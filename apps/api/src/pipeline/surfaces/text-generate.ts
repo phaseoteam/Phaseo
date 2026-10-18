@@ -594,9 +594,19 @@ async function materializeStreamResultToCompleted(args: {
 	);
 	// Executors that read usage from the upstream stream itself are authoritative for
 	// streamed clients (pipeline/after/stream.ts); buffered clients bill from the same usage.
+	// The finalizer is read once: its usage also carries the server-tool counters.
+	const finalizedUsage = await readAuthoritativeFinalizedUsage(args.result);
 	const authoritativeUsage = args.protocol === "anthropic.messages"
 		? null
-		: await readAuthoritativeStreamUsage(args.result);
+		: billableAuthoritativeUsage(finalizedUsage);
+	const baseUsage =
+		authoritativeUsage ??
+		((args.result.bill?.usage && typeof args.result.bill.usage === "object")
+			? args.result.bill.usage
+			: (consumed.usageRaw && typeof consumed.usageRaw === "object"
+				? consumed.usageRaw
+				: args.result.bill?.usage));
+	const serverToolMeters = serverToolMetersFrom(finalizedUsage);
 	return {
 		...args.result,
 		kind: "completed" as const,
@@ -619,15 +629,23 @@ async function materializeStreamResultToCompleted(args: {
 		},
 		bill: {
 			...args.result.bill,
-			usage:
-				authoritativeUsage ??
-				((args.result.bill?.usage && typeof args.result.bill.usage === "object")
-					? args.result.bill.usage
-					: (consumed.usageRaw && typeof consumed.usageRaw === "object"
-						? consumed.usageRaw
-						: args.result.bill?.usage)),
+			usage: serverToolMeters && (baseUsage == null || typeof baseUsage === "object")
+				? { ...(baseUsage ?? {}), ...serverToolMeters }
+				: baseUsage,
 		},
 	};
+}
+
+/** The usage an executor's own stream finalizer reports, when the executor marks it authoritative. */
+async function readAuthoritativeFinalizedUsage(result: any): Promise<Record<string, any> | null> {
+	if (result?.usageFinalizerAuthoritative !== true || typeof result.usageFinalizer !== "function") return null;
+	try {
+		const finalized = await result.usageFinalizer();
+		const usage = finalized?.usage;
+		return usage && typeof usage === "object" ? usage : null;
+	} catch {
+		return null;
+	}
 }
 
 /**
@@ -636,21 +654,36 @@ async function materializeStreamResultToCompleted(args: {
  * cache reads and writes inside it. Anthropic-semantics meters (Claude accounting) and the
  * Messages payload (cache on top of input_tokens) would contradict each other's hints.
  */
-async function readAuthoritativeStreamUsage(result: any): Promise<Record<string, any> | null> {
-	if (result?.usageFinalizerAuthoritative !== true || typeof result.usageFinalizer !== "function") return null;
-	try {
-		const finalized = await result.usageFinalizer();
-		const usage = finalized?.usage;
-		if (!usage || typeof usage !== "object") return null;
-		if (usage.cached_read_tokens_are_subset_of_input === false || usage.cached_write_tokens_are_subset_of_input === false) {
-			return null;
-		}
-		const billable = ["input_tokens", "output_tokens", "cached_read_text_tokens", "cached_write_text_tokens"]
-			.some((key) => typeof usage[key] === "number" && usage[key] > 0);
-		return billable ? usage : null;
-	} catch {
+function billableAuthoritativeUsage(usage: Record<string, any> | null): Record<string, any> | null {
+	if (!usage) return null;
+	if (usage.cached_read_tokens_are_subset_of_input === false || usage.cached_write_tokens_are_subset_of_input === false) {
 		return null;
 	}
+	const billable = ["input_tokens", "output_tokens", "cached_read_text_tokens", "cached_write_text_tokens"]
+		.some((key) => typeof usage[key] === "number" && usage[key] > 0);
+	return billable ? usage : null;
+}
+
+const SERVER_TOOL_METER_KEYS = ["native_web_search_requests", "native_web_fetch_requests", "server_tool_use"] as const;
+
+function serverToolMetersFrom(usage: Record<string, any> | null): Record<string, unknown> | null {
+	if (!usage) return null;
+	const meters: Record<string, unknown> = {};
+	for (const key of SERVER_TOOL_METER_KEYS) {
+		const value = usage[key];
+		if ((typeof value === "number" && Number.isFinite(value)) || (value && typeof value === "object")) meters[key] = value;
+	}
+	return Object.keys(meters).length ? meters : null;
+}
+
+/**
+ * Server-tool counters from an executor whose usage finalizer reads the upstream stream
+ * itself (Claude on Anthropic, Bedrock and Vertex). The client-protocol stream a buffered
+ * request is materialised from carries no such counters, so without this a buffered
+ * request's web searches (usage.server_tool_use.web_search_requests) were never billed.
+ */
+export async function readAuthoritativeServerToolMeters(result: any): Promise<Record<string, unknown> | null> {
+	return serverToolMetersFrom(await readAuthoritativeFinalizedUsage(result));
 }
 
 export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise<Response> {
