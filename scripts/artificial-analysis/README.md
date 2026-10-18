@@ -52,6 +52,12 @@ them as a fresh upstream fetch. The importer fails without writing anything if
 the publisher RPC is not deployed yet. No source import is required to initialize
 the existing v4 publication.
 
+The bootstrap is pinned to the verified complete v4.3.2 import. It refuses
+unexpected majors, mixed methodologies, and a missing metric instead of guessing
+completion from whichever version has the highest row. A shared table lock keeps
+legacy per-model writers from changing that evidence during capture. If the
+precondition fails, reconcile and verify the import before deployment.
+
 Rollback application code only; retain snapshot history and the additive schema.
 After deployment, verify the coverage RPC, the bootstrap publication and one
 manual dry run before allowing the next scheduled write. Full methodology history

@@ -43,9 +43,23 @@ try {
     ('${id(999)}','lab/one','aa-intelligence-index-v4',50,'Artificial Analysis ID existing; Intelligence Index v4.3.2');`);
   const seedName = (await readdir(new URL('../migrations/', import.meta.url))).find(name => name.endsWith('_seed_artificial_analysis_publications.sql'));
   const seed = await read(`../migrations/${seedName}`);
+  await rejects(db.exec(seed), /requires all four metrics/);
+  for (let i = 1; i < prefixes.length; i++) {
+    await db.query('insert into public.v2_benchmarks(benchmark_id,name) values ($1,$1)', [`${prefixes[i]}-v4`]);
+    await db.query('insert into public.v2_benchmark_results(result_id,model_slug,benchmark_id,score_numeric,other_info) values ($1,$2,$3,10,$4)',
+      [id(990 + i), 'lab/one', `${prefixes[i]}-v4`, 'Artificial Analysis ID existing; Intelligence Index v4.3.2']);
+  }
+  await db.exec(`update public.v2_benchmark_results set other_info='Artificial Analysis ID existing; Intelligence Index v4.3.3' where result_id='${id(991)}';`);
+  await rejects(db.exec(seed), /unexpected or mixed methodologies/);
+  await db.exec(`update public.v2_benchmark_results set other_info='Artificial Analysis ID existing; Intelligence Index v4.3.2' where result_id='${id(991)}';
+    insert into public.v2_benchmark_results(result_id,model_slug,benchmark_id,score_numeric,other_info)
+    values ('${id(989)}','lab/one','aa-intelligence-index-v5',70,'Artificial Analysis ID partial; Intelligence Index v5.0');`);
+  await rejects(db.exec(seed), /unexpected or mixed methodologies/);
+  assert.equal(await count('artificial_analysis_snapshots'), 0, 'partial future major never bootstraps a publication');
+  await db.exec(`delete from public.v2_benchmark_results where result_id='${id(989)}';`);
   await db.exec(seed); await db.exec(seed);
   assert.equal(await count('artificial_analysis_snapshots'), 1, 'bootstrap is idempotent and ignores empty v5');
-  assert.equal(await count('v2_benchmark_results'), 1, 'bootstrap does not rewrite existing scores');
+  assert.equal(await count('v2_benchmark_results'), 4, 'bootstrap does not rewrite existing scores');
   assert.equal((await db.query("select published from public.get_artificial_analysis_coverage() where benchmark_id='aa-intelligence-index-v4'")).rows[0].published, true);
   await db.exec('truncate public.artificial_analysis_snapshots, public.v2_benchmark_results, public.v2_benchmarks;');
   for (const role of ['anon', 'authenticated']) {
