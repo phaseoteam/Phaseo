@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
-const migrationFile = '../migrations/20261017163719_mobile_push_rules.sql';
+const migrationFile = '../migrations/20261018135417_mobile_push_rules.sql';
 const schemaFiles = [
     '../schemas/public/tables/mobile_notification_rules.sql',
     '../schemas/public/tables/catalogue_notification_events.sql',
