@@ -13,6 +13,7 @@ export interface ArtificialAnalysisPublicConfiguration {
 	effort: string | null;
 	creator: { id: string; slug: string; name: string; color?: string } | null;
 	intelligenceIndex: number | null;
+	intelligenceIndexIsEstimated: boolean | null;
 	totalTokens: Record<string, number | null> | null;
 	outputTokensPerTask: Record<string, number | null> | null;
 	totalCostUsd: Record<string, number | null> | null;

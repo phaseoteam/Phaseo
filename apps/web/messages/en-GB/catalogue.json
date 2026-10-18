@@ -1861,6 +1861,26 @@
 		"loadingModels": "Loading models…"
 	},
 	"benchmarks": {
+		"explorer": {
+			"comparisons": "Comparisons",
+			"tokenUsage": "Token usage",
+			"cost": "Cost",
+			"benchmarks": "Individual benchmarks",
+			"capabilities": "Domain capabilities",
+			"tokensPerTask": "Output tokens per task",
+			"totalOutputTokens": "Total output tokens",
+			"costPerTask": "Cost per task",
+			"totalCost": "Total evaluation cost",
+			"timePerTask": "Time per task",
+			"pareto": "Pareto frontier",
+			"score": "Score",
+			"financeAndAccounting": "Finance & accounting",
+			"strategyAndOps": "Strategy & operations",
+			"legal": "Legal",
+			"healthcareAndMedical": "Healthcare & medicine",
+			"engineering": "Engineering",
+			"economics": "Economics"
+		},
 		"title": "Benchmarks",
 		"description": "Explore AI model benchmarks, compare scores, and discover which evaluations are most widely used.",
 		"searchPlaceholder": "Search benchmarks...",

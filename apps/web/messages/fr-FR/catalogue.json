@@ -1861,6 +1861,26 @@
 		"loadingModels": "Chargement des modèles…"
 	},
 	"benchmarks": {
+		"explorer": {
+			"comparisons": "Comparaisons",
+			"tokenUsage": "Utilisation des tokens",
+			"cost": "Coût",
+			"benchmarks": "Benchmarks individuels",
+			"capabilities": "Compétences sectorielles",
+			"tokensPerTask": "Tokens de sortie par tâche",
+			"totalOutputTokens": "Total des tokens de sortie",
+			"costPerTask": "Coût par tâche",
+			"totalCost": "Coût total de l’évaluation",
+			"timePerTask": "Temps par tâche",
+			"pareto": "Frontière de Pareto",
+			"score": "Score",
+			"financeAndAccounting": "Finance et comptabilité",
+			"strategyAndOps": "Stratégie et opérations",
+			"legal": "Droit",
+			"healthcareAndMedical": "Santé et médecine",
+			"engineering": "Ingénierie",
+			"economics": "Économie"
+		},
 		"title": "Évaluations comparatives",
 		"description": "Explorez les benchmarks des modèles d'IA, comparez les scores et découvrez quelles évaluations sont les plus utilisées.",
 		"searchPlaceholder": "Rechercher des benchmarks...",

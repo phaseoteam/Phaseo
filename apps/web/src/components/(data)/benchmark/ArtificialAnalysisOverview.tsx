@@ -1,7 +1,7 @@
-import { useLocale, useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchFrontendArtificialAnalysisData, type PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import { artificialAnalysisVersion, artificialAnalysisMetricKey } from "@/lib/benchmarks/artificialAnalysis";
 import { buildArtificialAnalysisExplorer } from "@/lib/benchmarks/artificialAnalysisExplorer";
@@ -10,24 +10,27 @@ import ArtificialAnalysisSuiteNavigation from "./ArtificialAnalysisSuiteNavigati
 import { BenchmarkDisclosure } from "./BenchmarkDisclosure";
 import BenchmarkProgressChart from "./BenchmarkProgressChart";
 import ModelsUsingBenchmark from "./ModelsUsingBenchmark";
+import ArtificialAnalysisDashboard from "./ArtificialAnalysisDashboard";
+import { dashboardRows, loadDashboardData } from "@/lib/benchmarks/artificialAnalysisDashboard";
 
-export function ArtificialAnalysisOverview({
+export async function ArtificialAnalysisOverview({
 	benchmark,
 	rankings,
 }: {
 	benchmark: BenchmarkPage;
 	rankings: PublicBenchmarkRanking[];
 }) {
-	const t = useTranslations("Catalogue.benchmarks.current");
-	const tOther = useTranslations("Catalogue.models.detail.benchmarkGrid");
-	const locale = useLocale();
+	const [t, tOther, locale] = await Promise.all([getTranslations("Catalogue.benchmarks.current"), getTranslations("Catalogue.models.detail.benchmarkGrid"), getLocale()]);
 	const versionOf = (info: unknown) => artificialAnalysisVersion(typeof info === "string" ? info : null) ?? "Unspecified";
 	const versions = [...new Set(benchmark.results.map((result) => versionOf(result.other_info)))].sort((a, b) => b.localeCompare(a, "en", { numeric: true }));
 	const latestVersion = versions.find((version) => version !== "Unspecified") ?? versions[0] ?? "Unspecified";
+	const major = Number(benchmark.id.match(/-v(\d+)$/)?.[1]);
+	const publicData = Number.isSafeInteger(major) && major > 0 ? await loadDashboardData((offset) => fetchFrontendArtificialAnalysisData({ version: major, limit: 200, offset })).catch(() => null) : null;
+	const richData = publicData?.methodology_version === latestVersion ? publicData : null;
 	const results = benchmark.results.filter((result) => versionOf(result.other_info) === latestVersion && result.score !== null && Number.isFinite(Number(result.score)));
 	const { comparison_benchmarks: _comparisons, suite: _suite, ...currentBenchmark } = benchmark;
 	const current = { ...currentBenchmark, results };
-	const updated = results.map((result) => result.updated_at).filter((date): date is string => Boolean(date)).sort().at(-1);
+	const updated = richData?.fetched_at ?? results.map((result) => result.updated_at).filter((date): date is string => Boolean(date)).sort().at(-1);
 	const metric = artificialAnalysisMetricKey(benchmark.id);
 	const points = buildArtificialAnalysisExplorer(rankings);
 	// Web previews can precede the API deployment or encounter older edge payloads.
@@ -47,8 +50,9 @@ export function ArtificialAnalysisOverview({
 
 	return (
 		<div className="pb-12">
-			<ArtificialAnalysisExplorer points={points} footer={footer} initialView={metric === "coding" || metric === "agentic" || metric === "cost" ? metric : comparisonView} />
+			{richData ? <><ArtificialAnalysisDashboard rows={dashboardRows(richData.models)} />{footer}</> : <ArtificialAnalysisExplorer points={points} footer={footer} initialView={metric === "coding" || metric === "agentic" || metric === "cost" ? metric : comparisonView} />}
 			<div className="border-b">
+				{richData ? <BenchmarkDisclosure title={(await getTranslations("Catalogue.benchmarks"))("tocIndexComparisons")}><ArtificialAnalysisExplorer points={points} initialView="intelligence" /></BenchmarkDisclosure> : null}
 				<BenchmarkDisclosure id="progress" title={t("progress")}><BenchmarkProgressChart benchmark={current} /></BenchmarkDisclosure>
 				<BenchmarkDisclosure id="model-results" title={t("modelsResults")}><ModelsUsingBenchmark benchmark={current} /></BenchmarkDisclosure>
 				{otherEvaluations.length ? <BenchmarkDisclosure title={tOther("otherBenchmarks")} count={otherEvaluations.length.toLocaleString(locale)}>
