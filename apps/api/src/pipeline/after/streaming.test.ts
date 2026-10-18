@@ -67,6 +67,45 @@ function baseCtx(overrides?: Record<string, unknown>): any {
 }
 
 describe("passthroughWithPricing", () => {
+	it("finalizes usage from response.incomplete and strips the internal stop carrier", async () => {
+		const usageCalls: Array<any> = [];
+		const snapshots: Array<any> = [];
+		const upstream = makeSseResponse([
+			{ event: "response.created", data: { response: { id: "resp_1", object: "response", status: "in_progress" } } },
+			{
+				event: "response.incomplete",
+				data: {
+					type: "response.incomplete",
+					response: {
+						id: "resp_1",
+						object: "response",
+						status: "incomplete",
+						incomplete_details: { reason: "content_filter" },
+						_phaseo_stop: { reason: "refusal" },
+						usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
+					},
+				},
+			},
+		]);
+
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx(),
+			provider: "anthropic",
+			priceCard: null,
+			onFinalSnapshot: (snapshot) => snapshots.push(snapshot),
+			onFinalUsage: (usage) => {
+				usageCalls.push(usage);
+			},
+		});
+
+		const text = await drain(response);
+		expect(text).not.toContain("_phaseo_stop");
+		expect(text).toContain("\"incomplete_details\":{\"reason\":\"content_filter\"}");
+		expect(snapshots).toHaveLength(1);
+		expect(usageCalls).toEqual([{ input_tokens: 3, output_tokens: 2, total_tokens: 5 }]);
+	});
+
 	it("finalizes usage once from response.completed events", async () => {
 		const usageCalls: Array<any> = [];
 		const upstream = makeSseResponse([

@@ -885,6 +885,13 @@ export type IRChoice = {
 	};
 	finishReason: "stop" | "length" | "tool_calls" | "content_filter" | "error" | null;
 
+	// A finer provider reason that only some surfaces can express: Anthropic's
+	// stop_sequence and pause_turn (finishReason "stop"), and a refusal (finishReason
+	// "content_filter", or "stop" for OpenAI-style refusal text). Messages clients get
+	// it as stop_reason; Chat and Responses clients get the closest documented value.
+	// See core/finish-reason.ts.
+	finishDetail?: "stop_sequence" | "pause_turn" | "refusal";
+
 	// Which stop sequence triggered (if finishReason is "stop")
 	// Useful for debugging and understanding model behavior
 	stopSequence?: string;

@@ -1113,6 +1113,10 @@ export function anthropicMessagesToIR(
 			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
 		},
 		finishReason,
+		// stop_sequence, pause_turn and refusal, for Messages clients
+		...(finishReason !== "tool_calls" && (json.stop_reason === "stop_sequence" || json.stop_reason === "pause_turn" || json.stop_reason === "refusal")
+			? { finishDetail: json.stop_reason }
+			: {}),
 		// Preserve which stop sequence triggered (Anthropic-specific)
 		stopSequence: json.stop_sequence ?? undefined,
 	};

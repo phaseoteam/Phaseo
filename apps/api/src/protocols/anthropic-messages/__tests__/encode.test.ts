@@ -275,6 +275,23 @@ describe("encodeAnthropicMessagesResponse", () => {
 		}
 	});
 
+	it("keeps stop_sequence, pause_turn and refusal from the finish detail", () => {
+		const encode = (choice: Partial<IRChatResponse["choices"][0]>) => encodeAnthropicMessagesResponse({
+			id: "req-123",
+			model: "claude",
+			choices: [{ index: 0, message: { role: "assistant", content: [{ type: "text", text: "Test" }] }, finishReason: "stop", ...choice }],
+		} as IRChatResponse);
+
+		const sequence = encode({ finishDetail: "stop_sequence", stopSequence: "###" });
+		expect(sequence.stop_reason).toBe("stop_sequence");
+		expect(sequence.stop_sequence).toBe("###");
+		expect(encode({ stopSequence: "###" }).stop_reason).toBe("stop_sequence");
+		expect(encode({ finishDetail: "pause_turn" }).stop_reason).toBe("pause_turn");
+		expect(encode({ finishDetail: "refusal" }).stop_reason).toBe("refusal");
+		expect(encode({ finishReason: "content_filter", finishDetail: "refusal" }).stop_reason).toBe("refusal");
+		expect(encode({ finishReason: "error" }).stop_reason).toBeNull();
+	});
+
 	it("should handle missing usage", () => {
 		const ir: IRChatResponse = {
 			id: "req-123",

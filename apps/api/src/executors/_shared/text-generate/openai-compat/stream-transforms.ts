@@ -1,6 +1,7 @@
 import type { ExecutorExecuteArgs } from "@executors/types";
 import type { IRChatResponse, IRContentPart } from "@core/ir";
 import { irUsageToOpenAIStyle } from "@core/cache-usage";
+import { gatewayStopEntry } from "@core/finish-reason";
 import { openAIResponsesToIR } from "./transform";
 import { openAIChatToIR } from "./transform-chat";
 import { getProviderQuirks } from "./quirks";
@@ -398,7 +399,11 @@ export function transformResponsesStreamToChat(
 								await flushToolArguments(resolvedId, entry, controller);
 								break;
 							}
+							// response.incomplete is terminal too (max_output_tokens or content
+							// filter): it carries the final usage and the finish reason, so
+							// the client gets its final chunk and the request is billed.
 							case "response.completed":
+							case "response.incomplete":
 								finalResponse = payload?.response ?? finalResponse;
 								break;
 							case "response.failed":
@@ -437,6 +442,7 @@ type ResponsesStreamChoiceState = {
 	toolCalls: Map<number, { id: string; name: string; arguments: string; outputIndex: number; emittedAdded?: boolean }>;
 	emittedText?: boolean;
 	emittedReasoning?: boolean;
+	sawRefusal?: boolean;
 };
 
 export function transformChatStreamToResponses(
@@ -608,6 +614,12 @@ export function transformChatStreamToResponses(
 								const entry = getChoiceState(choiceIndex);
 								if (choice?.finish_reason) {
 									entry.finishReason = choice.finish_reason;
+								}
+								// An OpenAI-style refusal ends with finish_reason "stop"; Messages
+								// clients need it as stop_reason "refusal".
+								const refusal = choice?.delta?.refusal ?? choice?.message?.refusal;
+								if (typeof refusal === "string" && refusal.length > 0) {
+									entry.sawRefusal = true;
 								}
 
 								const deltaContent = choice?.delta?.content;
@@ -817,6 +829,9 @@ export function transformChatStreamToResponses(
 						const ir = openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
 						const usage = encodeResponsesUsageFromIR(ir.usage);
 						const completion = deriveResponsesCompletionFromFinish(ir.choices?.[0]?.finishReason);
+						const firstChoice = ir.choices?.[0];
+						const refusalStop = choiceStates.get(firstChoice?.index ?? 0)?.sawRefusal === true &&
+							(firstChoice?.finishReason === "stop" || firstChoice?.finishReason === "content_filter");
 						const encoded = encodeOpenAIResponsesResponse(ir, args.requestId);
 						const output =
 							Array.isArray(encoded.output) && encoded.output.length > 0
@@ -838,6 +853,8 @@ export function transformChatStreamToResponses(
 							created_at: ir.created ?? createdAt,
 							status: completion.status,
 							...(completion.incompleteDetails ? { incomplete_details: completion.incompleteDetails } : {}),
+							// Internal: stripped before the client sees the frame.
+							...gatewayStopEntry(refusalStop ? "refusal" : firstChoice?.finishDetail, firstChoice?.stopSequence),
 							model: ir.model ?? model,
 							output: [...indexed].sort((left, right) => left.index - right.index).map(({ item }) => item),
 							usage,
