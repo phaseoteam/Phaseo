@@ -4,18 +4,19 @@ import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { LegendItem, LineChart } from "@/components/charts";
 import { Logo } from "@/components/Logo";
-import { Badge, Icon, Segmented, Select, Text } from "@/components/ui";
+import { Badge, Icon, Segmented, Select, Text, useToneColor } from "@/components/ui";
 import { getModelEffectivePricing, getModelPricingHistory, type ProviderPricing } from "@/lib/api/models";
 import { cn } from "@/lib/cn";
 import { formatPrice, formatShortDate } from "@/lib/format";
 import { isRoutable, plansFor, priceLines } from "../pricing";
 import { meterName } from "./faq";
-import { EmptyBox, SubHeading, TinyBadge } from "./parts";
+import { EmptyBox, ServiceTierBadge, SubHeading, TinyBadge } from "./parts";
 import {
   buildPriceHistory, defaultRowPlan, effectiveRows, isEffectiveMeter, isSeriesVisibleByDefault, meterOptions, observedUsageByProviderPlan, RANGE_OPTIONS, summaryCutoffMs,
   tierDashArray, weightedEffectivePrice, type EffectiveRow, type PricingRange, type PricingView,
 } from "./pricingInsights";
 import { providerDisplayName, providerLogoId, tierLabel } from "./providers";
+import { serviceTierLabel } from "./tiers";
 
 /** Small prices keep their precision ("$0.0042"); the website rounds axis labels the same way. */
 const axisPrice = (value: number) => (value === 0 ? "0" : `$${Number(value.toPrecision(2))}`);
@@ -35,6 +36,7 @@ export function PricingSection({ modelId, providers }: { modelId: string; provid
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [inspected, setInspected] = useState<number | null>(null);
   const [nowMs] = useState(() => Date.now());
+  const muted = useToneColor("muted");
 
   const derived = useMemo(() => {
     const rowsInput = effective.data ?? [];
@@ -107,7 +109,7 @@ export function PricingSection({ modelId, providers }: { modelId: string; provid
             {plans.length > 1 || plans[0] !== "standard" ? (
               <View className="mt-3 flex-row flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border pt-2.5">
                 <Text variant="caption" className="font-medium text-foreground">Service tier</Text>
-                {plans.map((plan) => <LegendItem key={plan} colour="#888888" label={plan === "standard" ? "Standard" : tierLabel(plan)} dash={tierDashArray(plan)} />)}
+                {plans.map((plan) => <LegendItem key={plan} colour={muted} label={serviceTierLabel(plan)} dash={tierDashArray(plan)} />)}
               </View>
             ) : null}
           </View>
@@ -178,7 +180,7 @@ function SeriesRow({ row, values, visible, onToggle, expandable, open, onExpand,
       <Pressable accessibilityRole={expandable ? "button" : undefined} disabled={!expandable} onPress={onExpand} className="flex-1 flex-row items-center gap-2">
         {tier ? null : <Logo id={row.logoId} label={row.providerName} size={22} />}
         <Text variant="small" numberOfLines={1} className="shrink font-medium">{row.providerName}</Text>
-        {tier ? <TinyBadge label={tierLabel(row.plan)} tone="warning" /> : null}
+        {tier ? <ServiceTierBadge plan={row.plan} /> : null}
         {row.isExternal ? <TinyBadge label="External" /> : null}
         {expandable ? <Icon icon={open ? ChevronDown : ChevronRight} tone="muted" size={14} /> : null}
       </Pressable>
@@ -210,7 +212,12 @@ function ListPrices({ provider, last }: { provider: ProviderPricing; last: boole
         <Icon icon={open ? ChevronDown : ChevronRight} tone="muted" size={16} />
         <Logo id={providerLogoId(provider.provider)} label={name} size={22} />
         <Text variant="label" numberOfLines={1} className="flex-1">{name}</Text>
-        {routable ? (otherPlans.length ? <Text variant="caption">Also {otherPlans.map(tierLabel).join(", ")}</Text> : null) : <Badge label="Not active" />}
+        {routable ? (otherPlans.length ? (
+          <View className="flex-row items-center gap-1">
+            <Text variant="caption">Also</Text>
+            {otherPlans.map((plan) => <ServiceTierBadge key={plan} plan={plan} />)}
+          </View>
+        ) : null) : <Badge label="Not active" />}
       </Pressable>
       <View className={cn("flex-row flex-wrap gap-x-6 gap-y-2 px-3 pl-9 pt-2", open && longContext ? "pb-1" : "pb-3")}>
         {shown.map((line) => (

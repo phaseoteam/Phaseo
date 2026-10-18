@@ -7,6 +7,7 @@ import { useAppearance } from "@/providers/AppearanceProvider";
 import { modalityTone } from "./about";
 import type { CanonicalGatewayStatus, DataPolicyTier } from "./providers";
 import type { SectionId } from "./sections";
+import { serviceTierBadgeStyle } from "./tiers";
 
 /** A page section: a divider above (none for the first), the website's heading, and its layout reported for the jump menu. */
 export function PageSection({ id, title, description, action, first, onLayoutSection, children, className }: {
@@ -104,11 +105,22 @@ export function PolicyIcon({ tier, size = 16 }: { tier: DataPolicyTier; size?: n
   return <Icon icon={meta.icon} size={size} color={resolved === "dark" ? meta.dark : meta.light} />;
 }
 
-/** A small 16 px label badge (service tier, "Alias"). */
-export function TinyBadge({ label, tone = "muted" }: { label: string; tone?: "muted" | "warning" }) {
+/** A small 16 px neutral label badge ("External"). */
+export function TinyBadge({ label }: { label: string }) {
   return (
-    <View className={cn("h-4 justify-center rounded-[4px] px-1", tone === "warning" ? "bg-warning/15" : "bg-muted")}>
-      <Text className={cn("text-[10px] font-semibold leading-3", tone === "warning" ? "text-warning" : "text-muted-foreground")}>{label}</Text>
+    <View className="h-4 justify-center rounded-[4px] bg-muted px-1.5">
+      <Text className="text-[10px] font-semibold leading-3 text-muted-foreground">{label}</Text>
+    </View>
+  );
+}
+
+/** The website's service tier badge: each tier in its own colour, nothing for standard. */
+export function ServiceTierBadge({ plan }: { plan: string }) {
+  const style = serviceTierBadgeStyle(plan);
+  if (!style) return null;
+  return (
+    <View accessibilityLabel={`${style.label} service tier`} className={cn("h-4 justify-center rounded-[4px] px-1.5", style.background)}>
+      <Text className={cn("text-[10px] font-semibold leading-3", style.text)}>{style.label}</Text>
     </View>
   );
 }

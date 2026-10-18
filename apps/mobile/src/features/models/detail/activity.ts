@@ -4,12 +4,12 @@ const DAY_MS = 86_400_000;
 
 export type ActivityMode = "tokens" | "requests";
 
-/** The website's series colours (ModelActivityChart), as hex for SVG. */
+/** The website's series colours (ModelActivityChart HSL values, as hex for SVG). */
 export const ACTIVITY_SERIES = {
-  prompt: { label: "Prompt", colour: "#0ea5e9", description: "Prompt tokens measure input size." },
-  reasoning: { label: "Reasoning", colour: "#f59e0b", description: "Reasoning tokens show internal thinking before a response." },
-  completion: { label: "Completion", colour: "#22a878", description: "Completion tokens reflect total output length." },
-  requests: { label: "Requests", colour: "#c42b48", description: "Requests measure successful gateway calls for this model." },
+  prompt: { label: "Prompt", colour: "#0da2e7", description: "Prompt tokens measure input size." },
+  reasoning: { label: "Reasoning", colour: "#f59f0a", description: "Reasoning tokens show internal thinking before a response." },
+  completion: { label: "Completion", colour: "#27b07d", description: "Completion tokens reflect total output length." },
+  requests: { label: "Requests", colour: "#ce2743", description: "Requests measure successful gateway calls for this model." },
 } as const;
 
 export type ActivityDay = { day: string; prompt: number; reasoning: number; completion: number; requests: number; projected: number; isToday: boolean };

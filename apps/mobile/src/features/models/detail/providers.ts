@@ -2,6 +2,7 @@ import type { ProviderHealthRow, ProviderModel, ProviderPricing } from "@/lib/ap
 // Pure web modules, shared so statuses and names match phaseo.app exactly.
 import { chooseGatewayStatus, getGatewayStatusSortRank, normalizeGatewayStatusValue, resolveGatewayStatus, type CanonicalGatewayStatus } from "../../../../../web/src/components/(data)/model/pricing/providerGatewayStatus";
 import { formatProviderOfferDisplayName, resolveProviderDisplayName, resolveProviderLogoId } from "../../../../../web/src/lib/providers/providerOffers";
+import { serviceTierLabel } from "./tiers";
 
 export type { CanonicalGatewayStatus };
 
@@ -89,13 +90,8 @@ export function providerLogoId(provider: ProviderPricing["provider"]) {
   return resolveProviderLogoId({ providerId: provider.api_provider_id ?? "", providerFamilyId: provider.provider_family_id });
 }
 
-/** "Fast", "Batch", "Flex" for non-standard tiers. */
-export function tierLabel(plan: string) {
-  const value = normalizePlan(plan);
-  if (value === "priority" || value === "fast") return "Fast";
-  if (value === "ultrafast") return "Ultrafast";
-  return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
+/** "Fast", "Batch", "Flex": the website's tier names. */
+export const tierLabel = serviceTierLabel;
 
 const SELECTABLE_TIERS = ["priority", "ultrafast", "flex", "batch"];
 

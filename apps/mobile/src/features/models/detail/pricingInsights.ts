@@ -2,6 +2,9 @@ import type { EffectivePricingRow, PricingHistoryRule, ProviderPricing } from "@
 import { basePricePerMillion } from "../pricing";
 import { normalizeGatewayStatusValue } from "../../../../../web/src/components/(data)/model/pricing/providerGatewayStatus";
 import { normalizePlan, providerLogoId, providerOfferName, providerPlans } from "./providers";
+import { providerSeriesColour } from "./tiers";
+
+export { tierDashArray } from "./tiers";
 
 const DAY_MS = 86_400_000;
 const INPUT_METERS = ["input_text_tokens", "input_tokens"] as const;
@@ -72,8 +75,6 @@ export function effectivePriceSummary(usageByDay: Map<string, DayUsage>, sinceMs
   };
 }
 
-const FALLBACK_COLOURS = ["#3b82f6", "#f97316", "#10b981", "#a855f7", "#ef4444", "#14b8a6", "#eab308", "#ec4899", "#6366f1", "#84cc16"];
-
 export type EffectiveRow = {
   seriesKey: string;
   providerId: string;
@@ -101,7 +102,7 @@ export function effectiveRows(providers: ProviderPricing[], observed: Map<string
   const rows = providers.flatMap((provider, index) => {
     const providerId = provider.provider.api_provider_id ?? "";
     const plans = providerPlans(provider);
-    const colour = provider.provider.colour?.trim() || FALLBACK_COLOURS[index % FALLBACK_COLOURS.length]!;
+    const colour = provider.provider.colour?.trim() || providerSeriesColour(index);
     return (plans.length ? plans : ["standard"]).map((plan): EffectiveRow => {
       const usage = observed.get(planKey(providerId, plan));
       const prices = usage ? effectivePriceSummary(usage.usageByDay, cutoffMs) : null;
@@ -308,9 +309,3 @@ export function buildPriceHistory({ rows, rules, observed, view, meter, range, n
 
 /** Standard tiers (or a provider's only tier) start visible; the rest are toggled on from the table. */
 export const isSeriesVisibleByDefault = (row: Pick<EffectiveRow, "plan" | "plans">) => row.plan === "standard" || (!row.plans.includes("standard") && row.plan === row.plans[0]);
-
-/** Line dashes per tier, as the website's legend (chart-colors.tsx). */
-export function tierDashArray(plan: string) {
-  const dashes: Record<string, string | undefined> = { standard: undefined, free: "1 5", priority: "8 4", flex: "10 3 2 3", batch: "16 4" };
-  return Object.prototype.hasOwnProperty.call(dashes, plan) ? dashes[plan] : "6 4";
-}

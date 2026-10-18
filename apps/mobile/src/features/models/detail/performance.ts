@@ -77,7 +77,8 @@ export function trendSeries(data: ProviderTrendPoint[], metric: TrendMetric, max
     }));
 }
 
-const PERCENTILE_COLOURS: Record<number, string> = { 1: "#22b8cf", 5: "#339af0", 10: "#4c6ef5", 25: "#5c7cfa", 50: "#7950f2", 75: "#9c36b5", 90: "#ae3ec9", 95: "#c2255c", 99: "#e03131" };
+/** The website's percentile band colours (modelPerformancePercentiles.ts, OKLCH converted to hex). */
+const PERCENTILE_COLOURS: Record<number, string> = { 1: "#00d0e2", 5: "#00bfec", 10: "#00acf3", 25: "#2896f5", 50: "#507ef1", 75: "#6c68ea", 90: "#8151db", 95: "#9038c4", 99: "#9c17a6" };
 
 /** For a single provider the website draws P10/P50/P90 bands instead of one provider line. */
 export function singleProviderPercentileSeries(providerCount: number, points: ProviderTrendPoint[]): ProviderTrendPoint[] | null {
