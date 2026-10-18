@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { applyAllowlist, EXPECTATIONS_DIR, matchAllow } from "../src/expect/allowlist";
 import { checkBilling, checkFinish, checkParam, checkStreamOrder, expectedBilling, expectedUsage, getPath } from "../src/expect/text";
+import { buildClientMatrix } from "../src/client-requests";
 import type { AllowEntry, Mismatch } from "../src/expect/types";
 import type { ClientOutcome } from "../src/response-pipeline";
 import type { PriceCard } from "@pipeline/pricing/types";
@@ -42,6 +43,18 @@ describe("parameter expectations", () => {
 		expect(checkParam({ ...base, upstream: upstream({}) }).map((m) => m.kind)).toEqual(["dropped"]);
 		expect(checkParam({ ...base, upstream: upstream({ temperature: 0.4 }) }).map((m) => m.kind)).toEqual(["wrong_value"]);
 	});
+	it("expects a 400 for a parameter our spec documents as not supported", () => {
+		const scenarios = buildClientMatrix().scenarios;
+		const unsupported = scenarios.filter((entry) => entry.documentedUnsupported).map((entry) => entry.id);
+		expect(unsupported).toContain("responses.param.previous_response_id");
+		const scenario = scenarios.find((entry) => entry.id === "responses.param.previous_response_id")!;
+		const input = { ctx, provider: "openai", dialect: "openai-responses" as const, scenario, clientBody: scenario.body, documented: true };
+		expect(checkParam({ ...input, outcome: "rejected_validation" })).toEqual([]);
+		expect(checkParam({ ...input, outcome: "sent" }).map((m) => [m.kind, m.path])).toEqual([["error_mapping", "client.status"]]);
+		// Messages carries the same curated reasoning value as Chat and Responses.
+		expect(scenarios.find((entry) => entry.id === "messages.param.reasoning")?.body.reasoning).toMatchObject({ effort: "high" });
+	});
+
 	it("reports a documented parameter rejected before routing", () => {
 		const mismatches = checkParam({ ctx, provider: "groq", dialect: "openai-chat", scenario, outcome: "rejected_validation", clientBody: { temperature: 0.37 }, documented: true });
 		expect(mismatches.map((m) => [m.kind, m.path])).toEqual([["error_mapping", "client.status"]]);

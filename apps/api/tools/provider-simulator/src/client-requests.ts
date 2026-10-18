@@ -21,6 +21,8 @@ export type ClientScenario = {
 	/** Set for agent conversations so consecutive steps can be compared for prefix stability. */
 	conversation?: { id: string; step: number };
 	note?: string;
+	/** The spec documents the parameter as "Not supported": a clear 400 is the expected outcome. */
+	documentedUnsupported?: boolean;
 };
 
 export const SURFACE_ENDPOINT: Record<Surface, "chat.completions" | "responses" | "messages"> = {
@@ -231,6 +233,8 @@ const CURATED: Record<Surface, Curated> = {
 		tools: messagesTools(),
 		tool_choice: { type: "any", disable_parallel_tool_use: true },
 		thinking: { type: "enabled", budget_tokens: 2048 },
+		// Same reasoning value as Chat and Responses, so params.json's "reasoning" expectation holds on every surface.
+		reasoning: { effort: "high", summary: "detailed", max_tokens: 1337 },
 		service_tier: "auto",
 		cache_control: { type: "ephemeral", ttl: "1h" },
 		output_config: { effort: "high" },
@@ -297,7 +301,12 @@ function paramScenarios(surface: Surface): { scenarios: ClientScenario[]; docume
 		if (name === "top_logprobs" && surface === "chat") body.logprobs = true;
 		if (name === "audio") body.modalities = ["text", "audio"];
 		if (name === "thinking" && surface === "messages") body.max_tokens = 4096;
-		scenarios.push({ id: `${surface}.param.${name}`, surface, kind: "param", param: name, body, note: name in props ? undefined : "not in the public OpenAPI spec" });
+		const documentedUnsupported = /^\s*not supported\b/i.test(String((props[name] as any)?.description ?? ""));
+		scenarios.push({
+			id: `${surface}.param.${name}`, surface, kind: "param", param: name, body,
+			note: name in props ? (documentedUnsupported ? "documented as not supported" : undefined) : "not in the public OpenAPI spec",
+			...(documentedUnsupported ? { documentedUnsupported } : {}),
+		});
 
 		// Small enums get one variant per value: tool_choice modes, efforts, tiers.
 		const enums = props[name] ? enumValuesOf(doc, props[name]) : null;

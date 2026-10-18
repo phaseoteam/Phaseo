@@ -251,6 +251,12 @@ export function checkParam(input: RequestCheckInput): Mismatch[] {
 	const found = conceptFor(scenario);
 	const out: Mismatch[] = [];
 	const clientValue = scenario.param ? input.clientBody?.[scenario.param] : undefined;
+	if (scenario.documentedUnsupported) {
+		// Our spec says the gateway rejects it with 400; reaching a provider is the defect.
+		const source: Source = { kind: "spec", spec: "apps/docs/openapi/v1/openapi.yaml", path: `${scenario.surface} request property ${scenario.param}: "Not supported"` };
+		if (!input.outcome.startsWith("rejected")) out.push(mm(ctx, "error_mapping", "client.status", 400, input.outcome, source, { note: `${scenario.param} is documented as not supported` }));
+		return out;
+	}
 	if (input.outcome.startsWith("rejected")) {
 		if (input.documented || found?.concept.accepted) {
 			out.push(mm(ctx, "error_mapping", "client.status", 200, 400, found?.concept.source ?? { kind: "ref", ref: "phaseo-openapi-chat" }, { note: `documented parameter ${scenario.param} rejected before routing` }));
