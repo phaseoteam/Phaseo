@@ -5301,6 +5301,7 @@ const (
 	WorkspaceNotificationEventKindPaymentMethodExpiring WorkspaceNotificationEventKind = "payment_method_expiring"
 	WorkspaceNotificationEventKindModelDeprecation WorkspaceNotificationEventKind = "model_deprecation"
 	WorkspaceNotificationEventKindModelSubstitution WorkspaceNotificationEventKind = "model_substitution"
+	WorkspaceNotificationEventKindRateLimitThrottled WorkspaceNotificationEventKind = "rate_limit_throttled"
 )
 
 
@@ -5315,6 +5316,7 @@ type WorkspaceNotificationRouteMap struct {
 	ModelDeprecation []string `json:"model_deprecation"`
 	ModelSubstitution []string `json:"model_substitution"`
 	PaymentMethodExpiring []string `json:"payment_method_expiring"`
+	RateLimitThrottled []string `json:"rate_limit_throttled"`
 }
 
 type WorkspaceNotificationRouteResponse struct {

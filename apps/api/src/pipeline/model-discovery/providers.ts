@@ -105,6 +105,8 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 	groq: { providerName: "Groq" },
 	"inference-net": {
 		providerName: "Inference.net",
+		modelsEndpoint: "https://api.inference.net/v1/models",
+		authStyle: "none",
 		apiKeyEnv: ["INFERENCE_API_KEY", "INFERENCE_NET_API_KEY"],
 	},
 	doubleword: {

@@ -20809,6 +20809,7 @@ components:
         - payment_method_expiring
         - model_deprecation
         - model_substitution
+        - rate_limit_throttled
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -20817,6 +20818,7 @@ components:
         - payment_method_expiring
         - model_deprecation
         - model_substitution
+        - rate_limit_throttled
       properties:
         low_balance:
           type: array
@@ -20839,6 +20841,11 @@ components:
             type: string
             format: uuid
         model_substitution:
+          type: array
+          items:
+            type: string
+            format: uuid
+        rate_limit_throttled:
           type: array
           items:
             type: string

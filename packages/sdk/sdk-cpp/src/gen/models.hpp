@@ -3683,6 +3683,7 @@ struct WorkspaceNotificationRouteMap {
 	std::vector<std::string> model_deprecation;
 	std::vector<std::string> model_substitution;
 	std::vector<std::string> payment_method_expiring;
+	std::vector<std::string> rate_limit_throttled;
 };
 
 struct WorkspaceNotificationRouteResponse {
