@@ -4,8 +4,10 @@
 	"private": true,
 	"scripts": {
 		"dev": "mintlify dev --port 3101 --no-open",
-		"build": "pnpm run skills:check && pnpm run openapi:locales:check && pnpm run validate:locales && pnpm run translation:freshness:check && mintlify validate",
+		"build": "pnpm run skills:check && pnpm run og:check && pnpm run openapi:locales:check && pnpm run validate:locales && pnpm run translation:freshness:check && mintlify validate",
 		"check:links": "mintlify broken-links",
+		"og:sync": "node scripts/sync-og-images.mjs",
+		"og:check": "node scripts/sync-og-images.mjs --check",
 		"openapi:locales": "node scripts/generate-localized-openapi.mjs",
 		"openapi:locales:check": "node scripts/generate-localized-openapi.mjs --check",
 		"translation:freshness:init": "node scripts/translation-freshness.mjs init",
