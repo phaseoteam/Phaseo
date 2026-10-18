@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "phaseo",
+  "description": "The Phaseo plugin: skills for building on the Phaseo AI gateway, the Phaseo MCP and the Phaseo Docs MCP.",
+  "owner": {
+    "name": "Phaseo",
+    "url": "https://phaseo.app"
+  },
+  "plugins": [
+    {
+      "name": "phaseo",
+      "source": "./apps/mcp/plugin/phaseo",
+      "description": "Build on the Phaseo AI gateway: integration, migration, model selection, SDK and CLI skills, plus the Phaseo MCP for live models, pricing and usage and the Phaseo Docs MCP.",
+      "category": "development",
+      "tags": ["ai-gateway", "llm", "models", "pricing", "mcp"]
+    }
+  ]
+}

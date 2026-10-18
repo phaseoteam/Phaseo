@@ -13,6 +13,7 @@ icon: "square-terminal"
 | Phaseo CLI | سير العمل عبر الطرفية وCI والإدارة والأتمتة | قراءة وكتابة وفق النطاقات ودورك في مساحة العمل |
 | Phaseo MCP | بيانات Phaseo المباشرة داخل Codex وClaude وChatGPT وعملاء MCP الآخرين | مصادق عليه وللقراءة فقط |
 | Docs MCP | البحث في وثائق Phaseo الحالية أثناء البرمجة | الوثائق فقط وللقراءة فقط |
+| إضافة Phaseo | تثبيت Phaseo MCP وDocs MCP ومهارات Phaseo في Claude Code أو Codex دفعة واحدة | مثل كل خادم MCP |
 
 ## Phaseo CLI
 
@@ -95,9 +96,33 @@ codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 	اربط خادم الوثائق بـ Codex أو Claude Code أو Cursor أو OpenCode أو VS Code.
 </Card>
 
+## إضافة Phaseo
+
+تجمع إضافة Phaseo بين Phaseo MCP وDocs MCP ومهارات Phaseo للوكلاء الخاصة بالتكامل والترحيل واختيار النماذج ومراقبة الاستخدام وحزم SDK وCLI. ثبّتها مرة واحدة بدلًا من توصيل كل جزء بنفسك.
+
+### Claude Code
+
+```bash
+claude plugin marketplace add phaseoteam/skills
+claude plugin install phaseo@phaseo
+```
+
+شغّل `/mcp` وسجّل الدخول إلى `plugin:phaseo:phaseo` لربط حسابك في Phaseo. تُحمَّل المهارات عندما يطابقها الطلب، أو يمكنك تشغيل إحداها مباشرة، مثل `/phaseo:phaseo-gateway`.
+
+### Codex
+
+```bash
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+codex mcp login phaseo
+```
+
+يفتح الأمر الأخير مصادقة Phaseo OAuth لخادم Phaseo MCP. تُحمَّل المهارات عندما يطابقها الطلب.
+
 ## اختيار الواجهة المناسبة
 
 - استخدم **CLI** لإنشاء المفاتيح أو تغيير الإعدادات أو إدارة مساحات العمل أو أتمتة المهام الإدارية.
 - استخدم **Phaseo MCP** لمنح عميل الذكاء الاصطناعي وصولاً آمناً إلى بيانات Phaseo الحية.
 - استخدم **Docs MCP** لإتاحة وثائق Phaseo الحالية لمساعد برمجي دون الوصول إلى الحساب.
+- استخدم **إضافة Phaseo** لإعداد خادمَي MCP ومهارات Phaseo في Claude Code أو Codex دفعة واحدة.
 

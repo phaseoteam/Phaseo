@@ -13,6 +13,7 @@ Use Phaseo from your terminal with the CLI, or connect an AI client through MCP.
 | Phaseo CLI | Terminal workflows, CI, administration, and automation | Read and write, limited by your scopes and workspace role |
 | Phaseo MCP | Live Phaseo data inside Codex, Claude, ChatGPT, and other MCP clients | Authenticated and read-only |
 | Docs MCP | Looking up current Phaseo documentation while coding | Documentation-only and read-only |
+| Phaseo plugin | Installing the Phaseo MCP, the Docs MCP, and the Phaseo skills in Claude Code or Codex at once | Same as each MCP server |
 
 ## Phaseo CLI
 
@@ -95,9 +96,33 @@ Use it when a coding assistant needs current API examples, integration guidance,
 	Connect the documentation server to Codex, Claude Code, Cursor, OpenCode, or VS Code.
 </Card>
 
+## Phaseo plugin
+
+The Phaseo plugin bundles the Phaseo MCP, the Docs MCP, and the Phaseo agent skills for integration, migration, model selection, usage monitoring, the SDKs, and the CLI. Install it once instead of connecting each piece yourself.
+
+### Claude Code
+
+```bash
+claude plugin marketplace add phaseoteam/skills
+claude plugin install phaseo@phaseo
+```
+
+Run `/mcp` and sign in to `plugin:phaseo:phaseo` to connect your Phaseo account. Skills load when a request matches them, or you can run one directly, such as `/phaseo:phaseo-gateway`.
+
+### Codex
+
+```bash
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+codex mcp login phaseo
+```
+
+The last command opens Phaseo OAuth for the Phaseo MCP. Skills load when a request matches them.
+
 ## Choose the right interface
 
 - Use the **CLI** to create keys, change settings, manage workspaces, or automate administrative workflows.
 - Use the **Phaseo MCP** to give an AI client safe access to live Phaseo data.
 - Use the **Docs MCP** to give a coding assistant current Phaseo documentation without account access.
+- Use the **Phaseo plugin** to set up both MCP servers and the Phaseo skills in Claude Code or Codex at once.
 
