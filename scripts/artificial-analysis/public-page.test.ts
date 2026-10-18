@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { extractPublicModels } from "./public-page";
+import { createCipheriv, createHash } from "node:crypto";
+import { gzipSync } from "node:zlib";
+import { decodePublicData, extractFullPublicModels, extractPublicModels, publicDataManifest } from "./public-page";
 
 const source = "https://artificialanalysis.ai/models";
 const model = { id: "source-1", name: "Model (high)", slug: "model-high", effort: "high", intelligenceIndex: 0, canonicalIntelligenceIndexTokenCount: { input: 10, output: 0, reasoning: null }, intelligenceIndexEvaluations: [{ slug: "omniscience", score: -3, outputTokensPerTask: 0 }] };
@@ -36,4 +38,32 @@ test("ignores lightweight navigation entries and retains missing metrics as null
 	assert.equal(result.models.length, 1);
 	assert.equal(result.models[0].totalTokens, null);
 	assert.equal(result.fetchedAt, null);
+});
+
+const key = Buffer.alloc(32, 7);
+const manifest = { path: "/data/abc123.txt", key: key.toString("hex") };
+const encrypt = (data: unknown) => {
+	const cipher = createCipheriv("aes-256-gcm", key, createHash("sha256").update(key).digest().subarray(0, 12));
+	return Buffer.concat([cipher.update(gzipSync(JSON.stringify(data))), cipher.final(), cipher.getAuthTag()]);
+};
+test("discovers the model manifest rather than another page dataset", () => {
+	const page = html(`a:${JSON.stringify([{ manifest: { path: "/data/other.txt", key: "other" }, promptType: "long" }, { initialModels: [model], manifest }])}\n`);
+	assert.deepEqual(publicDataManifest(page), manifest);
+	assert.throws(() => publicDataManifest(html(`a:${JSON.stringify({ initialModels: [], manifest: { ...manifest, path: "https://other.example/data.txt" } })}\n`)), /Invalid/);
+});
+test("extracts all frontend models, including ones absent from the default page selection", () => {
+	const page = html(`a:${JSON.stringify({ initialModels: [model], manifest })}\n`);
+	const models = [model, { ...model, id: "source-2", name: "Other model", slug: "other-model", canonicalIntelligenceIndexTokenCount: null, gpqa: 0.87 }];
+	const result = extractFullPublicModels(page, encrypt({ models }), source, "now");
+	assert.equal(result.models.length, 2);
+	assert.equal(result.coverage, "full_frontend_dataset");
+	assert.equal((result.models[1].benchmarkScores as Record<string, number>).gpqa, 0.87);
+	assert.equal(result.dataUrl, "https://artificialanalysis.ai/data/abc123.txt");
+	assert.throws(() => extractFullPublicModels(page, encrypt({ models: [model, model] }), source, "now"), /duplicate/);
+});
+test("rejects corrupt data and malformed full datasets", () => {
+	const data = encrypt({ models: [model] });
+	data[0] ^= 1;
+	assert.throws(() => decodePublicData(data, manifest.key));
+	assert.throws(() => decodePublicData(encrypt({ models: [] }), manifest.key), /empty/);
 });

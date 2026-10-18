@@ -1,33 +1,48 @@
 # Artificial Analysis benchmarks
 
-## Public page extractor
+## Full frontend data extractor
 
 `pnpm exec tsx scripts/scrape-artificial-analysis-public.ts --output snapshot.json`
-reads the public `/models` HTML without an API key and writes a reviewable JSON
-snapshot. It extracts embedded model UUIDs, configurations, Intelligence Index
-scores, total token counts, output tokens per task, costs, timings, and individual
-Intelligence Index evaluation scores. Field names and units remain explicit;
-individual evaluation scores retain their source scales, including negative scores.
+loads the public models page, discovers its full-model data manifest, and fetches
+that versioned frontend data asset. It uses the same public decoding format as
+AA's unauthenticated browser. No API key or browser automation is needed; no
+downloaded JavaScript is executed. The manifest path is discovered on every run.
 
-Use `--url https://artificialanalysis.ai/models/<slug>` for a public model page,
-or `--input saved.html` to parse a saved response. The output file must not exist.
-Snapshots include the source URL, HTML SHA-256, detected methodology versions,
-and extraction time. Saved HTML has an unknown fetch time (`fetchedAt: null`).
+The default 27 HTML rows are **not** the extraction scope. The live frontend
+asset contained **704 distinct AA configurations**, including 216 with benchmark
+token totals and per-task token usage, 2,160 Intelligence Index evaluation scores,
+and 8,742 non-null standalone benchmark score fields. Missing metrics remain
+null. Individual scores preserve source scales and source field names; this
+extractor does not invent benchmark IDs or normalize incompatible scales.
 
-Coverage is **page selection only**, not the entire AA catalogue. In the initial
-live check, the page embedded 27 configurations with 270 individual evaluation
-scores. Model detail pages and query parameters can still embed the same default
-comparison set; requesting a URL does not guarantee that model is present. Match
-the returned UUIDs before using any record. Missing fields remain null, and page
-format changes or conflicting rows fail extraction. The script parses JSON;
-it never executes downloaded JavaScript or calls private APIs.
+Each snapshot records source/data URLs, HTML and data SHA-256 hashes, detected
+methodology versions, and fetch/extraction times. `--input saved.html --data
+saved-data.txt` supports offline replay; saved inputs have unknown fetch time.
+Output files are created exclusively. Invalid identities, duplicates, broken
+manifests, authentication failures in the data envelope, and changed schemas
+abort extraction. Corrupt or partial data is not published.
 
-This command makes one public page request, does not crawl automatically, and
-does not modify the database or the scheduled API import. Review coverage and
-methodology before adding a publication/import path. Preserve attribution to
-[Artificial Analysis](https://artificialanalysis.ai/models) in downstream displays.
+### Catalogue matching
 
-Tests: `pnpm exec tsx --test scripts/artificial-analysis/public-page.test.ts`.
+Add `--match-db` with the existing maintenance Supabase environment variables
+(`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`). This reads every
+`v2_models` row in ordered pages, uses the existing database AA UUID mappings,
+creator aliases and configuration-family matcher, and adds a bidirectional
+matching report to the JSON snapshot. It never writes to the database.
+
+The live audit matched 601 of 704 AA configurations to 419 Phaseo catalogue
+models. Another 103 configurations remained unmatched; five catalogue models
+were ambiguous. The report includes source UUIDs, candidate UUIDs, and unmapped
+source names so those cases can be reviewed instead of guessed. Counts are a
+point-in-time audit, not fixed completeness thresholds.
+
+The command makes two public requests plus optional catalogue reads. It does
+not modify the scheduled API import. Before publication, review unmatched IDs,
+benchmark metadata/scales, and methodology compatibility. Preserve attribution
+to [Artificial Analysis](https://artificialanalysis.ai/models).
+
+Tests: `pnpm exec tsx --test scripts/artificial-analysis/public-page.test.ts
+scripts/artificial-analysis/core.test.ts`.
 
 `pnpm data:sync-artificial-analysis` fetches every free V2 API page and imports Intelligence, Coding, Agentic, and total evaluation cost in USD into Supabase. Results retain source ID, index version, tested configuration, source link, and timestamp. Null metrics are omitted; zero is a score.
 

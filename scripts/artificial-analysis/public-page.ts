@@ -1,7 +1,55 @@
-import { createHash } from "node:crypto";
+import { createDecipheriv, createHash } from "node:crypto";
+import { gunzipSync } from "node:zlib";
 
 type JsonObject = Record<string, unknown>;
 const object = (value: unknown): value is JsonObject => Boolean(value) && typeof value === "object" && !Array.isArray(value);
+const methodologyVersions = (html: string) => [...new Set([...html.matchAll(/(?:Intelligence Index|Current version:)[\s\S]{0,30}?v(\d+\.\d+(?:\.\d+)?)/g)].map((match) => match[1]))];
+
+export function publicDataManifest(html: string) {
+	const stream = [...html.matchAll(/<script\b[^>]*>self\.__next_f\.push\((\[1,[\s\S]*?\])\)\s*;?<\/script>/g)].map((match) => JSON.parse(match[1])[1]).join("");
+	const manifests: Array<{ path: string; key: string }> = [];
+	const walk = (value: unknown) => {
+		if (!value || typeof value !== "object") return;
+		if (object(value) && Object.hasOwn(value, "initialModels") && object(value.manifest)) {
+			const { path, key } = value.manifest;
+			if (typeof path !== "string" || !/^\/data\/[a-f\d]+\.txt$/.test(path) || typeof key !== "string" || !/^[a-f\d]{64}$/.test(key)) throw new Error("Invalid public model manifest");
+			manifests.push({ path, key });
+		}
+		for (const item of Object.values(value)) walk(item);
+	};
+	for (const line of stream.split("\n")) {
+		const match = line.match(/^[a-f\d]+:([\s\S]*)$/);
+		if (!match) continue;
+		let value: unknown;
+		try { value = JSON.parse(match[1]); } catch { continue; }
+		walk(value);
+	}
+	const unique = [...new Map(manifests.map((manifest) => [JSON.stringify(manifest), manifest])).values()];
+	if (unique.length !== 1) throw new Error("Expected one full-model data manifest; page format may have changed");
+	return unique[0];
+}
+
+/** Same public data decoding used by AA's unauthenticated browser client. */
+export function decodePublicData(bytes: Buffer, keyHex: string) {
+	if (!/^[a-f\d]{64}$/.test(keyHex) || bytes.length < 17) throw new Error("Invalid public dataset envelope");
+	const key = Buffer.from(keyHex, "hex");
+	const iv = createHash("sha256").update(key).digest().subarray(0, 12);
+	const decipher = createDecipheriv("aes-256-gcm", key, iv);
+	decipher.setAuthTag(bytes.subarray(-16));
+	const compressed = Buffer.concat([decipher.update(bytes.subarray(0, -16)), decipher.final()]);
+	const data: unknown = JSON.parse(gunzipSync(compressed, { maxOutputLength: 50_000_000 }).toString("utf8"));
+	if (!object(data) || !Array.isArray(data.models) || !data.models.length) throw new Error("Full model dataset is empty or malformed");
+	return data.models;
+}
+
+export function extractFullPublicModels(html: string, bytes: Buffer, sourceUrl: string, fetchedAt: string) {
+	const manifest = publicDataManifest(html);
+	const models = decodePublicData(bytes, manifest.key);
+	const stream = `<script>self.__next_f.push(${JSON.stringify([1, `a:${JSON.stringify(models)}\n`]).replace(/</g, "\\u003c")})</script>`;
+	const snapshot = extractPublicModels(stream, sourceUrl, fetchedAt);
+	if (snapshot.models.length !== models.length) throw new Error("Full dataset contains missing or duplicate model identities");
+	return { ...snapshot, methodologyVersions: methodologyVersions(html), sha256: createHash("sha256").update(bytes).digest("hex"), pageSha256: createHash("sha256").update(html).digest("hex"), dataUrl: new URL(manifest.path, sourceUrl).href, coverage: "full_frontend_dataset" };
+}
 
 /** Decode JSON transport only. Never execute scripts downloaded from the source. */
 export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: string | null) {
@@ -51,6 +99,7 @@ export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: 
 				creator: row.creator ?? null,
 				intelligenceIndex: numeric(row.intelligenceIndex, "intelligenceIndex"),
 				intelligenceIndexIsEstimated: row.intelligenceIndexIsEstimated ?? null,
+				benchmarkScores: Object.fromEntries(["omniscience", "omniscienceAccuracy", "omniscienceHallucinationRate", "mlcrOverall", "gdpPdfAllPass", "gdpval", "gdpvalNormalized", "itBenchSre", "tau2", "tauBanking", "terminalbenchHard", "terminalBench21", "terminalBench40", "frontierCode", "terminalBenchScience", "hleDiamond", "scicode", "lcr", "ifbench", "hle", "gpqa", "critpt", "apexAgents", "mmmuPro", "livecodebench", "aime25", "analystAgent", "automationBenchPartialScore", "enterpriseOpsGym", "harveyLab"].filter((key) => Object.hasOwn(row, key)).map((key) => [key, numeric(row[key], key)])),
 				totalTokens: numericObject(row.canonicalIntelligenceIndexTokenCount, "totalTokens"),
 				outputTokensPerTask: numericObject(row.intelligenceIndexOutputTokensPerTask, "outputTokensPerTask"),
 				totalCostUsd: numericObject(row.intelligenceIndexCost, "totalCostUsd"),
@@ -70,6 +119,5 @@ export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: 
 	};
 	for (const record of records.values()) walk(record);
 	if (!models.size) throw new Error("No model data found; public page format may have changed");
-	const versions = [...new Set([...html.matchAll(/(?:Intelligence Index|Current version:)[\s\S]{0,30}?v(\d+\.\d+(?:\.\d+)?)/g)].map((match) => match[1]))];
-	return { source: "artificial_analysis_public_page", sourceUrl, fetchedAt, sha256: createHash("sha256").update(html).digest("hex"), methodologyVersions: versions, coverage: "page_selection_only", models: [...models.values()] };
+	return { source: "artificial_analysis_public_page", sourceUrl, fetchedAt, sha256: createHash("sha256").update(html).digest("hex"), methodologyVersions: methodologyVersions(html), coverage: "page_selection_only", models: [...models.values()] };
 }
