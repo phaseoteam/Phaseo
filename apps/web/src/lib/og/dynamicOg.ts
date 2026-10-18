@@ -40,20 +40,26 @@ export type DynamicOgParseResult =
 	| { ok: false; reason: DynamicOgRejection; field?: string };
 
 // Latin letters and marks, digits, spaces and everyday punctuation. Excludes
-// angle brackets, braces, backticks, control, zero-width and bidi characters.
-const TEXT_PATTERN = /^[\p{Script=Latin}\p{M}\p{N} .,:;!?'"’‘“”()&+\-–—/%$€£#*_|·…]+$/u;
+// angle brackets, braces, control, zero-width and bidi characters.
+const TEXT_PATTERN = /^[\p{Script=Latin}\p{M}\p{N} .,:;!?'"’‘“”()&+\-–—/%$€£#*_|·…`]+$/u;
 const PATHNAME_PATTERN = /^\/[A-Za-z0-9\-._~/]*$/;
 
-// Domains are only blocked for TLDs people actually click, so names such as
-// "Next.js" or "GPT-4.5" stay allowed.
+// Any "name.tld" token counts as a domain, whatever the TLD. Version numbers
+// such as "GPT-4.5" don't match because the part after the dot is not letters.
+// Spaced-out domains ("evil . xyz") are only caught for common TLDs, since
+// "sentence. Next" looks the same.
 const LINK_PATTERNS = [
 	/https?:/i,
 	/:\/\//,
 	/\bwww\./i,
 	/[\w.+-]+@[\w-]+\.[\w.-]+/,
-	/\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\s*\.\s*(?:com|net|org|io|ai|app|co|xyz|ru|cn|info|biz|me|gg|ly|link|click|top|site|online|dev|tk|ml|ga|cf|gq|sh|to|cc|tv|us|uk|de|fr|in|live|shop|store|vip|win|bit|pw|su|zip|mov)\b/i,
+	/[\p{L}\p{N}-]\.[a-z]{2,63}(?![\p{L}\p{N}])/iu,
+	/\b[a-z0-9-]+\s+\.\s*(?:com|net|org|io|ai|app|co|xyz|ru|cn|info|biz|me|gg|ly|link|click|top|site|online|dev|tk|ml|ga|cf|gq|sh|to|cc|tv|us|uk|de|fr|in|live|shop|store|vip|win|bit|pw|su|zip|mov|cloud|tech|website|lol|space)\b/i,
 ];
-const ALLOWED_DOMAINS = /\b(?:docs\.)?phaseo\.app\b/gi;
+// Dotted names that are allowed even though they look like domains. Matched as
+// whole tokens, so "support-phaseo.app" or "phaseo.app.evil.com" stay blocked.
+const ALLOWED_DOTTED_NAMES =
+	/(?<![\p{L}\p{N}\-.])(?:(?:docs\.)?phaseo\.app|(?:next|node|nuxt|vue|react|three|d3|express|nest|svelte|solid|ember|chart|moment|p5|tensorflow)\.js|asp\.net|\.net)(?![\p{L}\p{N}\-]|\.[\p{L}\p{N}])/giu;
 
 const profanityMatcher = new RegExpMatcher({
 	...englishDataset.build(),
@@ -65,13 +71,14 @@ function normalise(value: string): string {
 }
 
 function containsLink(value: string): boolean {
-	const withoutOwnDomains = value.replace(ALLOWED_DOMAINS, "");
-	return LINK_PATTERNS.some((pattern) => pattern.test(withoutOwnDomains));
+	const withoutAllowedNames = value.replace(ALLOWED_DOTTED_NAMES, " ");
+	return LINK_PATTERNS.some((pattern) => pattern.test(withoutAllowedNames));
 }
 
-// Three or more single letters split by separators, e.g. "f u c k" or "f.u.c.k".
+// Three or more single letters split by any non-alphanumeric separator, e.g.
+// "f u c k", "f.u.c.k" or "f/u/c/k".
 const SPELLED_OUT_PATTERN =
-	/(?<![\p{L}\p{N}])\p{L}(?=[\s.\-_*·|]+\p{L}(?![\p{L}\p{N}]))(?:[\s.\-_*·|]+\p{L}(?![\p{L}\p{N}])){2,}/gu;
+	/(?<![\p{L}\p{N}])\p{L}(?=[^\p{L}\p{N}]+\p{L}(?![\p{L}\p{N}]))(?:[^\p{L}\p{N}]+\p{L}(?![\p{L}\p{N}])){2,}/gu;
 
 export function containsBlockedText(value: string): boolean {
 	// Join spelled-out letters so spacing a word apart does not get it through,
@@ -98,6 +105,9 @@ export function parseDynamicOgParams(searchParams: URLSearchParams): DynamicOgPa
 		if (field === "pathname") {
 			if (!PATHNAME_PATTERN.test(value) || value.includes("//") || value.includes("..")) {
 				return { ok: false, reason: "invalid_pathname", field };
+			}
+			if (containsLink(value.replace(/\//g, " "))) {
+				return { ok: false, reason: "contains_link", field };
 			}
 		} else {
 			if (containsLink(value)) return { ok: false, reason: "contains_link", field };

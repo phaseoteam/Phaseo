@@ -32,6 +32,9 @@ describe("parseDynamicOgParams", () => {
 		"Claude Opus 5.5 vs GPT-5.5: 40% cheaper",
 		"Café résumé — naïve façade",
 		"Read more at phaseo.app/docs",
+		"Docs live at docs.phaseo.app.",
+		"Ship it. Next, measure latency",
+		"ASP.NET and Node.js SDKs, e.g. v2.1",
 		"Class assessment for Scunthorpe",
 		"Passing the cocktail analysis",
 		"Shitake mushrooms in a bass guitar class",
@@ -83,6 +86,11 @@ describe("parseDynamicOgParams", () => {
 		"Free credits at evil.com",
 		"Free credits at evil . xyz",
 		"Email support@example.com",
+		"Free credits at evil.cloud",
+		"Free credits at evil.website",
+		"Claim at support-phaseo.app",
+		"Claim at phaseo.app.evil.com",
+		"Claim at phaseo-support.phaseo.app",
 	])("rejects links: %s", (description) => {
 		expect(
 			parse(new URLSearchParams({ title: "Phaseo", description }).toString()),
@@ -94,6 +102,9 @@ describe("parseDynamicOgParams", () => {
 		["docs/quickstart", false],
 		["//evil.com", false],
 		["/models/openai/gpt-5.5", true],
+		["/docs/v1/api-reference/introduction", true],
+		["/claim-free-credits-at-evil.com", false],
+		["/www.evil.xyz", false],
 	])("validates pathname %s", (pathname, ok) => {
 		expect(parse(new URLSearchParams({ title: "Phaseo", pathname }).toString()).ok).toBe(ok);
 	});
@@ -104,6 +115,9 @@ describe("parseDynamicOgParams", () => {
 		["spaced out", "f u c k this"],
 		["dotted", "f.u.c.k this"],
 		["confusable", "ƒuck this"],
+		["slashed", "f/u/c/k this"],
+		["plus-separated", "f+u+c+k this"],
+		["colon-separated", "f:u:c:k this"],
 	])("blocks profanity (%s)", (_label, title) => {
 		expect(parse(new URLSearchParams({ title }).toString())).toMatchObject({
 			ok: false,
