@@ -685,11 +685,24 @@ function normalizeChatUsage(usage: any, observedServiceTier?: unknown): IRChatRe
 		inputDetails?.cache_creation_input_tokens,
 		inputDetails?.cache_creation_tokens,
 	);
+	const cachedWriteTokens5m = firstFiniteNumber(
+		usage.cached_write_text_tokens_5m,
+		usage.cache_creation?.ephemeral_5m_input_tokens,
+	);
+	const cachedWriteTokens1h = firstFiniteNumber(
+		usage.cached_write_text_tokens_1h,
+		usage.cache_creation?.ephemeral_1h_input_tokens,
+	);
+	// TTL-split writes (Anthropic-shaped `cache_creation`, gateway meters) sit on top of input.
+	const ttlCachedWriteTokens =
+		cachedWriteTokens5m !== undefined || cachedWriteTokens1h !== undefined
+			? (cachedWriteTokens5m ?? 0) + (cachedWriteTokens1h ?? 0)
+			: undefined;
 	const cachedWriteTokens = nestedCachedWriteTokens ?? firstFiniteNumber(
 		usage.cache_write_tokens,
 		usage.cache_creation_input_tokens,
 		outputDetails?.cached_tokens,
-	);
+	) ?? ttlCachedWriteTokens;
 	const reasoningTokens = usage.reasoning_tokens ?? outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
 	const cachedWriteTokensAreSubsetOfInput = typeof nestedCachedWriteTokens === "number" || typeof usage.cache_write_tokens === "number"
@@ -787,6 +800,8 @@ function normalizeChatUsage(usage: any, observedServiceTier?: unknown): IRChatRe
 			outputAudioTokens: outputDetails?.audio_tokens ?? outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
 			cachedWriteTokens,
+			...(cachedWriteTokens5m !== undefined ? { cachedWriteTokens5m } : {}),
+			...(cachedWriteTokens1h !== undefined ? { cachedWriteTokens1h } : {}),
 			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};
