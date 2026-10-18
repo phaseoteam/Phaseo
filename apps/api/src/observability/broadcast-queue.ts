@@ -2,7 +2,7 @@ import { clearRuntime, configureRuntime, getBindings, getSupabaseAdmin } from "@
 import type { GatewayBindings } from "@/runtime/env.types";
 import { mapWithConcurrency } from "@/pipeline/model-discovery/concurrency";
 import { broadcastDelivery } from "./broadcast-destinations";
-import type { BroadcastQueueMessage, BroadcastTelemetry } from "./broadcast-event";
+import { broadcastMessageBytes, gunzipJson, type BroadcastQueueMessage, type BroadcastTelemetry } from "./broadcast-event";
 import {
 	MAX_ATTEMPTS,
 	deliverGatewayOtlpPayload,
@@ -19,6 +19,11 @@ const MAX_OTLP_REQUEST_BYTES = 3 * 1024 * 1024;
 // Cloudflare caps one sendBatch call at 256 KB and 100 messages.
 const MAX_REQUEUE_BATCH_BYTES = 200_000;
 const MAX_REQUEUE_BATCH_MESSAGES = 100;
+// Inline events are loaded and delivered in rounds of at most this much
+// telemetry once decompressed. An uncompressed message is counted at the most
+// it can hold.
+const MAX_ROUND_TELEMETRY_BYTES = 16_000_000;
+const UNCOMPRESSED_TELEMETRY_BYTES = 120_000;
 // Retries after a failure that stopped delivery from being attempted, such as
 // Supabase or R2 being unavailable, back off by 30 seconds per attempt up to 15
 // minutes. With the consumer's max_retries of 100 a message waits out roughly 20
@@ -50,7 +55,7 @@ function errorMessage(error: unknown): string {
 function isBroadcastMessage(body: unknown): body is BroadcastQueueMessage {
 	const value = body as BroadcastQueueMessage | null;
 	return Boolean(value && value.v === 1 && typeof value.eventId === "string" && Array.isArray(value.destinationIds) &&
-		(value.telemetry || typeof value.spillKey === "string"));
+		(value.telemetry || ArrayBuffer.isView(value.telemetryGzip) || typeof value.spillKey === "string"));
 }
 
 // Only an event's first message needs a receipt. Requeued retries and
@@ -75,6 +80,7 @@ async function claimReceipts(messages: QueuedMessage[]): Promise<Set<string>> {
 
 async function loadTelemetry(body: BroadcastQueueMessage): Promise<BroadcastTelemetry | null> {
 	if (body.telemetry) return body.telemetry;
+	if (body.telemetryGzip) return gunzipJson<BroadcastTelemetry>(body.telemetryGzip);
 	const object = await getBindings().GATEWAY_IO_LOGS_BUCKET?.get(body.spillKey!);
 	return object ? await object.json<BroadcastTelemetry>() : null;
 }
@@ -205,7 +211,7 @@ async function requeue(retries: Array<{ event: Event } & Pending>): Promise<Set<
 	let current: typeof retries = [];
 	let bytes = 0;
 	for (const retry of retries) {
-		const size = JSON.stringify(retry.event.body).length;
+		const size = broadcastMessageBytes(retry.event.body);
 		if (current.length && (bytes + size > MAX_REQUEUE_BATCH_BYTES || current.length >= MAX_REQUEUE_BATCH_MESSAGES)) {
 			chunks.push(current);
 			current = [];
@@ -221,7 +227,7 @@ async function requeue(retries: Array<{ event: Event } & Pending>): Promise<Set<
 		try {
 			await getBindings().BROADCAST_QUEUE!.sendBatch(chunk.map((retry) => ({
 				body: { ...retry.event.body, destinationIds: retry.ids, attempt: retry.event.body.attempt + 1 },
-				contentType: "json" as const,
+				contentType: retry.event.body.telemetryGzip ? "v8" as const : "json" as const,
 				delaySeconds: delaySeconds(retry.delayMs),
 			})));
 		} catch (error) {
@@ -262,13 +268,24 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 		return summary;
 	}
 
-	// Inline events are delivered together. A spilled event can be many megabytes,
-	// so each is loaded and delivered on its own, then released.
-	const inline = messages.filter((message) => message.body.telemetry);
-	const rounds = [
-		...(inline.length ? [inline] : []),
-		...messages.filter((message) => !message.body.telemetry).map((message) => [message]),
-	];
+	// Inline events are delivered together, up to MAX_ROUND_TELEMETRY_BYTES at a
+	// time. A spilled event can be many megabytes, so each is loaded and delivered
+	// on its own, then released.
+	const rounds: QueuedMessage[][] = [];
+	let round: QueuedMessage[] = [];
+	let roundBytes = 0;
+	for (const message of messages.filter((message) => !message.body.spillKey)) {
+		const bytes = message.body.telemetryBytes ?? UNCOMPRESSED_TELEMETRY_BYTES;
+		if (round.length && roundBytes + bytes > MAX_ROUND_TELEMETRY_BYTES) {
+			rounds.push(round);
+			round = [];
+			roundBytes = 0;
+		}
+		round.push(message);
+		roundBytes += bytes;
+	}
+	if (round.length) rounds.push(round);
+	for (const message of messages.filter((message) => message.body.spillKey)) rounds.push([message]);
 	const configs = new Map<string, Promise<Record<string, unknown>>>();
 	const retries: Array<{ event: Event } & Pending> = [];
 	const finished: Event[] = [];
@@ -283,6 +300,12 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 					message.ack();
 				}
 			} catch (error) {
+				// Telemetry that will not decompress now never will; R2 may recover.
+				if (message.body.telemetryGzip) {
+					console.error("broadcast_queue_message_invalid", { id: message.id, error: errorMessage(error) });
+					message.ack();
+					continue;
+				}
 				console.error("broadcast_queue_spill_load_failed", { eventId: message.body.eventId, error: errorMessage(error) });
 				message.retry({ delaySeconds: setupRetrySeconds(message) });
 			}
