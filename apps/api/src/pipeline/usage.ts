@@ -36,6 +36,46 @@ export function stripUsagePricing(usage: any) {
     return base;
 }
 
+const isUsageObject = (value: unknown): value is Record<string, any> =>
+    Boolean(value) && typeof value === "object" && !Array.isArray(value);
+const isFiniteCount = (value: unknown): value is number =>
+    typeof value === "number" && Number.isFinite(value);
+
+/**
+ * Merge an executor's bill usage under the response payload's usage before pricing.
+ *
+ * The payload wins for overlapping fields, as before, and the bill keeps its extra meters.
+ * The cache hints (`cached_*_tokens_are_subset_of_input`) say how cache counts relate to
+ * `input_tokens`, so they must describe the object that supplied `input_tokens`. A Messages
+ * payload reports input without cache reads and writes (Anthropic), while the bill can hold
+ * the provider's OpenAI-style usage, whose hints say the cache sits inside input. Keeping
+ * the bill's hints next to the payload's input would take the cache out of input twice.
+ */
+export function mergeBillAndPayloadUsage(billUsage: unknown, payloadUsage: unknown): Record<string, any> {
+    const bill = isUsageObject(billUsage) ? billUsage : null;
+    const payload = isUsageObject(payloadUsage) ? payloadUsage : null;
+    const merged: Record<string, any> = { ...(bill ?? {}), ...(payload ?? {}) };
+    if (!bill || !payload) return merged;
+
+    const payloadInput = isFiniteCount(payload.input_tokens)
+        ? payload.input_tokens
+        : !isFiniteCount(bill.input_tokens) && isFiniteCount(payload.prompt_tokens)
+            ? payload.prompt_tokens
+            : undefined;
+    if (payloadInput === undefined) return merged;
+
+    const cache = resolveCacheTokenUsage(payload, payloadInput, { readSubsetDefault: true });
+    if (cache.readTokens !== undefined) {
+        delete merged.cachedReadTokensAreSubsetOfInput;
+        merged.cached_read_tokens_are_subset_of_input = cache.readSubset;
+    }
+    if (cache.writeTokens !== undefined) {
+        delete merged.cachedWriteTokensAreSubsetOfInput;
+        merged.cached_write_tokens_are_subset_of_input = cache.writeSubset;
+    }
+    return merged;
+}
+
 /** Media inputs counted from the request body, used when upstream usage omits them. */
 export type RequestMediaCounts = { images: number; audio: number; video: number };
 
