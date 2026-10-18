@@ -2,7 +2,7 @@ import { LegendList } from "@legendapp/list/react-native";
 import { usePathname, useRouter } from "expo-router";
 import { ArrowUpDown, Bot, Building2, CircleCheck, Gift, Shapes, SlidersHorizontal, X } from "lucide-react-native";
 import { type ComponentRef, useCallback, useDeferredValue, useEffect, useMemo, useRef } from "react";
-import { RefreshControl, type TextInput, View } from "react-native";
+import { type TextInput, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Button, Chip, ChipRow, EmptyState, ErrorState, Header, IconButton, Screen, SearchField, SkeletonRows, Text } from "@/components/ui";
@@ -103,7 +103,6 @@ export function ModelBrowser() {
           recycleItems
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={catalogue.isRefetching} onRefresh={() => void catalogue.refetch()} />}
           ListEmptyComponent={<EmptyState icon={Bot} title="No models match" body="Try fewer filters or a shorter search." action={filterCount ? "Clear filters" : undefined} onAction={() => filtersStore.set({ ...DEFAULT_FILTERS })} />}
           contentContainerStyle={{ paddingBottom: comparing.length ? 96 : 24 }}
         />
