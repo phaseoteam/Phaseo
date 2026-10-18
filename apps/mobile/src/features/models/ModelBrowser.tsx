@@ -1,11 +1,12 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { usePathname, useRouter } from "expo-router";
-import { ArrowUpDown, Bot, Building2, CircleCheck, Gift, Shapes, SlidersHorizontal, X } from "lucide-react-native";
+import { ArrowDownAZ, ArrowUpDown, Bot, Building2, CircleCheck, CircleDollarSign, Clock, Flame, Gift, Maximize2, Shapes, SlidersHorizontal, X, type LucideIcon } from "lucide-react-native";
 import { type ComponentRef, useCallback, useDeferredValue, useEffect, useMemo, useRef } from "react";
-import { RefreshControl, type TextInput, View } from "react-native";
+import { type TextInput, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
-import { Button, Chip, ChipRow, EmptyState, ErrorState, Header, IconButton, Screen, SearchField, SkeletonRows, Text } from "@/components/ui";
+import { Button, Chip, ChipRow, EmptyState, ErrorState, Header, IconButton, OptionSheet, Screen, SearchField, SkeletonRows, Text, useMenu, type ViewRef } from "@/components/ui";
+import { useLayout } from "@/hooks/useLayout";
 import type { ModelCard } from "@/lib/api/models";
 import { activeFilterCount, DEFAULT_FILTERS, filterModels, type CatalogueSort } from "@/lib/catalogue";
 import { compareStore, filtersStore, searchFocusStore, toggleCompare, updateFilters, useCatalogue, useLabIds } from "./state";
@@ -15,6 +16,7 @@ import { ModelRow } from "./ModelRow";
 let handledFocusRequest = 0;
 
 export const SORT_LABELS: Record<CatalogueSort, string> = { newest: "Newest", popular: "Most used", price: "Lowest price", context: "Largest context", name: "Name" };
+export const SORT_ICONS: Record<CatalogueSort, LucideIcon> = { newest: Clock, popular: Flame, price: CircleDollarSign, context: Maximize2, name: ArrowDownAZ };
 
 export function modelHref(id: string) {
   return `/models/${id}` as const;
@@ -40,6 +42,10 @@ export function ModelBrowser() {
   const router = useRouter();
   const pathname = usePathname();
   const openDetail = useOpenDetail("/models");
+  const { split } = useLayout();
+  // On tablets sort is a dropdown under its chip; phones keep the bottom sheet route.
+  const sortMenu = useMenu();
+  const sortRef = useRef<ViewRef>(null);
   const catalogue = useCatalogue();
   const filters = filtersStore.use();
   const comparing = compareStore.use();
@@ -75,7 +81,9 @@ export function ModelBrowser() {
         <SearchField ref={searchRef} value={filters.query} onChangeText={(value) => updateFilters({ query: value })} placeholder="Search models, labs or IDs" />
       </View>
       <ChipRow className="pb-2">
-        <Chip label={SORT_LABELS[filters.sort]} icon={ArrowUpDown} dropdown onPress={() => router.push("/filters/sort")} />
+        <View ref={sortRef} collapsable={false}>
+          <Chip label={SORT_LABELS[filters.sort]} icon={ArrowUpDown} dropdown onPress={() => (split ? void sortMenu.show(sortRef) : router.push("/filters/sort"))} />
+        </View>
         <Chip label="On Phaseo" icon={CircleCheck} selected={filters.availability === "phaseo"} onPress={() => updateFilters({ availability: filters.availability === "phaseo" ? "all" : "phaseo" })} />
         <Chip label="Free" icon={Gift} selected={filters.availability === "free"} onPress={() => updateFilters({ availability: filters.availability === "free" ? "all" : "free" })} />
         <Chip
@@ -103,12 +111,20 @@ export function ModelBrowser() {
           recycleItems
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={catalogue.isRefetching} onRefresh={() => void catalogue.refetch()} />}
           ListEmptyComponent={<EmptyState icon={Bot} title="No models match" body="Try fewer filters or a shorter search." action={filterCount ? "Clear filters" : undefined} onAction={() => filtersStore.set({ ...DEFAULT_FILTERS })} />}
           contentContainerStyle={{ paddingBottom: comparing.length ? 96 : 24 }}
         />
       )}
       {comparing.length ? <CompareTray count={comparing.length} /> : null}
+      <OptionSheet
+        open={sortMenu.open}
+        anchor={sortMenu.anchor}
+        title="Sort by"
+        value={filters.sort}
+        options={(Object.keys(SORT_LABELS) as CatalogueSort[]).map((value) => ({ value, label: SORT_LABELS[value], icon: SORT_ICONS[value] }))}
+        onChange={(sort) => updateFilters({ sort })}
+        onClose={sortMenu.close}
+      />
     </Screen>
   );
 }

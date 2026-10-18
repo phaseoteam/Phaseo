@@ -1,25 +1,24 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { ArrowDownAZ, Check, CircleDollarSign, CircleCheck, Clock, Flame, Gift, History, Maximize2, type LucideIcon } from "lucide-react-native";
+import { Check, CircleCheck, Gift, History } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ScrollView, Switch, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Button, Header, Icon, Row, Screen, SearchField, Section, Text } from "@/components/ui";
-import { SORT_LABELS } from "@/features/models/ModelBrowser";
+import { Button, Header, Icon, Row, RouteSheet, SearchField, Section, Text } from "@/components/ui";
+import { SORT_ICONS, SORT_LABELS } from "@/features/models/ModelBrowser";
 import { filtersStore, toggleValue, updateFilters, useCatalogue, useLabIds } from "@/features/models/state";
 import { DEFAULT_FILTERS, type CatalogueSort } from "@/lib/catalogue";
 import { modalityLabel } from "@/lib/format";
 import { modalityIcon } from "@/lib/modalityIcon";
 
-const SORT_ICONS: Record<CatalogueSort, LucideIcon> = { newest: Clock, popular: Flame, price: CircleDollarSign, context: Maximize2, name: ArrowDownAZ };
 
-/** Bottom sheets for the Models filters: sort, labs, and modalities. */
+/** The Models filters (sort, labs and modalities): bottom sheets on phones, dialogs on tablets. */
 export default function FilterSheet() {
   const { kind } = useLocalSearchParams<{ kind: string }>();
   return (
-    <Screen edges={[]} className="bg-popover">
+    <RouteSheet size={kind === "sort" ? "fit" : "tall"}>
       <Stack.Screen options={{ title: kind === "sort" ? "Sort" : kind === "organisations" ? "Labs" : "Filters" }} />
       {kind === "sort" ? <SortSheet /> : kind === "organisations" ? <OrganisationSheet /> : <ModelFilterSheet />}
-    </Screen>
+    </RouteSheet>
   );
 }
 

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { LogoMark } from "@/components/Logo";
-import { Button, Divider, Screen, Text, TextField } from "@/components/ui";
+import { Button, Divider, RouteSheet, Text, TextField } from "@/components/ui";
 import { WEB_ORIGIN } from "@/lib/config";
 import { authErrorMessage, useAuth, type OAuthProvider } from "@/providers/AuthProvider";
 
@@ -42,7 +42,7 @@ export default function SignInScreen() {
 
   if (mfaPending) {
     return (
-      <Screen edges={[]} className="bg-popover">
+      <RouteSheet size="tall">
         <KeyboardAwareScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <Text variant="title">Enter your code</Text>
           <Text variant="muted" className="mt-1">Your account uses two-factor authentication. Enter the 6-digit code from your authenticator app.</Text>
@@ -61,7 +61,7 @@ export default function SignInScreen() {
           <Button className="mt-2" label="Use a different account" variant="ghost" onPress={() => void signOut()} />
           {error ? <Text variant="small" className="mt-4 text-destructive">{error}</Text> : null}
         </KeyboardAwareScrollView>
-      </Screen>
+      </RouteSheet>
     );
   }
 
@@ -69,7 +69,7 @@ export default function SignInScreen() {
   const submit = () => canSubmit && void run("password", () => signInWithPassword(email.trim(), password));
 
   return (
-    <Screen edges={[]} className="bg-popover">
+    <RouteSheet size="tall">
       <KeyboardAwareScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <Image source={require("../assets/phaseo-icon.png")} style={{ width: 48, height: 48, borderRadius: 8 }} accessibilityLabel="Phaseo" />
         <Text variant="title" className="mt-4">Sign in to Phaseo</Text>
@@ -108,6 +108,6 @@ export default function SignInScreen() {
           </Pressable>
         </View>
       </KeyboardAwareScrollView>
-    </Screen>
+    </RouteSheet>
   );
 }

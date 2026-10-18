@@ -15,7 +15,7 @@ export function Segmented<T extends string>({ value, options, onChange, classNam
             onPress={() => onChange(option.value)}
             className={cn("h-8 flex-1 items-center justify-center rounded-sm", active && "bg-background")}
           >
-            <Text variant="small" className={cn("font-semibold", active ? "text-foreground" : "text-muted-foreground")}>{option.label}</Text>
+            <Text variant="small" numberOfLines={1} className={cn("px-1 font-semibold", active ? "text-foreground" : "text-muted-foreground")}>{option.label}</Text>
           </Pressable>
         );
       })}

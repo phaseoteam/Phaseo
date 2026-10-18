@@ -8,7 +8,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useCSSVariable } from "uniwind";
+import { routeSheetOptions } from "@/components/ui";
 import { NotificationObserver } from "@/features/notifications/NotificationObserver";
+import { useLayout } from "@/hooks/useLayout";
 import { AppearanceProvider, useAppearance } from "@/providers/AppearanceProvider";
 import { AuthProvider, useAuth } from "@/providers/AuthProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
@@ -39,6 +41,8 @@ export default function RootLayout() {
 function RootNavigator() {
   const { resolved, ready: appearanceReady } = useAppearance();
   const { ready: authReady } = useAuth();
+  // Sheets are native bottom sheets on phones and centred dialogs on tablets (see RouteSheet).
+  const { split } = useLayout();
   const [background, card, text, border, primary] = useCSSVariable(["--color-background", "--color-card", "--color-foreground", "--color-border", "--color-primary"]);
   const ready = appearanceReady && authReady;
 
@@ -67,9 +71,9 @@ function RootNavigator() {
       <NotificationObserver />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(app)" />
-        <Stack.Screen name="sign-in" options={{ presentation: "formSheet", sheetAllowedDetents: [0.75, 1], sheetGrabberVisible: true }} />
-        <Stack.Screen name="filters/[kind]" options={{ presentation: "formSheet", sheetAllowedDetents: [0.6, 1], sheetGrabberVisible: true }} />
-        <Stack.Screen name="sheets/[kind]" options={{ presentation: "formSheet", sheetAllowedDetents: [0.6, 1], sheetGrabberVisible: true }} />
+        <Stack.Screen name="sign-in" options={routeSheetOptions(split, [0.75, 1])} />
+        <Stack.Screen name="filters/[kind]" options={routeSheetOptions(split, [0.6, 1])} />
+        <Stack.Screen name="sheets/[kind]" options={routeSheetOptions(split, [0.6, 1])} />
         <Stack.Screen name="auth/callback" options={{ presentation: "transparentModal", animation: "fade" }} />
       </Stack>
     </ThemeProvider>

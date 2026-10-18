@@ -2,6 +2,7 @@ import { z } from "zod";
 import { request } from "./http";
 
 const num = z.coerce.number().nullish();
+const count = z.coerce.number().default(0);
 const str = z.string().nullish();
 const strings = z.array(z.string().nullish()).nullish().transform((values) => (values ?? []).filter((value): value is string => Boolean(value)));
 const option = z.object({ value: z.string(), count: z.coerce.number().default(0) });
@@ -75,7 +76,7 @@ const modelSchema = z.object({
   id: z.string().optional(),
   model_id: z.string().optional(),
   name: str,
-  organisation: z.object({ name: str, country_code: str }).passthrough().nullish(),
+  organisation: z.object({ name: str, country_code: str, colour: str, logo_url: str }).passthrough().nullish(),
   organisation_id: str,
   organisation_name: str,
   description: str,
@@ -92,6 +93,8 @@ const modelSchema = z.object({
   output_types: str,
   previous_model_id: str,
   family_id: str,
+  is_private: z.boolean().nullish(),
+  variants: z.array(z.object({ model_id: z.string(), name: str, variant_kind: str }).passthrough()).nullish(),
   model_links: z.array(linkSchema).nullish(),
   model_family: z.object({ display_name: str }).passthrough().nullish(),
   model_details: z.array(detailSchema).nullish(),
@@ -121,14 +124,20 @@ const gatewayRouteSchema = z.object({
   availability_status: str,
   context_length: num,
   max_output_tokens: num,
+  credential_mode: str,
   provider: z.object({ api_provider_id: str, api_provider_name: str, status: str }).passthrough().nullish(),
 }).passthrough();
 
 export type GatewayRoute = z.infer<typeof gatewayRouteSchema>;
 
+const supportedParameterSchema = z.object({ param_id: z.string(), provider_count_supported: z.coerce.number().default(0) }).passthrough();
+
 const gatewayMetadataSchema = z.object({
+  modelId: str,
+  aliases: z.array(z.string()).default([]),
   primaryModelIdentifier: str,
   acceptedModelIdentifiers: z.array(z.string()).default([]),
+  supportedParametersByEndpoint: z.record(z.string(), z.array(supportedParameterSchema)).default({}),
   providers: z.array(gatewayRouteSchema).default([]),
   activeProviders: z.array(gatewayRouteSchema).default([]),
   comingSoonProviders: z.array(gatewayRouteSchema).default([]),
@@ -149,15 +158,53 @@ const pricingRuleSchema = z.object({
   currency: str,
   pricing_plan: str,
   note: str,
+  effective_from: str,
+  effective_to: str,
+}).passthrough();
+
+const pricingProviderSchema = z.object({
+  api_provider_id: str,
+  api_provider_name: str,
+  status: str,
+  routing_status: str,
+  offer_label: str,
+  offer_scope: str,
+  colour: str,
+  provider_family_id: str,
+  data_policy_tier: str,
+  residency_mode: str,
+  default_execution_regions: z.array(z.string()).nullish(),
+  default_data_regions: z.array(z.string()).nullish(),
+  prompt_training_policy: str,
+  zero_data_retention: z.boolean().nullish(),
+}).passthrough();
+
+const providerModelSchema = z.object({
+  is_active_gateway: z.boolean().nullish(),
+  endpoint: str,
+  service_tier: str,
+  phaseo_status: str,
+  routing_status: str,
+  capability_status: str,
+  provider_availability_status: str,
+  access_scope: str,
+  effective_from: str,
+  effective_to: str,
+  context_length: num,
+  max_output_tokens: num,
+  execution_region: str,
+  provider_model_slug: str,
+  model_id: str,
 }).passthrough();
 
 const providerPricingSchema = z.object({
-  provider: z.object({ api_provider_id: str, api_provider_name: str, status: str }).passthrough(),
-  provider_models: z.array(z.object({ is_active_gateway: z.boolean().nullish(), endpoint: str }).passthrough()).default([]),
+  provider: pricingProviderSchema,
+  provider_models: z.array(providerModelSchema).default([]),
   pricing_rules: z.array(pricingRuleSchema).default([]),
 }).passthrough();
 
 export type ProviderPricing = z.infer<typeof providerPricingSchema>;
+export type ProviderModel = z.infer<typeof providerModelSchema>;
 export type PricingRule = z.infer<typeof pricingRuleSchema>;
 
 export async function getModelPricing(id: string): Promise<ProviderPricing[]> {
@@ -173,41 +220,233 @@ const performanceSummarySchema = z.object({
   totalRequests: z.coerce.number().default(0),
 }).passthrough();
 
+/** Metric values shared by the hourly, daily and percentile series. */
+const trendValues = {
+  avgThroughput: num,
+  avgLatencyMs: num,
+  avgEndToEndMs: num,
+  cachedInputPct: num,
+  requests: count,
+};
+
+const providerTrendPointSchema = z.object({
+  bucket: z.string().optional(),
+  day: z.string().optional(),
+  provider: z.string().default(""),
+  providerName: z.string().nullish(),
+  providerColor: str,
+  percentile: num,
+  ...trendValues,
+}).passthrough();
+
+export type ProviderTrendPoint = z.infer<typeof providerTrendPointSchema>;
+
 const performanceSchema = z.object({
+  cloudflareColo: str,
+  percentile: num,
+  rangeDays: num,
   summary: performanceSummarySchema,
-  providerPerformance: z.array(z.object({
-    provider: z.string().optional(),
-    providerName: z.string().optional(),
-    avgThroughput: num,
-    avgLatencyMs: num,
-    uptimePct: num,
-    requests: z.coerce.number().default(0),
+  hourly: z.array(z.object({ bucket: z.string(), successPct: num, ...trendValues }).passthrough()).default([]),
+  successSeries: z.array(z.object({
+    bucket: z.string(),
+    overallSuccessPct: num,
+    worstProviderSuccessPct: num,
+    worstProviderRequests: count,
+    providerCount: count,
+    requests: count,
   }).passthrough()).default([]),
+  providerHourly7d: z.array(providerTrendPointSchema).default([]),
+  providerDaily7d: z.array(providerTrendPointSchema).default([]),
+  providerPercentileDaily7d: z.array(providerTrendPointSchema).default([]),
+  qualitySeries: z.array(z.object({ bucket: z.string(), toolCallErrorPct: num, structuredOutputErrorPct: num, requests: count }).passthrough()).default([]),
 }).passthrough();
 
 export type ModelPerformance = z.infer<typeof performanceSchema>;
+export type SuccessPoint = ModelPerformance["successSeries"][number];
 
-export async function getModelPerformance(id: string): Promise<ModelPerformance | null> {
-  const raw = await request(path(id, "/performance"), { query: { percentile: 50 } });
+export async function getModelPerformance(id: string, options: { percentile?: number; colo?: string | null; range?: 1 | 3 | 7 } = {}): Promise<ModelPerformance | null> {
+  const raw = await request(path(id, "/performance"), { query: { percentile: options.percentile ?? 50, range: options.range ?? 3, colo: options.colo ?? undefined } });
   return z.object({ metrics: performanceSchema.nullish() }).passthrough().parse(raw).metrics ?? null;
 }
 
+/** Cloudflare locations that served enough requests to show their own charts. */
+export async function getModelPerformanceColos(id: string): Promise<{ colo: string; requests: number }[]> {
+  const raw = await request(path(id, "/performance/colos"));
+  return z.object({ colos: z.array(z.object({ colo: z.string(), requests: count })).default([]) }).passthrough().parse(raw).colos;
+}
+
+const providerHealthRowSchema = z.object({
+  provider_id: z.string(),
+  service_tier: str,
+  requests: count,
+  requests_30m: count,
+  health_requests: count,
+  uptime_pct: num,
+  request_success_pct: num,
+  percentile_latency_ms_30m: num,
+  p50_latency_ms_30m: num,
+  median_latency_ms_30m: num,
+  avg_latency_ms_30m: num,
+  percentile_latency_ms: num,
+  avg_latency_ms: num,
+  percentile_throughput_30m: num,
+  p50_throughput_30m: num,
+  median_throughput_30m: num,
+  avg_throughput_30m: num,
+  percentile_throughput: num,
+  avg_throughput: num,
+  last_request_at: str,
+}).passthrough();
+
+export type ProviderHealthRow = z.infer<typeof providerHealthRowSchema>;
+
+/** Three days of routing health per provider and service tier, as the website's provider table reads it. */
+export async function getModelProviderHealth(id: string, providerIds: string[], percentile = 50): Promise<ProviderHealthRow[]> {
+  const ids = [...new Set(providerIds.filter(Boolean))].sort();
+  if (!ids.length) return [];
+  const raw = await request(path(id, "/provider-health"), { query: { provider_ids: ids.join(","), window_days: 3, bucket_hours: 1, percentile } });
+  return z.object({ rows: z.array(providerHealthRowSchema).default([]) }).passthrough().parse(raw).rows;
+}
+
+const pricingHistoryRuleSchema = z.object({
+  providerId: z.string(),
+  providerName: z.string().nullish(),
+  pricingPlan: z.string().default("standard"),
+  meter: z.string(),
+  unit: z.string().default("token"),
+  unitSize: z.coerce.number().default(1),
+  pricePerUnit: z.coerce.number(),
+  pricePer1MUnits: z.coerce.number(),
+  priority: z.coerce.number().default(100),
+  effectiveFrom: str,
+  effectiveTo: str,
+  match: z.array(z.unknown()).default([]),
+  timeWindows: z.array(z.unknown()).default([]),
+}).passthrough();
+
+export type PricingHistoryRule = z.infer<typeof pricingHistoryRuleSchema>;
+
+export async function getModelPricingHistory(id: string, days = 3650): Promise<PricingHistoryRule[]> {
+  const raw = await request(path(id, "/pricing-history"), { query: { days } });
+  return z.object({ rules: z.array(pricingHistoryRuleSchema).default([]) }).passthrough().parse(raw).rules;
+}
+
+const effectivePricingRowSchema = z.object({
+  dayBucket: z.string(),
+  providerId: z.string(),
+  pricingPlan: z.string().default("standard"),
+  inputTokens: count,
+  outputTokens: count,
+  cachedReadTokens: count,
+  inputCostNanos: count,
+  outputCostNanos: count,
+}).passthrough();
+
+export type EffectivePricingRow = z.infer<typeof effectivePricingRowSchema>;
+
+/** What requests actually cost per provider, tier and day (after cache discounts and long-context tiers). */
+export async function getModelEffectivePricing(id: string, days = 365): Promise<EffectivePricingRow[]> {
+  const raw = await request(path(id, "/effective-pricing-daily"), { query: { days } });
+  return z.object({ rows: z.array(effectivePricingRowSchema).default([]) }).passthrough().parse(raw).rows;
+}
+
+const availabilitySchema = z.object({ isGatewayActive: z.boolean().default(false), activeProviderCount: count }).passthrough();
+
+export async function getModelAvailability(id: string): Promise<z.infer<typeof availabilitySchema>> {
+  const raw = await request(path(id, "/availability"));
+  return z.object({ availability: availabilitySchema }).passthrough().parse(raw).availability;
+}
+
+const organisationModelSchema = z.object({
+  model_id: z.string(),
+  name: str,
+  organisation_id: str,
+  status: str,
+  primary_date: str,
+  primary_timestamp: num,
+}).passthrough();
+
+export type OrganisationModel = z.infer<typeof organisationModelSchema>;
+
+export async function getOrganisationModels(organisationId: string): Promise<OrganisationModel[]> {
+  const raw = await request(`/api/_web/organisations/${encodeURIComponent(organisationId)}/models`);
+  return z.object({ models: z.array(organisationModelSchema).default([]) }).passthrough().parse(raw).models;
+}
+
+const rankingConfigurationSchema = z.object({ score: z.coerce.number(), variant: str, other_info: str }).passthrough();
+const rankingEntrySchema = z.object({
+  model_id: z.string(),
+  score: z.coerce.number(),
+  other_info: str,
+  configurations: z.array(rankingConfigurationSchema).nullish(),
+}).passthrough();
+
+const benchmarkRankingSchema = z.object({ benchmark_id: z.string(), lower_is_better: z.boolean().default(false), entries: z.array(rankingEntrySchema).default([]) }).passthrough();
+
+export type BenchmarkRanking = z.infer<typeof benchmarkRankingSchema>;
+
+/** Every model's scores per ranked benchmark (~1 MB; callers keep only what they need). */
+export async function getBenchmarkRankings(): Promise<BenchmarkRanking[]> {
+  const raw = await request("/api/_web/rankings/benchmarks");
+  return z.object({ benchmarks: z.array(benchmarkRankingSchema).default([]) }).passthrough().parse(raw).benchmarks;
+}
+
+const epochResultSchema = z.object({
+  model_id: z.string(),
+  score: z.coerce.number().nullish(),
+  rank: num,
+  other_info: str,
+  model: z.object({ name: str, organisation: z.object({ organisation_id: str }).passthrough().nullish() }).passthrough().nullish(),
+}).passthrough();
+
+export type EpochLeaderboardEntry = { modelId: string; modelName: string; organisationId: string | null; score: number; rank: number; otherInfo: string | null };
+
+/** The Epoch Capabilities Index leaderboard (scores and published confidence intervals). */
+export async function getEpochLeaderboard(): Promise<EpochLeaderboardEntry[]> {
+  const raw = await request<{ benchmark?: unknown }>("/api/_web/benchmarks/epoch-capabilities-index");
+  const parsed = z.object({ results: z.array(epochResultSchema).default([]) }).passthrough().parse(raw?.benchmark ?? raw);
+  return parsed.results.flatMap((result) => result.score == null || !Number.isFinite(result.score) ? [] : [{
+    modelId: result.model_id,
+    modelName: result.model?.name ?? result.model_id,
+    organisationId: result.model?.organisation?.organisation_id ?? null,
+    score: result.score,
+    rank: result.rank ?? 0,
+    otherInfo: result.other_info ?? null,
+  }]).sort((a, b) => a.rank - b.rank || b.score - a.score);
+}
+
 const benchmarkSchema = z.object({
-  benchmarkId: z.string().optional(),
+  benchmarkId: z.string().default(""),
   benchmarkName: z.string().optional(),
   totalModels: num,
   rank: num,
   score: num,
   scoreDisplay: z.string().optional(),
+  isPercentage: z.boolean().nullish(),
   isSelfReported: z.boolean().default(false),
+  otherInfo: str,
   sourceLink: str,
 }).passthrough();
 
 export type ModelBenchmark = z.infer<typeof benchmarkSchema>;
 
-export async function getModelBenchmarks(id: string): Promise<ModelBenchmark[]> {
+/** One evaluated configuration (Max, High, …) of a benchmark. Highlights keep one row per benchmark. */
+const benchmarkResultSchema = z.object({
+  benchmark_id: z.string(),
+  score: num,
+  variant: str,
+  result_key: str,
+  other_info: str,
+  source_link: str,
+  rank: num,
+  benchmark: z.object({ name: str, total_models: num, ascending_order: z.boolean().nullish() }).passthrough().nullish(),
+}).passthrough();
+
+export type ModelBenchmarkResult = z.infer<typeof benchmarkResultSchema>;
+
+export async function getModelBenchmarks(id: string): Promise<{ highlights: ModelBenchmark[]; results: ModelBenchmarkResult[] }> {
   const raw = await request(path(id, "/benchmarks"));
-  return z.object({ highlights: z.array(benchmarkSchema).default([]) }).passthrough().parse(raw).highlights;
+  return z.object({ highlights: z.array(benchmarkSchema).default([]), results: z.array(benchmarkResultSchema).default([]) }).passthrough().parse(raw);
 }
 
 const timelineEventSchema = z.object({
@@ -215,6 +454,8 @@ const timelineEventSchema = z.object({
   eventType: z.string().optional(),
   eventName: z.string().optional(),
   description: z.string().optional(),
+  modelId: z.string().optional(),
+  modelName: z.string().optional(),
 }).passthrough();
 
 export type ModelTimelineEvent = z.infer<typeof timelineEventSchema>;
@@ -240,16 +481,26 @@ export async function getModelApps(id: string): Promise<ModelApp[]> {
   return z.object({ apps: z.array(modelAppSchema).default([]) }).passthrough().parse(raw).apps;
 }
 
+/** One provider's gateway usage on one UTC day. */
 const activityRowSchema = z.object({
   dayBucket: z.string(),
-  requests: z.coerce.number().default(0),
-  totalTokens: z.coerce.number().default(0),
+  providerId: z.string().default(""),
+  requests: count,
+  successRequests: count,
+  totalTokens: count,
+  inputTokens: count,
+  outputTokens: count,
+  reasoningTokens: count,
+  inputTextTokens: count,
+  outputTextTokens: count,
+  cachedReadTokens: count,
+  cachedReadTextTokens: count,
 }).passthrough();
 
 export type ModelActivityRow = z.infer<typeof activityRowSchema>;
 
-export async function getModelActivity(id: string): Promise<ModelActivityRow[]> {
-  const raw = await request(path(id, "/usage-daily"), { query: { days: 30 } });
+export async function getModelActivity(id: string, days = 30): Promise<ModelActivityRow[]> {
+  const raw = await request(path(id, "/usage-daily"), { query: { days } });
   return z.object({ rows: z.array(activityRowSchema).default([]) }).passthrough().parse(raw).rows;
 }
 
