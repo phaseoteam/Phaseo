@@ -55,6 +55,15 @@ describe("response expectations", () => {
 		expect(checkFinish(ctx, "chat", null, "length")[0]?.kind).toBe("dropped");
 	});
 
+	it("accepts the closest finish an upstream dialect can signal", () => {
+		// Only Anthropic Messages reports stop_sequence; elsewhere a matched stop sequence is a plain stop.
+		expect(checkFinish(ctx, "messages", "end_turn", "stop_sequence", "openai-chat")).toEqual([]);
+		expect(checkFinish(ctx, "messages", "end_turn", "stop_sequence", "anthropic-messages")[0]?.kind).toBe("wrong_value");
+		// Anthropic's single refusal stop may surface on Responses as either documented outcome.
+		expect(checkFinish(ctx, "responses", "incomplete:content_filter", "refusal", "anthropic-messages")).toEqual([]);
+		expect(checkFinish(ctx, "responses", "incomplete:content_filter", "refusal", "openai-chat")[0]?.kind).toBe("wrong_value");
+	});
+
 	it("checks the Messages stream grammar", () => {
 		const good = outcome({ surface: "messages", frames: [{ type: "message_start" }, { type: "content_block_start", index: 0 }, { type: "content_block_delta", index: 0 }, { type: "content_block_stop", index: 0 }, { type: "message_delta" }, { type: "message_stop" }] });
 		expect(checkStreamOrder(ctx, good)).toEqual([]);

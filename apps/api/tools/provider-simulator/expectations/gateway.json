@@ -15,7 +15,14 @@
 		"chat": { "stop": ["stop"], "length": ["length"], "tool_calls": ["tool_calls"], "content_filter": ["content_filter"], "stop_sequence": ["stop"], "refusal": ["stop", "content_filter"], "pause_turn": ["stop"] },
 		"responses": { "stop": ["completed"], "length": ["incomplete:max_output_tokens"], "tool_calls": ["completed"], "content_filter": ["incomplete:content_filter"], "stop_sequence": ["completed"], "refusal": ["completed"], "pause_turn": ["completed"] },
 		"messages": { "stop": ["end_turn"], "length": ["max_tokens"], "tool_calls": ["tool_use"], "content_filter": ["refusal"], "stop_sequence": ["stop_sequence"], "refusal": ["refusal"], "pause_turn": ["pause_turn"] },
-		"sources": { "chat": { "kind": "ref", "ref": "openai-chat-object" }, "responses": { "kind": "ref", "ref": "openai-responses-object" }, "messages": { "kind": "ref", "ref": "anthropic-messages" } }
+		"sources": { "chat": { "kind": "ref", "ref": "openai-chat-object" }, "responses": { "kind": "ref", "ref": "openai-responses-object" }, "messages": { "kind": "ref", "ref": "anthropic-messages" } },
+		"byDialect": {
+			"note": "Finish values also accepted for some upstream dialects. A client surface can only report what the upstream signals: only Anthropic Messages has stop_sequence and pause_turn, and Anthropic reports one refusal stop for both safety filtering and refusals.",
+			"rules": [
+				{ "exceptDialects": ["anthropic-messages"], "surface": "messages", "accept": { "stop_sequence": ["end_turn"], "pause_turn": ["end_turn"] }, "source": { "kind": "assumed", "reason": "OpenAI-style, Responses and Gemini upstreams report a matched stop sequence as a plain stop and have no pause signal, so end_turn is the closest documented Messages value." } },
+				{ "dialects": ["anthropic-messages"], "surface": "responses", "accept": { "content_filter": ["completed", "incomplete:content_filter"], "refusal": ["completed", "incomplete:content_filter"] }, "source": { "kind": "assumed", "reason": "Anthropic signals both a safety-classifier stop and a refusal as stop_reason refusal, so a Responses client cannot be told which one happened; either documented outcome is accepted." } }
+			]
+		}
 	},
 	"usage": {
 		"source": { "kind": "ref", "ref": "phaseo-caching-usage" },

@@ -642,10 +642,18 @@ export function checkSurfaced(input: SurfacedInput): Mismatch[] {
 	return out;
 }
 
-export function checkFinish(ctx: Ctx, surface: Surface, finish: string | null | undefined, semantic: string): Mismatch[] {
+export function checkFinish(ctx: Ctx, surface: Surface, finish: string | null | undefined, semantic: string, dialect?: Dialect): Mismatch[] {
 	const gateway = expectationData().gateway.finish;
-	const expected: string[] | undefined = gateway[surface]?.[semantic];
-	if (!expected) return [];
+	const base: string[] | undefined = gateway[surface]?.[semantic];
+	if (!base) return [];
+	// Values a surface can only reach for some upstream dialects (gateway.json finish.byDialect).
+	const expected = [...base];
+	for (const rule of gateway.byDialect?.rules ?? []) {
+		if (rule.surface !== surface || !dialect) continue;
+		if (rule.dialects && !rule.dialects.includes(dialect)) continue;
+		if (rule.exceptDialects?.includes(dialect)) continue;
+		expected.push(...(rule.accept?.[semantic] ?? []));
+	}
 	if (expected.includes(String(finish))) return [];
 	return [mm(ctx, finish === null || finish === undefined ? "dropped" : "wrong_value", "client.finish", expected, finish, gateway.sources[surface], { note: `upstream finish: ${semantic}` })];
 }

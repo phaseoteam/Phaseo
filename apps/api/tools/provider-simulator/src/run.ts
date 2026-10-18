@@ -518,7 +518,7 @@ async function simulateResponses(provider: SimProvider, route: RouteUnderTest, s
 					if (variant.error?.kind === "mid_stream") {
 						mismatches.push(...checkMidStream(ctx, outcome, entry.finishReason));
 					} else {
-						mismatches.push(...checkFinish(ctx, surface, entry.finishReason, variant.finish));
+						mismatches.push(...checkFinish(ctx, surface, entry.finishReason, variant.finish, dialect as Dialect));
 						mismatches.push(...checkStreamOrder(ctx, outcome));
 						if (variant.id === "max" || variant.id === "text" || variant.id === "finish:refusal") mismatches.push(...checkSurfaced({ ctx, outcome, dialect: dialect as Dialect, variant }));
 						const usage = variant.usage === "max"
