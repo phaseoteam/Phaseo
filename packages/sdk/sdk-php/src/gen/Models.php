@@ -1961,6 +1961,16 @@ class ErrorUpstreamError
 	public $param;
 }
 
+class FileContentPart
+{
+	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed> */
+	public $file;
+	/** @var string */
+	public $type;
+}
+
 class FileResponse
 {
 	/** @var int|null */

@@ -983,7 +983,9 @@ export type CreateAnthropicMessageParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch";
+      | "batch"
+      | "auto"
+      | "standard_only";
     session_id?: string;
     stop_sequences?: string[];
     stream?: boolean;
@@ -2092,6 +2094,20 @@ export type CreateChatCompletionParams = {
                 video_url: string;
               }
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
+              }
+            | {
                 function: {
                   arguments?: string;
                   name?: string;
@@ -2099,7 +2115,8 @@ export type CreateChatCompletionParams = {
                 id: string;
                 type: "tool_call";
               }
-          )[];
+          )[]
+        | null;
       images?: {
         image_url: {
           url: string;
@@ -2436,6 +2453,20 @@ export async function createChatCompletion(
                 video_url: string;
               }
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
+              }
+            | {
                 function: {
                   arguments?: string;
                   name?: string;
@@ -2443,7 +2474,8 @@ export async function createChatCompletion(
                 id: string;
                 type: "tool_call";
               }
-          )[];
+          )[]
+        | null;
       images?: {
         image_url: {
           url: string;
@@ -2567,6 +2599,20 @@ export async function createChatCompletion(
                   video_url: string;
                 }
               | {
+                  cache_control?: {
+                    scope?: string;
+                    ttl?: string;
+                    type?: string;
+                    [key: string]: unknown;
+                  };
+                  file: {
+                    file_data?: string;
+                    file_id?: string;
+                    filename?: string;
+                  };
+                  type: "file";
+                }
+              | {
                   function: {
                     arguments?: string;
                     name?: string;
@@ -2574,7 +2620,8 @@ export async function createChatCompletion(
                   id: string;
                   type: "tool_call";
                 }
-            )[];
+            )[]
+          | null;
         images?: {
           image_url: {
             url: string;

@@ -609,7 +609,7 @@ pub struct ChatImageOutputPart {
 
 pub struct ChatMessage {
 	pub audios: Option<Vec<HashMap<String, String>>>,
-	pub content: Option<String>,
+	pub content: Option<Option<String>>,
 	pub images: Option<Vec<HashMap<String, String>>>,
 	pub name: Option<String>,
 	pub reasoning_content: Option<String>,
@@ -1112,6 +1112,12 @@ pub struct ErrorUpstreamError {
 	pub description: Option<Option<String>>,
 	pub message: Option<Option<String>>,
 	pub param: Option<Option<String>>,
+}
+
+pub struct FileContentPart {
+	pub cache_control: Option<HashMap<String, String>>,
+	pub file: HashMap<String, String>,
+	pub r#type: String,
 }
 
 pub struct FileResponse {

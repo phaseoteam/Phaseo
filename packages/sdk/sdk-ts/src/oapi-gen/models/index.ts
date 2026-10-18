@@ -126,6 +126,7 @@ export type { ErrorProviderFailureDiagnostics } from "./ErrorProviderFailureDiag
 export type { ErrorResponse } from "./ErrorResponse.js";
 export type { ErrorRoutingDiagnostics } from "./ErrorRoutingDiagnostics.js";
 export type { ErrorUpstreamError } from "./ErrorUpstreamError.js";
+export type { FileContentPart } from "./FileContentPart.js";
 export type { FileResponse } from "./FileResponse.js";
 export type { FileUploadRequest } from "./FileUploadRequest.js";
 export type { FunctionToolDefinition } from "./FunctionToolDefinition.js";

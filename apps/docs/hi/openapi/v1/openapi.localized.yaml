@@ -9594,6 +9594,8 @@ components:
             - assistant
             - tool
         content:
+          description: संदेश की सामग्री। जो असिस्टेंट संदेश केवल टूल कॉल करते हैं, वे इसे null पर सेट कर सकते हैं।
+          nullable: true
           oneOf:
             - type: string
             - type: array
@@ -9654,7 +9656,30 @@ components:
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: फ़ाइल इनपुट, जैसे PDF। file_data को base64 डेटा URL पर सेट करें, या file_id को उस प्रदाता पर अपलोड की गई फ़ाइल पर जो अनुरोध पूरा करता है।
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+            file_id:
+              type: string
+            filename:
+              type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -10275,6 +10300,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0

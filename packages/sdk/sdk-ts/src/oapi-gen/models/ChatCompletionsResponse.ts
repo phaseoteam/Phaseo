@@ -47,6 +47,20 @@ export interface ChatCompletionsResponse {
                 video_url: string;
               }
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
+              }
+            | {
                 function: {
                   arguments?: string;
                   name?: string;
@@ -54,7 +68,8 @@ export interface ChatCompletionsResponse {
                 id: string;
                 type: "tool_call";
               }
-          )[];
+          )[]
+        | null;
       images?: {
         image_url: {
           url: string;

@@ -9594,6 +9594,8 @@ components:
             - assistant
             - tool
         content:
+          description: メッセージの内容。ツールを呼び出すだけのアシスタントメッセージでは null に設定できます。
+          nullable: true
           oneOf:
             - type: string
             - type: array
@@ -9654,7 +9656,30 @@ components:
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: PDF などのファイル入力です。file_data には base64 のデータ URL を、file_id にはリクエストを処理するプロバイダーにアップロードしたファイルを指定します。
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+            file_id:
+              type: string
+            filename:
+              type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -10275,6 +10300,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0

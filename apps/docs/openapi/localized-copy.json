@@ -8344,6 +8344,26 @@
 			"zh-Hans": "不支持。Phaseo 不存储响应，因此设置了 previous_response_id 或 conversation 的请求会返回 400 unsupported_param。请在 input 中发送完整对话。",
 			"ar": "غير مدعوم. لا تخزّن Phaseo الردود، لذا تعيد الطلبات التي تحدد previous_response_id أو conversation الخطأ 400 unsupported_param. أرسل المحادثة كاملة في input."
 		},
+		"Message content. Assistant messages that only call tools may set it to null.": {
+			"es": "Contenido del mensaje. Los mensajes del asistente que solo llaman a herramientas pueden establecerlo en null.",
+			"fr": "Contenu du message. Les messages de l’assistant qui ne font qu’appeler des outils peuvent le définir sur null.",
+			"de": "Inhalt der Nachricht. Assistant-Nachrichten, die nur Tools aufrufen, können ihn auf null setzen.",
+			"pt-BR": "Conteúdo da mensagem. Mensagens do assistente que apenas chamam ferramentas podem defini-lo como null.",
+			"hi": "संदेश की सामग्री। जो असिस्टेंट संदेश केवल टूल कॉल करते हैं, वे इसे null पर सेट कर सकते हैं।",
+			"ja": "メッセージの内容。ツールを呼び出すだけのアシスタントメッセージでは null に設定できます。",
+			"zh-Hans": "消息内容。仅调用工具的助手消息可以将其设为 null。",
+			"ar": "محتوى الرسالة. يمكن لرسائل المساعد التي تستدعي الأدوات فقط تعيينه إلى null."
+		},
+		"File input, such as a PDF. Set file_data to a base64 data URL, or file_id to a file uploaded to the provider that serves the request.": {
+			"es": "Entrada de archivo, como un PDF. Define file_data como una URL de datos base64, o file_id como un archivo subido al proveedor que atiende la solicitud.",
+			"fr": "Fichier en entrée, par exemple un PDF. Définissez file_data sur une URL de données base64, ou file_id sur un fichier importé chez le fournisseur qui traite la requête.",
+			"de": "Dateieingabe, etwa ein PDF. Setze file_data auf eine base64-Daten-URL oder file_id auf eine Datei, die beim Anbieter hochgeladen wurde, der die Anfrage bearbeitet.",
+			"pt-BR": "Entrada de arquivo, como um PDF. Defina file_data como uma URL de dados base64, ou file_id como um arquivo enviado ao provedor que atende a solicitação.",
+			"hi": "फ़ाइल इनपुट, जैसे PDF। file_data को base64 डेटा URL पर सेट करें, या file_id को उस प्रदाता पर अपलोड की गई फ़ाइल पर जो अनुरोध पूरा करता है।",
+			"ja": "PDF などのファイル入力です。file_data には base64 のデータ URL を、file_id にはリクエストを処理するプロバイダーにアップロードしたファイルを指定します。",
+			"zh-Hans": "文件输入，例如 PDF。将 file_data 设为 base64 数据 URL，或将 file_id 设为已上传到处理该请求的提供商的文件。",
+			"ar": "إدخال ملف، مثل ملف PDF. اضبط file_data على عنوان URL لبيانات base64، أو file_id على ملف مرفوع إلى المزوّد الذي يخدم الطلب."
+		},
 		"Prompt cache control. Use type ephemeral with an optional ttl of 5m or 1h. scope applies only to a top-level Claude cache policy.": {
 			"es": "Control de la caché de prompts. Usa type ephemeral con un ttl opcional de 5m o 1h. scope solo se aplica a una política de caché de Claude de nivel superior.",
 			"fr": "Contrôle du cache de prompts. Utilisez type ephemeral avec un ttl facultatif de 5m ou 1h. scope ne s’applique qu’à une politique de cache Claude de premier niveau.",

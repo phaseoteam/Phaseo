@@ -9594,6 +9594,8 @@ components:
             - assistant
             - tool
         content:
+          description: Contenido del mensaje. Los mensajes del asistente que solo llaman a herramientas pueden establecerlo en null.
+          nullable: true
           oneOf:
             - type: string
             - type: array
@@ -9654,7 +9656,30 @@ components:
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: Entrada de archivo, como un PDF. Define file_data como una URL de datos base64, o file_id como un archivo subido al proveedor que atiende la solicitud.
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+            file_id:
+              type: string
+            filename:
+              type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -10275,6 +10300,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0

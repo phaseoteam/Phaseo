@@ -1586,6 +1586,13 @@ module Phaseo
     # @!attribute [rw] param
     #   @return [String, nil]
     ErrorUpstreamError = Struct.new(:code, :description, :message, :param, keyword_init: true)
+    # @!attribute [rw] cache_control
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] file
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] type
+    #   @return [String]
+    FileContentPart = Struct.new(:cache_control, :file, :type, keyword_init: true)
     # @!attribute [rw] bytes
     #   @return [Integer, nil]
     # @!attribute [rw] created_at

@@ -608,7 +608,7 @@ struct ChatImageOutputPart {
 
 struct ChatMessage {
 	std::vector<std::map<std::string, std::any>> audios;
-	std::any content;
+	std::optional<std::any> content;
 	std::vector<std::map<std::string, std::any>> images;
 	std::string name;
 	std::string reasoning_content;
@@ -1111,6 +1111,12 @@ struct ErrorUpstreamError {
 	std::optional<std::string> description;
 	std::optional<std::string> message;
 	std::optional<std::string> param;
+};
+
+struct FileContentPart {
+	std::map<std::string, std::any> cache_control;
+	std::map<std::string, std::any> file;
+	std::any type;
 };
 
 struct FileResponse {

@@ -9594,6 +9594,8 @@ components:
             - assistant
             - tool
         content:
+          description: 消息内容。仅调用工具的助手消息可以将其设为 null。
+          nullable: true
           oneOf:
             - type: string
             - type: array
@@ -9654,7 +9656,30 @@ components:
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: 文件输入，例如 PDF。将 file_data 设为 base64 数据 URL，或将 file_id 设为已上传到处理该请求的提供商的文件。
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+            file_id:
+              type: string
+            filename:
+              type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -10275,6 +10300,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0

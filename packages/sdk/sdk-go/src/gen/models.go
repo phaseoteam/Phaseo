@@ -1280,7 +1280,7 @@ type ChatImageOutputPart struct {
 
 type ChatMessage struct {
 	Audios *[]map[string]interface{} `json:"audios,omitempty"`
-	Content interface{} `json:"content,omitempty"`
+	Content *interface{} `json:"content,omitempty"`
 	Images *[]map[string]interface{} `json:"images,omitempty"`
 	Name *string `json:"name,omitempty"`
 	ReasoningContent *string `json:"reasoning_content,omitempty"`
@@ -1783,6 +1783,12 @@ type ErrorUpstreamError struct {
 	Description *string `json:"description,omitempty"`
 	Message *string `json:"message,omitempty"`
 	Param *string `json:"param,omitempty"`
+}
+
+type FileContentPart struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	File map[string]interface{} `json:"file"`
+	Type string `json:"type"`
 }
 
 type FileResponse struct {
