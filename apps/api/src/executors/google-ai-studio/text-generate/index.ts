@@ -7,7 +7,7 @@
 // Uses Google's native Gemini API format (NOT OpenAI-compatible)
 
 import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamChunk, IRStreamDelta, IRToolCall, IRUsage } from "@core/ir";
-import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import type { Bill, ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
@@ -940,6 +940,14 @@ function sumUsageCounts(counts: Record<string, number>): number | undefined {
 	return values.reduce((total, value) => total + value, 0);
 }
 
+function pickModality(sources: Array<Record<string, number>>, modality: string): Record<string, number> {
+	const picked: Record<string, number> = {};
+	sources.forEach((counts, index) => {
+		if (pickFiniteUsageNumber(counts[modality]) != null) picked[String(index)] = counts[modality];
+	});
+	return picked;
+}
+
 function interactionUsageToIRUsage(usage: any): IRUsage | undefined {
 	if (!usage || typeof usage !== "object") return undefined;
 
@@ -947,31 +955,43 @@ function interactionUsageToIRUsage(usage: any): IRUsage | undefined {
 	const outputByModality = readInteractionModalityCounts(usage.output_tokens_by_modality);
 	const cachedByModality = readInteractionModalityCounts(usage.cached_tokens_by_modality);
 
-	const inputTokens =
+	const toolUseByModality = readInteractionModalityCounts(usage.tool_use_tokens_by_modality);
+
+	// Same accounting as generateContent's usageMetadata: tool-use prompt tokens are
+	// input on top of the prompt, and thought tokens are output on top of the
+	// responses, billed at the output price.
+	const promptTokens =
 		pickFiniteUsageNumber(usage.total_input_tokens ?? usage.input_tokens) ??
-		sumUsageCounts(inputByModality) ??
-		0;
-	const outputTokens =
-		pickFiniteUsageNumber(usage.total_output_tokens ?? usage.output_tokens) ??
-		sumUsageCounts(outputByModality) ??
-		0;
-	const totalTokens =
-		pickFiniteUsageNumber(usage.total_tokens) ??
-		inputTokens + outputTokens;
-	const cachedInputTokens =
-		pickFiniteUsageNumber(usage.total_cached_tokens ?? usage.cached_tokens) ??
-		sumUsageCounts(cachedByModality);
+		sumUsageCounts(inputByModality);
+	const toolUseTokens =
+		pickFiniteUsageNumber(usage.total_tool_use_tokens ?? usage.tool_use_tokens) ??
+		sumUsageCounts(toolUseByModality);
+	const inputTokens = (promptTokens ?? 0) + (toolUseTokens ?? 0);
 	const reasoningTokens =
 		pickFiniteUsageNumber(
 			usage.total_thought_tokens ??
 			usage.thought_tokens ??
 			usage.reasoning_tokens,
 		);
+	const responseTokens =
+		pickFiniteUsageNumber(usage.total_output_tokens ?? usage.output_tokens) ??
+		sumUsageCounts(outputByModality);
+	const outputTokens = (responseTokens ?? 0) + (reasoningTokens ?? 0);
+	const totalTokens = Math.max(
+		pickFiniteUsageNumber(usage.total_tokens) ?? 0,
+		inputTokens + outputTokens,
+	);
+	const cachedInputTokens =
+		pickFiniteUsageNumber(usage.total_cached_tokens ?? usage.cached_tokens) ??
+		sumUsageCounts(cachedByModality);
 
 	const ext: IRUsage["_ext"] = {};
-	if (pickFiniteUsageNumber(inputByModality.image) != null) ext.inputImageTokens = inputByModality.image;
-	if (pickFiniteUsageNumber(inputByModality.audio) != null) ext.inputAudioTokens = inputByModality.audio;
-	if (pickFiniteUsageNumber(inputByModality.video) != null) ext.inputVideoTokens = inputByModality.video;
+	const inputImageTokens = sumUsageCounts(pickModality([inputByModality, toolUseByModality], "image"));
+	const inputAudioTokens = sumUsageCounts(pickModality([inputByModality, toolUseByModality], "audio"));
+	const inputVideoTokens = sumUsageCounts(pickModality([inputByModality, toolUseByModality], "video"));
+	if (inputImageTokens != null) ext.inputImageTokens = inputImageTokens;
+	if (inputAudioTokens != null) ext.inputAudioTokens = inputAudioTokens;
+	if (inputVideoTokens != null) ext.inputVideoTokens = inputVideoTokens;
 	if (pickFiniteUsageNumber(outputByModality.image) != null) ext.outputImageTokens = outputByModality.image;
 	if (pickFiniteUsageNumber(outputByModality.audio) != null) ext.outputAudioTokens = outputByModality.audio;
 	if (pickFiniteUsageNumber(outputByModality.video) != null) ext.outputVideoTokens = outputByModality.video;
@@ -1307,17 +1327,22 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					...args,
 					providerModelSlug: model,
 				} as ExecutorExecuteArgs;
-				const transformedStream = transformStream(response.body, streamingArgs, headerServiceTier);
+				const bill: Bill = { cost_cents: 0, currency: "USD" };
+				const usageRecorder = createGeminiStreamUsageRecorder(bill);
+				const transformedStream = transformStream(response.body, streamingArgs, headerServiceTier, {
+					onUsage: usageRecorder.onUsage,
+				});
 				return {
 					kind: "stream",
 					stream: transformedStream,
 					streamAlreadyTransformed: true,
-					bill: { cost_cents: 0, currency: "USD" },
+					bill,
 					upstream: response,
 					keySource: keyInfo.source,
 					byokKeyId: keyInfo.byokId,
 					mappedRequest,
-					usageFinalizer: async () => null,
+					usageFinalizer: usageRecorder.finalize,
+					usageFinalizerAuthoritative: true,
 				};
 			}
 
@@ -1540,10 +1565,36 @@ export function postprocess(ir: any, args: ExecutorExecuteArgs): any {
  *
  * We map this to IRStreamChunk, then to GatewayCompletionsResponse chunks.
  */
+export type GeminiStreamOptions = {
+	/** Called with each usage report the upstream stream carries (Google's counts are cumulative). */
+	onUsage?: (usage: IRUsage) => void;
+};
+
+/**
+ * Bill a Gemini stream from the upstream usage itself. Client frames carry only the
+ * client protocol's usage fields, so per-modality input (image, audio, video) would
+ * otherwise reach pricing as text.
+ */
+export function createGeminiStreamUsageRecorder(bill: Bill): {
+	onUsage: (usage: IRUsage) => void;
+	finalize: () => Promise<Bill | null>;
+} {
+	// Kept here rather than on bill.usage: the pipeline copies the bill when the executor
+	// returns, and the stream finaliser overwrites bill.usage with the client frames' usage.
+	let meters: Record<string, any> | undefined;
+	return {
+		onUsage: (usage) => {
+			meters = normalizeTextUsageForPricing(usage) ?? meters;
+		},
+		finalize: async () => (meters ? { ...bill, usage: { ...meters } } : null),
+	};
+}
+
 export function transformStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
 	headerServiceTier?: string,
+	options?: GeminiStreamOptions,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
 	const decoder = new TextDecoder();
@@ -1600,6 +1651,13 @@ export function transformStream(
 			});
 		})) {
 			sawUsableOutput = true;
+		}
+		if (irChunk.usage && options?.onUsage) {
+			try {
+				options.onUsage(irChunk.usage);
+			} catch {
+				// Usage observers must never break the client stream.
+			}
 		}
 		const openAIChunk = encodeIRChunkToOpenAI(irChunk);
 		controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));

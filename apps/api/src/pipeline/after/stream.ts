@@ -67,6 +67,22 @@ function getStreamTerminalPayload(frame: any): any | null {
     return null;
 }
 
+const INPUT_MODALITY_TOKEN_METERS = ["input_image_tokens", "input_audio_tokens", "input_video_tokens"] as const;
+
+/**
+ * Client shaping keeps modality counts only inside input_tokens_details, where they can also
+ * be counts of media parts. Carry the executor's token meters to pricing as meters.
+ */
+function withInputModalityTokenMeters(shaped: any, raw: any): any {
+    if (!shaped || typeof shaped !== "object" || !raw || typeof raw !== "object") return shaped;
+    const meters: Record<string, number> = {};
+    for (const key of INPUT_MODALITY_TOKEN_METERS) {
+        const value = raw[key];
+        if (typeof value === "number" && Number.isFinite(value) && value > 0 && shaped[key] == null) meters[key] = value;
+    }
+    return Object.keys(meters).length ? { ...shaped, ...meters } : shaped;
+}
+
 function hasBillableTokenUsage(usage: any): boolean {
     if (!usage || typeof usage !== "object") return false;
     return ["input_tokens", "output_tokens", "cached_read_text_tokens", "cached_write_text_tokens"]
@@ -645,7 +661,7 @@ export async function handleStreamResponse(
                 if (card && usageHasMeters) {
                     const tier = ctx.teamEnrichment?.tier ?? 'basic';
                     const repriced = calculatePricing(
-                        shapeStreamUsageForClient(usageWithToolMetrics),
+                        withInputModalityTokenMeters(shapeStreamUsageForClient(usageWithToolMetrics), usageWithToolMetrics),
                         card,
                         ctx.body,
                         tier,

@@ -13,7 +13,10 @@ import { ANTHROPIC_CACHE_USAGE_SEMANTICS, createAnthropicToResponsesStreamTransf
 import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
-import { transformStream as transformGoogleGeminiStream } from "@executors/google-ai-studio/text-generate";
+import {
+	createGeminiStreamUsageRecorder,
+	transformStream as transformGoogleGeminiStream,
+} from "@executors/google-ai-studio/text-generate";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { resolveProviderKey } from "@providers/keys";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
@@ -142,9 +145,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			// Every Claude stream records usage from the upstream frames, so cache writes are
 			// billed whichever model it is.
 			const accounting = route.family === "anthropic" ? createAnthropicStreamAccounting() : undefined;
+			// Gemini streams are billed from the upstream usageMetadata, which keeps image,
+			// audio and video input apart from text.
+			const geminiUsage = route.family === "gemini" ? createGeminiStreamUsageRecorder(bill) : undefined;
 			const stream = (() => {
-				if (route.family === "gemini") {
-					return transformGoogleGeminiStream(res.body!, args);
+				if (geminiUsage) {
+					return transformGoogleGeminiStream(res.body!, args, undefined, { onUsage: geminiUsage.onUsage });
 				}
 				if (route.family === "openapi_chat") {
 					return resolveStreamForProtocol(
@@ -177,12 +183,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				allowEmptySuccess: true,
 				stream,
 				usageFinalizer: async () => {
+					if (geminiUsage) return geminiUsage.finalize();
 					if (!accounting) return null;
 					const final = accounting.snapshot();
 					return { ...bill, usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
 						finish_reason: mapAnthropicStopReason(final.stopReason) };
 				},
-				usageFinalizerAuthoritative: accounting !== undefined,
+				usageFinalizerAuthoritative: accounting !== undefined || geminiUsage !== undefined,
 				bill,
 				upstream: res,
 				keySource: keyInfo.source,

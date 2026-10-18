@@ -84,7 +84,12 @@ export function normalizeGoogleUsage(meta: UsageMetadata | undefined): UsageShap
 
     if (meta.candidatesTokenCount != null) usage.output_text_tokens = usage.output_text_tokens ?? Math.max(0, meta.candidatesTokenCount
         - (usage.output_image_tokens ?? 0) - (usage.output_audio_tokens ?? 0) - (usage.output_video_tokens ?? 0));
-    if (meta.thoughtsTokenCount != null) usage.reasoning_tokens = meta.thoughtsTokenCount;
+    // Thoughts are not part of candidatesTokenCount, and Google bills them at the output text price.
+    const thoughts = pickFiniteNumber(meta.thoughtsTokenCount) ?? pickFiniteNumber(meta.thoughtTokenCount);
+    if (thoughts != null) {
+        usage.reasoning_tokens = thoughts;
+        usage.output_text_tokens = (usage.output_text_tokens ?? 0) + thoughts;
+    }
 
     if (meta.totalTokenCount != null) usage.total_tokens = meta.totalTokenCount;
 
@@ -106,6 +111,11 @@ function sumDefined(values: Array<number | undefined>): number | undefined {
     return seen ? total : undefined;
 }
 
+function sumModalityCounts(items: ModalityTokenCount[] | undefined): number | undefined {
+    if (!Array.isArray(items)) return undefined;
+    return sumDefined(items.map((entry) => pickFiniteNumber(entry?.tokenCount)));
+}
+
 /**
  * Convert Google usageMetadata into canonical IR usage, including multimodal token details.
  */
@@ -113,33 +123,29 @@ export function googleUsageMetadataToIRUsage(meta: UsageMetadata | undefined, he
     if (!meta) return undefined;
     const normalized = normalizeGoogleUsage(meta) ?? {};
 
-    const inputTokens =
+    // Google bills totalTokenCount = promptTokenCount + toolUsePromptTokenCount
+    // + candidatesTokenCount + thoughtsTokenCount. Tool-use prompt tokens are input,
+    // and thoughts are output at the output price, so both belong in the canonical
+    // totals (as OpenAI's prompt_tokens and completion_tokens include theirs).
+    const promptTokens =
         pickFiniteNumber(meta.promptTokenCount) ??
-        sumDefined([
-            normalized.input_text_tokens,
-            normalized.input_image_tokens,
-            normalized.input_audio_tokens,
-            normalized.input_video_tokens,
-        ]) ??
-        0;
-    const outputTokens =
+        sumModalityCounts(meta.promptTokensDetails);
+    const toolUsePromptTokens =
+        pickFiniteNumber(meta.toolUsePromptTokenCount) ??
+        sumModalityCounts(meta.toolUsePromptTokensDetails);
+    const inputTokens = sumDefined([promptTokens, toolUsePromptTokens]) ?? 0;
+    const reasoningTokens =
+        pickFiniteNumber(meta.thoughtsTokenCount) ??
+        pickFiniteNumber(meta.thoughtTokenCount);
+    const candidatesTokens =
         pickFiniteNumber(meta.candidatesTokenCount) ??
-        sumDefined([
-            normalized.output_text_tokens,
-            normalized.output_image_tokens,
-            normalized.output_audio_tokens,
-            normalized.output_video_tokens,
-        ]) ??
-        0;
+        sumModalityCounts(meta.candidatesTokensDetails);
+    const outputTokens = sumDefined([candidatesTokens, reasoningTokens]) ?? 0;
     const totalTokens = pickFiniteNumber(meta.totalTokenCount) ?? (inputTokens + outputTokens);
 
     const cachedInputTokens =
         pickFiniteNumber(meta.cachedContentTokenCount) ??
         pickFiniteNumber(normalized.cached_read_text_tokens);
-    const reasoningTokens =
-        pickFiniteNumber(meta.thoughtsTokenCount) ??
-        pickFiniteNumber(meta.thoughtTokenCount) ??
-        pickFiniteNumber(normalized.reasoning_tokens);
 
     const ext: IRUsage["_ext"] = {};
     if (pickFiniteNumber(normalized.input_image_tokens) != null) ext.inputImageTokens = normalized.input_image_tokens;

@@ -360,4 +360,56 @@ describe("runTextGeneratePipeline response cache", () => {
 			ir: { id: "ir_streamed" },
 		});
 	});
+
+	const materializeWithFinalizer = async (finalizerUsage: Record<string, unknown>) => {
+		getResponseCacheMock.mockReturnValue(null);
+		doRequestWithIRMock.mockResolvedValue({
+			result: {
+				kind: "stream",
+				stream: new ReadableStream<Uint8Array>({ start(controller) { controller.close(); } }),
+				upstream: new Response(null, { status: 200 }),
+				provider: "google-vertex",
+				generationTimeMs: 4,
+				bill: { cost_cents: 0, currency: "USD" },
+				usageFinalizer: async () => ({ cost_cents: 0, currency: "USD", usage: finalizerUsage }),
+				usageFinalizerAuthoritative: true,
+			},
+		});
+		consumeTextProtocolStreamToIRMock.mockResolvedValue({
+			ir: {
+				id: "ir_streamed",
+				model: "google/gemini-2.5-flash",
+				choices: [{ index: 0, message: { role: "assistant", content: [{ type: "text", text: "hello" }] }, finishReason: "stop" }],
+			},
+			rawResponse: { id: "resp_streamed" },
+			usageRaw: { input_tokens: 100, output_tokens: 10 },
+		});
+		finalizeRequestMock.mockResolvedValue(new Response(JSON.stringify({ id: "resp_streamed" }), { status: 200 }));
+		await runTextGeneratePipeline(createArgs());
+		return finalizeRequestMock.mock.calls[0]?.[0]?.exec?.result?.bill?.usage;
+	};
+
+	it("bills a buffered client from the executor's authoritative upstream usage", async () => {
+		const meters = {
+			input_tokens: 100,
+			input_text_tokens: 60,
+			input_image_tokens: 30,
+			cached_read_text_tokens: 10,
+			cached_read_tokens_are_subset_of_input: true,
+			output_tokens: 10,
+		};
+
+		expect(await materializeWithFinalizer(meters)).toEqual(meters);
+	});
+
+	it("keeps the materialised usage when the authoritative meters use Anthropic cache semantics", async () => {
+		const usage = await materializeWithFinalizer({
+			input_tokens: 20,
+			cached_read_text_tokens: 80,
+			cached_read_tokens_are_subset_of_input: false,
+			output_tokens: 10,
+		});
+
+		expect(usage).toEqual({ input_tokens: 100, output_tokens: 10 });
+	});
 });

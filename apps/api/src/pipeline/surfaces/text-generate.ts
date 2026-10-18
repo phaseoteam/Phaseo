@@ -592,6 +592,11 @@ async function materializeStreamResultToCompleted(args: {
 		0,
 		Math.round(performance.now() - materializeStartedAt),
 	);
+	// Executors that read usage from the upstream stream itself are authoritative for
+	// streamed clients (pipeline/after/stream.ts); buffered clients bill from the same usage.
+	const authoritativeUsage = args.protocol === "anthropic.messages"
+		? null
+		: await readAuthoritativeStreamUsage(args.result);
 	return {
 		...args.result,
 		kind: "completed" as const,
@@ -615,13 +620,37 @@ async function materializeStreamResultToCompleted(args: {
 		bill: {
 			...args.result.bill,
 			usage:
-				(args.result.bill?.usage && typeof args.result.bill.usage === "object")
+				authoritativeUsage ??
+				((args.result.bill?.usage && typeof args.result.bill.usage === "object")
 					? args.result.bill.usage
 					: (consumed.usageRaw && typeof consumed.usageRaw === "object"
 						? consumed.usageRaw
-						: args.result.bill?.usage),
+						: args.result.bill?.usage)),
 		},
 	};
+}
+
+/**
+ * The after-stage lays the client payload's usage over these meters, so they are only used
+ * when their input_tokens means what an OpenAI-shaped payload's does: the whole prompt with
+ * cache reads and writes inside it. Anthropic-semantics meters (Claude accounting) and the
+ * Messages payload (cache on top of input_tokens) would contradict each other's hints.
+ */
+async function readAuthoritativeStreamUsage(result: any): Promise<Record<string, any> | null> {
+	if (result?.usageFinalizerAuthoritative !== true || typeof result.usageFinalizer !== "function") return null;
+	try {
+		const finalized = await result.usageFinalizer();
+		const usage = finalized?.usage;
+		if (!usage || typeof usage !== "object") return null;
+		if (usage.cached_read_tokens_are_subset_of_input === false || usage.cached_write_tokens_are_subset_of_input === false) {
+			return null;
+		}
+		const billable = ["input_tokens", "output_tokens", "cached_read_text_tokens", "cached_write_text_tokens"]
+			.some((key) => typeof usage[key] === "number" && usage[key] > 0);
+		return billable ? usage : null;
+	} catch {
+		return null;
+	}
 }
 
 export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise<Response> {
