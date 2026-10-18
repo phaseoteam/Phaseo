@@ -13,6 +13,7 @@ import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToAnthropicMessages, anthropicMessagesToIR, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
 import {
+	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
 	createAnthropicPassthroughStreamTransformer,
 	createAnthropicToResponsesStreamTransformer,
@@ -147,10 +148,11 @@ async function executeBedrockMessages(
 				const final = accounting.snapshot();
 				return {
 					...bill,
-					usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
+					usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
 					finish_reason: mapAnthropicStopReason(final.stopReason),
 				};
 			},
+			usageFinalizerAuthoritative: true,
 			bill,
 			upstream: res,
 			keySource: keyInfo.source,
@@ -166,7 +168,7 @@ async function executeBedrockMessages(
 	const json: any = await res.json().catch(() => null);
 	const providerId = args.providerId || "amazon-bedrock";
 	const ir = anthropicMessagesToIR(json ?? {}, args.requestId, model, providerId);
-	const usageMeters = normalizeTextUsageForPricing(json?.usage ?? ir.usage);
+	const usageMeters = normalizeTextUsageForPricing(json?.usage ?? ir.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS);
 	if (usageMeters) {
 		bill.usage = usageMeters;
 	}
