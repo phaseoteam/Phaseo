@@ -221,6 +221,10 @@ function dispatchNonStreamSuccessSideEffects(args: {
                     model: getBaseModel(ctx.model),
                     body: ctx.body,
                     providerId: result.provider,
+                    apiModelId: result.apiModelId ?? null,
+                    providerModelSlug: result.providerModelSlug ?? null,
+                    keySource: result.keySource ?? null,
+                    byokKeyId: result.byokKeyId ?? null,
                     usage: usageForSticky,
                     enabled: cacheAwareRoutingEnabled,
                 });

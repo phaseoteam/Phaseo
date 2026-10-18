@@ -92,7 +92,9 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 			const response = await fetchUpstream(args, openAICompatUrl(args.providerId, "/responses"), {
 				method: "POST",
 				headers: openAICompatHeaders(args.providerId, keyInfo.key, {
-					"x-grok-conv-id": irRequest.xaiConversationId,
+					// The client conversation id wins; otherwise the workspace-namespaced cache key
+					// keeps the conversation on one xAI server.
+					"x-grok-conv-id": irRequest.xaiConversationId ?? args.meta.cacheAffinityKey ?? undefined,
 					"Idempotency-Key": args.requestId,
 					...upstreamTestHeaders(args.meta),
 				}),
