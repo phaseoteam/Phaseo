@@ -89,6 +89,25 @@ function swipe(direction, durationMs = 60) {
   shell("input", "swipe", String(x), String(Math.round(height * from)), String(x), String(Math.round(height * to)), String(durationMs));
 }
 
+/** The first on-screen element whose text or accessibility label is `label` (uiautomator). */
+function element(label) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      shell("uiautomator", "dump", "/sdcard/perf-ui.xml");
+      const xml = adb("exec-out", "cat", "/sdcard/perf-ui.xml");
+      for (const [tag] of xml.matchAll(/<node [^>]*>/g)) {
+        const attr = (name) => (tag.match(new RegExp(`${name}="([^"]*)"`)) ?? [])[1] ?? "";
+        if (attr("text") !== label && attr("content-desc") !== label && attr("hint") !== label) continue;
+        const [x1, y1, x2, y2] = (attr("bounds").match(/\d+/g) ?? []).map(Number);
+        return { x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2) };
+      }
+    } catch { /* the screen was busy; try again */ }
+    sleep(800);
+  }
+  throw new Error(`No element labelled "${label}".`);
+}
+const tap = (label) => { const { x, y } = element(label); shell("input", "tap", String(x), String(y)); };
+
 function toList() {
   link("list");
   sleep(1500);
@@ -196,10 +215,11 @@ switch (scenario) {
     link("lag-start");
     sleep(500);
     gfxReset();
-    const ui = (...args) => execFileSync("node", [flags.ui ?? "E:/phaseo-worktrees/demo-tools/mobile-test/ui.mjs", ...args], { encoding: "utf8", env: { ...process.env, ANDROID_SERIAL: serial } });
-    ui("type", "Message", "Explain the trade-offs again in detail");
+    tap("Message");
+    sleep(400);
+    shell("input", "text", "Explain%sthe%strade-offs%sagain%sin%sdetail");
     sleep(300);
-    ui("tap", "Send");
+    tap("Send");
     const started = Date.now();
     // While it streams: type in the composer and nudge the list, as a reader would.
     let typed = 0;
