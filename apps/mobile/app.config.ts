@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { ExpoConfig } from "expo/config";
+import { withAndroidManifest, type ConfigPlugin } from "expo/config-plugins";
 
 import appJson from "./app.json";
 
@@ -33,15 +35,44 @@ const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 const googleServicesFile = "./google-services.json";
 const hasGoogleServices = fs.existsSync(path.resolve(__dirname, googleServicesFile));
 
-export default {
-  ...appJson.expo,
+/**
+ * `APP_VARIANT=perf` builds "Phaseo Perf" (app.phaseo.client.perf), a separate app for load tests that
+ * installs beside the real one and never shares its chats. Its perf tools (seeder, timing spans, a local
+ * chat stand-in) are bundled only when `EXPO_PUBLIC_PERF_TOOLS=1`, so normal builds leave them out.
+ * See "Load tests" in README.md.
+ */
+const perf = process.env.APP_VARIANT === "perf";
+if (perf !== (process.env.EXPO_PUBLIC_PERF_TOOLS === "1")) {
+  throw new Error("Set APP_VARIANT=perf and EXPO_PUBLIC_PERF_TOOLS=1 together for the perf build, and neither for a normal build.");
+}
+
+/** The perf build talks plain HTTP to the chat stand-in on the development machine. */
+const withCleartextTraffic: ConfigPlugin = (config) => withAndroidManifest(config, (manifest) => {
+  const application = manifest.modResults.manifest.application?.[0];
+  if (application) application.$["android:usesCleartextTraffic"] = "true";
+  return manifest;
+});
+
+const expo = appJson.expo as ExpoConfig;
+const base: ExpoConfig = {
+  ...expo,
   android: {
-    ...appJson.expo.android,
-    ...(hasGoogleServices ? { googleServicesFile } : {}),
+    ...expo.android,
+    ...(hasGoogleServices && !perf ? { googleServicesFile } : {}),
   },
   extra: {
-    ...appJson.expo.extra,
+    ...expo.extra,
     supabaseUrl,
     supabasePublishableKey,
   },
 };
+
+export default perf
+  ? withCleartextTraffic({
+    ...base,
+    name: "Phaseo Perf",
+    scheme: "phaseo-perf",
+    ios: { ...base.ios, bundleIdentifier: "app.phaseo.client.perf" },
+    android: { ...base.android, package: "app.phaseo.client.perf" },
+  })
+  : base;

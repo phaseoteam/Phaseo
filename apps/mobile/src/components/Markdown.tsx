@@ -2,9 +2,12 @@ import * as Linking from "expo-linking";
 import { memo, useMemo } from "react";
 import { EnrichedMarkdownText, type MarkdownStyle } from "react-native-enriched-markdown";
 import { useCSSVariable } from "uniwind";
+import { perf } from "@/perf";
 
 /** Native markdown (GitHub flavour, for tables) styled with the app's tokens. */
 export const Markdown = memo(function Markdown({ text, streaming }: { text: string; streaming?: boolean }) {
+  perf?.count("render.markdown");
+  perf?.count("render.markdown.chars", text.length);
   const [foreground, muted, border, accent, primary] = useCSSVariable(["--color-foreground", "--color-muted-foreground", "--color-border", "--color-muted", "--color-primary"]).map((value) => String(value ?? ""));
   const style = useMemo<MarkdownStyle>(() => {
     const body = { fontFamily: "Montserrat", fontSize: 15, lineHeight: 23, color: foreground };

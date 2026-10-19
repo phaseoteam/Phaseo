@@ -2,8 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { useCatalogue } from "@/features/models/state";
 import { getGatewayChatModels } from "@/lib/api/chatModels";
+import type { Catalogue } from "@/lib/api/models";
 import { queryClient } from "@/providers/QueryProvider";
 import { modelReasoningSupport, modelServiceTierSupport } from "./capabilities";
+import { contextTokensFrom } from "./compaction";
 import type { GatewayChatModel } from "./gatewayModels";
 import { buildChatModelOptions, type ChatModelOption } from "./modelOptions";
 import type { ModelSettings, RequestCapabilities } from "./settings";
@@ -70,4 +72,17 @@ export async function requestCapabilities(modelId: string, settings?: ModelSetti
     reasoning: modelReasoningSupport(model.routes, settings?.providerId),
     serviceTiers: modelServiceTierSupport(model.routes, settings?.providerId),
   };
+}
+
+const cachedCatalogue = () => queryClient.getQueryData<Catalogue>(["public", "catalogue"]);
+
+/** A model's context window from the catalogue already on the device (the smallest of its providers'), or 128k. */
+export function contextTokensFor(modelId: string) {
+  return contextTokensFrom(cachedCatalogue()?.models.find((card) => card.model_id === modelId)?.context_lengths);
+}
+
+/** A model's name outside React (for notices), with its display name from settings when set. */
+export function modelLabelFor(modelId: string, settings?: ModelSettings) {
+  const option = sharedOptions(cachedCatalogue()?.models, queryClient.getQueryData<GatewayChatModel[]>(CHAT_MODELS_KEY)).byId.get(modelId);
+  return settings?.displayName?.trim() || option?.label || modelId.split("/").at(-1) || "this model";
 }

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Button, EmptyState, ErrorState, Fact, Header, Icon, LoadingState, Row, RouteSheet, SearchField, Section, Text, TextField } from "@/components/ui";
 import { ChatModelPicker } from "@/features/chat/ChatModelPicker";
-import { getChat, listMessages, updateChat } from "@/features/chat/db";
+import { getChat, getMessage, updateChat } from "@/features/chat/db";
 import { ModelSettingsSheet } from "@/features/chat/ModelSettingsSheet";
 import { editAndResend } from "@/features/chat/runner";
 import { notifyChat } from "@/features/chat/state";
@@ -107,8 +107,8 @@ function RenameChatSheet() {
 function EditMessageSheet() {
   const router = useRouter();
   const { workspaceId } = useWorkspace();
-  const { id, chatId } = useLocalSearchParams<{ id: string; chatId: string }>();
-  const message = listMessages(chatId).find((entry) => entry.id === id);
+  const { id } = useLocalSearchParams<{ id: string; chatId: string }>();
+  const [message] = useState(() => getMessage(id));
   const [text, setText] = useState(message?.content ?? "");
   if (!message) return <EmptyState title="Message not found" />;
   return (

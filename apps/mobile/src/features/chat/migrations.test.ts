@@ -42,7 +42,7 @@ describe("chat database migrations", () => {
     const { raw, database } = open();
     raw.exec(V1);
     expect(migrateChatDatabase(database)).toBe(1);
-    expect(schemaVersion(database)).toBe(2);
+    expect(schemaVersion(database)).toBe(SCHEMA_VERSION);
     expect(raw.prepare("SELECT id, title, models, model_settings FROM chats").all()).toEqual([{ id: "c1", title: "Old chat", models: '["openai/gpt-6","phaseo/free"]', model_settings: "{}" }]);
     expect(raw.prepare("SELECT id, content, error, error_code, error_status FROM messages ORDER BY position").all()).toEqual([
       { id: "m1", content: "Hello", error: null, error_code: null, error_status: null },
@@ -52,6 +52,32 @@ describe("chat database migrations", () => {
     // Per-model settings save and read back as JSON keyed by model.
     raw.prepare("UPDATE chats SET model_settings = ? WHERE id = ?").run(JSON.stringify({ "openai/gpt-6": { temperature: 0.2 } }), "c1");
     expect(JSON.parse((raw.prepare("SELECT model_settings FROM chats").get() as { model_settings: string }).model_settings)).toEqual({ "openai/gpt-6": { temperature: 0.2 } });
+  });
+
+  test("a version 2 database (the app before long-chat support) gains summaries, streamed pieces and the turn index in place", () => {
+    const { raw, database } = open();
+    raw.exec(V1);
+    raw.exec("ALTER TABLE chats ADD COLUMN model_settings TEXT NOT NULL DEFAULT '{}'; ALTER TABLE messages ADD COLUMN error_code TEXT; ALTER TABLE messages ADD COLUMN error_status INTEGER; PRAGMA user_version = 2;");
+    raw.prepare("UPDATE messages SET error_code = 'insufficient_credits', error_status = 402 WHERE id = 'm2'").run();
+    expect(migrateChatDatabase(database)).toBe(2);
+    expect(schemaVersion(database)).toBe(3);
+    // Nothing existing changes; answers gain an empty notice.
+    expect(raw.prepare("SELECT id, content, error_code, error_status, notice FROM messages ORDER BY position").all()).toEqual([
+      { id: "m1", content: "Hello", error_code: null, error_status: null, notice: null },
+      { id: "m2", content: "", error_code: "insufficient_credits", error_status: 402, notice: null },
+    ]);
+    expect(raw.prepare("SELECT chat_id FROM chat_search WHERE chat_search MATCH 'hello'").all()).toEqual([{ chat_id: "c1" }]);
+    // Pages of turns read user messages through the partial index.
+    const plan = raw.prepare("EXPLAIN QUERY PLAN SELECT position FROM messages WHERE chat_id = 'c1' AND role = 'user' AND position < 10 ORDER BY position DESC LIMIT 21").all() as { detail: string }[];
+    expect(plan.map((row) => row.detail).join(" ")).toContain("messages_turns");
+    // Summaries and streamed pieces go when their chat or message does.
+    raw.exec("PRAGMA foreign_keys = ON");
+    raw.prepare("INSERT INTO chat_summaries (chat_id, model, through_position, summary, created_at) VALUES ('c1', 'openai/gpt-6', 0, 'Said hello.', 3)").run();
+    raw.prepare("INSERT INTO message_deltas (message_id, seq, content) VALUES ('m2', 0, 'Hi')").run();
+    raw.prepare("DELETE FROM messages WHERE id = 'm2'").run();
+    expect(raw.prepare("SELECT count(*) AS n FROM message_deltas").get()).toEqual({ n: 0 });
+    raw.prepare("DELETE FROM chats WHERE id = 'c1'").run();
+    expect(raw.prepare("SELECT count(*) AS n FROM chat_summaries").get()).toEqual({ n: 0 });
   });
 
   test("running again does nothing", () => {
