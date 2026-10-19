@@ -834,6 +834,9 @@ importers:
       jest:
         specifier: 30.2.0
         version: 30.2.0(@types/node@26.2.0)(ts-node@10.9.2(@swc/core@1.15.47(@swc/helpers@0.5.23))(@types/node@26.2.0)(typescript@6.0.3))
+      jest-environment-jsdom:
+        specifier: 30.5.2
+        version: 30.5.2
       jest-environment-node:
         specifier: 30.4.1
         version: 30.4.1

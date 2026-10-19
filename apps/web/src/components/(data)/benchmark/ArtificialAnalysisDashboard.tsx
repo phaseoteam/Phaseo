@@ -108,8 +108,8 @@ export default function ArtificialAnalysisDashboard({ rows, footer }: { rows: Da
 		if (!node) return;
 		setExporting(true); setExportError(false);
 		try {
-			const { toPng } = await import("html-to-image");
-			const url = await toPng(node, { pixelRatio: 2, backgroundColor: getComputedStyle(document.body).backgroundColor, filter: (element) => !(element instanceof HTMLElement && (element.getAttribute("role") === "tooltip" || element.hasAttribute("data-export-hide"))) });
+			const { exportArtificialAnalysisChart } = await import("@/lib/benchmarks/exportArtificialAnalysisChart");
+			const url = await exportArtificialAnalysisChart(node);
 			const anchor = document.createElement("a"); anchor.href = url; anchor.download = `phaseo-aa-${activeChart}.png`; anchor.click();
 		} catch { setExportError(true); } finally { setExporting(false); }
 	};
