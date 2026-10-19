@@ -4,11 +4,17 @@
 --     gateway calls it in the background after responding.
 --   * sweep_spend_limit_warnings, run every 15 minutes, warns once per period when a budget or
 --     key limit is about 80% used by v2_private_usage_15m, with a forecast for weekly and monthly
---     periods, and never after the limit was reached.
+--     periods, and never after the limit was reached. Async jobs and realtime sessions, which the
+--     rollup leaves out, are added from gateway_requests through a new partial index.
 --   * Both write workspace_notification_events, which fan out to owners and admins, and to the
 --     key's creator for key limits. Nothing is emailed.
 SET local check_function_bodies = off;
 
+
+-- Async jobs and realtime sessions are left out of v2_private_usage_15m; the sweep reads their
+-- successful requests here. Built on every partition, as the partitioned table's other indexes are.
+CREATE INDEX gateway_requests_async_spend_idx ON public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)
+  WHERE ((success IS TRUE) AND (endpoint = ANY (ARRAY['video.generation'::text, 'batch'::text, 'music.generate'::text, 'audio.realtime'::text])));
 
 CREATE OR REPLACE FUNCTION private.spend_limit_period (
   p_window       text,
@@ -193,7 +199,9 @@ CREATE OR REPLACE FUNCTION public.sweep_spend_limit_warnings (
 -- Warns once when a workspace budget or an active API key's limit is about 80% used in its
 -- current period, as a money push: owners and admins hear about it, and for a key limit so does
 -- the key's creator. Usage comes from v2_private_usage_15m (cost, and successful requests for
--- request limits), which is rebuilt hourly and so lags; the push says "about". Nothing is sent
+-- request limits), which is rebuilt hourly and so lags; the push says "about". The rollup leaves
+-- out async jobs and realtime sessions, which the gateway's limits count, so their successful
+-- requests are added from gateway_requests through a small partial index. Nothing is sent
 -- for a limit already reached this period (record_spend_limit_reached), or one the rollup puts
 -- at 100% or more: the gateway blocks the next request and that alert follows. Weekly and
 -- monthly warnings say when the limit runs out at the period's pace so far, if that is before
@@ -230,6 +238,17 @@ begin
       and greatest(k.daily_limit_requests, k.weekly_limit_requests, k.monthly_limit_requests,
         k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos) > 0
   ),
+  async_requests as (
+    -- Async jobs and realtime sessions, which the rollup leaves out (gateway_requests_async_spend_idx).
+    select r.key_id, r.created_at, 1::bigint as requests, coalesce(r.cost_nanos, 0)::numeric as cost_nanos
+    from public.gateway_requests r
+    where r.success is true
+      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+      and r.workspace_id in (select k.workspace_id from limited_keys k)
+      and r.created_at >= least(v_week, v_month)
+      and r.created_at <= p_now
+      and r.key_id in (select k.id from limited_keys k)
+  ),
   key_usage as (
     -- One pass over each limited key's workspace since the earlier of this week's and this month's start.
     select
@@ -240,11 +259,16 @@ begin
       coalesce(sum(u.cost_nanos) filter (where u.bucket_start >= v_day), 0) as day_cost,
       coalesce(sum(u.cost_nanos) filter (where u.bucket_start >= v_week), 0) as week_cost,
       coalesce(sum(u.cost_nanos) filter (where u.bucket_start >= v_month), 0) as month_cost
-    from public.v2_private_usage_15m u
-    where u.workspace_id in (select k.workspace_id from limited_keys k)
-      and u.bucket_start >= least(v_week, v_month)
-      and u.bucket_start <= p_now
-      and u.key_id in (select k.id from limited_keys k)
+    from (
+      select u.key_id, u.bucket_start, u.successful_requests, u.cost_nanos
+      from public.v2_private_usage_15m u
+      where u.workspace_id in (select k.workspace_id from limited_keys k)
+        and u.bucket_start >= least(v_week, v_month)
+        and u.bucket_start <= p_now
+        and u.key_id in (select k.id from limited_keys k)
+      union all
+      select a.key_id, a.created_at, a.requests, a.cost_nanos from async_requests a
+    ) u
     group by u.key_id
   ),
   limits as (
@@ -258,6 +282,14 @@ begin
         where u.workspace_id = b.workspace_id
           and u.bucket_start >= coalesce((private.spend_limit_period(b.interval, p_now)).period_start, '-infinity'::timestamptz)
           and u.bucket_start <= p_now
+      ) + (
+        select coalesce(sum(r.cost_nanos), 0)
+        from public.gateway_requests r
+        where r.success is true
+          and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
+          and r.workspace_id = b.workspace_id
+          and r.created_at >= coalesce((private.spend_limit_period(b.interval, p_now)).period_start, '-infinity'::timestamptz)
+          and r.created_at <= p_now
       ) as used
     from public.workspace_budgets b
     union all

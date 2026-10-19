@@ -30,6 +30,8 @@ const KEY_CI = '80000000-0000-4000-8000-000000000001';
 const KEY_PROD = '80000000-0000-4000-8000-000000000002';
 const KEY_OVER = '80000000-0000-4000-8000-000000000003';
 const KEY_STEADY = '80000000-0000-4000-8000-000000000004';
+const KEY_VID = '80000000-0000-4000-8000-000000000005';
+const GAMMA = '70000000-0000-4000-8000-000000000004';
 const DOLLAR = 1_000_000_000;
 const usage = (workspace, key, bucket, { cost = 0, requests = 0 } = {}) => db.query(
     `insert into public.v2_private_usage_15m (workspace_id, bucket_start, model_id, key_id, requests, successful_requests, cost_nanos) values ($1, $2, 'openai/gpt-6-astra', $3, $4, $4, $5)`,
@@ -46,6 +48,9 @@ try {
         const path = file.replace('../schemas/', '');
         for (const list of ['loadOrder', 'files']) assert.ok(manifest[list].includes(path), `${path} is in the manifest's ${list}`);
     }
+    // The async spend index is declared on the partitioned table and built on every partition.
+    const asyncIndex = (await read('../schemas/public/tables/gateway_requests.sql')).match(/CREATE INDEX gateway_requests_async_spend_idx ON ONLY [^;]*;/)?.[0];
+    assert.ok(asyncIndex && v4.includes(asyncIndex.replace(' ON ONLY ', ' ON ')), 'the migration builds gateway_requests_async_spend_idx');
 
     await db.exec(`
       create role anon; create role authenticated; create role service_role bypassrls;
@@ -125,6 +130,10 @@ try {
       create table public.management_keys (
         id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
         name text not null, created_by uuid references public.users(user_id) on delete set null
+      );
+      create table public.gateway_requests (
+        id uuid primary key default gen_random_uuid(), workspace_id uuid not null, key_id uuid, endpoint text not null,
+        success boolean not null default false, cost_nanos bigint, created_at timestamptz not null default now()
       );
       create table public.workspace_budgets (
         id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
@@ -295,6 +304,31 @@ try {
     assert.ok(!seen.some(line => line.startsWith('b4') || (line.startsWith('b3') && line.includes('budget'))), 'members hear only about their own keys');
     assert.ok(pushes.every(push => push.href === (push.kind.startsWith('budget') ? '/settings/usage/overview' : '/settings/keys')));
     assert.equal((await one(`select count(*)::int n from public.email_outbox`)).n, 0, 'no email is queued');
+
+    // Async jobs and realtime sessions are not in the rollup but count towards limits: in November,
+    // Gamma's vid key ran nine video jobs (and one that failed) and a realtime session ran on the
+    // workspace. Its sync request is in gateway_requests too, but sync usage comes from the rollup,
+    // which has none here, so it is not counted twice.
+    await db.exec(`
+      insert into public.workspaces (id, name, owner_user_id) values ('${GAMMA}', 'Gamma', '${user(2)}');
+      insert into public.workspace_members (workspace_id, user_id, role) values ('${GAMMA}', '${user(2)}', 'owner');
+      insert into public.keys (id, workspace_id, name, created_by, daily_limit_requests, monthly_limit_cost_nanos) values ('${KEY_VID}', '${GAMMA}', 'vid', '${user(2)}', 10, ${50 * DOLLAR});
+      insert into public.workspace_budgets (workspace_id, interval, limit_nanos) values ('${GAMMA}', 'weekly', ${100 * DOLLAR});
+      insert into public.gateway_requests (workspace_id, key_id, endpoint, success, cost_nanos, created_at)
+        select '${GAMMA}', '${KEY_VID}', 'video.generation', true, ${4.5 * DOLLAR}, '2026-11-04T01:00:00Z'::timestamptz + make_interval(mins => n) from generate_series(1, 9) n;
+      insert into public.gateway_requests (workspace_id, key_id, endpoint, success, cost_nanos, created_at) values
+        ('${GAMMA}', '${KEY_VID}', 'video.generation', false, ${4.5 * DOLLAR}, '2026-11-04T02:00:00Z'),
+        ('${GAMMA}', null, 'audio.realtime', true, ${40 * DOLLAR}, '2026-11-03T08:00:00Z'),
+        ('${GAMMA}', '${KEY_VID}', 'chat.completions', true, ${30 * DOLLAR}, '2026-11-04T03:00:00Z');
+    `);
+    assert.deepEqual(await sweep('2026-11-04T12:00:00Z'), { budgets: 3, limitedKeys: 5, warned: 3 });
+    assert.deepEqual((await events(`occurred_at = '2026-11-04T12:00:00Z'`)).map(event => [event.kind, event.title, event.body]), [
+        // $40.50 of video and $40 of realtime: 2.5 days into the week, 2.5 * 100 / 80.5 = 3.1 days.
+        ['budget_warning', 'About 80% of the weekly budget used', '$80.50 of $100.00 so far this week. At this pace it runs out around Nov 5.'],
+        ['key_limit_warning', "API key 'vid' is at about 80% of its daily limit", '9 of 10 requests so far today.'],
+        // 3.5 days into November, 3.5 * 50 / 40.5 = 4.3 days.
+        ['key_limit_warning', "API key 'vid' is at about 80% of its monthly limit", '$40.50 of $50.00 so far this month. At this pace it runs out around Nov 5.'],
+    ]);
 
     // Nothing configured: the sweep returns after two counts.
     await db.exec(`delete from public.workspace_budgets; update public.keys set daily_limit_requests = 0, weekly_limit_cost_nanos = 0, monthly_limit_cost_nanos = 0, monthly_limit_requests = 0`);
