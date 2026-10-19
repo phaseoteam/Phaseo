@@ -4754,6 +4754,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /classifiers:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listClassifiers
+      summary: List classifiers
+      description: Lists the workspace's request classifiers. A workspace can have up to five. Owners and admins only.
+      responses:
+        '200':
+          description: Classifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierListResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createClassifier
+      summary: Create a classifier
+      description: Creates a classifier. After each eligible request finishes, the chosen model places it in every dimension and the answers are added to the request as labels, so they can be filtered and grouped in logs, usage and analytics. Classification runs after the response is sent and is billed to the workspace at the model's normal price.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierCreateInput'
+      responses:
+        '201':
+          description: Clasificador creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Classifier id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getClassifier
+      summary: Get a classifier
+      description: Returns one classifier. Owners and admins only.
+      responses:
+        '200':
+          description: Classifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateClassifier
+      summary: Update a classifier
+      description: Updates the fields you send. Changes reach the gateway within about a minute. Labels already written to past requests are not changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierUpdateInput'
+      responses:
+        '200':
+          description: Clasificador actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteClassifier
+      summary: Delete a classifier
+      description: Deletes a classifier. Labels it already wrote stay on past requests.
+      responses:
+        '200':
+          description: Classifier deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierDeleteResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/destinations:
     get:
       x-beta: true
@@ -19984,6 +20106,292 @@ components:
             $ref: '#/components/schemas/WorkspaceBudget'
       additionalProperties: false
     WorkspaceBudgetDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    ClassifierValue:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        description:
+          type: string
+          maxLength: 300
+          nullable: true
+          description: Tells the model when to pick this value.
+      additionalProperties: false
+    ClassifierDimension:
+      type: object
+      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      required:
+        - key
+        - values
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        multiple:
+          type: boolean
+          default: false
+          description: Allow more than one value per request.
+        allow_other:
+          type: boolean
+          default: false
+          description: Let the model answer "other" when no listed value fits.
+        values:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ClassifierValue'
+      additionalProperties: false
+    ClassifierScope:
+      type: object
+      description: Limits which requests are classified. Leave a list out to include everything.
+      properties:
+        key_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        app_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        models:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+      additionalProperties: false
+    ClassifierSampleBy:
+      type: string
+      description: request samples each request on its own. session keeps every request in a session in or out together.
+      enum:
+        - request
+        - session
+    ClassifierInputScope:
+      type: string
+      description: prompt classifies the request messages. prompt_and_response also shows the model the generated response.
+      enum:
+        - prompt
+        - prompt_and_response
+    Classifier:
+      type: object
+      description: A workspace taxonomy that a chosen model applies to requests after they finish.
+      required:
+        - id
+        - workspace_id
+        - name
+        - description
+        - enabled
+        - model
+        - instructions
+        - dimensions
+        - sample_rate
+        - sample_by
+        - input_scope
+        - scope
+        - monthly_budget_usd
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          description: Model that classifies requests, for example google/gemini-2.5-flash-lite.
+        instructions:
+          type: string
+          maxLength: 8000
+          description: Extra guidance for the model, added to the classification prompt.
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          description: Share of eligible requests to classify. 1 classifies every request.
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          nullable: true
+          description: Most the classifier may spend in a UTC calendar month. Classification pauses for the rest of the month once it is reached. null means no cap.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    ClassifierCreateInput:
+      type: object
+      required:
+        - name
+        - model
+        - dimensions
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+          default: true
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          default: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          nullable: true
+      additionalProperties: false
+    ClassifierUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          nullable: true
+      additionalProperties: false
+    ClassifierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierDeleteResponse:
       type: object
       required:
         - data
