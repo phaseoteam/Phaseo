@@ -14,6 +14,7 @@ import {
 	sealReasoningPart,
 	type ResponsesReasoningItem,
 } from "../shared/reasoning";
+import { toResponsesAnnotations } from "../shared/citations";
 
 /**
  * OpenAI Responses response type
@@ -145,7 +146,7 @@ export function encodeOpenAIResponsesResponse(
 					content.push({
 						type: "output_text",
 						text: part.text,
-						annotations: part.annotations ?? [],
+						annotations: toResponsesAnnotations(part.annotations),
 					});
 				}
 			}

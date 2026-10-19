@@ -10,6 +10,7 @@ import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
 import { SseParser } from "@core/sse-parser";
 import type { GatewayReasoningDetail } from "@core/types";
+import { toChatAnnotations, toResponsesAnnotations } from "@protocols/shared/citations";
 import {
 	isSealedReasoningValue,
 	openReasoningState,
@@ -326,6 +327,18 @@ export function transformResponsesStreamToChat(
 									await emitDelta({ role: "assistant", reasoning_content: payload.delta }, controller, 0);
 								}
 								break;
+							case "response.refusal.delta":
+								if (typeof payload?.delta === "string" && payload.delta.length > 0) {
+									await emitDelta({ role: "assistant", refusal: payload.delta }, controller, 0);
+								}
+								break;
+							case "response.output_text.annotation.added": {
+								const annotations = toChatAnnotations([payload?.annotation]);
+								if (annotations.length > 0) {
+									await emitDelta({ role: "assistant", annotations }, controller, 0);
+								}
+								break;
+							}
 							case "response.function_call_arguments.delta": {
 								const resolvedId = canonicalToolId(payload?.item_id);
 								if (!resolvedId) break;
@@ -433,6 +446,12 @@ export function transformResponsesStreamToChat(
 type ResponsesStreamChoiceState = {
 	text: string;
 	reasoning: string;
+	refusal: string;
+	// Content index of the refusal part, set when the part is announced.
+	refusalContentIndex?: number;
+	// Responses-shaped url_citation annotations on the message's output_text.
+	annotations: Array<Record<string, any>>;
+	emittedAnnotations: number;
 	mediaParts: Array<Extract<IRContentPart, { type: "image" | "audio" }>>;
 	finishReason?: string | null;
 	messageOutputIndex?: number;
@@ -475,6 +494,9 @@ export function transformChatStreamToResponses(
 			entry = {
 				text: "",
 				reasoning: "",
+				refusal: "",
+				annotations: [],
+				emittedAnnotations: 0,
 				mediaParts: [],
 				toolCalls: new Map(),
 			};
@@ -525,6 +547,64 @@ export function transformChatStreamToResponses(
 		controller: ReadableStreamDefaultController<Uint8Array>,
 	) => {
 		controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`));
+	};
+
+	// Refusal text and citations belong to the message item, next to its output_text.
+	const emitRefusal = async (
+		choiceIndex: number,
+		entry: ResponsesStreamChoiceState,
+		refusal: string,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+		if (entry.refusalContentIndex === undefined) {
+			// The refusal part follows the output_text part when there is text.
+			entry.refusalContentIndex = entry.text.length > 0 ? 1 : 0;
+			if (!entry.emittedText) {
+				// No text delta has opened the message yet: announce the item first.
+				await emitEvent("response.output_item.added", {
+					output_index: outputIndex,
+					item: { type: "message", id: itemId, status: "in_progress", role: "assistant", content: [] },
+				}, controller);
+			}
+			// Always announce the refusal part before its first delta, including
+			// after streamed text.
+			await emitEvent("response.content_part.added", {
+				item_id: itemId,
+				output_index: outputIndex,
+				content_index: entry.refusalContentIndex,
+				part: { type: "refusal", refusal: "" },
+			}, controller);
+		}
+		entry.refusal += refusal;
+		await emitEvent("response.refusal.delta", {
+			item_id: itemId,
+			output_index: outputIndex,
+			content_index: entry.refusalContentIndex,
+			delta: refusal,
+		}, controller);
+	};
+
+	// Annotations follow the text they cite: while the text is held back (MiniMax
+	// tool interop), they wait and go out after it.
+	const emitAnnotations = async (
+		choiceIndex: number,
+		entry: ResponsesStreamChoiceState,
+		annotations: unknown,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		entry.annotations.push(...toResponsesAnnotations(annotations));
+		if (!entry.emittedText) return;
+		const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+		for (; entry.emittedAnnotations < entry.annotations.length; entry.emittedAnnotations += 1) {
+			await emitEvent("response.output_text.annotation.added", {
+				item_id: itemId,
+				output_index: outputIndex,
+				content_index: 0,
+				annotation_index: entry.emittedAnnotations,
+				annotation: entry.annotations[entry.emittedAnnotations],
+			}, controller);
+		}
 	};
 
 	const emitCreated = async (controller: ReadableStreamDefaultController<Uint8Array>) => {
@@ -636,6 +716,13 @@ export function transformChatStreamToResponses(
 									}
 								}
 
+								if (typeof choice?.delta?.refusal === "string" && choice.delta.refusal.length > 0) {
+									await emitRefusal(choiceIndex, entry, choice.delta.refusal, controller);
+								}
+								if (Array.isArray(choice?.delta?.annotations)) {
+									await emitAnnotations(choiceIndex, entry, choice.delta.annotations, controller);
+								}
+
 								const deltaReasoning = choice?.delta?.reasoning_content;
 								if (typeof deltaReasoning === "string" && deltaReasoning.length > 0) {
 									entry.reasoning += deltaReasoning;
@@ -701,6 +788,12 @@ export function transformChatStreamToResponses(
 											entry.reasoning = message.reasoning_content;
 											ensureReasoningIndex(choiceIndex, entry);
 										}
+									}
+									if (typeof message.refusal === "string" && message.refusal.length > 0 && entry.refusal.length === 0) {
+										await emitRefusal(choiceIndex, entry, message.refusal, controller);
+									}
+									if (Array.isArray(message.annotations) && entry.annotations.length === 0) {
+										await emitAnnotations(choiceIndex, entry, message.annotations, controller);
 									}
 									if (Array.isArray(message.tool_calls)) {
 										for (const toolCall of message.tool_calls) {
@@ -773,6 +866,7 @@ export function transformChatStreamToResponses(
 							}, controller);
 							entry.emittedText = true;
 						}
+						if (entry.emittedText) await emitAnnotations(choiceIndex, entry, [], controller);
 						if (entry.reasoning.length > 0 && !entry.emittedReasoning) {
 							const { outputIndex, itemId } = ensureReasoningIndex(choiceIndex, entry);
 							await emitEvent("response.reasoning_text.delta", {
@@ -987,7 +1081,7 @@ function buildResponsesOutputFromState(
 				},
 			});
 		}
-		if (entry.messageOutputIndex != null && (entry.text.length > 0 || entry.mediaParts.length > 0)) {
+		if (entry.messageOutputIndex != null && (entry.text.length > 0 || entry.refusal.length > 0 || entry.mediaParts.length > 0)) {
 			outputItems.push({
 				index: entry.messageOutputIndex,
 				item: {
@@ -996,7 +1090,8 @@ function buildResponsesOutputFromState(
 					status: "completed",
 					role: "assistant",
 					content: [
-						...(entry.text.length > 0 ? [{ type: "output_text", text: entry.text, annotations: [] }] : []),
+						...(entry.text.length > 0 ? [{ type: "output_text", text: entry.text, annotations: entry.annotations }] : []),
+						...(entry.refusal.length > 0 ? [{ type: "refusal", refusal: entry.refusal }] : []),
 						...entry.mediaParts.map((part) => {
 							if (part.type === "image") {
 								if (part.source === "data") {
@@ -1284,7 +1379,11 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 			choice.message = {
 				role: message.role || previousMessage.role || "assistant",
 				content: message.content ?? previousMessage.content ?? "",
-				...(message.tool_calls ? { tool_calls: message.tool_calls } : {}),
+				// A quirk's partial message on the final chunk (Z.ai, MiniMax) must not
+				// drop the tool calls accumulated from earlier deltas.
+				...(message.tool_calls
+					? { tool_calls: message.tool_calls }
+					: previousMessage.tool_calls ? { tool_calls: previousMessage.tool_calls } : {}),
 				...(message.reasoning_content ? { reasoning_content: message.reasoning_content } : previousMessage.reasoning_content ? { reasoning_content: previousMessage.reasoning_content } : {}),
 				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
 				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
@@ -1297,11 +1396,21 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 					: Array.isArray(previousMessage._contentParts)
 						? { _contentParts: previousMessage._contentParts }
 						: {}),
+				...(typeof (message.refusal ?? previousMessage.refusal) === "string" ? { refusal: message.refusal ?? previousMessage.refusal } : {}),
+				...(Array.isArray(message.annotations)
+					? { annotations: message.annotations }
+					: Array.isArray(previousMessage.annotations) ? { annotations: previousMessage.annotations } : {}),
 			};
 		}
 
 		if (chunk.delta?.content) {
 			choice.message.content = (choice.message.content || "") + chunk.delta.content;
+		}
+		if (typeof chunk.delta?.refusal === "string" && chunk.delta.refusal) {
+			choice.message.refusal = (choice.message.refusal || "") + chunk.delta.refusal;
+		}
+		if (Array.isArray(chunk.delta?.annotations) && chunk.delta.annotations.length > 0) {
+			choice.message.annotations = [...(choice.message.annotations ?? []), ...chunk.delta.annotations];
 		}
 		if (chunk.delta?.reasoning_content) {
 			choice.message.reasoning_content =

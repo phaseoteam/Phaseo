@@ -31,6 +31,7 @@ import { resolveProviderKey } from "@providers/keys";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
+import { toAnthropicCitations } from "@protocols/shared/citations";
 import {
 	transformChatStream,
 	transformChatStreamToResponses,
@@ -555,6 +556,7 @@ function transformResponsesStreamToAnthropic(
 				emittedContent: boolean;
 				toolId?: string;
 				toolName?: string;
+				emittedCitations?: boolean;
 			};
 			const blocksByAlias = new Map<string, AnthropicBlock>();
 			const blocks: AnthropicBlock[] = [];
@@ -615,7 +617,7 @@ function transformResponsesStreamToAnthropic(
 				}
 				ensureMessageStart();
 				if (activeBlock) stopBlock(activeBlock);
-				const block = {
+				const block: AnthropicBlock = {
 					index: nextBlockIndex++,
 					type,
 					open: true,
@@ -703,6 +705,47 @@ function transformResponsesStreamToAnthropic(
 				stopBlock(block);
 			};
 
+			// Citations go on the text block they cite. Only Claude's own citations
+			// have a valid Messages form; plain URL citations are left off (see
+			// toAnthropicCitations). When the cited block has already closed, they
+			// wait for the end of the message and go on an empty text block of their
+			// own; the gateway drops empty text blocks when the conversation is
+			// replayed to Claude.
+			const lateCitations: Array<Record<string, any>> = [];
+			const emitCitations = (block: AnthropicBlock, annotations: unknown[]) => {
+				const citations = toAnthropicCitations(annotations);
+				if (citations.length === 0) return;
+				block.emittedCitations = true;
+				if (!block.open) {
+					lateCitations.push(...citations);
+					return;
+				}
+				for (const citation of citations) {
+					emit(controller, "content_block_delta", {
+						type: "content_block_delta",
+						index: block.index,
+						delta: { type: "citations_delta", citation },
+					});
+				}
+			};
+			const flushLateCitations = () => {
+				if (lateCitations.length === 0) return;
+				const index = nextBlockIndex++;
+				emit(controller, "content_block_start", {
+					type: "content_block_start",
+					index,
+					content_block: { type: "text", text: "" },
+				});
+				for (const citation of lateCitations.splice(0)) {
+					emit(controller, "content_block_delta", {
+						type: "content_block_delta",
+						index,
+						delta: { type: "citations_delta", citation },
+					});
+				}
+				emit(controller, "content_block_stop", { type: "content_block_stop", index });
+			};
+
 			function stopBlock(block: { index: number; open: boolean }) {
 				if (!block.open) return;
 				block.open = false;
@@ -733,7 +776,7 @@ function transformResponsesStreamToAnthropic(
 						const blockType = "text" as "text" | "thinking";
 						const block = ensureBlock(aliasesFor({ id: item?.id, outputIndex }), blockType);
 						if (!block.emittedContent) {
-							const text = extractOutputText(item?.content);
+							const text = extractOutputText(item?.content) || extractRefusalText(item?.content);
 							if (text) {
 								emit(controller, "content_block_delta", {
 									type: "content_block_delta",
@@ -744,6 +787,10 @@ function transformResponsesStreamToAnthropic(
 								});
 								block.emittedContent = true;
 							}
+						}
+						if (!block.emittedCitations) {
+							emitCitations(block, (Array.isArray(item?.content) ? item.content : [])
+								.flatMap((part: any) => (part?.type === "output_text" && Array.isArray(part.annotations) ? part.annotations : [])));
 						}
 						stopBlock(block);
 						continue;
@@ -773,6 +820,7 @@ function transformResponsesStreamToAnthropic(
 				}
 
 				for (const block of blocks) stopBlock(block);
+				flushLateCitations();
 				hasToolUse ||= blocks.some((block) => block.type === "tool_use");
 				const usage = normalizeUsageToAnthropic(response?.usage);
 				const stopReason = mapResponsesStatusToAnthropicStopReason(response, hasToolUse);
@@ -819,6 +867,29 @@ function transformResponsesStreamToAnthropic(
 								delta: { type: "text_delta", text: payload.delta },
 							});
 							block.emittedContent = true;
+							continue;
+						}
+						// Messages has no refusal field: refusal text is the assistant's text.
+						if (normalizedEvent === "response.refusal.delta" && typeof payload?.delta === "string" && payload.delta.length > 0) {
+							const block = ensureBlock(aliasesFor({
+								itemId: payload?.item_id,
+								outputIndex: payload?.output_index ?? 0,
+							}), "text");
+							emit(controller, "content_block_delta", {
+								type: "content_block_delta",
+								index: block.index,
+								delta: { type: "text_delta", text: payload.delta },
+							});
+							block.emittedContent = true;
+							continue;
+						}
+						if (normalizedEvent === "response.output_text.annotation.added" && payload?.annotation) {
+							const aliases = aliasesFor({
+								itemId: payload?.item_id,
+								outputIndex: payload?.output_index ?? 0,
+							});
+							const closed = aliases.map((alias) => blocksByAlias.get(alias)).find((candidate) => candidate && !candidate.open);
+							emitCitations(closed ?? ensureBlock(aliases, "text"), [payload.annotation]);
 							continue;
 						}
 						if (normalizedEvent === "response.reasoning_text.delta" && typeof payload?.delta === "string") {
@@ -957,6 +1028,13 @@ function extractOutputText(content: any): string {
 	return content
 		.map((part) => extractTextPart(part))
 		.filter((part) => part.length > 0)
+		.join("");
+}
+
+function extractRefusalText(content: any): string {
+	if (!Array.isArray(content)) return "";
+	return content
+		.map((part) => (part?.type === "refusal" && typeof part.refusal === "string" ? part.refusal : ""))
 		.join("");
 }
 

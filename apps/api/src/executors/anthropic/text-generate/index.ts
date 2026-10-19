@@ -22,6 +22,7 @@ import {
 	createAnthropicToResponsesStreamTransformer,
 } from "./stream-transformer";
 import { SseParser } from "@core/sse-parser";
+import { toIRAnnotations } from "@protocols/shared/citations";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
@@ -1114,7 +1115,8 @@ export function anthropicMessagesToIR(
 	for (const block of json.content || []) {
 		if (block.type === "text") {
 			if (block.text.length > 0) {
-				contentParts.push({ type: "text", text: block.text });
+				const annotations = toIRAnnotations(block.citations);
+				contentParts.push({ type: "text", text: block.text, ...(annotations.length > 0 ? { annotations } : {}) });
 			}
 		} else if (block.type === "tool_use") {
 			// CRITICAL: Extract tool_use blocks

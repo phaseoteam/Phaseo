@@ -37,6 +37,7 @@ import {
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 import { normalizeGoogleServiceTier } from "../../google/shared/service-tier";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
+import { geminiGroundingToAnnotations, toChatAnnotations } from "@protocols/shared/citations";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
 import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
@@ -687,6 +688,10 @@ function geminiToIR(
 				}
 			}
 		}
+
+		const groundingAnnotations = geminiGroundingToAnnotations(candidate);
+		const firstText = contentParts.find((part): part is Extract<IRContentPart, { type: "text" }> => part.type === "text");
+		if (firstText && groundingAnnotations.length > 0) firstText.annotations = groundingAnnotations;
 
 		// Map finish reason (tool calls should surface as tool_calls, not stop)
 		let finishReason = mapGeminiFinishReason(candidate.finishReason);
@@ -1574,6 +1579,7 @@ export function transformStream(
 	let interactionToolCallCount = 0;
 	let interactionSawFunctionCall = false;
 	let sawUsableOutput = false;
+	const emittedAnnotationKeys = new Set<string>();
 
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
@@ -1939,6 +1945,16 @@ export function transformStream(
 					if (signatureDetails.length > 0) {
 						choice.delta.reasoningDetails = signatureDetails;
 					}
+					// Grounding citations, once each, as Chat url_citation annotations.
+					const annotations = geminiGroundingToAnnotations(cand).filter((annotation) => {
+						const key = `${index}:${JSON.stringify(annotation)}`;
+						if (emittedAnnotationKeys.has(key)) return false;
+						emittedAnnotationKeys.add(key);
+						return true;
+					});
+					if (annotations.length > 0) {
+						choice.delta.annotations = annotations;
+					}
 
 					if (Object.keys(choice.delta).length > 0 || finishReason) {
 						irChunk.choices.push(choice);
@@ -2135,6 +2151,8 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 		if (Array.isArray(reasoningDetails) && reasoningDetails.length > 0) {
 			delta.reasoning_details = reasoningDetails.map((detail: Record<string, any>, index: number) => ({ ...detail, index }));
 		}
+		const annotations = toChatAnnotations((c.delta as any).annotations);
+		if (annotations.length > 0) delta.annotations = annotations;
 		if (Array.isArray(c.delta.toolCalls) && c.delta.toolCalls.length > 0) {
 			delta.tool_calls = c.delta.toolCalls.map((tc) => ({
 				index: tc.index,

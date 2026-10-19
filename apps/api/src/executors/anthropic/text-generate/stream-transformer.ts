@@ -2,6 +2,7 @@
 // Why: Responses API expects specific event names and structure
 // How: Parse Anthropic events and emit normalized Responses API events
 
+import { toResponsesAnnotations } from "@protocols/shared/citations";
 import { SseParser } from "@core/sse-parser";
 import { ANTHROPIC_REASONING_FORMAT, sealReasoningState } from "@core/reasoning-state";
 import { gatewayStopEntry, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
@@ -136,7 +137,14 @@ export function createAnthropicToResponsesStreamTransformer(
 		data?: string;
 		name?: string;
 		input?: string;
+		citations?: any[];
 	}> = new Map();
+	// Claude cites a whole text block, so a URL citation spans the block's text.
+	const blockAnnotations = (block: { text?: string; citations?: any[] }) =>
+		toResponsesAnnotations(block.citations).map((annotation) =>
+			annotation.type === "url_citation"
+				? { ...annotation, start_index: 0, end_index: (block.text || "").length }
+				: annotation);
 
 	// A reasoning item for a thinking or redacted_thinking block. The signature
 	// (or redacted data) is sealed with its origin so the client can send it
@@ -230,6 +238,7 @@ export function createAnthropicToResponsesStreamTransformer(
 						data: typeof block.data === "string" ? block.data : undefined,
 						name: block.name || "",
 						input: "",
+						...(Array.isArray(block.citations) && block.citations.length > 0 ? { citations: [...block.citations] } : {}),
 					});
 
 					if (block.type === "thinking" || block.type === "redacted_thinking") {
@@ -282,6 +291,19 @@ export function createAnthropicToResponsesStreamTransformer(
 							output_index: block.outputIndex,
 							item_id: block.itemId,
 						});
+
+					} else if (delta.type === "citations_delta" && delta.citation && typeof delta.citation === "object") {
+						block.citations = [...(block.citations ?? []), delta.citation];
+						const [annotation] = toResponsesAnnotations([delta.citation]);
+						if (annotation) {
+							emitEvent(controller, "response.output_text.annotation.added", {
+								item_id: block.itemId,
+								output_index: block.outputIndex,
+								content_index: 0,
+								annotation_index: block.citations.length - 1,
+								annotation,
+							});
+						}
 
 					} else if (delta.type === "signature_delta") {
 						// Thinking signature (store for final snapshot)
@@ -353,7 +375,7 @@ export function createAnthropicToResponsesStreamTransformer(
 								content: [{
 									type: "output_text",
 									text: block.text || "",
-									annotations: [],
+									annotations: blockAnnotations(block),
 								}],
 							});
 						} else if (block.type === "thinking" || block.type === "redacted_thinking") {

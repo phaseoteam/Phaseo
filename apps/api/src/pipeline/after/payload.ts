@@ -562,8 +562,9 @@ function toOaiChatChoices(choices: GatewayCompletionsChoice[] | undefined) {
         index: c.index ?? 0,
         message: {
             ...c.message,
-            refusal: (c as any).refusal ?? null,
-            annotations: (c as any).annotations ?? [],
+            // The encoder puts refusal and annotations on the message, as Chat documents.
+            refusal: (c.message as any)?.refusal ?? (c as any).refusal ?? null,
+            annotations: (c.message as any)?.annotations ?? (c as any).annotations ?? [],
         },
         logprobs: c.logprobs ?? null,
         finish_reason: c.finish_reason ?? null,

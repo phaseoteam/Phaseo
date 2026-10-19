@@ -13,6 +13,7 @@ import { getProviderQuirks } from "./quirks";
 import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
 import { isSealedReasoningValue } from "@core/reasoning-state";
 import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/shared/reasoning";
+import { toIRAnnotations } from "@protocols/shared/citations";
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -488,7 +489,8 @@ function applySealedReasoningDetails(
 	for (const part of decoded.parts) {
 		const plain = contentParts.find((candidate): candidate is Extract<IRContentPart, { type: "reasoning_text" }> =>
 			candidate.type === "reasoning_text" && !candidate.reasoningFormat);
-		if (plain && !part.text) {
+		// The signed detail repeats the plain reasoning_content text, or carries none.
+		if (plain && (!part.text || part.text === plain.text)) {
 			Object.assign(plain, { ...part, text: plain.text });
 		} else {
 			contentParts.push(part);
@@ -672,21 +674,23 @@ export function openAIChatToIR(
 			const rawContent = extractChoiceContent(choice.message?.content);
 			const { main, reasoning } = applyChatResponseQuirks({ providerId: provider, choice, rawContent });
 
-			// Add reasoning as reasoning_text parts
-			if (reasoning.length > 0) {
-				for (const reasoningText of reasoning) {
-					contentParts.push({
-						type: "reasoning_text",
-						text: reasoningText,
-					});
-				}
+			// Add reasoning as reasoning_text parts. Without a provider quirk, the
+			// plain reasoning_content (or reasoning) field carries it.
+			const plainReasoning = reasoning.length === 0 ? plainChatReasoning(choice.message) : undefined;
+			for (const reasoningText of plainReasoning ? [plainReasoning] : reasoning) {
+				contentParts.push({
+					type: "reasoning_text",
+					text: reasoningText,
+				});
 			}
 
 			// Add main content as text part
 			if (main) {
+				const annotations = toIRAnnotations(choice.message?.annotations);
 				contentParts.push({
 					type: "text",
 					text: main,
+					...(annotations.length > 0 ? { annotations } : {}),
 				});
 			}
 		}
@@ -702,6 +706,9 @@ export function openAIChatToIR(
 				role: "assistant" as const,
 				content: contentParts,
 				toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
+				...(typeof choice.message?.refusal === "string" && choice.message.refusal.length > 0
+					? { refusal: choice.message.refusal }
+					: {}),
 			},
 			finishReason: mapFinishReason(choice.finish_reason),
 			logprobs: choice.logprobs,
@@ -748,6 +755,13 @@ export function openAIChatToIR(
 		...(provider === "perplexity" && Array.isArray(json.related_questions) ? { relatedQuestions: json.related_questions } : {}),
 		...(provider === "perplexity" && Array.isArray(json.reasoning_steps) ? { reasoningSteps: json.reasoning_steps } : {}),
 	};
+}
+
+function plainChatReasoning(message: any): string | undefined {
+	for (const value of [message?.reasoning_content, message?.reasoning]) {
+		if (typeof value === "string" && value.length > 0) return value;
+	}
+	return undefined;
 }
 
 function firstFiniteNumber(...values: unknown[]): number | undefined {
