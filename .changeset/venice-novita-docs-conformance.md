@@ -13,3 +13,5 @@ MiniMax-M3.1-Flash no longer receives `thinking: {type: "disabled"}`, which it r
 Mistral and Mistral EU no longer receive `user` or `web_search_options`, which their API rejects as unknown fields. Temperature is capped at the documented 1.5, `service_tier: "standard"` is sent as `standard_only`, and reasoning effort uses the documented `none` to `xhigh` (it allowed `max`, which Mistral does not accept). Fireworks now receives `service_tier: "default"` for standard.
 
 Upstage now receives `stream_options`, so streamed Solar requests return the usage they are billed from (Upstage sends no usage on a stream without `include_usage`). Asking for no reasoning sends `none` instead of being raised to `low`, which turned reasoning on.
+
+Groq receives `service_tier: "on_demand"` (Chat) or `"default"` (Responses) for standard, and gpt-oss on Groq no longer receives reasoning effort values it rejects with a 400. Wafer receives `low` for `minimal` effort, which its Chat Completions rejects, and its request fixes now also apply to Wafer ZDR.

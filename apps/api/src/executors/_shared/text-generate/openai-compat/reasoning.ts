@@ -74,8 +74,11 @@ export function applyReasoningParams(args: {
 }): void {
 	const reasoning = args.ir.reasoning;
 	if (!reasoning) return;
-	if (args.providerId === "wafer") {
-		const effort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+	if (args.providerId === "wafer" || args.providerId === "wafer-zdr") {
+		// Chat Completions accepts none, low, medium, high, xhigh or max; anything else,
+		// minimal included, is a 400 (https://docs.wafer.ai/serverless/models).
+		const requested = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		const effort = requested === "minimal" || requested === "instant" ? "low" : requested;
 		if (effort && effort !== "none") {
 			args.request.reasoning_effort = effort;
 		} else if (reasoning.enabled !== undefined || effort === "none") {

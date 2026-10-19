@@ -263,3 +263,11 @@ describe("Upstage stream usage", () => {
 		expect(providerAcceptsStreamOptions("upstage")).toBe(true);
 	});
 });
+
+// Wafer Chat Completions: minimal returns 400; none, low, medium, high, xhigh, max are accepted
+// (https://docs.wafer.ai/serverless/models). wafer-zdr is the same API with a ZDR header.
+describe("Wafer reasoning effort", () => {
+	it.each(["wafer", "wafer-zdr"])("sends %s minimal as low", (providerId) => {
+		expect(irToOpenAIChat(baseIR({ reasoning: { effort: "minimal" } as any }), "zai-org/GLM-5.3", providerId).reasoning_effort).toBe("low");
+	});
+});

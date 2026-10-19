@@ -119,3 +119,25 @@ describe("Groq quirks", () => {
 		expect(request.reasoning).toEqual({ effort: "low" });
 	});
 });
+
+// https://console.groq.com/docs/api-reference: Chat service_tier auto/on_demand/flex/performance,
+// Responses auto/default/flex; gpt-oss reasoning_effort low/medium/high only (others are a 400).
+describe("Groq documented values", () => {
+	it("names the standard tier per endpoint", () => {
+		const chat: Record<string, any> = { model: "openai/gpt-oss-120b", messages: [], service_tier: "standard" };
+		groqQuirks.transformRequest?.({ request: chat, ir: {} as any });
+		expect(chat.service_tier).toBe("on_demand");
+		const responses: Record<string, any> = { model: "openai/gpt-oss-120b", input: [], service_tier: "standard" };
+		groqQuirks.transformRequest?.({ request: responses, ir: {} as any });
+		expect(responses.service_tier).toBe("default");
+	});
+
+	it("leaves out effort values gpt-oss rejects", () => {
+		const chat: Record<string, any> = { model: "openai/gpt-oss-120b", messages: [], reasoning_effort: "none" };
+		groqQuirks.transformRequest?.({ request: chat, ir: {} as any });
+		expect(chat).not.toHaveProperty("reasoning_effort");
+		const kept: Record<string, any> = { model: "openai/gpt-oss-120b", messages: [], reasoning_effort: "high" };
+		groqQuirks.transformRequest?.({ request: kept, ir: {} as any });
+		expect(kept.reasoning_effort).toBe("high");
+	});
+});
