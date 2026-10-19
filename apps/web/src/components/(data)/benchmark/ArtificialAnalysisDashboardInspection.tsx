@@ -28,21 +28,22 @@ export function useDashboardInspection(regionRef: RefObject<HTMLElement | null>)
  return { selection: temporary ?? pinned, pinned, inspect, leave, keep, pin, clear };
 }
 
-export function DashboardInspectionCard({ row, title, metric, unit, pinned, keep, leave, close }: {
- row: DashboardRow; title: string; metric: number | null; unit: string; pinned: boolean;
+export function DashboardInspectionCard({ row, comparison, comparisonMetric, title, metric, unit, pinned, keep, leave, close }: {
+ row: DashboardRow; comparison?: DashboardRow; comparisonMetric?: number | null; title: string; metric: number | null; unit: string; pinned: boolean;
  keep: () => void; leave: () => void; close: () => void;
 }) {
  const tx = useTranslations(), locale = useLocale();
- const metrics: [string, number | null, string][] = [
- [tx("Catalogue.rankings.benchmarkMetrics.intelligence"), row.intelligence, "score"],
- [title, metric, unit],
- [tx("Catalogue.benchmarks.explorer.tokensPerTask"), row.tokensPerTask, "tokens"],
- [tx("Catalogue.benchmarks.explorer.costPerTask"), row.costPerTask, "usd"],
- [tx("Catalogue.benchmarks.explorer.timePerTask"), row.timePerTask, "seconds"],
+ const metrics: [string, number | null, string, number | null][] = [
+ [tx("Catalogue.rankings.benchmarkMetrics.intelligence"), row.intelligence, "score", comparison?.intelligence ?? null],
+ [title, metric, unit, comparisonMetric ?? null],
+ [tx("Catalogue.benchmarks.explorer.tokensPerTask"), row.tokensPerTask, "tokens", comparison?.tokensPerTask ?? null],
+ [tx("Catalogue.benchmarks.explorer.costPerTask"), row.costPerTask, "usd", comparison?.costPerTask ?? null],
+ [tx("Catalogue.benchmarks.explorer.timePerTask"), row.timePerTask, "seconds", comparison?.timePerTask ?? null],
  ];
- return <div data-export-hide data-pinned={pinned || undefined} role="status" onMouseEnter={keep} onMouseLeave={leave} onFocus={keep} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) leave(); }} className="w-64 max-w-full rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md">
- <div className="flex items-start gap-2"><Logo id={row.creatorId} alt="" width={18} height={18} /><div className="min-w-0 flex-1"><p className="font-semibold">{row.modelName}</p><p className="mt-1 text-muted-foreground">{localizedBenchmarkConfiguration(row.effort, tx)}</p></div><Button variant="ghost" size="icon" className="-mr-1 -mt-1 size-7" aria-label={tx("Common.accessibility.close")} onClick={close}>×</Button></div>
- <dl className="my-3 space-y-2">{metrics.filter(([label], index) => metrics.findIndex((item) => item[0] === label) === index).map(([label, value, kind]) => value !== null && Number.isFinite(value) ? <div key={label} className="flex justify-between gap-4"><dt className="text-muted-foreground">{label}</dt><dd className="shrink-0 font-medium tabular-nums">{new Intl.NumberFormat(locale, { maximumSignificantDigits: 4, ...(kind === "usd" ? { style: "currency", currency: "USD" } : kind === "tokens" ? { notation: "compact" } : {}) }).format(value)}{kind === "seconds" ? " s" : ""}</dd></div> : null)}</dl>
+ const format = (value: number | null, kind: string) => value === null || !Number.isFinite(value) ? "—" : new Intl.NumberFormat(locale, { maximumSignificantDigits: 4, ...(kind === "usd" ? { style: "currency", currency: "USD" } : kind === "tokens" ? { notation: "compact" } : {}) }).format(value) + (kind === "seconds" ? " s" : "");
+ return <div data-export-hide data-pinned={pinned || undefined} role="status" onMouseEnter={keep} onMouseLeave={leave} onFocus={keep} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) leave(); }} className={`${comparison ? "w-[22rem]" : "w-64"} max-w-full rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md`}>
+ <div className="flex items-start gap-2"><Logo id={row.creatorId} alt="" width={18} height={18} /><div className="min-w-0 flex-1"><p className="font-semibold">{row.modelName}</p><p className="mt-1 text-muted-foreground">{localizedBenchmarkConfiguration(row.effort, tx)}{pinned ? ` · ${tx("Catalogue.benchmarks.explorer.pinned")}` : ""}</p></div><Button variant="ghost" size="icon" className="-mr-1 -mt-1 size-7" aria-label={tx("Common.accessibility.close")} onClick={close}>×</Button></div>
+ {comparison ? <div className="my-3"><p className="mb-2 truncate text-muted-foreground">{comparison.sourceName}</p><table className="w-full text-right tabular-nums"><thead className="text-[10px] font-normal text-muted-foreground"><tr><th scope="col" className="sr-only">{tx("Catalogue.benchmarks.explorer.score")}</th><th scope="col" className="pb-2">{tx("Catalogue.benchmarks.explorer.selected")}</th><th scope="col" className="pb-2 pl-2">{tx("Catalogue.benchmarks.explorer.hovered")}</th><th scope="col" className="pb-2 pl-2">{tx("Catalogue.benchmarks.explorer.multiplier")}</th></tr></thead><tbody>{metrics.filter(([label], index) => metrics.findIndex((item) => item[0] === label) === index).filter(([, value,, reference]) => value !== null || reference !== null).map(([label, value, kind, reference]) => <tr key={label}><th scope="row" className="py-1 pr-2 text-left text-[11px] font-normal text-muted-foreground">{label}</th><td>{format(reference, kind)}</td><td className="pl-2 font-medium">{format(value, kind)}</td><td className="pl-2 text-muted-foreground">{value !== null && reference !== null && reference !== 0 && Number.isFinite(value / reference) ? new Intl.NumberFormat(locale, { maximumSignificantDigits: 3 }).format(value / reference) + "×" : "—"}</td></tr>)}</tbody></table></div> : <dl className="my-3 space-y-2">{metrics.filter(([label], index) => metrics.findIndex((item) => item[0] === label) === index).map(([label, value, kind]) => value !== null && Number.isFinite(value) ? <div key={label} className="flex justify-between gap-4"><dt className="text-muted-foreground">{label}</dt><dd className="shrink-0 font-medium tabular-nums" title={String(value)}>{format(value, kind)}</dd></div> : null)}</dl>}
  {row.sourceSlug ? <a href={`https://artificialanalysis.ai/models/${row.sourceSlug}`} target="_blank" rel="noreferrer" className="underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring">Artificial Analysis ↗</a> : null}
  </div>;
 }

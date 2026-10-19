@@ -1862,6 +1862,10 @@
 	},
 	"benchmarks": {
 		"explorer": {
+			"pinned": "Épinglé",
+			"selected": "Sélectionné",
+			"hovered": "Survolé",
+			"multiplier": "Rapport",
 			"bars": "Barres",
 			"lines": "Lignes",
 			"comparisons": "Comparaisons",

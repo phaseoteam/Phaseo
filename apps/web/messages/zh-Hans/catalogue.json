@@ -1862,6 +1862,10 @@
 	},
 	"benchmarks": {
 		"explorer": {
+			"pinned": "已固定",
+			"selected": "已选",
+			"hovered": "悬停",
+			"multiplier": "比率",
 			"bars": "柱状图",
 			"lines": "折线图",
 			"comparisons": "对比",

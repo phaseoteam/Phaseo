@@ -1862,6 +1862,10 @@
 	},
 	"benchmarks": {
 		"explorer": {
+			"pinned": "固定",
+			"selected": "選択",
+			"hovered": "ホバー",
+			"multiplier": "比率",
 			"bars": "棒グラフ",
 			"lines": "折れ線",
 			"comparisons": "比較",

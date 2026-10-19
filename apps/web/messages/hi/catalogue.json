@@ -1862,6 +1862,10 @@
 	},
 	"benchmarks": {
 		"explorer": {
+			"pinned": "पिन किया गया",
+			"selected": "चयनित",
+			"hovered": "होवर",
+			"multiplier": "अनुपात",
 			"bars": "स्तंभ",
 			"lines": "रेखाएँ",
 			"comparisons": "तुलना",

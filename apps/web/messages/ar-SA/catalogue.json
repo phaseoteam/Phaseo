@@ -1862,6 +1862,10 @@
 	},
 	"benchmarks": {
 		"explorer": {
+			"pinned": "مثبّت",
+			"selected": "المحدد",
+			"hovered": "عند التمرير",
+			"multiplier": "النسبة",
 			"bars": "أعمدة",
 			"lines": "خطوط",
 			"comparisons": "المقارنات",

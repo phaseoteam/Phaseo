@@ -57,3 +57,14 @@ it("shows published zero values, omits absent metrics, and links the exact sourc
  act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
  expect(close).toHaveBeenCalledTimes(1);
 });
+it("compares a hovered configuration with a pin without inventing ratios for zero baselines", () => {
+ const row: DashboardRow = { id: "high", modelId: "lab/model", modelName: "Model", sourceName: "Model high", creatorId: "lab", colour: null, effort: "high", intelligence: 40, tokensPerTask: 200, costPerTask: 0, totalCost: null, totalTokens: null, timePerTask: null, benchmarks: {}, capabilities: {} };
+ const comparison = { ...row, id: "low", sourceName: "Model low", effort: "low", intelligence: 20, tokensPerTask: 100 };
+ act(() => root.render(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><DashboardInspectionCard row={row} comparison={comparison} comparisonMetric={100} title="Output tokens per task" metric={200} unit="tokens" pinned={false} keep={() => {}} leave={() => {}} close={() => {}} /></NextIntlClientProvider>));
+ const rows = [...container.querySelectorAll("tbody tr")];
+ expect(rows).toHaveLength(3);
+ expect(rows[0].textContent).toContain("20402×");
+ expect(rows[1].textContent).toContain("1002002×");
+ expect(rows[2].querySelector("td:last-child")?.textContent).toBe("—");
+ expect(container.textContent).not.toMatch(/Infinity|NaN/);
+});
