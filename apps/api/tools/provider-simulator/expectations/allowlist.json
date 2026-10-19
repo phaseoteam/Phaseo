@@ -18,55 +18,6 @@
 			}
 		},
 		{
-			"id": "billing-tts-unbilled",
-			"finding": "N2",
-			"fixGroup": "billing-2",
-			"justification": "Speech responses arrive as kind 'stream' while ctx.stream is false, so finalizeRequest ends in the passthrough with no pricing, charge or success audit (pipeline/after/index.ts:349-375, pipeline/surfaces/non-text.ts:575).",
-			"match": {
-				"family": "audio.speech",
-				"kind": [
-					"billing_under",
-					"dropped"
-				]
-			}
-		},
-		{
-			"id": "billing-stt-estimates",
-			"finding": "H3",
-			"fixGroup": "billing-2",
-			"justification": "Speech-to-text is billed from file-size estimates; OpenAI's reported usage.seconds and input_token_details are ignored (providers/openai/endpoints/audio-transcription-usage.ts:72-157).",
-			"match": {
-				"family": "re:^audio\\.(transcription|translations)$",
-				"kind": [
-					"billing_under",
-					"billing_over",
-					"wrong_value"
-				]
-			}
-		},
-		{
-			"id": "billing-anthropic-web-search",
-			"finding": "N21",
-			"fixGroup": "billing-2",
-			"justification": "Anthropic server_tool_use.web_search_requests never becomes the native_web_search_requests meter on any surface, so Claude web searches are not billed.",
-			"match": {
-				"provider": "anthropic",
-				"kind": "billing_under",
-				"path": "billing.meter.native_web_search_requests"
-			}
-		},
-		{
-			"id": "billing-alibaba-double-read",
-			"finding": "N23",
-			"fixGroup": "billing-2",
-			"justification": "Alibaba Qwen 3.8 Max bills the one reported prompt_tokens_details.cached_tokens twice, on both cached_read_text_tokens and implicit_cached_input_text_tokens (traced on the preview: 20,011 tokens on each meter), on every surface. The pricing sweep found the same defect on the card.",
-			"match": {
-				"provider": "alibaba-cloud",
-				"kind": "billing_over",
-				"path": "billing.read"
-			}
-		},
-		{
 			"id": "billing-chat-cached-reads",
 			"finding": "N3",
 			"fixGroup": "billing-2",
@@ -80,22 +31,6 @@
 					"wrong_value"
 				],
 				"path": "re:^(billing\\.(read|uncachedInput|write|write5m|write1h|meter\\.(input_text_tokens|cached_read_text_tokens))|billing|client\\.(body\\.)?usage\\.(prompt_tokens|prompt_tokens_details\\.(cached_tokens|cache_write_tokens)))$"
-			}
-		},
-		{
-			"id": "billing-e2e-chat-cached-reads",
-			"finding": "N3",
-			"fixGroup": "billing-2",
-			"justification": "End-to-end view of N3 and of the residual Claude cache accounting on Chat and Responses: cache reads billed as input, cache writes not billed.",
-			"match": {
-				"layer": "e2e",
-				"caseId": "re:^billing\\.(anthropic|openai|deepinfra)\\.(chat|responses)",
-				"kind": [
-					"billing_under",
-					"billing_over",
-					"dropped",
-					"wrong_value"
-				]
 			}
 		},
 		{
@@ -115,22 +50,6 @@
 			}
 		},
 		{
-			"id": "billing-e2e-messages-usage",
-			"finding": "N4",
-			"fixGroup": "billing-2",
-			"justification": "End-to-end view of N4: cache reads and writes missing from Messages usage and billing.",
-			"match": {
-				"layer": "e2e",
-				"caseId": "re:^billing\\.[a-z-]+\\.messages",
-				"kind": [
-					"billing_under",
-					"billing_over",
-					"dropped",
-					"wrong_value"
-				]
-			}
-		},
-		{
 			"id": "billing-responses-claude-cache",
 			"finding": "B2",
 			"fixGroup": "billing-2",
@@ -144,56 +63,6 @@
 					"wrong_value"
 				],
 				"path": "re:^(billing\\.(read|uncachedInput|write|write5m|write1h)|client\\.usage\\.(input_tokens|input_tokens_details\\.(cached_tokens|cache_write_tokens)))$"
-			}
-		},
-		{
-			"id": "billing-truncated-unbilled",
-			"finding": "N6",
-			"fixGroup": "billing-2",
-			"justification": "A Responses-dialect upstream that ends with response.incomplete produces no final chunk and no usage for Chat and Messages clients, so length- and filter-truncated answers are not billed (stream-transforms.ts:384-399).",
-			"match": {
-				"caseId": "re:^resp:finish:(length|content_filter)$",
-				"kind": [
-					"billing_under",
-					"dropped"
-				]
-			}
-		},
-		{
-			"id": "billing-fast-plan",
-			"finding": "N22",
-			"fixGroup": "billing-2",
-			"justification": "Price cards from the request-context RPC keep the plan name 'fast' (pipeline/before/schemas.ts:136, context.sql:579) while the engine selects 'priority' (pipeline/after/pricing.ts:45,200), so fast-tier requests bill at standard or zero.",
-			"match": {
-				"layer": "pricing",
-				"caseId": "re:rule\\.fast"
-			}
-		},
-		{
-			"id": "billing-pricing-engine",
-			"finding": "N23",
-			"fixGroup": "billing-2",
-			"justification": "Engine-side pricing defects found by the sweep: plans named 'default' or 'early_access' never selected, unreadable {key, operator} conditions, unit prices truncated below a nano, cache writes without a TTL split billed at the 5m rate, Bedrock long-context rules that require a 1h TTL, Alibaba implicit and explicit hits both billed, and the thinking-mode answer price. Limited to the providers and case families the 18 October sweep found, so a pricing regression on any other card fails the gate.",
-			"match": {
-				"layer": "pricing",
-				"kind": [
-					"billing_under",
-					"billing_over",
-					"invented",
-					"dropped"
-				],
-				"path": "re:^billing.",
-				"provider": [
-					"alibaba-cloud",
-					"amazon-bedrock",
-					"google-vertex",
-					"baidu",
-					"deepinfra",
-					"moonshotai",
-					"upstage",
-					"xiaomi"
-				],
-				"caseId": "re:^(text.generate|text.embed|embeddings|ocr):(documented|rule.standard.|fallback.cache-write.)"
 			}
 		},
 		{
@@ -215,16 +84,6 @@
 			"match": {
 				"layer": "pricing",
 				"path": "re:^catalogue\\."
-			}
-		},
-		{
-			"id": "billing-usage-reasoning-field",
-			"finding": "N25",
-			"fixGroup": "billing-2",
-			"justification": "Chat usage reports reasoning as a top-level reasoning_tokens instead of completion_tokens_details.reasoning_tokens, which OpenAI clients read.",
-			"match": {
-				"kind": "dropped",
-				"path": "client.usage.completion_tokens_details.reasoning_tokens"
 			}
 		},
 		{
@@ -252,17 +111,6 @@
 			}
 		},
 		{
-			"id": "stream-midstream-e2e",
-			"finding": "N7",
-			"fixGroup": "stream-2",
-			"justification": "End-to-end view of N7: the buffered client receives 200 and a success audit after a mid-stream failure.",
-			"match": {
-				"layer": "e2e",
-				"caseId": "re:^failover",
-				"path": "re:^(client\\.status|billing\\.successAudits)$"
-			}
-		},
-		{
 			"id": "stream-grammar",
 			"finding": "N26",
 			"fixGroup": "stream-2",
@@ -285,19 +133,6 @@
 			}
 		},
 		{
-			"id": "stream-tool-ids",
-			"finding": "N12",
-			"fixGroup": "stream-2",
-			"justification": "Gemini functionCall ids are replaced by gateway ids and Vertex Messages clients lose tool arguments; tool results then cannot reference the upstream id.",
-			"match": {
-				"kind": "dropped",
-				"path": [
-					"client.tool_call.id",
-					"client.tool_call.arguments"
-				]
-			}
-		},
-		{
 			"id": "reasoning-roundtrip",
 			"finding": "N8",
 			"fixGroup": "reasoning-2",
@@ -305,39 +140,6 @@
 			"match": {
 				"kind": "dropped",
 				"path": "re:^(client\\.reasoning\\.|roundtrip\\.upstream\\.)"
-			}
-		},
-		{
-			"id": "request-rejected-sdk-shapes",
-			"finding": "N10",
-			"fixGroup": "request-2",
-			"justification": "Chat zod schema rejects assistant content: null and file parts (core/schemas.ts:549-557,818-823), which OpenAI SDKs send.",
-			"match": {
-				"kind": "error_mapping",
-				"path": "client.status",
-				"caseId": "re:^chat\\.content\\."
-			}
-		},
-		{
-			"id": "request-messages-params",
-			"finding": "N11",
-			"fixGroup": "request-2",
-			"justification": "Documented /v1/messages parameters (session_id, reasoning, provider_options, cache_control, service_tier values) return 400 unknown_param or a schema error (pipeline/before/textParamPolicy.ts:287-317).",
-			"match": {
-				"kind": "error_mapping",
-				"path": "client.status",
-				"caseId": "re:^messages\\.(param|cache)\\."
-			}
-		},
-		{
-			"id": "request-previous-response-id",
-			"finding": "N28",
-			"fixGroup": "request-2",
-			"justification": "Since #2965, previous_response_id returns 400 because the gateway forces store=false upstream, but ResponsesRequest in our OpenAPI spec still documents it. Either the docs or the behaviour should change.",
-			"match": {
-				"kind": "error_mapping",
-				"path": "client.status",
-				"caseId": "re:^responses\\.param\\.previous_response_id"
 			}
 		},
 		{
@@ -449,56 +251,14 @@
 			}
 		},
 		{
-			"id": "routing-429-as-502",
-			"finding": "N31",
-			"fixGroup": "routing-errors-2",
-			"justification": "An upstream 429 reaches the client as 502 with the right Retry-After on every dialect and for BYOK (pipeline/execute/guards.ts:631, pipeline/execute/http.ts:31); BYOK 429s also drop the X-Phaseo-Upstream-RateLimit headers.",
-			"match": {
-				"layer": "e2e",
-				"caseId": "re:^(errors\\.|byok)",
-				"kind": [
-					"error_mapping",
-					"dropped"
-				]
-			}
-		},
-		{
-			"id": "routing-model-fallback",
-			"finding": "N32",
-			"fixGroup": "routing-errors-2",
-			"justification": "An upstream 400 becomes a gateway 502, which request-level model fallback treats as retryable, so a client error is retried on another model and billed (pipeline/index.ts:25); after a fallback the response model is the provider's echo.",
-			"match": {
-				"layer": "e2e",
-				"caseId": "re:^(request|dynamic)",
-				"kind": [
-					"wrong_value",
-					"billing_over"
-				]
-			}
-		},
-		{
-			"id": "routing-zero-max-output",
-			"finding": "N37",
-			"fixGroup": "routing-errors-2",
-			"justification": "filterProvidersByTokenLimits treats max_output_tokens 0 as a limit of zero rather than unknown (pipeline/before/capabilityValidation.ts:365-371), so a route stored with 0 (Parasail gemma-4-26b-a4b-it in the catalogue snapshot) rejects every request that sets max_tokens, including every /v1/messages request. Needs a production readback of routes stored with 0.",
+			"id": "request-executor-file-url-rejected",
+			"finding": "N30",
+			"fixGroup": "request-2",
+			"justification": "Chat-dialect providers return an explicit 400 unsupported_parameter for a Responses input_file sent by URL, because Chat Completions has no file-by-URL field (executors/_shared/text-generate/openai-compat/transform-chat.ts:458-463, from #2993). Before #2993 the document was dropped and the model answered without it. The rejection is correct; it happens in the executor after routing instead of in the capability check.",
 			"match": {
 				"kind": "error_mapping",
-				"path": [
-					"client.status",
-					"upstream.call"
-				],
-				"provider": "parasail",
-				"model": "google/gemma-4-26b-a4b-it"
-			}
-		},
-		{
-			"id": "routing-presets",
-			"finding": "N33",
-			"fixGroup": "request-2",
-			"justification": "Preset system prompts are dropped on /v1/messages without a client system (presetMerge.ts:37 vs anthropic-messages/decode.ts:165-213), and the zod temperature default overrides preset defaults on Chat.",
-			"match": {
-				"layer": "e2e",
-				"caseId": "re:^preset"
+				"path": "upstream.call",
+				"caseId": "responses.content.part.input_file_url"
 			}
 		},
 		{

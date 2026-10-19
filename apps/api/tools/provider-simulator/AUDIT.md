@@ -1,8 +1,8 @@
-# Provider audit, 2026-10-17 (updated 2026-10-18)
+# Provider audit, 2026-10-17 (updated 2026-10-19)
 
 This audit covers every registered text provider of the gateway. It used the provider simulator in this folder, plus code reading. Paths are relative to `apps/api/src` unless they say otherwise.
 
-- **Base:** `origin/main` at `6551de1fa3` for the 17 October sections; `6dd0d405ce` for the 18 October run.
+- **Base:** `origin/main` at `6551de1fa3` for the 17 October sections; `6dd0d405ce` for the 18 October run; `eba603bb65` for the 19 October run.
 - **Live calls:** none were made to providers or to the Phaseo API.
 
 Each finding is marked with how it was established:
@@ -11,7 +11,66 @@ Each finding is marked with how it was established:
 - **traced:** established by reading the code.
 - **needs-live:** only a live call can settle it, because it depends on what the provider actually accepts or returns.
 
-The 18 October expected-outcome run comes first. The 17 October audit it updates follows from "Scope and limits" onwards; its finding numbers (N1–N20, B1–B4, R1–R8) are reused, and N21–N37 are new.
+The 19 October run after the second fix stack comes first, then the 18 October expected-outcome run. The 17 October audit they update follows from "Scope and limits" onwards; its finding numbers (N1–N20, B1–B4, R1–R8) are reused, and N21–N37 are new.
+
+## After the second fix stack, 19 October
+
+The 17 fix PRs proposed below (#2982–#3000) are merged. This run is the same simulator on the result.
+
+- **Base:** `origin/main` at `eba603bb65`, after #2983, #2991, #3000, #2993, #2987, #2984, #2986, #2995, #2996, #2982, #2985, #2997, #2988, #2990, #2994, #2992 and #2999.
+- **Live calls:** none.
+- **Run:** `pnpm --filter @phaseo/gateway-api simulate:providers` exits 0 in about 8 min (pricing and end-to-end 59 s, executor layer 7 min 6 s).
+
+### Gate result
+
+9,033 mismatches (executor 8,734, end-to-end 10, pricing 289), all matched by the 25 entries in `expectations/allowlist.json`; none unused. 19 entries were removed because their fixes landed. One was added (`request-executor-file-url-rejected`, below).
+
+### Before and after
+
+| | 18 October (`6dd0d405ce`) | 19 October (`eba603bb65`) | Change |
+|---|---|---|---|
+| Mismatches, all layers | 24,484 | 9,033 | −15,451 (−63%) |
+| Executor layer | 24,022 | 8,734 | −15,288 |
+| End-to-end | 95 | 10 | −85 |
+| Pricing sweep | 367 | 289 | −78 |
+| Executor-layer groups | 855 | 696 | −159 |
+| Simulated under-billing, all responses | $26.34 | $0.24 | −99% |
+| Simulated over-billing, all responses | $1.32 | $0.0002 | |
+| Allow-list entries | 43 | 25 | −18 |
+
+Billing figures use the same method as on 18 October: the sum over every simulated response at the "max" usage of about 128k tokens per response, so they show relative size, not revenue.
+
+**Retired entirely** (no mismatches left): N4 and N3 cache usage on every surface except one AkashML route, N6 truncated answers, N22 fast plan, N23 pricing engine and the Alibaba double read, N21 Claude web search, N2 and H3 speech and transcription billing, N25 reasoning field, N12 tool ids, N10 and N11 rejected SDK shapes and `/v1/messages` parameters, N28 `previous_response_id` (now a clear 400 that says the gateway does not store responses), N31 429 mapping, N32 model fallback after a 400, N33 presets, N37 zero output limit, and the end-to-end mid-stream and cache cases.
+
+**Mostly fixed** (entry kept for the residual):
+
+| Entry | 18 October | 19 October | What is left |
+|---|---|---|---|
+| `request-content-values` (N29) | 6,237 | 753 | Message `name` dropped (126); tool and tool-parameter descriptions dropped on some providers; a second system message's content changes type |
+| `stream-grammar` (N26) | 2,010 | 4 | Vertex Gemini refusal streams (fixed by the follow-up below) |
+| `stream-citations-refusal` (N15) | 1,450 | 376 | Citations lost on `/v1/messages` (308); refusal text lost on every surface (64) |
+| `stream-midstream-errors` (N7) | 1,397 | 20 | Vertex Gemini: a mid-stream error still ends as a successful finish |
+| `stream-finish-mapping` (N5) | 1,324 | 16 | Vertex Gemini refusals (fixed by the follow-up below) |
+| `request-invented-defaults` (N9, N13) | 720 | 150 | Mostly `stream_options` sent unasked (102); `store`, `metadata` and `inference_geo` on a few providers |
+| `reasoning-roundtrip` (N8) | 167 | 4 | Buffered `/v1/messages` on Bedrock loses the thinking signature and `redacted_thinking` |
+| `billing-gemini-thinking` (N1) | 123 | 20 | AI Studio leaves 401 tool-use prompt tokens out of input; Vertex Messages bills image and audio prompt tokens as text; Vertex refusals (follow-up below) |
+| `billing-messages-usage`, `billing-chat-cached-reads`, `billing-responses-claude-cache` | 434, 144, 29 | 2 each | AkashML `qwen/qwen3.5-35b-a3b`: the card has no cache-read row, and cached reads bill $0 instead of at the input rate |
+
+`request-unsupported-forwarded` (4,353 → 3,505) and `request-params-dropped-or-changed` (2,108 → 2,041) moved less. #2999 drops and reports the parameters the capability check knows are unsupported; the rest are parameters the route data does not describe.
+
+### Regression found and fixed
+
+Since #2990, a Gemini stream that a safety filter blocks fails instead of ending with `content_filter`. Gemini sends `finishReason: SAFETY` or `PROHIBITED_CONTENT` with no content, which the empty-response guard from #1190 (`executors/google-ai-studio/text-generate/index.ts`) reports as `google_empty_response`; #2990 made that event fail the request. Streaming Chat clients got `finish_reason: "error"`, and buffered Vertex Gemini requests failed with `upstream_stream_failure` and were not billed ($0.22 of the $0.24 under-billing above). The existing entries matched these mismatches, so the gate did not fail; they showed up as new groups in `results/EXPECTATIONS.md`.
+
+The follow-up PR (fix/gemini-safety-block-stream-20261019) counts a `content_filter` finish as an answer and ends a prompt blocked through `promptFeedback.blockReason` the same way. With it applied, the Vertex-only run gives `content_filter` on Chat, `incomplete` with `content_filter` on Responses and `refusal` on Messages, all billed, and Vertex under-billing of $0; the gate still passes.
+
+### New allow-list entry
+
+`request-executor-file-url-rejected` (112 mismatches, 69 providers): Chat-dialect providers now return an explicit 400 `unsupported_parameter` for a Responses `input_file` sent by URL, because Chat Completions has no file-by-URL field (#2993). Before, the document was dropped and the model answered without it. The rejection is correct; it happens in the executor after routing rather than in the capability check, so it is filed under N30.
+
+### Still needs a live test
+
+The live checks from 18 October still apply, except N37 (fixed in code by #2984; a read-only readback of routes stored with `max_output_tokens = 0` is still worth doing) and N8 for Anthropic (streams and buffered responses now keep the signature; Bedrock buffered Messages does not). Add the `X-Phaseo-Dropped-Params` header from #2999: one request with an unsupported parameter pinned to a provider that lacks it.
 
 ## Expected-outcome run, 18 October
 
@@ -102,7 +161,7 @@ Counts are mismatches and distinct providers on this run. Billing deltas are sum
 
 ### Proposed second fix round
 
-These are proposals; nothing in this branch changes gateway behaviour. Estimates are for one engineer with the simulator as the regression test, including tests.
+These were merged as #2982–#3000 on 18–19 October; see "After the second fix stack" above for the result. Nothing in this branch changes gateway behaviour. Estimates are for one engineer with the simulator as the regression test, including tests.
 
 Order: billing first, because it loses money on every request type; then streams; then request hygiene, which needs the policy decision below. Each PR removes its allow-list entries, so the gate proves the fix.
 
@@ -124,6 +183,8 @@ Order: billing first, because it loses money on every request type; then streams
 ### Policy question
 
 `apps/api/AGENTS.md` says unsupported parameters should be rejected explicitly, not dropped or forwarded. Our public docs only say support varies. Today the gateway forwards parameters the provider's API does not define (N14: 4,353 mismatches on 92 providers), drops some it does define, and rejects a few in the executor after routing (N30). The expectations accept rejection or removal and flag only forwarding. A decision is needed before request-2: reject before routing (strict, clear errors, but breaks clients that send OpenAI defaults everywhere), or drop silently with a `phaseo.dropped_params` notice (lenient).
+
+**Decided 18 October:** drop and report. #2999 removes parameters the route does not support and lists them in the `X-Phaseo-Dropped-Params` response header.
 
 ### Still needs a live test
 

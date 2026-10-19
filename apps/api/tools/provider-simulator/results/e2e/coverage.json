@@ -158,8 +158,7 @@
         "preset.chat.system-and-defaults",
         "preset.chat.request-overrides-default",
         "dynamic.model-fallback-after-503",
-        "request.models-fallback-after-503",
-        "request.models-no-fallback-after-400"
+        "request.models-fallback-after-503"
       ]
     },
     {

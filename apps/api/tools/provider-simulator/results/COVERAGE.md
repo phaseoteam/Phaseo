@@ -57,15 +57,15 @@ Text executors with no upstream request in the executor layer: private-model, sc
 
 | Surface | Documented | Reached an upstream provider for at least one route | Never reached (all routes rejected or dropped) |
 |---|---|---|---|
-| chat | 36 | 32/36 (89%) | store, usage, meta, echo_upstream_request |
+| chat | 36 | 33/36 (92%) | usage, meta, echo_upstream_request |
 | responses | 28 | 27/28 (96%) | previous_response_id |
-| messages | 16 | 13/16 (81%) | session_id, reasoning, provider_options |
+| messages | 16 | 16/16 (100%) | – |
 
 Gateway-only parameters (`session_id`, `usage`, `meta`, `echo_upstream_request`, `debug`) are expected never to reach a provider.
 
 ## Executor-layer cases per route
 
-Client scenarios: 225 (base 3, param 134, content 25, tools 17, cache 8, reasoning 8, stream 3, agent 27), plus BYOK on each surface, a tool-loop round trip per surface, and response variants (text, max usage, four finish reasons, refusal, mid-stream error) on each surface in both modes; HTTP error variants on chat.
+Client scenarios: 218 (base 3, param 127, content 25, tools 17, cache 8, reasoning 8, stream 3, agent 27), plus BYOK on each surface, a tool-loop round trip per surface, and response variants (text, max usage, four finish reasons, refusal, mid-stream error) on each surface in both modes; HTTP error variants on chat.
 
 ## Not covered
 
