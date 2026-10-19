@@ -29,7 +29,7 @@ export default function ArtificialAnalysisDashboard({ rows, footer }: { rows: Da
 	const [exportError, setExportError] = useState(false);
 	const viewport = useRef<HTMLDivElement>(null);
 	const navigationViewport = useRef<HTMLDivElement>(null);
-	const initialized = useRef(false);
+	const displayedChart = useRef<string | null>(null);
 	const [filters, setFilters] = useQueryStates({ aaModels: parseAsArrayOf(parseAsString), aaEffort: parseAsString.withDefault(""), aaEfforts: parseAsArrayOf(parseAsString), aaCreator: parseAsString.withDefault(""), aaLayout: parseAsString.withDefault("overview"), aaBench: parseAsString.withDefault("terminalBench40"), aaDomain: parseAsString.withDefault("financeAndAccounting"), aaSection: parseAsString.withDefault("comparisons"), aaCompare: parseAsString.withDefault("cost"), aaMeasure: parseAsString.withDefault("task"), aaChart: parseAsString.withDefault(""), aaLabels: parseAsString.withDefault("true"), aaGrouped: parseAsString.withDefault("true"), aaSort: parseAsString.withDefault("asc"), aaScatter: parseAsString.withDefault("") }, { shallow: true, scroll: false });
 	const legacyChart = filters.aaSection === "tokenUsage" ? filters.aaMeasure === "total" ? "total-tokens" : "tokens-task" : filters.aaSection === "cost" ? filters.aaMeasure === "total" ? "total-cost" : "cost-task" : filters.aaSection === "benchmarks" || filters.aaSection === "capabilities" ? filters.aaSection : filters.aaCompare === "time" ? "time-intelligence" : "cost-intelligence";
 	const active = chartIds.includes(filters.aaChart as ChartId) ? filters.aaChart as ChartId : legacyChart;
@@ -54,12 +54,12 @@ export default function ArtificialAnalysisDashboard({ rows, footer }: { rows: Da
 		const target = container?.querySelector<HTMLElement>(`[data-aa-chart="${id}"]`);
 		if (!container || !target) return;
 		container.scrollTo({ top: target.offsetTop - container.offsetTop, behavior });
+		displayedChart.current = id;
 		setActiveChart(id);
 	};
 	useEffect(() => {
-		if (!initialized.current || active !== activeChart) scrollTo(active, "instant");
-		initialized.current = true;
-	}, [active, activeChart]);
+		if (displayedChart.current !== active) scrollTo(active, "instant");
+	}, [active]);
 	useEffect(() => {
 		const container = viewport.current;
 		if (!container) return;
