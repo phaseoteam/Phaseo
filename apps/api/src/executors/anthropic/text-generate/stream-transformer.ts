@@ -4,6 +4,7 @@
 
 import { SseParser } from "@core/sse-parser";
 import { ANTHROPIC_REASONING_FORMAT, sealReasoningState } from "@core/reasoning-state";
+import { gatewayStopEntry, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
 
 /**
  * Transform Anthropic Messages API streaming to OpenAI Responses API streaming format
@@ -122,6 +123,7 @@ export function createAnthropicToResponsesStreamTransformer(
 	let createdAt: number = Math.floor(Date.now() / 1000);
 	let usage: any = null;
 	let stopReason: string | null = null;
+	let stopSequence: string | null = null;
 
 	// Track content blocks by index
 	const contentBlocks: Map<number, {
@@ -331,6 +333,7 @@ export function createAnthropicToResponsesStreamTransformer(
 				} else if (payload.type === "message_delta") {
 					// Update usage and stop reason
 					if (payload.delta?.stop_reason) stopReason = payload.delta.stop_reason;
+					if (typeof payload.delta?.stop_sequence === "string") stopSequence = payload.delta.stop_sequence;
 					if (payload.usage) {
 						usage = { ...usage, ...payload.usage };
 					}
@@ -375,11 +378,12 @@ export function createAnthropicToResponsesStreamTransformer(
 						}
 					}
 
-					// Map Anthropic stop_reason to Responses API status
-					let status: "completed" | "incomplete" | "failed" = "completed";
-					if (stopReason === "max_tokens" || stopReason === "model_context_window_exceeded") {
-						status = "incomplete";
-					}
+					// Map Anthropic stop_reason to Responses API status: max_tokens and
+					// refusal (a safety classifier stop) are incomplete with the documented
+					// reason. stop_sequence, pause_turn and refusal also travel internally
+					// for Messages clients, which can express them.
+					const finish = normalizeFinishReason(stopReason);
+					const { status, incompleteDetails } = responsesStatusFor(finish.finishReason);
 
 					const responseUsage = anthropicUsageToResponsesUsage(usage);
 
@@ -391,13 +395,8 @@ export function createAnthropicToResponsesStreamTransformer(
 							created_at: createdAt,
 							model: model,
 							status,
-							...(status === "incomplete"
-								? {
-									incomplete_details: {
-										reason: "max_output_tokens",
-									},
-								}
-								: {}),
+							...(incompleteDetails ? { incomplete_details: incompleteDetails } : {}),
+							...gatewayStopEntry(finish.finishDetail, stopSequence),
 							output: outputItems,
 							usage: responseUsage,
 							nativeResponseId: messageId,

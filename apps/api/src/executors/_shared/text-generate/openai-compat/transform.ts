@@ -6,6 +6,7 @@
 
 import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRChoice, IRUsage, IRTool } from "@core/ir";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
+import { readGatewayStop } from "@core/finish-reason";
 import { applyResponsesRequestQuirks, applyResponsesResponseQuirks } from "./responses-quirks";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
@@ -943,6 +944,18 @@ export function openAIResponsesToIR(
 			choice.finishReason = "content_filter";
 		} else {
 			choice.finishReason = "stop";
+		}
+		// Anthropic's stop_sequence, pause_turn and refusal, carried internally on the
+		// canonical Responses stream, and OpenAI-style refusal text.
+		const gatewayStop = readGatewayStop(json);
+		if (gatewayStop && choice.finishReason !== "error") {
+			choice.finishDetail = gatewayStop.reason;
+			if (gatewayStop.sequence) choice.stopSequence = gatewayStop.sequence;
+		} else if (
+			typeof choice.message.refusal === "string" &&
+			(choice.finishReason === "stop" || choice.finishReason === "content_filter")
+		) {
+			choice.finishDetail = "refusal";
 		}
 
 		choices.push(choice);

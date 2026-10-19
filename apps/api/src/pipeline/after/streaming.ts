@@ -17,6 +17,7 @@ import {
 import { dispatchBackground } from "@/runtime/env";
 import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
 import { SseParser } from "@core/sse-parser";
+import { stripGatewayStop } from "@core/finish-reason";
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -419,6 +420,8 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         if (rewriteFrame) {
                             try { frameOut = rewriteFrame(frameOut) ?? frameOut; } catch { }
                         }
+                        // The internal stop carrier (core/finish-reason.ts) never reaches a client.
+                        frameOut = stripGatewayStop(frameOut);
                         await writeJson(frameOut, outbound.eventName ?? null);
                     }
 

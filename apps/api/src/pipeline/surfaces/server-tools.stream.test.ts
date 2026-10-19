@@ -15,6 +15,34 @@ function buildSseStream(frames: string[]): ReadableStream<Uint8Array> {
 
 describe("consumeTextProtocolStreamToIR", () => {
 	it.each([
+		["max_tokens", { finishReason: "length" }],
+		["stop_sequence", { finishReason: "stop", finishDetail: "stop_sequence", stopSequence: "###" }],
+		["pause_turn", { finishReason: "stop", finishDetail: "pause_turn" }],
+		["refusal", { finishReason: "content_filter", finishDetail: "refusal" }],
+		["end_turn", { finishReason: "stop" }],
+	])("keeps the Messages stop reason %s when message_stop follows", async (stopReason, expected) => {
+		const frame = (event: string, data: any) => `event: ${event}\ndata: ${JSON.stringify({ type: event, ...data })}\n\n`;
+		const stream = buildSseStream([
+			frame("message_start", { message: { id: "msg_1", role: "assistant", content: [], usage: { input_tokens: 5, output_tokens: 1 } } }),
+			frame("content_block_start", { index: 0, content_block: { type: "text", text: "" } }),
+			frame("content_block_delta", { index: 0, delta: { type: "text_delta", text: "Hi" } }),
+			frame("content_block_stop", { index: 0 }),
+			frame("message_delta", { delta: { stop_reason: stopReason, stop_sequence: stopReason === "stop_sequence" ? "###" : null }, usage: { output_tokens: 3 } }),
+			frame("message_stop", {}),
+		]);
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "anthropic.messages",
+			stream,
+			requestId: "req_messages_stop",
+			model: "claude",
+			provider: "anthropic",
+		});
+		const choice = consumed.ir.choices[0];
+		expect({ finishReason: choice.finishReason, finishDetail: choice.finishDetail, stopSequence: choice.stopSequence })
+			.toEqual({ finishDetail: undefined, stopSequence: undefined, ...expected });
+	});
+
+	it.each([
 		["stop", "length"],
 		["length", "stop"],
 	])("preserves different choice finish reasons (%s, %s) before a usage-only frame", async (...finishReasons) => {

@@ -5,8 +5,9 @@
 // Anthropic Messages Protocol - Encoder
 // Transforms IR -> Anthropic Messages Response
 
-import type { IRChatResponse, IRChoice, IRContentPart } from "@core/ir";
+import type { IRChatResponse, IRContentPart } from "@core/ir";
 import { irUsageToAnthropicStyle } from "@core/cache-usage";
+import { anthropicStopReasonFor, type AnthropicStopReason } from "@core/finish-reason";
 import { encodeAnthropicThinkingBlock, type ReasoningResponseOrigin } from "../shared/reasoning";
 
 /**
@@ -23,13 +24,7 @@ export type AnthropicMessagesResponse = {
 	role: "assistant";
 	content: AnthropicResponseContent[];
 	model: string;
-	stop_reason:
-		| "end_turn"
-		| "max_tokens"
-		| "stop_sequence"
-		| "tool_use"
-		| "refusal"
-		| null;
+	stop_reason: AnthropicStopReason | null;
 	stop_sequence: string | null;
 	usage: {
 		cache_creation: any | null;
@@ -132,8 +127,11 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 		content.push({ type: "text", text: "", citations: null });
 	}
 
-	// Map finish reason
-	const stopReason = mapFinishReasonToAnthropic(mainChoice.finishReason);
+	// Map finish reason (stop_sequence, pause_turn and refusal ride on finishDetail)
+	const stopReason = anthropicStopReasonFor(
+		mainChoice.finishReason,
+		mainChoice.finishDetail ?? (mainChoice.stopSequence ? "stop_sequence" : undefined),
+	);
 
 	return {
 		id: ir.id,
@@ -146,28 +144,6 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 		stop_sequence: mainChoice.stopSequence ?? null,
 		usage: encodeUsage(ir.usage, ir.serviceTier),
 	};
-}
-
-/**
- * Map IR finish reason to Anthropic stop reason
- */
-function mapFinishReasonToAnthropic(
-	reason: IRChoice["finishReason"],
-): AnthropicMessagesResponse["stop_reason"] {
-	switch (reason) {
-		case "stop":
-			return "end_turn";
-		case "length":
-			return "max_tokens";
-		case "tool_calls":
-			return "tool_use";
-		case "content_filter":
-			return "refusal";
-		case "error":
-			return null;
-		default:
-			return "end_turn";
-	}
 }
 
 function encodeUsage(

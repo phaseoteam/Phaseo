@@ -217,7 +217,7 @@
     },
     {
       "type": "stop",
-      "finishReason": "end_turn",
+      "finishReason": null,
       "payload": {
         "type": "message_stop"
       }

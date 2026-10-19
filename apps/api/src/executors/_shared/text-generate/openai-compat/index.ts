@@ -10,6 +10,13 @@ import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types
 import { fetchUpstream, UpstreamHeadersTimeoutError } from "@executors/_shared/timing/upstream";
 import type { IRChatResponse } from "@core/ir";
 import { resolveCacheTokenUsage, uncachedInputTokens } from "@core/cache-usage";
+import {
+	anthropicStopReasonFor,
+	normalizeFinishReason,
+	readGatewayStop,
+	responsesOutputHasRefusal,
+	type AnthropicStopReason,
+} from "@core/finish-reason";
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
@@ -768,11 +775,13 @@ function transformResponsesStreamToAnthropic(
 				for (const block of blocks) stopBlock(block);
 				hasToolUse ||= blocks.some((block) => block.type === "tool_use");
 				const usage = normalizeUsageToAnthropic(response?.usage);
+				const stopReason = mapResponsesStatusToAnthropicStopReason(response, hasToolUse);
+				const stopSequence = stopReason === "stop_sequence" ? readGatewayStop(response)?.sequence ?? null : null;
 				emit(controller, "message_delta", {
 					type: "message_delta",
 					delta: {
-						stop_reason: mapResponsesStatusToAnthropicStopReason(response, hasToolUse),
-						stop_sequence: null,
+						stop_reason: stopReason,
+						stop_sequence: stopSequence,
 					},
 					usage,
 				});
@@ -877,7 +886,9 @@ function transformResponsesStreamToAnthropic(
 							if (block) stopBlock(block);
 							continue;
 						}
-						if (normalizedEvent === "response.completed") {
+						// response.incomplete is terminal too: its response carries the
+						// usage and the max_output_tokens or content_filter reason.
+						if (normalizedEvent === "response.completed" || normalizedEvent === "response.incomplete") {
 							latestResponse = payload?.response ?? payload;
 							finishMessage(latestResponse);
 							continue;
@@ -959,16 +970,25 @@ function extractTextPart(part: any): string {
 function mapResponsesStatusToAnthropicStopReason(
 	response: any,
 	hasToolUse: boolean,
-): "end_turn" | "max_tokens" | "stop_sequence" | "tool_use" | "refusal" | null {
+): AnthropicStopReason | null {
 	const status = String(response?.status ?? "").toLowerCase();
 	if (status === "failed") return null;
-	if (hasToolUse) return "tool_use";
+	// An incomplete response wins over a tool call: the call's arguments may have been cut
+	// off (max_output_tokens), and reporting tool_use would invite the client to run them.
 	if (status === "incomplete") {
 		const reason = String(response?.incomplete_details?.reason ?? "").toLowerCase();
 		if (reason.includes("stop_sequence")) return "stop_sequence";
 		if (reason.includes("content")) return "refusal";
 		return "max_tokens";
 	}
+	if (hasToolUse) return "tool_use";
+	// Responses has no status for Anthropic's stop_sequence, pause_turn or refusal;
+	// the canonical stream carries them internally (core/finish-reason.ts).
+	const gatewayStop = readGatewayStop(response);
+	if (gatewayStop) {
+		return anthropicStopReasonFor(normalizeFinishReason(gatewayStop.reason).finishReason, gatewayStop.reason);
+	}
+	if (responsesOutputHasRefusal(response)) return "refusal";
 	return "end_turn";
 }
 
@@ -1027,7 +1047,9 @@ export async function bufferStreamToIR(
 			applyStreamPayload(payload);
 			if (
 				payload?.type === "response.completed" ||
+				payload?.type === "response.incomplete" ||
 				payload?.response?.status === "completed" ||
+				payload?.response?.status === "incomplete" ||
 				payload?.choices?.some?.((choice: any) => choice?.finish_reason != null)
 			) {
 				terminalAtMs = Date.now();

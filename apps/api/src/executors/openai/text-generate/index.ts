@@ -283,7 +283,9 @@ async function createOpenAIResponsesWebSocketStream(args: {
 						emitFrame(payload);
 
 						const type = typeof payload?.type === "string" ? payload.type : "";
-						if (type === "response.completed" && payload?.response) {
+						// response.incomplete (max_output_tokens, content filter) ends the
+						// response just like response.completed.
+						if ((type === "response.completed" || type === "response.incomplete") && payload?.response) {
 							finalResponsePayload = payload.response;
 							try {
 								const ir = openAIResponsesToIR(

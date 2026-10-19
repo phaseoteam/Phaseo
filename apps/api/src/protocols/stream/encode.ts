@@ -3,6 +3,7 @@
 // How: Maps UnifiedStreamEvent -> protocol event name + JSON payload.
 
 import type { UnifiedStreamEvent } from "@pipeline/after/stream-events";
+import { anthropicStopReasonFor, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
 
 export type StreamProtocol =
 	| "openai.chat.completions"
@@ -21,21 +22,8 @@ export type EncodeStreamContext = {
 };
 
 function mapStopToAnthropic(stop: string | null | undefined): string | null {
-	switch (String(stop ?? "").toLowerCase()) {
-		case "tool_calls":
-			return "tool_use";
-		case "length":
-			return "max_tokens";
-		case "content_filter":
-			return "refusal";
-		case "stop":
-		case "end_turn":
-			return "end_turn";
-		case "error":
-			return null;
-		default:
-			return stop == null ? null : String(stop);
-	}
+	const { finishReason, finishDetail } = normalizeFinishReason(stop);
+	return anthropicStopReasonFor(finishReason, finishDetail);
 }
 
 function encodeOpenAIChat(
@@ -190,14 +178,17 @@ function encodeOpenAIChat(
 		};
 	}
 	if (event.type === "stop") {
+		// A stop without a reason (Anthropic message_stop) follows the one that has it.
+		if (event.finishReason === null) return null;
 		return {
 			frame: {
 				object: "chat.completion.chunk",
 				choices: [
 					{
-						index: 0,
+						index: event.choiceIndex ?? 0,
 						delta: {},
-						finish_reason: event.finishReason ?? "stop",
+						// Chat documents stop | length | tool_calls | content_filter.
+						finish_reason: normalizeFinishReason(event.finishReason).finishReason,
 					},
 				],
 			},
@@ -368,6 +359,11 @@ function encodeOpenAIResponses(
 		};
 	}
 	if (event.type === "stop") {
+		// A stop without a reason (Anthropic message_stop) follows the one that has it.
+		if (event.finishReason === null) return null;
+		const { status, incompleteDetails } = responsesStatusFor(
+			normalizeFinishReason(event.finishReason).finishReason,
+		);
 		return {
 			eventName: "response.completed",
 			frame: {
@@ -375,7 +371,8 @@ function encodeOpenAIResponses(
 					id: ctx.requestId ?? undefined,
 					object: "response",
 					model: ctx.model ?? undefined,
-					status: event.finishReason === "error" ? "failed" : "completed",
+					status,
+					...(incompleteDetails ? { incomplete_details: incompleteDetails } : {}),
 				},
 			},
 		};

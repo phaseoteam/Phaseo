@@ -3,6 +3,7 @@
 import type { IRChatResponse, IRContentPart, IRToolCall, IRUsage } from "@core/ir";
 import { isSealedReasoningValue } from "@core/reasoning-state";
 import { resolveCacheTokenUsage } from "@core/cache-usage";
+import { normalizeFinishReason } from "@core/finish-reason";
 import type { Protocol } from "@protocols/detect";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
@@ -356,6 +357,8 @@ type StreamChoiceAccumulator = {
 	toolCallsByKey: Map<string, IRToolCall>;
 	toolCallOrder: string[];
 	finishReason?: IRChatResponse["choices"][number]["finishReason"];
+	finishDetail?: IRChatResponse["choices"][number]["finishDetail"];
+	stopSequence?: string;
 };
 
 type AccumulationState = {
@@ -364,17 +367,6 @@ type AccumulationState = {
 	sawToolDelta: boolean;
 	sawContentPartDelta: boolean;
 };
-
-function mapStopReasonToIr(reason: string | null | undefined): IRChatResponse["choices"][number]["finishReason"] {
-	const normalized = String(reason ?? "").trim().toLowerCase();
-	if (!normalized) return "stop";
-	if (normalized === "stop" || normalized === "end_turn" || normalized === "completed") return "stop";
-	if (normalized === "max_tokens" || normalized === "length") return "length";
-	if (normalized === "tool_use" || normalized === "tool_calls" || normalized.includes("tool")) return "tool_calls";
-	if (normalized.includes("content") || normalized.includes("refusal") || normalized.includes("safety")) return "content_filter";
-	if (normalized === "error" || normalized === "failed") return "error";
-	return "stop";
-}
 
 function parseUsageNumber(value: unknown): number | undefined {
 	if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -647,10 +639,18 @@ function applyUnifiedEventToAccumulators(args: {
 	}
 
 	if (event.type === "stop") {
-		const finishReason = mapStopReasonToIr(event.finishReason);
-		if (Number.isFinite(event.choiceIndex)) {
-			getChoiceAccumulator(choices, Number(event.choiceIndex)).finishReason = finishReason;
-		}
+		// A stop without a reason (Anthropic message_stop) only ends the stream; it
+		// must not replace the reason from the preceding message_delta.
+		if (event.finishReason == null) return;
+		const { finishReason, finishDetail } = normalizeFinishReason(event.finishReason);
+		const indexed = Number.isFinite(event.choiceIndex);
+		// Choice 0 carries the detail of a stream-wide stop (Messages and Responses).
+		const accumulator = getChoiceAccumulator(choices, indexed ? Number(event.choiceIndex) : 0);
+		if (indexed) accumulator.finishReason = finishReason;
+		accumulator.finishDetail = finishDetail;
+		accumulator.stopSequence = typeof event.stopSequence === "string" && event.stopSequence
+			? event.stopSequence
+			: undefined;
 		setGlobalFinishReason(finishReason);
 	}
 }
@@ -811,8 +811,14 @@ function buildIRFromAccumulatedEvents(args: {
 		const toolCalls = accumulator.toolCallOrder
 			.map((key) => accumulator.toolCallsByKey.get(key))
 			.filter((value): value is IRToolCall => Boolean(value));
+		// A stream-wide truncation (Responses response.incomplete) wins over an accumulated
+		// tool call: its arguments may be cut off, and tool_calls would invite running them.
+		const truncated = args.globalFinishReason === "length" || args.globalFinishReason === "content_filter"
+			? args.globalFinishReason
+			: null;
 		const finishReason =
 			accumulator.finishReason ??
+			truncated ??
 			(toolCalls.length > 0 ? "tool_calls" : null) ??
 			args.globalFinishReason ??
 			"stop";
@@ -825,6 +831,8 @@ function buildIRFromAccumulatedEvents(args: {
 				...(toolCalls.length > 0 ? { toolCalls } : {}),
 			},
 			finishReason,
+			...(accumulator.finishDetail ? { finishDetail: accumulator.finishDetail } : {}),
+			...(accumulator.stopSequence ? { stopSequence: accumulator.stopSequence } : {}),
 		};
 	});
 

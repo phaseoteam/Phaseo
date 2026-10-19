@@ -368,4 +368,54 @@ describe("extractUnifiedStreamEvents", () => {
 			),
 		).toBe(true);
 	});
+
+	it("treats response.incomplete as terminal, with usage and the content filter reason", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.incomplete",
+			frame: {
+				type: "response.incomplete",
+				response: {
+					object: "response",
+					status: "incomplete",
+					incomplete_details: { reason: "content_filter" },
+					usage: { input_tokens: 10, output_tokens: 4 },
+				},
+			},
+		});
+		expect(events.map((event) => event.type)).toEqual(["snapshot", "usage", "stop"]);
+		expect(events.find((event) => event.type === "stop")).toMatchObject({ finishReason: "content_filter" });
+	});
+
+	it("reports a completed response as stop, and the carried Anthropic stop when present", () => {
+		const completed = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.completed",
+			frame: { response: { object: "response", status: "completed", output: [] } },
+		});
+		expect(completed.find((event) => event.type === "stop")).toMatchObject({ finishReason: "stop" });
+
+		const paused = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.completed",
+			frame: { response: { object: "response", status: "completed", output: [], _phaseo_stop: { reason: "pause_turn" } } },
+		});
+		expect(paused.find((event) => event.type === "stop")).toMatchObject({ finishReason: "pause_turn" });
+	});
+
+	it("does not give message_stop a stop reason of its own", () => {
+		const delta = extractUnifiedStreamEvents({
+			protocol: "anthropic.messages",
+			eventName: "message_delta",
+			frame: { type: "message_delta", delta: { stop_reason: "stop_sequence", stop_sequence: "###" } },
+		});
+		expect(delta.find((event) => event.type === "stop")).toMatchObject({ finishReason: "stop_sequence", stopSequence: "###" });
+
+		const stop = extractUnifiedStreamEvents({
+			protocol: "anthropic.messages",
+			eventName: "message_stop",
+			frame: { type: "message_stop" },
+		});
+		expect(stop).toEqual([{ type: "stop", finishReason: null, payload: { type: "message_stop" } }]);
+	});
 });
