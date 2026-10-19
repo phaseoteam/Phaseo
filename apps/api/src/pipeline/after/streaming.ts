@@ -10,14 +10,24 @@ import {
 	extractUnifiedStreamEvents,
 	type UnifiedStreamEvent,
 } from "./stream-events";
-import {
-	encodeUnifiedStreamEvent,
-	type StreamProtocol,
-} from "@protocols/stream/encode";
+import type { StreamProtocol } from "@protocols/stream/encode";
 import { dispatchBackground } from "@/runtime/env";
 import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
 import { SseParser } from "@core/sse-parser";
 import { stripGatewayStop } from "@core/finish-reason";
+import { createChatStreamTerminal } from "./chat-stream-terminal";
+import { createStreamReencoder, encodeStreamInterruption, type StreamReencoder } from "./stream-reencode";
+
+/** A bare Chat `{"error": {...}}` frame: how OpenAI-compatible providers fail mid-stream. */
+function isBareErrorFrame(frame: any): boolean {
+    return Boolean(
+        frame?.error &&
+        typeof frame.error === "object" &&
+        frame.object === undefined &&
+        frame.type === undefined &&
+        !Array.isArray(frame.choices)
+    );
+}
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -214,7 +224,37 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         const parser = new SseParser();
         let sawTerminalSnapshot = false;
         let lastSeenUsage: any = null;
+        const chatTerminal = ctx.protocol === "openai.chat.completions" ? createChatStreamTerminal() : null;
+        let reencoder: StreamReencoder | null = null;
+        let sawStreamError = false;
+        const targetProtocol: StreamProtocol | null =
+            ctx.protocol === "openai.chat.completions" ||
+            ctx.protocol === "openai.responses" ||
+            ctx.protocol === "anthropic.messages"
+                ? ctx.protocol
+                : null;
+        const writeOutbound = async (outbound: { eventName?: string | null; frame: any }) => {
+            let frameOut: any = outbound.frame;
+            if (rewriteFrame) {
+                try { frameOut = rewriteFrame(frameOut) ?? frameOut; } catch { }
+            }
+            // The internal stop carrier (core/finish-reason.ts) never reaches a client.
+            frameOut = stripGatewayStop(frameOut);
+            // Chat clients get chunks only: the terminal chat.completion snapshot, already
+            // read above for events, usage, plugins and timing, becomes its finish and
+            // usage chunks here. Internal consumers (the buffered materialiser) read the
+            // executor stream directly and still see the snapshot.
+            if (chatTerminal) {
+                for (const chunk of chatTerminal.expand(frameOut)) {
+                    await writeJson(chunk, outbound.eventName ?? null);
+                }
+                return;
+            }
+            await writeJson(frameOut, outbound.eventName ?? null);
+        };
 
+        // A body that errors (connection reset) ends the stream like an early EOF.
+        let readError: unknown = null;
         try {
             while (true) {
                 const { value, done } = await reader.read();
@@ -227,6 +267,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     const dataStr = frame.data;
                     const eventName = frame.event;
                     if (!dataStr) continue;
+                    // Chat streams end with exactly one data: [DONE], written after the
+                    // last chunk below; an upstream one is not forwarded mid-stream.
+                    if (chatTerminal && dataStr.trim() === "[DONE]") continue;
 
                     let json: any;
                     try {
@@ -260,12 +303,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         eventName,
                         frame: json,
                     });
-                    const targetProtocol: StreamProtocol | null =
-                        ctx.protocol === "openai.chat.completions" ||
-                        ctx.protocol === "openai.responses" ||
-                        ctx.protocol === "anthropic.messages"
-                            ? ctx.protocol
-                            : null;
+                    if (events.some((event) => event.type === "error") || isBareErrorFrame(json)) {
+                        sawStreamError = true;
+                    }
                     if (onStreamEvent && events.length > 0) {
                         for (const event of events) {
                             try {
@@ -315,11 +355,11 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         recordCompletionTiming();
                     }
 
-                    const shouldReencode =
+                    const foreignFrame =
                         Boolean(targetProtocol) &&
                         Boolean(detectedProtocol) &&
-                        targetProtocol !== detectedProtocol &&
-                        events.length > 0;
+                        targetProtocol !== detectedProtocol;
+                    const shouldReencode = foreignFrame && events.length > 0;
 
                     // Client gone: the upstream is only drained for billing. Usage,
                     // terminal state and stream events were extracted above; skip
@@ -338,18 +378,27 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             event.type === "error"
                         );
 
+                    // A frame in another protocol is re-encoded with the client protocol's
+                    // grammar; one that maps to no client event is not forwarded raw.
+                    if (foreignFrame && !reencoder) {
+                        reencoder = createStreamReencoder(targetProtocol as StreamProtocol, {
+                            requestId: ctx.requestId,
+                            model: ctx.model,
+                        });
+                    }
                     const outboundFrames: Array<{ eventName?: string | null; frame: any }> = skipOutbound
                         ? []
-                        : shouldReencode
-                            ? events
-                                .map((event) =>
-                                    encodeUnifiedStreamEvent(targetProtocol as StreamProtocol, event, {
-                                        requestId: ctx.requestId,
-                                        model: ctx.model,
-                                    }),
-                                )
-                                .filter((entry): entry is { eventName?: string | null; frame: Record<string, any> } => Boolean(entry))
+                        : foreignFrame
+                            ? reencoder!.encode(events, { eventName, frame: json })
                             : [{ eventName, frame: json }];
+                    // The foreign terminal snapshot is not sent, but its rewrite still
+                    // applies response plugins and records their executions.
+                    if (shouldReencode && rewriteFrame && !skipOutbound) {
+                        const snapshot = events.find((event) => event.type === "snapshot" && event.isFinal);
+                        if (snapshot) {
+                            try { rewriteFrame(json); } catch { }
+                        }
+                    }
 
                     let finalUsageAfterWrite: any = null;
                     // Capture terminal state before rewriting the frame, but do not
@@ -416,13 +465,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     // Capture arrival timing before response rewriting and downstream writes;
                     // neither transform work nor client backpressure belongs in provider TTFT.
                     for (const outbound of outboundFrames) {
-                        let frameOut: any = outbound.frame;
-                        if (rewriteFrame) {
-                            try { frameOut = rewriteFrame(frameOut) ?? frameOut; } catch { }
-                        }
-                        // The internal stop carrier (core/finish-reason.ts) never reaches a client.
-                        frameOut = stripGatewayStop(frameOut);
-                        await writeJson(frameOut, outbound.eventName ?? null);
+                        await writeOutbound(outbound);
                     }
 
                     if (finalUsageAfterWrite) {
@@ -434,7 +477,32 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
                 }
             }
+        } catch (err) {
+            readError = err;
         } finally {
+            // Only a real terminal event (a stop or the final snapshot) completes the
+            // stream. Without one (a provider disconnect after partial output) the client
+            // gets its surface's failure event, as for a mid-stream provider error,
+            // rather than message_stop, response.completed or [DONE].
+            const completed = sawTerminalSnapshot;
+            // A re-encoded terminal that was waiting for trailing usage.
+            for (const outbound of reencoder?.flush({ completed }) ?? []) {
+                await writeOutbound(outbound);
+            }
+            if (!completed && !sawStreamError && targetProtocol) {
+                const failure = encodeStreamInterruption(targetProtocol, {
+                    requestId: ctx.requestId,
+                    model: ctx.model,
+                });
+                await writeJson(failure.frame, failure.eventName ?? null);
+            }
+            if (chatTerminal && completed && !downstreamClosed) {
+                try {
+                    await writer.write(enc.encode("data: [DONE]\n\n"));
+                } catch {
+                    downstreamClosed = true;
+                }
+            }
             if (!finalUsageSettled) {
                 finalizeUsage(lastSeenUsage, {
                     aborted: !sawTerminalSnapshot,
@@ -445,6 +513,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                 try { await writer.close(); } catch { }
             }
         }
+        if (readError) throw readError;
     })();
     dispatchBackground(streamPump.catch(err => {
         console.error("passthroughWithPricing stream error:", err, {

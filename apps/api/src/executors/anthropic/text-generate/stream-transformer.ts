@@ -213,8 +213,11 @@ export function createAnthropicToResponsesStreamTransformer(
 						emitEvent(controller, "response.created", {
 							response: {
 								id: requestId,
+								object: "response",
 								created_at: createdAt,
 								model: model,
+								status: "in_progress",
+								output: [],
 							},
 						});
 						createdEmitted = true;
@@ -245,6 +248,21 @@ export function createAnthropicToResponsesStreamTransformer(
 						emitEvent(controller, "response.output_item.added", {
 							output_index: outputIndex,
 							item: { type: "reasoning", id: itemId, summary: [], content: [] },
+						});
+					}
+
+					// A text block is a message item: announce it and its text part before
+					// any output_text.delta, as the Responses stream documents.
+					if (block.type === "text") {
+						emitEvent(controller, "response.output_item.added", {
+							output_index: outputIndex,
+							item: { type: "message", id: itemId, status: "in_progress", role: "assistant", content: [] },
+						});
+						emitEvent(controller, "response.content_part.added", {
+							item_id: itemId,
+							output_index: outputIndex,
+							content_index: 0,
+							part: { type: "output_text", text: "", annotations: [] },
 						});
 					}
 
@@ -280,6 +298,7 @@ export function createAnthropicToResponsesStreamTransformer(
 							delta: chunk,
 							output_index: block.outputIndex,
 							item_id: block.itemId,
+							content_index: 0,
 						});
 
 					} else if (delta.type === "thinking_delta") {
@@ -331,6 +350,24 @@ export function createAnthropicToResponsesStreamTransformer(
 						emitEvent(controller, "response.output_item.done", {
 							output_index: block.outputIndex,
 							item: buildReasoningItem(block),
+						});
+					} else if (block.type === "text") {
+						const part = { type: "output_text", text: block.text || "", annotations: [] };
+						emitEvent(controller, "response.output_text.done", {
+							item_id: block.itemId,
+							output_index: block.outputIndex,
+							content_index: 0,
+							text: part.text,
+						});
+						emitEvent(controller, "response.content_part.done", {
+							item_id: block.itemId,
+							output_index: block.outputIndex,
+							content_index: 0,
+							part,
+						});
+						emitEvent(controller, "response.output_item.done", {
+							output_index: block.outputIndex,
+							item: { type: "message", id: block.itemId, status: "completed", role: "assistant", content: [part] },
 						});
 					} else if (block.type === "tool_use") {
 						emitEvent(controller, "response.function_call_arguments.done", {
@@ -442,8 +479,9 @@ export function createAnthropicToResponsesStreamTransformer(
 
 					const responseUsage = anthropicUsageToResponsesUsage(usage);
 
-					// Emit response.completed
-					emitEvent(controller, "response.completed", {
+					// One terminal event: response.incomplete for max_tokens and refusal,
+					// response.completed otherwise.
+					emitEvent(controller, status === "incomplete" ? "response.incomplete" : "response.completed", {
 						response: {
 							id: requestId,
 							object: "response",

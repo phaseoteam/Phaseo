@@ -66,6 +66,58 @@ function baseCtx(overrides?: Record<string, unknown>): any {
 	};
 }
 
+describe("passthroughWithPricing client stream grammar", () => {
+	function dataFrames(text: string): string[] {
+		return text.split(/\n\n/).map((block) => block.split("\n").find((line) => line.startsWith("data:"))?.slice(5).trim() ?? "").filter(Boolean);
+	}
+
+	it("sends Chat clients chunks only, then one [DONE], while internal hooks still see the snapshot", async () => {
+		const snapshots: any[] = [];
+		const usageCalls: any[] = [];
+		const frames = makeSseResponse([
+			{ data: { id: "c", object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: "Hi" }, finish_reason: null }] } },
+			{ data: { id: "c", object: "chat.completion", choices: [{ index: 0, message: { role: "assistant", content: "Hi" }, finish_reason: "length" }], usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 } } },
+		]);
+		const upstream = new Response(`${await frames.text()}data: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream" } });
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx({ endpoint: "chat.completions", protocol: "openai.chat.completions" }),
+			provider: "groq",
+			priceCard: null,
+			onFinalSnapshot: (snapshot) => snapshots.push(snapshot),
+			onFinalUsage: (usage) => {
+				usageCalls.push(usage);
+			},
+		});
+		const out = dataFrames(await drain(response));
+		expect(out[out.length - 1]).toBe("[DONE]");
+		expect(out.filter((frame) => frame === "[DONE]")).toHaveLength(1);
+		const chunks = out.slice(0, -1).map((frame) => JSON.parse(frame));
+		expect(chunks.every((chunk) => chunk.object === "chat.completion.chunk")).toBe(true);
+		expect(chunks.flatMap((chunk) => chunk.choices.map((choice: any) => choice.finish_reason)).filter(Boolean)).toEqual(["length"]);
+		expect(chunks[chunks.length - 1]).toMatchObject({ choices: [], usage: { prompt_tokens: 3 } });
+		expect(snapshots[0]?.object).toBe("chat.completion");
+		expect(usageCalls).toEqual([{ prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 }]);
+	});
+
+	it("does not forward frames of another protocol that map to no client event", async () => {
+		const upstream = makeSseResponse([
+			{ event: "response.created", data: { type: "response.created", response: { id: "r", object: "response", status: "in_progress" } } },
+			{ event: "response.output_text.delta", data: { type: "response.output_text.delta", output_index: 0, item_id: "m", delta: "Hi" } },
+			{ event: "response.output_text.done", data: { type: "response.output_text.done", output_index: 0, item_id: "m", text: "Hi" } },
+			{ event: "response.completed", data: { type: "response.completed", response: { id: "r", object: "response", status: "completed", output: [], usage: { input_tokens: 1, output_tokens: 1 } } } },
+		]);
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx({ endpoint: "messages", protocol: "anthropic.messages" }),
+			provider: "google-ai-studio",
+			priceCard: null,
+		});
+		const types = dataFrames(await drain(response)).map((frame) => JSON.parse(frame).type);
+		expect(types).toEqual(["message_start", "content_block_start", "content_block_delta", "content_block_stop", "message_delta", "message_stop"]);
+	});
+});
+
 describe("passthroughWithPricing", () => {
 	it("finalizes usage from response.incomplete and strips the internal stop carrier", async () => {
 		const usageCalls: Array<any> = [];
