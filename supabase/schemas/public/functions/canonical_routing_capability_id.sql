@@ -36,7 +36,7 @@ as $$
       'text.generate','text.embed','text.rerank','text.moderate',
       'image.generate','image.edit','image.vary','video.generate','video.edit',
       'audio.speech','audio.transcription','audio.translations','audio.realtime',
-      'music.generate','decisions.make','ocr','parse','batch',
+      'music.generate','decisions.make','extraction.extract','ocr','parse','batch',
       'tool.call','structured.output','voice.design'
     ]) then replace(lower(trim(p_id)), '/', '.') else null end
   end;
