@@ -955,6 +955,121 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     ChatReasoningDetail = Struct.new(:data, :format, :id, :index, :signature, :summary, :text, :type, keyword_init: true)
+    # @!attribute [rw] created_at
+    #   @return [String]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] dimensions
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] enabled
+    #   @return [Boolean]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] input_scope
+    #   @return [String]
+    # @!attribute [rw] instructions
+    #   @return [String]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] monthly_budget_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] sample_by
+    #   @return [String]
+    # @!attribute [rw] sample_rate
+    #   @return [Float]
+    # @!attribute [rw] scope
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] updated_at
+    #   @return [String]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    Classifier = Struct.new(:created_at, :created_by, :description, :dimensions, :enabled, :id, :input_scope, :instructions, :model, :monthly_budget_usd, :name, :sample_by, :sample_rate, :scope, :updated_at, :workspace_id, keyword_init: true)
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] dimensions
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] input_scope
+    #   @return [String, nil]
+    # @!attribute [rw] instructions
+    #   @return [String, nil]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] monthly_budget_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] name
+    #   @return [String]
+    # @!attribute [rw] sample_by
+    #   @return [String, nil]
+    # @!attribute [rw] sample_rate
+    #   @return [Float, nil]
+    # @!attribute [rw] scope
+    #   @return [Hash{String => Object}, nil]
+    ClassifierCreateInput = Struct.new(:description, :dimensions, :enabled, :input_scope, :instructions, :model, :monthly_budget_usd, :name, :sample_by, :sample_rate, :scope, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    ClassifierDeleteResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] allow_other
+    #   @return [Boolean, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] key
+    #   @return [String]
+    # @!attribute [rw] multiple
+    #   @return [Boolean, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] values
+    #   @return [Array<Hash{String => Object}>]
+    ClassifierDimension = Struct.new(:allow_other, :description, :key, :multiple, :name, :values, keyword_init: true)
+    ClassifierInputScope = Object
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    ClassifierListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    ClassifierResponse = Struct.new(:data, keyword_init: true)
+    ClassifierSampleBy = Object
+    # @!attribute [rw] app_ids
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] key_ids
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] models
+    #   @return [Array<String>, nil]
+    ClassifierScope = Struct.new(:app_ids, :key_ids, :models, keyword_init: true)
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] dimensions
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] input_scope
+    #   @return [String, nil]
+    # @!attribute [rw] instructions
+    #   @return [String, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] monthly_budget_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] sample_by
+    #   @return [String, nil]
+    # @!attribute [rw] sample_rate
+    #   @return [Float, nil]
+    # @!attribute [rw] scope
+    #   @return [Hash{String => Object}, nil]
+    ClassifierUpdateInput = Struct.new(:description, :dimensions, :enabled, :input_scope, :instructions, :model, :monthly_budget_usd, :name, :sample_by, :sample_rate, :scope, keyword_init: true)
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] value
+    #   @return [String]
+    ClassifierValue = Struct.new(:description, :value, keyword_init: true)
     # @!attribute [rw] credits
     #   @return [Hash{String => Object}]
     # @!attribute [rw] ok

@@ -118,6 +118,13 @@ function createChatCompletion(Client $client, ?array $path = null, ?array $query
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/classifiers";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createDataContributionClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -402,6 +409,14 @@ function deleteApiKey(Client $client, ?array $path = null, ?array $query = null,
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
+function deleteClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/classifiers/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
 function deleteDataContributionClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -637,6 +652,14 @@ function getApiKey(Client $client, ?array $path = null, ?array $query = null, ?a
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/keys/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/classifiers/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -984,6 +1007,13 @@ function listBatchRequestsAlias(Client $client, ?array $path = null, ?array $que
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/batch/" . rawurlencode((string)($path["id"] ?? "")) . "/requests";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listClassifiers(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/classifiers";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1531,6 +1561,14 @@ function updateApiKey(Client $client, ?array $path = null, ?array $query = null,
 	$path = $path ?? [];
 	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
 	$resolvedPath = "/keys/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateClassifier(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/classifiers/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 

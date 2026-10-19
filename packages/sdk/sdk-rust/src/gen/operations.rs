@@ -90,6 +90,11 @@ pub fn createChatCompletion<T: Transport>(client: &Client<T>, path: &HashMap<Str
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/classifiers");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createDataContributionClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/data-contribution/classifiers");
 	client.request("POST", &resolved_path, body)
@@ -290,6 +295,11 @@ pub fn deleteApiKey<T: Transport>(client: &Client<T>, path: &HashMap<String, Str
 	client.request("DELETE", &resolved_path, body)
 }
 
+pub fn deleteClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/classifiers/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("DELETE", &resolved_path, body)
+}
+
 pub fn deleteDataContributionClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/data-contribution/classifiers/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("DELETE", &resolved_path, body)
@@ -437,6 +447,11 @@ pub fn getActivityAlias<T: Transport>(client: &Client<T>, path: &HashMap<String,
 
 pub fn getApiKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/keys/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/classifiers/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("GET", &resolved_path, body)
 }
 
@@ -667,6 +682,11 @@ pub fn listBatchRequests<T: Transport>(client: &Client<T>, path: &HashMap<String
 
 pub fn listBatchRequestsAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/batch/{}/requests", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listClassifiers<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/classifiers");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -1032,6 +1052,11 @@ pub fn testWorkspaceNotificationDestinationConfig<T: Transport>(client: &Client<
 
 pub fn updateApiKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/keys/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("PATCH", &resolved_path, body)
+}
+
+pub fn updateClassifier<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/classifiers/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("PATCH", &resolved_path, body)
 }
 

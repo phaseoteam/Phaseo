@@ -628,6 +628,91 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class Classifier {
+		public String created_at;
+		public String created_by;
+		public String description;
+		public java.util.List<Object> dimensions;
+		public Boolean enabled;
+		public String id;
+		public Object input_scope;
+		public String instructions;
+		public String model;
+		public Double monthly_budget_usd;
+		public String name;
+		public Object sample_by;
+		public Double sample_rate;
+		public Object scope;
+		public String updated_at;
+		public String workspace_id;
+	}
+
+	public static class ClassifierCreateInput {
+		public String description;
+		public java.util.List<Object> dimensions;
+		public Boolean enabled;
+		public Object input_scope;
+		public String instructions;
+		public String model;
+		public Double monthly_budget_usd;
+		public String name;
+		public Object sample_by;
+		public Double sample_rate;
+		public Object scope;
+	}
+
+	public static class ClassifierDeleteResponse {
+		public Object data;
+	}
+
+	public static class ClassifierDimension {
+		public Boolean allow_other;
+		public String description;
+		public String key;
+		public Boolean multiple;
+		public String name;
+		public java.util.List<Object> values;
+	}
+
+	public static class ClassifierInputScope {
+	}
+
+	public static class ClassifierListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class ClassifierResponse {
+		public Object data;
+	}
+
+	public static class ClassifierSampleBy {
+	}
+
+	public static class ClassifierScope {
+		public java.util.List<String> app_ids;
+		public java.util.List<String> key_ids;
+		public java.util.List<String> models;
+	}
+
+	public static class ClassifierUpdateInput {
+		public String description;
+		public java.util.List<Object> dimensions;
+		public Boolean enabled;
+		public Object input_scope;
+		public String instructions;
+		public String model;
+		public Double monthly_budget_usd;
+		public String name;
+		public Object sample_by;
+		public Double sample_rate;
+		public Object scope;
+	}
+
+	public static class ClassifierValue {
+		public String description;
+		public String value;
+	}
+
 	public static class CreditsResponse {
 		public Object credits;
 		public Object ok;

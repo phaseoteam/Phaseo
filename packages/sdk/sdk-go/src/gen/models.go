@@ -1301,6 +1301,101 @@ type ChatReasoningDetail struct {
 	Type string `json:"type"`
 }
 
+type Classifier struct {
+	CreatedAt string `json:"created_at"`
+	CreatedBy *string `json:"created_by"`
+	Description *string `json:"description"`
+	Dimensions []map[string]interface{} `json:"dimensions"`
+	Enabled bool `json:"enabled"`
+	Id string `json:"id"`
+	InputScope string `json:"input_scope"`
+	Instructions string `json:"instructions"`
+	Model string `json:"model"`
+	MonthlyBudgetUsd *float64 `json:"monthly_budget_usd"`
+	Name string `json:"name"`
+	SampleBy string `json:"sample_by"`
+	SampleRate float64 `json:"sample_rate"`
+	Scope map[string]interface{} `json:"scope"`
+	UpdatedAt string `json:"updated_at"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type ClassifierCreateInput struct {
+	Description *string `json:"description,omitempty"`
+	Dimensions []map[string]interface{} `json:"dimensions"`
+	Enabled *bool `json:"enabled,omitempty"`
+	InputScope *string `json:"input_scope,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Model string `json:"model"`
+	MonthlyBudgetUsd *float64 `json:"monthly_budget_usd,omitempty"`
+	Name string `json:"name"`
+	SampleBy *string `json:"sample_by,omitempty"`
+	SampleRate *float64 `json:"sample_rate,omitempty"`
+	Scope *map[string]interface{} `json:"scope,omitempty"`
+}
+
+type ClassifierDeleteResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type ClassifierDimension struct {
+	AllowOther *bool `json:"allow_other,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Key string `json:"key"`
+	Multiple *bool `json:"multiple,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Values []map[string]interface{} `json:"values"`
+}
+
+type ClassifierInputScope string
+
+const (
+	ClassifierInputScopePrompt ClassifierInputScope = "prompt"
+	ClassifierInputScopePromptAndResponse ClassifierInputScope = "prompt_and_response"
+)
+
+
+type ClassifierListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type ClassifierResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type ClassifierSampleBy string
+
+const (
+	ClassifierSampleByRequest ClassifierSampleBy = "request"
+	ClassifierSampleBySession ClassifierSampleBy = "session"
+)
+
+
+type ClassifierScope struct {
+	AppIds *[]string `json:"app_ids,omitempty"`
+	KeyIds *[]string `json:"key_ids,omitempty"`
+	Models *[]string `json:"models,omitempty"`
+}
+
+type ClassifierUpdateInput struct {
+	Description *string `json:"description,omitempty"`
+	Dimensions *[]map[string]interface{} `json:"dimensions,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+	InputScope *string `json:"input_scope,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Model *string `json:"model,omitempty"`
+	MonthlyBudgetUsd *float64 `json:"monthly_budget_usd,omitempty"`
+	Name *string `json:"name,omitempty"`
+	SampleBy *string `json:"sample_by,omitempty"`
+	SampleRate *float64 `json:"sample_rate,omitempty"`
+	Scope *map[string]interface{} `json:"scope,omitempty"`
+}
+
+type ClassifierValue struct {
+	Description *string `json:"description,omitempty"`
+	Value string `json:"value"`
+}
+
 type CreditsResponse struct {
 	Credits map[string]interface{} `json:"credits"`
 	Ok bool `json:"ok"`
