@@ -12,7 +12,8 @@ CREATE OR REPLACE FUNCTION public.enqueue_mobile_push_deliveries (
 -- minutes after its event to settle, so claim_mobile_push_deliveries can send a burst for the
 -- same device and group key as one push; if that moment falls in the user's quiet hours (in
 -- the device's time zone) it is deferred until they end. Past the daily cap, counted per device
--- with a grouped push counting once, it is recorded as suppressed; a push that joins a group
+-- over catalogue pushes only (never digests or other pushes without an event) and with a
+-- grouped push counting once, it is recorded as suppressed; a push that joins a group
 -- already waiting for the device adds nothing to the count. A device already told about a
 -- model's release is not told again that the same model reached Phaseo, and vice versa. Events
 -- more than two days old or about a model that is no longer public are closed without sending.
@@ -110,7 +111,7 @@ begin
           coalesce(bool_or(x.status in ('pending', 'deferred') and x.group_key = v_group_key), false) as joins_group
         from public.mobile_push_deliveries x
         where x.device_id = c.device_id and x.created_at > now() - interval '1 day'
-          and x.status in ('pending', 'processing', 'sent', 'deferred')
+          and x.status in ('pending', 'processing', 'sent', 'deferred') and x.event_id is not null
       ) sent
       where c.rule_id is not null
     ),

@@ -28,6 +28,9 @@ ALTER TABLE "public"."catalogue_notification_events"
 
 CREATE INDEX catalogue_notification_events_model_idx ON public.catalogue_notification_events USING btree (model_slug, created_at DESC);
 
+CREATE INDEX catalogue_notification_events_releases_idx ON public.catalogue_notification_events USING btree (occurred_at)
+  WHERE (kind = ANY (ARRAY['model_released'::text, 'gateway_available'::text]));
+
 CREATE INDEX catalogue_notification_events_unfanned_idx ON public.catalogue_notification_events USING btree (created_at, id)
   WHERE (fanned_out_at IS NULL);
 

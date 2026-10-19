@@ -1,6 +1,6 @@
 CREATE TABLE "public"."mobile_push_deliveries" (
   "id"                 uuid                     NOT NULL DEFAULT gen_random_uuid(),
-  "event_id"           uuid                     NOT NULL,
+  "event_id"           uuid,
   "device_id"          uuid                     NOT NULL,
   "user_id"            uuid                     NOT NULL,
   "rule_id"            uuid,
@@ -19,12 +19,15 @@ CREATE TABLE "public"."mobile_push_deliveries" (
   "updated_at"         timestamp with time zone NOT NULL DEFAULT now(),
   "group_key"          text,
   "merged_into"        uuid,
+  "workspace_id"       uuid,
+  "digest_id"          uuid,
   CONSTRAINT "mobile_push_deliveries_attempts_check" CHECK ((attempts >= 0)),
   CONSTRAINT "mobile_push_deliveries_event_id_device_id_key" UNIQUE (event_id, device_id),
   CONSTRAINT "mobile_push_deliveries_pkey" PRIMARY KEY (id),
   CONSTRAINT "mobile_push_deliveries_status_check"
     CHECK ((status = ANY (ARRAY['pending'::text, 'processing'::text, 'sent'::text, 'failed'::text, 'deferred'::text, 'suppressed'::text]))),
   CONSTRAINT "mobile_push_deliveries_device_id_fkey" FOREIGN KEY (device_id) REFERENCES public.mobile_push_devices(id) ON DELETE CASCADE,
+  CONSTRAINT "mobile_push_deliveries_digest_id_fkey" FOREIGN KEY (digest_id) REFERENCES public.mobile_push_digests(id) ON DELETE CASCADE,
   CONSTRAINT "mobile_push_deliveries_event_id_fkey" FOREIGN KEY (event_id) REFERENCES public.catalogue_notification_events(id) ON DELETE CASCADE,
   CONSTRAINT "mobile_push_deliveries_merged_into_fkey" FOREIGN KEY (merged_into) REFERENCES public.mobile_push_deliveries(id) ON DELETE SET NULL,
   CONSTRAINT "mobile_push_deliveries_rule_id_fkey" FOREIGN KEY (rule_id) REFERENCES public.mobile_notification_rules(id) ON DELETE SET NULL,
@@ -35,6 +38,12 @@ ALTER TABLE "public"."mobile_push_deliveries"
   ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX mobile_push_deliveries_device_idx ON public.mobile_push_deliveries USING btree (device_id, created_at DESC);
+
+CREATE UNIQUE INDEX mobile_push_deliveries_digest_device_key ON public.mobile_push_deliveries USING btree (digest_id, device_id)
+  WHERE (digest_id IS NOT NULL);
+
+CREATE INDEX mobile_push_deliveries_digest_due_idx ON public.mobile_push_deliveries USING btree (not_before, created_at)
+  WHERE ((digest_id IS NOT NULL) AND (status = ANY (ARRAY['pending'::text, 'deferred'::text])));
 
 CREATE INDEX mobile_push_deliveries_due_idx ON public.mobile_push_deliveries USING btree (not_before, created_at)
   WHERE (status = ANY (ARRAY['pending'::text, 'deferred'::text]));
@@ -60,6 +69,8 @@ CREATE POLICY "deny_direct_client_access" ON "public"."mobile_push_deliveries"
   USING (false)
   WITH CHECK (false);
 
+COMMENT ON COLUMN "public"."mobile_push_deliveries"."digest_id" IS 'The weekly digest this row sends; such rows have no catalogue event. Claimed by claim_mobile_push_digests, never by claim_mobile_push_deliveries, and never counted against the daily cap.';
+
 COMMENT ON COLUMN "public"."mobile_push_deliveries"."group_key" IS 'Deliveries for one device that share a key and are due together go out as one push: release:<lab> for releases and Phaseo availability, provider:<provider> for new providers of a model, price:<model> for price changes. Null is sent alone.';
 
 COMMENT ON COLUMN "public"."mobile_push_deliveries"."merged_into" IS 'The delivery whose push carried this one. Only that delivery holds the Expo ticket.';
@@ -68,7 +79,7 @@ COMMENT ON COLUMN "public"."mobile_push_deliveries"."receipt_checked_at" IS 'Whe
 
 COMMENT ON COLUMN "public"."mobile_push_deliveries"."receipt_claimed_at" IS 'When a run last asked Expo for the receipt. A receipt Expo did not return is asked for again 15 minutes later.';
 
-COMMENT ON TABLE "public"."mobile_push_deliveries" IS 'One row per catalogue event and device. Rows wait five minutes to settle, and those due for the same device and group key are sent as one push. Deferred rows wait for quiet hours to end; suppressed rows were over the daily cap or no longer wanted. Claimed with a token so overlapping runs never send twice.';
+COMMENT ON TABLE "public"."mobile_push_deliveries" IS 'One row per catalogue event and device, or per weekly digest and device (digest_id, no event). Catalogue rows wait five minutes to settle, and those due for the same device and group key are sent as one push. Deferred rows wait for quiet hours to end; suppressed rows were over the daily cap or no longer wanted. Claimed with a token so overlapping runs never send twice.';
 
 REVOKE ALL ON TABLE "public"."mobile_push_deliveries" FROM "service_role";
 
