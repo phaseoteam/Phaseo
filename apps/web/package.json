@@ -7,8 +7,9 @@
 	},
 	"packageManager": "pnpm@10.33.0",
 	"scripts": {
-		"predev": "node scripts/generate-docs-search.mjs",
-		"prebuild": "node scripts/generate-docs-search.mjs && node scripts/validate-message-scopes.mjs --write-client-scopes",
+		"predev": "node scripts/generate-docs-search.mjs && pnpm run i18n:client-files",
+		"prebuild": "node scripts/generate-docs-search.mjs && node scripts/validate-message-scopes.mjs --write-client-scopes && pnpm run i18n:client-files",
+		"i18n:client-files": "node --import tsx scripts/generate-client-message-files.mts",
 		"docs:search:index": "node scripts/generate-docs-search.mjs",
 		"dev": "node --max-http-header-size=32768 ./node_modules/next/dist/bin/next dev --turbopack --port 3100",
 		"build": "next build",

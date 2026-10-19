@@ -23,6 +23,9 @@
 # production
 /build
 
+# client dictionaries published at build time (scripts/generate-client-message-files.mts)
+/public/_i18n/
+
 # misc
 .DS_Store
 *.pem
