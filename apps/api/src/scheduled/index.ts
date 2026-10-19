@@ -20,6 +20,7 @@ import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/billing-alerts";
 import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-request";
 import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
+import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
@@ -383,6 +384,14 @@ async function handleMobilePushScheduledEvent(env: GatewayBindings): Promise<voi
 	if (env.MOBILE_PUSH_ENABLED !== "true") return;
 	configureRuntime(env);
 	try {
+		// The weekly digest first, so its due pushes are claimed before the catalogue claim looks.
+		// It does nothing outside Sunday to Tuesday UTC, and never holds up catalogue pushes.
+		try {
+			const digest = await runMobilePushDigestJob({ accessToken: env.EXPO_ACCESS_TOKEN });
+			if (hasMobilePushDigestActivity(digest)) console.log("mobile_push_digest_completed", digest);
+		} catch (error) {
+			console.error("mobile_push_digest_failed", serializeError(error));
+		}
 		const summary = await runMobilePushJob({ accessToken: env.EXPO_ACCESS_TOKEN });
 		if (hasMobilePushActivity(summary)) console.log("mobile_push_completed", summary);
 	} finally {
