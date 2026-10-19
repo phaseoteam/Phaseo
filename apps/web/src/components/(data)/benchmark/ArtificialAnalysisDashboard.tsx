@@ -76,7 +76,7 @@ export default function ArtificialAnalysisDashboard({ rows }: { rows: DashboardR
 		<nav aria-label={tx("Catalogue.benchmarks.tocIndexComparisons")} className="sticky top-16 z-20 flex items-center gap-4 border-b bg-background/95 py-3 backdrop-blur">
 			<div className="min-w-0 flex-1 overflow-x-auto"><TabsList variant="line" aria-label={tx("Catalogue.benchmarks.tocIndexComparisons")} className="h-9 gap-5">{sections.map((section) => <TabsTrigger key={section} value={section} className="px-0">{t(section)}</TabsTrigger>)}</TabsList></div>
 			<Button variant="ghost" size="icon-sm" disabled={!visible.length} onClick={exportData} aria-label={`${tx("Common.ui.chatSettings.export")} CSV`}><Download className="size-4" /></Button>
-			<Popover><PopoverTrigger asChild><Button variant="outline" size="sm" className="ml-auto gap-2 lg:hidden"><SlidersHorizontal className="size-4" />{tx("Common.nav.models")} ({selected.size})</Button></PopoverTrigger><PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-0">{picker}</PopoverContent></Popover>
+			<Popover><PopoverTrigger asChild><Button variant="outline" size="sm" className="ml-auto gap-2 lg:hidden"><SlidersHorizontal className="size-4" />{tx("Common.nav.models")} ({selected.size})</Button></PopoverTrigger><PopoverContent align="end" className="max-h-(--available-height) w-[min(22rem,calc(100vw-2rem))] gap-0 overflow-y-auto p-0">{picker}</PopoverContent></Popover>
 		</nav>
 		<div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
 			<div className="min-w-0">
