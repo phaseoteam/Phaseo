@@ -32,3 +32,12 @@ describe("readAuthoritativeServerToolMeters", () => {
 		})).resolves.toBeNull();
 	});
 });
+
+describe("readAuthoritativeServerToolMeters input checks", () => {
+	it("drops a negative flat counter but keeps the nested object", async () => {
+		await expect(readAuthoritativeServerToolMeters({
+			usageFinalizerAuthoritative: true,
+			usageFinalizer: async () => ({ usage: { native_web_search_requests: -2, server_tool_use: { web_search_requests: 2 } } }),
+		})).resolves.toEqual({ server_tool_use: { web_search_requests: 2 } });
+	});
+});

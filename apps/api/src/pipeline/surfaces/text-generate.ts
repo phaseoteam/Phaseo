@@ -671,7 +671,7 @@ function serverToolMetersFrom(usage: Record<string, any> | null): Record<string,
 	const meters: Record<string, unknown> = {};
 	for (const key of SERVER_TOOL_METER_KEYS) {
 		const value = usage[key];
-		if ((typeof value === "number" && Number.isFinite(value)) || (value && typeof value === "object")) meters[key] = value;
+		if ((typeof value === "number" && Number.isFinite(value) && value >= 0) || (value && typeof value === "object")) meters[key] = value;
 	}
 	return Object.keys(meters).length ? meters : null;
 }
