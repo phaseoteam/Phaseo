@@ -8,7 +8,7 @@ import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
-import { irToAnthropicMessages, anthropicMessagesToIR, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
 import { ANTHROPIC_CACHE_USAGE_SEMANTICS, createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
@@ -186,7 +186,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					if (geminiUsage) return geminiUsage.finalize();
 					if (!accounting) return null;
 					const final = accounting.snapshot();
-					return { ...bill, usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
+					return { ...bill, usage: anthropicUsageForPricing(final.usage),
 						finish_reason: mapAnthropicStopReason(final.stopReason) };
 				},
 				usageFinalizerAuthoritative: accounting !== undefined || geminiUsage !== undefined,

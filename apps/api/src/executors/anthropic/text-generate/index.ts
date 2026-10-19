@@ -298,7 +298,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 									const final = accounting.snapshot();
 									return {
 										...bill,
-										usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
+										usage: anthropicUsageForPricing(final.usage),
 										finish_reason: mapAnthropicStopReason(final.stopReason),
 									};
 								},
@@ -1105,6 +1105,51 @@ function mapIRFileToAnthropicDocument(part: Extract<IRContentPart, { type: "file
 	return { type: "document", source: { type: "base64", media_type: mimeType, data: part.data }, ...title, ...cache };
 }
 
+type AnthropicServerToolUse =NonNullable<NonNullable<IRChatResponse["usage"]>["_ext"]>["serverToolUse"];
+
+/**
+ * The numeric counters of Anthropic's `usage.server_tool_use` (web_search_requests,
+ * web_fetch_requests, ...). Server tools are billed per call, so the counts must reach
+ * pricing on every surface.
+ */
+export function anthropicServerToolUse(usage: any): AnthropicServerToolUse | undefined {
+	const raw = usage?.server_tool_use ?? usage?._ext?.serverToolUse;
+	if (!raw || typeof raw !== "object") return undefined;
+	const counts: Record<string, number> = {};
+	for (const [key, value] of Object.entries(raw)) {
+		if (typeof value === "number" && Number.isFinite(value) && value >= 0) counts[key] = value;
+	}
+	return Object.keys(counts).length ? counts as AnthropicServerToolUse : undefined;
+}
+
+function anthropicUsageExt(usage: any): NonNullable<IRChatResponse["usage"]>["_ext"] | undefined {
+	const serverToolUse = anthropicServerToolUse(usage);
+	const ext: NonNullable<NonNullable<IRChatResponse["usage"]>["_ext"]> = {};
+	if (typeof usage?.cache_creation_input_tokens === "number") {
+		ext.cachedWriteTokens = usage.cache_creation_input_tokens;
+		ext.cachedWriteTokens5m = typeof usage.cache_creation?.ephemeral_5m_input_tokens === "number"
+			? usage.cache_creation.ephemeral_5m_input_tokens
+			: undefined;
+		ext.cachedWriteTokens1h = typeof usage.cache_creation?.ephemeral_1h_input_tokens === "number"
+			? usage.cache_creation.ephemeral_1h_input_tokens
+			: undefined;
+	}
+	if (serverToolUse) ext.serverToolUse = serverToolUse;
+	return Object.keys(ext).length ? ext : undefined;
+}
+
+/**
+ * Pricing meters for raw Anthropic Messages usage. Keeps `server_tool_use` next to the
+ * flat meters: after-stage usage shaping passes that object through, and the engine reads
+ * `server_tool_use.web_search_requests` as native_web_search_requests, so web searches on
+ * streamed responses are billed as well as buffered ones.
+ */
+export function anthropicUsageForPricing(usage: any): Record<string, unknown> | undefined {
+	const meters = normalizeTextUsageForPricing(usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined;
+	const serverToolUse = anthropicServerToolUse(usage);
+	return meters && serverToolUse ? { ...meters, server_tool_use: serverToolUse } : meters;
+}
+
 /**
  * Transform Anthropic Messages response to IR format
  * CRITICAL FIX: Properly extracts tool_use blocks!
@@ -1197,20 +1242,7 @@ export function anthropicMessagesToIR(
 				// Anthropic's input_tokens excludes cache reads and writes; both are billed on top.
 				cachedReadTokensAreSubsetOfInput: false,
 				cachedWriteTokensAreSubsetOfInput: false,
-				_ext:
-					typeof json.usage.cache_creation_input_tokens === "number"
-						? {
-							cachedWriteTokens: json.usage.cache_creation_input_tokens,
-							cachedWriteTokens5m:
-								typeof json.usage.cache_creation?.ephemeral_5m_input_tokens === "number"
-									? json.usage.cache_creation.ephemeral_5m_input_tokens
-									: undefined,
-							cachedWriteTokens1h:
-								typeof json.usage.cache_creation?.ephemeral_1h_input_tokens === "number"
-									? json.usage.cache_creation.ephemeral_1h_input_tokens
-									: undefined,
-						}
-						: undefined,
+				_ext: anthropicUsageExt(json.usage),
 			}
 			: undefined,
 		serviceTier: resolveAnthropicServiceTierFromResponse(json),

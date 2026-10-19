@@ -83,6 +83,25 @@ export function mergeBillAndPayloadUsage(billUsage: unknown, payloadUsage: unkno
     return merged;
 }
 
+const SERVER_TOOL_USAGE_KEYS = ["native_web_search_requests", "native_web_fetch_requests", "server_tool_use"] as const;
+
+/**
+ * Server-tool counters an executor read from the upstream stream itself (authoritative usage)
+ * outrank the payload's copy after the merge: the payload is rebuilt from the client stream and
+ * can carry a lower or zero count, which would under-bill web searches.
+ */
+export function keepStreamServerToolMeters(
+    merged: Record<string, any>,
+    billUsage: unknown,
+    authoritative: boolean,
+): Record<string, any> {
+    if (!authoritative || !isUsageObject(billUsage)) return merged;
+    for (const key of SERVER_TOOL_USAGE_KEYS) {
+        if (billUsage[key] != null) merged[key] = billUsage[key];
+    }
+    return merged;
+}
+
 /** Media inputs counted from the request body, used when upstream usage omits them. */
 export type RequestMediaCounts = { images: number; audio: number; video: number };
 

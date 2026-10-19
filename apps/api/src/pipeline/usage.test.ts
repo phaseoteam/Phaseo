@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countRequestMediaInputs, mergeBillAndPayloadUsage, shapeUsageForClient, stripUsagePricing } from "./usage";
+import { countRequestMediaInputs, keepStreamServerToolMeters, mergeBillAndPayloadUsage, shapeUsageForClient, stripUsagePricing } from "./usage";
 import { normalizeAnthropicUsage } from "./after/payload";
 
 describe("request media counting", () => {
@@ -392,5 +392,21 @@ describe("normalizeAnthropicUsage subset hints", () => {
 		expect(usage).not.toHaveProperty("cached_read_tokens_are_subset_of_input");
 		expect(usage).not.toHaveProperty("cached_write_tokens_are_subset_of_input");
 		expect(shapeUsageForClient(usage, { endpoint: "messages" }).input_tokens).toBe(100_003);
+	});
+});
+
+describe("keepStreamServerToolMeters", () => {
+	const billUsage = { input_tokens: 10, native_web_search_requests: 3, server_tool_use: { web_search_requests: 3 } };
+	const payloadUsage = { input_tokens: 10, server_tool_use: { web_search_requests: 0 } };
+
+	it("keeps the stream's server-tool counters over the payload's copy", () => {
+		const merged = keepStreamServerToolMeters(mergeBillAndPayloadUsage(billUsage, payloadUsage), billUsage, true);
+		expect(merged.server_tool_use).toEqual({ web_search_requests: 3 });
+		expect(merged.native_web_search_requests).toBe(3);
+	});
+
+	it("leaves the merge alone when the executor's usage is not authoritative", () => {
+		const merged = keepStreamServerToolMeters(mergeBillAndPayloadUsage(billUsage, payloadUsage), billUsage, false);
+		expect(merged.server_tool_use).toEqual({ web_search_requests: 0 });
 	});
 });

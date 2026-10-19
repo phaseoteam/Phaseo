@@ -15,7 +15,7 @@ import { handleSpeechStreamResponse } from "./speech-stream";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { recordUsageAndChargeOnce } from "./charge";
-import { mergeBillAndPayloadUsage, shapeUsageForClient } from "../usage";
+import { keepStreamServerToolMeters, mergeBillAndPayloadUsage, shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
@@ -449,7 +449,11 @@ async function handleNonStreamResponse(
     // Keep payload usage authoritative for overlapping fields, but preserve
     // bill-only meters (for providers that meter requests/non-token dimensions).
     // Cache hints follow the payload's input_tokens (Anthropic semantics on Messages).
-    const usageNormalized = mergeBillAndPayloadUsage(result.bill?.usage, payload?.usage);
+    const usageNormalized = keepStreamServerToolMeters(
+        mergeBillAndPayloadUsage(result.bill?.usage, payload?.usage),
+        result.bill?.usage,
+        result.usageFinalizerAuthoritative === true,
+    );
     result.bill.usage = usageNormalized;
     result.bill.finish_reason = finishReason;
     const toolUsage = summarizeToolUsage({
