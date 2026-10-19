@@ -97,15 +97,18 @@ export function PricingSection({ modelId, providers }: { modelId: string; provid
           <View className="mt-3 h-[200px] rounded-md bg-muted" />
         ) : state.hasData && visibleRows.length ? (
           <View className="mt-3 rounded-md border border-border px-3 pb-3 pt-3">
-            {inspected != null ? <Text variant="caption" className="mb-1">{new Date(inspected).toISOString().slice(0, 16).replace("T", " ")} UTC</Text> : null}
             <LineChart
               height={200}
               step={shownView === "listed"}
               yFormat={axisPrice}
               xFormat={(time) => formatShortDate(time)}
-              series={visibleRows.map((row) => ({ key: row.seriesKey, colour: row.colour, dash: tierDashArray(row.plan), points: state.points.map((point) => ({ x: point.time, y: point.values[row.seriesKey] ?? null })) }))}
+              valueFormat={price}
+              tooltipTitle={(time) => `${new Date(time).toISOString().slice(0, 16).replace("T", " ")} UTC`}
+              accessibilityLabel={`${shownView === "effective" ? "Effective" : "List"} ${meterName(activeMeter).toLowerCase()} price per million tokens for ${visibleRows.length} ${visibleRows.length === 1 ? "route" : "routes"}`}
+              series={visibleRows.map((row) => ({ key: row.seriesKey, label: row.plan === defaultRowPlan(row) ? row.providerName : `${row.providerName} · ${tierLabel(row.plan)}`, colour: row.colour, dash: tierDashArray(row.plan), points: state.points.map((point) => ({ x: point.time, y: point.values[row.seriesKey] ?? null })) }))}
               onInspect={setInspected}
             />
+            <Text variant="caption" className="mt-1.5">Press and hold the chart, then drag, to read prices at a time. The table below shows them too.</Text>
             {plans.length > 1 || plans[0] !== "standard" ? (
               <View className="mt-3 flex-row flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border pt-2.5">
                 <Text variant="caption" className="font-medium text-foreground">Service tier</Text>

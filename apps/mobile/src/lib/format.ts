@@ -32,6 +32,28 @@ export function formatUsd(value: number | null | undefined, { precise = false }:
 
 export const nanosToUsd = (nanos: number | null | undefined) => (nanos == null ? null : nanos / 1_000_000_000);
 
+/** Short money for chart axes: $0, $0.005, $2.5, $40, $1.2K. */
+export function formatUsdAxis(value: number) {
+  if (!Number.isFinite(value) || value === 0) return "$0";
+  const abs = Math.abs(value);
+  const text = abs >= 1000 ? `${Number((abs / 1000).toFixed(abs % 1000 ? 1 : 0))}K` : abs >= 1 ? String(Number(abs.toFixed(2))) : String(Number(abs.toPrecision(2)));
+  return `${value < 0 ? "-" : ""}$${text}`;
+}
+
+/** File sizes: 0 B, 512 B, 4.2 KB, 12.3 MB, 1.05 GB (1 KB = 1,024 bytes). */
+export function formatBytes(bytes: number | null | undefined) {
+  if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return "—";
+  if (bytes < 1024) return `${Math.round(bytes)} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value >= 100 ? Math.round(value) : Number(value.toFixed(value >= 10 ? 1 : 2))} ${units[unit]}`;
+}
+
 /** Context window: 1M, 128K, 8K. */
 export function formatTokens(value: number | null | undefined) {
   if (value == null || !Number.isFinite(value) || value <= 0) return "—";

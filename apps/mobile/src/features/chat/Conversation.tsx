@@ -76,7 +76,10 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
 
   if (!chat) return <Screen><Header back={!split} /><EmptyState className="flex-1" icon={MessageSquareOff} title="Chat not found" body="It may have been deleted on this device." action="New chat" onAction={() => router.replace("/chat/new")} /></Screen>;
 
-  const openMenu = async () => showActions({ title: chat.title, anchor: await measureAnchor(moreRef), actions: chatActions(chat, { router, onDeleted: () => router.replace("/chat") }) });
+  const openMenu = async () => {
+    const anchor = await measureAnchor(moreRef);
+    showActions({ title: chat.title, anchor, actions: chatActions(chat, { router, anchor, onDeleted: () => router.replace("/chat") }) });
+  };
   const jumpToLatest = () => {
     if (window.hasLater) window.latest();
     else void listRef.current?.scrollToEnd({ animated: true });

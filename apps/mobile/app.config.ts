@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import type { ExpoConfig } from "expo/config";
@@ -53,6 +54,19 @@ const withCleartextTraffic: ConfigPlugin = (config) => withAndroidManifest(confi
   return manifest;
 });
 
+/**
+ * Which source a build came from, for Account → Diagnostics: the commit and when the config was read (the app
+ * build embeds this config). Builds outside a git checkout leave it out.
+ */
+function buildInfo() {
+  try {
+    const commit = execSync("git rev-parse --short=10 HEAD", { cwd: __dirname, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    return commit ? { buildCommit: commit, builtAt: new Date().toISOString() } : {};
+  } catch {
+    return {};
+  }
+}
+
 const expo = appJson.expo as ExpoConfig;
 const base: ExpoConfig = {
   ...expo,
@@ -64,6 +78,7 @@ const base: ExpoConfig = {
     ...expo.extra,
     supabaseUrl,
     supabasePublishableKey,
+    ...buildInfo(),
   },
 };
 

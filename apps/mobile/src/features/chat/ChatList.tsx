@@ -41,7 +41,7 @@ export function ChatList() {
     // From a search, the chat opens at the newest message that matched.
     openDetail((deferred ? `/chat/${chat.id}?q=${encodeURIComponent(deferred)}` : `/chat/${chat.id}`) as Href);
   }, [openDetail, deferred]);
-  const menu = useCallback((chat: Chat, anchor: ReturnType<typeof pointAnchor>) => showActions({ title: chat.title, anchor, actions: chatActions(chat, { router, onDeleted: () => { if (selectedId === chat.id) router.replace("/chat"); } }) }), [router, selectedId]);
+  const menu = useCallback((chat: Chat, anchor: ReturnType<typeof pointAnchor>) => showActions({ title: chat.title, anchor, actions: chatActions(chat, { router, anchor, onDeleted: () => { if (selectedId === chat.id) router.replace("/chat"); } }) }), [router, selectedId]);
 
   const renderItem = useCallback(({ item }: { item: ChatListItem }) => {
     if (item.type === "header") return <Text variant="label" className="px-4 pb-1.5 pt-5 text-muted-foreground">{item.title}</Text>;

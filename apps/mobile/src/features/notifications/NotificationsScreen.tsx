@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useRef } from "react";
-import { BellOff, LayoutList, Minus, Plus } from "lucide-react-native";
+import { BellOff, LayoutList, Minus, Plus, Send } from "lucide-react-native";
 import { Pressable, RefreshControl, ScrollView, Switch, View } from "react-native";
 import { Button, EmptyState, ErrorState, Header, Icon, LoadingState, measureAnchor, ReadableWidth, Row, Screen, Section, showActions, Text, toast, toastError, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
@@ -94,6 +94,11 @@ export function NotificationsScreen() {
             trailing={<Switch value={on} disabled={enable.isPending} onValueChange={(value) => enable.mutate(value)} trackColorOnClassName="accent-primary" />}
             last
           />
+          {/* Up here rather than below the settings, so checking that notifications arrive is one tap after switching them on. */}
+          <View className="px-4 pt-3">
+            <Button label="Send a test notification" icon={Send} variant="outline" disabled={!on} loading={test.isPending} onPress={() => test.mutate()} />
+            <Text variant="caption" className="mt-2">{on ? "Sends one notification to this phone, whatever your rules. Up to 3 every 10 minutes." : "Turn on notifications above to send a test."}</Text>
+          </View>
 
           <Section title="Rules" description="You get a notification when any rule matches and no mute rule does." action={<View ref={addRef} collapsable={false}><Button label="Add" icon={Plus} variant="ghost" size="sm" onPress={() => void addRule()} /></View>}>
             {data.rules.length === 0 ? (
@@ -135,12 +140,6 @@ export function NotificationsScreen() {
               <Text variant="muted">a day</Text>
             </View>
           </Section>
-
-          {on ? (
-            <View className="px-4 pt-8">
-              <Button label="Send a test notification" variant="outline" loading={test.isPending} onPress={() => test.mutate()} />
-            </View>
-          ) : null}
         </ReadableWidth>
       </ScrollView>
     </Screen>

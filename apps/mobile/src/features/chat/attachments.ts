@@ -7,10 +7,26 @@ import type { ChatAttachment } from "./types";
 const MAX_TEXT_BYTES = 200 * 1024;
 const TEXT_TYPES = /^(text\/|application\/(json|xml|javascript|x-yaml|yaml|csv|x-sh|sql|toml))/;
 
+/** Where picked files are copied (one flat folder; each message's attachment list points into it). */
+export const attachmentsFolder = () => new Directory(Paths.document, "chat-attachments");
+
 function attachmentsDir() {
-  const dir = new Directory(Paths.document, "chat-attachments");
+  const dir = attachmentsFolder();
   if (!dir.exists) dir.create({ intermediates: true });
   return dir;
+}
+
+/** The size of every kept attachment file, without creating the folder. */
+export function attachmentFileSizes(): number[] {
+  const dir = attachmentsFolder();
+  if (!dir.exists) return [];
+  return dir.list().map((entry) => entry.size ?? 0);
+}
+
+/** Deletes every kept attachment (when every chat is deleted). */
+export function removeAllAttachmentFiles() {
+  const dir = attachmentsFolder();
+  try { if (dir.exists) dir.delete(); } catch { /* already gone */ }
 }
 
 /** Copies a picked file into app storage so the chat keeps it after the picker's cache is cleared. */

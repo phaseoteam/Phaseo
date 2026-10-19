@@ -105,17 +105,17 @@ function TrendCard({ metric, label, view }: { metric: TrendMetric; label: string
   const chart = useCSSVariable(CHART_TOKENS).map((value) => String(value ?? "#3b82f6"));
   return (
     <View className="rounded-md border border-border px-4 py-4">
-      <View className="flex-row items-center justify-between">
-        <Text variant="label">{label}</Text>
-        {inspected != null ? <Text variant="caption">{timeLabel(view.resolution)(inspected)}</Text> : null}
-      </View>
+      <Text variant="label">{label}</Text>
       {series.length ? (
         <>
           <LineChart
             className="mt-2"
             height={148}
             showYAxis={false}
-            series={series.map((entry, index) => ({ key: entry.provider, colour: entry.colour ?? chart[index] ?? "#3b82f6", points: entry.points.map((point) => ({ x: point.time, y: point.value })) }))}
+            series={series.map((entry, index) => ({ key: entry.provider, label: entry.name, colour: entry.colour ?? chart[index] ?? "#3b82f6", points: entry.points.map((point) => ({ x: point.time, y: point.value })) }))}
+            valueFormat={(value) => formatValue(metric, value)}
+            tooltipTitle={timeLabel(view.resolution)}
+            accessibilityLabel={`${label} by provider, ${series.length} ${series.length === 1 ? "provider" : "providers"}`}
             onInspect={setInspected}
           />
           <View className="mt-2 gap-1.5">
@@ -165,9 +165,12 @@ function UptimeCard({ metrics }: { metrics: ModelPerformance | null }) {
         showYAxis={false}
         xTicks={4}
         xFormat={(time) => `${String(new Date(time).getHours()).padStart(2, "0")}:00`}
+        tooltipTitle={(time) => `${formatShortDate(time)}, ${String(new Date(time).getHours()).padStart(2, "0")}:00`}
+        valueFormat={format}
+        accessibilityLabel={`Uptime per hour over the last 24 hours, ${format(average)} on average`}
         series={[
-          { key: "overall", colour: "#16a249", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.overall })) },
-          ...(leastStable ? [{ key: "worst", colour: "#e92063", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.worst })) }] : []),
+          { key: "overall", label: "Phaseo routing", colour: "#16a249", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.overall })) },
+          ...(leastStable ? [{ key: "worst", label: "Without Phaseo Routing", colour: "#e92063", points: hours.map((hour) => ({ x: Date.parse(hour.bucket), y: hour.worst })) }] : []),
         ]}
         onInspect={setInspected}
       />
