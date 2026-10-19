@@ -6,7 +6,9 @@ import { getSupabaseAdmin } from "@/runtime/env";
 // and hands out due pushes under a claim token, one per device and group with the text already
 // written (claim_mobile_push_deliveries). Workspace alerts (money, traffic, security and
 // deprecations) are captured and queued per recipient by fan_out_workspace_push_events and go out
-// through the same claim. This job only moves pushes between the database and Expo.
+// through the same claim. Low balance is not captured from email: sweep_low_balance_pushes reads
+// the balances of workspaces whose owners or admins get money pushes and records one alert per
+// drop, which that fan-out then queues. This job only moves pushes between the database and Expo.
 
 export const EXPO_PUSH_SEND_URL = "https://exp.host/--/api/v2/push/send";
 export const EXPO_PUSH_RECEIPTS_URL = "https://exp.host/--/api/v2/push/getReceipts";
@@ -83,6 +85,8 @@ export type MobilePushSummary = {
 	// Workspace alerts captured from their sources, and workspace events fanned out to devices.
 	workspaceCaptured: number;
 	workspaceEvents: number;
+	// Low-balance drops the sweep recorded for pushing this run.
+	lowBalanceAlerts: number;
 	queued: number;
 	deferred: number;
 	suppressed: number;
@@ -99,6 +103,7 @@ export type MobilePushSummary = {
 	receiptErrors: number;
 	receiptError: string | null;
 	workspaceError: string | null;
+	lowBalanceError: string | null;
 };
 
 function emptySummary(): MobilePushSummary {
@@ -108,6 +113,7 @@ function emptySummary(): MobilePushSummary {
 		events: 0,
 		workspaceCaptured: 0,
 		workspaceEvents: 0,
+		lowBalanceAlerts: 0,
 		queued: 0,
 		deferred: 0,
 		suppressed: 0,
@@ -122,6 +128,7 @@ function emptySummary(): MobilePushSummary {
 		receiptErrors: 0,
 		receiptError: null,
 		workspaceError: null,
+		lowBalanceError: null,
 	};
 }
 
@@ -277,6 +284,16 @@ export async function runMobilePushJob(options: { accessToken?: string } = {}): 
 			summary.suppressed += count(result.suppressed);
 		}
 		if (rows.length < EVENT_PAGE_SIZE) break;
+	}
+
+	// Low balance is swept just before the fan-out, so a drop goes out in the same run. A failure
+	// here holds back neither catalogue news nor the other workspace alerts.
+	try {
+		const lowBalance = await supabase.rpc("sweep_low_balance_pushes", {});
+		if (lowBalance.error) throw new Error(lowBalance.error.message);
+		summary.lowBalanceAlerts = count(record(lowBalance.data).alerted);
+	} catch (error) {
+		summary.lowBalanceError = `mobile_push_low_balance_sweep_failed:${error instanceof Error ? error.message : String(error)}`.slice(0, 200);
 	}
 
 	// Workspace alerts are queued separately, so a failure there never holds back catalogue news.

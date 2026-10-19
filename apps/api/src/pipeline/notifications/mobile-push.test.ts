@@ -50,12 +50,15 @@ const grouped = push("lead", {
 
 type RpcHandler = (args: Record<string, unknown>) => { data: unknown; error: null | { message: string } };
 
-// Runs with no workspace alerts unless a test says otherwise.
-const idleWorkspace: RpcHandler = () => ({ data: { captured: 0, lowBalanceRepeats: 0, events: 0, queued: 0, deferred: 0 }, error: null });
+// Runs with no workspace alerts and no low balance unless a test says otherwise. The sweep reads
+// the watched workspaces' balances every run, so an idle one still reports what it watched.
+const idleWorkspace: RpcHandler = () => ({ data: { captured: 0, events: 0, queued: 0, deferred: 0 }, error: null });
+const idleLowBalance: RpcHandler = () => ({ data: { watched: 12, firstSeen: 0, dropped: 0, rearmed: 0, coveredByTopUp: 0, alerted: 0 }, error: null });
+const idleDefaults: Record<string, RpcHandler> = { fan_out_workspace_push_events: idleWorkspace, sweep_low_balance_pushes: idleLowBalance };
 
 function mockRpc(handlers: Record<string, RpcHandler | RpcHandler[]>) {
 	state.rpc.mockImplementation(async (name: string, args: Record<string, unknown>) => {
-		const handler = handlers[name] ?? (name === "fan_out_workspace_push_events" ? idleWorkspace : undefined);
+		const handler = handlers[name] ?? idleDefaults[name];
 		if (Array.isArray(handler)) return (handler.shift() ?? (() => ({ data: [], error: null })))(args);
 		if (handler) return handler(args);
 		throw new Error(`unexpected rpc ${name}`);
@@ -124,14 +127,14 @@ describe("mobile push job", () => {
 	it("sends workspace alerts on their category's channel with the workspace in data", () => {
 		const lowBalance = push("w", {
 			kind: "low_balance", category: "money", model_slug: null, title: "Acme: balance is $3.20",
-			body: "Below your $5.00 alert. Add credits to keep requests running.", href: "/settings/credits", group_key: null, group_count: null, tag: null,
+			body: "About 2 days left at this week's pace. Add credits to keep requests running.", href: "/settings/credits", group_key: null, group_count: null, tag: null,
 			workspace_id: "50000000-0000-4000-8000-000000000001", workspace_name: "Acme",
 		});
 		const message = buildMobilePushMessage(lowBalance);
 		expect(message).toEqual({
 			to: "ExponentPushToken[w]",
 			title: "Acme: balance is $3.20",
-			body: "Below your $5.00 alert. Add credits to keep requests running.",
+			body: "About 2 days left at this week's pace. Add credits to keep requests running.",
 			data: {
 				href: "/settings/credits", kind: "low_balance", category: "money", modelId: null, group: null,
 				workspaceId: "50000000-0000-4000-8000-000000000001", workspaceName: "Acme",
@@ -174,9 +177,13 @@ describe("mobile push job", () => {
 				data: args.p_event_id === "event-1" ? { queued: 2, deferred: 1, suppressed: 0 } : { queued: 1, deferred: 0, suppressed: 1 },
 				error: null,
 			}),
+			sweep_low_balance_pushes: (args) => {
+				expect(args).toEqual({});
+				return { data: { watched: 12, firstSeen: 0, dropped: 2, rearmed: 1, coveredByTopUp: 1, alerted: 1 }, error: null };
+			},
 			fan_out_workspace_push_events: (args) => {
 				expect(args).toEqual({ p_limit: 200 });
-				return { data: { captured: 3, lowBalanceRepeats: 1, events: 2, queued: 4, deferred: 1 }, error: null };
+				return { data: { captured: 3, events: 2, queued: 4, deferred: 1 }, error: null };
 			},
 			claim_mobile_push_deliveries: [
 				(args) => {
@@ -200,8 +207,8 @@ describe("mobile push job", () => {
 		const summary = await runMobilePushJob({ accessToken: "expo-secret" });
 
 		expect(summary).toMatchObject({
-			captured: 2, skippedTransactions: 1, events: 2, workspaceCaptured: 3, workspaceEvents: 2, queued: 7, deferred: 2, suppressed: 1, claimed: 3,
-			grouped: 9, sent: 1, retrying: 1, failed: 1, invalidated: 1, receipts: 0, workspaceError: null,
+			captured: 2, skippedTransactions: 1, events: 2, workspaceCaptured: 3, workspaceEvents: 2, lowBalanceAlerts: 1, queued: 7, deferred: 2, suppressed: 1,
+			claimed: 3, grouped: 9, sent: 1, retrying: 1, failed: 1, invalidated: 1, receipts: 0, workspaceError: null, lowBalanceError: null,
 		});
 		expect(state.eventQueries[0]).toMatchObject({ table: "catalogue_notification_events", select: "id", filters: [["is", "fanned_out_at", null]] });
 		const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -221,7 +228,31 @@ describe("mobile push job", () => {
 		const order = state.rpc.mock.calls.map(([name]) => name);
 		expect(order.indexOf("fan_out_workspace_push_events")).toBeGreaterThan(order.lastIndexOf("enqueue_mobile_push_deliveries"));
 		expect(order.indexOf("fan_out_workspace_push_events")).toBeLessThan(order.indexOf("claim_mobile_push_deliveries"));
+		// The sweep records its drops just before the fan-out queues them, so they go out in this run.
+		expect(order.filter((name) => name === "sweep_low_balance_pushes")).toHaveLength(1);
+		expect(order.indexOf("sweep_low_balance_pushes")).toBeGreaterThan(order.lastIndexOf("enqueue_mobile_push_deliveries"));
+		expect(order.indexOf("sweep_low_balance_pushes")).toBe(order.indexOf("fan_out_workspace_push_events") - 1);
 		expect(hasMobilePushActivity(summary)).toBe(true);
+	});
+
+	it("still fans out workspace alerts and sends when the low-balance sweep fails, and reports the failure", async () => {
+		mockRpc({
+			capture_catalogue_notification_events: () => ({ data: { emitted: 0 }, error: null }),
+			sweep_low_balance_pushes: () => ({ data: null, error: { message: "canceling statement due to statement timeout" } }),
+			fan_out_workspace_push_events: () => ({ data: { captured: 1, events: 1, queued: 1, deferred: 0 }, error: null }),
+			claim_mobile_push_deliveries: [() => ({ data: [push("a")], error: null })],
+			complete_mobile_push_deliveries: () => ({ data: { sent: 1 }, error: null }),
+			claim_mobile_push_receipts: () => ({ data: [], error: null }),
+		});
+		fetchMock.mockResolvedValueOnce(Response.json({ data: [{ status: "ok", id: "ticket-a" }] }));
+
+		const summary = await runMobilePushJob();
+
+		expect(summary).toMatchObject({
+			lowBalanceAlerts: 0, workspaceEvents: 1, queued: 1, claimed: 1, sent: 1, workspaceError: null,
+			lowBalanceError: "mobile_push_low_balance_sweep_failed:canceling statement due to statement timeout",
+		});
+		expect(hasMobilePushActivity({ ...summary, workspaceEvents: 0, queued: 0, claimed: 0, sent: 0 })).toBe(true);
 	});
 
 	it("still sends catalogue news when queueing workspace alerts fails, and reports the failure", async () => {
@@ -345,6 +376,9 @@ describe("mobile push job", () => {
 			claim_mobile_push_receipts: () => ({ data: [], error: null }),
 		});
 		const idle = await runMobilePushJob();
+		// The low-balance sweep watched workspaces but found no drop: not worth a log line.
+		expect(state.rpc.mock.calls.some(([name]) => name === "sweep_low_balance_pushes")).toBe(true);
+		expect(idle).toMatchObject({ lowBalanceAlerts: 0, lowBalanceError: null });
 		expect(hasMobilePushActivity(idle)).toBe(false);
 		expect(fetchMock).not.toHaveBeenCalled();
 
