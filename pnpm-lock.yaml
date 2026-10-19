@@ -990,7 +990,7 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: ^2.1.3
-        version: 2.1.3(hono@4.13.12)
+        version: 2.1.5(hono@4.13.12)
       '@radix-ui/react-select':
         specifier: ^2.3.7
         version: 2.3.7(@types/react-dom@19.2.3(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -2995,6 +2995,12 @@ packages:
 
   '@hono/node-server@2.1.3':
     resolution: {integrity: sha512-TA//nWMqPhbfdfneACk6t5a9eqbS9lABEPyKn0/xZTah3H3U2XaVg85rJFl0/Fyit0I552YDHgXGVSf3GwqbUw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4.13.11
+
+  '@hono/node-server@2.1.5':
+    resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
     engines: {node: '>=20'}
     peerDependencies:
       hono: ^4.13.11
@@ -10995,8 +11001,8 @@ packages:
     resolution: {integrity: sha512-7H/2gFSIitxc0hG3nOI1glS8QLo/EHBFFLk8vEUjXY/xu0AdL8jZ9U1IzO2PUm0d2D/ofQcAifb0g6OBkt8U7w==}
     engines: {node: '>= 12'}
 
-  ip-address@10.7.3:
-    resolution: {integrity: sha512-A1kdq/tSb5QjvKvAMgIoEvDBIgL7qaqVP/jkvSwYYRZ9iEzvPpopxp2wQfu3SuZRHtpHNxMn8Fs0bS+gf5Xmwg==}
+  ip-address@10.7.4:
+    resolution: {integrity: sha512-DWBMKyeM25D70nrIiTkgQth59/G+naKOTep6huF9j+GmeK3DMD60Zvxg5d5qQnz+38AHgou6ean2LECX+lrKDg==}
     engines: {node: '>= 12'}
 
   ip-regex@4.3.0:
@@ -18599,6 +18605,10 @@ snapshots:
     dependencies:
       hono: 4.13.12
 
+  '@hono/node-server@2.1.5(hono@4.13.12)':
+    dependencies:
+      hono: 4.13.12
+
   '@hookform/resolvers@5.7.1(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.1.0)(ajv-errors@3.0.0(ajv@8.20.0))(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(arktype@2.2.3)(react-hook-form@7.81.0(react@19.2.8))(zod@4.4.3)':
     dependencies:
       '@standard-schema/utils': 0.3.0
@@ -21083,7 +21093,7 @@ snapshots:
       extract-zip: 2.0.1
       progress: 2.0.3
       proxy-agent: 6.5.0
-      semver: 7.8.5
+      semver: 7.7.2
       tar-fs: 3.1.3
       unbzip2-stream: 1.4.3
       yargs: 17.7.3
@@ -26212,7 +26222,7 @@ snapshots:
       eslint: 9.39.5(jiti@2.7.0)
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-expo: 1.2.1(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5(jiti@2.7.0))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-react: 7.37.5(eslint@9.39.5(jiti@2.7.0))
       eslint-plugin-react-hooks: 7.1.1(eslint@9.39.5(jiti@2.7.0))
       globals: 16.5.0
@@ -26228,7 +26238,7 @@ snapshots:
       eslint: 10.8.1(jiti@2.7.0)
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@10.8.1(jiti@2.7.0)))(eslint@10.8.1(jiti@2.7.0))
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.8.1(jiti@2.7.0))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.8.1(jiti@2.7.0)))(eslint@10.8.1(jiti@2.7.0)))(eslint@10.8.1(jiti@2.7.0))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@10.8.1(jiti@2.7.0))
       eslint-plugin-react: 7.37.5(eslint@10.8.1(jiti@2.7.0))
       eslint-plugin-react-hooks: 7.1.1(eslint@10.8.1(jiti@2.7.0))
@@ -26265,7 +26275,7 @@ snapshots:
       tinyglobby: 0.2.17
       unrs-resolver: 1.12.2
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5(jiti@2.7.0))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))
     transitivePeerDependencies:
       - supports-color
 
@@ -26280,7 +26290,7 @@ snapshots:
       tinyglobby: 0.2.17
       unrs-resolver: 1.12.2
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.8.1(jiti@2.7.0))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.8.1(jiti@2.7.0)))(eslint@10.8.1(jiti@2.7.0)))(eslint@10.8.1(jiti@2.7.0))
     transitivePeerDependencies:
       - supports-color
 
@@ -26314,7 +26324,7 @@ snapshots:
       - supports-color
       - typescript
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.5(jiti@2.7.0)):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.63.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -26343,7 +26353,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.8.1(jiti@2.7.0)):
+  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.8.1(jiti@2.7.0)))(eslint@10.8.1(jiti@2.7.0)))(eslint@10.8.1(jiti@2.7.0)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -28441,7 +28451,7 @@ snapshots:
 
   ip-address@10.7.2: {}
 
-  ip-address@10.7.3: {}
+  ip-address@10.7.4: {}
 
   ip-regex@4.3.0: {}
 
@@ -33807,7 +33817,7 @@ snapshots:
 
   socks@2.8.10:
     dependencies:
-      ip-address: 10.7.3
+      ip-address: 10.7.4
       smart-buffer: 4.2.0
 
   sonner@2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
