@@ -1,21 +1,21 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { BellOff, LayoutList, Minus, Plus, Send } from "lucide-react-native";
-import { AppState, Platform, Pressable, RefreshControl, ScrollView, Switch, View } from "react-native";
-import { Button, EmptyState, ErrorState, Header, Icon, LoadingState, measureAnchor, ReadableWidth, Row, Screen, Section, showActions, Text, toast, toastError, type ViewRef } from "@/components/ui";
+import { BellOff, LayoutList, ListChecks, Plus, Send } from "lucide-react-native";
+import { AppState, Platform, RefreshControl, ScrollView, Switch, View } from "react-native";
+import { Button, EmptyState, ErrorState, Header, LoadingState, measureAnchor, ReadableWidth, Row, Screen, Section, showActions, Text, toast, toastError, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { ApiError } from "@/lib/api/http";
 import { createRule, sendTestNotification, updateNotificationSettings, updateRule, type NotificationRule, type NotificationSettings, type SettingsPatch } from "@/lib/api/notifications";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { shownCategories, type Category } from "./channels";
+import { DailyCapStepper, QuietHoursChoice } from "./controls";
 import { blockedChannels, openChannelSettings, registerForPush, registerThisPhone } from "./device";
-import { describeRule, EMPTY_RULE, RULE_TEMPLATES } from "./rules";
-import { adminWorkspaces } from "./setup";
-import { draftRuleStore, useNotificationSettings, useRuleNames } from "./state";
+import { describeRule, RULE_TEMPLATES } from "./rules";
+import { adminWorkspaces, STARTER_RULE } from "./setup";
+import { draftRuleStore, takeSetupOffer, useNotificationSettings, useRuleNames } from "./state";
 
-const QUIET_PRESETS = [{ start: "22:00", end: "07:00" }, { start: "23:00", end: "08:00" }, { start: "21:00", end: "09:00" }];
 // Settings writes run one at a time, and only the last response is applied, so quick taps don't flicker back.
 const SETTINGS_WRITE = { mutationKey: ["notification-settings-write"], scope: { id: "notification-settings-write" } };
 
@@ -50,12 +50,16 @@ export function NotificationsScreen() {
         const device = await registerForPush();
         // Servers that return categories take channel scheme 2; older ones get the old registration.
         await registerThisPhone(session!.user.id, device, Boolean(settings.data?.categories));
-        // A first switch-on with no rules would send nothing; start with every new model.
-        if (!settings.data?.rules.length) await createRule({ ...EMPTY_RULE, name: "Every new model" });
+        // A first switch-on with no rules would send nothing; start with setup's every new model.
+        if (!settings.data?.rules.length) await createRule(STARTER_RULE);
       }
       return updateNotificationSettings(settings.installationId!, { enabled: on });
     },
-    onSuccess: settings.set,
+    onSuccess: async (next, on) => {
+      settings.set(next);
+      // The first switch-on for this account on this phone carries on into setup.
+      if (on && session && (await takeSetupOffer(session.user.id))) router.push("/notification-setup");
+    },
     onError: (error) => toastError("Couldn't turn on notifications", error),
   });
   const applyLatest = (next: NotificationSettings) => {
@@ -139,6 +143,10 @@ export function NotificationsScreen() {
             <Text variant="caption" className="mt-2">{on ? "Sends one notification to this phone, whatever your rules. Up to 3 every 10 minutes." : "Turn on notifications above to send a test."}</Text>
           </View>
 
+          <Section>
+            <Row icon={ListChecks} title="Set up notifications" subtitle="Choose what you hear about, step by step" onPress={() => router.push("/notification-setup")} last />
+          </Section>
+
           <Section title="Rules" description="You get a notification when any rule matches and no mute rule does." action={<View ref={addRef} collapsable={false}><Button label="Add" icon={Plus} variant="ghost" size="sm" onPress={() => void addRule()} /></View>}>
             {data.rules.length === 0 ? (
               <View className="px-4 py-3">
@@ -180,33 +188,14 @@ export function NotificationsScreen() {
           ) : null}
 
           <Section title="Quiet hours" description="Notifications wait until quiet hours end, in this phone's time zone.">
-            <View className="flex-row flex-wrap gap-2 px-4 pt-1">
-              <Button label="Off" size="sm" variant={!data.quietHours ? "primary" : "outline"} onPress={() => update.mutate({ quietHours: null })} />
-              {QUIET_PRESETS.map((preset) => {
-                const active = data.quietHours?.start === preset.start && data.quietHours?.end === preset.end;
-                return <Button key={preset.start} label={`${preset.start}–${preset.end}`} size="sm" variant={active ? "primary" : "outline"} onPress={() => update.mutate({ quietHours: preset })} />;
-              })}
-            </View>
+            <QuietHoursChoice value={data.quietHours ?? null} onChange={(quietHours) => update.mutate({ quietHours })} />
           </Section>
 
           <Section title="Daily limit" description="After this many notifications in a day, the rest are skipped.">
-            <View className="flex-row items-center gap-4 px-4 pt-2">
-              <Stepper icon={Minus} label="Fewer" disabled={data.dailyCap <= 1} onPress={() => update.mutate({ dailyCap: Math.max(1, data.dailyCap - (data.dailyCap > 10 ? 5 : 1)) })} />
-              <Text variant="title" className="min-w-12 text-center">{data.dailyCap}</Text>
-              <Stepper icon={Plus} label="More" disabled={data.dailyCap >= 100} onPress={() => update.mutate({ dailyCap: Math.min(100, data.dailyCap + (data.dailyCap >= 10 ? 5 : 1)) })} />
-              <Text variant="muted">a day</Text>
-            </View>
+            <DailyCapStepper value={data.dailyCap} onChange={(dailyCap) => update.mutate({ dailyCap })} />
           </Section>
         </ReadableWidth>
       </ScrollView>
     </Screen>
-  );
-}
-
-function Stepper({ icon, label, disabled, onPress }: { icon: typeof Plus; label: string; disabled?: boolean; onPress(): void }) {
-  return (
-    <Pressable accessibilityLabel={label} disabled={disabled} onPress={onPress} className="h-10 w-10 items-center justify-center rounded-md border border-border active:bg-accent disabled:opacity-40">
-      <Icon icon={icon} size={18} />
-    </Pressable>
   );
 }

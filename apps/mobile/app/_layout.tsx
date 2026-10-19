@@ -74,6 +74,8 @@ function RootNavigator() {
         <Stack.Screen name="sign-in" options={routeSheetOptions(split, [0.75, 1])} />
         <Stack.Screen name="filters/[kind]" options={routeSheetOptions(split, [0.6, 1])} />
         <Stack.Screen name="sheets/[kind]" options={routeSheetOptions(split, [0.6, 1])} />
+        {/* A full-screen flow on phones; on tablets a centred dialog, drawn by the screen itself. */}
+        <Stack.Screen name="notification-setup" options={split ? routeSheetOptions(split, []) : { presentation: "fullScreenModal", animation: "slide_from_bottom" }} />
         <Stack.Screen name="auth/callback" options={{ presentation: "transparentModal", animation: "fade" }} />
       </Stack>
       <OverlayHost />
