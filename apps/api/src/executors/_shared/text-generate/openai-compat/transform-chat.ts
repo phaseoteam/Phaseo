@@ -14,6 +14,7 @@ import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-pol
 import { isSealedReasoningValue } from "@core/reasoning-state";
 import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/shared/reasoning";
 import { toIRAnnotations } from "@protocols/shared/citations";
+import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -82,7 +83,15 @@ export function irToOpenAIChat(
 				providerId === "siliconflow" ||
 				providerId === "stepfun" ||
 				providerId === "wafer" ||
-				providerId === "doubleword";
+				providerId === "wafer-zdr" ||
+				providerId === "doubleword" ||
+				// Beam returns 400 without it (https://docs.baseten.co/inference/model-apis/reasoning);
+				// Arcee, Together and DeepInfra document it on assistant messages for tool loops.
+				providerId === "baseten" ||
+				providerId === "arcee" ||
+				providerId === "arcee-ai" ||
+				providerId === "together" ||
+				providerId === "deepinfra";
 			if (providerSupportsAssistantReasoningContent && assistantReasoning.length > 0) {
 				if (providerId === "minimax" || providerId === "minimax-lightning") {
 					// With reasoning_split, MiniMax returns thinking in reasoning_details
@@ -220,7 +229,8 @@ export function irToOpenAIChat(
 	if (ir.stop) request.stop = ir.stop;
 	if (ir.seed !== undefined) request.seed = ir.seed;
 	if (ir.background !== undefined) request.background = ir.background;
-	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
+	// The provider's own name for the tier (OpenAI, Azure and DeepInfra call standard "default").
+	if (ir.serviceTier !== undefined) request.service_tier = normalizeTextProviderServiceTier(providerId ?? "", ir.serviceTier) ?? ir.serviceTier;
 	// Never send null: absent keys stay absent. The pipeline has already namespaced the key per workspace.
 	if (typeof ir.promptCacheKey === "string" && ir.promptCacheKey.length > 0) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;

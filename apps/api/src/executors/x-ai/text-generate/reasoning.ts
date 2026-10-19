@@ -27,6 +27,11 @@ const REASONING_EFFORT_TO_PERCENT: Record<ReasoningEffort, number> = {
 const XAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"grok-4": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"grok-4-1": new Set(["none", "low", "medium", "high", "xhigh"]),
+	// https://docs.x.ai/developers/models/grok-4.3: none, low, medium, high, xhigh (default low).
+	"grok-4.3": new Set(["none", "low", "medium", "high", "xhigh"]),
+	// grok-4.6 and grok-4.7 model pages: low, medium, high, xhigh (default high).
+	"grok-4.6": new Set(["low", "medium", "high", "xhigh"]),
+	"grok-4.7": new Set(["low", "medium", "high", "xhigh"]),
 };
 
 type XAiReasoningRouteFamily = {
