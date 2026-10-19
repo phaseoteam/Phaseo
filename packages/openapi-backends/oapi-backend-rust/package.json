@@ -18,7 +18,8 @@
                 },
     "devDependencies":  {
                             "@types/node":  "^26.1.2",
-                            "typescript":  "^6.0.3"
+                            "@typescript/native":  "catalog:",
+                            "typescript":  "catalog:"
                         },
     "dependencies":  {
                          "@phaseo/oapi-core":  "workspace:*"

@@ -9,6 +9,7 @@
 - Install: `pnpm install` (Node >=22.12.0).
 - Dev servers: `pnpm dev` to run everything, or scope with `pnpm --filter @phaseo/web dev`, `pnpm --filter @phaseo/gateway-api dev`, `pnpm --filter @phaseo/docs dev`.
 - Quality gates: `pnpm lint`, `pnpm typecheck`, `pnpm build`.
+- TypeScript: `tsc` is TypeScript 7 (`@typescript/native`); the `typescript` package is the TypeScript 6 API (`@typescript/typescript6`, bin `tsc6`) kept for typescript-eslint and scripts that import the compiler. Both come from the `catalog:` in `pnpm-workspace.yaml`. tsconfigs can't use `baseUrl`, `ignoreDeprecations` or `moduleResolution: node`.
 - Archived fixture checks (only when fixtures or validators change): `pnpm validate:data`, `pnpm validate:pricing`, `pnpm validate:gateway`. These do not validate live catalogue data. Docs: `pnpm docs:links` then `pnpm docs:build`.
 - Tests: `pnpm --filter @phaseo/web test`; Python SDK via `pnpm test:sdk-py` (`python -m pytest packages/sdk/sdk-py/tests`); TS SDK local compatibility suite via `pnpm --filter @phaseo/sdk test` and optional live smoke checks via `pnpm --filter @phaseo/sdk test:smoke` (full `pnpm test` runs the TS SDK local suite plus pytest).
 
