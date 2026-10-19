@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createStreamReencoder } from "./stream-reencode";
+import { createStreamReencoder, toMessagesUsage } from "./stream-reencode";
 import { extractUnifiedStreamEvents } from "./stream-events";
+import { normalizeAnthropicUsage } from "./payload";
+import { accumulateResponsesStream, itemLifecycle } from "./__tests__/responses-stream-accumulator";
 
 type Source = { event?: string; data: any };
 
@@ -103,14 +105,80 @@ describe("createStreamReencoder", () => {
 		expect(out.map((frame) => frame.eventName)).toEqual([
 			"response.created",
 			"response.output_item.added",
+			"response.content_part.added",
 			"response.output_text.delta",
+			"response.output_text.done",
+			"response.content_part.done",
+			"response.output_item.done",
 			"response.incomplete",
 		]);
-		expect(out[3].frame.response).toMatchObject({
+		expect(out.at(-1)!.frame.response).toMatchObject({
 			status: "incomplete",
 			incomplete_details: { reason: "max_output_tokens" },
 			usage: { prompt_tokens: 4, completion_tokens: 2 },
 		});
+	});
+
+	// CodeRabbit on #2992: the message item had no content part, deltas no content_index,
+	// nothing was closed and the terminal response had no output, so the OpenAI SDK's
+	// responses.stream() helper threw and finalResponse().output was empty.
+	it("gives Responses clients a stream the SDK helper accumulates into the final output", () => {
+		const out = reencode("openai.responses", [
+			chatChunk({ role: "assistant", reasoning_content: "Think" }),
+			chatChunk({ reasoning_content: "ing." }),
+			chatChunk({ content: "Hel" }),
+			chatChunk({ content: "lo" }),
+			toolFragment(0, "{\"city\":", { id: "call_a", name: "weather" }),
+			toolFragment(0, "\"Paris\"}"),
+			chatChunk({}, "tool_calls"),
+			{ data: { object: "chat.completion.chunk", choices: [], usage: { prompt_tokens: 4, completion_tokens: 2 } } },
+		]);
+		const frames = out.map((frame) => ({ event: String(frame.eventName), data: frame.frame }));
+		const { finalResponse, streamed } = accumulateResponsesStream(frames);
+		const expectedOutput = [
+			{ type: "reasoning", content: [{ type: "reasoning_text", text: "Thinking." }] },
+			{ type: "message", role: "assistant", status: "completed", content: [{ type: "output_text", text: "Hello", annotations: [] }] },
+			{ type: "function_call", call_id: "call_a", name: "weather", arguments: "{\"city\":\"Paris\"}", status: "completed" },
+		];
+		expect(finalResponse.output).toMatchObject(expectedOutput);
+		expect(streamed.output).toMatchObject(expectedOutput);
+		expect(itemLifecycle(frames)).toEqual([
+			{ index: 0, type: "reasoning", added: true, done: true },
+			{ index: 1, type: "message", added: true, done: true },
+			{ index: 2, type: "function_call", added: true, done: true },
+		]);
+		expect(frames.find((frame) => frame.event === "response.function_call_arguments.done")?.data)
+			.toMatchObject({ output_index: 2, name: "weather", arguments: "{\"city\":\"Paris\"}" });
+		// Every item is closed before the one terminal event.
+		const terminalIndex = frames.findIndex((frame) => frame.event === "response.completed");
+		expect(terminalIndex).toBe(frames.length - 1);
+	});
+
+	// CodeRabbit on #2992: Chat usage reached Messages clients unconverted (prompt_tokens,
+	// completion_tokens), so input_tokens and output_tokens came out as zero.
+	it("gives Messages clients Chat usage in Messages terms, cache reads beside input", () => {
+		const out = reencode("anthropic.messages", [
+			chatChunk({ role: "assistant", content: "Hi" }),
+			chatChunk({}, "stop"),
+			{
+				data: {
+					object: "chat.completion.chunk",
+					choices: [],
+					usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15, prompt_tokens_details: { cached_tokens: 4 } },
+				},
+			},
+		]);
+		const usage = out.find((frame) => frame.frame.type === "message_delta")?.frame.usage;
+		expect(usage).toEqual({ input_tokens: 6, output_tokens: 5, cache_read_input_tokens: 4, cache_creation_input_tokens: 0 });
+		// The after-stage Messages normaliser (stream.ts rewriteFrame) keeps these counts.
+		expect(normalizeAnthropicUsage(usage)).toMatchObject({ input_tokens: 6, output_tokens: 5, cache_read_input_tokens: 4, cache_creation_input_tokens: 0 });
+	});
+
+	it("maps Chat cache writes out of Messages input_tokens", () => {
+		expect(toMessagesUsage({ prompt_tokens: 100, completion_tokens: 7, prompt_tokens_details: { cached_tokens: 30, cache_write_tokens: 50 } }))
+			.toEqual({ input_tokens: 20, output_tokens: 7, cache_read_input_tokens: 30, cache_creation_input_tokens: 50 });
+		expect(toMessagesUsage({ prompt_tokens: 9, completion_tokens: 1 }))
+			.toEqual({ input_tokens: 9, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 });
 	});
 
 	it("drops the foreign snapshot and keeps one finish_reason for Chat clients", () => {
@@ -134,7 +202,7 @@ describe("createStreamReencoder", () => {
 		expect(toolArguments(out)).toEqual({ weather: "{\"city\":\"Paris\"}", time: "{\"zone\":\"CET\"}" });
 		const blocks = out.filter((frame) => frame.frame.type === "content_block_start").map((frame) => frame.frame.content_block.type);
 		expect(blocks).toEqual(["text", "tool_use", "tool_use"]);
-		expect(out.at(-2)?.frame).toMatchObject({ type: "message_delta", delta: { stop_reason: "tool_use" }, usage: { prompt_tokens: 5 } });
+		expect(out.at(-2)?.frame).toMatchObject({ type: "message_delta", delta: { stop_reason: "tool_use" }, usage: { input_tokens: 5, output_tokens: 9 } });
 		expect(out.at(-1)?.frame.type).toBe("message_stop");
 	});
 

@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveStreamForProtocol } from "../index";
 import { createAnthropicToResponsesStreamTransformer } from "../../../../anthropic/text-generate/stream-transformer";
+import { accumulateResponsesStream, itemLifecycle } from "../../../../../pipeline/after/__tests__/responses-stream-accumulator";
 
 type Frame = { event?: string; data: any };
 
@@ -83,5 +84,56 @@ describe("Responses stream grammar", () => {
 		const terminal = frames[frames.length - 1];
 		expect(terminal.event).toBe(finish === "length" ? "response.incomplete" : "response.completed");
 		expect(terminal.data.response.status).toBe(finish === "length" ? "incomplete" : "completed");
+	});
+
+	const chatWithEveryItem = () => sseResponse([
+		{ data: { id: "c", object: "chat.completion.chunk", model: "m", choices: [{ index: 0, delta: { role: "assistant", reasoning_content: "Hm" }, finish_reason: null }] } },
+		{ data: { id: "c", object: "chat.completion.chunk", model: "m", choices: [{ index: 0, delta: { reasoning_content: "m" }, finish_reason: null }] } },
+		{ data: { id: "c", object: "chat.completion.chunk", model: "m", choices: [{ index: 0, delta: { content: "Hel" }, finish_reason: null }] } },
+		{ data: { id: "c", object: "chat.completion.chunk", model: "m", choices: [{ index: 0, delta: { content: "lo" }, finish_reason: null }] } },
+		{ data: { id: "c", object: "chat.completion.chunk", model: "m", choices: [{ index: 0, delta: { tool_calls: [{ index: 0, id: "call_1", type: "function", function: { name: "f", arguments: "{\"a\":1}" } }] }, finish_reason: null }] } },
+		{ data: { id: "c", object: "chat.completion.chunk", model: "m", choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }], usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 } } },
+	]);
+	const chatToResponsesFrames = async () =>
+		parse(await new Response(resolveStreamForProtocol(chatWithEveryItem(), args("mistral"), "chat")).text());
+
+	// CodeRabbit on #2992: the OpenAI SDK helper builds its snapshot from
+	// response.created.response and pushes each output_item.added item into its output.
+	it("Chat upstream response.created carries the snapshot the SDK helper starts from", async () => {
+		const frames = await chatToResponsesFrames();
+		expect(frames[0].event).toBe("response.created");
+		// The id matches the terminal response's: the helper rejects a changed id.
+		expect(frames[0].data.response).toMatchObject({ id: "req_grammar", object: "response", status: "in_progress", output: [] });
+		expect(frames.at(-1)?.data.response.id).toBe("req_grammar");
+	});
+
+	// CodeRabbit on #2992: message and reasoning items were announced but never closed.
+	it("Chat upstream closes every announced item before tool calls and the terminal", async () => {
+		const frames = await chatToResponsesFrames();
+		expectResponsesGrammar(frames);
+		expect(itemLifecycle(frames)).toEqual([
+			{ index: 0, type: "reasoning", added: true, done: true },
+			{ index: 1, type: "message", added: true, done: true },
+			{ index: 2, type: "function_call", added: true, done: true },
+		]);
+		const names = frames.map((frame) => frame.event);
+		const doneAt = (type: string) => frames.findIndex((frame) => frame.event === "response.output_item.done" && frame.data.item.type === type);
+		expect(doneAt("reasoning")).toBeLessThan(names.indexOf("response.function_call_arguments.done"));
+		expect(doneAt("message")).toBeLessThan(names.indexOf("response.function_call_arguments.done"));
+		expect(frames.find((frame) => frame.event === "response.output_text.done")?.data).toMatchObject({ item_id: "msg_req_grammar_0", content_index: 0, text: "Hello" });
+		expect(frames.find((frame) => frame.event === "response.reasoning_text.done")?.data).toMatchObject({ item_id: "reasoning_req_grammar_0", content_index: 0, text: "Hmm" });
+		expect(frames.find((frame) => frame.event === "response.content_part.done" && frame.data.part.type === "output_text")?.data.part.text).toBe("Hello");
+	});
+
+	it("Chat upstream gives a stream the SDK helper accumulates into the final output", async () => {
+		const frames = await chatToResponsesFrames();
+		const { finalResponse, streamed } = accumulateResponsesStream(frames);
+		expect(streamed.output).toMatchObject([
+			{ type: "reasoning", id: "reasoning_req_grammar_0", status: "completed", content: [{ type: "reasoning_text", text: "Hmm" }] },
+			{ type: "message", id: "msg_req_grammar_0", status: "completed", content: [{ type: "output_text", text: "Hello" }] },
+			{ type: "function_call", call_id: "call_1", name: "f", arguments: "{\"a\":1}", status: "completed" },
+		]);
+		expect(finalResponse.output.map((item: any) => item.type)).toEqual(["reasoning", "message", "function_call"]);
+		expect(itemLifecycle(frames).every((item) => item.added && item.done)).toBe(true);
 	});
 });

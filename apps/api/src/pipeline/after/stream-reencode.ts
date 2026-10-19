@@ -9,6 +9,8 @@
 
 import { encodeUnifiedStreamEvent, type EncodedStreamFrame, type StreamProtocol } from "@protocols/stream/encode";
 import { normalizeFinishReason, responsesStatusFor, anthropicStopReasonFor } from "@core/finish-reason";
+import { resolveCacheTokenUsage, uncachedInputTokens } from "@core/cache-usage";
+import { pickFirstFiniteNumber } from "@core/usage-normalization";
 import { createToolCallKeyResolver, type UnifiedStreamEvent } from "./stream-events";
 
 export type StreamSourceFrame = { eventName?: string | null; frame: any };
@@ -112,6 +114,32 @@ function argumentsToSend(call: { sent: ArgumentsSent }, event: Extract<UnifiedSt
 		return event.arguments;
 	}
 	return null;
+}
+
+/**
+ * Source usage (Chat `prompt_tokens`/`completion_tokens` or Responses `input_tokens`/
+ * `output_tokens`, both counting cache reads and writes inside input) in Messages terms:
+ * `input_tokens` excludes the cache, which is reported beside it.
+ */
+export function toMessagesUsage(raw: any): Record<string, number | Record<string, number>> | null {
+	if (!raw || typeof raw !== "object") return null;
+	const input = pickFirstFiniteNumber(raw, ["input_tokens", "prompt_tokens"]) ?? 0;
+	const output = pickFirstFiniteNumber(raw, ["output_tokens", "completion_tokens"]) ?? 0;
+	const cache = resolveCacheTokenUsage(raw, input, { readSubsetDefault: true });
+	return {
+		input_tokens: uncachedInputTokens(input, cache),
+		output_tokens: output,
+		cache_read_input_tokens: Math.max(0, cache.readTokens ?? 0),
+		cache_creation_input_tokens: Math.max(0, cache.writeTokens ?? 0),
+		...(cache.write5mTokens !== undefined || cache.write1hTokens !== undefined
+			? {
+				cache_creation: {
+					ephemeral_5m_input_tokens: cache.write5mTokens ?? 0,
+					ephemeral_1h_input_tokens: cache.write1hTokens ?? 0,
+				},
+			}
+			: {}),
+	};
 }
 
 type BlockKind = "text" | "thinking" | "tool_use";
@@ -275,7 +303,8 @@ function createMessagesReencoder(ctx: EncodeContext): StreamReencoder {
 						break;
 					}
 					case "usage":
-						usage = event.usage;
+						// The source is Chat or Responses: restate its usage in Messages terms.
+						usage = toMessagesUsage(event.usage);
 						if (pendingStop !== undefined) terminal(out);
 						break;
 					case "stop":
@@ -308,15 +337,24 @@ function createMessagesReencoder(ctx: EncodeContext): StreamReencoder {
 	};
 }
 
+/** An output item the Responses re-encoder announced, with what it has accumulated. */
+type ResponsesItem =
+	| { kind: "message"; outputIndex: number; id: string; text: string }
+	| { kind: "reasoning"; outputIndex: number; id: string; text: string }
+	| { kind: "function_call"; outputIndex: number; id: string; callId?: string; name?: string; args: string }
+	| { kind: "media"; outputIndex: number; item: Record<string, any> };
+
 function createResponsesReencoder(ctx: EncodeContext): StreamReencoder {
 	let created = false;
 	let nextOutputIndex = 0;
-	const items = new Map<string, number>();
+	const items = new Map<string, ResponsesItem>();
+	const ordered: ResponsesItem[] = [];
 	const toolKey = createToolCallKeyResolver();
 	const sentArguments = new Map<string, { sent: ArgumentsSent }>();
 	let usage: any = null;
 	let pendingStop: string | null | undefined;
 	let finished = false;
+	const itemIdFor = (key: string) => `${key}_${ctx.requestId ?? "item"}`;
 
 	const ensureCreated = (out: EncodedStreamFrame[]) => {
 		if (created) return;
@@ -329,36 +367,88 @@ function createResponsesReencoder(ctx: EncodeContext): StreamReencoder {
 			},
 		});
 	};
-	const ensureItem = (out: EncodedStreamFrame[], key: string, item: Record<string, any>): number => {
+	const push = (out: EncodedStreamFrame[], type: string, frame: Record<string, any>) => {
+		out.push({ eventName: type, frame: { type, ...frame } });
+	};
+	/**
+	 * Announce an item once: output_item.added, then (for text items) the content part
+	 * its deltas write into, as the Responses stream documents.
+	 */
+	const ensureItem = <T extends ResponsesItem>(out: EncodedStreamFrame[], key: string, make: (outputIndex: number, id: string) => T, item: Record<string, any>): T => {
 		ensureCreated(out);
 		const existing = items.get(key);
-		if (existing !== undefined) return existing;
-		const outputIndex = nextOutputIndex++;
-		items.set(key, outputIndex);
-		out.push({
-			eventName: "response.output_item.added",
-			frame: { type: "response.output_item.added", output_index: outputIndex, item: { id: `${key}_${ctx.requestId ?? "item"}`, status: "in_progress", ...item } },
-		});
-		return outputIndex;
+		if (existing) return existing as T;
+		const id = itemIdFor(key);
+		const entry = make(nextOutputIndex++, id);
+		items.set(key, entry);
+		ordered.push(entry);
+		push(out, "response.output_item.added", { output_index: entry.outputIndex, item: { id, status: "in_progress", ...item } });
+		if (entry.kind === "message" || entry.kind === "reasoning") {
+			push(out, "response.content_part.added", {
+				item_id: id,
+				output_index: entry.outputIndex,
+				content_index: 0,
+				part: entry.kind === "message" ? { type: "output_text", text: "", annotations: [] } : { type: "reasoning_text", text: "" },
+			});
+		}
+		return entry;
+	};
+	/** The completed form of an item, for its output_item.done and the terminal output. */
+	const completedItem = (entry: ResponsesItem): Record<string, any> => {
+		switch (entry.kind) {
+			case "message":
+				return { id: entry.id, type: "message", role: "assistant", status: "completed", content: [{ type: "output_text", text: entry.text, annotations: [] }] };
+			case "reasoning":
+				return { id: entry.id, type: "reasoning", summary: [], content: [{ type: "reasoning_text", text: entry.text }] };
+			case "function_call":
+				return { id: entry.id, type: "function_call", call_id: entry.callId, name: entry.name, arguments: entry.args, status: "completed" };
+			default:
+				return { ...entry.item, status: "completed" };
+		}
+	};
+	/** Each item's done events, in output order, before the terminal event. */
+	const closeItems = (out: EncodedStreamFrame[]) => {
+		for (const entry of ordered) {
+			const outputIndex = entry.outputIndex;
+			if (entry.kind === "message" || entry.kind === "reasoning") {
+				const part = entry.kind === "message"
+					? { type: "output_text", text: entry.text, annotations: [] }
+					: { type: "reasoning_text", text: entry.text };
+				push(out, entry.kind === "message" ? "response.output_text.done" : "response.reasoning_text.done", {
+					item_id: entry.id,
+					output_index: outputIndex,
+					content_index: 0,
+					text: entry.text,
+				});
+				push(out, "response.content_part.done", { item_id: entry.id, output_index: outputIndex, content_index: 0, part });
+			} else if (entry.kind === "function_call") {
+				push(out, "response.function_call_arguments.done", {
+					item_id: entry.id,
+					output_index: outputIndex,
+					...(entry.name ? { name: entry.name } : {}),
+					arguments: entry.args,
+				});
+			}
+			push(out, "response.output_item.done", { output_index: outputIndex, item: completedItem(entry) });
+		}
 	};
 	const terminal = (out: EncodedStreamFrame[]) => {
 		if (finished || pendingStop === undefined) return;
 		finished = true;
 		ensureCreated(out);
+		closeItems(out);
 		const { status, incompleteDetails } = responsesStatusFor(normalizeFinishReason(pendingStop).finishReason);
 		const eventName = status === "incomplete" ? "response.incomplete" : status === "failed" ? "response.failed" : "response.completed";
-		out.push({
-			eventName,
-			frame: {
-				type: eventName,
-				response: {
-					id: ctx.requestId ?? undefined,
-					object: "response",
-					model: ctx.model ?? undefined,
-					status,
-					...(incompleteDetails ? { incomplete_details: incompleteDetails } : {}),
-					...(usage ? { usage } : {}),
-				},
+		push(out, eventName, {
+			response: {
+				id: ctx.requestId ?? undefined,
+				object: "response",
+				model: ctx.model ?? undefined,
+				status,
+				...(incompleteDetails ? { incomplete_details: incompleteDetails } : {}),
+				// The assembled output, so a client's final response matches what streamed.
+				output: ordered.map(completedItem),
+				...(usage ? { usage } : {}),
 			},
 		});
 	};
@@ -375,27 +465,34 @@ function createResponsesReencoder(ctx: EncodeContext): StreamReencoder {
 					case "delta_text": {
 						const reasoning = event.channel === "reasoning_text";
 						const key = `${reasoning ? "rs" : "msg"}_${event.choiceIndex ?? 0}`;
-						const outputIndex = ensureItem(out, key, reasoning
-							? { type: "reasoning", summary: [], content: [] }
-							: { type: "message", role: "assistant", content: [] });
-						out.push({
-							eventName: reasoning ? "response.reasoning_text.delta" : "response.output_text.delta",
-							frame: { type: reasoning ? "response.reasoning_text.delta" : "response.output_text.delta", item_id: `${key}_${ctx.requestId ?? "item"}`, output_index: outputIndex, delta: event.text },
+						const entry = reasoning
+							? ensureItem(out, key, (outputIndex, id) => ({ kind: "reasoning" as const, outputIndex, id, text: "" }), { type: "reasoning", summary: [], content: [] })
+							: ensureItem(out, key, (outputIndex, id) => ({ kind: "message" as const, outputIndex, id, text: "" }), { type: "message", role: "assistant", content: [] });
+						entry.text += event.text;
+						push(out, reasoning ? "response.reasoning_text.delta" : "response.output_text.delta", {
+							item_id: entry.id,
+							output_index: entry.outputIndex,
+							content_index: 0,
+							delta: event.text,
 						});
 						break;
 					}
 					case "delta_tool": {
 						const key = `fc_${toolKey(event).replace(/[^A-Za-z0-9_-]/g, "_")}`;
-						const outputIndex = ensureItem(out, key, { type: "function_call", call_id: event.toolCallId, name: event.toolName, arguments: "" });
-						const itemId = `${key}_${ctx.requestId ?? "item"}`;
+						const entry = ensureItem(
+							out,
+							key,
+							(outputIndex, id) => ({ kind: "function_call" as const, outputIndex, id, callId: event.toolCallId, name: event.toolName, args: "" }),
+							{ type: "function_call", call_id: event.toolCallId, name: event.toolName, arguments: "" },
+						);
+						entry.callId ??= event.toolCallId;
+						entry.name ??= event.toolName;
 						const call = sentArguments.get(key) ?? { sent: "none" as ArgumentsSent };
 						sentArguments.set(key, call);
 						const partial = argumentsToSend(call, event);
 						if (partial) {
-							out.push({
-								eventName: "response.function_call_arguments.delta",
-								frame: { type: "response.function_call_arguments.delta", item_id: itemId, output_index: outputIndex, delta: partial },
-							});
+							entry.args += partial;
+							push(out, "response.function_call_arguments.delta", { item_id: entry.id, output_index: entry.outputIndex, delta: partial });
 						}
 						break;
 					}
@@ -403,7 +500,9 @@ function createResponsesReencoder(ctx: EncodeContext): StreamReencoder {
 						const encoded = encodeUnifiedStreamEvent("openai.responses", event, ctx);
 						if (encoded) {
 							ensureCreated(out);
-							out.push({ ...encoded, frame: { ...encoded.frame, output_index: nextOutputIndex++ } });
+							const entry: ResponsesItem = { kind: "media", outputIndex: nextOutputIndex++, item: encoded.frame?.item ?? {} };
+							ordered.push(entry);
+							out.push({ ...encoded, frame: { ...encoded.frame, output_index: entry.outputIndex } });
 						}
 						break;
 					}
