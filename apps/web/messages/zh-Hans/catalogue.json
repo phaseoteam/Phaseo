@@ -1904,7 +1904,11 @@
 			"downloadPng": "下载 PNG",
 			"chartSettings": "图表设置",
 			"done": "完成",
-			"exportFailed": "无法导出图表，请重试。"
+			"exportFailed": "无法导出图表，请重试。",
+			"tokensTaskShort": "每任务词元",
+			"totalTokensShort": "总词元",
+			"totalCostShort": "总成本",
+			"all": "全部"
 		},
 		"title": "基准测试",
 		"description": "探索 AI 模型基准测试、比较分数，并了解哪些评测最常使用。",

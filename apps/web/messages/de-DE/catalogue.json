@@ -1904,7 +1904,11 @@
 			"downloadPng": "PNG herunterladen",
 			"chartSettings": "Diagrammeinstellungen",
 			"done": "Fertig",
-			"exportFailed": "Das Diagramm konnte nicht exportiert werden. Bitte erneut versuchen."
+			"exportFailed": "Das Diagramm konnte nicht exportiert werden. Bitte erneut versuchen.",
+			"tokensTaskShort": "Tokens pro Aufgabe",
+			"totalTokensShort": "Tokens gesamt",
+			"totalCostShort": "Gesamtkosten",
+			"all": "Alle"
 		},
 		"title": "Vergleichstests",
 		"description": "Entdecke KI-Modell-Benchmarks, vergleiche Bewertungen und sieh, welche Evaluierungen am häufigsten verwendet werden.",

@@ -1904,7 +1904,11 @@
 			"downloadPng": "PNGをダウンロード",
 			"chartSettings": "グラフ設定",
 			"done": "完了",
-			"exportFailed": "グラフを書き出せませんでした。もう一度お試しください。"
+			"exportFailed": "グラフを書き出せませんでした。もう一度お試しください。",
+			"tokensTaskShort": "タスクあたりのトークン",
+			"totalTokensShort": "合計トークン",
+			"totalCostShort": "合計コスト",
+			"all": "すべて"
 		},
 		"title": "ベンチマーク",
 		"description": "AIモデルのベンチマークを確認し、スコアを比較して、どの評価が広く使われているかを見つけます。",

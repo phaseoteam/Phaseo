@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CartesianGrid, ComposedChart, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis, useYAxisScale } from "recharts";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -47,6 +48,7 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 }) {
 	const tx = useTranslations();
 	const locale = useLocale();
+	const mobile = useIsMobile();
 	const [log, setLog] = useState(true);
 	const [frontier, setFrontier] = useState(false);
 	const [hovered, setHovered] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 	const xLabel = tokenScatter ? title : horizontalLabel;
 	const xUnit = tokenScatter ? "tokens" : horizontalUnit;
 	const unit = tokenScatter ? "score" : metricUnit;
-	const columns = !xValue;
+	const columns = !Boolean(xValue);
 	const candidate = highlight ?? hovered ?? pinned;
 	const activeModel = rows.some((row) => row.modelId === candidate) ? candidate : null;
 	const [size, setSize] = useState({ width: 0, height: 500 });
@@ -91,11 +93,11 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 		<div className="mb-3 flex flex-wrap items-center justify-between gap-3">
 			<h3 className="text-base font-semibold tracking-tight">{title}</h3>
 			<div data-export-hide className="flex flex-wrap items-center gap-1">
-				{scatterToggle ? <><Button size="sm" variant={!scatter ? "secondary" : "ghost"} aria-pressed={!scatter} onClick={() => onScatter?.(false)}>{tx("Catalogue.benchmarks.explorer.bars")}</Button><Button size="sm" variant={scatter ? "secondary" : "ghost"} aria-pressed={scatter} onClick={() => onScatter?.(true)}>{tx("Catalogue.benchmarks.explorer.scatter")}</Button></> : null}
-				{xValue ? <><Button size="sm" variant={frontier ? "secondary" : "ghost"} aria-pressed={frontier} onClick={() => setFrontier(!frontier)}>{tx("Catalogue.benchmarks.explorer.pareto")}</Button>{[false, true].map((isLog) => <Button key={String(isLog)} size="sm" variant={log === isLog ? "secondary" : "ghost"} aria-pressed={log === isLog} onClick={() => setLog(isLog)}>{tx(`Catalogue.compare.${isLog ? "logScale" : "linearScale"}`)}</Button>)}</> : null}
+				{scatterToggle ? <><Button size="sm" className="min-h-10 md:min-h-7" variant={!scatter ? "secondary" : "ghost"} aria-pressed={!scatter} onClick={() => onScatter?.(false)}>{tx("Catalogue.benchmarks.explorer.bars")}</Button><Button size="sm" className="min-h-10 md:min-h-7" variant={scatter ? "secondary" : "ghost"} aria-pressed={scatter} onClick={() => onScatter?.(true)}>{tx("Catalogue.benchmarks.explorer.scatter")}</Button></> : null}
+				{xValue ? <><Button size="sm" className="min-h-10 md:min-h-7" variant={frontier ? "secondary" : "ghost"} aria-pressed={frontier} onClick={() => setFrontier(!frontier)}>{tx("Catalogue.benchmarks.explorer.pareto")}</Button>{[false, true].map((isLog) => <Button key={String(isLog)} size="sm" variant={log === isLog ? "secondary" : "ghost"} aria-pressed={log === isLog} onClick={() => setLog(isLog)}>{tx(`Catalogue.compare.${isLog ? "logScale" : "linearScale"}`)}</Button>)}</> : null}
 			</div>
 		</div>
-		{!points.length ? <div className="flex min-h-72 items-center justify-center text-sm text-muted-foreground" role="status">{all.length && log ? <Button variant="outline" onClick={() => setLog(false)}>{tx("Catalogue.compare.linearScale")}</Button> : tx("Common.ui.benchmarkChartCopy.noResultsAvailableForThisMetric")}</div> : <div className="relative">{columns && hoveredGroup ? <div role="tooltip" className="pointer-events-none absolute right-3 top-3 z-30 w-72 max-w-[calc(100%-1.5rem)] rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md"><div className="mb-3 flex items-center gap-2"><Logo id={hoveredGroup.configurations[0].row.creatorId} alt="" width={18} height={18} /><p className="font-semibold">{hoveredGroup.configurations[0].row.modelName}</p></div><p className="mb-2 text-muted-foreground">{title}</p><div className="space-y-1">{hoveredGroup.configurations.map((item) => <div key={item.row.id} className={`flex items-center justify-between gap-4 rounded px-2 py-1.5 ${item.row.id === configuration ? "bg-muted font-semibold" : ""}`}><span className="min-w-0" title={item.row.sourceName}>{localizedBenchmarkConfiguration(item.row.effort, tx)}{hoveredGroup.configurations.filter((other) => other.row.effort === item.row.effort).length > 1 ? <span className="ml-1 text-muted-foreground">({item.row.sourceName})</span> : null}</span><span className="shrink-0 tabular-nums">{unit === "tokens" ? new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(item.value) : number(item.value)}</span></div>)}</div></div> : null}{columns ? <ArtificialAnalysisRangeRows groups={groups} number={number} onHighlight={setHovered} onConfiguration={setConfiguration} activeModel={activeModel} /> : null}<ScrollArea scrollBarOrientation="horizontal" className={columns ? "hidden w-full md:block" : "w-full"} viewportClassName="pb-3"><div className="h-[max(300px,calc(100svh-29rem))] md:h-[max(340px,calc(100svh-18rem))]" style={{ minWidth: columns ? Math.max(480, groups.length * 84 + 74) : undefined }} role="img" aria-label={title}>
+		{!points.length ? <div className="flex min-h-72 items-center justify-center text-sm text-muted-foreground" role="status">{all.length && log ? <Button variant="outline" onClick={() => setLog(false)}>{tx("Catalogue.compare.linearScale")}</Button> : tx("Common.ui.benchmarkChartCopy.noResultsAvailableForThisMetric")}</div> : <div className="relative">{columns && hoveredGroup ? <div role="tooltip" className="pointer-events-none fixed right-4 top-40 z-30 w-72 md:absolute md:right-3 md:top-3 max-w-[calc(100%-1.5rem)] rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md"><div className="mb-3 flex items-center gap-2"><Logo id={hoveredGroup.configurations[0].row.creatorId} alt="" width={18} height={18} /><p className="font-semibold">{hoveredGroup.configurations[0].row.modelName}</p></div><p className="mb-2 text-muted-foreground">{title}</p><div className="space-y-1">{hoveredGroup.configurations.map((item) => <div key={item.row.id} className={`flex items-center justify-between gap-4 rounded px-2 py-1.5 ${item.row.id === configuration ? "bg-muted font-semibold" : ""}`}><span className="min-w-0" title={item.row.sourceName}>{localizedBenchmarkConfiguration(item.row.effort, tx)}{hoveredGroup.configurations.filter((other) => other.row.effort === item.row.effort).length > 1 ? <span className="ml-1 text-muted-foreground">({item.row.sourceName})</span> : null}</span><span className="shrink-0 tabular-nums">{unit === "tokens" ? new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(item.value) : number(item.value)}</span></div>)}</div></div> : null}{columns && mobile ? <ArtificialAnalysisRangeRows groups={groups} number={number} onHighlight={setHovered} onConfiguration={setConfiguration} activeModel={activeModel} /> : null}{!columns || !mobile ? <ScrollArea scrollBarOrientation="horizontal" className={columns ? "hidden w-full md:block" : "w-full"} viewportClassName="pb-3"><div className="h-[max(300px,calc(100svh-29rem))] md:h-[max(340px,calc(100svh-18rem))]" style={{ minWidth: columns ? Math.max(480, groups.length * 84 + 74) : undefined }} role="img" aria-label={title}>
 			<ResponsiveContainer width="100%" height="100%" onResize={(width, height) => setSize({ width, height })}>
 					<ComposedChart margin={{ top: 24, right: directLabels ? 184 : 16, left: 0, bottom: 32 }}>
 					<CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="2 5" />
@@ -128,7 +130,7 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 					{xValue && frontier ? <Scatter name={tx("Catalogue.benchmarks.explorer.pareto")} data={paretoPoints(points)} shape={() => <g />} line={{ stroke: "var(--foreground)", strokeDasharray: "5 4", strokeWidth: 1.5 }} lineType="joint" isAnimationActive={false} /> : null}
 				</ComposedChart>
 			</ResponsiveContainer>
-		</div></ScrollArea></div>}
+		</div></ScrollArea> : null}</div>}
 		{columns && points.length ? <div className="mt-2 hidden flex-wrap justify-center md:flex gap-x-4 gap-y-2 text-xs text-muted-foreground">{efforts.map((effort) => <span key={effort} className="inline-flex items-center gap-1.5"><span className="font-medium text-foreground">{effortAbbreviations[effort] ?? effort.slice(0, 3)}</span>{localizedBenchmarkConfiguration(effort, tx)}</span>)}</div> : null}
 		{points.length && !columns && !directLabels && series.length <= 14 ? <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">{series.map((series) => <button type="button" key={series.id} aria-pressed={pinned === series.id} onClick={() => setPinned(pinned === series.id ? null : series.id)} onMouseEnter={() => setHovered(series.id)} onMouseLeave={() => setHovered(null)} className="flex min-h-8 items-center gap-2 rounded text-left hover:bg-muted" style={{ color: dashboardColour(series.points[0].row) }}><Logo id={series.points[0].row.creatorId} alt="" width={14} height={14} />{series.points[0].row.modelName}</button>)}</div> : null}
 	</section>;

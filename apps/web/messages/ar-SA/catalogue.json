@@ -1904,7 +1904,11 @@
 			"downloadPng": "تنزيل PNG",
 			"chartSettings": "إعدادات المخطط",
 			"done": "تم",
-			"exportFailed": "تعذر تصدير المخطط. حاول مرة أخرى."
+			"exportFailed": "تعذر تصدير المخطط. حاول مرة أخرى.",
+			"tokensTaskShort": "رموز لكل مهمة",
+			"totalTokensShort": "إجمالي الرموز",
+			"totalCostShort": "التكلفة الإجمالية",
+			"all": "الكل"
 		},
 		"title": "المعايير",
 		"description": "استكشف معايير نماذج AI، وقارن النتائج، واكتشف التقييمات الأكثر استخدامًا.",

@@ -51,7 +51,7 @@ export function dashboardModelGroups(rows: DashboardRow[], value: (row: Dashboar
 const finite = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : null;
 export function dashboardRows(models: ArtificialAnalysisPublicConfiguration[]): DashboardRow[] {
 	return models.map((model) => ({ id: model.id, modelId: model.model_id, modelName: model.name.replace(/\s*\((?:low|medium|high|xhigh|max|minimal|none|non-reasoning)[^)]*\)/gi, "").trim(), sourceName: model.name,
-		creatorId: model.creator?.slug ?? model.model_id.split("/")[0], colour: model.creator?.color ?? null, effort: model.effort ?? "default",
+		creatorId: model.creator?.slug ?? model.model_id.split("/")[0], colour: model.creator?.color ?? null, effort: model.effort ?? (/non-reasoning/i.test(model.name) ? "none" : "default"),
 		intelligence: model.intelligenceIndexIsEstimated ? null : finite(model.intelligenceIndex), tokensPerTask: finite(model.outputTokensPerTask?.output), totalTokens: finite(model.totalTokens?.output),
 		costPerTask: finite(model.costPerTaskUsd?.total), totalCost: finite(model.totalCostUsd?.total), timePerTask: finite(model.timePerTaskSeconds),
 		isOpenWeights: model.modelDetails?.isOpenWeights === true, deprecated: model.modelDetails?.deprecated === true, sourceSlug: model.slug,

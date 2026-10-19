@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { parseAsArrayOf, parseAsString, useQueryStates } from "nuqs";
-import { Download, ImageDown, SlidersHorizontal } from "lucide-react";
+import { Download, ImageDown, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -84,7 +84,16 @@ export default function ArtificialAnalysisDashboard({ rows, footer }: { rows: Da
 		const button = nav?.querySelector<HTMLElement>('[aria-current="location"]');
 		if (nav && button) { const left = button.offsetLeft; if (left < nav.scrollLeft || left + button.offsetWidth > nav.scrollLeft + nav.clientWidth) nav.scrollTo({ left: Math.max(0, left - 12), behavior: "smooth" }); }
 	}, [activeChart]);
+	useEffect(() => {
+		let frame = 0;
+		const resize = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => { if (displayedChart.current) scrollTo(displayedChart.current as ChartId, "instant"); const nav = navigationViewport.current; const button = nav?.querySelector<HTMLElement>('[aria-current="location"]'); if (nav && button) nav.scrollLeft = Math.max(0, button.offsetLeft - 12); }); };
+		window.addEventListener("resize", resize);
+		return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(frame); };
+	}, []);
 	const navigate = (id: ChartId) => { scrollTo(id, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"); };
+	useEffect(() => {
+		if (displayedChart.current) scrollTo(displayedChart.current as ChartId, "instant");
+	}, [filters.aaModels, filters.aaEfforts, filters.aaEffort, filters.aaCreator, filters.aaScatter, filters.aaGrouped, filters.aaLabels, filters.aaLayout, filters.aaBench, filters.aaDomain]);
 	const exportData = () => {
 		const columns = ["Model", "Configuration", "Intelligence", "Output tokens per task", "Total output tokens", "Cost per task (USD)", "Total cost (USD)", "Time per task (seconds)", ...availableBenchmarks.map((key) => dashboardBenchmarks[key]), ...capabilities];
 		const data = visible.map((row) => [row.sourceName, row.effort, row.intelligence, row.tokensPerTask, row.totalTokens, row.costPerTask, row.totalCost, row.timePerTask, ...availableBenchmarks.map((key) => row.benchmarks[key] ?? null), ...capabilities.map((key) => row.capabilities[key] ?? null)]);
@@ -102,16 +111,17 @@ export default function ArtificialAnalysisDashboard({ rows, footer }: { rows: Da
 			const anchor = document.createElement("a"); anchor.href = url; anchor.download = `phaseo-aa-${activeChart}.png`; anchor.click();
 		} catch { setExportError(true); } finally { setExporting(false); }
 	};
-	const picker = <ArtificialAnalysisModelPicker models={models} selected={selected} efforts={efforts} selectedEfforts={selectedEfforts} onModels={(ids) => void setFilters({ aaModels: ids })} onEfforts={(efforts) => void setFilters({ aaEffort: null, aaEfforts: efforts })} onReset={() => void setFilters({ aaModels: null, aaEffort: null, aaEfforts: null, aaCreator: null })} onHighlight={setHighlight} />;
+	const reset = () => void setFilters({ aaModels: null, aaEffort: null, aaEfforts: null, aaCreator: null });
+	const picker = (mobile = false) => <ArtificialAnalysisModelPicker hideHeading={mobile} models={models} selected={selected} efforts={efforts} selectedEfforts={selectedEfforts} onModels={(ids) => void setFilters({ aaModels: ids })} onEfforts={(efforts) => void setFilters({ aaEffort: null, aaEfforts: efforts })} onReset={reset} onHighlight={setHighlight} />;
 	const settings = <div className="space-y-4 p-3 text-xs"><div><p className="mb-2 font-medium">{t("scatterCharts")}</p><Button size="sm" variant={filters.aaLabels === "true" ? "secondary" : "ghost"} aria-pressed={filters.aaLabels === "true"} onClick={() => void setFilters({ aaLabels: filters.aaLabels === "true" ? "false" : "true" })}>{t("labels")}</Button></div><div><p className="mb-2 font-medium">{t("barCharts")}</p><div className="flex flex-wrap gap-1"><Button size="sm" variant={filters.aaGrouped === "true" ? "secondary" : "ghost"} aria-pressed={filters.aaGrouped === "true"} onClick={() => void setFilters({ aaGrouped: filters.aaGrouped === "true" ? "false" : "true" })}>{t("groupByModel")}</Button><Button size="sm" variant="ghost" onClick={() => void setFilters({ aaSort: filters.aaSort === "asc" ? "desc" : "asc" })}>{t(filters.aaSort === "asc" ? "highestLast" : "highestFirst")}</Button></div></div><Button size="sm" variant="ghost" onClick={exportData}><Download className="size-3.5" />CSV</Button></div>;
 	const chart = (title: string, value: (row: DashboardRow) => number | null, unit?: "usd" | "tokens", xValue?: (row: DashboardRow) => number | null, xLabel?: string, xUnit?: "usd" | "seconds" | "tokens", scatterToggle = false) => <ArtificialAnalysisDashboardChart title={title} rows={visible} value={value} unit={unit} xValue={xValue} xLabel={xLabel} xUnit={xUnit} highlight={highlight} labels={filters.aaLabels === "true"} groupModels={filters.aaGrouped === "true"} descending={filters.aaSort === "desc"} scatterToggle={scatterToggle} scatter={filters.aaScatter === "tokens-task"} onScatter={(scatter) => void setFilters({ aaScatter: scatter ? "tokens-task" : "" })} />;
 	return <>
 		<div className="flex h-[calc(100svh-7.5rem)] min-h-[32rem] flex-col border-b bg-background" data-aa-workspace>
 			<div className="flex shrink-0 items-center gap-2 border-y px-4 lg:px-6">
-				<ScrollArea className="min-w-0 flex-1" scrollBarOrientation="horizontal" viewportRef={navigationViewport} viewportClassName="relative py-1"><nav aria-label={tx("Catalogue.benchmarks.tocIndexComparisons")} className="flex w-max gap-1">{chartIds.map((id) => <button key={id} type="button" aria-current={activeChart === id ? "location" : undefined} onClick={() => navigate(id)} className="relative min-h-10 whitespace-nowrap px-3 text-xs font-medium text-muted-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full aria-[current=location]:text-foreground aria-[current=location]:after:bg-primary hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring">{titles[id]}</button>)}</nav></ScrollArea>
+				<ScrollArea className="min-w-0 flex-1" scrollBarOrientation="horizontal" viewportRef={navigationViewport} scrollBarClassName="hidden" viewportClassName="relative py-1"><nav aria-label={tx("Catalogue.benchmarks.tocIndexComparisons")} className="flex w-max gap-1">{chartIds.map((id) => <button key={id} type="button" aria-current={activeChart === id ? "location" : undefined} onClick={() => navigate(id)} className="relative min-h-10 whitespace-nowrap px-3 text-xs font-medium text-muted-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full aria-[current=location]:text-foreground aria-[current=location]:after:bg-primary hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring">{id === "tokens-task" ? t("tokensTaskShort") : id === "total-tokens" ? t("totalTokensShort") : id === "total-cost" ? t("totalCostShort") : titles[id]}</button>)}</nav></ScrollArea>
 				<Button variant="ghost" size="icon-sm" disabled={exporting || !visible.length} onClick={() => void exportPng()} aria-label={t("downloadPng")}><ImageDown className="size-4" /></Button>
 				<Popover><PopoverTrigger asChild><Button variant="ghost" size="icon-sm" className="hidden lg:flex" aria-label={t("chartSettings")}><SlidersHorizontal className="size-4" /></Button></PopoverTrigger><PopoverContent align="end" className="w-64 p-0">{settings}</PopoverContent></Popover>
-				<Sheet><SheetTrigger asChild><Button variant="outline" size="sm" className="lg:hidden"><SlidersHorizontal className="size-4" />{tx("Common.nav.models")} {selected.size}</Button></SheetTrigger><SheetContent showCloseButton={false} className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-none"><div className="flex h-14 shrink-0 items-center justify-between border-b px-4"><SheetTitle>{tx("Common.nav.models")}</SheetTitle><SheetClose asChild><Button variant="ghost" size="sm">{t("done")}</Button></SheetClose></div><ScrollArea className="min-h-0 flex-1">{picker}<div className="border-t">{settings}</div></ScrollArea></SheetContent></Sheet>
+				<Sheet><SheetTrigger asChild><Button variant="outline" size="sm" className="lg:hidden"><SlidersHorizontal className="size-4" />{tx("Common.nav.models")} {selected.size}</Button></SheetTrigger><SheetContent showCloseButton={false} className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-none"><div className="flex h-14 shrink-0 items-center justify-between border-b px-4"><SheetTitle>{tx("Common.nav.models")} <span className="font-normal text-muted-foreground">{selected.size}</span></SheetTitle><div className="ml-auto flex items-center gap-2"><Button variant="ghost" size="icon-sm" aria-label={tx("Catalogue.models.filtersUi.resetFiltersAndSearch")} onClick={reset}><RotateCcw className="size-3.5" /></Button><SheetClose asChild><Button variant="ghost" size="sm">{t("done")}</Button></SheetClose></div></div><ScrollArea className="min-h-0 flex-1">{picker(true)}<div className="border-t">{settings}</div></ScrollArea></SheetContent></Sheet>
 			</div>
 			{exportError ? <p role="alert" className="px-6 py-2 text-xs text-destructive">{t("exportFailed")}</p> : null}
 			<div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_15.5rem]">
@@ -125,7 +135,7 @@ export default function ArtificialAnalysisDashboard({ rows, footer }: { rows: Da
 						</>}
 					</div>)}
 				</ScrollArea>
-				<aside aria-label={tx("Common.nav.models")} className="hidden min-h-0 border-l lg:flex"><ScrollArea className="min-h-0 w-full">{picker}</ScrollArea></aside>
+				<aside aria-label={tx("Common.nav.models")} className="hidden min-h-0 border-l lg:flex"><ScrollArea className="min-h-0 w-full">{picker()}</ScrollArea></aside>
 			</div>
 			{footer ? <div className="shrink-0 border-t px-4 lg:px-6 [&>div]:py-2">{footer}</div> : null}
 		</div>

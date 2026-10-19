@@ -1904,7 +1904,11 @@
 			"downloadPng": "Download PNG",
 			"chartSettings": "Chart settings",
 			"done": "Done",
-			"exportFailed": "Could not export this chart. Please try again."
+			"exportFailed": "Could not export this chart. Please try again.",
+			"tokensTaskShort": "Tokens per task",
+			"totalTokensShort": "Total tokens",
+			"totalCostShort": "Total cost",
+			"all": "All"
 		},
 		"title": "Benchmarks",
 		"description": "Explore AI model benchmarks, compare scores, and discover which evaluations are most widely used.",

@@ -1904,7 +1904,11 @@
 			"downloadPng": "Descargar PNG",
 			"chartSettings": "Ajustes del gráfico",
 			"done": "Listo",
-			"exportFailed": "No se pudo exportar el gráfico. Inténtalo de nuevo."
+			"exportFailed": "No se pudo exportar el gráfico. Inténtalo de nuevo.",
+			"tokensTaskShort": "Tokens por tarea",
+			"totalTokensShort": "Tokens totales",
+			"totalCostShort": "Coste total",
+			"all": "Todos"
 		},
 		"title": "Evaluaciones comparativas",
 		"description": "Explora las evaluaciones comparativas de modelos de IA, compara puntuaciones y descubre qué evaluaciones se utilizan más.",

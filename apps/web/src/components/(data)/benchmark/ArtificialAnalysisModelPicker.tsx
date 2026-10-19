@@ -11,8 +11,8 @@ import { dashboardModelCategory, dashboardModelTier, toggleDashboardModels } fro
 import type { DashboardRow } from "@/lib/benchmarks/artificialAnalysisDashboard";
 import { dashboardColour } from "./ArtificialAnalysisDashboardChart";
 
-export function ArtificialAnalysisModelPicker({ models, selected, efforts, selectedEfforts, onModels, onEfforts, onReset, onHighlight }: {
-	models: DashboardRow[]; selected: Set<string>; efforts: string[]; selectedEfforts: string[] | null;
+export function ArtificialAnalysisModelPicker({ models, selected, efforts, selectedEfforts, onModels, onEfforts, onReset, onHighlight, hideHeading = false }: {
+	hideHeading?: boolean; models: DashboardRow[]; selected: Set<string>; efforts: string[]; selectedEfforts: string[] | null;
 	onModels: (ids: string[]) => void; onEfforts: (efforts: string[] | null) => void; onReset: () => void; onHighlight: (id: string | null) => void;
 }) {
 	const tx = useTranslations();
@@ -42,11 +42,11 @@ export function ArtificialAnalysisModelPicker({ models, selected, efforts, selec
 		const heading = <div className="mb-1 flex min-h-8 items-center justify-between gap-1 px-2"><span className="text-xs font-medium">{t(category)}</span><div className="flex items-center">{category === "frontier" ? (["small", "medium", "large"] as const).map((tier) => {
 			const ids = items.filter((model) => dashboardModelTier(model) === tier).map((model) => model.modelId);
 			return ids.length ? <button type="button" key={tier} aria-pressed={ids.every((id) => selected.has(id))} onClick={() => onModels(toggleDashboardModels(selected, ids))} className="rounded px-1.5 py-1.5 text-[10px] text-muted-foreground hover:bg-muted aria-pressed:text-foreground">{t(tier)}</button> : null;
-		}) : <button type="button" aria-pressed={all} onClick={() => onModels(toggleDashboardModels(selected, items.map((model) => model.modelId)))} className="rounded px-1.5 py-1.5 text-[10px] text-muted-foreground hover:bg-muted aria-pressed:text-foreground">{tx("Catalogue.models.filtersUi.any")}</button>}</div></div>;
+		}) : <button type="button" aria-pressed={all} onClick={() => onModels(toggleDashboardModels(selected, items.map((model) => model.modelId)))} className="rounded px-1.5 py-1.5 text-[10px] text-muted-foreground hover:bg-muted aria-pressed:text-foreground">{t("all")}</button>}</div></div>;
 		return <div key={category}>{heading}{contents}</div>;
 	};
 	return <div className="p-2">
-		<div className="flex items-center justify-between px-2 pb-2 text-sm font-semibold"><span>{tx("Common.nav.models")} <span className="ml-1 font-normal tabular-nums text-muted-foreground">{selected.size}</span></span><Button variant="ghost" size="icon-sm" aria-label={tx("Catalogue.models.filtersUi.resetFiltersAndSearch")} onClick={() => { setSearch(""); onReset(); }}><RotateCcw className="size-3.5" /></Button></div>
+		{!hideHeading ? <div className="flex items-center justify-between px-2 pb-2 text-sm font-semibold"><span>{tx("Common.nav.models")} <span className="ml-1 font-normal tabular-nums text-muted-foreground">{selected.size}</span></span><Button variant="ghost" size="icon-sm" aria-label={tx("Catalogue.models.filtersUi.resetFiltersAndSearch")} onClick={() => { setSearch(""); onReset(); }}><RotateCcw className="size-3.5" /></Button></div> : null}
 		<div className="relative mb-4"><Search className="pointer-events-none absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" /><Input ref={input} value={search} onChange={(event) => setSearch(event.target.value)} aria-label={tx("Catalogue.rankings.searchModels")} placeholder={tx("Catalogue.benchmarks.filterModels")} className="h-9 pl-8 pr-6 text-xs" /><kbd className="pointer-events-none absolute right-3 top-2 text-xs text-muted-foreground">/</kbd></div>
 		<div role="group" aria-label={tx("Common.ui.benchmarkChartCopy.modelConfiguration")} className="mb-4 px-2"><p className="mb-1 text-xs font-medium">{t("reasoning")}</p><div className="flex flex-wrap gap-0.5">{efforts.map((effort) => <button key={effort} type="button" aria-pressed={!selectedEfforts || selectedEfforts.includes(effort)} onClick={() => {
 			const next = new Set(selectedEfforts ?? efforts); if (next.has(effort)) next.delete(effort); else next.add(effort); onEfforts(next.size === efforts.length ? null : [...next]);
