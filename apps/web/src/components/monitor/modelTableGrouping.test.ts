@@ -81,8 +81,9 @@ describe("groupModelRows", () => {
 			features: ["tools", "json"],
 			executionRegions: ["us", "eu"],
 			context: 256_000,
-			inputPrices: [0, 1],
-			outputPrices: [2, 3],
+			// Azure and OpenAI tie on 3 combined; the cheaper input wins.
+			inputPrices: [0],
+			outputPrices: [3],
 			popularityTokensWeek: 150,
 		});
 		expect(result[0]?.providers.map(({ id }) => id)).toEqual(["azure", "openai"]);
@@ -148,14 +149,50 @@ describe("groupModelRows", () => {
 		expect(listed.outputPrices).toEqual([5]);
 	});
 
-	it("keeps genuine free-tier and provider price differences", () => {
+	it("shows the cheapest provider's rates rather than a range", () => {
 		const [group] = groupModelRows([
-			row({ tier: "free", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
 			row({ provider: { id: "openai", name: "OpenAI", inputPrice: 1, outputPrice: 2, features: [] } }),
 			row({ provider: { id: "azure", name: "Azure", inputPrice: 1.1, outputPrice: 2.2, features: [] } }),
 		]);
-		expect(group.inputPrices).toEqual([0, 1, 1.1]);
-		expect(group.outputPrices).toEqual([0, 2, 2.2]);
+		expect(group.inputPrices).toEqual([1]);
+		expect(group.outputPrices).toEqual([2]);
+	});
+
+	it("never mixes one provider's input with another's output", () => {
+		const [group] = groupModelRows([
+			row({ provider: { id: "a", name: "A", inputPrice: 0.5, outputPrice: 9, features: [] } }),
+			row({ provider: { id: "b", name: "B", inputPrice: 2, outputPrice: 3, features: [] } }),
+		]);
+		// B is cheaper overall (5 against 9.5); A's $0.50 input is not offered with B's output.
+		expect(group.inputPrices).toEqual([2]);
+		expect(group.outputPrices).toEqual([3]);
+	});
+
+	it("ranks a discounted tier behind a standard route", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "text.generate", tier: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: 0.5, outputPrice: 1, features: [] } }),
+			row({ endpoint: "text.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 1, outputPrice: 2, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([1]);
+		expect(group.outputPrices).toEqual([2]);
+	});
+
+	it("prefers a route that lists both sides over one that lists only a cheap input", () => {
+		const [group] = groupModelRows([
+			row({ provider: { id: "a", name: "A", inputPrice: 0.1, outputPrice: null, features: [] } }),
+			row({ provider: { id: "b", name: "B", inputPrice: 1, outputPrice: 2, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([1]);
+		expect(group.outputPrices).toEqual([2]);
+	});
+
+	it("keeps a genuinely free route's $0", () => {
+		const [group] = groupModelRows([
+			row({ tier: "free", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
+			row({ provider: { id: "azure", name: "Azure", inputPrice: 1.1, outputPrice: 2.2, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([0]);
+		expect(group.outputPrices).toEqual([0]);
 	});
 
 	it("keeps a listed $0 standard rate", () => {

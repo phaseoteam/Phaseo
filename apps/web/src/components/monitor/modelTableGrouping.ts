@@ -81,12 +81,6 @@ function isPrice(value: number | null | undefined): value is number {
 	return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
-function uniqueNumbers(values: Iterable<number | null | undefined>): number[] {
-	return Array.from(new Set(values))
-		.filter(isPrice)
-		.sort((a, b) => a - b);
-}
-
 // One table row per canonical model; its provider routes collapse into it.
 export function modelRowKey(row: Pick<ModelData, "id" | "modelId">): string {
 	return row.modelId || row.id;
@@ -107,6 +101,33 @@ function hasTokenPrice(row: ModelData): boolean {
 	if (isBatchPlaceholder(row)) return false;
 	const { provider, tier } = row;
 	return isPrice(provider.inputPrice) || isPrice(provider.outputPrice) || tier === "free";
+}
+
+const DISCOUNT_TIER = /batch|flex|discount/;
+
+// Standard (and free) routes set the list price; a discounted tier only counts
+// when nothing else is priced, so it is never shown as the model's price.
+function preferredTier(rows: readonly ModelData[]): readonly ModelData[] {
+	const standard = rows.filter(({ tier }) => !tier || tier === "standard" || tier === "free");
+	if (standard.length) return standard;
+	const fullPrice = rows.filter(({ tier }) => !DISCOUNT_TIER.test(tier ?? ""));
+	return fullPrice.length ? fullPrice : rows;
+}
+
+// The cheapest provider's token rates, chosen as on the models card: the route
+// pricing the most sides, then the lowest combined rate. Rates are never mixed
+// across providers, so a cheap input from one and a cheap output from another
+// do not read as a price nobody offers.
+function cheapestPrices(rows: readonly ModelData[]): { inputPrices: number[]; outputPrices: number[] } {
+	const sides = ({ provider }: ModelData) => Number(isPrice(provider.inputPrice)) + Number(isPrice(provider.outputPrice));
+	const total = ({ provider }: ModelData) =>
+		(isPrice(provider.inputPrice) ? provider.inputPrice : 0) + (isPrice(provider.outputPrice) ? provider.outputPrice : 0);
+	const input = ({ provider }: ModelData) => (isPrice(provider.inputPrice) ? provider.inputPrice : 0);
+	const [route] = [...preferredTier(rows)].sort((a, b) => sides(b) - sides(a) || total(a) - total(b) || input(a) - input(b));
+	return {
+		inputPrices: route && isPrice(route.provider.inputPrice) ? [route.provider.inputPrice] : [],
+		outputPrices: route && isPrice(route.provider.outputPrice) ? [route.provider.outputPrice] : [],
+	};
 }
 
 // Units priced in billionths of a dollar read better per million.
@@ -197,8 +218,7 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 		const operationPrices = modelCapabilities(variants.map(({ endpoint }) => endpoint)).map(capability => {
 			const matching = pricedVariants.filter(variant => modelCapability(variant.endpoint) === capability);
 			return { capability,
-				inputPrices: uniqueNumbers(matching.map(variant => variant.provider.inputPrice)),
-				outputPrices: uniqueNumbers(matching.map(variant => variant.provider.outputPrice)),
+				...cheapestPrices(matching),
 				usagePrices: usagePrices(unpricedVariants.filter(variant => modelCapability(variant.endpoint) === capability)),
 			};
 		}).filter(operation =>
@@ -257,12 +277,7 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 				variants.flatMap(({ supportedParameters }) => supportedParameters ?? []),
 			),
 			tiers: unique(variants.map(({ tier }) => tier || "standard")),
-			inputPrices: uniqueNumbers(
-				priceVariants.map(({ provider }) => provider.inputPrice),
-			),
-			outputPrices: uniqueNumbers(
-				priceVariants.map(({ provider }) => provider.outputPrice),
-			),
+			...cheapestPrices(priceVariants),
 			usagePrices: usagePrices(unpricedVariants),
 			operationPrices: operationPricesDiffer ? operationPrices : [],
 			added: variants
