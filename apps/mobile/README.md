@@ -4,7 +4,7 @@ The Phaseo app for Android (iOS later), built with Expo SDK 58, React Native 0.8
 
 - **No account needed** for models, providers, compare and releases. These use the public `phaseo.app/api/_web/*` endpoints, and the catalogue is cached on the device.
 - **Sign in once** (email and password, Google, GitHub or GitLab, as on the website) for chat, usage, workspace, API keys and notifications. Accounts with an authenticator app must enter their code before anything signed-in loads. The Supabase session is kept in the Android Keystore and refreshed while the app is open. New accounts are created on phaseo.app, which sets up their workspace.
-- **Chats live only on the phone** (`expo-sqlite`, with full-text search). Answers stream through the web chat proxy (`phaseo.app/api/chat/*`), so they're billed to the workspace like web chat.
+- **Chats live only on the phone** (`expo-sqlite`, with full-text search). Answers stream through the web chat proxy (`phaseo.app/api/chat/*`), so they're billed to the workspace like web chat. As on the website, up to four models can answer side by side, and each model in a chat has its own settings (provider, reasoning, service tier, system prompt, sampling).
 - **Tablets and unfolded foldables** (720 dp wide and up) get a sidebar, with list and detail side by side.
 
 ## Layout
@@ -48,6 +48,8 @@ cd android
 
 Checks: `pnpm --filter @phaseo/mobile typecheck`, `lint`, `test`, and `pnpm exec expo export --platform android` to bundle the JavaScript.
 
+To see exactly what chat sends, build with `EXPO_PUBLIC_CHAT_DEBUG=1`: each request body is logged to logcat under `[phaseo-chat]`, with message text shortened, attachments left out and no token.
+
 **Windows: native builds loop with `ninja: error: manifest 'build.ninja' still dirty after 100 tries`.** This happens with the SDK's default CMake 3.22: its glob check never settles on pnpm's symlinked package paths (reanimated/worklets, screens). Install CMake 3.31 with the SDK Manager. Then add it to `android/local.properties`, using forward slashes because backslashes are escape characters there, and delete the packages' `android/.cxx` folders before building again:
 
 ```
@@ -70,4 +72,4 @@ Until then, the Notifications screen says the service is coming soon.
 
 ## Not yet
 
-iOS builds (they need an Apple Developer account and EAS Build), sync with the desktop app, model-written chat titles, reasoning-effort settings, and code highlighting in answers (`enriched-markdown` code highlighting and math are off; turning them on needs its install script allowed).
+iOS builds (they need an Apple Developer account and EAS Build), sync with the desktop app, model-written chat titles, and code highlighting in answers (`enriched-markdown` code highlighting and math are off; turning them on needs its install script allowed).
