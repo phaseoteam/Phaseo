@@ -10,7 +10,7 @@ vi.mock("./context", () => ({ fetchGatewayContext: vi.fn() }));
 
 vi.mock("@/runtime/env", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/runtime/env")>()),
-	getBindingsIfConfigured: () => ({ MOBILE_PUSH_ENABLED: "true" }),
+	getBindingsIfConfigured: () => ({ MOBILE_PUSH_ENABLED: "false" }),
 	getSupabaseAdmin: () => {
 		if (state.adminThrows) throw new Error("runtime not configured");
 		return { rpc: state.rpc };

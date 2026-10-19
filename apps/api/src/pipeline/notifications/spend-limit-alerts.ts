@@ -7,7 +7,9 @@ import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@
 //     key limit and period. This runs in the background after the rejection is returned;
 //   * every 15 minutes, sweep_spend_limit_warnings warns once per period at about 80%, from the
 //     hourly usage rollup, with a forecast for weekly and monthly periods.
-// Both only run where mobile push is switched on.
+// Every worker that serves requests records the rejection, including the regional gateways
+// where MOBILE_PUSH_ENABLED is off: the central job that sends pushes fans the alert out. Only
+// the sweep is tied to that job.
 
 const SPEND_LIMIT_REASON =
 	/^(?:workspace_(daily|weekly|monthly|lifetime)_cost_budget_reached|(daily|weekly|monthly)_(?:request|cost)_limit_reached)$/;
@@ -29,8 +31,9 @@ function periodOf(window: string, now: Date): string {
 	return "lifetime";
 }
 
-function mobilePushEnabled(): boolean {
-	return getBindingsIfConfigured()?.MOBILE_PUSH_ENABLED === "true";
+// Outside a configured runtime (some unit tests) there is no database to record in.
+function runtimeConfigured(): boolean {
+	return getBindingsIfConfigured() !== null;
 }
 
 /**
@@ -46,7 +49,7 @@ export function noteSpendLimitReached(args: {
 }): void {
 	try {
 		const match = SPEND_LIMIT_REASON.exec(String(args.reason ?? ""));
-		if (!match || !args.workspaceId || !mobilePushEnabled()) return;
+		if (!match || !args.workspaceId || !runtimeConfigured()) return;
 		const budget = Boolean(match[1]);
 		const keyId = budget ? null : args.keyId ?? null;
 		if (!budget && !keyId) return;

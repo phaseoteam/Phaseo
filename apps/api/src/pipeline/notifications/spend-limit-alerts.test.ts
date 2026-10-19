@@ -42,19 +42,25 @@ describe("spend limit alerts", () => {
 		]);
 	});
 
-	it("ignores other rejections, a key limit without a key, and runtimes without mobile push", () => {
+	it("ignores other rejections, a key limit without a key, and a missing runtime", () => {
 		for (const reason of ["key_limit_soft_blocked", "insufficient_funds", "key_not_active", null]) {
 			noteSpendLimitReached({ workspaceId: "ws_1", keyId: "key_1", reason, now: oct16 });
 		}
 		noteSpendLimitReached({ workspaceId: "ws_1", keyId: null, reason: "monthly_cost_limit_reached", now: oct16 });
 		noteSpendLimitReached({ workspaceId: null, keyId: "key_1", reason: "monthly_cost_limit_reached", now: oct16 });
-		state.bindings = { MOBILE_PUSH_ENABLED: "false" };
-		noteSpendLimitReached({ workspaceId: "ws_1", keyId: "key_1", reason: "monthly_cost_limit_reached", now: oct16 });
 		state.bindings = null;
 		noteSpendLimitReached({ workspaceId: "ws_1", keyId: "key_1", reason: "monthly_cost_limit_reached", now: oct16 });
 
 		expect(state.dispatched).toHaveLength(0);
 		expect(state.rpc).not.toHaveBeenCalled();
+	});
+
+	it("records on regional gateways too, where this worker sends no pushes", async () => {
+		state.bindings = { MOBILE_PUSH_ENABLED: "false" };
+		noteSpendLimitReached({ workspaceId: "ws_1", keyId: "key_1", reason: "monthly_cost_limit_reached", now: oct16 });
+		await Promise.all(state.dispatched);
+
+		expect(state.rpc).toHaveBeenCalledWith("record_spend_limit_reached", { p_workspace_id: "ws_1", p_key_id: "key_1", p_reason: "monthly_cost_limit_reached" });
 	});
 
 	it("calls the database once per isolate, limit and period while a workspace keeps retrying", async () => {
