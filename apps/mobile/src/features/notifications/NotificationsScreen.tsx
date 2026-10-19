@@ -8,9 +8,11 @@ import { useLayout } from "@/hooks/useLayout";
 import { ApiError } from "@/lib/api/http";
 import { createRule, sendTestNotification, updateNotificationSettings, updateRule, type NotificationRule, type NotificationSettings, type SettingsPatch } from "@/lib/api/notifications";
 import { useAuth } from "@/providers/AuthProvider";
-import { CATEGORY_CHANNELS, type Category } from "./channels";
+import { useWorkspace } from "@/providers/WorkspaceProvider";
+import { shownCategories, type Category } from "./channels";
 import { blockedChannels, openChannelSettings, registerForPush, registerThisPhone } from "./device";
 import { describeRule, EMPTY_RULE, RULE_TEMPLATES } from "./rules";
+import { adminWorkspaces } from "./setup";
 import { draftRuleStore, useNotificationSettings, useRuleNames } from "./state";
 
 const QUIET_PRESETS = [{ start: "22:00", end: "07:00" }, { start: "23:00", end: "08:00" }, { start: "21:00", end: "09:00" }];
@@ -35,6 +37,7 @@ export function NotificationsScreen() {
   const queryClient = useQueryClient();
   const { split } = useLayout();
   const { session } = useAuth();
+  const { workspaces, loading: workspacesLoading } = useWorkspace();
   const settings = useNotificationSettings();
   const names = useRuleNames();
   const addRef = useRef<ViewRef>(null);
@@ -101,6 +104,9 @@ export function NotificationsScreen() {
 
   const data = settings.data!;
   const on = data.enabled && data.deviceRegistered;
+  // Money, Your traffic and Digest only reach workspace owners and admins. Until the workspaces load, show them all.
+  const admin = workspacesLoading || adminWorkspaces(workspaces).length > 0;
+  const categoryRows = shownCategories(admin);
   const openRule = (rule?: NotificationRule, template?: (typeof RULE_TEMPLATES)[number]) => {
     draftRuleStore.set(rule ? { ...rule } : { ...template!.rule });
     router.push({ pathname: "/account/rule", params: { id: rule?.id ?? "new", pick: template?.pick } });
@@ -124,7 +130,7 @@ export function NotificationsScreen() {
             title="Notifications on this phone"
             subtitle={on ? "On. Only updates that match your rules are sent." : data.enabled ? "On for your account, but this phone isn't registered." : "Off"}
             chevron={false}
-            trailing={<Switch value={on} disabled={enable.isPending} onValueChange={(value) => enable.mutate(value)} trackColorOnClassName="accent-primary" />}
+            trailing={<Switch value={on} disabled={enable.isPending} accessibilityLabel="Notifications on this phone" onValueChange={(value) => enable.mutate(value)} trackColorOnClassName="accent-primary" />}
             last
           />
           {/* Up here rather than below the settings, so checking that notifications arrive is one tap after switching them on. */}
@@ -148,7 +154,7 @@ export function NotificationsScreen() {
                 subtitle={describeRule(rule, names)}
                 numberOfLines={1}
                 onPress={() => openRule(rule)}
-                trailing={<Switch value={rule.enabled} onValueChange={(enabled) => toggleRule.mutate({ rule, enabled })} trackColorOnClassName="accent-primary" />}
+                trailing={<Switch value={rule.enabled} accessibilityLabel={`${rule.name || "Rule"} on`} onValueChange={(enabled) => toggleRule.mutate({ rule, enabled })} trackColorOnClassName="accent-primary" />}
                 chevron={false}
                 last={index === data.rules.length - 1}
               />
@@ -158,17 +164,18 @@ export function NotificationsScreen() {
           {/* Hidden until the server has categories (push v2), rather than showing switches that do nothing. */}
           {data.categories ? (
             <Section title="Categories" description={`Turn off whole kinds of notification. Your rules still choose which model updates arrive.${android ? " Tap a category for its sound and pop-up settings." : ""}`}>
-              {CATEGORY_CHANNELS.map((channel, index) => (
+              {categoryRows.map((channel, index) => (
                 <Row
                   key={channel.id}
                   title={channel.name}
-                  subtitle={blocked.has(channel.id) ? "Off in Android settings. Tap to change." : channel.description}
+                  subtitle={blocked.has(channel.id) ? "Off in Android settings. Tap to change." : channel.id === "security" && !admin ? "Only alerts about API keys you created" : channel.description}
                   onPress={android ? () => void openChannelSettings(channel.id) : undefined}
                   chevron={false}
-                  trailing={<Switch value={data.categories?.[channel.id] ?? true} onValueChange={(on) => setCategory.mutate({ category: channel.id, on })} trackColorOnClassName="accent-primary" />}
-                  last={index === CATEGORY_CHANNELS.length - 1}
+                  trailing={<Switch value={data.categories?.[channel.id] ?? true} accessibilityLabel={channel.name} onValueChange={(on) => setCategory.mutate({ category: channel.id, on })} trackColorOnClassName="accent-primary" />}
+                  last={index === categoryRows.length - 1}
                 />
               ))}
+              {!admin ? <Text variant="caption" className="px-4 pt-2">Money, Your traffic and Digest are only for workspace owners and admins.</Text> : null}
             </Section>
           ) : null}
 
