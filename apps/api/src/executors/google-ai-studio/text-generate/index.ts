@@ -1646,6 +1646,8 @@ export function transformStream(
 		controller: ReadableStreamDefaultController<Uint8Array>,
 	): void => {
 		if (irChunk.choices.some((choice: any) => {
+			// A safety block is a complete answer with no content, not a blank response.
+			if (choice.finishReason === "content_filter") return true;
 			if ((choice.delta?.toolCalls?.length ?? 0) > 0) return true;
 			if (typeof choice.delta?.content === "string" && choice.delta.content.trim().length > 0) return true;
 			return (choice.delta?.contentParts ?? []).some((part: any) => {
@@ -2012,6 +2014,10 @@ export function transformStream(
 						irChunk.choices.push(choice);
 					}
 				}
+			}
+			// A blocked prompt arrives as promptFeedback.blockReason with no candidates.
+			if (!payloadEntry?.candidates?.length && payloadEntry?.promptFeedback?.blockReason) {
+				irChunk.choices.push({ index: 0, delta: { role: "assistant" }, finishReason: "content_filter" } as any);
 			}
 
 			const chunkUsage = googleUsageMetadataToIRUsage(payloadEntry?.usageMetadata, headerServiceTier);
