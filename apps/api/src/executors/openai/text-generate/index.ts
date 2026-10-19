@@ -818,7 +818,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		? irToOpenAIResponses(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams)
 		: irToOpenAIChat(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams);
 
-	if (route === "responses" && isOpenAIProviderOffer(args.providerId)) {
+	if (route === "responses" && isOpenAIProviderOffer(args.providerId) && args.protocol === "openai.chat.completions") {
 		// Chat requests rerouted to /v1/responses (Responses-only models, reasoning) can carry
 		// Chat-only fields that OpenAI's CreateResponse does not define. Logprobs have a
 		// Responses form: include message.output_text.logprobs (with top_logprobs).
