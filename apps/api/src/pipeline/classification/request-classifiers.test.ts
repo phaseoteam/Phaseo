@@ -6,10 +6,12 @@ const state = vi.hoisted(() => ({
 	rpc: vi.fn(async (_name: string, _args: unknown) => ({ error: null })),
 	queries: [] as string[],
 	bindings: {} as Record<string, string>,
+	background: [] as Promise<unknown>[],
 }));
 
 vi.mock("@/runtime/env", () => ({
 	getBindingsIfConfigured: () => state.bindings,
+	dispatchBackground: (promise: Promise<unknown>) => { state.background.push(promise); },
 	getSupabaseAdmin: () => ({
 		from: (table: string) => {
 			state.queries.push(table);
@@ -37,6 +39,7 @@ import {
 	buildClassifierSchema,
 	buildTranscript,
 	buildTranscriptTurns,
+	classifierOutputTokens,
 	excludeFromRequestClassification,
 	mergeClassifierLabels,
 	parseClassifierAnswer,
@@ -82,6 +85,7 @@ beforeEach(() => {
 	state.rpc.mockClear();
 	state.queries = [];
 	state.bindings = {};
+	state.background = [];
 });
 
 describe("transcript", () => {
@@ -187,6 +191,17 @@ describe("labels", () => {
 	});
 });
 
+describe("classifierOutputTokens", () => {
+	it("leaves room to pick every value of a multi-value dimension", () => {
+		const values = Array.from({ length: 50 }, (_, index) => ({ value: `${"v".repeat(60)}${index}` }));
+		const single = classifierOutputTokens([{ key: "a", name: "a", description: null, multiple: false, allow_other: false, values } as any]);
+		const multiple = classifierOutputTokens([{ key: "a", name: "a", description: null, multiple: true, allow_other: false, values } as any]);
+		expect(single).toBeLessThan(150);
+		// 50 values of 61 to 62 characters is about 1,050 tokens of JSON strings.
+		expect(multiple).toBeGreaterThan(1_100);
+	});
+});
+
 describe("applyRequestClassifiers", () => {
 	it("adds the answers as labels, records spend and keeps the outcome", async () => {
 		const call = vi.fn(async () => answer({ d0: { value: "legal", confidence: 0.9 } }));
@@ -201,6 +216,33 @@ describe("applyRequestClassifiers", () => {
 		const sent = (call.mock.calls[0] as any)[0].input[1].content[0].text as string;
 		expect(sent).toContain("USER: Review this contract clause");
 		expect(state.rpc).toHaveBeenCalledWith("record_request_classifier_spend", { p_workspace_id: WORKSPACE, p_classifier_id: classifier().id, p_cost_nanos: 25_000 });
+	});
+
+	it("retries a failed spend write so the budget still sees the cost", async () => {
+		state.rpc.mockResolvedValueOnce({ error: { message: "connection reset" } } as any);
+		const context = ctx({ requestClassifierCall: vi.fn(async () => answer({ d0: { value: "legal", confidence: 0.9 } })) });
+		await applyRequestClassifiers(context, null);
+		expect(state.rpc).toHaveBeenCalledTimes(2);
+		expect(context.meta.labels).toEqual([{ key: "department", value: "legal" }]);
+	});
+
+	it("keeps calls that outlive the timeout running in the background, unlabelled", async () => {
+		vi.useFakeTimers();
+		try {
+			let finish: (response: Response) => void = () => {};
+			const call = vi.fn(() => new Promise<Response>((resolve) => { finish = resolve; }));
+			const context = ctx({ requestClassifierCall: call });
+			const run = applyRequestClassifiers(context, null);
+			await vi.advanceTimersByTimeAsync(12_000);
+			await run;
+			expect(context.meta.labels).toEqual([]);
+			expect(state.background).toHaveLength(1);
+			finish(answer({ d0: { value: "legal", confidence: 0.9 } }));
+			await state.background[0];
+			expect(state.rpc).toHaveBeenCalledWith("record_request_classifier_spend", expect.objectContaining({ p_cost_nanos: 25_000 }));
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("does nothing for classifier calls, untagged endpoints, testing mode, or without credentials", async () => {

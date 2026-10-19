@@ -18,7 +18,7 @@ import {
 	type ClassifierDimension,
 	type ClassifierRow,
 } from "@core/request-classifiers";
-import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
+import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { RESERVED_CLASSIFIER_LABEL_KEY } from "../before/request-labels";
 import type { PipelineContext } from "../before/types";
 import { isStealthRequest } from "../stealth";
@@ -33,7 +33,9 @@ const SESSION_CACHE_TTL_SECONDS = 3_600;
 const CLASSIFICATION_TIMEOUT_MS = 12_000;
 const MAX_TURN_CHARS = 4_000;
 const MAX_TRANSCRIPT_CHARS = 48_000;
-const MAX_OUTPUT_TOKENS_PER_DIMENSION = 60;
+/** Room for a dimension's key, confidence and JSON punctuation. */
+const OUTPUT_TOKENS_PER_DIMENSION = 40;
+const SPEND_RECORD_ATTEMPTS = 3;
 
 export type ClassifierHandler = (request: Request) => Promise<Response>;
 export type ClassifierCall = (body: Record<string, unknown>, classifierId: string) => Promise<Response>;
@@ -297,13 +299,24 @@ export function buildClassifierPrompt(classifier: ClassifierRow, dimensions: Cla
 	return lines.join("\n");
 }
 
+/** Enough output for the longest valid answer: every value of a multi-value dimension, about 3 characters per token. */
+export function classifierOutputTokens(dimensions: ClassifierDimension[]): number {
+	return 64 + dimensions.reduce((total, dimension) => {
+		const values = allowedValues(dimension);
+		const answer = dimension.multiple
+			? values.reduce((sum, value) => sum + Math.ceil(value.length / 3) + 2, 0)
+			: Math.ceil(Math.max(...values.map((value) => value.length)) / 3) + 2;
+		return total + OUTPUT_TOKENS_PER_DIMENSION + answer;
+	}, 0);
+}
+
 export function buildClassifierRequestBody(classifier: ClassifierRow, dimensions: ClassifierDimension[], transcript: string): Record<string, unknown> {
 	return {
 		model: classifier.model,
 		stream: false,
 		store: false,
 		temperature: 0,
-		max_output_tokens: 64 + dimensions.length * MAX_OUTPUT_TOKENS_PER_DIMENSION,
+		max_output_tokens: classifierOutputTokens(dimensions),
 		text: {
 			format: { type: "json_schema", name: "request_classification", strict: true, schema: buildClassifierSchema(dimensions) },
 		},
@@ -403,13 +416,28 @@ export function mergeClassifierLabels(existing: RequestLabel[], outcomes: Classi
 	return [...existing, ...added];
 }
 
+/**
+ * The call is already billed, so a lost write would let the classifier run past
+ * its budget. Retries can double-count if a write committed but its reply was
+ * lost; that only stops the classifier early, which is the safe direction.
+ */
 async function recordSpend(workspaceId: string, classifierId: string, costNanos: number) {
-	const { error } = await getSupabaseAdmin().rpc("record_request_classifier_spend", {
-		p_workspace_id: workspaceId,
-		p_classifier_id: classifierId,
-		p_cost_nanos: Math.max(0, Math.round(costNanos)),
-	});
-	if (error) console.warn("request_classifier_spend_record_failed", { workspaceId, classifierId, error: error.message });
+	let message = "";
+	for (let attempt = 1; attempt <= SPEND_RECORD_ATTEMPTS; attempt++) {
+		try {
+			const { error } = await getSupabaseAdmin().rpc("record_request_classifier_spend", {
+				p_workspace_id: workspaceId,
+				p_classifier_id: classifierId,
+				p_cost_nanos: Math.max(0, Math.round(costNanos)),
+			});
+			if (!error) return;
+			message = error.message;
+		} catch (error) {
+			message = error instanceof Error ? error.message : String(error);
+		}
+		if (attempt < SPEND_RECORD_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+	}
+	console.error("request_classifier_spend_record_failed", { workspaceId, classifierId, error: message });
 }
 
 async function classifyOne(
@@ -482,9 +510,13 @@ export async function applyRequestClassifiers(ctx: PipelineContext, gatewayRespo
 		});
 		let timer: ReturnType<typeof setTimeout> | undefined;
 		const timeout = new Promise<"timeout">((resolve) => { timer = setTimeout(() => resolve("timeout"), CLASSIFICATION_TIMEOUT_MS); });
-		const settled = await Promise.race([Promise.all(work), timeout]);
+		const all = Promise.all(work);
+		const settled = await Promise.race([all, timeout]);
 		clearTimeout(timer);
 		if (settled === "timeout") {
+			// The log is written without these labels, but calls already sent are
+			// billed: keep them alive so their own logging and spend still land.
+			dispatchBackground(all);
 			console.warn("request_classifier_timeout", { requestId: ctx.requestId, workspaceId: ctx.workspaceId });
 			return;
 		}
