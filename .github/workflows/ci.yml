@@ -213,6 +213,10 @@ jobs:
             - name: Enforce EUR routing restriction
               run: pnpm --filter @phaseo/web test --runTestsByPath scripts/eur-routing.test.ts
 
+            # These apps have no CI build job; TypeScript 7 checks each in seconds.
+            - name: Typecheck desktop, mobile and perf-upstream
+              run: pnpm --filter @phaseo/desktop --filter @phaseo/mobile --filter @phaseo/perf-upstream run typecheck
+
     check-paths:
         name: Check changed paths
         runs-on: ubuntu-latest
@@ -457,6 +461,7 @@ jobs:
                   pnpm --filter @phaseo/web audit:i18n:ui
                   pnpm --filter @phaseo/web test:i18n:ui-audit
                   pnpm --filter @phaseo/web test --runTestsByPath 'src/app/(dashboard)/rankings/RankingsPageContent.test.tsx' 'src/components/(rankings)/UsageStackedBar.test.tsx' 'src/components/(rankings)/time-buckets.test.ts'
+                  pnpm --filter @phaseo/web typecheck
                   pnpm --filter @phaseo/web exec next build --experimental-build-mode compile
 
             - name: Web API lint, test & build
