@@ -282,6 +282,49 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).toContain("\"reasoning_content\":\"thinking trace\"");
 	});
 
+	it("counts Interactions thought tokens as output and leaves tool-use tokens out of input", async () => {
+		// Google's documented accounting: total = input + output + thoughts; tool-use tokens are
+		// not added (function-calling example: input 100, output 25, tool use 50, total 125).
+		const upstream = makeGoogleSseStream([
+			{ index: 0, step: { type: "model_output" }, event_type: "step.start" },
+			{ index: 0, delta: { type: "text", text: "done" }, event_type: "step.delta" },
+			{
+				interaction: {
+					id: "v1_test",
+					status: "completed",
+					usage: {
+						total_input_tokens: 100,
+						total_cached_tokens: 40,
+						total_output_tokens: 30,
+						total_thought_tokens: 20,
+						total_tool_use_tokens: 7,
+						total_tokens: 150,
+						input_tokens_by_modality: [{ modality: "text", tokens: 90 }, { modality: "image", tokens: 10 }],
+						cached_tokens_by_modality: [{ modality: "text", tokens: 36 }, { modality: "image", tokens: 4 }],
+					},
+				},
+				event_type: "interaction.completed",
+			},
+		]);
+		const seen: any[] = [];
+
+		const stream = transformStream(upstream, baseArgs(), undefined, { onUsage: (usage) => seen.push(usage) });
+		const output = await readStreamText(stream);
+
+		expect(output).toContain("\"prompt_tokens\":100");
+		expect(output).toContain("\"completion_tokens\":50");
+		expect(output).toContain("\"reasoning_tokens\":20");
+		expect(seen.at(-1)).toMatchObject({
+			inputTokens: 100,
+			outputTokens: 50,
+			totalTokens: 150,
+			reasoningTokens: 20,
+			cachedInputTokens: 40,
+			// The 4 cached image tokens are billed through cachedInputTokens, not again as image input.
+			_ext: { inputImageTokens: 6 },
+		});
+	});
+
 	it("emits image deltas when Interactions stream returns image content", async () => {
 		const upstream = makeGoogleSseStream([
 			{

@@ -581,6 +581,92 @@ describe.each([
 });
 
 // ---------------------------------------------------------------------------------------
+// Gemini on Vertex with thinking, tool-use prompt tokens and image and audio input.
+// totalTokenCount = promptTokenCount + toolUsePromptTokenCount + candidatesTokenCount
+// + thoughtsTokenCount (https://ai.google.dev/api/generate-content#UsageMetadata); thoughts
+// are billed at the output price, and image and audio input at their own rates when priced.
+// ---------------------------------------------------------------------------------------
+
+describe("Gemini thinking and multimodal input on Vertex", () => {
+	const usageMetadata = {
+		promptTokenCount: 10_000,
+		cachedContentTokenCount: 4_000,
+		candidatesTokenCount: 600,
+		thoughtsTokenCount: 900,
+		toolUsePromptTokenCount: 50,
+		totalTokenCount: 11_550,
+		promptTokensDetails: [
+			{ modality: "TEXT", tokenCount: 9_000 },
+			{ modality: "IMAGE", tokenCount: 700 },
+			{ modality: "AUDIO", tokenCount: 300 },
+		],
+		cacheTokensDetails: [{ modality: "TEXT", tokenCount: 4_000 }],
+	};
+	const prices = { input: "0.3", output: "2.5", cachedRead: "0.03", image: "0.6", audio: "1" };
+	const baseCard = textCard("google-vertex", "google/gemini-2.5-flash", prices);
+	const modalityRule = (meter: string, price: string) => ({ ...baseCard.rules[0], id: `${meter}_rule`, meter, price_per_unit: price });
+	const card = { ...baseCard, rules: [...baseCard.rules, modalityRule("input_image_tokens", prices.image), modalityRule("input_audio_tokens", prices.audio)] } as typeof baseCard;
+	const textOnlyCard = baseCard;
+	// Uncached text = 10,000 + 50 tool-use - 4,000 read - 700 image - 300 audio.
+	const expected = expectedNanos([[5_050, 0.3], [4_000, 0.03], [700, 0.6], [300, 1], [1_500, 2.5]]);
+	// Without image and audio rows, those tokens bill as text.
+	const expectedTextOnly = expectedNanos([[6_050, 0.3], [4_000, 0.03], [1_500, 2.5]]);
+	const withVertexRuntime = async (run: () => Promise<void>) => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		try { await run(); } finally { teardownTestRuntime(); setupTestRuntime(); }
+	};
+	const geminiSse = () => sse([
+		{ data: { candidates: [{ content: { role: "model", parts: [{ text: "Planned the proof." }] }, index: 0 }], modelVersion: "gemini-2.5-flash" } },
+		{ data: { candidates: [{ content: { role: "model", parts: [{ text: "" }] }, finishReason: "STOP", index: 0 }], usageMetadata, modelVersion: "gemini-2.5-flash" } },
+	]);
+
+	for (const endpoint of ["chat.completions", "responses", "messages"] as const) {
+		it(`bills thoughts, tool-use prompt, image and audio tokens on ${endpoint} (streamed)`, async () => withVertexRuntime(async () => {
+			const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+			stubFetch(() => geminiSse());
+			const executor: any = await executeVertex(executorArgs(endpoint, "google-vertex", "gemini-2.5-flash", true));
+			expect(executor.usageFinalizerAuthoritative).toBe(true);
+			const { nanos, usage } = await runStream({ endpoint, provider: "google-vertex", model: "google/gemini-2.5-flash", card, executor });
+			warn.mockRestore();
+			expect(nanos).toBe(expected);
+			if (endpoint === "chat.completions") {
+				expect(usage).toMatchObject({ prompt_tokens: 10_050, completion_tokens: 1_500, completion_tokens_details: { reasoning_tokens: 900 } });
+			} else if (endpoint === "responses") {
+				expect(usage).toMatchObject({ input_tokens: 10_050, output_tokens: 1_500, output_tokens_details: { reasoning_tokens: 900 } });
+			} else {
+				expect(usage).toMatchObject({ input_tokens: 6_050, cache_read_input_tokens: 4_000, output_tokens: 1_500 });
+			}
+		}));
+
+		it(`bills thoughts, tool-use prompt, image and audio tokens on ${endpoint} (buffered)`, async () => withVertexRuntime(async () => {
+			const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+			stubFetch(() => geminiSse());
+			const executor = await asCompleted(await executeVertex(executorArgs(endpoint, "google-vertex", "gemini-2.5-flash", false)));
+			const { nanos, usage } = await runNonStream({ endpoint, provider: "google-vertex", model: "google/gemini-2.5-flash", card, executor });
+			warn.mockRestore();
+			expect(nanos).toBe(expected);
+			if (endpoint === "chat.completions") {
+				expect(usage).toMatchObject({ prompt_tokens: 10_050, completion_tokens: 1_500, completion_tokens_details: { reasoning_tokens: 900 } });
+			} else if (endpoint === "responses") {
+				expect(usage).toMatchObject({ input_tokens: 10_050, output_tokens: 1_500, output_tokens_details: { reasoning_tokens: 900 } });
+			} else {
+				expect(usage).toMatchObject({ output_tokens: 1_500 });
+			}
+		}));
+	}
+
+	it("bills image and audio input as text when the card has no rows for them (streamed)", async () => withVertexRuntime(async () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		stubFetch(() => geminiSse());
+		const executor: any = await executeVertex(executorArgs("chat.completions", "google-vertex", "gemini-2.5-flash", true));
+		const { nanos } = await runStream({ endpoint: "chat.completions", provider: "google-vertex", model: "google/gemini-2.5-flash", card: textOnlyCard, executor });
+		warn.mockRestore();
+		expect(nanos).toBe(expectedTextOnly);
+	}));
+});
+
+// ---------------------------------------------------------------------------------------
 // A 40-step agent turn on Claude Sonnet: 30k-token tool prompt cached once (5m), each step
 // appends ~1.5k tokens (written) and reads the whole prefix. Billed per step, streamed.
 // ---------------------------------------------------------------------------------------

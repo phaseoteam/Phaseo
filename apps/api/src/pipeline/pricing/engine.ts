@@ -183,12 +183,28 @@ function analyzeRuleSelection(candidates: PriceRule[], ctx: Record<string, any>)
     };
 }
 
+const REPORTED_INPUT_TOTAL_PATHS = [
+    "input_tokens",
+    "prompt_tokens",
+    "promptTokens",
+    "prompt_token_count",
+    "total_input_tokens",
+    "totalInputTokens",
+    "inputTokens",
+    "promptTokenCount",
+] as const;
+
 /** Split raw usage into numeric meters and a context object */
 function splitUsage(
     usageRaw: any,
     card: PriceCard,
     requestOptions?: Record<string, any>,
-): { meters: Record<string, number>; context: Record<string, any> } {
+): {
+    meters: Record<string, number>;
+    context: Record<string, any>;
+    /** input_text_tokens is the whole uncached prompt, so it still contains any image, audio or video tokens. */
+    inputTextCoversPrompt: boolean;
+} {
     const meters: Record<string, number> = {};
     const context: Record<string, any> = {};
     const allowedMeters = new Set<string>([...KNOWN_METERS, ...card.rules.map((rule) => rule.meter)]);
@@ -375,8 +391,18 @@ function splitUsage(
         typeof canonicalInputTokens === "number" &&
         inputTextTokens === canonicalInputTokens;
 
+    const uncachedCanonicalInput = Math.max(0, canonicalInputTokens - cachedTokensInsideInput);
+    // A reported input_text_tokens is the whole prompt only when it matches a separately
+    // reported input total (with or without the cache taken out). Without such a total it
+    // is taken as text alone.
+    const reportedInputTotal = pickFirstFiniteNumber(usageRaw, [...REPORTED_INPUT_TOTAL_PATHS]);
+    const inputTextCoversPrompt =
+        meters.input_text_tokens == null ||
+        (typeof reportedInputTotal === "number" &&
+            (meters.input_text_tokens === reportedInputTotal ||
+                meters.input_text_tokens === Math.max(0, reportedInputTotal - cachedTokensInsideInput)));
     if (meters.input_text_tokens == null) {
-        meters.input_text_tokens = Math.max(0, canonicalInputTokens - cachedTokensInsideInput);
+        meters.input_text_tokens = uncachedCanonicalInput;
     }
     if (meters.output_text_tokens == null) {
         meters.output_text_tokens =
@@ -420,7 +446,30 @@ function splitUsage(
         context,
     });
 
-    return { meters, context };
+    return { meters, context, inputTextCoversPrompt };
+}
+
+const INPUT_MODALITY_METERS: PricingDimensionKey[] = ["input_image_tokens", "input_audio_tokens", "input_video_tokens"];
+
+/**
+ * Image, audio and video prompt tokens are part of the provider's input total. When the card
+ * prices a modality on its own meter, take those tokens out of input_text_tokens so they are
+ * billed once, at the modality's rate. When it does not, they stay in input_text_tokens and
+ * are billed as text, as before.
+ */
+function separatePricedInputModalities(
+    meters: Record<string, number>,
+    inputTextCoversPrompt: boolean,
+    hasRule: (meter: PricingDimensionKey) => boolean,
+): void {
+    for (const meter of INPUT_MODALITY_METERS) {
+        const quantity = meters[meter];
+        if (typeof quantity !== "number" || !(quantity > 0)) continue;
+        if (!inputTextCoversPrompt || !hasRule(meter)) continue;
+        const text = meters.input_text_tokens ?? 0;
+        const moved = Math.min(text, quantity);
+        meters.input_text_tokens = text - moved;
+    }
 }
 
 /** price qty at rule's price/unit_size using nanos math */
@@ -779,8 +828,24 @@ export function computeBillSummary(
     if (requiresExplicitServiceTier(card) && !card.rules.some((rule) => rule.pricing_plan === pricingPlan)) {
         throw new Error(`pricing_plan_missing:${pricingPlan}`);
     }
-    const { meters, context: usageContext } = splitUsage(usageRaw, card, requestOptions);
+    const { meters, context: usageContext, inputTextCoversPrompt } = splitUsage(usageRaw, card, requestOptions);
     const ctx = { ...(requestOptions ?? {}), ...(usageContext ?? {}) };
+    {
+        const modalityContext = { ...ctx, ...meters };
+        const ruleMatches = (plan: string, meter: PricingDimensionKey) =>
+            card.rules.some((rule) =>
+                rule.pricing_plan === plan && rule.meter === meter && matchesConditions(rule.match, modalityContext),
+            );
+        // Mirrors the rule selection in the meter loop below, so a modality only leaves
+        // input_text_tokens when the loop will price it.
+        separatePricedInputModalities(meters, inputTextCoversPrompt, (meter) => {
+            if (ruleMatches(pricingPlan, meter)) return true;
+            if (pricingPlan === "standard") return false;
+            const planDefinesMeter = card.rules.some((rule) => rule.pricing_plan === pricingPlan && rule.meter === meter);
+            if (planDefinesMeter) return pricingPlan !== "batch";
+            return ruleMatches("standard", meter);
+        });
+    }
 
     logPricingDebug("usage_received", {
         meters,
