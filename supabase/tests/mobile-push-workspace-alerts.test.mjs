@@ -17,6 +17,11 @@ const schemaFiles = [
     '../schemas/public/functions/claim_mobile_push_deliveries.sql',
 ];
 const newFiles = schemaFiles.slice(0, 6);
+// Redefined since by the low-balance sweep (mobile-push-low-balance.test.mjs), which stops reading
+// low_balance emails and adds the forecast to the low-balance text. This suite runs the migration
+// as it was, so the behaviour below is unchanged.
+const lowBalanceFile = '../migrations/20261019194033_mobile_push_low_balance_sweep.sql';
+const redefinedLater = /(workspace_push_message|capture_workspace_notification_events)\.sql$/;
 const rows = async (sql, params) => (await db.query(sql, params)).rows;
 const one = async (sql, params) => (await rows(sql, params))[0];
 const asService = async fn => { await db.exec('set role service_role'); try { return await fn(); } finally { await db.exec('reset role'); } };
@@ -52,7 +57,10 @@ const message = async (kind, category, payload, isActor = false, workspaceName =
 try {
     // The migration carries every schema file it changed, and the manifest lists the new ones.
     const v3 = await read(v3File);
-    for (const file of schemaFiles) assert.ok(v3.includes((await read(file)).trim()), `${file} is in the migration`);
+    const lowBalance = await read(lowBalanceFile);
+    for (const file of schemaFiles) {
+        assert.ok((redefinedLater.test(file) ? lowBalance : v3).includes((await read(file)).trim()), `${file} is in the migration`);
+    }
     const deliveries = await read('../schemas/public/tables/mobile_push_deliveries.sql');
     for (const text of [
         'CONSTRAINT "mobile_push_deliveries_message_check" CHECK (((event_id IS NOT NULL) OR (digest_id IS NOT NULL) OR (message IS NOT NULL)))',

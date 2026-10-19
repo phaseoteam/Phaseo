@@ -18,6 +18,9 @@ CREATE OR REPLACE FUNCTION private.workspace_push_message (
 --                     is $3.20", but "Acme: GPT-4o retires Nov 30".
 -- Money is in US format ($3.20) and dates are UTC (Nov 30). Kinds not written here carry their
 -- own text in payload.push: title, body, href, modelSlug and lowerLead.
+-- Low balance says how long the balance lasts at the pace of the last spend_window_days days
+-- (recent_spend_nanos), as the web's credit runway does: not below a cent a day, and "more than
+-- 90 days" past that.
 declare
   v_number constant text := '^-?[0-9]+(\.[0-9]+)?$';
   v_title text;
@@ -33,16 +36,26 @@ declare
   v_retires timestamptz;
   v_deprecates timestamptz;
   v_expires timestamptz;
+  v_balance numeric;
+  v_daily numeric;
+  v_days numeric;
 begin
   v_key := '''' || case when v_name is null then 'unnamed' when char_length(v_name) > 40 then left(v_name, 39) || '…' else v_name end || '''';
 
   if p_kind = 'low_balance' then
     v_lower := true;
-    v_title := 'Balance is ' || coalesce(private.workspace_push_usd(greatest(0,
-      case when p_payload ->> 'balance_nanos' ~ v_number then (p_payload ->> 'balance_nanos')::numeric end)), 'low');
-    v_body := coalesce('Below your ' || private.workspace_push_usd(
-      case when p_payload ->> 'threshold_nanos' ~ v_number then (p_payload ->> 'threshold_nanos')::numeric end) || ' alert. ', '')
-      || 'Add credits to keep requests running.';
+    v_balance := case when p_payload ->> 'balance_nanos' ~ v_number then (p_payload ->> 'balance_nanos')::numeric end;
+    v_daily := case when p_payload ->> 'recent_spend_nanos' ~ v_number and p_payload ->> 'spend_window_days' ~ '^[1-9][0-9]*$'
+      then (p_payload ->> 'recent_spend_nanos')::numeric / (p_payload ->> 'spend_window_days')::numeric end;
+    v_days := case when v_balance > 0 and v_daily >= 10000000 then v_balance / v_daily end;
+    v_title := 'Balance is ' || coalesce(private.workspace_push_usd(greatest(0, v_balance)), 'low');
+    v_body := case
+        when v_days is null then ''
+        when v_days < 1 then 'Less than a day left at this week''s pace. '
+        when v_days > 90 then 'More than 90 days left at this week''s pace. '
+        when round(v_days) = 1 then 'About 1 day left at this week''s pace. '
+        else 'About ' || round(v_days) || ' days left at this week''s pace. '
+      end || 'Add credits to keep requests running.';
     v_href := '/settings/credits';
 
   elsif p_kind = 'auto_top_up_failed' then
