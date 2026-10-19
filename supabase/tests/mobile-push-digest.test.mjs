@@ -10,6 +10,10 @@ const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 const v1File = '../migrations/20261018135417_mobile_push_rules.sql';
 const v2File = '../migrations/20261019170840_mobile_push_categories_and_grouping.sql';
 const digestFile = '../migrations/20261019175553_mobile_push_weekly_digest.sql';
+// Migrations after the digest, replayed so its cases run on the final functions. The catalogue
+// claim and the deliveries table's comment were redefined there and are checked by their suites.
+const laterFiles = ['../migrations/20261019175633_mobile_push_workspace_alerts.sql'];
+const redefinedLater = /claim_mobile_push_deliveries\.sql$/;
 const schemaFiles = [
     '../schemas/public/tables/mobile_push_digests.sql',
     '../schemas/private/functions/mobile_push_digest_week.sql',
@@ -62,7 +66,11 @@ try {
     const v1 = await read(v1File);
     const v2 = await read(v2File);
     const migration = await read(digestFile);
-    for (const file of schemaFiles) assert.ok(migration.includes((await read(file)).trim()), `${file} is in the migration`);
+    const laterMigrations = await Promise.all(laterFiles.map(read));
+    for (const file of schemaFiles) {
+        const text = (await read(file)).trim();
+        assert.ok(redefinedLater.test(file) ? laterMigrations.some(next => next.includes(text)) : migration.includes(text), `${file} is in the migration`);
+    }
     const deliveriesTable = await read('../schemas/public/tables/mobile_push_deliveries.sql');
     const eventsTable = await read('../schemas/public/tables/catalogue_notification_events.sql');
     for (const [table, start] of [
@@ -75,7 +83,7 @@ try {
         const at = table.indexOf(start);
         assert.ok(at >= 0, `${start} is declared`);
         const statement = table.slice(at, table.indexOf(';\n', at) + 1);
-        assert.ok(migration.includes(statement), `the migration carries ${start}`);
+        assert.ok(migration.includes(statement) || (start.startsWith('COMMENT ON TABLE') && laterMigrations.some(next => next.includes(statement))), `the migration carries ${start}`);
     }
     for (const text of [
         '"event_id"           uuid,\n',
@@ -174,6 +182,9 @@ try {
       );
       create table public.v2_request_usage (request_event_id uuid, meter_key text, quantity numeric(30,12), sequence integer default 0);
       create table public.keys (id uuid primary key, workspace_id uuid, created_by uuid);
+      -- Read by the later migrations' indexes.
+      create table public.email_outbox (id uuid primary key default gen_random_uuid(), created_at timestamptz not null default now(), kind text not null, workspace_id uuid, payload jsonb not null default '{}');
+      create table public.workspace_audit_events (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, target_type text not null, created_at timestamptz not null default now());
       create table public.v2_analytics_outbox (request_event_id uuid primary key, workspace_id uuid, occurred_at timestamptz, status text);
       grant select on public.v2_request_facts, public.v2_request_usage, public.v2_model_provider_routes, public.keys, public.v2_analytics_outbox to service_role;
     `);
@@ -191,6 +202,7 @@ try {
     await db.exec(v1);
     await db.exec(v2);
     await db.exec(migration);
+    for (const next of laterMigrations) await db.exec(next);
 
     // People. u1 owns Acme and administers Beta and Gamma; it is only a member of Delta, which is
     // busy. u2 has one workspace (New York), u3 a quiet one (Tokyo) and rules for OpenAI only, u4

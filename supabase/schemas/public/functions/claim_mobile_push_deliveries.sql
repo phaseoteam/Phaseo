@@ -16,7 +16,9 @@ CREATE OR REPLACE FUNCTION public.claim_mobile_push_deliveries (
     group_key       text,
     group_count     integer,
     tag             text,
-    deliveries      integer
+    deliveries      integer,
+    workspace_id    uuid,
+    workspace_name  text
   )
   LANGUAGE plpgsql
   SECURITY DEFINER
@@ -28,10 +30,12 @@ CREATE OR REPLACE FUNCTION public.claim_mobile_push_deliveries (
 -- minutes; rows waiting for quiet hours to end, or for a later retry, stay behind. A grouped push
 -- also counts what the device was sent for that group since midnight UTC, and its tag (the group
 -- key and the UTC date) makes it replace that earlier notification. Each push is returned under
--- its oldest row's id; the other rows point at it through merged_into.
--- Before claiming, rows over two days old, for a device that is no longer active, or for a user
--- who has since switched push or the push's category off are closed instead of sent, and rows a
--- crashed run left processing for ten minutes go back to the queue to be grouped again.
+-- its oldest row's id; the other rows point at it through merged_into. Workspace alerts carry
+-- their own message and workspace, have no group key, and so always go alone.
+-- Before claiming, rows over two days old, for a device that is no longer active, for a user who
+-- has since switched push or the push's category off, or for a workspace the user has left are
+-- closed instead of sent, and rows a crashed run left processing for ten minutes go back to the
+-- queue to be grouped again.
 -- Claims run one at a time: a call that finds another claim in progress returns nothing, and
 -- the next run picks the work up. Otherwise two overlapping calls could each lock part of the
 -- same group and send it as two pushes. The lock ends with the transaction; claimed rows are
@@ -58,6 +62,9 @@ begin
         when x.created_at <= now() - interval '2 days' then 'expired'
         when dev.status <> 'active' then 'device_inactive'
         when not coalesce(p.enabled, false) then 'notifications_disabled'
+        when x.workspace_id is not null and not exists (
+          select 1 from public.workspace_members m where m.workspace_id = x.workspace_id and m.user_id = x.user_id
+        ) then 'not_a_member'
         else 'category_disabled'
       end,
       merged_into = null,
@@ -66,13 +73,16 @@ begin
       updated_at = now()
   from public.mobile_push_devices dev
   left join public.mobile_notification_preferences p on p.user_id = dev.user_id
-  cross join public.catalogue_notification_events e
   where dev.id = x.device_id
-    and e.id = x.event_id
+    and x.digest_id is null
     and (x.status in ('pending', 'deferred') or (x.status = 'processing' and x.claimed_at < now() - interval '10 minutes'))
     and (
       x.created_at <= now() - interval '2 days' or dev.status <> 'active' or not coalesce(p.enabled, false)
-      or (p.categories -> private.mobile_push_category(e.kind)) = 'false'::jsonb
+      or (p.categories -> coalesce(x.message ->> 'category',
+        (select private.mobile_push_category(e.kind) from public.catalogue_notification_events e where e.id = x.event_id))) = 'false'::jsonb
+      or (x.workspace_id is not null and not exists (
+        select 1 from public.workspace_members m where m.workspace_id = x.workspace_id and m.user_id = x.user_id
+      ))
     );
 
   update public.mobile_push_deliveries x
@@ -94,7 +104,7 @@ begin
     limit p_limit
   ),
   locked as (
-    select x.id, x.device_id, x.group_key, x.event_id, x.created_at, x.attempts, d.unit
+    select x.id, x.device_id, x.group_key, x.event_id, x.created_at, x.attempts, x.message, x.workspace_id, d.unit
     from public.mobile_push_deliveries x
     join due d on d.device_id = x.device_id and d.unit = coalesce(x.group_key, x.id::text)
     where x.status in ('pending', 'deferred') and x.not_before <= now() and x.digest_id is null
@@ -103,19 +113,19 @@ begin
   members as (
     select
       l.*,
-      e.occurred_at,
+      coalesce(e.occurred_at, l.created_at) as occurred_at,
       first_value(l.id) over (partition by l.device_id, l.unit order by l.created_at, l.id) as lead_id,
       count(*) over (partition by l.device_id, l.unit) as member_count,
       max(l.attempts) over (partition by l.device_id, l.unit) as max_attempts,
-      jsonb_build_object(
+      case when e.id is null then l.message else jsonb_build_object(
         'kind', e.kind, 'modelSlug', e.model_slug, 'labSlug', e.lab_slug, 'providerSlug', e.provider_slug,
         'modelName', coalesce(nullif(btrim(e.payload ->> 'modelName'), ''), e.model_slug),
         'labName', coalesce(nullif(btrim(e.payload ->> 'labName'), ''), e.lab_slug),
         'providerName', coalesce(nullif(btrim(e.payload ->> 'providerName'), ''), e.provider_slug),
         'title', e.title, 'body', e.body, 'href', e.href
-      ) as item
+      ) end as item
     from locked l
-    join public.catalogue_notification_events e on e.id = l.event_id
+    left join public.catalogue_notification_events e on e.id = l.event_id
   ),
   sent_today as (
     select g.device_id, g.unit, e.occurred_at, x.created_at, x.id,
@@ -163,7 +173,7 @@ begin
     dev.expo_push_token,
     dev.channel_scheme,
     c.message ->> 'kind',
-    private.mobile_push_category(c.message ->> 'kind'),
+    coalesce(m.item ->> 'category', private.mobile_push_category(c.message ->> 'kind')),
     c.message ->> 'modelSlug',
     c.message ->> 'title',
     c.message ->> 'body',
@@ -171,10 +181,13 @@ begin
     m.group_key,
     case when m.group_key is not null then (c.message ->> 'count')::integer end,
     case when m.group_key is not null then m.group_key || ':' || to_char(now() at time zone 'UTC', 'YYYY-MM-DD') end,
-    m.member_count::integer
+    m.member_count::integer,
+    m.workspace_id,
+    ws.name
   from members m
   join composed c on c.device_id = m.device_id and c.unit = m.unit
   join public.mobile_push_devices dev on dev.id = m.device_id
+  left join public.workspaces ws on ws.id = m.workspace_id
   where m.id = m.lead_id
   order by m.id;
 end;

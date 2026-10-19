@@ -5,9 +5,7 @@ const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 const v1File = '../migrations/20261018135417_mobile_push_rules.sql';
 const v2File = '../migrations/20261019170840_mobile_push_categories_and_grouping.sql';
-// Schema files the weekly digest migration has replaced since; mobile-push-digest.test.mjs checks them there.
 const digestFile = '../migrations/20261019175553_mobile_push_weekly_digest.sql';
-const replacedByDigest = new Set(['../schemas/public/functions/enqueue_mobile_push_deliveries.sql', '../schemas/public/functions/claim_mobile_push_deliveries.sql']);
 const functionFiles = [
     '../schemas/private/functions/mobile_push_category.sql',
     '../schemas/private/functions/mobile_push_group_key.sql',
@@ -23,6 +21,10 @@ const functionFiles = [
     '../schemas/public/functions/update_mobile_notification_categories.sql',
 ];
 const newFiles = [functionFiles[0], functionFiles[1], functionFiles[2], functionFiles[11]];
+// Replaced since: the fan-out by the weekly digest (mobile-push-digest.test.mjs), and the claim by
+// 20261019175633_mobile_push_workspace_alerts.sql (mobile-push-workspace-alerts.test.mjs), which
+// also changed the deliveries table's comments.
+const v3File = '../migrations/20261019175633_mobile_push_workspace_alerts.sql';
 const rows = async (sql, params) => (await db.query(sql, params)).rows;
 const one = async (sql, params) => (await rows(sql, params))[0];
 const asService = async fn => { await db.exec('set role service_role'); try { return await fn(); } finally { await db.exec('reset role'); } };
@@ -54,7 +56,9 @@ try {
     const v1 = await read(v1File);
     const v2 = await read(v2File);
     const digest = await read(digestFile);
-    for (const file of functionFiles) assert.ok((replacedByDigest.has(file) ? digest : v2).includes((await read(file)).trim()), `${file} is in the migration`);
+    const v3 = await read(v3File);
+    const latest = new Map([[functionFiles[5], digest], [functionFiles[6], v3]]);
+    for (const file of functionFiles) assert.ok((latest.get(file) ?? v2).includes((await read(file)).trim()), `${file} is in the migration`);
     const tables = {};
     for (const name of ['mobile_push_devices', 'mobile_notification_preferences', 'mobile_push_deliveries', 'catalogue_notification_events', 'mobile_notification_rules']) {
         tables[name] = await read(`../schemas/public/tables/${name}.sql`);
@@ -76,7 +80,7 @@ try {
     for (const [name, table] of Object.entries(tables)) {
         for (const statement of table.match(/^COMMENT ON [^\n]*;$/gm)) {
             if (statement.startsWith('COMMENT ON TABLE "public"."mobile_push_devices"')) continue;
-            assert.ok(v1.includes(statement) || v2.includes(statement) || digest.includes(statement), `${name}: ${statement.slice(0, 90)} is in a migration`);
+            assert.ok([v1, v2, digest, v3].some(migration => migration.includes(statement)), `${name}: ${statement.slice(0, 90)} is in a migration`);
         }
         for (const column of ['channel_scheme', 'categories', 'group_key', 'merged_into']) {
             if (table.includes(`"${column}"`)) assert.match(v2, new RegExp(`ADD COLUMN "${column}" `), `${column} is added`);
