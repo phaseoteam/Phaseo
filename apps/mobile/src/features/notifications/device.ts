@@ -50,11 +50,3 @@ export async function registerForPush(): Promise<PushRegistration> {
     deviceName: Device.deviceName ?? Device.modelName ?? null,
   };
 }
-
-/** Where a tapped notification should open, from its `href` (e.g. /models/openai/gpt-5). */
-export function notificationHref(response: Notifications.NotificationResponse): string | null {
-  const data = response.notification.request.content.data ?? {};
-  if (typeof data.href === "string" && data.href.startsWith("/")) return data.href;
-  if (typeof data.modelId === "string" && data.modelId.trim()) return `/models/${data.modelId}`;
-  return null;
-}
