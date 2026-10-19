@@ -642,6 +642,18 @@ function parseWebSearchToolDefaults(tool: any): {
 	};
 }
 
+/**
+ * Anthropic's web search `user_location` is flat ({type, city, region, country, timezone});
+ * OpenAI Chat's `web_search_options.user_location` nests the fields under `approximate`.
+ * https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool#localization
+ */
+function flattenUserLocation(location: Record<string, any>): Record<string, any> {
+	const nested = location.approximate;
+	if (!nested || typeof nested !== "object") return location;
+	const { approximate: _approximate, ...rest } = location;
+	return { ...rest, type: "approximate", ...nested };
+}
+
 function buildNativeWebSearchTool(tool: any, protocol: Protocol): any {
 	const parameters = tool?.parameters && typeof tool.parameters === "object" ? tool.parameters : {};
 	const searchContextSize =
@@ -660,7 +672,7 @@ function buildNativeWebSearchTool(tool: any, protocol: Protocol): any {
 			...(typeof tool?.max_uses === "number" ? { max_uses: tool.max_uses } : {}),
 			...(Array.isArray(allowedDomains) ? { allowed_domains: allowedDomains } : {}),
 			...(Array.isArray(blockedDomains) ? { blocked_domains: blockedDomains } : {}),
-			...(userLocation && typeof userLocation === "object" ? { user_location: userLocation } : {}),
+			...(userLocation && typeof userLocation === "object" ? { user_location: flattenUserLocation(userLocation) } : {}),
 		};
 	}
 
