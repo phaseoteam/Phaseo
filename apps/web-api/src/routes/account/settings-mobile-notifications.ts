@@ -7,11 +7,11 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 
-// Mobile push settings for the Phaseo app: a master switch, quiet hours, a daily cap, one Expo
-// token per app installation, and up to 50 rules. Matching, quiet hours and the cap are applied
-// by the database when an event fans out (enqueue_mobile_push_deliveries); this router only
-// validates and stores. The tables deny browser access, so every query runs as the service role
-// scoped to the signed-in user.
+// Mobile push settings for the Phaseo app: a master switch, category switches, quiet hours, a
+// daily cap, one Expo token per app installation, and up to 50 rules. Matching, categories, quiet
+// hours and the cap are applied by the database when an event fans out
+// (enqueue_mobile_push_deliveries); this router only validates and stores. The tables deny
+// browser access, so every query runs as the service role scoped to the signed-in user.
 
 export const MOBILE_NOTIFICATION_EVENT_KINDS = [
 	"model_released",
@@ -19,12 +19,27 @@ export const MOBILE_NOTIFICATION_EVENT_KINDS = [
 	"price_changed",
 	"deprecation_announced",
 	"provider_added",
+	"provider_launched",
+] as const;
+// The app's Android channels from channel scheme 2, apart from tests; each can be switched off.
+export const MOBILE_NOTIFICATION_CATEGORIES = [
+	"new-models",
+	"prices-providers",
+	"deprecations",
+	"money",
+	"traffic",
+	"security",
+	"jobs",
+	"account",
+	"digest",
 ] as const;
 export const MAX_MOBILE_NOTIFICATION_RULES = 50;
 const MAX_LIST_IDS = 200;
 const DEFAULT_DAILY_CAP = 10;
 const EXPO_PUSH_SEND_URL = "https://exp.host/--/api/v2/push/send";
-const MOBILE_PUSH_CHANNEL_ID = "model-updates";
+// Builds on channel scheme 1 only have this channel; a push to a channel a device lacks is not shown.
+const LEGACY_CHANNEL_ID = "model-updates";
+const TEST_CHANNEL_ID = "tests";
 const INSTALLATION_ID = /^[A-Za-z0-9._:-]{8,200}$/;
 const EXPO_PUSH_TOKEN = /^Expo(?:nent)?PushToken\[[A-Za-z0-9_-]+\]$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,6 +51,7 @@ const RULE_SELECT =
 	"id,name,enabled,action,event_kinds,lab_mode,lab_slugs,provider_mode,provider_slugs,model_slugs,input_modalities,output_modalities,only_on_phaseo,include_free_variants,position";
 
 type EventKind = (typeof MOBILE_NOTIFICATION_EVENT_KINDS)[number];
+type Category = (typeof MOBILE_NOTIFICATION_CATEGORIES)[number];
 type ScopeMode = "all" | "only" | "except";
 
 type RuleRow = {
@@ -74,6 +90,7 @@ export type MobileNotificationRule = {
 
 export type MobileNotificationSettings = {
 	enabled: boolean;
+	categories: Record<Category, boolean>;
 	quietHours: { start: string; end: string } | null;
 	dailyCap: number;
 	deviceRegistered: boolean;
@@ -187,9 +204,21 @@ const clockTime = (example: string) => z.string({ message: `Quiet hours use 24-h
 	.regex(CLOCK, { message: `Quiet hours use 24-hour "HH:MM" times, such as "${example}".` });
 const dailyCapMessage = { message: "dailyCap must be a whole number from 1 to 100." };
 
+// Send only the categories to change; the others keep their setting.
+const categoriesSchema = z
+	.object(
+		Object.fromEntries(MOBILE_NOTIFICATION_CATEGORIES.map((category) => [
+			category,
+			z.boolean({ message: `${category} must be true or false.` }).optional(),
+		])) as Record<Category, z.ZodOptional<z.ZodBoolean>>,
+		{ message: "categories must be an object of true or false values." },
+	)
+	.strict();
+
 const settingsSchema = z
 	.object({
 		enabled: z.boolean({ message: "enabled must be true or false." }).optional(),
+		categories: categoriesSchema.optional(),
 		quietHours: z
 			.object({ start: clockTime("22:00"), end: clockTime("07:00") }, { message: "quietHours must be an object with start and end, or null." })
 			.strict()
@@ -209,6 +238,8 @@ function isTimeZone(value: string): boolean {
 	}
 }
 
+const channelSchemeMessage = { message: "channelScheme must be a whole number from 1 to 100." };
+
 const deviceSchema = z
 	.object({
 		expoPushToken: z.string({ message: "expoPushToken is required." }).trim().max(300)
@@ -218,6 +249,9 @@ const deviceSchema = z
 			.refine(isTimeZone, { message: 'timeZone must be an IANA time zone such as "Europe/London".' }),
 		deviceName: z.string().trim().max(100, { message: "deviceName must be at most 100 characters." }).nullable().optional(),
 		appVersion: z.string().trim().max(40, { message: "appVersion must be at most 40 characters." }).nullable().optional(),
+		// Which notification channels the app has created: 1 (the default) is the single
+		// model-updates channel, 2 is one channel per category.
+		channelScheme: z.number(channelSchemeMessage).int(channelSchemeMessage).min(1, channelSchemeMessage).max(100, channelSchemeMessage).optional(),
 	}, { message: "Send the device as a JSON object." })
 	.strict();
 
@@ -323,10 +357,16 @@ function ruleChangesToRow(changes: RuleChanges): Record<string, unknown> {
 	return row;
 }
 
+// Every category with its stored switch, or on when none is stored.
+export function categoriesFromRow(stored: unknown): Record<Category, boolean> {
+	const values = stored && typeof stored === "object" && !Array.isArray(stored) ? stored as Record<string, unknown> : {};
+	return Object.fromEntries(MOBILE_NOTIFICATION_CATEGORIES.map((category) => [category, values[category] !== false])) as Record<Category, boolean>;
+}
+
 async function loadSettings(env: Env, userId: string, installationId: string | null): Promise<MobileNotificationSettings | null> {
 	const client = getDataClient(env);
 	const [preferences, rules, device] = await Promise.all([
-		client.from("mobile_notification_preferences").select("enabled,quiet_start,quiet_end,daily_cap").eq("user_id", userId).maybeSingle(),
+		client.from("mobile_notification_preferences").select("enabled,categories,quiet_start,quiet_end,daily_cap").eq("user_id", userId).maybeSingle(),
 		client.from("mobile_notification_rules").select(RULE_SELECT).eq("user_id", userId)
 			.order("position", { ascending: true }).order("created_at", { ascending: true }).order("id", { ascending: true })
 			.limit(MAX_MOBILE_NOTIFICATION_RULES),
@@ -335,11 +375,12 @@ async function loadSettings(env: Env, userId: string, installationId: string | n
 			: Promise.resolve({ data: null, error: null }),
 	]);
 	if (preferences.error || rules.error || device.error) return null;
-	const stored = preferences.data as { enabled?: unknown; quiet_start?: unknown; quiet_end?: unknown; daily_cap?: unknown } | null;
+	const stored = preferences.data as { enabled?: unknown; categories?: unknown; quiet_start?: unknown; quiet_end?: unknown; daily_cap?: unknown } | null;
 	const start = clock(stored?.quiet_start);
 	const end = clock(stored?.quiet_end);
 	return {
 		enabled: stored?.enabled === true,
+		categories: categoriesFromRow(stored?.categories),
 		quietHours: start && end ? { start, end } : null,
 		dailyCap: typeof stored?.daily_cap === "number" ? stored.daily_cap : DEFAULT_DAILY_CAP,
 		deviceRegistered: (device.data as { status?: unknown } | null)?.status === "active",
@@ -353,7 +394,7 @@ function queryInstallationId(c: AppContext): string | null {
 	return value && INSTALLATION_ID.test(value) ? value : null;
 }
 
-async function sendTestPush(env: Env, expoPushToken: string): Promise<"sent" | "device_not_registered" | "failed"> {
+async function sendTestPush(env: Env, expoPushToken: string, channelScheme: number): Promise<"sent" | "device_not_registered" | "failed"> {
 	const accessToken = env.EXPO_ACCESS_TOKEN?.trim();
 	try {
 		const response = await fetch(EXPO_PUSH_SEND_URL, {
@@ -367,8 +408,8 @@ async function sendTestPush(env: Env, expoPushToken: string): Promise<"sent" | "
 				to: expoPushToken,
 				title: "Phaseo test notification",
 				body: "Notifications from Phaseo will look like this.",
-				data: { href: "/", kind: "test", modelId: null },
-				channelId: MOBILE_PUSH_CHANNEL_ID,
+				data: { href: "/", kind: "test", category: TEST_CHANNEL_ID, modelId: null, group: null },
+				channelId: channelScheme >= 2 ? TEST_CHANNEL_ID : LEGACY_CHANNEL_ID,
 				sound: null,
 			}]),
 			signal: AbortSignal.timeout(15_000),
@@ -405,9 +446,16 @@ accountSettingsMobileNotificationsRouter.put("/mobile-notifications", bodyLimit(
 		changes.quiet_end = parsed.data.quietHours?.end ?? null;
 	}
 	if (parsed.data.dailyCap !== undefined) changes.daily_cap = parsed.data.dailyCap;
+	const client = getDataClient(c.env);
 	if (Object.keys(changes).length > 0) {
-		const saved = await getDataClient(c.env).from("mobile_notification_preferences")
+		const saved = await client.from("mobile_notification_preferences")
 			.upsert({ user_id: user.id, ...changes, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+		if (saved.error) return unavailable(c, "mobile_notification_settings_write_failed");
+	}
+	const categories = Object.fromEntries(Object.entries(parsed.data.categories ?? {}).filter(([, value]) => value !== undefined));
+	if (Object.keys(categories).length > 0) {
+		// Merged into the stored switches in the database, so changes from two devices at once both stick.
+		const saved = await client.rpc("update_mobile_notification_categories", { p_user_id: user.id, p_categories: categories });
 		if (saved.error) return unavailable(c, "mobile_notification_settings_write_failed");
 	}
 	const settings = await loadSettings(c.env, user.id, queryInstallationId(c));
@@ -422,7 +470,8 @@ accountSettingsMobileNotificationsRouter.put("/mobile-notifications/devices/:ins
 	if (!INSTALLATION_ID.test(installationId)) return invalid(c, "invalid_device", "installationId is not valid.");
 	const parsed = await parseBody(c, deviceSchema, "invalid_device");
 	if ("response" in parsed) return parsed.response;
-	// One row per installation and per token; a token that moves account moves with it.
+	// One row per installation and per token; a token that moves account moves with it. An app
+	// that does not report a channel scheme only has the single model-updates channel.
 	const registered = await getDataClient(c.env).rpc("register_mobile_push_device", {
 		p_user_id: user.id,
 		p_installation_id: installationId,
@@ -431,6 +480,7 @@ accountSettingsMobileNotificationsRouter.put("/mobile-notifications/devices/:ins
 		p_time_zone: parsed.data.timeZone,
 		p_device_name: parsed.data.deviceName || null,
 		p_app_version: parsed.data.appVersion || null,
+		p_channel_scheme: parsed.data.channelScheme ?? 1,
 	});
 	if (registered.error) return unavailable(c, "mobile_notification_device_write_failed");
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -523,7 +573,7 @@ accountSettingsMobileNotificationsRouter.post("/mobile-notifications/test", body
 	// Counts the attempt (three per ten minutes per user) and returns the device's token.
 	const claimed = await client.rpc("claim_mobile_push_test", { p_user_id: user.id, p_installation_id: parsed.data.installationId });
 	if (claimed.error) return unavailable(c, "mobile_notification_test_unavailable");
-	const claim = (claimed.data ?? {}) as { error?: string; retryAfterSeconds?: number; deviceId?: string; expoPushToken?: string };
+	const claim = (claimed.data ?? {}) as { error?: string; retryAfterSeconds?: number; deviceId?: string; expoPushToken?: string; channelScheme?: number };
 	if (claim.error === "rate_limited") {
 		const retryAfter = Math.max(1, Math.trunc(Number(claim.retryAfterSeconds) || 60));
 		return c.json(
@@ -535,7 +585,7 @@ accountSettingsMobileNotificationsRouter.post("/mobile-notifications/test", body
 	if (claim.error || !claim.expoPushToken || !claim.deviceId) {
 		return c.json({ error: "device_not_registered", message: "Turn on notifications in the app on this device first." }, 404, PRIVATE_NO_STORE_HEADERS);
 	}
-	const outcome = await sendTestPush(c.env, claim.expoPushToken);
+	const outcome = await sendTestPush(c.env, claim.expoPushToken, Number(claim.channelScheme) || 1);
 	if (outcome === "device_not_registered") {
 		const now = new Date().toISOString();
 		await client.from("mobile_push_devices").update({ status: "invalid", invalidated_at: now, updated_at: now })

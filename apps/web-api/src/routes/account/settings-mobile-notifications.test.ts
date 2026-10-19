@@ -54,7 +54,10 @@ const rule = {
 	labs: { mode: "except", ids: ["qwen", "meta"] }, providers: { mode: "all", ids: [] }, models: [], inputModalities: [],
 	outputModalities: ["text"], onlyOnPhaseo: false, includeFreeVariants: false, position: 0,
 };
-const eventKinds = ["model_released", "gateway_available", "price_changed", "deprecation_announced", "provider_added"];
+const eventKinds = ["model_released", "gateway_available", "price_changed", "deprecation_announced", "provider_added", "provider_launched"];
+const allCategoriesOn = {
+	"new-models": true, "prices-providers": true, deprecations: true, money: true, traffic: true, security: true, jobs: true, account: true, digest: true,
+};
 
 function settingsReads(call: Call, stored: { preferences?: unknown[]; rules?: unknown[]; devices?: unknown[] } = {}) {
 	if (call.method !== "GET") return undefined;
@@ -80,18 +83,21 @@ describe("mobile notification settings", () => {
 		const response = await send("");
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cache-control")).toBe("private, no-store");
-		expect(await response.json()).toEqual({ enabled: false, quietHours: null, dailyCap: 10, deviceRegistered: false, rules: [], eventKinds });
+		expect(await response.json()).toEqual({ enabled: false, categories: allCategoriesOn, quietHours: null, dailyCap: 10, deviceRegistered: false, rules: [], eventKinds });
 		expect(calls.some((call) => call.url.pathname.endsWith("/mobile_push_devices")), "no device lookup without an installation").toBe(false);
 	});
 
 	it("returns the user's settings, rules and this installation's registration", async () => {
 		const calls = stubFetch((call) => settingsReads(call, {
-			preferences: [{ enabled: true, quiet_start: "22:00:00", quiet_end: "07:30:00", daily_cap: 5 }],
+			preferences: [{ enabled: true, categories: { digest: false, "prices-providers": false, unknown: false }, quiet_start: "22:00:00", quiet_end: "07:30:00", daily_cap: 5 }],
 			rules: [ruleRow],
 			devices: [{ status: "active" }],
 		}));
 		const response = await send("?installationId=install-0001");
-		expect(await response.json()).toEqual({ enabled: true, quietHours: { start: "22:00", end: "07:30" }, dailyCap: 5, deviceRegistered: true, rules: [rule], eventKinds });
+		expect(await response.json()).toEqual({
+			enabled: true, categories: { ...allCategoriesOn, digest: false, "prices-providers": false }, quietHours: { start: "22:00", end: "07:30" },
+			dailyCap: 5, deviceRegistered: true, rules: [rule], eventKinds,
+		});
 		for (const call of calls) expect(call.url.searchParams.get("user_id")).toBe(`eq.${USER}`);
 		expect(calls.find((call) => call.url.pathname.endsWith("/mobile_push_devices"))?.url.searchParams.get("installation_id")).toBe("eq.install-0001");
 	});
@@ -114,9 +120,44 @@ describe("mobile notification settings", () => {
 
 		await send("", { method: "PUT", body: { quietHours: { start: "22:00", end: "07:00" }, dailyCap: 3 } });
 		expect(saved).toMatchObject({ quiet_start: "22:00", quiet_end: "07:00", daily_cap: 3 });
+		expect(calls.some((call) => call.url.pathname.endsWith("/rpc/update_mobile_notification_categories"))).toBe(false);
+	});
+
+	it("merges only the categories sent, in the database", async () => {
+		const merged: unknown[] = [];
+		const calls = stubFetch((call) => {
+			if (call.url.pathname.endsWith("/rpc/update_mobile_notification_categories")) {
+				merged.push(call.body);
+				return Response.json({ digest: false });
+			}
+			if (call.method === "POST" && call.url.pathname.endsWith("/mobile_notification_preferences")) return new Response(null, { status: 201 });
+			return settingsReads(call, { preferences: [{ enabled: true, categories: { digest: false }, quiet_start: null, quiet_end: null, daily_cap: 10 }] });
+		});
+		const response = await send("", { method: "PUT", body: { categories: { digest: false } } });
+		expect(response.status).toBe(200);
+		expect(merged).toEqual([{ p_user_id: USER, p_categories: { digest: false } }]);
+		expect(calls.some((call) => call.method === "POST" && call.url.pathname.endsWith("/mobile_notification_preferences")), "no other setting is written").toBe(false);
+		expect((await response.json()).categories).toEqual({ ...allCategoriesOn, digest: false });
+
+		expect((await send("", { method: "PUT", body: { enabled: true, categories: { "new-models": false, money: true } } })).status).toBe(200);
+		expect(merged.at(-1)).toEqual({ p_user_id: USER, p_categories: { "new-models": false, money: true } });
+		expect(calls.find((call) => call.method === "POST" && call.url.pathname.endsWith("/mobile_notification_preferences"))?.body)
+			.toMatchObject({ user_id: USER, enabled: true });
+	});
+
+	it("reports a failed category write as unavailable", async () => {
+		stubFetch((call) => call.url.pathname.endsWith("/rpc/update_mobile_notification_categories")
+			? Response.json({ message: "boom" }, { status: 500 })
+			: settingsReads(call));
+		const response = await send("", { method: "PUT", body: { categories: { jobs: false } } });
+		expect(response.status).toBe(503);
+		expect((await response.json()).error).toBe("mobile_notification_settings_write_failed");
 	});
 
 	it.each([
+		[{ categories: { tests: false } }, "Unknown field: tests."],
+		[{ categories: { digest: "off" } }, "categories.digest: digest must be true or false."],
+		[{ categories: ["digest"] }, "categories: categories must be an object of true or false values."],
 		[{ dailyCap: 0 }, "dailyCap: dailyCap must be a whole number from 1 to 100."],
 		[{ dailyCap: 2.5 }, "dailyCap: dailyCap must be a whole number from 1 to 100."],
 		[{ quietHours: { start: "22:00", end: "22:00" } }, "quietHours: Quiet hours must start and end at different times."],
@@ -147,8 +188,16 @@ describe("mobile push devices", () => {
 		expect(await response.json()).toEqual({ ok: true });
 		expect(calls[0].body).toEqual({
 			p_user_id: USER, p_installation_id: "install-0001", p_expo_push_token: device.expoPushToken, p_platform: "android",
-			p_time_zone: "Europe/London", p_device_name: "Pixel 9", p_app_version: "1.0.0",
+			p_time_zone: "Europe/London", p_device_name: "Pixel 9", p_app_version: "1.0.0", p_channel_scheme: 1,
 		});
+	});
+
+	it("stores the channel scheme the app reports, and scheme 1 when it reports none", async () => {
+		const calls = stubFetch((call) => call.url.pathname.endsWith("/rpc/register_mobile_push_device") ? Response.json("device-id") : undefined);
+		expect((await send("/devices/install-0001", { method: "PUT", body: { ...device, channelScheme: 2 } })).status).toBe(200);
+		expect(calls[0].body).toMatchObject({ p_channel_scheme: 2 });
+		await send("/devices/install-0001", { method: "PUT", body: device });
+		expect(calls[1].body).toMatchObject({ p_channel_scheme: 1 });
 	});
 
 	it.each([
@@ -156,6 +205,9 @@ describe("mobile push devices", () => {
 		["/devices/install-0001", { ...device, platform: "web" }, 'platform: platform must be "android" or "ios".'],
 		["/devices/install-0001", { ...device, timeZone: "Mars/Olympus" }, 'timeZone: timeZone must be an IANA time zone such as "Europe/London".'],
 		["/devices/install-0001", { expoPushToken: device.expoPushToken, platform: "ios" }, "timeZone: timeZone is required."],
+		["/devices/install-0001", { ...device, channelScheme: 1.5 }, "channelScheme: channelScheme must be a whole number from 1 to 100."],
+		["/devices/install-0001", { ...device, channelScheme: 0 }, "channelScheme: channelScheme must be a whole number from 1 to 100."],
+		["/devices/install-0001", { ...device, channelScheme: "2" }, "channelScheme: channelScheme must be a whole number from 1 to 100."],
 		["/devices/short", device, "installationId is not valid."],
 	])("rejects an invalid device on %s", async (path, body, message) => {
 		const calls = stubFetch(() => undefined);
@@ -204,6 +256,14 @@ describe("mobile notification rules", () => {
 		expect(await response.json()).toEqual({ rule: { ...rule, position: 5 } });
 	});
 
+	it("accepts rules about providers launching on Phaseo", async () => {
+		const store = ruleStore({ rule: { ...ruleRow, event_kinds: ["provider_launched"], lab_mode: "all", lab_slugs: [] } });
+		const response = await send("/rules", { method: "POST", body: { events: ["provider_launched"] } });
+		expect(response.status).toBe(201);
+		expect(store.calls[0].body).toMatchObject({ p_rule: { event_kinds: ["provider_launched"] } });
+		expect((await response.json()).rule.events).toEqual(["provider_launched"]);
+	});
+
 	it("caps users at 50 rules", async () => {
 		const store = ruleStore({ error: "rule_limit_reached" });
 		const response = await send("/rules", { method: "POST", body: input });
@@ -221,7 +281,7 @@ describe("mobile notification rules", () => {
 
 	it.each([
 		[{ events: [] }, "events: Choose at least one event."],
-		[{ events: ["model_rumoured"] }, "events.0: Events must be any of: model_released, gateway_available, price_changed, deprecation_announced, provider_added."],
+		[{ events: ["model_rumoured"] }, "events.0: Events must be any of: model_released, gateway_available, price_changed, deprecation_announced, provider_added, provider_launched."],
 		[{ labs: { mode: "all" } }, "events: events must be a list."],
 		[{ events: ["price_changed"], labs: { mode: "only", ids: [] } }, 'labs.ids: Choose at least one lab for "only" or "except", or use "all".'],
 		[{ events: ["price_changed"], providers: { mode: "sometimes", ids: ["openai"] } }, 'providers.mode: provider mode must be "all", "only" or "except".'],
@@ -304,8 +364,17 @@ describe("test push", () => {
 		expect(expo?.headers.get("authorization")).toBe("Bearer expo-access-token");
 		expect(expo?.body).toEqual([{
 			to: "ExponentPushToken[abc]", title: "Phaseo test notification", body: "Notifications from Phaseo will look like this.",
-			data: { href: "/", kind: "test", modelId: null }, channelId: "model-updates", sound: null,
+			data: { href: "/", kind: "test", category: "tests", modelId: null, group: null }, channelId: "model-updates", sound: null,
 		}]);
+	});
+
+	it("uses the tests channel once the app has created the category channels", async () => {
+		for (const [channelScheme, channelId] of [[1, "model-updates"], [2, "tests"], [3, "tests"]] as const) {
+			const calls = testPush({ ...claim, channelScheme });
+			expect((await send("/test", { method: "POST", body: { installationId: "install-0001" } })).status).toBe(200);
+			const expo = calls.find((call) => call.url.hostname === "exp.host");
+			expect((expo?.body as Array<{ channelId: string }>)[0].channelId).toBe(channelId);
+		}
 	});
 
 	it("limits test pushes and says when to retry", async () => {
