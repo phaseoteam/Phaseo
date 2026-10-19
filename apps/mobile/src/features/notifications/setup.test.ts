@@ -104,21 +104,44 @@ describe("custom rules", () => {
     expect(server.state.rules).toEqual([expect.objectContaining({ id: "legacy", name: SETUP_RULE_NAMES.news, labs: { mode: "only", ids: ["qwen"] } })]);
   });
 
-  it("keeps a category on while one of the user's rules needs it", () => {
-    const keeps = categoriesFor({ ...STARTER_CHOICES, modelNews: "none" }, custom, true);
-    expect(keeps).toMatchObject({ "prices-providers": true, deprecations: true });
-    expect(keeps).not.toHaveProperty("new-models");
+  it("leaves the categories alone for the user's own rules", () => {
+    const off = { ...allOn(), "prices-providers": false, deprecations: false };
+    expect(planSetup({ ...STARTER_CHOICES, modelNews: "none" }, state(custom, { categories: off }), false).settings).toEqual({});
   });
 
-  it("never turns off a model-update category that no rule needs", () => {
-    const categories = categoriesFor({ ...STARTER_CHOICES, modelNews: "none" }, [], false);
-    expect(categories).toEqual({});
-    expect(categoriesFor({ ...STARTER_CHOICES, alsoAvailable: true }, [], false)).toEqual({ "new-models": true, "prices-providers": true });
+  it("turns on only the categories setup's own rules arrive in, and never one off", () => {
+    expect(categoriesFor({ ...STARTER_CHOICES, modelNews: "none" }, false)).toEqual({});
+    expect(categoriesFor({ ...STARTER_CHOICES, alsoAvailable: true }, false)).toEqual({ "new-models": true });
+    expect(categoriesFor({ ...STARTER_CHOICES, modelNews: "models", models: ["openai/gpt-5"], alsoAvailable: true, prices: true }, false)).toEqual({ "new-models": true, "prices-providers": true });
+  });
+});
+
+describe("categories the user switched off", () => {
+  it("reads followed-model news as off while Prices and providers is off", () => {
+    const news = rule("news", setupRules({ ...STARTER_CHOICES, modelNews: "models", models: ["openai/gpt-5"] }).news!);
+    const current = state([news], { categories: { ...allOn(), "prices-providers": false } });
+    expect(choicesFrom(current).modelNews).toBe("none");
+    expect(planSetup(choicesFrom(current), current, true).settings).toEqual({});
+    expect(choicesFrom(state([news])).modelNews).toBe("models");
   });
 
-  it("keeps a kind this build doesn't know working", () => {
-    const future = rule("future", { events: ["benchmark_published"] });
-    expect(categoriesFor({ ...STARTER_CHOICES, modelNews: "none" }, [future], true)).toMatchObject({ "new-models": true, "prices-providers": true, deprecations: true });
+  it("reads Also available on Phaseo as off while New models is off", () => {
+    const news = rule("news", setupRules({ ...STARTER_CHOICES, modelNews: "models", models: ["openai/gpt-5"], alsoAvailable: true }).news!);
+    expect(choicesFrom(state([news], { categories: { ...allOn(), "new-models": false } }))).toMatchObject({ modelNews: "models", alsoAvailable: false });
+  });
+
+  it.each(variants.map((choices, index) => [index, choices] as const))("never switches one back on when nothing changed (%i)", async (_, choices) => {
+    for (const category of ["new-models", "prices-providers", "deprecations"] as const) {
+      const server = fakeServer(state(custom));
+      await finish(choices, server);
+      const current = { ...server.state, categories: { ...server.state.categories!, [category]: false } };
+      expect(planSetup(choicesFrom(current), current, true).settings.categories?.[category]).toBeUndefined();
+    }
+  });
+
+  it("switches one on again when the user chooses what needs it", () => {
+    const current = state([], { categories: { ...allOn(), deprecations: false } });
+    expect(planSetup({ ...choicesFrom(current), deprecations: true }, current, false).settings.categories).toEqual({ deprecations: true });
   });
 });
 
@@ -142,8 +165,8 @@ describe("members and admins", () => {
   });
 
   it("leaves Deprecations on for workspace alerts when deprecation news is off", () => {
-    expect(categoriesFor({ ...STARTER_CHOICES, deprecations: false }, [], true)).not.toHaveProperty("deprecations");
-    expect(categoriesFor({ ...STARTER_CHOICES, deprecations: true }, [], true).deprecations).toBe(true);
+    expect(categoriesFor({ ...STARTER_CHOICES, deprecations: false }, true)).not.toHaveProperty("deprecations");
+    expect(categoriesFor({ ...STARTER_CHOICES, deprecations: true }, true).deprecations).toBe(true);
   });
 
   it("uses the workspace's low-balance threshold, or $5", () => {
@@ -178,10 +201,10 @@ describe("idempotency", () => {
   it("updates setup's rule in place rather than adding another", async () => {
     const server = fakeServer(state([rule("starter", STARTER_RULE)], { categories: { ...allOn(), "prices-providers": false } }));
     await finish({ ...STARTER_CHOICES, alsoAvailable: true }, server);
-    // "Now on Phaseo" also matches provider launches, which arrive under Prices and providers.
-    expect(server.writes).toEqual(["update starter", "settings"]);
+    // Provider launches also match "now on Phaseo", but the user's own Prices and providers switch stays off.
+    expect(server.writes).toEqual(["update starter"]);
     expect(server.state.rules).toHaveLength(1);
-    expect(server.state.categories?.["prices-providers"]).toBe(true);
+    expect(server.state.categories?.["prices-providers"]).toBe(false);
   });
 
   it("counts a rule that's already gone as deleted", async () => {

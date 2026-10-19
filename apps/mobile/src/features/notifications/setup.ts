@@ -177,19 +177,33 @@ export function splitRules(rules: NotificationRule[]) {
   return { owned, custom };
 }
 
-/** Where setup starts: the current rules and settings. A switched-off rule or category reads as off. */
+// Where each kind setup's rules listen for arrives. (Provider launches, which "now on Phaseo" rules
+// also match, arrive under Prices and providers; setup leaves that to the user's switch.)
+const KIND_CATEGORY: Record<string, Category> = {
+  model_released: "new-models",
+  gateway_available: "new-models",
+  provider_added: "prices-providers",
+  price_changed: "prices-providers",
+  deprecation_announced: "deprecations",
+};
+
+/**
+ * Where setup starts: the current rules and settings. A switched-off rule reads as off, and so does
+ * one whose category is off, so finishing without changes never switches that category back on.
+ */
 export function choicesFrom(state: SetupState): SetupChoices {
   const { owned } = splitRules(state.rules);
   const on = (category: Category) => state.categories?.[category] !== false;
   const [news, prices, deprecations] = SETUP_ROLES.map((role) => owned[role][0] ?? null);
   const read = news ? readRule("news", news) : null;
-  const newsOn = Boolean(read && news!.enabled && on("new-models"));
+  // Followed-model news is new providers, which arrive under Prices and providers.
+  const newsOn = Boolean(read && news!.enabled && on(read.modelNews === "models" ? "prices-providers" : "new-models"));
   return {
     modelNews: newsOn ? read!.modelNews : "none",
     labs: read?.labs ?? [],
     // Followed models from whichever setup rule has them, so the model picker opens with them.
     models: [news, prices, deprecations].find((rule) => rule?.models.length)?.models ?? [],
-    alsoAvailable: read?.alsoAvailable ?? false,
+    alsoAvailable: Boolean(read?.alsoAvailable && on("new-models")),
     prices: Boolean(prices?.enabled && on("prices-providers")),
     deprecations: Boolean(deprecations?.enabled && on("deprecations")),
     money: on("money"),
@@ -201,32 +215,17 @@ export function choicesFrom(state: SetupState): SetupChoices {
   };
 }
 
-// The categories a rule's kinds arrive in. provider_launched matches rules with gateway_available or
-// provider_added too, so a "now on Phaseo" rule also needs Prices and providers.
-const KIND_CATEGORIES: Record<string, Category[]> = {
-  model_released: ["new-models"],
-  gateway_available: ["new-models", "prices-providers"],
-  provider_added: ["prices-providers"],
-  provider_launched: ["prices-providers"],
-  price_changed: ["prices-providers"],
-  deprecation_announced: ["deprecations"],
-};
-const CATALOGUE: Category[] = ["new-models", "prices-providers", "deprecations"];
-
 /**
- * The categories setup writes. A model-update category is turned on when a rule needs it (setup's or
- * the user's own, so neither is silenced) and otherwise left alone: without a rule nothing arrives
- * there anyway, a rule added later would be blocked, and Deprecations also carries workspace alerts
- * about models a workspace uses. Money, Security, Your traffic and Digest only reach owners and
+ * The categories setup writes. It turns on the category each of its own rules arrives in, so a choice
+ * made here isn't blocked by a switch turned off earlier (and a choice reads as off while its category
+ * is off, see choicesFrom). It never turns one off, and the user's own rules don't count: those are
+ * the user's settings, a rule added later would be blocked, and Deprecations also carries workspace
+ * alerts about models a workspace uses. Money, Security, Your traffic and Digest only reach owners and
  * admins, so only theirs are written.
  */
-export function categoriesFor(choices: SetupChoices, customRules: RuleInput[], admin: boolean): Partial<Record<Category, boolean>> {
+export function categoriesFor(choices: SetupChoices, admin: boolean): Partial<Record<Category, boolean>> {
   const result: Partial<Record<Category, boolean>> = {};
-  for (const rule of [...Object.values(setupRules(choices)), ...customRules]) {
-    if (!rule || rule.action !== "notify") continue;
-    // A kind this build doesn't know could arrive anywhere, so it keeps every model-update category.
-    for (const kind of rule.events) for (const category of KIND_CATEGORIES[kind] ?? CATALOGUE) result[category] = true;
-  }
+  for (const rule of Object.values(setupRules(choices))) for (const kind of rule?.events ?? []) result[KIND_CATEGORY[kind]!] = true;
   return admin ? { ...result, money: choices.money, security: choices.security, traffic: choices.traffic, digest: choices.digest } : result;
 }
 
@@ -245,7 +244,7 @@ const sameQuiet = (a: QuietHours, b: QuietHours) => (a && b ? a.start === b.star
  * are removed. The user's own rules are never in the plan.
  */
 export function planSetup(choices: SetupChoices, state: SetupState, admin: boolean): SetupPlan {
-  const { owned, custom } = splitRules(state.rules);
+  const { owned } = splitRules(state.rules);
   const wanted = setupRules(choices);
   const plan: SetupPlan = { remove: [], update: [], create: [], settings: {} };
   for (const role of SETUP_ROLES) {
@@ -263,7 +262,7 @@ export function planSetup(choices: SetupChoices, state: SetupState, admin: boole
   // Servers without categories reject them.
   if (state.categories) {
     const current = state.categories;
-    const changed = Object.entries(categoriesFor(choices, custom, admin)).filter(([category, value]) => (current[category as Category] ?? true) !== value);
+    const changed = Object.entries(categoriesFor(choices, admin)).filter(([category, value]) => (current[category as Category] ?? true) !== value);
     if (changed.length) plan.settings.categories = Object.fromEntries(changed);
   }
   if (!sameQuiet(choices.quietHours, state.quietHours ?? null)) plan.settings.quietHours = choices.quietHours;
