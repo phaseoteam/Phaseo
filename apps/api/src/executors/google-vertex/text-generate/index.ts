@@ -395,6 +395,9 @@ export function resolveVertexApiBase(bindings: Record<string, any>, providerId?:
 	const project = String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
 	const configuredLocation = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
 	const requiredLocation = providerId === "google-vertex-eu" && family === "anthropic" ? "eu"
+		// Served only on global and the us/eu multi-regions, no single region
+		// (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-1-flash-lite).
+		: providerId === "google-vertex-eu" && family === "gemini" && /^(?:google\/)?gemini-3\.1-flash-lite$/.test(model ?? "") ? "eu"
 		: providerId === "google-vertex" && family === "anthropic" ? "global"
 		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-3\.1-flash-lite)$/.test(model ?? "") ? "global"
 		: providerId === "google-vertex" && family === "openapi_chat" && model?.endsWith("-maas")
@@ -499,6 +502,8 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	if (ir.topP !== undefined) generationConfig.topP = ir.topP;
 	if (ir.topK !== undefined) generationConfig.topK = ir.topK;
 	if (ir.stop) generationConfig.stopSequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
+	// GenerationConfig.seed (https://docs.cloud.google.com/vertex-ai/generative-ai/docs/reference/rest/v1/GenerationConfig).
+	if (ir.seed !== undefined) generationConfig.seed = ir.seed;
 
 	if (
 		ir.reasoning?.enabled ||

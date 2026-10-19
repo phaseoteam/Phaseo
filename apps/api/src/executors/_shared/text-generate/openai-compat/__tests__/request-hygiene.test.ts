@@ -217,3 +217,17 @@ describe("fields the client did not send", () => {
 		expect(providerAcceptsStreamOptions("deepinfra")).toBe(true);
 	});
 });
+
+// OpenAI, Azure and DeepInfra name the standard tier "default"; "standard" is not in their
+// service_tier enums (https://platform.openai.com/docs/api-reference/chat/create,
+// https://docs.deepinfra.com/api-reference/chat-completions/openai-chat-completions).
+describe("provider service tier names", () => {
+	it.each(["openai", "openai-eu", "azure", "deepinfra"])("sends %s service_tier default for standard", (providerId) => {
+		expect(irToOpenAIChat(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("default");
+		expect(irToOpenAIResponses(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("default");
+	});
+
+	it("leaves tiers without an alias unchanged", () => {
+		expect(irToOpenAIChat(baseIR({ serviceTier: "priority" }), "m", "deepinfra").service_tier).toBe("priority");
+	});
+});

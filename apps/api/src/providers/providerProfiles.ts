@@ -178,7 +178,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "openai",
-		aliases: ["azure"],
+		aliases: ["azure", "openai-eu"],
 		text: {
 			paramPolicy: {
 				supportedParams: [

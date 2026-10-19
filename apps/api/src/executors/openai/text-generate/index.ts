@@ -47,18 +47,23 @@ const REASONING_EFFORT_TO_PERCENT: Record<ReasoningEffort, number> = {
 
 const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"gpt-5": new Set(["minimal", "low", "medium", "high"]),
-	"gpt-5-pro": new Set(["minimal", "low", "medium", "high"]),
-	"gpt-5-pro-preview": new Set(["minimal", "low", "medium", "high"]),
+	// gpt-5-pro "defaults to (and only supports) reasoning.effort: high".
+	"gpt-5-pro": new Set(["high"]),
+	"gpt-5-pro-preview": new Set(["high"]),
 	"gpt-5.1": new Set(["none", "minimal", "low", "medium", "high"]),
 	"gpt-5.1-codex-max": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
 	"gpt-5.2": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
 	"gpt-5.2-codex": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
+	"gpt-5.2-pro": new Set(["medium", "high", "xhigh"]),
 	"gpt-5.3": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
-	"gpt-5.3-codex": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
+	"gpt-5.3-codex": new Set(["low", "medium", "high", "xhigh"]),
 	"gpt-5.4": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-mini": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-nano": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-pro": new Set(["medium", "high", "xhigh"]),
+	// https://developers.openai.com/api/docs/models/gpt-5.5 and /gpt-5.5-pro
+	"gpt-5.5": new Set(["none", "low", "medium", "high", "xhigh"]),
+	"gpt-5.5-pro": new Set(["medium", "high", "xhigh"]),
 	"gpt-5.6-luna": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-5.6-luna-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-5.6-sol": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
@@ -78,6 +83,11 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"o1-mini": new Set(["low", "medium", "high"]),
 	"o3-mini": new Set(["low", "medium", "high"]),
 };
+
+// Models whose pages list Chat Completions as not supported (Responses and Batch only), e.g.
+// https://developers.openai.com/api/docs/models/gpt-5.5-pro and /gpt-5.3-codex. A dated
+// snapshot of the same model matches too.
+const OPENAI_RESPONSES_ONLY_MODELS = /^(?:gpt-5(?:\.[245])?-pro|o1-pro|o3-pro|gpt-5\.3-codex)(?:-\d{4}-\d{2}-\d{2})?$/;
 
 const OPENAI_WEBSOCKET_RECOVERABLE_ERRORS = new Set([
 	"session_timeout",
@@ -779,6 +789,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	const modelForRouting = normalizedRoutingModel.model ?? requestedRoutingModel;
 	const normalizedModel = normalizeModelName(modelForRouting).toLowerCase();
 	const requiresResponsesRoute = normalizedModel === "gpt-6.1-sol" ||
+		OPENAI_RESPONSES_ONLY_MODELS.test(normalizedModel) ||
 		(normalizedModel === "gpt-6-astra" && (args.ir as IRChatRequest).serviceTier === "ultrafast");
 	const hasAsyncTool = (args.ir as IRChatRequest).tools?.some((tool) => tool.async === true) ?? false;
 	const useNativeChatRoute =
