@@ -8,6 +8,8 @@ CREATE TABLE "public"."mobile_notification_preferences" (
   "quiet_end"                  time without time zone,
   "daily_cap"                  integer                    NOT NULL DEFAULT 10,
   "test_push_sent_at"          timestamp with time zone[] NOT NULL DEFAULT '{}'::timestamp with time zone[],
+  "categories"                 jsonb                      NOT NULL DEFAULT '{}'::jsonb,
+  CONSTRAINT "mobile_notification_preferences_categories_check" CHECK ((jsonb_typeof(categories) = 'object'::text)),
   CONSTRAINT "mobile_notification_preferences_daily_cap_check" CHECK (((daily_cap >= 1) AND (daily_cap <= 100))),
   CONSTRAINT "mobile_notification_preferences_pkey" PRIMARY KEY (user_id),
   CONSTRAINT "mobile_notification_preferences_quiet_hours_check"
@@ -26,7 +28,9 @@ CREATE POLICY "deny_direct_client_access" ON "public"."mobile_notification_prefe
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON COLUMN "public"."mobile_notification_preferences"."daily_cap" IS 'Most catalogue notifications a user receives in any 24 hours; later ones are recorded as suppressed.';
+COMMENT ON COLUMN "public"."mobile_notification_preferences"."categories" IS 'Category switches: new-models, prices-providers, deprecations, money, traffic, security, jobs, account and digest map to true or false. A missing key means on.';
+
+COMMENT ON COLUMN "public"."mobile_notification_preferences"."daily_cap" IS 'Most catalogue pushes each device receives in any 24 hours, where a grouped push counts once; later ones are recorded as suppressed.';
 
 COMMENT ON COLUMN "public"."mobile_notification_preferences"."enabled" IS 'Master switch for mobile push. Which events notify is decided by mobile_notification_rules.';
 
@@ -38,7 +42,7 @@ COMMENT ON COLUMN "public"."mobile_notification_preferences"."quiet_start" IS 'L
 
 COMMENT ON COLUMN "public"."mobile_notification_preferences"."test_push_sent_at" IS 'Recent test pushes, used to rate limit them.';
 
-COMMENT ON TABLE "public"."mobile_notification_preferences" IS 'Per-user mobile push settings: master switch, quiet hours and daily cap.';
+COMMENT ON TABLE "public"."mobile_notification_preferences" IS 'Per-user mobile push settings: master switch, categories, quiet hours and daily cap.';
 
 REVOKE ALL ON TABLE "public"."mobile_notification_preferences" FROM "service_role";
 

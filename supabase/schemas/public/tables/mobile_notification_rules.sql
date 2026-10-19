@@ -21,7 +21,7 @@ CREATE TABLE "public"."mobile_notification_rules" (
   CONSTRAINT "mobile_notification_rules_event_kinds_check"
     CHECK
     (((cardinality(event_kinds) > 0) AND (event_kinds <@ ARRAY['model_released'::text, 'gateway_available'::text, 'price_changed'::text, 'deprecation_announced'::text,
-    'provider_added'::text]))),
+    'provider_added'::text, 'provider_launched'::text]))),
   CONSTRAINT "mobile_notification_rules_lab_mode_check" CHECK ((lab_mode = ANY (ARRAY['all'::text, 'only'::text, 'except'::text]))),
   CONSTRAINT "mobile_notification_rules_lists_check"
     CHECK
@@ -46,7 +46,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."mobile_notification_rules
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."mobile_notification_rules" IS 'User-written mobile push rules. A device is notified when one enabled notify rule matches an event and no enabled mute rule does. Lists left empty match anything; at most 50 rules per user, enforced by the API.';
+COMMENT ON TABLE "public"."mobile_notification_rules" IS 'User-written mobile push rules. A device is notified when one enabled notify rule matches an event and no enabled mute rule does. Lists left empty match anything; a rule with gateway_available or provider_added also matches provider_launched. At most 50 rules per user, enforced by the API.';
 
 REVOKE ALL ON TABLE "public"."mobile_notification_rules" FROM "service_role";
 
