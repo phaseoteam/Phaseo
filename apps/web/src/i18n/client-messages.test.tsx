@@ -1,8 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { prerender } from "react-dom/static";
 import { useTranslations } from "next-intl";
 import { ClientMessagesProvider, FeatureMessagesProvider } from "@/components/i18n/LocaleMessagesProvider";
 import { allClientMessageScopes, clientMessagesFile, clientMessagesScopeId, selectScopeMessages } from "./client-message-files";
-import { clientMessagesFallbackUrl, clientMessagesUrl } from "./client-message-source";
+import { clientMessagesFallbackUrl, clientMessagesUrl, fetchClientMessages } from "./client-message-source";
 import { resolveClientMessages } from "./client-messages";
 import { getPublicMessages } from "./messages";
 import { publicLocales } from "./routing";
@@ -61,5 +62,58 @@ describe("client dictionaries", () => {
 		);
 		expect(html).toContain(messages.Common.nav.models);
 		expect(html).toContain(catalogueText.replace(/&/g, "&amp;").replace(/'/g, "&#x27;"));
+	});
+});
+
+describe("loading dictionaries in the browser", () => {
+	const source = { key: "fr-FR/0123456789abcdef", scope: "shell" };
+	const realFetch = globalThis.fetch;
+	afterEach(() => {
+		globalThis.fetch = realFetch;
+	});
+
+	// Answers requests in order; once the replies run out, the server is down.
+	function respond(...replies: Array<Response | Error>) {
+		const fetchMock = jest.fn(async (_url: string) => {
+			const reply = replies.shift() ?? new Response("down", { status: 503 });
+			if (reply instanceof Error) throw reply;
+			return reply;
+		});
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+		return fetchMock;
+	}
+
+	it("retries a failed load before giving up", async () => {
+		const fetchMock = respond(new TypeError("Failed to fetch"), new Response("down", { status: 503 }), Response.json({ Common: { ok: "oui" } }));
+		const waits: number[] = [];
+		await expect(fetchClientMessages(source, async (delayMs) => { waits.push(delayMs); })).resolves.toEqual({ Common: { ok: "oui" } });
+		expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([clientMessagesUrl(source), clientMessagesFallbackUrl(source), clientMessagesUrl(source)]);
+		expect(waits).toEqual([250]);
+	});
+
+	it("gives up at once when this deployment no longer knows the scope", async () => {
+		const fetchMock = respond(new Response("gone", { status: 404 }), new Response("unknown scope", { status: 404 }));
+		await expect(fetchClientMessages(source, async () => {})).rejects.toThrow("could not be loaded");
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("hands a dictionary that keeps failing to the error boundary instead of fetching it again", async () => {
+		const fetchMock = respond();
+		const scope = globalThis as { window?: unknown };
+		scope.window = globalThis;
+		try {
+			const errors: unknown[] = [];
+			await prerender(
+				<ClientMessagesProvider locale="fr-FR" source={{ key: "fr-FR/fedcba9876543210", scope: "shell" }} timeZone="UTC">
+					<p>copy</p>
+				</ClientMessagesProvider>,
+				{ onError: (error) => { errors.push(error); } },
+			).catch((error: unknown) => errors.push(error));
+			expect(String(errors[0])).toContain("could not be loaded");
+			// Three attempts, each trying the published file and then the current copy.
+			expect(fetchMock).toHaveBeenCalledTimes(6);
+		} finally {
+			delete scope.window;
+		}
 	});
 });

@@ -7,21 +7,11 @@ export { NextIntlClientProvider as LocaleMessagesProvider } from "next-intl";
 import { NextIntlClientProvider, useLocale, useMessages, useTimeZone, type AbstractIntlMessages, type Locale } from "next-intl";
 import { use, useMemo, type ReactNode } from "react";
 import { combineMessages } from "@/i18n/message-scopes";
-import { clientMessagesFallbackUrl, clientMessagesUrl, type ClientMessagesSource } from "@/i18n/client-message-source";
+import { fetchClientMessages, type ClientMessagesSource } from "@/i18n/client-message-source";
 
-type LoadedMessages = { promise: Promise<AbstractIntlMessages>; value?: AbstractIntlMessages };
+type LoadedMessages = { promise: Promise<AbstractIntlMessages>; value?: AbstractIntlMessages; error?: unknown };
 
 const loaded = new Map<string, LoadedMessages>();
-
-async function fetchClientMessages(source: ClientMessagesSource): Promise<AbstractIntlMessages> {
-	const published = await fetch(clientMessagesUrl(source)).catch(() => null);
-	if (published?.ok) return published.json();
-	// The published file is missing only when this tab predates a deployment
-	// that changed the copy; the current deployment still serves the scope.
-	const current = await fetch(clientMessagesFallbackUrl(source));
-	if (!current.ok) throw new Error(`Translations ${source.key} could not be loaded`);
-	return current.json();
-}
 
 /**
  * Pages carry a reference, never the dictionary. While rendering on the server
@@ -40,9 +30,15 @@ function useClientMessages(source: ClientMessagesSource | undefined): AbstractIn
 	let entry = loaded.get(source.key);
 	if (!entry) {
 		const created: LoadedMessages = { promise: fetchClientMessages(source) };
-		created.promise.then((value) => { created.value = value; }, () => { loaded.delete(source.key); });
+		created.promise.then((value) => { created.value = value; }, (error: unknown) => { created.error = error; });
 		loaded.set(source.key, created);
 		entry = created;
+	}
+	if (entry.error !== undefined) {
+		// Hand the failure to the error boundary; a later render (its retry, or a
+		// navigation) starts a fresh load instead of this render refetching.
+		loaded.delete(source.key);
+		throw entry.error;
 	}
 	return entry.value ?? use(entry.promise);
 }

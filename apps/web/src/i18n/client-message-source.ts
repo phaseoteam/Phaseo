@@ -25,3 +25,37 @@ export function clientMessagesFallbackUrl(source: ClientMessagesSource): string 
 	const locale = source.key.slice(0, source.key.indexOf("/"));
 	return `/api/i18n/scope/${encodeURIComponent(locale)}/${encodeURIComponent(source.scope)}`;
 }
+
+const RETRY_DELAYS_MS = [250, 1000];
+
+// An offline tab keeps its server-rendered page and finishes hydrating once the
+// connection returns; other failures get a short backoff.
+function waitBeforeRetry(delayMs: number): Promise<void> {
+	if (typeof navigator !== "undefined" && navigator.onLine === false) {
+		return new Promise((resolve) => window.addEventListener("online", () => resolve(), { once: true }));
+	}
+	return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+/**
+ * Loads a dictionary in the browser: the published file, else the current
+ * deployment's copy of the same scope. Gives up after three attempts, or at once
+ * when the deployment no longer knows the scope.
+ */
+export async function fetchClientMessages(
+	source: ClientMessagesSource,
+	wait: (delayMs: number) => Promise<void> = waitBeforeRetry,
+): Promise<AbstractIntlMessages> {
+	for (let attempt = 0; ; attempt++) {
+		const published = await fetch(clientMessagesUrl(source)).catch(() => null);
+		if (published?.ok) return published.json();
+		// The published file is missing only when this tab predates a deployment
+		// that changed the copy; the current deployment still serves the scope.
+		const current = await fetch(clientMessagesFallbackUrl(source)).catch(() => null);
+		if (current?.ok) return current.json();
+		if (current?.status === 404 || attempt >= RETRY_DELAYS_MS.length) {
+			throw new Error(`Translations ${source.key} could not be loaded`);
+		}
+		await wait(RETRY_DELAYS_MS[attempt]);
+	}
+}
