@@ -444,6 +444,19 @@ try {
     assert.deepEqual(await one(`select status, not_before > now() + interval '119 minutes' and not_before < now() + interval '121 minutes' as after_quiet_hours
       from public.mobile_push_deliveries where device_id = ${device('x9')}`), { status: 'deferred', after_quiet_hours: true });
 
+    // Claims run one at a time under a transaction-scoped advisory lock, so two overlapping runs
+    // cannot each take part of a group. PGlite has a single session, and a session never blocks
+    // on an advisory lock it holds itself, so this checks the lock is taken and released with the
+    // transaction; a second session getting no rows while it is held was checked on PostgreSQL 15.
+    const claimLock = `select count(*)::int n from pg_catalog.pg_locks l, (select pg_catalog.hashtextextended('claim_mobile_push_deliveries', 0) k) x
+      where l.locktype = 'advisory' and l.granted and l.pid = pg_catalog.pg_backend_pid() and l.objsubid = 1
+        and l.classid::bigint = ((x.k >> 32) & 4294967295) and l.objid::bigint = (x.k & 4294967295)`;
+    await db.exec('begin; set local role service_role');
+    await db.query('select * from public.claim_mobile_push_deliveries(10, $1)', [claimToken()]);
+    const heldDuringClaim = (await one(claimLock)).n;
+    await db.exec('commit');
+    assert.deepEqual([heldDuringClaim, (await one(claimLock)).n], [1, 0], 'the claim lock is held until its transaction ends');
+
     // The test push reports the device's channel scheme.
     const a2 = (await one(`select id from public.mobile_push_devices where installation_id = 'install-a2'`)).id;
     assert.deepEqual(await asService(async () => (await one(`select public.claim_mobile_push_test($1, 'install-a2') r`, [user(1)])).r),

@@ -32,6 +32,10 @@ CREATE OR REPLACE FUNCTION public.claim_mobile_push_deliveries (
 -- Before claiming, rows over two days old, for a device that is no longer active, or for a user
 -- who has since switched push or the push's category off are closed instead of sent, and rows a
 -- crashed run left processing for ten minutes go back to the queue to be grouped again.
+-- Claims run one at a time: a call that finds another claim in progress returns nothing, and
+-- the next run picks the work up. Otherwise two overlapping calls could each lock part of the
+-- same group and send it as two pushes. The lock ends with the transaction; claimed rows are
+-- processing by then, so a later claim cannot take them.
 #variable_conflict use_column
 declare
   v_day_start timestamp with time zone := date_trunc('day', now() at time zone 'UTC') at time zone 'UTC';
@@ -41,6 +45,9 @@ begin
   end if;
   if p_claim_token is null then
     raise exception 'invalid_mobile_push_claim_token';
+  end if;
+  if not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('claim_mobile_push_deliveries', 0)) then
+    return;
   end if;
 
   update public.mobile_push_deliveries x
