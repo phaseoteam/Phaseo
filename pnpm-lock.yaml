@@ -540,8 +540,8 @@ importers:
         specifier: ^9.6.1
         version: 9.6.1(@types/react@19.2.18)(expo-asset@58.0.16(expo@58.0.14)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(expo-file-system@58.0.9(expo@58.0.14)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.8)))(expo@58.0.14)(immer@11.1.18)(react-dom@19.2.8(react@19.2.8))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.8))(react@19.2.8)(three@0.184.0)
       '@rive-app/react-webgl2':
-        specifier: ^4.29.3
-        version: 4.29.5(react@19.2.8)
+        specifier: ^4.36.0
+        version: 4.36.0(react@19.2.8)
       '@shadcn/react':
         specifier: 0.3.1
         version: 0.3.1(@types/react@19.2.18)(react@19.2.8)
@@ -5760,13 +5760,13 @@ packages:
       react-redux:
         optional: true
 
-  '@rive-app/react-webgl2@4.29.5':
-    resolution: {integrity: sha512-yiUT1UwWbj4ImP40uHH2UUes6cfSfZNohec2QefWwsJdTJ6s+kB9Ht3ruFjdsKnol/H41qnPcpsSURu6aHQGaQ==}
+  '@rive-app/react-webgl2@4.36.0':
+    resolution: {integrity: sha512-EWWFztHCKZoYrdPSkVwtnO3YQ4N9Z0rdAP5C7FLg7PgTT4Kwxdj5G+7vGnRKer08P0+E6gvZJNzitnewRXookA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0
 
-  '@rive-app/webgl2@2.38.5':
-    resolution: {integrity: sha512-CS0nuUZ0B1fXXk9uOQGGW4aU4qJSVs7uHvHVIkBsKV9QRGzFRlehssQ+znTfocBxbV6D1KCGKSR0uTvsbdINiQ==}
+  '@rive-app/webgl2@2.44.0':
+    resolution: {integrity: sha512-BIlutEsgyPRwMLEat2dDVBannAqIH75TeCCyrYA4KjUMMM+2bFJ2qfwqJACUAsUE+EYdcQaONycfTFRQ4JGLqg==}
 
   '@rolldown/binding-android-arm64@1.1.5':
     resolution: {integrity: sha512-lZg8fqIv2v7FF237bwMgzGZEJvGL79/s5knJ/i6FmsGF4XXlzccZ4jb+TrFIxtSSxFtIpdsgrPZeMk1I9AFcyQ==}
@@ -22095,12 +22095,12 @@ snapshots:
       react: 19.2.8
       react-redux: 9.3.0(@types/react@19.2.18)(react@19.2.8)(redux@5.0.1)
 
-  '@rive-app/react-webgl2@4.29.5(react@19.2.8)':
+  '@rive-app/react-webgl2@4.36.0(react@19.2.8)':
     dependencies:
-      '@rive-app/webgl2': 2.38.5
+      '@rive-app/webgl2': 2.44.0
       react: 19.2.8
 
-  '@rive-app/webgl2@2.38.5': {}
+  '@rive-app/webgl2@2.44.0': {}
 
   '@rolldown/binding-android-arm64@1.1.5':
     optional: true
