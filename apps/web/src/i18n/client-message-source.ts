@@ -27,12 +27,22 @@ export function clientMessagesFallbackUrl(source: ClientMessagesSource): string 
 }
 
 const RETRY_DELAYS_MS = [250, 1000];
+const OFFLINE_WAIT_MS = 30_000;
 
-// An offline tab keeps its server-rendered page and finishes hydrating once the
-// connection returns; other failures get a short backoff.
+// An offline tab keeps its server-rendered page and retries once the connection
+// returns, or after 30 s in case the browser never reports it; other failures
+// get a short backoff.
 function waitBeforeRetry(delayMs: number): Promise<void> {
 	if (typeof navigator !== "undefined" && navigator.onLine === false) {
-		return new Promise((resolve) => window.addEventListener("online", () => resolve(), { once: true }));
+		return new Promise((resolve) => {
+			const done = () => {
+				window.removeEventListener("online", done);
+				clearTimeout(timer);
+				resolve();
+			};
+			const timer = setTimeout(done, OFFLINE_WAIT_MS);
+			window.addEventListener("online", done);
+		});
 	}
 	return new Promise((resolve) => setTimeout(resolve, delayMs));
 }

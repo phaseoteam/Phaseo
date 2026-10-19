@@ -91,6 +91,53 @@ describe("loading dictionaries in the browser", () => {
 		expect(waits).toEqual([250]);
 	});
 
+	// The browser reports itself offline; returns a function that restores the globals.
+	function goOffline() {
+		const scope = globalThis as { window?: EventTarget; navigator?: unknown };
+		const navigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+		scope.window = new EventTarget();
+		Object.defineProperty(globalThis, "navigator", { value: { onLine: false }, configurable: true });
+		return () => {
+			delete scope.window;
+			if (navigatorDescriptor) Object.defineProperty(globalThis, "navigator", navigatorDescriptor);
+			else delete scope.navigator;
+		};
+	}
+
+	it("retries as soon as an offline browser reconnects", async () => {
+		jest.useFakeTimers();
+		const restore = goOffline();
+		try {
+			const fetchMock = respond(new TypeError("Failed to fetch"), new TypeError("Failed to fetch"), Response.json({ Common: { ok: "oui" } }));
+			const loading = fetchClientMessages(source);
+			await jest.advanceTimersByTimeAsync(5_000);
+			expect(fetchMock).toHaveBeenCalledTimes(2);
+			(globalThis as { window?: EventTarget }).window?.dispatchEvent(new Event("online"));
+			await expect(loading).resolves.toEqual({ Common: { ok: "oui" } });
+			expect(jest.getTimerCount()).toBe(0);
+		} finally {
+			restore();
+			jest.useRealTimers();
+		}
+	});
+
+	it("stops waiting for a reconnect that never comes after 30 seconds", async () => {
+		jest.useFakeTimers();
+		const restore = goOffline();
+		try {
+			const fetchMock = respond(new TypeError("Failed to fetch"), new TypeError("Failed to fetch"), Response.json({ Common: { ok: "oui" } }));
+			const loading = fetchClientMessages(source);
+			await jest.advanceTimersByTimeAsync(29_999);
+			expect(fetchMock).toHaveBeenCalledTimes(2);
+			await jest.advanceTimersByTimeAsync(1);
+			await expect(loading).resolves.toEqual({ Common: { ok: "oui" } });
+			expect(fetchMock).toHaveBeenCalledTimes(3);
+		} finally {
+			restore();
+			jest.useRealTimers();
+		}
+	});
+
 	it("gives up at once when this deployment no longer knows the scope", async () => {
 		const fetchMock = respond(new Response("gone", { status: 404 }), new Response("unknown scope", { status: 404 }));
 		await expect(fetchClientMessages(source, async () => {})).rejects.toThrow("could not be loaded");
