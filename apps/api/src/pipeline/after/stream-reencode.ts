@@ -16,11 +16,55 @@ export type StreamSourceFrame = { eventName?: string | null; frame: any };
 export type StreamReencoder = {
 	/** Client frames for the canonical events of one source frame. */
 	encode(events: UnifiedStreamEvent[], source?: StreamSourceFrame): EncodedStreamFrame[];
-	/** Frames still owed when the source ends (a terminal waiting for usage). */
-	flush(): EncodedStreamFrame[];
+	/**
+	 * Frames still owed when the source ends (a terminal waiting for usage). `completed`
+	 * says the source sent a real terminal event; without one nothing is finished, and
+	 * the caller reports the interruption (see encodeStreamInterruption).
+	 */
+	flush(opts: { completed: boolean }): EncodedStreamFrame[];
 };
 
 type EncodeContext = { requestId?: string | null; model?: string | null };
+
+const INTERRUPTION_CODE = "upstream_stream_failure";
+const INTERRUPTION_MESSAGE = "The upstream stream ended before the response completed.";
+
+/**
+ * The client protocol's failure frame for a stream whose source ended with no stop and
+ * no final snapshot (a provider disconnect after partial output). It matches how
+ * mid-stream provider errors reach each surface: a Chat error frame (and no [DONE]),
+ * `response.failed`, or a Messages `error` event (and no message_stop).
+ */
+export function encodeStreamInterruption(target: StreamProtocol, ctx: EncodeContext): EncodedStreamFrame {
+	const message = INTERRUPTION_MESSAGE;
+	switch (target) {
+		case "anthropic.messages":
+			return { eventName: "error", frame: { type: "error", error: { type: "api_error", message } } };
+		case "openai.responses":
+			return {
+				eventName: "response.failed",
+				frame: {
+					type: "response.failed",
+					response: {
+						id: ctx.requestId ?? undefined,
+						object: "response",
+						model: ctx.model ?? undefined,
+						status: "failed",
+						error: { code: INTERRUPTION_CODE, message },
+					},
+				},
+			};
+		default:
+			return {
+				frame: {
+					object: "error",
+					message,
+					// OpenAI SDKs raise on a frame's `error` field.
+					error: { message, type: "upstream_error", code: INTERRUPTION_CODE },
+				},
+			};
+	}
+}
 
 type ArgumentsSent = "none" | "delta" | "full";
 
@@ -70,15 +114,28 @@ function argumentsToSend(call: { sent: ArgumentsSent }, event: Extract<UnifiedSt
 	return null;
 }
 
+type BlockKind = "text" | "thinking" | "tool_use";
+
+/** A block that arrived while a tool_use block was open, sent whole once that block closes. */
+type HeldBlock =
+	| { kind: "text" | "thinking"; text: string }
+	| { kind: "tool_use"; key: string; id?: string; name?: string; args: string };
+
 function createMessagesReencoder(ctx: EncodeContext): StreamReencoder {
 	let started = false;
 	let nextIndex = 0;
-	let open: { index: number; kind: "text" | "thinking" | "tool_use" } | null = null;
+	let open: { index: number; kind: BlockKind; key?: string } | null = null;
 	let usage: any = null;
 	let pendingStop: string | null | undefined;
 	let finished = false;
 	const toolKey = createToolCallKeyResolver();
-	const calls = new Map<string, { index: number; sent: ArgumentsSent }>();
+	const calls = new Map<string, { sent: ArgumentsSent }>();
+	// Messages blocks cannot interleave, and a Chat or Responses source can send more
+	// argument fragments for an earlier tool call after a later one began (parallel
+	// calls). So once a tool_use block is open it stays open until the source stops;
+	// anything else that arrives meanwhile is held, in order, and sent whole after it.
+	const held: HeldBlock[] = [];
+	const heldCalls = new Map<string, Extract<HeldBlock, { kind: "tool_use" }>>();
 
 	const start = (out: EncodedStreamFrame[]) => {
 		if (started) return;
@@ -105,18 +162,52 @@ function createMessagesReencoder(ctx: EncodeContext): StreamReencoder {
 		out.push({ eventName: "content_block_stop", frame: { type: "content_block_stop", index: open.index } });
 		open = null;
 	};
-	const openBlock = (out: EncodedStreamFrame[], kind: "text" | "thinking" | "tool_use", block: Record<string, any>) => {
+	const openBlock = (out: EncodedStreamFrame[], kind: BlockKind, block: Record<string, any>, key?: string) => {
 		start(out);
 		close(out);
-		open = { index: nextIndex++, kind };
+		open = { index: nextIndex++, kind, ...(key ? { key } : {}) };
 		out.push({ eventName: "content_block_start", frame: { type: "content_block_start", index: open.index, content_block: block } });
 		return open.index;
+	};
+	const emptyBlock = (kind: "text" | "thinking") =>
+		kind === "thinking" ? { type: "thinking", thinking: "" } : { type: "text", text: "" };
+	const textDelta = (out: EncodedStreamFrame[], index: number, kind: "text" | "thinking", text: string) => {
+		out.push({
+			eventName: "content_block_delta",
+			frame: {
+				type: "content_block_delta",
+				index,
+				delta: kind === "thinking" ? { type: "thinking_delta", thinking: text } : { type: "text_delta", text },
+			},
+		});
+	};
+	const toolDelta = (out: EncodedStreamFrame[], index: number, partial: string) => {
+		out.push({
+			eventName: "content_block_delta",
+			frame: { type: "content_block_delta", index, delta: { type: "input_json_delta", partial_json: partial } },
+		});
+	};
+	/** Close the open block, then send every held block whole, in arrival order. */
+	const release = (out: EncodedStreamFrame[]) => {
+		close(out);
+		for (const block of held) {
+			if (block.kind === "tool_use") {
+				const index = openBlock(out, "tool_use", { type: "tool_use", id: block.id, name: block.name, input: {} }, block.key);
+				if (block.args) toolDelta(out, index, block.args);
+			} else {
+				const index = openBlock(out, block.kind, emptyBlock(block.kind));
+				if (block.text) textDelta(out, index, block.kind, block.text);
+			}
+			close(out);
+		}
+		held.length = 0;
+		heldCalls.clear();
 	};
 	const terminal = (out: EncodedStreamFrame[]) => {
 		if (finished || pendingStop === undefined) return;
 		finished = true;
 		start(out);
-		close(out);
+		release(out);
 		const { finishReason, finishDetail } = normalizeFinishReason(pendingStop);
 		out.push({
 			eventName: "message_delta",
@@ -142,34 +233,45 @@ function createMessagesReencoder(ctx: EncodeContext): StreamReencoder {
 					case "delta_text": {
 						const kind = event.channel === "reasoning_text" ? "thinking" : "text";
 						if (kind === "thinking") sawThinking = true;
-						const index = open?.kind === kind
-							? open.index
-							: openBlock(out, kind, kind === "thinking" ? { type: "thinking", thinking: "" } : { type: "text", text: "" });
-						out.push({
-							eventName: "content_block_delta",
-							frame: {
-								type: "content_block_delta",
-								index,
-								delta: kind === "thinking" ? { type: "thinking_delta", thinking: event.text } : { type: "text_delta", text: event.text },
-							},
-						});
+						if (open?.kind === "tool_use" || held.length > 0) {
+							const last = held.at(-1);
+							if (last && last.kind === kind) last.text += event.text;
+							else held.push({ kind, text: event.text });
+							break;
+						}
+						const index = open?.kind === kind ? open.index : openBlock(out, kind, emptyBlock(kind));
+						textDelta(out, index, kind, event.text);
 						break;
 					}
 					case "delta_tool": {
 						const key = toolKey(event);
 						let call = calls.get(key);
+						const isNew = !call;
 						if (!call) {
-							const index = openBlock(out, "tool_use", { type: "tool_use", id: event.toolCallId, name: event.toolName, input: {} });
-							call = { index, sent: "none" };
+							call = { sent: "none" };
 							calls.set(key, call);
 						}
 						const partial = argumentsToSend(call, event);
-						if (partial && open?.index === call.index) {
-							out.push({
-								eventName: "content_block_delta",
-								frame: { type: "content_block_delta", index: call.index, delta: { type: "input_json_delta", partial_json: partial } },
-							});
+						if (open?.kind === "tool_use" && open.key === key) {
+							if (partial) toolDelta(out, open.index, partial);
+							break;
 						}
+						if (isNew && open?.kind !== "tool_use" && held.length === 0) {
+							const index = openBlock(out, "tool_use", { type: "tool_use", id: event.toolCallId, name: event.toolName, input: {} }, key);
+							if (partial) toolDelta(out, index, partial);
+							break;
+						}
+						let heldCall = heldCalls.get(key);
+						if (!heldCall) {
+							// A call already sent and closed (the source stopped) gets nothing more.
+							if (!isNew) break;
+							heldCall = { kind: "tool_use", key, id: event.toolCallId, name: event.toolName, args: "" };
+							heldCalls.set(key, heldCall);
+							held.push(heldCall);
+						}
+						heldCall.id ??= event.toolCallId;
+						heldCall.name ??= event.toolName;
+						if (partial) heldCall.args += partial;
 						break;
 					}
 					case "usage":
@@ -179,6 +281,8 @@ function createMessagesReencoder(ctx: EncodeContext): StreamReencoder {
 					case "stop":
 						if (event.finishReason === null) break;
 						if (pendingStop === undefined) pendingStop = event.finishReason ?? "stop";
+						// The content is complete: send held blocks now, not when usage arrives.
+						release(out);
 						if (usage) terminal(out);
 						break;
 					case "error": {
@@ -193,8 +297,10 @@ function createMessagesReencoder(ctx: EncodeContext): StreamReencoder {
 			}
 			return out;
 		},
-		flush() {
+		flush({ completed }) {
 			const out: EncodedStreamFrame[] = [];
+			// Without a real terminal event the message did not finish: no message_stop.
+			if (!completed) return out;
 			if (started && pendingStop === undefined) pendingStop = "stop";
 			terminal(out);
 			return out;
@@ -321,8 +427,10 @@ function createResponsesReencoder(ctx: EncodeContext): StreamReencoder {
 			}
 			return out;
 		},
-		flush() {
+		flush({ completed }) {
 			const out: EncodedStreamFrame[] = [];
+			// Without a real terminal event the response did not complete.
+			if (!completed) return out;
 			if (created && pendingStop === undefined) pendingStop = "stop";
 			terminal(out);
 			return out;

@@ -16,7 +16,18 @@ import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
 import { SseParser } from "@core/sse-parser";
 import { stripGatewayStop } from "@core/finish-reason";
 import { createChatStreamTerminal } from "./chat-stream-terminal";
-import { createStreamReencoder, type StreamReencoder } from "./stream-reencode";
+import { createStreamReencoder, encodeStreamInterruption, type StreamReencoder } from "./stream-reencode";
+
+/** A bare Chat `{"error": {...}}` frame: how OpenAI-compatible providers fail mid-stream. */
+function isBareErrorFrame(frame: any): boolean {
+    return Boolean(
+        frame?.error &&
+        typeof frame.error === "object" &&
+        frame.object === undefined &&
+        frame.type === undefined &&
+        !Array.isArray(frame.choices)
+    );
+}
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -215,6 +226,13 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         let lastSeenUsage: any = null;
         const chatTerminal = ctx.protocol === "openai.chat.completions" ? createChatStreamTerminal() : null;
         let reencoder: StreamReencoder | null = null;
+        let sawStreamError = false;
+        const targetProtocol: StreamProtocol | null =
+            ctx.protocol === "openai.chat.completions" ||
+            ctx.protocol === "openai.responses" ||
+            ctx.protocol === "anthropic.messages"
+                ? ctx.protocol
+                : null;
         const writeOutbound = async (outbound: { eventName?: string | null; frame: any }) => {
             let frameOut: any = outbound.frame;
             if (rewriteFrame) {
@@ -235,6 +253,8 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             await writeJson(frameOut, outbound.eventName ?? null);
         };
 
+        // A body that errors (connection reset) ends the stream like an early EOF.
+        let readError: unknown = null;
         try {
             while (true) {
                 const { value, done } = await reader.read();
@@ -283,12 +303,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         eventName,
                         frame: json,
                     });
-                    const targetProtocol: StreamProtocol | null =
-                        ctx.protocol === "openai.chat.completions" ||
-                        ctx.protocol === "openai.responses" ||
-                        ctx.protocol === "anthropic.messages"
-                            ? ctx.protocol
-                            : null;
+                    if (events.some((event) => event.type === "error") || isBareErrorFrame(json)) {
+                        sawStreamError = true;
+                    }
                     if (onStreamEvent && events.length > 0) {
                         for (const event of events) {
                             try {
@@ -460,18 +477,32 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
                 }
             }
+        } catch (err) {
+            readError = err;
+        } finally {
+            // Only a real terminal event (a stop or the final snapshot) completes the
+            // stream. Without one (a provider disconnect after partial output) the client
+            // gets its surface's failure event, as for a mid-stream provider error,
+            // rather than message_stop, response.completed or [DONE].
+            const completed = sawTerminalSnapshot;
             // A re-encoded terminal that was waiting for trailing usage.
-            for (const outbound of reencoder?.flush() ?? []) {
+            for (const outbound of reencoder?.flush({ completed }) ?? []) {
                 await writeOutbound(outbound);
             }
-            if (chatTerminal && !downstreamClosed) {
+            if (!completed && !sawStreamError && targetProtocol) {
+                const failure = encodeStreamInterruption(targetProtocol, {
+                    requestId: ctx.requestId,
+                    model: ctx.model,
+                });
+                await writeJson(failure.frame, failure.eventName ?? null);
+            }
+            if (chatTerminal && completed && !downstreamClosed) {
                 try {
                     await writer.write(enc.encode("data: [DONE]\n\n"));
                 } catch {
                     downstreamClosed = true;
                 }
             }
-        } finally {
             if (!finalUsageSettled) {
                 finalizeUsage(lastSeenUsage, {
                     aborted: !sawTerminalSnapshot,
@@ -482,6 +513,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                 try { await writer.close(); } catch { }
             }
         }
+        if (readError) throw readError;
     })();
     dispatchBackground(streamPump.catch(err => {
         console.error("passthroughWithPricing stream error:", err, {
