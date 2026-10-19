@@ -5,6 +5,7 @@
 //   pnpm --filter @phaseo/mobile licences:check    fail when the file doesn't match the installed packages
 //
 // `pnpm build` regenerates it first, and Jest (scripts/licences/licences.test.ts) fails when it's out of date.
+import { Buffer } from "node:buffer";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
