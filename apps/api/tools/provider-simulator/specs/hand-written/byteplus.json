@@ -1,0 +1,50 @@
+{
+	"id": "byteplus",
+	"source": {
+		"url": null,
+		"docs": "https://docs.byteplus.com/en/docs/ModelArk/1494384",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Page is client-rendered; content read from the MDContent JSON embedded in the HTML (updated 2026-10-17). response_format types: text, json_schema, json_object. tool_choice: none, auto, required, or named function. Response extras: moderation_hit_type, service_status.model_fallback. A Responses API exists at /api/v3/responses (separate docs, not reviewed)."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"frequency_penalty": {},
+					"logit_bias": {},
+					"logprobs": {},
+					"max_completion_tokens": {},
+					"max_tokens": {},
+					"parallel_tool_calls": {},
+					"presence_penalty": {},
+					"prompt_cache_key": {},
+					"reasoning_effort": {},
+					"response_format": {},
+					"service_tier": {},
+					"stop": {},
+					"stream_options": {},
+					"temperature": {},
+					"thinking": {},
+					"tool_choice": {},
+					"tools": {},
+					"top_logprobs": {},
+					"top_p": {},
+					"image_url": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

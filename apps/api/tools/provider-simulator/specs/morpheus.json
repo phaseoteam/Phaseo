@@ -1,0 +1,544 @@
+{
+	"id": "morpheus",
+	"source": {
+		"url": "https://api.mor.org/api/v1/openapi.json",
+		"docs": null,
+		"fetchedAt": "2026-10-18T08:41:07.308Z",
+		"sha256": "a2247c9f4fd910af69ec8925d35c3760231e50bf72b8a198196909df978121bd",
+		"handWritten": false,
+		"notes": "FastAPI spec from the Morpheus API Gateway (v1.50.0). Base https://api.mor.org."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"$ref": "#/components/schemas/ChatCompletionRequest"
+			},
+			"response": {}
+		}
+	},
+	"components": {
+		"schemas": {
+			"ChatCompletionRequest": {
+				"properties": {
+					"model": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Model"
+					},
+					"messages": {
+						"items": {
+							"$ref": "#/components/schemas/ChatMessage"
+						},
+						"type": "array",
+						"title": "Messages"
+					},
+					"temperature": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Temperature",
+						"default": 1
+					},
+					"top_p": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Top P",
+						"default": 1
+					},
+					"n": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "N",
+						"default": 1
+					},
+					"stream": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Stream",
+						"default": false
+					},
+					"stop": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"type": "string"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Stop"
+					},
+					"max_tokens": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Max Tokens"
+					},
+					"presence_penalty": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Presence Penalty",
+						"default": 0
+					},
+					"frequency_penalty": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Frequency Penalty",
+						"default": 0
+					},
+					"tools": {
+						"anyOf": [
+							{
+								"items": {
+									"$ref": "#/components/schemas/Tool"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tools"
+					},
+					"tool_choice": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"$ref": "#/components/schemas/ToolChoice"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Choice"
+					},
+					"session_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Session Id",
+						"description": "Optional session ID to use for this request. If not provided, the system will use the session associated with the API key."
+					}
+				},
+				"additionalProperties": true,
+				"type": "object",
+				"required": [
+					"messages"
+				],
+				"title": "ChatCompletionRequest",
+				"description": "Request payload for chat completions.\n\nKnown OpenAI-compatible fields are validated. Provider-specific extras\n(e.g. ``venice_parameters``, ``stream_options``) are accepted and forwarded\nto the proxy-router unchanged — the router already preserves unknown keys\nvia OpenAICompletionRequestExtra.\n\nNote: Field defaults and names for the typed fields must remain unchanged\nfor API parity."
+			},
+			"ChatMessage": {
+				"properties": {
+					"role": {
+						"type": "string",
+						"title": "Role"
+					},
+					"content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"items": {
+									"anyOf": [
+										{
+											"$ref": "#/components/schemas/ContentPartText"
+										},
+										{
+											"$ref": "#/components/schemas/ContentPartImageUrl"
+										},
+										{
+											"$ref": "#/components/schemas/ContentPartInputAudio"
+										},
+										{
+											"$ref": "#/components/schemas/ContentPartFile"
+										}
+									]
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Content"
+					},
+					"name": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Name"
+					},
+					"tool_calls": {
+						"anyOf": [
+							{
+								"items": {
+									"additionalProperties": true,
+									"type": "object"
+								},
+								"type": "array"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Calls"
+					},
+					"tool_call_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Tool Call Id"
+					}
+				},
+				"type": "object",
+				"required": [
+					"role"
+				],
+				"title": "ChatMessage",
+				"description": "Represents a single chat message in the OpenAI-compatible schema.\n\nContent can be either a string or a list of content parts (for multimodal inputs)."
+			},
+			"Tool": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"title": "Type",
+						"default": "function"
+					},
+					"function": {
+						"$ref": "#/components/schemas/ToolFunction"
+					}
+				},
+				"type": "object",
+				"required": [
+					"function"
+				],
+				"title": "Tool",
+				"description": "Tool wrapper for function-based tools (OpenAI-compatible)."
+			},
+			"ToolChoice": {
+				"properties": {
+					"type": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Type",
+						"default": "function"
+					},
+					"function": {
+						"anyOf": [
+							{
+								"additionalProperties": true,
+								"type": "object"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Function"
+					}
+				},
+				"type": "object",
+				"title": "ToolChoice",
+				"description": "Explicit tool selection for tool calling."
+			},
+			"ContentPartText": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"title": "Type",
+						"default": "text"
+					},
+					"text": {
+						"type": "string",
+						"title": "Text"
+					}
+				},
+				"type": "object",
+				"required": [
+					"text"
+				],
+				"title": "ContentPartText",
+				"description": "Text content part for multimodal messages."
+			},
+			"ContentPartImageUrl": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"title": "Type",
+						"default": "image_url"
+					},
+					"image_url": {
+						"$ref": "#/components/schemas/ImageUrl"
+					}
+				},
+				"type": "object",
+				"required": [
+					"image_url"
+				],
+				"title": "ContentPartImageUrl",
+				"description": "Image URL content part for multimodal messages."
+			},
+			"ContentPartInputAudio": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"title": "Type",
+						"default": "input_audio"
+					},
+					"input_audio": {
+						"$ref": "#/components/schemas/InputAudio"
+					}
+				},
+				"type": "object",
+				"required": [
+					"input_audio"
+				],
+				"title": "ContentPartInputAudio",
+				"description": "Audio content part for multimodal messages."
+			},
+			"ContentPartFile": {
+				"properties": {
+					"type": {
+						"type": "string",
+						"title": "Type",
+						"default": "file"
+					},
+					"file": {
+						"$ref": "#/components/schemas/FileData"
+					}
+				},
+				"type": "object",
+				"required": [
+					"file"
+				],
+				"title": "ContentPartFile",
+				"description": "File content part for multimodal messages."
+			},
+			"ToolFunction": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "Name"
+					},
+					"description": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Description"
+					},
+					"parameters": {
+						"additionalProperties": true,
+						"type": "object",
+						"title": "Parameters",
+						"default": {}
+					}
+				},
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"title": "ToolFunction",
+				"description": "Function definition for tool calling."
+			},
+			"ImageUrl": {
+				"properties": {
+					"url": {
+						"type": "string",
+						"title": "Url"
+					},
+					"detail": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Detail"
+					}
+				},
+				"type": "object",
+				"required": [
+					"url"
+				],
+				"title": "ImageUrl",
+				"description": "Image URL for vision content parts."
+			},
+			"InputAudio": {
+				"properties": {
+					"data": {
+						"type": "string",
+						"title": "Data"
+					},
+					"format": {
+						"type": "string",
+						"title": "Format"
+					}
+				},
+				"type": "object",
+				"required": [
+					"data",
+					"format"
+				],
+				"title": "InputAudio",
+				"description": "Audio data for input_audio content parts."
+			},
+			"FileData": {
+				"properties": {
+					"file_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "File Id"
+					},
+					"filename": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "Filename"
+					},
+					"file_data": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "File Data"
+					}
+				},
+				"type": "object",
+				"title": "FileData",
+				"description": "File reference for file content parts."
+			}
+		}
+	},
+	"servers": [],
+	"securitySchemes": {
+		"OAuth2": {
+			"type": "oauth2",
+			"flows": {
+				"authorizationCode": {
+					"authorizationUrl": "https://auth.mor.org/oauth2/authorize",
+					"tokenUrl": "https://auth.mor.org/oauth2/token",
+					"scopes": {
+						"aws.cognito.signin.user.admin": "Read own user attributes (GetUser)",
+						"openid": "OpenID Connect authentication",
+						"email": "Access to email address",
+						"profile": "Access to profile information"
+					}
+				}
+			},
+			"description": "🚀 OAuth2 authentication via secure identity provider"
+		},
+		"BearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"bearerFormat": "JWT",
+			"description": "🎫 JWT Bearer token from OAuth2 login or direct token"
+		},
+		"APIKeyAuth": {
+			"type": "apiKey",
+			"in": "header",
+			"name": "Authorization",
+			"description": "🗝️ API key in format: 'Bearer sk-xxxxxx'"
+		}
+	},
+	"operationPaths": {
+		"chat": "/api/v1/chat/completions"
+	}
+}

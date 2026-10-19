@@ -1,0 +1,386 @@
+{
+	"provider": "byteplus",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "byteplus:bytedance/seed-1.6-250915:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-1.6-250915/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.05/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#2","standard","output_text_tokens","2/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#3","standard","input_text_tokens","0.5/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.05/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#5","standard","output_text_tokens","4/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1341200,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",51200],["input_text_tokens",1576,"#0","input_text_tokens",394000],["output_text_tokens",448,"#2","output_text_tokens",896000]]}},
+				{"id":"documented.long-context@128001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":108001,"input_tokens":128001,"output_tokens":448,"total_tokens":128449},"ir":{"inputTokens":128001,"outputTokens":448,"totalTokens":128449,"cachedInputTokens":108001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":17192050,"lines":[["cached_read_text_tokens",108001,"#4","cached_read_text_tokens",5400050],["input_text_tokens",20000,"#3","input_text_tokens",10000000],["output_text_tokens",448,"#5","output_text_tokens",1792000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":75773350,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",228350],["input_text_tokens",123434,"#3","input_text_tokens",61717000],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":38000600,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",228350],["input_text_tokens",123433,"#0","input_text_tokens",30858250],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128001,"output_text_tokens":3457,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":77828500,"lines":[["input_text_tokens",128001,"#3","input_text_tokens",64000500],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128000,"output_text_tokens":3457,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":38914000,"lines":[["input_text_tokens",128000,"#0","input_text_tokens",32000000],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seed-1.6-flash-250715:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-1.6-flash-250715/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.075/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.015/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#2","standard","output_text_tokens","0.3/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#3","standard","input_text_tokens","0.1/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.015/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#5","standard","output_text_tokens","0.8/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":267960,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",15360],["input_text_tokens",1576,"#0","input_text_tokens",118200],["output_text_tokens",448,"#2","output_text_tokens",134400]]}},
+				{"id":"documented.long-context@128001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":108001,"input_tokens":128001,"output_tokens":448,"total_tokens":128449},"ir":{"inputTokens":128001,"outputTokens":448,"totalTokens":128449,"cachedInputTokens":108001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3978415,"lines":[["cached_read_text_tokens",108001,"#4","cached_read_text_tokens",1620015],["input_text_tokens",20000,"#3","input_text_tokens",2000000],["output_text_tokens",448,"#5","output_text_tokens",358400]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":15177505,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",68505],["input_text_tokens",123434,"#3","input_text_tokens",12343400],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":10363080,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",68505],["input_text_tokens",123433,"#0","input_text_tokens",9257475],["output_text_tokens",3457,"#2","output_text_tokens",1037100]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128001,"output_text_tokens":3457,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":15565700,"lines":[["input_text_tokens",128001,"#3","input_text_tokens",12800100],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128000,"output_text_tokens":3457,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":10637100,"lines":[["input_text_tokens",128000,"#0","input_text_tokens",9600000],["output_text_tokens",3457,"#2","output_text_tokens",1037100]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seed-1.6-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-1.6-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.075/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.015/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#2","standard","output_text_tokens","0.3/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#3","standard","input_text_tokens","0.1/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.015/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#5","standard","output_text_tokens","0.8/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":267960,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",15360],["input_text_tokens",1576,"#0","input_text_tokens",118200],["output_text_tokens",448,"#2","output_text_tokens",134400]]}},
+				{"id":"documented.long-context@128001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":108001,"input_tokens":128001,"output_tokens":448,"total_tokens":128449},"ir":{"inputTokens":128001,"outputTokens":448,"totalTokens":128449,"cachedInputTokens":108001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3978415,"lines":[["cached_read_text_tokens",108001,"#4","cached_read_text_tokens",1620015],["input_text_tokens",20000,"#3","input_text_tokens",2000000],["output_text_tokens",448,"#5","output_text_tokens",358400]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":15177505,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",68505],["input_text_tokens",123434,"#3","input_text_tokens",12343400],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":10363080,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",68505],["input_text_tokens",123433,"#0","input_text_tokens",9257475],["output_text_tokens",3457,"#2","output_text_tokens",1037100]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128001,"output_text_tokens":3457,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":15565700,"lines":[["input_text_tokens",128001,"#3","input_text_tokens",12800100],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128000,"output_text_tokens":3457,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":10637100,"lines":[["input_text_tokens",128000,"#0","input_text_tokens",9600000],["output_text_tokens",3457,"#2","output_text_tokens",1037100]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seed-1.6:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-1.6/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.05/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#2","standard","output_text_tokens","2/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#3","standard","input_text_tokens","0.5/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.05/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#5","standard","output_text_tokens","4/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1341200,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",51200],["input_text_tokens",1576,"#0","input_text_tokens",394000],["output_text_tokens",448,"#2","output_text_tokens",896000]]}},
+				{"id":"documented.long-context@128001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":108001,"input_tokens":128001,"output_tokens":448,"total_tokens":128449},"ir":{"inputTokens":128001,"outputTokens":448,"totalTokens":128449,"cachedInputTokens":108001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":17192050,"lines":[["cached_read_text_tokens",108001,"#4","cached_read_text_tokens",5400050],["input_text_tokens",20000,"#3","input_text_tokens",10000000],["output_text_tokens",448,"#5","output_text_tokens",1792000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":75773350,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",228350],["input_text_tokens",123434,"#3","input_text_tokens",61717000],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":38000600,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",228350],["input_text_tokens",123433,"#0","input_text_tokens",30858250],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128001,"output_text_tokens":3457,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":77828500,"lines":[["input_text_tokens",128001,"#3","input_text_tokens",64000500],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128000,"output_text_tokens":3457,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":38914000,"lines":[["input_text_tokens",128000,"#0","input_text_tokens",32000000],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seed-1.8:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-1.8/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.05/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#2","standard","output_text_tokens","2/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#3","standard","input_text_tokens","0.5/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.05/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#5","standard","output_text_tokens","4/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1341200,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",51200],["input_text_tokens",1576,"#0","input_text_tokens",394000],["output_text_tokens",448,"#2","output_text_tokens",896000]]}},
+				{"id":"documented.long-context@128001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":108001,"input_tokens":128001,"output_tokens":448,"total_tokens":128449},"ir":{"inputTokens":128001,"outputTokens":448,"totalTokens":128449,"cachedInputTokens":108001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":17192050,"lines":[["cached_read_text_tokens",108001,"#4","cached_read_text_tokens",5400050],["input_text_tokens",20000,"#3","input_text_tokens",10000000],["output_text_tokens",448,"#5","output_text_tokens",1792000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":75773350,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",228350],["input_text_tokens",123434,"#3","input_text_tokens",61717000],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":38000600,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",228350],["input_text_tokens",123433,"#0","input_text_tokens",30858250],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128001,"output_text_tokens":3457,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":77828500,"lines":[["input_text_tokens",128001,"#3","input_text_tokens",64000500],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128000,"output_text_tokens":3457,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":38914000,"lines":[["input_text_tokens",128000,"#0","input_text_tokens",32000000],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seed-2.0-lite-260428:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-2.0-lite-260428/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.05/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#2","standard","output_text_tokens","2/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#3","standard","input_text_tokens","0.5/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.1/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#5","standard","output_text_tokens","4/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1341200,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",51200],["input_text_tokens",1576,"#0","input_text_tokens",394000],["output_text_tokens",448,"#2","output_text_tokens",896000]]}},
+				{"id":"documented.long-context@128001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":108001,"input_tokens":128001,"output_tokens":448,"total_tokens":128449},"ir":{"inputTokens":128001,"outputTokens":448,"totalTokens":128449,"cachedInputTokens":108001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":22592100,"lines":[["cached_read_text_tokens",108001,"#4","cached_read_text_tokens",10800100],["input_text_tokens",20000,"#3","input_text_tokens",10000000],["output_text_tokens",448,"#5","output_text_tokens",1792000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":76001700,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",456700],["input_text_tokens",123434,"#3","input_text_tokens",61717000],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":38000600,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",228350],["input_text_tokens",123433,"#0","input_text_tokens",30858250],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128001,"output_text_tokens":3457,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":77828500,"lines":[["input_text_tokens",128001,"#3","input_text_tokens",64000500],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128000,"output_text_tokens":3457,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":38914000,"lines":[["input_text_tokens",128000,"#0","input_text_tokens",32000000],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seed-2.0-lite:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-2.0-lite/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.05/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#2","standard","output_text_tokens","2/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#3","standard","input_text_tokens","0.5/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.1/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#5","standard","output_text_tokens","4/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1341200,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",51200],["input_text_tokens",1576,"#0","input_text_tokens",394000],["output_text_tokens",448,"#2","output_text_tokens",896000]]}},
+				{"id":"documented.long-context@128001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":108001,"input_tokens":128001,"output_tokens":448,"total_tokens":128449},"ir":{"inputTokens":128001,"outputTokens":448,"totalTokens":128449,"cachedInputTokens":108001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":22592100,"lines":[["cached_read_text_tokens",108001,"#4","cached_read_text_tokens",10800100],["input_text_tokens",20000,"#3","input_text_tokens",10000000],["output_text_tokens",448,"#5","output_text_tokens",1792000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":76001700,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",456700],["input_text_tokens",123434,"#3","input_text_tokens",61717000],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":38000600,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",228350],["input_text_tokens",123433,"#0","input_text_tokens",30858250],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128001,"output_text_tokens":3457,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":77828500,"lines":[["input_text_tokens",128001,"#3","input_text_tokens",64000500],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128000,"output_text_tokens":3457,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":38914000,"lines":[["input_text_tokens",128000,"#0","input_text_tokens",32000000],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seed-2.0-mini-260428:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-2.0-mini-260428/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.02/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#2","standard","output_text_tokens","0.4/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#3","standard","input_text_tokens","0.2/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.04/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#5","standard","output_text_tokens","0.8/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":357280,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",20480],["input_text_tokens",1576,"#0","input_text_tokens",157600],["output_text_tokens",448,"#2","output_text_tokens",179200]]}},
+				{"id":"documented.long-context@128001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":108001,"input_tokens":128001,"output_tokens":448,"total_tokens":128449},"ir":{"inputTokens":128001,"outputTokens":448,"totalTokens":128449,"cachedInputTokens":108001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":8678440,"lines":[["cached_read_text_tokens",108001,"#4","cached_read_text_tokens",4320040],["input_text_tokens",20000,"#3","input_text_tokens",4000000],["output_text_tokens",448,"#5","output_text_tokens",358400]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":27635080,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",182680],["input_text_tokens",123434,"#3","input_text_tokens",24686800],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":13817440,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",91340],["input_text_tokens",123433,"#0","input_text_tokens",12343300],["output_text_tokens",3457,"#2","output_text_tokens",1382800]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128001,"output_text_tokens":3457,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":28365800,"lines":[["input_text_tokens",128001,"#3","input_text_tokens",25600200],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128000,"output_text_tokens":3457,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":14182800,"lines":[["input_text_tokens",128000,"#0","input_text_tokens",12800000],["output_text_tokens",3457,"#2","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seed-2.0-mini:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-2.0-mini/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.02/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#2","standard","output_text_tokens","0.4/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#3","standard","input_text_tokens","0.2/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.04/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#5","standard","output_text_tokens","0.8/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":357280,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",20480],["input_text_tokens",1576,"#0","input_text_tokens",157600],["output_text_tokens",448,"#2","output_text_tokens",179200]]}},
+				{"id":"documented.long-context@128001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":108001,"input_tokens":128001,"output_tokens":448,"total_tokens":128449},"ir":{"inputTokens":128001,"outputTokens":448,"totalTokens":128449,"cachedInputTokens":108001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":8678440,"lines":[["cached_read_text_tokens",108001,"#4","cached_read_text_tokens",4320040],["input_text_tokens",20000,"#3","input_text_tokens",4000000],["output_text_tokens",448,"#5","output_text_tokens",358400]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":27635080,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",182680],["input_text_tokens",123434,"#3","input_text_tokens",24686800],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":13817440,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",91340],["input_text_tokens",123433,"#0","input_text_tokens",12343300],["output_text_tokens",3457,"#2","output_text_tokens",1382800]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128001,"output_text_tokens":3457,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":28365800,"lines":[["input_text_tokens",128001,"#3","input_text_tokens",25600200],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128000,"output_text_tokens":3457,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":14182800,"lines":[["input_text_tokens",128000,"#0","input_text_tokens",12800000],["output_text_tokens",3457,"#2","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seed-2.0-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-2.0-pro/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.5/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.1/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#2","standard","output_text_tokens","3/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#3","standard","input_text_tokens","1/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.2/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null],
+				["#5","standard","output_text_tokens","6/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":128000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2234400,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",102400],["input_text_tokens",1576,"#0","input_text_tokens",788000],["output_text_tokens",448,"#2","output_text_tokens",1344000]]}},
+				{"id":"documented.long-context@128001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":108001,"input_tokens":128001,"output_tokens":448,"total_tokens":128449},"ir":{"inputTokens":128001,"outputTokens":448,"totalTokens":128449,"cachedInputTokens":108001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":44288200,"lines":[["cached_read_text_tokens",108001,"#4","cached_read_text_tokens",21600200],["input_text_tokens",20000,"#3","input_text_tokens",20000000],["output_text_tokens",448,"#5","output_text_tokens",2688000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":145089400,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",913400],["input_text_tokens",123434,"#3","input_text_tokens",123434000],["output_text_tokens",3457,"#5","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":123433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":72544200,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",456700],["input_text_tokens",123433,"#0","input_text_tokens",61716500],["output_text_tokens",3457,"#2","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt128000)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128001,"output_text_tokens":3457,"input_tokens":128001,"output_tokens":3457,"total_tokens":131458},"expected":{"nanos":148743000,"lines":[["input_text_tokens",128001,"#3","input_text_tokens",128001000],["output_text_tokens",3457,"#5","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte128000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":128000,"output_text_tokens":3457,"input_tokens":128000,"output_tokens":3457,"total_tokens":131457},"expected":{"nanos":74371000,"lines":[["input_text_tokens",128000,"#0","input_text_tokens",64000000],["output_text_tokens",3457,"#2","output_text_tokens",10371000]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seed-translation:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seed-translation/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.8/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":878400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",358400]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":878400,"lines":[["cached_read_text_tokens",1024,"#0","input_text_tokens",204800,"cache read at the input price"],["input_text_tokens",1576,"#0","input_text_tokens",315200],["output_text_tokens",448,"#1","output_text_tokens",358400]]},"source":{"kind":"spec","spec":"byteplus","path":"usageFields"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":5235000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",2765600]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seedance-2.0-fast:video.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seedance-2.0-fast/video.generate/pricing.json",
+			"rules": [
+				["#0","standard","total_tokens","5.6/1000000 token",100,[{"path":"input_video_seconds","op":"eq","or_group":1,"and_index":1,"value":0}],null,null],
+				["#1","standard","total_tokens","3.3/1000000 token",100,[{"path":"input_video_seconds","op":"gt","or_group":1,"and_index":1,"value":0}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_video_seconds":0,"total_tokens":1000},"expected":{"nanos":5600000,"lines":[["total_tokens",1000,"#0","total_tokens",5600000]]}},
+				{"id":"rule.standard.total_tokens.when(input_video_secondseq0)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"total_tokens":12347,"input_video_seconds":0},"expected":{"nanos":69143200,"lines":[["total_tokens",12347,"#0","total_tokens",69143200]]}},
+				{"id":"rule.standard.total_tokens.when(input_video_secondsgt0)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"total_tokens":12347,"input_video_seconds":1},"expected":{"nanos":40745100,"lines":[["total_tokens",12347,"#1","total_tokens",40745100]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seedance-2.0-mini-260615:video.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seedance-2.0-mini-260615/video.generate/pricing.json",
+			"rules": [
+				["#0","standard","total_tokens","3.5/1000000 token",100,[{"path":"input_video_seconds","op":"eq","value":0}],null,null],
+				["#1","standard","total_tokens","2.1/1000000 token",100,[{"path":"input_video_seconds","op":"gt","value":0}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_video_seconds":0,"total_tokens":1000},"expected":{"nanos":3500000,"lines":[["total_tokens",1000,"#0","total_tokens",3500000]]}},
+				{"id":"rule.standard.total_tokens.when(input_video_secondseq0)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"total_tokens":12347,"input_video_seconds":0},"expected":{"nanos":43214500,"lines":[["total_tokens",12347,"#0","total_tokens",43214500]]}},
+				{"id":"rule.standard.total_tokens.when(input_video_secondsgt0)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"total_tokens":12347,"input_video_seconds":1},"expected":{"nanos":25928700,"lines":[["total_tokens",12347,"#1","total_tokens",25928700]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seedance-2.0:video.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seedance-2.0/video.generate/pricing.json",
+			"rules": [
+				["#0","standard","total_tokens","7/1000000 token",100,[{"path":"input_video_seconds","op":"eq","value":0},{"path":"resolution","op":"in","value":["480p","720p"]}],null,null],
+				["#1","standard","total_tokens","4.3/1000000 token",100,[{"path":"input_video_seconds","op":"gt","value":0},{"path":"resolution","op":"in","value":["480p","720p"]}],null,null],
+				["#2","standard","total_tokens","7.7/1000000 token",100,[{"path":"input_video_seconds","op":"eq","value":0},{"path":"resolution","op":"in","value":["1080p"]}],null,null],
+				["#3","standard","total_tokens","4.7/1000000 token",100,[{"path":"input_video_seconds","op":"gt","value":0},{"path":"resolution","op":"in","value":["1080p"]}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","context":{"resolution":"480p"},"usage":{"requests":1,"input_video_seconds":0,"total_tokens":1000},"expected":{"nanos":7000000,"lines":[["total_tokens",1000,"#0","total_tokens",7000000]]}},
+				{"id":"rule.standard.total_tokens.when(input_video_secondseq0&resolutionin[\"1080p\"])","kind":"rule","targets":["#2"],"plan":"standard","context":{"resolution":"1080p"},"usage":{"requests":1,"total_tokens":12347,"input_video_seconds":0},"expected":{"nanos":95071900,"lines":[["total_tokens",12347,"#2","total_tokens",95071900]]}},
+				{"id":"rule.standard.total_tokens.when(input_video_secondseq0&resolutionin[\"480p\",\"720p\"])","kind":"rule","targets":["#0"],"plan":"standard","context":{"resolution":"480p"},"usage":{"requests":1,"total_tokens":12347,"input_video_seconds":0},"expected":{"nanos":86429000,"lines":[["total_tokens",12347,"#0","total_tokens",86429000]]}},
+				{"id":"rule.standard.total_tokens.when(input_video_secondsgt0&resolutionin[\"1080p\"])","kind":"rule","targets":["#3"],"plan":"standard","context":{"resolution":"1080p"},"usage":{"requests":1,"total_tokens":12347,"input_video_seconds":1},"expected":{"nanos":58030900,"lines":[["total_tokens",12347,"#3","total_tokens",58030900]]}},
+				{"id":"rule.standard.total_tokens.when(input_video_secondsgt0&resolutionin[\"480p\",\"720p\"])","kind":"rule","targets":["#1"],"plan":"standard","context":{"resolution":"480p"},"usage":{"requests":1,"total_tokens":12347,"input_video_seconds":1},"expected":{"nanos":53092100,"lines":[["total_tokens",12347,"#1","total_tokens",53092100]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seedream-5.0-pro:images.edits",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seedream-5.0-pro/images.edits/pricing.json",
+			"rules": [
+				["#0","standard","input_image","0.003/1 image",250,null,null,1],
+				["#1","standard","output_image","0.045/1 image",200,[{"path":"image_params.output_pixels","op":"lte","or_group":1,"and_index":1,"value":2360000}],null,null],
+				["#2","standard","output_image","0.09/1 image",200,[{"path":"image_params.output_pixels","op":"gt","or_group":1,"and_index":1,"value":2360000}],null,null],
+				["#3","standard","output_image","0.045/1 image",10,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","context":{"image_params":{"output_pixels":2360000}},"usage":{"requests":1,"input_image":1,"output_image":1},"expected":{"nanos":45000000,"lines":[["input_image",1,"#0","input_image",0],["output_image",1,"#1","output_image",45000000]]}},
+				{"id":"rule.standard.input_image","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_image":3},"expected":{"nanos":6000000,"lines":[["input_image",3,"#0","input_image",6000000]]}},
+				{"id":"rule.standard.output_image","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"output_image":2},"expected":{"nanos":90000000,"lines":[["output_image",2,"#3","output_image",90000000]]}},
+				{"id":"rule.standard.output_image.when(image_params.output_pixelsgt2360000)","kind":"rule","targets":["#2"],"plan":"standard","context":{"image_params":{"output_pixels":2360001}},"usage":{"requests":1,"output_image":2},"expected":{"nanos":180000000,"lines":[["output_image",2,"#2","output_image",180000000]]}},
+				{"id":"rule.standard.output_image.when(image_params.output_pixelslte2360000)","kind":"rule","targets":["#1"],"plan":"standard","context":{"image_params":{"output_pixels":2360000}},"usage":{"requests":1,"output_image":2},"expected":{"nanos":90000000,"lines":[["output_image",2,"#1","output_image",90000000]]}}
+			]
+		},
+		{
+			"key": "byteplus:bytedance/seedream-5.0-pro:images.generations",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/bytedance-seedream-5.0-pro/images.generations/pricing.json",
+			"rules": [
+				["#0","standard","output_image","0.045/1 image",200,[{"path":"image_params.output_pixels","op":"lte","or_group":1,"and_index":1,"value":2360000}],null,null],
+				["#1","standard","output_image","0.09/1 image",200,[{"path":"image_params.output_pixels","op":"gt","or_group":1,"and_index":1,"value":2360000}],null,null],
+				["#2","standard","output_image","0.045/1 image",10,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","context":{"image_params":{"output_pixels":2360000}},"usage":{"requests":1,"output_image":1},"expected":{"nanos":45000000,"lines":[["output_image",1,"#0","output_image",45000000]]}},
+				{"id":"rule.standard.output_image","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"output_image":2},"expected":{"nanos":90000000,"lines":[["output_image",2,"#2","output_image",90000000]]}},
+				{"id":"rule.standard.output_image.when(image_params.output_pixelsgt2360000)","kind":"rule","targets":["#1"],"plan":"standard","context":{"image_params":{"output_pixels":2360001}},"usage":{"requests":1,"output_image":2},"expected":{"nanos":180000000,"lines":[["output_image",2,"#1","output_image",180000000]]}},
+				{"id":"rule.standard.output_image.when(image_params.output_pixelslte2360000)","kind":"rule","targets":["#0"],"plan":"standard","context":{"image_params":{"output_pixels":2360000}},"usage":{"requests":1,"output_image":2},"expected":{"nanos":90000000,"lines":[["output_image",2,"#0","output_image",90000000]]}}
+			]
+		},
+		{
+			"key": "byteplus:deepseek/deepseek-v3.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/deepseek-deepseek-v3.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.28/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":32000}],null,null],
+				["#1","standard","cached_read_text_tokens","0.056/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":32000}],null,null],
+				["#2","standard","output_text_tokens","0.42/1000000 token",100,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":32000}],null,null],
+				["#3","standard","input_text_tokens","0.56/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":32000},{"path":"input_tokens","op":"lte","or_group":1,"and_index":2,"value":131072}],null,null],
+				["#4","standard","cached_read_text_tokens","0.056/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":32000},{"path":"input_tokens","op":"lte","or_group":1,"and_index":2,"value":131072}],null,null],
+				["#5","standard","output_text_tokens","0.84/1000000 token",100,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":32000},{"path":"input_tokens","op":"lte","or_group":1,"and_index":2,"value":131072}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":686784,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",57344],["input_text_tokens",1576,"#0","input_text_tokens",441280],["output_text_tokens",448,"#2","output_text_tokens",188160]]}},
+				{"id":"documented.long-context@32001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":12001,"input_tokens":32001,"output_tokens":448,"total_tokens":32449},"ir":{"inputTokens":32001,"outputTokens":448,"totalTokens":32449,"cachedInputTokens":12001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":12248376,"lines":[["cached_read_text_tokens",12001,"#4","cached_read_text_tokens",672056],["input_text_tokens",20000,"#3","input_text_tokens",11200000],["output_text_tokens",448,"#5","output_text_tokens",376320]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt32000&input_tokenslte131072)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126505,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":74002432,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",255752],["input_text_tokens",126505,"#3","input_text_tokens",70842800],["output_text_tokens",3457,"#5","output_text_tokens",2903880]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte32000)","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":27433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":32000,"output_tokens":3457,"total_tokens":35457},"expected":{"nanos":9388932,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",255752],["input_text_tokens",27433,"#0","input_text_tokens",7681240],["output_text_tokens",3457,"#2","output_text_tokens",1451940]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt32000&input_tokenslte131072)","kind":"rule","targets":["#3","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131072,"output_text_tokens":3457,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":76304200,"lines":[["input_text_tokens",131072,"#3","input_text_tokens",73400320],["output_text_tokens",3457,"#5","output_text_tokens",2903880]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte32000)","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":32000,"output_text_tokens":3457,"input_tokens":32000,"output_tokens":3457,"total_tokens":35457},"expected":{"nanos":10411940,"lines":[["input_text_tokens",32000,"#0","input_text_tokens",8960000],["output_text_tokens",3457,"#2","output_text_tokens",1451940]]}}
+			]
+		},
+		{
+			"key": "byteplus:deepseek/deepseek-v4-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/deepseek-deepseek-v4-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.028/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":374752,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",28672],["input_text_tokens",1576,"#0","input_text_tokens",220640],["output_text_tokens",448,"#2","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2824416,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",127876],["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2696540,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}}
+			]
+		},
+		{
+			"key": "byteplus:deepseek/deepseek-v4-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/deepseek-deepseek-v4-pro/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.74/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.145/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.48/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4449760,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",148480],["input_text_tokens",1576,"#0","input_text_tokens",2742240],["output_text_tokens",448,"#2","output_text_tokens",1559040]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":34176355,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",662215],["input_text_tokens",12347,"#0","input_text_tokens",21483780],["output_text_tokens",3457,"#2","output_text_tokens",12030360]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":33514140,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",21483780],["output_text_tokens",3457,"#2","output_text_tokens",12030360]]}}
+			]
+		},
+		{
+			"key": "byteplus:openai/gpt-oss-120b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/openai-gpt-oss-120b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.02/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":402080,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",20480],["input_text_tokens",1576,"#0","input_text_tokens",157600],["output_text_tokens",448,"#2","output_text_tokens",224000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":3054540,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",91340],["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#2","output_text_tokens",1728500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2963200,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#2","output_text_tokens",1728500]]}}
+			]
+		},
+		{
+			"key": "byteplus:z-ai/glm-4.7:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/z-ai-glm-4.7/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.11/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2043840,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",112640],["input_text_tokens",1576,"#0","input_text_tokens",945600],["output_text_tokens",448,"#2","output_text_tokens",985600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":15515970,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",502370],["input_text_tokens",12347,"#0","input_text_tokens",7408200],["output_text_tokens",3457,"#2","output_text_tokens",7605400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":15013600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7408200],["output_text_tokens",3457,"#2","output_text_tokens",7605400]]}}
+			]
+		},
+		{
+			"key": "byteplus:z-ai/glm-5.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/byteplus/z-ai-glm-5.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.4/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.26/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4443840,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",266240],["input_text_tokens",1576,"#0","input_text_tokens",2206400],["output_text_tokens",448,"#2","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":33684020,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1187420],["input_text_tokens",12347,"#0","input_text_tokens",17285800],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":32496600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",17285800],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}}
+			]
+		}
+	]
+}

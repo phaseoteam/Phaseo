@@ -1,0 +1,1310 @@
+{
+ "activeRoutes": 1571,
+ "activeRoutesWithCard": 1550,
+ "cards": 1550,
+ "cardsExercised": 1532,
+ "metersPresent": 5347,
+ "metersExercised": 5344,
+ "conditionBranchesPresent": 1466,
+ "conditionBranchesExercised": 1466,
+ "byCapability": {
+  "audio.generate": {
+   "cards": 0,
+   "cardsExercised": 0,
+   "metersPresent": 0,
+   "metersExercised": 0
+  },
+  "audio.realtime": {
+   "cards": 7,
+   "cardsExercised": 7,
+   "metersPresent": 44,
+   "metersExercised": 44
+  },
+  "audio.speech": {
+   "cards": 28,
+   "cardsExercised": 25,
+   "metersPresent": 29,
+   "metersExercised": 29
+  },
+  "audio.transcribe": {
+   "cards": 3,
+   "cardsExercised": 3,
+   "metersPresent": 3,
+   "metersExercised": 3
+  },
+  "audio.transcription": {
+   "cards": 22,
+   "cardsExercised": 22,
+   "metersPresent": 26,
+   "metersExercised": 26
+  },
+  "audio.translations": {
+   "cards": 4,
+   "cardsExercised": 4,
+   "metersPresent": 4,
+   "metersExercised": 4
+  },
+  "batch": {
+   "cards": 40,
+   "cardsExercised": 40,
+   "metersPresent": 106,
+   "metersExercised": 106
+  },
+  "embeddings": {
+   "cards": 11,
+   "cardsExercised": 11,
+   "metersPresent": 11,
+   "metersExercised": 11
+  },
+  "image.edit": {
+   "cards": 26,
+   "cardsExercised": 25,
+   "metersPresent": 54,
+   "metersExercised": 54
+  },
+  "image.generate": {
+   "cards": 36,
+   "cardsExercised": 35,
+   "metersPresent": 60,
+   "metersExercised": 60
+  },
+  "images.edits": {
+   "cards": 1,
+   "cardsExercised": 1,
+   "metersPresent": 2,
+   "metersExercised": 2
+  },
+  "images.generations": {
+   "cards": 4,
+   "cardsExercised": 4,
+   "metersPresent": 33,
+   "metersExercised": 33
+  },
+  "music.generate": {
+   "cards": 6,
+   "cardsExercised": 5,
+   "metersPresent": 5,
+   "metersExercised": 5
+  },
+  "ocr": {
+   "cards": 5,
+   "cardsExercised": 5,
+   "metersPresent": 8,
+   "metersExercised": 8
+  },
+  "parse": {
+   "cards": 1,
+   "cardsExercised": 1,
+   "metersPresent": 1,
+   "metersExercised": 1
+  },
+  "rerank": {
+   "cards": 7,
+   "cardsExercised": 7,
+   "metersPresent": 8,
+   "metersExercised": 8
+  },
+  "text.embed": {
+   "cards": 48,
+   "cardsExercised": 48,
+   "metersPresent": 65,
+   "metersExercised": 65
+  },
+  "text.generate": {
+   "cards": 1266,
+   "cardsExercised": 1256,
+   "metersPresent": 4836,
+   "metersExercised": 4833
+  },
+  "text.moderate": {
+   "cards": 2,
+   "cardsExercised": 2,
+   "metersPresent": 2,
+   "metersExercised": 2
+  },
+  "text.rerank": {
+   "cards": 1,
+   "cardsExercised": 1,
+   "metersPresent": 1,
+   "metersExercised": 1
+  },
+  "video.edit": {
+   "cards": 1,
+   "cardsExercised": 1,
+   "metersPresent": 3,
+   "metersExercised": 3
+  },
+  "video.generate": {
+   "cards": 31,
+   "cardsExercised": 29,
+   "metersPresent": 46,
+   "metersExercised": 46
+  }
+ },
+ "notCovered": [
+  {
+   "what": "route deepinfra:hexgrad/kokoro-82m:audio.generate",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route fireworks:qwen/qwen3-reranker:rerank",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-6-astra-pro:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-6-astra:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-image-1-mini:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-image-1:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-image-1:image.generate",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-image-1.5:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-image-2:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/omni-moderation:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/sora-2-pro:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/sora-2:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/text-embedding-3-large:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/text-embedding-3-small:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/text-embedding-ada-002:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route voyage:voyage/rerank-1:rerank",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route voyage:voyage/rerank-2-lite:rerank",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route voyage:voyage/rerank-2:rerank",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route voyage:voyage/rerank-2.5-lite:rerank",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route voyage:voyage/rerank-2.5:rerank",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route voyage:voyage/rerank-lite-1:rerank",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "card deepseek:deepseek/deepseek-v4.1-flash-preview:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card elevenlabs:eleven-labs/eleven-v4-turbo:audio.speech",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card elevenlabs:eleven-labs/eleven-v4:audio.speech",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card gmicloud:minimax/minimax-m2.7:free:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card gmicloud:minimax/minimax-m3:free:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card gmicloud:minimax/music-3.0:free:music.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card gmicloud:minimax/speech-2.8:free:audio.speech",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card gmicloud:tencent/hy-image-v3.5-preview:free:image.edit",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card gmicloud:tencent/hy-image-v3.5-preview:free:image.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card google-vertex:anthropic/claude-3-haiku:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card ltx:ltx-2-fast:video.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card ltx:ltx-2-pro:video.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card mistral:mistral/devstral-small-2:free:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card mistral:mistral/devstral-small-2:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card mistral:mistral/leanstral:free:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card mistral:mistral/magistral-small-1.2:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card mistral:mistral/mistral-small-3.2:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card mistral:mistral/mistral-small-creative:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "rule gmicloud:deepseek/deepseek-v4-pro:text.generate #3",
+   "reason": "shadowed by #0 (same plan, meter and conditions; priority 100 vs 90, price 1.392 vs 1.74)"
+  },
+  {
+   "what": "rule gmicloud:deepseek/deepseek-v4-pro:text.generate #4",
+   "reason": "shadowed by #1 (same plan, meter and conditions; priority 100 vs 90, price 0.116 vs 0.145)"
+  },
+  {
+   "what": "rule gmicloud:deepseek/deepseek-v4-pro:text.generate #5",
+   "reason": "shadowed by #2 (same plan, meter and conditions; priority 100 vs 90, price 2.784 vs 3.48)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-2.5-flash-image:text.generate #0",
+   "reason": "shadowed by #3 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-2.5-flash-image:text.generate #1",
+   "reason": "shadowed by #4 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #28",
+   "reason": "shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #29",
+   "reason": "shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #30",
+   "reason": "shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #31",
+   "reason": "shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #32",
+   "reason": "shadowed by #64 (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #33",
+   "reason": "shadowed by #65 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #34",
+   "reason": "shadowed by #66 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #35",
+   "reason": "shadowed by #67 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #36",
+   "reason": "shadowed by #68 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #37",
+   "reason": "shadowed by #69 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #38",
+   "reason": "shadowed by #70 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #39",
+   "reason": "shadowed by #71 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #40",
+   "reason": "shadowed by #72 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #41",
+   "reason": "shadowed by #73 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #42",
+   "reason": "shadowed by #74 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #43",
+   "reason": "shadowed by #75 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #44",
+   "reason": "shadowed by #76 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #45",
+   "reason": "shadowed by #77 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #46",
+   "reason": "shadowed by #78 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #47",
+   "reason": "shadowed by #79 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #48",
+   "reason": "shadowed by #80 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #49",
+   "reason": "shadowed by #81 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #50",
+   "reason": "shadowed by #82 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #51",
+   "reason": "shadowed by #83 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #52",
+   "reason": "shadowed by #84 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #53",
+   "reason": "shadowed by #85 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #54",
+   "reason": "shadowed by #86 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #55",
+   "reason": "shadowed by #87 (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #56",
+   "reason": "shadowed by #88 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #57",
+   "reason": "shadowed by #89 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #58",
+   "reason": "shadowed by #90 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate #59",
+   "reason": "shadowed by #91 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #0",
+   "reason": "shadowed by #32 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #1",
+   "reason": "shadowed by #33 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #2",
+   "reason": "shadowed by #34 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #3",
+   "reason": "shadowed by #35 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #4",
+   "reason": "shadowed by #36 (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #5",
+   "reason": "shadowed by #37 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #6",
+   "reason": "shadowed by #38 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #7",
+   "reason": "shadowed by #39 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #8",
+   "reason": "shadowed by #40 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #9",
+   "reason": "shadowed by #41 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #10",
+   "reason": "shadowed by #42 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #11",
+   "reason": "shadowed by #43 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #12",
+   "reason": "shadowed by #44 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #13",
+   "reason": "shadowed by #45 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #14",
+   "reason": "shadowed by #46 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #15",
+   "reason": "shadowed by #47 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #16",
+   "reason": "shadowed by #48 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #17",
+   "reason": "shadowed by #49 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #18",
+   "reason": "shadowed by #50 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #19",
+   "reason": "shadowed by #51 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #20",
+   "reason": "shadowed by #52 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #21",
+   "reason": "shadowed by #53 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #22",
+   "reason": "shadowed by #54 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #23",
+   "reason": "shadowed by #55 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #24",
+   "reason": "shadowed by #56 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #25",
+   "reason": "shadowed by #57 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #26",
+   "reason": "shadowed by #58 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #27",
+   "reason": "shadowed by #59 (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #28",
+   "reason": "shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #29",
+   "reason": "shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #30",
+   "reason": "shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.7-flash:text.generate #31",
+   "reason": "shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #28",
+   "reason": "shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #29",
+   "reason": "shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #30",
+   "reason": "shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #31",
+   "reason": "shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #32",
+   "reason": "shadowed by #64 (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #33",
+   "reason": "shadowed by #65 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #34",
+   "reason": "shadowed by #66 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #35",
+   "reason": "shadowed by #67 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #36",
+   "reason": "shadowed by #68 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #37",
+   "reason": "shadowed by #69 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #38",
+   "reason": "shadowed by #70 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #39",
+   "reason": "shadowed by #71 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #40",
+   "reason": "shadowed by #72 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #41",
+   "reason": "shadowed by #73 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #42",
+   "reason": "shadowed by #74 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #43",
+   "reason": "shadowed by #75 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #44",
+   "reason": "shadowed by #76 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #45",
+   "reason": "shadowed by #77 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #46",
+   "reason": "shadowed by #78 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #47",
+   "reason": "shadowed by #79 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #48",
+   "reason": "shadowed by #80 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #49",
+   "reason": "shadowed by #81 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #50",
+   "reason": "shadowed by #82 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #51",
+   "reason": "shadowed by #83 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #52",
+   "reason": "shadowed by #84 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #53",
+   "reason": "shadowed by #85 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #54",
+   "reason": "shadowed by #86 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #55",
+   "reason": "shadowed by #87 (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #56",
+   "reason": "shadowed by #88 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #57",
+   "reason": "shadowed by #89 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #58",
+   "reason": "shadowed by #90 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate #59",
+   "reason": "shadowed by #91 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #0",
+   "reason": "shadowed by #32 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #1",
+   "reason": "shadowed by #33 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #2",
+   "reason": "shadowed by #34 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #3",
+   "reason": "shadowed by #35 (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #4",
+   "reason": "shadowed by #36 (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #5",
+   "reason": "shadowed by #37 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #6",
+   "reason": "shadowed by #38 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #7",
+   "reason": "shadowed by #39 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #8",
+   "reason": "shadowed by #40 (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #9",
+   "reason": "shadowed by #41 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #10",
+   "reason": "shadowed by #42 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #11",
+   "reason": "shadowed by #43 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #12",
+   "reason": "shadowed by #44 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #13",
+   "reason": "shadowed by #45 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #14",
+   "reason": "shadowed by #46 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #15",
+   "reason": "shadowed by #47 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #16",
+   "reason": "shadowed by #48 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #17",
+   "reason": "shadowed by #49 (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #18",
+   "reason": "shadowed by #50 (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #19",
+   "reason": "shadowed by #51 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #20",
+   "reason": "shadowed by #52 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #21",
+   "reason": "shadowed by #53 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #22",
+   "reason": "shadowed by #54 (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #23",
+   "reason": "shadowed by #55 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #24",
+   "reason": "shadowed by #56 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #25",
+   "reason": "shadowed by #57 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #26",
+   "reason": "shadowed by #58 (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #27",
+   "reason": "shadowed by #59 (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #28",
+   "reason": "shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #29",
+   "reason": "shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #30",
+   "reason": "shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate #31",
+   "reason": "shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule longcat:meituan/longcat-2.0:text.generate #3",
+   "reason": "shadowed by #0 (same plan, meter and conditions; priority 100 vs 90, price 0.3 vs 0.75)"
+  },
+  {
+   "what": "rule longcat:meituan/longcat-2.0:text.generate #4",
+   "reason": "shadowed by #1 (same plan, meter and conditions; priority 100 vs 90, price 0.006 vs 0.015)"
+  },
+  {
+   "what": "rule longcat:meituan/longcat-2.0:text.generate #5",
+   "reason": "shadowed by #2 (same plan, meter and conditions; priority 100 vs 90, price 1.2 vs 2.95)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3-3b:text.generate #0",
+   "reason": "shadowed by #3 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3-3b:text.generate #2",
+   "reason": "shadowed by #4 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3-3b:text.generate #5",
+   "reason": "shadowed by #7 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3-3b:text.generate #6",
+   "reason": "shadowed by #8 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3-3b:text.generate #9",
+   "reason": "shadowed by #11 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3-3b:text.generate #10",
+   "reason": "shadowed by #12 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ocr-4:ocr #0",
+   "reason": "shadowed by #1 (same plan, meter and conditions; priority 110 vs 100, price 2 vs 4)"
+  },
+  {
+   "what": "rule mistral:mistral/ocr-4:ocr #2",
+   "reason": "shadowed by #3 (same plan, meter and conditions; priority 110 vs 100, price 0.5 vs 2)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:batch #0",
+   "reason": "shadowed by #8 (same plan, meter and conditions; priority 200 vs 100, price 2.2 vs 2.75)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:batch #1",
+   "reason": "shadowed by #9 (same plan, meter and conditions; priority 200 vs 100, price 0.22 vs 0.275)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:batch #2",
+   "reason": "shadowed by #10 (same plan, meter and conditions; priority 200 vs 100, price 2.75 vs 3.4375)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:batch #3",
+   "reason": "shadowed by #11 (same plan, meter and conditions; priority 200 vs 100, price 11 vs 16.5)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:batch #4",
+   "reason": "shadowed by #12 (same plan, meter and conditions; priority 200 vs 100, price 4.4 vs 5.5)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:batch #5",
+   "reason": "shadowed by #13 (same plan, meter and conditions; priority 200 vs 100, price 0.44 vs 0.55)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:batch #6",
+   "reason": "shadowed by #14 (same plan, meter and conditions; priority 200 vs 100, price 5.5 vs 6.875)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:batch #7",
+   "reason": "shadowed by #15 (same plan, meter and conditions; priority 200 vs 100, price 16.5 vs 24.75)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #32",
+   "reason": "shadowed by #0 (same plan, meter and conditions; priority 200 vs 100, price 4.4 vs 5.5)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #33",
+   "reason": "shadowed by #1 (same plan, meter and conditions; priority 200 vs 100, price 0.44 vs 0.55)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #34",
+   "reason": "shadowed by #2 (same plan, meter and conditions; priority 200 vs 100, price 5.5 vs 6.875)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #35",
+   "reason": "shadowed by #3 (same plan, meter and conditions; priority 200 vs 100, price 22 vs 33)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #36",
+   "reason": "shadowed by #4 (same plan, meter and conditions; priority 200 vs 100, price 8.8 vs 11)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #37",
+   "reason": "shadowed by #5 (same plan, meter and conditions; priority 200 vs 100, price 0.88 vs 1.1)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #38",
+   "reason": "shadowed by #6 (same plan, meter and conditions; priority 200 vs 100, price 11 vs 13.75)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #39",
+   "reason": "shadowed by #7 (same plan, meter and conditions; priority 200 vs 100, price 33 vs 49.5)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #40",
+   "reason": "shadowed by #57 (same plan, meter and conditions; priority 200 vs 100, price 2.2 vs 2.75)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #41",
+   "reason": "shadowed by #58 (same plan, meter and conditions; priority 200 vs 100, price 0.22 vs 0.275)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #42",
+   "reason": "shadowed by #59 (same plan, meter and conditions; priority 200 vs 100, price 2.75 vs 3.4375)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #43",
+   "reason": "shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 11 vs 16.5)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #44",
+   "reason": "shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 4.4 vs 5.5)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #45",
+   "reason": "shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.44 vs 0.55)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #46",
+   "reason": "shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 5.5 vs 6.875)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #47",
+   "reason": "shadowed by #64 (same plan, meter and conditions; priority 200 vs 100, price 16.5 vs 24.75)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #48",
+   "reason": "shadowed by #65 (same plan, meter and conditions; priority 200 vs 100, price 8.8 vs 11)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #49",
+   "reason": "shadowed by #66 (same plan, meter and conditions; priority 200 vs 100, price 0.88 vs 1.1)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #50",
+   "reason": "shadowed by #67 (same plan, meter and conditions; priority 200 vs 100, price 11 vs 13.75)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #51",
+   "reason": "shadowed by #68 (same plan, meter and conditions; priority 200 vs 100, price 44 vs 66)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #52",
+   "reason": "shadowed by #69 (same plan, meter and conditions; priority 200 vs 100, price 17.6 vs 22)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #53",
+   "reason": "shadowed by #70 (same plan, meter and conditions; priority 200 vs 100, price 1.76 vs 2.2)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #54",
+   "reason": "shadowed by #71 (same plan, meter and conditions; priority 200 vs 100, price 22 vs 27.5)"
+  },
+  {
+   "what": "rule openai-eu:openai/gpt-5.6-sol:text.generate #55",
+   "reason": "shadowed by #72 (same plan, meter and conditions; priority 200 vs 100, price 66 vs 99)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.2:batch #3",
+   "reason": "shadowed by #0 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.2:batch #4",
+   "reason": "shadowed by #1 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.2:batch #5",
+   "reason": "shadowed by #2 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.3-chat:text.generate #3",
+   "reason": "shadowed by #0 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.3-chat:text.generate #4",
+   "reason": "shadowed by #1 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.3-chat:text.generate #5",
+   "reason": "shadowed by #2 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch #0",
+   "reason": "shadowed by #8 (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch #1",
+   "reason": "shadowed by #9 (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch #2",
+   "reason": "shadowed by #10 (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch #3",
+   "reason": "shadowed by #11 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch #4",
+   "reason": "shadowed by #12 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch #5",
+   "reason": "shadowed by #13 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch #6",
+   "reason": "shadowed by #14 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch #7",
+   "reason": "shadowed by #15 (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #32",
+   "reason": "shadowed by #0 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #33",
+   "reason": "shadowed by #1 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #34",
+   "reason": "shadowed by #2 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #35",
+   "reason": "shadowed by #3 (same plan, meter and conditions; priority 200 vs 100, price 20 vs 30)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #36",
+   "reason": "shadowed by #4 (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #37",
+   "reason": "shadowed by #5 (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #38",
+   "reason": "shadowed by #6 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #39",
+   "reason": "shadowed by #7 (same plan, meter and conditions; priority 200 vs 100, price 30 vs 45)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #40",
+   "reason": "shadowed by #56 (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #41",
+   "reason": "shadowed by #57 (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #42",
+   "reason": "shadowed by #58 (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #43",
+   "reason": "shadowed by #59 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #44",
+   "reason": "shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #45",
+   "reason": "shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #46",
+   "reason": "shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #47",
+   "reason": "shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #48",
+   "reason": "shadowed by #64 (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #49",
+   "reason": "shadowed by #65 (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #50",
+   "reason": "shadowed by #66 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #51",
+   "reason": "shadowed by #67 (same plan, meter and conditions; priority 200 vs 100, price 40 vs 60)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #52",
+   "reason": "shadowed by #68 (same plan, meter and conditions; priority 200 vs 100, price 16 vs 20)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #53",
+   "reason": "shadowed by #69 (same plan, meter and conditions; priority 200 vs 100, price 1.6 vs 2)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #54",
+   "reason": "shadowed by #70 (same plan, meter and conditions; priority 200 vs 100, price 20 vs 25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate #55",
+   "reason": "shadowed by #71 (same plan, meter and conditions; priority 200 vs 100, price 60 vs 90)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:batch #0",
+   "reason": "shadowed by #8 (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:batch #1",
+   "reason": "shadowed by #9 (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:batch #2",
+   "reason": "shadowed by #10 (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:batch #3",
+   "reason": "shadowed by #11 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:batch #4",
+   "reason": "shadowed by #12 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:batch #5",
+   "reason": "shadowed by #13 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:batch #6",
+   "reason": "shadowed by #14 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:batch #7",
+   "reason": "shadowed by #15 (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #32",
+   "reason": "shadowed by #0 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #33",
+   "reason": "shadowed by #1 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #34",
+   "reason": "shadowed by #2 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #35",
+   "reason": "shadowed by #3 (same plan, meter and conditions; priority 200 vs 100, price 20 vs 30)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #36",
+   "reason": "shadowed by #4 (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #37",
+   "reason": "shadowed by #5 (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #38",
+   "reason": "shadowed by #6 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #39",
+   "reason": "shadowed by #7 (same plan, meter and conditions; priority 200 vs 100, price 30 vs 45)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #40",
+   "reason": "shadowed by #57 (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #41",
+   "reason": "shadowed by #58 (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #42",
+   "reason": "shadowed by #59 (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #43",
+   "reason": "shadowed by #60 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #44",
+   "reason": "shadowed by #61 (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #45",
+   "reason": "shadowed by #62 (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #46",
+   "reason": "shadowed by #63 (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #47",
+   "reason": "shadowed by #64 (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #48",
+   "reason": "shadowed by #65 (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #49",
+   "reason": "shadowed by #66 (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #50",
+   "reason": "shadowed by #67 (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #51",
+   "reason": "shadowed by #68 (same plan, meter and conditions; priority 200 vs 100, price 40 vs 60)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #52",
+   "reason": "shadowed by #69 (same plan, meter and conditions; priority 200 vs 100, price 16 vs 20)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #53",
+   "reason": "shadowed by #70 (same plan, meter and conditions; priority 200 vs 100, price 1.6 vs 2)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #54",
+   "reason": "shadowed by #71 (same plan, meter and conditions; priority 200 vs 100, price 20 vs 25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol:text.generate #55",
+   "reason": "shadowed by #72 (same plan, meter and conditions; priority 200 vs 100, price 60 vs 90)"
+  },
+  {
+   "what": "rule weights-and-biases:nvidia/nemotron-3-super-120b-a12b:text.generate #0",
+   "reason": "shadowed by #2 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule weights-and-biases:nvidia/nemotron-3-super-120b-a12b:text.generate #1",
+   "reason": "shadowed by #3 (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "adapter-side condition extraction for media cards",
+   "reason": "condition values (image_params, video_params, resolution, mode, ...) are handed to the engine in usage.context; media adapters derive them from the request, which this layer does not run"
+  },
+  {
+   "what": "executor usage mapping",
+   "reason": "documented cases start from the gateway IR usage (core/ir.ts); the executor layer of the simulator covers native-to-IR mapping"
+  },
+  {
+   "what": "BYOK fees, data-contribution discounts, tier markup, credits",
+   "reason": "applied after calculatePricing"
+  },
+  {
+   "what": "live catalogue rows",
+   "reason": "the sweep reads the archived fixtures in packages/data/catalog/src/data; the database owns live rows"
+  }
+ ]
+}
