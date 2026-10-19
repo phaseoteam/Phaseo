@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { categoriesFrom, type Category } from "@/features/notifications/channels";
 import { request } from "./http";
 
 export const EVENT_KINDS = ["model_released", "gateway_available", "price_changed", "deprecation_announced", "provider_added", "provider_launched"] as const;
@@ -35,7 +36,8 @@ const settingsSchema = z.object({
   dailyCap: z.coerce.number().default(10),
   deviceRegistered: z.boolean().default(false),
   rules: z.array(ruleSchema).default([]),
-  // Came with push v2. Without it the app offers only the kinds every server knows.
+  // Both came with push v2. Without them the app hides categories and the provider_launched kind.
+  categories: z.unknown().optional().transform(categoriesFrom),
   eventKinds: z.array(z.string()).nullish(),
 });
 
@@ -43,16 +45,23 @@ export type NotificationSettings = z.infer<typeof settingsSchema>;
 
 const base = "/api/account/settings/mobile-notifications";
 
+export function parseNotificationSettings(raw: unknown): NotificationSettings {
+  return settingsSchema.parse(raw);
+}
+
 export async function getNotificationSettings(installationId: string): Promise<NotificationSettings> {
-  return settingsSchema.parse(await request(base, { auth: true, query: { installationId } }));
+  return parseNotificationSettings(await request(base, { auth: true, query: { installationId } }));
 }
 
-/** Pass this install's ID so the response says whether this phone is registered. */
-export async function updateNotificationSettings(installationId: string, patch: { enabled?: boolean; quietHours?: { start: string; end: string } | null; dailyCap?: number }): Promise<NotificationSettings> {
-  return settingsSchema.parse(await request(base, { method: "PUT", auth: true, query: { installationId }, body: patch }));
+export type SettingsPatch = { enabled?: boolean; quietHours?: { start: string; end: string } | null; dailyCap?: number; categories?: Partial<Record<Category, boolean>> };
+
+/** Pass this install's ID so the response says whether this phone is registered. Send `categories` only to servers that returned them. */
+export async function updateNotificationSettings(installationId: string, patch: SettingsPatch): Promise<NotificationSettings> {
+  return parseNotificationSettings(await request(base, { method: "PUT", auth: true, query: { installationId }, body: patch }));
 }
 
-export async function registerDevice(device: { installationId: string; expoPushToken: string; platform: "android" | "ios"; timeZone: string; deviceName: string | null; appVersion: string }) {
+/** Send `channelScheme` only to servers that support it: older ones reject unknown fields (see registration.ts). */
+export async function registerDevice(device: { installationId: string; expoPushToken: string; platform: "android" | "ios"; timeZone: string; deviceName: string | null; appVersion: string; channelScheme?: 2 }) {
   const { installationId, ...body } = device;
   await request(`${base}/devices/${encodeURIComponent(installationId)}`, { method: "PUT", auth: true, body });
 }

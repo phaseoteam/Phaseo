@@ -92,6 +92,8 @@ Notification settings and rules are in the app. Delivery needs the mobile push s
 
 Until then, the Notifications screen says the service is coming soon.
 
+On Android, pushes arrive on one of ten channels (`src/features/notifications/channels.ts`), so each kind has its own sound and pop-up settings: New models, Prices and providers (silent), Deprecations, Money, Your traffic and Security (these three pop up), Jobs, Account, Digest (silent) and Tests. The server only uses them for phones registered with `channelScheme: 2`; until then it sends everything to the old `model-updates` channel, which the app keeps until a server accepts scheme 2. On every start, a phone with notifications on registers again if anything changed, so existing installs move over by themselves. The same channels, minus Tests, are the Categories on the Notifications screen, which appear once the server returns them. `defaultChannel` in `app.json` is where Firebase puts a push whose channel doesn't exist, so it names a channel that always does; changing it needs `expo prebuild` before a native build.
+
 ## Not yet
 
 iOS builds (they need an Apple Developer account and EAS Build), sync with the desktop app, model-written chat titles, and code highlighting in answers (`enriched-markdown` code highlighting and math are off; turning them on needs its install script allowed).
