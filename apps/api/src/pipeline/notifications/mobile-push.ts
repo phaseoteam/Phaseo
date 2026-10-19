@@ -155,9 +155,9 @@ export function buildMobilePushMessage(push: ClaimedMobilePush) {
 		},
 		channelId: mobilePushChannelId(push.category, push.channel_scheme),
 		sound: null,
-		// Android replaces a shown notification with the same tag: a later push for the group the
-		// same day updates it in place.
-		...(push.tag ? { tag: push.tag } : {}),
+		// A later push for the group the same day updates the shown one in place: Android replaces by
+		// tag, iOS by collapseId (which on Android only merges pushes still in transit).
+		...(push.tag ? { tag: push.tag, collapseId: push.tag } : {}),
 	};
 }
 

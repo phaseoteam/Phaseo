@@ -83,6 +83,7 @@ describe("mobile push job", () => {
 			channelId: "prices-providers",
 			sound: null,
 			tag: "price:deepseek/deepseek-v4:2026-10-19",
+			collapseId: "price:deepseek/deepseek-v4:2026-10-19",
 		});
 	});
 
@@ -95,6 +96,7 @@ describe("mobile push job", () => {
 			channelId: "new-models",
 			sound: null,
 			tag: "release:deepseek:2026-10-19",
+			collapseId: "release:deepseek:2026-10-19",
 		});
 	});
 
