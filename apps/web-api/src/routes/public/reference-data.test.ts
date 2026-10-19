@@ -12,6 +12,32 @@ afterEach(() => {
 });
 
 describe("public reference-data routes", () => {
+	it("loads bounded AA data for a selected model and major", async () => {
+		const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			expect(String(input)).toContain("/rpc/get_artificial_analysis_public_models");
+			expect(JSON.parse(String(init?.body))).toEqual({ p_model_slug: "lab/model", p_major: 4, p_limit: 20, p_offset: 10 });
+			return Response.json({ snapshot_id: "snapshot", methodology_version: "4.3.2", total: 1, models: [{ model_id: "lab/model", totalTokens: { output: 0 } }] });
+		});
+		vi.stubGlobal("fetch", fetch);
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data?model=lab%2Fmodel&version=4&limit=20&offset=10", {}, env);
+		expect(response.status).toBe(200);
+		expect((await response.json() as { models: unknown[] }).models).toHaveLength(1);
+		expect(response.headers.get("Cache-Control")).toContain("s-maxage=300");
+	});
+	it.each(["limit=201", "offset=-1", "version=4.3", "model="])("rejects invalid public data selection %s", async (query) => {
+		const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+		expect((await app.request(`https://phaseo.app/api/_web/benchmarks/artificial-analysis/data?${query}`, {}, env)).status).toBe(400);
+		expect(fetch).not.toHaveBeenCalled();
+	});
+	it("keeps missing AA publications distinct from unavailable storage", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json(null)));
+		expect((await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data", {}, env)).status).toBe(404);
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json({ message: "not deployed" }, { status: 503 })));
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data", {}, env);
+		expect(response.status).toBe(503);
+		expect(await response.json()).toEqual({ error: "aa_data_unavailable" });
+		expect(response.headers.get("Cloudflare-CDN-Cache-Control")).toBeNull();
+	});
 	it("loads AA comparisons in one nested score query and preserves configurations", async () => {
 		const ids = ["aa-intelligence-index-v4", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v4"];
 		const scoreQueries: URL[] = [];
