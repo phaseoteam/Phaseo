@@ -28,10 +28,16 @@ publicReferenceDataRouter.get("/benchmarks/artificial-analysis/data", async (c) 
 	if (limit === null || offset === null || major === null || (model !== undefined && (!model || model.length > 200))) return c.json({ error: "invalid_aa_data_selection" }, 400);
 	try {
 		const { data, error } = await getDataClient(c.env).rpc("get_artificial_analysis_public_models", { p_model_slug: model ?? null, p_major: major || null, p_limit: limit, p_offset: offset });
-		if (error) return c.json({ error: "aa_data_unavailable" }, 503);
+		if (error) {
+			console.error("[web-api/reference] AA public data failed", error);
+			return c.json({ error: "aa_data_unavailable" }, 503);
+		}
 		if (!data) return c.json({ error: "aa_data_not_found" }, 404);
 		return withPublicCache(c.json(data), { edgeTtlSeconds: 300, cacheTags: ["web-api-reference-data", "artificial-analysis-public-data"] });
-	} catch { return c.json({ error: "aa_data_unavailable" }, 503); }
+	} catch (error) {
+		console.error("[web-api/reference] AA public data failed", error);
+		return c.json({ error: "aa_data_unavailable" }, 503);
+	}
 });
 
 function notFound(c: { json: (value: unknown, status: number) => Response }, resource: string) {
