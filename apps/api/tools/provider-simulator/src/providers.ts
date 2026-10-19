@@ -46,7 +46,7 @@ function routeScore(route: CatalogueRoute): number {
 	if (route.inputModalities.includes("image")) score += 1;
 	if (NOT_A_CHAT_MODEL.test(route.apiModelId)) score -= 30;
 	if (route.routingStatus === "deprecated") score -= 2;
-	if (/-exp|experimental|preview|-beta/i.test(route.apiModelId)) score -= 4;
+	if (/-exp\b|experimental|preview|-beta\b/i.test(route.apiModelId)) score -= 4;
 	score += Math.min(3, Math.log10(Math.max(1, route.contextLength ?? 1)) - 3);
 	return score;
 }

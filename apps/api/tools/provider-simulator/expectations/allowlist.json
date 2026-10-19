@@ -173,7 +173,7 @@
 			"id": "billing-pricing-engine",
 			"finding": "N23",
 			"fixGroup": "billing-2",
-			"justification": "Engine-side pricing defects found by the sweep: plans named 'default' or 'early_access' never selected, unreadable {key, operator} conditions, unit prices truncated below a nano, cache writes without a TTL split billed at the 5m rate, Bedrock long-context rules that require a 1h TTL, Alibaba implicit and explicit hits both billed, and the thinking-mode answer price.",
+			"justification": "Engine-side pricing defects found by the sweep: plans named 'default' or 'early_access' never selected, unreadable {key, operator} conditions, unit prices truncated below a nano, cache writes without a TTL split billed at the 5m rate, Bedrock long-context rules that require a 1h TTL, Alibaba implicit and explicit hits both billed, and the thinking-mode answer price. Limited to the providers and case families the 18 October sweep found, so a pricing regression on any other card fails the gate.",
 			"match": {
 				"layer": "pricing",
 				"kind": [
@@ -182,7 +182,18 @@
 					"invented",
 					"dropped"
 				],
-				"path": "re:^billing\\."
+				"path": "re:^billing.",
+				"provider": [
+					"alibaba-cloud",
+					"amazon-bedrock",
+					"google-vertex",
+					"baidu",
+					"deepinfra",
+					"moonshotai",
+					"upstage",
+					"xiaomi"
+				],
+				"caseId": "re:^(text.generate|text.embed|embeddings|ocr):(documented|rule.standard.|fallback.cache-write.)"
 			}
 		},
 		{

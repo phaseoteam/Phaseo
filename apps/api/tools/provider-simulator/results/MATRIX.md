@@ -132,7 +132,7 @@ Scenarios per route: 225. Providers: 104. Run time: 385 s.
 
 - **chat**: 36 documented top-level params exercised; schema-derived values for: session_id, usage, prompt_cache_options, meta, echo_upstream_request.
 - **responses**: 28 documented top-level params exercised; schema-derived values for: session_id, prompt_cache_options, modalities, image_config, usage, meta, echo_upstream_request.
-- **messages**: 16 documented top-level params exercised; schema-derived values for: max_tokens, session_id, reasoning, usage, meta, echo_upstream_request.
+- **messages**: 16 documented top-level params exercised; schema-derived values for: max_tokens, session_id, usage, meta, echo_upstream_request.
 
 ## Per provider
 

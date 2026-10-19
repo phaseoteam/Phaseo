@@ -31,7 +31,11 @@ it("simulates every registered text provider", async () => {
 		return;
 	}
 	setupSimulatorRuntime();
-	fs.mkdirSync(path.join(resultsDir, "providers"), { recursive: true });
+	// Start from an empty providers folder: stale files from an earlier or wider run would
+	// otherwise reach the gate and coverage report as if this run had produced them.
+	const providersDir = path.join(resultsDir, "providers");
+	fs.mkdirSync(providersDir, { recursive: true });
+	for (const file of fs.readdirSync(providersDir).filter((name) => name.endsWith(".json"))) fs.rmSync(path.join(providersDir, file));
 	const providers = process.env.SIM_PROVIDERS?.split(",").map((id) => id.trim()).filter(Boolean);
 	const started = Date.now();
 	const { matrix, results } = await runSimulation({
