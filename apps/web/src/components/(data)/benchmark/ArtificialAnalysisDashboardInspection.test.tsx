@@ -68,3 +68,16 @@ it("compares a hovered configuration with a pin without inventing ratios for zer
  expect(rows[2].querySelector("td:last-child")?.textContent).toBe("—");
  expect(container.textContent).not.toMatch(/Infinity|NaN/);
 });
+it("does not reopen on the point exposed beneath a dismissed card", () => {
+ act(() => root.render(<Harness />));
+ act(() => inspection.hover({ kind: "configuration", id: "high" }));
+ act(() => inspection.clear());
+ act(() => inspection.hover({ kind: "configuration", id: "under-card" }));
+ expect(container.querySelector("output")?.textContent).toBe("none");
+ act(() => document.body.dispatchEvent(new Event("pointermove", { bubbles: true })));
+ act(() => inspection.hover({ kind: "configuration", id: "next" }));
+ expect(container.querySelector("output")?.textContent).toBe("configuration:next");
+ act(() => inspection.clear());
+ act(() => inspection.inspect({ kind: "configuration", id: "keyboard" }));
+ expect(container.querySelector("output")?.textContent).toBe("configuration:keyboard");
+});

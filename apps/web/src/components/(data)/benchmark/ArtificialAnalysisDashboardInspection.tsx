@@ -14,18 +14,22 @@ type Selection = { kind: "model" | "configuration"; id: string };
 export function useDashboardInspection(regionRef: RefObject<HTMLElement | null>) {
  const [temporary, setTemporary] = useState<Selection | null>(null);
  const [pinned, setPinned] = useState<Selection | null>(null);
+ const suppressHover = useRef(false);
  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
  const keep = () => { if (timer.current) clearTimeout(timer.current); };
  const inspect = (selection: Selection) => { keep(); setTemporary(selection); };
+ const hover = (selection: Selection) => { if (!suppressHover.current) inspect(selection); };
  const leave = () => { keep(); timer.current = setTimeout(() => setTemporary(null), 180); };
  const pin = (selection: Selection) => { keep(); setTemporary(null); setPinned((previous) => previous?.kind === selection.kind && previous.id === selection.id ? null : selection); };
- const clear = () => { keep(); setTemporary(null); setPinned(null); };
+ const clear = () => { suppressHover.current = true; keep(); setTemporary(null); setPinned(null); };
  useEffect(() => {
  const outside = (event: PointerEvent) => { if (regionRef.current && !regionRef.current.contains(event.target as Node)) { if (timer.current) clearTimeout(timer.current); setTemporary(null); setPinned(null); } };
+ const moved = () => { suppressHover.current = false; };
+ document.addEventListener("pointermove", moved);
  document.addEventListener("pointerdown", outside);
- return () => { document.removeEventListener("pointerdown", outside); if (timer.current) clearTimeout(timer.current); };
+ return () => { document.removeEventListener("pointermove", moved); document.removeEventListener("pointerdown", outside); if (timer.current) clearTimeout(timer.current); };
  }, [regionRef]);
- return { selection: temporary ?? pinned, pinned, inspect, leave, keep, pin, clear };
+ return { selection: temporary ?? pinned, pinned, inspect, hover, leave, keep, pin, clear };
 }
 
 export function DashboardInspectionCard({ row, comparison, comparisonMetric, title, metric, unit, pinned, keep, leave, close }: {
