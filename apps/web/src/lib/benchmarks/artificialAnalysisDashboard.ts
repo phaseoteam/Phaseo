@@ -33,6 +33,20 @@ export type DashboardRow = {
 	intelligence: number | null; tokensPerTask: number | null; totalTokens: number | null; costPerTask: number | null; totalCost: number | null; timePerTask: number | null;
 	benchmarks: Record<string, number | null>; capabilities: Record<string, number | null>;
 };
+
+/** Give every published configuration its own slot, including repeated effort levels. */
+export function dashboardModelGroups(rows: DashboardRow[], value: (row: DashboardRow) => number | null, lowerIsBetter: boolean) {
+	const groups = new Map<string, { row: DashboardRow; value: number }[]>();
+	for (const row of rows) {
+		const metric = value(row);
+		if (metric === null || !Number.isFinite(metric)) continue;
+		const group = groups.get(row.modelId) ?? [];
+		group.push({ row, value: metric });
+		groups.set(row.modelId, group);
+	}
+	return [...groups].map(([id, configurations]) => ({ id, configurations: configurations.sort((a, b) => effortOrder.indexOf(a.row.effort) - effortOrder.indexOf(b.row.effort) || a.row.sourceName.localeCompare(b.row.sourceName) || a.row.id.localeCompare(b.row.id)), maximum: Math.max(...configurations.map((configuration) => configuration.value)) }))
+		.sort((a, b) => (lowerIsBetter ? a.maximum - b.maximum : b.maximum - a.maximum) || a.id.localeCompare(b.id));
+}
 const finite = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : null;
 export function dashboardRows(models: ArtificialAnalysisPublicConfiguration[]): DashboardRow[] {
 	return models.map((model) => ({ id: model.id, modelId: model.model_id, modelName: model.name.replace(/\s*\((?:low|medium|high|xhigh|max|minimal|none|non-reasoning)[^)]*\)/gi, "").trim(), sourceName: model.name,

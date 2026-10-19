@@ -1,4 +1,4 @@
-import { dashboardLabelPositions, dashboardLinearTicks, dashboardRows, loadDashboardData, paretoPoints } from "./artificialAnalysisDashboard";
+import { dashboardLabelPositions, dashboardLinearTicks, dashboardModelGroups, dashboardRows, loadDashboardData, paretoPoints } from "./artificialAnalysisDashboard";
 import type { ArtificialAnalysisPublicConfiguration, ArtificialAnalysisPublicData } from "@/lib/fetchers/benchmarks/types";
 
 const model = (id: string): ArtificialAnalysisPublicConfiguration => ({ id, model_id: "lab/model", name: "Model (High)", slug: "model-high", creator: null, effort: "high", intelligenceIndex: 50, intelligenceIndexIsEstimated: false, totalTokens: { output: 0 }, outputTokensPerTask: null, totalCostUsd: null, costPerTaskUsd: { total: 0.005 }, timePerTaskSeconds: null, benchmarkScores: { omniscience: -3 }, capabilityScores: null, modelDetails: {}, pricing: {}, performance: {}, breakdowns: {}, evaluations: [] });
@@ -36,6 +36,25 @@ it("retains zero, negative scores, configuration identity and task/total distinc
 	expect(dashboardRows([{ ...model("dated"), name: "Model (0902)" }])[0].modelName).toBe("Model (0902)");
 	expect(row).not.toHaveProperty("sourceData");
 	expect(dashboardRows([{ ...model("estimate"), intelligenceIndexIsEstimated: true }])[0].intelligence).toBeNull();
+});
+
+it("keeps every configuration in its model group, including duplicate effort levels", () => {
+	const base = dashboardRows([model("one")])[0];
+	const rows = [{ ...base, id: "max", effort: "max", totalTokens: 100 }, { ...base, id: "high-b", effort: "high", totalTokens: 50 }, { ...base, id: "high-a", effort: "high", totalTokens: 40 }, { ...base, id: "other", modelId: "lab/other", totalTokens: 10 }, { ...base, id: "missing", totalTokens: null }];
+	const groups = dashboardModelGroups(rows, (row) => row.totalTokens, true);
+	expect(groups.map((group) => group.id)).toEqual(["lab/other", "lab/model"]);
+	expect(groups[1].configurations.map((item) => item.row.id)).toEqual(["high-a", "high-b", "max"]);
+	expect(groups[1].configurations.map((item) => item.value)).toEqual([40, 50, 100]);
+	expect(rows[0].id).toBe("max");
+});
+
+it("keeps zero/negative grouped values, excludes nonfinite data, and sorts score groups high first", () => {
+	const base = dashboardRows([model("one")])[0];
+	const rows = [{ ...base, id: "zero", totalTokens: 0 }, { ...base, id: "negative", totalTokens: -2 }, { ...base, id: "positive", modelId: "lab/other", totalTokens: 2 }, { ...base, id: "invalid", totalTokens: Infinity }];
+	const groups = dashboardModelGroups(rows, (row) => row.totalTokens, false);
+	expect(groups[0].id).toBe("lab/other");
+	expect(groups[1].configurations.map((item) => item.value).sort()).toEqual([-2, 0]);
+	expect(dashboardModelGroups([], (row) => row.totalTokens, true)).toEqual([]);
 });
 it("loads all configurations with bounded pages from a single publication", async () => {
 	const first = Array.from({ length: 200 }, (_, i) => model(String(i)));

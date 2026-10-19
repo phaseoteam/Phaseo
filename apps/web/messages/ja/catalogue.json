@@ -1862,6 +1862,8 @@
 	},
 	"benchmarks": {
 		"explorer": {
+			"bars": "棒グラフ",
+			"lines": "折れ線",
 			"comparisons": "比較",
 			"tokenUsage": "トークン使用量",
 			"cost": "コスト",

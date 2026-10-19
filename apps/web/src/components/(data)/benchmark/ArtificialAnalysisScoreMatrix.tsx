@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Logo } from "@/components/Logo";
 import { effortOrder, type DashboardRow } from "@/lib/benchmarks/artificialAnalysisDashboard";
 
@@ -17,7 +18,7 @@ export function ArtificialAnalysisScoreMatrix({ rows, metrics, onSelect }: {
 	for (const row of rows) bestIntelligence.set(row.modelId, Math.max(bestIntelligence.get(row.modelId) ?? -Infinity, row.intelligence ?? -Infinity));
 	const ordered = [...rows].sort((a, b) => (bestIntelligence.get(b.modelId)! - bestIntelligence.get(a.modelId)!) || a.modelName.localeCompare(b.modelName) || effortOrder.indexOf(a.effort) - effortOrder.indexOf(b.effort) || a.sourceName.localeCompare(b.sourceName));
 	const maxima = metrics.map((metric) => Math.max(-Infinity, ...rows.flatMap((row) => { const value = metric.value(row); return value !== null && Number.isFinite(value) ? [value] : []; })));
-	return <div className="my-4 max-h-[min(65vh,40rem)] overflow-auto rounded-lg border">
+	return <ScrollArea className="my-4 h-[min(65vh,40rem)] rounded-lg border" scrollBarOrientation="both">
 		<table className="w-full border-separate border-spacing-0 text-sm">
 			<caption className="sr-only">{tx("Catalogue.rankings.intelligenceValue.evaluatedConfigurations")}</caption>
 			<thead className="sticky top-0 z-20 bg-background"><tr>
@@ -29,5 +30,5 @@ export function ArtificialAnalysisScoreMatrix({ rows, metrics, onSelect }: {
 				{metrics.map((metric, index) => { const value = metric.value(row); const available = value !== null && Number.isFinite(value); return <td key={metric.key} className={`border-b px-4 py-3 text-right tabular-nums group-hover:bg-muted/40 ${available && value === maxima[index] ? "bg-primary/5 font-semibold text-primary" : "text-muted-foreground"}`} title={available ? String(value) : undefined}>{available ? format.format(value) : "—"}</td>; })}
 			</tr>)}</tbody>
 		</table>
-	</div>;
+	</ScrollArea>;
 }

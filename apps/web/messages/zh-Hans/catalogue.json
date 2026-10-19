@@ -1862,6 +1862,8 @@
 	},
 	"benchmarks": {
 		"explorer": {
+			"bars": "柱状图",
+			"lines": "折线图",
 			"comparisons": "对比",
 			"tokenUsage": "Token 用量",
 			"cost": "成本",

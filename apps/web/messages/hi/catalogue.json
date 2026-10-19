@@ -1862,6 +1862,8 @@
 	},
 	"benchmarks": {
 		"explorer": {
+			"bars": "स्तंभ",
+			"lines": "रेखाएँ",
 			"comparisons": "तुलना",
 			"tokenUsage": "टोकन उपयोग",
 			"cost": "लागत",

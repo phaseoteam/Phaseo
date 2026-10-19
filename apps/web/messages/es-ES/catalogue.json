@@ -1862,6 +1862,8 @@
 	},
 	"benchmarks": {
 		"explorer": {
+			"bars": "Barras",
+			"lines": "Líneas",
 			"comparisons": "Comparaciones",
 			"tokenUsage": "Uso de tokens",
 			"cost": "Coste",

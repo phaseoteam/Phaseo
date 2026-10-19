@@ -1862,6 +1862,8 @@
 	},
 	"benchmarks": {
 		"explorer": {
+			"bars": "أعمدة",
+			"lines": "خطوط",
 			"comparisons": "المقارنات",
 			"tokenUsage": "استخدام الرموز",
 			"cost": "التكلفة",
