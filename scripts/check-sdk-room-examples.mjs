@@ -8,7 +8,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const sdk = path.join(root, "packages/sdk/sdk-ts");
 const require = createRequire(path.join(sdk, "package.json"));
+// `typescript` is the TypeScript 6 API (transpileModule); `@typescript/native` is the
+// TypeScript 7 compiler that typechecks the exports. See pnpm-workspace.yaml.
 const ts = require("typescript");
+const tsc = path.join(path.dirname(require.resolve("@typescript/native/package.json")), "bin/tsc");
 const source = await readFile(path.join(root, "apps/web/src/lib/chat/sdkExport.ts"), "utf8");
 const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
 const { sdkCode } = await import(`data:text/javascript;base64,${Buffer.from(js).toString("base64")}`);
@@ -38,7 +41,7 @@ try {
     await writeFile(path.join(temp, `room-${index}.py`), sdkCode({ endpoint, body }, "python"));
     files.push(filename);
   }
-  run(process.execPath, [require.resolve("typescript/bin/tsc"), "--ignoreConfig", "--rootDir", temp, "--outDir", path.join(temp, "compiled"), "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--strict", "--skipLibCheck", "--types", "node", ...files], temp);
+  run(process.execPath, [tsc, "--ignoreConfig", "--rootDir", temp, "--outDir", path.join(temp, "compiled"), "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--strict", "--skipLibCheck", "--types", "node", ...files], temp);
   run(process.env.PYTHON ?? "python", ["-c", "import ast,pathlib,sys; files=list(pathlib.Path(sys.argv[1]).glob('*.py')); [ast.parse(p.read_text(encoding='utf8')) for p in files]; print(f'{len(files)} Python room exports compile')", temp], root);
   await writeFile(path.join(temp, "cases.json"), JSON.stringify(cases));
   const mockPath = path.join(temp, "mock.mjs");

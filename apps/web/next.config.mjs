@@ -51,6 +51,12 @@ const nextConfig = {
   // off: it re-renders every dynamic page as a runtime prefetch and embeds that
   // copy in the response, and links here only prefetch static shells on intent.
   cacheComponents: true,
+  // `pnpm run build` type-checks with TypeScript 7 first (`next typegen && tsc
+  // --noEmit`). Next's own check would run the `typescript` package's CLI, which
+  // is the TypeScript 6 package kept for typescript-eslint (pnpm-workspace.yaml).
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
     globalNotFound: true,
   },

@@ -56,10 +56,11 @@
 	"dependencies": {},
 	"devDependencies": {
 		"@types/node": "^26.1.2",
+		"@typescript/native": "catalog:",
 		"rimraf": "^6.0.0",
 		"ts-node": "^10.9.2",
 		"tsx": "^4.23.13",
-		"typescript": "^6.0.3"
+		"typescript": "catalog:"
 	},
 	"repository": {
 		"type": "git",

@@ -71,11 +71,12 @@
 		"@anthropic-ai/sdk": "^0.91.1",
 		"@cloudflare/workers-types": "^4.20260523.1",
 		"@copilotkit/aimock": "1.15.1",
+		"@typescript/native": "catalog:",
 		"dotenv": "^17.4.2",
 		"eslint": "^10.8.1",
 		"openai": "^6.39.0",
 		"tsx": "^4.23.13",
-		"typescript": "^6.0.3",
+		"typescript": "catalog:",
 		"typescript-eslint": "^8.58.1",
 		"vitest": "^4.1.7",
 		"wrangler": "^4.94.0"
