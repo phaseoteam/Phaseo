@@ -750,6 +750,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -800,6 +802,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -921,6 +925,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -8566,6 +8572,10 @@ components:
         type: string
     ModelSubstitution:
       description: Por qué y cómo se sustituyó el modelo solicitado, por ejemplo `reason=unserved; from=lab/old-model; to=lab/new-model`. Solo se envía cuando el enrutamiento de modelos retirados respondió la solicitud con un modelo sustituto.
+      schema:
+        type: string
+    DroppedParams:
+      description: Parámetros que envió el cliente y que el proveedor que atiende la solicitud no admite, y que el gateway eliminó en lugar de enviarlos al proveedor o rechazar la solicitud, por ejemplo `top_k, min_p`. Solo se envía en respuestas satisfactorias y solo cuando se descartó al menos un parámetro del cuerpo de la solicitud. Los parámetros que proceden de un preset o de un valor predeterminado no se incluyen.
       schema:
         type: string
     UpstreamRateLimitValue:

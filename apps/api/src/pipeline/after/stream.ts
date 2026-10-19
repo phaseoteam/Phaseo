@@ -25,6 +25,7 @@ import {
 	maybeOpenOnRecentErrors,
 } from "../execute/health";
 import { getBaseModel } from "../execute/utils";
+import { droppedParamsForClient } from "../execute/unsupportedParams";
 import { noteModelSubstitutionServed } from "../before/modelSuccessor";
 import { withServedModel } from "./served-model";
 import { logDebugEvent, previewValue } from "../debug";
@@ -438,6 +439,7 @@ export async function handleStreamResponse(
                                 provider: entry.providerId,
                                 unsupported_params: entry.unsupportedParams,
                             })) ?? [],
+                        dropped_params: droppedParamsForClient(ctx).map(({ param, reason }) => ({ param, reason })),
                     },
                     ...(ctx.pluginExecutions?.length
                         ? { plugin_executions: ctx.pluginExecutions }

@@ -8,6 +8,7 @@ import { detectTextProtocol } from "@protocols/detect";
 import type { UnifiedStreamEvent } from "../after/stream-events";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { doRequestWithIR } from "../execute";
+import { droppedParamsForClient, restoreDroppedParams } from "../execute/unsupportedParams";
 import { finalizeRequest, settleNonBillableFailure } from "../after";
 import { handleFailureAudit, handleSuccessAudit } from "../after/audit";
 import { makeHeaders, createResponse } from "../after/http";
@@ -546,6 +547,9 @@ async function handleCachedTextResponse(args: {
 	const ctx = pre.ctx;
 	ctx.meta.generation_ms = 0;
 	ctx.meta.latency_ms = ctx.meta.before_ms ?? 0;
+	// The cached result was generated without these parameters; report them as
+	// a live call would (header, meta and audit). Older entries carry none.
+	restoreDroppedParams(ctx, record.droppedParams);
 
 	const result = {
 		kind: "completed" as const,
@@ -613,8 +617,16 @@ async function handleCachedTextResponse(args: {
 			responseBodyRecord.meta && typeof responseBodyRecord.meta === "object"
 				? responseBodyRecord.meta
 				: {};
+		const existingRouting =
+			existingMeta.routing && typeof existingMeta.routing === "object"
+				? existingMeta.routing
+				: null;
+		const droppedParams = droppedParamsForClient(ctx).map(({ param, reason }) => ({ param, reason }));
 		responseBodyRecord.meta = {
 			...existingMeta,
+			...(existingRouting || droppedParams.length > 0
+				? { routing: { ...(existingRouting ?? {}), dropped_params: droppedParams } }
+				: {}),
 			...(ctx.responseCache ? { response_cache: ctx.responseCache } : {}),
 			...(ctx.guardrailEnforcement
 				? { guardrail_enforcement: ctx.guardrailEnforcement }
