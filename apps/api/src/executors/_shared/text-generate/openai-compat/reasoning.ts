@@ -274,12 +274,16 @@ export function applyReasoningParams(args: {
 			reasoning.effort !== "none" &&
 			args.request.reasoning_effort == null
 		) {
-			args.request.reasoning_effort =
+			const deepseekEffort =
 				reasoning.effort === "minimal"
 					? "low"
 					: reasoning.effort === "low" || reasoning.effort === "max"
 						? reasoning.effort
 					: "high";
+			// DeepSeek's Responses API reads reasoning.effort and silently ignores unknown
+			// fields (https://api-docs.deepseek.com/guides/responses_api/).
+			if ("input" in args.request) args.request.reasoning = { effort: deepseekEffort };
+			else args.request.reasoning_effort = deepseekEffort;
 		}
 		if (args.request[field] == null) {
 			const format = config.format ?? "type";

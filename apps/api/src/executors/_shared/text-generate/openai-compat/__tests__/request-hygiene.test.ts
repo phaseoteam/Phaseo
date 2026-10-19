@@ -271,3 +271,15 @@ describe("Wafer reasoning effort", () => {
 		expect(irToOpenAIChat(baseIR({ reasoning: { effort: "minimal" } as any }), "zai-org/GLM-5.3", providerId).reasoning_effort).toBe("low");
 	});
 });
+
+// DeepSeek's Responses API reads reasoning.effort; reasoning_effort is ignored there
+// (https://api-docs.deepseek.com/guides/responses_api/).
+describe("DeepSeek Responses reasoning", () => {
+	it("sends effort as reasoning.effort on Responses and reasoning_effort on Chat", () => {
+		const ir = baseIR({ reasoning: { effort: "high" } as any });
+		const responses = irToOpenAIResponses(ir, "deepseek-v4-pro", "deepseek");
+		expect(responses.reasoning).toEqual({ effort: "high" });
+		expect(responses).not.toHaveProperty("reasoning_effort");
+		expect(irToOpenAIChat(ir, "deepseek-v4-pro", "deepseek").reasoning_effort).toBe("high");
+	});
+});

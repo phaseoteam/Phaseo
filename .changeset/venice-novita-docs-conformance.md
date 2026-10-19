@@ -15,3 +15,5 @@ Mistral and Mistral EU no longer receive `user` or `web_search_options`, which t
 Upstage now receives `stream_options`, so streamed Solar requests return the usage they are billed from (Upstage sends no usage on a stream without `include_usage`). Asking for no reasoning sends `none` instead of being raised to `low`, which turned reasoning on.
 
 Groq receives `service_tier: "on_demand"` (Chat) or `"default"` (Responses) for standard, and gpt-oss on Groq no longer receives reasoning effort values it rejects with a 400. Wafer receives `low` for `minimal` effort, which its Chat Completions rejects, and its request fixes now also apply to Wafer ZDR.
+
+DeepSeek requests on its Responses API carry reasoning effort as `reasoning.effort`, the field it reads there, instead of being ignored. gpt-oss on Cerebras no longer receives `reasoning_effort: "none"`, which it does not accept.
