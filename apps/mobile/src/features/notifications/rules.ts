@@ -51,14 +51,15 @@ export const RULE_TEMPLATES: RuleTemplate[] = [
   { key: "mute", title: "Mute something", description: "Never notify me about chosen labs or models", rule: { ...EMPTY_RULE, action: "mute", events: ["model_released", "gateway_available", "price_changed", "deprecation_announced", "provider_added"], labs: { mode: "only", ids: [] } }, pick: "labs" },
 ];
 
-function list(names: string[], max = 3) {
+/** "A, B and C", or "A, B, C and 2 more" past `max`. */
+export function listNames(names: string[], max = 3) {
   if (names.length <= max) return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0] ?? "";
   return `${names.slice(0, max).join(", ")} and ${names.length - max} more`;
 }
 
 function scope(mode: ScopeMode, ids: string[], noun: string, name: (id: string) => string) {
   if (mode === "all" || !ids.length) return mode === "only" && !ids.length ? `no ${noun}s yet` : `any ${noun}`;
-  const names = list(ids.map(name));
+  const names = listNames(ids.map(name));
   return mode === "only" ? names : `any ${noun} except ${names}`;
 }
 
@@ -66,13 +67,13 @@ function scope(mode: ScopeMode, ids: string[], noun: string, name: (id: string) 
 export function describeRule(rule: RuleInput | NotificationRule, names: { lab(id: string): string; provider(id: string): string; model(id: string): string }) {
   // Kinds from a newer server that this build has no words for are left out.
   const phrases = rule.events.filter(isEventKind).map((event) => EVENT_LABELS[event].phrase);
-  const events = list(phrases.length ? phrases : ["other updates"], EVENT_KINDS.length);
+  const events = listNames(phrases.length ? phrases : ["other updates"], EVENT_KINDS.length);
   const parts = [`${rule.action === "mute" ? "Never notify me about" : "Notify me about"} ${events}`];
-  if (rule.models.length) parts.push(`for ${list(rule.models.map(names.model))}`);
+  if (rule.models.length) parts.push(`for ${listNames(rule.models.map(names.model))}`);
   else if (rule.labs.mode !== "all" || rule.labs.ids.length) parts.push(`from ${scope(rule.labs.mode, rule.labs.ids, "lab", names.lab)}`);
   if (rule.providers.mode !== "all" && rule.providers.ids.length) parts.push(`served by ${scope(rule.providers.mode, rule.providers.ids, "provider", names.provider)}`);
   const modalities = [...rule.inputModalities.map((value) => `${modalityLabel(value).toLowerCase()} input`), ...rule.outputModalities.map((value) => `${modalityLabel(value).toLowerCase()} output`)];
-  if (modalities.length) parts.push(`with ${list(modalities)}`);
+  if (modalities.length) parts.push(`with ${listNames(modalities)}`);
   return `${parts.join(" ")}${rule.onlyOnPhaseo ? ", only on Phaseo" : ""}.`;
 }
 
