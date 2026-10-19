@@ -1,4 +1,5 @@
-import { labFilterName, notificationTarget, targetForHref } from "./links";
+import { DEFAULT_FILTERS, type CatalogueFilters } from "@/lib/catalogue";
+import { labFilterName, labFilters, notificationTarget, openLabModels, targetForHref, type OpenLabDeps } from "./links";
 
 describe("targetForHref", () => {
   it("opens model pages", () => {
@@ -74,5 +75,69 @@ describe("labFilterName", () => {
 
   it("is null for a lab the catalogue doesn't have", () => {
     expect(labFilterName(models, "newlab")).toBeNull();
+  });
+});
+
+describe("openLabModels", () => {
+  const cachedModels = [{ model_id: "openai/gpt-6-astra", organisation_id: "openai", organisation_name: "OpenAI" }];
+  const freshModels = [...cachedModels, { model_id: "newlab/first-model", organisation_id: "newlab", organisation_name: "New Lab" }];
+  // Someone browsing with their own filters when the notification is tapped.
+  const previous: CatalogueFilters = { ...DEFAULT_FILTERS, query: "claude", availability: "free", organisations: ["Anthropic"], sort: "price" };
+
+  function setup(refresh: OpenLabDeps["refresh"]) {
+    let filters = previous;
+    const events: string[] = [];
+    const deps: OpenLabDeps = {
+      cached: cachedModels,
+      refresh: async () => { events.push("refresh"); return refresh(); },
+      filters: { get: () => filters, set: (next) => { filters = next; events.push(`set:${next.organisations.join(",") || `query=${next.query}`}`); } },
+      navigate: () => { events.push(`navigate with ${filters.organisations.join(",") || `query=${filters.query}`}`); },
+    };
+    return { deps, events, filters: () => filters, setFilters: (next: CatalogueFilters) => { filters = next; } };
+  }
+
+  it("filters to a cached lab before opening Models, without a refresh", async () => {
+    const { deps, events, filters } = setup(async () => freshModels);
+    await openLabModels("openai", deps);
+    expect(events).toEqual(["set:OpenAI", "navigate with OpenAI"]);
+    expect(filters()).toEqual(labFilters("OpenAI", "openai"));
+  });
+
+  it("shows a cleared slug search before waiting for fresh data, then the lab once it lands", async () => {
+    let land!: (models: typeof freshModels) => void;
+    const { deps, events, filters } = setup(() => new Promise((resolve) => { land = resolve; }));
+    const opening = openLabModels("newlab", deps);
+    // Still waiting on the refresh: the user already sees the slug search, not their old filters.
+    expect(events).toEqual(["set:query=newlab", "navigate with query=newlab", "refresh"]);
+    expect(filters()).toEqual({ ...DEFAULT_FILTERS, query: "newlab" });
+    land(freshModels);
+    await opening;
+    expect(filters()).toEqual({ ...DEFAULT_FILTERS, organisations: ["New Lab"] });
+  });
+
+  it("keeps the slug search when the refresh fails or doesn't find the lab", async () => {
+    for (const refresh of [async () => { throw new Error("offline"); }, async () => cachedModels]) {
+      const { deps, filters } = setup(refresh);
+      await openLabModels("newlab", deps);
+      expect(filters()).toEqual({ ...DEFAULT_FILTERS, query: "newlab" });
+    }
+  });
+
+  it("leaves filters the user changed while it waited", async () => {
+    let land!: (models: typeof freshModels) => void;
+    const { deps, filters, setFilters } = setup(() => new Promise((resolve) => { land = resolve; }));
+    const opening = openLabModels("newlab", deps);
+    const typed = { ...DEFAULT_FILTERS, query: "new lab first" };
+    setFilters(typed);
+    land(freshModels);
+    await opening;
+    expect(filters()).toBe(typed);
+  });
+
+  it("works without a cached catalogue", async () => {
+    const { deps, events, filters } = setup(async () => freshModels);
+    await openLabModels("openai", { ...deps, cached: null });
+    expect(events[0]).toBe("set:query=openai");
+    expect(filters()).toEqual({ ...DEFAULT_FILTERS, organisations: ["OpenAI"] });
   });
 });

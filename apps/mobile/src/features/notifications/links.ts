@@ -1,5 +1,5 @@
 import type { ModelCard } from "@/lib/api/models";
-import { organisationName } from "@/lib/catalogue";
+import { DEFAULT_FILTERS, organisationName, type CatalogueFilters } from "@/lib/catalogue";
 
 /** Where a tapped notification opens. The app has no lab page, so a lab opens Models filtered to it. */
 export type NotificationTarget = { kind: "model"; id: string } | { kind: "lab"; slug: string } | { kind: "provider"; id: string } | { kind: "home" };
@@ -51,8 +51,39 @@ export function notificationTarget(data: Record<string, unknown> | null | undefi
   return null;
 }
 
+type LabModels = Pick<ModelCard, "organisation_id" | "organisation_name" | "model_id">[];
+
 /** The Labs filter works on display names; this finds the one for a lab slug. Null for a lab the catalogue doesn't have. */
-export function labFilterName(models: Pick<ModelCard, "organisation_id" | "organisation_name" | "model_id">[], slug: string): string | null {
+export function labFilterName(models: LabModels, slug: string): string | null {
   const model = models.find((entry) => entry.organisation_id === slug) ?? models.find((entry) => entry.model_id.startsWith(`${slug}/`));
   return model ? organisationName(model) : null;
+}
+
+/** Models newest first, other filters cleared: the lab by name, or a search for its slug when the name isn't known. */
+export function labFilters(name: string | null, slug: string): CatalogueFilters {
+  return { ...DEFAULT_FILTERS, ...(name ? { organisations: [name] } : { query: slug }) };
+}
+
+export type OpenLabDeps = {
+  cached: LabModels | null;
+  refresh(): Promise<LabModels | null>;
+  filters: { get(): CatalogueFilters; set(filters: CatalogueFilters): void };
+  navigate(): void;
+};
+
+/**
+ * Opens Models filtered to a lab (the app has no lab page). The filters are set before the screen
+ * opens, so it never shows the previous ones. A lab missing from the cached catalogue (newer than it)
+ * starts as a search for its slug, and switches to the Labs filter if fresh data has it, unless the
+ * user has changed the filters by then.
+ */
+export async function openLabModels(slug: string, deps: OpenLabDeps) {
+  const known = deps.cached ? labFilterName(deps.cached, slug) : null;
+  const shown = labFilters(known, slug);
+  deps.filters.set(shown);
+  deps.navigate();
+  if (known) return;
+  const fresh = await deps.refresh().catch(() => null);
+  const name = fresh ? labFilterName(fresh, slug) : null;
+  if (name && deps.filters.get() === shown) deps.filters.set(labFilters(name, slug));
 }

@@ -3,10 +3,9 @@ import * as Notifications from "expo-notifications";
 import { useRouter, type Href } from "expo-router";
 import { useEffect } from "react";
 import { catalogueQuery, filtersStore } from "@/features/models/state";
-import { DEFAULT_FILTERS } from "@/lib/catalogue";
 import { useAuth } from "@/providers/AuthProvider";
 import { ensurePushChannels, installationId, syncThisPhone } from "./device";
-import { labFilterName, notificationTarget, type NotificationTarget } from "./links";
+import { notificationTarget, openLabModels, type NotificationTarget } from "./links";
 import { notificationSettingsQuery } from "./state";
 
 Notifications.setNotificationHandler({
@@ -19,17 +18,13 @@ type Router = ReturnType<typeof useRouter>;
 // Keyed by delivery time too, since a merged notification reuses the earlier one's identifier.
 let lastOpened: string | null = null;
 
-/** Models, filtered to one lab (the app has no lab page) and newest first. */
-async function openLab(slug: string, router: Router, queryClient: QueryClient) {
-  const show = (name: string | null) => filtersStore.set({ ...DEFAULT_FILTERS, ...(name ? { organisations: [name] } : { query: slug }) });
-  const cached = queryClient.getQueryData(catalogueQuery.queryKey);
-  const name = cached ? labFilterName(cached.models, slug) : null;
-  if (name) show(name);
-  router.push("/models");
-  if (name) return;
-  // A lab newer than the cached catalogue needs fresh data; failing that, search for its slug.
-  const fresh = await queryClient.fetchQuery({ ...catalogueQuery, staleTime: 0 }).catch(() => null);
-  show(fresh ? labFilterName(fresh.models, slug) : null);
+function openLab(slug: string, router: Router, queryClient: QueryClient) {
+  return openLabModels(slug, {
+    cached: queryClient.getQueryData(catalogueQuery.queryKey)?.models ?? null,
+    refresh: async () => (await queryClient.fetchQuery({ ...catalogueQuery, staleTime: 0 })).models,
+    filters: filtersStore,
+    navigate: () => router.push("/models"),
+  });
 }
 
 function openTarget(target: NotificationTarget, router: Router, queryClient: QueryClient) {
