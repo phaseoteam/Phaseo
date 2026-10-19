@@ -15,6 +15,14 @@ afterAll(() => {
 });
 
 describe("resolveOpenAICompatRoute", () => {
+	// https://docs.venice.ai/guides/features/responses-api: only openai-* models (not
+	// openai-gpt-oss-120b) are served natively; /chat/completions is the complete option.
+	it("sends Venice's non-OpenAI models to Chat Completions", () => {
+		expect(resolveOpenAICompatRoute("venice", "zai-org-glm-5")).toBe("chat");
+		expect(resolveOpenAICompatRoute("venice", "openai-gpt-oss-120b")).toBe("chat");
+		expect(resolveOpenAICompatRoute("venice", "openai-gpt-54")).toBe("responses");
+	});
+
 	it("routes openai chat-only models to chat", () => {
 		expect(resolveOpenAICompatRoute("openai", "openai/gpt-audio")).toBe("chat");
 		expect(resolveOpenAICompatRoute("openai", "gpt-audio-mini")).toBe("chat");
@@ -81,7 +89,7 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("poolside", "poolside/laguna-m.1")).toBe("chat");
 		expect(resolveOpenAICompatRoute("scaleway", "llama-3.3-70b-instruct")).toBe("responses");
 		expect(resolveOpenAICompatRoute("together", "meta-llama/Llama-3.3-70B-Instruct-Turbo")).toBe("chat");
-		expect(resolveOpenAICompatRoute("venice", "venice-uncensored")).toBe("responses");
+		expect(resolveOpenAICompatRoute("venice", "venice-uncensored")).toBe("chat");
 		expect(resolveOpenAICompatRoute("cerebras", "llama3.1-70b")).toBe("chat");
 		expect(resolveOpenAICompatRoute("fireworks", "accounts/fireworks/models/llama-v3p3-70b-instruct")).toBe("responses");
 		expect(resolveOpenAICompatRoute("groq", "llama-3.3-70b-versatile")).toBe("responses");

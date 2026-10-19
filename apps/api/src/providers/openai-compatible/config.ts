@@ -366,6 +366,16 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
 		return CLOUDFLARE_RESPONSES_MODELS.has(normalized) ? "responses" : "chat";
 	}
 
+	// Venice's beta /responses serves only its openai-* models natively (not
+	// openai-gpt-oss-120b); every other model is translated with `text.format` ignored
+	// and most venice_parameters dropped. Venice: "For non-OpenAI models,
+	// /chat/completions is still the most complete option."
+	// https://docs.venice.ai/guides/features/responses-api
+	if (canonicalProviderId === "venice") {
+		const veniceModel = normalized.toLowerCase();
+		return veniceModel.startsWith("openai-") && veniceModel !== "openai-gpt-oss-120b" ? "responses" : "chat";
+	}
+
 	if (canonicalProviderId === "openai") {
 		if (OPENAI_LEGACY_COMPLETIONS_MODELS.has(model ?? "") || OPENAI_LEGACY_COMPLETIONS_MODELS.has(normalized)) {
 			return "chat";
