@@ -71,6 +71,7 @@ export default function ArtificialAnalysisDashboard({ rows, footer }: { rows: Da
 				const closest = [...container.querySelectorAll<HTMLElement>("[data-aa-chart]")].reduce<HTMLElement | null>((best, element) => !best || Math.abs(element.getBoundingClientRect().top - top) < Math.abs(best.getBoundingClientRect().top - top) ? element : best, null);
 				if (closest) {
 					const id = closest.dataset.aaChart as ChartId;
+					displayedChart.current = id;
 					setActiveChart(id);
 					void setFilters({ aaChart: id });
 				}
