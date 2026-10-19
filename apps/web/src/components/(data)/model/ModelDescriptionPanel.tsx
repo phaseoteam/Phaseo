@@ -37,7 +37,7 @@ export default function ModelDescriptionPanel({
 	}, [description, expanded]);
 
 	return (
-		<div className="relative max-w-4xl">
+		<div className="relative w-full">
 			<div className="relative">
 				<div
 					id={descriptionId}
