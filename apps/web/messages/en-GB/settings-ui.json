@@ -6119,6 +6119,7 @@
 			"running": "Running…",
 			"fixFirst": "Fix the classifier before testing it.",
 			"privacyReview": "Open Chat once and review your workspace privacy settings, then try again.",
+			"budgetReached": "This classifier has spent its monthly budget, so test runs are paused until next month. Raise the budget to test now.",
 			"openChat": "Open Chat",
 			"failed": "The test failed.",
 			"failedWithMessage": "The test failed: {message}",

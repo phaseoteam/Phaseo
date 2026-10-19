@@ -210,6 +210,8 @@ function sampleText(value: unknown, field: string, required: boolean): { ok: tru
  * sends, through the gateway as the signed-in member. It is billed like any
  * classification and labelled phaseo.classifier_test (the saved id, or "draft");
  * phaseo.classifier itself is reserved for the gateway's own classifier calls.
+ * A saved classifier's test runs also count toward its monthly budget, and are
+ * refused once that budget is spent; drafts have no budget yet.
  */
 accountSettingsClassifiersRouter.post("/classifiers/test", async (c) => {
 	const body = await readBody(c);
@@ -227,6 +229,21 @@ accountSettingsClassifiersRouter.post("/classifiers/test", async (c) => {
 	const savedId = typeof body.classifierId === "string" && UUID_PATTERN.test(body.classifierId) ? body.classifierId.toLowerCase() : null;
 
 	const { context } = access;
+	if (savedId) {
+		const [saved, spent] = await Promise.all([
+			context.client.from("workspace_request_classifiers").select("id,monthly_budget_nanos")
+				.eq("workspace_id", context.workspaceId).eq("id", savedId).maybeSingle(),
+			context.client.from("workspace_request_classifier_spend_monthly").select("cost_nanos")
+				.eq("workspace_id", context.workspaceId).eq("classifier_id", savedId).eq("month", currentSpendMonth()).maybeSingle(),
+		]);
+		if (saved.error || spent.error) return json(c, { error: "settings_unavailable" }, 503);
+		if (!saved.data) return json(c, { error: "not_found" }, 404);
+		const budget = saved.data.monthly_budget_nanos == null ? null : Number(saved.data.monthly_budget_nanos);
+		if (budget != null && (Number(spent.data?.cost_nanos) || 0) >= budget) {
+			// Code only: the settings page shows its own translated copy for it.
+			return json(c, { error: "classifier_budget_reached" }, 409);
+		}
+	}
 	const key = await ensureChatGatewayKey(c.env, { user: context.user, client: context.client, workspaceId: context.workspaceId }, (promise) => c.executionCtx.waitUntil(promise));
 	// The settings page maps these codes to its own copy (for example, a link to review Chat privacy).
 	if ("status" in key) return json(c, { error: key.code }, key.status);
@@ -264,6 +281,12 @@ accountSettingsClassifiersRouter.post("/classifiers/test", async (c) => {
 	}
 	const labels = parseClassifierAnswer(payload, dimensions);
 	const costNanos = Number(payload?.cost_nanos ?? 0) || 0;
+	if (savedId) {
+		const { error } = await context.client.rpc("record_request_classifier_spend", {
+			p_workspace_id: context.workspaceId, p_classifier_id: savedId, p_cost_nanos: Math.max(0, Math.round(costNanos)),
+		});
+		if (error) console.warn("classifier_test_spend_record_failed", { classifierId: savedId, error: error.message });
+	}
 	return json(c, {
 		labels: labels ?? [],
 		answered: labels !== null,

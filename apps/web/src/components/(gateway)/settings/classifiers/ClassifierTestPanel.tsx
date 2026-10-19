@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { testClassifier, type ClassifierTestResult } from "@/app/(dashboard)/settings/classifiers/actions";
 import { formatUsd } from "./classifierForm";
 
-type Outcome = { kind: "result"; result: ClassifierTestResult } | { kind: "privacy" } | { kind: "error"; message: string | null } | null;
+type Outcome = { kind: "result"; result: ClassifierTestResult } | { kind: "privacy" } | { kind: "budget" } | { kind: "error"; message: string | null } | null;
 
 /** Runs the current draft once on a sample prompt, as the signed-in member. */
 export function ClassifierTestPanel({ classifierId, buildRequest, includeResponse }: {
@@ -38,6 +38,7 @@ export function ClassifierTestPanel({ classifierId, buildRequest, includeRespons
 			});
 			if (result.ok) setOutcome({ kind: "result", result: result.result });
 			else if (result.code === "chat_privacy_review_required") setOutcome({ kind: "privacy" });
+			else if (result.code === "classifier_budget_reached") setOutcome({ kind: "budget" });
 			else setOutcome({ kind: "error", message: result.message });
 		});
 	}
@@ -66,6 +67,7 @@ export function ClassifierTestPanel({ classifierId, buildRequest, includeRespons
 				{outcome?.kind === "privacy" ? (
 					<p className="text-sm">{t("privacyReview")} <Link href="/chat" className="underline underline-offset-4">{t("openChat")}</Link></p>
 				) : null}
+				{outcome?.kind === "budget" ? <p className="text-sm text-destructive">{t("budgetReached")}</p> : null}
 				{outcome?.kind === "error" ? <p className="text-sm text-destructive">{outcome.message ? t("failedWithMessage", { message: outcome.message }) : t("failed")}</p> : null}
 				{outcome?.kind === "result" ? <TestResult result={outcome.result} /> : null}
 			</div>

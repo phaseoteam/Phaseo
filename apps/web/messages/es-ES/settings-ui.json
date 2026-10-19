@@ -6119,6 +6119,7 @@
 			"running": "Ejecutando…",
 			"fixFirst": "Corrige el clasificador antes de probarlo.",
 			"privacyReview": "Abre Chat una vez y revisa la configuración de privacidad de tu espacio de trabajo; después vuelve a intentarlo.",
+			"budgetReached": "Este clasificador ha gastado su presupuesto mensual, así que las pruebas están en pausa hasta el mes que viene. Aumenta el presupuesto para probar ahora.",
 			"openChat": "Abrir Chat",
 			"failed": "La prueba ha fallado.",
 			"failedWithMessage": "La prueba ha fallado: {message}",

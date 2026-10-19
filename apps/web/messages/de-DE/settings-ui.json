@@ -6119,6 +6119,7 @@
 			"running": "Läuft…",
 			"fixFirst": "Korrigiere den Klassifikator, bevor du ihn testest.",
 			"privacyReview": "Öffne einmal den Chat und prüfe die Datenschutzeinstellungen deines Workspace, dann versuche es erneut.",
+			"budgetReached": "Dieser Klassifikator hat sein Monatsbudget ausgegeben, daher sind Testläufe bis zum nächsten Monat pausiert. Erhöhe das Budget, um jetzt zu testen.",
 			"openChat": "Chat öffnen",
 			"failed": "Der Test ist fehlgeschlagen.",
 			"failedWithMessage": "Der Test ist fehlgeschlagen: {message}",
