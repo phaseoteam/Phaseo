@@ -12,20 +12,21 @@ import BenchmarkProgressChart from "./BenchmarkProgressChart";
 import ModelsUsingBenchmark from "./ModelsUsingBenchmark";
 import ArtificialAnalysisDashboard from "./ArtificialAnalysisDashboard";
 import { dashboardRows, loadDashboardData } from "@/lib/benchmarks/artificialAnalysisDashboard";
+import { ArtificialAnalysisDeferredExplorer } from "./ArtificialAnalysisDeferredExplorer";
 
 export async function ArtificialAnalysisOverview({
 	benchmark,
-	rankings,
+	rankings: rankingsPromise,
 }: {
 	benchmark: BenchmarkPage;
-	rankings: PublicBenchmarkRanking[];
+	rankings: PublicBenchmarkRanking[] | Promise<PublicBenchmarkRanking[]>;
 }) {
-	const [t, tOther, locale] = await Promise.all([getTranslations("Catalogue.benchmarks.current"), getTranslations("Catalogue.models.detail.benchmarkGrid"), getLocale()]);
+	const major = Number(benchmark.id.match(/-v(\d+)$/)?.[1]);
+	const dataPromise = Number.isSafeInteger(major) && major > 0 ? loadDashboardData((offset) => fetchFrontendArtificialAnalysisData({ version: major, limit: 200, offset })).catch(() => null) : Promise.resolve(null);
+	const [t, tOther, locale, rankings, publicData] = await Promise.all([getTranslations("Catalogue.benchmarks.current"), getTranslations("Catalogue.models.detail.benchmarkGrid"), getLocale(), rankingsPromise, dataPromise]);
 	const versionOf = (info: unknown) => artificialAnalysisVersion(typeof info === "string" ? info : null) ?? "Unspecified";
 	const versions = [...new Set(benchmark.results.map((result) => versionOf(result.other_info)))].sort((a, b) => b.localeCompare(a, "en", { numeric: true }));
 	const latestVersion = versions.find((version) => version !== "Unspecified") ?? versions[0] ?? "Unspecified";
-	const major = Number(benchmark.id.match(/-v(\d+)$/)?.[1]);
-	const publicData = Number.isSafeInteger(major) && major > 0 ? await loadDashboardData((offset) => fetchFrontendArtificialAnalysisData({ version: major, limit: 200, offset })).catch(() => null) : null;
 	const richData = publicData?.methodology_version === latestVersion ? publicData : null;
 	const results = benchmark.results.filter((result) => versionOf(result.other_info) === latestVersion && result.score !== null && Number.isFinite(Number(result.score)));
 	const { comparison_benchmarks: _comparisons, suite: _suite, ...currentBenchmark } = benchmark;
@@ -52,7 +53,7 @@ export async function ArtificialAnalysisOverview({
 		<div className="pb-12">
 			{richData ? <><ArtificialAnalysisDashboard rows={dashboardRows(richData.models)} />{footer}</> : <ArtificialAnalysisExplorer points={points} footer={footer} initialView={metric === "coding" || metric === "agentic" || metric === "cost" ? metric : comparisonView} />}
 			<div className="border-b">
-				{richData ? <BenchmarkDisclosure title={(await getTranslations("Catalogue.benchmarks"))("tocIndexComparisons")}><ArtificialAnalysisExplorer points={points} initialView="intelligence" /></BenchmarkDisclosure> : null}
+				{richData ? <ArtificialAnalysisDeferredExplorer title={(await getTranslations("Catalogue.benchmarks"))("tocIndexComparisons")} points={points} /> : null}
 				<BenchmarkDisclosure id="progress" title={t("progress")}><BenchmarkProgressChart benchmark={current} /></BenchmarkDisclosure>
 				<BenchmarkDisclosure id="model-results" title={t("modelsResults")}><ModelsUsingBenchmark benchmark={current} /></BenchmarkDisclosure>
 				{otherEvaluations.length ? <BenchmarkDisclosure title={tOther("otherBenchmarks")} count={otherEvaluations.length.toLocaleString(locale)}>
