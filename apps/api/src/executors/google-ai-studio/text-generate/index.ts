@@ -1258,7 +1258,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			const totalMs = Date.now() - selectedDispatchAtMs;
 			const finalPayload = encodeOpenAIChatResponse(irResponse, requestId);
 			const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
-			const stream =
+			const syntheticStream =
 				protocol === "openai.chat.completions"
 					? buildSyntheticServerToolStream({
 						protocol,
@@ -1268,6 +1268,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 						created: finalPayload.created,
 					})
 					: createSyntheticResponsesStreamFromIR(irResponse, requestId);
+			// Messages clients need Messages events (message_start ... message_stop, thinking
+			// blocks), not the Responses events the synthetic stream is written in.
+			const stream =
+				syntheticStream && protocol === "anthropic.messages"
+					? resolveStreamForProtocol(new Response(syntheticStream), args, "responses", {
+						canonicalResponsesEvents: true,
+					})
+					: syntheticStream;
 
 			if (!stream) {
 				throw new Error("google_ai_studio_synthetic_stream_failed");

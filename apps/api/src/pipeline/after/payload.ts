@@ -753,7 +753,14 @@ export function normalizeAnthropicUsage(raw: any, irUsage?: IRUsage) {
         );
         const uncachedInput = Math.max(0, totalInput - (openAIRead ?? 0) - (openAIWrite ?? 0));
         // The OpenAI-style details restate the same cache counts; Messages reports them once.
-        const { input_tokens_details: _inputDetails, prompt_tokens_details: _promptDetails, ...anthropicRaw } = raw ?? {};
+        // Input no longer contains the cache, so OpenAI-style subset hints would be wrong here.
+        const {
+            input_tokens_details: _inputDetails,
+            prompt_tokens_details: _promptDetails,
+            cached_read_tokens_are_subset_of_input: _readSubset,
+            cached_write_tokens_are_subset_of_input: _writeSubset,
+            ...anthropicRaw
+        } = raw ?? {};
         return normalizeAnthropicUsage({
             ...anthropicRaw,
             input_tokens: uncachedInput,

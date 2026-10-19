@@ -273,7 +273,8 @@ function expectOpenAIClientUsage(endpoint: Endpoint, usage: any, tokens: Tokens)
 	} else {
 		expect(usage.input_tokens).toBe(tokens.uncached);
 		expect(usage.cache_read_input_tokens).toBe(tokens.read);
-		expect(usage.cache_creation_input_tokens).toBe(write);
+		// Anthropic documents cache_creation_input_tokens as nullable; null means no writes.
+		expect(usage.cache_creation_input_tokens ?? 0).toBe(write);
 	}
 }
 
@@ -390,6 +391,16 @@ const compatCases: CompatCase[] = [
 		responsesUsage: { input_tokens: 53_100, output_tokens: 850, total_tokens: 53_950, input_tokens_details: { cached_tokens: 48_000, cache_write_tokens: 3_000 }, output_tokens_details: { reasoning_tokens: 0 } },
 	},
 	{
+		// More uncached input than cache, so subtracting the cache twice still looks possible.
+		name: "OpenAI GPT-5.6, mostly uncached prompt",
+		provider: "openai",
+		model: "openai/gpt-5.6-sol",
+		prices: { input: "5", output: "30", cachedRead: "0.5", cachedWrite: "6.25" },
+		tokens: { uncached: 80_000, read: 20_011, write: 3_000, output: 850 },
+		chatUsage: { prompt_tokens: 103_011, completion_tokens: 850, total_tokens: 103_861, prompt_tokens_details: { cached_tokens: 20_011, cache_write_tokens: 3_000 } },
+		responsesUsage: { input_tokens: 103_011, output_tokens: 850, total_tokens: 103_861, input_tokens_details: { cached_tokens: 20_011, cache_write_tokens: 3_000 } },
+	},
+	{
 		// Alibaba explicit cache: prompt_tokens includes cached_tokens and cache_creation_input_tokens.
 		name: "Alibaba Qwen explicit cache",
 		provider: "alibaba-cloud",
@@ -469,7 +480,9 @@ describe.each(compatCases)("$name", (testCase) => {
 	const card = textCard(testCase.provider, testCase.model, testCase.prices);
 	const expected = expectedCost(testCase.tokens, testCase.prices);
 
-	for (const endpoint of ["chat.completions", "responses"] as const) {
+	// Messages clients get Anthropic usage (input without the cache) while the executor's bill
+	// keeps the provider's OpenAI-style usage; the after-stage merges both before pricing.
+	for (const endpoint of ["chat.completions", "responses", "messages"] as const) {
 		it(`bills each cache meter once on ${endpoint} (buffered)`, async () => {
 			let executor: { ir: any; bill: any; rawResponse?: any };
 			if (testCase.responsesUsage) {
@@ -510,19 +523,29 @@ describe.each(compatCases)("$name", (testCase) => {
 // has no cached-read row in the catalogue, so hits bill at the input rate (fallback).
 // ---------------------------------------------------------------------------------------
 
-describe("Gemini on AI Studio", () => {
-	const usageMetadata = { promptTokenCount: 51_000, cachedContentTokenCount: 48_000, candidatesTokenCount: 850, totalTokenCount: 51_850 };
+describe.each([
+	{
+		prompt: "a mostly cached prompt",
+		usageMetadata: { promptTokenCount: 51_000, cachedContentTokenCount: 48_000, candidatesTokenCount: 850, totalTokenCount: 51_850 },
+		tokens: { uncached: 3_000, read: 48_000, output: 850 } as Tokens,
+	},
+	{
+		// More uncached input than cache reads, so subtracting the reads twice still looks possible.
+		prompt: "a mostly uncached prompt",
+		usageMetadata: { promptTokenCount: 100_003, cachedContentTokenCount: 20_011, candidatesTokenCount: 850, totalTokenCount: 100_853 },
+		tokens: { uncached: 79_992, read: 20_011, output: 850 } as Tokens,
+	},
+])("Gemini on AI Studio with $prompt", ({ usageMetadata, tokens }) => {
 	const cases = [
 		{ name: "with a cached-read row", prices: { input: "0.5", output: "3", cachedRead: "0.05" } as TokenPrices },
 		{ name: "without a cached-read row (input-rate fallback)", prices: { input: "2", output: "12" } as TokenPrices },
 	];
-	const tokens: Tokens = { uncached: 3_000, read: 48_000, output: 850 };
 
 	for (const { name, prices } of cases) {
 		const card = textCard("google-ai-studio", "google/gemini-3.1-pro-preview", prices);
 		const expected = expectedCost(tokens, prices);
 
-		for (const endpoint of ["chat.completions", "responses"] as const) {
+		for (const endpoint of ["chat.completions", "responses", "messages"] as const) {
 			it(`bills implicit cache hits ${name} on ${endpoint} (buffered)`, async () => {
 				const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 				const irUsage = googleUsageMetadataToIRUsage(usageMetadata as any);

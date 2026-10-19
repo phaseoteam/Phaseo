@@ -14,7 +14,7 @@ import { handleStreamResponse, handlePassthroughFallback } from "./stream";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { recordUsageAndChargeOnce } from "./charge";
-import { shapeUsageForClient } from "../usage";
+import { mergeBillAndPayloadUsage, shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
@@ -439,18 +439,10 @@ async function handleNonStreamResponse(
     payload = pluginOutcome.payload;
     result.normalized = payload;
     ctx.pluginExecutions = pluginOutcome.executions;
-    const usageFromPayload = payload?.usage ?? null;
-    const usageFromBill = result.bill?.usage ?? null;
-    const payloadUsageObject =
-        usageFromPayload && typeof usageFromPayload === "object" ? usageFromPayload : null;
-    const billUsageObject =
-        usageFromBill && typeof usageFromBill === "object" ? usageFromBill : null;
     // Keep payload usage authoritative for overlapping fields, but preserve
     // bill-only meters (for providers that meter requests/non-token dimensions).
-    const usageNormalized = {
-        ...(billUsageObject ?? {}),
-        ...(payloadUsageObject ?? {}),
-    };
+    // Cache hints follow the payload's input_tokens (Anthropic semantics on Messages).
+    const usageNormalized = mergeBillAndPayloadUsage(result.bill?.usage, payload?.usage);
     result.bill.usage = usageNormalized;
     result.bill.finish_reason = finishReason;
     const toolUsage = summarizeToolUsage({

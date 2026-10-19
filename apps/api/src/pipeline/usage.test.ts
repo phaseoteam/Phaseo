@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { countRequestMediaInputs, shapeUsageForClient, stripUsagePricing } from "./usage";
+import { countRequestMediaInputs, mergeBillAndPayloadUsage, shapeUsageForClient, stripUsagePricing } from "./usage";
+import { normalizeAnthropicUsage } from "./after/payload";
 
 describe("request media counting", () => {
 	const chatBody = {
@@ -305,5 +306,91 @@ describe("stripUsagePricing", () => {
 		expect(stripped.cost_usd_str).toBeUndefined();
 		expect(stripped.cost_cents).toBeUndefined();
 		expect(stripped.currency).toBeUndefined();
+	});
+});
+
+describe("mergeBillAndPayloadUsage", () => {
+	// Executor bill in OpenAI terms (input includes the cache), as normalizeTextUsageForPricing writes it.
+	const openAIBill = {
+		input_tokens: 103_011,
+		input_text_tokens: 80_000,
+		output_tokens: 850,
+		cached_read_text_tokens: 20_011,
+		cached_write_text_tokens: 3_000,
+		cached_read_tokens_are_subset_of_input: true,
+		cached_write_tokens_are_subset_of_input: true,
+		requests: 1,
+	};
+	// The same response on /v1/messages: Anthropic terms, input without the cache.
+	const messagesPayload = {
+		input_tokens: 80_000,
+		output_tokens: 850,
+		cache_read_input_tokens: 20_011,
+		cache_creation_input_tokens: 3_000,
+		cache_creation: null,
+		server_tool_use: null,
+		service_tier: null,
+	};
+
+	it("takes the cache hints from the payload that supplied input_tokens", () => {
+		const merged = mergeBillAndPayloadUsage(openAIBill, messagesPayload);
+		expect(merged).toMatchObject({
+			input_tokens: 80_000,
+			requests: 1,
+			cached_read_tokens_are_subset_of_input: false,
+			cached_write_tokens_are_subset_of_input: false,
+		});
+		const shaped = shapeUsageForClient(merged, { endpoint: "messages", includeInternalHints: true });
+		// Reads and writes are taken out of input once: 80,000 uncached + 20,011 + 3,000.
+		expect(shaped.input_tokens).toBe(103_011);
+		expect(shaped.input_tokens_details).toMatchObject({ cached_tokens: 20_011, cache_write_tokens: 3_000 });
+	});
+
+	it("keeps OpenAI-style hints when the payload is OpenAI-shaped", () => {
+		const chatPayload = { input_tokens: 103_011, output_tokens: 850, input_tokens_details: { cached_tokens: 20_011, cache_write_tokens: 3_000 } };
+		const merged = mergeBillAndPayloadUsage(openAIBill, chatPayload);
+		expect(merged.cached_read_tokens_are_subset_of_input).toBe(true);
+		expect(merged.cached_write_tokens_are_subset_of_input).toBe(true);
+		expect(shapeUsageForClient(merged, { endpoint: "responses" }).input_tokens).toBe(103_011);
+	});
+
+	it("leaves the bill's hints alone when the payload has no cache counts or no input", () => {
+		expect(mergeBillAndPayloadUsage(openAIBill, { input_tokens: 103_011, output_tokens: 850 }).cached_read_tokens_are_subset_of_input).toBe(true);
+		expect(mergeBillAndPayloadUsage(openAIBill, { requests: 2 })).toEqual({ ...openAIBill, requests: 2 });
+		// prompt_tokens only counts when the bill has no input_tokens of its own.
+		expect(mergeBillAndPayloadUsage(openAIBill, { prompt_tokens: 80_000, cache_read_input_tokens: 20_011 }).cached_read_tokens_are_subset_of_input).toBe(true);
+	});
+
+	it("does not keep the bill's cache-inclusive total next to the payload's input", () => {
+		const billWithTotal = { ...openAIBill, total_tokens: 103_861 };
+		const merged = mergeBillAndPayloadUsage(billWithTotal, messagesPayload);
+		expect(merged.total_tokens).toBeUndefined();
+		const shaped = shapeUsageForClient(merged, { endpoint: "messages", includeInternalHints: true });
+		// 103,011 input (80,000 + 20,011 + 3,000) + 850 output, counted once.
+		expect(shaped.total_tokens).toBe(103_861);
+		// A payload with its own total keeps it.
+		expect(mergeBillAndPayloadUsage(billWithTotal, { ...messagesPayload, total_tokens: 80_850 }).total_tokens).toBe(80_850);
+	});
+
+	it("handles a missing side", () => {
+		expect(mergeBillAndPayloadUsage(null, messagesPayload)).toEqual(messagesPayload);
+		expect(mergeBillAndPayloadUsage(openAIBill, undefined)).toEqual(openAIBill);
+		expect(mergeBillAndPayloadUsage("x", 3)).toEqual({});
+	});
+});
+
+describe("normalizeAnthropicUsage subset hints", () => {
+	it("drops OpenAI-style subset hints once input no longer contains the cache", () => {
+		const usage = normalizeAnthropicUsage({
+			input_tokens: 100_003,
+			output_tokens: 850,
+			input_tokens_details: { cached_tokens: 20_011 },
+			cached_read_tokens_are_subset_of_input: true,
+			cached_write_tokens_are_subset_of_input: true,
+		});
+		expect(usage).toMatchObject({ input_tokens: 79_992, cache_read_input_tokens: 20_011 });
+		expect(usage).not.toHaveProperty("cached_read_tokens_are_subset_of_input");
+		expect(usage).not.toHaveProperty("cached_write_tokens_are_subset_of_input");
+		expect(shapeUsageForClient(usage, { endpoint: "messages" }).input_tokens).toBe(100_003);
 	});
 });
