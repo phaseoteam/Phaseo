@@ -1174,10 +1174,12 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 				unsupportedParams: [
 					"top_k", "min_p", "repetition_penalty", "parallel_tool_calls",
 					"max_tool_calls", "modalities", "image_config", "metadata", "background",
-					"service_tier", "web_search_options", "stream_options",
+					"service_tier", "web_search_options",
 				],
 			},
-			normalize: { maxTemperature: 2, reasoningEffortFallback: ["low", "medium", "high"] },
+			// https://console.upstage.ai/api/chat: stream_options.include_usage is the only way to
+			// get usage on a stream; reasoning_effort runs none..max, with none and minimal off.
+			normalize: { maxTemperature: 2, reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh", "max"] },
 		},
 	},
 	{

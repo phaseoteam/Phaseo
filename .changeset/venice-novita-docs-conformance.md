@@ -11,3 +11,5 @@ Nebius Token Factory now receives `service_tier: "default"` for standard (its en
 MiniMax-M3.1-Flash no longer receives `thinking: {type: "disabled"}`, which it rejects with a 400, and now receives `reasoning_effort` from `low` to `max`. Grok 4.3, 4.6 and 4.7 keep their documented effort levels, including `xhigh` and, on 4.3, `none`; before, they were clamped to low, medium or high.
 
 Mistral and Mistral EU no longer receive `user` or `web_search_options`, which their API rejects as unknown fields. Temperature is capped at the documented 1.5, `service_tier: "standard"` is sent as `standard_only`, and reasoning effort uses the documented `none` to `xhigh` (it allowed `max`, which Mistral does not accept). Fireworks now receives `service_tier: "default"` for standard.
+
+Upstage now receives `stream_options`, so streamed Solar requests return the usage they are billed from (Upstage sends no usage on a stream without `include_usage`). Asking for no reasoning sends `none` instead of being raised to `low`, which turned reasoning on.

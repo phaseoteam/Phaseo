@@ -255,3 +255,11 @@ describe("io.net reasoning", () => {
 		expect(irToOpenAIChat(baseIR({ reasoning: reasoning as any }), "deepseek-ai/DeepSeek-V4.1-Flash", "io-net").reasoning).toEqual({ effort });
 	});
 });
+
+// Upstage: "A streaming response carries no usage statistics by default, so token counts are
+// unavailable unless this is set" (stream_options.include_usage, https://console.upstage.ai/api/chat).
+describe("Upstage stream usage", () => {
+	it("accepts stream_options so streamed usage can be billed", () => {
+		expect(providerAcceptsStreamOptions("upstage")).toBe(true);
+	});
+});
