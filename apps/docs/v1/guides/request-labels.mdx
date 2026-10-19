@@ -7,6 +7,8 @@ icon: "tags"
 
 Use request labels when application code needs a stable cost dimension that is more specific than an API key or application. Labels are captured with the request audit and can be filtered in analytics without changing the model request.
 
+To label requests automatically from their content, use [request classifiers](/v1/guides/request-classifiers). Their answers are stored as request labels and filter the same way.
+
 ## Send labels
 
 Set `X-Phaseo-Metadata` to a JSON object containing up to 32 unique key/value labels:
