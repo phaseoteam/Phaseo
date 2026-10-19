@@ -92,8 +92,10 @@ function Walkthrough({ settings, installationId, workspaces, onSaved, close }: {
     if (!kind || !draft) return;
     setChoices((current) => (kind === "labs" ? { ...current, labs: draft.labs.ids } : { ...current, models: draft.models }));
   }, []));
+  const seeded = useRef(false);
   const pick = (kind: "labs" | "models") => {
     draftRuleStore.set({ ...EMPTY_RULE, labs: { mode: "only", ids: choices.labs }, models: choices.models });
+    seeded.current = true;
     picking.current = kind;
     router.push({ pathname: "/sheets/[kind]", params: { kind: "pick", type: kind } });
   };
@@ -136,6 +138,8 @@ function Walkthrough({ settings, installationId, workspaces, onSaved, close }: {
   function exit() {
     setLeaving(true);
     disablePrevention();
+    // The draft held setup's picks, not a rule being edited.
+    if (seeded.current) draftRuleStore.set(null);
     close();
   }
   // Leaving saves nothing, so it asks first when that would lose a change.
