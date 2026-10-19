@@ -707,6 +707,13 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 			initialTab={initialTab}
 			labelFacets={initial.labelFacets}
 			labelSummary={initial.labelSummary}
+			requestClassifiers={initial.requestClassifiers ?? []}
+			labelBreakdown={{
+				from,
+				to,
+				keyId: sp.get("key") || null,
+				creatorId: sp.get("user") || null,
+			}}
 			preset={preset}
 			customFrom={customFrom}
 			customTo={customTo}

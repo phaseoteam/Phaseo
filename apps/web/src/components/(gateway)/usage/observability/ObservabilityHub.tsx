@@ -89,6 +89,8 @@ import type { GuardrailEnforcementMetricsResult } from "@/lib/gateway/usage/guar
 import { formatUsageComparisonRange, type UsageRangePreset } from "@/lib/gateway/usage/timeRange";
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
 import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
+import UsageLabelBreakdown from "@/components/(gateway)/usage/UsageLabelBreakdown";
+import { buildLabelKeyOptions, labelValueDisplay, type RequestClassifierSummary } from "@/components/(gateway)/usage/requestClassifierLabels";
 import { Logo } from "@/components/Logo";
 import type { UsageLabelFacet, UsageLabelSummary } from "@/lib/fetchers/internal/settingsTypes";
 import type {
@@ -2512,6 +2514,8 @@ export default function ObservabilityHub({
 	initialTab,
 	labelFacets = [],
 	labelSummary = null,
+	requestClassifiers = [],
+	labelBreakdown,
 	preset,
 	customFrom,
 	customTo,
@@ -2521,11 +2525,19 @@ export default function ObservabilityHub({
 	initialTab: ObservabilityTab;
 	labelFacets?: UsageLabelFacet[];
 	labelSummary?: UsageLabelSummary | null;
+	requestClassifiers?: RequestClassifierSummary[];
+	/** The period and key filters the "usage by label" table reads with; omitted, it is hidden. */
+	labelBreakdown?: { from: string; to: string; keyId?: string | null; excludeKey?: boolean; creatorId?: string | null };
 	preset: UsageRangePreset;
 	customFrom?: string | null;
 	customTo?: string | null;
 }) {
 	const t = useTranslations("SettingsUI.observability");
+	const tLabels = useTranslations("SettingsUI.requestClassifierUsage");
+	const labelKeyName = (key: string) => {
+		const option = buildLabelKeyOptions(labelFacets, requestClassifiers).find((entry) => entry.key === key);
+		return option?.kind === "classifier_calls" ? tLabels("classifierCalls") : option?.name ?? key;
+	};
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -2534,7 +2546,7 @@ export default function ObservabilityHub({
 					<p className="mt-1 text-xs text-muted-foreground sm:text-sm">{t("yourUsage")}</p>
 				</div>
 				<div className="flex shrink-0 flex-wrap justify-end gap-2">
-					<RequestLabelFilter facets={labelFacets} />
+					<RequestLabelFilter facets={labelFacets} classifiers={requestClassifiers} mode="usage" />
 					<UsageLogsToolbar
 						view="logs"
 						preset={preset}
@@ -2549,9 +2561,9 @@ export default function ObservabilityHub({
 						<div className="min-w-0">
 							<p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{t("filteredSpend")}</p>
 							<p className="mt-1 truncate text-sm font-medium">
-								<span className="font-mono">{labelSummary.key}</span>
+								<span className="font-mono">{labelKeyName(labelSummary.key)}</span>
 								<span className="px-1.5 text-muted-foreground">=</span>
-								<span>{labelSummary.value}</span>
+								<span>{labelValueDisplay(labelSummary.key, labelSummary.value, requestClassifiers)}</span>
 							</p>
 						</div>
 						<div className="flex items-center gap-6 text-sm">
@@ -2570,6 +2582,14 @@ export default function ObservabilityHub({
 			) : null}
 
 			{initialTab === "overview" ? <Overview data={data} /> : null}
+			{initialTab === "overview" && labelBreakdown ? (
+				<UsageLabelBreakdown
+					facets={labelFacets}
+					classifiers={requestClassifiers}
+					labelFilterActive={Boolean(labelSummary)}
+					{...labelBreakdown}
+				/>
+			) : null}
 			{initialTab === "trends" ? <Trends data={data} /> : null}
 			{initialTab === "explore" ? (
 				<Explore data={data} />

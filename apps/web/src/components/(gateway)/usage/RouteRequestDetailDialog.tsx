@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import type { InvestigateGenerationResult } from "@/app/(dashboard)/gateway/usage/server-actions";
 import RequestDetailDialog from "./RequestDetailDialog";
+import type { RequestClassifierSummary } from "./requestClassifierLabels";
 
 export function RouteRequestDetailErrorDialog({
 	closeHref,
@@ -62,8 +63,10 @@ export default function RouteRequestDetailDialog({
 	nextHref,
 	position,
 	total,
+	requestClassifiers,
 }: {
 	detail: InvestigateGenerationResult;
+	requestClassifiers?: RequestClassifierSummary[];
 	closeHref: string;
 	previousHref?: string | null;
 	nextHref?: string | null;
@@ -102,6 +105,7 @@ export default function RouteRequestDetailDialog({
 			providerMetadata={providerMetadata}
 			providerName={providerName}
 			ioLog={detail.ioLog}
+			classifiers={requestClassifiers ?? detail.requestClassifiers ?? []}
 			headerNavigation={
 				<div className="flex items-center gap-2">
 					<div className="flex items-center gap-1">

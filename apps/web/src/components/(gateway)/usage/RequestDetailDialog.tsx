@@ -61,6 +61,8 @@ import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoom
 import UsageEntityHoverCard from "./UsageEntityHoverCard";
 import { providerAttemptTimelineDuration, responseTimelineTiming } from "./responseTimeline";
 import { readLifecycleJournal } from "./OrderedLifecycleEvents";
+import RequestClassificationsSection from "./RequestClassificationsSection";
+import type { RequestClassifierSummary } from "./requestClassifierLabels";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -82,6 +84,8 @@ interface RequestDetailDialogProps {
 	presentation?: "dialog" | "sheet";
 	disablePointerDismissal?: boolean;
 	loading?: boolean;
+	/** Names for the request's classifier labels; ids are shown without them. */
+	classifiers?: RequestClassifierSummary[];
 }
 
 type ProviderAttemptRow = RequestRow["provider_attempts"][number];
@@ -811,6 +815,7 @@ export default function RequestDetailDialog({
 	presentation = "dialog",
 	disablePointerDismissal = false,
 	loading = false,
+	classifiers,
 }: RequestDetailDialogProps) {
 	const t = useTranslations("SettingsUI");
 	const roomErrorT = useTranslations("Product.chatRooms");
@@ -2712,6 +2717,8 @@ export default function RequestDetailDialog({
 								]}
 							/>
 						</GenerationSection>
+
+						<RequestClassificationsSection detailMetadata={request.detail_metadata} classifiers={classifiers} />
 
 						<GenerationSection title={s("Response timeline")}>
 							<DetailTimingBar items={responseTimelineItems} />
