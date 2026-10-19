@@ -361,6 +361,17 @@ describe("mergeBillAndPayloadUsage", () => {
 		expect(mergeBillAndPayloadUsage(openAIBill, { prompt_tokens: 80_000, cache_read_input_tokens: 20_011 }).cached_read_tokens_are_subset_of_input).toBe(true);
 	});
 
+	it("does not keep the bill's cache-inclusive total next to the payload's input", () => {
+		const billWithTotal = { ...openAIBill, total_tokens: 103_861 };
+		const merged = mergeBillAndPayloadUsage(billWithTotal, messagesPayload);
+		expect(merged.total_tokens).toBeUndefined();
+		const shaped = shapeUsageForClient(merged, { endpoint: "messages", includeInternalHints: true });
+		// 103,011 input (80,000 + 20,011 + 3,000) + 850 output, counted once.
+		expect(shaped.total_tokens).toBe(103_861);
+		// A payload with its own total keeps it.
+		expect(mergeBillAndPayloadUsage(billWithTotal, { ...messagesPayload, total_tokens: 80_850 }).total_tokens).toBe(80_850);
+	});
+
 	it("handles a missing side", () => {
 		expect(mergeBillAndPayloadUsage(null, messagesPayload)).toEqual(messagesPayload);
 		expect(mergeBillAndPayloadUsage(openAIBill, undefined)).toEqual(openAIBill);

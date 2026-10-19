@@ -64,6 +64,13 @@ export function mergeBillAndPayloadUsage(billUsage: unknown, payloadUsage: unkno
             : undefined;
     if (payloadInput === undefined) return merged;
 
+    // The bill's total was computed with the bill's input; next to the payload's input it would
+    // count the cache twice once the hints below make reads and writes additive. Derive it again.
+    if (!isFiniteCount(payload.total_tokens) && !isFiniteCount(payload.totalTokens)) {
+        delete merged.total_tokens;
+        delete merged.totalTokens;
+    }
+
     const cache = resolveCacheTokenUsage(payload, payloadInput, { readSubsetDefault: true });
     if (cache.readTokens !== undefined) {
         delete merged.cachedReadTokensAreSubsetOfInput;
