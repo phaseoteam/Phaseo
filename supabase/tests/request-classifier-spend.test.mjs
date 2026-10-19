@@ -21,8 +21,8 @@ try {
     create function private.capture_gateway_workspace_publication() returns trigger language plpgsql security definer as $$ begin return null; end $$;
     insert into public.workspaces values ('${ws(1)}'), ('${ws(2)}');
   `);
-  await db.exec(await migration('20261019155013_workspace_request_classifiers.sql'));
-  const spendMigration = await migration('20261019161226_request_classifier_spend.sql');
+  await db.exec(await migration('20261019224759_workspace_request_classifiers.sql'));
+  const spendMigration = await migration('20261019225731_request_classifier_spend.sql');
   await db.exec(spendMigration);
   assert.ok(spendMigration.includes(await schema('public/tables/workspace_request_classifier_spend_monthly.sql')), 'table matches the declarative definition');
   assert.ok(spendMigration.includes(await schema('public/functions/record_request_classifier_spend.sql')), 'function matches the declarative definition');
