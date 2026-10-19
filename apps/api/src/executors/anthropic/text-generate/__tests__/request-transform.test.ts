@@ -30,6 +30,16 @@ afterEach(() => {
 	clearRuntime();
 });
 
+describe("irToAnthropicMessages max_tokens fallback", () => {
+	it("uses a known route limit when the request has no max_tokens", () => {
+		expect(irToAnthropicMessages(createBaseRequest(), 8192).max_tokens).toBe(8192);
+	});
+
+	it.each([0, -1, null])("falls back to 4096 when the route limit is %s", (limit) => {
+		expect(irToAnthropicMessages(createBaseRequest(), limit).max_tokens).toBe(4096);
+	});
+});
+
 describe("irToAnthropicMessages service controls", () => {
 	it.each(["claude-haiku-5-5", "anthropic/claude-haiku-5.5"])("uses adaptive thinking and effort for %s", (model) => {
 		const request = createBaseRequest();

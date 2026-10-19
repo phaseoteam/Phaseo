@@ -5,6 +5,7 @@
 
 import type { Endpoint } from "@core/types";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type {
     CapabilityRoutingStatus,
     ProviderCandidate,
@@ -883,19 +884,20 @@ function calculateTokenAffinityScore(
     requestedMaxTokens: number | null,
     providerMaxOutputTokens: number | null | undefined
 ): number {
-    // If no tokens requested or provider has no limit, return neutral score
-    if (requestedMaxTokens === null || providerMaxOutputTokens === null || providerMaxOutputTokens === undefined) {
+    // If no tokens requested or provider has no known limit (null or a stored 0), return neutral score
+    const providerLimit = routeOutputTokenLimit(providerMaxOutputTokens);
+    if (requestedMaxTokens === null || providerLimit === null) {
         return 0.5;
     }
 
     // Provider must support at least the requested amount (this should already be filtered)
-    if (providerMaxOutputTokens < requestedMaxTokens) {
+    if (providerLimit < requestedMaxTokens) {
         return 0;
     }
 
     // Calculate how much "headroom" the provider has
     // Less headroom = better match = higher score
-    const headroom = providerMaxOutputTokens - requestedMaxTokens;
+    const headroom = providerLimit - requestedMaxTokens;
     const maxReasonableHeadroom = requestedMaxTokens * 2; // 2x the request is "reasonable"
 
     if (headroom === 0) {

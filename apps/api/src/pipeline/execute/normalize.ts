@@ -3,6 +3,7 @@
 // How: Adjusts IR params that are not provider-specific.
 
 import type { IRChatRequest } from "@core/ir";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type { Protocol } from "@protocols/detect";
 import { getProviderProfile } from "@providers/providerProfiles";
 import {
@@ -178,8 +179,10 @@ function normalizeMaxTokens(
         keys: ["max_tokens", "max_output_tokens"],
         fallback: { min: 1 },
     });
-    if (typeof providerMaxOutputTokens === "number" && Number.isFinite(providerMaxOutputTokens)) {
-        range.max = Math.min(range.max ?? Number.POSITIVE_INFINITY, providerMaxOutputTokens);
+    // A stored limit of 0 is unknown, not a cap of zero tokens.
+    const providerLimit = routeOutputTokenLimit(providerMaxOutputTokens);
+    if (providerLimit !== null) {
+        range.max = Math.min(range.max ?? Number.POSITIVE_INFINITY, providerLimit);
     }
 
     if (typeof ir.maxTokens === "number" && Number.isFinite(ir.maxTokens)) {

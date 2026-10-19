@@ -3,6 +3,7 @@
 // How: Validates token limits, parameter support, and filters incompatible providers.
 
 import type { Endpoint } from "@core/types";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type { ParamRoutingDiagnostics, ProviderCandidate } from "./types";
 import { err } from "./http";
 import {
@@ -363,12 +364,13 @@ function filterProvidersByTokenLimits(args: {
 
 	// Filter providers that can accommodate this token limit
 	const filtered = args.providers.filter((provider) => {
-		// If provider has no limit specified, assume it can handle the request
-		if (provider.maxOutputTokens === null || provider.maxOutputTokens === undefined) {
+		// No known limit (null, or a stored 0): assume it can handle the request.
+		const limit = routeOutputTokenLimit(provider.maxOutputTokens);
+		if (limit === null) {
 			return true;
 		}
 		// Provider must support at least the requested amount
-		return provider.maxOutputTokens >= requestedMaxTokens;
+		return limit >= requestedMaxTokens;
 	});
 
 	if (!filtered.length) {
