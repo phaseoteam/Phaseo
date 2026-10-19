@@ -7,6 +7,7 @@ import { Button, Icon, Text } from "@/components/ui";
 import type { ModelDetail, ModelSubscription } from "@/lib/api/models";
 import { cn } from "@/lib/cn";
 import { WEB_ORIGIN } from "@/lib/config";
+import { MONEY_LOCALE } from "@/lib/format";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { detailValue, formatKeyDate, formatLongCount, genericLinks, licenceLabel, licenceUrl, linkLabel, modalityTags, parseTypes, relativeDateLabel, type Lineage } from "./about";
 import { ModalityTag, SubHeading } from "./parts";
@@ -173,7 +174,7 @@ export function VerificationBlock({ outputTypes }: { outputTypes: string[] }) {
 }
 
 const money = (amount: number, currency: string) => {
-  try { return new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount); } catch { return `${amount} ${currency}`; }
+  try { return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency }).format(amount); } catch { return `${amount} ${currency}`; }
 };
 
 /** Plans that include the model ("Commercial plans and bundled access that currently include this model"). */

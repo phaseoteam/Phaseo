@@ -20,11 +20,14 @@ export function formatPrice(value: number | null | undefined) {
   return `$${Number(value.toFixed(digits)).toString()}`;
 }
 
+/** Money is always shown in the US style ("$1,234.50"), never "US$". */
+export const MONEY_LOCALE = "en-US";
+
 export function formatUsd(value: number | null | undefined, { precise = false }: { precise?: boolean } = {}) {
   if (value == null || !Number.isFinite(value)) return "—";
   const abs = Math.abs(value);
   const digits = precise || abs < 1 ? (abs > 0 && abs < 0.01 ? 4 : 2) : 2;
-  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+  return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 }
 
 export const nanosToUsd = (nanos: number | null | undefined) => (nanos == null ? null : nanos / 1_000_000_000);
