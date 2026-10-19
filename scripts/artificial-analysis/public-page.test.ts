@@ -9,10 +9,10 @@ const model = { id: "source-1", name: "Model (high)", slug: "model-high", effort
 const html = (stream: string) => `<title>Intelligence Index v4.3.2</title><script>self.__next_f.push(${JSON.stringify([1, stream])})</script>`;
 
 test("accepts mixed-case HTML script tags for models and manifests", () => {
-	const page = html(`a:${JSON.stringify([model])}\n`).replace(/script/g, "ScRiPt");
+	const page = html(`a:${JSON.stringify([model])}\n`).replace(/script/g, "ScRiPt").replace("</ScRiPt>", "</ScRiPt \t>");
 	assert.equal(extractPublicModels(page, source, null).models.length, 1);
 	const manifest = { path: "/data/abc.txt", key: "a".repeat(64) };
-	assert.deepEqual(publicDataManifest(html(`a:${JSON.stringify({ initialModels: [], manifest })}\n`).replace(/script/g, "SCRIPT")), manifest);
+	assert.deepEqual(publicDataManifest(html(`a:${JSON.stringify({ initialModels: [], manifest })}\n`).replace(/script/g, "SCRIPT").replace("</SCRIPT>", "</SCRIPT >")), manifest);
 });
 test("rejects malformed and conflicting JSON records while allowing tagged and identical records", () => {
 	const valid = `a:${JSON.stringify([model])}\n`;
