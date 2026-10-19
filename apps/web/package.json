@@ -15,7 +15,7 @@
 		"build": "pnpm run typecheck && next build",
 		"start": "next start --port 3100",
 		"lint": "eslint src",
-		"typecheck": "next typegen && tsc --noEmit",
+		"typecheck": "next typegen && tsc --noEmit --tsBuildInfoFile .next/cache/.tsbuildinfo",
 		"clean": "rimraf .next",
 		"validate": "tsx ../../packages/data/catalog/src/data/validate.ts --preset structure",
 		"validate:pricing": "tsx ../../packages/data/catalog/src/data/validate.ts --preset pricing",
