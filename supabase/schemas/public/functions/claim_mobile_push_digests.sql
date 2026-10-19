@@ -16,10 +16,12 @@ CREATE OR REPLACE FUNCTION public.claim_mobile_push_digests (
 -- channelScheme, title, body, href, tag, isoWeek, workspaceId, workspaceName }] }.
 -- Results go to complete_mobile_push_deliveries like any other push. Before claiming, rows a
 -- crashed run left processing for ten minutes become claimable again, and rows over two days
--- old, for a device that is no longer active, or for a user who has since switched push or the
--- digest off are closed instead of sent. Digest rows are never grouped, never count against the
--- daily cap, and are never sent by claim_mobile_push_deliveries, which only sends catalogue
--- events. When idle, each step reads an empty partial index.
+-- old, for a device that is no longer active or has gone back to an app build without the digest
+-- channel (channel scheme below 2), or for a user who has since switched push or the digest off
+-- are closed instead of sent; a device that changes in the meantime is skipped until the next
+-- run closes its row. Digest rows are never grouped, never count against the daily cap, and are
+-- never read by claim_mobile_push_deliveries. When idle, each step reads an empty partial index.
+-- A backlog larger than one run sends is left pending, oldest first, for the next run.
 declare
   v_built jsonb;
   v_closed integer;
@@ -47,6 +49,7 @@ begin
         error_code = case
           when x.created_at <= p_now - interval '2 days' then 'expired'
           when dev.status <> 'active' then 'device_inactive'
+          when dev.channel_scheme < 2 then 'channel_scheme_unsupported'
           when not coalesce(p.enabled, false) then 'notifications_disabled'
           else 'category_disabled'
         end,
@@ -57,8 +60,8 @@ begin
       and x.digest_id is not null
       and x.status in ('pending', 'deferred')
       and (
-        x.created_at <= p_now - interval '2 days' or dev.status <> 'active' or not coalesce(p.enabled, false)
-        or (p.categories -> 'digest') = 'false'::jsonb
+        x.created_at <= p_now - interval '2 days' or dev.status <> 'active' or dev.channel_scheme < 2
+        or not coalesce(p.enabled, false) or (p.categories -> 'digest') = 'false'::jsonb
       )
     returning x.id
   )
@@ -67,6 +70,7 @@ begin
   with due as (
     select x.id
     from public.mobile_push_deliveries x
+    join public.mobile_push_devices dev on dev.id = x.device_id and dev.status = 'active' and dev.channel_scheme >= 2
     where x.digest_id is not null and x.status in ('pending', 'deferred') and x.not_before <= p_now
     order by x.not_before, x.created_at, x.id
     limit p_limit

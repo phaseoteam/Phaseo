@@ -7,7 +7,7 @@ const v1File = '../migrations/20261018135417_mobile_push_rules.sql';
 const v2File = '../migrations/20261019170840_mobile_push_categories_and_grouping.sql';
 // Schema files the weekly digest migration has replaced since; mobile-push-digest.test.mjs checks them there.
 const digestFile = '../migrations/20261019175553_mobile_push_weekly_digest.sql';
-const replacedByDigest = new Set(['../schemas/public/functions/enqueue_mobile_push_deliveries.sql']);
+const replacedByDigest = new Set(['../schemas/public/functions/enqueue_mobile_push_deliveries.sql', '../schemas/public/functions/claim_mobile_push_deliveries.sql']);
 const functionFiles = [
     '../schemas/private/functions/mobile_push_category.sql',
     '../schemas/private/functions/mobile_push_group_key.sql',

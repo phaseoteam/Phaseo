@@ -21,11 +21,12 @@ const schemaFiles = [
     '../schemas/private/functions/mobile_push_digest_facts.sql',
     '../schemas/private/functions/build_mobile_push_digests.sql',
     '../schemas/public/functions/enqueue_mobile_push_deliveries.sql',
+    '../schemas/public/functions/claim_mobile_push_deliveries.sql',
     '../schemas/public/functions/claim_mobile_push_digests.sql',
     '../schemas/public/functions/get_mobile_week_summary.sql',
 ];
-// Every file but enqueue (which changed) is new.
-const newFiles = schemaFiles.filter(file => !file.includes('enqueue_mobile_push_deliveries'));
+// Every file but enqueue and the catalogue claim (which changed) is new.
+const newFiles = schemaFiles.filter(file => !/enqueue_mobile_push_deliveries|claim_mobile_push_deliveries/.test(file));
 const rows = async (sql, params) => (await db.query(sql, params)).rows;
 const one = async (sql, params) => (await rows(sql, params))[0];
 const asService = async fn => { await db.exec('set role service_role'); try { return await fn(); } finally { await db.exec('reset role'); } };
@@ -500,6 +501,56 @@ try {
     assert.equal(midweek.days.length, 7);
     assert.deepEqual(midweek.change, { spend: null, requests: null }, 'no change without usage in both spans');
     assert.equal(await asService(async () => (await one(`select public.get_mobile_week_summary($1, $2, '2025-W53', 'UTC') s`, [user(1), workspace(1)])).s), null);
+
+    // A device that goes back to an app build without the digest channel (scheme 1) while a digest
+    // waits for it never gets the digest: the row is closed before claiming.
+    await db.exec(`insert into public.mobile_push_digests (user_id, iso_week, time_zone, week_start, week_cutoff, status, workspace_id, title, body, href, created_at)
+      values ('${user(3)}', '2026-W45', 'Asia/Tokyo', '2026-11-01 15:00Z', '2026-11-08 09:00Z', 'queued', '${workspace(6)}', 'Your Phaseo week', 'A quiet week', '/account/week', '2026-11-04 08:00Z');
+      insert into public.mobile_push_deliveries (digest_id, workspace_id, device_id, user_id, status, not_before, created_at)
+      select g.id, g.workspace_id, d.id, d.user_id, 'deferred', now() - interval '1 hour', '2026-11-04 08:00Z'
+      from public.mobile_push_digests g join public.mobile_push_devices d on d.user_id = g.user_id where g.user_id = '${user(3)}' and g.iso_week = '2026-W45';`);
+    await asService(() => db.query(`select public.register_mobile_push_device($1, 'install-u3', 'ExponentPushToken[u3]', 'android', 'Asia/Tokyo', 'Pixel', '1.9.0', 1)`, [user(3)]));
+    const downgraded = await claim('2026-11-04 12:00Z');
+    assert.deepEqual([downgraded.closed, downgraded.pushes], [1, []]);
+    assert.deepEqual(await rows(`select x.status, x.error_code from public.mobile_push_deliveries x join public.mobile_push_digests g on g.id = x.digest_id
+      where g.user_id = $1 and g.iso_week = '2026-W45'`, [user(3)]), [{ status: 'suppressed', error_code: 'channel_scheme_unsupported' }]);
+
+    // A digest backlog bigger than one run sends (the job's 10 calls of 100) never holds catalogue
+    // pushes back: the catalogue claim skips digest rows before its limit, even when they are older
+    // and would otherwise fill it. The digest job sends the oldest 1,000 and the next run the rest.
+    await db.exec(`
+      insert into public.mobile_notification_preferences (user_id, enabled) values ('${user(11)}', true);
+      insert into public.mobile_push_devices (user_id, installation_id, expo_push_token, platform, time_zone, channel_scheme)
+        select '${user(11)}', 'install-bulk-' || n, 'ExponentPushToken[bulk-' || n || ']', 'android', 'UTC', 2 from generate_series(1, 1050) n;
+      insert into public.mobile_push_digests (user_id, iso_week, time_zone, week_start, week_cutoff, status, title, body, href, created_at)
+        values ('${user(11)}', '2026-W44', 'UTC', '2026-10-26Z', '2026-11-01 18:00Z', 'queued', 'Your Phaseo week', 'A quiet week', '/account/week', '2026-11-04 08:00Z');
+      insert into public.mobile_push_deliveries (digest_id, device_id, user_id, status, not_before, created_at)
+        select g.id, d.id, d.user_id, 'pending', now() - interval '1 hour', '2026-11-04 08:00Z'
+        from public.mobile_push_digests g join public.mobile_push_devices d on d.user_id = g.user_id where g.user_id = '${user(11)}';
+      -- u1's price change from the cap check above is now due, on all three devices.
+      update public.mobile_push_deliveries set not_before = now() - interval '30 minutes'
+        where event_id = (select id from public.catalogue_notification_events where dedupe_key = 'cap');
+    `);
+    const backlog = `select count(*)::int n from public.mobile_push_deliveries where user_id = '${user(11)}' and status = 'pending'`;
+    const catalogue = await asService(() => rows('select * from public.claim_mobile_push_deliveries(100, $1)', [claimToken()]));
+    assert.deepEqual(catalogue.map(push => push.expo_push_token).sort(), ['ExponentPushToken[u1-new]', 'ExponentPushToken[u1-phone]', 'ExponentPushToken[u1-tablet]']);
+    assert.ok(catalogue.every(push => push.kind === 'price_changed'));
+    assert.equal((await one(backlog)).n, 1050, 'the catalogue claim leaves every digest row alone');
+    const run = async () => {
+        let sent = 0;
+        for (let call = 0; call < 10; call += 1) {
+            const batch = await claimPushes('2026-11-04 12:00Z', 100);
+            sent += batch.pushes.length;
+            if (batch.pushes.length > 0) await complete(batch.pushes);
+            if (batch.pushes.length < 100) break;
+        }
+        return sent;
+    };
+    assert.equal(await run(), 1000, 'one run sends ten full batches');
+    assert.equal((await one(backlog)).n, 50);
+    assert.deepEqual(await asService(() => rows('select * from public.claim_mobile_push_deliveries(100, $1)', [claimToken()])), [], 'still nothing for the catalogue claim to take');
+    assert.equal(await run(), 50, 'the next run sends the rest');
+    assert.equal((await one(backlog)).n, 0);
 
     // Backend only: the service role reads and claims, the browser roles do nothing.
     await asService(async () => {

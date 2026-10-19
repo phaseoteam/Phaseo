@@ -149,6 +149,19 @@ describe("weekly digest push", () => {
 		expect(summary.sent).toBe(1);
 	});
 
+	it("sends at most ten full batches a run and leaves the rest for the next run", async () => {
+		const full = Array.from({ length: 100 }, (_, index) => digest(`d${index}`));
+		mockRpc({
+			claim_mobile_push_digests: Array.from({ length: 11 }, () => () => claimResult(full)),
+			complete_mobile_push_deliveries: Array.from({ length: 10 }, () => () => ({ data: { sent: 100, retrying: 0, failed: 0, invalidated: 0 }, error: null })),
+		});
+		fetchMock.mockImplementation(async () => new Response(JSON.stringify({ data: full.map((push) => ({ status: "ok", id: `t-${push.id}` })) }), { status: 200 }));
+		const summary = await runMobilePushDigestJob({ now: sunday });
+		expect(state.rpc.mock.calls.filter(([name]) => name === "claim_mobile_push_digests")).toHaveLength(10);
+		expect(fetchMock).toHaveBeenCalledTimes(10);
+		expect(summary).toMatchObject({ claimed: 1000, sent: 1000 });
+	});
+
 	it("retries every push when Expo cannot be reached", async () => {
 		mockRpc({
 			claim_mobile_push_digests: [() => claimResult([digest("a"), digest("b")])],
