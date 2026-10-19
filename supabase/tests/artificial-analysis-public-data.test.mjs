@@ -14,7 +14,10 @@ const get = (model = null, major = null, limit = 50, offset = 0) => db.query('se
 try {
   await db.exec("create role anon; create role authenticated; create role service_role bypassrls; grant usage on schema public to anon, authenticated, service_role; create table public.v2_models(model_slug text primary key, hidden boolean); insert into public.v2_models values ('lab/visible',false),('lab/hidden',true); grant select on public.v2_models to service_role;");
   const migration = (await readdir(new URL('../migrations/', import.meta.url))).find(name => name.endsWith('_artificial_analysis_public_data.sql'));
-  if (migration && process.env.AA_PUBLIC_SCHEMA_ONLY !== '1') await db.exec(`begin; ${await read(`../migrations/${migration}`)} commit;`);
+  if (migration && process.env.AA_PUBLIC_SCHEMA_ONLY !== '1') {
+    await db.exec(`begin; ${await read(`../migrations/${migration}`)} commit;`);
+    await db.exec(await read('../migrations/20261019143056_optimize_aa_public_snapshot_reads.sql'));
+  }
   else {
     await db.exec(await read('../schemas/public/tables/artificial_analysis_public_snapshots.sql'));
     for (const name of ['publish_artificial_analysis_public_snapshot','get_artificial_analysis_public_models']) await db.exec(await read(`../schemas/public/functions/${name}.sql`));
