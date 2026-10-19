@@ -57,6 +57,7 @@ import {
 } from "./modelSuccessor";
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
 import { parseRequestLabels } from "./request-labels";
+import { isClassifierSubrequest } from "../classification/request-classifiers";
 import { generatePublicId } from "./genId";
 import { applyDeploymentRegionPolicy, validateRegionalTextRequest } from "./deployment-region";
 import {
@@ -318,7 +319,7 @@ export async function beforeRequest(
     );
     if (!j.ok) return j as { ok: false; response: Response };
     let rawBody = j.value;
-    const requestLabels = parseRequestLabels(req);
+    const requestLabels = parseRequestLabels(req, { allowClassifierLabel: isClassifierSubrequest(req) });
     if (requestLabels.ok === false) {
         return {
             ok: false,

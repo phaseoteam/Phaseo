@@ -1,6 +1,8 @@
 import type { RequestLabel } from "@core/types";
 
 export const REQUEST_LABELS_HEADER = "x-phaseo-metadata";
+/** Set only by the gateway on its own request classifier calls; counted as classifier spend. */
+export const RESERVED_CLASSIFIER_LABEL_KEY = "phaseo.classifier";
 
 const MAX_HEADER_LENGTH = 8_192;
 const MAX_LABELS = 32;
@@ -22,7 +24,7 @@ function normalizeLabel(value: unknown, field: "key" | "value"): string | null {
     if (CONTROL_CHARACTER_PATTERN.test(normalized)) return null;
     return normalized;
 }
-export function parseRequestLabels(req: Request): RequestLabelsResult {
+export function parseRequestLabels(req: Request, options: { allowClassifierLabel?: boolean } = {}): RequestLabelsResult {
     const raw = req.headers.get(REQUEST_LABELS_HEADER);
     if (!raw) return { ok: true, labels: [] };
     if (raw.length > MAX_HEADER_LENGTH) {
@@ -54,6 +56,9 @@ export function parseRequestLabels(req: Request): RequestLabelsResult {
         const value = normalizeLabel(label.value, "value");
         if (!key || !value) {
             return { ok: false, message: `${REQUEST_LABELS_HEADER}.labels[${index}] must contain a valid key and value` };
+        }
+        if (key === RESERVED_CLASSIFIER_LABEL_KEY && !options.allowClassifierLabel) {
+            return { ok: false, message: `${REQUEST_LABELS_HEADER} label key ${RESERVED_CLASSIFIER_LABEL_KEY} is reserved` };
         }
         if (keys.has(key)) {
             return { ok: false, message: `${REQUEST_LABELS_HEADER} cannot contain duplicate keys` };

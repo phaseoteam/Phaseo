@@ -19,11 +19,12 @@ import {
 	type ClassifierRow,
 } from "@core/request-classifiers";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
+import { RESERVED_CLASSIFIER_LABEL_KEY } from "../before/request-labels";
 import type { PipelineContext } from "../before/types";
 import { isStealthRequest } from "../stealth";
 import { sanitizeDataContributionPayload } from "./data-contribution";
 
-export const CLASSIFIER_LABEL_KEY = "phaseo.classifier";
+export const CLASSIFIER_LABEL_KEY = RESERVED_CLASSIFIER_LABEL_KEY;
 const CLASSIFIABLE_ENDPOINTS = new Set<Endpoint>(["chat.completions", "responses", "messages"]);
 const CONFIG_CACHE_FRESH_MS = 60_000;
 const SPEND_CACHE_FRESH_MS = 60_000;
@@ -55,6 +56,11 @@ const unclassifiedRequests = new WeakSet<Request>();
 export function excludeFromRequestClassification(request: Request): Request {
 	unclassifiedRequests.add(request);
 	return request;
+}
+
+/** True for the gateway's own classifier calls; callers cannot forge this. */
+export function isClassifierSubrequest(req: Request): boolean {
+	return classifierSubrequests.has(req);
 }
 
 /**

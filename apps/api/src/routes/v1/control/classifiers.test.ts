@@ -161,6 +161,7 @@ describe("classifier management", () => {
 		[{ name: "x", model: "m", dimensions: [] }, "dimensions must be an array of 1 to 12"],
 		[{ name: "x", model: "m", dimensions: [DEPARTMENT, DEPARTMENT] }, "duplicate key"],
 		[{ name: "x", model: "m", dimensions: [{ key: "bad key", values: ["a", "b"] }] }, "dimensions[0].key"],
+		[{ name: "x", model: "m", dimensions: [{ key: "Phaseo.classifier", values: ["a", "b"] }] }, "reserved for Phaseo labels"],
 		[{ name: "x", model: "m", dimensions: [{ key: "tier", values: ["only"] }] }, "values must have 2 to 50"],
 		[{ name: "x", model: "m", dimensions: [{ key: "tier", values: ["a", "A"] }] }, "duplicate value"],
 		[{ name: "x", model: "m", dimensions: [{ key: "tier", allow_other: true, values: ["a", "other"] }] }, "added automatically"],

@@ -84,6 +84,7 @@ function parseDimension(raw: unknown, path: string): Parsed<ClassifierDimension>
 	const record = raw as Record<string, unknown>;
 	const key = typeof record.key === "string" ? record.key.trim() : "";
 	if (!DIMENSION_KEY_PATTERN.test(key)) return fail(`${path}.key must be 1 to 64 letters, digits, or _ . : -`);
+	if (key.toLowerCase().startsWith("phaseo.")) return fail(`${path}.key cannot start with phaseo., which is reserved for Phaseo labels`);
 	const name = typeof record.name === "string" && record.name.trim() ? record.name.trim() : key;
 	if (name.length > 100 || CONTROL_CHARACTER_PATTERN.test(name)) return fail(`${path}.name must be at most 100 characters`);
 	const description = optionalText(record.description, `${path}.description`, 500);
