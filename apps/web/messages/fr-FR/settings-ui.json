@@ -4421,7 +4421,10 @@
 		"enterprise": "Entreprise",
 		"scimProvisioning": "Provisionnement SCIM",
 		"singleSignOn": "Authentification unique",
-		"workspaces": "Espaces de travail"
+		"workspaces": "Espaces de travail",
+		"classifiers": "Classificateurs",
+		"newClassifier": "Nouveau classificateur",
+		"classifier": "Classificateur"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4647,7 +4650,8 @@
 		"searchPlaceholder": "Rechercher des paramètres…",
 		"becomeProvider": "Devenir fournisseur",
 		"empty": "Aucun paramètre trouvé.",
-		"providerProfile": "Profil du fournisseur"
+		"providerProfile": "Profil du fournisseur",
+		"classifiers": "Classificateurs"
 	},
 	"settingsAvailability": {
 		"title": "Les paramètres sont temporairement indisponibles",
@@ -5958,6 +5962,191 @@
 			"invalid_model": "Saisissez un identifiant de modèle comme lab/model.",
 			"invalid_successor": "Saisissez un identifiant de remplaçant, ou « never ».",
 			"too_many_replacements": "Cet espace de travail a atteint la limite de 500 remplaçants."
+		}
+	},
+	"classifiers": {
+		"title": "Classificateurs",
+		"description": "Étiquetez automatiquement les requêtes avec un modèle, puis filtrez et regroupez l'utilisation selon ces étiquettes.",
+		"newClassifier": "Nouveau classificateur",
+		"feedback": "Comment les classificateurs pourraient-ils mieux vous servir ?",
+		"limitReached": "Cet espace de travail a déjà {limit} classificateurs, le maximum autorisé.",
+		"selectWorkspace": "Sélectionnez un espace de travail pour gérer ses classificateurs.",
+		"adminsOnly": "Seuls les propriétaires et les administrateurs de l'espace de travail peuvent voir et modifier les classificateurs, car ils décident du contenu des requêtes envoyé à un modèle.",
+		"emptyTitle": "Aucun classificateur pour l'instant",
+		"emptyBody": "Créez-en un à partir d'un modèle prédéfini comme Service ou Type de tâche, puis choisissez un modèle et la part du trafic à classer.",
+		"billingNote": "Chaque classification est une requête normale au modèle choisi, facturée à cet espace de travail au prix habituel de ce modèle. Ces requêtes apparaissent dans Utilisation et Journaux avec l'étiquette phaseo.classifier.",
+		"statusOn": "Activé",
+		"statusOff": "Désactivé",
+		"listModel": "Modèle",
+		"listLabels": "Clés d'étiquette",
+		"listSampling": "Échantillonnage",
+		"sampledRequests": "{percent} % des requêtes",
+		"sampledSessions": "{percent} % des sessions",
+		"listThisMonth": "Ce mois-ci",
+		"spendSummary": "{spend} pour {count, plural, one {# classification} other {# classifications}}",
+		"noBudget": "aucun budget",
+		"budgetOf": "budget {budget}",
+		"backToList": "Retour aux classificateurs",
+		"newTitle": "Nouveau classificateur",
+		"newDescription": "Choisissez les étiquettes, un modèle et la part du trafic à classer.",
+		"editTitle": "Classificateur",
+		"editDescription": "Modifiez ce que ce classificateur étiquette et sa fréquence d'exécution.",
+		"notFound": "Ce classificateur n'existe plus.",
+		"resultsNote": "Les réponses sont enregistrées comme étiquettes de requête, avec la clé de la dimension comme clé d'étiquette : vous pouvez donc filtrer et regrouper par ces étiquettes dans Journaux et Utilisation. Si votre application envoie déjà une étiquette avec la même clé, sa valeur est conservée.",
+		"presets": {
+			"title": "Partir d'un modèle prédéfini",
+			"description": "Un modèle prédéfini remplit les dimensions. Vous pouvez tout modifier ensuite.",
+			"department": {
+				"title": "Service",
+				"summary": "L'équipe à laquelle la requête est destinée"
+			},
+			"audience": {
+				"title": "Public",
+				"summary": "Qui lira le résultat"
+			},
+			"task_type": {
+				"title": "Type de tâche",
+				"summary": "Code, analyse, rédaction, support, etc."
+			},
+			"engineering_work": {
+				"title": "Travail d'ingénierie",
+				"summary": "Fonctionnalités, corrections, revues, tests"
+			},
+			"agent_complexity": {
+				"title": "Complexité de l'agent",
+				"summary": "La difficulté de la tâche et sa famille"
+			},
+			"compliance": {
+				"title": "Conformité",
+				"summary": "Données personnelles et sujets réglementés"
+			}
+		},
+		"sections": {
+			"details": "Détails",
+			"model": "Modèle",
+			"dimensions": "Dimensions",
+			"instructions": "Instructions",
+			"sampling": "Échantillonnage",
+			"scope": "Périmètre",
+			"budget": "Budget mensuel",
+			"results": "Où apparaissent les résultats",
+			"test": "Essayer sur un exemple"
+		},
+		"fields": {
+			"name": "Nom",
+			"namePlaceholder": "Service",
+			"description": "Description",
+			"enabled": "Classer les requêtes",
+			"enabledDescription": "Lorsque cette option est désactivée, rien n'est classé ni facturé."
+		},
+		"model": {
+			"label": "Modèle du classificateur",
+			"help": "La liste affiche les modèles dont la prise en charge des sorties structurées est documentée. Un petit modèle rapide suffit généralement.",
+			"showAll": "Afficher tous les modèles"
+		},
+		"dimensions": {
+			"help": "Chaque dimension devient une étiquette. Ajoutez jusqu'à {max} dimensions avec jusqu'à {values} valeurs chacune.",
+			"addDimension": "Ajouter une dimension",
+			"dimensionTitle": "Dimension {index}",
+			"moveDimensionUp": "Monter la dimension {index}",
+			"moveDimensionDown": "Descendre la dimension {index}",
+			"removeDimension": "Supprimer la dimension {index}",
+			"name": "Nom",
+			"namePlaceholder": "Centre de coûts",
+			"key": "Clé d'étiquette",
+			"keyHelp": "Lettres, chiffres et _ . : - uniquement.",
+			"description": "Signification",
+			"descriptionPlaceholder": "L'équipe qui utilisera la réponse",
+			"multiple": "Autoriser plusieurs valeurs",
+			"allowOther": "Ajouter other quand rien ne convient",
+			"value": "Valeur",
+			"valueDescription": "Description (aide le modèle à choisir)",
+			"valueActions": "Actions",
+			"valueAt": "Valeur {index}",
+			"valuePlaceholder": "engineering",
+			"valueDescriptionAt": "Description de la valeur {index}",
+			"valueDescriptionPlaceholder": "Facultatif",
+			"moveValueUp": "Monter la valeur {index}",
+			"moveValueDown": "Descendre la valeur {index}",
+			"removeValue": "Supprimer la valeur {index}",
+			"addValue": "Ajouter une valeur",
+			"otherAutomatic": "Le modèle peut aussi répondre other."
+		},
+		"instructions": {
+			"help": "Indications facultatives pour les cas limites. Elles sont ajoutées après les dimensions.",
+			"placeholder": "Traitez les questions de contrat de l'équipe commerciale comme legal."
+		},
+		"sampling": {
+			"percent": "Part du trafic",
+			"percentHelp": "De 0,01 % à 100 %. L'échantillonnage est déterministe : une requête ou une session reçoit toujours la même décision.",
+			"sampleBy": "Échantillonner par",
+			"byRequest": "Requête",
+			"bySession": "Session",
+			"byRequestHelp": "Chaque requête est échantillonnée séparément.",
+			"bySessionHelp": "Les requêtes ayant le même ID de session sont échantillonnées ensemble. Les requêtes suivantes de la session réutilisent la première réponse pendant une heure au plus : une session n'est donc généralement facturée qu'une fois.",
+			"includeResponse": "Inclure la réponse",
+			"includeResponseHelp": "Envoie aussi la réponse du modèle au classificateur. Utile pour certaines étiquettes, mais plus coûteux."
+		},
+		"scope": {
+			"help": "Laissez une liste vide pour classer tout le trafic de l'espace de travail.",
+			"keys": "Clés API",
+			"apps": "Applications",
+			"models": "Modèles demandés",
+			"allKeys": "Toutes les clés",
+			"allApps": "Toutes les applications",
+			"allModels": "Tous les modèles",
+			"selected": "{count} sélectionné(s)",
+			"search": "Rechercher",
+			"none": "Rien à choisir pour l'instant."
+		},
+		"budget": {
+			"label": "Budget en USD",
+			"placeholder": "Aucun budget",
+			"help": "Dès que les dépenses atteignent le budget, la classification est suspendue jusqu'au mois civil suivant (UTC). Les dépenses sont vérifiées environ une fois par minute : le budget peut donc être légèrement dépassé.",
+			"spent": "Dépenses ce mois-ci : {spend} pour {count, plural, one {# classification} other {# classifications}}."
+		},
+		"results": {
+			"viewValue": "requêtes étiquetées",
+			"classifierRequests": "Les requêtes de ce classificateur et leur coût dans Journaux",
+			"afterSave": "Des liens vers Journaux filtrés par chaque étiquette apparaîtront ici une fois le classificateur enregistré."
+		},
+		"test": {
+			"description": "Envoie un exemple avec la même requête que celle créée par la passerelle, en votre nom. Il est facturé comme une classification et étiqueté phaseo.classifier. Rien n'est enregistré.",
+			"prompt": "Prompt d'exemple",
+			"promptPlaceholder": "Peux-tu vérifier cette clause du contrat avant que je l'envoie au client ?",
+			"response": "Réponse d'exemple (facultatif)",
+			"run": "Lancer le test",
+			"running": "En cours…",
+			"fixFirst": "Corrigez le classificateur avant de le tester.",
+			"privacyReview": "Ouvrez Chat une fois et vérifiez les paramètres de confidentialité de votre espace de travail, puis réessayez.",
+			"openChat": "Ouvrir Chat",
+			"failed": "Le test a échoué.",
+			"failedWithMessage": "Le test a échoué : {message}",
+			"labelKey": "Clé d'étiquette",
+			"labelValue": "Valeur",
+			"confidence": "Confiance",
+			"noAnswer": "Le modèle n'a pas renvoyé de réponse exploitable. Essayez un autre modèle ou simplifiez les dimensions.",
+			"costLine": "Coût {cost} avec {model}"
+		},
+		"actions": {
+			"save": "Enregistrer les modifications",
+			"create": "Créer le classificateur",
+			"saving": "Enregistrement…",
+			"cancel": "Annuler",
+			"delete": "Supprimer le classificateur",
+			"deleteTitle": "Supprimer {name} ?",
+			"deleteBody": "Les nouvelles requêtes ne sont plus classées. Les étiquettes déjà enregistrées restent sur les requêtes passées.",
+			"deleteConfirm": "Supprimer",
+			"saved": "Classificateur enregistré",
+			"created": "Classificateur créé",
+			"deleted": "Classificateur supprimé"
+		},
+		"errors": {
+			"invalid": "Vérifiez le classificateur : {message}",
+			"saveFailed": "Impossible d'enregistrer le classificateur.",
+			"deleteFailed": "Impossible de supprimer le classificateur.",
+			"samplePercent": "Saisissez une part de 0,01 % à 100 %.",
+			"budgetUsd": "Saisissez un budget supérieur à $0, ou laissez le champ vide."
 		}
 	}
 }

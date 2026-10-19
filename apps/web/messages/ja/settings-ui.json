@@ -4421,7 +4421,10 @@
 		"enterprise": "エンタープライズ",
 		"scimProvisioning": "SCIM プロビジョニング",
 		"singleSignOn": "シングルサインオン",
-		"workspaces": "ワークスペース"
+		"workspaces": "ワークスペース",
+		"classifiers": "分類器",
+		"newClassifier": "新しい分類器",
+		"classifier": "分類器"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4647,7 +4650,8 @@
 		"searchPlaceholder": "設定を検索…",
 		"becomeProvider": "プロバイダーになる",
 		"empty": "設定が見つかりません。",
-		"providerProfile": "プロバイダープロフィール"
+		"providerProfile": "プロバイダープロフィール",
+		"classifiers": "分類器"
 	},
 	"settingsAvailability": {
 		"title": "設定は一時的に利用できません",
@@ -5958,6 +5962,191 @@
 			"invalid_model": "lab/model のようなモデル ID を入力してください。",
 			"invalid_successor": "代替モデルの ID、または \"never\" を入力してください。",
 			"too_many_replacements": "このワークスペースは代替モデルの上限 (500 件) に達しました。"
+		}
+	},
+	"classifiers": {
+		"title": "分類器",
+		"description": "モデルでリクエストに自動でラベルを付け、そのラベルで使用量を絞り込んだりグループ化したりします。",
+		"newClassifier": "新しい分類器",
+		"feedback": "分類器をもっと使いやすくするには、どうすればよいですか？",
+		"limitReached": "このワークスペースにはすでに上限の {limit} 個の分類器があります。",
+		"selectWorkspace": "分類器を管理するワークスペースを選択してください。",
+		"adminsOnly": "分類器はリクエストのどの内容をモデルに送るかを決めるため、閲覧と変更はワークスペースのオーナーと管理者に限られます。",
+		"emptyTitle": "分類器はまだありません",
+		"emptyBody": "「部門」や「タスクの種類」などのプリセットから作成し、モデルと分類するトラフィックの割合を選びます。",
+		"billingNote": "分類はそれぞれ選択したモデルへの通常のリクエストで、そのモデルの通常料金でこのワークスペースに請求されます。これらのリクエストは使用量とログに phaseo.classifier ラベル付きで表示されます。",
+		"statusOn": "オン",
+		"statusOff": "オフ",
+		"listModel": "モデル",
+		"listLabels": "ラベルキー",
+		"listSampling": "サンプリング",
+		"sampledRequests": "リクエストの {percent}%",
+		"sampledSessions": "セッションの {percent}%",
+		"listThisMonth": "今月",
+		"spendSummary": "{count, plural, other {# 件の分類}}で {spend}",
+		"noBudget": "予算なし",
+		"budgetOf": "予算 {budget}",
+		"backToList": "分類器の一覧に戻る",
+		"newTitle": "新しい分類器",
+		"newDescription": "ラベル、モデル、分類するトラフィックの割合を選びます。",
+		"editTitle": "分類器",
+		"editDescription": "この分類器が付けるラベルと実行頻度を変更します。",
+		"notFound": "この分類器はもう存在しません。",
+		"resultsNote": "回答はリクエストのラベルとして保存され、ディメンションのキーがラベルキーになります。ログと使用量でこれらのラベルで絞り込んだりグループ化したりできます。アプリが同じキーのラベルをすでに送っている場合は、アプリの値が優先されます。",
+		"presets": {
+			"title": "プリセットから始める",
+			"description": "プリセットはディメンションを入力します。あとからすべて変更できます。",
+			"department": {
+				"title": "部門",
+				"summary": "リクエストがどのチームのものか"
+			},
+			"audience": {
+				"title": "対象読者",
+				"summary": "出力を誰が読むか"
+			},
+			"task_type": {
+				"title": "タスクの種類",
+				"summary": "コーディング、分析、文章作成、サポートなど"
+			},
+			"engineering_work": {
+				"title": "エンジニアリング作業",
+				"summary": "機能追加、バグ修正、レビュー、テスト"
+			},
+			"agent_complexity": {
+				"title": "エージェントの複雑さ",
+				"summary": "タスクの難しさと種類"
+			},
+			"compliance": {
+				"title": "コンプライアンス",
+				"summary": "個人データと規制対象のトピック"
+			}
+		},
+		"sections": {
+			"details": "詳細",
+			"model": "モデル",
+			"dimensions": "ディメンション",
+			"instructions": "指示",
+			"sampling": "サンプリング",
+			"scope": "対象範囲",
+			"budget": "月間予算",
+			"results": "結果の表示場所",
+			"test": "サンプルで試す"
+		},
+		"fields": {
+			"name": "名前",
+			"namePlaceholder": "部門",
+			"description": "説明",
+			"enabled": "リクエストを分類する",
+			"enabledDescription": "オフの間は何も分類されず、請求も発生しません。"
+		},
+		"model": {
+			"label": "分類器のモデル",
+			"help": "構造化出力への対応が文書化されているモデルを表示しています。通常は小さく高速なモデルで十分です。",
+			"showAll": "すべてのモデルを表示"
+		},
+		"dimensions": {
+			"help": "ディメンションごとに 1 つのラベルになります。ディメンションは最大 {max} 個、それぞれ最大 {values} 個の値を追加できます。",
+			"addDimension": "ディメンションを追加",
+			"dimensionTitle": "ディメンション {index}",
+			"moveDimensionUp": "ディメンション {index} を上に移動",
+			"moveDimensionDown": "ディメンション {index} を下に移動",
+			"removeDimension": "ディメンション {index} を削除",
+			"name": "名前",
+			"namePlaceholder": "コストセンター",
+			"key": "ラベルキー",
+			"keyHelp": "英字、数字、_ . : - のみ使用できます。",
+			"description": "意味",
+			"descriptionPlaceholder": "回答を使うチーム",
+			"multiple": "複数の値を許可",
+			"allowOther": "当てはまらない場合に other を追加",
+			"value": "値",
+			"valueDescription": "説明（モデルの判断に役立ちます）",
+			"valueActions": "操作",
+			"valueAt": "値 {index}",
+			"valuePlaceholder": "engineering",
+			"valueDescriptionAt": "値 {index} の説明",
+			"valueDescriptionPlaceholder": "任意",
+			"moveValueUp": "値 {index} を上に移動",
+			"moveValueDown": "値 {index} を下に移動",
+			"removeValue": "値 {index} を削除",
+			"addValue": "値を追加",
+			"otherAutomatic": "モデルは other と回答することもできます。"
+		},
+		"instructions": {
+			"help": "判断が難しいケース向けの任意の指示です。ディメンションのあとに追加されます。",
+			"placeholder": "営業チームからの契約に関する質問は legal として扱う。"
+		},
+		"sampling": {
+			"percent": "トラフィックの割合",
+			"percentHelp": "0.01% から 100% まで。サンプリングは決定的なので、同じリクエストやセッションには常に同じ判定が出ます。",
+			"sampleBy": "サンプリングの単位",
+			"byRequest": "リクエスト",
+			"bySession": "セッション",
+			"byRequestHelp": "リクエストごとに個別にサンプリングします。",
+			"bySessionHelp": "同じセッション ID のリクエストはまとめてサンプリングされます。セッション内の後続のリクエストは最初の回答を最大 1 時間再利用するため、通常セッションごとの請求は 1 回です。",
+			"includeResponse": "レスポンスを含める",
+			"includeResponseHelp": "モデルの返答も分類器に送ります。ラベルによっては精度が上がりますが、費用が増えます。"
+		},
+		"scope": {
+			"help": "リストを空にすると、ワークスペースのすべてのトラフィックを分類します。",
+			"keys": "API キー",
+			"apps": "アプリ",
+			"models": "リクエストされたモデル",
+			"allKeys": "すべてのキー",
+			"allApps": "すべてのアプリ",
+			"allModels": "すべてのモデル",
+			"selected": "{count} 件を選択",
+			"search": "検索",
+			"none": "まだ選択できるものがありません。"
+		},
+		"budget": {
+			"label": "予算（USD）",
+			"placeholder": "予算なし",
+			"help": "支出が予算に達すると、次の暦月（UTC）まで分類が一時停止します。支出の確認は約 1 分ごとなので、わずかに超えることがあります。",
+			"spent": "今月の支出：{count, plural, other {# 件の分類}}で {spend}。"
+		},
+		"results": {
+			"viewValue": "のラベルが付いたリクエスト：",
+			"classifierRequests": "この分類器自身のリクエストとその費用をログで見る",
+			"afterSave": "分類器を保存すると、各ラベルで絞り込んだログへのリンクがここに表示されます。"
+		},
+		"test": {
+			"description": "ゲートウェイが作成するのと同じリクエストで、サンプルを 1 件あなたとして送信します。分類と同じく請求され、phaseo.classifier ラベルが付きます。何も保存されません。",
+			"prompt": "サンプルのプロンプト",
+			"promptPlaceholder": "顧客に送る前に、この契約条項を確認してもらえますか？",
+			"response": "サンプルのレスポンス（任意）",
+			"run": "テストを実行",
+			"running": "実行中…",
+			"fixFirst": "テストする前に分類器を修正してください。",
+			"privacyReview": "一度 Chat を開いてワークスペースのプライバシー設定を確認してから、もう一度お試しください。",
+			"openChat": "Chat を開く",
+			"failed": "テストに失敗しました。",
+			"failedWithMessage": "テストに失敗しました：{message}",
+			"labelKey": "ラベルキー",
+			"labelValue": "値",
+			"confidence": "確信度",
+			"noAnswer": "モデルから使える回答が返りませんでした。別のモデルを試すか、ディメンションを簡単にしてください。",
+			"costLine": "{model} で費用 {cost}"
+		},
+		"actions": {
+			"save": "変更を保存",
+			"create": "分類器を作成",
+			"saving": "保存中…",
+			"cancel": "キャンセル",
+			"delete": "分類器を削除",
+			"deleteTitle": "{name} を削除しますか？",
+			"deleteBody": "新しいリクエストは分類されなくなります。すでに保存されたラベルは過去のリクエストに残ります。",
+			"deleteConfirm": "削除",
+			"saved": "分類器を保存しました",
+			"created": "分類器を作成しました",
+			"deleted": "分類器を削除しました"
+		},
+		"errors": {
+			"invalid": "分類器を確認してください：{message}",
+			"saveFailed": "分類器を保存できませんでした。",
+			"deleteFailed": "分類器を削除できませんでした。",
+			"samplePercent": "0.01% から 100% の割合を入力してください。",
+			"budgetUsd": "$0 より大きい予算を入力するか、空欄のままにしてください。"
 		}
 	}
 }

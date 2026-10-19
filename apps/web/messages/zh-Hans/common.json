@@ -136,6 +136,10 @@
 					"title": "创建防护规则",
 					"subtitle": "添加请求或响应策略"
 				},
+				"action-create-classifier": {
+					"title": "创建一个分类器",
+					"subtitle": "按部门、任务或受众为请求打标签"
+				},
 				"action-copy-page-link": {
 					"title": "复制当前页面链接",
 					"subtitle": "将此页面 URL 复制到剪贴板"
@@ -250,6 +254,7 @@
 				"nav-settings-presets": "路由预设",
 				"nav-settings-privacy": "隐私设置",
 				"nav-settings-guardrails": "防护规则",
+				"nav-settings-classifiers": "分类器",
 				"nav-settings-oauth": "OAuth 应用",
 				"nav-settings-broadcast": "事件转发",
 				"nav-settings-webhooks": "Webhooks",
@@ -328,6 +333,7 @@
 				"nav-settings-account-privacy": "账户隐私",
 				"nav-settings-credits-onboarding": "设置账单",
 				"nav-settings-guardrails-new": "创建防护规则",
+				"nav-settings-classifiers-new": "创建分类器",
 				"nav-settings-presets-new": "创建路由预设",
 				"nav-how-phaseo-normalises-ai-benchmarks": "基准测试如何归一化",
 				"nav-how-phaseo-measures-latency-throughput": "性能如何测量",

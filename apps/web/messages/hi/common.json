@@ -136,6 +136,10 @@
 					"title": "गार्डरेल बनाएँ",
 					"subtitle": "अनुरोध या जवाब के लिए नीति जोड़ें"
 				},
+				"action-create-classifier": {
+					"title": "एक क्लासिफ़ायर बनाएँ",
+					"subtitle": "विभाग, कार्य या दर्शकों के आधार पर अनुरोधों को लेबल करें"
+				},
 				"action-copy-page-link": {
 					"title": "वर्तमान पेज का लिंक कॉपी करें",
 					"subtitle": "इस पेज का URL क्लिपबोर्ड पर कॉपी करें"
@@ -250,6 +254,7 @@
 				"nav-settings-presets": "रूटिंग प्रीसेट",
 				"nav-settings-privacy": "गोपनीयता सेटिंग",
 				"nav-settings-guardrails": "गार्डरेल",
+				"nav-settings-classifiers": "क्लासिफ़ायर",
 				"nav-settings-oauth": "OAuth ऐप्स",
 				"nav-settings-broadcast": "प्रसारण",
 				"nav-settings-webhooks": "Webhooks",
@@ -328,6 +333,7 @@
 				"nav-settings-account-privacy": "खाते की गोपनीयता",
 				"nav-settings-credits-onboarding": "बिलिंग सेट अप करें",
 				"nav-settings-guardrails-new": "गार्डरेल बनाएँ",
+				"nav-settings-classifiers-new": "क्लासिफ़ायर बनाएँ",
 				"nav-settings-presets-new": "रूटिंग प्रीसेट बनाएँ",
 				"nav-how-phaseo-normalises-ai-benchmarks": "बेंचमार्क का सामान्यीकरण कैसे होता है",
 				"nav-how-phaseo-measures-latency-throughput": "प्रदर्शन कैसे मापा जाता है",

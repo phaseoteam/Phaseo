@@ -4421,7 +4421,10 @@
 		"enterprise": "企业",
 		"scimProvisioning": "SCIM 配置",
 		"singleSignOn": "单点登录",
-		"workspaces": "工作区"
+		"workspaces": "工作区",
+		"classifiers": "分类器",
+		"newClassifier": "新建分类器",
+		"classifier": "分类器"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4647,7 +4650,8 @@
 		"searchPlaceholder": "搜索设置…",
 		"becomeProvider": "成为提供商",
 		"empty": "未找到设置。",
-		"providerProfile": "提供商资料"
+		"providerProfile": "提供商资料",
+		"classifiers": "分类器"
 	},
 	"settingsAvailability": {
 		"title": "设置暂时不可用",
@@ -5958,6 +5962,191 @@
 			"invalid_model": "请输入模型 ID，例如 lab/model。",
 			"invalid_successor": "请输入替代模型 ID，或 \"never\"。",
 			"too_many_replacements": "此工作区已达到 500 个替代模型的上限。"
+		}
+	},
+	"classifiers": {
+		"title": "分类器",
+		"description": "用模型自动为请求打标签，然后按这些标签筛选和分组用量。",
+		"newClassifier": "新建分类器",
+		"feedback": "分类器怎样才能更好地为你服务？",
+		"limitReached": "此工作区已有 {limit} 个分类器，已达上限。",
+		"selectWorkspace": "选择一个工作区来管理它的分类器。",
+		"adminsOnly": "分类器决定哪些请求内容会发送给模型，因此只有工作区所有者和管理员可以查看和更改。",
+		"emptyTitle": "还没有分类器",
+		"emptyBody": "从“部门”或“任务类型”等预设创建一个，然后选择模型和要分类的流量比例。",
+		"billingNote": "每次分类都是对所选模型的一次普通请求，按该模型的常规价格计入此工作区的账单。这些请求会带着 phaseo.classifier 标签出现在用量和日志中。",
+		"statusOn": "开",
+		"statusOff": "关",
+		"listModel": "模型",
+		"listLabels": "标签键",
+		"listSampling": "采样",
+		"sampledRequests": "{percent}% 的请求",
+		"sampledSessions": "{percent}% 的会话",
+		"listThisMonth": "本月",
+		"spendSummary": "{count, plural, other {# 次分类}}，共 {spend}",
+		"noBudget": "无预算",
+		"budgetOf": "预算 {budget}",
+		"backToList": "返回分类器列表",
+		"newTitle": "新建分类器",
+		"newDescription": "选择标签、模型以及要分类的流量比例。",
+		"editTitle": "分类器",
+		"editDescription": "更改此分类器打的标签以及运行频率。",
+		"notFound": "此分类器已不存在。",
+		"resultsNote": "回答会保存为请求标签，维度键即标签键，因此你可以在日志和用量中按它们筛选和分组。如果你的应用已经发送了相同键的标签，则保留应用的值。",
+		"presets": {
+			"title": "从预设开始",
+			"description": "预设会填好维度，之后你可以修改任何内容。",
+			"department": {
+				"title": "部门",
+				"summary": "请求属于哪个团队"
+			},
+			"audience": {
+				"title": "受众",
+				"summary": "谁会阅读输出"
+			},
+			"task_type": {
+				"title": "任务类型",
+				"summary": "编程、分析、写作、支持等"
+			},
+			"engineering_work": {
+				"title": "工程工作",
+				"summary": "新功能、缺陷修复、评审、测试"
+			},
+			"agent_complexity": {
+				"title": "智能体复杂度",
+				"summary": "任务难度及其类别"
+			},
+			"compliance": {
+				"title": "合规",
+				"summary": "个人数据和受监管话题"
+			}
+		},
+		"sections": {
+			"details": "详情",
+			"model": "模型",
+			"dimensions": "维度",
+			"instructions": "说明",
+			"sampling": "采样",
+			"scope": "范围",
+			"budget": "每月预算",
+			"results": "结果显示位置",
+			"test": "用示例试一试"
+		},
+		"fields": {
+			"name": "名称",
+			"namePlaceholder": "部门",
+			"description": "描述",
+			"enabled": "对请求分类",
+			"enabledDescription": "关闭后，不会分类任何请求，也不会产生费用。"
+		},
+		"model": {
+			"label": "分类器模型",
+			"help": "列表显示有文档说明支持结构化输出的模型。通常一个小而快的模型就够了。",
+			"showAll": "显示所有模型"
+		},
+		"dimensions": {
+			"help": "每个维度对应一个标签。最多可添加 {max} 个维度，每个维度最多 {values} 个值。",
+			"addDimension": "添加维度",
+			"dimensionTitle": "维度 {index}",
+			"moveDimensionUp": "上移维度 {index}",
+			"moveDimensionDown": "下移维度 {index}",
+			"removeDimension": "移除维度 {index}",
+			"name": "名称",
+			"namePlaceholder": "成本中心",
+			"key": "标签键",
+			"keyHelp": "只能使用字母、数字和 _ . : -",
+			"description": "含义",
+			"descriptionPlaceholder": "将使用该回答的团队",
+			"multiple": "允许多个值",
+			"allowOther": "都不符合时添加 other",
+			"value": "值",
+			"valueDescription": "描述（帮助模型选择）",
+			"valueActions": "操作",
+			"valueAt": "值 {index}",
+			"valuePlaceholder": "engineering",
+			"valueDescriptionAt": "值 {index} 的描述",
+			"valueDescriptionPlaceholder": "可选",
+			"moveValueUp": "上移值 {index}",
+			"moveValueDown": "下移值 {index}",
+			"removeValue": "移除值 {index}",
+			"addValue": "添加值",
+			"otherAutomatic": "模型也可以回答 other。"
+		},
+		"instructions": {
+			"help": "针对边界情况的可选指引，会添加在维度之后。",
+			"placeholder": "把销售团队提出的合同问题视为 legal。"
+		},
+		"sampling": {
+			"percent": "流量比例",
+			"percentHelp": "从 0.01% 到 100%。采样是确定性的，因此同一请求或会话总会得到相同的结果。",
+			"sampleBy": "采样依据",
+			"byRequest": "请求",
+			"bySession": "会话",
+			"byRequestHelp": "每个请求单独采样。",
+			"bySessionHelp": "会话 ID 相同的请求会一起采样。会话中后续的请求在最长一小时内复用第一次的回答，因此一个会话通常只计费一次。",
+			"includeResponse": "包含响应",
+			"includeResponseHelp": "同时把模型的回复发送给分类器。对某些标签有帮助，但费用更高。"
+		},
+		"scope": {
+			"help": "将列表留空即可对工作区的全部流量分类。",
+			"keys": "API 密钥",
+			"apps": "应用",
+			"models": "请求的模型",
+			"allKeys": "所有密钥",
+			"allApps": "所有应用",
+			"allModels": "所有模型",
+			"selected": "已选 {count} 项",
+			"search": "搜索",
+			"none": "暂时没有可选项。"
+		},
+		"budget": {
+			"label": "预算（USD）",
+			"placeholder": "无预算",
+			"help": "支出达到预算后，分类会暂停到下一个自然月（UTC）。支出大约每分钟检查一次，因此可能略微超出。",
+			"spent": "本月支出：{count, plural, other {# 次分类}}，共 {spend}。"
+		},
+		"results": {
+			"viewValue": "带有以下标签值的请求：",
+			"classifierRequests": "在日志中查看此分类器自身的请求及其费用",
+			"afterSave": "保存分类器后，这里会显示按各标签筛选的日志链接。"
+		},
+		"test": {
+			"description": "以你的身份，用网关构建的同一请求发送一个示例。它按一次分类计费，并带有 phaseo.classifier 标签。不会保存任何内容。",
+			"prompt": "示例提示词",
+			"promptPlaceholder": "在我发给客户之前，你能帮我检查一下这条合同条款吗？",
+			"response": "示例响应（可选）",
+			"run": "运行测试",
+			"running": "正在运行…",
+			"fixFirst": "请先修正分类器再测试。",
+			"privacyReview": "请先打开一次 Chat 并查看工作区的隐私设置，然后重试。",
+			"openChat": "打开 Chat",
+			"failed": "测试失败。",
+			"failedWithMessage": "测试失败：{message}",
+			"labelKey": "标签键",
+			"labelValue": "值",
+			"confidence": "置信度",
+			"noAnswer": "模型没有返回可用的回答。请换一个模型或简化维度。",
+			"costLine": "使用 {model}，费用 {cost}"
+		},
+		"actions": {
+			"save": "保存更改",
+			"create": "创建分类器",
+			"saving": "正在保存…",
+			"cancel": "取消",
+			"delete": "删除分类器",
+			"deleteTitle": "删除 {name}？",
+			"deleteBody": "新请求将不再被分类。已保存的标签会保留在以往的请求上。",
+			"deleteConfirm": "删除",
+			"saved": "分类器已保存",
+			"created": "分类器已创建",
+			"deleted": "分类器已删除"
+		},
+		"errors": {
+			"invalid": "请检查分类器：{message}",
+			"saveFailed": "无法保存分类器。",
+			"deleteFailed": "无法删除分类器。",
+			"samplePercent": "请输入 0.01% 到 100% 之间的比例。",
+			"budgetUsd": "请输入大于 $0 的预算，或留空。"
 		}
 	}
 }

@@ -2,6 +2,7 @@ import type { StatsigProfile } from "@/lib/statsig/shared";
 import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
 import type { DisplayPreferences } from "@/lib/displayPreferences";
+import type { ClassifierDimension, ClassifierScope, InputScope, SampleBy } from "@/components/(gateway)/settings/classifiers/requestClassifiers";
 
 export type SettingsLayoutInitialData = {
 	isEnterpriseInvoiceMode: boolean;
@@ -571,6 +572,37 @@ export type SettingsGuardrailMember = { id: string; name: string; role: string }
 export type SettingsGuardrailProvider = { id: string; name: string; familyId: string; offerLabel: string | null; offerScope: "global" | "regional" | "specialized" | null };
 export type SettingsGuardrailsInitialData = { activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrailKeyIdsByGuardrailId: Record<string, string[]>; guardrailMemberIdsByGuardrailId: Record<string, string[]>; guardrails: SettingsGuardrailRow[]; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; providers: SettingsGuardrailProvider[]; workspaceId: string | null };
 export type SettingsGuardrailEditorData = { accountPolicy: AccountPrivacyPolicy; activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrail: SettingsGuardrailRow | null; initialKeyIds: string[]; initialMemberIds: string[]; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; mode: "create" | "edit"; providers: SettingsGuardrailProvider[]; teamName: string | null; workspaceId: string | null };
+
+/** A request classifier in API units (sample_rate 0 to 1, budget in USD) with this month's spend. */
+export type SettingsClassifier = {
+	id: string;
+	workspace_id: string;
+	name: string;
+	description: string | null;
+	enabled: boolean;
+	model: string;
+	instructions: string;
+	dimensions: ClassifierDimension[];
+	sample_rate: number;
+	sample_by: SampleBy;
+	input_scope: InputScope;
+	scope: ClassifierScope;
+	monthly_budget_usd: number | null;
+	created_by: string | null;
+	created_at: string;
+	updated_at: string;
+	usage: { classifications: number; costUsd: number };
+};
+export type SettingsClassifiersInitialData = {
+	canManageClassifiers: boolean;
+	workspaceId: string | null;
+	/** First day of the current UTC month, which spend covers. */
+	month: string;
+	limit: number;
+	classifiers: SettingsClassifier[];
+	keys: Array<{ id: string; name: string; prefix: string; status: string }>;
+	apps: Array<{ id: string; title: string }>;
+};
 
 export type SettingsUsageAlertsInitialData = { signedIn: boolean; warnings: DeprecationWarning[]; workspaceId: string | null };
 

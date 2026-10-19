@@ -25,6 +25,7 @@ import {
 	ClipboardCheck,
 	Inbox,
 	SlidersHorizontal,
+	Tags,
 } from "lucide-react";
 
 export type NavItem = {
@@ -156,6 +157,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				icon: ShieldCheck,
 				badge: "Beta",
 				match: ["/settings/guardrails"],
+			},
+			{
+				href: "/settings/classifiers",
+				label: "Classifiers",
+				icon: Tags,
+				badge: "Beta",
+				match: ["/settings/classifiers"],
 			},
 			{
 				href: "/settings/workspaces/enterprise",
@@ -327,6 +335,7 @@ const WORKSPACE_NAV_ORDER = [
 	"/settings/usage/logs",
 	"/settings/routing",
 	"/settings/guardrails",
+	"/settings/classifiers",
 	"/settings/privacy",
 	"/settings/presets",
 	"/settings/workspaces/private-models",

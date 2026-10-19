@@ -136,6 +136,10 @@
 					"title": "Create a guardrail",
 					"subtitle": "Add a request or response policy"
 				},
+				"action-create-classifier": {
+					"title": "Create a classifier",
+					"subtitle": "Label requests by department, task or audience"
+				},
 				"action-copy-page-link": {
 					"title": "Copy current page link",
 					"subtitle": "Copy this page URL to the clipboard"
@@ -250,6 +254,7 @@
 				"nav-settings-presets": "Routing Presets",
 				"nav-settings-privacy": "Privacy Settings",
 				"nav-settings-guardrails": "Guardrails",
+				"nav-settings-classifiers": "Classifiers",
 				"nav-settings-oauth": "OAuth Apps",
 				"nav-settings-broadcast": "Broadcast",
 				"nav-settings-webhooks": "Webhooks",
@@ -328,6 +333,7 @@
 				"nav-settings-account-privacy": "Account Privacy",
 				"nav-settings-credits-onboarding": "Set Up Billing",
 				"nav-settings-guardrails-new": "Create Guardrail",
+				"nav-settings-classifiers-new": "Create Classifier",
 				"nav-settings-presets-new": "Create Routing Preset",
 				"nav-how-phaseo-normalises-ai-benchmarks": "How Benchmarks Are Normalised",
 				"nav-how-phaseo-measures-latency-throughput": "How Performance Is Measured",
