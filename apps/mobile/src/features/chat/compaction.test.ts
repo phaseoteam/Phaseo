@@ -20,9 +20,14 @@ describe("budgeting", () => {
   });
 
   test("the gateway's count of the previous request replaces the estimate of everything before it", () => {
-    expect(estimatePrompt({ threadChars: 999_999, systemChars: 0, summaryChars: 0, media: 0, calibrated: { promptTokens: 50_000, charsSince: 7_000 } })).toBe(52_000);
+    expect(estimatePrompt({ threadChars: 182_000, systemChars: 0, summaryChars: 0, media: 0, calibrated: { promptTokens: 50_000, charsSince: 7_000 } })).toBe(52_000);
     // A zero count (a provider that didn't report usage) falls back to the estimate.
     expect(estimatePrompt({ threadChars: 7_000, systemChars: 0, summaryChars: 0, media: 0, calibrated: { promptTokens: 0, charsSince: 7_000 } })).toBe(2_000);
+  });
+
+  test("a count far below the character estimate (the thread changed since) never undercuts half of it", () => {
+    // 3.5 MB of thread is ~1M tokens by characters; a stale count of 50k must not let it all through.
+    expect(estimatePrompt({ threadChars: 3_500_000, systemChars: 0, summaryChars: 0, media: 0, calibrated: { promptTokens: 50_000, charsSince: 3_500 } })).toBe(500_000);
   });
 
   test("compaction starts past 80% of the window", () => {

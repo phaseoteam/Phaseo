@@ -35,13 +35,18 @@ export function contextTokensFrom(lengths: readonly (number | null | undefined)[
 
 /**
  * The next request's size in tokens. With the gateway's count for this model's previous request
- * (`usage.prompt_tokens`), only what was added since is estimated; otherwise everything is.
+ * (`usage.prompt_tokens`), only what was added since is estimated; otherwise everything is. A count far below
+ * the character estimate means the thread changed since that request, so it never goes under half of it.
  */
 export function estimatePrompt(args: { threadChars: number; systemChars: number; summaryChars: number; media: number; calibrated?: { promptTokens: number; charsSince: number } | null }) {
   const media = args.media * MEDIA_TOKENS;
-  if (args.calibrated && args.calibrated.promptTokens > 0) return args.calibrated.promptTokens + estimateTokens(args.calibrated.charsSince) + media;
-  return estimateTokens(args.threadChars + args.systemChars + args.summaryChars) + media;
+  const estimated = estimateTokens(args.threadChars + args.systemChars + args.summaryChars);
+  if (args.calibrated && args.calibrated.promptTokens > 0) return Math.max(args.calibrated.promptTokens + estimateTokens(args.calibrated.charsSince), Math.ceil(estimated * CALIBRATION_FLOOR)) + media;
+  return estimated + media;
 }
+
+/** The least share of the character estimate a calibrated estimate may be. */
+export const CALIBRATION_FLOOR = 0.5;
 
 export const shouldCompact = (estimate: number, contextTokens: number) => estimate > contextTokens * COMPACT_AT;
 
