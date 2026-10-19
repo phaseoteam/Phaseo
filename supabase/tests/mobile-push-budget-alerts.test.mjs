@@ -6,6 +6,7 @@ const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 const migrations = [
     '../migrations/20261018135417_mobile_push_rules.sql',
     '../migrations/20261019170840_mobile_push_categories_and_grouping.sql',
+    '../migrations/20261019175553_mobile_push_weekly_digest.sql',
     '../migrations/20261019175633_mobile_push_workspace_alerts.sql',
 ];
 const v4File = '../migrations/20261019181507_mobile_push_budget_alerts.sql';

@@ -12,7 +12,7 @@ const v2File = '../migrations/20261019170840_mobile_push_categories_and_grouping
 const digestFile = '../migrations/20261019175553_mobile_push_weekly_digest.sql';
 // Migrations after the digest, replayed so its cases run on the final functions. The catalogue
 // claim and the deliveries table's comment were redefined there and are checked by their suites.
-const laterFiles = ['../migrations/20261019175633_mobile_push_workspace_alerts.sql'];
+const laterFiles = ['../migrations/20261019175633_mobile_push_workspace_alerts.sql', '../migrations/20261019181507_mobile_push_budget_alerts.sql'];
 const redefinedLater = /claim_mobile_push_deliveries\.sql$/;
 const schemaFiles = [
     '../schemas/public/tables/mobile_push_digests.sql',
@@ -185,6 +185,7 @@ try {
       -- Read by the later migrations' indexes.
       create table public.email_outbox (id uuid primary key default gen_random_uuid(), created_at timestamptz not null default now(), kind text not null, workspace_id uuid, payload jsonb not null default '{}');
       create table public.workspace_audit_events (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, target_type text not null, created_at timestamptz not null default now());
+      create table public.gateway_requests (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, key_id uuid, endpoint text not null, success boolean, cost_nanos bigint, created_at timestamptz not null default now());
       create table public.v2_analytics_outbox (request_event_id uuid primary key, workspace_id uuid, occurred_at timestamptz, status text);
       grant select on public.v2_request_facts, public.v2_request_usage, public.v2_model_provider_routes, public.keys, public.v2_analytics_outbox to service_role;
     `);
