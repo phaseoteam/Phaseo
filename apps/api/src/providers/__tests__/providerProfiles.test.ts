@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getProviderProfile } from "../providerProfiles";
+import { getTextProviderReasoningEffortFallback } from "../textProfiles";
 
 describe("providerProfiles", () => {
 	it("resolves alias entries to the canonical profile", () => {
@@ -105,5 +106,18 @@ describe("providerProfiles", () => {
 		expect(wandb?.text?.paramPolicy?.supportedParams).toEqual(expect.arrayContaining([
 			"tools", "response_format", "reasoning.enabled",
 		]));
+	});
+});
+
+// The pipeline clamps OpenAI effort before the executor; it must match the model pages
+// (https://developers.openai.com/api/docs/models/gpt-5.5 and /gpt-5.5-pro).
+describe("OpenAI pipeline effort levels", () => {
+	it.each([
+		["gpt-5.5", ["none", "low", "medium", "high", "xhigh"]],
+		["gpt-5.5-pro", ["medium", "high", "xhigh"]],
+		["gpt-5.3-codex", ["low", "medium", "high", "xhigh"]],
+		["gpt-5-pro", ["high"]],
+	])("lists %s levels", (model, levels) => {
+		expect(getTextProviderReasoningEffortFallback({ providerId: "openai", model })).toEqual(levels);
 	});
 });

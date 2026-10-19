@@ -56,8 +56,19 @@ function openAIReasoningFallback(model: string): TextReasoningEffort[] {
 	if (m.includes("gpt-5.6")) {
 		return ["none", "low", "medium", "high", "xhigh", "max"];
 	}
-	if (m.includes("gpt-5.4-pro")) {
+	// Model pages on developers.openai.com/api/docs/models (gpt-5.5, gpt-5.5-pro, gpt-5.2-pro,
+	// gpt-5.3-codex, gpt-5-pro). Keep in step with OPENAI_REASONING_EFFORT_SUPPORT in the executor.
+	if (m.includes("gpt-5.4-pro") || m.includes("gpt-5.5-pro") || m.includes("gpt-5.2-pro")) {
 		return ["medium", "high", "xhigh"];
+	}
+	if (m.includes("gpt-5.5")) {
+		return ["none", "low", "medium", "high", "xhigh"];
+	}
+	if (m.includes("gpt-5.3-codex")) {
+		return ["low", "medium", "high", "xhigh"];
+	}
+	if (/gpt-5-pro/.test(m)) {
+		return ["high"];
 	}
 	if (m.includes("gpt-5.4")) {
 		return ["none", "low", "medium", "high", "xhigh"];

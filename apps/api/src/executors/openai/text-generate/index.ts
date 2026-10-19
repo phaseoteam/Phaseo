@@ -89,6 +89,10 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 // snapshot of the same model matches too.
 const OPENAI_RESPONSES_ONLY_MODELS = /^(?:gpt-5(?:\.[245])?-pro|o1-pro|o3-pro|gpt-5\.3-codex)(?:-\d{4}-\d{2}-\d{2})?$/;
 
+// Chat Completions fields with no CreateResponse property
+// (https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml).
+const OPENAI_CHAT_ONLY_FIELDS = ["stop", "seed", "frequency_penalty", "presence_penalty", "logit_bias"] as const;
+
 const OPENAI_WEBSOCKET_RECOVERABLE_ERRORS = new Set([
 	"session_timeout",
 	"concurrency_limit_exceeded",
@@ -813,6 +817,19 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	const requestPayload = route === "responses"
 		? irToOpenAIResponses(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams)
 		: irToOpenAIChat(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams);
+
+	if (route === "responses" && isOpenAIProviderOffer(args.providerId)) {
+		// Chat requests rerouted to /v1/responses (Responses-only models, reasoning) can carry
+		// Chat-only fields that OpenAI's CreateResponse does not define. Logprobs have a
+		// Responses form: include message.output_text.logprobs (with top_logprobs).
+		for (const field of OPENAI_CHAT_ONLY_FIELDS) delete requestPayload[field];
+		if (requestPayload.logprobs === true) {
+			const include = Array.isArray(requestPayload.include) ? requestPayload.include : [];
+			if (!include.includes("message.output_text.logprobs")) include.push("message.output_text.logprobs");
+			requestPayload.include = include;
+		}
+		delete requestPayload.logprobs;
+	}
 
 	requestPayload.stream = true;
 	// Responses requests always go upstream with store: false (documented on the

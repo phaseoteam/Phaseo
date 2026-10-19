@@ -243,6 +243,35 @@ describe("openai text executor HTTP mode", () => {
 		},
 	);
 
+	it("leaves Chat-only fields out of a request rerouted to Responses", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_chat_only",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.5-pro",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({ model: "openai/gpt-5.5-pro", stop: ["END"], seed: 7, frequencyPenalty: 0.5, presencePenalty: 0.5, logprobs: true } as any),
+			providerModelSlug: "gpt-5.5-pro",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		const body = mock.calls[0]?.bodyJson ?? {};
+		for (const field of ["stop", "seed", "frequency_penalty", "presence_penalty", "logit_bias", "logprobs"]) {
+			expect(body).not.toHaveProperty(field);
+		}
+		expect(body.include).toContain("message.output_text.logprobs");
+	});
+
 	it("sends OpenAI EU the documented service_tier name for standard", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/chat/completions"),
