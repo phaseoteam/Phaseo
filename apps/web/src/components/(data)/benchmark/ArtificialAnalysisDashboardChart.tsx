@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type ReactElement } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactElement, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CartesianGrid, ComposedChart, ResponsiveContainer, Scatter, XAxis, YAxis, useYAxisScale, useXAxisScale, usePlotArea } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -28,13 +28,31 @@ const emptyShape = () => <g />;
 
 /** Recharts animation wrappers remount children on prop changes, even with animation disabled.
  * Keep interactive shapes in a stable SVG layer so inspecting a point never discards focus. */
-function DashboardShapes({ series, columns, activeModel, configuration, render }: {
+function DashboardShapes({ series, columns, activeModel, configuration, onInspect, onLeave, onPin, render }: {
  series: DashboardSeries[]; columns: boolean; activeModel: string | null; configuration: string | null;
+ onInspect: (id: string) => void; onLeave: () => void; onPin: (id: string) => void;
  render: (props: { cx: number; cy: number; payload: DashboardPoint }, series: DashboardSeries) => ReactElement;
 }) {
- const xScale = useXAxisScale(), yScale = useYAxisScale();
- if (!xScale || !yScale) return null;
- return <g>{series.map((item) => <g key={item.id} opacity={activeModel && activeModel !== item.id ? configuration ? 0.35 : 0.15 : 1}>
+ const xScale = useXAxisScale(), yScale = useYAxisScale(), plot = usePlotArea();
+ const projected = series.flatMap((item) => item.points.map((point) => ({ ...point, cx: xScale?.(point.x), cy: yScale?.(point.y) })));
+ if (!xScale || !yScale || !plot) return null;
+ const nearest = (event: ReactPointerEvent<SVGGElement> | ReactMouseEvent<SVGGElement>) => {
+ if ((event.target as Element).closest("foreignObject")) return null;
+ const svg = event.currentTarget.ownerSVGElement, matrix = svg?.getScreenCTM();
+ if (!svg || !matrix) return null;
+ const cursor = svg.createSVGPoint(); cursor.x = event.clientX; cursor.y = event.clientY;
+ const position = cursor.matrixTransform(matrix.inverse());
+ let closest: DashboardPoint | null = null, distance = 14 ** 2;
+ for (const point of projected) {
+ if (typeof point.cx !== "number" || typeof point.cy !== "number") continue;
+ const candidate = (point.cx - position.x) ** 2 + (point.cy - position.y) ** 2;
+ if (candidate < distance) { closest = point; distance = candidate; }
+ }
+ return closest;
+ };
+ return <g onPointerMove={!columns ? (event) => { if ((event.target as Element).closest("foreignObject")) return; const point = nearest(event); if (point) onInspect(point.row.id); else onLeave(); } : undefined} onPointerLeave={!columns ? onLeave : undefined} onClickCapture={!columns ? (event) => { const point = nearest(event); if (point) { event.stopPropagation(); onPin(point.row.id); } } : undefined}>
+ {!columns ? <rect data-export-hide x={plot.x} y={plot.y} width={plot.width} height={plot.height} fill="transparent" /> : null}
+ {series.map((item) => <g key={item.id} opacity={activeModel && activeModel !== item.id ? configuration ? 0.35 : 0.15 : 1}>
  {!columns && new Set(item.points.map((point) => point.row.effort)).size === item.points.length ? <path pointerEvents="none" d={item.points.map((point, index) => `${index ? "L" : "M"}${xScale(point.x)},${yScale(point.y)}`).join(" ")} fill="none" stroke={dashboardColour(item.points[0].row)} strokeWidth={activeModel === item.id ? 2.5 : 1.75} /> : null}
  {item.points.map((point) => {
  const cx = xScale(point.x), cy = yScale(point.y);
@@ -139,7 +157,7 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 					} : axis} tickLine={false} axisLine={{ stroke: "var(--border)" }} tickFormatter={(n: number) => xValue ? xNumber(n) : columns ? rows.find((row) => row.modelId === modelIds[n])?.modelName ?? "" : localizedBenchmarkConfiguration(efforts[n], tx)} height={columns ? 90 : 30} interval={columns ? 0 : "preserveStartEnd"} label={columns ? undefined : { value: xLabel ?? tx("Common.ui.benchmarkChartCopy.modelConfiguration"), position: "bottom", offset: 12, ...axis }} />
 					<YAxis type="number" dataKey="y" domain={domain} ticks={yTicks} tick={axis} width={58} tickLine={false} axisLine={false} tickFormatter={(n: number) => number(n, true, tickPrecision)} label={xValue ? { value: tx("Catalogue.rankings.benchmarkMetrics.intelligence"), position: "insideTopLeft", dy: -22, ...axis } : undefined} />
 					{series.map((series) => <Scatter key={series.id} data={series.points} shape={emptyShape} activeShape={false} isAnimationActive={false} />)}
- <DashboardShapes series={series} columns={columns} activeModel={activeModel} configuration={configuration} render={(props, series) => {
+ <DashboardShapes series={series} columns={columns} activeModel={activeModel} configuration={configuration} onInspect={(id) => inspection.hover({ kind: "configuration", id })} onLeave={inspection.leave} onPin={(id) => inspection.pin({ kind: "configuration", id })} render={(props, series) => {
 						const { cx, cy, payload } = props as { cx: number; cy: number; payload: typeof points[number] };
 						const last = payload.row.id === series.points.at(-1)!.row.id;
 						const labelY = labelPositions.get(series.id) ?? cy;
@@ -150,7 +168,7 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 							const abbreviation = effortAbbreviations[payload.row.effort] ?? payload.row.effort.slice(0, 3);
 							return <DashboardColumn cx={cx} cy={cy} width={width} label={`${payload.row.sourceName}: ${number(payload.y)}`} onHover={() => inspection.hover({ kind: "configuration", id: payload.row.id })} onFocus={() => inspection.inspect({ kind: "configuration", id: payload.row.id })} onBlur={inspection.leave} onClick={() => inspection.pin({ kind: "configuration", id: payload.row.id })} selected={configuration === payload.row.id} pinned={inspection.pinned?.id === payload.row.id} colour={dashboardColour(payload.row)} opacity={configuration ? configuration === payload.row.id ? 1 : 0.35 : 0.4 + 0.6 * (index + 1) / configurations.length} effort={abbreviation} formattedValue={unit === "tokens" ? new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 0 }).format(payload.y) : number(payload.y, true)} showValue={width >= 7} groupSize={configurations.length} />;
 						}
-						return <g><circle tabIndex={0} role="button" aria-pressed={inspection.pinned?.id === payload.row.id} aria-label={`${payload.row.sourceName}: ${number(payload.y)}${xValue ? `; ${xLabel}: ${new Intl.NumberFormat(locale, { maximumSignificantDigits: 12 }).format(payload.x)}` : ""}`} onMouseEnter={() => inspection.hover({ kind: "configuration", id: payload.row.id })} onMouseLeave={inspection.leave} onFocus={() => inspection.inspect({ kind: "configuration", id: payload.row.id })} onBlur={inspection.leave} onClick={() => inspection.pin({ kind: "configuration", id: payload.row.id })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); inspection.pin({ kind: "configuration", id: payload.row.id }); requestAnimationFrame(() => regionRef.current?.querySelector<HTMLButtonElement>('[role="status"] button')?.focus()); } }} className="focus-visible:outline-2 focus-visible:outline-ring" cx={cx} cy={cy} r={12} fillOpacity={0} fill={dashboardColour(payload.row)} stroke="transparent" strokeWidth={1.5} /><circle opacity={configuration && configuration !== payload.row.id && activeModel === series.id ? 0.4 : 1} aria-hidden="true" pointerEvents="none" cx={cx} cy={cy} r={configuration === payload.row.id ? 6 : activeModel === series.id ? 4.5 : 3.5} fill={dashboardColour(payload.row)} />{directLabels && last ? <g><path aria-hidden="true" d={`M${cx + 6},${cy} L${size.width - 178},${labelY}`} stroke={dashboardColour(payload.row)} strokeWidth={0.7} opacity={0.3} fill="none" /><foreignObject x={size.width - 174} y={labelY - 12} width={174} height={24}><button type="button" aria-pressed={pinned === series.id} onClick={() => inspection.pin({ kind: "model", id: series.id })} onMouseEnter={() => inspection.hover({ kind: "model", id: series.id })} onMouseLeave={inspection.leave} onFocus={() => inspection.inspect({ kind: "model", id: series.id })} onBlur={inspection.leave} className="flex h-6 w-full items-center gap-1.5 rounded px-1 text-left text-xs font-medium hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring" style={{ color: dashboardColour(payload.row) }}><Logo id={payload.row.creatorId} alt="" width={15} height={15} className="shrink-0 object-contain" /><span className="truncate">{payload.row.modelName}</span></button></foreignObject></g> : null}</g>;
+						return <g><circle tabIndex={0} role="button" aria-pressed={inspection.pinned?.id === payload.row.id} aria-label={`${payload.row.sourceName}: ${number(payload.y)}${xValue ? `; ${xLabel}: ${new Intl.NumberFormat(locale, { maximumSignificantDigits: 12 }).format(payload.x)}` : ""}`} pointerEvents="none" onFocus={() => inspection.inspect({ kind: "configuration", id: payload.row.id })} onBlur={inspection.leave} onClick={() => inspection.pin({ kind: "configuration", id: payload.row.id })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); inspection.pin({ kind: "configuration", id: payload.row.id }); requestAnimationFrame(() => regionRef.current?.querySelector<HTMLButtonElement>('[role="status"] button')?.focus()); } }} className="focus-visible:outline-2 focus-visible:outline-ring" cx={cx} cy={cy} r={12} fillOpacity={0} fill={dashboardColour(payload.row)} stroke="transparent" strokeWidth={1.5} /><circle opacity={configuration && configuration !== payload.row.id && activeModel === series.id ? 0.4 : 1} aria-hidden="true" pointerEvents="none" cx={cx} cy={cy} r={configuration === payload.row.id ? 6 : activeModel === series.id ? 4.5 : 3.5} fill={dashboardColour(payload.row)} />{directLabels && last ? <g><path aria-hidden="true" d={`M${cx + 6},${cy} L${size.width - 178},${labelY}`} stroke={dashboardColour(payload.row)} strokeWidth={0.7} opacity={0.3} fill="none" /><foreignObject x={size.width - 174} y={labelY - 12} width={174} height={24}><button type="button" aria-pressed={pinned === series.id} onClick={() => inspection.pin({ kind: "model", id: series.id })} onMouseEnter={() => inspection.hover({ kind: "model", id: series.id })} onMouseLeave={inspection.leave} onFocus={() => inspection.inspect({ kind: "model", id: series.id })} onBlur={inspection.leave} className="flex h-6 w-full items-center gap-1.5 rounded px-1 text-left text-xs font-medium hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring" style={{ color: dashboardColour(payload.row) }}><Logo id={payload.row.creatorId} alt="" width={15} height={15} className="shrink-0 object-contain" /><span className="truncate">{payload.row.modelName}</span></button></foreignObject></g> : null}</g>;
 					}} />
 					<DashboardInspectionGuides point={points.find((point) => point.row.id === configuration)} columns={columns} colour={selectedRow ? dashboardColour(selectedRow) : "var(--foreground)"} number={(n) => number(n, true)} xNumber={xNumber} />{xValue && frontier ? <Scatter name={tx("Catalogue.benchmarks.explorer.pareto")} data={paretoPoints(points)} shape={() => <g />} line={{ stroke: "var(--foreground)", strokeDasharray: "5 4", strokeWidth: 1.5 }} lineType="joint" isAnimationActive={false} /> : null}
 				</ComposedChart>

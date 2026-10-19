@@ -16,10 +16,10 @@ export function useDashboardInspection(regionRef: RefObject<HTMLElement | null>)
  const [pinned, setPinned] = useState<Selection | null>(null);
  const suppressHover = useRef(false);
  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
- const keep = () => { if (timer.current) clearTimeout(timer.current); };
- const inspect = (selection: Selection) => { keep(); setTemporary(selection); };
+ const keep = () => { if (timer.current) clearTimeout(timer.current); timer.current = null; };
+ const inspect = (selection: Selection) => { keep(); setTemporary((previous) => previous?.kind === selection.kind && previous.id === selection.id ? previous : selection); };
  const hover = (selection: Selection) => { if (!suppressHover.current) inspect(selection); };
- const leave = () => { keep(); timer.current = setTimeout(() => setTemporary(null), 180); };
+ const leave = () => { if (timer.current) return; timer.current = setTimeout(() => { timer.current = null; setTemporary(null); }, 180); };
  const pin = (selection: Selection) => { keep(); setTemporary(null); setPinned((previous) => previous?.kind === selection.kind && previous.id === selection.id ? null : selection); };
  const clear = () => { suppressHover.current = true; keep(); setTemporary(null); setPinned(null); };
  useEffect(() => {
