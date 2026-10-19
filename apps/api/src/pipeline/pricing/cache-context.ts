@@ -21,6 +21,32 @@ function normalizeCacheTtl(value: string | undefined): string | undefined {
 	return value.trim().toLowerCase();
 }
 
+function partHasCacheMark(part: unknown): boolean {
+	return isObject(part) && (isObject(part.cache_control) || isObject(part.cacheControl) || isObject(part.prompt_cache_breakpoint));
+}
+
+function contentHasCacheMark(content: unknown): boolean {
+	return Array.isArray(content) && content.some(partHasCacheMark);
+}
+
+/**
+ * Whether the request marks cache breakpoints on content blocks, system blocks or tools
+ * (Anthropic-style `cache_control`, OpenAI-style `prompt_cache_breakpoint`). Providers
+ * that bill implicit and explicit cache hits at different rates (Alibaba Model Studio)
+ * serve an explicit hit only for such a request.
+ */
+function requestHasCacheMarks(body: any): boolean {
+	if (!isObject(body)) return false;
+	if (contentHasCacheMark(body.system) || contentHasCacheMark(body.tools)) return true;
+	for (const message of Array.isArray(body.messages) ? body.messages : []) {
+		if (partHasCacheMark(message) || contentHasCacheMark(message?.content)) return true;
+	}
+	for (const item of Array.isArray(body.input) ? body.input : []) {
+		if (partHasCacheMark(item) || contentHasCacheMark(item?.content)) return true;
+	}
+	return false;
+}
+
 export function deriveCachePricingContext(body: any): Record<string, any> {
 	const providerOptions = body?.provider_options ?? body?.providerOptions;
 	const hasOpenaiOptions = isObject(providerOptions?.openai);
@@ -94,6 +120,7 @@ export function deriveCachePricingContext(body: any): Record<string, any> {
 	if (googleCacheTtl) out.google_cache_ttl = normalizeCacheTtl(googleCacheTtl);
 	if (xaiConversationId) out.xai_conversation_id = xaiConversationId;
 	if (cacheTtl) out.cache_ttl = cacheTtl;
+	if (requestHasCacheMarks(body)) out.cache_marks = true;
 
 	const cacheProvider = (() => {
 		if (xaiConversationId || hasXaiOptions) return "xai";

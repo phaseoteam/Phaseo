@@ -101,4 +101,18 @@ describe("deriveCachePricingContext", () => {
 		expect(context.cache_provider).toBe("xai");
 		expect(context.cache_requested).toBe(true);
 	});
+	it.each([
+		["a Chat content block", { messages: [{ role: "user", content: [{ type: "text", text: "x", cache_control: { type: "ephemeral" } }] }] }],
+		["a Messages system block", { system: [{ type: "text", text: "x", cache_control: { type: "ephemeral" } }], messages: [] }],
+		["a tool", { tools: [{ name: "t", cache_control: { type: "ephemeral" } }], messages: [] }],
+		["a Responses input part", { input: [{ role: "user", content: [{ type: "input_text", text: "x", prompt_cache_breakpoint: { mode: "explicit" } }] }] }],
+	])("records cache marks on %s", (_label, body) => {
+		const context = deriveCachePricingContext(body);
+		expect(context.cache_marks).toBe(true);
+		expect(context.cache_requested).toBe(true);
+	});
+	it("records no cache marks on an unmarked request", () => {
+		const context = deriveCachePricingContext({ messages: [{ role: "user", content: [{ type: "text", text: "x" }] }] });
+		expect(context).toEqual({});
+	});
 });
