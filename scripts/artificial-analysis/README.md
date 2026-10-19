@@ -18,6 +18,7 @@ extractor does not invent benchmark IDs or normalize incompatible scales.
 Each snapshot records source/data URLs, HTML and data SHA-256 hashes, detected
 methodology versions, and fetch/extraction times. `--input saved.html --data
 saved-data.txt` supports offline replay; saved inputs have unknown fetch time.
+Saved HTML requires an explicit `--url` to preserve source provenance.
 Output files are created exclusively. Invalid identities, duplicates, broken
 manifests, authentication failures in the data envelope, and changed schemas
 abort extraction. Corrupt or partial data is not published.

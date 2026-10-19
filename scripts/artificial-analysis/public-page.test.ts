@@ -8,6 +8,28 @@ const source = "https://artificialanalysis.ai/models";
 const model = { id: "source-1", name: "Model (high)", slug: "model-high", effort: "high", intelligenceIndex: 0, canonicalIntelligenceIndexTokenCount: { input: 10, output: 0, reasoning: null }, intelligenceIndexEvaluations: [{ slug: "omniscience", score: -3, outputTokensPerTask: 0 }] };
 const html = (stream: string) => `<title>Intelligence Index v4.3.2</title><script>self.__next_f.push(${JSON.stringify([1, stream])})</script>`;
 
+test("accepts mixed-case HTML script tags for models and manifests", () => {
+	const page = html(`a:${JSON.stringify([model])}\n`).replace(/script/g, "ScRiPt");
+	assert.equal(extractPublicModels(page, source, null).models.length, 1);
+	const manifest = { path: "/data/abc.txt", key: "a".repeat(64) };
+	assert.deepEqual(publicDataManifest(html(`a:${JSON.stringify({ initialModels: [], manifest })}\n`).replace(/script/g, "SCRIPT")), manifest);
+});
+test("rejects malformed and conflicting JSON records while allowing tagged and identical records", () => {
+	const valid = `a:${JSON.stringify([model])}\n`;
+	assert.throws(() => extractPublicModels(html(valid + 'b:[{"id":'), source, null));
+	assert.throws(() => extractPublicModels(html(valid + `a:${JSON.stringify([{ ...model, intelligenceIndex: 2 }])}\n`), source, null), /Conflicting/);
+	assert.equal(extractPublicModels(html(valid + valid + 'b:I["module"]\n'), source, null).models.length, 1);
+});
+test("rejects invalid candidate identities and cost shapes and preserves absent evaluations", () => {
+	for (const bad of [{ ...model, slug: 123 }, { ...model, slug: null }, { ...model, intelligenceIndexCostPerTask: 123 }]) {
+		assert.throws(() => extractPublicModels(html(`a:${JSON.stringify([model, bad])}\n`), source, null));
+	}
+	for (const evaluations of [undefined, null, []]) {
+		const result = extractPublicModels(html(`a:${JSON.stringify([{ ...model, intelligenceIndexEvaluations: evaluations }])}\n`), source, null);
+		assert.deepEqual(result.models[0].evaluations, evaluations ?? null);
+	}
+});
+
 test("extracts public scores and token counts without conflating null and zero", () => {
 	const result = extractPublicModels(html(`a:${JSON.stringify([model])}\n`), source, "2026-10-18T00:00:00Z");
 	assert.equal(result.models.length, 1);

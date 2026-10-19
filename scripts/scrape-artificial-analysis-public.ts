@@ -8,6 +8,7 @@ import { databaseModelMappings, matchModels, type CatalogModel, type SourceModel
 async function main() {
 	const { values } = parseArgs({ options: { url: { type: "string", default: "https://artificialanalysis.ai/models" }, input: { type: "string" }, data: { type: "string" }, output: { type: "string" }, "match-db": { type: "boolean" }, write: { type: "boolean" } } });
 	if (!values.output) throw new Error("Supply --output <snapshot.json>; optionally --input <saved.html>, --data <saved-data.txt>, and --match-db");
+	if (values.input && !process.argv.includes("--url") && !process.argv.some((arg) => arg.startsWith("--url="))) throw new Error("Supply --url with saved HTML to preserve source provenance");
 	if (values.write && (!values["match-db"] || values.input || values.data || values.url !== "https://artificialanalysis.ai/models")) throw new Error("Publication requires a fresh full /models fetch and --match-db");
 	const url = new URL(values.url);
 	if (url.origin !== "https://artificialanalysis.ai" || !/^\/models(?:\/[a-zA-Z0-9._-]+)?\/?$/.test(url.pathname) || url.username || url.password) throw new Error("Use an Artificial Analysis public model page URL");

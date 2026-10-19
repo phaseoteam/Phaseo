@@ -6,7 +6,7 @@ const object = (value: unknown): value is JsonObject => Boolean(value) && typeof
 const methodologyVersions = (html: string) => [...new Set([...html.matchAll(/(?:Intelligence Index|Current version:)[\s\S]{0,30}?v(\d+\.\d+(?:\.\d+)?)/g)].map((match) => match[1]))];
 
 export function publicDataManifest(html: string) {
-	const stream = [...html.matchAll(/<script\b[^>]*>self\.__next_f\.push\((\[1,[\s\S]*?\])\)\s*;?<\/script>/g)].map((match) => JSON.parse(match[1])[1]).join("");
+	const stream = [...html.matchAll(/<script\b[^>]*>self\.__next_f\.push\((\[1,[\s\S]*?\])\)\s*;?<\/script>/gi)].map((match) => JSON.parse(match[1])[1]).join("");
 	const manifests: Array<{ path: string; key: string }> = [];
 	const walk = (value: unknown) => {
 		if (!value || typeof value !== "object") return;
@@ -55,7 +55,7 @@ export function extractFullPublicModels(html: string, bytes: Buffer, sourceUrl: 
 export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: string | null) {
 	const records = new Map<string, unknown>();
 	let stream = "";
-	for (const match of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) {
+	for (const match of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
 		const push = match[1].match(/^self\.__next_f\.push\((\[1,[\s\S]*\])\)\s*;?$/);
 		if (!push) continue;
 		const chunk: unknown = JSON.parse(push[1]);
@@ -64,7 +64,13 @@ export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: 
 	for (const line of stream.split("\n")) {
 		const match = line.match(/^([\da-f]+):([\s\S]*)$/);
 		if (!match) continue;
-		try { records.set(match[1], JSON.parse(match[2])); } catch { /* Flight module and text records are not model JSON. */ }
+		let value: unknown;
+		try { value = JSON.parse(match[2]); } catch (error) {
+			if (/^\s*[\[{]/.test(match[2])) throw error;
+			continue; // Tagged Flight module and text records are not model JSON.
+		}
+		if (records.has(match[1]) && JSON.stringify(records.get(match[1])) !== JSON.stringify(value)) throw new Error("Conflicting public data record");
+		records.set(match[1], value);
 	}
 	const resolve = (value: unknown, seen = new Set<string>()): unknown => {
 		if (typeof value === "string" && /^\$[\da-f]+$/.test(value)) {
@@ -89,11 +95,12 @@ export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: 
 	const models = new Map<string, JsonObject>();
 	const walk = (value: unknown) => {
 		if (!value || typeof value !== "object") return;
-		if (object(value) && Object.hasOwn(value, "intelligenceIndex") && (Object.hasOwn(value, "canonicalIntelligenceIndexTokenCount") || Object.hasOwn(value, "intelligenceIndexEvaluations")) && typeof value.slug === "string") {
+		if (object(value) && Object.hasOwn(value, "intelligenceIndex") && (Object.hasOwn(value, "canonicalIntelligenceIndexTokenCount") || Object.hasOwn(value, "intelligenceIndexEvaluations"))) {
 			const row = resolve(value) as JsonObject;
-			if (typeof row.id !== "string" || !row.id || typeof row.name !== "string" || !/^[a-zA-Z0-9._-]+$/.test(row.slug as string)) throw new Error("Invalid public model identity");
+			if (typeof row.id !== "string" || !row.id || typeof row.name !== "string" || typeof row.slug !== "string" || !/^[a-zA-Z0-9._-]+$/.test(row.slug)) throw new Error("Invalid public model identity");
 			const evaluations = row.intelligenceIndexEvaluations;
 			if (evaluations !== null && evaluations !== undefined && !Array.isArray(evaluations)) throw new Error("Invalid evaluation list");
+			if (row.intelligenceIndexCostPerTask != null && !object(row.intelligenceIndexCostPerTask)) throw new Error("Invalid cost per task");
 			const result = {
 				id: row.id, slug: row.slug, name: row.name, effort: object(row.effort) && typeof row.effort.slug === "string" ? row.effort.slug : typeof row.effort === "string" ? row.effort : null,
 				creator: row.creator ?? null,
@@ -111,10 +118,10 @@ export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: 
 				totalCostUsd: numericObject(row.intelligenceIndexCost, "totalCostUsd"),
 				costPerTaskUsd: object(row.intelligenceIndexCostPerTask) ? numericObject(row.intelligenceIndexCostPerTask.cost, "costPerTaskUsd") : null,
 				timePerTaskSeconds: numeric(row.intelligenceIndexTimePerTask, "timePerTaskSeconds", true),
-				evaluations: (evaluations as unknown[] | null | undefined ?? []).map((evaluation) => {
+				evaluations: Array.isArray(evaluations) ? evaluations.map((evaluation) => {
 					if (!object(evaluation) || typeof evaluation.slug !== "string" || !evaluation.slug) throw new Error("Invalid evaluation identity");
 					return { slug: evaluation.slug, score: numeric(evaluation.score, "score"), outputTokensPerTask: numeric(evaluation.outputTokensPerTask, "outputTokensPerTask", true), costPerTaskUsd: numeric(evaluation.costPerTask, "costPerTask", true), timePerTaskSeconds: numeric(evaluation.timePerTask, "timePerTask", true) };
-				}),
+				}) : null,
 			};
 			const previous = models.get(row.id);
 			if (previous && JSON.stringify(previous) !== JSON.stringify(result)) throw new Error(`Conflicting public rows for ${row.id}`);
