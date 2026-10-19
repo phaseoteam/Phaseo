@@ -4,6 +4,7 @@
 
 import type { IRContentPart } from "@core/ir";
 import { readGatewayStop, responsesOutputHasRefusal } from "@core/finish-reason";
+import { isBareChatErrorFrame } from "@core/stream-errors";
 
 type StopReason = string | null | undefined;
 
@@ -272,6 +273,16 @@ function extractOpenAIChatEvents(frame: any): UnifiedStreamEvent[] {
 		events.push({ type: "error", message: frame?.message, payload: frame });
 		return events;
 	}
+	// OpenAI-compatible providers report a failure after the stream started as a
+	// bare `{"error": {...}}` data frame with no `object` or `choices`.
+	if (isBareChatErrorFrame(frame)) {
+		events.push({
+			type: "error",
+			message: typeof frame.error.message === "string" ? frame.error.message : "stream_error",
+			payload: frame,
+		});
+		return events;
+	}
 
 	if (frame?.object === "chat.completion.chunk") {
 		events.push({
@@ -524,7 +535,9 @@ function extractOpenAIResponsesEvents(
 			message:
 				typeof frame?.error?.message === "string"
 					? frame.error.message
-					: (typeof frame?.message === "string" ? frame.message : "stream_error"),
+					: typeof frame?.response?.error?.message === "string"
+						? frame.response.error.message
+						: (typeof frame?.message === "string" ? frame.message : "stream_error"),
 			payload: frame,
 		});
 		events.push({

@@ -360,6 +360,39 @@ export function createAnthropicToResponsesStreamTransformer(
 						usage = { ...usage, ...payload.usage };
 					}
 
+				} else if (payload.type === "error") {
+					// Anthropic reports a failure after the stream started (for example
+					// overloaded_error) as an `error` event and sends no message_stop.
+					// The partial output already reached the client as deltas.
+					if (!createdEmitted) {
+						// An error before message_start: open the response so the stream
+						// still begins with response.created.
+						createdAt = createdAt || Math.floor(Date.now() / 1000);
+						emitEvent(controller, "response.created", {
+							response: {
+								id: requestId,
+								created_at: createdAt,
+								model: model,
+							},
+						});
+						createdEmitted = true;
+					}
+					emitEvent(controller, "response.failed", {
+						response: {
+							id: requestId,
+							object: "response",
+							created_at: createdAt,
+							model: model,
+							status: "failed",
+							error: {
+								code: typeof payload.error?.type === "string" ? payload.error.type : "api_error",
+								message: typeof payload.error?.message === "string" ? payload.error.message : "stream_error",
+							},
+							output: [],
+							usage: anthropicUsageToResponsesUsage(usage),
+							nativeResponseId: messageId,
+						},
+					});
 				} else if (payload.type === "message_stop") {
 					// Build final response object
 					const outputItems: any[] = [];

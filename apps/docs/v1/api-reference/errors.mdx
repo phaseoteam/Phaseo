@@ -91,7 +91,9 @@ Some errors include more detail to help you fix the issue faster:
 | `phaseo_free_model_limit_exceeded` | `429` | Phaseo's shared daily free-model allowance is exhausted (1,500 requests by default). Honor `Retry-After`, wait for the 00:00 UTC reset, or choose a paid model. |
 | `rate_limit_exceeded` | `429` | A workspace [rate limit policy](./limits.mdx#rate-limit-policies) is exhausted. `policy_id` and `limit_scope` identify it. Honor `Retry-After`, or ask a workspace admin to change the policy. |
 | `validation_error` | `400` | Invalid parameters or request body. |
+| `upstream_error` | `429` | Every provider tried for the request rate limited it. Honor `Retry-After`; BYOK requests also carry `X-Phaseo-Upstream-RateLimit-*` headers. Other provider failures use `502`. |
 | `provider_error` | `502` | The upstream model provider failed to respond correctly. |
+| `upstream_stream_failure` | `502` | A non-streaming request whose provider failed after it started generating. No partial output is returned and the request is not charged. |
 | `server_error` | `500` | An unexpected issue happened inside Phaseo. |
 
 ## When a provider fails
@@ -257,7 +259,8 @@ Set an attempt limit and an overall deadline, and add jitter to backoff delays. 
 ## Streaming-specific notes
 
 - If the request fails before streaming begins, you get a standard JSON error payload.
-- If it fails mid-stream, treat the partial stream as incomplete and show a retry option.
+- If it fails mid-stream, the stream ends with the endpoint's failure event instead of a normal finish: an `error` frame on Chat Completions, `response.failed` (or `error`) on Responses, and an `error` event on Messages. Treat the partial stream as incomplete and show a retry option.
+- A non-streaming request whose provider fails part-way returns `502` with `upstream_stream_failure`, not a partial response.
 - Always capture `generation_id` and endpoint/model metadata in logs.
 
 ## Troubleshooting tips

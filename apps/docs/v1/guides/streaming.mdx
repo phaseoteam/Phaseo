@@ -54,7 +54,9 @@ Pass an `AbortSignal` to your server-side HTTP client and cancel when the user s
 
 Render partial text progressively, but mark a response complete only after the endpoint's successful terminal event. A closed connection alone is not proof of completion.
 
-If a stream fails after output begins:
+If a stream fails after output begins, it ends with the endpoint's failure event rather than its successful terminal event: an `error` frame on Chat Completions (no `finish_reason`), `response.failed` or `error` on Responses, and an `error` event on Messages (no `message_stop`). Phaseo does not charge for the partial output of a stream that fails.
+
+When that happens:
 
 1. Mark the partial response as interrupted.
 2. Keep the request or generation ID, endpoint, and model in your logs.

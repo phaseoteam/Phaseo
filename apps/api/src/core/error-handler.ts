@@ -19,7 +19,7 @@ import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
-import { extractDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
+import { readDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 
 const REDACT_ERROR_KEYS = new Set([
@@ -677,7 +677,8 @@ export async function handleError({
     },
 }): Promise<Response> {
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
-    applyDownstreamRateLimitHeaders(headers, extractDownstreamRateLimitHeaders(res.headers, { includeQuotaDetails: false }));
+    // Keeps BYOK quota headers the execute stage already put in downstream form.
+    applyDownstreamRateLimitHeaders(headers, readDownstreamRateLimitHeaders(res.headers));
     if (timingHeader) {
         headers.set("Server-Timing", timingHeader);
         headers.set("Timing-Allow-Origin", "*");

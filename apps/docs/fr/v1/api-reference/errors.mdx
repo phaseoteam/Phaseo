@@ -90,7 +90,9 @@ Certaines erreurs fournissent des détails supplémentaires pour accélérer le 
 | `phaseo_free_model_limit_exceeded` | `429` | Le quota quotidien partagé des modèles gratuits de Phaseo est épuisé (1 500 requêtes par défaut). Respectez `Retry-After`, attendez la réinitialisation à 00:00 UTC ou choisissez un modèle payant. |
 | `rate_limit_exceeded` | `429` | Une [politique de limite de débit](./limits.mdx) de l’espace de travail est épuisée. `policy_id` et `limit_scope` l’identifient. Respectez `Retry-After`, ou demandez à un administrateur de l’espace de travail de modifier la politique. |
 | `validation_error` | `400` | Paramètres ou corps de requête invalide. |
+| `upstream_error` | `429` | Tous les fournisseurs essayés pour la requête l’ont limitée en débit. Respectez `Retry-After` ; les requêtes BYOK incluent aussi les en-têtes `X-Phaseo-Upstream-RateLimit-*`. Les autres échecs de fournisseur utilisent `502`. |
 | `provider_error` | `502` | Le fournisseur de modèle en amont n’a pas répondu correctement. |
+| `upstream_stream_failure` | `502` | Une requête sans streaming dont le fournisseur a échoué après le début de la génération. Aucune sortie partielle n’est renvoyée et la requête n’est pas facturée. |
 | `server_error` | `500` | Un problème inattendu s’est produit dans Phaseo. |
 
 ## En cas d’échec d’un fournisseur
@@ -254,7 +256,8 @@ Définissez une limite de tentatives et une échéance globale, et ajoutez une v
 ## Particularités du streaming
 
 - Si la requête échoue avant le début du streaming, vous recevez une réponse d’erreur JSON standard.
-- Si elle échoue en cours de flux, considérez le flux partiel comme incomplet et proposez une nouvelle tentative.
+- Si elle échoue en cours de flux, le flux se termine par l’événement d’échec du point de terminaison au lieu d’une fin normale : une trame `error` pour Chat Completions, `response.failed` (ou `error`) pour Responses et un événement `error` pour Messages. Considérez le flux partiel comme incomplet et proposez une nouvelle tentative.
+- Une requête sans streaming dont le fournisseur échoue en cours de route renvoie `502` avec `upstream_stream_failure`, et non une réponse partielle.
 - Enregistrez toujours `generation_id` ainsi que les métadonnées du point de terminaison et du modèle.
 
 ## Conseils de dépannage

@@ -9,6 +9,7 @@ import { parseMinimaxInterleavedText } from "./providers/minimax/quirks";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
 import { SseParser } from "@core/sse-parser";
+import { isBareChatErrorFrame, readUpstreamStreamError } from "@core/stream-errors";
 import type { GatewayReasoningDetail } from "@core/types";
 import { toChatAnnotations, toResponsesAnnotations } from "@protocols/shared/citations";
 import {
@@ -421,7 +422,15 @@ export function transformResponsesStreamToChat(
 								break;
 							case "response.failed":
 							case "error":
-								await emit({ object: "error", message: payload?.error?.message ?? "stream_error" }, controller);
+								{
+									// OpenAI SDKs raise on a frame's `error` field; object/message stay for existing readers.
+									const failure = readUpstreamStreamError(payload);
+									await emit({
+										object: "error",
+										message: failure.message,
+										error: { message: failure.message, type: failure.code ?? "upstream_error", code: failure.code },
+									}, controller);
+								}
 								break;
 							default:
 								break;
@@ -620,6 +629,7 @@ export function transformChatStreamToResponses(
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
 			let createdEmitted = false;
+			let upstreamFailure: { code: string | null; message: string } | null = null;
 			try {
 				while (true) {
 					const { value, done } = await reader.read();
@@ -669,7 +679,14 @@ export function transformChatStreamToResponses(
 							continue;
 						}
 
-						if (!isChatPayload) continue;
+						if (!isChatPayload) {
+							// A Chat upstream that fails after the stream started sends a bare
+							// error frame; the stream then ends as response.failed below.
+							if (mode !== "responses" && isBareChatErrorFrame(payload)) {
+								upstreamFailure ??= readUpstreamStreamError(payload);
+							}
+							continue;
+						}
 
 						mode = "chat";
 						applyStreamQuirks(payload, state, args.providerId);
@@ -945,8 +962,10 @@ export function transformChatStreamToResponses(
 							id: args.requestId,
 							object: "response",
 							created_at: ir.created ?? createdAt,
-							status: completion.status,
-							...(completion.incompleteDetails ? { incomplete_details: completion.incompleteDetails } : {}),
+							status: upstreamFailure ? "failed" : completion.status,
+							...(upstreamFailure
+								? { error: { code: upstreamFailure.code ?? "server_error", message: upstreamFailure.message } }
+								: (completion.incompleteDetails ? { incomplete_details: completion.incompleteDetails } : {})),
 							// Internal: stripped before the client sees the frame.
 							...gatewayStopEntry(refusalStop ? "refusal" : firstChoice?.finishDetail, firstChoice?.stopSequence),
 							model: ir.model ?? model,
@@ -959,8 +978,26 @@ export function transformChatStreamToResponses(
 							...(encoded.related_questions ? { related_questions: encoded.related_questions } : {}),
 							...(encoded.reasoning_steps ? { reasoning_steps: encoded.reasoning_steps } : {}),
 						};
-						await emitEvent("response.completed", { response }, controller);
+						await emitEvent(upstreamFailure ? "response.failed" : "response.completed", { response }, controller);
 					}
+				}
+				if (upstreamFailure && mode === "unknown") {
+					// The upstream failed before sending any chunk.
+					if (!createdEmitted) {
+						await emitCreated(controller);
+						createdEmitted = true;
+					}
+					await emitEvent("response.failed", {
+						response: {
+							id: args.requestId,
+							object: "response",
+							created_at: createdAt,
+							status: "failed",
+							error: { code: upstreamFailure.code ?? "server_error", message: upstreamFailure.message },
+							model,
+							output: [],
+						},
+					}, controller);
 				}
 			} catch (err) {
 				console.error("openai compat chat->responses stream transform failed:", err);

@@ -14,6 +14,7 @@ import type { PipelineTiming } from "./execute";
 import { resolvePipeline } from "./registry";
 import { ResponsesSchema } from "@core/schemas";
 import { MAX_REQUEST_MODEL_FALLBACKS } from "./before/requestModelFallbacks";
+import { everyAttemptRejectedRequest } from "./execute/attempt-outcomes";
 import { runAutoRouterClassifierGatewayRequest } from "./auto-router-classifier-gateway";
 import {
 	buildPipelineExecutionErrorResponse,
@@ -77,12 +78,34 @@ function modelFallbackAttemptKey(ctx: {
 	return `${ctx.model}|${providers}|${ctx.preset?.id ?? ""}`;
 }
 
-function shouldTryModelFallback(response: Response): boolean {
-    return MODEL_FALLBACK_STATUSES.has(response.status);
+// A provider rejection of the request itself (400, 413, 422) reaches the client
+// as a 502 upstream_error, but it is the request's fault: another model would
+// be called, and billed, with the same bad request.
+function shouldTryModelFallback(
+	response: Response,
+	ctx: { attemptErrors?: Array<Record<string, unknown>> | null },
+): boolean {
+	if (!MODEL_FALLBACK_STATUSES.has(response.status)) return false;
+	return !(response.status === 502 && everyAttemptRejectedRequest(ctx.attemptErrors));
 }
 
 function discardResponseBody(response: Response) {
 	response.body?.cancel().catch(() => undefined);
+}
+
+/**
+ * A 429 upstream_error says every provider called was rate limited. Across model fallbacks
+ * that holds only if every model that ran also ended in 429; otherwise (for example the
+ * primary's provider failed with 503) the request failed for mixed reasons and is a 502.
+ */
+export async function settleMixedRateLimitAcrossModels(response: Response, attempts: readonly ModelFallbackAttempt[]): Promise<Response> {
+	if (response.status !== 429) return response;
+	const executed = attempts.filter((attempt) => attempt.stage === "execute");
+	if (executed.every((attempt) => attempt.status === 429)) return response;
+	const body = await response.clone().json().catch(() => null) as Record<string, unknown> | null;
+	if (!body || body.error !== "upstream_error") return response;
+	discardResponseBody(response);
+	return new Response(JSON.stringify({ ...body, status_code: 502 }), { status: 502, headers: response.headers });
 }
 
 function hasBlobValue(value: unknown): boolean {
@@ -342,9 +365,9 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				}
 				response = withRateLimitPolicyHeaders(response, fallbackPre.ctx);
 				attempts.push({ model: fallbackPre.ctx.model, status: response.status, stage: "execute" });
-				if (!shouldTryModelFallback(response) || rejectedByRateLimitPolicy(fallbackPre.ctx)) return response;
+				if (!shouldTryModelFallback(response, fallbackPre.ctx) || rejectedByRateLimitPolicy(fallbackPre.ctx)) return response;
 			}
-			return response;
+			return await settleMixedRateLimitAcrossModels(response, attempts);
         };
 
         // If before failed, log and return error immediately
@@ -384,7 +407,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 
         try {
 			const response = withRateLimitPolicyHeaders(await runWithHeaders({ pre, req, endpoint, timing }), pre.ctx);
-			if (!shouldTryModelFallback(response)) return response;
+			if (!shouldTryModelFallback(response, pre.ctx)) return response;
 			// Other models share the exhausted policy allowance.
 			if (rejectedByRateLimitPolicy(pre.ctx)) return response;
 			const fallbackPlan = configuredModelFallbacks(pre.ctx);
