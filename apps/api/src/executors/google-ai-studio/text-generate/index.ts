@@ -1551,8 +1551,14 @@ export function transformStream(
 	let buf = "";
 	type StreamToolState = {
 		id: string;
+		// Stream-wide position of this call in its candidate, so parallel calls
+		// that arrive in separate frames keep distinct chat `index` values.
+		toolIndex: number;
 		argumentsSoFar: string;
 		emittedName: boolean;
+		// Whole `args` already received: Gemini sends complete calls, so another
+		// complete call under the same key is a new call, not a continuation.
+		complete: boolean;
 	};
 	type InteractionStepState = {
 		type: string;
@@ -1563,6 +1569,7 @@ export function transformStream(
 		toolIndex: number;
 	};
 	const toolStates = new Map<string, StreamToolState>();
+	const toolCountByCandidate = new Map<number, number>();
 	const interactionStepStates = new Map<number, InteractionStepState>();
 	let interactionToolCallCount = 0;
 	let interactionSawFunctionCall = false;
@@ -1782,7 +1789,6 @@ export function transformStream(
 						name?: string;
 						arguments?: string;
 					}> = [];
-					let functionCallIndex = 0;
 					// Thought signatures, sealed so chat clients can return them
 					// and the gateway replays them only to this Gemini model.
 					const signatureDetails: Array<Record<string, any>> = [];
@@ -1811,27 +1817,45 @@ export function transformStream(
 								content += part.text;
 							}
 						} else if (part.functionCall) {
-							const toolIndex = functionCallIndex++;
-							const stateKey = `${index}:${partIdx}:${part.functionCall.name || "tool"}`;
-							let state = toolStates.get(stateKey);
-							if (!state) {
-								state = {
-									id: typeof part.functionCall.id === "string" && part.functionCall.id
-										? part.functionCall.id
-										: `call_${args.requestId}_${index}_${partIdx}`,
-									argumentsSoFar: "",
-									emittedName: false,
-								};
-								toolStates.set(stateKey, state);
-							}
-
+							const upstreamId = typeof part.functionCall.id === "string" && part.functionCall.id
+								? part.functionCall.id
+								: null;
 							const partialArgs = typeof part.functionCall.partialArgs === "string"
 								? part.functionCall.partialArgs
 								: "";
 							const hasPartialArgs = partialArgs.length > 0;
-							const nextArguments = hasPartialArgs
-								? `${state.argumentsSoFar}${partialArgs}`
-								: JSON.stringify(part.functionCall.args || {});
+							const baseKey = upstreamId
+								? `${index}:id:${upstreamId}`
+								: `${index}:${partIdx}:${part.functionCall.name || "tool"}`;
+							const completeArguments = hasPartialArgs ? null : JSON.stringify(part.functionCall.args || {});
+							let stateKey = baseKey;
+							let state = toolStates.get(stateKey);
+							// Without upstream ids, a different complete call at the same part
+							// position and name (parallel calls in separate frames) is a new
+							// call; an identical re-send stays the same call.
+							for (
+								let repeat = 1;
+								state?.complete && completeArguments !== null && !upstreamId && state.argumentsSoFar !== completeArguments;
+								repeat += 1
+							) {
+								stateKey = `${baseKey}#${repeat}`;
+								state = toolStates.get(stateKey);
+							}
+							if (!state) {
+								const toolIndex = toolCountByCandidate.get(index) ?? 0;
+								toolCountByCandidate.set(index, toolIndex + 1);
+								state = {
+									id: upstreamId ?? `call_${args.requestId}_${index}_${toolIndex}`,
+									toolIndex,
+									argumentsSoFar: "",
+									emittedName: false,
+									complete: false,
+								};
+								toolStates.set(stateKey, state);
+							}
+							const toolIndex = state.toolIndex;
+							if (completeArguments !== null) state.complete = true;
+							const nextArguments = completeArguments ?? `${state.argumentsSoFar}${partialArgs}`;
 							let argumentsDelta = "";
 							if (hasPartialArgs) {
 								argumentsDelta = partialArgs;
