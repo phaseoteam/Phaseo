@@ -36,6 +36,8 @@ CREATE OR REPLACE FUNCTION public.claim_mobile_push_deliveries (
 -- the next run picks the work up. Otherwise two overlapping calls could each lock part of the
 -- same group and send it as two pushes. The lock ends with the transaction; claimed rows are
 -- processing by then, so a later claim cannot take them.
+-- Weekly digest rows (digest_id) are never read here, so a backlog of them cannot use up
+-- p_limit; claim_mobile_push_digests claims, closes and requeues them.
 #variable_conflict use_column
 declare
   v_day_start timestamp with time zone := date_trunc('day', now() at time zone 'UTC') at time zone 'UTC';
@@ -75,13 +77,13 @@ begin
 
   update public.mobile_push_deliveries x
   set status = 'pending', merged_into = null, claim_token = null, claimed_at = null, updated_at = now()
-  where x.status = 'processing' and x.claimed_at < now() - interval '10 minutes';
+  where x.status = 'processing' and x.claimed_at < now() - interval '10 minutes' and x.digest_id is null;
 
   return query
   with due as (
     select w.device_id, coalesce(w.group_key, w.id::text) as unit
     from public.mobile_push_deliveries w
-    where w.status in ('pending', 'deferred')
+    where w.status in ('pending', 'deferred') and w.digest_id is null
     group by w.device_id, coalesce(w.group_key, w.id::text)
     having min(w.not_before) <= now()
       and (
@@ -95,7 +97,7 @@ begin
     select x.id, x.device_id, x.group_key, x.event_id, x.created_at, x.attempts, d.unit
     from public.mobile_push_deliveries x
     join due d on d.device_id = x.device_id and d.unit = coalesce(x.group_key, x.id::text)
-    where x.status in ('pending', 'deferred') and x.not_before <= now()
+    where x.status in ('pending', 'deferred') and x.not_before <= now() and x.digest_id is null
     for update of x skip locked
   ),
   members as (

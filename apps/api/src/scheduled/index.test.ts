@@ -17,6 +17,7 @@ const pruneExpiredDataContributionsMock = vi.fn();
 const runPaymentMethodExpiryNotificationJobMock = vi.fn();
 const enqueueFeedbackRequestEmailsMock = vi.fn(async () => 0);
 const runMobilePushJobMock = vi.fn();
+const runMobilePushDigestJobMock = vi.fn();
 const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
@@ -87,6 +88,11 @@ vi.mock("@/pipeline/notifications/mobile-push", () => ({
 	hasMobilePushActivity: (summary: Record<string, unknown>) => Object.values(summary).some((value) => Number(value) > 0),
 }));
 
+vi.mock("@/pipeline/notifications/mobile-push-digest", () => ({
+	runMobilePushDigestJob: (...args: unknown[]) => runMobilePushDigestJobMock(...args),
+	hasMobilePushDigestActivity: (summary: Record<string, unknown> | undefined) => Object.values(summary ?? {}).some((value) => Number(value) > 0),
+}));
+
 vi.mock("@/pipeline/notifications/notification-delivery", () => ({
 	runNotificationDeliveryJob: (...args: unknown[]) => runNotificationDeliveryJobMock(...args),
 	enqueueModelDeprecationNotifications: (...args: unknown[]) => enqueueModelDeprecationNotificationsMock(...args),
@@ -150,6 +156,7 @@ describe("handleScheduledEvent", () => {
 		runPaymentMethodExpiryNotificationJobMock.mockReset();
 		enqueueFeedbackRequestEmailsMock.mockClear();
 		runMobilePushJobMock.mockReset().mockResolvedValue({ captured: 0, sent: 0 });
+		runMobilePushDigestJobMock.mockReset().mockResolvedValue({ built: 0, sent: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
 		enqueueModelDeprecationNotificationsMock.mockReset().mockResolvedValue({ workspaces: 0, enqueued: 0 });
 		runAccountDeletionPurgeJobMock.mockReset().mockResolvedValue({
@@ -428,6 +435,33 @@ describe("handleScheduledEvent", () => {
 			expect(log).toHaveBeenCalledWith("mobile_push_completed", { captured: 1, sent: 2 });
 		} finally {
 			log.mockRestore();
+		}
+	});
+
+	it("runs the weekly digest with mobile push, before it, and never lets it stop catalogue pushes", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "false" } as any);
+			expect(runMobilePushDigestJobMock).not.toHaveBeenCalled();
+
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "true", EXPO_ACCESS_TOKEN: "expo-token" } as any);
+			expect(runMobilePushDigestJobMock).toHaveBeenCalledWith({ accessToken: "expo-token" });
+			expect(runMobilePushDigestJobMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
+			expect(log).not.toHaveBeenCalledWith("mobile_push_digest_completed", expect.anything());
+
+			runMobilePushDigestJobMock.mockResolvedValueOnce({ built: 1, sent: 2 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:10:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("mobile_push_digest_completed", { built: 1, sent: 2 });
+
+			runMobilePushJobMock.mockClear();
+			runMobilePushDigestJobMock.mockRejectedValueOnce(new Error("mobile_push_digest_claim_failed:boom"));
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(errors).toHaveBeenCalledWith("mobile_push_digest_failed", expect.anything());
+			expect(runMobilePushJobMock).toHaveBeenCalledTimes(1);
+		} finally {
+			log.mockRestore();
+			errors.mockRestore();
 		}
 	});
 });

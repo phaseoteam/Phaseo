@@ -5,6 +5,9 @@ const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 const v1File = '../migrations/20261018135417_mobile_push_rules.sql';
 const v2File = '../migrations/20261019170840_mobile_push_categories_and_grouping.sql';
+// Schema files the weekly digest migration has replaced since; mobile-push-digest.test.mjs checks them there.
+const digestFile = '../migrations/20261019175553_mobile_push_weekly_digest.sql';
+const replacedByDigest = new Set(['../schemas/public/functions/enqueue_mobile_push_deliveries.sql', '../schemas/public/functions/claim_mobile_push_deliveries.sql']);
 const functionFiles = [
     '../schemas/private/functions/mobile_push_category.sql',
     '../schemas/private/functions/mobile_push_group_key.sql',
@@ -50,7 +53,8 @@ try {
     // The migration carries every schema file it changed, and the manifest lists the new ones.
     const v1 = await read(v1File);
     const v2 = await read(v2File);
-    for (const file of functionFiles) assert.ok(v2.includes((await read(file)).trim()), `${file} is in the migration`);
+    const digest = await read(digestFile);
+    for (const file of functionFiles) assert.ok((replacedByDigest.has(file) ? digest : v2).includes((await read(file)).trim()), `${file} is in the migration`);
     const tables = {};
     for (const name of ['mobile_push_devices', 'mobile_notification_preferences', 'mobile_push_deliveries', 'catalogue_notification_events', 'mobile_notification_rules']) {
         tables[name] = await read(`../schemas/public/tables/${name}.sql`);
@@ -68,11 +72,11 @@ try {
         assert.ok(check, `${name} allows provider_launched`);
         carried(name, check);
     }
-    // Every comment on these tables is in one of the two migrations, bar the one that predates them.
+    // Every comment on these tables is in one of the push migrations, bar the one that predates them.
     for (const [name, table] of Object.entries(tables)) {
         for (const statement of table.match(/^COMMENT ON [^\n]*;$/gm)) {
             if (statement.startsWith('COMMENT ON TABLE "public"."mobile_push_devices"')) continue;
-            assert.ok(v1.includes(statement) || v2.includes(statement), `${name}: ${statement.slice(0, 90)} is in a migration`);
+            assert.ok(v1.includes(statement) || v2.includes(statement) || digest.includes(statement), `${name}: ${statement.slice(0, 90)} is in a migration`);
         }
         for (const column of ['channel_scheme', 'categories', 'group_key', 'merged_into']) {
             if (table.includes(`"${column}"`)) assert.match(v2, new RegExp(`ADD COLUMN "${column}" `), `${column} is added`);
