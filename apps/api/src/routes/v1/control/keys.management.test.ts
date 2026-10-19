@@ -455,6 +455,31 @@ describe("management key routes", () => {
 		expect(state.updatePayloads).toEqual([]);
 	});
 
+	it("records pausing and resuming a key as such, like the dashboard", async () => {
+		// Each update reads the key, then reads it back.
+		for (const status of ["active", "paused", "paused", "active", "active", "active"]) {
+			state.keyRows.push({
+				id: "key_live", hash: "hash_1", workspace_id: "ws_1", kid: "kid_1", name: "Live Key", prefix: "phaseo_v1_sk_abc", status, scopes: "[]",
+				created_by: "user_1", created_at: "2026-04-28T10:00:00Z", updated_at: "2026-04-28T10:30:00Z", last_used_at: null, soft_blocked: false,
+				expires_at: null, daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0,
+			});
+		}
+		const { recordWorkspaceAuditEvent } = await import("@/lib/audit/workspaceAudit");
+		const audit = vi.mocked(recordWorkspaceAuditEvent);
+		audit.mockClear();
+		const { keysRoutes } = await import("./keys");
+		for (const body of [{ disabled: true }, { disabled: false }, { name: "Renamed" }]) {
+			const response = await keysRoutes.request("https://example.com/hash_1", {
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(body),
+			});
+			expect(response.status).toBe(200);
+		}
+
+		expect(audit.mock.calls.map(([, event]) => event.action)).toEqual(["api_key.paused", "api_key.resumed", "api_key.updated"]);
+	});
+
 	it("updates a key by hash and remaps limit_reset using the existing limit", async () => {
 		state.keyRows.push(
 			{

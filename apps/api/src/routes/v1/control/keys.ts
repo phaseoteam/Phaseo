@@ -851,7 +851,9 @@ async function handleUpdateKey(req: Request) {
 			throw new Error(refetchError.message || "Failed to fetch updated API key");
 		}
 		if (!updated) throw new Error("Failed to fetch updated API key");
-		await auditApiKey(auth.value, "api_key.updated", updated as KeyRow, { changed_fields: Object.keys(updatePayload) });
+		// Pausing and resuming are recorded as such, as the dashboard does.
+		const action = typeof body.disabled === "boolean" ? (body.disabled ? "api_key.paused" : "api_key.resumed") : "api_key.updated";
+		await auditApiKey(auth.value, action, updated as KeyRow, { changed_fields: Object.keys(updatePayload) });
 
 		return json({ data: formatApiKey(updated as KeyRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {

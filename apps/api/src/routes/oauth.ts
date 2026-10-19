@@ -973,7 +973,7 @@ oauthRouter.post(
 					{ type: "authorization_code", id: String(data.id) },
 					tokenInput,
 				)
-				: await issueOAuthManagedKeyForAuthorizationCode(String(data.id), tokenInput);
+				: await issueOAuthManagedKeyForAuthorizationCode(String(data.id), tokenInput, { clientName: client.name ?? null });
 			if (!tokens) return oauthError("invalid_grant", "Authorization code is invalid or expired");
 			return json(tokens, 200, { "Cache-Control": "no-store" });
 		}
