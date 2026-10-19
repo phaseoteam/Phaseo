@@ -1,4 +1,5 @@
 import * as SQLite from "expo-sqlite";
+import { perf } from "@/perf";
 import { migrateChatDatabase } from "./migrations";
 import { cleanSettings, type ModelSettings } from "./settings";
 import type { Chat, ChatAttachment, ChatMessage } from "./types";
@@ -9,7 +10,10 @@ export function db() {
   if (database) return database;
   database = SQLite.openDatabaseSync("phaseo-chats.db");
   database.execSync("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA synchronous = NORMAL;");
-  migrateChatDatabase(database);
+  perf?.attachDb(database);
+  const opened = database;
+  if (perf) perf.time("db.migrate", () => migrateChatDatabase(opened), (from) => ({ from }));
+  else migrateChatDatabase(opened);
   // A run can't survive the app being closed; anything left streaming was interrupted.
   database.runSync("UPDATE messages SET status = 'stopped' WHERE status = 'streaming'");
   return database;

@@ -7,6 +7,7 @@ import { useOpenDetail } from "@/components/shell/SplitStack";
 import { EmptyState, Header, Icon, IconButton, pointAnchor, Screen, SearchField, showActions, Text } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatRelativeDay } from "@/lib/format";
+import { perf } from "@/perf";
 import { chatActions } from "./chatActions";
 import { searchChats } from "./db";
 import { groupChats, type ChatListItem } from "./groups";
@@ -15,6 +16,7 @@ import { useModelLabels } from "./models";
 import { useChats } from "./state";
 
 export function ChatList() {
+  perf?.chatListRender();
   const router = useRouter();
   const pathname = usePathname();
   const openDetail = useOpenDetail("/chat");
@@ -41,7 +43,7 @@ export function ChatList() {
         accessibilityRole="button"
         accessibilityLabel={chat.title}
         accessibilityHint="Long press for rename, pin and delete"
-        onPress={() => openDetail(`/chat/${chat.id}`)}
+        onPress={() => { perf?.chatTapped(chat.id); openDetail(`/chat/${chat.id}`); }}
         onLongPress={(event) => showActions({ title: chat.title, anchor: pointAnchor(event), actions: chatActions(chat, { router, onDeleted: () => { if (selectedId === chat.id) router.replace("/chat"); } }) })}
         delayLongPress={300}
         className={cn("mx-2 rounded-md px-3 py-2.5 active:bg-accent", selectedId === chat.id && "bg-accent")}
@@ -70,6 +72,7 @@ export function ChatList() {
         renderItem={renderItem}
         extraData={extraData}
         estimatedItemSize={60}
+        onLoad={perf ? () => perf?.chatListLoaded(items.length) : undefined}
         keyboardDismissMode="on-drag"
         ListEmptyComponent={deferred
           ? <EmptyState title="No chats match" body="Search looks through titles and messages." />

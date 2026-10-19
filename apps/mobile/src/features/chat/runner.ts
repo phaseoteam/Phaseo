@@ -1,5 +1,6 @@
 import * as Crypto from "expo-crypto";
 import { ApiError } from "@/lib/api/http";
+import { perf } from "@/perf";
 import { createChat, deleteMessagesFrom, getChat, indexAnswer, insertMessage, listMessages, nextPosition, updateChat, updateMessage } from "./db";
 import { requestCapabilities } from "./models";
 import type { ModelSettings } from "./settings";
@@ -65,12 +66,16 @@ async function answer(chatId: string, parentId: string, model: string, workspace
     liveStore.set((current) => ({ ...current, [message.id]: { content, reasoning } }));
     if (Date.now() - flushedAt > FLUSH_MS) {
       flushedAt = Date.now();
+      perf?.count("stream.flush");
       updateMessage(message.id, { content, reasoning });
     }
   };
+  perf?.streamStarted(message.id);
 
   try {
+    const historyStarted = perf ? performance.now() : 0;
     const history = await historyFor(listMessages(chatId), model, parentId);
+    perf?.log("history.build", { model, ms: Math.round(performance.now() - historyStarted), messages: history.length });
     // Settings are read when the answer starts, so a change applies from the next message or retry.
     const settings = getChat(chatId)?.modelSettings[model];
     const result = await streamCompletion({
@@ -94,6 +99,7 @@ async function answer(chatId: string, parentId: string, model: string, workspace
     updateMessage(message.id, { content, reasoning, status: stopped ? "stopped" : "error", error: stopped ? null : text, errorCode: stopped ? null : code, errorStatus: stopped ? null : status });
     if (!stopped && (error instanceof ChatRequestError || error instanceof ApiError)) for (const listener of errorListeners) listener(chatId, { code: code ?? "", message: text });
   } finally {
+    perf?.streamFinished(message.id, { chars: content.length, reasoningChars: reasoning.length });
     running.delete(message.id);
     liveStore.set((current) => {
       const next = { ...current };

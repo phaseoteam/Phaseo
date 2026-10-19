@@ -7,6 +7,7 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Button, EmptyState, Header, Icon, IconButton, measureAnchor, Screen, showActions, Text, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { useAuth } from "@/providers/AuthProvider";
+import { perf } from "@/perf";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { chatActions } from "./chatActions";
 import { Composer } from "./Composer";
@@ -67,6 +68,7 @@ export function Conversation({ chatId }: { chatId: string }) {
           maintainScrollAtEnd
           alignItemsAtEnd
           maintainVisibleContentPosition
+          onLoad={perf ? () => perf?.chatShown(chatId, { messages: messages.length, turns: turns.length }) : undefined}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingTop: 4, paddingBottom: 8 }}
@@ -76,7 +78,7 @@ export function Conversation({ chatId }: { chatId: string }) {
           settings={settings}
           onModelPress={openPicker}
           running={running}
-          disabledReason={session ? null : "Sign in to send messages"}
+          disabledReason={session || perf?.chatOrigin() ? null : "Sign in to send messages"}
           onSend={(text, attachments) => sendMessage({ chatId, text, attachments, workspaceId })}
           onStop={() => stopChat(chatId)}
         />
@@ -166,7 +168,7 @@ export function NewChat({ initialModel }: { initialModel?: string }) {
           settings={settings}
           onModelPress={openPicker}
           running={false}
-          disabledReason={!session ? "Sign in to send messages" : !models.length ? "Choose a model first" : null}
+          disabledReason={!session && !perf?.chatOrigin() ? "Sign in to send messages" : !models.length ? "Choose a model first" : null}
           onSend={(text, attachments) => {
             const id = startChat({ text, attachments, models, modelSettings: settings, workspaceId });
             draftSettingsStore.set({});

@@ -11,6 +11,7 @@ import { Button, Icon, measureAnchor, pointAnchor, showActions, Text, toast, use
 import { WEB_ORIGIN } from "@/lib/config";
 import { cn } from "@/lib/cn";
 import { formatUsd } from "@/lib/format";
+import { perf } from "@/perf";
 import { chatErrorPresentation } from "./errors";
 import type { Turn } from "./groups";
 import { useOpenModelPicker, useOpenModelSettings } from "./ModelChips";
@@ -43,6 +44,8 @@ function useCopy() {
 /** One user message and every model's answer to it: tabs on phones, columns on wide tablets. */
 export const TurnView = memo(function TurnView({ turn, side, labels, settings, workspaceId }: { turn: Turn; side: boolean; labels: ModelLabel; settings: Record<string, ModelSettings>; workspaceId: string | null }) {
   const [selected, setSelected] = useState(0);
+  perf?.count("render.turn");
+  useEffect(() => { perf?.turnShown(turn.user.chatId, turn.user.position); }, [turn.user.chatId, turn.user.position]);
   const answers = turn.answers;
   const active = answers[Math.min(selected, answers.length - 1)];
   return (
@@ -125,6 +128,7 @@ function UserMessage({ message, workspaceId }: { message: ChatMessage; workspace
 
 export function AnswerView({ message, labels, settings, workspaceId, showHeader = true, compact }: { message: ChatMessage; labels: ModelLabel; settings: Record<string, ModelSettings>; workspaceId: string | null; showHeader?: boolean; compact?: boolean }) {
   const router = useRouter();
+  perf?.count("render.answer");
   const live = useLive(message.id);
   const content = live?.content ?? message.content;
   const reasoning = live?.reasoning ?? message.reasoning;
