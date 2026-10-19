@@ -20331,6 +20331,9 @@ components:
         monthly_budget_usd:
           type: number
           format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
           nullable: true
       additionalProperties: false
     ClassifierUpdateInput:
@@ -20373,6 +20376,9 @@ components:
         monthly_budget_usd:
           type: number
           format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
           nullable: true
       additionalProperties: false
     ClassifierResponse:
