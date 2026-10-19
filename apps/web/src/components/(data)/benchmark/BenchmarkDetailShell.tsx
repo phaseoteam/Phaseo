@@ -77,13 +77,13 @@ export default async function BenchmarkDetailShell({
 							{artificialAnalysis ? <ArtificialAnalysisLogo size={32} /> : epochCapabilitiesIndex ? <><Image src="/benchmarks/epoch-ai.svg" alt="Epoch AI" width={150} height={26} className="h-[26px] w-auto dark:hidden" /><Image src="/benchmarks/epoch-ai_dark.svg" alt="" aria-hidden="true" width={150} height={26} className="hidden h-[26px] w-auto dark:block" /></> : <Trophy className="size-7 text-muted-foreground" />}
 						</div>
 						<div className="min-w-0">
-							<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+							<h1 className={`${artificialAnalysis ? "text-xl sm:text-2xl" : "text-2xl"} font-semibold tracking-tight md:text-3xl`}>
 								{displayName}
 							</h1>
 							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? tChart("independentEvaluations") : epochCapabilitiesIndex ? t("independentEvaluations", { metric: "Capabilities Index" }) : t("detailSubtitle")}</p>
 						</div>
 					</div>
-					<BenchmarkEditButton benchmarkId={benchmark.id} />
+					<BenchmarkEditButton benchmarkId={benchmark.id} compactMobile={artificialAnalysis} />
 				</div>
 				<div className="mt-6 min-h-full">{tocItems.length ? <div className="flex flex-col gap-6 lg:flex-row lg:items-start"><ModelPageToc items={tocItems} className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44" /><div className="min-w-0 flex-1">{children}</div></div> : children}</div>
 			</div>

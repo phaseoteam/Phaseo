@@ -5,6 +5,19 @@ export const dashboardBenchmarks: Record<string, string> = {
 };
 export const effortOrder = ["default", "none", "minimal", "low", "medium", "high", "xhigh", "max"];
 
+export function dashboardLinearTicks(values: number[]) {
+	const finite = values.filter(Number.isFinite);
+	const min = finite.length ? Math.min(...finite) : 0, max = finite.length ? Math.max(...finite) : 1;
+	const padding = Math.max((max - min) * 0.05, max === min ? Math.abs(max) * 0.1 || 1 : 0);
+	const lower = min >= 0 ? Math.max(0, min - padding) : min - padding;
+	const upper = max + padding;
+	const raw = (upper - lower) / 5;
+	const power = 10 ** Math.floor(Math.log10(raw));
+	const step = ([1, 2, 5, 10].find((factor) => factor * power >= raw) ?? 10) * power;
+	const start = Math.floor(lower / step), end = Math.ceil(upper / step);
+	return Array.from({ length: end - start + 1 }, (_, index) => Number(((start + index) * step).toPrecision(12)));
+}
+
 /** Keep direct chart labels apart without changing their data coordinates. */
 export function dashboardLabelPositions(items: { id: string; y: number }[], top: number, bottom: number, gap = 20) {
 	const sorted = [...items].sort((a, b) => a.y - b.y || a.id.localeCompare(b.id));

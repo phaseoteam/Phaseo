@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { CartesianGrid, ComposedChart, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
-import { dashboardLabelPositions, dashboardLogTicks, effortOrder, paretoPoints, type DashboardRow } from "@/lib/benchmarks/artificialAnalysisDashboard";
+import { dashboardLabelPositions, dashboardLinearTicks, dashboardLogTicks, effortOrder, paretoPoints, type DashboardRow } from "@/lib/benchmarks/artificialAnalysisDashboard";
 
 export function dashboardColour(row: DashboardRow) {
 	const colour = /^#[\da-f]{6}$/i.test(row.colour ?? "") ? row.colour! : "#6b7280";
@@ -34,10 +34,8 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value, xValue, x
 	const ticks = xValue && log ? dashboardLogTicks(points.map((point) => point.x)) : undefined;
 	const series = [...new Set(points.map((point) => point.row.modelId))].map((id) => ({ id, points: points.filter((point) => point.row.modelId === id).sort((a, b) => a.x - b.x) }));
 	const directLabels = size.width >= 640 && series.length <= 14;
-	const minY = points.length ? Math.min(...points.map((point) => point.y)) : 0;
-	const maxY = points.length ? Math.max(...points.map((point) => point.y)) : 1;
-	const padding = Math.max((maxY - minY) * 0.08, maxY === minY ? Math.abs(maxY) * 0.1 || 1 : 0.001);
-	const domain: [number, number] = [Math.min(0, minY) < 0 ? minY - padding : Math.max(0, minY - padding), maxY + padding];
+	const yTicks = dashboardLinearTicks(points.map((point) => point.y));
+	const domain: [number, number] = [yTicks[0], yTicks.at(-1)!];
 	const labelPositions = dashboardLabelPositions(series.map((item) => ({ id: item.id, y: 24 + (domain[1] - item.points.at(-1)!.y) / (domain[1] - domain[0]) * Math.max(1, size.height - 100) })), 24, size.height - 80);
 	const number = (n: number, compact = false) => new Intl.NumberFormat(locale, { ...(unit === "usd" ? { style: "currency" as const, currency: "USD", currencyDisplay: "narrowSymbol" as const } : {}), ...(compact ? { ...(Math.abs(n) >= 1000 ? { notation: "compact" as const } : {}), maximumSignificantDigits: 3 } : { maximumSignificantDigits: 12 }) }).format(n);
 	const xNumber = (n: number) => new Intl.NumberFormat(locale, { maximumSignificantDigits: 3, ...(xUnit === "usd" ? { style: "currency" as const, currency: "USD", currencyDisplay: "narrowSymbol" as const } : xUnit === "seconds" ? { style: "unit" as const, unit: "second", unitDisplay: "narrow" as const } : {}) }).format(n);
@@ -55,7 +53,7 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value, xValue, x
 				<ComposedChart margin={{ top: 24, right: directLabels ? 160 : 16, left: 0, bottom: 32 }}>
 					<CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="2 5" />
 					<XAxis type="number" dataKey="x" scale={xValue && log ? "log" : "auto"} domain={xValue ? ticks ? [ticks[0], ticks.at(-1)!] : ["auto", "auto"] : [-0.5, Math.max(0.5, efforts.length - 0.5)]} ticks={xValue ? ticks : efforts.map((_, i) => i)} tick={axis} tickLine={false} axisLine={{ stroke: "var(--border)" }} tickFormatter={(n: number) => xValue ? xNumber(n) : localizedBenchmarkConfiguration(efforts[n], tx)} label={{ value: xLabel ?? tx("Common.ui.benchmarkChartCopy.modelConfiguration"), position: "bottom", offset: 12, ...axis }} />
-					<YAxis type="number" dataKey="y" domain={domain} tick={axis} width={58} tickLine={false} axisLine={false} tickFormatter={(n: number) => number(n, true)} label={{ value: xValue ? tx("Catalogue.rankings.benchmarkMetrics.intelligence") : title, position: "insideTopLeft", dy: -22, ...axis }} />
+					<YAxis type="number" dataKey="y" domain={domain} ticks={yTicks} tick={axis} width={58} tickLine={false} axisLine={false} tickFormatter={(n: number) => number(n, true)} label={xValue ? { value: tx("Catalogue.rankings.benchmarkMetrics.intelligence"), position: "insideTopLeft", dy: -22, ...axis } : undefined} />
 					<Tooltip shared={false} cursor={{ stroke: "var(--border)" }} content={({ active, payload }) => {
 						const point = payload?.[0]?.payload as typeof points[number] | undefined;
 						return active && point?.row ? <div className="max-w-80 rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md"><p className="font-medium">{point.row.sourceName}</p><p className="mt-2 tabular-nums">{xValue ? tx("Catalogue.rankings.benchmarkMetrics.intelligence") : title}: {number(point.y)}</p>{xValue ? <p className="mt-1 tabular-nums">{xLabel}: {new Intl.NumberFormat(locale, { maximumSignificantDigits: 12 }).format(point.x)}</p> : null}</div> : null;

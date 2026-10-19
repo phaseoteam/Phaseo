@@ -7,10 +7,12 @@ import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAu
 
 interface BenchmarkEditButtonProps {
   benchmarkId: string;
+  compactMobile?: boolean;
 }
 
 export default async function BenchmarkEditButton({
   benchmarkId,
+  compactMobile,
 }: BenchmarkEditButtonProps) {
 	const t = await getTranslations("Catalogue.benchmarks");
   const authStatus = await fetchInternalAuthStatus().catch(() => ({
@@ -19,7 +21,7 @@ export default async function BenchmarkEditButton({
   }));
 
   if (!authStatus.isAdmin) {
-    return <CatalogIssueButton entity="Benchmark" id={benchmarkId} />;
+    return <CatalogIssueButton entity="Benchmark" id={benchmarkId} compactMobile={compactMobile} />;
   }
 
   return (

@@ -1,8 +1,18 @@
-import { dashboardLabelPositions, dashboardRows, loadDashboardData, paretoPoints } from "./artificialAnalysisDashboard";
+import { dashboardLabelPositions, dashboardLinearTicks, dashboardRows, loadDashboardData, paretoPoints } from "./artificialAnalysisDashboard";
 import type { ArtificialAnalysisPublicConfiguration, ArtificialAnalysisPublicData } from "@/lib/fetchers/benchmarks/types";
 
 const model = (id: string): ArtificialAnalysisPublicConfiguration => ({ id, model_id: "lab/model", name: "Model (High)", slug: "model-high", creator: null, effort: "high", intelligenceIndex: 50, intelligenceIndexIsEstimated: false, totalTokens: { output: 0 }, outputTokensPerTask: null, totalCostUsd: null, costPerTaskUsd: { total: 0.005 }, timePerTaskSeconds: null, benchmarkScores: { omniscience: -3 }, capabilityScores: null, modelDetails: {}, pricing: {}, performance: {}, breakdowns: {}, evaluations: [] });
 const page = (models: ArtificialAnalysisPublicConfiguration[], total = models.length, snapshot = "same") => ({ models, total, snapshot_id: snapshot, methodology_version: "4.3.2" } as ArtificialAnalysisPublicData);
+
+it("uses readable ticks without clipping zero, negative scores or tiny costs", () => {
+	expect(dashboardLinearTicks([34, 58])).toEqual([30, 40, 50, 60]);
+	for (const values of [[0], [-3, 4], [0.00001, 0.00002], []]) {
+		const ticks = dashboardLinearTicks(values);
+		expect(ticks.length).toBeGreaterThan(1);
+		expect(ticks.every(Number.isFinite)).toBe(true);
+		for (const value of values) { expect(ticks[0]).toBeLessThanOrEqual(value); expect(ticks.at(-1)).toBeGreaterThanOrEqual(value); }
+	}
+});
 
 it("keeps clustered endpoint labels apart and inside the plot without moving their points", () => {
 	const points = [{ id: "a", y: 10 }, { id: "b", y: 11 }, { id: "c", y: 1000 }];
