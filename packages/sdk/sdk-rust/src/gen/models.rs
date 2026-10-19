@@ -630,6 +630,89 @@ pub struct ChatReasoningDetail {
 	pub r#type: String,
 }
 
+pub struct Classifier {
+	pub created_at: String,
+	pub created_by: Option<String>,
+	pub description: Option<String>,
+	pub dimensions: Vec<HashMap<String, String>>,
+	pub enabled: bool,
+	pub id: String,
+	pub input_scope: String,
+	pub instructions: String,
+	pub model: String,
+	pub monthly_budget_usd: Option<f64>,
+	pub name: String,
+	pub sample_by: String,
+	pub sample_rate: f64,
+	pub scope: HashMap<String, String>,
+	pub updated_at: String,
+	pub workspace_id: String,
+}
+
+pub struct ClassifierCreateInput {
+	pub description: Option<Option<String>>,
+	pub dimensions: Vec<HashMap<String, String>>,
+	pub enabled: Option<bool>,
+	pub input_scope: Option<String>,
+	pub instructions: Option<String>,
+	pub model: String,
+	pub monthly_budget_usd: Option<Option<f64>>,
+	pub name: String,
+	pub sample_by: Option<String>,
+	pub sample_rate: Option<f64>,
+	pub scope: Option<HashMap<String, String>>,
+}
+
+pub struct ClassifierDeleteResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct ClassifierDimension {
+	pub allow_other: Option<bool>,
+	pub description: Option<Option<String>>,
+	pub key: String,
+	pub multiple: Option<bool>,
+	pub name: Option<String>,
+	pub values: Vec<HashMap<String, String>>,
+}
+
+pub type ClassifierInputScope = JsonValue;
+
+pub struct ClassifierListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct ClassifierResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub type ClassifierSampleBy = JsonValue;
+
+pub struct ClassifierScope {
+	pub app_ids: Option<Vec<String>>,
+	pub key_ids: Option<Vec<String>>,
+	pub models: Option<Vec<String>>,
+}
+
+pub struct ClassifierUpdateInput {
+	pub description: Option<Option<String>>,
+	pub dimensions: Option<Vec<HashMap<String, String>>>,
+	pub enabled: Option<bool>,
+	pub input_scope: Option<String>,
+	pub instructions: Option<String>,
+	pub model: Option<String>,
+	pub monthly_budget_usd: Option<Option<f64>>,
+	pub name: Option<String>,
+	pub sample_by: Option<String>,
+	pub sample_rate: Option<f64>,
+	pub scope: Option<HashMap<String, String>>,
+}
+
+pub struct ClassifierValue {
+	pub description: Option<Option<String>>,
+	pub value: String,
+}
+
 pub struct CreditsResponse {
 	pub credits: HashMap<String, String>,
 	pub ok: bool,

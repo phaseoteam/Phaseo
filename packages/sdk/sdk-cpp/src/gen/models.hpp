@@ -629,6 +629,89 @@ struct ChatReasoningDetail {
 	std::any type;
 };
 
+struct Classifier {
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::optional<std::string> description;
+	std::vector<std::map<std::string, std::any>> dimensions;
+	bool enabled;
+	std::string id;
+	std::any input_scope;
+	std::string instructions;
+	std::string model;
+	std::optional<double> monthly_budget_usd;
+	std::string name;
+	std::any sample_by;
+	double sample_rate;
+	std::map<std::string, std::any> scope;
+	std::string updated_at;
+	std::string workspace_id;
+};
+
+struct ClassifierCreateInput {
+	std::optional<std::string> description;
+	std::vector<std::map<std::string, std::any>> dimensions;
+	std::optional<bool> enabled;
+	std::any input_scope;
+	std::string instructions;
+	std::string model;
+	std::optional<double> monthly_budget_usd;
+	std::string name;
+	std::any sample_by;
+	std::optional<double> sample_rate;
+	std::map<std::string, std::any> scope;
+};
+
+struct ClassifierDeleteResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct ClassifierDimension {
+	std::optional<bool> allow_other;
+	std::optional<std::string> description;
+	std::string key;
+	std::optional<bool> multiple;
+	std::string name;
+	std::vector<std::map<std::string, std::any>> values;
+};
+
+using ClassifierInputScope = std::any;
+
+struct ClassifierListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct ClassifierResponse {
+	std::map<std::string, std::any> data;
+};
+
+using ClassifierSampleBy = std::any;
+
+struct ClassifierScope {
+	std::vector<std::string> app_ids;
+	std::vector<std::string> key_ids;
+	std::vector<std::string> models;
+};
+
+struct ClassifierUpdateInput {
+	std::optional<std::string> description;
+	std::vector<std::map<std::string, std::any>> dimensions;
+	std::optional<bool> enabled;
+	std::any input_scope;
+	std::string instructions;
+	std::string model;
+	std::optional<double> monthly_budget_usd;
+	std::string name;
+	std::any sample_by;
+	std::optional<double> sample_rate;
+	std::map<std::string, std::any> scope;
+};
+
+struct ClassifierValue {
+	std::optional<std::string> description;
+	std::string value;
+};
+
 struct CreditsResponse {
 	std::map<std::string, std::any> credits;
 	std::any ok;

@@ -1131,6 +1131,150 @@ class ChatReasoningDetail
 	public $type;
 }
 
+class Classifier
+{
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string|null */
+	public $description;
+	/** @var array */
+	public $dimensions;
+	/** @var bool */
+	public $enabled;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $input_scope;
+	/** @var string */
+	public $instructions;
+	/** @var string */
+	public $model;
+	/** @var float|null */
+	public $monthly_budget_usd;
+	/** @var string */
+	public $name;
+	/** @var string */
+	public $sample_by;
+	/** @var float */
+	public $sample_rate;
+	/** @var array<string, mixed> */
+	public $scope;
+	/** @var string */
+	public $updated_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class ClassifierCreateInput
+{
+	/** @var string|null */
+	public $description;
+	/** @var array */
+	public $dimensions;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $input_scope;
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $model;
+	/** @var float|null */
+	public $monthly_budget_usd;
+	/** @var string */
+	public $name;
+	/** @var string|null */
+	public $sample_by;
+	/** @var float|null */
+	public $sample_rate;
+	/** @var array<string, mixed>|null */
+	public $scope;
+}
+
+class ClassifierDeleteResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class ClassifierDimension
+{
+	/** @var bool|null */
+	public $allow_other;
+	/** @var string|null */
+	public $description;
+	/** @var string */
+	public $key;
+	/** @var bool|null */
+	public $multiple;
+	/** @var string|null */
+	public $name;
+	/** @var array */
+	public $values;
+}
+
+class ClassifierInputScope { }
+
+class ClassifierListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class ClassifierResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class ClassifierSampleBy { }
+
+class ClassifierScope
+{
+	/** @var array|null */
+	public $app_ids;
+	/** @var array|null */
+	public $key_ids;
+	/** @var array|null */
+	public $models;
+}
+
+class ClassifierUpdateInput
+{
+	/** @var string|null */
+	public $description;
+	/** @var array|null */
+	public $dimensions;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $input_scope;
+	/** @var string|null */
+	public $instructions;
+	/** @var string|null */
+	public $model;
+	/** @var float|null */
+	public $monthly_budget_usd;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $sample_by;
+	/** @var float|null */
+	public $sample_rate;
+	/** @var array<string, mixed>|null */
+	public $scope;
+}
+
+class ClassifierValue
+{
+	/** @var string|null */
+	public $description;
+	/** @var string */
+	public $value;
+}
+
 class CreditsResponse
 {
 	/** @var array<string, mixed> */

@@ -2696,6 +2696,123 @@ export async function createChatCompletion(
   });
 }
 
+export type CreateClassifierParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    description?: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled?: boolean;
+    input_scope?: "prompt" | "prompt_and_response";
+    instructions?: string;
+    model: string;
+    monthly_budget_usd?: number | null;
+    name: string;
+    sample_by?: "request" | "session";
+    sample_rate?: number;
+    scope?: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+  };
+};
+
+/**
+ * Creates a classifier. After each eligible request finishes, the chosen model places it in every dimension and the answers are added to the request as labels, so they can be filtered and grouped in logs, usage and analytics. Classification runs after the response is sent and is billed to the workspace at the model's normal price.
+ */
+export async function createClassifier(
+  client: Client,
+  args: CreateClassifierParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/classifiers";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateDataContributionClassifierParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -7485,6 +7602,45 @@ export async function deleteApiKey(
   });
 }
 
+export type DeleteClassifierParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Deletes a classifier. Labels it already wrote stay on past requests.
+ */
+export async function deleteClassifier(
+  client: Client,
+  args: DeleteClassifierParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/classifiers/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type DeleteDataContributionClassifierParams = {
   path: {
     id: string;
@@ -9006,6 +9162,101 @@ export async function getApiKey(
       };
       usage_monthly: number;
       usage_weekly: number;
+      workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetClassifierParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one classifier. Owners and admins only.
+ */
+export async function getClassifier(
+  client: Client,
+  args: GetClassifierParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/classifiers/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
       workspace_id: string;
     };
   }>({
@@ -13216,6 +13467,97 @@ export async function listBatchRequestsAlias(
       } | null;
     }[];
     object?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListClassifiersParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's request classifiers. A workspace can have up to five. Owners and admins only.
+ */
+export async function listClassifiers(
+  client: Client,
+  args: ListClassifiersParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/classifiers";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
+      workspace_id: string;
+    }[];
   }>({
     method: "GET",
     path: resolvedPath,
@@ -20620,6 +20962,127 @@ export async function updateApiKey(
       };
       usage_monthly: number;
       usage_weekly: number;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateClassifierParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    description?: string | null;
+    dimensions?: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled?: boolean;
+    input_scope?: "prompt" | "prompt_and_response";
+    instructions?: string;
+    model?: string;
+    monthly_budget_usd?: number | null;
+    name?: string;
+    sample_by?: "request" | "session";
+    sample_rate?: number;
+    scope?: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+  };
+};
+
+/**
+ * Updates the fields you send. Changes reach the gateway within about a minute. Labels already written to past requests are not changed.
+ */
+export async function updateClassifier(
+  client: Client,
+  args: UpdateClassifierParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/classifiers/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
       workspace_id: string;
     };
   }>({
