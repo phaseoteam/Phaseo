@@ -443,6 +443,7 @@ jobs:
               run: |
                   pnpm run validate:api
                   pnpm --filter @phaseo/gateway-api exec vitest run src/executors/_shared/text-generate/openai-compat/__tests__/execute.test.ts
+                  pnpm --filter @phaseo/gateway-api simulate:providers:test
                   cd apps/api && pnpm exec tsx scripts/pricing-simulator-cli.ts
 
             - name: Docs validation
@@ -734,7 +735,7 @@ jobs:
 
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+              uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
               with:
                   distribution: "temurin"
                   java-version: "17"
@@ -748,7 +749,7 @@ jobs:
 
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83
+              uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a
               with:
                   ruby-version: "3.2"
 
@@ -1170,13 +1171,13 @@ jobs:
                   php-version: "8.2"
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+              uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
               with:
                   distribution: temurin
                   java-version: "17"
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83
+              uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a
               with:
                   ruby-version: "3.2"
             - name: Setup Rust
@@ -1210,7 +1211,7 @@ jobs:
 
             - name: Create GitHub App token (Phaseo Bot)
               id: app-token
-              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+              uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
               with:
                   client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
                   private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}

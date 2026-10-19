@@ -17,6 +17,19 @@ Si buscas consejos de ajuste en lugar de definiciones de campos, consulta [Pará
 
 La compatibilidad de los parámetros sigue variando según el endpoint, el modelo y el proveedor. La tabla de inicio rápido del modelo reúne la compatibilidad de los proveedores activos para una ruta específica.
 
+## Parámetros no admitidos
+
+Si el proveedor que atiende una solicitud no admite uno de sus parámetros de muestreo, Phaseo descarta ese parámetro. No se envía al proveedor y la solicitud no se rechaza, así que los clientes que siempre envían los valores predeterminados de OpenAI siguen funcionando. La compatibilidad se decide por proveedor a partir de los perfiles de proveedor de Phaseo y de los parámetros de catálogo de la ruta. Si una ruta no declara parámetros, solo se omite la comprobación del catálogo: los parámetros que el perfil de proveedor marca como no admitidos se siguen descartando, por ejemplo `top_k` en Cohere o `stop` en Reflection.
+
+Solo se pueden descartar estos parámetros: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` en `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` e `image_config`. Los mensajes, las herramientas, `tool_choice`, `response_format`, la configuración de razonamiento y los límites de salida nunca se descartan.
+
+En las respuestas satisfactorias, Phaseo indica los parámetros descartados que envió la propia solicitud:
+
+- en el encabezado de respuesta `X-Phaseo-Dropped-Params`, por ejemplo `X-Phaseo-Dropped-Params: top_k, min_p`
+- en `meta.routing.dropped_params` cuando la solicitud establece `meta: true`, por ejemplo `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+Un parámetro que procede de un preset o de un valor predeterminado, y no del cuerpo de la solicitud, puede descartarse sin aparecer en ninguno de los dos lugares. Aun así, queda registrado en los diagnósticos de enrutamiento que Phaseo guarda con la solicitud.
+
 ## Consulta rápida
 
 | Parámetro | Tipo | Úsalo para |

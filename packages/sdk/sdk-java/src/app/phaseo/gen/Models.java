@@ -1116,6 +1116,12 @@ public final class Models {
 		public String param;
 	}
 
+	public static class FileContentPart {
+		public Object cache_control;
+		public Object file;
+		public Object type;
+	}
+
 	public static class FileResponse {
 		public Integer bytes;
 		public Integer created_at;

@@ -86,6 +86,19 @@ export function getLegacyModelPageRedirect(pathname: string): string | null {
 	);
 }
 
+// English (US) differed from the unprefixed English pages only in spelling,
+// while crawlers rendered every English page under both prefixes.
+const RETIRED_LOCALE_PREFIXES = new Set(["en-us"]);
+
+/** Drops a retired locale prefix in any casing: /en-US/models -> /models. */
+export function getRetiredLocaleRedirect(pathname: string): string | null {
+	const [prefix = "", ...rest] = pathname.split("/").filter(Boolean);
+	if (!RETIRED_LOCALE_PREFIXES.has(prefix.toLowerCase())) {
+		return null;
+	}
+	return `/${rest.join("/")}`;
+}
+
 function isRetiredBlogPath(pathname: string): boolean {
 	const slug = withoutLocalePrefix(pathname).replace(/^\/blog\//, "").split("/")[0];
 	return RETIRED_BLOG_SLUGS.has(slug);
@@ -202,10 +215,12 @@ export async function proxy(request: NextRequest) {
 		return NextResponse.rewrite(rewriteUrl);
 	}
 
-	const legacyModelPage = getLegacyModelPageRedirect(request.nextUrl.pathname);
-	if (legacyModelPage) {
+	const retiredLocalePath = getRetiredLocaleRedirect(request.nextUrl.pathname);
+	const pagePath = retiredLocalePath ?? request.nextUrl.pathname;
+	const legacyModelPage = getLegacyModelPageRedirect(pagePath);
+	if (retiredLocalePath !== null || legacyModelPage) {
 		const redirectUrl = request.nextUrl.clone();
-		redirectUrl.pathname = legacyModelPage;
+		redirectUrl.pathname = legacyModelPage ?? pagePath;
 		return NextResponse.redirect(redirectUrl, 308);
 	}
 

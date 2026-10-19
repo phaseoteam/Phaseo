@@ -9,6 +9,7 @@ import { applyDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers"
 import type { PipelineTiming } from "./index";
 import type { ProviderCandidate } from "../before/types";
 import { err, json } from "./http";
+import { everyAttemptRateLimited } from "./attempt-outcomes";
 import { captureTimingSnapshot } from "./utils";
 
 export type ExecuteGuardOk<T> = { ok: true; value: T };
@@ -628,6 +629,10 @@ export async function guardAllFailed(
             response,
         };
     }
+    // When every provider throttled the request the client gets the throttling
+    // status (with the provider's Retry-After below), not a generic 502, so
+    // SDKs back off instead of treating it as a gateway failure.
+    const allRateLimited = !hasUpstreamPaymentRequired && everyAttemptRateLimited(attemptErrors);
     const res = err(hasUpstreamPaymentRequired ? "provider_payment_required" : "upstream_error", {
         reason: hasUpstreamPaymentRequired
             ? "upstream_provider_payment_required"
@@ -649,7 +654,7 @@ export async function guardAllFailed(
         provider_enablement: providerEnablement,
         provider_candidate_diagnostics: candidateBuild,
         provider_failure_diagnostics: providerFailureDiagnostics,
-    });
+    }, allRateLimited ? 429 : undefined);
 	const finalRateLimitHeaders = [...attemptErrors]
 		.reverse()
 		.map((entry) => entry?.upstream_rate_limit_headers)

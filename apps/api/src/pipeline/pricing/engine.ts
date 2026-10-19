@@ -2,8 +2,9 @@
 // Why: Keeps stage-specific logic isolated and testable.
 // How: Exposes helpers used by before/execute/after orchestration.
 
-import { parseUsdToNanos, formatUsdFromNanosExact, nanosToCentsCeil } from "./money";
-import { requiresExplicitServiceTier } from "./service-tiers";
+import { parseUsdToNanos, formatUsdFromNanosExact, formatUsdPriceExact, nanosToCentsCeil, priceLineNanosExact } from "./money";
+import { canonicalPricingPlan, normalizePriceCardPlans, requiresExplicitServiceTier, resolveBasePricingPlan } from "./service-tiers";
+import { assignImplicitCacheRead, cacheCountsReportedOutsideInput, cacheHitIsExplicit, nativeToolFallbackRule, thinkingModeBillsAnswer } from "./meter-semantics";
 import { matchesConditions, shallowMerge, evaluateConditions } from "./conditions";
 import type { PriceCard, PriceRule, PricingBreakdownLine, PricingDimensionKey, PricingResult, PricingTimestampBasis } from "./types";
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage, resolveRequestCountUsage } from "@core/usage-normalization";
@@ -182,8 +183,28 @@ function analyzeRuleSelection(candidates: PriceRule[], ctx: Record<string, any>)
     };
 }
 
+const REPORTED_INPUT_TOTAL_PATHS = [
+    "input_tokens",
+    "prompt_tokens",
+    "promptTokens",
+    "prompt_token_count",
+    "total_input_tokens",
+    "totalInputTokens",
+    "inputTokens",
+    "promptTokenCount",
+] as const;
+
 /** Split raw usage into numeric meters and a context object */
-function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, number>; context: Record<string, any> } {
+function splitUsage(
+    usageRaw: any,
+    card: PriceCard,
+    requestOptions?: Record<string, any>,
+): {
+    meters: Record<string, number>;
+    context: Record<string, any>;
+    /** input_text_tokens is the whole uncached prompt, so it still contains any image, audio or video tokens. */
+    inputTextCoversPrompt: boolean;
+} {
     const meters: Record<string, number> = {};
     const context: Record<string, any> = {};
     const allowedMeters = new Set<string>([...KNOWN_METERS, ...card.rules.map((rule) => rule.meter)]);
@@ -228,7 +249,7 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
         card.rules.some((rule) => rule.meter === "implicit_cached_input_text_tokens") &&
         meters.implicit_cached_input_text_tokens == null
     ) {
-        meters.implicit_cached_input_text_tokens = cachedReadTokens;
+        assignImplicitCacheRead(meters, card, cachedReadTokens, cacheHitIsExplicit(requestOptions, [cachedWriteTokens, cachedWrite5mTokens, cachedWrite1hTokens]));
     }
     if (typeof cachedWriteTokens === "number" && meters.cached_write_text_tokens == null) {
         meters.cached_write_text_tokens = cachedWriteTokens;
@@ -255,10 +276,13 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
         typeof cachedWrite5mTokens !== "number" &&
         typeof cachedWrite1hTokens !== "number"
     ) {
+        // A provider that reports one write count without a TTL split wrote with the TTL the
+        // request asked for (cache_control.ttl, prompt_cache_retention); 5 minutes otherwise.
         const ttlHint = String(
             usageRaw?.cache_ttl ??
             usageRaw?.cache_ttl_seconds ??
             usageRaw?.context?.cache_ttl ??
+            requestOptions?.cache_ttl ??
             "5m",
         ).trim().toLowerCase();
         if (ttlHint === "1h" || ttlHint === "60m" || ttlHint === "3600") {
@@ -367,8 +391,18 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
         typeof canonicalInputTokens === "number" &&
         inputTextTokens === canonicalInputTokens;
 
+    const uncachedCanonicalInput = Math.max(0, canonicalInputTokens - cachedTokensInsideInput);
+    // A reported input_text_tokens is the whole prompt only when it matches a separately
+    // reported input total (with or without the cache taken out). Without such a total it
+    // is taken as text alone.
+    const reportedInputTotal = pickFirstFiniteNumber(usageRaw, [...REPORTED_INPUT_TOTAL_PATHS]);
+    const inputTextCoversPrompt =
+        meters.input_text_tokens == null ||
+        (typeof reportedInputTotal === "number" &&
+            (meters.input_text_tokens === reportedInputTotal ||
+                meters.input_text_tokens === Math.max(0, reportedInputTotal - cachedTokensInsideInput)));
     if (meters.input_text_tokens == null) {
-        meters.input_text_tokens = Math.max(0, canonicalInputTokens - cachedTokensInsideInput);
+        meters.input_text_tokens = uncachedCanonicalInput;
     }
     if (meters.output_text_tokens == null) {
         meters.output_text_tokens =
@@ -397,13 +431,45 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
         (meters.cached_write_text_tokens ?? 0) +
         (meters.cached_write_text_tokens_5m ?? 0) +
         (meters.cached_write_text_tokens_1h ?? 0);
+    // Prompt length for `input_tokens` tier conditions (Claude and Gemini long-context rates,
+    // OpenAI's 272k tier): the reported input plus cache reads and writes the usage states
+    // are reported outside it (Anthropic: "A request's prompt length counts all of its input
+    // tokens, including cache reads and cache writes"). Counts with no stated relation to
+    // input are not added, so a bare input_tokens still compares as reported.
+    const outside = cacheCountsReportedOutsideInput(usageRaw, cache);
+    context.prompt_input_tokens = (Number.isFinite(canonicalInputTokens) ? canonicalInputTokens : 0) +
+        (outside.read ? Math.max(0, cachedReadTokens ?? 0) : 0) +
+        (outside.write ? Math.max(0, cache.writeTokens ?? 0) : 0);
 
     logPricingDebug("splitUsage_output", {
         meters,
         context,
     });
 
-    return { meters, context };
+    return { meters, context, inputTextCoversPrompt };
+}
+
+const INPUT_MODALITY_METERS: PricingDimensionKey[] = ["input_image_tokens", "input_audio_tokens", "input_video_tokens"];
+
+/**
+ * Image, audio and video prompt tokens are part of the provider's input total. When the card
+ * prices a modality on its own meter, take those tokens out of input_text_tokens so they are
+ * billed once, at the modality's rate. When it does not, they stay in input_text_tokens and
+ * are billed as text, as before.
+ */
+function separatePricedInputModalities(
+    meters: Record<string, number>,
+    inputTextCoversPrompt: boolean,
+    hasRule: (meter: PricingDimensionKey) => boolean,
+): void {
+    for (const meter of INPUT_MODALITY_METERS) {
+        const quantity = meters[meter];
+        if (typeof quantity !== "number" || !(quantity > 0)) continue;
+        if (!inputTextCoversPrompt || !hasRule(meter)) continue;
+        const text = meters.input_text_tokens ?? 0;
+        const moved = Math.min(text, quantity);
+        meters.input_text_tokens = text - moved;
+    }
 }
 
 /** price qty at rule's price/unit_size using nanos math */
@@ -561,11 +627,17 @@ function priceWithRule(qty: number, rule: PriceRule, requestOptions?: Record<str
         throw new Error("pricing_invalid_unit_price");
     }
     // Pro-rate by unit size (e.g. 8 tokens at a per-1M-token rate).
-    const billableUnits = Math.max(0, qty - includedQuantity) / unitSize;
+    const billableQuantity = Math.max(0, qty - includedQuantity);
+    const billableUnits = billableQuantity / unitSize;
     const unitPriceNanos = parseUsdToNanos(resolvedPrice.price_per_unit);
-    if (numericPrice > 0 && unitPriceNanos === 0) throw new Error("pricing_unit_price_below_precision");
+    // Catalogue prices keep digits below a nano (numeric(30,12) nanos), so price the line
+    // exactly rather than from the unit price truncated to whole nanos.
+    const exactLineNanos = priceLineNanosExact(billableQuantity, unitSize, resolvedPrice.price_per_unit);
+    if (numericPrice > 0 && unitPriceNanos === 0 && exactLineNanos === null) {
+        throw new Error("pricing_unit_price_below_precision");
+    }
     // Keep nanos integral to avoid floating precision drift downstream.
-    const lineNanos = Math.round(billableUnits * unitPriceNanos);
+    const lineNanos = exactLineNanos ?? Math.round(billableUnits * unitPriceNanos);
     if (!Number.isSafeInteger(unitPriceNanos) || !Number.isSafeInteger(lineNanos) || lineNanos < 0) {
         throw new Error("pricing_amount_out_of_range");
     }
@@ -586,7 +658,7 @@ function priceWithRule(qty: number, rule: PriceRule, requestOptions?: Record<str
     return {
         billableUnits,
         unitPriceNanos,
-        unitPriceUsd: formatUsdFromNanosExact(unitPriceNanos),
+        unitPriceUsd: formatUsdPriceExact(resolvedPrice.price_per_unit),
         lineCostUsd: formatUsdFromNanosExact(lineNanos),
         lineNanos,
         billingTimestampBasis: resolvedPrice.billing_timestamp_basis,
@@ -596,40 +668,15 @@ function priceWithRule(qty: number, rule: PriceRule, requestOptions?: Record<str
     };
 }
 
-function nativeToolFallbackRule(card: PriceCard, meter: PricingDimensionKey): PriceRule | null {
-    const provider = String(card.provider ?? "").toLowerCase();
-    if (meter === "native_web_search_requests" && (provider === "openai" || provider === "anthropic")) {
-        return {
-            pricing_plan: "standard",
-            meter,
-            unit: "request",
-            unit_size: 1,
-            price_per_unit: "0.01",
-            currency: "USD",
-            match: [],
-            priority: -1000,
-            id: `${provider}_native_web_search_default`,
-        };
-    }
-    if (meter === "native_web_fetch_requests" && provider === "anthropic") {
-        return {
-            pricing_plan: "standard",
-            meter,
-            unit: "request",
-            unit_size: 1,
-            price_per_unit: "0",
-            currency: "USD",
-            match: [],
-            priority: -1000,
-            id: "anthropic_native_web_fetch_default",
-        };
-    }
-    return null;
-}
-
 type CachePricingFallback = NonNullable<PricingResult["cache_pricing_fallback"]>[number];
 
-type PricingJob = { dim: PricingDimensionKey; qty: number; context: Record<string, any> };
+type PricingJob = {
+    dim: PricingDimensionKey;
+    qty: number;
+    context: Record<string, any>;
+    /** Meter whose rules price this quantity, when it is not `dim` itself. */
+    ruleMeter?: PricingDimensionKey;
+};
 
 function rulesReferenceCacheTtl(card: PriceCard, meter: string): boolean {
     return card.rules.some((rule) =>
@@ -656,9 +703,14 @@ function buildPricingJobs(
         ? matchContext.cache_ttl
         : undefined;
     const withTtl = (ttl: string) => ({ ...matchContext, cache_ttl: ttl });
+    const answerAtThinkingPrice = thinkingModeBillsAnswer(card, meters);
     for (const dim of dims) {
         const qty = meters[dim];
         if (!qty || qty <= 0) continue;
+        if (dim === "output_text_tokens" && answerAtThinkingPrice) {
+            jobs.push({ dim, qty, context: matchContext, ruleMeter: "output_reasoning_tokens" });
+            continue;
+        }
         if (dim === "cached_write_text_tokens_5m" || dim === "cached_write_text_tokens_1h") {
             jobs.push({ dim, qty, context: withTtl(dim.endsWith("_1h") ? "1h" : "5m") });
             continue;
@@ -713,6 +765,7 @@ function cacheMeterFallbackRule(
     meter: PricingDimensionKey,
     pricingPlan: string,
     matchContext: Record<string, any>,
+    basePlan = "standard",
 ): { rule: PriceRule; inputRule: PriceRule; multiplier: number } | null {
     if (!CACHE_METERS.has(meter)) return null;
     const inputMeters: PricingDimensionKey[] = meter.includes("image")
@@ -722,7 +775,7 @@ function cacheMeterFallbackRule(
             : meter.includes("video")
                 ? ["input_video_tokens", "input_text_tokens", "input_tokens"]
                 : ["input_text_tokens", "input_tokens"];
-    const plans = pricingPlan === "standard" ? ["standard"] : [pricingPlan, "standard"];
+    const plans = pricingPlan === basePlan ? [basePlan] : [pricingPlan, basePlan];
     for (const plan of plans) {
         for (const inputMeter of inputMeters) {
             const candidates = card.rules
@@ -756,20 +809,43 @@ function cacheMeterFallbackRule(
 /** Main public API -- build a full pricing summary from raw usage. */
 export function computeBillSummary(
     usageRaw: Record<string, any>,
-    card: PriceCard,
+    cardInput: PriceCard,
     requestOptions?: Record<string, any>,
-    pricingPlan: string = "standard"
+    requestedPricingPlan: string = "standard"
 ): PricingResult {
+    // Cards from either loader may still name the fast tier `fast`; the engine prices it as `priority`.
+    const card = normalizePriceCardPlans(cardInput);
     if (card.currency && card.currency.toUpperCase() !== "USD") {
         throw new Error("pricing_unsupported_currency");
     }
+    // A card without standard rules sells its ordinary price under a provider label
+    // (DeepInfra `default`, Xiaomi `early_access`) or as `free`; that plan stands in for standard.
+    const basePlan = resolveBasePricingPlan(card) ?? "standard";
+    const requestedPlan = canonicalPricingPlan(requestedPricingPlan);
+    const pricingPlan = requestedPlan === "standard" ? basePlan : requestedPlan;
     // A card for another service tier is not a free price card. Check before
     // walking meters, which may include informational, non-billable counters.
     if (requiresExplicitServiceTier(card) && !card.rules.some((rule) => rule.pricing_plan === pricingPlan)) {
         throw new Error(`pricing_plan_missing:${pricingPlan}`);
     }
-    const { meters, context: usageContext } = splitUsage(usageRaw, card);
+    const { meters, context: usageContext, inputTextCoversPrompt } = splitUsage(usageRaw, card, requestOptions);
     const ctx = { ...(requestOptions ?? {}), ...(usageContext ?? {}) };
+    {
+        const modalityContext = { ...ctx, ...meters };
+        const ruleMatches = (plan: string, meter: PricingDimensionKey) =>
+            card.rules.some((rule) =>
+                rule.pricing_plan === plan && rule.meter === meter && matchesConditions(rule.match, modalityContext),
+            );
+        // Mirrors the rule selection in the meter loop below, so a modality only leaves
+        // input_text_tokens when the loop will price it.
+        separatePricedInputModalities(meters, inputTextCoversPrompt, (meter) => {
+            if (ruleMatches(pricingPlan, meter)) return true;
+            if (pricingPlan === "standard") return false;
+            const planDefinesMeter = card.rules.some((rule) => rule.pricing_plan === pricingPlan && rule.meter === meter);
+            if (planDefinesMeter) return pricingPlan !== "batch";
+            return ruleMatches("standard", meter);
+        });
+    }
 
     logPricingDebug("usage_received", {
         meters,
@@ -788,7 +864,16 @@ export function computeBillSummary(
     const lines: PricingBreakdownLine[] = [];
     const unmatchedConfiguredMeters: string[] = [];
     const missingRequiredCacheMeters: string[] = [];
-    const matchContext = { ...ctx, ...meters };
+    // Tier conditions on `input_tokens` compare the full prompt length; the input_tokens
+    // meter itself is still billed at its reported quantity.
+    const promptInputTokens = Number(usageContext?.prompt_input_tokens);
+    const matchContext = {
+        ...ctx,
+        ...meters,
+        ...(Number.isFinite(promptInputTokens) && promptInputTokens > (meters.input_tokens ?? 0)
+            ? { input_tokens: promptInputTokens }
+            : {}),
+    };
 
     const findCandidatesForPlanAndMeter = (
         plan: string,
@@ -802,22 +887,23 @@ export function computeBillSummary(
 
     for (const job of buildPricingJobs(card, dims, meters, matchContext)) {
         const { dim, qty, context: jobContext } = job;
+        const ruleMeter = job.ruleMeter ?? dim;
 
         // choose the highest priority rule for this meter that matches plan + conditions
-        let candidates = findCandidatesForPlanAndMeter(pricingPlan, dim, jobContext);
+        let candidates = findCandidatesForPlanAndMeter(pricingPlan, ruleMeter, jobContext);
         let resolvedPlan = pricingPlan;
         let conservativeCoverageFallback = false;
-        if (!candidates.length && pricingPlan !== "standard") {
+        if (!candidates.length && pricingPlan !== basePlan) {
             const requestedPlanDefinesMeter = card.rules.some(
-                (rule) => rule.pricing_plan === pricingPlan && rule.meter === dim,
+                (rule) => rule.pricing_plan === pricingPlan && rule.meter === ruleMeter,
             );
             // Batch settlement must retain the hold when its pricing dimensions
             // do not match. Selecting an unrelated tier can charge the wrong rate.
             if (requestedPlanDefinesMeter && pricingPlan !== "batch") {
                 candidates = card.rules
                     .filter((rule) =>
-                        (rule.pricing_plan === pricingPlan || rule.pricing_plan === "standard") &&
-                        rule.meter === dim,
+                        (rule.pricing_plan === pricingPlan || rule.pricing_plan === basePlan) &&
+                        rule.meter === ruleMeter,
                     )
                     .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
                 conservativeCoverageFallback = true;
@@ -825,17 +911,17 @@ export function computeBillSummary(
                     meter: dim,
                     quantity: qty,
                     requestedPricingPlan: pricingPlan,
-                    fallbackPricingPlan: "standard",
+                    fallbackPricingPlan: basePlan,
                     candidateRuleIds: candidates.map((r) => r.id),
                 });
             }
             if (conservativeCoverageFallback) {
                 resolvedPlan = pricingPlan;
             } else if (!requestedPlanDefinesMeter || pricingPlan !== "batch") {
-                const fallbackCandidates = findCandidatesForPlanAndMeter("standard", dim, jobContext);
+                const fallbackCandidates = findCandidatesForPlanAndMeter(basePlan, ruleMeter, jobContext);
                 if (fallbackCandidates.length) {
                     candidates = fallbackCandidates;
-                    resolvedPlan = "standard";
+                    resolvedPlan = basePlan;
                     logPricingDebug("meter_plan_fallback", {
                         meter: dim,
                         quantity: qty,
@@ -889,7 +975,7 @@ export function computeBillSummary(
             // discard it when an effective card is incomplete.
             if (CACHE_METERS.has(dim)) {
                 missingRequiredCacheMeters.push(dim);
-            } else if (card.rules.some((rule) => rule.meter === dim)) {
+            } else if (card.rules.some((rule) => rule.meter === ruleMeter)) {
                 unmatchedConfiguredMeters.push(dim);
             }
             continue;
@@ -992,7 +1078,7 @@ export function computeBillSummary(
 		const fallback = hasPricedAggregateCacheWrite &&
 			(meter === "cached_write_text_tokens_5m" || meter === "cached_write_text_tokens_1h")
 			? null
-			: cacheMeterFallbackRule(card, meter as PricingDimensionKey, pricingPlan, matchContext);
+			: cacheMeterFallbackRule(card, meter as PricingDimensionKey, pricingPlan, matchContext, basePlan);
 		if (!fallback) {
 			unpricedCacheMeters.push(meter);
 			continue;

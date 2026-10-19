@@ -53,7 +53,9 @@ Nutze [Tool-Aufrufmuster](./tool-calling-patterns.mdx) für Fortsetzungsanfragen
 
 Zeige Teiltexte schrittweise an, aber markiere eine Antwort erst nach dem erfolgreichen Abschlussereignis als vollständig. Eine geschlossene Verbindung allein belegt keinen Abschluss.
 
-Wenn ein Stream nach Ausgabebeginn fehlschlägt:
+Schlägt ein Stream nach Ausgabebeginn fehl, endet er mit dem Fehlerereignis des Endpunkts statt mit seinem erfolgreichen Abschlussereignis: einem `error`-Frame bei Chat Completions (ohne `finish_reason`), `response.failed` oder `error` bei Responses und einem `error`-Ereignis bei Messages (ohne `message_stop`). Phaseo berechnet die Teilausgabe eines fehlgeschlagenen Streams nicht.
+
+In diesem Fall:
 
 1. Markiere die Teilantwort als unterbrochen.
 2. Speichere Anfrage- oder Generierungs-ID, Endpunkt und Modell in deinen Logs.

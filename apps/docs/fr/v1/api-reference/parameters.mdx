@@ -17,6 +17,19 @@ Pour obtenir des conseils de réglage plutôt que des définitions de champs, co
 
 La prise en charge des paramètres varie toujours selon le point de terminaison, le modèle et le fournisseur. Le tableau de démarrage rapide du modèle regroupe la prise en charge des fournisseurs actifs pour une route donnée.
 
+## Paramètres non pris en charge
+
+Si le fournisseur qui traite une requête ne prend pas en charge l'un de ses paramètres d'échantillonnage, Phaseo retire ce paramètre. Il n'est pas envoyé au fournisseur et la requête n'est pas rejetée : les clients qui envoient toujours les valeurs par défaut d'OpenAI continuent de fonctionner. La prise en charge est déterminée pour chaque fournisseur à partir des profils de fournisseur de Phaseo et des paramètres de catalogue de la route. Si une route ne déclare aucun paramètre, seule la vérification du catalogue est ignorée : les paramètres que le profil de fournisseur marque comme non pris en charge sont tout de même retirés, par exemple `top_k` chez Cohere ou `stop` chez Reflection.
+
+Seuls ces paramètres peuvent être retirés : `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` sur `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` et `image_config`. Les messages, les outils, `tool_choice`, `response_format`, les réglages de raisonnement et les limites de sortie ne sont jamais retirés.
+
+Pour les réponses réussies, Phaseo signale les paramètres retirés que la requête a elle-même envoyés :
+
+- dans l'en-tête de réponse `X-Phaseo-Dropped-Params`, par exemple `X-Phaseo-Dropped-Params: top_k, min_p`
+- dans `meta.routing.dropped_params` lorsque la requête définit `meta: true`, par exemple `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+Un paramètre qui provient d'un préréglage ou d'une valeur par défaut, et non du corps de la requête, peut être retiré sans apparaître à aucun de ces endroits. Il est tout de même consigné dans les diagnostics de routage que Phaseo enregistre avec la requête.
+
 ## Consultation rapide
 
 | Paramètre | Type | Utilisation |

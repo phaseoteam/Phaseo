@@ -750,6 +750,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -800,6 +802,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -921,6 +925,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -8568,6 +8574,10 @@ components:
       description: '要求されたモデルが置き換えられた理由と方法。例: `reason=unserved; from=lab/old-model; to=lab/new-model`。提供終了モデルのルーティングが代替モデルでリクエストに応答した場合にのみ送信されます。'
       schema:
         type: string
+    DroppedParams:
+      description: 'クライアントが送信したリクエストパラメーターのうち、処理するプロバイダーがサポートしていないため、ゲートウェイがプロバイダーに送信したりリクエストを拒否したりせずに削除したもの。例: `top_k, min_p`。成功したレスポンスで、リクエスト本文のパラメーターが 1 つ以上削除された場合にのみ送信されます。プリセットや既定値から設定されたパラメーターは含まれません。'
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: BYOK 専用のプロバイダー割り当てメタデータです。マネージドプロバイダーへのリクエストでは省略されます。
       schema:
@@ -9594,8 +9604,10 @@ components:
             - assistant
             - tool
         content:
-          oneOf:
+          description: メッセージの内容です。文字列またはコンテンツパーツの配列を指定します。null に設定できるのは、ツールを呼び出す（tool_calls を含む）アシスタントメッセージだけです。その他のロールで null を送ると、ゲートウェイは 400 エラーで拒否します。
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9654,7 +9666,37 @@ components:
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: PDF などのファイル入力です。file_data には base64 のデータ URL を、file_id にはリクエストを処理するプロバイダーにアップロードしたファイルを指定します。
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+              minLength: 1
+            file_id:
+              type: string
+              minLength: 1
+            filename:
+              type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -10275,6 +10317,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0

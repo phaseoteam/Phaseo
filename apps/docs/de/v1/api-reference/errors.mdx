@@ -90,7 +90,9 @@ Einige Fehler enthalten zusätzliche Informationen, die bei der schnelleren Behe
 | `phaseo_free_model_limit_exceeded` | `429` | Das gemeinsame Tageskontingent für kostenlose Phaseo-Modelle ist ausgeschöpft (standardmäßig 1.500 Anfragen). Beachte `Retry-After`, warte bis zur Zurücksetzung um 00:00 UTC oder wähle ein kostenpflichtiges Modell. |
 | `rate_limit_exceeded` | `429` | Eine [Ratenlimit-Richtlinie](./limits.mdx) des Workspace ist ausgeschöpft. `policy_id` und `limit_scope` geben an, welche. Beachte `Retry-After` oder bitte einen Workspace-Admin, die Richtlinie zu ändern. |
 | `validation_error` | `400` | Ungültige Parameter oder ungültiger Anfrage-Body. |
+| `upstream_error` | `429` | Jeder für die Anfrage versuchte Anbieter hat sie wegen Ratenbegrenzung abgelehnt. Beachte `Retry-After`; BYOK-Anfragen enthalten zusätzlich die Header `X-Phaseo-Upstream-RateLimit-*`. Andere Anbieterfehler verwenden `502`. |
 | `provider_error` | `502` | Der Upstream-Modellanbieter hat nicht korrekt geantwortet. |
+| `upstream_stream_failure` | `502` | Eine Anfrage ohne Streaming, deren Anbieter nach Beginn der Generierung fehlgeschlagen ist. Es wird keine Teilausgabe zurückgegeben und die Anfrage wird nicht berechnet. |
 | `server_error` | `500` | In Phaseo ist ein unerwartetes Problem aufgetreten. |
 
 ## Wenn ein Anbieter ausfällt
@@ -254,7 +256,8 @@ Lege eine maximale Anzahl von Versuchen und eine Gesamtfrist fest und ergänze d
 ## Hinweise speziell für Streaming
 
 - Schlägt die Anfrage vor Beginn des Streamings fehl, erhältst du eine standardmäßige JSON-Fehlerantwort.
-- Schlägt sie während des Streams fehl, behandle den Teilstream als unvollständig und biete einen erneuten Versuch an.
+- Schlägt sie während des Streams fehl, endet der Stream mit dem Fehlerereignis des Endpunkts statt mit einem normalen Abschluss: einem `error`-Frame bei Chat Completions, `response.failed` (oder `error`) bei Responses und einem `error`-Ereignis bei Messages. Behandle den Teilstream als unvollständig und biete einen erneuten Versuch an.
+- Schlägt bei einer Anfrage ohne Streaming der Anbieter mittendrin fehl, erhältst du `502` mit `upstream_stream_failure` statt einer Teilantwort.
 - Protokolliere immer `generation_id` sowie Endpunkt- und Modellmetadaten.
 
 ## Tipps zur Fehlerbehebung

@@ -251,6 +251,9 @@
 			"endpointVideoGeneration": "Geração de vídeo",
 			"endpointImageVariations": "Variações de imagens",
 			"endpointMusicGeneration": "Geração de música",
+			"endpointVideoEditing": "Edição de vídeo",
+			"endpointOcr": "OCR",
+			"endpointDocumentParsing": "Análise de documentos",
 			"tierPrivate": "Privados",
 			"capabilityTextGeneration": "Geração de texto",
 			"modalityDecisions": "Decisões"
@@ -1858,6 +1861,26 @@
 		"loadingModels": "Carregando modelos…"
 	},
 	"benchmarks": {
+		"explorer": {
+			"comparisons": "Comparações",
+			"tokenUsage": "Uso de tokens",
+			"cost": "Custo",
+			"benchmarks": "Benchmarks individuais",
+			"capabilities": "Capacidades por área",
+			"tokensPerTask": "Tokens de saída por tarefa",
+			"totalOutputTokens": "Total de tokens de saída",
+			"costPerTask": "Custo por tarefa",
+			"totalCost": "Custo total da avaliação",
+			"timePerTask": "Tempo por tarefa",
+			"pareto": "Fronteira de Pareto",
+			"score": "Pontuação",
+			"financeAndAccounting": "Finanças e contabilidade",
+			"strategyAndOps": "Estratégia e operações",
+			"legal": "Direito",
+			"healthcareAndMedical": "Saúde e medicina",
+			"engineering": "Engenharia",
+			"economics": "Economia"
+		},
 		"title": "Avaliações comparativas",
 		"description": "Explore benchmarks de modelos de IA, compare pontuações e descubra quais avaliações são mais usadas.",
 		"searchPlaceholder": "Buscar benchmarks...",

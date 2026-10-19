@@ -256,7 +256,38 @@ export async function irPartToGeminiPart(
 		return mediaUrlToGeminiPart(part.url, "video/mp4", maxRemoteAssetBytes, options.upstreamTiming);
 	}
 
+	if (part.type === "file") {
+		const mapped = await irFilePartToGeminiPart(part, maxRemoteAssetBytes, options.upstreamTiming);
+		// Callers that need one part per input get an empty text part; the
+		// list mapper below leaves unrepresentable files out instead.
+		return mapped ?? { text: "" };
+	}
+
 	return { text: String(part) };
+}
+
+/**
+ * Gemini takes file bytes as `inline_data` and remote or uploaded files as
+ * `file_data.file_uri`. An OpenAI `file_id` is not a Gemini file, so only a
+ * Gemini Files API name or URI is sent; anything else is left out.
+ * https://ai.google.dev/gemini-api/docs/document-processing
+ */
+async function irFilePartToGeminiPart(
+	part: Extract<IRContentPart, { type: "file" }>,
+	maxRemoteAssetBytes: number,
+	upstreamTiming?: ExecutorUpstreamTiming,
+): Promise<GeminiPart | null> {
+	const mimeType = part.mimeType || "application/pdf";
+	if (part.source === "data") {
+		return { inline_data: { mime_type: mimeType, data: part.data } };
+	}
+	if (part.source === "url") {
+		return mediaUrlToGeminiPart(part.data, part.mimeType || inferMimeTypeFromUrl(part.data) || "application/pdf", maxRemoteAssetBytes, upstreamTiming);
+	}
+	if (/^files\/[^/]+$/.test(part.data) || /^https:\/\/generativelanguage\.googleapis\.com\//i.test(part.data)) {
+		return { file_data: { mime_type: mimeType, file_uri: part.data } };
+	}
+	return null;
 }
 
 export async function irPartsToGeminiParts(
@@ -265,6 +296,11 @@ export async function irPartsToGeminiParts(
 ): Promise<GeminiPart[]> {
 	const mapped: GeminiPart[] = [];
 	for (const part of parts) {
+		if (part.type === "file") {
+			const file = await irFilePartToGeminiPart(part, options.maxRemoteAssetBytes ?? DEFAULT_MAX_REMOTE_ASSET_BYTES, options.upstreamTiming);
+			if (file) mapped.push(file);
+			continue;
+		}
 		mapped.push(await irPartToGeminiPart(part, options));
 	}
 	return mapped;

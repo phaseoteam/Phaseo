@@ -1,5 +1,5 @@
 event: response.created
-data: {"response":{"id":"req_golden","created_at":1767323045,"model":"claude-x"}}
+data: {"response":{"id":"req_golden","object":"response","created_at":1767323045,"model":"claude-x","status":"in_progress","output":[]}}
 
 event: response.output_item.added
 data: {"output_index":0,"item":{"type":"reasoning","id":"item_req_golden_0","summary":[],"content":[]}}
@@ -10,11 +10,26 @@ data: {"delta":"Let me think ✓","output_index":0,"item_id":"item_req_golden_0"
 event: response.output_item.done
 data: {"output_index":0,"item":{"type":"reasoning","id":"item_req_golden_0","status":"completed","summary":[],"content":[{"type":"output_text","text":"Let me think ✓","annotations":[]}],"encrypted_content":"phx1.eyJmIjoiYW50aHJvcGljLWNsYXVkZS12MSIsImsiOiJzaWduYXR1cmUiLCJtIjoiY2xhdWRlLXgiLCJwIjoiYW50aHJvcGljIn0.sig=="}}
 
-event: response.output_text.delta
-data: {"delta":"Hello","output_index":1,"item_id":"item_req_golden_1"}
+event: response.output_item.added
+data: {"output_index":1,"item":{"type":"message","id":"item_req_golden_1","status":"in_progress","role":"assistant","content":[]}}
+
+event: response.content_part.added
+data: {"item_id":"item_req_golden_1","output_index":1,"content_index":0,"part":{"type":"output_text","text":"","annotations":[]}}
 
 event: response.output_text.delta
-data: {"delta":" wörld 👋","output_index":1,"item_id":"item_req_golden_1"}
+data: {"delta":"Hello","output_index":1,"item_id":"item_req_golden_1","content_index":0}
+
+event: response.output_text.delta
+data: {"delta":" wörld 👋","output_index":1,"item_id":"item_req_golden_1","content_index":0}
+
+event: response.output_text.done
+data: {"item_id":"item_req_golden_1","output_index":1,"content_index":0,"text":"Hello wörld 👋"}
+
+event: response.content_part.done
+data: {"item_id":"item_req_golden_1","output_index":1,"content_index":0,"part":{"type":"output_text","text":"Hello wörld 👋","annotations":[]}}
+
+event: response.output_item.done
+data: {"output_index":1,"item":{"type":"message","id":"item_req_golden_1","status":"completed","role":"assistant","content":[{"type":"output_text","text":"Hello wörld 👋","annotations":[]}]}}
 
 event: response.output_item.added
 data: {"output_index":2,"item":{"type":"function_call","id":"item_req_golden_2","call_id":"toolu_1","name":"get_weather","arguments":""}}

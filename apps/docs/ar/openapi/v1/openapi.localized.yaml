@@ -750,6 +750,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -800,6 +802,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -921,6 +925,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -8568,6 +8574,10 @@ components:
       description: سبب استبدال النموذج المطلوب وكيفيته، مثل `reason=unserved; from=lab/old-model; to=lab/new-model`. يُرسل فقط عندما يجيب توجيه النماذج المتوقفة عن الطلب بنموذج بديل.
       schema:
         type: string
+    DroppedParams:
+      description: معلمات أرسلها العميل ولا يدعمها المزوّد الذي يخدم الطلب، فحذفتها البوابة بدلًا من إرسالها إلى المزوّد أو رفض الطلب، مثل `top_k, min_p`. تُرسل فقط في الاستجابات الناجحة، وفقط عند حذف معلمة واحدة على الأقل من جسم الطلب. لا تُدرج المعلمات التي مصدرها إعداد مسبق أو قيمة افتراضية.
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: بيانات وصفية لحصة المزوّد خاصة بـ BYOK فقط. تُحذف في الطلبات التي تستخدم مزوّداً مُداراً.
       schema:
@@ -9594,8 +9604,10 @@ components:
             - assistant
             - tool
         content:
-          oneOf:
+          description: 'محتوى الرسالة: سلسلة نصية أو مصفوفة من أجزاء المحتوى. يمكن فقط لرسائل المساعد التي تستدعي الأدوات (مع tool_calls) تعيينه إلى null؛ وترفض البوابة المحتوى null للأدوار الأخرى بخطأ 400.'
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9654,7 +9666,37 @@ components:
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: إدخال ملف، مثل ملف PDF. اضبط file_data على عنوان URL لبيانات base64، أو file_id على ملف مرفوع إلى المزوّد الذي يخدم الطلب.
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+              minLength: 1
+            file_id:
+              type: string
+              minLength: 1
+            filename:
+              type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -10275,6 +10317,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0

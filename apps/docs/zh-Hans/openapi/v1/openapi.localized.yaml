@@ -750,6 +750,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -800,6 +802,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -921,6 +925,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -8568,6 +8574,10 @@ components:
       description: 请求的模型被替换的原因和方式，例如 `reason=unserved; from=lab/old-model; to=lab/new-model`。仅当已停用模型的路由使用替代模型响应请求时才会发送。
       schema:
         type: string
+    DroppedParams:
+      description: 客户端发送、但处理请求的提供商不支持，因而被网关移除（而不是发送给提供商或拒绝请求）的请求参数，例如 `top_k, min_p`。仅在成功的响应中、且至少移除了一个来自请求正文的参数时才会发送。来自预设或默认值的参数不会列出。
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: 仅适用于 BYOK 的提供商配额元数据。使用托管提供商的请求不会返回此字段。
       schema:
@@ -9594,8 +9604,10 @@ components:
             - assistant
             - tool
         content:
-          oneOf:
+          description: 消息内容：字符串或内容部件数组。只有调用工具（带 tool_calls）的助手消息可以将其设为 null；其他角色的 null 内容会被网关以 400 错误拒绝。
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9654,7 +9666,37 @@ components:
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: 文件输入，例如 PDF。将 file_data 设为 base64 数据 URL，或将 file_id 设为已上传到处理该请求的提供商的文件。
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+              minLength: 1
+            file_id:
+              type: string
+              minLength: 1
+            filename:
+              type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -10275,6 +10317,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0

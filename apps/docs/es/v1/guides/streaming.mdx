@@ -53,7 +53,9 @@ Pasa un `AbortSignal` al cliente HTTP del servidor y cancela cuando el usuario s
 
 Muestra el texto parcial de forma progresiva, pero marca la respuesta como completa solo tras el evento final correcto del endpoint. Una conexión cerrada no demuestra que haya terminado.
 
-Si un stream falla después de empezar la salida:
+Si un stream falla después de empezar la salida, termina con el evento de fallo del endpoint en lugar de su evento final correcto: un frame `error` en Chat Completions (sin `finish_reason`), `response.failed` o `error` en Responses y un evento `error` en Messages (sin `message_stop`). Phaseo no cobra la salida parcial de un stream que falla.
+
+Cuando eso ocurra:
 
 1. Marca la respuesta parcial como interrumpida.
 2. Guarda el ID de solicitud o generación, endpoint y modelo en los registros.

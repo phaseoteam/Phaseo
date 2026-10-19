@@ -251,6 +251,9 @@
 			"endpointVideoGeneration": "वीडियो जनरेशन",
 			"endpointImageVariations": "छवि विविधताएँ",
 			"endpointMusicGeneration": "संगीत जनरेशन",
+			"endpointVideoEditing": "वीडियो संपादन",
+			"endpointOcr": "OCR",
+			"endpointDocumentParsing": "दस्तावेज़ पार्सिंग",
 			"tierPrivate": "निजी",
 			"capabilityTextGeneration": "टेक्स्ट जनरेशन",
 			"modalityDecisions": "निर्णय"
@@ -1858,6 +1861,26 @@
 		"loadingModels": "मॉडल लोड हो रहे हैं…"
 	},
 	"benchmarks": {
+		"explorer": {
+			"comparisons": "तुलना",
+			"tokenUsage": "टोकन उपयोग",
+			"cost": "लागत",
+			"benchmarks": "अलग-अलग बेंचमार्क",
+			"capabilities": "क्षेत्रीय क्षमताएँ",
+			"tokensPerTask": "प्रति कार्य आउटपुट टोकन",
+			"totalOutputTokens": "कुल आउटपुट टोकन",
+			"costPerTask": "प्रति कार्य लागत",
+			"totalCost": "कुल मूल्यांकन लागत",
+			"timePerTask": "प्रति कार्य समय",
+			"pareto": "पारेटो सीमा",
+			"score": "स्कोर",
+			"financeAndAccounting": "वित्त और लेखांकन",
+			"strategyAndOps": "रणनीति और संचालन",
+			"legal": "कानून",
+			"healthcareAndMedical": "स्वास्थ्य और चिकित्सा",
+			"engineering": "इंजीनियरिंग",
+			"economics": "अर्थशास्त्र"
+		},
 		"title": "बेंचमार्क",
 		"description": "AI मॉडल बेंचमार्क देखें, स्कोर की तुलना करें और जानें कि कौन-से मूल्यांकन सबसे व्यापक रूप से उपयोग किए जाते हैं।",
 		"searchPlaceholder": "बेंचमार्क खोजें...",

@@ -1,6 +1,7 @@
 import type { ExecutorExecuteArgs } from "@executors/types";
 import type { IRChatResponse, IRContentPart } from "@core/ir";
 import { irUsageToOpenAIStyle } from "@core/cache-usage";
+import { gatewayStopEntry } from "@core/finish-reason";
 import { openAIResponsesToIR } from "./transform";
 import { openAIChatToIR } from "./transform-chat";
 import { getProviderQuirks } from "./quirks";
@@ -8,7 +9,9 @@ import { parseMinimaxInterleavedText } from "./providers/minimax/quirks";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
 import { SseParser } from "@core/sse-parser";
+import { isBareChatErrorFrame, readUpstreamStreamError } from "@core/stream-errors";
 import type { GatewayReasoningDetail } from "@core/types";
+import { toChatAnnotations, toResponsesAnnotations } from "@protocols/shared/citations";
 import {
 	isSealedReasoningValue,
 	openReasoningState,
@@ -325,6 +328,18 @@ export function transformResponsesStreamToChat(
 									await emitDelta({ role: "assistant", reasoning_content: payload.delta }, controller, 0);
 								}
 								break;
+							case "response.refusal.delta":
+								if (typeof payload?.delta === "string" && payload.delta.length > 0) {
+									await emitDelta({ role: "assistant", refusal: payload.delta }, controller, 0);
+								}
+								break;
+							case "response.output_text.annotation.added": {
+								const annotations = toChatAnnotations([payload?.annotation]);
+								if (annotations.length > 0) {
+									await emitDelta({ role: "assistant", annotations }, controller, 0);
+								}
+								break;
+							}
 							case "response.function_call_arguments.delta": {
 								const resolvedId = canonicalToolId(payload?.item_id);
 								if (!resolvedId) break;
@@ -398,12 +413,24 @@ export function transformResponsesStreamToChat(
 								await flushToolArguments(resolvedId, entry, controller);
 								break;
 							}
+							// response.incomplete is terminal too (max_output_tokens or content
+							// filter): it carries the final usage and the finish reason, so
+							// the client gets its final chunk and the request is billed.
 							case "response.completed":
+							case "response.incomplete":
 								finalResponse = payload?.response ?? finalResponse;
 								break;
 							case "response.failed":
 							case "error":
-								await emit({ object: "error", message: payload?.error?.message ?? "stream_error" }, controller);
+								{
+									// OpenAI SDKs raise on a frame's `error` field; object/message stay for existing readers.
+									const failure = readUpstreamStreamError(payload);
+									await emit({
+										object: "error",
+										message: failure.message,
+										error: { message: failure.message, type: failure.code ?? "upstream_error", code: failure.code },
+									}, controller);
+								}
 								break;
 							default:
 								break;
@@ -428,6 +455,12 @@ export function transformResponsesStreamToChat(
 type ResponsesStreamChoiceState = {
 	text: string;
 	reasoning: string;
+	refusal: string;
+	// Content index of the refusal part, set when the part is announced.
+	refusalContentIndex?: number;
+	// Responses-shaped url_citation annotations on the message's output_text.
+	annotations: Array<Record<string, any>>;
+	emittedAnnotations: number;
 	mediaParts: Array<Extract<IRContentPart, { type: "image" | "audio" }>>;
 	finishReason?: string | null;
 	messageOutputIndex?: number;
@@ -437,6 +470,10 @@ type ResponsesStreamChoiceState = {
 	toolCalls: Map<number, { id: string; name: string; arguments: string; outputIndex: number; emittedAdded?: boolean }>;
 	emittedText?: boolean;
 	emittedReasoning?: boolean;
+	sawRefusal?: boolean;
+	announcedMessage?: boolean;
+	announcedTextPart?: boolean;
+	announcedReasoning?: boolean;
 };
 
 export function transformChatStreamToResponses(
@@ -450,7 +487,6 @@ export function transformChatStreamToResponses(
 
 	let mode: "unknown" | "responses" | "chat" = "unknown";
 	let createdAt = Math.floor(Date.now() / 1000);
-	let responseId: string | null = args.requestId ?? null;
 	let nativeResponseId: string | null = null;
 	let model = args.providerModelSlug ?? args.ir.model;
 	let finalResponse: any = null;
@@ -469,6 +505,9 @@ export function transformChatStreamToResponses(
 			entry = {
 				text: "",
 				reasoning: "",
+				refusal: "",
+				annotations: [],
+				emittedAnnotations: 0,
 				mediaParts: [],
 				toolCalls: new Map(),
 			};
@@ -491,6 +530,55 @@ export function transformChatStreamToResponses(
 			entry.reasoningItemId = `reasoning_${args.requestId}_${choiceIndex}`;
 		}
 		return { outputIndex: entry.reasoningOutputIndex, itemId: entry.reasoningItemId! };
+	};
+
+	// Responses streams announce an item (output_item.added, and the text part of a
+	// message) before any delta for it.
+	const announceMessage = async (
+		choiceIndex: number,
+		entry: ResponsesStreamChoiceState,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+		if (!entry.announcedMessage) {
+			entry.announcedMessage = true;
+			await emitEvent("response.output_item.added", {
+				output_index: outputIndex,
+				item: { type: "message", id: itemId, status: "in_progress", role: "assistant", content: [] },
+			}, controller);
+		}
+		if (!entry.announcedTextPart) {
+			entry.announcedTextPart = true;
+			await emitEvent("response.content_part.added", {
+				item_id: itemId,
+				output_index: outputIndex,
+				content_index: 0,
+				part: { type: "output_text", text: "", annotations: [] },
+			}, controller);
+		}
+		return { outputIndex, itemId };
+	};
+
+	const announceReasoning = async (
+		choiceIndex: number,
+		entry: ResponsesStreamChoiceState,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		const { outputIndex, itemId } = ensureReasoningIndex(choiceIndex, entry);
+		if (!entry.announcedReasoning) {
+			entry.announcedReasoning = true;
+			await emitEvent("response.output_item.added", {
+				output_index: outputIndex,
+				item: { type: "reasoning", id: itemId, summary: [], content: [] },
+			}, controller);
+			await emitEvent("response.content_part.added", {
+				item_id: itemId,
+				output_index: outputIndex,
+				content_index: 0,
+				part: { type: "reasoning_text", text: "" },
+			}, controller);
+		}
+		return { outputIndex, itemId };
 	};
 
 	const ensureToolCallState = (
@@ -521,19 +609,166 @@ export function transformChatStreamToResponses(
 		controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`));
 	};
 
+	// Refusal text and citations belong to the message item, next to its output_text.
+	const emitRefusal = async (
+		choiceIndex: number,
+		entry: ResponsesStreamChoiceState,
+		refusal: string,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+		if (entry.refusalContentIndex === undefined) {
+			// The refusal part follows the output_text part when there is text.
+			entry.refusalContentIndex = entry.text.length > 0 ? 1 : 0;
+			if (!entry.announcedMessage) {
+				// No text delta has opened the message yet: announce the item first.
+				entry.announcedMessage = true;
+				await emitEvent("response.output_item.added", {
+					output_index: outputIndex,
+					item: { type: "message", id: itemId, status: "in_progress", role: "assistant", content: [] },
+				}, controller);
+			}
+			// Always announce the refusal part before its first delta, including
+			// after streamed text.
+			await emitEvent("response.content_part.added", {
+				item_id: itemId,
+				output_index: outputIndex,
+				content_index: entry.refusalContentIndex,
+				part: { type: "refusal", refusal: "" },
+			}, controller);
+		}
+		entry.refusal += refusal;
+		await emitEvent("response.refusal.delta", {
+			item_id: itemId,
+			output_index: outputIndex,
+			content_index: entry.refusalContentIndex,
+			delta: refusal,
+		}, controller);
+	};
+
+	// Annotations follow the text they cite: while the text is held back (MiniMax
+	// tool interop), they wait and go out after it.
+	const emitAnnotations = async (
+		choiceIndex: number,
+		entry: ResponsesStreamChoiceState,
+		annotations: unknown,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		entry.annotations.push(...toResponsesAnnotations(annotations));
+		if (!entry.emittedText) return;
+		const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+		for (; entry.emittedAnnotations < entry.annotations.length; entry.emittedAnnotations += 1) {
+			await emitEvent("response.output_text.annotation.added", {
+				item_id: itemId,
+				output_index: outputIndex,
+				content_index: 0,
+				annotation_index: entry.emittedAnnotations,
+				annotation: entry.annotations[entry.emittedAnnotations],
+			}, controller);
+		}
+	};
+
+	// The SDK stream helpers build their snapshot from response.created.response and
+	// push each output_item.added item into its output, so it carries an empty output.
+	// Its id is the one the terminal response carries: the helpers reject a changed id.
 	const emitCreated = async (controller: ReadableStreamDefaultController<Uint8Array>) => {
 		await emitEvent("response.created", {
 			response: {
-				id: responseId ?? args.requestId,
+				id: args.requestId,
+				object: "response",
 				created_at: createdAt,
 				model,
+				status: "in_progress",
+				output: [],
 			},
 		}, controller);
+	};
+
+	// Close each announced message and reasoning item with its done events, using the
+	// accumulated text, as the Anthropic transformer does at content_block_stop.
+	// Returns the output indexes it closed.
+	const closeAnnouncedItems = async (
+		entry: ResponsesStreamChoiceState,
+		finalItemAt: (outputIndex: number) => any,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	): Promise<number[]> => {
+		const closed: number[] = [];
+		if (entry.announcedReasoning && entry.reasoningOutputIndex != null) {
+			const outputIndex = entry.reasoningOutputIndex;
+			const itemId = entry.reasoningItemId!;
+			const part = { type: "reasoning_text", text: entry.reasoning };
+			await emitEvent("response.reasoning_text.done", {
+				item_id: itemId,
+				output_index: outputIndex,
+				content_index: 0,
+				text: entry.reasoning,
+			}, controller);
+			await emitEvent("response.content_part.done", {
+				item_id: itemId,
+				output_index: outputIndex,
+				content_index: 0,
+				part,
+			}, controller);
+			const finalItem = finalItemAt(outputIndex);
+			// Keep the sealed reasoning state when the final output carries it, under the
+			// id the stream announced (SDK stream helpers reject a changed item id).
+			const item = finalItem?.type === "reasoning" && finalItem.encrypted_content
+				? { ...finalItem, id: itemId }
+				: { type: "reasoning", id: itemId, status: "completed", summary: [], content: [part] };
+			await emitEvent("response.output_item.done", { output_index: outputIndex, item }, controller);
+			closed.push(outputIndex);
+		}
+		if (entry.announcedMessage && entry.messageOutputIndex != null) {
+			const outputIndex = entry.messageOutputIndex;
+			const itemId = entry.messageItemId!;
+			if (entry.announcedTextPart) {
+				const part = { type: "output_text", text: entry.text, annotations: entry.annotations };
+				await emitEvent("response.output_text.done", {
+					item_id: itemId,
+					output_index: outputIndex,
+					content_index: 0,
+					text: entry.text,
+				}, controller);
+				await emitEvent("response.content_part.done", {
+					item_id: itemId,
+					output_index: outputIndex,
+					content_index: 0,
+					part,
+				}, controller);
+			}
+			if (entry.refusalContentIndex !== undefined) {
+				await emitEvent("response.refusal.done", {
+					item_id: itemId,
+					output_index: outputIndex,
+					content_index: entry.refusalContentIndex,
+					refusal: entry.refusal,
+				}, controller);
+				await emitEvent("response.content_part.done", {
+					item_id: itemId,
+					output_index: outputIndex,
+					content_index: entry.refusalContentIndex,
+					part: { type: "refusal", refusal: entry.refusal },
+				}, controller);
+			}
+			await emitEvent("response.output_item.done", {
+				output_index: outputIndex,
+				item: {
+					type: "message",
+					id: itemId,
+					status: "completed",
+					role: "assistant",
+					content: messageContentFromState(entry),
+				},
+			}, controller);
+			closed.push(outputIndex);
+		}
+		return closed;
 	};
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
 			let createdEmitted = false;
+			let upstreamFailure: { code: string | null; message: string } | null = null;
 			try {
 				while (true) {
 					const { value, done } = await reader.read();
@@ -583,13 +818,19 @@ export function transformChatStreamToResponses(
 							continue;
 						}
 
-						if (!isChatPayload) continue;
+						if (!isChatPayload) {
+							// A Chat upstream that fails after the stream started sends a bare
+							// error frame; the stream then ends as response.failed below.
+							if (mode !== "responses" && isBareChatErrorFrame(payload)) {
+								upstreamFailure ??= readUpstreamStreamError(payload);
+							}
+							continue;
+						}
 
 						mode = "chat";
 						applyStreamQuirks(payload, state, args.providerId);
 
 						if (!createdEmitted) {
-							if (payload?.id) responseId = payload.id;
 							if (payload?.created) createdAt = payload.created;
 							if (payload?.model) model = payload.model;
 							await emitCreated(controller);
@@ -609,30 +850,45 @@ export function transformChatStreamToResponses(
 								if (choice?.finish_reason) {
 									entry.finishReason = choice.finish_reason;
 								}
+								// An OpenAI-style refusal ends with finish_reason "stop"; Messages
+								// clients need it as stop_reason "refusal".
+								const refusal = choice?.delta?.refusal ?? choice?.message?.refusal;
+								if (typeof refusal === "string" && refusal.length > 0) {
+									entry.sawRefusal = true;
+								}
 
 								const deltaContent = choice?.delta?.content;
 								if (typeof deltaContent === "string" && deltaContent.length > 0) {
 									entry.text += deltaContent;
 									if (!isMiniMaxToolInterop) {
 										entry.emittedText = true;
-										const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+										const { outputIndex, itemId } = await announceMessage(choiceIndex, entry, controller);
 										await emitEvent("response.output_text.delta", {
 											delta: deltaContent,
 											output_index: outputIndex,
 											item_id: itemId,
+											content_index: 0,
 										}, controller);
 									}
+								}
+
+								if (typeof choice?.delta?.refusal === "string" && choice.delta.refusal.length > 0) {
+									await emitRefusal(choiceIndex, entry, choice.delta.refusal, controller);
+								}
+								if (Array.isArray(choice?.delta?.annotations)) {
+									await emitAnnotations(choiceIndex, entry, choice.delta.annotations, controller);
 								}
 
 								const deltaReasoning = choice?.delta?.reasoning_content;
 								if (typeof deltaReasoning === "string" && deltaReasoning.length > 0) {
 									entry.reasoning += deltaReasoning;
 									entry.emittedReasoning = true;
-									const { outputIndex, itemId } = ensureReasoningIndex(choiceIndex, entry);
+									const { outputIndex, itemId } = await announceReasoning(choiceIndex, entry, controller);
 									await emitEvent("response.reasoning_text.delta", {
 										delta: deltaReasoning,
 										output_index: outputIndex,
 										item_id: itemId,
+										content_index: 0,
 									}, controller);
 								}
 
@@ -689,6 +945,12 @@ export function transformChatStreamToResponses(
 											entry.reasoning = message.reasoning_content;
 											ensureReasoningIndex(choiceIndex, entry);
 										}
+									}
+									if (typeof message.refusal === "string" && message.refusal.length > 0 && entry.refusal.length === 0) {
+										await emitRefusal(choiceIndex, entry, message.refusal, controller);
+									}
+									if (Array.isArray(message.annotations) && entry.annotations.length === 0) {
+										await emitAnnotations(choiceIndex, entry, message.annotations, controller);
 									}
 									if (Array.isArray(message.tool_calls)) {
 										for (const toolCall of message.tool_calls) {
@@ -753,23 +1015,47 @@ export function transformChatStreamToResponses(
 
 					for (const [choiceIndex, entry] of choiceStates.entries()) {
 						if (entry.text.length > 0 && !entry.emittedText) {
-							const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+							const { outputIndex, itemId } = await announceMessage(choiceIndex, entry, controller);
 							await emitEvent("response.output_text.delta", {
 								delta: entry.text,
 								output_index: outputIndex,
 								item_id: itemId,
+								content_index: 0,
 							}, controller);
 							entry.emittedText = true;
 						}
+						if (entry.emittedText) await emitAnnotations(choiceIndex, entry, [], controller);
 						if (entry.reasoning.length > 0 && !entry.emittedReasoning) {
-							const { outputIndex, itemId } = ensureReasoningIndex(choiceIndex, entry);
+							const { outputIndex, itemId } = await announceReasoning(choiceIndex, entry, controller);
 							await emitEvent("response.reasoning_text.delta", {
 								delta: entry.reasoning,
 								output_index: outputIndex,
 								item_id: itemId,
+								content_index: 0,
 							}, controller);
 							entry.emittedReasoning = true;
 						}
+					}
+
+					// The final output is built first so a reasoning item's done event can
+					// carry its sealed state.
+					const final = finalResponse ? (() => {
+						const ir = openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
+						const encoded = encodeOpenAIResponsesResponse(ir, args.requestId);
+						const output =
+							Array.isArray(encoded.output) && encoded.output.length > 0
+								? encoded.output
+								: buildResponsesOutputFromState(choiceStates, args.requestId);
+						const indexed = assignStreamedOutputIndexes(output, choiceStates, () => nextOutputIndex++);
+						return { ir, encoded, indexed };
+					})() : null;
+					const finalItemAt = (outputIndex: number) => final?.indexed.find(({ index }) => index === outputIndex)?.item;
+
+					// Close announced message and reasoning items before tool calls and the
+					// terminal event.
+					const closedIndexes = new Set<number>();
+					for (const entry of choiceStates.values()) {
+						for (const index of await closeAnnouncedItems(entry, finalItemAt, controller)) closedIndexes.add(index);
 					}
 
 					for (const entry of choiceStates.values()) {
@@ -813,18 +1099,17 @@ export function transformChatStreamToResponses(
 						createdEmitted = true;
 					}
 
-					if (finalResponse) {
-						const ir = openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
+					if (final) {
+						const { ir, encoded, indexed } = final;
 						const usage = encodeResponsesUsageFromIR(ir.usage);
 						const completion = deriveResponsesCompletionFromFinish(ir.choices?.[0]?.finishReason);
-						const encoded = encodeOpenAIResponsesResponse(ir, args.requestId);
-						const output =
-							Array.isArray(encoded.output) && encoded.output.length > 0
-								? encoded.output
-								: buildResponsesOutputFromState(choiceStates, args.requestId);
-						const indexed = assignStreamedOutputIndexes(output, choiceStates, () => nextOutputIndex++);
+						const firstChoice = ir.choices?.[0];
+						const refusalStop = choiceStates.get(firstChoice?.index ?? 0)?.sawRefusal === true &&
+							(firstChoice?.finishReason === "stop" || firstChoice?.finishReason === "content_filter");
 						for (const { index, item, streamed } of indexed) {
 							if ((item as any)?.type !== "reasoning" || !(item as any).encrypted_content) continue;
+							// Already closed with the streamed reasoning text above.
+							if (closedIndexes.has(index)) continue;
 							// Items the stream never announced (for example a Gemini function-call
 							// signature) get a full added/done pair at a fresh index.
 							if (!streamed) {
@@ -836,8 +1121,12 @@ export function transformChatStreamToResponses(
 							id: args.requestId,
 							object: "response",
 							created_at: ir.created ?? createdAt,
-							status: completion.status,
-							...(completion.incompleteDetails ? { incomplete_details: completion.incompleteDetails } : {}),
+							status: upstreamFailure ? "failed" : completion.status,
+							...(upstreamFailure
+								? { error: { code: upstreamFailure.code ?? "server_error", message: upstreamFailure.message } }
+								: (completion.incompleteDetails ? { incomplete_details: completion.incompleteDetails } : {})),
+							// Internal: stripped before the client sees the frame.
+							...gatewayStopEntry(refusalStop ? "refusal" : firstChoice?.finishDetail, firstChoice?.stopSequence),
 							model: ir.model ?? model,
 							output: [...indexed].sort((left, right) => left.index - right.index).map(({ item }) => item),
 							usage,
@@ -848,8 +1137,32 @@ export function transformChatStreamToResponses(
 							...(encoded.related_questions ? { related_questions: encoded.related_questions } : {}),
 							...(encoded.reasoning_steps ? { reasoning_steps: encoded.reasoning_steps } : {}),
 						};
-						await emitEvent("response.completed", { response }, controller);
+						// One terminal event: response.failed when the upstream failed, response.incomplete
+						// for length and content filter, otherwise response.completed.
+						await emitEvent(
+							upstreamFailure ? "response.failed" : completion.status === "incomplete" ? "response.incomplete" : "response.completed",
+							{ response },
+							controller,
+						);
 					}
+				}
+				if (upstreamFailure && mode === "unknown") {
+					// The upstream failed before sending any chunk.
+					if (!createdEmitted) {
+						await emitCreated(controller);
+						createdEmitted = true;
+					}
+					await emitEvent("response.failed", {
+						response: {
+							id: args.requestId,
+							object: "response",
+							created_at: createdAt,
+							status: "failed",
+							error: { code: upstreamFailure.code ?? "server_error", message: upstreamFailure.message },
+							model,
+							output: [],
+						},
+					}, controller);
 				}
 			} catch (err) {
 				console.error("openai compat chat->responses stream transform failed:", err);
@@ -970,7 +1283,7 @@ function buildResponsesOutputFromState(
 				},
 			});
 		}
-		if (entry.messageOutputIndex != null && (entry.text.length > 0 || entry.mediaParts.length > 0)) {
+		if (entry.messageOutputIndex != null && (entry.text.length > 0 || entry.refusal.length > 0 || entry.mediaParts.length > 0)) {
 			outputItems.push({
 				index: entry.messageOutputIndex,
 				item: {
@@ -978,49 +1291,7 @@ function buildResponsesOutputFromState(
 					id: entry.messageItemId ?? `msg_${requestId}_${choiceIndex}`,
 					status: "completed",
 					role: "assistant",
-					content: [
-						...(entry.text.length > 0 ? [{ type: "output_text", text: entry.text, annotations: [] }] : []),
-						...entry.mediaParts.map((part) => {
-							if (part.type === "image") {
-								if (part.source === "data") {
-									return {
-										type: "output_image",
-										b64_json: part.data,
-										mime_type: part.mimeType,
-									};
-								}
-								return {
-									type: "output_image",
-									image_url: { url: part.data },
-									mime_type: part.mimeType,
-								};
-							}
-							const mimeType = (() => {
-								if (part.format === "wav") return "audio/wav";
-								if (part.format === "mp3") return "audio/mpeg";
-								if (part.format === "flac") return "audio/flac";
-								if (part.format === "m4a") return "audio/m4a";
-								if (part.format === "ogg") return "audio/ogg";
-								if (part.format === "pcm16") return "audio/l16";
-								if (part.format === "pcm24") return "audio/l24";
-								return "audio/wav";
-							})();
-							if (part.source === "data") {
-								return {
-									type: "output_audio",
-									b64_json: part.data,
-									mime_type: mimeType,
-									...(part.format ? { format: part.format } : {}),
-								};
-							}
-							return {
-								type: "output_audio",
-								audio_url: { url: part.data },
-								mime_type: mimeType,
-								...(part.format ? { format: part.format } : {}),
-							};
-						}),
-					],
+					content: messageContentFromState(entry),
 				},
 			});
 		}
@@ -1038,6 +1309,54 @@ function buildResponsesOutputFromState(
 	}
 	outputItems.sort((a, b) => a.index - b.index);
 	return outputItems.map((entry) => entry.item);
+}
+
+/** A message item's content parts from the streamed choice state. */
+function messageContentFromState(entry: ResponsesStreamChoiceState): any[] {
+	return [
+		...(entry.text.length > 0 ? [{ type: "output_text", text: entry.text, annotations: entry.annotations }] : []),
+		...(entry.refusal.length > 0 ? [{ type: "refusal", refusal: entry.refusal }] : []),
+		...entry.mediaParts.map((part) => {
+			if (part.type === "image") {
+				if (part.source === "data") {
+					return {
+						type: "output_image",
+						b64_json: part.data,
+						mime_type: part.mimeType,
+					};
+				}
+				return {
+					type: "output_image",
+					image_url: { url: part.data },
+					mime_type: part.mimeType,
+				};
+			}
+			const mimeType = (() => {
+				if (part.format === "wav") return "audio/wav";
+				if (part.format === "mp3") return "audio/mpeg";
+				if (part.format === "flac") return "audio/flac";
+				if (part.format === "m4a") return "audio/m4a";
+				if (part.format === "ogg") return "audio/ogg";
+				if (part.format === "pcm16") return "audio/l16";
+				if (part.format === "pcm24") return "audio/l24";
+				return "audio/wav";
+			})();
+			if (part.source === "data") {
+				return {
+					type: "output_audio",
+					b64_json: part.data,
+					mime_type: mimeType,
+					...(part.format ? { format: part.format } : {}),
+				};
+			}
+			return {
+				type: "output_audio",
+				audio_url: { url: part.data },
+				mime_type: mimeType,
+				...(part.format ? { format: part.format } : {}),
+			};
+		}),
+	];
 }
 
 function deriveResponsesCompletionFromFinish(finishReason?: string | null): {
@@ -1267,7 +1586,11 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 			choice.message = {
 				role: message.role || previousMessage.role || "assistant",
 				content: message.content ?? previousMessage.content ?? "",
-				...(message.tool_calls ? { tool_calls: message.tool_calls } : {}),
+				// A quirk's partial message on the final chunk (Z.ai, MiniMax) must not
+				// drop the tool calls accumulated from earlier deltas.
+				...(message.tool_calls
+					? { tool_calls: message.tool_calls }
+					: previousMessage.tool_calls ? { tool_calls: previousMessage.tool_calls } : {}),
 				...(message.reasoning_content ? { reasoning_content: message.reasoning_content } : previousMessage.reasoning_content ? { reasoning_content: previousMessage.reasoning_content } : {}),
 				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
 				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
@@ -1280,11 +1603,21 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 					: Array.isArray(previousMessage._contentParts)
 						? { _contentParts: previousMessage._contentParts }
 						: {}),
+				...(typeof (message.refusal ?? previousMessage.refusal) === "string" ? { refusal: message.refusal ?? previousMessage.refusal } : {}),
+				...(Array.isArray(message.annotations)
+					? { annotations: message.annotations }
+					: Array.isArray(previousMessage.annotations) ? { annotations: previousMessage.annotations } : {}),
 			};
 		}
 
 		if (chunk.delta?.content) {
 			choice.message.content = (choice.message.content || "") + chunk.delta.content;
+		}
+		if (typeof chunk.delta?.refusal === "string" && chunk.delta.refusal) {
+			choice.message.refusal = (choice.message.refusal || "") + chunk.delta.refusal;
+		}
+		if (Array.isArray(chunk.delta?.annotations) && chunk.delta.annotations.length > 0) {
+			choice.message.annotations = [...(choice.message.annotations ?? []), ...chunk.delta.annotations];
 		}
 		if (chunk.delta?.reasoning_content) {
 			choice.message.reasoning_content =

@@ -13,7 +13,9 @@
             "content": [
               {
                 "type": "reasoning_text",
-                "text": "Let me think ✓"
+                "text": "Let me think ✓",
+                "thoughtSignature": "sig==",
+                "reasoningFormat": "anthropic-claude-v1"
               },
               {
                 "type": "text",
@@ -217,7 +219,7 @@
     },
     {
       "type": "stop",
-      "finishReason": "end_turn",
+      "finishReason": null,
       "payload": {
         "type": "message_stop"
       }

@@ -177,6 +177,52 @@ describe("guardAllFailed", () => {
 		expect(JSON.stringify(payload)).not.toContain("upstream_rate_limit_headers");
 	});
 
+	it("returns 429 with the final Retry-After when every dispatched provider throttled the request", async () => {
+		const ctx: any = {
+			model: "openai/gpt-oss-120b",
+			endpoint: "chat.completions",
+			requestId: "req_all_429",
+			attemptErrors: [
+				{ provider: "deepinfra", type: "upstream_non_2xx", status: 429, upstream_rate_limit_headers: { "Retry-After": "5" } },
+				// A breaker-blocked candidate was never called and does not change the outcome.
+				{ provider: "together", type: "blocked" },
+				{ provider: "groq", type: "upstream_non_2xx", status: 429, upstream_rate_limit_headers: { "Retry-After": "11" } },
+			],
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+
+		expect(result.response.status).toBe(429);
+		expect(result.response.headers.get("Retry-After")).toBe("11");
+		expect(await result.response.json()).toMatchObject({
+			error: "upstream_error",
+			reason: "all_candidates_failed",
+			failed_statuses: [429],
+		});
+	});
+
+	it("keeps 502 when a throttled provider is mixed with another failure", async () => {
+		const ctx: any = {
+			model: "openai/gpt-oss-120b",
+			endpoint: "chat.completions",
+			requestId: "req_mixed_429",
+			attemptErrors: [
+				{ provider: "deepinfra", type: "upstream_non_2xx", status: 503 },
+				{ provider: "groq", type: "upstream_non_2xx", status: 429, upstream_rate_limit_headers: { "Retry-After": "11" } },
+				{ provider: "together", type: "error", message: "socket hang up" },
+			],
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+
+		expect(result.response.status).toBe(502);
+		expect(result.response.headers.get("Retry-After")).toBe("11");
+	});
+
 	it("summarizes multi-provider failures in the description", async () => {
 		const ctx: any = {
 			model: "xiaomi/mimo-v2-tts:free",

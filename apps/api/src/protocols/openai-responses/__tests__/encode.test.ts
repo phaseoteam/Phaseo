@@ -7,6 +7,24 @@ import { describe, it, expect } from "vitest";
 import { encodeOpenAIResponsesResponse } from "../encode";
 import type { IRChatResponse } from "@core/ir";
 
+describe("encodeOpenAIResponsesResponse finish status", () => {
+	it.each([
+		["length", "incomplete", { reason: "max_output_tokens" }],
+		["content_filter", "incomplete", { reason: "content_filter" }],
+		["stop", "completed", undefined],
+		["tool_calls", "completed", undefined],
+		["error", "failed", undefined],
+	] as const)("encodes %s as %s with its incomplete reason", (finishReason, status, details) => {
+		const response = encodeOpenAIResponsesResponse({
+			id: "req-1",
+			model: "m",
+			choices: [{ index: 0, message: { role: "assistant", content: [{ type: "text", text: "x" }] }, finishReason }],
+		} as IRChatResponse, "req-1");
+		expect(response.status).toBe(status);
+		expect(response.incomplete_details).toEqual(details);
+	});
+});
+
 describe("encodeOpenAIResponsesResponse", () => {
 	it("should encode simple text response", () => {
 		const ir: IRChatResponse = {

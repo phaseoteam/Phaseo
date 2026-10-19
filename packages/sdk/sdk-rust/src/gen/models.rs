@@ -1114,6 +1114,12 @@ pub struct ErrorUpstreamError {
 	pub param: Option<Option<String>>,
 }
 
+pub struct FileContentPart {
+	pub cache_control: Option<HashMap<String, String>>,
+	pub file: HashMap<String, String>,
+	pub r#type: String,
+}
+
 pub struct FileResponse {
 	pub bytes: Option<i64>,
 	pub created_at: Option<i64>,

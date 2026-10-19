@@ -202,6 +202,40 @@ export function irUsageToOpenAIStyle(usage: {
 	};
 }
 
+export type AnthropicStyleCacheUsage = {
+	/** Input that was neither read from nor written to the cache. */
+	inputTokens: number;
+	readTokens?: number;
+	writeTokens?: number;
+	write5mTokens?: number;
+	write1hTokens?: number;
+};
+
+/**
+ * Restate IR usage in Anthropic terms for the Messages encoder: input excludes cache reads
+ * and writes, which are reported beside it.
+ */
+export function irUsageToAnthropicStyle(usage: Parameters<typeof irUsageToOpenAIStyle>[0]): AnthropicStyleCacheUsage {
+	const input = Number.isFinite(usage.inputTokens) ? Number(usage.inputTokens) : 0;
+	const cache = resolveCacheTokenUsage(
+		{
+			cachedInputTokens: usage.cachedInputTokens,
+			cachedReadTokensAreSubsetOfInput: usage.cachedReadTokensAreSubsetOfInput,
+			cachedWriteTokensAreSubsetOfInput: usage.cachedWriteTokensAreSubsetOfInput,
+			_ext: usage._ext,
+		},
+		input,
+		{ readSubsetDefault: true },
+	);
+	return {
+		inputTokens: uncachedInputTokens(input, cache),
+		readTokens: cache.readTokens,
+		writeTokens: cache.writeTokens,
+		write5mTokens: cache.write5mTokens,
+		write1hTokens: cache.write1hTokens,
+	};
+}
+
 export type ReportedCacheTokens = {
 	readTokens?: number;
 	writeTokens?: number;

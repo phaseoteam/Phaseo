@@ -185,6 +185,8 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 					"provider_options.openai.context_management",
 					"reasoning.mode",
 				],
+				// Not in OpenAI's Chat or Responses API.
+				unsupportedParams: ["image_config"],
 			},
 			normalize: {
 				maxTemperature: 2,
@@ -374,7 +376,10 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "mistral",
 		text: {
 			paramPolicy: {
-				supportedParams: ["max_tokens", "reasoning.enabled", "reasoning.effort", "service_tier"],
+				// Sampling fields from Mistral's chat API spec; seed is sent as random_seed.
+				supportedParams: ["max_tokens", "reasoning.enabled", "reasoning.effort", "service_tier", "seed", "top_k", "repetition_penalty", "logprobs", "top_logprobs"],
+				// Not in Mistral's API; its streams end with usage without stream_options.
+				unsupportedParams: ["stream_options", "max_tool_calls"],
 			},
 			normalize: { reasoningEffortFallback: ["none", "low", "medium", "high", "max"] },
 		},
@@ -457,7 +462,20 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		textOnly: true,
 		text: {
 			paramPolicy: {
-				supportedParams: ["service_tier"],
+				supportedParams: ["service_tier", "seed", "top_k", "repetition_penalty", "logprobs", "top_logprobs"],
+				unsupportedParams: ["stream_options", "max_tool_calls"],
+			},
+		},
+	},
+	{
+		// Together's chat API has no stream_options; usage arrives on the last chunk.
+		// https://docs.together.ai/reference/chat-completions-1
+		id: "together",
+		text: {
+			paramPolicy: {
+				// In Together's chat API; not every catalogue route lists them.
+				supportedParams: ["seed", "logprobs"],
+				unsupportedParams: ["stream_options", "max_tool_calls", "image_config"],
 			},
 		},
 	},
@@ -624,7 +642,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 					"response_format", "top_logprobs", "service_tier", "reasoning.effort",
 				],
 				unsupportedParams: [
-					"frequency_penalty", "presence_penalty", "logit_bias", "logprobs",
+					"frequency_penalty", "presence_penalty", "logit_bias", "logprobs", "image_config",
 				],
 			},
 			normalize: {
@@ -669,6 +687,10 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "ambient",
+		text: {
+			// Not in Ambient's published API spec.
+			paramPolicy: { unsupportedParams: ["image_config"] },
+		},
 	},
 	{
 		id: "empiriolabs",
@@ -778,6 +800,13 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "baidu",
+		text: {
+			paramPolicy: {
+				// In Qianfan's v2 chat API (https://cloud.baidu.com/doc/qianfan-api/s/3m7of64lb).
+				supportedParams: ["seed", "repetition_penalty"],
+				unsupportedParams: ["image_config"],
+			},
+		},
 	},
 	{
 		id: "minimax",

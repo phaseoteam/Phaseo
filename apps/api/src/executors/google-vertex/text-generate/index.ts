@@ -8,12 +8,15 @@ import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
-import { irToAnthropicMessages, anthropicMessagesToIR, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
 import { ANTHROPIC_CACHE_USAGE_SEMANTICS, createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
-import { transformStream as transformGoogleGeminiStream } from "@executors/google-ai-studio/text-generate";
+import {
+	createGeminiStreamUsageRecorder,
+	transformStream as transformGoogleGeminiStream,
+} from "@executors/google-ai-studio/text-generate";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { resolveProviderKey } from "@providers/keys";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
@@ -142,9 +145,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			// Every Claude stream records usage from the upstream frames, so cache writes are
 			// billed whichever model it is.
 			const accounting = route.family === "anthropic" ? createAnthropicStreamAccounting() : undefined;
+			// Gemini streams are billed from the upstream usageMetadata, which keeps image,
+			// audio and video input apart from text.
+			const geminiUsage = route.family === "gemini" ? createGeminiStreamUsageRecorder(bill) : undefined;
 			const stream = (() => {
-				if (route.family === "gemini") {
-					return transformGoogleGeminiStream(res.body!, args);
+				if (geminiUsage) {
+					return transformGoogleGeminiStream(res.body!, args, undefined, { onUsage: geminiUsage.onUsage });
 				}
 				if (route.family === "openapi_chat") {
 					return resolveStreamForProtocol(
@@ -177,12 +183,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				allowEmptySuccess: true,
 				stream,
 				usageFinalizer: async () => {
+					if (geminiUsage) return geminiUsage.finalize();
 					if (!accounting) return null;
 					const final = accounting.snapshot();
-					return { ...bill, usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
+					return { ...bill, usage: anthropicUsageForPricing(final.usage),
 						finish_reason: mapAnthropicStopReason(final.stopReason) };
 				},
-				usageFinalizerAuthoritative: accounting !== undefined,
+				usageFinalizerAuthoritative: accounting !== undefined || geminiUsage !== undefined,
 				bill,
 				upstream: res,
 				keySource: keyInfo.source,
@@ -668,11 +675,18 @@ function mapGeminiFinishReason(reason: string | undefined): IRChoice["finishReas
 			return "stop";
 		case "MAX_TOKENS":
 			return "length";
+		// Filter outcomes documented for the Gemini API and Vertex; each can end a candidate with no content.
 		case "SAFETY":
 		case "RECITATION":
 		case "PROHIBITED_CONTENT":
 		case "SPII":
 		case "BLOCKLIST":
+		case "LANGUAGE":
+		case "MODEL_ARMOR":
+		case "ESCALATION":
+		case "IMAGE_SAFETY":
+		case "IMAGE_PROHIBITED_CONTENT":
+		case "IMAGE_RECITATION":
 			return "content_filter";
 		case "MALFORMED_FUNCTION_CALL":
 			return "error";

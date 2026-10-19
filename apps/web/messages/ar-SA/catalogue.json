@@ -251,6 +251,9 @@
 			"endpointVideoGeneration": "إنشاء الفيديو",
 			"endpointImageVariations": "تنويعات الصور",
 			"endpointMusicGeneration": "توليد الموسيقى",
+			"endpointVideoEditing": "تحرير الفيديو",
+			"endpointOcr": "التعرف الضوئي على الحروف",
+			"endpointDocumentParsing": "تحليل المستندات",
 			"tierPrivate": "خاصة",
 			"capabilityTextGeneration": "توليد النص",
 			"modalityDecisions": "القرارات"
@@ -1858,6 +1861,26 @@
 		"loadingModels": "جارٍ تحميل النماذج…"
 	},
 	"benchmarks": {
+		"explorer": {
+			"comparisons": "المقارنات",
+			"tokenUsage": "استخدام الرموز",
+			"cost": "التكلفة",
+			"benchmarks": "الاختبارات الفردية",
+			"capabilities": "القدرات حسب المجال",
+			"tokensPerTask": "رموز الإخراج لكل مهمة",
+			"totalOutputTokens": "إجمالي رموز الإخراج",
+			"costPerTask": "التكلفة لكل مهمة",
+			"totalCost": "إجمالي تكلفة التقييم",
+			"timePerTask": "الوقت لكل مهمة",
+			"pareto": "حد باريتو",
+			"score": "النتيجة",
+			"financeAndAccounting": "المالية والمحاسبة",
+			"strategyAndOps": "الاستراتيجية والعمليات",
+			"legal": "القانون",
+			"healthcareAndMedical": "الصحة والطب",
+			"engineering": "الهندسة",
+			"economics": "الاقتصاد"
+		},
 		"title": "المعايير",
 		"description": "استكشف معايير نماذج AI، وقارن النتائج، واكتشف التقييمات الأكثر استخدامًا.",
 		"searchPlaceholder": "ابحث عن معايير...",

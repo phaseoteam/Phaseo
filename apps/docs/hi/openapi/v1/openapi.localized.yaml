@@ -750,6 +750,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -800,6 +802,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -921,6 +925,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -8568,6 +8574,10 @@ components:
       description: अनुरोधित मॉडल को क्यों और कैसे बदला गया, उदाहरण के लिए `reason=unserved; from=lab/old-model; to=lab/new-model`। यह केवल तब भेजा जाता है जब सेवानिवृत्त मॉडल रूटिंग ने अनुरोध का उत्तर किसी प्रतिस्थापन मॉडल से दिया हो।
       schema:
         type: string
+    DroppedParams:
+      description: क्लाइंट के भेजे वे पैरामीटर जिनका सर्व करने वाला प्रदाता समर्थन नहीं करता और जिन्हें गेटवे ने प्रदाता को भेजने या अनुरोध अस्वीकार करने के बजाय हटा दिया, उदाहरण के लिए `top_k, min_p`। यह केवल सफल रिस्पॉन्स में भेजा जाता है, और तभी जब अनुरोध बॉडी का कम से कम एक पैरामीटर हटाया गया हो। किसी प्रीसेट या डिफ़ॉल्ट मान से आने वाले पैरामीटर सूची में नहीं होते।
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: केवल BYOK के लिए प्रदाता कोटा मेटाडेटा। प्रबंधित-प्रदाता अनुरोधों में शामिल नहीं होता।
       schema:
@@ -9594,8 +9604,10 @@ components:
             - assistant
             - tool
         content:
-          oneOf:
+          description: 'संदेश की सामग्री: एक स्ट्रिंग या सामग्री भागों का array। केवल वे असिस्टेंट संदेश जो टूल कॉल करते हैं (tool_calls के साथ), इसे null पर सेट कर सकते हैं; अन्य भूमिकाओं के लिए गेटवे null सामग्री को 400 त्रुटि के साथ अस्वीकार करता है।'
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9654,7 +9666,37 @@ components:
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: फ़ाइल इनपुट, जैसे PDF। file_data को base64 डेटा URL पर सेट करें, या file_id को उस प्रदाता पर अपलोड की गई फ़ाइल पर जो अनुरोध पूरा करता है।
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+              minLength: 1
+            file_id:
+              type: string
+              minLength: 1
+            filename:
+              type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -10275,6 +10317,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0

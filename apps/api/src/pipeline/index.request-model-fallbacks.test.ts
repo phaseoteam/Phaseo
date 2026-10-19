@@ -15,7 +15,7 @@ vi.mock("./error-response", () => ({
 	logPipelineExecutionError: vi.fn(),
 }));
 
-import { makeEndpointHandler } from "./index";
+import { makeEndpointHandler, settleMixedRateLimitAcrossModels } from "./index";
 
 function requestContext(model: string, models: string[] = [], extra: Record<string, any> = {}) {
 	return {
@@ -103,6 +103,60 @@ describe("request-level models fallbacks", () => {
 
 		expect(response.status).toBe(status);
 		expect(beforeRequestMock).toHaveBeenCalledTimes(1);
+	});
+
+	it.each([400, 413, 422])("does not switch models when every provider rejected the request with %s (surfaced as 502)", async (status) => {
+		const primary = requestContext("primary/model", ["fallback/model"], {
+			attemptErrors: [
+				{ provider: "anthropic", type: "upstream_non_2xx", status },
+				{ provider: "bedrock", type: "upstream_non_2xx", status },
+			],
+		});
+		beforeRequestMock.mockResolvedValueOnce({ ok: true, ctx: primary });
+		runnerMock.mockResolvedValueOnce(new Response("upstream_error", { status: 502 }));
+
+		const response = await makeEndpointHandler({ endpoint: "chat.completions", schema: null })(post("chat/completions"));
+
+		expect(response.status).toBe(502);
+		expect(beforeRequestMock).toHaveBeenCalledTimes(1);
+		expect(runnerMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("still switches models after a 502 when a provider failed for a retryable reason", async () => {
+		const primary = requestContext("primary/model", ["fallback/model"], {
+			attemptErrors: [
+				{ provider: "anthropic", type: "upstream_non_2xx", status: 400 },
+				{ provider: "bedrock", type: "upstream_non_2xx", status: 503 },
+			],
+		});
+		beforeRequestMock
+			.mockResolvedValueOnce({ ok: true, ctx: primary })
+			.mockResolvedValueOnce({ ok: true, ctx: requestContext("fallback/model") });
+		runnerMock
+			.mockResolvedValueOnce(new Response("upstream_error", { status: 502 }))
+			.mockResolvedValueOnce(new Response("ok", { status: 200 }));
+
+		const response = await makeEndpointHandler({ endpoint: "chat.completions", schema: null })(post("chat/completions"));
+
+		expect(response.status).toBe(200);
+		expect(runnerMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("stops at a fallback model whose providers all rejected the request", async () => {
+		beforeRequestMock
+			.mockResolvedValueOnce({ ok: true, ctx: requestContext("primary/model", ["first/model", "second/model"]) })
+			.mockResolvedValueOnce({
+				ok: true,
+				ctx: requestContext("first/model", [], { attemptErrors: [{ provider: "openai", type: "upstream_non_2xx", status: 400 }] }),
+			});
+		runnerMock
+			.mockResolvedValueOnce(new Response("unavailable", { status: 503 }))
+			.mockResolvedValueOnce(new Response("upstream_error", { status: 502 }));
+
+		const response = await makeEndpointHandler({ endpoint: "chat.completions", schema: null })(post("chat/completions"));
+
+		expect(response.status).toBe(502);
+		expect(runnerMock).toHaveBeenCalledTimes(2);
 	});
 
 	it("never retries a stream that has already started", async () => {
@@ -362,5 +416,39 @@ describe("request-level models fallbacks", () => {
 
 		expect(response.status).toBe(200);
 		expect(beforeRequestMock).toHaveBeenCalledTimes(2);
+	});
+});
+
+describe("settleMixedRateLimitAcrossModels", () => {
+	const throttled = () => new Response(JSON.stringify({ error: "upstream_error", status_code: 429 }), {
+		status: 429,
+		headers: { "Content-Type": "application/json", "Retry-After": "7" },
+	});
+
+	it("keeps 429 when every model that ran was rate limited", async () => {
+		const response = await settleMixedRateLimitAcrossModels(throttled(), [
+			{ model: "a/primary", status: 429, stage: "execute" },
+			{ model: "b/fallback", status: 422, stage: "before" },
+			{ model: "c/fallback", status: 429, stage: "execute" },
+		]);
+		expect(response.status).toBe(429);
+	});
+
+	it("reports 502 when an earlier model failed for another reason", async () => {
+		const response = await settleMixedRateLimitAcrossModels(throttled(), [
+			{ model: "a/primary", status: 503, stage: "execute" },
+			{ model: "b/fallback", status: 429, stage: "execute" },
+		]);
+		expect(response.status).toBe(502);
+		expect(await response.json()).toMatchObject({ error: "upstream_error", status_code: 502 });
+	});
+
+	it("leaves a workspace rate-limit policy 429 alone", async () => {
+		const policy = new Response(JSON.stringify({ error: "rate_limit_exceeded", status_code: 429 }), { status: 429 });
+		const response = await settleMixedRateLimitAcrossModels(policy, [
+			{ model: "a/primary", status: 503, stage: "execute" },
+			{ model: "b/fallback", status: 429, stage: "execute" },
+		]);
+		expect(response.status).toBe(429);
 	});
 });

@@ -215,6 +215,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 									toolCallId: item.tool_call_id,
 									content: toolResult.content,
 									...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
+									...(toolResult.parts ? { parts: toolResult.parts } : {}),
 								},
 							],
 						});
@@ -267,6 +268,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 								toolCallId: item.call_id,
 								content: toolResult.content,
 								...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
+								...(toolResult.parts ? { parts: toolResult.parts } : {}),
 								...(item.type === "custom_tool_call_output" ? { type: "custom" as const } : {}),
 							},
 						],
@@ -385,7 +387,8 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
 		googleCachedContent: providerCacheOptions.googleCachedContent,
 		xaiConversationId: providerCacheOptions.xaiConversationId,
-		safetyIdentifier: (req as any).safety_identifier,
+		// The schema fills an absent value with null; null is never sent upstream.
+		safetyIdentifier: typeof (req as any).safety_identifier === "string" ? (req as any).safety_identifier : undefined,
 		modalities: normalizeModalities((req as any).modalities),
 		imageConfig: normalizeImageConfig((req as any).image_config),
 		vendor: Object.keys(vendor).length > 0 ? vendor : undefined,

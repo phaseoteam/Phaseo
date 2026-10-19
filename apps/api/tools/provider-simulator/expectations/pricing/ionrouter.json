@@ -1,0 +1,212 @@
+{
+	"provider": "ionrouter",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "ionrouter:allenai/molmo-2-8b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/allenai-molmo-2-8b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.25/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":216000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",104000],["output_text_tokens",448,"#1","output_text_tokens",112000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1358130,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",493880],["output_text_tokens",3457,"#1","output_text_tokens",864250]]}}
+			]
+		},
+		{
+			"key": "ionrouter:minimax/minimax-m2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/minimax-minimax-m2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.4/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1712000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1040000],["output_text_tokens",448,"#1","output_text_tokens",672000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":10124300,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",4938800],["output_text_tokens",3457,"#1","output_text_tokens",5185500]]}}
+			]
+		},
+		{
+			"key": "ionrouter:moonshotai/kimi-k2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/moonshotai-kimi-k2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1236800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",716800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":8000600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",5531200]]}}
+			]
+		},
+		{
+			"key": "ionrouter:openai/gpt-oss-120b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/openai-gpt-oss-120b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.02/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.095/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":94560,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",52000],["output_text_tokens",448,"#1","output_text_tokens",42560]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":575355,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",246940],["output_text_tokens",3457,"#1","output_text_tokens",328415]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen2.5-14b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen2.5-14b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.12/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":131760,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",78000],["output_text_tokens",448,"#1","output_text_tokens",53760]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":785250,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",370410],["output_text_tokens",3457,"#1","output_text_tokens",414840]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen2.5-32b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen2.5-32b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.075/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":329400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",195000],["output_text_tokens",448,"#1","output_text_tokens",134400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1963125,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",926025],["output_text_tokens",3457,"#1","output_text_tokens",1037100]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen2.5-7b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen2.5-7b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.025/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":109800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",65000],["output_text_tokens",448,"#1","output_text_tokens",44800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":654375,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",308675],["output_text_tokens",3457,"#1","output_text_tokens",345700]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen2.5-vl-7b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen2.5-vl-7b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.25/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":216000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",104000],["output_text_tokens",448,"#1","output_text_tokens",112000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1358130,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",493880],["output_text_tokens",3457,"#1","output_text_tokens",864250]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen3-14b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen3-14b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.12/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":131760,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",78000],["output_text_tokens",448,"#1","output_text_tokens",53760]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":785250,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",370410],["output_text_tokens",3457,"#1","output_text_tokens",414840]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen3-30b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen3-30b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.14/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":166720,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",104000],["output_text_tokens",448,"#1","output_text_tokens",62720]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":977860,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",493880],["output_text_tokens",3457,"#1","output_text_tokens",483980]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen3-8b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen3-8b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.025/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":154600,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",65000],["output_text_tokens",448,"#1","output_text_tokens",89600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1000075,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",308675],["output_text_tokens",3457,"#1","output_text_tokens",691400]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen3-vl-30b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen3-vl-30b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.25/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":216000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",104000],["output_text_tokens",448,"#1","output_text_tokens",112000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1358130,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",493880],["output_text_tokens",3457,"#1","output_text_tokens",864250]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen3-vl-8b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen3-vl-8b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.25/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":216000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",104000],["output_text_tokens",448,"#1","output_text_tokens",112000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1358130,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",493880],["output_text_tokens",3457,"#1","output_text_tokens",864250]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen3.5-122b-a10b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen3.5-122b-a10b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1236800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",716800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":8000600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",5531200]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen3.5-27b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen3.5-27b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":927600,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",390000],["output_text_tokens",448,"#1","output_text_tokens",537600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6000450,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_text_tokens",3457,"#1","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "ionrouter:qwen/qwen3.5-35b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/qwen-qwen3.5-35b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.125/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":773000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",325000],["output_text_tokens",448,"#1","output_text_tokens",448000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":5000375,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1543375],["output_text_tokens",3457,"#1","output_text_tokens",3457000]]}}
+			]
+		},
+		{
+			"key": "ionrouter:z-ai/glm-5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/ionrouter/z-ai-glm-5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","3.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":4688000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",3120000],["output_text_tokens",448,"#1","output_text_tokens",1568000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":26915900,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",14816400],["output_text_tokens",3457,"#1","output_text_tokens",12099500]]}}
+			]
+		}
+	]
+}

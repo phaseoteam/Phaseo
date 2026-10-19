@@ -777,6 +777,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -821,6 +823,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -943,6 +947,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -8964,6 +8970,16 @@ components:
         retired model routing answered the request with a replacement model.
       schema:
         type: string
+    DroppedParams:
+      description: >-
+        Request parameters the client sent that the serving provider does not
+        support, which the gateway removed instead of sending them upstream or
+        rejecting the request, for example `top_k, min_p`. Sent only on
+        successful responses, and only when at least one parameter from the
+        request body was dropped. Parameters that come from a preset or a
+        default value are not listed.
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: >-
         BYOK-only provider quota metadata. Omitted for managed-provider
@@ -10037,8 +10053,14 @@ components:
             - assistant
             - tool
         content:
-          oneOf:
+          description: >-
+            Message content: a string or an array of content parts. Only
+            assistant messages that call tools (with tool_calls) may set it to
+            null; the gateway rejects null content for other roles with a 400
+            error.
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -10097,7 +10119,39 @@ components:
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: >-
+        File input, such as a PDF. Set file_data to a base64 data URL, or
+        file_id to a file uploaded to the provider that serves the request.
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+              minLength: 1
+            file_id:
+              type: string
+              minLength: 1
+            filename:
+              type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -10730,6 +10784,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0

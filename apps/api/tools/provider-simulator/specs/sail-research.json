@@ -1,0 +1,1810 @@
+{
+	"id": "sail-research",
+	"source": {
+		"url": "https://docs.sailresearch.com/openapi.json",
+		"docs": null,
+		"fetchedAt": "2026-10-18T08:41:09.059Z",
+		"sha256": "b2cfc5c22b138402677043f4e09fb7e19d935fda7021620ae80b1fece4ae0916",
+		"handWritten": false,
+		"notes": "Served by docs.sailresearch.com. Server https://api.sailresearch.com/v1."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"$ref": "#/components/schemas/CreateChatCompletionRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/ChatCompletionResponse"
+			}
+		},
+		"responses": {
+			"request": {
+				"$ref": "#/components/schemas/CreateResponseRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/ResponseObject"
+			}
+		},
+		"messages": {
+			"request": {
+				"$ref": "#/components/schemas/CreateMessageRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/AnthropicMessageResponse"
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"CreateChatCompletionRequest": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {
+						"type": "string"
+					},
+					"messages": {
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionMessage"
+						}
+					},
+					"temperature": {
+						"oneOf": [
+							{
+								"type": "number",
+								"minimum": 0,
+								"maximum": 2
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"top_p": {
+						"oneOf": [
+							{
+								"type": "number",
+								"minimum": 0,
+								"maximum": 1
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"max_completion_tokens": {
+						"oneOf": [
+							{
+								"type": "integer",
+								"minimum": 1
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"response_format": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/ChatResponseFormatText"
+							},
+							{
+								"$ref": "#/components/schemas/ChatResponseFormatJsonSchema"
+							}
+						]
+					},
+					"reasoning_effort": {
+						"oneOf": [
+							{
+								"type": "string",
+								"enum": [
+									"none",
+									"minimal",
+									"low",
+									"medium",
+									"high",
+									"xhigh",
+									"max"
+								],
+								"description": "Reasoning effort for the model. `max` selects the same top tier as `xhigh`."
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"n": {
+						"type": "integer",
+						"enum": [
+							1
+						],
+						"description": "Only n=1 is currently supported."
+					},
+					"modalities": {
+						"type": "array",
+						"minItems": 1,
+						"maxItems": 1,
+						"items": {
+							"type": "string",
+							"enum": [
+								"text"
+							]
+						}
+					},
+					"stream": {
+						"type": "boolean",
+						"description": "When true, the response is returned as a Server-Sent Events stream of chat.completion.chunk objects instead of a single JSON response."
+					},
+					"stream_options": {
+						"type": "object",
+						"description": "Options that apply when stream is true.",
+						"properties": {
+							"include_usage": {
+								"type": "boolean",
+								"description": "When true, emit a final chunk with token usage for the full request before the [DONE] terminator."
+							}
+						},
+						"additionalProperties": false
+					},
+					"store": {
+						"type": "boolean",
+						"enum": [
+							true
+						],
+						"description": "Only true is supported."
+					},
+					"user": {
+						"type": "string",
+						"maxLength": 256
+					},
+					"prompt_cache_key": {
+						"type": "string",
+						"description": "Optional routing hint for prompt-prefix cache locality. Requests with the same key are preferentially routed to maximize cache hit rates."
+					},
+					"metadata": {
+						"$ref": "#/components/schemas/RequestMetadata"
+					}
+				},
+				"additionalProperties": true
+			},
+			"ChatCompletionResponse": {
+				"type": "object",
+				"required": [
+					"id",
+					"object",
+					"created",
+					"model",
+					"choices"
+				],
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"object": {
+						"type": "string",
+						"enum": [
+							"chat.completion"
+						]
+					},
+					"created": {
+						"type": "integer"
+					},
+					"model": {
+						"type": "string"
+					},
+					"choices": {
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"$ref": "#/components/schemas/ChatCompletionChoice"
+						}
+					},
+					"usage": {
+						"$ref": "#/components/schemas/ChatCompletionUsage"
+					},
+					"service_tier": {
+						"$ref": "#/components/schemas/ServedServiceTier"
+					}
+				},
+				"additionalProperties": true
+			},
+			"CreateResponseRequest": {
+				"type": "object",
+				"required": [
+					"model",
+					"input"
+				],
+				"properties": {
+					"model": {
+						"type": "string"
+					},
+					"input": {
+						"$ref": "#/components/schemas/ResponseInput"
+					},
+					"raw_prompt_tokens": {
+						"type": "array",
+						"items": {
+							"type": "integer",
+							"minimum": 0,
+							"maximum": 2147483647
+						},
+						"minItems": 1,
+						"maxItems": 2000000,
+						"description": "Sail extension: pre-tokenized prompt as an array of token ids, forwarded to the model verbatim (no chat templating or tokenization). When set, `input` is still required but ignored; pass a placeholder string."
+					},
+					"max_output_tokens": {
+						"oneOf": [
+							{
+								"type": "integer",
+								"minimum": 1
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"temperature": {
+						"oneOf": [
+							{
+								"type": "number",
+								"minimum": 0,
+								"maximum": 2
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"top_p": {
+						"oneOf": [
+							{
+								"type": "number",
+								"minimum": 0,
+								"maximum": 1
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"text": {
+						"$ref": "#/components/schemas/ResponseTextConfiguration"
+					},
+					"reasoning": {
+						"$ref": "#/components/schemas/ResponseReasoningConfiguration"
+					},
+					"instructions": {
+						"type": "string",
+						"description": "Prepended to the input as a system message."
+					},
+					"parallel_tool_calls": {
+						"type": "boolean",
+						"description": "Accepted for OpenAI compatibility. Models decide their own tool-call cadence, so this field has no effect."
+					},
+					"include": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"description": "Additional data to include. reasoning.encrypted_content is accepted for OpenAI-client compatibility, but reasoning items are returned without encrypted content."
+					},
+					"background": {
+						"type": "boolean",
+						"description": "When true, submits a background request using a supported balanced or flex window; defaults to false. See [Background mode](/support#responses-api) for restrictions and [Default behavior](/completion-windows#default-behavior) for window selection."
+					},
+					"prompt_cache_key": {
+						"type": "string",
+						"description": "Optional routing hint for prompt-prefix cache locality. Requests with the same key are preferentially routed to maximize cache hit rates."
+					},
+					"store": {
+						"type": "boolean",
+						"description": "Accepted for OpenAI compatibility. false does not change Sail's normal temporary request/response storage for processing, retries, polling, and idempotency; Customer Data remains governed by Sail's DPA retention and deletion terms."
+					},
+					"truncation": {
+						"type": "string",
+						"enum": [
+							"disabled"
+						]
+					},
+					"stream": {
+						"type": "boolean",
+						"description": "When true on a foreground request, returns OpenAI Responses Server-Sent Events. background=true requests cannot be streamed."
+					},
+					"user": {
+						"type": "string",
+						"maxLength": 256
+					},
+					"metadata": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/RequestMetadata"
+							}
+						],
+						"description": "Optional string metadata. The keys supercached_input_tokens and supercache_write_input_tokens are reserved for response output. A request that supplies either key returns HTTP 400."
+					}
+				},
+				"additionalProperties": true
+			},
+			"ResponseObject": {
+				"type": "object",
+				"required": [
+					"id",
+					"object",
+					"created_at",
+					"status",
+					"model",
+					"metadata",
+					"usage"
+				],
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"object": {
+						"type": "string",
+						"enum": [
+							"response"
+						]
+					},
+					"created_at": {
+						"type": "integer"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"queued",
+							"in_progress",
+							"failed",
+							"completed",
+							"incomplete",
+							"cancelled"
+						]
+					},
+					"model": {
+						"type": "string"
+					},
+					"input": {
+						"$ref": "#/components/schemas/ResponseInput"
+					},
+					"output": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"type": "object",
+									"additionalProperties": true
+								}
+							},
+							{
+								"type": "object",
+								"additionalProperties": true
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"error": {
+						"oneOf": [
+							{
+								"type": "object",
+								"additionalProperties": true
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"incomplete_details": {
+						"oneOf": [
+							{
+								"type": "object",
+								"additionalProperties": true
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"max_output_tokens": {
+						"oneOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"reasoning": {
+						"type": "object",
+						"additionalProperties": true
+					},
+					"text": {
+						"$ref": "#/components/schemas/ResponseTextConfiguration"
+					},
+					"store": {
+						"type": "boolean"
+					},
+					"temperature": {
+						"type": "number"
+					},
+					"top_p": {
+						"type": "number"
+					},
+					"parallel_tool_calls": {
+						"type": "boolean"
+					},
+					"tool_choice": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "object",
+								"additionalProperties": true
+							}
+						]
+					},
+					"tools": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"additionalProperties": true
+						}
+					},
+					"truncation": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "object",
+								"additionalProperties": true
+							}
+						]
+					},
+					"usage": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/ResponseUsage"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"user": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"metadata": {
+						"type": "object",
+						"description": "Response metadata. A completed response includes supercached_input_tokens and supercache_write_input_tokens as decimal strings when Supercache accounting data is available. Both fields are included when their value is zero.",
+						"properties": {
+							"supercached_input_tokens": {
+								"type": "string",
+								"pattern": "^[0-9]+$",
+								"description": "Input tokens served from Supercache."
+							},
+							"supercache_write_input_tokens": {
+								"type": "string",
+								"pattern": "^[0-9]+$",
+								"description": "Input tokens written to Supercache for later requests."
+							}
+						},
+						"additionalProperties": true
+					},
+					"service_tier": {
+						"$ref": "#/components/schemas/ServedServiceTier"
+					}
+				},
+				"additionalProperties": true
+			},
+			"CreateMessageRequest": {
+				"type": "object",
+				"required": [
+					"model",
+					"max_tokens",
+					"messages"
+				],
+				"properties": {
+					"model": {
+						"type": "string"
+					},
+					"max_tokens": {
+						"type": "integer",
+						"minimum": 1
+					},
+					"messages": {
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"$ref": "#/components/schemas/AnthropicMessageParam"
+						}
+					},
+					"system": {
+						"description": "System prompt: a string, or an array of text blocks.",
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/AnthropicTextBlock"
+								}
+							}
+						]
+					},
+					"temperature": {
+						"type": "number",
+						"minimum": 0,
+						"maximum": 1
+					},
+					"top_p": {
+						"type": "number",
+						"minimum": 0,
+						"maximum": 1
+					},
+					"output_config": {
+						"$ref": "#/components/schemas/AnthropicOutputConfig"
+					},
+					"routing": {
+						"type": "object",
+						"properties": {
+							"allowed_countries": {
+								"type": "array",
+								"items": {
+									"type": "string",
+									"pattern": "^\\s*[Uu][Ss]\\s*$"
+								},
+								"description": "Restricts this request to United States capacity. Country codes are case-insensitive and surrounding whitespace is ignored."
+							}
+						},
+						"additionalProperties": false
+					},
+					"tools": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"additionalProperties": true
+						},
+						"description": "Tool definitions the model may call. Responses include `tool_use` blocks; return outcomes as `tool_result` content blocks in a follow-up message."
+					},
+					"tool_choice": {
+						"type": "object",
+						"additionalProperties": true,
+						"description": "Controls tool use: `auto`, `any`, `tool`, or `none`."
+					},
+					"thinking": {
+						"type": "object",
+						"additionalProperties": true,
+						"description": "Extended thinking configuration; translated to the model's reasoning."
+					},
+					"stream": {
+						"type": "boolean",
+						"description": "When `true`, returns Anthropic Server-Sent Events after generation completes. This is not incremental token delivery."
+					},
+					"metadata": {
+						"$ref": "#/components/schemas/RequestMetadata"
+					},
+					"context_management": {
+						"type": "object",
+						"additionalProperties": true,
+						"description": "Anthropic server-side context-editing config (Claude Code sends it automatically). Accepted for compatibility but ignored: Sail forwards the full context each turn."
+					},
+					"cache_control": {
+						"$ref": "#/components/schemas/AnthropicCacheControl"
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicMessageResponse": {
+				"type": "object",
+				"required": [
+					"id",
+					"type",
+					"role",
+					"content",
+					"model",
+					"stop_reason",
+					"stop_sequence",
+					"usage"
+				],
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"message"
+						]
+					},
+					"role": {
+						"type": "string",
+						"enum": [
+							"assistant"
+						]
+					},
+					"content": {
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"oneOf": [
+								{
+									"$ref": "#/components/schemas/AnthropicTextBlock"
+								},
+								{
+									"$ref": "#/components/schemas/AnthropicToolUseBlock"
+								},
+								{
+									"$ref": "#/components/schemas/AnthropicThinkingBlock"
+								}
+							]
+						}
+					},
+					"model": {
+						"type": "string"
+					},
+					"stop_reason": {
+						"type": "string",
+						"enum": [
+							"end_turn",
+							"max_tokens",
+							"tool_use",
+							"stop_sequence",
+							"refusal",
+							"model_context_window_exceeded"
+						]
+					},
+					"stop_sequence": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"usage": {
+						"$ref": "#/components/schemas/AnthropicUsage"
+					}
+				},
+				"additionalProperties": false
+			},
+			"ChatCompletionMessage": {
+				"type": "object",
+				"required": [
+					"role"
+				],
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"system",
+							"user",
+							"assistant",
+							"tool",
+							"function",
+							"developer"
+						]
+					},
+					"content": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							},
+							{
+								"type": "array",
+								"items": {
+									"oneOf": [
+										{
+											"$ref": "#/components/schemas/ChatTextContentPart"
+										},
+										{
+											"$ref": "#/components/schemas/ChatImageContentPart"
+										},
+										{
+											"$ref": "#/components/schemas/ChatFileContentPart"
+										}
+									]
+								}
+							}
+						]
+					},
+					"name": {
+						"type": "string"
+					},
+					"tool_calls": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"additionalProperties": true
+						}
+					},
+					"tool_call_id": {
+						"type": "string"
+					},
+					"function_call": {
+						"type": "object",
+						"additionalProperties": true
+					}
+				},
+				"additionalProperties": false
+			},
+			"ChatResponseFormatText": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"text"
+						]
+					}
+				},
+				"additionalProperties": false
+			},
+			"ChatResponseFormatJsonSchema": {
+				"type": "object",
+				"required": [
+					"type",
+					"json_schema"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"json_schema"
+						]
+					},
+					"json_schema": {
+						"type": "object",
+						"required": [
+							"name"
+						],
+						"properties": {
+							"name": {
+								"type": "string"
+							},
+							"description": {
+								"type": "string"
+							},
+							"schema": {
+								"type": "object",
+								"additionalProperties": true
+							},
+							"strict": {
+								"type": "boolean"
+							}
+						},
+						"additionalProperties": false
+					}
+				},
+				"additionalProperties": false
+			},
+			"RequestMetadata": {
+				"type": "object",
+				"description": "Optional string metadata. completion_window controls scheduling; completion_webhook/webhook_token configure completion webhooks; supercache_write stores a reusable prompt prefix.",
+				"properties": {
+					"completion_window": {
+						"type": "string",
+						"description": "[Completion window](/completion-windows) controls request scheduling and token pricing.\n\n**Defaults when omitted**\n- **Core model inference:** `asap` (low latency).\n- **Batch:** `flex`, including when the value is empty. Other windows are rejected.\n- **LoRA:** `balanced` for core models.\n- **Background Responses:** an available non-ASAP window. Models that only support `asap` are rejected.\n- **Flex-only models:** `flex` is the default and only window, including for Batch and LoRA.\n\n**Requirements**\n- An explicit window must be supported by the model or Sail returns an error. See the [Pricing support matrix](/pricing).\n- Use `flex` through the Batch API or Responses with `background: true`. Synchronous Responses, Chat Completions, and Messages reject `flex`. Background Responses cannot stream.\n\nSee [default behavior](/completion-windows#default-behavior) and [Flex request requirements](/completion-windows#flex) for details.",
+						"enum": [
+							"asap",
+							"balanced",
+							"standard",
+							"flex"
+						]
+					},
+					"completion_webhook": {
+						"type": "string",
+						"format": "uri"
+					},
+					"webhook_token": {
+						"type": "string"
+					},
+					"supercache_write": {
+						"type": "string",
+						"description": "Write the eligible prompt prefix to Supercache for 24 hours. Supported only by the Responses and Chat Completions APIs. Omit this field for automatic reads.",
+						"enum": [
+							"24h"
+						]
+					}
+				},
+				"additionalProperties": {
+					"type": "string"
+				}
+			},
+			"ChatCompletionChoice": {
+				"type": "object",
+				"required": [
+					"index",
+					"message",
+					"logprobs",
+					"finish_reason"
+				],
+				"properties": {
+					"index": {
+						"type": "integer"
+					},
+					"message": {
+						"$ref": "#/components/schemas/ChatCompletionResponseMessage"
+					},
+					"logprobs": {
+						"type": "null"
+					},
+					"finish_reason": {
+						"type": "string",
+						"enum": [
+							"stop",
+							"length",
+							"tool_calls",
+							"content_filter",
+							"function_call"
+						]
+					}
+				},
+				"additionalProperties": false
+			},
+			"ChatCompletionUsage": {
+				"type": "object",
+				"required": [
+					"prompt_tokens",
+					"completion_tokens",
+					"total_tokens"
+				],
+				"properties": {
+					"prompt_tokens": {
+						"type": "integer"
+					},
+					"completion_tokens": {
+						"type": "integer"
+					},
+					"total_tokens": {
+						"type": "integer"
+					},
+					"prompt_tokens_details": {
+						"type": "object",
+						"additionalProperties": true
+					},
+					"completion_tokens_details": {
+						"type": "object",
+						"additionalProperties": true
+					}
+				},
+				"additionalProperties": false
+			},
+			"ServedServiceTier": {
+				"type": "string",
+				"enum": [
+					"asap",
+					"balanced",
+					"flex"
+				],
+				"description": "The completion window Sail selected for this request, including when no window was requested. The legacy request value standard is reported as balanced. Older stored responses may omit this field."
+			},
+			"ResponseInput": {
+				"description": "Text input, plus image input (input_image) on multimodal models and inline PDF input (input_file) on every model. Audio, files referenced by file_id or file_url, and item references are not currently supported.",
+				"oneOf": [
+					{
+						"type": "string",
+						"minLength": 1
+					},
+					{
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"$ref": "#/components/schemas/ResponseInputMessage"
+						}
+					},
+					{
+						"$ref": "#/components/schemas/ResponseInputObject"
+					}
+				]
+			},
+			"ResponseTextConfiguration": {
+				"type": "object",
+				"required": [
+					"format"
+				],
+				"properties": {
+					"format": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/ResponseTextFormat"
+							},
+							{
+								"$ref": "#/components/schemas/ResponseJsonSchemaFormat"
+							}
+						]
+					}
+				},
+				"additionalProperties": false
+			},
+			"ResponseReasoningConfiguration": {
+				"type": "object",
+				"properties": {
+					"effort": {
+						"type": "string",
+						"enum": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						],
+						"description": "Reasoning effort for the model. `max` selects the same top tier as `xhigh`."
+					},
+					"generate_summary": {
+						"type": "string",
+						"enum": [
+							"auto",
+							"concise",
+							"detailed"
+						]
+					}
+				},
+				"additionalProperties": true
+			},
+			"ResponseUsage": {
+				"type": "object",
+				"required": [
+					"input_tokens",
+					"input_tokens_details",
+					"output_tokens",
+					"output_tokens_details",
+					"total_tokens"
+				],
+				"properties": {
+					"input_tokens": {
+						"type": "integer"
+					},
+					"input_tokens_details": {
+						"$ref": "#/components/schemas/ResponseUsageDetails"
+					},
+					"output_tokens": {
+						"type": "integer"
+					},
+					"output_tokens_details": {
+						"$ref": "#/components/schemas/ResponseUsageDetails"
+					},
+					"total_tokens": {
+						"type": "integer"
+					},
+					"prompt_tokens": {
+						"type": "integer"
+					},
+					"completion_tokens": {
+						"type": "integer"
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicMessageParam": {
+				"type": "object",
+				"required": [
+					"role",
+					"content"
+				],
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"user",
+							"assistant",
+							"system",
+							"developer"
+						],
+						"description": "user/assistant per Anthropic; system and developer are also accepted (Claude Code injects mid-conversation system/developer messages)."
+					},
+					"content": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"minItems": 1,
+								"items": {
+									"oneOf": [
+										{
+											"$ref": "#/components/schemas/AnthropicTextBlock"
+										},
+										{
+											"$ref": "#/components/schemas/AnthropicImageBlock"
+										},
+										{
+											"$ref": "#/components/schemas/AnthropicDocumentBlock"
+										},
+										{
+											"$ref": "#/components/schemas/AnthropicToolUseBlock"
+										},
+										{
+											"$ref": "#/components/schemas/AnthropicToolResultBlock"
+										},
+										{
+											"$ref": "#/components/schemas/AnthropicThinkingBlock"
+										},
+										{
+											"$ref": "#/components/schemas/AnthropicRedactedThinkingBlock"
+										}
+									]
+								}
+							}
+						]
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicTextBlock": {
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"text"
+						]
+					},
+					"text": {
+						"type": "string"
+					},
+					"cache_control": {
+						"$ref": "#/components/schemas/AnthropicCacheControl"
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicOutputConfig": {
+				"type": "object",
+				"properties": {
+					"format": {
+						"$ref": "#/components/schemas/AnthropicOutputConfigFormat"
+					},
+					"effort": {
+						"type": "string",
+						"enum": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						],
+						"description": "Reasoning effort for the model (`max` is treated as `xhigh`). Overrides any effort derived from `thinking`."
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicCacheControl": {
+				"type": "object",
+				"description": "Prompt-cache breakpoint (e.g. { \"type\": \"ephemeral\" }). Accepted for Anthropic SDK compatibility and has no effect: Sail caches repeated prompt prefixes automatically, without breakpoints. Cache reads are reported in usage.cache_read_input_tokens.",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"ephemeral"
+						]
+					}
+				},
+				"additionalProperties": true
+			},
+			"AnthropicToolUseBlock": {
+				"type": "object",
+				"description": "Tool call emitted by the model. Return its outcome as a tool_result block in a follow-up user message.",
+				"required": [
+					"type",
+					"id",
+					"name",
+					"input"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"tool_use"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"input": {
+						"type": "object",
+						"additionalProperties": true
+					},
+					"cache_control": {
+						"$ref": "#/components/schemas/AnthropicCacheControl"
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicThinkingBlock": {
+				"type": "object",
+				"description": "Extended-thinking reasoning block. The reasoning text is forwarded; an opaque signature is accepted but is not verified or forwarded.",
+				"required": [
+					"type",
+					"thinking"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"thinking"
+						]
+					},
+					"thinking": {
+						"type": "string"
+					},
+					"signature": {
+						"type": "string",
+						"description": "Opaque signature accepted for compatibility but not verified or forwarded."
+					},
+					"cache_control": {
+						"$ref": "#/components/schemas/AnthropicCacheControl"
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicUsage": {
+				"type": "object",
+				"required": [
+					"input_tokens",
+					"cache_creation_input_tokens",
+					"cache_read_input_tokens",
+					"output_tokens"
+				],
+				"properties": {
+					"input_tokens": {
+						"type": "integer",
+						"description": "Prompt tokens not read from cache. The full prompt is input_tokens + cache_read_input_tokens + cache_creation_input_tokens."
+					},
+					"cache_creation_input_tokens": {
+						"type": "integer",
+						"description": "Always 0. Sail has no separate cache-write charge: prompt tokens not read from cache are counted in input_tokens."
+					},
+					"cache_read_input_tokens": {
+						"type": "integer",
+						"description": "Prompt tokens read from cache and billed at the cached input rate."
+					},
+					"output_tokens": {
+						"type": "integer"
+					},
+					"service_tier": {
+						"$ref": "#/components/schemas/ServedServiceTier"
+					}
+				},
+				"additionalProperties": false
+			},
+			"ChatTextContentPart": {
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"text"
+						]
+					},
+					"text": {
+						"type": "string"
+					}
+				},
+				"additionalProperties": false
+			},
+			"ChatImageContentPart": {
+				"type": "object",
+				"description": "Image content part. Image input is supported only on multimodal models; see the Models page.",
+				"required": [
+					"type",
+					"image_url"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"image_url"
+						]
+					},
+					"image_url": {
+						"type": "object",
+						"required": [
+							"url"
+						],
+						"properties": {
+							"url": {
+								"type": "string",
+								"description": "Public http(s) URL or a base64 data URI."
+							},
+							"detail": {
+								"type": "string",
+								"enum": [
+									"auto",
+									"low",
+									"high"
+								]
+							}
+						},
+						"additionalProperties": false
+					}
+				},
+				"additionalProperties": false
+			},
+			"ChatFileContentPart": {
+				"type": "object",
+				"description": "PDF file content part. Sail sends the PDF's text to the model, so this works on every model. See [PDF input](/support#pdf-input).",
+				"required": [
+					"type",
+					"file"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"file"
+						]
+					},
+					"file": {
+						"type": "object",
+						"required": [
+							"file_data"
+						],
+						"properties": {
+							"file_data": {
+								"type": "string",
+								"description": "The PDF as a base64 data URI (data:application/pdf;base64,<data>), or raw base64 when filename ends in .pdf."
+							},
+							"filename": {
+								"type": "string",
+								"description": "Name used to label the PDF's text."
+							}
+						},
+						"additionalProperties": false
+					}
+				},
+				"additionalProperties": false
+			},
+			"ChatCompletionResponseMessage": {
+				"type": "object",
+				"required": [
+					"role",
+					"content"
+				],
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"assistant"
+						]
+					},
+					"content": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"reasoning_content": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"refusal": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				},
+				"additionalProperties": true
+			},
+			"ResponseInputMessage": {
+				"type": "object",
+				"required": [
+					"role",
+					"content"
+				],
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"system",
+							"user",
+							"assistant",
+							"tool",
+							"function"
+						]
+					},
+					"content": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"minItems": 1,
+								"items": {
+									"oneOf": [
+										{
+											"$ref": "#/components/schemas/ResponseInputTextPart"
+										},
+										{
+											"$ref": "#/components/schemas/ResponseInputImagePart"
+										},
+										{
+											"$ref": "#/components/schemas/ResponseInputFilePart"
+										}
+									]
+								}
+							}
+						]
+					},
+					"name": {
+						"type": "string"
+					},
+					"tool_calls": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"additionalProperties": true
+						}
+					},
+					"tool_call_id": {
+						"type": "string"
+					},
+					"function_call": {
+						"type": "object",
+						"additionalProperties": true
+					}
+				},
+				"additionalProperties": false
+			},
+			"ResponseInputObject": {
+				"type": "object",
+				"required": [
+					"messages"
+				],
+				"properties": {
+					"messages": {
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"$ref": "#/components/schemas/ResponseInputMessage"
+						}
+					}
+				},
+				"additionalProperties": false
+			},
+			"ResponseTextFormat": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"text"
+						]
+					}
+				},
+				"additionalProperties": false
+			},
+			"ResponseJsonSchemaFormat": {
+				"type": "object",
+				"required": [
+					"type",
+					"name"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"json_schema"
+						]
+					},
+					"name": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"schema": {
+						"type": "object",
+						"additionalProperties": true
+					},
+					"strict": {
+						"type": "boolean"
+					}
+				},
+				"additionalProperties": false
+			},
+			"ResponseUsageDetails": {
+				"type": "object",
+				"required": [
+					"cached_tokens",
+					"reasoning_tokens"
+				],
+				"properties": {
+					"cached_tokens": {
+						"type": "integer",
+						"description": "Input tokens served from regular cache or Supercache. This is an aggregate count."
+					},
+					"reasoning_tokens": {
+						"type": "integer"
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicImageBlock": {
+				"type": "object",
+				"description": "Image content block. Image input is supported only on multimodal models; see the Models page.",
+				"required": [
+					"type",
+					"source"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"image"
+						]
+					},
+					"source": {
+						"oneOf": [
+							{
+								"type": "object",
+								"required": [
+									"type",
+									"media_type",
+									"data"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"base64"
+										]
+									},
+									"media_type": {
+										"type": "string",
+										"description": "Image MIME type, e.g. image/jpeg, image/png, image/webp, image/gif."
+									},
+									"data": {
+										"type": "string",
+										"description": "Base64-encoded image bytes (no data: prefix)."
+									}
+								},
+								"additionalProperties": false
+							},
+							{
+								"type": "object",
+								"required": [
+									"type",
+									"url"
+								],
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"url"
+										]
+									},
+									"url": {
+										"type": "string",
+										"description": "Public http(s) URL of the image."
+									}
+								},
+								"additionalProperties": false
+							}
+						]
+					},
+					"cache_control": {
+						"$ref": "#/components/schemas/AnthropicCacheControl"
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicDocumentBlock": {
+				"type": "object",
+				"description": "PDF document block. Sail sends the PDF's text to the model, so this works on every model. See [PDF input](/support#pdf-input).",
+				"required": [
+					"type",
+					"source"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"document"
+						]
+					},
+					"source": {
+						"type": "object",
+						"required": [
+							"type",
+							"media_type",
+							"data"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"base64"
+								]
+							},
+							"media_type": {
+								"type": "string",
+								"enum": [
+									"application/pdf"
+								]
+							},
+							"data": {
+								"type": "string",
+								"description": "Base64-encoded PDF bytes (no data: prefix)."
+							}
+						},
+						"additionalProperties": false
+					},
+					"title": {
+						"type": "string",
+						"description": "Name used to label the PDF's text."
+					},
+					"context": {
+						"type": "string",
+						"description": "Sent to the model as text before the document's text."
+					},
+					"citations": {
+						"type": "object",
+						"description": "Accepted for compatibility. Citation blocks are not returned."
+					},
+					"cache_control": {
+						"$ref": "#/components/schemas/AnthropicCacheControl"
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicToolResultBlock": {
+				"type": "object",
+				"description": "Result of a tool call, sent back in a user message. Images inside tool results are replaced with a text marker because Sail does not yet forward them to the model.",
+				"required": [
+					"type",
+					"tool_use_id",
+					"content"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"tool_result"
+						]
+					},
+					"tool_use_id": {
+						"type": "string"
+					},
+					"content": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"oneOf": [
+										{
+											"$ref": "#/components/schemas/AnthropicTextBlock"
+										},
+										{
+											"$ref": "#/components/schemas/AnthropicImageBlock"
+										},
+										{
+											"$ref": "#/components/schemas/AnthropicDocumentBlock"
+										}
+									]
+								}
+							}
+						]
+					},
+					"is_error": {
+						"type": "boolean"
+					},
+					"cache_control": {
+						"$ref": "#/components/schemas/AnthropicCacheControl"
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicRedactedThinkingBlock": {
+				"type": "object",
+				"description": "Opaque extended-thinking replay block. Accepted for conversation compatibility but not forwarded to the model.",
+				"required": [
+					"type",
+					"data"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"redacted_thinking"
+						]
+					},
+					"data": {
+						"type": "string",
+						"description": "Opaque, encrypted reasoning payload."
+					},
+					"cache_control": {
+						"$ref": "#/components/schemas/AnthropicCacheControl"
+					}
+				},
+				"additionalProperties": false
+			},
+			"AnthropicOutputConfigFormat": {
+				"type": "object",
+				"required": [
+					"type",
+					"schema"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"json_schema"
+						]
+					},
+					"schema": {
+						"type": "object",
+						"additionalProperties": true
+					},
+					"name": {
+						"type": "string"
+					},
+					"strict": {
+						"type": "boolean"
+					}
+				},
+				"additionalProperties": false
+			},
+			"ResponseInputTextPart": {
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"input_text"
+						]
+					},
+					"text": {
+						"type": "string"
+					}
+				},
+				"additionalProperties": false
+			},
+			"ResponseInputImagePart": {
+				"type": "object",
+				"description": "Image content part. Image input is supported only on multimodal models; see the Models page.",
+				"required": [
+					"type",
+					"image_url"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"input_image"
+						]
+					},
+					"image_url": {
+						"type": "string",
+						"description": "Public http(s) URL or a base64 data URI (data:<media-type>;base64,<data>)."
+					},
+					"detail": {
+						"type": "string",
+						"enum": [
+							"auto",
+							"low",
+							"high"
+						]
+					}
+				},
+				"additionalProperties": false
+			},
+			"ResponseInputFilePart": {
+				"type": "object",
+				"description": "PDF file content part. Sail sends the PDF's text to the model, so this works on every model. See [PDF input](/support#pdf-input).",
+				"required": [
+					"type",
+					"file_data"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"input_file"
+						]
+					},
+					"file_data": {
+						"type": "string",
+						"description": "The PDF as a base64 data URI (data:application/pdf;base64,<data>), or raw base64 when filename ends in .pdf."
+					},
+					"filename": {
+						"type": "string",
+						"description": "Name used to label the PDF's text."
+					}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"servers": [
+		{
+			"url": "https://api.sailresearch.com/v1"
+		}
+	],
+	"securitySchemes": {
+		"BearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"bearerFormat": "API Key"
+		},
+		"AnthropicApiKey": {
+			"type": "apiKey",
+			"in": "header",
+			"name": "x-api-key"
+		}
+	},
+	"operationPaths": {
+		"chat": "/chat/completions",
+		"responses": "/responses",
+		"messages": "/messages"
+	}
+}

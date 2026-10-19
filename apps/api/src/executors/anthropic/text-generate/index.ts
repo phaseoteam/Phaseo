@@ -9,6 +9,7 @@
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { IRChatRequest, IRChatResponse, IRChoice, IRContentPart, IRToolCall } from "@core/ir";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { azureAnthropicHeaders, azureAnthropicUrl, resolveAzureConfig, resolveAzureCredential } from "@providers/azure/config";
@@ -21,6 +22,7 @@ import {
 	createAnthropicToResponsesStreamTransformer,
 } from "./stream-transformer";
 import { SseParser } from "@core/sse-parser";
+import { toIRAnnotations } from "@protocols/shared/citations";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
@@ -296,7 +298,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 									const final = accounting.snapshot();
 									return {
 										...bill,
-										usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
+										usage: anthropicUsageForPricing(final.usage),
 										finish_reason: mapAnthropicStopReason(final.stopReason),
 									};
 								},
@@ -655,10 +657,16 @@ export function irToAnthropicMessages(
 				role: "user",
 				content: msg.toolResults.map((result) => {
 					const cacheControl = normalizeAnthropicCacheControlValue(result.cacheControl);
+					// tool_result content takes text and image blocks, so a client's
+					// content parts are kept; a plain result stays a string.
+					const blocks = (result.parts ?? [])
+						.filter((part) => (part.type === "text" && part.text.length > 0) || part.type === "image")
+						.map(mapIRContentToAnthropic);
 					return {
 						type: "tool_result",
 						tool_use_id: result.toolCallId,
-						content: result.content,
+						content: blocks.length > 0 ? blocks : result.content,
+						...(result.isError ? { is_error: true } : {}),
 						...(cacheControl ? { cache_control: cacheControl } : {}),
 					};
 				}),
@@ -669,8 +677,9 @@ export function irToAnthropicMessages(
 	placeLateSystemMessages(messages, systemSegments, supportsAnthropicMidConversationSystemMessages(resolvedModel));
 	let system = joinAnthropicSystemSegments(systemSegments);
 
-	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens, otherwise 4096
-	const maxTokens = ir.maxTokens ?? providerMaxOutputTokens ?? 4096;
+	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens
+	// (a stored 0 is unknown, not a limit), otherwise 4096
+	const maxTokens = ir.maxTokens ?? routeOutputTokenLimit(providerMaxOutputTokens) ?? 4096;
 
 	const request: any = {
 		messages,
@@ -729,7 +738,9 @@ export function irToAnthropicMessages(
 	if (anthropicUserId) request.metadata = { user_id: anthropicUserId };
 	const reasoningDisabled = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
 
-	if (usesAdaptiveThinkingControls) {
+	// Without client reasoning settings `thinking` is omitted, so the model's own
+	// default applies (off on Opus 4.7 and 4.8, adaptive on the 5-series).
+	if (usesAdaptiveThinkingControls && ir.reasoning) {
 		if (reasoningDisabled && supportsAnthropicThinkingDisabled(resolvedModel)) {
 			request.thinking = { type: "disabled" };
 		} else {
@@ -1045,6 +1056,10 @@ function mapIRContentToAnthropic(part: any): any {
 		}
 	}
 
+	if (part.type === "file") {
+		return mapIRFileToAnthropicDocument(part, cacheControl);
+	}
+
 	if (part.type === "provider_block") {
 		// Copy so cache defaults never write back into the shared IR.
 		return { ...part.block };
@@ -1052,6 +1067,87 @@ function mapIRContentToAnthropic(part: any): any {
 
 	// Fallback
 	return { type: "text", text: String(part) };
+}
+
+function decodeBase64Utf8(data: string): string | null {
+	try {
+		const binary = atob(data);
+		const bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+		return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * A Chat `file` or Responses `input_file` part as an Anthropic `document`
+ * block: base64 PDF, plain text, a URL, or a Files API id (the executor adds
+ * the files beta header for `source.type: "file"`).
+ * https://platform.claude.com/docs/en/build-with-claude/pdf-support
+ */
+function mapIRFileToAnthropicDocument(part: Extract<IRContentPart, { type: "file" }>, cacheControl: any): any {
+	const title = part.filename ? { title: part.filename } : {};
+	const cache = cacheControl ? { cache_control: cacheControl } : {};
+	if (part.source === "url") {
+		return { type: "document", source: { type: "url", url: part.data }, ...title, ...cache };
+	}
+	if (part.source === "id") {
+		return { type: "document", source: { type: "file", file_id: part.data }, ...title, ...cache };
+	}
+	const mimeType = (part.mimeType || "application/pdf").toLowerCase();
+	if (mimeType.startsWith("text/")) {
+		const text = decodeBase64Utf8(part.data);
+		if (text !== null) {
+			return { type: "document", source: { type: "text", media_type: "text/plain", data: text }, ...title, ...cache };
+		}
+	}
+	return { type: "document", source: { type: "base64", media_type: mimeType, data: part.data }, ...title, ...cache };
+}
+
+type AnthropicServerToolUse =NonNullable<NonNullable<IRChatResponse["usage"]>["_ext"]>["serverToolUse"];
+
+/**
+ * The numeric counters of Anthropic's `usage.server_tool_use` (web_search_requests,
+ * web_fetch_requests, ...). Server tools are billed per call, so the counts must reach
+ * pricing on every surface.
+ */
+export function anthropicServerToolUse(usage: any): AnthropicServerToolUse | undefined {
+	const raw = usage?.server_tool_use ?? usage?._ext?.serverToolUse;
+	if (!raw || typeof raw !== "object") return undefined;
+	const counts: Record<string, number> = {};
+	for (const [key, value] of Object.entries(raw)) {
+		if (typeof value === "number" && Number.isFinite(value) && value >= 0) counts[key] = value;
+	}
+	return Object.keys(counts).length ? counts as AnthropicServerToolUse : undefined;
+}
+
+function anthropicUsageExt(usage: any): NonNullable<IRChatResponse["usage"]>["_ext"] | undefined {
+	const serverToolUse = anthropicServerToolUse(usage);
+	const ext: NonNullable<NonNullable<IRChatResponse["usage"]>["_ext"]> = {};
+	if (typeof usage?.cache_creation_input_tokens === "number") {
+		ext.cachedWriteTokens = usage.cache_creation_input_tokens;
+		ext.cachedWriteTokens5m = typeof usage.cache_creation?.ephemeral_5m_input_tokens === "number"
+			? usage.cache_creation.ephemeral_5m_input_tokens
+			: undefined;
+		ext.cachedWriteTokens1h = typeof usage.cache_creation?.ephemeral_1h_input_tokens === "number"
+			? usage.cache_creation.ephemeral_1h_input_tokens
+			: undefined;
+	}
+	if (serverToolUse) ext.serverToolUse = serverToolUse;
+	return Object.keys(ext).length ? ext : undefined;
+}
+
+/**
+ * Pricing meters for raw Anthropic Messages usage. Keeps `server_tool_use` next to the
+ * flat meters: after-stage usage shaping passes that object through, and the engine reads
+ * `server_tool_use.web_search_requests` as native_web_search_requests, so web searches on
+ * streamed responses are billed as well as buffered ones.
+ */
+export function anthropicUsageForPricing(usage: any): Record<string, unknown> | undefined {
+	const meters = normalizeTextUsageForPricing(usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined;
+	const serverToolUse = anthropicServerToolUse(usage);
+	return meters && serverToolUse ? { ...meters, server_tool_use: serverToolUse } : meters;
 }
 
 /**
@@ -1072,7 +1168,8 @@ export function anthropicMessagesToIR(
 	for (const block of json.content || []) {
 		if (block.type === "text") {
 			if (block.text.length > 0) {
-				contentParts.push({ type: "text", text: block.text });
+				const annotations = toIRAnnotations(block.citations);
+				contentParts.push({ type: "text", text: block.text, ...(annotations.length > 0 ? { annotations } : {}) });
 			}
 		} else if (block.type === "tool_use") {
 			// CRITICAL: Extract tool_use blocks
@@ -1113,6 +1210,10 @@ export function anthropicMessagesToIR(
 			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
 		},
 		finishReason,
+		// stop_sequence, pause_turn and refusal, for Messages clients
+		...(finishReason !== "tool_calls" && (json.stop_reason === "stop_sequence" || json.stop_reason === "pause_turn" || json.stop_reason === "refusal")
+			? { finishDetail: json.stop_reason }
+			: {}),
 		// Preserve which stop sequence triggered (Anthropic-specific)
 		stopSequence: json.stop_sequence ?? undefined,
 	};
@@ -1141,20 +1242,7 @@ export function anthropicMessagesToIR(
 				// Anthropic's input_tokens excludes cache reads and writes; both are billed on top.
 				cachedReadTokensAreSubsetOfInput: false,
 				cachedWriteTokensAreSubsetOfInput: false,
-				_ext:
-					typeof json.usage.cache_creation_input_tokens === "number"
-						? {
-							cachedWriteTokens: json.usage.cache_creation_input_tokens,
-							cachedWriteTokens5m:
-								typeof json.usage.cache_creation?.ephemeral_5m_input_tokens === "number"
-									? json.usage.cache_creation.ephemeral_5m_input_tokens
-									: undefined,
-							cachedWriteTokens1h:
-								typeof json.usage.cache_creation?.ephemeral_1h_input_tokens === "number"
-									? json.usage.cache_creation.ephemeral_1h_input_tokens
-									: undefined,
-						}
-						: undefined,
+				_ext: anthropicUsageExt(json.usage),
 			}
 			: undefined,
 		serviceTier: resolveAnthropicServiceTierFromResponse(json),

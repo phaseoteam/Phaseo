@@ -17,6 +17,19 @@ icon: "sliders-horizontal"
 
 参数支持情况仍因端点、模型和提供商而异。模型快速入门表汇总了特定路由上当前活跃提供商的支持情况。
 
+## 不支持的参数
+
+如果处理请求的提供商不支持请求中的某个采样参数，Phaseo 会移除该参数。该参数不会发送给提供商，请求也不会被拒绝，因此始终发送 OpenAI 默认值的客户端可以继续正常工作。是否支持由 Phaseo 的提供商配置和该路由的目录参数按提供商判断。如果某个路由没有声明任何参数，则只会跳过目录检查：提供商配置标记为不支持的参数仍会被移除，例如 Cohere 的 `top_k` 或 Reflection 的 `stop`。
+
+只有以下参数可能被移除：`temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`（在 `/v1/messages` 上为 `stop_sequences`）、`parallel_tool_calls`、`max_tool_calls` 和 `image_config`。消息、工具、`tool_choice`、`response_format`、推理设置和输出上限永远不会被移除。
+
+在成功的响应中，Phaseo 会在以下位置报告请求本身发送且已被移除的参数：
+
+- `X-Phaseo-Dropped-Params` 响应头，例如 `X-Phaseo-Dropped-Params: top_k, min_p`
+- 请求设置 `meta: true` 时的 `meta.routing.dropped_params`，例如 `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+来自预设或默认值（而不是请求正文）的参数可能会被移除，但不会出现在上述任何位置。它仍会记录在 Phaseo 随请求保存的路由诊断中。
+
 ## 快速查找
 
 | 参数 | 类型 | 用途 |

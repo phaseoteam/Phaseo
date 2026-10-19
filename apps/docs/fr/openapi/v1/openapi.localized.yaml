@@ -750,6 +750,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -800,6 +802,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -921,6 +925,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -8568,6 +8574,10 @@ components:
       description: Pourquoi et comment le modèle demandé a été remplacé, par exemple `reason=unserved; from=lab/old-model; to=lab/new-model`. Envoyé uniquement lorsque le routage des modèles retirés a répondu à la requête avec un modèle remplaçant.
       schema:
         type: string
+    DroppedParams:
+      description: Paramètres envoyés par le client que le fournisseur qui traite la requête ne prend pas en charge et que la passerelle a retirés au lieu de les envoyer au fournisseur ou de rejeter la requête, par exemple `top_k, min_p`. Envoyé uniquement dans les réponses réussies, et seulement lorsqu'au moins un paramètre du corps de la requête a été retiré. Les paramètres qui proviennent d'un préréglage ou d'une valeur par défaut ne sont pas listés.
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: Métadonnées de quota du fournisseur, uniquement pour BYOK. Omission pour les requêtes utilisant un fournisseur géré.
       schema:
@@ -9594,8 +9604,10 @@ components:
             - assistant
             - tool
         content:
-          oneOf:
+          description: 'Contenu du message : une chaîne ou un tableau de parties de contenu. Seuls les messages de l’assistant qui appellent des outils (avec tool_calls) peuvent le définir sur null ; la passerelle refuse un contenu null pour les autres rôles avec une erreur 400.'
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9654,7 +9666,37 @@ components:
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: Fichier en entrée, par exemple un PDF. Définissez file_data sur une URL de données base64, ou file_id sur un fichier importé chez le fournisseur qui traite la requête.
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+              minLength: 1
+            file_id:
+              type: string
+              minLength: 1
+            filename:
+              type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -10275,6 +10317,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0

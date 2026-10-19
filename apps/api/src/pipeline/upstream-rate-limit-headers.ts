@@ -71,6 +71,25 @@ export function extractDownstreamRateLimitHeaders(
 	return downstream;
 }
 
+/**
+ * Reads the rate-limit headers a gateway response already carries in their
+ * downstream form: `Retry-After` and the `X-Phaseo-Upstream-RateLimit-*`
+ * quota headers, which the execute stage only sets for BYOK attempts. Provider
+ * header names are not read, so a raw upstream response cannot leak a shared
+ * account's quota through this path.
+ */
+export function readDownstreamRateLimitHeaders(responseHeaders: Headers): Record<string, string> {
+	const downstream: Record<string, string> = {};
+	const retryAfter = normalizeRetryAfter(responseHeaders.get("retry-after"));
+	if (retryAfter != null) downstream["Retry-After"] = retryAfter;
+	for (const name of EXPOSED_UPSTREAM_RATE_LIMIT_HEADERS) {
+		if (name === "Retry-After") continue;
+		const value = normalizeQuotaValue(responseHeaders.get(name));
+		if (value != null) downstream[name] = value;
+	}
+	return downstream;
+}
+
 export function applyDownstreamRateLimitHeaders(
 	responseHeaders: Headers,
 	headers: Record<string, unknown> | null | undefined,

@@ -58,6 +58,56 @@ function parseDataUrl(value: string): { data: string; mimeType?: string } {
 	};
 }
 
+function nonEmptyString(value: unknown): string | undefined {
+	return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function mimeTypeFromFilename(filename: string | undefined): string | undefined {
+	const extension = filename?.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
+	if (extension === "pdf") return "application/pdf";
+	if (extension === "txt") return "text/plain";
+	if (extension === "md") return "text/markdown";
+	if (extension === "csv") return "text/csv";
+	return undefined;
+}
+
+/**
+ * Map an OpenAI Chat `file` part (`{type:"file", file:{file_data|file_id, filename}}`)
+ * or a Responses `input_file` part (`file_data`, `file_url` or `file_id` on the
+ * part itself) to an IR file part. `file_data` is a base64 data URL in both
+ * APIs; a bare base64 string is kept as data without a media type.
+ * https://platform.openai.com/docs/api-reference/chat/create
+ * https://platform.openai.com/docs/api-reference/responses/create
+ */
+function normalizeFilePart(part: any): IRContentPart | null {
+	const source = part?.type === "file" && part.file && typeof part.file === "object" ? part.file : part;
+	const filename = nonEmptyString(source?.filename);
+	const cacheControl = normalizePartCacheControl(part);
+	const common = {
+		...(filename ? { filename } : {}),
+		...(cacheControl ? { cacheControl } : {}),
+	};
+	const fileData = nonEmptyString(source?.file_data);
+	if (fileData) {
+		if (/^data:/i.test(fileData)) {
+			const parsed = parseDataUrl(fileData);
+			if (!parsed.data) return null;
+			const mimeType = parsed.mimeType ?? mimeTypeFromFilename(filename);
+			return { type: "file", source: "data", data: parsed.data, ...(mimeType ? { mimeType } : {}), ...common };
+		}
+		if (/^https?:\/\//i.test(fileData)) {
+			return { type: "file", source: "url", data: fileData, ...common };
+		}
+		const mimeType = mimeTypeFromFilename(filename);
+		return { type: "file", source: "data", data: fileData, ...(mimeType ? { mimeType } : {}), ...common };
+	}
+	const fileUrl = nonEmptyString(source?.file_url);
+	if (fileUrl) return { type: "file", source: "url", data: fileUrl, ...common };
+	const fileId = nonEmptyString(source?.file_id);
+	if (fileId) return { type: "file", source: "id", data: fileId, ...common };
+	return null;
+}
+
 /**
  * Read a content block's or tool definition's cache mark. OpenAI's
  * `prompt_cache_breakpoint` wins over an Anthropic-style `cache_control`
@@ -86,26 +136,34 @@ export function normalizePartCacheControl(part: any): IRCacheControl | undefined
 const TEXT_PART_TYPES = new Set(["text", "input_text", "output_text"]);
 
 /**
- * Tool results are stored as text in the IR. Array content that is all text
- * and carries a cache mark keeps its text and the mark (the last one wins), so
- * the breakpoint can be re-emitted upstream. Other arrays keep the historical
- * JSON encoding so existing prompts stay byte-identical.
+ * Tool results keep their text in the IR (`content`, the text parts joined)
+ * and, when the client sent an array of content parts, the parts themselves.
+ * Encoders send the parts where the upstream accepts structured tool results
+ * and the joined text elsewhere, never a JSON string of the array. A cache mark
+ * on any part is kept (the last one wins) so the breakpoint can be re-emitted.
  */
-export function normalizeToolResultContent(content: unknown): { content: string; cacheControl?: IRCacheControl } {
+export function normalizeToolResultContent(content: unknown): { content: string; cacheControl?: IRCacheControl; parts?: IRContentPart[] } {
 	if (typeof content === "string") return { content };
 	if (content === null || content === undefined) return { content: "" };
 	if (
 		Array.isArray(content) &&
 		content.length > 0 &&
-		content.every((part) => part && typeof part === "object" && TEXT_PART_TYPES.has(part.type) && typeof part.text === "string")
+		content.every((part) => part && typeof part === "object" && typeof part.type === "string")
 	) {
 		const marks = content.map(normalizePartCacheControl).filter((mark): mark is IRCacheControl => Boolean(mark));
-		if (marks.length > 0) {
-			return {
-				content: content.map((part) => part.text).join(""),
-				cacheControl: marks[marks.length - 1],
-			};
-		}
+		const cacheControl = marks.length > 0 ? marks[marks.length - 1] : undefined;
+		const allText = content.every((part) => TEXT_PART_TYPES.has(part.type) && typeof part.text === "string");
+		const text = content
+			.filter((part) => TEXT_PART_TYPES.has(part.type) && typeof part.text === "string")
+			.map((part) => part.text)
+			.join("");
+		// A marked all-text result is sent as one marked text part, as before.
+		if (allText && cacheControl) return { content: text, cacheControl };
+		return {
+			content: text,
+			parts: normalizeOpenAIContent(content),
+			...(cacheControl ? { cacheControl } : {}),
+		};
 	}
 	return { content: JSON.stringify(content) };
 }
@@ -205,6 +263,8 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 		}
 
 		if (part?.type === "input_file" || part?.type === "file") {
+			const normalized = normalizeFilePart(part);
+			if (normalized) return normalized;
 			return {
 				type: "provider_block",
 				block: { ...part },

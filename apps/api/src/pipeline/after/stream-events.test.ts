@@ -368,4 +368,84 @@ describe("extractUnifiedStreamEvents", () => {
 			),
 		).toBe(true);
 	});
+
+	it("treats response.incomplete as terminal, with usage and the content filter reason", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.incomplete",
+			frame: {
+				type: "response.incomplete",
+				response: {
+					object: "response",
+					status: "incomplete",
+					incomplete_details: { reason: "content_filter" },
+					usage: { input_tokens: 10, output_tokens: 4 },
+				},
+			},
+		});
+		expect(events.map((event) => event.type)).toEqual(["snapshot", "usage", "stop"]);
+		expect(events.find((event) => event.type === "stop")).toMatchObject({ finishReason: "content_filter" });
+	});
+
+	it("reports a completed response as stop, and the carried Anthropic stop when present", () => {
+		const completed = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.completed",
+			frame: { response: { object: "response", status: "completed", output: [] } },
+		});
+		expect(completed.find((event) => event.type === "stop")).toMatchObject({ finishReason: "stop" });
+
+		const paused = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.completed",
+			frame: { response: { object: "response", status: "completed", output: [], _phaseo_stop: { reason: "pause_turn" } } },
+		});
+		expect(paused.find((event) => event.type === "stop")).toMatchObject({ finishReason: "pause_turn" });
+	});
+
+	it("does not give message_stop a stop reason of its own", () => {
+		const delta = extractUnifiedStreamEvents({
+			protocol: "anthropic.messages",
+			eventName: "message_delta",
+			frame: { type: "message_delta", delta: { stop_reason: "stop_sequence", stop_sequence: "###" } },
+		});
+		expect(delta.find((event) => event.type === "stop")).toMatchObject({ finishReason: "stop_sequence", stopSequence: "###" });
+
+		const stop = extractUnifiedStreamEvents({
+			protocol: "anthropic.messages",
+			eventName: "message_stop",
+			frame: { type: "message_stop" },
+		});
+		expect(stop).toEqual([{ type: "stop", finishReason: null, payload: { type: "message_stop" } }]);
+	});
+});
+
+describe("mid-stream upstream errors", () => {
+	it("reads a bare OpenAI-compatible error frame on a Chat stream as an error", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.chat.completions",
+			frame: { error: { message: "upstream reset", type: "server_error" } },
+		});
+		expect(events).toEqual([expect.objectContaining({ type: "error", message: "upstream reset" })]);
+	});
+
+	it("does not read a chunk that carries an error field next to choices as a failure", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.chat.completions",
+			frame: { object: "chat.completion.chunk", error: null, choices: [{ index: 0, delta: { content: "hi" } }] },
+		});
+		expect(events.some((event) => event.type === "error")).toBe(false);
+	});
+
+	it("takes the message of response.failed from response.error", () => {
+		const events = extractUnifiedStreamEvents({
+			protocol: "openai.responses",
+			eventName: "response.failed",
+			frame: { response: { status: "failed", error: { code: "server_error", message: "upstream reset" } } },
+		});
+		expect(events).toEqual(expect.arrayContaining([
+			expect.objectContaining({ type: "error", message: "upstream reset" }),
+			expect.objectContaining({ type: "stop", finishReason: "error" }),
+		]));
+	});
 });

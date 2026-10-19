@@ -7,12 +7,14 @@
 
 import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
 import { irUsageToOpenAIStyle } from "@core/cache-usage";
+import { responsesStatusFor } from "@core/finish-reason";
 import {
 	encodeResponsesReasoningItem,
 	encodeResponsesToolSignatureItem,
 	sealReasoningPart,
 	type ResponsesReasoningItem,
 } from "../shared/reasoning";
+import { toResponsesAnnotations } from "../shared/citations";
 
 /**
  * OpenAI Responses response type
@@ -56,6 +58,7 @@ export type OpenAIResponsesResponse = {
 		};
 	};
 	status: "completed" | "failed" | "incomplete";
+	incomplete_details?: { reason: "max_output_tokens" | "content_filter" } | null;
 	status_details?: {
 		type: string;
 		reason: string;
@@ -143,7 +146,7 @@ export function encodeOpenAIResponsesResponse(
 					content.push({
 						type: "output_text",
 						text: part.text,
-						annotations: part.annotations ?? [],
+						annotations: toResponsesAnnotations(part.annotations),
 					});
 				}
 			}
@@ -230,12 +233,8 @@ export function encodeOpenAIResponsesResponse(
 	}
 
 	const mainChoice = ir.choices[0];
-	let status: "completed" | "failed" | "incomplete" = "completed";
-	if (mainChoice?.finishReason === "error") {
-		status = "failed";
-	} else if (mainChoice?.finishReason === "length") {
-		status = "incomplete";
-	}
+	// length and content_filter are incomplete, with the documented reason.
+	const { status, incompleteDetails } = responsesStatusFor(mainChoice?.finishReason);
 
 	return {
 		id: requestId ?? ir.id, // Gateway request ID as primary
@@ -247,6 +246,7 @@ export function encodeOpenAIResponsesResponse(
 		usage: encodeUsage(ir.usage),
 		...(ir.usage?.serviceTier || ir.serviceTier ? { service_tier: ir.usage?.serviceTier ?? ir.serviceTier } : {}),
 		status,
+		...(incompleteDetails ? { incomplete_details: incompleteDetails } : {}),
 		...(ir.citations ? { citations: ir.citations } : {}),
 		...(ir.searchResults ? { search_results: ir.searchResults } : {}),
 		...(ir.images ? { images: ir.images } : {}),

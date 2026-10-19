@@ -1,0 +1,49 @@
+{
+	"id": "novita",
+	"source": {
+		"url": null,
+		"docs": "https://docs.novita.ai/api-reference/model-apis-llm-create-chat-completion",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. max_tokens is marked required. response_format types: text, json_object, json_schema. tool_choice not documented. Content parts: text, image_url, video_url, input_audio. Page has range inconsistencies (n \"1 < x < 128\" with default 1). No machine-readable spec found (no embedded OpenAPI in the .md export)."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"max_tokens": {},
+					"stream_options": {},
+					"n": {},
+					"seed": {},
+					"frequency_penalty": {},
+					"presence_penalty": {},
+					"repetition_penalty": {},
+					"stop": {},
+					"temperature": {},
+					"top_p": {},
+					"top_k": {},
+					"min_p": {},
+					"logit_bias": {},
+					"logprobs": {},
+					"top_logprobs": {},
+					"tools": {},
+					"response_format": {},
+					"separate_reasoning": {},
+					"enable_thinking": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

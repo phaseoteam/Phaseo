@@ -251,6 +251,9 @@
 			"endpointVideoGeneration": "Generación de video",
 			"endpointImageVariations": "Variaciones de imágenes",
 			"endpointMusicGeneration": "Generación de música",
+			"endpointVideoEditing": "Edición de vídeo",
+			"endpointOcr": "OCR",
+			"endpointDocumentParsing": "Análisis de documentos",
 			"tierPrivate": "Privados",
 			"capabilityTextGeneration": "Generación de texto",
 			"modalityDecisions": "Decisiones"
@@ -1858,6 +1861,26 @@
 		"loadingModels": "Cargando modelos…"
 	},
 	"benchmarks": {
+		"explorer": {
+			"comparisons": "Comparaciones",
+			"tokenUsage": "Uso de tokens",
+			"cost": "Coste",
+			"benchmarks": "Benchmarks individuales",
+			"capabilities": "Capacidades por área",
+			"tokensPerTask": "Tokens de salida por tarea",
+			"totalOutputTokens": "Tokens de salida totales",
+			"costPerTask": "Coste por tarea",
+			"totalCost": "Coste total de evaluación",
+			"timePerTask": "Tiempo por tarea",
+			"pareto": "Frontera de Pareto",
+			"score": "Puntuación",
+			"financeAndAccounting": "Finanzas y contabilidad",
+			"strategyAndOps": "Estrategia y operaciones",
+			"legal": "Derecho",
+			"healthcareAndMedical": "Salud y medicina",
+			"engineering": "Ingeniería",
+			"economics": "Economía"
+		},
 		"title": "Evaluaciones comparativas",
 		"description": "Explora las evaluaciones comparativas de modelos de IA, compara puntuaciones y descubre qué evaluaciones se utilizan más.",
 		"searchPlaceholder": "Buscar evaluaciones...",

@@ -283,7 +283,9 @@ async function createOpenAIResponsesWebSocketStream(args: {
 						emitFrame(payload);
 
 						const type = typeof payload?.type === "string" ? payload.type : "";
-						if (type === "response.completed" && payload?.response) {
+						// response.incomplete (max_output_tokens, content filter) ends the
+						// response just like response.completed.
+						if ((type === "response.completed" || type === "response.incomplete") && payload?.response) {
 							finalResponsePayload = payload.response;
 							try {
 								const ir = openAIResponsesToIR(
@@ -802,7 +804,10 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		: irToOpenAIChat(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams);
 
 	requestPayload.stream = true;
-	requestPayload.store = false;
+	// Responses requests always go upstream with store: false (documented on the
+	// Responses endpoint page). Chat Completions does not store by default, so
+	// store is only sent there when the client set it, and then as false.
+	if (route === "responses" || (args.ir as IRChatRequest).store !== undefined) requestPayload.store = false;
 	if (
 		route === "responses"
 		&& isOpenAIProviderOffer(args.providerId)

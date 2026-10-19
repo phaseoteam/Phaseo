@@ -90,7 +90,9 @@ Alguns erros trazem mais detalhes para ajudar a corrigir o problema rapidamente:
 | `phaseo_free_model_limit_exceeded` | `429` | A cota diária compartilhada dos modelos gratuitos do Phaseo foi esgotada (1.500 solicitações por padrão). Respeite `Retry-After`, aguarde a redefinição às 00:00 UTC ou escolha um modelo pago. |
 | `rate_limit_exceeded` | `429` | Uma [política de limite de taxa](./limits.mdx) do espaço de trabalho se esgotou. `policy_id` e `limit_scope` a identificam. Respeite `Retry-After` ou peça a um administrador do espaço de trabalho para alterar a política. |
 | `validation_error` | `400` | Parâmetros ou corpo da solicitação inválidos. |
+| `upstream_error` | `429` | Todos os provedores tentados para a solicitação aplicaram limite de taxa. Respeite `Retry-After`; solicitações BYOK também trazem os cabeçalhos `X-Phaseo-Upstream-RateLimit-*`. Outras falhas de provedor usam `502`. |
 | `provider_error` | `502` | O provedor upstream do modelo não respondeu corretamente. |
+| `upstream_stream_failure` | `502` | Uma solicitação sem streaming cujo provedor falhou depois de começar a gerar. Nenhuma saída parcial é retornada e a solicitação não é cobrada. |
 | `server_error` | `500` | Ocorreu um problema inesperado na Phaseo. |
 
 ## Quando um provedor falha
@@ -253,7 +255,8 @@ Defina um limite de tentativas e um prazo total e adicione variação aleatória
 ## Observações específicas sobre streaming
 
 - Se a solicitação falhar antes do início do streaming, você receberá um payload JSON de erro padrão.
-- Se falhar no meio do fluxo, considere o trecho parcial incompleto e ofereça a opção de tentar novamente.
+- Se falhar no meio do fluxo, o fluxo termina com o evento de falha do endpoint em vez de um encerramento normal: um frame `error` no Chat Completions, `response.failed` (ou `error`) no Responses e um evento `error` no Messages. Considere o trecho parcial incompleto e ofereça a opção de tentar novamente.
+- Uma solicitação sem streaming cujo provedor falha no meio retorna `502` com `upstream_stream_failure`, não uma resposta parcial.
 - Sempre registre `generation_id` e os metadados do endpoint/modelo.
 
 ## Dicas para solucionar problemas

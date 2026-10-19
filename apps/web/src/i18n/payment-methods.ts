@@ -9,9 +9,9 @@ import pt from "../../messages/pt-BR/payment-methods.json";
 import ja from "../../messages/ja/payment-methods.json";
 import ar from "../../messages/ar-SA/payment-methods.json";
 import { mergeCatalogMessages } from "./message-overlays";
-import type { PublicLocale } from "./routing";
+import type { PublicLocale, ShippedLocale } from "./routing";
 export type PaymentMethodsMessages = typeof en;
-const catalogs: Record<PublicLocale, PaymentMethodsMessages> = {
+const catalogs: Record<ShippedLocale, PaymentMethodsMessages> = {
 	"en-GB": en,
 	"en-US": mergeCatalogMessages(en, enUsOverlay),
 	"zh-Hans": zhHans as PaymentMethodsMessages,

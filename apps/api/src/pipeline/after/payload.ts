@@ -562,8 +562,9 @@ function toOaiChatChoices(choices: GatewayCompletionsChoice[] | undefined) {
         index: c.index ?? 0,
         message: {
             ...c.message,
-            refusal: (c as any).refusal ?? null,
-            annotations: (c as any).annotations ?? [],
+            // The encoder puts refusal and annotations on the message, as Chat documents.
+            refusal: (c.message as any)?.refusal ?? (c as any).refusal ?? null,
+            annotations: (c.message as any)?.annotations ?? (c as any).annotations ?? [],
         },
         logprobs: c.logprobs ?? null,
         finish_reason: c.finish_reason ?? null,
@@ -738,11 +739,31 @@ export function normalizeAnthropicUsage(raw: any, irUsage?: IRUsage) {
         // Gateway usage follows OpenAI semantics (input includes the cache); the Messages
         // surface reports input_tokens without cache reads and writes, as Anthropic does.
         const totalInput = Number(raw?.input_tokens ?? 0);
-        const write5m = typeof raw?.cached_write_text_tokens_5m === "number" ? raw.cached_write_text_tokens_5m : undefined;
-        const write1h = typeof raw?.cached_write_text_tokens_1h === "number" ? raw.cached_write_text_tokens_1h : undefined;
+        // Client usage shaping drops the TTL split, so fall back to the response's IR for it.
+        const pickCount = (...values: unknown[]) =>
+            values.find((value): value is number => typeof value === "number" && Number.isFinite(value));
+        const write5m = openAIWrite === undefined ? undefined : pickCount(
+            raw?.cached_write_text_tokens_5m,
+            raw?.cache_creation?.ephemeral_5m_input_tokens,
+            irUsage?._ext?.cachedWriteTokens5m,
+        );
+        const write1h = openAIWrite === undefined ? undefined : pickCount(
+            raw?.cached_write_text_tokens_1h,
+            raw?.cache_creation?.ephemeral_1h_input_tokens,
+            irUsage?._ext?.cachedWriteTokens1h,
+        );
         const uncachedInput = Math.max(0, totalInput - (openAIRead ?? 0) - (openAIWrite ?? 0));
+        // The OpenAI-style details restate the same cache counts; Messages reports them once.
+        // Input no longer contains the cache, so OpenAI-style subset hints would be wrong here.
+        const {
+            input_tokens_details: _inputDetails,
+            prompt_tokens_details: _promptDetails,
+            cached_read_tokens_are_subset_of_input: _readSubset,
+            cached_write_tokens_are_subset_of_input: _writeSubset,
+            ...anthropicRaw
+        } = raw ?? {};
         return normalizeAnthropicUsage({
-            ...raw,
+            ...anthropicRaw,
             input_tokens: uncachedInput,
             ...(typeof raw?.total_tokens === "number"
                 ? { total_tokens: uncachedInput + Number(raw?.output_tokens ?? 0) }

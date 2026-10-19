@@ -1,4 +1,5 @@
 import type { Endpoint } from "@core/types";
+import type { DroppedParamsRecord } from "@pipeline/execute/unsupportedParams";
 
 const RESPONSE_CACHE_VERSION = "v1";
 const RESPONSE_CACHE_PREFIX = "gateway:response-cache";
@@ -73,6 +74,8 @@ export type CachedResponseRecord = {
 	createdAt: string;
 	expiresAt: string;
 	ttlSeconds: number;
+	/** Parameters dropped for the provider that generated the response; absent on older entries. */
+	droppedParams?: DroppedParamsRecord | null;
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -272,6 +275,7 @@ export function buildCachedResponseRecord(args: {
 	routingMode?: string | null;
 	presetId?: string | null;
 	presetSlug?: string | null;
+	droppedParams?: DroppedParamsRecord | null;
 	ttlSeconds: number;
 	now?: Date;
 }): CachedResponseRecord {
@@ -299,5 +303,6 @@ export function buildCachedResponseRecord(args: {
 		createdAt: createdAt.toISOString(),
 		expiresAt: expiresAt.toISOString(),
 		ttlSeconds: args.ttlSeconds,
+		droppedParams: args.droppedParams ?? null,
 	};
 }

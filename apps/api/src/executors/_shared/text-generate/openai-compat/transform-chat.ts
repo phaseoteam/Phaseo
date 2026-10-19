@@ -13,6 +13,7 @@ import { getProviderQuirks } from "./quirks";
 import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
 import { isSealedReasoningValue } from "@core/reasoning-state";
 import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/shared/reasoning";
+import { toIRAnnotations } from "@protocols/shared/citations";
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -31,16 +32,19 @@ export function irToOpenAIChat(
 			messages.push({
 				role: "system",
 				content: mapSystemLikeContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "developer") {
 			messages.push({
 				role: "developer",
 				content: mapSystemLikeContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "user") {
 			messages.push({
 				role: "user",
 				content: mapIRContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "assistant") {
 			const assistantText = msg.content
@@ -59,6 +63,7 @@ export function irToOpenAIChat(
 			const message: any = {
 				role: "assistant",
 				content: assistantText || null,
+				...messageNameField(msg.name, providerId),
 			};
 
 			const providerSupportsAssistantReasoningContent =
@@ -119,11 +124,7 @@ export function irToOpenAIChat(
 				messages.push({
 					role: "tool",
 					tool_call_id: result.toolCallId,
-					// A marked result is sent as a text part so the mark survives;
-					// the cache policy turns it back into a string where unsupported.
-					content: result.cacheControl
-						? [mapTextPartToOpenAI({ type: "text", text: result.content, cacheControl: result.cacheControl })]
-						: result.content,
+					content: mapToolResultToOpenAIChat(result, providerId),
 				});
 			}
 		}
@@ -351,6 +352,50 @@ function hasCacheControl(content: IRContentPart[]): boolean {
 	return content.some((part) => part.type === "text" && part.cacheControl);
 }
 
+// Chat APIs whose message schema defines a participant `name` on system, user and
+// assistant messages (from each provider's published spec). Strict APIs such as
+// Mistral's reject the field, so it is sent only here.
+const MESSAGE_NAME_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure", "akashml", "ambient", "baidu", "baseten", "cerebras", "deepinfra",
+	"deepseek", "friendli", "io-net", "moonshot-ai", "moonshotai", "nebius-token-factory",
+	"nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1", "ovhcloud",
+	"sail-research", "together", "venice",
+]);
+
+// Chat APIs whose tool message content may be an array of text parts, as in
+// OpenAI's schema. Others take a string.
+const TOOL_CONTENT_PARTS_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure", "akashml", "ambient", "baseten", "cerebras", "deepinfra",
+	"deepseek", "groq", "inception", "io-net", "meta", "mistral", "mistral-eu", "moonshot-ai", "moonshotai",
+	"nebius-token-factory", "nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1",
+	"ovhcloud", "perplexity", "reka", "sail-research", "sambanova",
+]);
+
+function messageNameField(name: string | undefined, providerId: string | undefined): { name?: string } {
+	if (!name || !providerId || !MESSAGE_NAME_PROVIDERS.has(providerId)) return {};
+	return { name };
+}
+
+/**
+ * Tool result content: the client's text parts as an array where the provider
+ * accepts one, otherwise the text parts joined. Chat tool messages carry text
+ * only, so image parts in a tool result have no place here.
+ */
+function mapToolResultToOpenAIChat(
+	result: Extract<IRMessage, { role: "tool" }>["toolResults"][number],
+	providerId: string | undefined,
+): any {
+	const textParts = (result.parts ?? []).filter((part): part is Extract<IRContentPart, { type: "text" }> => part.type === "text");
+	if (textParts.length > 0 && providerId && TOOL_CONTENT_PARTS_PROVIDERS.has(providerId)) {
+		return textParts.map((part) => mapTextPartToOpenAI(part));
+	}
+	// A marked result is sent as a text part so the mark survives;
+	// the cache policy turns it back into a string where unsupported.
+	return result.cacheControl
+		? [mapTextPartToOpenAI({ type: "text", text: result.content, cacheControl: result.cacheControl })]
+		: result.content;
+}
+
 function mapTextPartToOpenAI(part: Extract<IRContentPart, { type: "text" }>, type = "text"): any {
 	const promptCacheBreakpoint = part.cacheControl?.type === "prompt_cache_breakpoint"
 		? { mode: part.cacheControl.mode }
@@ -373,14 +418,53 @@ function mapSystemLikeContentToOpenAI(content: IRContentPart[]): any {
 		.map((part) => mapTextPartToOpenAI(part));
 }
 
+/**
+ * Chat Completions `file` part: base64 `file_data` (as a data URL) or an
+ * uploaded `file_id`. Chat has no URL form, so a file given by URL is left out
+ * rather than sent in a shape the provider would reject.
+ * https://platform.openai.com/docs/api-reference/chat/create
+ */
+export function mapFilePartToOpenAIChat(part: Extract<IRContentPart, { type: "file" }>): any | null {
+	const filename = part.filename ? { filename: part.filename } : {};
+	if (part.source === "data") {
+		return {
+			type: "file",
+			file: { ...filename, file_data: `data:${part.mimeType || "application/pdf"};base64,${part.data}` },
+			...cacheMarkFields(part.cacheControl),
+		};
+	}
+	if (part.source === "id") {
+		return {
+			type: "file",
+			file: { ...filename, file_id: part.data },
+			...cacheMarkFields(part.cacheControl),
+		};
+	}
+	return null;
+}
+
 function mapIRContentToOpenAI(content: IRContentPart[]): any {
 	if (content.length === 1 && content[0].type === "text" && !content[0].cacheControl) {
 		return content[0].text;
 	}
 
-	return content.map((part) => {
+	return content.flatMap((part) => {
 		if (part.type === "text") {
 			return mapTextPartToOpenAI(part);
+		}
+
+		if (part.type === "file") {
+			const mapped = mapFilePartToOpenAIChat(part);
+			// Chat Completions has no file-by-URL field. Dropping the document would let the model
+			// answer without it, so fail this attempt instead: routing then tries a provider that can
+			// carry it, and the client gets an explicit error if none can.
+			if (!mapped) {
+				throw Object.assign(
+					new Error("This provider's Chat Completions API cannot take a file by URL; send the file as file_data or file_id."),
+					{ code: "unsupported_parameter", param: "file" },
+				);
+			}
+			return [mapped];
 		}
 
 		if (part.type === "image") {
@@ -449,7 +533,8 @@ function applySealedReasoningDetails(
 	for (const part of decoded.parts) {
 		const plain = contentParts.find((candidate): candidate is Extract<IRContentPart, { type: "reasoning_text" }> =>
 			candidate.type === "reasoning_text" && !candidate.reasoningFormat);
-		if (plain && !part.text) {
+		// The signed detail repeats the plain reasoning_content text, or carries none.
+		if (plain && (!part.text || part.text === plain.text)) {
 			Object.assign(plain, { ...part, text: plain.text });
 		} else {
 			contentParts.push(part);
@@ -633,21 +718,23 @@ export function openAIChatToIR(
 			const rawContent = extractChoiceContent(choice.message?.content);
 			const { main, reasoning } = applyChatResponseQuirks({ providerId: provider, choice, rawContent });
 
-			// Add reasoning as reasoning_text parts
-			if (reasoning.length > 0) {
-				for (const reasoningText of reasoning) {
-					contentParts.push({
-						type: "reasoning_text",
-						text: reasoningText,
-					});
-				}
+			// Add reasoning as reasoning_text parts. Without a provider quirk, the
+			// plain reasoning_content (or reasoning) field carries it.
+			const plainReasoning = reasoning.length === 0 ? plainChatReasoning(choice.message) : undefined;
+			for (const reasoningText of plainReasoning ? [plainReasoning] : reasoning) {
+				contentParts.push({
+					type: "reasoning_text",
+					text: reasoningText,
+				});
 			}
 
 			// Add main content as text part
 			if (main) {
+				const annotations = toIRAnnotations(choice.message?.annotations);
 				contentParts.push({
 					type: "text",
 					text: main,
+					...(annotations.length > 0 ? { annotations } : {}),
 				});
 			}
 		}
@@ -663,6 +750,9 @@ export function openAIChatToIR(
 				role: "assistant" as const,
 				content: contentParts,
 				toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
+				...(typeof choice.message?.refusal === "string" && choice.message.refusal.length > 0
+					? { refusal: choice.message.refusal }
+					: {}),
 			},
 			finishReason: mapFinishReason(choice.finish_reason),
 			logprobs: choice.logprobs,
@@ -709,6 +799,13 @@ export function openAIChatToIR(
 		...(provider === "perplexity" && Array.isArray(json.related_questions) ? { relatedQuestions: json.related_questions } : {}),
 		...(provider === "perplexity" && Array.isArray(json.reasoning_steps) ? { reasoningSteps: json.reasoning_steps } : {}),
 	};
+}
+
+function plainChatReasoning(message: any): string | undefined {
+	for (const value of [message?.reasoning_content, message?.reasoning]) {
+		if (typeof value === "string" && value.length > 0) return value;
+	}
+	return undefined;
 }
 
 function firstFiniteNumber(...values: unknown[]): number | undefined {

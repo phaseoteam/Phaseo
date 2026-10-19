@@ -25,7 +25,9 @@ import {
 	maybeOpenOnRecentErrors,
 } from "../execute/health";
 import { getBaseModel } from "../execute/utils";
+import { droppedParamsForClient } from "../execute/unsupportedParams";
 import { noteModelSubstitutionServed } from "../before/modelSuccessor";
+import { withServedModel } from "./served-model";
 import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
@@ -65,6 +67,22 @@ function getStreamTerminalPayload(frame: any): any | null {
         return frame.response;
     }
     return null;
+}
+
+const INPUT_MODALITY_TOKEN_METERS = ["input_image_tokens", "input_audio_tokens", "input_video_tokens"] as const;
+
+/**
+ * Client shaping keeps modality counts only inside input_tokens_details, where they can also
+ * be counts of media parts. Carry the executor's token meters to pricing as meters.
+ */
+function withInputModalityTokenMeters(shaped: any, raw: any): any {
+    if (!shaped || typeof shaped !== "object" || !raw || typeof raw !== "object") return shaped;
+    const meters: Record<string, number> = {};
+    for (const key of INPUT_MODALITY_TOKEN_METERS) {
+        const value = raw[key];
+        if (typeof value === "number" && Number.isFinite(value) && value > 0 && shaped[key] == null) meters[key] = value;
+    }
+    return Object.keys(meters).length ? { ...shaped, ...meters } : shaped;
 }
 
 function hasBillableTokenUsage(usage: any): boolean {
@@ -258,7 +276,7 @@ export async function handleStreamResponse(
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
             const includeMeta = ctx.meta.returnMeta ?? false;
-            const next: any = { ...frame };
+            const next: any = withServedModel({ ...frame }, ctx);
             delete next.provider;
             delete next.gateway;
 
@@ -421,6 +439,7 @@ export async function handleStreamResponse(
                                 provider: entry.providerId,
                                 unsupported_params: entry.unsupportedParams,
                             })) ?? [],
+                        dropped_params: droppedParamsForClient(ctx).map(({ param, reason }) => ({ param, reason })),
                     },
                     ...(ctx.pluginExecutions?.length
                         ? { plugin_executions: ctx.pluginExecutions }
@@ -645,7 +664,7 @@ export async function handleStreamResponse(
                 if (card && usageHasMeters) {
                     const tier = ctx.teamEnrichment?.tier ?? 'basic';
                     const repriced = calculatePricing(
-                        shapeStreamUsageForClient(usageWithToolMetrics),
+                        withInputModalityTokenMeters(shapeStreamUsageForClient(usageWithToolMetrics), usageWithToolMetrics),
                         card,
                         ctx.body,
                         tier,

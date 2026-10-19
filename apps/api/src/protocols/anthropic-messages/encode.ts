@@ -5,8 +5,13 @@
 // Anthropic Messages Protocol - Encoder
 // Transforms IR -> Anthropic Messages Response
 
-import type { IRChatResponse, IRChoice, IRContentPart } from "@core/ir";
+import type { IRChatResponse, IRContentPart } from "@core/ir";
+import { irUsageToAnthropicStyle } from "@core/cache-usage";
+import { anthropicStopReasonFor, type AnthropicStopReason } from "@core/finish-reason";
 import { encodeAnthropicThinkingBlock, type ReasoningResponseOrigin } from "../shared/reasoning";
+import { toAnthropicCitations } from "../shared/citations";
+
+import { sealToolCallSignature } from "../shared/reasoning";
 
 /**
  * Anthropic Messages response type
@@ -22,13 +27,7 @@ export type AnthropicMessagesResponse = {
 	role: "assistant";
 	content: AnthropicResponseContent[];
 	model: string;
-	stop_reason:
-		| "end_turn"
-		| "max_tokens"
-		| "stop_sequence"
-		| "tool_use"
-		| "refusal"
-		| null;
+	stop_reason: AnthropicStopReason | null;
 	stop_sequence: string | null;
 	usage: {
 		cache_creation: any | null;
@@ -125,14 +124,23 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 				input: safeParseToolArguments(toolCall.arguments),
 			});
 		}
+		// Gemini function-call signatures go back as signature-only thinking blocks after the
+		// calls, as the stream sends them, so the next request can return each to its call.
+		for (const toolCall of mainChoice.message.toolCalls) {
+			const signature = sealToolCallSignature(toolCall, origin);
+			if (signature) content.push({ type: "thinking", thinking: "", signature });
+		}
 	}
 
 	if (content.length === 0 && !hasToolCalls && reasoningCount === 0) {
 		content.push({ type: "text", text: "", citations: null });
 	}
 
-	// Map finish reason
-	const stopReason = mapFinishReasonToAnthropic(mainChoice.finishReason);
+	// Map finish reason (stop_sequence, pause_turn and refusal ride on finishDetail)
+	const stopReason = anthropicStopReasonFor(
+		mainChoice.finishReason,
+		mainChoice.finishDetail ?? (mainChoice.stopSequence ? "stop_sequence" : undefined),
+	);
 
 	return {
 		id: ir.id,
@@ -145,28 +153,6 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 		stop_sequence: mainChoice.stopSequence ?? null,
 		usage: encodeUsage(ir.usage, ir.serviceTier),
 	};
-}
-
-/**
- * Map IR finish reason to Anthropic stop reason
- */
-function mapFinishReasonToAnthropic(
-	reason: IRChoice["finishReason"],
-): AnthropicMessagesResponse["stop_reason"] {
-	switch (reason) {
-		case "stop":
-			return "end_turn";
-		case "length":
-			return "max_tokens";
-		case "tool_calls":
-			return "tool_use";
-		case "content_filter":
-			return "refusal";
-		case "error":
-			return null;
-		default:
-			return "end_turn";
-	}
 }
 
 function encodeUsage(
@@ -182,11 +168,19 @@ function encodeUsage(
 			: serviceTier === "standard" || serviceTier === "priority" || serviceTier === "batch"
 				? serviceTier
 				: null;
+	// Anthropic semantics: input_tokens excludes cache reads and writes, reported beside it.
+	const cache = irUsageToAnthropicStyle({ ...anyUsage, inputTokens: inputTokens ?? 0 });
+	const hasWriteSplit = typeof cache.write5mTokens === "number" || typeof cache.write1hTokens === "number";
 	return {
-		cache_creation: null,
-		cache_creation_input_tokens: null,
-		cache_read_input_tokens: anyUsage?.cachedInputTokens ?? null,
-		input_tokens: inputTokens ?? 0,
+		cache_creation: hasWriteSplit
+			? {
+				ephemeral_5m_input_tokens: cache.write5mTokens ?? 0,
+				ephemeral_1h_input_tokens: cache.write1hTokens ?? 0,
+			}
+			: null,
+		cache_creation_input_tokens: cache.writeTokens ?? null,
+		cache_read_input_tokens: cache.readTokens ?? null,
+		input_tokens: inputTokens == null ? 0 : cache.inputTokens,
 		output_tokens: outputTokens ?? 0,
 		server_tool_use:
 			typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number" ||
@@ -252,10 +246,11 @@ function encodeOrderedContentParts(parts: IRContentPart[], origin?: ReasoningRes
 	for (const part of parts) {
 		if (part.type === "text") {
 			if (part.text.length > 0) {
+				const citations = toAnthropicCitations(part.annotations);
 				content.push({
 					type: "text",
 					text: part.text,
-					citations: null,
+					citations: citations.length > 0 ? citations : null,
 				});
 			}
 			continue;

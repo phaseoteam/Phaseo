@@ -8344,6 +8344,26 @@
 			"zh-Hans": "不支持。Phaseo 不存储响应，因此设置了 previous_response_id 或 conversation 的请求会返回 400 unsupported_param。请在 input 中发送完整对话。",
 			"ar": "غير مدعوم. لا تخزّن Phaseo الردود، لذا تعيد الطلبات التي تحدد previous_response_id أو conversation الخطأ 400 unsupported_param. أرسل المحادثة كاملة في input."
 		},
+		"Message content: a string or an array of content parts. Only assistant messages that call tools (with tool_calls) may set it to null; the gateway rejects null content for other roles with a 400 error.": {
+			"es": "Contenido del mensaje: una cadena o un array de partes de contenido. Solo los mensajes del asistente que llaman a herramientas (con tool_calls) pueden establecerlo en null; la pasarela rechaza el contenido null en los demás roles con un error 400.",
+			"fr": "Contenu du message : une chaîne ou un tableau de parties de contenu. Seuls les messages de l’assistant qui appellent des outils (avec tool_calls) peuvent le définir sur null ; la passerelle refuse un contenu null pour les autres rôles avec une erreur 400.",
+			"de": "Inhalt der Nachricht: ein String oder ein Array von Inhaltsteilen. Nur Assistant-Nachrichten, die Tools aufrufen (mit tool_calls), können ihn auf null setzen; das Gateway lehnt null-Inhalte bei anderen Rollen mit einem 400-Fehler ab.",
+			"pt-BR": "Conteúdo da mensagem: uma string ou um array de partes de conteúdo. Somente mensagens do assistente que chamam ferramentas (com tool_calls) podem defini-lo como null; o gateway rejeita conteúdo null em outros papéis com um erro 400.",
+			"hi": "संदेश की सामग्री: एक स्ट्रिंग या सामग्री भागों का array। केवल वे असिस्टेंट संदेश जो टूल कॉल करते हैं (tool_calls के साथ), इसे null पर सेट कर सकते हैं; अन्य भूमिकाओं के लिए गेटवे null सामग्री को 400 त्रुटि के साथ अस्वीकार करता है।",
+			"ja": "メッセージの内容です。文字列またはコンテンツパーツの配列を指定します。null に設定できるのは、ツールを呼び出す（tool_calls を含む）アシスタントメッセージだけです。その他のロールで null を送ると、ゲートウェイは 400 エラーで拒否します。",
+			"zh-Hans": "消息内容：字符串或内容部件数组。只有调用工具（带 tool_calls）的助手消息可以将其设为 null；其他角色的 null 内容会被网关以 400 错误拒绝。",
+			"ar": "محتوى الرسالة: سلسلة نصية أو مصفوفة من أجزاء المحتوى. يمكن فقط لرسائل المساعد التي تستدعي الأدوات (مع tool_calls) تعيينه إلى null؛ وترفض البوابة المحتوى null للأدوار الأخرى بخطأ 400."
+		},
+		"File input, such as a PDF. Set file_data to a base64 data URL, or file_id to a file uploaded to the provider that serves the request.": {
+			"es": "Entrada de archivo, como un PDF. Define file_data como una URL de datos base64, o file_id como un archivo subido al proveedor que atiende la solicitud.",
+			"fr": "Fichier en entrée, par exemple un PDF. Définissez file_data sur une URL de données base64, ou file_id sur un fichier importé chez le fournisseur qui traite la requête.",
+			"de": "Dateieingabe, etwa ein PDF. Setze file_data auf eine base64-Daten-URL oder file_id auf eine Datei, die beim Anbieter hochgeladen wurde, der die Anfrage bearbeitet.",
+			"pt-BR": "Entrada de arquivo, como um PDF. Defina file_data como uma URL de dados base64, ou file_id como um arquivo enviado ao provedor que atende a solicitação.",
+			"hi": "फ़ाइल इनपुट, जैसे PDF। file_data को base64 डेटा URL पर सेट करें, या file_id को उस प्रदाता पर अपलोड की गई फ़ाइल पर जो अनुरोध पूरा करता है।",
+			"ja": "PDF などのファイル入力です。file_data には base64 のデータ URL を、file_id にはリクエストを処理するプロバイダーにアップロードしたファイルを指定します。",
+			"zh-Hans": "文件输入，例如 PDF。将 file_data 设为 base64 数据 URL，或将 file_id 设为已上传到处理该请求的提供商的文件。",
+			"ar": "إدخال ملف، مثل ملف PDF. اضبط file_data على عنوان URL لبيانات base64، أو file_id على ملف مرفوع إلى المزوّد الذي يخدم الطلب."
+		},
 		"Prompt cache control. Use type ephemeral with an optional ttl of 5m or 1h. scope applies only to a top-level Claude cache policy.": {
 			"es": "Control de la caché de prompts. Usa type ephemeral con un ttl opcional de 5m o 1h. scope solo se aplica a una política de caché de Claude de nivel superior.",
 			"fr": "Contrôle du cache de prompts. Utilisez type ephemeral avec un ttl facultatif de 5m ou 1h. scope ne s’applique qu’à une politique de cache Claude de premier niveau.",
@@ -8393,6 +8413,16 @@
 			"ja": "GPT-5.6より前のOpenAIとAzure OpenAIのモデル向けのプロンプトキャッシュ保持期間。provider_options.openai.prompt_cache_retentionより優先されます。",
 			"zh-Hans": "适用于 GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型的 prompt 缓存保留策略。优先于 provider_options.openai.prompt_cache_retention。",
 			"ar": "مدة الاحتفاظ بذاكرة المطالبات المؤقتة لنماذج OpenAI وAzure OpenAI السابقة لـ GPT-5.6. تتقدّم على provider_options.openai.prompt_cache_retention."
+		},
+		"Request parameters the client sent that the serving provider does not support, which the gateway removed instead of sending them upstream or rejecting the request, for example `top_k, min_p`. Sent only on successful responses, and only when at least one parameter from the request body was dropped. Parameters that come from a preset or a default value are not listed.": {
+			"es": "Parámetros que envió el cliente y que el proveedor que atiende la solicitud no admite, y que el gateway eliminó en lugar de enviarlos al proveedor o rechazar la solicitud, por ejemplo `top_k, min_p`. Solo se envía en respuestas satisfactorias y solo cuando se descartó al menos un parámetro del cuerpo de la solicitud. Los parámetros que proceden de un preset o de un valor predeterminado no se incluyen.",
+			"fr": "Paramètres envoyés par le client que le fournisseur qui traite la requête ne prend pas en charge et que la passerelle a retirés au lieu de les envoyer au fournisseur ou de rejeter la requête, par exemple `top_k, min_p`. Envoyé uniquement dans les réponses réussies, et seulement lorsqu'au moins un paramètre du corps de la requête a été retiré. Les paramètres qui proviennent d'un préréglage ou d'une valeur par défaut ne sont pas listés.",
+			"de": "Vom Client gesendete Parameter, die der bedienende Anbieter nicht unterstützt und die das Gateway entfernt hat, statt sie an den Anbieter zu senden oder die Anfrage abzulehnen, zum Beispiel `top_k, min_p`. Wird nur bei erfolgreichen Antworten gesendet und nur, wenn mindestens ein Parameter aus dem Anfrage-Body entfernt wurde. Parameter aus einem Preset oder einem Standardwert werden nicht aufgeführt.",
+			"pt-BR": "Parâmetros enviados pelo cliente que o provedor que atende a solicitação não suporta e que o gateway removeu em vez de enviá-los ao provedor ou rejeitar a solicitação, por exemplo `top_k, min_p`. Enviado apenas em respostas bem-sucedidas e somente quando pelo menos um parâmetro do corpo da solicitação foi descartado. Parâmetros que vêm de um preset ou de um valor padrão não são listados.",
+			"hi": "क्लाइंट के भेजे वे पैरामीटर जिनका सर्व करने वाला प्रदाता समर्थन नहीं करता और जिन्हें गेटवे ने प्रदाता को भेजने या अनुरोध अस्वीकार करने के बजाय हटा दिया, उदाहरण के लिए `top_k, min_p`। यह केवल सफल रिस्पॉन्स में भेजा जाता है, और तभी जब अनुरोध बॉडी का कम से कम एक पैरामीटर हटाया गया हो। किसी प्रीसेट या डिफ़ॉल्ट मान से आने वाले पैरामीटर सूची में नहीं होते।",
+			"ja": "クライアントが送信したリクエストパラメーターのうち、処理するプロバイダーがサポートしていないため、ゲートウェイがプロバイダーに送信したりリクエストを拒否したりせずに削除したもの。例: `top_k, min_p`。成功したレスポンスで、リクエスト本文のパラメーターが 1 つ以上削除された場合にのみ送信されます。プリセットや既定値から設定されたパラメーターは含まれません。",
+			"zh-Hans": "客户端发送、但处理请求的提供商不支持，因而被网关移除（而不是发送给提供商或拒绝请求）的请求参数，例如 `top_k, min_p`。仅在成功的响应中、且至少移除了一个来自请求正文的参数时才会发送。来自预设或默认值的参数不会列出。",
+			"ar": "معلمات أرسلها العميل ولا يدعمها المزوّد الذي يخدم الطلب، فحذفتها البوابة بدلًا من إرسالها إلى المزوّد أو رفض الطلب، مثل `top_k, min_p`. تُرسل فقط في الاستجابات الناجحة، وفقط عند حذف معلمة واحدة على الأقل من جسم الطلب. لا تُدرج المعلمات التي مصدرها إعداد مسبق أو قيمة افتراضية."
 		}
 	},
 	"GET /apps": {

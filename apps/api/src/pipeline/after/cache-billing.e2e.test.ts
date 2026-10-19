@@ -273,7 +273,8 @@ function expectOpenAIClientUsage(endpoint: Endpoint, usage: any, tokens: Tokens)
 	} else {
 		expect(usage.input_tokens).toBe(tokens.uncached);
 		expect(usage.cache_read_input_tokens).toBe(tokens.read);
-		expect(usage.cache_creation_input_tokens).toBe(write);
+		// Anthropic documents cache_creation_input_tokens as nullable; null means no writes.
+		expect(usage.cache_creation_input_tokens ?? 0).toBe(write);
 	}
 }
 
@@ -390,6 +391,16 @@ const compatCases: CompatCase[] = [
 		responsesUsage: { input_tokens: 53_100, output_tokens: 850, total_tokens: 53_950, input_tokens_details: { cached_tokens: 48_000, cache_write_tokens: 3_000 }, output_tokens_details: { reasoning_tokens: 0 } },
 	},
 	{
+		// More uncached input than cache, so subtracting the cache twice still looks possible.
+		name: "OpenAI GPT-5.6, mostly uncached prompt",
+		provider: "openai",
+		model: "openai/gpt-5.6-sol",
+		prices: { input: "5", output: "30", cachedRead: "0.5", cachedWrite: "6.25" },
+		tokens: { uncached: 80_000, read: 20_011, write: 3_000, output: 850 },
+		chatUsage: { prompt_tokens: 103_011, completion_tokens: 850, total_tokens: 103_861, prompt_tokens_details: { cached_tokens: 20_011, cache_write_tokens: 3_000 } },
+		responsesUsage: { input_tokens: 103_011, output_tokens: 850, total_tokens: 103_861, input_tokens_details: { cached_tokens: 20_011, cache_write_tokens: 3_000 } },
+	},
+	{
 		// Alibaba explicit cache: prompt_tokens includes cached_tokens and cache_creation_input_tokens.
 		name: "Alibaba Qwen explicit cache",
 		provider: "alibaba-cloud",
@@ -469,7 +480,9 @@ describe.each(compatCases)("$name", (testCase) => {
 	const card = textCard(testCase.provider, testCase.model, testCase.prices);
 	const expected = expectedCost(testCase.tokens, testCase.prices);
 
-	for (const endpoint of ["chat.completions", "responses"] as const) {
+	// Messages clients get Anthropic usage (input without the cache) while the executor's bill
+	// keeps the provider's OpenAI-style usage; the after-stage merges both before pricing.
+	for (const endpoint of ["chat.completions", "responses", "messages"] as const) {
 		it(`bills each cache meter once on ${endpoint} (buffered)`, async () => {
 			let executor: { ir: any; bill: any; rawResponse?: any };
 			if (testCase.responsesUsage) {
@@ -510,19 +523,29 @@ describe.each(compatCases)("$name", (testCase) => {
 // has no cached-read row in the catalogue, so hits bill at the input rate (fallback).
 // ---------------------------------------------------------------------------------------
 
-describe("Gemini on AI Studio", () => {
-	const usageMetadata = { promptTokenCount: 51_000, cachedContentTokenCount: 48_000, candidatesTokenCount: 850, totalTokenCount: 51_850 };
+describe.each([
+	{
+		prompt: "a mostly cached prompt",
+		usageMetadata: { promptTokenCount: 51_000, cachedContentTokenCount: 48_000, candidatesTokenCount: 850, totalTokenCount: 51_850 },
+		tokens: { uncached: 3_000, read: 48_000, output: 850 } as Tokens,
+	},
+	{
+		// More uncached input than cache reads, so subtracting the reads twice still looks possible.
+		prompt: "a mostly uncached prompt",
+		usageMetadata: { promptTokenCount: 100_003, cachedContentTokenCount: 20_011, candidatesTokenCount: 850, totalTokenCount: 100_853 },
+		tokens: { uncached: 79_992, read: 20_011, output: 850 } as Tokens,
+	},
+])("Gemini on AI Studio with $prompt", ({ usageMetadata, tokens }) => {
 	const cases = [
 		{ name: "with a cached-read row", prices: { input: "0.5", output: "3", cachedRead: "0.05" } as TokenPrices },
 		{ name: "without a cached-read row (input-rate fallback)", prices: { input: "2", output: "12" } as TokenPrices },
 	];
-	const tokens: Tokens = { uncached: 3_000, read: 48_000, output: 850 };
 
 	for (const { name, prices } of cases) {
 		const card = textCard("google-ai-studio", "google/gemini-3.1-pro-preview", prices);
 		const expected = expectedCost(tokens, prices);
 
-		for (const endpoint of ["chat.completions", "responses"] as const) {
+		for (const endpoint of ["chat.completions", "responses", "messages"] as const) {
 			it(`bills implicit cache hits ${name} on ${endpoint} (buffered)`, async () => {
 				const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 				const irUsage = googleUsageMetadataToIRUsage(usageMetadata as any);
@@ -555,6 +578,92 @@ describe("Gemini on AI Studio", () => {
 			});
 		}
 	}
+});
+
+// ---------------------------------------------------------------------------------------
+// Gemini on Vertex with thinking, tool-use prompt tokens and image and audio input.
+// totalTokenCount = promptTokenCount + toolUsePromptTokenCount + candidatesTokenCount
+// + thoughtsTokenCount (https://ai.google.dev/api/generate-content#UsageMetadata); thoughts
+// are billed at the output price, and image and audio input at their own rates when priced.
+// ---------------------------------------------------------------------------------------
+
+describe("Gemini thinking and multimodal input on Vertex", () => {
+	const usageMetadata = {
+		promptTokenCount: 10_000,
+		cachedContentTokenCount: 4_000,
+		candidatesTokenCount: 600,
+		thoughtsTokenCount: 900,
+		toolUsePromptTokenCount: 50,
+		totalTokenCount: 11_550,
+		promptTokensDetails: [
+			{ modality: "TEXT", tokenCount: 9_000 },
+			{ modality: "IMAGE", tokenCount: 700 },
+			{ modality: "AUDIO", tokenCount: 300 },
+		],
+		cacheTokensDetails: [{ modality: "TEXT", tokenCount: 4_000 }],
+	};
+	const prices = { input: "0.3", output: "2.5", cachedRead: "0.03", image: "0.6", audio: "1" };
+	const baseCard = textCard("google-vertex", "google/gemini-2.5-flash", prices);
+	const modalityRule = (meter: string, price: string) => ({ ...baseCard.rules[0], id: `${meter}_rule`, meter, price_per_unit: price });
+	const card = { ...baseCard, rules: [...baseCard.rules, modalityRule("input_image_tokens", prices.image), modalityRule("input_audio_tokens", prices.audio)] } as typeof baseCard;
+	const textOnlyCard = baseCard;
+	// Uncached text = 10,000 + 50 tool-use - 4,000 read - 700 image - 300 audio.
+	const expected = expectedNanos([[5_050, 0.3], [4_000, 0.03], [700, 0.6], [300, 1], [1_500, 2.5]]);
+	// Without image and audio rows, those tokens bill as text.
+	const expectedTextOnly = expectedNanos([[6_050, 0.3], [4_000, 0.03], [1_500, 2.5]]);
+	const withVertexRuntime = async (run: () => Promise<void>) => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		try { await run(); } finally { teardownTestRuntime(); setupTestRuntime(); }
+	};
+	const geminiSse = () => sse([
+		{ data: { candidates: [{ content: { role: "model", parts: [{ text: "Planned the proof." }] }, index: 0 }], modelVersion: "gemini-2.5-flash" } },
+		{ data: { candidates: [{ content: { role: "model", parts: [{ text: "" }] }, finishReason: "STOP", index: 0 }], usageMetadata, modelVersion: "gemini-2.5-flash" } },
+	]);
+
+	for (const endpoint of ["chat.completions", "responses", "messages"] as const) {
+		it(`bills thoughts, tool-use prompt, image and audio tokens on ${endpoint} (streamed)`, async () => withVertexRuntime(async () => {
+			const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+			stubFetch(() => geminiSse());
+			const executor: any = await executeVertex(executorArgs(endpoint, "google-vertex", "gemini-2.5-flash", true));
+			expect(executor.usageFinalizerAuthoritative).toBe(true);
+			const { nanos, usage } = await runStream({ endpoint, provider: "google-vertex", model: "google/gemini-2.5-flash", card, executor });
+			warn.mockRestore();
+			expect(nanos).toBe(expected);
+			if (endpoint === "chat.completions") {
+				expect(usage).toMatchObject({ prompt_tokens: 10_050, completion_tokens: 1_500, completion_tokens_details: { reasoning_tokens: 900 } });
+			} else if (endpoint === "responses") {
+				expect(usage).toMatchObject({ input_tokens: 10_050, output_tokens: 1_500, output_tokens_details: { reasoning_tokens: 900 } });
+			} else {
+				expect(usage).toMatchObject({ input_tokens: 6_050, cache_read_input_tokens: 4_000, output_tokens: 1_500 });
+			}
+		}));
+
+		it(`bills thoughts, tool-use prompt, image and audio tokens on ${endpoint} (buffered)`, async () => withVertexRuntime(async () => {
+			const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+			stubFetch(() => geminiSse());
+			const executor = await asCompleted(await executeVertex(executorArgs(endpoint, "google-vertex", "gemini-2.5-flash", false)));
+			const { nanos, usage } = await runNonStream({ endpoint, provider: "google-vertex", model: "google/gemini-2.5-flash", card, executor });
+			warn.mockRestore();
+			expect(nanos).toBe(expected);
+			if (endpoint === "chat.completions") {
+				expect(usage).toMatchObject({ prompt_tokens: 10_050, completion_tokens: 1_500, completion_tokens_details: { reasoning_tokens: 900 } });
+			} else if (endpoint === "responses") {
+				expect(usage).toMatchObject({ input_tokens: 10_050, output_tokens: 1_500, output_tokens_details: { reasoning_tokens: 900 } });
+			} else {
+				expect(usage).toMatchObject({ output_tokens: 1_500 });
+			}
+		}));
+	}
+
+	it("bills image and audio input as text when the card has no rows for them (streamed)", async () => withVertexRuntime(async () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		stubFetch(() => geminiSse());
+		const executor: any = await executeVertex(executorArgs("chat.completions", "google-vertex", "gemini-2.5-flash", true));
+		const { nanos } = await runStream({ endpoint: "chat.completions", provider: "google-vertex", model: "google/gemini-2.5-flash", card: textOnlyCard, executor });
+		warn.mockRestore();
+		expect(nanos).toBe(expectedTextOnly);
+	}));
 });
 
 // ---------------------------------------------------------------------------------------

@@ -53,7 +53,9 @@ Gateway 接受带工具的流式请求，但支持取决于所选模型和提供
 
 逐步显示部分文本，但只有收到端点成功终止事件后才能标记完成。连接关闭本身并不证明已完成。
 
-流在输出开始后失败时：
+流在输出开始后失败时，会以端点的失败事件而不是成功终止事件结束：Chat Completions 为 `error` 帧（没有 `finish_reason`），Responses 为 `response.failed` 或 `error`，Messages 为 `error` 事件（没有 `message_stop`）。Phaseo 不会对失败流的部分输出计费。
+
+发生这种情况时：
 
 1. 将部分响应标记为中断。
 2. 在日志中保留请求或生成 ID、端点和模型。

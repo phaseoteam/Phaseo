@@ -10,6 +10,13 @@ import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types
 import { fetchUpstream, UpstreamHeadersTimeoutError } from "@executors/_shared/timing/upstream";
 import type { IRChatResponse } from "@core/ir";
 import { resolveCacheTokenUsage, uncachedInputTokens } from "@core/cache-usage";
+import {
+	anthropicStopReasonFor,
+	normalizeFinishReason,
+	readGatewayStop,
+	responsesOutputHasRefusal,
+	type AnthropicStopReason,
+} from "@core/finish-reason";
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
@@ -24,6 +31,7 @@ import { resolveProviderKey } from "@providers/keys";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
+import { toAnthropicCitations } from "@protocols/shared/citations";
 import {
 	transformChatStream,
 	transformChatStreamToResponses,
@@ -34,6 +42,7 @@ import {
 	readErrorPayload,
 } from "./retry-policy";
 import { SseParser } from "@core/sse-parser";
+import { readUpstreamStreamError } from "@core/stream-errors";
 import {
 	ANTHROPIC_REASONING_FORMAT,
 	openReasoningState,
@@ -548,6 +557,7 @@ function transformResponsesStreamToAnthropic(
 				emittedContent: boolean;
 				toolId?: string;
 				toolName?: string;
+				emittedCitations?: boolean;
 			};
 			const blocksByAlias = new Map<string, AnthropicBlock>();
 			const blocks: AnthropicBlock[] = [];
@@ -608,7 +618,7 @@ function transformResponsesStreamToAnthropic(
 				}
 				ensureMessageStart();
 				if (activeBlock) stopBlock(activeBlock);
-				const block = {
+				const block: AnthropicBlock = {
 					index: nextBlockIndex++,
 					type,
 					open: true,
@@ -696,6 +706,47 @@ function transformResponsesStreamToAnthropic(
 				stopBlock(block);
 			};
 
+			// Citations go on the text block they cite. Only Claude's own citations
+			// have a valid Messages form; plain URL citations are left off (see
+			// toAnthropicCitations). When the cited block has already closed, they
+			// wait for the end of the message and go on an empty text block of their
+			// own; the gateway drops empty text blocks when the conversation is
+			// replayed to Claude.
+			const lateCitations: Array<Record<string, any>> = [];
+			const emitCitations = (block: AnthropicBlock, annotations: unknown[]) => {
+				const citations = toAnthropicCitations(annotations);
+				if (citations.length === 0) return;
+				block.emittedCitations = true;
+				if (!block.open) {
+					lateCitations.push(...citations);
+					return;
+				}
+				for (const citation of citations) {
+					emit(controller, "content_block_delta", {
+						type: "content_block_delta",
+						index: block.index,
+						delta: { type: "citations_delta", citation },
+					});
+				}
+			};
+			const flushLateCitations = () => {
+				if (lateCitations.length === 0) return;
+				const index = nextBlockIndex++;
+				emit(controller, "content_block_start", {
+					type: "content_block_start",
+					index,
+					content_block: { type: "text", text: "" },
+				});
+				for (const citation of lateCitations.splice(0)) {
+					emit(controller, "content_block_delta", {
+						type: "content_block_delta",
+						index,
+						delta: { type: "citations_delta", citation },
+					});
+				}
+				emit(controller, "content_block_stop", { type: "content_block_stop", index });
+			};
+
 			function stopBlock(block: { index: number; open: boolean }) {
 				if (!block.open) return;
 				block.open = false;
@@ -726,7 +777,7 @@ function transformResponsesStreamToAnthropic(
 						const blockType = "text" as "text" | "thinking";
 						const block = ensureBlock(aliasesFor({ id: item?.id, outputIndex }), blockType);
 						if (!block.emittedContent) {
-							const text = extractOutputText(item?.content);
+							const text = extractOutputText(item?.content) || extractRefusalText(item?.content);
 							if (text) {
 								emit(controller, "content_block_delta", {
 									type: "content_block_delta",
@@ -737,6 +788,10 @@ function transformResponsesStreamToAnthropic(
 								});
 								block.emittedContent = true;
 							}
+						}
+						if (!block.emittedCitations) {
+							emitCitations(block, (Array.isArray(item?.content) ? item.content : [])
+								.flatMap((part: any) => (part?.type === "output_text" && Array.isArray(part.annotations) ? part.annotations : [])));
 						}
 						stopBlock(block);
 						continue;
@@ -766,13 +821,16 @@ function transformResponsesStreamToAnthropic(
 				}
 
 				for (const block of blocks) stopBlock(block);
+				flushLateCitations();
 				hasToolUse ||= blocks.some((block) => block.type === "tool_use");
 				const usage = normalizeUsageToAnthropic(response?.usage);
+				const stopReason = mapResponsesStatusToAnthropicStopReason(response, hasToolUse);
+				const stopSequence = stopReason === "stop_sequence" ? readGatewayStop(response)?.sequence ?? null : null;
 				emit(controller, "message_delta", {
 					type: "message_delta",
 					delta: {
-						stop_reason: mapResponsesStatusToAnthropicStopReason(response, hasToolUse),
-						stop_sequence: null,
+						stop_reason: stopReason,
+						stop_sequence: stopSequence,
 					},
 					usage,
 				});
@@ -810,6 +868,29 @@ function transformResponsesStreamToAnthropic(
 								delta: { type: "text_delta", text: payload.delta },
 							});
 							block.emittedContent = true;
+							continue;
+						}
+						// Messages has no refusal field: refusal text is the assistant's text.
+						if (normalizedEvent === "response.refusal.delta" && typeof payload?.delta === "string" && payload.delta.length > 0) {
+							const block = ensureBlock(aliasesFor({
+								itemId: payload?.item_id,
+								outputIndex: payload?.output_index ?? 0,
+							}), "text");
+							emit(controller, "content_block_delta", {
+								type: "content_block_delta",
+								index: block.index,
+								delta: { type: "text_delta", text: payload.delta },
+							});
+							block.emittedContent = true;
+							continue;
+						}
+						if (normalizedEvent === "response.output_text.annotation.added" && payload?.annotation) {
+							const aliases = aliasesFor({
+								itemId: payload?.item_id,
+								outputIndex: payload?.output_index ?? 0,
+							});
+							const closed = aliases.map((alias) => blocksByAlias.get(alias)).find((candidate) => candidate && !candidate.open);
+							emitCitations(closed ?? ensureBlock(aliases, "text"), [payload.annotation]);
 							continue;
 						}
 						if (normalizedEvent === "response.reasoning_text.delta" && typeof payload?.delta === "string") {
@@ -877,7 +958,21 @@ function transformResponsesStreamToAnthropic(
 							if (block) stopBlock(block);
 							continue;
 						}
-						if (normalizedEvent === "response.completed") {
+						if (normalizedEvent === "error" || normalizedEvent === "response.failed") {
+							// Messages clients receive a failure after output began as an
+							// `error` event with no message_delta or message_stop.
+							if (terminalEmitted) continue;
+							const failure = readUpstreamStreamError(payload);
+							emit(controller, "error", {
+								type: "error",
+								error: { type: anthropicStreamErrorType(failure.code), message: failure.message },
+							});
+							terminalEmitted = true;
+							continue;
+						}
+						// response.incomplete is terminal too: its response carries the
+						// usage and the max_output_tokens or content_filter reason.
+						if (normalizedEvent === "response.completed" || normalizedEvent === "response.incomplete") {
 							latestResponse = payload?.response ?? payload;
 							finishMessage(latestResponse);
 							continue;
@@ -898,6 +993,25 @@ function transformResponsesStreamToAnthropic(
 			}
 		},
 	});
+}
+
+const ANTHROPIC_STREAM_ERROR_TYPES = new Set([
+	"invalid_request_error",
+	"authentication_error",
+	"permission_error",
+	"not_found_error",
+	"request_too_large",
+	"rate_limit_error",
+	"api_error",
+	"overloaded_error",
+]);
+
+function anthropicStreamErrorType(code: string | null): string {
+	const value = String(code ?? "").toLowerCase();
+	if (ANTHROPIC_STREAM_ERROR_TYPES.has(value)) return value;
+	if (value.includes("overload")) return "overloaded_error";
+	if (value.includes("rate_limit")) return "rate_limit_error";
+	return "api_error";
 }
 
 function normalizeUsageToAnthropic(usage: any): {
@@ -949,6 +1063,13 @@ function extractOutputText(content: any): string {
 		.join("");
 }
 
+function extractRefusalText(content: any): string {
+	if (!Array.isArray(content)) return "";
+	return content
+		.map((part) => (part?.type === "refusal" && typeof part.refusal === "string" ? part.refusal : ""))
+		.join("");
+}
+
 function extractTextPart(part: any): string {
 	if (!part || typeof part !== "object") return "";
 	if (typeof part.text === "string") return part.text;
@@ -959,16 +1080,25 @@ function extractTextPart(part: any): string {
 function mapResponsesStatusToAnthropicStopReason(
 	response: any,
 	hasToolUse: boolean,
-): "end_turn" | "max_tokens" | "stop_sequence" | "tool_use" | "refusal" | null {
+): AnthropicStopReason | null {
 	const status = String(response?.status ?? "").toLowerCase();
 	if (status === "failed") return null;
-	if (hasToolUse) return "tool_use";
+	// An incomplete response wins over a tool call: the call's arguments may have been cut
+	// off (max_output_tokens), and reporting tool_use would invite the client to run them.
 	if (status === "incomplete") {
 		const reason = String(response?.incomplete_details?.reason ?? "").toLowerCase();
 		if (reason.includes("stop_sequence")) return "stop_sequence";
 		if (reason.includes("content")) return "refusal";
 		return "max_tokens";
 	}
+	if (hasToolUse) return "tool_use";
+	// Responses has no status for Anthropic's stop_sequence, pause_turn or refusal;
+	// the canonical stream carries them internally (core/finish-reason.ts).
+	const gatewayStop = readGatewayStop(response);
+	if (gatewayStop) {
+		return anthropicStopReasonFor(normalizeFinishReason(gatewayStop.reason).finishReason, gatewayStop.reason);
+	}
+	if (responsesOutputHasRefusal(response)) return "refusal";
 	return "end_turn";
 }
 
@@ -1027,7 +1157,9 @@ export async function bufferStreamToIR(
 			applyStreamPayload(payload);
 			if (
 				payload?.type === "response.completed" ||
+				payload?.type === "response.incomplete" ||
 				payload?.response?.status === "completed" ||
+				payload?.response?.status === "incomplete" ||
 				payload?.choices?.some?.((choice: any) => choice?.finish_reason != null)
 			) {
 				terminalAtMs = Date.now();

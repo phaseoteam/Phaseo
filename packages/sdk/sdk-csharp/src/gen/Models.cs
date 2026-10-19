@@ -2691,6 +2691,19 @@ public sealed class ErrorUpstreamError
 
 }
 
+public sealed class FileContentPart
+{
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
+	[JsonPropertyName("file")]
+	public Dictionary<string, object> File { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class FileResponse
 {
 	[JsonPropertyName("bytes")]

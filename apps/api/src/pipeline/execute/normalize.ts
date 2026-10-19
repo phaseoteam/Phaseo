@@ -3,6 +3,7 @@
 // How: Adjusts IR params that are not provider-specific.
 
 import type { IRChatRequest } from "@core/ir";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type { Protocol } from "@protocols/detect";
 import { getProviderProfile } from "@providers/providerProfiles";
 import {
@@ -14,6 +15,7 @@ import {
 	REASONING_EFFORT_ORDER,
 	type ReasoningEffort,
 } from "./textNormalizePolicy";
+import { dropUnsupportedParams, type DroppedParam } from "./unsupportedParams";
 type ParamRange = {
     min?: number;
     max?: number;
@@ -178,8 +180,10 @@ function normalizeMaxTokens(
         keys: ["max_tokens", "max_output_tokens"],
         fallback: { min: 1 },
     });
-    if (typeof providerMaxOutputTokens === "number" && Number.isFinite(providerMaxOutputTokens)) {
-        range.max = Math.min(range.max ?? Number.POSITIVE_INFINITY, providerMaxOutputTokens);
+    // A stored limit of 0 is unknown, not a cap of zero tokens.
+    const providerLimit = routeOutputTokenLimit(providerMaxOutputTokens);
+    if (providerLimit !== null) {
+        range.max = Math.min(range.max ?? Number.POSITIVE_INFINITY, providerLimit);
     }
 
     if (typeof ir.maxTokens === "number" && Number.isFinite(ir.maxTokens)) {
@@ -202,9 +206,16 @@ export function normalizeIRForProvider(
         capabilityParams?: Record<string, any> | null;
         providerMaxOutputTokens?: number | null;
         modelForReasoning?: string | null;
+        /** Called with the optional parameters removed for this provider. */
+        onDroppedParams?: (dropped: DroppedParam[]) => void;
     }
 ): IRChatRequest {
     const capabilityParams = options?.capabilityParams ?? null;
+    // Parameters the provider does not support are dropped (and reported), not
+    // forwarded: see ./unsupportedParams.ts.
+    const supported = dropUnsupportedParams(ir, providerId, capabilityParams);
+    if (supported.dropped.length > 0) options?.onDroppedParams?.(supported.dropped);
+    ir = supported.ir;
     const modelForReasoning = options?.modelForReasoning ?? ir.model;
     const nextMaxTokens = normalizeMaxTokens(
         ir,

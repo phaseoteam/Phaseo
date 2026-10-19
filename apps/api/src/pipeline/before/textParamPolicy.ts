@@ -310,6 +310,12 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"imageConfig",
 			"stop_sequences",
 			"thinking",
+			// Documented on AnthropicMessagesRequest and decoded like Chat and
+			// Responses; they used to fail as unknown_param.
+			"reasoning",
+			"session_id",
+			"provider_options",
+			"providerOptions",
 			"web_search_options",
 			"webSearchOptions",
 			"plugins",
@@ -334,6 +340,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			image_config: "image_config",
 			imageConfig: "image_config",
 			thinking: "reasoning",
+			reasoning: "reasoning",
 			metadata: "metadata",
 			service_tier: "service_tier",
 			web_search_options: "web_search_options",

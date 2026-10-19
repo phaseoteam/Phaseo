@@ -11,7 +11,7 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
-import { irToAnthropicMessages, anthropicMessagesToIR, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
 import {
 	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
@@ -148,7 +148,7 @@ async function executeBedrockMessages(
 				const final = accounting.snapshot();
 				return {
 					...bill,
-					usage: normalizeTextUsageForPricing(final.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined,
+					usage: anthropicUsageForPricing(final.usage),
 					finish_reason: mapAnthropicStopReason(final.stopReason),
 				};
 			},

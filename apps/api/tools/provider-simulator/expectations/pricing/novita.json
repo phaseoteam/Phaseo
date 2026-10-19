@@ -1,0 +1,1276 @@
+{
+	"provider": "novita",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "novita:baai/bge-m3:embeddings",
+			"file": "packages/data/catalog/src/data/pricing/novita/baai-bge-m3/embeddings/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.01/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":10000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",10000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":123470,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",123470]]}}
+			]
+		},
+		{
+			"key": "novita:baai/bge-reranker-v2-m3:rerank",
+			"file": "packages/data/catalog/src/data/pricing/novita/baai-bge-reranker-v2-m3/rerank/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.01/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.01/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"output_text_tokens":1000,"input_tokens":1000,"output_tokens":1000,"total_tokens":2000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",10000],["output_text_tokens",1000,"#1","output_text_tokens",10000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":158040,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",123470],["output_text_tokens",3457,"#1","output_text_tokens",34570]]}}
+			]
+		},
+		{
+			"key": "novita:baidu/cobuddy:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/baidu-cobuddy/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.07/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.28/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.13/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1236160,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",71680],["input_text_tokens",1576,"#1","input_text_tokens",441280],["output_reasoning_tokens",192,"#2","output_text_tokens",216960,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",506240]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":8574830,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",319690],["input_text_tokens",12347,"#1","input_text_tokens",3457160],["output_reasoning_tokens",789,"#2","output_text_tokens",891570,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3906410]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8255140,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3457160],["output_reasoning_tokens",789,"#2","output_text_tokens",891570,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3906410]]}}
+			]
+		},
+		{
+			"key": "novita:baidu/ernie-4.5-vl-424b-a47b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/baidu-ernie-4.5-vl-424b-a47b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.42/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.25/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":1892000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1092000],["output_reasoning_tokens",192,"#1","output_text_tokens",240000,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",560000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":10493240,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",5185740],["output_reasoning_tokens",789,"#1","output_text_tokens",986250,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",4321250]]}}
+			]
+		},
+		{
+			"key": "novita:bytedance/seedance-1.5-pro:video.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/bytedance-seedance-1.5-pro/video.generate/pricing.json",
+			"rules": [
+				["#0","standard","output_video_seconds","0.012/1 second",100,[{"path":"size","op":"eq","value":"480p","or_group":1,"and_index":1},{"path":"audio","op":"eq","value":false,"or_group":1,"and_index":2}],null,null],
+				["#1","standard","output_video_seconds","0.024/1 second",100,[{"path":"size","op":"eq","value":"480p","or_group":1,"and_index":1},{"path":"audio","op":"eq","value":true,"or_group":1,"and_index":2}],null,null],
+				["#2","standard","output_video_seconds","0.026/1 second",100,[{"path":"size","op":"eq","value":"720p","or_group":1,"and_index":1},{"path":"audio","op":"eq","value":false,"or_group":1,"and_index":2}],null,null],
+				["#3","standard","output_video_seconds","0.052/1 second",100,[{"path":"size","op":"eq","value":"720p","or_group":1,"and_index":1},{"path":"audio","op":"eq","value":true,"or_group":1,"and_index":2}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","context":{"size":"480p","audio":false},"usage":{"requests":1,"output_video_seconds":5},"expected":{"nanos":60000000,"lines":[["output_video_seconds",5,"#0","output_video_seconds",60000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(sizeeq\"480p\"&audioeqfalse)","kind":"rule","targets":["#0"],"plan":"standard","context":{"size":"480p","audio":false},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":84000000,"lines":[["output_video_seconds",7,"#0","output_video_seconds",84000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(sizeeq\"480p\"&audioeqtrue)","kind":"rule","targets":["#1"],"plan":"standard","context":{"size":"480p","audio":true},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":168000000,"lines":[["output_video_seconds",7,"#1","output_video_seconds",168000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(sizeeq\"720p\"&audioeqfalse)","kind":"rule","targets":["#2"],"plan":"standard","context":{"size":"720p","audio":false},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":182000000,"lines":[["output_video_seconds",7,"#2","output_video_seconds",182000000]]}},
+				{"id":"rule.standard.output_video_seconds.when(sizeeq\"720p\"&audioeqtrue)","kind":"rule","targets":["#3"],"plan":"standard","context":{"size":"720p","audio":true},"usage":{"requests":1,"output_video_seconds":7},"expected":{"nanos":364000000,"lines":[["output_video_seconds",7,"#3","output_video_seconds",364000000]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-ocr-2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-ocr-2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.03/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":91440,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",78000],["output_text_tokens",448,"#1","output_text_tokens",13440]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":474120,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",370410],["output_text_tokens",3457,"#1","output_text_tokens",103710]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-r1-0528:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-r1-0528/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.35/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.7/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":3061600,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",358400],["input_text_tokens",1576,"#1","input_text_tokens",1103200],["output_reasoning_tokens",192,"#2","output_text_tokens",480000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1120000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":20856350,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1598450],["input_text_tokens",12347,"#1","input_text_tokens",8642900],["output_reasoning_tokens",789,"#2","output_text_tokens",1972500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8642500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":19257900,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",8642900],["output_reasoning_tokens",789,"#2","output_text_tokens",1972500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8642500]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-r1-distill-llama-70b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-r1-distill-llama-70b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.8/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.8/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":2592000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",2080000],["output_reasoning_tokens",192,"#1","output_text_tokens",153600,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",358400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":13274400,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",9877600],["output_reasoning_tokens",789,"#1","output_text_tokens",631200,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",2765600]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-r1-turbo:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-r1-turbo/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.7/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":3420000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1820000],["output_reasoning_tokens",192,"#1","output_text_tokens",480000,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",1120000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":19257900,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",8642900],["output_reasoning_tokens",789,"#1","output_text_tokens",1972500,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",8642500]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-v3-0324:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v3-0324/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.135/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.12/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1065520,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",138240],["input_text_tokens",1576,"#1","input_text_tokens",425520],["output_text_tokens",448,"#2","output_text_tokens",501760]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":7822075,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",616545],["input_text_tokens",12347,"#1","input_text_tokens",3333690],["output_text_tokens",3457,"#2","output_text_tokens",3871840]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7205530,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3333690],["output_text_tokens",3457,"#2","output_text_tokens",3871840]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-v3-turbo:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v3-turbo/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.4/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1622400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1040000],["output_text_tokens",448,"#1","output_text_tokens",582400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":9432900,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",4938800],["output_text_tokens",3457,"#1","output_text_tokens",4494100]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-v3.1-terminus:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v3.1-terminus/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.135/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1203760,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",138240],["input_text_tokens",1576,"#1","input_text_tokens",425520],["output_reasoning_tokens",192,"#2","output_text_tokens",192000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",448000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":8196235,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",616545],["input_text_tokens",12347,"#1","input_text_tokens",3333690],["output_reasoning_tokens",789,"#2","output_text_tokens",789000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3457000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":7579690,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3333690],["output_reasoning_tokens",789,"#2","output_text_tokens",789000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3457000]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-v3.1:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v3.1/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.135/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1203760,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",138240],["input_text_tokens",1576,"#1","input_text_tokens",425520],["output_reasoning_tokens",192,"#2","output_text_tokens",192000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",448000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":8196235,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",616545],["input_text_tokens",12347,"#1","input_text_tokens",3333690],["output_reasoning_tokens",789,"#2","output_text_tokens",789000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3457000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":7579690,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3333690],["output_reasoning_tokens",789,"#2","output_text_tokens",789000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3457000]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-v3.2-exp:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v3.2-exp/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.41/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":964400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",702000],["output_reasoning_tokens",192,"#1","output_text_tokens",78720,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",183680]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":5074550,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3333690],["output_reasoning_tokens",789,"#1","output_text_tokens",323490,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",1417370]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-v3.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v3.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.1345/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.269/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":817672,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",137728],["input_text_tokens",1576,"#1","input_text_tokens",423944],["output_reasoning_tokens",192,"#2","output_text_tokens",76800,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",179200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":5634005,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",614262],["input_text_tokens",12347,"#1","input_text_tokens",3321343],["output_reasoning_tokens",789,"#2","output_text_tokens",315600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1382800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":5019743,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3321343],["output_reasoning_tokens",789,"#2","output_text_tokens",315600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-v4-flash-0731:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v4-flash-0731/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.028/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":428512,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",28672],["input_text_tokens",1576,"#1","input_text_tokens",220640],["output_reasoning_tokens",192,"#2","output_text_tokens",53760,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":3045336,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",127876],["input_text_tokens",12347,"#1","input_text_tokens",1728580],["output_reasoning_tokens",789,"#2","output_text_tokens",220920,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":2917460,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",1728580],["output_reasoning_tokens",789,"#2","output_text_tokens",220920,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-v4-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v4-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.028/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":428512,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",28672],["input_text_tokens",1576,"#1","input_text_tokens",220640],["output_reasoning_tokens",192,"#2","output_text_tokens",53760,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":3045336,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",127876],["input_text_tokens",12347,"#1","input_text_tokens",1728580],["output_reasoning_tokens",789,"#2","output_text_tokens",220920,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":2917460,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",1728580],["output_reasoning_tokens",789,"#2","output_text_tokens",220920,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-v4-pro-0813:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v4-pro-0813/text.generate/pricing.json",
+			"rules": [
+				["#1","standard","input_text_tokens","1.32/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.96/1000000 token",100,null,null,null],
+				["#3","standard","cached_read_text_tokens","0.044/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":4659776,"lines":[["cached_read_text_tokens",1024,"#3","cached_read_text_tokens",45056],["input_text_tokens",1576,"#1","input_text_tokens",2080320],["output_reasoning_tokens",192,"#2","output_text_tokens",760320,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1774080]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":33313148,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",200948],["input_text_tokens",12347,"#1","input_text_tokens",16298040],["output_reasoning_tokens",789,"#2","output_text_tokens",3124440,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13689720]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":33112200,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",16298040],["output_reasoning_tokens",789,"#2","output_text_tokens",3124440,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13689720]]}}
+			]
+		},
+		{
+			"key": "novita:deepseek/deepseek-v4-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v4-pro/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.135/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1.6/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":4707840,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",138240],["input_text_tokens",1576,"#1","input_text_tokens",2521600],["output_reasoning_tokens",192,"#2","output_text_tokens",614400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1433600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":33958945,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",616545],["input_text_tokens",12347,"#1","input_text_tokens",19755200],["output_reasoning_tokens",789,"#2","output_text_tokens",2524800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",11062400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":33342400,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",19755200],["output_reasoning_tokens",789,"#2","output_text_tokens",2524800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",11062400]]}}
+			]
+		},
+		{
+			"key": "novita:google/gemma-3-27b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/google-gemma-3-27b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.119/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":399000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",309400],["output_text_tokens",448,"#1","output_text_tokens",89600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2160693,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1469293],["output_text_tokens",3457,"#1","output_text_tokens",691400]]}}
+			]
+		},
+		{
+			"key": "novita:google/gemma-4-26b-a4b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/google-gemma-4-26b-a4b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.13/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":594000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",338000],["output_reasoning_tokens",192,"#1","output_text_tokens",76800,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",179200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":3303510,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1605110],["output_reasoning_tokens",789,"#1","output_text_tokens",315600,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "novita:google/gemma-4-31b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/google-gemma-4-31b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":620000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",364000],["output_reasoning_tokens",192,"#1","output_text_tokens",76800,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",179200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":3426980,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1728580],["output_reasoning_tokens",789,"#1","output_text_tokens",315600,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "novita:inclusionai/ling-2.6-1t:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/inclusionai-ling-2.6-1t/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1654240,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",61440],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_text_tokens",448,"#2","output_text_tokens",1120000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":12620620,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",274020],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",8642500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":12346600,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",8642500]]}}
+			]
+		},
+		{
+			"key": "novita:inclusionai/ling-2.6-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/inclusionai-ling-2.6-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.02/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":312480,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",20480],["input_text_tokens",1576,"#1","input_text_tokens",157600],["output_text_tokens",448,"#2","output_text_tokens",134400]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2363140,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",91340],["input_text_tokens",12347,"#1","input_text_tokens",1234700],["output_text_tokens",3457,"#2","output_text_tokens",1037100]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2271800,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",1234700],["output_text_tokens",3457,"#2","output_text_tokens",1037100]]}}
+			]
+		},
+		{
+			"key": "novita:inclusionai/ling-3.0-flash-fin:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/inclusionai-ling-3.0-flash-fin/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":0,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",0],["input_text_tokens",1576,"#0","input_text_tokens",0],["output_reasoning_tokens",192,"#2","output_text_tokens",0,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",0]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":0,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",0],["input_text_tokens",12347,"#0","input_text_tokens",0],["output_reasoning_tokens",789,"#2","output_text_tokens",0,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",0]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":0,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",0],["output_reasoning_tokens",789,"#2","output_text_tokens",0,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",0]]}}
+			]
+		},
+		{
+			"key": "novita:inclusionai/ling-3.0-flash-sante:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/inclusionai-ling-3.0-flash-sante/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":0,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",0],["input_text_tokens",1576,"#0","input_text_tokens",0],["output_reasoning_tokens",192,"#2","output_text_tokens",0,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",0]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":0,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",0],["input_text_tokens",12347,"#0","input_text_tokens",0],["output_reasoning_tokens",789,"#2","output_text_tokens",0,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",0]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":0,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",0],["output_reasoning_tokens",789,"#2","output_text_tokens",0,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",0]]}}
+			]
+		},
+		{
+			"key": "novita:inclusionai/ling-3.0-flash-vl:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/inclusionai-ling-3.0-flash-vl/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":0,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",0],["input_text_tokens",1576,"#0","input_text_tokens",0],["output_reasoning_tokens",192,"#2","output_text_tokens",0,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",0]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":0,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",0],["input_text_tokens",12347,"#0","input_text_tokens",0],["output_reasoning_tokens",789,"#2","output_text_tokens",0,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",0]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":0,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",0],["output_reasoning_tokens",789,"#2","output_text_tokens",0,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",0]]}}
+			]
+		},
+		{
+			"key": "novita:inclusionai/ling-3.0-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/inclusionai-ling-3.0-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.012/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.18/1000000 token",100,null,null,null],
+				["#3","priority","cached_read_text_tokens","0.012/1000000 token",100,null,null,null],
+				["#4","priority","input_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#5","priority","output_text_tokens","0.18/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":222048,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",12288],["input_text_tokens",1576,"#1","input_text_tokens",94560],["output_reasoning_tokens",192,"#2","output_text_tokens",34560,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",80640]]}},
+				{"id":"rule.priority.cached_read_text_tokens","kind":"rule","targets":["#3"],"plan":"priority","body":{"model":"inclusionai/ling-3.0-flash","service_tier":"priority"},"usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":1559904,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",54804],["input_text_tokens",12347,"#4","input_text_tokens",740820],["output_reasoning_tokens",789,"#5","output_text_tokens",142020,"reasoning at the output price"],["output_text_tokens",3457,"#5","output_text_tokens",622260]]}},
+				{"id":"rule.priority.input_text_tokens","kind":"rule","targets":["#4","#5"],"plan":"priority","body":{"model":"inclusionai/ling-3.0-flash","service_tier":"priority"},"usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":1505100,"lines":[["input_text_tokens",12347,"#4","input_text_tokens",740820],["output_reasoning_tokens",789,"#5","output_text_tokens",142020,"reasoning at the output price"],["output_text_tokens",3457,"#5","output_text_tokens",622260]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":1559904,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",54804],["input_text_tokens",12347,"#1","input_text_tokens",740820],["output_reasoning_tokens",789,"#2","output_text_tokens",142020,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",622260]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":1505100,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",740820],["output_reasoning_tokens",789,"#2","output_text_tokens",142020,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",622260]]}}
+			]
+		},
+		{
+			"key": "novita:inclusionai/ring-2.6-1t:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/inclusionai-ring-2.6-1t/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2134240,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",61440],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",480000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1120000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":14593120,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",274020],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",1972500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8642500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":14319100,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",1972500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8642500]]}}
+			]
+		},
+		{
+			"key": "novita:kwaipilot/kat-coder-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/kwaipilot-kat-coder-pro/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1071840,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",61440],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":8126520,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",274020],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "novita:meta/llama-3.1-8b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/meta-llama-3.1-8b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.02/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.05/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":74400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",52000],["output_text_tokens",448,"#1","output_text_tokens",22400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":419790,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",246940],["output_text_tokens",3457,"#1","output_text_tokens",172850]]}}
+			]
+		},
+		{
+			"key": "novita:meta/llama-3.3-70b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/meta-llama-3.3-70b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.135/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":530200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",351000],["output_text_tokens",448,"#1","output_text_tokens",179200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3049645,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1666845],["output_text_tokens",3457,"#1","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "novita:meta/llama-4-maverick:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/meta-llama-4-maverick/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.85/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1082800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",702000],["output_text_tokens",448,"#1","output_text_tokens",380800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6272140,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3333690],["output_text_tokens",3457,"#1","output_text_tokens",2938450]]}}
+			]
+		},
+		{
+			"key": "novita:meta/llama-4-scout:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/meta-llama-4-scout/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.18/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.59/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":732320,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",468000],["output_text_tokens",448,"#1","output_text_tokens",264320]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4262090,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2222460],["output_text_tokens",3457,"#1","output_text_tokens",2039630]]}}
+			]
+		},
+		{
+			"key": "novita:microsoft/wizardlm-2-8x22b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/microsoft-wizardlm-2-8x22b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.62/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.62/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1889760,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1612000],["output_text_tokens",448,"#1","output_text_tokens",277760]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":9798480,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7655140],["output_text_tokens",3457,"#1","output_text_tokens",2143340]]}}
+			]
+		},
+		{
+			"key": "novita:mindai/macaron-v1-tall:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/mindai-macaron-v1-tall/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.044/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.2475/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.43/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1350316,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",45056],["input_text_tokens",1576,"#1","input_text_tokens",390060],["output_reasoning_tokens",192,"#2","output_text_tokens",274560,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",640640]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":9328611,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",200948],["input_text_tokens",12347,"#1","input_text_tokens",3055883],["output_reasoning_tokens",789,"#2","output_text_tokens",1128270,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4943510]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":9127663,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3055883],["output_reasoning_tokens",789,"#2","output_text_tokens",1128270,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4943510]]}}
+			]
+		},
+		{
+			"key": "novita:mindai/macaron-v1-venti:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/mindai-macaron-v1-venti/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.165/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.825/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.475/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":3053160,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",168960],["input_text_tokens",1576,"#1","input_text_tokens",1300200],["output_reasoning_tokens",192,"#2","output_text_tokens",475200,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1108800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":21448680,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",753555],["input_text_tokens",12347,"#1","input_text_tokens",10186275],["output_reasoning_tokens",789,"#2","output_text_tokens",1952775,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8556075]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":20695125,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",10186275],["output_reasoning_tokens",789,"#2","output_text_tokens",1952775,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8556075]]}}
+			]
+		},
+		{
+			"key": "novita:minimax/minimax-m1-80k:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/minimax-minimax-m1-80k/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.55/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":2838000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1430000],["output_reasoning_tokens",192,"#1","output_text_tokens",422400,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",985600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":16132050,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",6790850],["output_reasoning_tokens",789,"#1","output_text_tokens",1735800,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",7605400]]}}
+			]
+		},
+		{
+			"key": "novita:minimax/minimax-m2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/minimax-minimax-m2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1271520,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",30720],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",230400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":8936310,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",137010],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8799300,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "novita:minimax/minimax-m2.1:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/minimax-minimax-m2.1/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1041120,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",30720],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":7989510,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",137010],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "novita:minimax/minimax-m2.5-highspeed:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/minimax-minimax-m2.5-highspeed/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2512320,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",30720],["input_text_tokens",1576,"#1","input_text_tokens",945600],["output_reasoning_tokens",192,"#2","output_text_tokens",460800,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1075200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":17735610,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",137010],["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",1893600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8296800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":17598600,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",1893600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8296800]]}}
+			]
+		},
+		{
+			"key": "novita:minimax/minimax-m2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/minimax-minimax-m2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1271520,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",30720],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",230400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":8936310,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",137010],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8799300,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "novita:minimax/minimax-m2.7:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/minimax-minimax-m2.7/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1302240,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",61440],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",230400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":9073320,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",274020],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8799300,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "novita:minimax/minimax-m3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/minimax-minimax-m3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1302240,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",61440],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",230400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":9073320,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",274020],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8799300,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "novita:mistral/mistral-nemo:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/mistral-mistral-nemo/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.17/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":180160,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",104000],["output_text_tokens",448,"#1","output_text_tokens",76160]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1081570,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",493880],["output_text_tokens",3457,"#1","output_text_tokens",587690]]}}
+			]
+		},
+		{
+			"key": "novita:moonshotai/kimi-k2-0905:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/moonshotai-kimi-k2-0905/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":2680000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1560000],["output_text_tokens",448,"#1","output_text_tokens",1120000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":16050700,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7408200],["output_text_tokens",3457,"#1","output_text_tokens",8642500]]}}
+			]
+		},
+		{
+			"key": "novita:moonshotai/kimi-k2-thinking:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/moonshotai-kimi-k2-thinking/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2699200,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",153600],["input_text_tokens",1576,"#1","input_text_tokens",945600],["output_reasoning_tokens",192,"#2","output_text_tokens",480000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1120000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":18708250,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",685050],["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",1972500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8642500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":18023200,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",1972500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8642500]]}}
+			]
+		},
+		{
+			"key": "novita:moonshotai/kimi-k2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/moonshotai-kimi-k2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.57/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2.3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":2512400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1482000],["output_text_tokens",448,"#1","output_text_tokens",1030400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":14988890,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7037790],["output_text_tokens",3457,"#1","output_text_tokens",7951100]]}}
+			]
+		},
+		{
+			"key": "novita:moonshotai/kimi-k2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/moonshotai-kimi-k2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2968000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",102400],["input_text_tokens",1576,"#1","input_text_tokens",945600],["output_reasoning_tokens",192,"#2","output_text_tokens",576000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1344000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":20602900,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",456700],["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",2367000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":20146200,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",2367000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",10371000]]}}
+			]
+		},
+		{
+			"key": "novita:moonshotai/kimi-k2.6:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/moonshotai-kimi-k2.6/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.16/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.8/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":3600640,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",163840],["input_text_tokens",1576,"#1","input_text_tokens",1260800],["output_reasoning_tokens",192,"#2","output_text_tokens",652800,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1523200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":25044720,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",730720],["input_text_tokens",12347,"#1","input_text_tokens",9877600],["output_reasoning_tokens",789,"#2","output_text_tokens",2682600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",11753800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":24314000,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",9877600],["output_reasoning_tokens",789,"#2","output_text_tokens",2682600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",11753800]]}}
+			]
+		},
+		{
+			"key": "novita:moonshotai/kimi-k2.7-code:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/moonshotai-kimi-k2.7-code/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.19/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":4251760,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",194560],["input_text_tokens",1576,"#1","input_text_tokens",1497200],["output_reasoning_tokens",192,"#2","output_text_tokens",768000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":29581380,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",867730],["input_text_tokens",12347,"#1","input_text_tokens",11729650],["output_reasoning_tokens",789,"#2","output_text_tokens",3156000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":28713650,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",11729650],["output_reasoning_tokens",789,"#2","output_text_tokens",3156000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "novita:moonshotai/kimi-k3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/moonshotai-kimi-k3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":14635200,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",307200],["input_text_tokens",1576,"#1","input_text_tokens",4728000],["output_reasoning_tokens",192,"#2","output_text_tokens",2880000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",6720000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":102101100,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1370100],["input_text_tokens",12347,"#1","input_text_tokens",37041000],["output_reasoning_tokens",789,"#2","output_text_tokens",11835000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":100731000,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",37041000],["output_reasoning_tokens",789,"#2","output_text_tokens",11835000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}}
+			]
+		},
+		{
+			"key": "novita:nvidia/nemotron-3-nano-30b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/nvidia-nemotron-3-nano-30b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.05/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":258000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",130000],["output_reasoning_tokens",192,"#1","output_text_tokens",38400,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",89600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":1466550,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",617350],["output_reasoning_tokens",789,"#1","output_text_tokens",157800,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",691400]]}}
+			]
+		},
+		{
+			"key": "novita:openai/gpt-oss-120b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/openai-gpt-oss-120b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.05/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.25/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":290000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",130000],["output_reasoning_tokens",192,"#1","output_text_tokens",48000,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",112000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":1678850,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",617350],["output_reasoning_tokens",789,"#1","output_text_tokens",197250,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",864250]]}}
+			]
+		},
+		{
+			"key": "novita:openai/gpt-oss-20b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/openai-gpt-oss-20b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":200000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",104000],["output_reasoning_tokens",192,"#1","output_text_tokens",28800,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",67200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":1130780,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",493880],["output_reasoning_tokens",789,"#1","output_text_tokens",118350,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",518550]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen-mt-plus:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen-mt-plus/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.75/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":986000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",650000],["output_text_tokens",448,"#1","output_text_tokens",336000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":5679500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_text_tokens",3457,"#1","output_text_tokens",2592750]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen2.5-72b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen2.5-72b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.38/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1167200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",988000],["output_text_tokens",448,"#1","output_text_tokens",179200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6074660,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",4691860],["output_text_tokens",3457,"#1","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-235b-a22b-2507:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-235b-a22b-2507/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.09/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.58/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":493840,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",234000],["output_text_tokens",448,"#1","output_text_tokens",259840]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3116290,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1111230],["output_text_tokens",3457,"#1","output_text_tokens",2005060]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-235b-a22b-thinking-2507:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-235b-a22b-thinking-2507/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":2700000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",780000],["output_reasoning_tokens",192,"#1","output_text_tokens",576000,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",1344000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":16442100,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_reasoning_tokens",789,"#1","output_text_tokens",2367000,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",10371000]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-235b-a22b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-235b-a22b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.8/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":1032000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_reasoning_tokens",192,"#1","output_text_tokens",153600,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",358400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":5866200,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_reasoning_tokens",789,"#1","output_text_tokens",631200,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",2765600]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-coder-30b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-coder-30b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.07/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.27/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":302960,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",182000],["output_text_tokens",448,"#1","output_text_tokens",120960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1797680,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",864290],["output_text_tokens",3457,"#1","output_text_tokens",933390]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-coder-480b-a35b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-coder-480b-a35b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.38/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.55/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1682400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",988000],["output_text_tokens",448,"#1","output_text_tokens",694400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":10050210,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",4691860],["output_text_tokens",3457,"#1","output_text_tokens",5358350]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-coder-next:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-coder-next/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1192000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",672000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7654900,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",5185500]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-max:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-max/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.845/1000000 token",100,[{"path":"input_tokens","op":"lt","or_group":1,"and_index":1,"value":32768}],null,null],
+				["#1","standard","input_text_tokens","1.4/1000000 token",100,[{"path":"input_tokens","op":"gte","or_group":1,"and_index":1,"value":32768},{"path":"input_tokens","op":"lte","or_group":1,"and_index":2,"value":131072}],null,null],
+				["#2","standard","input_text_tokens","2.11/1000000 token",100,[{"path":"input_tokens","op":"gte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#3","standard","output_text_tokens","3.38/1000000 token",100,[{"path":"input_tokens","op":"lt","or_group":1,"and_index":1,"value":32768}],null,null],
+				["#4","standard","output_text_tokens","5.64/1000000 token",100,[{"path":"input_tokens","op":"gte","or_group":1,"and_index":1,"value":32768},{"path":"input_tokens","op":"lte","or_group":1,"and_index":2,"value":131072}],null,null],
+				["#5","standard","output_text_tokens","8.45/1000000 token",100,[{"path":"input_tokens","op":"gte","or_group":1,"and_index":1,"value":131072}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":3711240,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",2197000],["output_text_tokens",448,"#3","output_text_tokens",1514240]]}},
+				{"id":"documented.long-context@32769","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":32769,"output_text_tokens":448,"input_tokens":32769,"output_tokens":448,"total_tokens":33217},"ir":{"inputTokens":32769,"outputTokens":448,"totalTokens":33217},"expected":{"nanos":48403320,"lines":[["input_text_tokens",32769,"#1","input_text_tokens",45876600],["output_text_tokens",448,"#4","output_text_tokens",2526720]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgte131072)","kind":"rule","targets":["#2","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131073,"output_text_tokens":3457,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":305775680,"lines":[["input_text_tokens",131073,"#2","input_text_tokens",276564030],["output_text_tokens",3457,"#5","output_text_tokens",29211650]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgte32768&input_tokenslte131072)","kind":"rule","targets":["#1","#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131072,"output_text_tokens":3457,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":202998280,"lines":[["input_text_tokens",131072,"#1","input_text_tokens",183500800],["output_text_tokens",3457,"#4","output_text_tokens",19497480]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslt32768)","kind":"rule","targets":["#0","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":32767,"output_text_tokens":3457,"input_tokens":32767,"output_tokens":3457,"total_tokens":36224},"expected":{"nanos":39372775,"lines":[["input_text_tokens",32767,"#0","input_text_tokens",27688115],["output_text_tokens",3457,"#3","output_text_tokens",11684660]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-next-80b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-next-80b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":1350000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",390000],["output_reasoning_tokens",192,"#1","output_text_tokens",288000,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",672000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8221050,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_reasoning_tokens",789,"#1","output_text_tokens",1183500,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",5185500]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-omni-30b-a3b-thinking:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-omni-30b-a3b-thinking/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.97/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":1270800,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",650000],["output_reasoning_tokens",192,"#1","output_text_tokens",186240,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",434560]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":7205370,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_reasoning_tokens",789,"#1","output_text_tokens",765330,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",3353290]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-omni-30b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-omni-30b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.97/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1084560,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",650000],["output_text_tokens",448,"#1","output_text_tokens",434560]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":6440040,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_text_tokens",3457,"#1","output_text_tokens",3353290]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-vl-235b-a22b-thinking:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-vl-235b-a22b-thinking/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.98/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","3.95/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":5076000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",2548000],["output_reasoning_tokens",192,"#1","output_text_tokens",758400,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",1769600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":28871760,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",12100060],["output_reasoning_tokens",789,"#1","output_text_tokens",3116550,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",13655150]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-vl-235b-a22b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-vl-235b-a22b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":1452000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",780000],["output_text_tokens",448,"#1","output_text_tokens",672000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":8889600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#1","output_text_tokens",5185500]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3-vl-30b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3-vl-30b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.7/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":833600,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",313600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4889300,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",2419900]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.5-122b-a10b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.5-122b-a10b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.4/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","3.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":3088000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1040000],["output_reasoning_tokens",192,"#1","output_text_tokens",614400,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",1433600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":18526000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",4938800],["output_reasoning_tokens",789,"#1","output_text_tokens",2524800,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",11062400]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.5-27b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.5-27b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":2316000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",780000],["output_reasoning_tokens",192,"#1","output_text_tokens",460800,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",1075200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":13894500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_reasoning_tokens",789,"#1","output_text_tokens",1893600,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",8296800]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.5-35b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.5-35b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":1930000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",650000],["output_reasoning_tokens",192,"#1","output_text_tokens",384000,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",896000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":11578750,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_reasoning_tokens",789,"#1","output_text_tokens",1578000,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",6914000]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.5-397b-a17b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.5-397b-a17b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","3.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":3864000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1560000],["output_reasoning_tokens",192,"#1","output_text_tokens",691200,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",1612800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":22693800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7408200],["output_reasoning_tokens",789,"#1","output_text_tokens",2840400,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",12445200]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.6-27b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.6-27b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","3.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":3864000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",1560000],["output_reasoning_tokens",192,"#1","output_text_tokens",691200,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",1612800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":22693800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",7408200],["output_reasoning_tokens",789,"#1","output_text_tokens",2840400,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",12445200]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.6-35b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.6-35b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.248/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.485/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":1595200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",644800],["output_reasoning_tokens",192,"#1","output_text_tokens",285120,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",665280]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":9367366,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3062056],["output_reasoning_tokens",789,"#1","output_text_tokens",1171665,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",5133645]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.7-max:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.7-max/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1.25/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.75/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":4626000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",256000],["input_text_tokens",1576,"#1","input_text_tokens",1970000],["output_reasoning_tokens",192,"#2","output_text_tokens",720000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1680000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":32498000,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1141750],["input_text_tokens",12347,"#1","input_text_tokens",15433750],["output_reasoning_tokens",789,"#2","output_text_tokens",2958750,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",12963750]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":31356250,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",15433750],["output_reasoning_tokens",789,"#2","output_text_tokens",2958750,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",12963750]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.8-2.4t-a95b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.8-2.4t-a95b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","2/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":7248000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",256000],["input_text_tokens",1576,"#1","input_text_tokens",3152000],["output_reasoning_tokens",192,"#2","output_text_tokens",1152000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",2688000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":51311750,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1141750],["input_text_tokens",12347,"#1","input_text_tokens",24694000],["output_reasoning_tokens",789,"#2","output_text_tokens",4734000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":50170000,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",24694000],["output_reasoning_tokens",789,"#2","output_text_tokens",4734000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.8-27b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.8-27b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.42/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.085/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2668960,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",87040],["input_text_tokens",1576,"#0","input_text_tokens",661920],["output_reasoning_tokens",192,"#2","output_text_tokens",576000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1344000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":18311935,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",388195],["input_text_tokens",12347,"#0","input_text_tokens",5185740],["output_reasoning_tokens",789,"#2","output_text_tokens",2367000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":17923740,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",5185740],["output_reasoning_tokens",789,"#2","output_text_tokens",2367000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",10371000]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.8-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.8-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.016/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.47/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":553584,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",16384],["input_text_tokens",1576,"#0","input_text_tokens",236400],["output_reasoning_tokens",192,"#2","output_text_tokens",90240,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",210560]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":3920742,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",73072],["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_reasoning_tokens",789,"#2","output_text_tokens",370830,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1624790]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":3847670,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_reasoning_tokens",789,"#2","output_text_tokens",370830,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1624790]]}}
+			]
+		},
+		{
+			"key": "novita:qwen/qwen3.8-max:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/qwen-qwen3.8-max/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","2/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":7248000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",256000],["input_text_tokens",1576,"#1","input_text_tokens",3152000],["output_reasoning_tokens",192,"#2","output_text_tokens",1152000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",2688000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":51311750,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1141750],["input_text_tokens",12347,"#1","input_text_tokens",24694000],["output_reasoning_tokens",789,"#2","output_text_tokens",4734000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":50170000,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",24694000],["output_reasoning_tokens",789,"#2","output_text_tokens",4734000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}}
+			]
+		},
+		{
+			"key": "novita:stepfun/step-3.7-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/stepfun-step-3.7-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1092160,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",40960],["input_text_tokens",1576,"#1","input_text_tokens",315200],["output_reasoning_tokens",192,"#2","output_text_tokens",220800,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",515200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":7534980,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",182680],["input_text_tokens",12347,"#1","input_text_tokens",2469400],["output_reasoning_tokens",789,"#2","output_text_tokens",907350,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3975550]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":7352300,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",2469400],["output_reasoning_tokens",789,"#2","output_text_tokens",907350,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3975550]]}}
+			]
+		},
+		{
+			"key": "novita:tencent/hy3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/tencent-hy3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.035/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.58/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":627680,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",35840],["input_text_tokens",1576,"#1","input_text_tokens",220640],["output_reasoning_tokens",192,"#2","output_text_tokens",111360,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",259840]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":4351105,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",159845],["input_text_tokens",12347,"#1","input_text_tokens",1728580],["output_reasoning_tokens",789,"#2","output_text_tokens",457620,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2005060]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":4191260,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",1728580],["output_reasoning_tokens",789,"#2","output_text_tokens",457620,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2005060]]}}
+			]
+		},
+		{
+			"key": "novita:xiaomi/mimo-v2.5-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/xiaomi-mimo-v2.5-pro/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.0043/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.522/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.044/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1495235,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",4403],["input_text_tokens",1576,"#1","input_text_tokens",822672],["output_reasoning_tokens",192,"#2","output_text_tokens",200448,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",467712]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":10897596,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",19638],["input_text_tokens",12347,"#1","input_text_tokens",6445134],["output_reasoning_tokens",789,"#2","output_text_tokens",823716,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3609108]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":10877958,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",6445134],["output_reasoning_tokens",789,"#2","output_text_tokens",823716,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3609108]]}}
+			]
+		},
+		{
+			"key": "novita:xiaomi/mimo-v2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/xiaomi-mimo-v2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.0034/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.168/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.336/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":483290,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",3482],["input_text_tokens",1576,"#1","input_text_tokens",264768],["output_reasoning_tokens",192,"#2","output_text_tokens",64512,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",150528]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":3516480,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",15528],["input_text_tokens",12347,"#1","input_text_tokens",2074296],["output_reasoning_tokens",789,"#2","output_text_tokens",265104,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1161552]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":3500952,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",2074296],["output_reasoning_tokens",789,"#2","output_text_tokens",265104,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1161552]]}}
+			]
+		},
+		{
+			"key": "novita:z-ai/autoglm-phone-9b-multilingual:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/z-ai-autoglm-phone-9b-multilingual/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.035/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.138/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":152824,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",91000],["output_text_tokens",448,"#1","output_text_tokens",61824]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":909211,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",432145],["output_text_tokens",3457,"#1","output_text_tokens",477066]]}}
+			]
+		},
+		{
+			"key": "novita:z-ai/glm-4.5v:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/z-ai-glm-4.5v/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.11/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.8/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2210240,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",112640],["input_text_tokens",1576,"#1","input_text_tokens",945600],["output_reasoning_tokens",192,"#2","output_text_tokens",345600,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",806400]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":15553370,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",502370],["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",1420200,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",6222600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":15051000,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",1420200,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",6222600]]}}
+			]
+		},
+		{
+			"key": "novita:z-ai/glm-4.6:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/z-ai-glm-4.6/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.11/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.55/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2387440,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",112640],["input_text_tokens",1576,"#1","input_text_tokens",866800],["output_reasoning_tokens",192,"#2","output_text_tokens",422400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",985600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":16634420,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",502370],["input_text_tokens",12347,"#1","input_text_tokens",6790850],["output_reasoning_tokens",789,"#2","output_text_tokens",1735800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",7605400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":16132050,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",6790850],["output_reasoning_tokens",789,"#2","output_text_tokens",1735800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",7605400]]}}
+			]
+		},
+		{
+			"key": "novita:z-ai/glm-4.6v:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/z-ai-glm-4.6v/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.055/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.9/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1105120,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",56320],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",172800,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",403200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":7776685,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",251185],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",710100,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3111300]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":7525500,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",710100,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3111300]]}}
+			]
+		},
+		{
+			"key": "novita:z-ai/glm-4.7-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/z-ai-glm-4.7-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.01/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.07/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":376560,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",10240],["input_text_tokens",1576,"#1","input_text_tokens",110320],["output_reasoning_tokens",192,"#2","output_text_tokens",76800,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",179200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":2608360,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",45670],["input_text_tokens",12347,"#1","input_text_tokens",864290],["output_reasoning_tokens",789,"#2","output_text_tokens",315600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1382800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":2562690,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",864290],["output_reasoning_tokens",789,"#2","output_text_tokens",315600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "novita:z-ai/glm-4.7:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/z-ai-glm-4.7/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.11/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2466240,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",112640],["input_text_tokens",1576,"#1","input_text_tokens",945600],["output_reasoning_tokens",192,"#2","output_text_tokens",422400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",985600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":17251770,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",502370],["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",1735800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",7605400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":16749400,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",1735800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",7605400]]}}
+			]
+		},
+		{
+			"key": "novita:z-ai/glm-5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/z-ai-glm-5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":3828800,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",204800],["input_text_tokens",1576,"#1","input_text_tokens",1576000],["output_reasoning_tokens",192,"#2","output_text_tokens",614400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1433600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":26847600,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",913400],["input_text_tokens",12347,"#1","input_text_tokens",12347000],["output_reasoning_tokens",789,"#2","output_text_tokens",2524800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",11062400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":25934200,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",12347000],["output_reasoning_tokens",789,"#2","output_text_tokens",2524800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",11062400]]}}
+			]
+		},
+		{
+			"key": "novita:z-ai/glm-5.1:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/z-ai-glm-5.1/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.26/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1.38/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":5257120,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",266240],["input_text_tokens",1576,"#1","input_text_tokens",2174880],["output_reasoning_tokens",192,"#2","output_text_tokens",844800,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":36908680,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1187420],["input_text_tokens",12347,"#1","input_text_tokens",17038860],["output_reasoning_tokens",789,"#2","output_text_tokens",3471600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":35721260,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",17038860],["output_reasoning_tokens",789,"#2","output_text_tokens",3471600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}}
+			]
+		},
+		{
+			"key": "novita:z-ai/glm-5.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/z-ai-glm-5.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.26/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1.4/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":5288640,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",266240],["input_text_tokens",1576,"#1","input_text_tokens",2206400],["output_reasoning_tokens",192,"#2","output_text_tokens",844800,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":37155620,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1187420],["input_text_tokens",12347,"#1","input_text_tokens",17285800],["output_reasoning_tokens",789,"#2","output_text_tokens",3471600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":35968200,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",17285800],["output_reasoning_tokens",789,"#2","output_text_tokens",3471600,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}}
+			]
+		},
+		{
+			"key": "novita:z-ai/glm-5.3-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/z-ai-glm-5.3-flash/text.generate/pricing.json",
+			"rules": [
+				["#1","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#3","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#5","standard","output_text_tokens","0.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":587120,"lines":[["cached_read_text_tokens",1024,"#3","cached_read_text_tokens",30720],["input_text_tokens",1576,"#1","input_text_tokens",236400],["output_reasoning_tokens",192,"#5","output_text_tokens",96000,"reasoning at the output price"],["output_text_tokens",448,"#5","output_text_tokens",224000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":4112060,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",137010],["input_text_tokens",12347,"#1","input_text_tokens",1852050],["output_reasoning_tokens",789,"#5","output_text_tokens",394500,"reasoning at the output price"],["output_text_tokens",3457,"#5","output_text_tokens",1728500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":3975050,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",1852050],["output_reasoning_tokens",789,"#5","output_text_tokens",394500,"reasoning at the output price"],["output_text_tokens",3457,"#5","output_text_tokens",1728500]]}}
+			]
+		},
+		{
+			"key": "novita:zai-org/glm-4.5-air:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/novita/zai-org-glm-4.5-air/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.025/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.13/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.85/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":774480,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",25600],["input_text_tokens",1576,"#1","input_text_tokens",204880],["output_reasoning_tokens",192,"#2","output_text_tokens",163200,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",380800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":5328385,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",114175],["input_text_tokens",12347,"#1","input_text_tokens",1605110],["output_reasoning_tokens",789,"#2","output_text_tokens",670650,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2938450]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":5214210,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",1605110],["output_reasoning_tokens",789,"#2","output_text_tokens",670650,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2938450]]}}
+			]
+		}
+	]
+}

@@ -90,7 +90,9 @@ Algunos errores incluyen más detalles para ayudarte a corregir el problema más
 | `phaseo_free_model_limit_exceeded` | `429` | Se agotó la cuota diaria compartida de modelos gratuitos de Phaseo (1.500 solicitudes por defecto). Respeta `Retry-After`, espera al reinicio a las 00:00 UTC o elige un modelo de pago. |
 | `rate_limit_exceeded` | `429` | Se agotó una [política de límite de frecuencia](./limits.mdx) del espacio de trabajo. `policy_id` y `limit_scope` la identifican. Respeta `Retry-After` o pide a un administrador del espacio de trabajo que cambie la política. |
 | `validation_error` | `400` | Los parámetros o el cuerpo de la solicitud no son válidos. |
+| `upstream_error` | `429` | Todos los proveedores probados para la solicitud aplicaron un límite de frecuencia. Respeta `Retry-After`; las solicitudes BYOK también incluyen los encabezados `X-Phaseo-Upstream-RateLimit-*`. Los demás fallos del proveedor usan `502`. |
 | `provider_error` | `502` | El proveedor del modelo ascendente no respondió correctamente. |
+| `upstream_stream_failure` | `502` | Una solicitud sin streaming cuyo proveedor falló después de empezar a generar. No se devuelve salida parcial y la solicitud no se cobra. |
 | `server_error` | `500` | Se produjo un problema inesperado en Phaseo. |
 
 ## Cuando falla un proveedor
@@ -254,7 +256,8 @@ Establece un límite de intentos y un plazo total, y añade variación aleatoria
 ## Notas específicas de streaming
 
 - Si la solicitud falla antes de empezar el streaming, recibirás una respuesta de error JSON estándar.
-- Si falla a mitad del flujo, trata el flujo parcial como incompleto y ofrece la opción de reintentar.
+- Si falla a mitad del flujo, el flujo termina con el evento de fallo del endpoint en lugar de un final normal: un frame `error` en Chat Completions, `response.failed` (o `error`) en Responses y un evento `error` en Messages. Trata el flujo parcial como incompleto y ofrece la opción de reintentar.
+- Una solicitud sin streaming cuyo proveedor falla a mitad devuelve `502` con `upstream_stream_failure`, no una respuesta parcial.
 - Registra siempre `generation_id` y los metadatos del endpoint y del modelo.
 
 ## Consejos para resolver problemas

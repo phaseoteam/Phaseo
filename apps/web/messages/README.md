@@ -8,7 +8,7 @@ The auth slice currently has a ten-locale Apple-compatible review cohort:
 | Locale | Language | Catalog model | Status |
 | --- | --- | --- | --- |
 | `en-GB` | British English | Source | Public source |
-| `en-US` | US English | Sparse `en-GB` overlay | Machine draft |
+| `en-US` | US English | Sparse `en-GB` overlay | Staged (not routed) |
 | `zh-Hans` | Simplified Chinese | Full catalog | Machine draft |
 | `hi` | Hindi | Full catalog | Machine draft |
 | `es-ES` | Spanish (Spain) | Full catalog | Machine draft |
@@ -24,6 +24,16 @@ uses Apple App Store Connect's canonical locale tags. The longer-term breadth
 benchmark is Apple's current 50-locale metadata matrix, recorded in
 `src/i18n/apple-locales.ts`. Apple distinguishes store metadata from complete
 product-UI localisation; Phaseo does too.
+
+`en-US` has been staged since 2026-10-19. Its overlay changes 52 of about 15,000
+strings, all of them spellings. Meanwhile crawlers were rendering every English
+page under both `/` and `/en-US/`, which made `/en-US/` 15% of all page renders.
+The overlay still builds and validates, but nothing routes to it:
+
+- `proxy.ts` sends `/en-US/…` to the same page without the prefix with a 308.
+- `en` and `en-US` browsers now resolve to the unprefixed English pages.
+
+To bring it back, set its `release` to `public` and remove `RETIRED_LOCALE_PREFIXES` from `proxy.ts`.
 
 The current slice covers sign-in, sign-up, password reset, and authentication
 errors. Other surfaces stay in English until they move as complete, tested

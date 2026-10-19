@@ -62,6 +62,17 @@ export type IRContentPart =
 		url: string;
 	}
 	| {
+		// A document or other file input: an OpenAI Chat `file` part or a
+		// Responses `input_file` part. Executors map it to the provider's own
+		// file block, or leave it out where the provider has none.
+		type: "file";
+		source: "data" | "url" | "id";
+		data: string; // base64 (no data: prefix), URL, or provider file id
+		mimeType?: string;
+		filename?: string;
+		cacheControl?: IRCacheControl;
+	}
+	| {
 		type: "provider_block";
 		block: Record<string, any>;
 	};
@@ -110,7 +121,10 @@ export type IRToolCall = {
  */
 export type IRToolResult = {
 	toolCallId: string; // References IRToolCall.id
-	content: string; // Result (can be structured JSON string)
+	content: string; // Result text (text parts joined when the client sent content parts)
+	// The client's content parts, when it sent an array. Encoders send these
+	// where the upstream accepts structured tool results, and `content` elsewhere.
+	parts?: IRContentPart[];
 	isError?: boolean; // Optional error flag
 	cacheControl?: IRCacheControl;
 	type?: "function" | "custom";
@@ -127,19 +141,23 @@ export type IRMessage =
 	| {
 		role: "system";
 		content: IRContentPart[];
+		name?: string; // OpenAI Chat participant name
 	}
 	| {
 		role: "developer";
 		content: IRContentPart[];
+		name?: string;
 	}
 	| {
 		role: "user";
 		content: IRContentPart[];
+		name?: string;
 	}
 	| {
 		role: "assistant";
 		content: IRContentPart[]; // Regular assistant content
 		toolCalls?: IRToolCall[]; // Optional tool calls
+		name?: string;
 		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
 	}
 	| {
@@ -884,6 +902,13 @@ export type IRChoice = {
 		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
 	};
 	finishReason: "stop" | "length" | "tool_calls" | "content_filter" | "error" | null;
+
+	// A finer provider reason that only some surfaces can express: Anthropic's
+	// stop_sequence and pause_turn (finishReason "stop"), and a refusal (finishReason
+	// "content_filter", or "stop" for OpenAI-style refusal text). Messages clients get
+	// it as stop_reason; Chat and Responses clients get the closest documented value.
+	// See core/finish-reason.ts.
+	finishDetail?: "stop_sequence" | "pause_turn" | "refusal";
 
 	// Which stop sequence triggered (if finishReason is "stop")
 	// Useful for debugging and understanding model behavior

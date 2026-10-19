@@ -251,6 +251,9 @@
 			"endpointVideoGeneration": "视频生成",
 			"endpointImageVariations": "图像变体",
 			"endpointMusicGeneration": "音乐生成",
+			"endpointVideoEditing": "视频编辑",
+			"endpointOcr": "OCR",
+			"endpointDocumentParsing": "文档解析",
 			"tierPrivate": "私有",
 			"capabilityTextGeneration": "文本生成",
 			"modalityDecisions": "决策"
@@ -1858,6 +1861,26 @@
 		"loadingModels": "正在加载模型…"
 	},
 	"benchmarks": {
+		"explorer": {
+			"comparisons": "对比",
+			"tokenUsage": "Token 用量",
+			"cost": "成本",
+			"benchmarks": "单项基准",
+			"capabilities": "领域能力",
+			"tokensPerTask": "每项任务输出 Token",
+			"totalOutputTokens": "输出 Token 总量",
+			"costPerTask": "每项任务成本",
+			"totalCost": "评测总成本",
+			"timePerTask": "每项任务耗时",
+			"pareto": "帕累托前沿",
+			"score": "得分",
+			"financeAndAccounting": "金融与会计",
+			"strategyAndOps": "战略与运营",
+			"legal": "法律",
+			"healthcareAndMedical": "医疗与健康",
+			"engineering": "工程",
+			"economics": "经济"
+		},
 		"title": "基准测试",
 		"description": "探索 AI 模型基准测试、比较分数，并了解哪些评测最常使用。",
 		"searchPlaceholder": "搜索基准测试...",

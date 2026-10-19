@@ -5,6 +5,7 @@
 import { z } from "zod";
 import type { PriceCard } from "../pricing";
 import type { PriceRule, PricingDimensionKey, PricingTimestampBasis, PricingTimeWindow } from "../pricing/types";
+import { canonicalPricingPlan } from "../pricing/service-tiers";
 import type {
     GateCheck,
     ByokKeyMeta,
@@ -133,7 +134,8 @@ const priceRuleSchema = z
         id: z.string().optional(),
     })
     .transform<PriceRule>((rule) => ({
-        pricing_plan: rule.pricing_plan,
+        // The RPC returns the stored service tier slug; `fast` SKUs are priced as `priority`.
+        pricing_plan: canonicalPricingPlan(rule.pricing_plan),
         meter: rule.meter as PricingDimensionKey,
         unit: rule.unit,
         unit_size: rule.unit_size,

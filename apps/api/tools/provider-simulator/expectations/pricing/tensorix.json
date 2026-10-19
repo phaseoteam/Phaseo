@@ -1,0 +1,299 @@
+{
+	"provider": "tensorix",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "tensorix:deepseek/deepseek-r1-2025-05-28:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/deepseek-deepseek-r1-2025-05-28/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.66/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.17/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2379040,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",174080],["input_text_tokens",1576,"#0","input_text_tokens",1040160],["output_text_tokens",448,"#2","output_text_tokens",1164800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":17913610,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",776390],["input_text_tokens",12347,"#0","input_text_tokens",8149020],["output_text_tokens",3457,"#2","output_text_tokens",8988200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":17137220,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",8149020],["output_text_tokens",3457,"#2","output_text_tokens",8988200]]}}
+			]
+		},
+		{
+			"key": "tensorix:deepseek/deepseek-v3.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/deepseek-deepseek-v3.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.08/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":778720,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",81920],["input_text_tokens",1576,"#0","input_text_tokens",472800],["output_text_tokens",448,"#2","output_text_tokens",224000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":5797960,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",365360],["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",1728500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":5432600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",1728500]]}}
+			]
+		},
+		{
+			"key": "tensorix:deepseek/deepseek-v4-flash-0731:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/deepseek-deepseek-v4-flash-0731/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":589840,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",61440],["input_text_tokens",1576,"#0","input_text_tokens",394000],["output_text_tokens",448,"#2","output_text_tokens",134400]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":4397870,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",274020],["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_text_tokens",3457,"#2","output_text_tokens",1037100]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4123850,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3086750],["output_text_tokens",3457,"#2","output_text_tokens",1037100]]}}
+			]
+		},
+		{
+			"key": "tensorix:deepseek/deepseek-v4-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/deepseek-deepseek-v4-pro/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.75/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.44/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4776560,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",450560],["input_text_tokens",1576,"#0","input_text_tokens",2758000],["output_text_tokens",448,"#2","output_text_tokens",1568000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":35716230,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",2009480],["input_text_tokens",12347,"#0","input_text_tokens",21607250],["output_text_tokens",3457,"#2","output_text_tokens",12099500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":33706750,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",21607250],["output_text_tokens",3457,"#2","output_text_tokens",12099500]]}}
+			]
+		},
+		{
+			"key": "tensorix:minimax/minimax-m2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/minimax-minimax-m2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.08/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1092320,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",81920],["input_text_tokens",1576,"#0","input_text_tokens",472800],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":8217860,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",365360],["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "tensorix:minimax/minimax-m3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/minimax-minimax-m3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.4/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1628800,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",102400],["input_text_tokens",1576,"#0","input_text_tokens",630400],["output_text_tokens",448,"#2","output_text_tokens",896000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":12309500,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",456700],["input_text_tokens",12347,"#0","input_text_tokens",4938800],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":11852800,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",4938800],["output_text_tokens",3457,"#2","output_text_tokens",6914000]]}}
+			]
+		},
+		{
+			"key": "tensorix:moonshotai/kimi-k2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/moonshotai-kimi-k2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.5/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.13/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.8/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2175520,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",133120],["input_text_tokens",1576,"#0","input_text_tokens",788000],["output_text_tokens",448,"#2","output_text_tokens",1254400]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":16446810,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",593710],["input_text_tokens",12347,"#0","input_text_tokens",6173500],["output_text_tokens",3457,"#2","output_text_tokens",9679600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":15853100,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",6173500],["output_text_tokens",3457,"#2","output_text_tokens",9679600]]}}
+			]
+		},
+		{
+			"key": "tensorix:moonshotai/kimi-k2.6:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/moonshotai-kimi-k2.6/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3624000,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",256000],["input_text_tokens",1576,"#0","input_text_tokens",1576000],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":27316750,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1141750],["input_text_tokens",12347,"#0","input_text_tokens",12347000],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":26175000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",12347000],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "tensorix:moonshotai/kimi-k2.7-code:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/moonshotai-kimi-k2.7-code/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.25/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.31/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4303440,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",317440],["input_text_tokens",1576,"#0","input_text_tokens",1970000],["output_text_tokens",448,"#2","output_text_tokens",2016000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":32406020,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1415770],["input_text_tokens",12347,"#0","input_text_tokens",15433750],["output_text_tokens",3457,"#2","output_text_tokens",15556500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":30990250,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",15433750],["output_text_tokens",3457,"#2","output_text_tokens",15556500]]}}
+			]
+		},
+		{
+			"key": "tensorix:moonshotai/kimi-k3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/moonshotai-kimi-k3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","3/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.75/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":12216000,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",768000],["input_text_tokens",1576,"#0","input_text_tokens",4728000],["output_text_tokens",448,"#2","output_text_tokens",6720000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":92321250,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",3425250],["input_text_tokens",12347,"#0","input_text_tokens",37041000],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":88896000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",37041000],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}}
+			]
+		},
+		{
+			"key": "tensorix:qwen/qwen3-235b-a22b-2507:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/qwen-qwen3-235b-a22b-2507/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.07/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.02/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.46/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":336880,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",20480],["input_text_tokens",1576,"#0","input_text_tokens",110320],["output_text_tokens",448,"#2","output_text_tokens",206080]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2545850,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",91340],["input_text_tokens",12347,"#0","input_text_tokens",864290],["output_text_tokens",3457,"#2","output_text_tokens",1590220]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2454510,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",864290],["output_text_tokens",3457,"#2","output_text_tokens",1590220]]}}
+			]
+		},
+		{
+			"key": "tensorix:qwen/qwen3-embedding-8b:text.embed",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/qwen-qwen3-embedding-8b/text.embed/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.02/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"input_tokens":1000,"output_tokens":0,"total_tokens":1000},"expected":{"nanos":20000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",20000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":246940,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",246940]]}}
+			]
+		},
+		{
+			"key": "tensorix:qwen/qwen3.5-122b-a10b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/qwen-qwen3.5-122b-a10b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.5/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.13/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2489120,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",133120],["input_text_tokens",1576,"#0","input_text_tokens",788000],["output_text_tokens",448,"#2","output_text_tokens",1568000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":18866710,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",593710],["input_text_tokens",12347,"#0","input_text_tokens",6173500],["output_text_tokens",3457,"#2","output_text_tokens",12099500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":18273000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",6173500],["output_text_tokens",3457,"#2","output_text_tokens",12099500]]}}
+			]
+		},
+		{
+			"key": "tensorix:qwen/qwen3.5-9b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/qwen-qwen3.5-9b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":366960,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",40960],["input_text_tokens",1576,"#0","input_text_tokens",236400],["output_text_tokens",448,"#2","output_text_tokens",89600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2726130,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",182680],["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_text_tokens",3457,"#2","output_text_tokens",691400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2543450,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1852050],["output_text_tokens",3457,"#2","output_text_tokens",691400]]}}
+			]
+		},
+		{
+			"key": "tensorix:qwen/qwen3.8-2.4t-a95b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/qwen-qwen3.8-2.4t-a95b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","2.5/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.63/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":7273120,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",645120],["input_text_tokens",1576,"#0","input_text_tokens",3940000],["output_text_tokens",448,"#2","output_text_tokens",2688000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":54486710,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",2877210],["input_text_tokens",12347,"#0","input_text_tokens",30867500],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":51609500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",30867500],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}}
+			]
+		},
+		{
+			"key": "tensorix:qwen/qwen3.8-27b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/qwen-qwen3.8-27b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.4/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1808000,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",102400],["input_text_tokens",1576,"#0","input_text_tokens",630400],["output_text_tokens",448,"#2","output_text_tokens",1075200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":13692300,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",456700],["input_text_tokens",12347,"#0","input_text_tokens",4938800],["output_text_tokens",3457,"#2","output_text_tokens",8296800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":13235600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",4938800],["output_text_tokens",3457,"#2","output_text_tokens",8296800]]}}
+			]
+		},
+		{
+			"key": "tensorix:z-ai/glm-5-turbo:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/z-ai-glm-5-turbo/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.2/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3990400,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",307200],["input_text_tokens",1576,"#0","input_text_tokens",1891200],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":30014500,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1370100],["input_text_tokens",12347,"#0","input_text_tokens",14816400],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":28644400,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",14816400],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "tensorix:z-ai/glm-5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/z-ai-glm-5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3265600,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",256000],["input_text_tokens",1576,"#0","input_text_tokens",1576000],["output_text_tokens",448,"#2","output_text_tokens",1433600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":24551150,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1141750],["input_text_tokens",12347,"#0","input_text_tokens",12347000],["output_text_tokens",3457,"#2","output_text_tokens",11062400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":23409400,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",12347000],["output_text_tokens",3457,"#2","output_text_tokens",11062400]]}}
+			]
+		},
+		{
+			"key": "tensorix:z-ai/glm-5.1:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/z-ai-glm-5.1/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.4/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.35/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4536000,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",358400],["input_text_tokens",1576,"#0","input_text_tokens",2206400],["output_text_tokens",448,"#2","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":34095050,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1598450],["input_text_tokens",12347,"#0","input_text_tokens",17285800],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":32496600,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",17285800],["output_text_tokens",3457,"#2","output_text_tokens",15210800]]}}
+			]
+		},
+		{
+			"key": "tensorix:z-ai/glm-5.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/z-ai-glm-5.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.5/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.38/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4769120,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",389120],["input_text_tokens",1576,"#0","input_text_tokens",2364000],["output_text_tokens",448,"#2","output_text_tokens",2016000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":35812460,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1735460],["input_text_tokens",12347,"#0","input_text_tokens",18520500],["output_text_tokens",3457,"#2","output_text_tokens",15556500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":34077000,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",18520500],["output_text_tokens",3457,"#2","output_text_tokens",15556500]]}}
+			]
+		},
+		{
+			"key": "tensorix:z-ai/glm-5v-turbo:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/tensorix/z-ai-glm-5v-turbo/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.2/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3990400,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",307200],["input_text_tokens",1576,"#0","input_text_tokens",1891200],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":30014500,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",1370100],["input_text_tokens",12347,"#0","input_text_tokens",14816400],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":28644400,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",14816400],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		}
+	]
+}

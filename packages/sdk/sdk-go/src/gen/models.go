@@ -1785,6 +1785,12 @@ type ErrorUpstreamError struct {
 	Param *string `json:"param,omitempty"`
 }
 
+type FileContentPart struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	File map[string]interface{} `json:"file"`
+	Type string `json:"type"`
+}
+
 type FileResponse struct {
 	Bytes *int `json:"bytes,omitempty"`
 	CreatedAt *int `json:"created_at,omitempty"`

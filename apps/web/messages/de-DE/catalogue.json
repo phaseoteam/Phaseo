@@ -251,6 +251,9 @@
 			"endpointVideoGeneration": "Videogenerierung",
 			"endpointImageVariations": "Bildvariationen",
 			"endpointMusicGeneration": "Musikgenerierung",
+			"endpointVideoEditing": "Videobearbeitung",
+			"endpointOcr": "OCR",
+			"endpointDocumentParsing": "Dokumentanalyse",
 			"tierPrivate": "Privat",
 			"capabilityTextGeneration": "Textgenerierung",
 			"modalityDecisions": "Entscheidungen"
@@ -1858,6 +1861,26 @@
 		"loadingModels": "Modelle werden geladen…"
 	},
 	"benchmarks": {
+		"explorer": {
+			"comparisons": "Vergleiche",
+			"tokenUsage": "Tokenverbrauch",
+			"cost": "Kosten",
+			"benchmarks": "Einzelne Benchmarks",
+			"capabilities": "Fachkompetenzen",
+			"tokensPerTask": "Ausgabetokens pro Aufgabe",
+			"totalOutputTokens": "Ausgabetokens insgesamt",
+			"costPerTask": "Kosten pro Aufgabe",
+			"totalCost": "Gesamte Bewertungskosten",
+			"timePerTask": "Zeit pro Aufgabe",
+			"pareto": "Pareto-Grenze",
+			"score": "Punktzahl",
+			"financeAndAccounting": "Finanzen & Rechnungswesen",
+			"strategyAndOps": "Strategie & Betrieb",
+			"legal": "Recht",
+			"healthcareAndMedical": "Gesundheit & Medizin",
+			"engineering": "Ingenieurwesen",
+			"economics": "Wirtschaft"
+		},
 		"title": "Vergleichstests",
 		"description": "Entdecke KI-Modell-Benchmarks, vergleiche Bewertungen und sieh, welche Evaluierungen am häufigsten verwendet werden.",
 		"searchPlaceholder": "Benchmarks suchen ...",

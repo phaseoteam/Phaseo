@@ -2,6 +2,7 @@
 // Why: Presets allow teams to standardize prompts, parameters, and routing
 // How: Apply preset defaults, inject system prompts, filter providers
 
+import type { Endpoint } from "@core/types";
 import type { PresetConfig, PresetData, ProviderCandidate } from "./types";
 import { normalizeProviderId, normalizeProviderList } from "@/lib/config/providerAliases";
 import { mergeGatewayPlugins } from "@/plugins/normalize";
@@ -19,9 +20,12 @@ function prependPresetTextPart(content: any[], systemPrompt: string, type: "text
  * Preset defaults are applied only if not already present in the request
  * System prompts are prepended to messages
  */
-export function mergePresetWithBody(body: any, preset: PresetData): any {
+export function mergePresetWithBody(body: any, preset: PresetData, endpoint?: Endpoint): any {
 	const config = preset.config;
 	const merged = { ...body };
+	// Messages bodies carry the system prompt in top-level `system`; a system
+	// role in `messages` is not part of that API and the decoder drops it.
+	const usesTopLevelSystem = endpoint === "messages";
 
 	if (config.defaultModel && merged.model === undefined) {
 		merged.model = config.defaultModel;
@@ -44,6 +48,15 @@ export function mergePresetWithBody(body: any, preset: PresetData): any {
 			merged.instructions = prependPresetTextPart(merged.instructions, config.systemPrompt, "input_text");
 		} else if (merged.instructions === undefined && merged.input !== undefined) {
 			merged.instructions = config.systemPrompt;
+		} else if (usesTopLevelSystem) {
+			// Anthropic-style system parameter
+			if (Array.isArray(merged.system)) {
+				merged.system = prependPresetTextPart(merged.system, config.systemPrompt, "text");
+			} else if (typeof merged.system === "string" && merged.system.length > 0) {
+				merged.system = `${config.systemPrompt}\n\n${merged.system}`;
+			} else {
+				merged.system = config.systemPrompt;
+			}
 		} else if (merged.messages && Array.isArray(merged.messages)) {
 			// Check if there's already a system message
 			const hasSystem = merged.messages.some((m: any) => m.role === "system");

@@ -63,6 +63,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			messages.push({
 				role: normalizedRole,
 				content: normalizeOpenAIContent(msgAny.content),
+				...(typeof msgAny.name === "string" && msgAny.name.length > 0 ? { name: msgAny.name } : {}),
 			});
 		} else if (normalizedRole === "assistant") {
 			const assistantContent = normalizeOpenAIContent(msgAny.content || "");
@@ -86,6 +87,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 				role: "assistant",
 				content,
 				toolCalls,
+				...(typeof msgAny.name === "string" && msgAny.name.length > 0 ? { name: msgAny.name } : {}),
 			});
 		} else if (normalizedRole === "tool") {
 			const toolResult = normalizeToolResultContent(msgAny.content);
@@ -96,6 +98,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 						toolCallId: msgAny.tool_call_id,
 						content: toolResult.content,
 						...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
+						...(toolResult.parts ? { parts: toolResult.parts } : {}),
 					},
 				],
 			});
@@ -285,6 +288,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		topLogprobs: req.top_logprobs,
 		stop: reqAny.stop,
 		streamOptions: req.stream_options,
+		store: req.store,
 		background: (req as any).background,
 		serviceTier: resolveTextServiceTier({
 			service_tier: (req as any).service_tier,
@@ -299,7 +303,8 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
 		googleCachedContent: providerCacheOptions.googleCachedContent,
 		xaiConversationId: providerCacheOptions.xaiConversationId,
-		safetyIdentifier: (req as any).safety_identifier,
+		// The schema fills an absent value with null; null is never sent upstream.
+		safetyIdentifier: typeof (req as any).safety_identifier === "string" ? (req as any).safety_identifier : undefined,
 		vendor,
 		userId: req.user_id ?? req.user,
 		metadata,

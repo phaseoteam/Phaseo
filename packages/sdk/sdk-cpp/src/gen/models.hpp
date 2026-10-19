@@ -1113,6 +1113,12 @@ struct ErrorUpstreamError {
 	std::optional<std::string> param;
 };
 
+struct FileContentPart {
+	std::map<std::string, std::any> cache_control;
+	std::map<std::string, std::any> file;
+	std::any type;
+};
+
 struct FileResponse {
 	std::optional<int> bytes;
 	std::optional<int> created_at;

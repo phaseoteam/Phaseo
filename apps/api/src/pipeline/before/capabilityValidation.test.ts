@@ -419,7 +419,8 @@ describe("validateCapabilities", () => {
 			workspaceId: "team_test",
 			providers: [
 				provider("google-ai-studio", { image_config: {}, temperature: {} }, 4096),
-				provider("openai", { temperature: {} }, 4096),
+				// DeepInfra's profile says nothing about image_config, so its support is unknown.
+				provider("deepinfra", { temperature: {} }, 4096),
 			],
 			model: "google/gemini-2-5-flash-image",
 		});
@@ -427,7 +428,7 @@ describe("validateCapabilities", () => {
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.requestedParams).toContain("image_config");
-			expect(result.providers.map((p: any) => p.providerId)).toEqual(["google-ai-studio", "openai"]);
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["google-ai-studio", "deepinfra"]);
 		}
 	});
 
@@ -901,5 +902,54 @@ describe("validateCapabilities", () => {
 		if (result.ok) {
 			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai", "anthropic"]);
 		}
+	});
+
+	describe("max_tokens against route output limits", () => {
+		const messagesRequest = (providers: any[]) => {
+			const body = {
+				model: "google/gemma-4-26b-a4b-it",
+				messages: [{ role: "user", content: "hello" }],
+				max_tokens: 777,
+			};
+			return validateCapabilities({
+				endpoint: "messages",
+				rawBody: body,
+				body,
+				requestId: "req_zero_limit",
+				workspaceId: "team_test",
+				providers,
+				model: "google/gemma-4-26b-a4b-it",
+			});
+		};
+
+		it.each([0, -1])("treats a stored max_output_tokens of %s as unknown, like null", (limit) => {
+			const result = messagesRequest([provider("parasail", { max_tokens: {} }, limit)]);
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.providers.map((p: any) => p.providerId)).toEqual(["parasail"]);
+			}
+		});
+
+		it("still rejects when every known limit is below max_tokens", () => {
+			const result = messagesRequest([provider("parasail", { max_tokens: {} }, 512)]);
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.response.status).toBe(400);
+			}
+		});
+
+		it("drops only the route whose known limit is too small", () => {
+			const result = messagesRequest([
+				provider("small", { max_tokens: {} }, 512),
+				provider("parasail", { max_tokens: {} }, 0),
+			]);
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.providers.map((p: any) => p.providerId)).toEqual(["parasail"]);
+			}
+		});
 	});
 });
