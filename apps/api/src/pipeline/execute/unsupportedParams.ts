@@ -139,6 +139,9 @@ export function dropUnsupportedParams(
 	return { ir: next ?? ir, dropped };
 }
 
+/** Response header naming the client parameters the gateway removed. */
+export const DROPPED_PARAMS_HEADER = "X-Phaseo-Dropped-Params";
+
 /** `X-Phaseo-Dropped-Params` value: the dropped client parameter names, comma separated. */
 export function droppedParamsHeader(dropped: Array<Pick<DroppedParam, "param">>): string {
 	return Array.from(new Set(dropped.map((entry) => entry.param))).join(", ");
@@ -189,6 +192,32 @@ export function clearDroppedParams(ctx: DroppedParamsContext): void {
 	if (!ctx.routingDiagnostics || !("droppedParams" in ctx.routingDiagnostics)) return;
 	const { droppedParams: _previous, ...rest } = ctx.routingDiagnostics;
 	ctx.routingDiagnostics = rest;
+}
+
+function isDroppedParamsRecord(value: unknown): value is DroppedParamsRecord {
+	if (!value || typeof value !== "object") return false;
+	const record = value as Partial<DroppedParamsRecord>;
+	return (
+		typeof record.provider === "string" &&
+		Array.isArray(record.params) &&
+		record.params.every((entry) => Boolean(entry) && typeof entry === "object" && typeof entry.param === "string")
+	);
+}
+
+/** The drops to store with a cached response, so a cache hit reports what the cached result was generated without. */
+export function cachedDroppedParams(ctx: { routingDiagnostics?: Record<string, any> | null }): DroppedParamsRecord | null {
+	const record = ctx.routingDiagnostics?.droppedParams;
+	return isDroppedParamsRecord(record) ? record : null;
+}
+
+/**
+ * Puts a cached response's drops back on the request context, so the header,
+ * `meta.routing.dropped_params` and the audit report them as for a live call.
+ * Entries cached before drops were stored carry none and change nothing.
+ */
+export function restoreDroppedParams(ctx: DroppedParamsContext, stored: unknown): void {
+	if (!isDroppedParamsRecord(stored)) return;
+	ctx.routingDiagnostics = { ...(ctx.routingDiagnostics ?? {}), droppedParams: stored };
 }
 
 /** The drops to report to the client: those of the provider that served it, client-sent only. */

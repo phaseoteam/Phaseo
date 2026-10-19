@@ -159,4 +159,24 @@ describe("response-cache policy", () => {
 		expect(record.expiresAt).toBe("2026-05-09T12:02:00.000Z");
 		expect(record.providerId).toBe("openai");
 	});
+
+	it("keeps the parameters dropped for the provider with the cache record", () => {
+		const base = {
+			key: "gateway:response-cache:v1:ws_123:abc123",
+			fingerprint: "abc123",
+			endpoint: "responses" as const,
+			model: "openai/gpt-5.4-nano",
+			statusCode: 200,
+			responseBody: { id: "resp_123" },
+			providerId: "openai",
+			ttlSeconds: 120,
+		};
+		const droppedParams = {
+			provider: "openai",
+			params: [{ param: "top_k", reason: "unsupported_by_provider" as const, source: "catalogue" as const, client_sent: true }],
+		};
+
+		expect(buildCachedResponseRecord({ ...base, droppedParams }).droppedParams).toEqual(droppedParams);
+		expect(buildCachedResponseRecord(base).droppedParams).toBeNull();
+	});
 });

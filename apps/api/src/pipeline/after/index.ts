@@ -23,7 +23,7 @@ import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import { getBaseModel } from "../execute/utils";
-import { droppedParamsForClient } from "../execute/unsupportedParams";
+import { cachedDroppedParams, droppedParamsForClient } from "../execute/unsupportedParams";
 import { dispatchBackground, ensureRuntimeForBackground, getResponseCache } from "@/runtime/env";
 import { resolveNonStreamLatencyMs } from "./timing";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
@@ -200,6 +200,8 @@ function dispatchNonStreamSuccessSideEffects(args: {
                         routingMode: ctx.routingMode ?? null,
                         presetId: ctx.preset?.id ?? null,
                         presetSlug: ctx.preset?.slug ?? null,
+                        // Cache hits report the same X-Phaseo-Dropped-Params as this response.
+                        droppedParams: cachedDroppedParams(ctx),
                         ttlSeconds: cacheState.ttlSeconds,
                     });
                     await responseCache.set(

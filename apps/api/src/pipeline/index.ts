@@ -5,7 +5,7 @@
 
 import { beforeRequest, type BeforeRequestObservabilitySnapshot, type UnservedModelFallback } from "./before";
 import { modelSubstitutionHeader, noteModelSubstitutionServed, type ModelSubstitution } from "./before/modelSuccessor";
-import { droppedParamsForClient, droppedParamsHeader } from "./execute/unsupportedParams";
+import { DROPPED_PARAMS_HEADER, droppedParamsForClient, droppedParamsHeader } from "./execute/unsupportedParams";
 import type { Endpoint } from "@core/types";
 import { handleError } from "@core/error-handler";
 import { auditFailure } from "./audit";
@@ -214,7 +214,7 @@ function withDroppedParamsHeader(
 	const dropped = droppedParamsForClient(ctx);
 	if (dropped.length === 0) return response;
 	const headers = new Headers(response.headers);
-	headers.set("X-Phaseo-Dropped-Params", droppedParamsHeader(dropped));
+	headers.set(DROPPED_PARAMS_HEADER, droppedParamsHeader(dropped));
 	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
