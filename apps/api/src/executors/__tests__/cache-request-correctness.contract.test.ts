@@ -8,6 +8,7 @@ import type { ExecutorExecuteArgs } from "@executors/types";
 import { ChatCompletionsSchema, ResponsesSchema } from "@core/schemas";
 import { decodeOpenAIChatRequest } from "@protocols/openai-chat/decode";
 import { decodeOpenAIResponsesRequest } from "@protocols/openai-responses/decode";
+import { providerAcceptsStreamOptions } from "@executors/_shared/text-generate/openai-compat/prompt-cache-policy";
 import { executor as anthropicExecutor } from "@executors/anthropic/text-generate";
 import { execute as bedrockExecute } from "@executors/amazon-bedrock/text-generate";
 import { executor as ionRouterExecutor } from "@executors/ionrouter/text-generate";
@@ -555,7 +556,9 @@ describe("R8: production capability params never filter the request", () => {
 });
 
 describe("R9: stream_options and stateful Responses params", () => {
-	it("does not add stream_options for providers whose profile rejects it", async () => {
+	// Upstage: "A streaming response carries no usage statistics by default, so token counts are
+	// unavailable unless this is set" (https://console.upstage.ai/api/chat).
+	it("sends stream_options to Upstage so streamed usage can be billed", async () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ UPSTAGE_API_KEY: "upstage-test" } as any);
 		const mock = installFetchMock([{
@@ -578,7 +581,12 @@ describe("R9: stream_options and stateful Responses params", () => {
 			setupTestRuntime();
 		}
 		expect(mock.calls[0]!.bodyJson.stream).toBe(true);
-		expect(mock.calls[0]!.bodyJson).not.toHaveProperty("stream_options");
+		expect(mock.calls[0]!.bodyJson.stream_options).toEqual({ include_usage: true });
+	});
+
+	it("does not add stream_options for providers whose profile rejects it", () => {
+		// Mistral's schema has no stream_options (https://docs.mistral.ai/openapi.yaml).
+		expect(providerAcceptsStreamOptions("mistral")).toBe(false);
 	});
 
 	it.each([
