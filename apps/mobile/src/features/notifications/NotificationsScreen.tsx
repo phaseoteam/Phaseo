@@ -1,33 +1,52 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BellOff, LayoutList, Minus, Plus, Send } from "lucide-react-native";
-import { Pressable, RefreshControl, ScrollView, Switch, View } from "react-native";
+import { AppState, Platform, Pressable, RefreshControl, ScrollView, Switch, View } from "react-native";
 import { Button, EmptyState, ErrorState, Header, Icon, LoadingState, measureAnchor, ReadableWidth, Row, Screen, Section, showActions, Text, toast, toastError, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { ApiError } from "@/lib/api/http";
-import { createRule, registerDevice, sendTestNotification, updateNotificationSettings, updateRule, type NotificationRule } from "@/lib/api/notifications";
-import { APP_VERSION } from "@/lib/config";
+import { createRule, sendTestNotification, updateNotificationSettings, updateRule, type NotificationRule, type NotificationSettings, type SettingsPatch } from "@/lib/api/notifications";
 import { useAuth } from "@/providers/AuthProvider";
-import { registerForPush } from "./device";
+import { CATEGORY_CHANNELS, type Category } from "./channels";
+import { blockedChannels, openChannelSettings, registerForPush, registerThisPhone } from "./device";
 import { describeRule, EMPTY_RULE, RULE_TEMPLATES } from "./rules";
 import { draftRuleStore, useNotificationSettings, useRuleNames } from "./state";
 
 const QUIET_PRESETS = [{ start: "22:00", end: "07:00" }, { start: "23:00", end: "08:00" }, { start: "21:00", end: "09:00" }];
+// Settings writes run one at a time, and only the last response is applied, so quick taps don't flicker back.
+const SETTINGS_WRITE = { mutationKey: ["notification-settings-write"], scope: { id: "notification-settings-write" } };
+
+/** Channels switched off in Android's own settings, read again whenever the user comes back to the app. */
+function useBlockedChannels(active: boolean) {
+  const [blocked, setBlocked] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    if (!active) return;
+    const read = () => void blockedChannels().then(setBlocked).catch(() => undefined);
+    read();
+    const subscription = AppState.addEventListener("change", (state) => { if (state === "active") read(); });
+    return () => subscription.remove();
+  }, [active]);
+  return blocked;
+}
 
 export function NotificationsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { split } = useLayout();
   const { session } = useAuth();
   const settings = useNotificationSettings();
   const names = useRuleNames();
   const addRef = useRef<ViewRef>(null);
+  const android = Platform.OS === "android";
+  const blocked = useBlockedChannels(android && Boolean(settings.data?.categories));
 
   const enable = useMutation({
     mutationFn: async (on: boolean) => {
       if (on) {
         const device = await registerForPush();
-        await registerDevice({ ...device, appVersion: APP_VERSION });
+        // Servers that return categories take channel scheme 2; older ones get the old registration.
+        await registerThisPhone(session!.user.id, device, Boolean(settings.data?.categories));
         // A first switch-on with no rules would send nothing; start with every new model.
         if (!settings.data?.rules.length) await createRule({ ...EMPTY_RULE, name: "Every new model" });
       }
@@ -36,7 +55,21 @@ export function NotificationsScreen() {
     onSuccess: settings.set,
     onError: (error) => toastError("Couldn't turn on notifications", error),
   });
-  const update = useMutation({ mutationFn: (patch: Parameters<typeof updateNotificationSettings>[1]) => updateNotificationSettings(settings.installationId!, patch), onSuccess: settings.set });
+  const applyLatest = (next: NotificationSettings) => {
+    // This write is still counted; anything more is queued behind it and will answer with newer settings.
+    if (queryClient.isMutating({ mutationKey: SETTINGS_WRITE.mutationKey }) <= 1) settings.set(next);
+  };
+  const update = useMutation({ ...SETTINGS_WRITE, mutationFn: (patch: SettingsPatch) => updateNotificationSettings(settings.installationId!, patch), onSuccess: applyLatest });
+  const setCategory = useMutation({
+    ...SETTINGS_WRITE,
+    mutationFn: ({ category, on }: { category: Category; on: boolean }) => updateNotificationSettings(settings.installationId!, { categories: { [category]: on } }),
+    onMutate: ({ category, on }) => settings.patch((current) => (current.categories ? { ...current, categories: { ...current.categories, [category]: on } } : current)),
+    onSuccess: applyLatest,
+    onError: (error) => {
+      void settings.refetch();
+      toastError("Couldn't change that category", error);
+    },
+  });
   const toggleRule = useMutation({
     mutationFn: ({ rule, enabled }: { rule: NotificationRule; enabled: boolean }) => updateRule(rule.id, { enabled }),
     onSuccess: () => void settings.refetch(),
@@ -121,6 +154,23 @@ export function NotificationsScreen() {
               />
             ))}
           </Section>
+
+          {/* Hidden until the server has categories (push v2), rather than showing switches that do nothing. */}
+          {data.categories ? (
+            <Section title="Categories" description={`Turn off whole kinds of notification. Your rules still choose which model updates arrive.${android ? " Tap a category for its sound and pop-up settings." : ""}`}>
+              {CATEGORY_CHANNELS.map((channel, index) => (
+                <Row
+                  key={channel.id}
+                  title={channel.name}
+                  subtitle={blocked.has(channel.id) ? "Off in Android settings. Tap to change." : channel.description}
+                  onPress={android ? () => void openChannelSettings(channel.id) : undefined}
+                  chevron={false}
+                  trailing={<Switch value={data.categories?.[channel.id] ?? true} onValueChange={(on) => setCategory.mutate({ category: channel.id, on })} trackColorOnClassName="accent-primary" />}
+                  last={index === CATEGORY_CHANNELS.length - 1}
+                />
+              ))}
+            </Section>
+          ) : null}
 
           <Section title="Quiet hours" description="Notifications wait until quiet hours end, in this phone's time zone.">
             <View className="flex-row flex-wrap gap-2 px-4 pt-1">

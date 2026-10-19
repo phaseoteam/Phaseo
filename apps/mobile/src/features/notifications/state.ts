@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useProviders } from "@/features/providers/ProviderBrowser";
 import { useCatalogueIndex } from "@/features/models/state";
@@ -6,7 +6,7 @@ import { getNotificationSettings, unregisterDevice, type NotificationSettings, t
 import { modelName } from "@/lib/catalogue";
 import { createStore } from "@/lib/store";
 import { onSignOut, useAuth } from "@/providers/AuthProvider";
-import { installationId } from "./device";
+import { forgetRegistration, installationId } from "./device";
 
 /** The rule being edited, shared with the lab/provider/model picker sheets. */
 export const draftRuleStore = createStore<RuleInput | null>(null);
@@ -19,17 +19,26 @@ export function useInstallationId() {
 
 // Stop pushing to this phone once its owner signs out.
 onSignOut(async () => {
+  await forgetRegistration().catch(() => undefined);
   try { await unregisterDevice(await installationId()); } catch { /* signed out already or never registered */ }
 });
+
+/** Shared with the start-up registration check, so the screen opens on the settings it already fetched. */
+export function notificationSettingsQuery(userId: string | null, id: string | null) {
+  return queryOptions({ queryKey: ["account", userId, "notifications", id] as const, queryFn: () => getNotificationSettings(id!), retry: false });
+}
 
 export function useNotificationSettings() {
   const { session } = useAuth();
   const id = useInstallationId();
   const queryClient = useQueryClient();
-  const key = useMemo(() => ["account", session?.user.id ?? null, "notifications", id] as const, [session?.user.id, id]);
-  const query = useQuery({ queryKey: key, queryFn: () => getNotificationSettings(id!), enabled: Boolean(session && id), retry: false });
-  const set = useCallback((settings: NotificationSettings) => queryClient.setQueryData(key, settings), [queryClient, key]);
-  return { ...query, installationId: id, set };
+  const userId = session?.user.id ?? null;
+  const options = useMemo(() => notificationSettingsQuery(userId, id), [userId, id]);
+  const query = useQuery({ ...options, enabled: Boolean(session && id) });
+  const set = useCallback((settings: NotificationSettings) => queryClient.setQueryData(options.queryKey, settings), [queryClient, options]);
+  /** For optimistic changes; a no-op before the settings have loaded. */
+  const patch = useCallback((change: (current: NotificationSettings) => NotificationSettings) => queryClient.setQueryData(options.queryKey, (current) => (current ? change(current) : current)), [queryClient, options]);
+  return { ...query, installationId: id, set, patch };
 }
 
 /** Display names for lab, provider and model IDs in rule summaries. */

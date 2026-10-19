@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { getCatalogue, type ModelCard } from "@/lib/api/models";
 import { MAX_COMPARE } from "@/lib/api/compare";
@@ -25,8 +25,11 @@ export function toggleCompare(id: string) {
   compareStore.set((current) => current.includes(id) ? current.filter((entry) => entry !== id) : current.length >= MAX_COMPARE ? current : [...current, id]);
 }
 
+/** Also read outside React, e.g. when a notification opens a lab's models. */
+export const catalogueQuery = queryOptions({ queryKey: ["public", "catalogue"], queryFn: getCatalogue, staleTime: 30 * 60 * 1000 });
+
 export function useCatalogue() {
-  return useQuery({ queryKey: ["public", "catalogue"], queryFn: getCatalogue, staleTime: 30 * 60 * 1000 });
+  return useQuery(catalogueQuery);
 }
 
 /** Lab IDs by display name. The Labs filter works on names (as the web does); logos need the ID. */
