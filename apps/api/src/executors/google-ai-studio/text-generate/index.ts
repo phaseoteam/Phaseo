@@ -1082,11 +1082,18 @@ function mapGeminiFinishReason(reason: string | undefined): IRChoice["finishReas
 			return "stop";
 		case "MAX_TOKENS":
 			return "length";
+		// Filter outcomes documented for the Gemini API and Vertex; each can end a candidate with no content.
 		case "SAFETY":
 		case "RECITATION":
 		case "PROHIBITED_CONTENT":
 		case "SPII":
 		case "BLOCKLIST":
+		case "LANGUAGE":
+		case "MODEL_ARMOR":
+		case "ESCALATION":
+		case "IMAGE_SAFETY":
+		case "IMAGE_PROHIBITED_CONTENT":
+		case "IMAGE_RECITATION":
 			return "content_filter";
 		case "MALFORMED_FUNCTION_CALL":
 			return "error";
@@ -2016,7 +2023,8 @@ export function transformStream(
 				}
 			}
 			// A blocked prompt arrives as promptFeedback.blockReason with no candidates.
-			if (!payloadEntry?.candidates?.length && payloadEntry?.promptFeedback?.blockReason) {
+			const blockReason = payloadEntry?.promptFeedback?.blockReason;
+			if (!payloadEntry?.candidates?.length && blockReason && blockReason !== "BLOCK_REASON_UNSPECIFIED") {
 				irChunk.choices.push({ index: 0, delta: { role: "assistant" }, finishReason: "content_filter" } as any);
 			}
 

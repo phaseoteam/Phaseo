@@ -66,7 +66,19 @@ describe("google-ai-studio stream transform", () => {
 		expect(output.match(/data: \[DONE\]/g)).toHaveLength(1);
 	});
 
-	it.each(["SAFETY", "PROHIBITED_CONTENT"])("ends a stream blocked with %s as content_filter, not as an error", async (providerFinishReason) => {
+	it.each([
+		"SAFETY",
+		"PROHIBITED_CONTENT",
+		"RECITATION",
+		"SPII",
+		"BLOCKLIST",
+		"LANGUAGE",
+		"MODEL_ARMOR",
+		"ESCALATION",
+		"IMAGE_SAFETY",
+		"IMAGE_PROHIBITED_CONTENT",
+		"IMAGE_RECITATION",
+	])("ends a stream blocked with %s as content_filter, not as an error", async (providerFinishReason) => {
 		const upstream = makeGoogleSseStream([{
 			candidates: [{ index: 0, content: { role: "model", parts: [] }, finishReason: providerFinishReason }],
 			usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 0, totalTokenCount: 5 },
