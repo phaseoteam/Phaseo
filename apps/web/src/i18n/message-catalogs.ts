@@ -10,13 +10,13 @@ import {
 	type AuthMessages,
 } from "./default-messages";
 import { mergeCatalogMessages, mergeMessages, nestDottedMessageKeys } from "./message-overlays";
-import type { PublicLocale } from "./routing";
+import type { PublicLocale, ShippedLocale } from "./routing";
 
 type PublicMessageLoader = () => Promise<AuthMessages>;
 type MessageTree = Record<string, unknown>;
 type DomainMessageLoader = () => Promise<MessageTree>;
 
-const commonMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
+const commonMessageLoaders: Record<ShippedLocale, DomainMessageLoader> = {
 	"en-GB": async () => englishCommonMessages,
 	"en-US": async () => mergeCatalogMessages(englishCommonMessages, (await import("../../messages/en-US/common.overrides.json")).default),
 	"zh-Hans": async () => (await import("../../messages/zh-Hans/common.json")).default,
@@ -29,7 +29,7 @@ const commonMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
 	"ar-SA": async () => (await import("../../messages/ar-SA/common.json")).default,
 };
 
-const siteMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
+const siteMessageLoaders: Record<ShippedLocale, DomainMessageLoader> = {
 	"en-GB": async () => englishSiteMessages,
 	"en-US": async () => mergeCatalogMessages(englishSiteMessages, (await import("../../messages/en-US/site.overrides.json")).default),
 	"zh-Hans": async () => (await import("../../messages/zh-Hans/site.json")).default,
@@ -42,7 +42,7 @@ const siteMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
 	"ar-SA": async () => (await import("../../messages/ar-SA/site.json")).default,
 };
 
-const catalogueMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
+const catalogueMessageLoaders: Record<ShippedLocale, DomainMessageLoader> = {
 	"en-GB": async () => englishCatalogueMessages,
 	"en-US": async () => mergeCatalogMessages(englishCatalogueMessages, (await import("../../messages/en-US/catalogue.overrides.json")).default),
 	"zh-Hans": async () => (await import("../../messages/zh-Hans/catalogue.json")).default,
@@ -55,7 +55,7 @@ const catalogueMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
 	"ar-SA": async () => (await import("../../messages/ar-SA/catalogue.json")).default,
 };
 
-const contentMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
+const contentMessageLoaders: Record<ShippedLocale, DomainMessageLoader> = {
 	"en-GB": async () => englishContentMessages,
 	"en-US": async () => mergeCatalogMessages(englishContentMessages, (await import("../../messages/en-US/content.overrides.json")).default),
 	"zh-Hans": async () => (await import("../../messages/zh-Hans/content.json")).default,
@@ -68,7 +68,7 @@ const contentMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
 	"ar-SA": async () => (await import("../../messages/ar-SA/content.json")).default,
 };
 
-const productMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
+const productMessageLoaders: Record<ShippedLocale, DomainMessageLoader> = {
 	"en-GB": async () => englishProductMessages,
 	"en-US": async () => mergeCatalogMessages(englishProductMessages, (await import("../../messages/en-US/product.overrides.json")).default),
 	"zh-Hans": async () => (await import("../../messages/zh-Hans/product.json")).default,
@@ -81,7 +81,7 @@ const productMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
 	"ar-SA": async () => (await import("../../messages/ar-SA/product.json")).default,
 };
 
-const settingsUiMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
+const settingsUiMessageLoaders: Record<ShippedLocale, DomainMessageLoader> = {
 	"en-GB": async () => englishSettingsUiMessages,
 	"en-US": async () => mergeCatalogMessages(englishSettingsUiMessages, (await import("../../messages/en-US/settings-ui.overrides.json")).default),
 	"zh-Hans": async () => (await import("../../messages/zh-Hans/settings-ui.json")).default,
@@ -94,7 +94,7 @@ const settingsUiMessageLoaders: Record<PublicLocale, DomainMessageLoader> = {
 	"ar-SA": async () => (await import("../../messages/ar-SA/settings-ui.json")).default,
 };
 
-const publicMessageLoaders: Record<PublicLocale, PublicMessageLoader> = {
+const publicMessageLoaders: Record<ShippedLocale, PublicMessageLoader> = {
 	"en-GB": async () => englishAuthMessages,
 	"en-US": async () => mergeMessages(englishAuthMessages, (await import("../../messages/en-US/auth.overrides.json")).default),
 	"zh-Hans": async () => (await import("../../messages/zh-Hans/auth.json")).default,

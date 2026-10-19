@@ -11,6 +11,7 @@ import { publicLocales } from "@/i18n/routing";
 import {
 	config,
 	getLegacyModelPageRedirect,
+	getRetiredLocaleRedirect,
 	isLocalizedAuthPath,
 	isLocalizedPagePath,
 	proxy,
@@ -191,7 +192,7 @@ describe("public localisation proxy", () => {
 	it.each([
 		["/models/openai/gpt-5/ja", "/models/openai/gpt-5"],
 		["/models/vercel/v0-1.0-md/performance", "/models/vercel/v0-1.0-md"],
-		["/en-US/models/z-ai/glm-5/playground", "/en-US/models/z-ai/glm-5"],
+		["/en-US/models/z-ai/glm-5/playground", "/models/z-ai/glm-5"],
 		["/de-DE/models/openai/gpt-4.1/benchmarks/extra", "/de-DE/models/openai/gpt-4.1"],
 		["/en-GB/models/openai/gpt-5/fr-FR", "/models/openai/gpt-5"],
 	])("redirects legacy model sub-path %s before rendering", async (pathname, expected) => {
@@ -215,6 +216,42 @@ describe("public localisation proxy", () => {
 		"/benchmarks/openai/gpt-5/ja",
 	])("leaves %s to the normal page routing", (pathname) => {
 		expect(getLegacyModelPageRedirect(pathname)).toBeNull();
+	});
+
+	it.each([
+		["/en-US", "/"],
+		["/en-US/", "/"],
+		["/en-US/models/openai/gpt-5", "/models/openai/gpt-5"],
+		["/en-us/compare", "/compare"],
+		["/EN-US/benchmarks/gpqa", "/benchmarks/gpqa"],
+		["/en-US/settings/keys", "/settings/keys"],
+	])("sends retired English (US) URL %s to the English page", async (pathname, expected) => {
+		expect(unstable_doesMiddlewareMatch({ config, url: `${origin}${pathname}` })).toBe(true);
+
+		const response = await proxy(new NextRequest(`${origin}${pathname}?ref=old`));
+		const location = new URL(response.headers.get("location")!);
+
+		expect(response.status).toBe(308);
+		expect(location.pathname).toBe(expected);
+		expect(location.search).toBe("?ref=old");
+		expect(mockCreateServerClient).not.toHaveBeenCalled();
+	});
+
+	it.each(["/en-GB/models", "/en-USA/models", "/models/en-US", "/fr-FR/models"])(
+		"keeps %s out of the retired-locale redirect",
+		(pathname) => {
+			expect(getRetiredLocaleRedirect(pathname)).toBeNull();
+		},
+	);
+
+	it.each([
+		["an English browser", { "accept-language": "en-US,en;q=0.9" }],
+		["a visitor who chose English (US) before", { "accept-language": "en-US", cookie: "PHASEO_LOCALE=en-US" }],
+	])("serves %s the unprefixed English pages", async (_visitor, headers) => {
+		const response = await proxy(new NextRequest(`${origin}/models`, { headers }));
+
+		expect(response.headers.get("location")).toBeNull();
+		expect(new URL(response.headers.get("x-middleware-rewrite")!).pathname).toBe("/en-GB/models");
 	});
 
 	const writesWithoutServerAction: Array<[string, string, Record<string, string>]> = [

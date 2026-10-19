@@ -10,7 +10,6 @@ import {
 
 export const openGraphLocales = {
 	"en-GB": "en_GB",
-	"en-US": "en_US",
 	"zh-Hans": "zh_CN",
 	hi: "hi_IN",
 	"es-ES": "es_ES",
