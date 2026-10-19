@@ -391,6 +391,9 @@ try {
     // Repeated price changes to one model are one push. c1 is at its cap of 2 and is suppressed;
     // u1 switches prices off before the push is due, so a1 and a2 are closed when it is claimed.
     await db.exec(`update public.v2_pricing_sku_meters set price_nanos = 140000000 where meter_key = 'input_tokens' and sku_id = '10000000-0000-4000-8000-000000000001'`);
+    // A separate transaction a moment later, so the output change is reliably the latest one
+    // (two quick writes can share a timestamp, and the message names the latest change).
+    await new Promise(resolve => setTimeout(resolve, 5));
     await db.exec(`update public.v2_pricing_sku_meters set price_nanos = 560000000 where meter_key = 'output_tokens' and sku_id = '10000000-0000-4000-8000-000000000001'`);
     await capture();
     assert.equal((await capture()).emitted, 2);
