@@ -45,6 +45,14 @@ describe("/v1/messages documented parameters", () => {
 		expect(getUnknownTopLevelParams("messages", body)).toEqual([]);
 	});
 
+	it("routes output_config effort and format like reasoning and response_format", () => {
+		const params = extractRequestedParams("messages", {
+			...base,
+			output_config: { effort: "high", format: { type: "json_schema", schema: { type: "object" } } },
+		});
+		expect(params).toEqual(expect.arrayContaining(["reasoning.effort", "response_format"]));
+	});
+
 	it("still rejects parameters the Messages API does not document", () => {
 		expect(getUnknownTopLevelParams("messages", { ...base, mcp_servers: [] })).toEqual(["mcp_servers"]);
 	});

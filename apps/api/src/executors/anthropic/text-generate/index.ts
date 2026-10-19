@@ -751,8 +751,13 @@ export function irToAnthropicMessages(
 	const thinkingOffType = reasoningDisabled ? anthropicThinkingOffType(resolvedModel) : null;
 	if (usesAdaptiveThinkingControls && ir.reasoning) {
 		if (thinkingOffType) {
-			// `between_tools` and `disabled` take no other field.
+			// `between_tools` and `disabled` take no other field. Both are accepted at effort
+			// high or below, so a client's low, medium or high effort still applies.
 			request.thinking = { type: thinkingOffType };
+			const offEffort = ir.reasoning?.effort;
+			if (offEffort === "low" || offEffort === "medium" || offEffort === "high") {
+				request.output_config = { ...(request.output_config ?? {}), effort: offEffort };
+			}
 		} else {
 			request.thinking = {
 				type: "adaptive",

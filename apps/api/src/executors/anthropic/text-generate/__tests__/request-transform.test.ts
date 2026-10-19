@@ -564,6 +564,20 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(irToAnthropicMessages(request).thinking).toEqual({ type: "between_tools" });
 	});
 
+	it("keeps a Messages client's low effort alongside between_tools", () => {
+		const request = decodeAnthropicMessagesRequest({
+			model: "anthropic/claude-sonnet-5.5",
+			max_tokens: 1024,
+			messages: [{ role: "user", content: "Hello" }],
+			thinking: { type: "between_tools" },
+			output_config: { effort: "low" },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "between_tools" });
+		expect(payload.output_config?.effort).toBe("low");
+	});
+
 	// Per-model table at https://platform.claude.com/docs/en/build-with-claude/thinking.
 	it.each([
 		["anthropic/claude-opus-4.7", { type: "disabled" }],

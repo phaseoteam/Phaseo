@@ -172,12 +172,13 @@ function isJsonSchemaResponseFormat(body: any): boolean {
 	if (directFormat && typeof directFormat === "object" && directFormat.type === "json_schema") {
 		return true;
 	}
-	const textFormat = body?.text?.format;
+	// Responses text.format, or Anthropic Messages output_config.format (json_schema only).
+	const textFormat = body?.text?.format ?? body?.output_config?.format;
 	return Boolean(textFormat && typeof textFormat === "object" && textFormat.type === "json_schema");
 }
 
 function hasRequestedResponseFormat(body: any): boolean {
-	return body?.response_format != null || body?.text?.format != null;
+	return body?.response_format != null || body?.text?.format != null || body?.output_config?.format != null;
 }
 
 function filterProvidersByCapability(
