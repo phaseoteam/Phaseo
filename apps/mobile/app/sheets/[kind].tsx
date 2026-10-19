@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Check } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
+import { Logo } from "@/components/Logo";
 import { Button, EmptyState, ErrorState, Fact, Header, Icon, LoadingState, Row, RouteSheet, SearchField, Section, Segmented, Text, TextField } from "@/components/ui";
 import { exportAndShare } from "@/features/chat/chatActions";
 import type { ExportFormat } from "@/features/chat/export";
@@ -200,6 +201,7 @@ function PickSheet() {
           <Row
             key={option.id}
             title={option.name}
+            leading={<Logo id={option.id} label={option.name} size={28} />}
             chevron={false}
             trailing={scope.ids.includes(option.id) ? <Icon icon={Check} tone="primary" size={18} /> : null}
             onPress={() => setIds(scope.ids.includes(option.id) ? scope.ids.filter((id) => id !== option.id) : [...scope.ids, option.id])}
