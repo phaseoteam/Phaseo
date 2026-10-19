@@ -100,6 +100,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createExtraction(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/extractions";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createGatewayFeedback(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/feedback";
 		return client.request("POST", resolvedPath, query, headers, body);

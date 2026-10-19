@@ -67,6 +67,7 @@ export const MODEL_CAPABILITY_OPTIONS = [
   "text.rerank",
   "text.moderate",
   "decisions.make",
+  "extraction.extract",
   "image.generate",
   "image.edit",
   "audio.transcribe",

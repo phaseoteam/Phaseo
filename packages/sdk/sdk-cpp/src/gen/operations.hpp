@@ -105,6 +105,11 @@ inline Response CreateEmbedding(Client& client, const std::map<std::string, std:
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateExtraction(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/extractions";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateGatewayFeedback(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/feedback";
 	return client.request("POST", resolved_path, body);

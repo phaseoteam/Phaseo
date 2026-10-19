@@ -264,6 +264,12 @@ export function estimateProviderTokenReservation(args: {
 	providerMaxInputTokens?: number | null;
 	providerMaxOutputTokens?: number | null;
 }): number | null {
+	if (args.capability === "extraction.extract") {
+		const fields = (args.body as { fields?: Record<string, unknown> } | null)?.fields;
+		const count = fields && typeof fields === "object" ? Object.keys(fields).length : 0;
+		// One field per full model context is deliberately conservative across parallel passes.
+		return count >= 1 && count <= 64 ? count * 65536 : null;
+	}
 	const stats = requestBodyStats(args.body, args.bodyBytes);
 	const inputUpperBound = stats.unbounded
 		? positiveSafeInteger(args.providerMaxInputTokens)

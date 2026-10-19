@@ -18,6 +18,7 @@ from .jobs import JobFailedError, JobTimeoutError, job_status, _validate_options
 from .transport import APIResponse, PhaseoHTTPError, RawResponse, RequestHook, decode_response, request_trace_url, retry_after, validate_controls
 from .media import upload_input
 from .pagination import aiter_items, aiter_pages
+from gen import models
 
 ParsedOutput = TypeVar("ParsedOutput", bound=BaseModel)
 PREFLIGHT_STRUCTURAL_FIELDS = {"model", "input", "messages", "prompt", "contents", "provider", "providers", "routing", "metadata", "session_id", "app", "webhook", "idempotency_key"}
@@ -37,6 +38,14 @@ class AsyncResource:
         return await self.client.request("GET", f"{self.path}/{quote(resource_id, safe='')}")
 
     get = retrieve
+
+
+class AsyncExtractions:
+    def __init__(self, client: "AsyncPhaseo"):
+        self.client = client
+
+    async def create(self, params: models.ExtractionRequest) -> models.ExtractionResponse:
+        return await self.client.request("POST", "/extractions", body=params)
 
 
 class AsyncTextResource(AsyncResource):
@@ -309,6 +318,7 @@ class AsyncPhaseo:
         self.rerank = AsyncResource(self, "/rerank")
         self.moderations = AsyncResource(self, "/moderations")
         self.decisions = AsyncDecisions(self, "/decisions")
+        self.extractions = AsyncExtractions(self)
         self.models = AsyncModels(self, "/models")
         self.files = AsyncFiles(self, "/batches/files")
         self.music = AsyncJobs(self, "/music/generate", "music")

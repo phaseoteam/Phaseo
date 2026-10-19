@@ -2,7 +2,7 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "7d03465f92f200fe11870be2f6eb6317d058fc999b5bfb7b46870536e6b30eed",
+      "@openapi": "41882c270e8c8ae648c69cdf2545ddb8ead4f29f0e9c99e51274a5439bb041b3",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -51,6 +51,7 @@
       "api-reference/endpoint/endpoints.mdx": "8e30fa538099598ace56407aa2cb97dd65701ec12e62275e35c7d8bf96e7d4a1",
       "api-reference/endpoint/events-create.mdx": "f3c8aa8a4551839a8d5098e2be9338bff23430d155c2ef713725e41a24b87cfd",
       "api-reference/endpoint/events-list.mdx": "6448c7c572d75f407096f70ae32792e0e8252f5612bd9950b62a76d15f2282cc",
+      "api-reference/endpoint/extractions.mdx": "c282b67576ffb94526254c4931e8bb204b90c53484f6f01c03635f1996384ccd",
       "api-reference/endpoint/feedback-create.mdx": "4ce68886eab128c15bbd7d7444e498e3d7829d9297a5dd35327c210aeffa8601",
       "api-reference/endpoint/feedback-list.mdx": "72322fa85dd4e3244153096eb212a339013a7bc898a630e6133d320db8e8fce9",
       "api-reference/endpoint/feedback-summary.mdx": "12ca8c12af6aa53ec122bcaf57e6dfe42ce206d769b3e6e4718b0d4a32343b0f",
@@ -630,7 +631,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "de": {
-      "@openapi": "7d03465f92f200fe11870be2f6eb6317d058fc999b5bfb7b46870536e6b30eed",
+      "@openapi": "41882c270e8c8ae648c69cdf2545ddb8ead4f29f0e9c99e51274a5439bb041b3",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -679,6 +680,7 @@
       "api-reference/endpoint/endpoints.mdx": "8e30fa538099598ace56407aa2cb97dd65701ec12e62275e35c7d8bf96e7d4a1",
       "api-reference/endpoint/events-create.mdx": "f3c8aa8a4551839a8d5098e2be9338bff23430d155c2ef713725e41a24b87cfd",
       "api-reference/endpoint/events-list.mdx": "6448c7c572d75f407096f70ae32792e0e8252f5612bd9950b62a76d15f2282cc",
+      "api-reference/endpoint/extractions.mdx": "c282b67576ffb94526254c4931e8bb204b90c53484f6f01c03635f1996384ccd",
       "api-reference/endpoint/feedback-create.mdx": "4ce68886eab128c15bbd7d7444e498e3d7829d9297a5dd35327c210aeffa8601",
       "api-reference/endpoint/feedback-list.mdx": "72322fa85dd4e3244153096eb212a339013a7bc898a630e6133d320db8e8fce9",
       "api-reference/endpoint/feedback-summary.mdx": "12ca8c12af6aa53ec122bcaf57e6dfe42ce206d769b3e6e4718b0d4a32343b0f",
@@ -1258,7 +1260,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "es": {
-      "@openapi": "7d03465f92f200fe11870be2f6eb6317d058fc999b5bfb7b46870536e6b30eed",
+      "@openapi": "41882c270e8c8ae648c69cdf2545ddb8ead4f29f0e9c99e51274a5439bb041b3",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -1307,6 +1309,7 @@
       "api-reference/endpoint/endpoints.mdx": "8e30fa538099598ace56407aa2cb97dd65701ec12e62275e35c7d8bf96e7d4a1",
       "api-reference/endpoint/events-create.mdx": "f3c8aa8a4551839a8d5098e2be9338bff23430d155c2ef713725e41a24b87cfd",
       "api-reference/endpoint/events-list.mdx": "6448c7c572d75f407096f70ae32792e0e8252f5612bd9950b62a76d15f2282cc",
+      "api-reference/endpoint/extractions.mdx": "c282b67576ffb94526254c4931e8bb204b90c53484f6f01c03635f1996384ccd",
       "api-reference/endpoint/feedback-create.mdx": "4ce68886eab128c15bbd7d7444e498e3d7829d9297a5dd35327c210aeffa8601",
       "api-reference/endpoint/feedback-list.mdx": "72322fa85dd4e3244153096eb212a339013a7bc898a630e6133d320db8e8fce9",
       "api-reference/endpoint/feedback-summary.mdx": "12ca8c12af6aa53ec122bcaf57e6dfe42ce206d769b3e6e4718b0d4a32343b0f",
@@ -1886,7 +1889,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "fr": {
-      "@openapi": "7d03465f92f200fe11870be2f6eb6317d058fc999b5bfb7b46870536e6b30eed",
+      "@openapi": "41882c270e8c8ae648c69cdf2545ddb8ead4f29f0e9c99e51274a5439bb041b3",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -1935,6 +1938,7 @@
       "api-reference/endpoint/endpoints.mdx": "8e30fa538099598ace56407aa2cb97dd65701ec12e62275e35c7d8bf96e7d4a1",
       "api-reference/endpoint/events-create.mdx": "f3c8aa8a4551839a8d5098e2be9338bff23430d155c2ef713725e41a24b87cfd",
       "api-reference/endpoint/events-list.mdx": "6448c7c572d75f407096f70ae32792e0e8252f5612bd9950b62a76d15f2282cc",
+      "api-reference/endpoint/extractions.mdx": "c282b67576ffb94526254c4931e8bb204b90c53484f6f01c03635f1996384ccd",
       "api-reference/endpoint/feedback-create.mdx": "4ce68886eab128c15bbd7d7444e498e3d7829d9297a5dd35327c210aeffa8601",
       "api-reference/endpoint/feedback-list.mdx": "72322fa85dd4e3244153096eb212a339013a7bc898a630e6133d320db8e8fce9",
       "api-reference/endpoint/feedback-summary.mdx": "12ca8c12af6aa53ec122bcaf57e6dfe42ce206d769b3e6e4718b0d4a32343b0f",
@@ -2514,7 +2518,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "hi": {
-      "@openapi": "7d03465f92f200fe11870be2f6eb6317d058fc999b5bfb7b46870536e6b30eed",
+      "@openapi": "41882c270e8c8ae648c69cdf2545ddb8ead4f29f0e9c99e51274a5439bb041b3",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2563,6 +2567,7 @@
       "api-reference/endpoint/endpoints.mdx": "8e30fa538099598ace56407aa2cb97dd65701ec12e62275e35c7d8bf96e7d4a1",
       "api-reference/endpoint/events-create.mdx": "f3c8aa8a4551839a8d5098e2be9338bff23430d155c2ef713725e41a24b87cfd",
       "api-reference/endpoint/events-list.mdx": "6448c7c572d75f407096f70ae32792e0e8252f5612bd9950b62a76d15f2282cc",
+      "api-reference/endpoint/extractions.mdx": "c282b67576ffb94526254c4931e8bb204b90c53484f6f01c03635f1996384ccd",
       "api-reference/endpoint/feedback-create.mdx": "4ce68886eab128c15bbd7d7444e498e3d7829d9297a5dd35327c210aeffa8601",
       "api-reference/endpoint/feedback-list.mdx": "72322fa85dd4e3244153096eb212a339013a7bc898a630e6133d320db8e8fce9",
       "api-reference/endpoint/feedback-summary.mdx": "12ca8c12af6aa53ec122bcaf57e6dfe42ce206d769b3e6e4718b0d4a32343b0f",
@@ -3142,7 +3147,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "ja": {
-      "@openapi": "7d03465f92f200fe11870be2f6eb6317d058fc999b5bfb7b46870536e6b30eed",
+      "@openapi": "41882c270e8c8ae648c69cdf2545ddb8ead4f29f0e9c99e51274a5439bb041b3",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3191,6 +3196,7 @@
       "api-reference/endpoint/endpoints.mdx": "8e30fa538099598ace56407aa2cb97dd65701ec12e62275e35c7d8bf96e7d4a1",
       "api-reference/endpoint/events-create.mdx": "f3c8aa8a4551839a8d5098e2be9338bff23430d155c2ef713725e41a24b87cfd",
       "api-reference/endpoint/events-list.mdx": "6448c7c572d75f407096f70ae32792e0e8252f5612bd9950b62a76d15f2282cc",
+      "api-reference/endpoint/extractions.mdx": "c282b67576ffb94526254c4931e8bb204b90c53484f6f01c03635f1996384ccd",
       "api-reference/endpoint/feedback-create.mdx": "4ce68886eab128c15bbd7d7444e498e3d7829d9297a5dd35327c210aeffa8601",
       "api-reference/endpoint/feedback-list.mdx": "72322fa85dd4e3244153096eb212a339013a7bc898a630e6133d320db8e8fce9",
       "api-reference/endpoint/feedback-summary.mdx": "12ca8c12af6aa53ec122bcaf57e6dfe42ce206d769b3e6e4718b0d4a32343b0f",
@@ -3770,7 +3776,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "pt-BR": {
-      "@openapi": "7d03465f92f200fe11870be2f6eb6317d058fc999b5bfb7b46870536e6b30eed",
+      "@openapi": "41882c270e8c8ae648c69cdf2545ddb8ead4f29f0e9c99e51274a5439bb041b3",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3819,6 +3825,7 @@
       "api-reference/endpoint/endpoints.mdx": "8e30fa538099598ace56407aa2cb97dd65701ec12e62275e35c7d8bf96e7d4a1",
       "api-reference/endpoint/events-create.mdx": "f3c8aa8a4551839a8d5098e2be9338bff23430d155c2ef713725e41a24b87cfd",
       "api-reference/endpoint/events-list.mdx": "6448c7c572d75f407096f70ae32792e0e8252f5612bd9950b62a76d15f2282cc",
+      "api-reference/endpoint/extractions.mdx": "c282b67576ffb94526254c4931e8bb204b90c53484f6f01c03635f1996384ccd",
       "api-reference/endpoint/feedback-create.mdx": "4ce68886eab128c15bbd7d7444e498e3d7829d9297a5dd35327c210aeffa8601",
       "api-reference/endpoint/feedback-list.mdx": "72322fa85dd4e3244153096eb212a339013a7bc898a630e6133d320db8e8fce9",
       "api-reference/endpoint/feedback-summary.mdx": "12ca8c12af6aa53ec122bcaf57e6dfe42ce206d769b3e6e4718b0d4a32343b0f",
@@ -4398,7 +4405,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "zh-Hans": {
-      "@openapi": "7d03465f92f200fe11870be2f6eb6317d058fc999b5bfb7b46870536e6b30eed",
+      "@openapi": "41882c270e8c8ae648c69cdf2545ddb8ead4f29f0e9c99e51274a5439bb041b3",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4447,6 +4454,7 @@
       "api-reference/endpoint/endpoints.mdx": "8e30fa538099598ace56407aa2cb97dd65701ec12e62275e35c7d8bf96e7d4a1",
       "api-reference/endpoint/events-create.mdx": "f3c8aa8a4551839a8d5098e2be9338bff23430d155c2ef713725e41a24b87cfd",
       "api-reference/endpoint/events-list.mdx": "6448c7c572d75f407096f70ae32792e0e8252f5612bd9950b62a76d15f2282cc",
+      "api-reference/endpoint/extractions.mdx": "c282b67576ffb94526254c4931e8bb204b90c53484f6f01c03635f1996384ccd",
       "api-reference/endpoint/feedback-create.mdx": "4ce68886eab128c15bbd7d7444e498e3d7829d9297a5dd35327c210aeffa8601",
       "api-reference/endpoint/feedback-list.mdx": "72322fa85dd4e3244153096eb212a339013a7bc898a630e6133d320db8e8fce9",
       "api-reference/endpoint/feedback-summary.mdx": "12ca8c12af6aa53ec122bcaf57e6dfe42ce206d769b3e6e4718b0d4a32343b0f",

@@ -256,7 +256,9 @@
 			"endpointDocumentParsing": "दस्तावेज़ पार्सिंग",
 			"tierPrivate": "निजी",
 			"capabilityTextGeneration": "टेक्स्ट जनरेशन",
-			"modalityDecisions": "निर्णय"
+			"modalityDecisions": "निर्णय",
+			"modalityClassification": "वर्गीकरण",
+			"modalityExtraction": "निष्कर्षण"
 		},
 		"freeRouter": {
 			"title": "मुफ़्त मॉडल पूल",

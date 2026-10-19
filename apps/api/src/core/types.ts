@@ -15,6 +15,7 @@ export type Endpoint =
     | "moderations"
     | "rerank"
     | "decisions"
+    | "extractions"
     | "video.generation"
     | "embeddings"
     | "batch"

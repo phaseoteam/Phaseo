@@ -139,6 +139,13 @@ function createEmbedding(Client $client, ?array $path = null, ?array $query = nu
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createExtraction(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/extractions";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createGatewayFeedback(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];

@@ -129,6 +129,14 @@ class _ModerationsResource:
         return self._parent.generate_moderation(params)
 
 
+class _ExtractionsResource:
+    def __init__(self, parent: "Phaseo"):
+        self._parent = parent
+
+    def create(self, params: models.ExtractionRequest) -> models.ExtractionResponse:
+        return self._parent.create_extraction(params)
+
+
 class _DecisionsResource:
     def __init__(self, parent: "Phaseo"):
         self._parent = parent
@@ -537,6 +545,7 @@ class Phaseo:
         self.audio = _AudioResource(self)
         self.moderations = _ModerationsResource(self)
         self.decisions = _DecisionsResource(self)
+        self.extractions = _ExtractionsResource(self)
         self.batches = _BatchesResource(self)
         self.files = _FilesResource(self)
         self.models = _ModelsResource(self)
@@ -950,6 +959,18 @@ class Phaseo:
                 error=exc,
                 started_at=started,
             )
+            raise
+
+    def create_extraction(self, request: models.ExtractionRequest) -> models.ExtractionResponse:
+        payload = dict(request)
+        self._maybe_warn_for_payload(payload)
+        started = time.time()
+        try:
+            response = ops.createExtraction(self._client, body=payload)
+            self._capture_success(endpoint="extraction.extract", request=payload, response=response, started_at=started)
+            return response
+        except Exception as exc:
+            self._capture_error(endpoint="extraction.extract", request=payload, error=exc, started_at=started)
             raise
 
     def generate_video(self, request: VideoCreateRequest | dict[str, Any]) -> dict[str, Any]:

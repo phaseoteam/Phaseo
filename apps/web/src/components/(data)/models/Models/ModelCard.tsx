@@ -162,6 +162,7 @@ const providerStatusOrderIndex = new Map<string, number>(
 function toTitleLabel(value: string): string {
 	const normalized = value.trim().toLowerCase();
 	if (normalized === "realtime") return "Realtime";
+	if (normalized === "extraction" || normalized === "extraction.extract") return "Extraction";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";

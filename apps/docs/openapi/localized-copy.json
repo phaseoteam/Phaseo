@@ -8423,6 +8423,146 @@
 			"ja": "クライアントが送信したリクエストパラメーターのうち、処理するプロバイダーがサポートしていないため、ゲートウェイがプロバイダーに送信したりリクエストを拒否したりせずに削除したもの。例: `top_k, min_p`。成功したレスポンスで、リクエスト本文のパラメーターが 1 つ以上削除された場合にのみ送信されます。プリセットや既定値から設定されたパラメーターは含まれません。",
 			"zh-Hans": "客户端发送、但处理请求的提供商不支持，因而被网关移除（而不是发送给提供商或拒绝请求）的请求参数，例如 `top_k, min_p`。仅在成功的响应中、且至少移除了一个来自请求正文的参数时才会发送。来自预设或默认值的参数不会列出。",
 			"ar": "معلمات أرسلها العميل ولا يدعمها المزوّد الذي يخدم الطلب، فحذفتها البوابة بدلًا من إرسالها إلى المزوّد أو رفض الطلب، مثل `top_k, min_p`. تُرسل فقط في الاستجابات الناجحة، وفقط عند حذف معلمة واحدة على الأقل من جسم الطلب. لا تُدرج المعلمات التي مصدرها إعداد مسبق أو قيمة افتراضية."
+		},
+		"Extract typed values": {
+			"es": "Extraer valores tipados",
+			"fr": "Extraire des valeurs typées",
+			"de": "Typisierte Werte extrahieren",
+			"pt-BR": "Extrair valores tipados",
+			"hi": "टाइप किए गए मान निकालें",
+			"ja": "型付きの値を抽出",
+			"zh-Hans": "提取类型化值",
+			"ar": "استخراج قيم محددة النوع"
+		},
+		"Extracts text, numbers, dates, times, durations and typed lists from text or embedded images. Returns typed values and model-reported uncertainty. Estimates, forecasts, streaming and remote image URLs are not supported.": {
+			"es": "Extrae texto, números, fechas, horas, duraciones y listas tipadas de texto o imágenes integradas. Devuelve valores tipados e incertidumbre indicada por el modelo. No se admiten estimaciones, pronósticos, streaming ni URL de imágenes remotas.",
+			"fr": "Extrait du texte, des nombres, des dates, des heures, des durées et des listes typées à partir de texte ou d’images intégrées. Renvoie des valeurs typées et l’incertitude indiquée par le modèle. Les estimations, les prévisions, le streaming et les URL d’images distantes ne sont pas pris en charge.",
+			"de": "Extrahiert Text, Zahlen, Datumsangaben, Uhrzeiten, Zeitspannen und typisierte Listen aus Text oder eingebetteten Bildern. Gibt typisierte Werte und die vom Modell gemeldete Unsicherheit zurück. Schätzungen, Prognosen, Streaming und URLs entfernter Bilder werden nicht unterstützt.",
+			"pt-BR": "Extrai texto, números, datas, horários, durações e listas tipadas de texto ou imagens incorporadas. Retorna valores tipados e a incerteza informada pelo modelo. Estimativas, previsões, streaming e URLs de imagens remotas não são compatíveis.",
+			"hi": "टेक्स्ट या एम्बेड की गई इमेज से टेक्स्ट, संख्याएँ, तारीखें, समय, अवधियाँ और टाइप की गई सूचियाँ निकालता है। टाइप किए गए मान और मॉडल द्वारा बताई गई अनिश्चितता लौटाता है। अनुमान, पूर्वानुमान, स्ट्रीमिंग और रिमोट इमेज URL समर्थित नहीं हैं।",
+			"ja": "テキストや埋め込み画像からテキスト、数値、日付、時刻、期間、型付きリストを抽出します。型付きの値とモデルが報告する不確実性を返します。推定、予測、ストリーミング、リモート画像のURLには対応していません。",
+			"zh-Hans": "从文本或嵌入式图像中提取文本、数字、日期、时间、时长和类型化列表。返回类型化值及模型报告的不确定性。不支持估算、预测、流式传输或远程图像 URL。",
+			"ar": "يستخرج النصوص والأرقام والتواريخ والأوقات والمدد والقوائم محددة النوع من نص أو صور مضمّنة. يعيد قيماً محددة النوع ومعلومات عدم اليقين التي يبلغ عنها النموذج. لا يدعم التقديرات أو التنبؤات أو البث أو روابط الصور البعيدة."
+		},
+		"Typed extraction answers": {
+			"es": "Respuestas de extracción tipadas",
+			"fr": "Réponses d’extraction typées",
+			"de": "Typisierte Extraktionsantworten",
+			"pt-BR": "Respostas de extração tipadas",
+			"hi": "टाइप किए गए निष्कर्षण उत्तर",
+			"ja": "型付きの抽出結果",
+			"zh-Hans": "类型化提取结果",
+			"ar": "إجابات استخراج محددة النوع"
+		},
+		"Model ID with the extraction.extract capability.": {
+			"es": "ID de modelo con la capacidad extraction.extract.",
+			"fr": "ID du modèle doté de la capacité extraction.extract.",
+			"de": "Modell-ID mit der Fähigkeit extraction.extract.",
+			"pt-BR": "ID do modelo com a capacidade extraction.extract.",
+			"hi": "extraction.extract क्षमता वाला मॉडल ID।",
+			"ja": "extraction.extract機能を持つモデルID。",
+			"zh-Hans": "具备 extraction.extract 能力的模型 ID。",
+			"ar": "معرّف نموذج يدعم القدرة extraction.extract."
+		},
+		"Source text. May be empty when images are supplied.": {
+			"es": "Texto de origen. Puede estar vacío si se proporcionan imágenes.",
+			"fr": "Texte source. Peut être vide si des images sont fournies.",
+			"de": "Quelltext. Darf leer sein, wenn Bilder übergeben werden.",
+			"pt-BR": "Texto de origem. Pode ficar vazio quando imagens são fornecidas.",
+			"hi": "स्रोत टेक्स्ट। इमेज दिए जाने पर खाली हो सकता है।",
+			"ja": "入力元のテキスト。画像を指定する場合は空にできます。",
+			"zh-Hans": "源文本。提供图像时可以为空。",
+			"ar": "النص المصدر. يمكن أن يكون فارغاً عند توفير صور."
+		},
+		"Field names match ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$.": {
+			"es": "Los nombres de campo siguen ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$.",
+			"fr": "Les noms de champs respectent ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$.",
+			"de": "Feldnamen entsprechen ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$.",
+			"pt-BR": "Os nomes dos campos seguem ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$.",
+			"hi": "फ़ील्ड नाम ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$ से मेल खाते हैं।",
+			"ja": "フィールド名は^[A-Za-z_][A-Za-z0-9_.-]{0,63}$に一致する必要があります。",
+			"zh-Hans": "字段名称须符合 ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$。",
+			"ar": "تطابق أسماء الحقول النمط ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$."
+		},
+		"Embedded PNG, JPEG or WebP images; 4 MiB each and 8 MiB combined decoded.": {
+			"es": "Imágenes PNG, JPEG o WebP integradas; 4 MiB por imagen y 8 MiB en total una vez decodificadas.",
+			"fr": "Images PNG, JPEG ou WebP intégrées ; 4 MiB par image et 8 MiB au total après décodage.",
+			"de": "Eingebettete PNG-, JPEG- oder WebP-Bilder; nach dem Dekodieren 4 MiB pro Bild und insgesamt 8 MiB.",
+			"pt-BR": "Imagens PNG, JPEG ou WebP incorporadas; 4 MiB por imagem e 8 MiB no total após a decodificação.",
+			"hi": "एम्बेड की गई PNG, JPEG या WebP इमेज; डिकोड करने के बाद प्रति इमेज 4 MiB और कुल 8 MiB।",
+			"ja": "埋め込みのPNG、JPEG、WebP画像。デコード後に1枚あたり4 MiB、合計8 MiBまで。",
+			"zh-Hans": "嵌入式 PNG、JPEG 或 WebP 图像；解码后每张最多 4 MiB，合计最多 8 MiB。",
+			"ar": "صور PNG أو JPEG أو WebP مضمّنة؛ 4 MiB لكل صورة و8 MiB إجمالاً بعد فك الترميز."
+		},
+		"Explicit date context for incomplete dates.": {
+			"es": "Contexto de fecha explícito para fechas incompletas.",
+			"fr": "Contexte de date explicite pour les dates incomplètes.",
+			"de": "Expliziter Datumskontext für unvollständige Datumsangaben.",
+			"pt-BR": "Contexto de data explícito para datas incompletas.",
+			"hi": "अधूरी तारीखों के लिए स्पष्ट तारीख संदर्भ।",
+			"ja": "不完全な日付を解釈するための明示的な日付コンテキスト。",
+			"zh-Hans": "用于补全不完整日期的明确日期上下文。",
+			"ar": "سياق تاريخ صريح للتواريخ غير المكتملة."
+		},
+		"Base64-encoded image bytes, without a data URL prefix.": {
+			"es": "Bytes de imagen codificados en Base64, sin prefijo de URL de datos.",
+			"fr": "Octets d’image encodés en Base64, sans préfixe d’URL de données.",
+			"de": "Base64-kodierte Bilddaten ohne Daten-URL-Präfix.",
+			"pt-BR": "Bytes da imagem codificados em Base64, sem prefixo de URL de dados.",
+			"hi": "Base64 में एन्कोड किए गए इमेज बाइट, डेटा URL प्रीफ़िक्स के बिना।",
+			"ja": "データURLの接頭辞を付けない、Base64エンコードされた画像バイト列。",
+			"zh-Hans": "Base64 编码的图像字节，不带数据 URL 前缀。",
+			"ar": "بايتات صورة بترميز Base64، دون بادئة رابط بيانات."
+		},
+		"Whether the provider truncated source input.": {
+			"es": "Indica si el proveedor truncó el texto de origen.",
+			"fr": "Indique si le fournisseur a tronqué le texte source.",
+			"de": "Gibt an, ob der Anbieter den Quelltext gekürzt hat.",
+			"pt-BR": "Indica se o provedor truncou o texto de origem.",
+			"hi": "बताता है कि प्रदाता ने स्रोत टेक्स्ट काटा है या नहीं।",
+			"ja": "プロバイダーが入力元のテキストを切り詰めたかどうか。",
+			"zh-Hans": "表示提供商是否截断了源文本。",
+			"ar": "يوضح ما إذا كان المزوّد قد اقتطع النص المصدر."
+		},
+		"Extracted text or ISO date/time, or null when undetermined.": {
+			"es": "Texto extraído o fecha/hora ISO, o null si no se puede determinar.",
+			"fr": "Texte extrait ou date/heure ISO, ou null si la valeur est indéterminée.",
+			"de": "Extrahierter Text oder ISO-Datum/-Uhrzeit; null bei unbestimmtem Wert.",
+			"pt-BR": "Texto extraído ou data/hora ISO, ou null quando indeterminado.",
+			"hi": "निकाला गया टेक्स्ट या ISO तारीख/समय; मान अनिर्धारित होने पर null।",
+			"ja": "抽出したテキストまたはISO形式の日付・時刻。判定できない場合はnull。",
+			"zh-Hans": "提取的文本或 ISO 日期/时间；无法确定时为 null。",
+			"ar": "نص مستخرج أو تاريخ/وقت بصيغة ISO، أو null عند تعذر تحديده."
+		},
+		"Model-reported confidence; not a guarantee of correctness.": {
+			"es": "Confianza indicada por el modelo; no garantiza la exactitud.",
+			"fr": "Confiance indiquée par le modèle ; ne garantit pas l’exactitude.",
+			"de": "Vom Modell gemeldete Konfidenz; keine Garantie für Richtigkeit.",
+			"pt-BR": "Confiança informada pelo modelo; não garante a precisão.",
+			"hi": "मॉडल द्वारा बताया गया विश्वास; शुद्धता की गारंटी नहीं।",
+			"ja": "モデルが報告する信頼度であり、正確性を保証しません。",
+			"zh-Hans": "模型报告的置信度，不保证正确。",
+			"ar": "ثقة يبلغ عنها النموذج؛ لا تضمن صحة النتيجة."
+		},
+		"Probability that the value is undetermined.": {
+			"es": "Probabilidad de que el valor no se pueda determinar.",
+			"fr": "Probabilité que la valeur soit indéterminée.",
+			"de": "Wahrscheinlichkeit, dass der Wert unbestimmt ist.",
+			"pt-BR": "Probabilidade de que o valor seja indeterminado.",
+			"hi": "मान अनिर्धारित होने की संभावना।",
+			"ja": "値を判定できない確率。",
+			"zh-Hans": "无法确定该值的概率。",
+			"ar": "احتمال تعذر تحديد القيمة."
+		},
+		"Provider-reported aggregate input tokens across all passes.": {
+			"es": "Tokens de entrada agregados de todas las pasadas, según el proveedor.",
+			"fr": "Total des tokens d’entrée de toutes les passes, indiqué par le fournisseur.",
+			"de": "Vom Anbieter gemeldete Summe der Eingabetokens über alle Durchläufe.",
+			"pt-BR": "Total de tokens de entrada de todas as passagens, informado pelo provedor.",
+			"hi": "सभी पास के कुल इनपुट टोकन, जैसा प्रदाता ने बताया है।",
+			"ja": "プロバイダーが報告する、全パスの合計入力トークン数。",
+			"zh-Hans": "提供商报告的所有处理轮次的输入令牌总数。",
+			"ar": "إجمالي رموز الإدخال عبر جميع التمريرات، كما أبلغ عنه المزوّد."
 		}
 	},
 	"GET /apps": {

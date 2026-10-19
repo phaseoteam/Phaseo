@@ -256,7 +256,9 @@
 			"endpointDocumentParsing": "文档解析",
 			"tierPrivate": "私有",
 			"capabilityTextGeneration": "文本生成",
-			"modalityDecisions": "决策"
+			"modalityDecisions": "决策",
+			"modalityClassification": "分类",
+			"modalityExtraction": "提取"
 		},
 		"freeRouter": {
 			"title": "免费模型池",

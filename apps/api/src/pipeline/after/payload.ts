@@ -928,7 +928,7 @@ export function formatClientPayload(args: {
         return attachTopLevelPricing(body, usage);
     }
 
-	if (ctx.endpoint === "decisions") {
+	if (ctx.endpoint === "decisions" || ctx.endpoint === "extractions") {
 		const {
 			provider,
 			provider_id: _providerId,

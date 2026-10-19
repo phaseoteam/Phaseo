@@ -12,14 +12,23 @@ import {
 	Radio,
 	Scale,
 	ScanText,
+	createLucideIcon,
 	Speech,
 	Type,
 	Video,
 	type LucideIcon,
 } from "lucide-react";
 
+// Source lines narrow into a typed value enclosed by brackets.
+export const ExtractionIcon = createLucideIcon("Extraction", [
+	["path", { d: "M3 5h10M3 9h7M3 13h4", key: "source" }],
+	["path", { d: "m10 13 3 3-3 3M13 16h3", key: "extract" }],
+	["path", { d: "M19 12h-2v8h2M21 12h2v8h-2", key: "value" }],
+]);
+
 export function getModalityIcon(value: string): LucideIcon {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("extract")) return ExtractionIcon;
 	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;

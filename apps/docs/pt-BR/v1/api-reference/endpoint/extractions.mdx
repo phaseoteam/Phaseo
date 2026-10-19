@@ -1,0 +1,59 @@
+---
+title: "Extrair valores"
+badge: "Beta"
+tag: "Beta"
+description: "Extraia valores tipados de texto e imagens."
+icon: "list-filter"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /extractions"
+---
+
+<Warning>A extração está em prévia. A disponibilidade do modelo depende das rotas de provedor configuradas.</Warning>
+
+A extração pertence à família Decisions. Use decisões para escolher entre opções conhecidas e extração para retornar valores como número de fatura, data ou total.
+
+```typescript
+import { Phaseo } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+const result = await client.extractions.create({
+  model: "cloudflare/clairic",
+  input: "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+  fields: {
+    invoice_number: { type: "text" },
+    total: { type: "number", decimals: 2, instructions: "Total including shipping" },
+  },
+});
+console.log(result.answers.total.value);
+```
+
+```python
+import os
+from phaseo import Phaseo
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+result = client.extractions.create({
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {"total": {"type": "number", "decimals": 2,
+                         "instructions": "Total including shipping"}},
+})
+print(result["answers"]["total"]["value"])
+```
+
+Os exemplos exigem uma rota ativa de modelo de extração. Verifique a disponibilidade do modelo antes de enviar solicitações. No Python, `AsyncPhaseo` também oferece `await client.extractions.create(...)`.
+
+## Tipos de campo
+
+Os tipos compatíveis são `text`, `number`, `date`, `time`, `datetime`, `duration` e `list`. Listas exigem `items: "text"`, `"number"` ou `"date"`. Forneça de 1 a 64 campos e no máximo 16.384 caracteres de origem. Os nomes dos campos começam com uma letra ou sublinhado e contêm até 64 letras, dígitos, sublinhados, pontos ou hífens.
+
+Números e durações aceitam `integer` e `decimals` (0–6). Durações aceitam `seconds`, `minutes`, `hours`, `days`, `weeks`, `months` ou `years`. Defina `reference_date` quando a interpretação de datas incompletas depender de um ano específico.
+
+Imagens usam objetos `{ content_type, base64 }`: até quatro imagens PNG/JPEG/WebP, 4 MiB cada e 8 MiB no total após decodificação. O limite da solicitação é de 16 MiB. URLs remotas, PDFs, áudio, vídeo, estimativas, previsões e streaming não são compatíveis.
+
+## Ler respostas
+
+Leia `answers[field_name].value`. Um valor escalar pode ser `null` quando a origem não o determina. `p_null` é a probabilidade de um valor indeterminado segundo o modelo; `confidence` é uma pontuação separada informada pelo modelo. Listas fornecem confiança sem `p_null`. Essas pontuações não garantem a precisão: escolha limites de revisão para sua carga de trabalho. Uma lista vazia válida é diferente de uma solicitação com falha.
+
+`truncated: true` significa que o provedor não processou toda a entrada de origem. Revise o resultado ou reenvie uma entrada mais curta antes de confiar na completude. Posições de texto e palpites brutos não são expostos. Faça cálculos complexos no código da aplicação.
+
+O uso informa os `input_tokens` agregados de todas as passagens do provedor. Os tokens de saída são zero. Use os preços retornados pelo gateway em vez de estimar o custo pelo tamanho da origem ou multiplicar o uso pelo número de campos.

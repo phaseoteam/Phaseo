@@ -256,7 +256,9 @@
 			"endpointDocumentParsing": "Document parsing",
 			"tierPrivate": "Private",
 			"capabilityTextGeneration": "Text generation",
-			"modalityDecisions": "Decisions"
+			"modalityDecisions": "Decisions",
+			"modalityClassification": "Classification",
+			"modalityExtraction": "Extraction"
 		},
 		"freeRouter": {
 			"title": "Free model pool",

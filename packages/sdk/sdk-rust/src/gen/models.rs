@@ -1114,6 +1114,99 @@ pub struct ErrorUpstreamError {
 	pub param: Option<Option<String>>,
 }
 
+pub type ExtractionAnswer = JsonValue;
+
+pub struct ExtractionDateField {
+	pub instructions: Option<String>,
+	pub r#type: String,
+}
+
+pub struct ExtractionDatetimeField {
+	pub instructions: Option<String>,
+	pub r#type: String,
+}
+
+pub struct ExtractionDurationField {
+	pub decimals: Option<i64>,
+	pub instructions: Option<String>,
+	pub integer: Option<bool>,
+	pub r#type: String,
+	pub unit: Option<String>,
+}
+
+pub type ExtractionField = JsonValue;
+
+pub struct ExtractionImage {
+	pub base64: String,
+	pub content_type: String,
+}
+
+pub struct ExtractionListAnswer {
+	pub confidence: f64,
+	pub r#type: String,
+	pub value: Vec<String>,
+}
+
+pub struct ExtractionListField {
+	pub decimals: Option<i64>,
+	pub instructions: Option<String>,
+	pub items: String,
+	pub r#type: String,
+}
+
+pub struct ExtractionNumberAnswer {
+	pub confidence: f64,
+	pub p_null: f64,
+	pub r#type: String,
+	pub value: Option<f64>,
+}
+
+pub struct ExtractionNumberField {
+	pub decimals: Option<i64>,
+	pub instructions: Option<String>,
+	pub integer: Option<bool>,
+	pub r#type: String,
+	pub unit: Option<String>,
+}
+
+pub struct ExtractionRequest {
+	pub fields: HashMap<String, String>,
+	pub images: Option<Vec<HashMap<String, String>>>,
+	pub input: String,
+	pub model: String,
+	pub reference_date: Option<String>,
+}
+
+pub struct ExtractionResponse {
+	pub answers: HashMap<String, String>,
+	pub model: String,
+	pub truncated: bool,
+	pub usage: HashMap<String, String>,
+}
+
+pub struct ExtractionStringAnswer {
+	pub confidence: f64,
+	pub p_null: f64,
+	pub r#type: String,
+	pub value: Option<String>,
+}
+
+pub struct ExtractionTextField {
+	pub instructions: Option<String>,
+	pub r#type: String,
+}
+
+pub struct ExtractionTimeField {
+	pub instructions: Option<String>,
+	pub r#type: String,
+}
+
+pub struct ExtractionUsage {
+	pub input_tokens: i64,
+	pub output_tokens: String,
+	pub total_tokens: i64,
+}
+
 pub struct FileContentPart {
 	pub cache_control: Option<HashMap<String, String>>,
 	pub file: HashMap<String, String>,

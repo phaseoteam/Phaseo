@@ -389,6 +389,7 @@ export async function guardJson(
     const maxBytes = options.maxBytes ?? (
         contentType.includes("multipart/form-data")
             ? MULTIPART_REQUEST_BODY_LIMIT_BYTES
+            : options.endpoint === "extractions" ? 16 * 1024 * 1024
             : options.endpoint === "decisions"
                 ? DECISIONS_REQUEST_BODY_LIMIT_BYTES
                 : DEFAULT_REQUEST_BODY_LIMIT_BYTES

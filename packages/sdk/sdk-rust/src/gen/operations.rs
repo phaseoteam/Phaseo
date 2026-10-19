@@ -105,6 +105,11 @@ pub fn createEmbedding<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createExtraction<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/extractions");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createGatewayFeedback<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/feedback");
 	client.request("POST", &resolved_path, body)

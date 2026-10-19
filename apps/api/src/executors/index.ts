@@ -81,6 +81,7 @@ import { executor as chutesText } from "./chutes/text-generate";
 import { executor as clarifaiText } from "./clarifai/text-generate";
 import { executor as cloudflareText } from "./cloudflare/text-generate";
 import { executor as cloudflareDecisions } from "./cloudflare/decisions";
+import { executor as cloudflareExtraction } from "./cloudflare/extraction";
 import { executor as openrouterText } from "./openrouter/text-generate";
 import { executor as cloudflareImage } from "./cloudflare/image-generate";
 import { executor as cloudflareAudioTranscription } from "./cloudflare/audio-transcription";
@@ -176,6 +177,7 @@ type Capability =
 	| "moderations"
 	| "rerank"
 	| "decisions.make"
+	| "extraction.extract"
 	| "systemone"
 	| "image.generate"
 	| "image.edit"
@@ -358,6 +360,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"text.generate": clarifaiText,
 	},
 	cloudflare: {
+		"extraction.extract": cloudflareExtraction,
 		"decisions.make": cloudflareDecisions,
 		"text.generate": cloudflareText,
 		embeddings: openaiEmbeddings,
