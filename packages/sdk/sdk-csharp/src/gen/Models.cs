@@ -2691,6 +2691,207 @@ public sealed class ErrorUpstreamError
 
 }
 
+public sealed class ExtractionAnswer { }
+
+public sealed class ExtractionDateField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionDatetimeField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionDurationField
+{
+	[JsonPropertyName("decimals")]
+	public long? Decimals { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("integer")]
+	public bool? Integer { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("unit")]
+	public string? Unit { get; set; }
+
+}
+
+public sealed class ExtractionField { }
+
+public sealed class ExtractionImage
+{
+	[JsonPropertyName("base64")]
+	public string Base64 { get; set; }
+
+	[JsonPropertyName("content_type")]
+	public string ContentType { get; set; }
+
+}
+
+public sealed class ExtractionListAnswer
+{
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("value")]
+	public List<object> Value { get; set; }
+
+}
+
+public sealed class ExtractionListField
+{
+	[JsonPropertyName("decimals")]
+	public long? Decimals { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("items")]
+	public string Items { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionNumberAnswer
+{
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("p_null")]
+	public double PNull { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("value")]
+	public double? Value { get; set; }
+
+}
+
+public sealed class ExtractionNumberField
+{
+	[JsonPropertyName("decimals")]
+	public long? Decimals { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("integer")]
+	public bool? Integer { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("unit")]
+	public string? Unit { get; set; }
+
+}
+
+public sealed class ExtractionRequest
+{
+	[JsonPropertyName("fields")]
+	public Dictionary<string, object> Fields { get; set; }
+
+	[JsonPropertyName("images")]
+	public List<Dictionary<string, object>>? Images { get; set; }
+
+	[JsonPropertyName("input")]
+	public string Input { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("reference_date")]
+	public string? ReferenceDate { get; set; }
+
+}
+
+public sealed class ExtractionResponse
+{
+	[JsonPropertyName("answers")]
+	public Dictionary<string, object> Answers { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("truncated")]
+	public bool Truncated { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object> Usage { get; set; }
+
+}
+
+public sealed class ExtractionStringAnswer
+{
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("p_null")]
+	public double PNull { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("value")]
+	public string? Value { get; set; }
+
+}
+
+public sealed class ExtractionTextField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionTimeField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionUsage
+{
+	[JsonPropertyName("input_tokens")]
+	public long InputTokens { get; set; }
+
+	[JsonPropertyName("output_tokens")]
+	public string OutputTokens { get; set; }
+
+	[JsonPropertyName("total_tokens")]
+	public long TotalTokens { get; set; }
+
+}
+
 public sealed class FileContentPart
 {
 	[JsonPropertyName("cache_control")]

@@ -1,0 +1,59 @@
+---
+title: "提取值"
+badge: "Beta"
+tag: "Beta"
+description: "从文本和图像中提取类型化值。"
+icon: "list-filter"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /extractions"
+---
+
+<Warning>提取功能处于预览阶段。模型是否可用取决于已配置的提供商路由。</Warning>
+
+提取属于 Decisions 系列。需要在已知选项中选择时使用决策功能；需要返回发票编号、日期或总额等值时使用提取功能。
+
+```typescript
+import { Phaseo } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+const result = await client.extractions.create({
+  model: "cloudflare/clairic",
+  input: "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+  fields: {
+    invoice_number: { type: "text" },
+    total: { type: "number", decimals: 2, instructions: "Total including shipping" },
+  },
+});
+console.log(result.answers.total.value);
+```
+
+```python
+import os
+from phaseo import Phaseo
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+result = client.extractions.create({
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {"total": {"type": "number", "decimals": 2,
+                         "instructions": "Total including shipping"}},
+})
+print(result["answers"]["total"]["value"])
+```
+
+这些示例需要有效的提取模型路由。发送请求前请检查模型是否可用。Python 的 `AsyncPhaseo` 也提供 `await client.extractions.create(...)`。
+
+## 字段类型
+
+支持的类型为 `text`、`number`、`date`、`time`、`datetime`、`duration` 和 `list`。列表必须指定 `items: "text"`、`"number"` 或 `"date"`。提供 1–64 个字段，源文本最多 16,384 个字符。字段名称以字母或下划线开头，最多包含 64 个字母、数字、下划线、点或连字符。
+
+数字和时长支持 `integer` 和 `decimals`（0–6）。时长接受 `seconds`、`minutes`、`hours`、`days`、`weeks`、`months` 或 `years`。如果不完整日期的解读取决于特定年份，请设置 `reference_date`。
+
+图像输入使用 `{ content_type, base64 }` 对象：最多四张 PNG/JPEG/WebP 图像，解码后每张最多 4 MiB，合计最多 8 MiB。请求大小上限为 16 MiB。不支持远程 URL、PDF、音频、视频、估算、预测或流式传输。
+
+## 读取回答
+
+读取 `answers[field_name].value`。源内容无法确定某个标量值时，该值可以为 `null`。`p_null` 是模型给出的无法确定该值的概率；`confidence` 是模型报告的另一个独立分数。列表提供置信度，但不提供 `p_null`。这些分数不保证正确，请根据工作负载选择审核阈值。有效的空列表与请求失败不同。
+
+`truncated: true` 表示提供商未处理全部源输入。在依赖结果的完整性之前，请审核结果或重新提交较短的输入。不公开文本偏移量或原始猜测值。复杂计算应在应用代码中完成。
+
+使用量报告包含提供商所有处理轮次的 `input_tokens` 总数。输出令牌数为零。请使用 gateway 返回的价格，不要根据源文本长度估算费用，也不要将使用量乘以字段数量。

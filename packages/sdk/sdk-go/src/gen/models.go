@@ -1785,6 +1785,99 @@ type ErrorUpstreamError struct {
 	Param *string `json:"param,omitempty"`
 }
 
+type ExtractionAnswer = interface{}
+
+type ExtractionDateField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionDatetimeField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionDurationField struct {
+	Decimals *int `json:"decimals,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Integer *bool `json:"integer,omitempty"`
+	Type string `json:"type"`
+	Unit *string `json:"unit,omitempty"`
+}
+
+type ExtractionField = interface{}
+
+type ExtractionImage struct {
+	Base64 string `json:"base64"`
+	ContentType string `json:"content_type"`
+}
+
+type ExtractionListAnswer struct {
+	Confidence float64 `json:"confidence"`
+	Type string `json:"type"`
+	Value []interface{} `json:"value"`
+}
+
+type ExtractionListField struct {
+	Decimals *int `json:"decimals,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Items string `json:"items"`
+	Type string `json:"type"`
+}
+
+type ExtractionNumberAnswer struct {
+	Confidence float64 `json:"confidence"`
+	PNull float64 `json:"p_null"`
+	Type string `json:"type"`
+	Value *float64 `json:"value"`
+}
+
+type ExtractionNumberField struct {
+	Decimals *int `json:"decimals,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Integer *bool `json:"integer,omitempty"`
+	Type string `json:"type"`
+	Unit *string `json:"unit,omitempty"`
+}
+
+type ExtractionRequest struct {
+	Fields map[string]interface{} `json:"fields"`
+	Images *[]map[string]interface{} `json:"images,omitempty"`
+	Input string `json:"input"`
+	Model string `json:"model"`
+	ReferenceDate *string `json:"reference_date,omitempty"`
+}
+
+type ExtractionResponse struct {
+	Answers map[string]interface{} `json:"answers"`
+	Model string `json:"model"`
+	Truncated bool `json:"truncated"`
+	Usage map[string]interface{} `json:"usage"`
+}
+
+type ExtractionStringAnswer struct {
+	Confidence float64 `json:"confidence"`
+	PNull float64 `json:"p_null"`
+	Type string `json:"type"`
+	Value *string `json:"value"`
+}
+
+type ExtractionTextField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionTimeField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionUsage struct {
+	InputTokens int `json:"input_tokens"`
+	OutputTokens string `json:"output_tokens"`
+	TotalTokens int `json:"total_tokens"`
+}
+
 type FileContentPart struct {
 	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	File map[string]interface{} `json:"file"`

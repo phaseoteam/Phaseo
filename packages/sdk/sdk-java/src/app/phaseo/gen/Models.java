@@ -1116,6 +1116,101 @@ public final class Models {
 		public String param;
 	}
 
+	public static class ExtractionAnswer {
+	}
+
+	public static class ExtractionDateField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionDatetimeField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionDurationField {
+		public Integer decimals;
+		public String instructions;
+		public Boolean integer;
+		public Object type;
+		public Object unit;
+	}
+
+	public static class ExtractionField {
+	}
+
+	public static class ExtractionImage {
+		public String base64;
+		public Object content_type;
+	}
+
+	public static class ExtractionListAnswer {
+		public Double confidence;
+		public Object type;
+		public java.util.List<Object> value;
+	}
+
+	public static class ExtractionListField {
+		public Integer decimals;
+		public String instructions;
+		public Object items;
+		public Object type;
+	}
+
+	public static class ExtractionNumberAnswer {
+		public Double confidence;
+		public Double p_null;
+		public Object type;
+		public Double value;
+	}
+
+	public static class ExtractionNumberField {
+		public Integer decimals;
+		public String instructions;
+		public Boolean integer;
+		public Object type;
+		public String unit;
+	}
+
+	public static class ExtractionRequest {
+		public Object fields;
+		public java.util.List<Object> images;
+		public String input;
+		public String model;
+		public String reference_date;
+	}
+
+	public static class ExtractionResponse {
+		public Object answers;
+		public String model;
+		public Boolean truncated;
+		public Object usage;
+	}
+
+	public static class ExtractionStringAnswer {
+		public Double confidence;
+		public Double p_null;
+		public Object type;
+		public String value;
+	}
+
+	public static class ExtractionTextField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionTimeField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionUsage {
+		public Integer input_tokens;
+		public Object output_tokens;
+		public Integer total_tokens;
+	}
+
 	public static class FileContentPart {
 		public Object cache_control;
 		public Object file;

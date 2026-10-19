@@ -256,7 +256,9 @@
 			"endpointDocumentParsing": "Analyse de documents",
 			"tierPrivate": "Privés",
 			"capabilityTextGeneration": "Génération de texte",
-			"modalityDecisions": "Décisions"
+			"modalityDecisions": "Décisions",
+			"modalityClassification": "Classification",
+			"modalityExtraction": "Extraction"
 		},
 		"freeRouter": {
 			"title": "Pool de modèles gratuits",

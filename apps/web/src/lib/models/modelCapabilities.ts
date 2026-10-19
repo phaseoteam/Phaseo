@@ -26,6 +26,7 @@ export function modelOutputFilterValues(modalities: readonly string[], endpoints
 // Endpoint names that address the same gateway capability. Only true aliases belong here:
 // image generation and image editing, for example, remain separate capabilities.
 const MODEL_CAPABILITY_ALIASES: Record<string, string> = {
+	extractions: "extraction.extract",
 	embeddings: "text.embed",
 	rerank: "text.rerank",
 	moderation: "text.moderate",
@@ -49,6 +50,7 @@ const MODEL_CAPABILITY_ALIASES: Record<string, string> = {
 export const MODEL_CAPABILITY_LABEL_KEYS = {
 	"text.generate": "capabilityTextGeneration",
 	"decisions.make": "modalityDecisions",
+	"extraction.extract": "modalityExtraction",
 	"image.generate": "endpointImageGeneration",
 	"image.edit": "endpointImageEditing",
 	"image.vary": "endpointImageVariations",

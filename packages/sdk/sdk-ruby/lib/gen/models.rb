@@ -1586,6 +1586,116 @@ module Phaseo
     # @!attribute [rw] param
     #   @return [String, nil]
     ErrorUpstreamError = Struct.new(:code, :description, :message, :param, keyword_init: true)
+    ExtractionAnswer = Object
+    # @!attribute [rw] instructions
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    ExtractionDateField = Struct.new(:instructions, :type, keyword_init: true)
+    # @!attribute [rw] instructions
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    ExtractionDatetimeField = Struct.new(:instructions, :type, keyword_init: true)
+    # @!attribute [rw] decimals
+    #   @return [Integer, nil]
+    # @!attribute [rw] instructions
+    #   @return [String, nil]
+    # @!attribute [rw] integer
+    #   @return [Boolean, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    # @!attribute [rw] unit
+    #   @return [String, nil]
+    ExtractionDurationField = Struct.new(:decimals, :instructions, :integer, :type, :unit, keyword_init: true)
+    ExtractionField = Object
+    # @!attribute [rw] base64
+    #   @return [String]
+    # @!attribute [rw] content_type
+    #   @return [String]
+    ExtractionImage = Struct.new(:base64, :content_type, keyword_init: true)
+    # @!attribute [rw] confidence
+    #   @return [Float]
+    # @!attribute [rw] type
+    #   @return [String]
+    # @!attribute [rw] value
+    #   @return [Array<String, Float>]
+    ExtractionListAnswer = Struct.new(:confidence, :type, :value, keyword_init: true)
+    # @!attribute [rw] decimals
+    #   @return [Integer, nil]
+    # @!attribute [rw] instructions
+    #   @return [String, nil]
+    # @!attribute [rw] items
+    #   @return [String]
+    # @!attribute [rw] type
+    #   @return [String]
+    ExtractionListField = Struct.new(:decimals, :instructions, :items, :type, keyword_init: true)
+    # @!attribute [rw] confidence
+    #   @return [Float]
+    # @!attribute [rw] p_null
+    #   @return [Float]
+    # @!attribute [rw] type
+    #   @return [String]
+    # @!attribute [rw] value
+    #   @return [Float, nil]
+    ExtractionNumberAnswer = Struct.new(:confidence, :p_null, :type, :value, keyword_init: true)
+    # @!attribute [rw] decimals
+    #   @return [Integer, nil]
+    # @!attribute [rw] instructions
+    #   @return [String, nil]
+    # @!attribute [rw] integer
+    #   @return [Boolean, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    # @!attribute [rw] unit
+    #   @return [String, nil]
+    ExtractionNumberField = Struct.new(:decimals, :instructions, :integer, :type, :unit, keyword_init: true)
+    # @!attribute [rw] fields
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] images
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] input
+    #   @return [String]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] reference_date
+    #   @return [String, nil]
+    ExtractionRequest = Struct.new(:fields, :images, :input, :model, :reference_date, keyword_init: true)
+    # @!attribute [rw] answers
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] model
+    #   @return [String]
+    # @!attribute [rw] truncated
+    #   @return [Boolean]
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}]
+    ExtractionResponse = Struct.new(:answers, :model, :truncated, :usage, keyword_init: true)
+    # @!attribute [rw] confidence
+    #   @return [Float]
+    # @!attribute [rw] p_null
+    #   @return [Float]
+    # @!attribute [rw] type
+    #   @return [String]
+    # @!attribute [rw] value
+    #   @return [String, nil]
+    ExtractionStringAnswer = Struct.new(:confidence, :p_null, :type, :value, keyword_init: true)
+    # @!attribute [rw] instructions
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    ExtractionTextField = Struct.new(:instructions, :type, keyword_init: true)
+    # @!attribute [rw] instructions
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    ExtractionTimeField = Struct.new(:instructions, :type, keyword_init: true)
+    # @!attribute [rw] input_tokens
+    #   @return [Integer]
+    # @!attribute [rw] output_tokens
+    #   @return [String]
+    # @!attribute [rw] total_tokens
+    #   @return [Integer]
+    ExtractionUsage = Struct.new(:input_tokens, :output_tokens, :total_tokens, keyword_init: true)
     # @!attribute [rw] cache_control
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] file

@@ -1961,6 +1961,160 @@ class ErrorUpstreamError
 	public $param;
 }
 
+class ExtractionAnswer { }
+
+class ExtractionDateField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionDatetimeField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionDurationField
+{
+	/** @var int|null */
+	public $decimals;
+	/** @var string|null */
+	public $instructions;
+	/** @var bool|null */
+	public $integer;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $unit;
+}
+
+class ExtractionField { }
+
+class ExtractionImage
+{
+	/** @var string */
+	public $base64;
+	/** @var string */
+	public $content_type;
+}
+
+class ExtractionListAnswer
+{
+	/** @var float */
+	public $confidence;
+	/** @var string */
+	public $type;
+	/** @var array */
+	public $value;
+}
+
+class ExtractionListField
+{
+	/** @var int|null */
+	public $decimals;
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $items;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionNumberAnswer
+{
+	/** @var float */
+	public $confidence;
+	/** @var float */
+	public $p_null;
+	/** @var string */
+	public $type;
+	/** @var float|null */
+	public $value;
+}
+
+class ExtractionNumberField
+{
+	/** @var int|null */
+	public $decimals;
+	/** @var string|null */
+	public $instructions;
+	/** @var bool|null */
+	public $integer;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $unit;
+}
+
+class ExtractionRequest
+{
+	/** @var array<string, mixed> */
+	public $fields;
+	/** @var array|null */
+	public $images;
+	/** @var string */
+	public $input;
+	/** @var string */
+	public $model;
+	/** @var string|null */
+	public $reference_date;
+}
+
+class ExtractionResponse
+{
+	/** @var array<string, mixed> */
+	public $answers;
+	/** @var string */
+	public $model;
+	/** @var bool */
+	public $truncated;
+	/** @var array<string, mixed> */
+	public $usage;
+}
+
+class ExtractionStringAnswer
+{
+	/** @var float */
+	public $confidence;
+	/** @var float */
+	public $p_null;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $value;
+}
+
+class ExtractionTextField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionTimeField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionUsage
+{
+	/** @var int */
+	public $input_tokens;
+	/** @var string */
+	public $output_tokens;
+	/** @var int */
+	public $total_tokens;
+}
+
 class FileContentPart
 {
 	/** @var array<string, mixed>|null */

@@ -34,6 +34,8 @@ import type {
   ResponsesRequest,
   ResponsesResponse,
   DecisionsRequest,
+  ExtractionRequest,
+  ExtractionResponse,
   DecisionsResponse,
   DecisionCreateRequest,
   OpenAIDecisionsRequest,
@@ -418,6 +420,8 @@ export type {
   VideoGenerationResponse
 };
 
+export type { ExtractionRequest, ExtractionResponse };
+
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
 export type DecisionResponseFor<Request extends DecisionCreateRequest> =
   Request extends OpenAIDecisionsRequest ? OpenAIDecisionsResponse : DecisionsResponse;
@@ -595,6 +599,17 @@ export class Phaseo {
     create: async (req: OpenAIDecisionsRequest): Promise<OpenAIDecisionsResponse> => this.makeDecision(req),
     make: async <Request extends DecisionCreateRequest>(req: Request): Promise<DecisionResponseFor<Request>> => this.makeDecision(req),
   };
+
+  readonly extractions = {
+    create: (req: ExtractionRequest): Promise<ExtractionResponse> => this.createExtraction(req),
+  };
+
+  createExtraction(req: ExtractionRequest): Promise<ExtractionResponse> {
+    return this.withLifecycleGuard(req, () => this.telemetry.wrap(
+      "extraction.extract", () => ops.createExtraction(this.client, { body: req }),
+      () => req, extractGatewayMetadata,
+    ));
+  }
 
   readonly providers = {
     list: async (params: Record<string, unknown> = {}): Promise<unknown> => this.listProviders(params),

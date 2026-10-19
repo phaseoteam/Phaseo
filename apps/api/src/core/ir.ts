@@ -504,6 +504,21 @@ export type IRRerankResponse = {
 // DECISIONS
 // ============================================================================
 
+export type IRExtractionRequest = {
+  model: string;
+  sourceText: string;
+  fields: Record<string, import("./extraction").ExtractionField>;
+  images?: Array<{ contentType: "image/png" | "image/jpeg" | "image/webp"; base64: string }>;
+  referenceDate?: string;
+  rawRequest?: unknown;
+};
+export type IRExtractionResponse = {
+  model: string;
+  answers: Record<string, import("./extraction").ExtractionAnswer>;
+  truncated: boolean;
+  usage: IRUsage;
+};
+
 export type IRDecisionQuestion = {
 	type: "noul" | "choice" | "score" | "box";
 	instructions: string | Record<string, any> | any[];

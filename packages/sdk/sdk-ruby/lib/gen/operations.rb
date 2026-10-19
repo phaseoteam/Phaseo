@@ -121,6 +121,12 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createExtraction(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/extractions"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createGatewayFeedback(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/feedback"

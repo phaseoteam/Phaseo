@@ -283,6 +283,21 @@ func CreateEmbedding(client *Client, path map[string]string, query map[string]st
 	return out, nil
 }
 
+func CreateExtraction(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/extractions"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func CreateGatewayFeedback(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/feedback"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)

@@ -10,6 +10,7 @@ export const capabilityToEndpoints: Record<string, string[]> = {
     "rerank": ["/rerank"],
     "rerank.create": ["/rerank"],
     "decisions.make": ["/decisions"],
+    "extraction.extract": ["/extractions"],
     // Compatibility aliases for the legacy capability names. The public route is /decisions;
     // TypeSafe's native /v1/systemone path is kept inside the provider executor only.
     "systemone": ["/decisions"],
@@ -62,6 +63,7 @@ const ENDPOINT_TO_PATH: Record<string, string> = {
     rerank: "/rerank",
     "decisions.make": "/decisions",
     decisions: "/decisions",
+    extractions: "/extractions",
     "images.generations": "/images/generations",
     "images.edits": "/images/edits",
     "audio.speech": "/audio/speech",

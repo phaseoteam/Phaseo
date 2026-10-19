@@ -3264,6 +3264,141 @@ export async function createEmbedding(
   });
 }
 
+export type CreateExtractionParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    fields: {
+      [key: string]:
+        | {
+            instructions?: string;
+            type: "text";
+          }
+        | {
+            decimals?: number;
+            instructions?: string;
+            integer?: boolean;
+            type: "number";
+            unit?: string;
+          }
+        | {
+            instructions?: string;
+            type: "date";
+          }
+        | {
+            instructions?: string;
+            type: "time";
+          }
+        | {
+            instructions?: string;
+            type: "datetime";
+          }
+        | {
+            decimals?: number;
+            instructions?: string;
+            integer?: boolean;
+            type: "duration";
+            unit?:
+              | "seconds"
+              | "minutes"
+              | "hours"
+              | "days"
+              | "weeks"
+              | "months"
+              | "years";
+          }
+        | {
+            decimals?: number;
+            instructions?: string;
+            items: "text" | "number" | "date";
+            type: "list";
+          };
+    };
+    images?: {
+      base64: string;
+      content_type: "image/png" | "image/jpeg" | "image/webp";
+    }[];
+    input: string;
+    model: string;
+    reference_date?: string;
+  };
+};
+
+/**
+ * Extracts text, numbers, dates, times, durations and typed lists from text or embedded images. Returns typed values and model-reported uncertainty. Estimates, forecasts, streaming and remote image URLs are not supported.
+ */
+export async function createExtraction(
+  client: Client,
+  args: CreateExtractionParams = {},
+): Promise<{
+  answers: {
+    [key: string]:
+      | {
+          confidence: number;
+          p_null: number;
+          type: "text" | "date" | "time" | "datetime";
+          value: string | null;
+        }
+      | {
+          confidence: number;
+          p_null: number;
+          type: "number" | "duration";
+          value: number | null;
+        }
+      | {
+          confidence: number;
+          type: "list";
+          value: (string | number)[];
+        };
+  };
+  model: string;
+  truncated: boolean;
+  usage: {
+    input_tokens: number;
+    output_tokens: 0;
+    total_tokens: number;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/extractions";
+  return client.request<{
+    answers: {
+      [key: string]:
+        | {
+            confidence: number;
+            p_null: number;
+            type: "text" | "date" | "time" | "datetime";
+            value: string | null;
+          }
+        | {
+            confidence: number;
+            p_null: number;
+            type: "number" | "duration";
+            value: number | null;
+          }
+        | {
+            confidence: number;
+            type: "list";
+            value: (string | number)[];
+          };
+    };
+    model: string;
+    truncated: boolean;
+    usage: {
+      input_tokens: number;
+      output_tokens: 0;
+      total_tokens: number;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateGatewayFeedbackParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;

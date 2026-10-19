@@ -1018,6 +1018,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DecisionCreateResponse'
+  /extractions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createExtraction
+      summary: Extraire des valeurs typées
+      description: Extrait du texte, des nombres, des dates, des heures, des durées et des listes typées à partir de texte ou d’images intégrées. Renvoie des valeurs typées et l’incertitude indiquée par le modèle. Les estimations, les prévisions, le streaming et les URL d’images distantes ne sont pas pris en charge.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractionRequest'
+      responses:
+        '200':
+          description: Réponses d’extraction typées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResponse'
   /audio/speech:
     post:
       x-beta: true
@@ -11225,6 +11246,310 @@ components:
         - type: string
         - type: object
           additionalProperties: true
+    ExtractionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - model
+        - input
+        - fields
+      properties:
+        model:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: ID du modèle doté de la capacité extraction.extract.
+        input:
+          type: string
+          maxLength: 16384
+          description: Texte source. Peut être vide si des images sont fournies.
+        fields:
+          type: object
+          minProperties: 1
+          maxProperties: 64
+          description: Les noms de champs respectent ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$.
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionField'
+        images:
+          type: array
+          maxItems: 4
+          description: Images PNG, JPEG ou WebP intégrées ; 4 MiB par image et 8 MiB au total après décodage.
+          items:
+            $ref: '#/components/schemas/ExtractionImage'
+        reference_date:
+          type: string
+          format: date
+          description: Contexte de date explicite pour les dates incomplètes.
+    ExtractionImage:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - image/png
+            - image/jpeg
+            - image/webp
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Octets d’image encodés en Base64, sans préfixe d’URL de données.
+    ExtractionField:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionTextField'
+        - $ref: '#/components/schemas/ExtractionNumberField'
+        - $ref: '#/components/schemas/ExtractionDateField'
+        - $ref: '#/components/schemas/ExtractionTimeField'
+        - $ref: '#/components/schemas/ExtractionDatetimeField'
+        - $ref: '#/components/schemas/ExtractionDurationField'
+        - $ref: '#/components/schemas/ExtractionListField'
+    ExtractionTextField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionNumberField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          maxLength: 64
+    ExtractionDateField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionTimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - time
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDatetimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - datetime
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDurationField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - duration
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          enum:
+            - seconds
+            - minutes
+            - hours
+            - days
+            - weeks
+            - months
+            - years
+    ExtractionListField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - items
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        instructions:
+          type: string
+          maxLength: 2048
+        items:
+          type: string
+          enum:
+            - text
+            - number
+            - date
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+    ExtractionResponse:
+      type: object
+      required:
+        - model
+        - answers
+        - truncated
+        - usage
+      properties:
+        model:
+          type: string
+        answers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionAnswer'
+        truncated:
+          type: boolean
+          description: Indique si le fournisseur a tronqué le texte source.
+        usage:
+          $ref: '#/components/schemas/ExtractionUsage'
+    ExtractionAnswer:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionStringAnswer'
+        - $ref: '#/components/schemas/ExtractionNumberAnswer'
+        - $ref: '#/components/schemas/ExtractionListAnswer'
+    ExtractionStringAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+            - date
+            - time
+            - datetime
+        value:
+          type: string
+          description: Texte extrait ou date/heure ISO, ou null si la valeur est indéterminée.
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Confiance indiquée par le modèle ; ne garantit pas l’exactitude.
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Probabilité que la valeur soit indéterminée.
+    ExtractionNumberAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+            - duration
+        value:
+          type: number
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionListAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        value:
+          type: array
+          maxItems: 4096
+          items:
+            oneOf:
+              - type: string
+              - type: number
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionUsage:
+      type: object
+      required:
+        - input_tokens
+        - output_tokens
+        - total_tokens
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+          description: Total des tokens d’entrée de toutes les passes, indiqué par le fournisseur.
+        output_tokens:
+          type: integer
+          enum:
+            - 0
+        total_tokens:
+          type: integer
+          minimum: 0
     DecisionCreateRequest:
       description: Le format OpenAI est recommandé. Le format historique reste disponible. La réponse suit la requête ; ne mélangez pas les formats.
       oneOf:

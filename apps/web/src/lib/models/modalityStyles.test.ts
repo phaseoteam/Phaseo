@@ -11,6 +11,7 @@ const GROUPS = [
 	"audio_music",
 	"moderations",
 	"decisions",
+	"extraction",
 	"rerank",
 	"embeddings",
 	"documents",

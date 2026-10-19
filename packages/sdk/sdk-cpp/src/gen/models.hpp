@@ -1113,6 +1113,99 @@ struct ErrorUpstreamError {
 	std::optional<std::string> param;
 };
 
+using ExtractionAnswer = std::any;
+
+struct ExtractionDateField {
+	std::string instructions;
+	std::any type;
+};
+
+struct ExtractionDatetimeField {
+	std::string instructions;
+	std::any type;
+};
+
+struct ExtractionDurationField {
+	std::optional<int> decimals;
+	std::string instructions;
+	std::optional<bool> integer;
+	std::any type;
+	std::any unit;
+};
+
+using ExtractionField = std::any;
+
+struct ExtractionImage {
+	std::string base64;
+	std::any content_type;
+};
+
+struct ExtractionListAnswer {
+	double confidence;
+	std::any type;
+	std::vector<std::any> value;
+};
+
+struct ExtractionListField {
+	std::optional<int> decimals;
+	std::string instructions;
+	std::any items;
+	std::any type;
+};
+
+struct ExtractionNumberAnswer {
+	double confidence;
+	double p_null;
+	std::any type;
+	std::optional<double> value;
+};
+
+struct ExtractionNumberField {
+	std::optional<int> decimals;
+	std::string instructions;
+	std::optional<bool> integer;
+	std::any type;
+	std::string unit;
+};
+
+struct ExtractionRequest {
+	std::map<std::string, std::any> fields;
+	std::vector<std::map<std::string, std::any>> images;
+	std::string input;
+	std::string model;
+	std::string reference_date;
+};
+
+struct ExtractionResponse {
+	std::map<std::string, std::any> answers;
+	std::string model;
+	bool truncated;
+	std::map<std::string, std::any> usage;
+};
+
+struct ExtractionStringAnswer {
+	double confidence;
+	double p_null;
+	std::any type;
+	std::optional<std::string> value;
+};
+
+struct ExtractionTextField {
+	std::string instructions;
+	std::any type;
+};
+
+struct ExtractionTimeField {
+	std::string instructions;
+	std::any type;
+};
+
+struct ExtractionUsage {
+	int input_tokens;
+	std::any output_tokens;
+	int total_tokens;
+};
+
 struct FileContentPart {
 	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> file;
