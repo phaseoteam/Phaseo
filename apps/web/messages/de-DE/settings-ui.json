@@ -6111,7 +6111,7 @@
 			"afterSave": "Links zu Protokolle, gefiltert nach jedem Label, erscheinen hier, sobald der Klassifikator gespeichert ist."
 		},
 		"test": {
-			"description": "Sendet ein Beispiel mit genau der Anfrage, die das Gateway erstellt, in deinem Namen. Es wird wie eine Klassifizierung berechnet und mit phaseo.classifier gelabelt. Es wird nichts gespeichert.",
+			"description": "Sendet ein Beispiel mit genau der Anfrage, die das Gateway erstellt, in deinem Namen. Es wird wie eine Klassifizierung berechnet und mit phaseo.classifier_test gelabelt. Es wird nichts gespeichert.",
 			"prompt": "Beispiel-Prompt",
 			"promptPlaceholder": "Kannst du diese Vertragsklausel prüfen, bevor ich sie an den Kunden schicke?",
 			"response": "Beispielantwort (optional)",

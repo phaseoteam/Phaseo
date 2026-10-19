@@ -206,7 +206,7 @@ describe("classifier test run", () => {
 		const sent = requests.find((entry) => entry.url.hostname === "gateway.test")!;
 		expect(sent.url.pathname).toBe("/v1/responses");
 		expect(sent.headers.get("authorization")).toMatch(/^Bearer phaseo_v1_sk_/);
-		expect(JSON.parse(sent.headers.get("x-phaseo-metadata")!)).toEqual({ labels: [{ key: "phaseo.classifier", value: CLASSIFIER_ID }] });
+		expect(JSON.parse(sent.headers.get("x-phaseo-metadata")!)).toEqual({ labels: [{ key: "phaseo.classifier_test", value: CLASSIFIER_ID }] });
 		expect(sent.body.text.format).toMatchObject({ type: "json_schema", strict: true });
 		expect(sent.body.text.format.schema.properties.d0.properties.value.enum).toEqual(["engineering", "legal", "other"]);
 		expect(sent.body.input[0].content[0].text).toContain("Prefer legal for contracts");

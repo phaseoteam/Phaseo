@@ -14,6 +14,7 @@ import { tieredRead } from "@core/tiered-cache";
 import type { Endpoint, RequestLabel } from "@core/types";
 import {
 	CLASSIFIER_COLUMNS,
+	CLASSIFIER_TEST_LABEL_KEY,
 	buildClassifierRequestBody,
 	parseClassifierAnswer,
 	responseText,
@@ -367,9 +368,8 @@ export async function applyRequestClassifiers(ctx: PipelineContext, gatewayRespo
 	const call = ctx.requestClassifierCall;
 	if (!call || ctx.classifierSubrequest || ctx.testingMode || !CLASSIFIABLE_ENDPOINTS.has(ctx.endpoint) || isStealthRequest(ctx)) return;
 	if (getBindingsIfConfigured()?.REQUEST_CLASSIFIERS_ENABLED === "false") return;
-	// A classifier test run from settings arrives over HTTP labelled like a
-	// classifier call; it is not classified again either.
-	if ((ctx.meta.labels ?? []).some((label) => label.key === CLASSIFIER_LABEL_KEY)) return;
+	// A classifier test run from settings is itself a classification; do not classify it again.
+	if ((ctx.meta.labels ?? []).some((label) => label.key === CLASSIFIER_TEST_LABEL_KEY)) return;
 	try {
 		const classifiers = await loadClassifiers(ctx.workspaceId);
 		if (!classifiers.length) return;

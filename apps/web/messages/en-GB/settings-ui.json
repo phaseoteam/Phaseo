@@ -6111,7 +6111,7 @@
 			"afterSave": "Links to Logs filtered by each label appear here once the classifier is saved."
 		},
 		"test": {
-			"description": "Sends one sample through the same request the gateway builds, as you. It is billed like a classification and labelled phaseo.classifier. Nothing is saved.",
+			"description": "Sends one sample through the same request the gateway builds, as you. It is billed like a classification and labelled phaseo.classifier_test. Nothing is saved.",
 			"prompt": "Sample prompt",
 			"promptPlaceholder": "Can you check this contract clause before I send it to the customer?",
 			"response": "Sample response (optional)",

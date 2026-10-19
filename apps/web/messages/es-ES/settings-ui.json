@@ -6111,7 +6111,7 @@
 			"afterSave": "Cuando guardes el clasificador, aquí aparecerán enlaces a Registros filtrados por cada etiqueta."
 		},
 		"test": {
-			"description": "Envía un ejemplo con la misma solicitud que crea el gateway, en tu nombre. Se factura como una clasificación y se etiqueta con phaseo.classifier. No se guarda nada.",
+			"description": "Envía un ejemplo con la misma solicitud que crea el gateway, en tu nombre. Se factura como una clasificación y se etiqueta con phaseo.classifier_test. No se guarda nada.",
 			"prompt": "Prompt de ejemplo",
 			"promptPlaceholder": "¿Puedes revisar esta cláusula del contrato antes de que se la envíe al cliente?",
 			"response": "Respuesta de ejemplo (opcional)",

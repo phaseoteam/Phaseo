@@ -13,6 +13,12 @@ export const MAX_DIMENSIONS = 12;
 export const MAX_VALUES_PER_DIMENSION = 50;
 export const MAX_SCOPE_ENTRIES = 50;
 export const MAX_INSTRUCTIONS_LENGTH = 8_000;
+/**
+ * Labels a settings test run of a classifier (value: the classifier id, or "draft").
+ * The gateway does not classify requests that carry it, and its cost is kept
+ * apart from the phaseo.classifier label, which only the gateway can set.
+ */
+export const CLASSIFIER_TEST_LABEL_KEY = "phaseo.classifier_test";
 /** The value a dimension with allow_other answers when nothing in its list fits. */
 export const OTHER_VALUE = "other";
 
@@ -89,6 +95,7 @@ function parseDimension(raw: unknown, path: string): Parsed<ClassifierDimension>
 	const record = raw as Record<string, unknown>;
 	const key = typeof record.key === "string" ? record.key.trim() : "";
 	if (!DIMENSION_KEY_PATTERN.test(key)) return fail(`${path}.key must be 1 to 64 letters, digits, or _ . : -`);
+	if (key.toLowerCase().startsWith("phaseo.")) return fail(`${path}.key cannot start with phaseo., which is reserved for Phaseo labels`);
 	const name = typeof record.name === "string" && record.name.trim() ? record.name.trim() : key;
 	if (name.length > 100 || CONTROL_CHARACTER_PATTERN.test(name)) return fail(`${path}.name must be at most 100 characters`);
 	const description = optionalText(record.description, `${path}.description`, 500);

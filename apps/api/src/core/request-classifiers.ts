@@ -14,6 +14,12 @@ export const MAX_DIMENSIONS = 12;
 export const MAX_VALUES_PER_DIMENSION = 50;
 export const MAX_SCOPE_ENTRIES = 50;
 export const MAX_INSTRUCTIONS_LENGTH = 8_000;
+/**
+ * Labels a settings test run of a classifier (value: the classifier id, or "draft").
+ * The gateway does not classify requests that carry it, and its cost is kept
+ * apart from the phaseo.classifier label, which only the gateway can set.
+ */
+export const CLASSIFIER_TEST_LABEL_KEY = "phaseo.classifier_test";
 /** The value a dimension with allow_other answers when nothing in its list fits. */
 export const OTHER_VALUE = "other";
 

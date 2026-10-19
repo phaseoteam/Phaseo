@@ -6,6 +6,7 @@ import { ensureChatGatewayKey, resolveGatewayBaseUrlForEnvironment } from "@/cha
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
 import {
 	CLASSIFIER_COLUMNS,
+	CLASSIFIER_TEST_LABEL_KEY,
 	MAX_CLASSIFIERS_PER_WORKSPACE,
 	buildClassifierRequestBody,
 	formatClassifier,
@@ -24,8 +25,7 @@ import {
 // and admins can read or change them.
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const CLASSIFIER_LABEL_KEY = "phaseo.classifier";
-const TEST_LABEL_VALUE = "test";
+const DRAFT_LABEL_VALUE = "draft";
 const MAX_SAMPLE_CHARS = 8_000;
 const TEST_TIMEOUT_MS = 30_000;
 
@@ -208,7 +208,8 @@ function sampleText(value: unknown, field: string, required: boolean): { ok: tru
 /**
  * Runs a draft classifier once on a sample, with the same request the gateway
  * sends, through the gateway as the signed-in member. It is billed like any
- * classification and labelled phaseo.classifier (the saved id, or "test").
+ * classification and labelled phaseo.classifier_test (the saved id, or "draft");
+ * phaseo.classifier itself is reserved for the gateway's own classifier calls.
  */
 accountSettingsClassifiersRouter.post("/classifiers/test", async (c) => {
 	const body = await readBody(c);
@@ -246,7 +247,7 @@ accountSettingsClassifiersRouter.post("/classifiers/test", async (c) => {
 			headers: {
 				Authorization: `Bearer ${key.apiKey}`,
 				"Content-Type": "application/json",
-				"x-phaseo-metadata": JSON.stringify({ labels: [{ key: CLASSIFIER_LABEL_KEY, value: savedId ?? TEST_LABEL_VALUE }] }),
+				"x-phaseo-metadata": JSON.stringify({ labels: [{ key: CLASSIFIER_TEST_LABEL_KEY, value: savedId ?? DRAFT_LABEL_VALUE }] }),
 			},
 			body: JSON.stringify(request),
 			signal: AbortSignal.timeout(TEST_TIMEOUT_MS),

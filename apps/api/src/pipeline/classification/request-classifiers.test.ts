@@ -263,9 +263,9 @@ describe("applyRequestClassifiers", () => {
 		expect(state.queries).toEqual([]);
 	});
 
-	it("does not classify a settings test run, which carries the classifier label over HTTP", async () => {
+	it("does not classify a settings test run", async () => {
 		const call = vi.fn(async () => answer({ d0: { value: "legal", confidence: 1 } }));
-		const labels = [{ key: CLASSIFIER_LABEL_KEY, value: "test" }];
+		const labels = [{ key: "phaseo.classifier_test", value: "draft" }];
 		const context = ctx({ requestClassifierCall: call, meta: { ...ctx().meta, labels } });
 		await applyRequestClassifiers(context, null);
 		expect(context.meta.labels).toEqual(labels);

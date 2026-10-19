@@ -93,6 +93,13 @@ describe("draft serialization", () => {
 		expect(problemLocation("name must be 1 to 100 characters")).toEqual({ dimension: null, value: null });
 	});
 
+	it("rejects dimension keys in the reserved phaseo. namespace", () => {
+		const draft = presetDraft("audience");
+		draft.dimensions[0]!.key = "phaseo.classifier";
+		const built = draftToPayload(draft);
+		expect(!built.ok && built.problem.field === "api" && built.problem.message).toContain("reserved");
+	});
+
 	it("needs a name and a key for every dimension", () => {
 		expect(draftToPayload({ ...presetDraft("audience"), name: "" }).ok).toBe(false);
 		expect(draftToPayload({ ...presetDraft("audience"), dimensions: [emptyDimension()] }).ok).toBe(false);

@@ -6111,7 +6111,7 @@
 			"afterSave": "Links para Registros filtrados por cada rótulo aparecem aqui depois que o classificador for salvo."
 		},
 		"test": {
-			"description": "Envia um exemplo com a mesma solicitação que o gateway monta, em seu nome. Ele é cobrado como uma classificação e rotulado com phaseo.classifier. Nada é salvo.",
+			"description": "Envia um exemplo com a mesma solicitação que o gateway monta, em seu nome. Ele é cobrado como uma classificação e rotulado com phaseo.classifier_test. Nada é salvo.",
 			"prompt": "Prompt de exemplo",
 			"promptPlaceholder": "Você pode revisar esta cláusula do contrato antes que eu envie ao cliente?",
 			"response": "Resposta de exemplo (opcional)",

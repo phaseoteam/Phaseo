@@ -6111,7 +6111,7 @@
 			"afterSave": "Des liens vers Journaux filtrés par chaque étiquette apparaîtront ici une fois le classificateur enregistré."
 		},
 		"test": {
-			"description": "Envoie un exemple avec la même requête que celle créée par la passerelle, en votre nom. Il est facturé comme une classification et étiqueté phaseo.classifier. Rien n'est enregistré.",
+			"description": "Envoie un exemple avec la même requête que celle créée par la passerelle, en votre nom. Il est facturé comme une classification et étiqueté phaseo.classifier_test. Rien n'est enregistré.",
 			"prompt": "Prompt d'exemple",
 			"promptPlaceholder": "Peux-tu vérifier cette clause du contrat avant que je l'envoie au client ?",
 			"response": "Réponse d'exemple (facultatif)",

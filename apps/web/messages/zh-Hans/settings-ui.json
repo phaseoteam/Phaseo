@@ -6111,7 +6111,7 @@
 			"afterSave": "保存分类器后，这里会显示按各标签筛选的日志链接。"
 		},
 		"test": {
-			"description": "以你的身份，用网关构建的同一请求发送一个示例。它按一次分类计费，并带有 phaseo.classifier 标签。不会保存任何内容。",
+			"description": "以你的身份，用网关构建的同一请求发送一个示例。它按一次分类计费，并带有 phaseo.classifier_test 标签。不会保存任何内容。",
 			"prompt": "示例提示词",
 			"promptPlaceholder": "在我发给客户之前，你能帮我检查一下这条合同条款吗？",
 			"response": "示例响应（可选）",
