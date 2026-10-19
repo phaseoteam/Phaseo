@@ -1082,11 +1082,18 @@ function mapGeminiFinishReason(reason: string | undefined): IRChoice["finishReas
 			return "stop";
 		case "MAX_TOKENS":
 			return "length";
+		// Filter outcomes documented for the Gemini API and Vertex; each can end a candidate with no content.
 		case "SAFETY":
 		case "RECITATION":
 		case "PROHIBITED_CONTENT":
 		case "SPII":
 		case "BLOCKLIST":
+		case "LANGUAGE":
+		case "MODEL_ARMOR":
+		case "ESCALATION":
+		case "IMAGE_SAFETY":
+		case "IMAGE_PROHIBITED_CONTENT":
+		case "IMAGE_RECITATION":
 			return "content_filter";
 		case "MALFORMED_FUNCTION_CALL":
 			return "error";
@@ -1646,6 +1653,8 @@ export function transformStream(
 		controller: ReadableStreamDefaultController<Uint8Array>,
 	): void => {
 		if (irChunk.choices.some((choice: any) => {
+			// A safety block is a complete answer with no content, not a blank response.
+			if (choice.finishReason === "content_filter") return true;
 			if ((choice.delta?.toolCalls?.length ?? 0) > 0) return true;
 			if (typeof choice.delta?.content === "string" && choice.delta.content.trim().length > 0) return true;
 			return (choice.delta?.contentParts ?? []).some((part: any) => {
@@ -2012,6 +2021,11 @@ export function transformStream(
 						irChunk.choices.push(choice);
 					}
 				}
+			}
+			// A blocked prompt arrives as promptFeedback.blockReason with no candidates.
+			const blockReason = payloadEntry?.promptFeedback?.blockReason;
+			if (!payloadEntry?.candidates?.length && blockReason && blockReason !== "BLOCK_REASON_UNSPECIFIED") {
+				irChunk.choices.push({ index: 0, delta: { role: "assistant" }, finishReason: "content_filter" } as any);
 			}
 
 			const chunkUsage = googleUsageMetadataToIRUsage(payloadEntry?.usageMetadata, headerServiceTier);

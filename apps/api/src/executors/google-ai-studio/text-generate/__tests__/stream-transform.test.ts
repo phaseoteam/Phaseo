@@ -66,6 +66,41 @@ describe("google-ai-studio stream transform", () => {
 		expect(output.match(/data: \[DONE\]/g)).toHaveLength(1);
 	});
 
+	it.each([
+		"SAFETY",
+		"PROHIBITED_CONTENT",
+		"RECITATION",
+		"SPII",
+		"BLOCKLIST",
+		"LANGUAGE",
+		"MODEL_ARMOR",
+		"ESCALATION",
+		"IMAGE_SAFETY",
+		"IMAGE_PROHIBITED_CONTENT",
+		"IMAGE_RECITATION",
+	])("ends a stream blocked with %s as content_filter, not as an error", async (providerFinishReason) => {
+		const upstream = makeGoogleSseStream([{
+			candidates: [{ index: 0, content: { role: "model", parts: [] }, finishReason: providerFinishReason }],
+			usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 0, totalTokenCount: 5 },
+		}]);
+		const output = await readStreamText(transformStream(upstream, baseArgs()));
+		const chunks = output.split("\n").filter((line) => line.startsWith("data: {")).map((line) => JSON.parse(line.slice(6)));
+		expect(chunks.flatMap((chunk) => chunk.choices).some((choice) => choice.finish_reason === "content_filter")).toBe(true);
+		expect(output).not.toContain("response.failed");
+		expect(output).not.toContain("google_empty_response");
+	});
+
+	it("ends a stream whose prompt was blocked as content_filter", async () => {
+		const upstream = makeGoogleSseStream([{
+			promptFeedback: { blockReason: "SAFETY" },
+			usageMetadata: { promptTokenCount: 5, totalTokenCount: 5 },
+		}]);
+		const output = await readStreamText(transformStream(upstream, baseArgs()));
+		const chunks = output.split("\n").filter((line) => line.startsWith("data: {")).map((line) => JSON.parse(line.slice(6)));
+		expect(chunks.flatMap((chunk) => chunk.choices).some((choice) => choice.finish_reason === "content_filter")).toBe(true);
+		expect(output).not.toContain("google_empty_response");
+	});
+
 	it("emits a structured error instead of a blank successful stream", async () => {
 		const upstream = makeGoogleSseStream([
 			{
