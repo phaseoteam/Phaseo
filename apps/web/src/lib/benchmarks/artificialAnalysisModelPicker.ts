@@ -22,3 +22,7 @@ export function toggleDashboardModels(selected: Set<string>, ids: string[]) {
 	for (const id of ids) if (remove) next.delete(id); else next.add(id);
 	return [...next];
 }
+
+export function dashboardDefaultEfforts(efforts: string[]) {
+	return efforts.filter((effort) => effort !== "none");
+}

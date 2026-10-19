@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Link } from "@/i18n/navigation";
 import { dashboardBenchmarks, effortOrder, type DashboardRow } from "@/lib/benchmarks/artificialAnalysisDashboard";
-import { dashboardDefaultModels } from "@/lib/benchmarks/artificialAnalysisModelPicker";
+import { dashboardDefaultModels, dashboardDefaultEfforts } from "@/lib/benchmarks/artificialAnalysisModelPicker";
 import { ArtificialAnalysisDashboardChart } from "./ArtificialAnalysisDashboardChart";
 import { ArtificialAnalysisModelPicker } from "./ArtificialAnalysisModelPicker";
 import { ArtificialAnalysisScoreMatrix } from "./ArtificialAnalysisScoreMatrix";
@@ -40,9 +40,9 @@ export default function ArtificialAnalysisDashboard({ rows, footer }: { rows: Da
 		return [...models.values()].sort((a, b) => (b.intelligence ?? -Infinity) - (a.intelligence ?? -Infinity) || a.modelName.localeCompare(b.modelName));
 	}, [rows]);
 	const selected = new Set(filters.aaModels ?? dashboardDefaultModels(models));
-	const selectedEfforts = filters.aaEfforts ?? (filters.aaEffort ? [filters.aaEffort] : null);
 	const availableEfforts = rows.filter((row) => selected.has(row.modelId)).map((row) => row.effort);
 	const efforts = [...new Set(availableEfforts)].sort((a, b) => effortOrder.indexOf(a) - effortOrder.indexOf(b));
+	const selectedEfforts = filters.aaEfforts ?? (filters.aaEffort ? [filters.aaEffort] : dashboardDefaultEfforts(efforts));
 	const visible = rows.filter((row) => selected.has(row.modelId) && (!selectedEfforts || selectedEfforts.includes(row.effort)) && (!filters.aaCreator || row.creatorId === filters.aaCreator));
 	const availableBenchmarks = Object.keys(dashboardBenchmarks).filter((key) => rows.some((row) => typeof row.benchmarks[key] === "number"));
 	const benchmark = availableBenchmarks.includes(filters.aaBench) ? filters.aaBench : availableBenchmarks[0];
@@ -91,9 +91,10 @@ export default function ArtificialAnalysisDashboard({ rows, footer }: { rows: Da
 		return () => { window.removeEventListener("resize", resize); cancelAnimationFrame(frame); };
 	}, []);
 	const navigate = (id: ChartId) => { scrollTo(id, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"); };
+	const filterSignature = JSON.stringify([filters.aaModels, filters.aaEfforts, filters.aaEffort, filters.aaCreator, filters.aaScatter, filters.aaGrouped, filters.aaLabels, filters.aaLayout, filters.aaBench, filters.aaDomain]);
 	useEffect(() => {
 		if (displayedChart.current) scrollTo(displayedChart.current as ChartId, "instant");
-	}, [filters.aaModels, filters.aaEfforts, filters.aaEffort, filters.aaCreator, filters.aaScatter, filters.aaGrouped, filters.aaLabels, filters.aaLayout, filters.aaBench, filters.aaDomain]);
+	}, [filterSignature]);
 	const exportData = () => {
 		const columns = ["Model", "Configuration", "Intelligence", "Output tokens per task", "Total output tokens", "Cost per task (USD)", "Total cost (USD)", "Time per task (seconds)", ...availableBenchmarks.map((key) => dashboardBenchmarks[key]), ...capabilities];
 		const data = visible.map((row) => [row.sourceName, row.effort, row.intelligence, row.tokensPerTask, row.totalTokens, row.costPerTask, row.totalCost, row.timePerTask, ...availableBenchmarks.map((key) => row.benchmarks[key] ?? null), ...capabilities.map((key) => row.capabilities[key] ?? null)]);
@@ -127,7 +128,7 @@ export default function ArtificialAnalysisDashboard({ rows, footer }: { rows: Da
 			<div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_15.5rem]">
 				<ScrollArea className="min-h-0 min-w-0" viewportRef={viewport} viewportClassName="relative h-full overscroll-contain" viewportProps={{ tabIndex: 0, "aria-label": tx("Catalogue.benchmarks.tocIndexComparisons") }}>
 					{chartIds.map((id) => <div key={id} data-aa-chart={id} id={id === "tokens-task" ? "aa-tokenUsage" : `aa-${id}`} className="min-h-[calc(100svh-13rem)] border-b px-4 py-5 last:border-b-0 lg:px-6">
-						{id === "cost-intelligence" ? chart(titles[id], (row) => row.intelligence, undefined, (row) => row.costPerTask, `${t("costPerTask")} (USD)`, "usd") : id === "time-intelligence" ? chart(titles[id], (row) => row.intelligence, undefined, (row) => row.timePerTask, `${t("timePerTask")} (s)`, "seconds") : id === "tokens-task" ? chart(titles[id], (row) => row.tokensPerTask, "tokens", undefined, undefined, undefined, true) : id === "total-tokens" ? chart(titles[id], (row) => row.totalTokens, "tokens") : id === "cost-task" ? chart(titles[id], (row) => row.costPerTask, "usd") : id === "total-cost" ? chart(titles[id], (row) => row.totalCost, "usd") : <>
+						{id === "cost-intelligence" ? chart(titles[id], (row) => row.intelligence, undefined, (row) => row.costPerTask, `${t("costPerTask")} (USD)`, "usd") : id === "time-intelligence" ? chart(titles[id], (row) => row.intelligence, undefined, (row) => row.timePerTask, t("timePerTask"), "seconds") : id === "tokens-task" ? chart(titles[id], (row) => row.tokensPerTask, "tokens", undefined, undefined, undefined, true) : id === "total-tokens" ? chart(titles[id], (row) => row.totalTokens, "tokens") : id === "cost-task" ? chart(titles[id], (row) => row.costPerTask, "usd") : id === "total-cost" ? chart(titles[id], (row) => row.totalCost, "usd") : <>
 							<div className="mb-5 flex flex-wrap items-center justify-between gap-3"><h2 className="text-base font-semibold">{titles[id]}</h2><div className="flex gap-1"><Button variant={filters.aaLayout === "overview" ? "secondary" : "ghost"} size="sm" onClick={() => void setFilters({ aaLayout: "overview" })}>{tx("Catalogue.compare.overview")}</Button><Button variant={filters.aaLayout === "chart" ? "secondary" : "ghost"} size="sm" onClick={() => void setFilters({ aaLayout: "chart" })}>{tx("Catalogue.compare.viewCharts")}</Button></div>
 								{id === "benchmarks" ? <Select value={benchmark} onValueChange={(value) => void setFilters({ aaBench: value, aaLayout: "chart" })}><SelectTrigger className="w-full sm:w-64" aria-label={t("benchmarks")}><SelectValue>{dashboardBenchmarks[benchmark]}</SelectValue></SelectTrigger><SelectContent>{availableBenchmarks.map((key) => <SelectItem key={key} value={key}>{dashboardBenchmarks[key]}</SelectItem>)}</SelectContent></Select> : <Select value={domain} onValueChange={(value) => void setFilters({ aaDomain: value, aaLayout: "chart" })}><SelectTrigger className="w-full sm:w-64" aria-label={t("capabilities")}><SelectValue>{t(domain as typeof capabilities[number])}</SelectValue></SelectTrigger><SelectContent>{capabilities.map((key) => <SelectItem key={key} value={key}>{t(key)}</SelectItem>)}</SelectContent></Select>}
 							</div>

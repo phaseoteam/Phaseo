@@ -1,4 +1,4 @@
-﻿import { dashboardDefaultModels, dashboardModelCategory, dashboardModelTier, toggleDashboardModels } from "./artificialAnalysisModelPicker";
+﻿import { dashboardDefaultModels, dashboardDefaultEfforts, dashboardModelCategory, dashboardModelTier, toggleDashboardModels } from "./artificialAnalysisModelPicker";
 import type { DashboardRow } from "./artificialAnalysisDashboard";
 const model = (name: string, extra: Partial<DashboardRow> = {}) => ({ modelName: name, modelId: name, ...extra } as DashboardRow);
 it("uses curated frontier tiers without inferring a size from a score", () => {
@@ -15,4 +15,8 @@ it("toggles a whole group without clearing other selected models", () => {
 it("restores frontier defaults, with a usable fallback for another publication", () => {
 	expect(dashboardDefaultModels([model("Claude Sonnet 5.5"), model("GPT-6 Astra"), model("Old model")])).toEqual(["GPT-6 Astra"]);
 	expect(dashboardDefaultModels([model("Other")])).toEqual(["Other"]);
+});
+
+it("starts with reasoning configurations and keeps non-reasoning available as an opt-in", () => {
+	expect(dashboardDefaultEfforts(["none", "low", "high", "max", "default"])).toEqual(["low", "high", "max", "default"]);
 });
