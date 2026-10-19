@@ -19,14 +19,16 @@ icon: "sliders-horizontal"
 
 ## サポートされていないパラメーター
 
-リクエストを処理するプロバイダーがサンプリングパラメーターのいずれかをサポートしていない場合、Phaseo はそのパラメーターを削除します。プロバイダーには送信されず、リクエストも拒否されないため、常に OpenAI の既定値を送信するクライアントもそのまま動作します。サポートの有無は、Phaseo のプロバイダープロファイルとルートのカタログパラメーターからプロバイダーごとに判断されます。ルートがパラメーターを宣言していない場合は、何も削除されません。
+リクエストを処理するプロバイダーがサンプリングパラメーターのいずれかをサポートしていない場合、Phaseo はそのパラメーターを削除します。プロバイダーには送信されず、リクエストも拒否されないため、常に OpenAI の既定値を送信するクライアントもそのまま動作します。サポートの有無は、Phaseo のプロバイダープロファイルとルートのカタログパラメーターからプロバイダーごとに判断されます。ルートがパラメーターを宣言していない場合、省略されるのはカタログによる判定だけです。プロバイダープロファイルでサポート対象外とされているパラメーターは引き続き削除されます（例: Cohere の `top_k`、Reflection の `stop`）。
 
 削除される可能性があるのは次のパラメーターだけです: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`（`/v1/messages` では `stop_sequences`）、`parallel_tool_calls`、`max_tool_calls`、`image_config`。メッセージ、ツール、`tool_choice`、`response_format`、推論設定、出力上限は削除されません。
 
-削除されたパラメーターはすべて次の場所で通知されます。
+成功したレスポンスでは、リクエスト自体が送信したパラメーターのうち削除されたものが次の場所で通知されます。
 
 - `X-Phaseo-Dropped-Params` レスポンスヘッダー。例: `X-Phaseo-Dropped-Params: top_k, min_p`
 - リクエストで `meta: true` を設定した場合の `meta.routing.dropped_params`。例: `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+リクエスト本文ではなく、プリセットや既定値から設定されたパラメーターは、どちらの場所にも表示されずに削除されることがあります。その場合も、Phaseo がリクエストとともに保存するルーティング診断には記録されます。
 
 ## クイック参照
 

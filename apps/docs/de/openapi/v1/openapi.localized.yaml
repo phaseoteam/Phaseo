@@ -8575,7 +8575,7 @@ components:
       schema:
         type: string
     DroppedParams:
-      description: Anfrageparameter, die der bedienende Anbieter nicht unterstützt und die das Gateway entfernt hat, statt sie an den Anbieter zu senden oder die Anfrage abzulehnen, zum Beispiel `top_k, min_p`. Wird nur gesendet, wenn ein Parameter entfernt wurde.
+      description: Vom Client gesendete Parameter, die der bedienende Anbieter nicht unterstützt und die das Gateway entfernt hat, statt sie an den Anbieter zu senden oder die Anfrage abzulehnen, zum Beispiel `top_k, min_p`. Wird nur bei erfolgreichen Antworten gesendet und nur, wenn mindestens ein Parameter aus dem Anfrage-Body entfernt wurde. Parameter aus einem Preset oder einem Standardwert werden nicht aufgeführt.
       schema:
         type: string
     UpstreamRateLimitValue:

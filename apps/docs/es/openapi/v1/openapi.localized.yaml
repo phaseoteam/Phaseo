@@ -8575,7 +8575,7 @@ components:
       schema:
         type: string
     DroppedParams:
-      description: Parámetros de la solicitud que el proveedor que la atiende no admite y que el gateway eliminó en lugar de enviarlos al proveedor o rechazar la solicitud, por ejemplo `top_k, min_p`. Solo se envía cuando se descartó un parámetro.
+      description: Parámetros que envió el cliente y que el proveedor que atiende la solicitud no admite, y que el gateway eliminó en lugar de enviarlos al proveedor o rechazar la solicitud, por ejemplo `top_k, min_p`. Solo se envía en respuestas satisfactorias y solo cuando se descartó al menos un parámetro del cuerpo de la solicitud. Los parámetros que proceden de un preset o de un valor predeterminado no se incluyen.
       schema:
         type: string
     UpstreamRateLimitValue:

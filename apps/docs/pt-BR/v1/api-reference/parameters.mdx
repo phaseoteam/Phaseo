@@ -19,14 +19,16 @@ O suporte a parâmetros ainda varia conforme o endpoint, o modelo e o provedor. 
 
 ## Parâmetros não suportados
 
-Se o provedor que atende uma solicitação não suportar um dos seus parâmetros de amostragem, a Phaseo descarta esse parâmetro. Ele não é enviado ao provedor e a solicitação não é rejeitada, então clientes que sempre enviam os padrões da OpenAI continuam funcionando. O suporte é definido por provedor a partir dos perfis de provedor da Phaseo e dos parâmetros de catálogo da rota. Se uma rota não declarar parâmetros, nada é descartado.
+Se o provedor que atende uma solicitação não suportar um dos seus parâmetros de amostragem, a Phaseo descarta esse parâmetro. Ele não é enviado ao provedor e a solicitação não é rejeitada, então clientes que sempre enviam os padrões da OpenAI continuam funcionando. O suporte é definido por provedor a partir dos perfis de provedor da Phaseo e dos parâmetros de catálogo da rota. Se uma rota não declarar parâmetros, apenas a verificação do catálogo é ignorada: os parâmetros que o perfil de provedor marca como não suportados continuam sendo descartados, por exemplo `top_k` na Cohere ou `stop` na Reflection.
 
 Somente estes parâmetros podem ser descartados: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` em `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` e `image_config`. Mensagens, ferramentas, `tool_choice`, `response_format`, configurações de raciocínio e limites de saída nunca são descartados.
 
-Cada parâmetro descartado é informado:
+Em respostas bem-sucedidas, a Phaseo informa os parâmetros descartados que a própria solicitação enviou:
 
 - no cabeçalho de resposta `X-Phaseo-Dropped-Params`, por exemplo `X-Phaseo-Dropped-Params: top_k, min_p`
 - em `meta.routing.dropped_params` quando a solicitação define `meta: true`, por exemplo `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+Um parâmetro que vem de um preset ou de um valor padrão, e não do corpo da solicitação, pode ser descartado sem aparecer em nenhum desses lugares. Mesmo assim, ele fica registrado nos diagnósticos de roteamento que a Phaseo armazena com a solicitação.
 
 ## Consulta rápida
 

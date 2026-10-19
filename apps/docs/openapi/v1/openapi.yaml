@@ -8972,10 +8972,12 @@ components:
         type: string
     DroppedParams:
       description: >-
-        Request parameters the serving provider does not support, which the
-        gateway removed instead of sending them upstream or rejecting the
-        request, for example `top_k, min_p`. Sent only when a parameter was
-        dropped.
+        Request parameters the client sent that the serving provider does not
+        support, which the gateway removed instead of sending them upstream or
+        rejecting the request, for example `top_k, min_p`. Sent only on
+        successful responses, and only when at least one parameter from the
+        request body was dropped. Parameters that come from a preset or a
+        default value are not listed.
       schema:
         type: string
     UpstreamRateLimitValue:

@@ -20,14 +20,16 @@ Parameter support still varies by endpoint, model, and provider. The model quick
 
 ## Unsupported parameters
 
-If the provider serving a request does not support one of its sampling parameters, Phaseo drops that parameter. It is not sent upstream, and the request is not rejected, so clients that always send OpenAI defaults keep working. Support is decided per provider from Phaseo's provider profiles and the route's catalogue parameters. If a route declares no parameters, nothing is dropped.
+If the provider serving a request does not support one of its sampling parameters, Phaseo drops that parameter. It is not sent upstream, and the request is not rejected, so clients that always send OpenAI defaults keep working. Support is decided per provider from Phaseo's provider profiles and the route's catalogue parameters. If a route declares no parameters, only the catalogue check is skipped: parameters the provider profile marks unsupported are still dropped, for example `top_k` on Cohere or `stop` on Reflection.
 
 Only these parameters can be dropped: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` on `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` and `image_config`. Messages, tools, `tool_choice`, `response_format`, reasoning settings and output limits are never dropped.
 
-Every dropped parameter is reported:
+On successful responses, Phaseo reports the dropped parameters that the request itself sent:
 
 - in the `X-Phaseo-Dropped-Params` response header, for example `X-Phaseo-Dropped-Params: top_k, min_p`
 - in `meta.routing.dropped_params` when the request sets `meta: true`, for example `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+A parameter that comes from a preset or a default value, not from the request body, can be dropped without appearing in either place. It is still recorded in the routing diagnostics that Phaseo stores with the request.
 
 ## Quick lookup
 

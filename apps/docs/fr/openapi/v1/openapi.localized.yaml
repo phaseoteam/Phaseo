@@ -8575,7 +8575,7 @@ components:
       schema:
         type: string
     DroppedParams:
-      description: Paramètres de la requête que le fournisseur qui la traite ne prend pas en charge et que la passerelle a retirés au lieu de les envoyer au fournisseur ou de rejeter la requête, par exemple `top_k, min_p`. Envoyé uniquement lorsqu'un paramètre a été retiré.
+      description: Paramètres envoyés par le client que le fournisseur qui traite la requête ne prend pas en charge et que la passerelle a retirés au lieu de les envoyer au fournisseur ou de rejeter la requête, par exemple `top_k, min_p`. Envoyé uniquement dans les réponses réussies, et seulement lorsqu'au moins un paramètre du corps de la requête a été retiré. Les paramètres qui proviennent d'un préréglage ou d'une valeur par défaut ne sont pas listés.
       schema:
         type: string
     UpstreamRateLimitValue:

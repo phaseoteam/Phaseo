@@ -19,14 +19,16 @@ Die Parameterunterstützung variiert weiterhin je nach Endpunkt, Modell und Anbi
 
 ## Nicht unterstützte Parameter
 
-Unterstützt der Anbieter, der eine Anfrage bedient, einen ihrer Sampling-Parameter nicht, entfernt Phaseo diesen Parameter. Er wird nicht an den Anbieter gesendet, und die Anfrage wird nicht abgelehnt, sodass Clients, die immer die OpenAI-Standardwerte senden, weiter funktionieren. Die Unterstützung wird pro Anbieter anhand der Anbieterprofile von Phaseo und der Katalogparameter der Route bestimmt. Gibt eine Route keine Parameter an, wird nichts entfernt.
+Unterstützt der Anbieter, der eine Anfrage bedient, einen ihrer Sampling-Parameter nicht, entfernt Phaseo diesen Parameter. Er wird nicht an den Anbieter gesendet, und die Anfrage wird nicht abgelehnt, sodass Clients, die immer die OpenAI-Standardwerte senden, weiter funktionieren. Die Unterstützung wird pro Anbieter anhand der Anbieterprofile von Phaseo und der Katalogparameter der Route bestimmt. Gibt eine Route keine Parameter an, entfällt nur die Katalogprüfung: Parameter, die das Anbieterprofil als nicht unterstützt kennzeichnet, werden trotzdem entfernt, zum Beispiel `top_k` bei Cohere oder `stop` bei Reflection.
 
 Nur diese Parameter können entfernt werden: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` bei `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` und `image_config`. Nachrichten, Tools, `tool_choice`, `response_format`, Reasoning-Einstellungen und Ausgabelimits werden nie entfernt.
 
-Jeder entfernte Parameter wird gemeldet:
+Bei erfolgreichen Antworten meldet Phaseo die entfernten Parameter, die die Anfrage selbst gesendet hat:
 
 - im Antwort-Header `X-Phaseo-Dropped-Params`, zum Beispiel `X-Phaseo-Dropped-Params: top_k, min_p`
 - in `meta.routing.dropped_params`, wenn die Anfrage `meta: true` setzt, zum Beispiel `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+Ein Parameter, der aus einem Preset oder einem Standardwert stammt und nicht aus dem Anfrage-Body, kann entfernt werden, ohne an einer dieser Stellen zu erscheinen. Er wird trotzdem in den Routing-Diagnosen erfasst, die Phaseo mit der Anfrage speichert.
 
 ## Schnellübersicht
 

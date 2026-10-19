@@ -8575,7 +8575,7 @@ components:
       schema:
         type: string
     DroppedParams:
-      description: 处理请求的提供商不支持、网关因此移除（而不是发送给提供商或拒绝请求）的请求参数，例如 `top_k, min_p`。仅当有参数被移除时才会发送。
+      description: 客户端发送、但处理请求的提供商不支持，因而被网关移除（而不是发送给提供商或拒绝请求）的请求参数，例如 `top_k, min_p`。仅在成功的响应中、且至少移除了一个来自请求正文的参数时才会发送。来自预设或默认值的参数不会列出。
       schema:
         type: string
     UpstreamRateLimitValue:
