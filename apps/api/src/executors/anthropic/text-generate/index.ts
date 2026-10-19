@@ -657,10 +657,16 @@ export function irToAnthropicMessages(
 				role: "user",
 				content: msg.toolResults.map((result) => {
 					const cacheControl = normalizeAnthropicCacheControlValue(result.cacheControl);
+					// tool_result content takes text and image blocks, so a client's
+					// content parts are kept; a plain result stays a string.
+					const blocks = (result.parts ?? [])
+						.filter((part) => (part.type === "text" && part.text.length > 0) || part.type === "image")
+						.map(mapIRContentToAnthropic);
 					return {
 						type: "tool_result",
 						tool_use_id: result.toolCallId,
-						content: result.content,
+						content: blocks.length > 0 ? blocks : result.content,
+						...(result.isError ? { is_error: true } : {}),
 						...(cacheControl ? { cache_control: cacheControl } : {}),
 					};
 				}),
@@ -732,7 +738,9 @@ export function irToAnthropicMessages(
 	if (anthropicUserId) request.metadata = { user_id: anthropicUserId };
 	const reasoningDisabled = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
 
-	if (usesAdaptiveThinkingControls) {
+	// Without client reasoning settings `thinking` is omitted, so the model's own
+	// default applies (off on Opus 4.7 and 4.8, adaptive on the 5-series).
+	if (usesAdaptiveThinkingControls && ir.reasoning) {
 		if (reasoningDisabled && supportsAnthropicThinkingDisabled(resolvedModel)) {
 			request.thinking = { type: "disabled" };
 		} else {

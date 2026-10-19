@@ -59,7 +59,9 @@ describe("managed Bedrock Opus 5.5 Mantle contract", () => {
 		try {
 			const result = await executor(args(protocol));
 			expect(mock.calls).toHaveLength(1);
-			expect(mock.calls[0].bodyJson).toMatchObject({ model: "anthropic.claude-opus-5-5", stream: false, thinking: { type: "adaptive" } });
+			expect(mock.calls[0].bodyJson).toMatchObject({ model: "anthropic.claude-opus-5-5", stream: false });
+			// No reasoning settings from the client: thinking is left to the model default.
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("thinking");
 			expect(result.keySource).toBe("gateway");
 			if (result.kind !== "completed" || !result.ir) throw new Error("expected completion");
 			// The thinking block keeps its signature, tagged as Claude reasoning from Bedrock.

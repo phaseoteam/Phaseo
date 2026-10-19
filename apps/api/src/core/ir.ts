@@ -121,7 +121,10 @@ export type IRToolCall = {
  */
 export type IRToolResult = {
 	toolCallId: string; // References IRToolCall.id
-	content: string; // Result (can be structured JSON string)
+	content: string; // Result text (text parts joined when the client sent content parts)
+	// The client's content parts, when it sent an array. Encoders send these
+	// where the upstream accepts structured tool results, and `content` elsewhere.
+	parts?: IRContentPart[];
 	isError?: boolean; // Optional error flag
 	cacheControl?: IRCacheControl;
 	type?: "function" | "custom";
@@ -138,19 +141,23 @@ export type IRMessage =
 	| {
 		role: "system";
 		content: IRContentPart[];
+		name?: string; // OpenAI Chat participant name
 	}
 	| {
 		role: "developer";
 		content: IRContentPart[];
+		name?: string;
 	}
 	| {
 		role: "user";
 		content: IRContentPart[];
+		name?: string;
 	}
 	| {
 		role: "assistant";
 		content: IRContentPart[]; // Regular assistant content
 		toolCalls?: IRToolCall[]; // Optional tool calls
+		name?: string;
 		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
 	}
 	| {

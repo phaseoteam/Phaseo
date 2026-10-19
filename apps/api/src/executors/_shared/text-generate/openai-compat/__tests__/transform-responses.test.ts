@@ -524,7 +524,8 @@ describe("irToOpenAIResponses", () => {
 			stream: false,
 		} as any, "qwen3.7-max", "alibaba-cloud");
 
-		expect(request.input_items[0].content).toEqual([
+		expect(request.input_items).toBeUndefined();
+		expect(request.input[0].content).toEqual([
 			{
 				type: "input_text",
 				text: "stable context",
