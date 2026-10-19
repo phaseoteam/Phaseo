@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { measure } from "@/lib/diagnostics";
 import { kv } from "@/lib/storage";
 import { createStore } from "@/lib/store";
 import { getChat, listChats, listChatsAsync, setModelSettings, updateChat } from "./db";
@@ -83,7 +84,7 @@ const ordered = (a: Chat, b: Chat) => Number(b.pinned) - Number(a.pinned) || b.u
 
 export function useChats(): Chat[] {
   listVersion.use();
-  chatList ??= listChats();
+  chatList ??= measure("Chat list read", listChats, (chats) => `${chats.length} chats`);
   return chatList;
 }
 

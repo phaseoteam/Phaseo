@@ -1,5 +1,6 @@
 import * as Crypto from "expo-crypto";
 import { ApiError } from "@/lib/api/http";
+import { endTimer, startTimer } from "@/lib/diagnostics";
 import { perf } from "@/perf";
 import { SUMMARY_MAX_TOKENS } from "./compaction";
 import { appendDeltas, copyMessages, createChat, deleteMessagesFrom, finishMessage, getChat, getMessage, indexAnswer, insertMessage, nextPosition, updateChat, type MessagePatch, type StreamDelta } from "./db";
@@ -61,6 +62,7 @@ function armFlushClock() {
       // The final write still saves the answer; a failed flush only narrows what a crash would keep.
     }
     const cost = performance.now() - started;
+    endTimer("Stream flush", started, () => `${deltas.length} ${deltas.length === 1 ? "answer" : "answers"}`);
     for (const [, flush] of due) flush.cost(cost);
     armFlushClock();
   }, Math.max(0, next - Date.now()));
@@ -177,8 +179,10 @@ const toUsage = (usage: { prompt_tokens?: number; completion_tokens?: number; co
 async function summarise(args: { model: string; settings?: ModelSettings; workspaceId: string | null; signal: AbortSignal; messages: WireMessage[] }) {
   const settings: ModelSettings = { ...args.settings, systemPrompt: undefined, maxOutputTokens: SUMMARY_MAX_TOKENS };
   let text = "";
+  const started = startTimer();
   try {
     const result = await streamCompletion({ model: args.model, messages: args.messages, settings, capabilities: await requestCapabilities(args.model, settings), workspaceId: args.workspaceId, signal: args.signal, onText: (delta) => { text += delta; } });
+    endTimer("Compaction", started, () => `${args.model}, ${args.messages.length} messages summarised`);
     return { text: result.text, usage: toUsage(result.usage) };
   } catch (error) {
     // A summary that ran out of room is still worth keeping.
@@ -217,7 +221,7 @@ async function answer(chatId: string, parent: ChatMessage, model: string, worksp
   try {
     // Settings are read when the answer starts, so a change applies from the next message or retry.
     const settings = getChat(chatId)?.modelSettings[model];
-    const historyStarted = perf ? performance.now() : 0;
+    const historyStarted = performance.now();
     prepared = await prepareThread({
       chatId,
       model,
@@ -229,6 +233,7 @@ async function answer(chatId: string, parent: ChatMessage, model: string, worksp
       onSummarising: () => live.phase("summarising"),
       summarise: (messages) => summarise({ model, settings, workspaceId, signal: controller.signal, messages }),
     });
+    endTimer("Request history built", historyStarted, () => `${model}, ${prepared?.messages.length ?? 0} messages${prepared?.compacted ? ", with a summary" : ""}`);
     perf?.log("history.build", { model, ms: Math.round(performance.now() - historyStarted), messages: prepared.messages.length, estimate: prepared.estimate, contextTokens: prepared.contextTokens, compacted: prepared.compacted, notice: prepared.notice ?? null });
     if (prepared.summary) {
       summaryAdded(prepared.summary);
@@ -273,6 +278,11 @@ export function stopAnswer(messageId: string) {
 
 export function stopChat(chatId: string) {
   for (const entry of running.values()) if (entry.chatId === chatId) entry.controller.abort();
+}
+
+/** Stops every answer that is streaming (before deleting all chats). */
+export function stopAllAnswers() {
+  for (const entry of running.values()) entry.controller.abort();
 }
 
 /** Re-runs one answer in place with the same model. */
