@@ -128,14 +128,15 @@ const TOOL_OUTPUT_NO_FILE_PROVIDERS = new Set(["moonshot-ai", "moonshotai"]);
 /**
  * function_call_output.output: the client's content parts where the provider
  * accepts a list, otherwise the text parts joined (never a JSON string of the list).
- * Decoding keeps a Responses input_file as the client's own provider_block.
+ * A Responses input_file decodes to an IR file part (older decoders kept it as a provider_block).
  */
 function mapToolResultOutput(result: IRToolResult, providerId?: string): any {
 	const canonicalProviderId = providerId ? normalizeProviderId(providerId) : providerId;
 	if (result.parts?.length && canonicalProviderId && TOOL_OUTPUT_PARTS_PROVIDERS.has(canonicalProviderId)) {
+		const takesFiles = !TOOL_OUTPUT_NO_FILE_PROVIDERS.has(canonicalProviderId);
 		const parts = result.parts
 			.filter((part) => part.type === "text" || part.type === "image"
-				|| (part.type === "provider_block" && part.block?.type === "input_file" && !TOOL_OUTPUT_NO_FILE_PROVIDERS.has(canonicalProviderId)))
+				|| (takesFiles && (part.type === "file" || (part.type === "provider_block" && part.block?.type === "input_file"))))
 			.map(mapContentPart);
 		if (parts.length > 0) return parts;
 	}
