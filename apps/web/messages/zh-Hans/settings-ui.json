@@ -6119,7 +6119,6 @@
 			"running": "正在运行…",
 			"fixFirst": "请先修正分类器再测试。",
 			"privacyReview": "请先打开一次 Chat 并查看工作区的隐私设置，然后重试。",
-			"budgetReached": "此分类器已用完本月预算，测试运行将暂停到下个月。如需立即测试，请提高预算。",
 			"openChat": "打开 Chat",
 			"failed": "测试失败。",
 			"failedWithMessage": "测试失败：{message}",

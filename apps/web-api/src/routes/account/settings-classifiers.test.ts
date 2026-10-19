@@ -34,7 +34,6 @@ type Fixture = {
 	reviewed?: boolean;
 	insertError?: { code: string; message: string } | null;
 	gateway?: (request: Request) => Response;
-	spentNanos?: number;
 };
 
 function database(fixture: Fixture = {}) {
@@ -58,9 +57,8 @@ function database(fixture: Fixture = {}) {
 			return Response.json([row(request.method === "PATCH" ? { enabled: false } : {})]);
 		}
 		if (url.pathname.endsWith("/workspace_request_classifier_spend_monthly")) {
-			return Response.json([{ classifier_id: CLASSIFIER_ID, classifications: 1234, cost_nanos: fixture.spentNanos ?? 1_250_000_000 }]);
+			return Response.json([{ classifier_id: CLASSIFIER_ID, classifications: 1234, cost_nanos: 1_250_000_000 }]);
 		}
-		if (url.pathname.endsWith("/rpc/record_request_classifier_spend")) return new Response(null, { status: 204 });
 		if (url.pathname.endsWith("/keys")) {
 			if (request.method === "GET" && url.searchParams.get("kid")) return Response.json([{ id: "chat-key", workspace_id: WORKSPACE, status: "active", hash: "x" }]);
 			return Response.json([{ id: "00000000-0000-4000-8000-0000000000a1", name: "Production", prefix: "abc123", status: "active" }]);
@@ -213,28 +211,6 @@ describe("classifier test run", () => {
 		expect(sent.body.text.format.schema.properties.d0.properties.value.enum).toEqual(["engineering", "legal", "other"]);
 		expect(sent.body.input[0].content[0].text).toContain("Prefer legal for contracts");
 		expect(sent.body.input[1].content[0].text).toBe("<transcript>\nUSER: Review this NDA clause\n</transcript>");
-		// A saved classifier's test run counts toward its monthly budget.
-		const recorded = requests.find((entry) => entry.url.pathname.endsWith("/rpc/record_request_classifier_spend"));
-		expect(recorded?.body).toEqual({ p_workspace_id: WORKSPACE, p_classifier_id: CLASSIFIER_ID, p_cost_nanos: 42_000 });
-	});
-
-	it("refuses a saved classifier's test run once its monthly budget is spent", async () => {
-		const requests = database({ role: "admin", reviewed: true, spentNanos: 5_000_000_000, gateway: () => Response.json({ cost_nanos: 1 }) });
-		const response = await call("/classifiers/test", { method: "POST", body: JSON.stringify(testBody) });
-		expect(response.status).toBe(409);
-		expect(((await response.json()) as any).error).toBe("classifier_budget_reached");
-		expect(requests.some((entry) => entry.url.hostname === "gateway.test")).toBe(false);
-	});
-
-	it("does not record budget spend for an unsaved draft", async () => {
-		const requests = database({
-			role: "admin",
-			reviewed: true,
-			gateway: () => Response.json({ cost_nanos: 42_000, output_text: JSON.stringify({ d0: { value: "legal", confidence: 1 } }) }),
-		});
-		const response = await call("/classifiers/test", { method: "POST", body: JSON.stringify({ ...testBody, classifierId: undefined }) });
-		expect(response.status).toBe(200);
-		expect(requests.some((entry) => entry.url.pathname.endsWith("/rpc/record_request_classifier_spend"))).toBe(false);
 	});
 
 	it("rejects an invalid draft before calling the gateway", async () => {
