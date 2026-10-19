@@ -4,6 +4,7 @@ import { useProviders } from "@/features/providers/ProviderBrowser";
 import { useCatalogueIndex } from "@/features/models/state";
 import { getNotificationSettings, unregisterDevice, type NotificationSettings, type RuleInput } from "@/lib/api/notifications";
 import { modelName } from "@/lib/catalogue";
+import { kv } from "@/lib/storage";
 import { createStore } from "@/lib/store";
 import { onSignOut, useAuth } from "@/providers/AuthProvider";
 import { forgetRegistration, installationId } from "./device";
@@ -22,6 +23,16 @@ onSignOut(async () => {
   await forgetRegistration().catch(() => undefined);
   try { await unregisterDevice(await installationId()); } catch { /* signed out already or never registered */ }
 });
+
+const SETUP_OFFERED_KEY = "phaseo.notification-setup-offered";
+
+/** True the first time for each account on this phone: setup opens by itself after the first switch-on. */
+export async function takeSetupOffer(userId: string) {
+  const key = `${SETUP_OFFERED_KEY}:${userId}`;
+  if (await kv.getItem(key)) return false;
+  await kv.setItem(key, "1");
+  return true;
+}
 
 /** Shared with the start-up registration check, so the screen opens on the settings it already fetched. */
 export function notificationSettingsQuery(userId: string | null, id: string | null) {

@@ -24,7 +24,7 @@ export const CHANNELS = [
   { id: "security", name: "Security", importance: "high", description: "API key activity and leaked keys" },
   { id: "jobs", name: "Jobs", importance: "default", description: "Batches and other long-running jobs when they finish" },
   { id: "account", name: "Account", importance: "default", description: "Changes to your account and team" },
-  { id: "digest", name: "Digest", importance: "low", description: "Your Phaseo week, once a week, without sound" },
+  { id: "digest", name: "Digest", importance: "low", description: "Your Phaseo week, on Sundays at 18:00, without sound" },
   { id: "tests", name: "Tests", importance: "default", description: "Test notifications you send from the app" },
 ] as const satisfies readonly ChannelSpec[];
 
@@ -44,6 +44,17 @@ export const TEST_CHANNEL_ID = "tests";
 export type Category = Exclude<ChannelId, typeof TEST_CHANNEL_ID>;
 export const CATEGORY_CHANNELS = CHANNELS.filter((channel): channel is Extract<(typeof CHANNELS)[number], { id: Category }> => channel.id !== TEST_CHANNEL_ID);
 export const CATEGORIES: Category[] = CATEGORY_CHANNELS.map((channel) => channel.id);
+
+/** Nothing sends to these yet, so the Notifications screen leaves them out. Their channels stay. */
+export const UNUSED_CATEGORIES: readonly Category[] = ["jobs", "account"];
+
+/** Alerts that only reach workspace owners and admins. Members get Security alerts only for keys they created. */
+export const ADMIN_CATEGORIES: readonly Category[] = ["money", "traffic", "digest"];
+
+/** The category rows the Notifications screen shows. Members don't see the ones that never reach them. */
+export function shownCategories(admin: boolean) {
+  return CATEGORY_CHANNELS.filter((channel) => !UNUSED_CATEGORIES.includes(channel.id) && (admin || !ADMIN_CATEGORIES.includes(channel.id)));
+}
 
 /**
  * The server's `categories`, with every category this app knows filled in (a missing one means its
