@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION private.capture_workspace_notification_events (
   SET search_path TO ''
   AS $function$
 -- Turns new workspace events into push events (workspace_notification_events), one per dedupe key:
---   email_outbox            low_balance, auto_top_up_failed and payment_method_expiring (money),
+--   email_outbox            auto_top_up_failed and payment_method_expiring (money),
 --                           model_deprecation (deprecations), model_substitution and
 --                           rate_limit_throttled (traffic), and security_leaked_key (security; one
 --                           per exposed key, though the email has a row per recipient, with the
@@ -20,10 +20,8 @@ CREATE OR REPLACE FUNCTION private.capture_workspace_notification_events (
 --   * after a read cut short by p_limit, from just after its last row (a keyset position), so
 --     each call moves on even when the overlap alone holds more than p_limit rows.
 -- Nothing older than two days is read, and the first call only sets the cursors.
--- Low balance is pushed once per drop: a low_balance row is skipped while the workspace's last
--- low-balance push stands, that is until a credit (top-up, refund, grant or adjustment) lifted the
--- balance above the threshold between that push and the row, or the threshold changed. The
--- email itself is unchanged.
+-- Low balance emails are not read: sweep_low_balance_pushes pushes low balance once per drop
+-- whatever the email setting, so an email row is never a second push. The email is unchanged.
 declare
   v_uuid constant text := '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
   v_now timestamptz := now();
@@ -34,10 +32,8 @@ declare
   v_last_id uuid;
   v_read integer;
   v_row record;
-  v_last_push record;
   v_inserted integer;
   v_captured integer := 0;
-  v_repeats integer := 0;
 begin
   if p_limit is null or p_limit < 1 then
     raise exception 'invalid_workspace_notification_capture_limit';
@@ -56,7 +52,7 @@ begin
       where (o.created_at, o.id) > (v_from, v_from_id)
         and o.created_at > v_now - interval '2 days'
         and o.created_at <= v_now
-        and o.kind in ('low_balance', 'auto_top_up_failed', 'payment_method_expiring', 'model_deprecation', 'model_substitution',
+        and o.kind in ('auto_top_up_failed', 'payment_method_expiring', 'model_deprecation', 'model_substitution',
           'rate_limit_throttled', 'security_leaked_key')
         and o.workspace_id is not null
       order by o.created_at, o.id
@@ -66,34 +62,12 @@ begin
       v_last := v_row.created_at;
       v_last_id := v_row.id;
 
-      if v_row.kind = 'low_balance' then
-        continue when exists (select 1 from public.workspace_notification_events e where e.dedupe_key = 'email_outbox:' || v_row.id);
-        select e.occurred_at, e.payload ->> 'threshold_nanos' as threshold into v_last_push
-        from public.workspace_notification_events e
-        where e.workspace_id = v_row.workspace_id and e.kind = 'low_balance' and e.occurred_at <= v_row.created_at
-        order by e.occurred_at desc
-        limit 1;
-        if v_last_push.occurred_at is not null
-          and v_last_push.threshold is not distinct from (v_row.payload ->> 'threshold_nanos')
-          and not exists (
-            select 1
-            from public.credit_ledger l
-            where l.workspace_id = v_row.workspace_id
-              and l.created_at > v_last_push.occurred_at and l.created_at <= v_row.created_at
-              and l.amount_nanos > 0
-              and l.after_balance_nanos > case when v_row.payload ->> 'threshold_nanos' ~ '^[0-9]+$' then (v_row.payload ->> 'threshold_nanos')::numeric else 0 end
-          ) then
-          v_repeats := v_repeats + 1;
-          continue;
-        end if;
-      end if;
-
       insert into public.workspace_notification_events (workspace_id, kind, category, dedupe_key, key_id, key_created_by, payload, occurred_at)
       select
         v_row.workspace_id,
         v_row.kind,
         case
-          when v_row.kind in ('low_balance', 'auto_top_up_failed', 'payment_method_expiring') then 'money'
+          when v_row.kind in ('auto_top_up_failed', 'payment_method_expiring') then 'money'
           when v_row.kind = 'model_deprecation' then 'deprecations'
           when v_row.kind = 'security_leaked_key' then 'security'
           else 'traffic'
@@ -194,7 +168,7 @@ begin
     where source = 'workspace_audit_events';
   end if;
 
-  return jsonb_build_object('captured', v_captured, 'lowBalanceRepeats', v_repeats);
+  return jsonb_build_object('captured', v_captured);
 end;
 $function$;
 
