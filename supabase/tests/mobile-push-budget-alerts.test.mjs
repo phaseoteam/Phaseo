@@ -122,6 +122,10 @@ try {
         daily_limit_requests bigint not null default 0, weekly_limit_requests bigint not null default 0, monthly_limit_requests bigint not null default 0,
         daily_limit_cost_nanos bigint not null default 0, weekly_limit_cost_nanos bigint not null default 0, monthly_limit_cost_nanos bigint not null default 0
       );
+      create table public.management_keys (
+        id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
+        name text not null, created_by uuid references public.users(user_id) on delete set null
+      );
       create table public.workspace_budgets (
         id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
         interval text not null check (interval in ('daily', 'weekly', 'monthly', 'lifetime')), limit_nanos bigint not null check (limit_nanos > 0),
