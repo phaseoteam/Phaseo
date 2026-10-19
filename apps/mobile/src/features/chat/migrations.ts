@@ -8,7 +8,7 @@ export type MigrationDatabase = {
  * Chats live only on this device, so a schema change bumps `user_version` and migrates the database
  * in place. Each step runs in a transaction; a failed step leaves the previous version intact.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 const STEPS: Record<number, string> = {
   1: `
@@ -47,6 +47,32 @@ const STEPS: Record<number, string> = {
     ALTER TABLE chats ADD COLUMN model_settings TEXT NOT NULL DEFAULT '{}';
     ALTER TABLE messages ADD COLUMN error_code TEXT;
     ALTER TABLE messages ADD COLUMN error_status INTEGER;
+  `,
+  // Long chats (desktop's approach, apps/desktop workspaceStore):
+  // - a partial index of user messages, so a page of turns is found without reading answers;
+  // - streamed text appended in small rows while an answer streams, folded into the message when it
+  //   ends (or at the next launch, if the app was closed), instead of rewriting the whole answer;
+  // - summaries of older messages per chat and model, for chats longer than a model's context window;
+  // - a notice on an answer (for example, that its summary couldn't be written).
+  3: `
+    CREATE INDEX IF NOT EXISTS messages_turns ON messages (chat_id, position) WHERE role = 'user';
+    ALTER TABLE messages ADD COLUMN notice TEXT;
+    CREATE TABLE IF NOT EXISTS message_deltas (
+      message_id TEXT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+      seq INTEGER NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      reasoning TEXT NOT NULL DEFAULT '',
+      PRIMARY KEY (message_id, seq)
+    ) WITHOUT ROWID;
+    CREATE TABLE IF NOT EXISTS chat_summaries (
+      chat_id TEXT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+      model TEXT NOT NULL,
+      through_position INTEGER NOT NULL,
+      summary TEXT NOT NULL,
+      usage TEXT,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (chat_id, model, through_position)
+    );
   `,
 };
 

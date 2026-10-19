@@ -1,22 +1,25 @@
-import { LegendList } from "@legendapp/list/react-native";
+import { LegendList, type LegendListRef } from "@legendapp/list/react-native";
 import { useRouter } from "expo-router";
-import { BookOpenText, Code2, Lightbulb, MessageSquareOff, MoreHorizontal, PenLine, type LucideIcon } from "lucide-react-native";
+import { ArrowDown, BookOpenText, Code2, Lightbulb, MessageSquareOff, MoreHorizontal, PenLine, type LucideIcon } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
-import { Button, EmptyState, Header, Icon, IconButton, measureAnchor, Screen, showActions, Text, type ViewRef } from "@/components/ui";
+import { Button, EmptyState, Header, Icon, IconButton, measureAnchor, Screen, showActions, Text, useToneColor, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { useAuth } from "@/providers/AuthProvider";
 import { perf } from "@/perf";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { chatActions } from "./chatActions";
 import { Composer } from "./Composer";
-import { toTurns, type Turn } from "./groups";
-import { TurnView } from "./Messages";
+import { buildItems, reconcileItems, type ConversationItem } from "./conversationItems";
+import { newestMatch } from "./db";
+import { getLive, liveShapes } from "./live";
+import { ConversationContext, ConversationRow, selectedAnswers } from "./Messages";
 import { ModelChipRow, useOpenModelPicker } from "./ModelChips";
 import { useChatModelOptions, useModelLabels } from "./models";
 import { onChatError, sendMessage, startChat, stopChat } from "./runner";
-import { chatModelStore, draftSettingsStore, useChat } from "./state";
+import { chatModelStore, draftSettingsStore, useChat, useChatRunning } from "./state";
+import { chatReloaded, useChatWindow } from "./window";
 
 /** Routes account errors from any running answer to the screen that can fix them. */
 function useChatErrors(chatId: string | null) {
@@ -28,7 +31,9 @@ function useChatErrors(chatId: string | null) {
   }), [chatId, router]);
 }
 
-export function Conversation({ chatId }: { chatId: string }) {
+const EMPTY: string[] = [];
+
+export function Conversation({ chatId, focusMessage, search }: { chatId: string; focusMessage?: string | null; search?: string | null }) {
   const router = useRouter();
   const { split, wide } = useLayout();
   const { session } = useAuth();
@@ -36,17 +41,47 @@ export function Conversation({ chatId }: { chatId: string }) {
   const labels = useModelLabels();
   const openPicker = useOpenModelPicker(chatId);
   const moreRef = useRef<ViewRef>(null);
-  const { chat, messages } = useChat(chatId);
-  const turns = useMemo(() => toTurns(messages, chat?.models ?? []), [messages, chat?.models]);
-  const running = messages.some((message) => message.status === "streaming");
+  const listRef = useRef<LegendListRef>(null);
+  const { chat } = useChat(chatId);
+  // A link to a message, or a search result, opens the chat around that message.
+  const [focus] = useState(() => focusMessage ?? (search ? newestMatch(chatId, search) : null));
+  const window = useChatWindow(chatId, focus);
+  const running = useChatRunning(chatId);
+  const selected = selectedAnswers.use();
+  const shapes = liveShapes.use();
+  const models = chat?.models ?? EMPTY;
   const settings = useMemo(() => chat?.modelSettings ?? {}, [chat?.modelSettings]);
+  const built = useMemo(() => {
+    void shapes;
+    return buildItems({ messages: window.messages, summaries: window.summaries, models, side: wide, selected, live: getLive });
+  }, [window.messages, window.summaries, models, wide, selected, shapes]);
+  // Rows that didn't change keep their object, so memoised rows skip rendering (state adjusted during render).
+  const [stable, setStable] = useState({ source: built, items: built });
+  let items = stable.items;
+  if (stable.source !== built) {
+    items = reconcileItems(stable.items, built);
+    setStable({ source: built, items });
+  }
+  const [initialIndex] = useState(() => (focus ? items.findIndex((item) => item.key === `user:${focus}` || item.key === `answer:${focus}:0`) : -1));
+  const context = useMemo(() => ({ chatId, labels, settings, workspaceId, focus }), [chatId, labels, settings, workspaceId, focus]);
+  const [away, setAway] = useState(false);
   useChatErrors(chatId);
 
-  const renderItem = useCallback(({ item }: { item: Turn }) => <TurnView turn={item} side={wide && item.answers.length > 1} labels={labels} settings={settings} workspaceId={workspaceId} />, [wide, labels, settings, workspaceId]);
+  const renderItem = useCallback(({ item }: { item: ConversationItem }) => <ConversationRow item={item} />, []);
+  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const next = contentSize.height - layoutMeasurement.height - contentOffset.y > layoutMeasurement.height * 1.5;
+    setAway((current) => (current === next ? current : next));
+  }, []);
 
   if (!chat) return <Screen><Header back={!split} /><EmptyState className="flex-1" icon={MessageSquareOff} title="Chat not found" body="It may have been deleted on this device." action="New chat" onAction={() => router.replace("/chat/new")} /></Screen>;
 
   const openMenu = async () => showActions({ title: chat.title, anchor: await measureAnchor(moreRef), actions: chatActions(chat, { router, onDeleted: () => router.replace("/chat") }) });
+  const jumpToLatest = () => {
+    if (window.hasLater) window.latest();
+    else void listRef.current?.scrollToEnd({ animated: true });
+  };
+  const atFocus = Boolean(focus) && window.generation === 0 && initialIndex >= 0;
 
   return (
     <Screen>
@@ -58,32 +93,74 @@ export function Conversation({ chatId }: { chatId: string }) {
       <ModelChipRow chatId={chatId} models={chat.models} settings={settings} className="pb-2" />
       <View className="h-px bg-border" />
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <LegendList
-          data={turns}
-          keyExtractor={(turn) => turn.key}
-          renderItem={renderItem}
-          extraData={settings}
-          estimatedItemSize={240}
-          initialScrollAtEnd
-          maintainScrollAtEnd
-          alignItemsAtEnd
-          maintainVisibleContentPosition
-          onLoad={perf ? () => perf?.chatShown(chatId, { messages: messages.length, turns: turns.length }) : undefined}
-          keyboardDismissMode="interactive"
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingTop: 4, paddingBottom: 8 }}
-        />
+        <View className="flex-1">
+        <ConversationContext.Provider value={context}>
+          <LegendList
+            ref={listRef}
+            data={items}
+            dataKey={window.generation}
+            keyExtractor={(item) => item.key}
+            getItemType={(item) => item.type}
+            renderItem={renderItem}
+            estimatedItemSize={220}
+            initialScrollAtEnd={!atFocus}
+            initialScrollIndex={atFocus ? { index: initialIndex, viewPosition: 0 } : undefined}
+            maintainScrollAtEnd={!window.hasLater}
+            alignItemsAtEnd
+            maintainVisibleContentPosition
+            // Pages load ahead of either end as the reader scrolls towards it (desktop's paging), two screens early for fast flings.
+            onStartReached={window.older}
+            onStartReachedThreshold={2}
+            onEndReached={window.newer}
+            onEndReachedThreshold={2}
+            onScroll={onScroll}
+            onLoad={perf ? () => perf?.chatShown(chatId, { messages: window.messages.length, items: items.length }) : undefined}
+            ListHeaderComponent={window.hasEarlier || window.error ? <PageEdge loading={window.loading === "older"} error={window.error} onRetry={window.older} /> : null}
+            ListFooterComponent={window.hasLater ? <PageEdge loading={window.loading === "newer"} error={null} onRetry={window.newer} /> : null}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingTop: 4, paddingBottom: 8 }}
+          />
+        </ConversationContext.Provider>
+        {away || window.hasLater ? (
+          <View pointerEvents="box-none" className="absolute bottom-3 left-0 right-0 items-center">
+            <Pressable accessibilityRole="button" accessibilityLabel="Jump to latest" onPress={jumpToLatest} className="h-9 flex-row items-center gap-1.5 rounded-md border border-border bg-background px-3 shadow-sm active:bg-accent">
+              <Icon icon={ArrowDown} tone="foreground" size={15} />
+              <Text variant="small" className="font-semibold">Jump to latest</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        </View>
         <Composer
           models={chat.models}
           settings={settings}
           onModelPress={openPicker}
           running={running}
           disabledReason={session || perf?.chatOrigin() ? null : "Sign in to send messages"}
-          onSend={(text, attachments) => sendMessage({ chatId, text, attachments, workspaceId })}
+          onSend={(text, attachments) => {
+            const behind = window.hasLater;
+            sendMessage({ chatId, text, attachments, workspaceId });
+            if (behind) chatReloaded(chatId);
+            else void listRef.current?.scrollToEnd({ animated: true });
+          }}
           onStop={() => stopChat(chatId)}
         />
       </KeyboardAvoidingView>
     </Screen>
+  );
+}
+
+/** The top or bottom of a window that has more beyond it: a spinner while the next page loads. */
+function PageEdge({ loading, error, onRetry }: { loading: boolean; error: string | null; onRetry(): void }) {
+  const muted = useToneColor("muted");
+  return (
+    <View className="h-12 items-center justify-center">
+      {error ? (
+        <Pressable accessibilityRole="button" onPress={onRetry} className="rounded-md px-3 py-2 active:bg-accent">
+          <Text variant="caption" className="text-link">{"Couldn't load these messages. Try again"}</Text>
+        </Pressable>
+      ) : loading ? <ActivityIndicator size="small" color={muted} /> : null}
+    </View>
   );
 }
 
