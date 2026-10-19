@@ -2,6 +2,7 @@
 
 import type { IRChatResponse, IRContentPart, IRToolCall, IRUsage } from "@core/ir";
 import { isSealedReasoningValue } from "@core/reasoning-state";
+import { resolveCacheTokenUsage } from "@core/cache-usage";
 import type { Protocol } from "@protocols/detect";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
@@ -401,16 +402,24 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.total_tokens) ??
 		parseUsageNumber(usageRaw.totalTokens) ??
 		(inputTokens + outputTokens);
+	// The stream carries the client protocol's usage: OpenAI-style details (reads and writes
+	// inside input) for Chat and Responses, Anthropic's top-level cache fields (on top of
+	// input) for Messages. Keep that reading in IR, so the re-encoded body and the bill agree.
+	const cache = resolveCacheTokenUsage(usageRaw, inputTokens, { readSubsetDefault: true });
 	const cachedInputTokens =
+		cache.readTokens ??
 		parseUsageNumber(usageRaw.cached_read_tokens) ??
 		parseUsageNumber(usageRaw.cached_input_tokens) ??
 		parseUsageNumber(usageRaw.cached_tokens) ??
 		parseUsageNumber(usageRaw.prompt_cache_hit_tokens) ??
+		parseUsageNumber(usageRaw.cache_read_input_tokens) ??
 		parseUsageNumber(usageRaw.prompt_tokens_details?.cached_tokens) ??
-		parseUsageNumber(usageRaw.input_tokens_details?.cached_tokens);
+		parseUsageNumber(usageRaw.input_tokens_details?.cached_tokens) ??
+		parseUsageNumber(usageRaw.input_details?.cached_tokens);
 	const reasoningTokens =
 		parseUsageNumber(usageRaw.reasoning_tokens) ??
-		parseUsageNumber(usageRaw.output_tokens_details?.reasoning_tokens);
+		parseUsageNumber(usageRaw.output_tokens_details?.reasoning_tokens) ??
+		parseUsageNumber(usageRaw.completion_tokens_details?.reasoning_tokens);
 
 	const ext: NonNullable<IRUsage["_ext"]> = {};
 	const inputImageTokens =
@@ -438,6 +447,7 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.output_video_tokens);
 	if (outputVideoTokens != null) ext.outputVideoTokens = outputVideoTokens;
 	const cachedWriteTokens =
+		cache.writeTokens ??
 		parseUsageNumber(usageRaw.output_tokens_details?.cached_tokens) ??
 		parseUsageNumber(usageRaw.input_tokens_details?.cache_creation_input_tokens) ??
 		parseUsageNumber(usageRaw.prompt_tokens_details?.cache_creation_input_tokens) ??
@@ -448,10 +458,12 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.cached_write_tokens);
 	if (cachedWriteTokens != null) ext.cachedWriteTokens = cachedWriteTokens;
 	const cachedWriteTokens5m =
+		cache.write5mTokens ??
 		parseUsageNumber(usageRaw.cached_write_text_tokens_5m) ??
 		parseUsageNumber(usageRaw.cache_creation?.ephemeral_5m_input_tokens);
 	if (cachedWriteTokens5m != null) ext.cachedWriteTokens5m = cachedWriteTokens5m;
 	const cachedWriteTokens1h =
+		cache.write1hTokens ??
 		parseUsageNumber(usageRaw.cached_write_text_tokens_1h) ??
 		parseUsageNumber(usageRaw.cache_creation?.ephemeral_1h_input_tokens);
 	if (cachedWriteTokens1h != null) ext.cachedWriteTokens1h = cachedWriteTokens1h;
@@ -507,6 +519,8 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		totalTokens,
 		...(typeof usageRaw.service_tier === "string" ? { serviceTier: usageRaw.service_tier } : {}),
 		...(cachedInputTokens != null ? { cachedInputTokens } : {}),
+		...(cache.readTokens != null ? { cachedReadTokensAreSubsetOfInput: cache.readSubset } : {}),
+		...(cache.writeTokens != null ? { cachedWriteTokensAreSubsetOfInput: cache.writeSubset } : {}),
 		...(reasoningTokens != null ? { reasoningTokens } : {}),
 		...(Object.keys(ext).length > 0 ? { _ext: ext } : {}),
 	};

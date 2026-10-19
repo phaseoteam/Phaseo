@@ -44,6 +44,13 @@ describe("shapeUsageForClient", () => {
 		expect(shaped.input_tokens_details).toMatchObject({ cached_tokens: 4, cache_write_tokens: 6 });
 		expect(shaped.output_tokens_details.reasoning_tokens).toBe(2);
 	});
+	it("reads reasoning from Chat completion_tokens_details (OpenRouter and other Chat upstreams)", () => {
+		const shaped = shapeUsageForClient({
+			prompt_tokens: 100, completion_tokens: 50, total_tokens: 150,
+			completion_tokens_details: { reasoning_tokens: 11 },
+		}, { endpoint: "chat.completions" });
+		expect(shaped.output_tokens_details).toEqual({ reasoning_tokens: 11 });
+	});
 	it("preserves the input-image billing meter", () => {
 		const shaped = shapeUsageForClient({ input_image: 2, requests: 1 });
 		expect(shaped.input_image).toBe(2);

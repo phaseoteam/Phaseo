@@ -159,7 +159,10 @@ export function shapeUsageForClient(
     const cachedWrite = cache.writeTokens;
     const cachedWrite5m = cache.write5mTokens;
     const cachedWrite1h = cache.write1hTokens;
-    const reasoningTokens = pickNumber(base, "reasoning_tokens") ?? pickNumber(base, "output_tokens_details.reasoning_tokens");
+    const reasoningTokens =
+        pickNumber(base, "reasoning_tokens") ??
+        pickNumber(base, "output_tokens_details.reasoning_tokens") ??
+        pickNumber(base, "completion_tokens_details.reasoning_tokens");
 
     // Multimodal signals (prefer tokenized meters, then detail fields, then count-based fallbacks).
     const inputImageTokens =

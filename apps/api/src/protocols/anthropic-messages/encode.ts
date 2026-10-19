@@ -6,6 +6,7 @@
 // Transforms IR -> Anthropic Messages Response
 
 import type { IRChatResponse, IRChoice, IRContentPart } from "@core/ir";
+import { irUsageToAnthropicStyle } from "@core/cache-usage";
 import { encodeAnthropicThinkingBlock, type ReasoningResponseOrigin } from "../shared/reasoning";
 
 /**
@@ -182,11 +183,19 @@ function encodeUsage(
 			: serviceTier === "standard" || serviceTier === "priority" || serviceTier === "batch"
 				? serviceTier
 				: null;
+	// Anthropic semantics: input_tokens excludes cache reads and writes, reported beside it.
+	const cache = irUsageToAnthropicStyle({ ...anyUsage, inputTokens: inputTokens ?? 0 });
+	const hasWriteSplit = typeof cache.write5mTokens === "number" || typeof cache.write1hTokens === "number";
 	return {
-		cache_creation: null,
-		cache_creation_input_tokens: null,
-		cache_read_input_tokens: anyUsage?.cachedInputTokens ?? null,
-		input_tokens: inputTokens ?? 0,
+		cache_creation: hasWriteSplit
+			? {
+				ephemeral_5m_input_tokens: cache.write5mTokens ?? 0,
+				ephemeral_1h_input_tokens: cache.write1hTokens ?? 0,
+			}
+			: null,
+		cache_creation_input_tokens: cache.writeTokens ?? null,
+		cache_read_input_tokens: cache.readTokens ?? null,
+		input_tokens: inputTokens == null ? 0 : cache.inputTokens,
 		output_tokens: outputTokens ?? 0,
 		server_tool_use:
 			typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number" ||

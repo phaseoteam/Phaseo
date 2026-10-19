@@ -33,6 +33,7 @@
         "outputTokens": 20,
         "totalTokens": 30,
         "cachedInputTokens": 3,
+        "cachedReadTokensAreSubsetOfInput": true,
         "reasoningTokens": 5
       }
     },
