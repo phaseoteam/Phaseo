@@ -6,7 +6,7 @@
 - Shared tooling lives in `scripts/`, release metadata in `.changeset/`; the database owns catalog data. `packages/data/catalog/src/data` contains archived compatibility fixtures; daily public exports live under `packages/data/catalog/generated/database-v2`.
 
 ## Build, Test, and Development Commands
-- Install: `pnpm install` (Node >=22.12.0).
+- Install: `pnpm install` (Node ^22.19.0 or >=24).
 - Dev servers: `pnpm dev` to run everything, or scope with `pnpm --filter @phaseo/web dev`, `pnpm --filter @phaseo/gateway-api dev`, `pnpm --filter @phaseo/docs dev`.
 - Quality gates: `pnpm lint`, `pnpm typecheck`, `pnpm build`.
 - TypeScript: `tsc` is TypeScript 7 (`@typescript/native`); the `typescript` package is the TypeScript 6 API (`@typescript/typescript6`, bin `tsc6`) kept for typescript-eslint and scripts that import the compiler. Both come from the `catalog:` in `pnpm-workspace.yaml`. tsconfigs can't use `baseUrl`, `ignoreDeprecations` or `moduleResolution: node`.
