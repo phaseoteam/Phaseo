@@ -7,7 +7,7 @@ const id = (prefix, n) => `${prefix}0000000-0000-4000-8000-00000000000${n}`;
 const ws = (n) => id('1', n);
 const user = (n) => id('2', n);
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
-const migrationUrl = new URL('../migrations/20261019155013_workspace_request_classifiers.sql', import.meta.url);
+const migrationUrl = new URL('../migrations/20261019224759_workspace_request_classifiers.sql', import.meta.url);
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const DIMENSIONS = JSON.stringify([{ key: 'department', name: 'Department', multiple: false, allow_other: true, values: [{ value: 'legal' }] }]);
 

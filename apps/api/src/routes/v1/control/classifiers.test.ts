@@ -149,7 +149,7 @@ describe("classifier management", () => {
 		expect(stored).toMatchObject({ workspace_id: WORKSPACE, sample_rate_bps: 1_000, monthly_budget_nanos: 12_500_000_000 });
 		expect(state.audit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
 			action: "request_classifier.created",
-			metadata: expect.objectContaining({ dimension_keys: ["department"] }),
+			metadata: expect.objectContaining({ dimension_keys: ["department"], classified_input: "prompt" }),
 		}));
 	});
 
@@ -173,6 +173,7 @@ describe("classifier management", () => {
 		[{ name: "x", model: "m", dimensions: [DEPARTMENT], scope: { key_ids: ["nope"] } }, "scope.key_ids must contain only ids"],
 		[{ name: "x", model: "m", dimensions: [DEPARTMENT], monthly_budget_usd: -1 }, "monthly_budget_usd must be"],
 		[{ name: "x", model: "m", dimensions: [DEPARTMENT], instructions: "x".repeat(8_001) }, "instructions must be"],
+		[{ name: "x", model: "m", dimensions: [DEPARTMENT], sampleRate: 0.1 }, "Unknown field: sampleRate"],
 	])("rejects an invalid classifier %#", async (body, message) => {
 		const response = await call("/", "POST", body);
 		expect(response.status).toBe(400);

@@ -195,7 +195,15 @@ export type ClassifierFields = Partial<Pick<ClassifierRow,
 	"name" | "description" | "enabled" | "model" | "instructions" | "dimensions" | "sample_rate_bps" | "sample_by" | "input_scope" | "scope"
 >> & { monthly_budget_nanos?: number | null };
 
+const CLASSIFIER_INPUT_FIELDS = new Set([
+	"name", "description", "enabled", "model", "instructions", "dimensions",
+	"sample_rate", "sample_by", "input_scope", "scope", "monthly_budget_usd",
+]);
+
 export function parseClassifierFields(body: Record<string, unknown>): Parsed<ClassifierFields> {
+	// A misspelt field would otherwise fall back to the defaults (full sampling, no budget).
+	const unknown = Object.keys(body).find((field) => !CLASSIFIER_INPUT_FIELDS.has(field));
+	if (unknown !== undefined) return fail(`Unknown field: ${unknown}`);
 	const fields: ClassifierFields = {};
 	if (body.name !== undefined) {
 		const name = typeof body.name === "string" ? body.name.trim() : "";

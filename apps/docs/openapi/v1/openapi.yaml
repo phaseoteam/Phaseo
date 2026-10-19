@@ -20868,6 +20868,9 @@ components:
           description: Let the model answer "other" when no listed value fits.
         values:
           type: array
+          description: >-
+            Between 2 and 50 values. A single value is allowed only when
+            allow_other is true.
           minItems: 1
           maxItems: 50
           items:
@@ -21047,6 +21050,7 @@ components:
       additionalProperties: false
     ClassifierUpdateInput:
       type: object
+      minProperties: 1
       properties:
         name:
           type: string

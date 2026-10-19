@@ -80,7 +80,8 @@ async function audit(
 			model: row.model,
 			dimension_keys: (row.dimensions ?? []).map((dimension) => dimension.key),
 			sample_rate_bps: row.sample_rate_bps,
-			input_scope: row.input_scope,
+			// The audit sanitizer drops keys containing "scope".
+			classified_input: row.input_scope,
 			monthly_budget_nanos: row.monthly_budget_nanos == null ? null : Number(row.monthly_budget_nanos),
 		},
 	});
