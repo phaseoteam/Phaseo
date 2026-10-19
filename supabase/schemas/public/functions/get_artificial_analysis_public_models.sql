@@ -6,12 +6,16 @@ AS $function$
     SELECT * FROM public.artificial_analysis_public_snapshots
     WHERE p_major IS NULL OR major_version = p_major
     ORDER BY major_version DESC, fetched_at DESC LIMIT 1
+  ), owners AS MATERIALIZED (
+    SELECT jsonb_object_agg(owner.value->>'id', owner.value->>'model_id') AS by_source
+    FROM snapshot s CROSS JOIN LATERAL jsonb_array_elements(s.payload->'matching'->'sources') owner
+  ), source_models AS MATERIALIZED (
+    SELECT m.value - 'sourceData' AS data, m.value->>'id' AS source_id
+    FROM snapshot s CROSS JOIN LATERAL jsonb_array_elements(s.payload->'models') m
   ), visible AS (
-    SELECT m.value - 'sourceData' || jsonb_build_object('model_id', model.model_slug) AS data, m.value->>'id' AS source_id
-    FROM snapshot s
-    CROSS JOIN LATERAL jsonb_array_elements(s.payload->'models') m
-    JOIN LATERAL jsonb_array_elements(s.payload->'matching'->'sources') owner ON owner.value->>'id' = m.value->>'id'
-    JOIN public.v2_models model ON model.model_slug = owner.value->>'model_id' AND NOT coalesce(model.hidden, false)
+    SELECT m.data || jsonb_build_object('model_id', model.model_slug) AS data, m.source_id
+    FROM source_models m CROSS JOIN owners owner
+    JOIN public.v2_models model ON model.model_slug = owner.by_source->>m.source_id AND NOT coalesce(model.hidden, false)
     WHERE p_model_slug IS NULL OR model.model_slug = p_model_slug
   )
   SELECT jsonb_build_object(
