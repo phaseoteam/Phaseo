@@ -67,6 +67,8 @@ export default async function BenchmarkDetailShell({
 	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmark.id);
 	const displayName = artificialAnalysis ? "Artificial Analysis" : epochCapabilitiesIndex ? "Epoch AI" : benchmark.name ?? benchmark.id;
 
+	if (artificialAnalysis) return <main className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><div className="flex items-center gap-2.5"><ArtificialAnalysisLogo size={22} /><h1 className="text-sm font-semibold tracking-tight">Artificial Analysis</h1></div><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</main>;
+
 	return (
 		<main className="flex flex-col">
 			<EntityStickyHeader kind="benchmark" id={benchmark.suite?.id ?? benchmark.id} name={displayName} observeId="benchmark-detail-primary-header" baseHref={`/benchmarks/${benchmark.suite?.id ?? benchmark.id}`} navigation={[]} brandLogo={epochCapabilitiesIndex ? { light: "/benchmarks/epoch-ai.svg", dark: "/benchmarks/epoch-ai_dark.svg", width: 150, height: 26 } : undefined} />

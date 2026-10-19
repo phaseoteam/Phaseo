@@ -31,6 +31,7 @@ export function dashboardLabelPositions(items: { id: string; y: number }[], top:
 export type DashboardRow = {
 	id: string; modelId: string; modelName: string; sourceName: string; creatorId: string; colour: string | null; effort: string;
 	intelligence: number | null; tokensPerTask: number | null; totalTokens: number | null; costPerTask: number | null; totalCost: number | null; timePerTask: number | null;
+	isOpenWeights?: boolean; deprecated?: boolean; sourceSlug?: string;
 	benchmarks: Record<string, number | null>; capabilities: Record<string, number | null>;
 };
 
@@ -53,6 +54,7 @@ export function dashboardRows(models: ArtificialAnalysisPublicConfiguration[]): 
 		creatorId: model.creator?.slug ?? model.model_id.split("/")[0], colour: model.creator?.color ?? null, effort: model.effort ?? "default",
 		intelligence: model.intelligenceIndexIsEstimated ? null : finite(model.intelligenceIndex), tokensPerTask: finite(model.outputTokensPerTask?.output), totalTokens: finite(model.totalTokens?.output),
 		costPerTask: finite(model.costPerTaskUsd?.total), totalCost: finite(model.totalCostUsd?.total), timePerTask: finite(model.timePerTaskSeconds),
+		isOpenWeights: model.modelDetails?.isOpenWeights === true, deprecated: model.modelDetails?.deprecated === true, sourceSlug: model.slug,
 		benchmarks: model.benchmarkScores ?? {}, capabilities: model.capabilityScores ?? {},
 	}));
 }
