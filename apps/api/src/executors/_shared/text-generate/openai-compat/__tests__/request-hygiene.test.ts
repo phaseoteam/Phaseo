@@ -222,9 +222,14 @@ describe("fields the client did not send", () => {
 // service_tier enums (https://platform.openai.com/docs/api-reference/chat/create,
 // https://docs.deepinfra.com/api-reference/chat-completions/openai-chat-completions).
 describe("provider service tier names", () => {
-	it.each(["openai", "openai-eu", "azure", "deepinfra", "nebius-token-factory"])("sends %s service_tier default for standard", (providerId) => {
+	it.each(["openai", "openai-eu", "azure", "deepinfra", "nebius-token-factory", "fireworks"])("sends %s service_tier default for standard", (providerId) => {
 		expect(irToOpenAIChat(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("default");
 		expect(irToOpenAIResponses(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("default");
+	});
+
+	// Mistral's RequestedServiceTier is auto or standard_only (https://docs.mistral.ai/openapi.yaml).
+	it.each(["mistral", "mistral-eu"])("sends %s service_tier standard_only for standard", (providerId) => {
+		expect(irToOpenAIChat(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("standard_only");
 	});
 
 	it("leaves tiers without an alias unchanged", () => {

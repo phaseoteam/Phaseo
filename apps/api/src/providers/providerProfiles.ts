@@ -379,10 +379,17 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			paramPolicy: {
 				// Sampling fields from Mistral's chat API spec; seed is sent as random_seed.
 				supportedParams: ["max_tokens", "reasoning.enabled", "reasoning.effort", "service_tier", "seed", "top_k", "repetition_penalty", "logprobs", "top_logprobs"],
-				// Not in Mistral's API; its streams end with usage without stream_options.
-				unsupportedParams: ["stream_options", "max_tool_calls"],
+				// Not in Mistral's API, which rejects unknown fields; its streams end with usage
+				// without stream_options.
+				unsupportedParams: ["stream_options", "max_tool_calls", "user", "web_search_options"],
 			},
-			normalize: { reasoningEffortFallback: ["none", "low", "medium", "high", "max"] },
+			// https://docs.mistral.ai/openapi.yaml ChatCompletionRequest: additionalProperties false,
+			// temperature 0 to 1.5, reasoning_effort none to xhigh, service_tier auto or standard_only.
+			normalize: {
+				maxTemperature: 1.5,
+				serviceTierAliases: { standard: "standard_only" },
+				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh"],
+			},
 		},
 	},
 	{
@@ -467,7 +474,14 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		text: {
 			paramPolicy: {
 				supportedParams: ["service_tier", "seed", "top_k", "repetition_penalty", "logprobs", "top_logprobs"],
-				unsupportedParams: ["stream_options", "max_tool_calls"],
+				unsupportedParams: ["stream_options", "max_tool_calls", "user", "web_search_options"],
+			},
+			// https://docs.mistral.ai/openapi.yaml ChatCompletionRequest: additionalProperties false,
+			// temperature 0 to 1.5, reasoning_effort none to xhigh, service_tier auto or standard_only.
+			normalize: {
+				maxTemperature: 1.5,
+				serviceTierAliases: { standard: "standard_only" },
+				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh"],
 			},
 		},
 	},
