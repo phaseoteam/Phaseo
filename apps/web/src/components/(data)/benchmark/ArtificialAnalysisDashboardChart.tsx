@@ -39,8 +39,8 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value, xValue, x
 	const padding = Math.max((maxY - minY) * 0.08, maxY === minY ? Math.abs(maxY) * 0.1 || 1 : 0.001);
 	const domain: [number, number] = [Math.min(0, minY) < 0 ? minY - padding : Math.max(0, minY - padding), maxY + padding];
 	const labelPositions = dashboardLabelPositions(series.map((item) => ({ id: item.id, y: 24 + (domain[1] - item.points.at(-1)!.y) / (domain[1] - domain[0]) * Math.max(1, size.height - 100) })), 24, size.height - 80);
-	const number = (n: number, compact = false) => new Intl.NumberFormat(locale, { ...(unit === "usd" ? { style: "currency" as const, currency: "USD", currencyDisplay: "narrowSymbol" as const } : {}), ...(compact ? { notation: "compact" as const, maximumFractionDigits: 2 } : { maximumSignificantDigits: 12 }) }).format(n);
-	const xNumber = (n: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 2, ...(xUnit === "usd" ? { style: "currency" as const, currency: "USD", currencyDisplay: "narrowSymbol" as const } : xUnit === "seconds" ? { style: "unit" as const, unit: "second", unitDisplay: "narrow" as const } : {}) }).format(n);
+	const number = (n: number, compact = false) => new Intl.NumberFormat(locale, { ...(unit === "usd" ? { style: "currency" as const, currency: "USD", currencyDisplay: "narrowSymbol" as const } : {}), ...(compact ? { ...(Math.abs(n) >= 1000 ? { notation: "compact" as const } : {}), maximumSignificantDigits: 3 } : { maximumSignificantDigits: 12 }) }).format(n);
+	const xNumber = (n: number) => new Intl.NumberFormat(locale, { maximumSignificantDigits: 3, ...(xUnit === "usd" ? { style: "currency" as const, currency: "USD", currencyDisplay: "narrowSymbol" as const } : xUnit === "seconds" ? { style: "unit" as const, unit: "second", unitDisplay: "narrow" as const } : {}) }).format(n);
 	const axis = { fontSize: 11, fill: "var(--muted-foreground)" };
 	return <section className="min-w-0 scroll-mt-32 py-5" aria-label={title}>
 		<div className="mb-5 flex flex-wrap items-center justify-between gap-3">
