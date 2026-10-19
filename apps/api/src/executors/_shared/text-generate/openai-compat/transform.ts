@@ -117,22 +117,25 @@ function usesOpenAIResponsesShape(providerId?: string): boolean {
 }
 
 // Responses APIs whose function_call_output.output may be a list of input_text,
-// input_image and input_file parts (from each provider's published spec). The
-// others (SambaNova, Groq, Fireworks, DeepInfra, OVHcloud, Perplexity) take a string.
+// input_image and input_file parts (Moonshot's has no input_file), from each provider's
+// published spec. The others (SambaNova, Groq, Fireworks, DeepInfra, OVHcloud, Perplexity) take a string.
 const TOOL_OUTPUT_PARTS_PROVIDERS = new Set([
 	"openai", "openai-eu", "azure", "ambient", "moonshot-ai", "moonshotai",
 	"nebius-token-factory", "nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1",
 ]);
+const TOOL_OUTPUT_NO_FILE_PROVIDERS = new Set(["moonshot-ai", "moonshotai"]);
 
 /**
  * function_call_output.output: the client's content parts where the provider
  * accepts a list, otherwise the text parts joined (never a JSON string of the list).
+ * Decoding keeps a Responses input_file as the client's own provider_block.
  */
 function mapToolResultOutput(result: IRToolResult, providerId?: string): any {
 	const canonicalProviderId = providerId ? normalizeProviderId(providerId) : providerId;
 	if (result.parts?.length && canonicalProviderId && TOOL_OUTPUT_PARTS_PROVIDERS.has(canonicalProviderId)) {
 		const parts = result.parts
-			.filter((part) => part.type === "text" || part.type === "image")
+			.filter((part) => part.type === "text" || part.type === "image"
+				|| (part.type === "provider_block" && part.block?.type === "input_file" && !TOOL_OUTPUT_NO_FILE_PROVIDERS.has(canonicalProviderId)))
 			.map(mapContentPart);
 		if (parts.length > 0) return parts;
 	}

@@ -105,6 +105,64 @@ describe("array tool results", () => {
 		expect(chat.messages.find((message: any) => message.role === "tool").content).toBe("search hit");
 	});
 
+	function fileToolOutputIR(output: any[]): IRChatRequest {
+		return decodeOpenAIResponsesRequest({
+			model: "lab/model",
+			input: [
+				{ type: "function_call", call_id: "call_1", name: "read_report", arguments: "{}" },
+				{ type: "function_call_output", call_id: "call_1", output },
+			],
+		} as any);
+	}
+	const fileOutput = (request: any) => request.input.find((item: any) => item.type === "function_call_output").output;
+	const reportFile = { type: "input_file", file_id: "file-abc123", filename: "report.pdf" };
+
+	it.each(["openai", "azure", "ambient", "nebius-token-factory"])("sends a file-only tool result to %s as its input_file part", (providerId) => {
+		const request = irToOpenAIResponses(fileToolOutputIR([reportFile]), "model", providerId);
+		expect(fileOutput(request)).toEqual([reportFile]);
+	});
+
+	it("keeps the file in a mixed text, image and file tool result", () => {
+		const ir = fileToolOutputIR([
+			{ type: "input_text", text: "summary" },
+			{ type: "input_image", image_url: "https://example.com/a.png" },
+			{ type: "input_file", file_url: "https://example.com/report.pdf" },
+		]);
+		expect(fileOutput(irToOpenAIResponses(ir, "gpt-5.4", "openai"))).toEqual([
+			{ type: "input_text", text: "summary" },
+			expect.objectContaining({ type: "input_image", image_url: "https://example.com/a.png" }),
+			{ type: "input_file", file_url: "https://example.com/report.pdf" },
+		]);
+	});
+
+	it("sends no input_file to Moonshot, whose tool output parts are text and image only", () => {
+		const mixed = fileToolOutputIR([{ type: "input_text", text: "summary" }, reportFile]);
+		expect(fileOutput(irToOpenAIResponses(mixed, "kimi-k2", "moonshotai"))).toEqual([{ type: "input_text", text: "summary" }]);
+		expect(fileOutput(irToOpenAIResponses(fileToolOutputIR([reportFile]), "kimi-k2", "moonshotai"))).toBe("");
+	});
+
+	it("sends no input_file to string-only Responses APIs", () => {
+		const mixed = fileToolOutputIR([{ type: "input_text", text: "summary" }, reportFile]);
+		expect(fileOutput(irToOpenAIResponses(mixed, "gpt-oss-120b", "sambanova"))).toBe("summary");
+	});
+
+	it("does not pass other provider blocks through as tool output parts", () => {
+		const ir = baseIR({
+			messages: [
+				{ role: "assistant", content: [], toolCalls: [{ id: "call_1", name: "f", arguments: "{}" }] },
+				{
+					role: "tool",
+					toolResults: [{
+						toolCallId: "call_1",
+						content: "text",
+						parts: [{ type: "text", text: "text" }, { type: "provider_block", block: { type: "document", source: { type: "text", data: "x" } } }],
+					}],
+				},
+			],
+		} as any);
+		expect(fileOutput(irToOpenAIResponses(ir, "gpt-5.4", "openai"))).toEqual([{ type: "input_text", text: "text" }]);
+	});
+
 	it("keeps a string tool result a string", () => {
 		const ir = decodeOpenAIChatRequest({
 			model: "lab/model",
