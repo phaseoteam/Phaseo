@@ -1,0 +1,56 @@
+﻿"use client";
+
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { usePlotArea, useXAxisScale, useYAxisScale } from "recharts";
+import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
+import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
+import type { DashboardRow } from "@/lib/benchmarks/artificialAnalysisDashboard";
+
+type Selection = { kind: "model" | "configuration"; id: string };
+
+/** A temporary inspection returns to the pinned selection when the pointer leaves. */
+export function useDashboardInspection(regionRef: RefObject<HTMLElement | null>) {
+ const [temporary, setTemporary] = useState<Selection | null>(null);
+ const [pinned, setPinned] = useState<Selection | null>(null);
+ const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+ const keep = () => { if (timer.current) clearTimeout(timer.current); };
+ const inspect = (selection: Selection) => { keep(); setTemporary(selection); };
+ const leave = () => { keep(); timer.current = setTimeout(() => setTemporary(null), 180); };
+ const pin = (selection: Selection) => { keep(); setTemporary(null); setPinned((previous) => previous?.kind === selection.kind && previous.id === selection.id ? null : selection); };
+ const clear = () => { keep(); setTemporary(null); setPinned(null); };
+ useEffect(() => {
+ const outside = (event: PointerEvent) => { if (regionRef.current && !regionRef.current.contains(event.target as Node)) { if (timer.current) clearTimeout(timer.current); setTemporary(null); setPinned(null); } };
+ document.addEventListener("pointerdown", outside);
+ return () => { document.removeEventListener("pointerdown", outside); if (timer.current) clearTimeout(timer.current); };
+ }, [regionRef]);
+ return { selection: temporary ?? pinned, pinned, inspect, leave, keep, pin, clear };
+}
+
+export function DashboardInspectionCard({ row, title, metric, unit, pinned, keep, leave, close }: {
+ row: DashboardRow; title: string; metric: number | null; unit: string; pinned: boolean;
+ keep: () => void; leave: () => void; close: () => void;
+}) {
+ const tx = useTranslations(), locale = useLocale();
+ const metrics: [string, number | null, string][] = [
+ [tx("Catalogue.rankings.benchmarkMetrics.intelligence"), row.intelligence, "score"],
+ [title, metric, unit],
+ [tx("Catalogue.benchmarks.explorer.tokensPerTask"), row.tokensPerTask, "tokens"],
+ [tx("Catalogue.benchmarks.explorer.costPerTask"), row.costPerTask, "usd"],
+ [tx("Catalogue.benchmarks.explorer.timePerTask"), row.timePerTask, "seconds"],
+ ];
+ return <div data-export-hide data-pinned={pinned || undefined} role="status" onMouseEnter={keep} onMouseLeave={leave} onFocus={keep} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) leave(); }} className="w-64 max-w-full rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md">
+ <div className="flex items-start gap-2"><Logo id={row.creatorId} alt="" width={18} height={18} /><div className="min-w-0 flex-1"><p className="font-semibold">{row.modelName}</p><p className="mt-1 text-muted-foreground">{localizedBenchmarkConfiguration(row.effort, tx)}</p></div><Button variant="ghost" size="icon" className="-mr-1 -mt-1 size-7" aria-label={tx("Common.accessibility.close")} onClick={close}>×</Button></div>
+ <dl className="my-3 space-y-2">{metrics.filter(([label], index) => metrics.findIndex((item) => item[0] === label) === index).map(([label, value, kind]) => value !== null && Number.isFinite(value) ? <div key={label} className="flex justify-between gap-4"><dt className="text-muted-foreground">{label}</dt><dd className="shrink-0 font-medium tabular-nums">{new Intl.NumberFormat(locale, { maximumSignificantDigits: 4, ...(kind === "usd" ? { style: "currency", currency: "USD" } : kind === "tokens" ? { notation: "compact" } : {}) }).format(value)}{kind === "seconds" ? " s" : ""}</dd></div> : null)}</dl>
+ {row.sourceSlug ? <a href={`https://artificialanalysis.ai/models/${row.sourceSlug}`} target="_blank" rel="noreferrer" className="underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring">Artificial Analysis ↗</a> : null}
+ </div>;
+}
+
+export function DashboardInspectionGuides({ point, columns, colour, number, xNumber }: { point?: { x: number; y: number }; columns: boolean; colour: string; number: (value: number) => string; xNumber: (value: number) => string }) {
+ const plot = usePlotArea(), xScale = useXAxisScale(), yScale = useYAxisScale();
+ if (!point || !plot || !xScale || !yScale) return null;
+ const x = xScale(point.x), y = yScale(point.y);
+ if (typeof x !== "number" || typeof y !== "number") return null;
+ return <g data-export-hide pointerEvents="none" aria-hidden="true"><path d={`M${plot.x},${y} H${plot.x + plot.width}${columns ? "" : ` M${x},${plot.y} V${plot.y + plot.height}`}`} stroke={colour} strokeDasharray="3 4" opacity={0.6} /><rect x={Math.max(0, plot.x - 54)} y={y - 10} width={50} height={20} rx={3} fill="var(--popover)" stroke={colour} /><text x={plot.x - 8} y={y + 4} textAnchor="end" fontSize={10} fill="var(--foreground)">{number(point.y)}</text>{!columns ? <g><rect x={x - 29} y={plot.y + plot.height + 3} width={58} height={20} rx={3} fill="var(--popover)" stroke={colour} /><text x={x} y={plot.y + plot.height + 17} textAnchor="middle" fontSize={10} fill="var(--foreground)">{xNumber(point.x)}</text></g> : null}</g>;
+}
