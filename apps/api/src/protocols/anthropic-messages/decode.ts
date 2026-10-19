@@ -40,12 +40,12 @@ export type AnthropicMessagesRequest = {
 	metadata?: Record<string, any>;
 	service_tier?: string;
 	thinking?: {
-		type: "enabled" | "disabled" | "adaptive";
+		type: "enabled" | "disabled" | "adaptive" | "between_tools";
 		budget_tokens?: number;
 		display?: "summarized" | "omitted";
 	};
 	output_config?: {
-		effort?: "low" | "medium" | "high" | "max";
+		effort?: "low" | "medium" | "high" | "xhigh" | "max";
 		format?: { type: "json_schema"; schema: Record<string, any> } | null;
 	};
 	provider_options?: Record<string, any>;
@@ -371,7 +371,7 @@ function resolveRequestedReasoning(req: AnthropicMessagesRequest): IRChatRequest
 	const enabled =
 		typeof reasoningReq?.enabled === "boolean"
 			? reasoningReq.enabled
-			: req.thinking?.type === "disabled"
+			: req.thinking?.type === "disabled" || req.thinking?.type === "between_tools"
 				? false
 				: req.thinking?.type === "enabled" || req.thinking?.type === "adaptive"
 					? true

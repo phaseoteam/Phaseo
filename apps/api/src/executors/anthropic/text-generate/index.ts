@@ -30,7 +30,9 @@ import { ANTHROPIC_REASONING_FORMAT, canReplayReasoning } from "@core/reasoning-
 import { applyAnthropicCacheControlDefaults, normalizeAnthropicCacheControlValue } from "./cache-control";
 import {
 	supportsAnthropicMidConversationSystemMessages,
-	supportsAnthropicThinkingDisabled,
+	anthropicThinkingOffType,
+	clampClaudeEffort,
+	supportsAnthropicInferenceGeo,
 	usesClaudeAdaptiveThinkingControls,
 } from "@core/claudeModelCapabilities";
 import {
@@ -686,7 +688,9 @@ export function irToAnthropicMessages(
 		system: system || undefined,
 		max_tokens: maxTokens,
 	};
-	if (options?.inferenceGeo) {
+	// Older models reject `inference_geo`. "global" is their default, so it is left out; "us"
+	// is still sent, so a US-only request fails rather than running outside the US.
+	if (options?.inferenceGeo && (options.inferenceGeo === "us" || supportsAnthropicInferenceGeo(resolvedModel))) {
 		request.inference_geo = options.inferenceGeo;
 	}
 
@@ -727,7 +731,11 @@ export function irToAnthropicMessages(
 			request.tool_choice = { type: "tool", name: ir.toolChoice.name };
 		}
 	}
-	if (request.tool_choice && ir.parallelToolCalls === false) {
+	if (ir.parallelToolCalls === false && !request.tool_choice && Array.isArray(request.tools) && request.tools.length > 0) {
+		// Anthropic carries the switch on tool_choice; "auto" is its default choice.
+		request.tool_choice = { type: "auto" };
+	}
+	if (request.tool_choice && request.tool_choice.type !== "none" && ir.parallelToolCalls === false) {
 		request.tool_choice.disable_parallel_tool_use = true;
 	}
 
@@ -740,9 +748,16 @@ export function irToAnthropicMessages(
 
 	// Without client reasoning settings `thinking` is omitted, so the model's own
 	// default applies (off on Opus 4.7 and 4.8, adaptive on the 5-series).
+	const thinkingOffType = reasoningDisabled ? anthropicThinkingOffType(resolvedModel) : null;
 	if (usesAdaptiveThinkingControls && ir.reasoning) {
-		if (reasoningDisabled && supportsAnthropicThinkingDisabled(resolvedModel)) {
-			request.thinking = { type: "disabled" };
+		if (thinkingOffType) {
+			// `between_tools` and `disabled` take no other field. Both are accepted at effort
+			// high or below, so a client's low, medium or high effort still applies.
+			request.thinking = { type: thinkingOffType };
+			const offEffort = ir.reasoning?.effort;
+			if (offEffort === "low" || offEffort === "medium" || offEffort === "high") {
+				request.output_config = { ...(request.output_config ?? {}), effort: offEffort };
+			}
 		} else {
 			request.thinking = {
 				type: "adaptive",
@@ -778,10 +793,11 @@ export function irToAnthropicMessages(
 		}
 
 		const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning.effort);
-		if (!reasoningDisabled && anthropicEffort) {
+		const supportedEffort = reasoningDisabled ? undefined : clampClaudeEffort(resolvedModel, anthropicEffort);
+		if (supportedEffort) {
 			request.output_config = {
 				...(request.output_config ?? {}),
-				effort: anthropicEffort,
+				effort: supportedEffort,
 			};
 		}
 	}
@@ -869,7 +885,8 @@ function enforceManualThinkingTurnStructure(request: any): void {
 }
 
 const LATE_SYSTEM_MESSAGE = Symbol("lateSystemMessage");
-const ANTHROPIC_METADATA_USER_ID_MAX_LENGTH = 256;
+// https://platform.claude.com/docs/en/api/messages/create: metadata.user_id maxLength 512.
+const ANTHROPIC_METADATA_USER_ID_MAX_LENGTH = 512;
 
 function resolveAnthropicMetadataUserId(ir: IRChatRequest): string | undefined {
 	const candidates = [ir.metadata?.user_id, ir.userId];
@@ -1146,6 +1163,11 @@ function anthropicUsageExt(usage: any): NonNullable<IRChatResponse["usage"]>["_e
  */
 export function anthropicUsageForPricing(usage: any): Record<string, unknown> | undefined {
 	const meters = normalizeTextUsageForPricing(usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined;
+	// Fast mode is priced on the priority plan; its usage still says `service_tier: "standard"`.
+	if (meters && typeof usage?.speed === "string" && usage.speed.toLowerCase() === "fast") {
+		meters.service_tier = "priority";
+		meters.serviceTier = "priority";
+	}
 	const serverToolUse = anthropicServerToolUse(usage);
 	return meters && serverToolUse ? { ...meters, server_tool_use: serverToolUse } : meters;
 }
@@ -1222,6 +1244,7 @@ export function anthropicMessagesToIR(
 	if (!json.id) {
 		console.warn(`[ID-VALIDATION] Provider ${provider} (Anthropic Messages) did not return response ID`);
 	}
+	const serviceTier = resolveAnthropicServiceTierFromResponse(json);
 
 	return {
 		id: requestId,
@@ -1232,6 +1255,8 @@ export function anthropicMessagesToIR(
 		choices: [choice],
 		usage: json.usage
 			? {
+				// The buffered bill is priced from this usage, so it carries the tier too.
+				...(serviceTier ? { serviceTier } : {}),
 				inputTokens: json.usage.input_tokens || 0,
 				outputTokens: json.usage.output_tokens || 0,
 				totalTokens: (json.usage.input_tokens || 0) + (json.usage.output_tokens || 0),
@@ -1245,7 +1270,7 @@ export function anthropicMessagesToIR(
 				_ext: anthropicUsageExt(json.usage),
 			}
 			: undefined,
-		serviceTier: resolveAnthropicServiceTierFromResponse(json),
+		serviceTier,
 	};
 }
 
@@ -1271,16 +1296,19 @@ export function anthropicThinkingBlockToIR(
 }
 
 function resolveAnthropicServiceTierFromResponse(json: any): string | undefined {
+	// A fast-mode response reports `usage.speed: "fast"` next to `usage.service_tier: "standard"`
+	// (https://platform.claude.com/docs/en/build-with-claude/fast-mode), and fast is priced
+	// on the priority plan, so the speed decides first.
+	const usageSpeed = typeof json?.usage?.speed === "string"
+		? json.usage.speed.toLowerCase()
+		: undefined;
+	if (usageSpeed === "fast") return "priority";
+
 	const usageTier = typeof json?.usage?.service_tier === "string"
 		? json.usage.service_tier.toLowerCase()
 		: undefined;
 	if (usageTier === "standard_only") return "standard";
 	if (usageTier) return usageTier;
-
-	const usageSpeed = typeof json?.usage?.speed === "string"
-		? json.usage.speed.toLowerCase()
-		: undefined;
-	if (usageSpeed === "fast") return "priority";
 
 	const responseTier = typeof json?.service_tier === "string"
 		? json.service_tier.toLowerCase()

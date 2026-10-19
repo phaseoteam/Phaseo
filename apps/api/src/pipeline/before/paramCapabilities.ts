@@ -128,6 +128,11 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 	if (endpoint === "responses" && rawBody.text?.format != null) {
 		params.push("response_format");
 	}
+	// Anthropic's output_config carries reasoning effort and structured output; route on both.
+	if (endpoint === "messages" && isPlainObject(rawBody.output_config)) {
+		if (rawBody.output_config.effort != null) params.push("reasoning.effort");
+		if (rawBody.output_config.format != null) params.push("response_format");
+	}
 
 	// Infer tool usage from message/input surfaces where tools may be omitted but active.
 	if (Array.isArray(rawBody.messages) && hasToolUsageInMessages(rawBody.messages)) {
