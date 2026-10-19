@@ -551,7 +551,7 @@ class ChatImageOutputPart(TypedDict):
 
 class ChatMessage(TypedDict):
 	audios: NotRequired[List[ChatAudioOutputPart]]
-	content: NotRequired[Optional[Union[str, List[Union[TextContentPart, Dict[str, Any], AudioContentPart, VideoContentPart, FileContentPart, ToolCallContentPart]]]]]
+	content: NotRequired[Union[Optional[str], List[Union[TextContentPart, Dict[str, Any], AudioContentPart, VideoContentPart, FileContentPart, ToolCallContentPart]]]]
 	images: NotRequired[List[ChatImageOutputPart]]
 	name: NotRequired[str]
 	reasoning_content: NotRequired[str]

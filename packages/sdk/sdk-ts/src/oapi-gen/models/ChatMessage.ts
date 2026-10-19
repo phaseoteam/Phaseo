@@ -9,6 +9,7 @@ export interface ChatMessage {
   }[];
   content?:
     | string
+    | null
     | (
         | {
             cache_control?: {
@@ -64,8 +65,7 @@ export interface ChatMessage {
             id: string;
             type: "tool_call";
           }
-      )[]
-    | null;
+      )[];
   images?: {
     image_url: {
       url: string;

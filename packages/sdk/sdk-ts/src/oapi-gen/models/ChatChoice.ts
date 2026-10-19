@@ -12,6 +12,7 @@ export interface ChatChoice {
     }[];
     content?:
       | string
+      | null
       | (
           | {
               cache_control?: {
@@ -67,8 +68,7 @@ export interface ChatChoice {
               id: string;
               type: "tool_call";
             }
-        )[]
-      | null;
+        )[];
     images?: {
       image_url: {
         url: string;

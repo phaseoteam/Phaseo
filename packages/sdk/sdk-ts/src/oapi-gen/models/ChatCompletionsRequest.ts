@@ -46,6 +46,7 @@ export interface ChatCompletionsRequest {
     }[];
     content?:
       | string
+      | null
       | (
           | {
               cache_control?: {
@@ -101,8 +102,7 @@ export interface ChatCompletionsRequest {
               id: string;
               type: "tool_call";
             }
-        )[]
-      | null;
+        )[];
     images?: {
       image_url: {
         url: string;

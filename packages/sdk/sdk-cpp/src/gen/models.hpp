@@ -608,7 +608,7 @@ struct ChatImageOutputPart {
 
 struct ChatMessage {
 	std::vector<std::map<std::string, std::any>> audios;
-	std::optional<std::any> content;
+	std::any content;
 	std::vector<std::map<std::string, std::any>> images;
 	std::string name;
 	std::string reasoning_content;

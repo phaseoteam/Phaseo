@@ -2060,6 +2060,7 @@ export type CreateChatCompletionParams = {
       }[];
       content?:
         | string
+        | null
         | (
             | {
                 cache_control?: {
@@ -2115,8 +2116,7 @@ export type CreateChatCompletionParams = {
                 id: string;
                 type: "tool_call";
               }
-          )[]
-        | null;
+          )[];
       images?: {
         image_url: {
           url: string;
@@ -2419,6 +2419,7 @@ export async function createChatCompletion(
       }[];
       content?:
         | string
+        | null
         | (
             | {
                 cache_control?: {
@@ -2474,8 +2475,7 @@ export async function createChatCompletion(
                 id: string;
                 type: "tool_call";
               }
-          )[]
-        | null;
+          )[];
       images?: {
         image_url: {
           url: string;
@@ -2559,6 +2559,7 @@ export async function createChatCompletion(
         }[];
         content?:
           | string
+          | null
           | (
               | {
                   cache_control?: {
@@ -2620,8 +2621,7 @@ export async function createChatCompletion(
                   id: string;
                   type: "tool_call";
                 }
-            )[]
-          | null;
+            )[];
         images?: {
           image_url: {
             url: string;

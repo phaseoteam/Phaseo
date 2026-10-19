@@ -922,7 +922,7 @@ module Phaseo
     # @!attribute [rw] audios
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] content
-    #   @return [String, Array<Hash{String => Object}>, nil]
+    #   @return [String, nil, Array<Hash{String => Object}>]
     # @!attribute [rw] images
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] name

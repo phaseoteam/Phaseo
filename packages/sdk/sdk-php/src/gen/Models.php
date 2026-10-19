@@ -1093,7 +1093,7 @@ class ChatMessage
 {
 	/** @var array|null */
 	public $audios;
-	/** @var string|array|null */
+	/** @var string|null|array */
 	public $content;
 	/** @var array|null */
 	public $images;
