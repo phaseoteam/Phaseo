@@ -231,3 +231,14 @@ describe("provider service tier names", () => {
 		expect(irToOpenAIChat(baseIR({ serviceTier: "priority" }), "m", "deepinfra").service_tier).toBe("priority");
 	});
 });
+
+// Atlas Cloud takes a `thinking` object and unifies thinking.type with its other
+// reasoning flags (https://www.atlascloud.ai/docs/llm-protocols).
+describe("Atlas Cloud reasoning", () => {
+	it.each([[{ enabled: false }, "disabled"], [{ effort: "high" }, "enabled"], [{ effort: "none" }, "disabled"]] as const)(
+		"sends reasoning %j as thinking.type %s",
+		(reasoning, type) => {
+			expect(irToOpenAIChat(baseIR({ reasoning: reasoning as any }), "deepseek-ai/deepseek-v4.1-flash-1017", "atlascloud").thinking).toEqual({ type });
+		},
+	);
+});

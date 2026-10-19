@@ -49,10 +49,12 @@ function resolveReasoningConfig(providerId?: string): ReasoningConfig | null {
 	// Note: Google is no longer OpenAI-compatible - it uses native implementation
 	// Thinking mode is handled in the Google executor via generationConfig.thinkingBudget
 
-	if (providerId === "deepseek" || providerId === "wafer") {
+	if (providerId === "deepseek" || providerId === "wafer" || providerId === "atlascloud") {
 		// DeepSeek uses thinking: {type: "enabled"} for thinking mode
 		// https://api-docs.deepseek.com/guides/thinking_mode
 		// Wafer's first-party model quick starts document the same shape.
+		// Atlas Cloud's chat API takes a `thinking` object and unifies `thinking.type` with
+		// its other reasoning flags (https://www.atlascloud.ai/docs/llm-protocols).
 		return { mode: "enabled", field: "thinking", format: "type" };
 	}
 
