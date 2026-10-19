@@ -18,6 +18,7 @@ const runPaymentMethodExpiryNotificationJobMock = vi.fn();
 const enqueueFeedbackRequestEmailsMock = vi.fn(async () => 0);
 const runMobilePushJobMock = vi.fn();
 const runMobilePushDigestJobMock = vi.fn();
+const runSpendLimitWarningSweepMock = vi.fn();
 const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
@@ -93,6 +94,10 @@ vi.mock("@/pipeline/notifications/mobile-push-digest", () => ({
 	hasMobilePushDigestActivity: (summary: Record<string, unknown> | undefined) => Object.values(summary ?? {}).some((value) => Number(value) > 0),
 }));
 
+vi.mock("@/pipeline/notifications/spend-limit-alerts", () => ({
+	runSpendLimitWarningSweep: (...args: unknown[]) => runSpendLimitWarningSweepMock(...args),
+}));
+
 vi.mock("@/pipeline/notifications/notification-delivery", () => ({
 	runNotificationDeliveryJob: (...args: unknown[]) => runNotificationDeliveryJobMock(...args),
 	enqueueModelDeprecationNotifications: (...args: unknown[]) => enqueueModelDeprecationNotificationsMock(...args),
@@ -157,6 +162,7 @@ describe("handleScheduledEvent", () => {
 		enqueueFeedbackRequestEmailsMock.mockClear();
 		runMobilePushJobMock.mockReset().mockResolvedValue({ captured: 0, sent: 0 });
 		runMobilePushDigestJobMock.mockReset().mockResolvedValue({ built: 0, sent: 0 });
+		runSpendLimitWarningSweepMock.mockReset().mockResolvedValue({ budgets: 0, limitedKeys: 0, warned: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
 		enqueueModelDeprecationNotificationsMock.mockReset().mockResolvedValue({ workspaces: 0, enqueued: 0 });
 		runAccountDeletionPurgeJobMock.mockReset().mockResolvedValue({
@@ -416,6 +422,37 @@ describe("handleScheduledEvent", () => {
 
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), enabled);
 		expect(enqueueFeedbackRequestEmailsMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("sweeps for budget warnings every 15 minutes before sending pushes, only where mobile push runs", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), {} as any);
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:20:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(runSpendLimitWarningSweepMock).not.toHaveBeenCalled();
+
+			runMobilePushJobMock.mockClear();
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(runSpendLimitWarningSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendLimitWarningSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
+			expect(log).not.toHaveBeenCalledWith("spend_limit_warnings_swept", expect.anything());
+
+			runSpendLimitWarningSweepMock.mockResolvedValueOnce({ budgets: 1, limitedKeys: 3, warned: 2 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:30:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("spend_limit_warnings_swept", { budgets: 1, limitedKeys: 3, warned: 2 });
+
+			// A failed sweep does not stop the pushes.
+			runMobilePushJobMock.mockClear();
+			runSpendLimitWarningSweepMock.mockRejectedValueOnce(new Error("timeout"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => {});
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:45:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(error).toHaveBeenCalledWith("spend_limit_sweep_scheduled_failed", expect.anything());
+			expect(runMobilePushJobMock).toHaveBeenCalledTimes(1);
+			error.mockRestore();
+		} finally {
+			log.mockRestore();
+		}
 	});
 
 	it("runs mobile push every five minutes only when explicitly enabled, logging only real work", async () => {

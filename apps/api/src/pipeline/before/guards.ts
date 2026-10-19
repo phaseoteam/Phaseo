@@ -26,6 +26,7 @@ import { isFreePriceCard } from "../pricing/free";
 import type { PriceCard } from "../pricing";
 import { parseW3cTraceContext } from "@observability/trace-context";
 import { detectClientAttribution } from "./clientAttribution";
+import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
 export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
@@ -479,6 +480,8 @@ export async function guardContext(args: {
         }
 
         if (!args.internal && !context.keyLimit.ok) {
+            // A used-up budget or key limit alerts the workspace in the background; this never waits or throws.
+            noteSpendLimitReached({ workspaceId: args.workspaceId, keyId: args.apiKeyId, reason: context.keyLimit.reason });
             const response = err("key_limit_exceeded", {
                 reason: context.keyLimit.reason ?? "key_limit_exceeded",
                 reset_at: context.keyLimit.resetAt,
