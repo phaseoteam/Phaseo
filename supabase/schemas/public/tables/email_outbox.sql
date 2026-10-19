@@ -20,7 +20,7 @@ CREATE TABLE "public"."email_outbox" (
 ALTER TABLE "public"."email_outbox"
   ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX email_outbox_created_at_idx ON public.email_outbox USING btree (created_at);
+CREATE INDEX email_outbox_created_at_idx ON public.email_outbox USING btree (created_at, id);
 
 CREATE UNIQUE INDEX email_outbox_dedupe_key_unique ON public.email_outbox USING btree (dedupe_key);
 

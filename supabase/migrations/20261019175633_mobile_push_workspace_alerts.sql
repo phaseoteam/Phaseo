@@ -66,10 +66,13 @@ GRANT SELECT ON TABLE "public"."workspace_notification_events" TO "service_role"
 REVOKE ALL ON TABLE "public"."workspace_notification_events" FROM "anon", "authenticated";
 
 CREATE TABLE "public"."workspace_notification_cursors" (
-  "source"     text                     NOT NULL,
-  "read_until" timestamp with time zone NOT NULL,
-  "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
+  "source"            text                     NOT NULL,
+  "read_until"        timestamp with time zone NOT NULL,
+  "resume_created_at" timestamp with time zone,
+  "resume_id"         uuid,
+  "updated_at"        timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "workspace_notification_cursors_pkey" PRIMARY KEY (source),
+  CONSTRAINT "workspace_notification_cursors_resume_check" CHECK (((resume_created_at IS NULL) = (resume_id IS NULL))),
   CONSTRAINT "workspace_notification_cursors_source_check" CHECK ((source = ANY (ARRAY['email_outbox'::text, 'workspace_audit_events'::text])))
 );
 
@@ -84,6 +87,8 @@ CREATE POLICY "deny_direct_client_access" ON "public"."workspace_notification_cu
   WITH CHECK (false);
 
 COMMENT ON COLUMN "public"."workspace_notification_cursors"."read_until" IS 'Rows created up to this moment have been read. The next read starts ten minutes earlier, so a row whose transaction committed late is still seen.';
+
+COMMENT ON COLUMN "public"."workspace_notification_cursors"."resume_created_at" IS 'With resume_id, the last row (created_at, id) of a read cut short by its row limit. The next read carries on after it instead of starting the overlap again, so a full page always moves the cursor.';
 
 COMMENT ON TABLE "public"."workspace_notification_cursors" IS 'Read positions of capture_workspace_notification_events in email_outbox and workspace_audit_events.';
 
@@ -116,9 +121,9 @@ COMMENT ON COLUMN "public"."mobile_push_deliveries"."workspace_event_id" IS 'The
 COMMENT ON COLUMN "public"."mobile_push_deliveries"."workspace_id" IS 'Workspace a workspace alert is about. Null for catalogue news. The push names it to members of more than one workspace and is closed unsent if the recipient has left it.';
 
 -- The capture reads both sources by creation time.
-CREATE INDEX email_outbox_created_at_idx ON public.email_outbox USING btree (created_at);
+CREATE INDEX email_outbox_created_at_idx ON public.email_outbox USING btree (created_at, id);
 
-CREATE INDEX workspace_audit_events_api_key_created_idx ON public.workspace_audit_events USING btree (created_at)
+CREATE INDEX workspace_audit_events_api_key_created_idx ON public.workspace_audit_events USING btree (created_at, id)
   WHERE (target_type = 'api_key'::text);
 
 CREATE OR REPLACE FUNCTION private.workspace_push_usd (
@@ -306,13 +311,17 @@ CREATE OR REPLACE FUNCTION private.capture_workspace_notification_events (
 --   email_outbox            low_balance, auto_top_up_failed and payment_method_expiring (money),
 --                           model_deprecation (deprecations), model_substitution and
 --                           rate_limit_throttled (traffic), and security_leaked_key (security; one
---                           per exposed key, though the email has a row per recipient)
+--                           per exposed key, though the email has a row per recipient, with the
+--                           API or management key's creator as a recipient)
 --   workspace_audit_events  api_key.created, .rotated, .deleted, .paused and .resumed (security),
 --                           except for the web chat's managed key
--- Each source is read from its cursor: rows created from ten minutes before the previous read up
--- to the start of this call, so a row whose transaction commits a little late is still read, and
--- reading the overlap again adds nothing. Nothing older than two days is read, and the first call
--- only sets the cursors. Up to p_limit rows are read per source.
+-- Each source is read from its cursor, in (created_at, id) order, up to p_limit rows per source:
+--   * normally from ten minutes before the previous complete read up to the start of this call,
+--     so a row whose transaction commits a little late is still read, and reading the overlap
+--     again adds nothing;
+--   * after a read cut short by p_limit, from just after its last row (a keyset position), so
+--     each call moves on even when the overlap alone holds more than p_limit rows.
+-- Nothing older than two days is read, and the first call only sets the cursors.
 -- Low balance is pushed once per drop: a low_balance row is skipped while the workspace's last
 -- low-balance push stands, that is until a credit (top-up, refund, grant or adjustment) lifted the
 -- balance above the threshold between that push and the row, or the threshold changed. The
@@ -320,8 +329,11 @@ CREATE OR REPLACE FUNCTION private.capture_workspace_notification_events (
 declare
   v_uuid constant text := '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
   v_now timestamptz := now();
-  v_until timestamptz;
+  v_cursor public.workspace_notification_cursors%rowtype;
+  v_from timestamptz;
+  v_from_id uuid;
   v_last timestamptz;
+  v_last_id uuid;
   v_read integer;
   v_row record;
   v_last_push record;
@@ -333,15 +345,18 @@ begin
     raise exception 'invalid_workspace_notification_capture_limit';
   end if;
 
-  select c.read_until into v_until from public.workspace_notification_cursors c where c.source = 'email_outbox' for update;
-  if v_until is null then
+  select c.* into v_cursor from public.workspace_notification_cursors c where c.source = 'email_outbox' for update;
+  if v_cursor.source is null then
     insert into public.workspace_notification_cursors (source, read_until) values ('email_outbox', v_now) on conflict (source) do nothing;
   else
     v_read := 0;
+    v_from := coalesce(v_cursor.resume_created_at, v_cursor.read_until - interval '10 minutes');
+    v_from_id := coalesce(v_cursor.resume_id, '00000000-0000-0000-0000-000000000000'::uuid);
     for v_row in
       select o.id, o.created_at, o.kind, o.workspace_id, o.payload
       from public.email_outbox o
-      where o.created_at > greatest(v_until - interval '10 minutes', v_now - interval '2 days')
+      where (o.created_at, o.id) > (v_from, v_from_id)
+        and o.created_at > v_now - interval '2 days'
         and o.created_at <= v_now
         and o.kind in ('low_balance', 'auto_top_up_failed', 'payment_method_expiring', 'model_deprecation', 'model_substitution',
           'rate_limit_throttled', 'security_leaked_key')
@@ -351,6 +366,7 @@ begin
     loop
       v_read := v_read + 1;
       v_last := v_row.created_at;
+      v_last_id := v_row.id;
 
       if v_row.kind = 'low_balance' then
         continue when exists (select 1 from public.workspace_notification_events e where e.dedupe_key = 'email_outbox:' || v_row.id);
@@ -389,8 +405,8 @@ begin
             || coalesce(v_row.payload ->> 'key_id', v_row.payload ->> 'key_preview', v_row.payload ->> 'key_name', '') || ':' || extract(epoch from v_row.created_at)
           else 'email_outbox:' || v_row.id
         end,
-        k.id,
-        k.created_by,
+        coalesce(k.id, mk.id),
+        coalesce(k.created_by, mk.created_by),
         v_row.payload - 'user_first_name',
         v_row.created_at
       from (select 1) one
@@ -398,26 +414,37 @@ begin
         on v_row.kind = 'security_leaked_key' and coalesce(v_row.payload ->> 'key_type', 'api_key') = 'api_key'
         and k.workspace_id = v_row.workspace_id
         and k.id = case when v_row.payload ->> 'key_id' ~* v_uuid then (v_row.payload ->> 'key_id')::uuid end
+      left join public.management_keys mk
+        on v_row.kind = 'security_leaked_key' and v_row.payload ->> 'key_type' = 'management_key'
+        and mk.workspace_id = v_row.workspace_id
+        and mk.id = case when v_row.payload ->> 'key_id' ~* v_uuid then (v_row.payload ->> 'key_id')::uuid end
       on conflict (dedupe_key) do nothing;
       get diagnostics v_inserted = row_count;
       v_captured := v_captured + v_inserted;
     end loop;
 
+    -- A full page leaves a keyset position to carry on from; a short one completes the read.
     update public.workspace_notification_cursors
-    set read_until = case when v_read < p_limit then v_now else greatest(v_until, v_last) end, updated_at = v_now
+    set read_until = case when v_read < p_limit then v_now else read_until end,
+        resume_created_at = case when v_read < p_limit then null else v_last end,
+        resume_id = case when v_read < p_limit then null else v_last_id end,
+        updated_at = v_now
     where source = 'email_outbox';
   end if;
 
-  select c.read_until into v_until from public.workspace_notification_cursors c where c.source = 'workspace_audit_events' for update;
-  if v_until is null then
+  select c.* into v_cursor from public.workspace_notification_cursors c where c.source = 'workspace_audit_events' for update;
+  if v_cursor.source is null then
     insert into public.workspace_notification_cursors (source, read_until) values ('workspace_audit_events', v_now) on conflict (source) do nothing;
   else
     v_read := 0;
+    v_from := coalesce(v_cursor.resume_created_at, v_cursor.read_until - interval '10 minutes');
+    v_from_id := coalesce(v_cursor.resume_id, '00000000-0000-0000-0000-000000000000'::uuid);
     for v_row in
       select a.id, a.created_at, a.workspace_id, a.actor_user_id, a.action, a.target_id, a.target_name, a.metadata
       from public.workspace_audit_events a
       where a.target_type = 'api_key'
-        and a.created_at > greatest(v_until - interval '10 minutes', v_now - interval '2 days')
+        and (a.created_at, a.id) > (v_from, v_from_id)
+        and a.created_at > v_now - interval '2 days'
         and a.created_at <= v_now
         and a.action in ('api_key.created', 'api_key.rotated', 'api_key.deleted', 'api_key.paused', 'api_key.resumed')
       order by a.created_at, a.id
@@ -425,6 +452,7 @@ begin
     loop
       v_read := v_read + 1;
       v_last := v_row.created_at;
+      v_last_id := v_row.id;
 
       insert into public.workspace_notification_events (workspace_id, kind, category, dedupe_key, actor_user_id, key_id, key_created_by, payload, occurred_at)
       select
@@ -459,8 +487,12 @@ begin
       v_captured := v_captured + v_inserted;
     end loop;
 
+    -- A full page leaves a keyset position to carry on from; a short one completes the read.
     update public.workspace_notification_cursors
-    set read_until = case when v_read < p_limit then v_now else greatest(v_until, v_last) end, updated_at = v_now
+    set read_until = case when v_read < p_limit then v_now else read_until end,
+        resume_created_at = case when v_read < p_limit then null else v_last end,
+        resume_id = case when v_read < p_limit then null else v_last_id end,
+        updated_at = v_now
     where source = 'workspace_audit_events';
   end if;
 

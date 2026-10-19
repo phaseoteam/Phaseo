@@ -32,16 +32,20 @@ const SOLO = '50000000-0000-4000-8000-000000000002';
 const KEY_CI = '60000000-0000-4000-8000-000000000001';
 const KEY_PROD = '60000000-0000-4000-8000-000000000002';
 const KEY_CHAT = '60000000-0000-4000-8000-000000000003';
+const KEY_OPS = '60000000-0000-4000-8000-000000000004';
+const PAGING = '50000000-0000-4000-8000-000000000003';
 // Claimed pushes by device name, the installation id without its prefix.
 const byDevice = async pushes => {
     const names = Object.fromEntries((await rows('select id, installation_id from public.mobile_push_devices')).map(row => [row.id, row.installation_id.slice(8)]));
     const tokens = Object.fromEntries((await rows('select expo_push_token, id from public.mobile_push_devices')).map(row => [row.expo_push_token, names[row.id]]));
     return Object.fromEntries(pushes.map(push => [tokens[push.expo_push_token], push]));
 };
-const outbox = (kind, payload, workspace = ACME) => db.query(`insert into public.email_outbox (kind, to_email, workspace_id, payload) values ($1, 'owner@example.com', $2, $3)`, [kind, workspace, JSON.stringify(payload)]);
-const audit = (actor, action, keyId, keyName, metadata = {}) => db.query(
+// PGlite's clock can give two quick statements the same now(), so source rows are spaced out.
+const pause = () => new Promise(resolve => setTimeout(resolve, 2));
+const outbox = async (kind, payload, workspace = ACME) => { await pause(); return db.query(`insert into public.email_outbox (kind, to_email, workspace_id, payload) values ($1, 'owner@example.com', $2, $3)`, [kind, workspace, JSON.stringify(payload)]); };
+const audit = async (actor, action, keyId, keyName, metadata = {}) => { await pause(); return db.query(
     `insert into public.workspace_audit_events (workspace_id, actor_user_id, action, target_type, target_id, target_name, metadata) values ($1, $2, $3, 'api_key', $4, $5, $6)`,
-    [ACME, actor, action, keyId, keyName, JSON.stringify(metadata)]);
+    [ACME, actor, action, keyId, keyName, JSON.stringify(metadata)]); };
 const message = async (kind, category, payload, isActor = false, workspaceName = null) =>
     (await one('select private.workspace_push_message($1, $2, $3, $4, $5) m', [kind, category, JSON.stringify(payload), isActor, workspaceName])).m;
 
@@ -156,6 +160,10 @@ try {
         id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
         name text not null, status text not null default 'active', created_by uuid not null references public.users(user_id)
       );
+      create table public.management_keys (
+        id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
+        name text not null, created_by uuid references public.users(user_id) on delete set null
+      );
       create table public.email_outbox (
         id uuid primary key default gen_random_uuid(), created_at timestamptz not null default now(), kind text not null,
         template text not null default 'generic', to_email text not null, subject text, workspace_id uuid references public.workspaces(id) on delete set null,
@@ -221,6 +229,8 @@ try {
         ('${ACME}', '${user(4)}', 'member'), ('${ACME}', '${user(5)}', 'admin'), ('${ACME}', '${user(6)}', 'admin');
       insert into public.keys (id, workspace_id, name, created_by) values
         ('${KEY_CI}', '${ACME}', 'ci', '${user(3)}'), ('${KEY_PROD}', '${ACME}', 'prod', '${user(2)}'), ('${KEY_CHAT}', '${ACME}', '__chat_route_managed_key__', '${user(4)}');
+      -- u4 made a management key while an admin, and is a plain member now.
+      insert into public.management_keys (id, workspace_id, name, created_by) values ('${KEY_OPS}', '${ACME}', 'ops', '${user(4)}');
     `);
 
     // The queued release still goes out, untouched by the workspace columns.
@@ -265,11 +275,13 @@ try {
     // Six hours later the email repeats while the balance is still low: no push. A top-up that
     // leaves it below the threshold does not re-arm it either.
     await outbox('low_balance', { balance_nanos: 1_000_000_000, threshold_nanos: 5_000_000_000 });
+    await pause();
     await db.query(`insert into public.credit_ledger (workspace_id, kind, amount_nanos, before_balance_nanos, after_balance_nanos) values ($1, 'top_up', 2000000000, 1000000000, 3000000000)`, [ACME]);
     await outbox('low_balance', { balance_nanos: 2_500_000_000, threshold_nanos: 5_000_000_000 });
     assert.deepEqual(await fanOut(), { captured: 0, lowBalanceRepeats: 2, events: 0, queued: 0, deferred: 0 });
     assert.deepEqual(await fanOut(), { captured: 0, lowBalanceRepeats: 2, events: 0, queued: 0, deferred: 0 }, 'reading the overlap again decides the same');
     // A top-up lifts it above the threshold; the next drop is pushed once.
+    await pause();
     await db.query(`insert into public.credit_ledger (workspace_id, kind, amount_nanos, before_balance_nanos, after_balance_nanos) values ($1, 'top_up', 20000000000, 2500000000, 22500000000)`, [ACME]);
     await outbox('low_balance', { balance_nanos: 4_990_000_000, threshold_nanos: 5_000_000_000 });
     await outbox('low_balance', { balance_nanos: 4_000_000_000, threshold_nanos: 5_000_000_000 });
@@ -326,6 +338,17 @@ try {
     assert.deepEqual([pushes.d5.title, pushes.d5.body, pushes.d5.category, pushes.d5.href],
         ["API key 'ci' was exposed", 'Reported by GitHub. It has been revoked, so replace it.', 'security', '/settings/keys']);
     assert.equal(pushes.d1.title, "Acme: API key 'ci' was exposed", 'a title that starts with a name keeps its case');
+    await sendAll(token, Object.values(pushes));
+
+    // An exposed management key reaches its creator too, here a plain member.
+    await db.query(`insert into public.email_outbox (kind, to_email, workspace_id, user_id, payload) values ('security_leaked_key', 'u1@example.com', $1, $2, $3)`,
+        [ACME, user(1), JSON.stringify({ key_type: 'management_key', key_id: KEY_OPS, key_name: 'ops', key_preview: 'mk_ops…wxyz', auto_revoked: false })]);
+    assert.deepEqual(await fanOut(), { captured: 1, lowBalanceRepeats: 3, events: 1, queued: 5, deferred: 0 });
+    token = claimToken();
+    pushes = await byDevice(await claim(token));
+    assert.deepEqual(Object.keys(pushes).sort(), ['d1', 'd2', 'd4', 'd5', 'd6']);
+    assert.deepEqual([pushes.d4.title, pushes.d4.body, pushes.d4.href],
+        ["Management key 'ops' was exposed", 'Reported as public. Rotate it now.', '/settings/management-api-keys']);
     await sendAll(token, Object.values(pushes));
 
     // Categories off: u1 switches security off. Queued key pushes are closed at claim, and new
@@ -416,6 +439,36 @@ try {
         kind: 'budget_warning', category: 'money', title: 'Acme: about 80% of the monthly budget used', body: '$80.00 of $100.00.', href: '/settings/usage/overview', modelSlug: null,
     }, 'kinds written elsewhere carry their own text');
     assert.equal(await message('something_else', 'money', {}), null);
+
+    // More rows than one read takes, all inside the ten-minute overlap: each read carries on after
+    // the last row of the previous one, (created_at, id) order breaking ties, so every row is
+    // captured. Paging has no members, so nothing is queued.
+    await db.exec(`insert into public.workspaces (id, name, owner_user_id) values ('${PAGING}', 'Paging', '${user(7)}')`);
+    await db.exec(`insert into public.email_outbox (kind, to_email, workspace_id, payload) select 'auto_top_up_failed', 'x@example.com', '${PAGING}', jsonb_build_object('reason', 'r' || n) from generate_series(1, 4) n`);
+    await db.exec(`insert into public.email_outbox (kind, to_email, workspace_id, payload) select 'auto_top_up_failed', 'x@example.com', '${PAGING}', jsonb_build_object('reason', 's' || n) from generate_series(1, 4) n`);
+    const inWindow = (await one(`select count(*)::int n from public.email_outbox where created_at > (select read_until from public.workspace_notification_cursors where source = 'email_outbox') - interval '10 minutes'`)).n;
+    assert.ok(inWindow > 11, `the overlap holds ${inWindow} rows, many more than a read of 3`);
+    let paged = 0;
+    let reads = 0;
+    let resumed = false;
+    while (paged < 8 && reads < 20) {
+        paged += (await one('select private.capture_workspace_notification_events(3) r')).r.captured;
+        resumed ||= (await one(`select resume_id is not null as on from public.workspace_notification_cursors where source = 'email_outbox'`)).on;
+        reads += 1;
+    }
+    assert.equal(paged, 8, 'every row in the overlap is reached');
+    assert.ok(resumed && reads <= Math.ceil(inWindow / 3) + 1, `${reads} reads of 3 for ${inWindow} rows`);
+    // Reading on starts the overlap again from the completed read and captures nothing twice.
+    for (let read = 0; read < 10; read += 1) {
+        assert.equal((await one('select private.capture_workspace_notification_events(3) r')).r.captured, 0, 'reading on captures nothing twice');
+    }
+    // The job reads up to 5,000 rows, so it ends with both reads complete.
+    const drained = await fanOut();
+    assert.deepEqual([drained.captured, drained.events, drained.queued, drained.deferred], [0, 8, 0, 0]);
+    assert.deepEqual(await rows(`select source, resume_created_at, resume_id from public.workspace_notification_cursors order by source`), [
+        { source: 'email_outbox', resume_created_at: null, resume_id: null },
+        { source: 'workspace_audit_events', resume_created_at: null, resume_id: null },
+    ], 'a short read completes the cursor');
 
     // Idle: nothing new, so nothing is captured, queued or written apart from the cursors.
     const before = await one(`select (select count(*) from public.workspace_notification_events)::int events, (select count(*) from public.mobile_push_deliveries)::int deliveries`);
