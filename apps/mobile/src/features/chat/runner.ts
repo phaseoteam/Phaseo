@@ -162,8 +162,16 @@ export function sendMessage(args: { chatId: string; text: string; attachments: C
   notifyChat(chat.id);
 }
 
-const toUsage = (usage: { prompt_tokens?: number; completion_tokens?: number; cost?: unknown } | undefined): TokenUsage | undefined =>
-  usage ? { inputTokens: usage.prompt_tokens, outputTokens: usage.completion_tokens, costUsd: typeof usage.cost === "number" ? usage.cost : undefined } : undefined;
+/** The gateway reports cost as `cost` or, from phaseo.app's proxy, as `pricing.total_usd_str`. */
+function costOf(usage: { cost?: unknown; pricing?: unknown }) {
+  if (typeof usage.cost === "number") return usage.cost;
+  const total = usage.pricing && typeof usage.pricing === "object" ? (usage.pricing as Record<string, unknown>).total_usd_str : undefined;
+  const parsed = typeof total === "string" ? Number(total) : NaN;
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+const toUsage = (usage: { prompt_tokens?: number; completion_tokens?: number; cost?: unknown; pricing?: unknown } | undefined): TokenUsage | undefined =>
+  usage ? { inputTokens: usage.prompt_tokens, outputTokens: usage.completion_tokens, costUsd: costOf(usage) } : undefined;
 
 /** The summary request: the same model, provider and proxy as its answers, with the summary instructions instead of the chat's system prompt. */
 async function summarise(args: { model: string; settings?: ModelSettings; workspaceId: string | null; signal: AbortSignal; messages: WireMessage[] }) {

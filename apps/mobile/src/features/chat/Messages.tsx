@@ -241,7 +241,7 @@ const formatUsage = (usage: MessageUsage | null) => {
   const parts = [
     usage.outputTokens != null ? `${usage.outputTokens.toLocaleString("en-GB")} tokens` : null,
     cost != null ? formatUsd(cost, { precise: true }) : null,
-    usage.summary ? `includes ${usage.summary.costUsd != null ? `${formatUsd(usage.summary.costUsd, { precise: true })} ` : ""}to summarise earlier messages` : null,
+    usage.summary ? (usage.summary.costUsd != null ? `includes ${formatUsd(usage.summary.costUsd, { precise: true })} to summarise earlier messages` : "includes a summary of earlier messages") : null,
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : null;
 };
