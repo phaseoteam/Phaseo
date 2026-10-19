@@ -1045,6 +1045,10 @@ function mapIRContentToAnthropic(part: any): any {
 		}
 	}
 
+	if (part.type === "file") {
+		return mapIRFileToAnthropicDocument(part, cacheControl);
+	}
+
 	if (part.type === "provider_block") {
 		// Copy so cache defaults never write back into the shared IR.
 		return { ...part.block };
@@ -1052,6 +1056,42 @@ function mapIRContentToAnthropic(part: any): any {
 
 	// Fallback
 	return { type: "text", text: String(part) };
+}
+
+function decodeBase64Utf8(data: string): string | null {
+	try {
+		const binary = atob(data);
+		const bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+		return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * A Chat `file` or Responses `input_file` part as an Anthropic `document`
+ * block: base64 PDF, plain text, a URL, or a Files API id (the executor adds
+ * the files beta header for `source.type: "file"`).
+ * https://platform.claude.com/docs/en/build-with-claude/pdf-support
+ */
+function mapIRFileToAnthropicDocument(part: Extract<IRContentPart, { type: "file" }>, cacheControl: any): any {
+	const title = part.filename ? { title: part.filename } : {};
+	const cache = cacheControl ? { cache_control: cacheControl } : {};
+	if (part.source === "url") {
+		return { type: "document", source: { type: "url", url: part.data }, ...title, ...cache };
+	}
+	if (part.source === "id") {
+		return { type: "document", source: { type: "file", file_id: part.data }, ...title, ...cache };
+	}
+	const mimeType = (part.mimeType || "application/pdf").toLowerCase();
+	if (mimeType.startsWith("text/")) {
+		const text = decodeBase64Utf8(part.data);
+		if (text !== null) {
+			return { type: "document", source: { type: "text", media_type: "text/plain", data: text }, ...title, ...cache };
+		}
+	}
+	return { type: "document", source: { type: "base64", media_type: mimeType, data: part.data }, ...title, ...cache };
 }
 
 /**

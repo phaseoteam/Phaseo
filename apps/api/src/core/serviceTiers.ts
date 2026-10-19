@@ -56,7 +56,8 @@ export function normalizeTextServiceTier(value: unknown): NormalizedTextServiceT
 	if (typeof value !== "string") return undefined;
 	const tier = value.trim().toLowerCase();
 	if (!tier) return undefined;
-	if (tier === "standard" || tier === "default") return "standard";
+	// Anthropic's "standard_only" is the standard tier.
+	if (tier === "standard" || tier === "default" || tier === "standard_only") return "standard";
 	if (tier === "fast") return "fast";
 	if (tier === "ultrafast") return "ultrafast";
 	if (tier === "priority") return "priority";
@@ -75,6 +76,10 @@ export function validateTextServiceTier(value: unknown, field?: "service_tier" |
 	const raw = value.trim();
 	if (!raw) return { ok: true };
 	const tier = raw.toLowerCase();
+	// Anthropic's and OpenAI's "auto" asks for no particular tier: the request
+	// is routed as if service_tier were unset. The route schemas decide which
+	// endpoints accept the value.
+	if (tier === "auto") return { ok: true };
 
 	const normalized = normalizeTextServiceTier(raw);
 	if (!normalized) {

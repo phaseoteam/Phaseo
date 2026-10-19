@@ -262,6 +262,8 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 	// Transform tool choice
 	const toolChoice = normalizeAnthropicToolChoice(req.tool_choice);
 	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
+	const providerOptions = req.provider_options ?? req.providerOptions;
+	const vendor = decodeVendorProviderOptions(providerOptions);
 	const providerGeo = normalizeProviderGeoPreferences(req as any);
 	const explicitInferenceGeo =
 		typeof req.inference_geo === "string" && req.inference_geo.trim().length > 0
@@ -310,10 +312,18 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// Advanced parameters
 		stop: req.stop_sequences,
 		metadata: req.metadata,
-		serviceTier: resolveTextServiceTier({
-			service_tier: req.service_tier,
-		}),
+		// Anthropic's "auto" picks no gateway tier (routing and pricing read the
+		// body and ignore it) but is kept so the Anthropic executor sends it.
+		serviceTier: isAutoServiceTier(req.service_tier)
+			? "auto"
+			: resolveTextServiceTier({ service_tier: req.service_tier }),
+		// provider_options apply as they do on Chat and Responses.
+		promptCacheRetention: providerCacheOptions.promptCacheRetention,
+		promptCacheOptions: providerOptions?.openai?.prompt_cache_options,
 		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
+		googleCachedContent: providerCacheOptions.googleCachedContent,
+		xaiConversationId: providerCacheOptions.xaiConversationId,
+		vendor,
 		geo,
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
 		imageConfig: req.image_config
@@ -332,6 +342,24 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 			}
 			: undefined,
 	};
+}
+
+function isAutoServiceTier(value: unknown): boolean {
+	return typeof value === "string" && value.trim().toLowerCase() === "auto";
+}
+
+/**
+ * Provider-scoped options that the Chat decoder passes to executors as
+ * vendor options. Each executor reads only its own entry.
+ */
+function decodeVendorProviderOptions(providerOptions: Record<string, any> | undefined): IRChatRequest["vendor"] {
+	if (!providerOptions || typeof providerOptions !== "object") return undefined;
+	const vendor: Record<string, Record<string, any>> = {};
+	for (const [key, target] of [["deepinfra", "deepinfra"], ["fireworks", "fireworks"], ["gmicloud", "gmicloud"], ["venice", "venice"], ["zai", "zai"], ["z-ai", "zai"]] as const) {
+		const value = providerOptions[key];
+		if (value && typeof value === "object" && !Array.isArray(value) && !vendor[target]) vendor[target] = { ...value };
+	}
+	return Object.keys(vendor).length > 0 ? vendor as IRChatRequest["vendor"] : undefined;
 }
 
 function resolveRequestedReasoning(req: AnthropicMessagesRequest): IRChatRequest["reasoning"] {
