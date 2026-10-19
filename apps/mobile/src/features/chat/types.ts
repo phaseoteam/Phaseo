@@ -1,6 +1,8 @@
+import type { ModelSettings } from "./settings";
+
 export type ChatAttachment = {
   id: string;
-  kind: "image" | "text";
+  kind: "image" | "text" | "audio";
   name: string;
   mimeType: string;
   /** File in the app's document directory. */
@@ -22,6 +24,9 @@ export type ChatMessage = {
   reasoning: string;
   status: MessageStatus;
   error: string | null;
+  /** The gateway's or the stream's error code, and the HTTP status when there was one. */
+  errorCode: string | null;
+  errorStatus: number | null;
   attachments: ChatAttachment[];
   usage: { inputTokens?: number; outputTokens?: number; costUsd?: number } | null;
   createdAt: number;
@@ -33,6 +38,8 @@ export type Chat = {
   title: string;
   /** One model, or several answering side by side. */
   models: string[];
+  /** Each model's own settings in this chat. Models without an entry use the defaults. */
+  modelSettings: Record<string, ModelSettings>;
   pinned: boolean;
   workspaceId: string | null;
   createdAt: number;

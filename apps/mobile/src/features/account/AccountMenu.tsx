@@ -1,8 +1,8 @@
 import { usePathname, useRouter } from "expo-router";
 import { Bell, Building2, ChartNoAxesColumn, Info, KeyRound, LogOut, Palette } from "lucide-react-native";
-import { Alert, ScrollView, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { useOpenDetail } from "@/components/shell/SplitStack";
-import { Button, Header, Row, Screen, Section, Text } from "@/components/ui";
+import { Button, confirm, Header, Row, Screen, Section, Text } from "@/components/ui";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 
@@ -61,10 +61,7 @@ export function AccountMenu() {
               destructive
               chevron={false}
               last
-              onPress={() => Alert.alert("Sign out?", "Chats stay on this phone. You'll need to sign in again to send messages or see usage.", [
-                { text: "Cancel", style: "cancel" },
-                { text: "Sign out", style: "destructive", onPress: () => void signOut() },
-              ])}
+              onPress={() => void confirm({ title: "Sign out?", body: "Chats stay on this phone. You'll need to sign in again to send messages or see usage.", confirmLabel: "Sign out", destructive: true }).then((ok) => { if (ok) void signOut(); })}
             />
           </Section>
         ) : null}

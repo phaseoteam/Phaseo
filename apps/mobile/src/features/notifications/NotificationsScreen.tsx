@@ -1,8 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { BellOff, Minus, Plus } from "lucide-react-native";
-import { Alert, Pressable, RefreshControl, ScrollView, Switch, View } from "react-native";
-import { Button, EmptyState, ErrorState, Header, Icon, LoadingState, ReadableWidth, Row, Screen, Section, Text } from "@/components/ui";
+import { useRef } from "react";
+import { BellOff, LayoutList, Minus, Plus } from "lucide-react-native";
+import { Pressable, RefreshControl, ScrollView, Switch, View } from "react-native";
+import { Button, EmptyState, ErrorState, Header, Icon, LoadingState, measureAnchor, ReadableWidth, Row, Screen, Section, showActions, Text, toast, toastError, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { ApiError } from "@/lib/api/http";
 import { createRule, registerDevice, sendTestNotification, updateNotificationSettings, updateRule, type NotificationRule } from "@/lib/api/notifications";
@@ -20,6 +21,7 @@ export function NotificationsScreen() {
   const { session } = useAuth();
   const settings = useNotificationSettings();
   const names = useRuleNames();
+  const addRef = useRef<ViewRef>(null);
 
   const enable = useMutation({
     mutationFn: async (on: boolean) => {
@@ -32,7 +34,7 @@ export function NotificationsScreen() {
       return updateNotificationSettings(settings.installationId!, { enabled: on });
     },
     onSuccess: settings.set,
-    onError: (error) => Alert.alert("Couldn't turn on notifications", error instanceof Error ? error.message : "Try again."),
+    onError: (error) => toastError("Couldn't turn on notifications", error),
   });
   const update = useMutation({ mutationFn: (patch: Parameters<typeof updateNotificationSettings>[1]) => updateNotificationSettings(settings.installationId!, patch), onSuccess: settings.set });
   const toggleRule = useMutation({
@@ -41,8 +43,8 @@ export function NotificationsScreen() {
   });
   const test = useMutation({
     mutationFn: () => sendTestNotification(settings.installationId!),
-    onSuccess: () => Alert.alert("Sent", "A test notification is on its way to this phone."),
-    onError: (error) => Alert.alert("Couldn't send a test", error instanceof Error ? error.message : "Try again."),
+    onSuccess: () => toast("A test notification is on its way to this phone.", { tone: "success", title: "Sent" }),
+    onError: (error) => toastError("Couldn't send a test", error),
   });
 
   if (!session) {
@@ -70,10 +72,15 @@ export function NotificationsScreen() {
     draftRuleStore.set(rule ? { ...rule } : { ...template!.rule });
     router.push({ pathname: "/account/rule", params: { id: rule?.id ?? "new", pick: template?.pick } });
   };
-  const addRule = () => Alert.alert("New rule", "Start from a template; you can change everything after.", [
-    ...RULE_TEMPLATES.slice(0, 2).map((template) => ({ text: template.title, onPress: () => openRule(undefined, template) })),
-    { text: "More…", onPress: () => router.push({ pathname: "/account/rule-templates" }) },
-  ], { cancelable: true });
+  // Templates in a menu under Add (a bottom panel on phones); the full list is one more tap away.
+  const addRule = async () => showActions({
+    title: "Start from a template",
+    anchor: await measureAnchor(addRef),
+    actions: [
+      ...RULE_TEMPLATES.slice(0, 4).map((template) => ({ key: template.key, label: template.title, description: template.description, onPress: () => openRule(undefined, template) })),
+      { key: "more", label: "All templates", icon: LayoutList, onPress: () => router.push({ pathname: "/account/rule-templates" }) },
+    ],
+  });
 
   return (
     <Screen>
@@ -88,7 +95,7 @@ export function NotificationsScreen() {
             last
           />
 
-          <Section title="Rules" description="You get a notification when any rule matches and no mute rule does." action={<Button label="Add" icon={Plus} variant="ghost" size="sm" onPress={addRule} />}>
+          <Section title="Rules" description="You get a notification when any rule matches and no mute rule does." action={<View ref={addRef} collapsable={false}><Button label="Add" icon={Plus} variant="ghost" size="sm" onPress={() => void addRule()} /></View>}>
             {data.rules.length === 0 ? (
               <View className="px-4 py-3">
                 <Text variant="muted">No rules yet, so nothing will be sent.</Text>

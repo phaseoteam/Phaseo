@@ -8,7 +8,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useCSSVariable } from "uniwind";
-import { routeSheetOptions } from "@/components/ui";
+import { OverlayHost, routeSheetOptions } from "@/components/ui";
 import { NotificationObserver } from "@/features/notifications/NotificationObserver";
 import { useLayout } from "@/hooks/useLayout";
 import { AppearanceProvider, useAppearance } from "@/providers/AppearanceProvider";
@@ -76,6 +76,7 @@ function RootNavigator() {
         <Stack.Screen name="sheets/[kind]" options={routeSheetOptions(split, [0.6, 1])} />
         <Stack.Screen name="auth/callback" options={{ presentation: "transparentModal", animation: "fade" }} />
       </Stack>
+      <OverlayHost />
     </ThemeProvider>
   );
 }
