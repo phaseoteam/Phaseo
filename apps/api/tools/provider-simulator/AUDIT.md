@@ -47,22 +47,22 @@ Billing figures use the same method as on 18 October: the sum over every simulat
 | Entry | 18 October | 19 October | What is left |
 |---|---|---|---|
 | `request-content-values` (N29) | 6,237 | 753 | Message `name` dropped (126); tool and tool-parameter descriptions dropped on some providers; a second system message's content changes type |
-| `stream-grammar` (N26) | 2,010 | 4 | Vertex Gemini refusal streams (fixed by the follow-up below) |
+| `stream-grammar` (N26) | 2,010 | 4 | Vertex Gemini refusal streams (fixed by #3028) |
 | `stream-citations-refusal` (N15) | 1,450 | 376 | Citations lost on `/v1/messages` (308); refusal text lost on every surface (64) |
 | `stream-midstream-errors` (N7) | 1,397 | 20 | Vertex Gemini: a mid-stream error still ends as a successful finish |
-| `stream-finish-mapping` (N5) | 1,324 | 16 | Vertex Gemini refusals (fixed by the follow-up below) |
+| `stream-finish-mapping` (N5) | 1,324 | 16 | Vertex Gemini refusals: the Chat ones are fixed by #3028; on Responses a Gemini block ends `incomplete` with `content_filter`, where the expectation for a refusal says `completed` |
 | `request-invented-defaults` (N9, N13) | 720 | 150 | Mostly `stream_options` sent unasked (102); `store`, `metadata` and `inference_geo` on a few providers |
 | `reasoning-roundtrip` (N8) | 167 | 4 | Buffered `/v1/messages` on Bedrock loses the thinking signature and `redacted_thinking` |
-| `billing-gemini-thinking` (N1) | 123 | 20 | AI Studio leaves 401 tool-use prompt tokens out of input; Vertex Messages bills image and audio prompt tokens as text; Vertex refusals (follow-up below) |
+| `billing-gemini-thinking` (N1) | 123 | 20 | AI Studio leaves 401 tool-use prompt tokens out of input; Vertex Messages bills image and audio prompt tokens as text; Vertex refusals (#3028) |
 | `billing-messages-usage`, `billing-chat-cached-reads`, `billing-responses-claude-cache` | 434, 144, 29 | 2 each | AkashML `qwen/qwen3.5-35b-a3b`: the card has no cache-read row, and cached reads bill $0 instead of at the input rate |
 
 `request-unsupported-forwarded` (4,353 → 3,505) and `request-params-dropped-or-changed` (2,108 → 2,041) moved less. #2999 drops and reports the parameters the capability check knows are unsupported; the rest are parameters the route data does not describe.
 
 ### Regression found and fixed
 
-Since #2990, a Gemini stream that a safety filter blocks fails instead of ending with `content_filter`. Gemini sends `finishReason: SAFETY` or `PROHIBITED_CONTENT` with no content, which the empty-response guard from #1190 (`executors/google-ai-studio/text-generate/index.ts`) reports as `google_empty_response`; #2990 made that event fail the request. Streaming Chat clients got `finish_reason: "error"`, and buffered Vertex Gemini requests failed with `upstream_stream_failure` and were not billed ($0.22 of the $0.24 under-billing above). The existing entries matched these mismatches, so the gate did not fail; they showed up as new groups in `results/EXPECTATIONS.md`.
+Since #2990, a Gemini stream that a safety filter blocks fails instead of ending with `content_filter`. Gemini sends `finishReason: SAFETY` or `PROHIBITED_CONTENT` with no content, which the empty-response guard from #1190 (`executors/google-ai-studio/text-generate/index.ts`) reports as `google_empty_response`; #2990 made that event fail the request. Streaming Chat clients got `finish_reason: "error"`, and buffered Chat requests to Vertex Gemini failed with `upstream_stream_failure` and were not billed ($0.22 of the $0.24 under-billing above). Responses and Messages clients already got `content_filter` and `refusal`. The existing entries matched these mismatches, so the gate did not fail; they showed up as new groups in `results/EXPECTATIONS.md`.
 
-The follow-up PR (fix/gemini-safety-block-stream-20261019) counts a `content_filter` finish as an answer and ends a prompt blocked through `promptFeedback.blockReason` the same way. With it applied, the Vertex-only run gives `content_filter` on Chat, `incomplete` with `content_filter` on Responses and `refusal` on Messages, all billed, and Vertex under-billing of $0; the gate still passes.
+The follow-up, #3028, counts a `content_filter` finish as an answer and ends a prompt blocked through `promptFeedback.blockReason` the same way. With it applied, the Vertex-only run gives `content_filter` on Chat, `incomplete` with `content_filter` on Responses and `refusal` on Messages, all billed, and Vertex under-billing of $0; the gate still passes.
 
 ### New allow-list entry
 
