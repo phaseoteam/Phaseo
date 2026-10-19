@@ -173,6 +173,29 @@ describe("buildGatewayGenAiOtlpPayload", () => {
 		expect(server["phaseo.rate_limit.policy_id"]).toEqual({ stringValue: "policy_1" });
 		expect(server["phaseo.rate_limit.scope"]).toEqual({ stringValue: "key" });
 	});
+
+	it("exports request labels, with multi-value classifier dimensions as arrays", () => {
+		const payload = buildGatewayGenAiOtlpPayload({
+			requestId: "req_labelled",
+			workspaceId: "ws_1",
+			endpoint: "chat.completions",
+			requestedModel: "openai/gpt-5",
+			statusCode: 200,
+			success: true,
+			labels: [
+				{ key: "team", value: "contracts" },
+				{ key: "department", value: "legal" },
+				{ key: "topics", value: "billing" },
+				{ key: "topics", value: "security" },
+			],
+			startedAtMs: 1,
+			completedAtMs: 2,
+		}, { ...options, includeSensitiveContent: false });
+		const server = attributes(spans(payload)[0]);
+		expect(server["phaseo.label.team"]).toEqual({ stringValue: "contracts" });
+		expect(server["phaseo.label.department"]).toEqual({ stringValue: "legal" });
+		expect(server["phaseo.label.topics"]).toEqual({ arrayValue: { values: [{ stringValue: "billing" }, { stringValue: "security" }] } });
+	});
 });
 
 describe("async GenAI lifecycle spans", () => {
