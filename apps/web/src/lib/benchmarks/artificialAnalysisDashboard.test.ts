@@ -1,8 +1,18 @@
-import { dashboardRows, loadDashboardData, paretoPoints } from "./artificialAnalysisDashboard";
+import { dashboardLabelPositions, dashboardRows, loadDashboardData, paretoPoints } from "./artificialAnalysisDashboard";
 import type { ArtificialAnalysisPublicConfiguration, ArtificialAnalysisPublicData } from "@/lib/fetchers/benchmarks/types";
 
 const model = (id: string): ArtificialAnalysisPublicConfiguration => ({ id, model_id: "lab/model", name: "Model (High)", slug: "model-high", creator: null, effort: "high", intelligenceIndex: 50, intelligenceIndexIsEstimated: false, totalTokens: { output: 0 }, outputTokensPerTask: null, totalCostUsd: null, costPerTaskUsd: { total: 0.005 }, timePerTaskSeconds: null, benchmarkScores: { omniscience: -3 }, capabilityScores: null, modelDetails: {}, pricing: {}, performance: {}, breakdowns: {}, evaluations: [] });
 const page = (models: ArtificialAnalysisPublicConfiguration[], total = models.length, snapshot = "same") => ({ models, total, snapshot_id: snapshot, methodology_version: "4.3.2" } as ArtificialAnalysisPublicData);
+
+it("keeps clustered endpoint labels apart and inside the plot without moving their points", () => {
+	const points = [{ id: "a", y: 10 }, { id: "b", y: 11 }, { id: "c", y: 1000 }];
+	const positions = [...dashboardLabelPositions(points, 20, 100).values()];
+	expect(positions[0]).toBeGreaterThanOrEqual(20);
+	expect(positions.at(-1)).toBeLessThanOrEqual(100);
+	expect(positions[1] - positions[0]).toBeGreaterThanOrEqual(20);
+	expect(positions[2] - positions[1]).toBeGreaterThanOrEqual(20);
+	expect(points[2].y).toBe(1000);
+});
 
 it("retains zero, negative scores, configuration identity and task/total distinctions in a slim payload", () => {
 	const row = dashboardRows([model("one")])[0];

@@ -4,6 +4,17 @@ export const dashboardBenchmarks: Record<string, string> = {
 	terminalBench40: "Terminal-Bench 4.0", scicode: "SciCode", hle: "Humanity’s Last Exam", gpqa: "GPQA Diamond", omniscience: "AA-Omniscience", lcr: "AA-LCR", gdpval: "GDPval-AA", critpt: "CritPt", gdpPdfAllPass: "GDP.pdf", automationBenchPartialScore: "AutomationBench-AA", mmmuPro: "MMMU-Pro", livecodebench: "LiveCodeBench", aime25: "AIME 2025", ifbench: "IFBench", tau2: "τ²-Bench Telecom", tauBanking: "τ-Bench Banking", apexAgents: "APEX-Agents", terminalBench21: "Terminal-Bench 2.1",
 };
 export const effortOrder = ["default", "none", "minimal", "low", "medium", "high", "xhigh", "max"];
+
+/** Keep direct chart labels apart without changing their data coordinates. */
+export function dashboardLabelPositions(items: { id: string; y: number }[], top: number, bottom: number, gap = 20) {
+	const sorted = [...items].sort((a, b) => a.y - b.y || a.id.localeCompare(b.id));
+	const spacing = sorted.length > 1 ? Math.min(gap, (bottom - top) / (sorted.length - 1)) : gap;
+	const positions = sorted.map((item, index) => Math.max(item.y, index ? top + index * spacing : top));
+	for (let index = 1; index < positions.length; index++) positions[index] = Math.max(positions[index], positions[index - 1] + spacing);
+	if (positions.length) positions[positions.length - 1] = Math.min(positions.at(-1)!, bottom);
+	for (let index = positions.length - 2; index >= 0; index--) positions[index] = Math.min(positions[index], positions[index + 1] - spacing);
+	return new Map(sorted.map((item, index) => [item.id, positions[index]]));
+}
 export type DashboardRow = {
 	id: string; modelId: string; modelName: string; sourceName: string; creatorId: string; colour: string | null; effort: string;
 	intelligence: number | null; tokensPerTask: number | null; totalTokens: number | null; costPerTask: number | null; totalCost: number | null; timePerTask: number | null;
