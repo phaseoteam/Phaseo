@@ -522,16 +522,17 @@ try {
           select e.id, d.id, d.user_id, 'sent', now() from public.catalogue_notification_events e
           cross join (select id, user_id from public.mobile_push_devices where installation_id = 'install-u5') d where e.dedupe_key like 'bulk-%';
           analyze;`);
-        const time = async (label, at) => {
-            for (let i = 0; i < 20; i += 1) await claim(at);
+        const time = async (label, run) => {
+            for (let i = 0; i < 20; i += 1) await run();
             const start = performance.now();
-            for (let i = 0; i < 200; i += 1) await claim(at);
+            for (let i = 0; i < 200; i += 1) await run();
             console.log(`${label}: ${((performance.now() - start) / 200).toFixed(2)} ms`);
         };
         console.log('delivery rows:', (await one('select count(*)::int n from public.mobile_push_deliveries')).n);
-        await time('idle claim_mobile_push_digests outside the build hours (Wednesday)', '2026-10-28 12:00Z');
-        await time('idle claim_mobile_push_digests inside the build hours, nobody due (Sunday 08:59 UTC)', '2026-10-25 08:59Z');
-        await time('idle claim_mobile_push_digests inside the build hours, everyone written (Sunday 18:30 UTC)', '2026-10-25 18:30Z');
+        await time('idle claim_mobile_push_digests outside the build hours (Wednesday)', () => claim('2026-10-28 12:00Z'));
+        await time('idle claim_mobile_push_digests inside the build hours, nobody due (Sunday 08:59 UTC)', () => claim('2026-10-25 08:59Z'));
+        await time('idle claim_mobile_push_digests inside the build hours, everyone written (Sunday 18:30 UTC)', () => claim('2026-10-25 18:30Z'));
+        await time('idle claim_mobile_push_deliveries, for comparison', () => asService(() => rows('select * from public.claim_mobile_push_deliveries(100, $1)', [claimToken()])));
     }
     console.log('mobile push digest: ok');
 } finally {
