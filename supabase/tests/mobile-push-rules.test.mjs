@@ -4,25 +4,18 @@ const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pgli
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 const migrationFile = '../migrations/20261018135417_mobile_push_rules.sql';
+// The schema files this migration still matches. The rules, events and deliveries tables and
+// the fan-out, claim, completion, receipt, registration and test-push functions were changed by
+// 20261019170840_mobile_push_categories_and_grouping.sql; mobile-push-v2.test.mjs checks those
+// and the behaviour after both migrations.
 const schemaFiles = [
-    '../schemas/public/tables/mobile_notification_rules.sql',
-    '../schemas/public/tables/catalogue_notification_events.sql',
     '../schemas/public/tables/catalogue_notification_cursors.sql',
     '../schemas/public/tables/catalogue_notification_skipped_transactions.sql',
-    '../schemas/public/tables/mobile_push_deliveries.sql',
     '../schemas/private/functions/catalogue_notification_usd.sql',
-    '../schemas/private/functions/mobile_notification_rule_matches.sql',
     '../schemas/private/functions/record_model_released_notification.sql',
-    '../schemas/public/functions/capture_catalogue_notification_events.sql',
-    '../schemas/public/functions/enqueue_mobile_push_deliveries.sql',
-    '../schemas/public/functions/claim_mobile_push_deliveries.sql',
-    '../schemas/public/functions/complete_mobile_push_deliveries.sql',
     '../schemas/public/functions/claim_mobile_push_receipts.sql',
-    '../schemas/public/functions/record_mobile_push_receipts.sql',
-    '../schemas/public/functions/register_mobile_push_device.sql',
     '../schemas/public/functions/reorder_mobile_notification_rules.sql',
     '../schemas/public/functions/create_mobile_notification_rule.sql',
-    '../schemas/public/functions/claim_mobile_push_test.sql',
 ];
 const rows = async (sql, params) => (await db.query(sql, params)).rows;
 const one = async (sql, params) => (await rows(sql, params))[0];

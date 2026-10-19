@@ -304,6 +304,7 @@ async function applyLeakedKeyRevocation(candidate: KeyCandidate): Promise<void> 
 
 async function enqueueOwnerNotifications(args: {
 	workspaceId: string;
+	keyId: string;
 	keyType: "api_key" | "management_key";
 	keyName: string | null;
 	keyPreview: string | null;
@@ -364,6 +365,8 @@ async function enqueueOwnerNotifications(args: {
 					user_first_name: deriveFirstNameFromMetadata(metadata) || "there",
 					workspace_name: workspaceName,
 					key_type: args.keyType,
+					// Lets the mobile alert also reach the key's creator.
+					key_id: args.keyId,
 					key_name: args.keyName,
 					key_preview: args.keyPreview,
 					reported_source: args.source,
@@ -560,6 +563,7 @@ async function handleReportLeakedKey(req: Request) {
 		if (matchedKey && (actionTaken === "auto_revoked" || actionTaken === "matched_report_only")) {
 			await enqueueOwnerNotifications({
 				workspaceId: matchedKey.workspace_id,
+				keyId: matchedKey.id,
 				keyType: matchedKey.table === "management_keys" ? "management_key" : "api_key",
 				keyName: matchedKey.name,
 				keyPreview: tokenPreview(parsed),

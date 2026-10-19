@@ -1,4 +1,5 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import {
 	CAPABILITIES,
 	DEFAULT_CLI_OAUTH_CAPABILITIES,
@@ -917,9 +918,31 @@ export async function issueTokenPairForGrant(
 	return material.response;
 }
 
+// A delegated key is recorded like a key made in the dashboard, so owners and admins hear about
+// it. This never fails the token exchange.
+async function recordOAuthKeyIssued(args: { kid: string; workspaceId: string; userId: string; clientId: string; clientName?: string | null }) {
+	try {
+		const supabase = getSupabaseAdmin();
+		const { data, error } = await supabase.from("keys").select("id, name, prefix").eq("kid", args.kid).maybeSingle();
+		if (error || !data?.id) return;
+		await recordWorkspaceAuditEvent(supabase, {
+			workspaceId: args.workspaceId,
+			actorUserId: args.userId,
+			action: "api_key.created",
+			targetType: "api_key",
+			targetId: String(data.id),
+			targetName: typeof data.name === "string" ? data.name : null,
+			metadata: { prefix: data.prefix ?? null, status: "active", source: "oauth", oauthClientId: args.clientId, appName: args.clientName ?? null },
+		});
+	} catch (error) {
+		console.error("oauth_key_audit_failed", { message: error instanceof Error ? error.message : String(error) });
+	}
+}
+
 export async function issueOAuthManagedKeyForAuthorizationCode(
 	grantId: string,
 	input: TokenIssueInput,
+	options: { clientName?: string | null } = {},
 ) {
 	// Unbound delegated keys can spend workspace credits and require Gateway
 	// consent. A key bound to the Gateway API is still a Gateway credential and
@@ -957,6 +980,13 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 	}
 	if (error) throw new Error(error.message || "Failed to consume OAuth code and issue key");
 	if (data !== "issued") return null;
+	await recordOAuthKeyIssued({
+		kid: generated.kid,
+		workspaceId: input.workspaceId,
+		userId: input.userId,
+		clientId: input.clientId,
+		clientName: options.clientName,
+	});
 	return {
 		access_token: generated.plaintext,
 		token_type: "Bearer",

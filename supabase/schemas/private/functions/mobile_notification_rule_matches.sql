@@ -15,9 +15,14 @@ CREATE OR REPLACE FUNCTION private.mobile_notification_rule_matches (
   AS $function$
   -- Lists left empty match anything. An event without a lab or provider matches "all" and
   -- "except" but never "only". Modality lists are all required. Mute rules ignore
-  -- include_free_variants, so muting a lab also mutes its free variants.
+  -- include_free_variants, so muting a lab also mutes its free variants. A provider launching
+  -- on Phaseo (provider_launched, which has no model or lab) is matched by rules about Phaseo
+  -- availability or new providers, so rules written before it existed pick it up.
   select p_rule.enabled
-    and p_kind = any (p_rule.event_kinds)
+    and (
+      p_kind = any (p_rule.event_kinds)
+      or (p_kind = 'provider_launched' and p_rule.event_kinds && ARRAY['gateway_available', 'provider_added'])
+    )
     and (
       p_rule.lab_mode = 'all'
       or (p_rule.lab_mode = 'only' and coalesce(p_lab_slug = any (p_rule.lab_slugs), false))

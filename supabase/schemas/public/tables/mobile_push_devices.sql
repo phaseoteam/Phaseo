@@ -12,7 +12,9 @@ CREATE TABLE "public"."mobile_push_devices" (
   "time_zone"       text,
   "device_name"     text,
   "app_version"     text,
+  "channel_scheme"  smallint                 NOT NULL DEFAULT 1,
   CONSTRAINT "mobile_push_devices_app_version_check" CHECK (((app_version IS NULL) OR ((char_length(app_version) >= 1) AND (char_length(app_version) <= 40)))),
+  CONSTRAINT "mobile_push_devices_channel_scheme_check" CHECK (((channel_scheme >= 1) AND (channel_scheme <= 100))),
   CONSTRAINT "mobile_push_devices_device_name_check" CHECK (((device_name IS NULL) OR ((char_length(device_name) >= 1) AND (char_length(device_name) <= 100)))),
   CONSTRAINT "mobile_push_devices_expo_push_token_check" CHECK ((expo_push_token ~ '^Expo(nent)?PushToken[[][A-Za-z0-9_-]+[]]$'::text)),
   CONSTRAINT "mobile_push_devices_expo_push_token_key" UNIQUE (expo_push_token),
@@ -36,6 +38,8 @@ CREATE POLICY "deny_direct_client_access" ON "public"."mobile_push_devices"
   TO "anon", "authenticated"
   USING (false)
   WITH CHECK (false);
+
+COMMENT ON COLUMN "public"."mobile_push_devices"."channel_scheme" IS 'Android notification channels the installed app has created: 1 is the single model-updates channel, 2 adds one channel per category. Pushes use a category channel only from 2.';
 
 COMMENT ON COLUMN "public"."mobile_push_devices"."time_zone" IS 'IANA time zone reported by the app, used for quiet hours. Null means UTC.';
 

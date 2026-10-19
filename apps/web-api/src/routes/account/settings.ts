@@ -29,6 +29,7 @@ import { accountSettingsScimRouter } from "./settings-scim";
 import { accountSettingsProviderOnboardingRouter } from "./settings-provider-onboarding";
 import { accountSettingsProviderCatalogRouter } from "./settings-provider-catalog";
 import { accountSettingsMobileNotificationsRouter } from "./settings-mobile-notifications";
+import { accountSettingsMobileWeekRouter } from "./settings-mobile-week";
 import { creditSpendWindowStart, recentCreditSpend } from "./creditSpend";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
 import { keyDisplayData } from "./settings-key-display";
@@ -150,6 +151,7 @@ accountSettingsRouter.route("/", accountSettingsScimRouter);
 accountSettingsRouter.route("/", accountSettingsProviderOnboardingRouter);
 accountSettingsRouter.route("/", accountSettingsProviderCatalogRouter);
 accountSettingsRouter.route("/", accountSettingsMobileNotificationsRouter);
+accountSettingsRouter.route("/", accountSettingsMobileWeekRouter);
 
 accountSettingsRouter.get("/layout", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);

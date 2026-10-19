@@ -7,8 +7,9 @@ CREATE OR REPLACE FUNCTION public.record_mobile_push_receipts (
   SET search_path TO ''
   AS $function$
 -- Closes the receipts Expo returned: [{ "id", "status": "ok" | "error", "errorCode",
--- "errorMessage" }]. An error marks the push failed and DeviceNotRegistered retires the
--- device. Tickets left out stay open, so claim_mobile_push_receipts hands them out again.
+-- "errorMessage" }]. An error marks the push failed, with every row it carried, and
+-- DeviceNotRegistered retires the device. Tickets left out stay open, so
+-- claim_mobile_push_receipts hands them out again.
 declare
   v_result jsonb;
 begin
@@ -31,7 +32,14 @@ begin
         updated_at = now()
     from results r
     where x.id = r.id and x.status = 'sent' and x.receipt_checked_at is null
-    returning x.device_id, x.status, x.error_code
+    returning x.id, x.device_id, x.status, x.error_code, x.error_message
+  ),
+  carried as (
+    update public.mobile_push_deliveries x
+    set status = 'failed', error_code = c.error_code, error_message = c.error_message, updated_at = now()
+    from checked c
+    where c.status = 'failed' and x.merged_into = c.id and x.status = 'sent'
+    returning x.id
   ),
   invalidated as (
     update public.mobile_push_devices dev

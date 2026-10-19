@@ -2,12 +2,29 @@ import { getSupabaseAdmin } from "@/runtime/env";
 
 // Rule-based mobile push for the Phaseo app. The database does the work: it turns catalogue
 // history into notification events (capture_catalogue_notification_events), matches each event
-// against users' rules and queues one push per device (enqueue_mobile_push_deliveries), and hands
-// out due pushes under a claim token. This job only moves pushes between the database and Expo.
+// against users' rules and categories and queues it per device (enqueue_mobile_push_deliveries),
+// and hands out due pushes under a claim token, one per device and group with the text already
+// written (claim_mobile_push_deliveries). Workspace alerts (money, traffic, security and
+// deprecations) are captured and queued per recipient by fan_out_workspace_push_events and go out
+// through the same claim. This job only moves pushes between the database and Expo.
 
 export const EXPO_PUSH_SEND_URL = "https://exp.host/--/api/v2/push/send";
 export const EXPO_PUSH_RECEIPTS_URL = "https://exp.host/--/api/v2/push/getReceipts";
-export const MOBILE_PUSH_CHANNEL_ID = "model-updates";
+// The only channel of app builds on channel scheme 1. From scheme 2 the app has one channel per
+// category instead, and deletes this one.
+export const MOBILE_PUSH_LEGACY_CHANNEL_ID = "model-updates";
+const MOBILE_PUSH_CHANNEL_IDS = new Set([
+	"new-models",
+	"prices-providers",
+	"deprecations",
+	"money",
+	"traffic",
+	"security",
+	"jobs",
+	"account",
+	"digest",
+	"tests",
+]);
 // Expo accepts at most 100 messages per send request.
 const EXPO_SEND_BATCH_SIZE = 100;
 // Expo accepts up to 1,000 receipt ids per request; stay well under it.
@@ -19,19 +36,30 @@ const BULK_TRANSACTION_MODELS = 20;
 const EVENT_PAGE_SIZE = 50;
 const MAX_FANOUT_PASSES = 10;
 const MAX_SEND_BATCHES = 10;
+const WORKSPACE_EVENT_LIMIT = 200;
 // Expo ticket errors that no retry can fix.
 const TERMINAL_EXPO_ERRORS = new Set(["DeviceNotRegistered", "MessageTooBig"]);
 
+// One push as claim_mobile_push_deliveries returns it. A grouped push carries `deliveries` rows
+// and counts `group_count` items, including those already sent to the device today.
 export type ClaimedMobilePush = {
 	id: string;
-	event_id: string;
 	attempts: number;
 	expo_push_token: string;
+	channel_scheme: number;
 	kind: string;
+	category: string | null;
 	model_slug: string | null;
 	title: string;
 	body: string;
 	href: string;
+	group_key: string | null;
+	group_count: number | null;
+	tag: string | null;
+	deliveries: number;
+	// Set for workspace alerts; null for catalogue news.
+	workspace_id?: string | null;
+	workspace_name?: string | null;
 };
 
 type ExpoTicket =
@@ -52,10 +80,15 @@ export type MobilePushSummary = {
 	captured: number;
 	skippedTransactions: number;
 	events: number;
+	// Workspace alerts captured from their sources, and workspace events fanned out to devices.
+	workspaceCaptured: number;
+	workspaceEvents: number;
 	queued: number;
 	deferred: number;
 	suppressed: number;
 	claimed: number;
+	// Deliveries carried by another delivery's push for the same device and group, not sent on their own.
+	grouped: number;
 	sent: number;
 	retrying: number;
 	failed: number;
@@ -65,6 +98,7 @@ export type MobilePushSummary = {
 	receiptsPending: number;
 	receiptErrors: number;
 	receiptError: string | null;
+	workspaceError: string | null;
 };
 
 function emptySummary(): MobilePushSummary {
@@ -72,10 +106,13 @@ function emptySummary(): MobilePushSummary {
 		captured: 0,
 		skippedTransactions: 0,
 		events: 0,
+		workspaceCaptured: 0,
+		workspaceEvents: 0,
 		queued: 0,
 		deferred: 0,
 		suppressed: 0,
 		claimed: 0,
+		grouped: 0,
 		sent: 0,
 		retrying: 0,
 		failed: 0,
@@ -84,11 +121,12 @@ function emptySummary(): MobilePushSummary {
 		receiptsPending: 0,
 		receiptErrors: 0,
 		receiptError: null,
+		workspaceError: null,
 	};
 }
 
 export function hasMobilePushActivity(summary: MobilePushSummary): boolean {
-	return Object.entries(summary).some(([key, value]) => key === "receiptError" ? Boolean(value) : Number(value) > 0);
+	return Object.entries(summary).some(([key, value]) => key.endsWith("Error") ? Boolean(value) : Number(value) > 0);
 }
 
 function count(value: unknown): number {
@@ -109,14 +147,32 @@ function expoHeaders(accessToken?: string): Record<string, string> {
 	};
 }
 
-export function buildMobilePushMessage(push: Pick<ClaimedMobilePush, "expo_push_token" | "title" | "body" | "href" | "kind" | "model_slug">) {
+// A push whose channel the device lacks is not shown, so only apps on channel scheme 2 or later
+// are sent to a category channel; older builds get their single channel.
+export function mobilePushChannelId(category: string | null | undefined, channelScheme: number | null | undefined): string {
+	if (!(Number(channelScheme) >= 2)) return MOBILE_PUSH_LEGACY_CHANNEL_ID;
+	return category && MOBILE_PUSH_CHANNEL_IDS.has(category) ? category : "new-models";
+}
+
+export function buildMobilePushMessage(push: ClaimedMobilePush) {
 	return {
 		to: push.expo_push_token,
 		title: push.title,
 		body: push.body,
-		data: { href: push.href, kind: push.kind, modelId: push.model_slug },
-		channelId: MOBILE_PUSH_CHANNEL_ID,
+		data: {
+			href: push.href,
+			kind: push.kind,
+			category: push.category,
+			modelId: push.model_slug,
+			group: push.group_key ? { key: push.group_key, count: count(push.group_count) || 1 } : null,
+			workspaceId: push.workspace_id ?? null,
+			workspaceName: push.workspace_name ?? null,
+		},
+		channelId: mobilePushChannelId(push.category, push.channel_scheme),
 		sound: null,
+		// A later push for the group the same day updates the shown one in place: Android replaces by
+		// tag, iOS by collapseId (which on Android only merges pushes still in transit).
+		...(push.tag ? { tag: push.tag, collapseId: push.tag } : {}),
 	};
 }
 
@@ -223,6 +279,19 @@ export async function runMobilePushJob(options: { accessToken?: string } = {}): 
 		if (rows.length < EVENT_PAGE_SIZE) break;
 	}
 
+	// Workspace alerts are queued separately, so a failure there never holds back catalogue news.
+	try {
+		const workspace = await supabase.rpc("fan_out_workspace_push_events", { p_limit: WORKSPACE_EVENT_LIMIT });
+		if (workspace.error) throw new Error(workspace.error.message);
+		const result = record(workspace.data);
+		summary.workspaceCaptured = count(result.captured);
+		summary.workspaceEvents = count(result.events);
+		summary.queued += count(result.queued);
+		summary.deferred += count(result.deferred);
+	} catch (error) {
+		summary.workspaceError = `mobile_push_workspace_fan_out_failed:${error instanceof Error ? error.message : String(error)}`.slice(0, 200);
+	}
+
 	for (let batch = 0; batch < MAX_SEND_BATCHES; batch += 1) {
 		const claimToken = crypto.randomUUID();
 		const claimed = await supabase.rpc("claim_mobile_push_deliveries", { p_limit: EXPO_SEND_BATCH_SIZE, p_claim_token: claimToken });
@@ -230,6 +299,7 @@ export async function runMobilePushJob(options: { accessToken?: string } = {}): 
 		const pushes = (Array.isArray(claimed.data) ? claimed.data : []) as ClaimedMobilePush[];
 		if (pushes.length === 0) break;
 		summary.claimed += pushes.length;
+		summary.grouped += pushes.reduce((total, push) => total + Math.max(0, count(push.deliveries) - 1), 0);
 
 		const results = await sendClaimedPushes(pushes, options.accessToken);
 		const completed = await supabase.rpc("complete_mobile_push_deliveries", { p_claim_token: claimToken, p_results: results });

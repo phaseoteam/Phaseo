@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
 	authorizationUpdateError: null as { message?: string } | null,
 	delegatedKeyRow: null as Record<string, unknown> | null,
 	revokedDelegatedKeyIds: [] as string[],
+	auditEvents: [] as Array<Record<string, unknown>>,
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -149,6 +150,14 @@ vi.mock("@/runtime/env", () => ({
 					}),
 				};
 			}
+			if (table === "workspace_audit_events") {
+				return {
+					insert: async (row: Record<string, unknown>) => {
+						state.auditEvents.push(row);
+						return { error: null };
+					},
+				};
+			}
 			throw new Error(`Unexpected table: ${table}`);
 		},
 	}),
@@ -178,6 +187,7 @@ describe("OAuth refresh rotation security", () => {
 		state.authorizationUpdateError = null;
 		state.delegatedKeyRow = null;
 		state.revokedDelegatedKeyIds.length = 0;
+		state.auditEvents.length = 0;
 		vi.resetModules();
 	});
 
@@ -295,6 +305,30 @@ describe("OAuth refresh rotation security", () => {
 			p_key_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
 		});
 		expect(rpcCall?.args.p_key_hash).not.toBe(result?.access_token);
+	});
+
+	it("records an OAuth-managed key as a new API key, so owners and admins are alerted", async () => {
+		state.rotationStatus = "issued";
+		state.delegatedKeyRow = { id: "key_1", name: "OAuth: partner_app", prefix: "abc123" };
+		const { issueOAuthManagedKeyForAuthorizationCode } = await import("./service");
+
+		const result = await issueOAuthManagedKeyForAuthorizationCode(
+			"00000000-0000-0000-0000-000000000003",
+			{ userId: "user_1", workspaceId: "ws_1", clientId: "partner_app", scopes: ["gateway:access"] },
+			{ clientName: "Partner App" },
+		);
+
+		expect(result?.access_token).toMatch(/^phaseo_v1_sk_/);
+		expect(state.auditEvents).toEqual([{
+			workspace_id: "ws_1",
+			actor_user_id: "user_1",
+			action: "api_key.created",
+			target_type: "api_key",
+			target_id: "key_1",
+			target_name: "OAuth: partner_app",
+			metadata: { prefix: "abc123", status: "active", source: "oauth", oauthClientId: "partner_app", appName: "Partner App" },
+			request_id: null,
+		}]);
 	});
 
 	it("refuses to mint an OAuth-managed key without gateway access consent", async () => {
