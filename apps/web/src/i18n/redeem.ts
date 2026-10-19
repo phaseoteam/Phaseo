@@ -9,7 +9,7 @@ import pt from "../../messages/pt-BR/redeem.json";
 import ja from "../../messages/ja/redeem.json";
 import ar from "../../messages/ar-SA/redeem.json";
 import { mergeCatalogMessages } from "./message-overlays";
-import type { PublicLocale } from "./routing";
+import type { PublicLocale, ShippedLocale } from "./routing";
 export type RedeemMessages = typeof englishRedeemMessages;
-const catalogs: Record<PublicLocale, RedeemMessages> = { "en-GB": englishRedeemMessages, "en-US": mergeCatalogMessages(englishRedeemMessages, enUsOverlay), "zh-Hans": zhHans as RedeemMessages, hi: hi as RedeemMessages, "es-ES": es as RedeemMessages, "fr-FR": fr as RedeemMessages, "de-DE": germanRedeemMessages, "pt-BR": pt as RedeemMessages, ja: ja as RedeemMessages, "ar-SA": ar as RedeemMessages };
+const catalogs: Record<ShippedLocale, RedeemMessages> = { "en-GB": englishRedeemMessages, "en-US": mergeCatalogMessages(englishRedeemMessages, enUsOverlay), "zh-Hans": zhHans as RedeemMessages, hi: hi as RedeemMessages, "es-ES": es as RedeemMessages, "fr-FR": fr as RedeemMessages, "de-DE": germanRedeemMessages, "pt-BR": pt as RedeemMessages, ja: ja as RedeemMessages, "ar-SA": ar as RedeemMessages };
 export function getRedeemMessages(locale: PublicLocale): RedeemMessages { return catalogs[locale]; }

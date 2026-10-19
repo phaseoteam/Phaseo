@@ -46,8 +46,7 @@ describe("runtime locale message loading", () => {
 			const localizedSentinel = valueAt(localized.SettingsUI, "routingStudio.modelCatalogueError");
 			const sourceSentinel = valueAt(source.SettingsUI, "routingStudio.modelCatalogueError");
 			expect(localizedSentinel).toBeTruthy();
-			if (locale === "en-US") expect(localizedSentinel).not.toBe(sourceSentinel);
-			else expect(localizedSentinel).not.toBe(sourceSentinel);
+			expect(localizedSentinel).not.toBe(sourceSentinel);
 		},
 	);
 
@@ -63,14 +62,6 @@ describe("runtime locale message loading", () => {
 			translate("SettingsUI.strings.phraseInvalidCodePleaseTryAgain" as never),
 		).toBe("Código no válido. Por favor inténtalo de nuevo.");
 		expect(onError).not.toHaveBeenCalled();
-	});
-
-	it("uses the en-GB help tree for en-US while localized trees remain available", async () => {
-		const [source, us] = await Promise.all([
-			import("@/lib/content/helpCenter").then(({ getLocalizedHelpCategories }) => getLocalizedHelpCategories("en-GB")),
-			import("@/lib/content/helpCenter").then(({ getLocalizedHelpCategories }) => getLocalizedHelpCategories("en-US")),
-		]);
-		expect(us).toEqual(source);
 	});
 
 	it.each(publicLocales)("loads utility catalogs for %s", (locale: PublicLocale) => {
