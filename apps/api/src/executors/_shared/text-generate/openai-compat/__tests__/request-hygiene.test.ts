@@ -222,7 +222,7 @@ describe("fields the client did not send", () => {
 // service_tier enums (https://platform.openai.com/docs/api-reference/chat/create,
 // https://docs.deepinfra.com/api-reference/chat-completions/openai-chat-completions).
 describe("provider service tier names", () => {
-	it.each(["openai", "openai-eu", "azure", "deepinfra", "nebius-token-factory", "fireworks"])("sends %s service_tier default for standard", (providerId) => {
+	it.each(["openai", "openai-eu", "azure", "deepinfra", "nebius-token-factory", "fireworks", "reflection"])("sends %s service_tier default for standard", (providerId) => {
 		expect(irToOpenAIChat(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("default");
 		expect(irToOpenAIResponses(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("default");
 	});
@@ -281,5 +281,20 @@ describe("DeepSeek Responses reasoning", () => {
 		expect(responses.reasoning).toEqual({ effort: "high" });
 		expect(responses).not.toHaveProperty("reasoning_effort");
 		expect(irToOpenAIChat(ir, "deepseek-v4-pro", "deepseek").reasoning_effort).toBe("high");
+	});
+});
+
+// Providers that document reasoning_content on earlier assistant messages get it back in tool
+// loops (Baseten Beam returns 400 without it: https://docs.baseten.co/inference/model-apis/reasoning).
+describe("assistant reasoning_content pass-back", () => {
+	it.each(["baseten", "arcee-ai", "together", "deepinfra", "wafer-zdr"])("sends %s the earlier turn's reasoning", (providerId) => {
+		const request = irToOpenAIChat(baseIR({
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "hi" }] },
+				{ role: "assistant", content: [{ type: "reasoning_text", text: "thinking" }, { type: "text", text: "ok" }] },
+				{ role: "user", content: [{ type: "text", text: "next" }] },
+			] as any,
+		}), "m", providerId);
+		expect(request.messages[1].reasoning_content).toBe("thinking");
 	});
 });

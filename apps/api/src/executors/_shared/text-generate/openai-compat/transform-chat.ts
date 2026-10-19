@@ -83,7 +83,15 @@ export function irToOpenAIChat(
 				providerId === "siliconflow" ||
 				providerId === "stepfun" ||
 				providerId === "wafer" ||
-				providerId === "doubleword";
+				providerId === "wafer-zdr" ||
+				providerId === "doubleword" ||
+				// Beam returns 400 without it (https://docs.baseten.co/inference/model-apis/reasoning);
+				// Arcee, Together and DeepInfra document it on assistant messages for tool loops.
+				providerId === "baseten" ||
+				providerId === "arcee" ||
+				providerId === "arcee-ai" ||
+				providerId === "together" ||
+				providerId === "deepinfra";
 			if (providerSupportsAssistantReasoningContent && assistantReasoning.length > 0) {
 				if (providerId === "minimax" || providerId === "minimax-lightning") {
 					// With reasoning_split, MiniMax returns thinking in reasoning_details

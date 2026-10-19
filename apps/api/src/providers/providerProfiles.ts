@@ -81,7 +81,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		text: {
 			paramPolicy: {
 				supportedParams: ["max_tokens", "temperature", "top_p", "seed", "frequency_penalty", "presence_penalty", "stream_options", "tools", "tool_choice", "parallel_tool_calls", "response_format", "reasoning.effort"],
-				unsupportedParams: ["stop", "n", "logprobs", "logit_bias", "modalities", "verbosity", "metadata", "user", "user_id", "top_logprobs", "top_k", "min_p", "repetition_penalty", "web_search_options", "image_config", "audio", "prompt_cache_key", "prompt_cache_retention", "safety_identifier", "reasoning.max_tokens", "reasoning.summary"],
+				unsupportedParams: ["stop", "n", "logprobs", "logit_bias", "modalities", "verbosity", "metadata", "user", "user_id", "top_logprobs", "top_k", "min_p", "repetition_penalty", "web_search_options", "image_config", "audio", "prompt_cache_key", "prompt_cache_retention", "safety_identifier", "reasoning.max_tokens", "reasoning.summary", "max_tool_calls", "background"],
 			},
 			normalize: {
 				preserveReasoningEffort: true,

@@ -17,3 +17,5 @@ Upstage now receives `stream_options`, so streamed Solar requests return the usa
 Groq receives `service_tier: "on_demand"` (Chat) or `"default"` (Responses) for standard, and gpt-oss on Groq no longer receives reasoning effort values it rejects with a 400. Wafer receives `low` for `minimal` effort, which its Chat Completions rejects, and its request fixes now also apply to Wafer ZDR.
 
 DeepSeek requests on its Responses API carry reasoning effort as `reasoning.effort`, the field it reads there, instead of being ignored. gpt-oss on Cerebras no longer receives `reasoning_effort: "none"`, which it does not accept.
+
+Earlier turns' `reasoning_content` now reaches Baseten, Arcee, Together, DeepInfra and Wafer ZDR in tool loops; Baseten's Beam returns 400 without it. Reflection no longer receives `max_tool_calls` or `background`, which it rejects.
