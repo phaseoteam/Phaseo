@@ -57,7 +57,7 @@ export function ChatsDeviceScreen() {
                 </View>
               )}
               title={names.length ? names.join(", ") : "No models chosen yet"}
-              subtitle={`${models.length} of 4 · they answer side by side`}
+              subtitle={models.length > 1 ? `${models.length} models answer side by side` : "Tap to choose. Up to 4 can answer side by side."}
               numberOfLines={2}
               onPress={() => router.push({ pathname: "/sheets/[kind]", params: { kind: "chat-models" } })}
               last

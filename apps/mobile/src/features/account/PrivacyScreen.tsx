@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react-native";
 import { RefreshControl, ScrollView, Switch, View } from "react-native";
-import { confirm, ErrorState, Fact, Header, Icon, LoadingState, ReadableWidth, Row, Screen, Section, Text, toast, toastError } from "@/components/ui";
+import { confirm, ErrorState, Header, Icon, LoadingState, ReadableWidth, Row, Screen, Section, Text, toast, toastError } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { updateWorkspacePrivacy, type ChatPrivacyReview, type PrivacyPatch } from "@/lib/api/account";
 import { openWeb } from "@/lib/web";
@@ -107,9 +107,9 @@ export function PrivacyScreen({ workspaceId }: { workspaceId: string }) {
                 />
               </Section>
               <Section title="Route access" description="Which providers and models this workspace may use.">
-                <Fact label="Providers" value={restriction(policy.provider_restriction_mode, policy.provider_restriction_provider_ids, "provider")} />
-                <Fact label="Models" value={restriction(policy.model_restriction_mode, policy.model_restriction_model_ids, "model")} />
-                <Fact label="Free providers publishing prompts" value={policy.privacy_enable_free_may_publish_prompts ? "Allowed" : "Not allowed"} />
+                <Row title="Providers" value={restriction(policy.provider_restriction_mode, policy.provider_restriction_provider_ids, "provider")} />
+                <Row title="Models" value={restriction(policy.model_restriction_mode, policy.model_restriction_model_ids, "model")} />
+                <Row title="Free providers publishing prompts" value={policy.privacy_enable_free_may_publish_prompts ? "Allowed" : "Not allowed"} />
                 <Row title={canEdit ? "Choose providers and models on phaseo.app" : "See route access on phaseo.app"} chevron={false} trailing={<Icon icon={ExternalLink} tone="muted" size={15} />} onPress={() => void openWeb("/settings/privacy")} last />
               </Section>
               <Section title="Data contribution">

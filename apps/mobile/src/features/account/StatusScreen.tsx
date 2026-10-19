@@ -21,6 +21,9 @@ export function StatusDot({ state, size = 10 }: { state: string; size?: number }
   return <View accessibilityElementsHidden importantForAccessibility="no" style={{ width: size, height: size, borderRadius: Math.max(2, Math.round(size / 4)), backgroundColor: colour }} />;
 }
 
+/** A service's state in a word or two (the page's own label is a sentence for the whole site). */
+const SHORT: Record<string, string> = { operational: "Operational", monitoring: "Monitoring", degraded: "Degraded", partial_outage: "Partial outage", major_outage: "Major outage", maintenance: "Maintenance" };
+
 const time = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" });
 
 /** What phaseo.app/status shows, from the same source: the overall state, open incidents and each service. */
@@ -62,7 +65,7 @@ export function StatusScreen() {
                     key={`${component.parent ?? ""}${component.name}`}
                     title={component.name}
                     subtitle={component.parent}
-                    trailing={<View className="flex-row items-center gap-1.5"><StatusDot state={component.state} /><Text variant="muted">{component.label ?? component.state}</Text></View>}
+                    trailing={<View className="flex-row items-center gap-1.5"><StatusDot state={component.state} /><Text variant="muted">{SHORT[component.state] ?? component.label ?? "Unknown"}</Text></View>}
                     last={index === data.components.length - 1}
                   />
                 )) : <EmptyState title="No services listed" body="The status page didn't list its services just now." />}

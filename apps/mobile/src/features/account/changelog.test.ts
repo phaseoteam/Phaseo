@@ -23,6 +23,11 @@ const CURRENT = `> ## Documentation Index
 
 * [Anthropic: Claude Haiku 5.5](https://phaseo.app/models/anthropic/claude-haiku-5.5)
 * [Google: Nano Banana 2.1](https://phaseo.app/models/google/gemini-nano-banana-2.1) added with Vertex routes.
+
+***
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.
 `;
 
 const ARCHIVE = `# September
@@ -48,6 +53,7 @@ describe("changelog", () => {
     expect(entries.map((entry) => entry.date)).toEqual(["October 9, 2026", "October 7, 2026"]);
     expect(entries[0]!.groups).toEqual([{ title: "Product", items: [[{ text: "Chat adds an opt-in Interactive answers experiment beside temporary chat." }]] }]);
     expect(entries[1]!.groups[0]!.title).toBe("New models");
+    expect(entries[1]!.groups[0]!.items).toHaveLength(2);
     expect(entries[1]!.groups[0]!.items[1]).toEqual([{ text: "Google: Nano Banana 2.1", url: "https://phaseo.app/models/google/gemini-nano-banana-2.1" }, { text: " added with Vertex routes." }]);
   });
 

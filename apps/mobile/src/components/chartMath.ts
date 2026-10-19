@@ -41,7 +41,11 @@ export function barLayout(count: number, left: number, plotWidth: number, maxBar
   return { slot, barWidth, x, centre: (index: number) => x(index) + barWidth / 2 };
 }
 
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max));
+/** A worklet too: placeTooltip calls it on the UI thread, where only worklets can be called. */
+function clamp(value: number, min: number, max: number) {
+  "worklet";
+  return Math.min(Math.max(value, min), Math.max(min, max));
+}
 
 export type TooltipPlacement = { left: number; top: number };
 

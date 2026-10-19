@@ -7,7 +7,7 @@ import { Button, EmptyState, Fact, Header, ReadableWidth, Row, Screen, SearchFie
 import { useLayout } from "@/hooks/useLayout";
 import { formatNumber } from "@/lib/format";
 import { openWeb } from "@/lib/web";
-import { findLicence, licenceName, licencePackages, licenceSections, licenceText, shownCopyright, type Licence } from "./licences";
+import { findLicence, licenceName, licencePackages, licenceSections, licenceText, reflowLicence, shownCopyright, type Licence } from "./licences";
 
 type Item = { type: "header"; key: string; licence: string; count: number } | { type: "package"; key: string; entry: Licence };
 
@@ -77,7 +77,7 @@ export function LicenceScreen() {
             </Section>
             <Section title="Licence text">
               {text ? (
-                <Text variant="mono" selectable className="px-4 text-[12px] leading-[18px] text-foreground">{text}</Text>
+                <Text variant="small" selectable className="px-4 text-foreground">{reflowLicence(text)}</Text>
               ) : (
                 <View className="gap-3 px-4">
                   <Text variant="muted">{`This package doesn't include a licence file. Its package information says it's published under ${licenceName(entry.licence)}.`}</Text>

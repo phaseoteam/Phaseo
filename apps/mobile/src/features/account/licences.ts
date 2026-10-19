@@ -32,6 +32,22 @@ export function licenceText(entry: Licence, texts: readonly string[] = load().da
   return template.split("\n").map((line) => (line === MARK ? entry.copyright[index++] ?? "" : line)).join("\n");
 }
 
+const LIST_ITEM = /^(?:[-*•]|\d+[.)]|\([a-z0-9]+\)|[a-z][.)])\s/i;
+const indent = (line: string) => line.length - line.trimStart().length;
+
+/**
+ * Licence files wrap at about 80 columns, which reads raggedly on a phone. For display, the lines of a plain
+ * paragraph (evenly indented, not a list) are joined so it wraps to the screen; lists and other layouts keep their
+ * lines.
+ */
+export function reflowLicence(text: string): string {
+  return text.split(/\n{2,}/).map((paragraph) => {
+    const lines = paragraph.split("\n");
+    if (lines.length < 2 || lines.some((line) => LIST_ITEM.test(line.trim())) || lines.some((line) => indent(line) !== indent(lines[0]!))) return paragraph;
+    return lines.map((line) => line.trim()).join(" ");
+  }).join("\n\n");
+}
+
 /** The package's copyright holders (template lines left out), or its author when the licence names nobody. */
 export function shownCopyright(entry: Licence): string | null {
   const lines = entry.copyright.flatMap((block) => block.split("\n")).filter((line) => !TEMPLATE_LINE.test(line));

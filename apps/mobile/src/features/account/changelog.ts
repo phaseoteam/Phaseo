@@ -69,7 +69,12 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
   };
   for (const raw of markdown.split(/\r?\n/)) {
     const line = raw.trim();
-    if (!line || line.startsWith(">") || line.startsWith("<img") || line.startsWith("![") || line === "***" || line === "---") continue;
+    if (!line || line.startsWith(">") || line.startsWith("<img") || line.startsWith("![")) continue;
+    // A rule ends a day in the current month's page; anything after it (the docs footer) belongs to no entry.
+    if (/^(\*{3,}|-{3,})$/.test(line)) {
+      entry = null;
+      continue;
+    }
     const heading = ENTRY_HEADING.exec(line);
     const update = UPDATE_OPEN.exec(line);
     if (heading || update) {
