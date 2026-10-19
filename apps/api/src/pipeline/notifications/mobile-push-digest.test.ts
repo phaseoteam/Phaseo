@@ -62,6 +62,7 @@ describe("weekly digest push", () => {
 			channelId: "digest",
 			sound: null,
 			tag: "digest:2026-W43",
+			collapseId: "digest:2026-W43",
 		});
 		// Old builds only have the one channel.
 		expect(buildMobilePushDigestMessage(digest("b", { channelScheme: 1 })).channelId).toBe("model-updates");
@@ -124,11 +125,11 @@ describe("weekly digest push", () => {
 		const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
 		expect(url).toBe(EXPO_PUSH_SEND_URL);
 		expect((init.headers as Record<string, string>).authorization).toBe("Bearer expo-token");
-		const sent = JSON.parse(String(init.body)) as Array<{ to: string; channelId: string; tag: string; data: { kind: string } }>;
-		expect(sent.map((message) => [message.to, message.channelId, message.tag, message.data.kind])).toEqual([
-			["ExponentPushToken[phone]", "digest", "digest:2026-W43", "weekly_summary"],
-			["ExponentPushToken[tablet]", "digest", "digest:2026-W43", "weekly_summary"],
-			["ExponentPushToken[gone]", "digest", "digest:2026-W43", "weekly_summary"],
+		const sent = JSON.parse(String(init.body)) as Array<{ to: string; channelId: string; tag: string; collapseId: string; data: { kind: string } }>;
+		expect(sent.map((message) => [message.to, message.channelId, message.tag, message.collapseId, message.data.kind])).toEqual([
+			["ExponentPushToken[phone]", "digest", "digest:2026-W43", "digest:2026-W43", "weekly_summary"],
+			["ExponentPushToken[tablet]", "digest", "digest:2026-W43", "digest:2026-W43", "weekly_summary"],
+			["ExponentPushToken[gone]", "digest", "digest:2026-W43", "digest:2026-W43", "weekly_summary"],
 		]);
 		expect(summary).toEqual({ built: 1, skipped: 0, queued: 3, deferred: 1, closed: 2, claimed: 3, sent: 1, retrying: 1, failed: 1, invalidated: 1 });
 		expect(hasMobilePushDigestActivity(summary)).toBe(true);

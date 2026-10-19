@@ -88,8 +88,10 @@ export function buildMobilePushDigestMessage(push: ClaimedMobilePushDigest) {
 		},
 		channelId: mobilePushChannelId(MOBILE_PUSH_DIGEST_CATEGORY, push.channelScheme),
 		sound: null,
-		// One digest a week: a resend replaces the shown notification.
+		// One digest a week: a resend replaces the shown notification, on Android by tag and on
+		// iOS by collapseId.
 		tag: push.tag,
+		collapseId: push.tag,
 	};
 }
 
