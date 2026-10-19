@@ -19,11 +19,6 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
 	AlignCenter,
 	AlertTriangle,
 	ArrowDown,
@@ -842,13 +837,13 @@ export function MonitorDataTable({
 		].filter(Boolean).join(" · ");
 		const renderRouteDetails = (route: ProviderRoute) => (
 			<span className="block">
-				<span className="block font-medium">{route.name}</span>
+				<span className="block font-semibold text-foreground">{route.name}</span>
 				{route.regions.length ? (
-					<span className="block opacity-80">
+					<span className="block text-muted-foreground">
 						{modelsUiT("regionRouting")}: {regionsLabel(route.regions)}
 					</span>
 				) : null}
-				{route.routeId ? <span className="block font-mono text-[10px] opacity-70">{route.routeId}</span> : null}
+				{route.routeId ? <span className="block font-mono text-[10px] text-muted-foreground">{route.routeId}</span> : null}
 			</span>
 		);
 		const visibleProviders = routes.slice(0, 5);
@@ -857,8 +852,8 @@ export function MonitorDataTable({
 			<div className="flex items-center">
 				<div className="flex items-center gap-1">
 					{visibleProviders.map((provider) => (
-						<Tooltip key={provider.id}>
-							<TooltipTrigger asChild>
+						<HoverCard key={provider.id} openDelay={160} closeDelay={80}>
+							<HoverCardTrigger asChild>
 								<Link
 									href={`/api-providers/${provider.id}`}
 									aria-label={routeLabel(provider)}
@@ -873,14 +868,14 @@ export function MonitorDataTable({
 									/>
 									</span>
 								</Link>
-							</TooltipTrigger>
-							<TooltipContent side="top" className="max-w-64">{renderRouteDetails(provider)}</TooltipContent>
-						</Tooltip>
+							</HoverCardTrigger>
+							<HoverCardContent align="center" side="top" className="w-64 p-3 text-xs">{renderRouteDetails(provider)}</HoverCardContent>
+						</HoverCard>
 					))}
 				</div>
 				{hiddenProviders.length > 0 ? (
-					<Tooltip>
-						<TooltipTrigger asChild>
+					<HoverCard openDelay={160} closeDelay={80}>
+						<HoverCardTrigger asChild>
 							<span
 								tabIndex={0}
 								aria-label={`${hiddenProviders.length} additional providers`}
@@ -888,15 +883,15 @@ export function MonitorDataTable({
 							>
 								+{hiddenProviders.length}
 							</span>
-						</TooltipTrigger>
-						<TooltipContent side="top" className="max-w-64">
+						</HoverCardTrigger>
+						<HoverCardContent align="center" side="top" className="w-64 p-3 text-xs">
 							<div className="space-y-1.5">
 								{hiddenProviders.map((route) => (
 									<span key={route.id} className="block">{renderRouteDetails(route)}</span>
 								))}
 							</div>
-						</TooltipContent>
-					</Tooltip>
+						</HoverCardContent>
+					</HoverCard>
 				) : null}
 			</div>
 		);
@@ -1140,15 +1135,15 @@ export function MonitorDataTable({
 					const label = capabilityLabel(operation.capability);
 					return (
 						<Fragment key={operation.capability}>
-							<Tooltip>
-								<TooltipTrigger asChild>
+							<HoverCard openDelay={160} closeDelay={80}>
+								<HoverCardTrigger asChild>
 									<span role="img" tabIndex={0} aria-label={label}
 										className={cn(MODEL_ICON_BADGE_CLASS_NAME, "size-4 rounded-sm", tone.badgeClassName)}>
 										<Icon aria-hidden className={cn("h-2.5 w-2.5", tone.iconClassName)} />
 									</span>
-								</TooltipTrigger>
-								<TooltipContent side="top">{label}</TooltipContent>
-							</Tooltip>
+								</HoverCardTrigger>
+								<HoverCardContent align="center" side="top" className="w-auto p-3 text-xs font-semibold text-foreground">{label}</HoverCardContent>
+							</HoverCard>
 							<div className="leading-4">{renderPriceCell(operation[column], operation.usagePrices, column)}</div>
 						</Fragment>
 					);

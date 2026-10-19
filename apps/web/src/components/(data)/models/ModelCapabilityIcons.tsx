@@ -1,10 +1,10 @@
 import type { LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { MODEL_CAPABILITY_LABEL_KEYS, modelCapabilities } from "@/lib/models/modelCapabilities";
 import { getModalityIcon } from "@/lib/models/modalityIcons";
 import { getModalityTone } from "@/lib/models/modalityStyles";
@@ -49,15 +49,15 @@ export function ModelCapabilityIcons({ endpoints }: { endpoints: readonly string
 		{modelCapabilities(endpoints).map(capability => {
 			const { icon: Icon, tone } = getCapabilityIconMeta(capability);
 			const capabilityLabel = label(capability);
-			return <Tooltip key={capability}>
-				<TooltipTrigger asChild>
+			return <HoverCard key={capability} openDelay={160} closeDelay={80}>
+				<HoverCardTrigger asChild>
 					<span role="img" tabIndex={0} aria-label={capabilityLabel}
 						className={cn(MODEL_ICON_BADGE_CLASS_NAME, tone.badgeClassName)}>
 						<Icon aria-hidden className={cn("h-3.5 w-3.5", tone.iconClassName)} />
 					</span>
-				</TooltipTrigger>
-				<TooltipContent side="top">{capabilityLabel}</TooltipContent>
-			</Tooltip>;
+				</HoverCardTrigger>
+				<HoverCardContent align="center" side="top" className="w-auto p-3 text-xs font-semibold text-foreground">{capabilityLabel}</HoverCardContent>
+			</HoverCard>;
 		})}
 	</div>;
 }
