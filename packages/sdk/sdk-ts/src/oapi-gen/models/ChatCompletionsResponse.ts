@@ -13,6 +13,7 @@ export interface ChatCompletionsResponse {
       }[];
       content?:
         | string
+        | null
         | (
             | {
                 cache_control?: {
@@ -45,6 +46,20 @@ export interface ChatCompletionsResponse {
             | {
                 type: "input_video";
                 video_url: string;
+              }
+            | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
               }
             | {
                 function: {

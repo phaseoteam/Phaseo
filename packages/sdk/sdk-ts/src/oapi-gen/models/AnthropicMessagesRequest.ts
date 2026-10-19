@@ -132,7 +132,9 @@ export interface AnthropicMessagesRequest {
     | "ultrafast"
     | "priority"
     | "flex"
-    | "batch";
+    | "batch"
+    | "auto"
+    | "standard_only";
   session_id?: string;
   stop_sequences?: string[];
   stream?: boolean;

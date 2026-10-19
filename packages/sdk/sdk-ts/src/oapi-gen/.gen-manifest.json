@@ -131,6 +131,7 @@
     "models/ErrorResponse.ts",
     "models/ErrorRoutingDiagnostics.ts",
     "models/ErrorUpstreamError.ts",
+    "models/FileContentPart.ts",
     "models/FileResponse.ts",
     "models/FileUploadRequest.ts",
     "models/FunctionToolDefinition.ts",

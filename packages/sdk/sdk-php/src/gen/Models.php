@@ -1093,7 +1093,7 @@ class ChatMessage
 {
 	/** @var array|null */
 	public $audios;
-	/** @var string|array|null */
+	/** @var string|null|array */
 	public $content;
 	/** @var array|null */
 	public $images;
@@ -1959,6 +1959,16 @@ class ErrorUpstreamError
 	public $message;
 	/** @var string|null */
 	public $param;
+}
+
+class FileContentPart
+{
+	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed> */
+	public $file;
+	/** @var string */
+	public $type;
 }
 
 class FileResponse

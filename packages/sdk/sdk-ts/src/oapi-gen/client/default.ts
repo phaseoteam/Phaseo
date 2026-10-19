@@ -983,7 +983,9 @@ export type CreateAnthropicMessageParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch";
+      | "batch"
+      | "auto"
+      | "standard_only";
     session_id?: string;
     stop_sequences?: string[];
     stream?: boolean;
@@ -2058,6 +2060,7 @@ export type CreateChatCompletionParams = {
       }[];
       content?:
         | string
+        | null
         | (
             | {
                 cache_control?: {
@@ -2090,6 +2093,20 @@ export type CreateChatCompletionParams = {
             | {
                 type: "input_video";
                 video_url: string;
+              }
+            | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
               }
             | {
                 function: {
@@ -2402,6 +2419,7 @@ export async function createChatCompletion(
       }[];
       content?:
         | string
+        | null
         | (
             | {
                 cache_control?: {
@@ -2434,6 +2452,20 @@ export async function createChatCompletion(
             | {
                 type: "input_video";
                 video_url: string;
+              }
+            | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
               }
             | {
                 function: {
@@ -2527,6 +2559,7 @@ export async function createChatCompletion(
         }[];
         content?:
           | string
+          | null
           | (
               | {
                   cache_control?: {
@@ -2565,6 +2598,20 @@ export async function createChatCompletion(
               | {
                   type: "input_video";
                   video_url: string;
+                }
+              | {
+                  cache_control?: {
+                    scope?: string;
+                    ttl?: string;
+                    type?: string;
+                    [key: string]: unknown;
+                  };
+                  file: {
+                    file_data?: string;
+                    file_id?: string;
+                    filename?: string;
+                  };
+                  type: "file";
                 }
               | {
                   function: {
