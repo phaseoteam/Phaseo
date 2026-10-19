@@ -52,6 +52,13 @@ function messageFor(status: number, body: Record<string, unknown> | null) {
   return "Phaseo couldn't load this.";
 }
 
+/** A public page as text (the docs' Markdown copies), for feeds that aren't JSON. */
+export async function requestText(path: string, signal?: AbortSignal): Promise<string> {
+  const response = await fetch(buildUrl(path), { headers: { accept: "text/markdown, text/plain;q=0.9" }, signal });
+  if (!response.ok) throw new ApiError(response.status, messageFor(response.status, null));
+  return response.text();
+}
+
 export async function request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { accept: "application/json" };
   if (options.body !== undefined) headers["content-type"] = "application/json";
