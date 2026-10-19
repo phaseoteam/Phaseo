@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactElement } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { CartesianGrid, ComposedChart, ResponsiveContainer, Scatter, XAxis, YAxis, useYAxisScale, usePlotArea } from "recharts";
+import { CartesianGrid, ComposedChart, ResponsiveContainer, Scatter, XAxis, YAxis, useYAxisScale, useXAxisScale, usePlotArea } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -22,12 +22,32 @@ export function dashboardColour(row: DashboardRow) {
 	return Math.max(...channels) < 96 && Math.max(...channels) - Math.min(...channels) < 12 ? `color-mix(in srgb, var(--foreground) ${shade + 12}%, var(--background))` : `color-mix(in srgb, ${colour} ${shade + 10}%, var(--foreground))`;
 }
 
-function DashboardColumn({ cx, cy, width, label, colour, opacity, onHover, onFocus, onBlur, onClick, selected, effort, formattedValue, showValue, groupSize }: { cx: number; cy: number; width: number; label: string; colour: string; opacity: number; onHover: () => void; onFocus: () => void; onBlur: () => void; onClick: () => void; selected: boolean; effort: string; formattedValue: string; showValue: boolean; groupSize: number }) {
+type DashboardPoint = { x: number; y: number; row: DashboardRow };
+type DashboardSeries = { id: string; points: DashboardPoint[] };
+const emptyShape = () => <g />;
+
+/** Recharts animation wrappers remount children on prop changes, even with animation disabled.
+ * Keep interactive shapes in a stable SVG layer so inspecting a point never discards focus. */
+function DashboardShapes({ series, columns, activeModel, configuration, render }: {
+ series: DashboardSeries[]; columns: boolean; activeModel: string | null; configuration: string | null;
+ render: (props: { cx: number; cy: number; payload: DashboardPoint }, series: DashboardSeries) => ReactElement;
+}) {
+ const xScale = useXAxisScale(), yScale = useYAxisScale();
+ if (!xScale || !yScale) return null;
+ return <g>{series.map((item) => <g key={item.id} opacity={activeModel && activeModel !== item.id ? configuration ? 0.35 : 0.15 : 1}>
+ {!columns && new Set(item.points.map((point) => point.row.effort)).size === item.points.length ? <path pointerEvents="none" d={item.points.map((point, index) => `${index ? "L" : "M"}${xScale(point.x)},${yScale(point.y)}`).join(" ")} fill="none" stroke={dashboardColour(item.points[0].row)} strokeWidth={activeModel === item.id ? 2.5 : 1.75} /> : null}
+ {item.points.map((point) => {
+ const cx = xScale(point.x), cy = yScale(point.y);
+ return typeof cx === "number" && typeof cy === "number" ? <g key={point.row.id}>{render({ cx, cy, payload: point }, item)}</g> : null;
+ })}</g>)}</g>;
+}
+
+function DashboardColumn({ cx, cy, width, label, colour, opacity, onHover, onFocus, onBlur, onClick, selected, pinned, effort, formattedValue, showValue, groupSize }: { cx: number; cy: number; width: number; label: string; colour: string; opacity: number; onHover: () => void; onFocus: () => void; onBlur: () => void; onClick: () => void; selected: boolean; pinned: boolean; effort: string; formattedValue: string; showValue: boolean; groupSize: number }) {
 	const scale = useYAxisScale();
  const plot = usePlotArea();
 	const zero = scale?.(0);
 	if (typeof zero !== "number") return null;
-	return <g opacity={opacity} tabIndex={0} role="button" aria-label={label} aria-pressed={selected} onMouseEnter={onHover} onMouseLeave={onBlur} onFocus={onFocus} onBlur={onBlur} onClick={onClick} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onClick(); } }} className="cursor-pointer focus-visible:outline-2 focus-visible:outline-ring">{plot ? <rect data-export-hide x={cx - width / 2 - 1} y={plot.y} width={width + 2} height={plot.height} fill={selected ? "var(--muted)" : "transparent"} /> : null}<rect x={cx - width / 2} y={Math.min(cy, zero)} width={width} height={Math.max(1, Math.abs(zero - cy))} rx={3} fill={colour} /><text aria-hidden="true" x={cx} y={zero + 15} textAnchor="middle" fontSize={9} fill="var(--muted-foreground)">{effort}</text>{showValue ? <text aria-hidden="true" x={cx} y={cy < zero ? cy - 7 : cy > zero ? cy + 13 : cy - 7} textAnchor="middle" fontSize={groupSize > 5 ? 9 : 10} fontWeight={500} fill="var(--foreground)">{formattedValue}</text> : null}</g>;
+	return <g opacity={opacity} tabIndex={0} role="button" aria-label={label} aria-pressed={pinned} onMouseEnter={onHover} onMouseLeave={onBlur} onFocus={onFocus} onBlur={onBlur} onClick={onClick} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); const section = event.currentTarget.closest("section"); onClick(); requestAnimationFrame(() => section?.querySelector<HTMLButtonElement>('[role="status"] button')?.focus()); } }} className="cursor-pointer focus-visible:outline-2 focus-visible:outline-ring">{plot ? <rect data-export-hide x={cx - width / 2 - 1} y={plot.y} width={width + 2} height={plot.height} fill={selected ? "var(--muted)" : "transparent"} /> : null}<rect x={cx - width / 2} y={Math.min(cy, zero)} width={width} height={Math.max(1, Math.abs(zero - cy))} rx={3} fill={colour} /><text aria-hidden="true" x={cx} y={zero + 15} textAnchor="middle" fontSize={9} fill="var(--muted-foreground)">{effort}</text>{showValue ? <text aria-hidden="true" x={cx} y={cy < zero ? cy - 7 : cy > zero ? cy + 13 : cy - 7} textAnchor="middle" fontSize={groupSize > 5 ? 9 : 10} fontWeight={500} fill="var(--foreground)">{formattedValue}</text> : null}</g>;
 }
 
 function ArtificialAnalysisRangeRows({ groups, number, activeModel }: { groups: ReturnType<typeof dashboardModelGroups>; number: (value: number, compact?: boolean) => string; activeModel: string | null }) {
@@ -54,8 +74,8 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 	const regionRef = useRef<HTMLElement>(null);
  const inspection = useDashboardInspection(regionRef);
 	const tokenScatter = scatterToggle && scatter;
-	const xValue = tokenScatter ? metricValue : horizontalValue;
-	const value = tokenScatter ? (row: DashboardRow) => row.intelligence : metricValue;
+	const xValue = useMemo(() => tokenScatter ? metricValue : horizontalValue, [tokenScatter, metricValue, horizontalValue]);
+	const value = useCallback((row: DashboardRow) => tokenScatter ? row.intelligence : metricValue(row), [tokenScatter, metricValue]);
 	const xLabel = tokenScatter ? title : horizontalLabel;
 	const xUnit = tokenScatter ? "tokens" : horizontalUnit;
 	const unit = tokenScatter ? "score" : metricUnit;
@@ -68,7 +88,8 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
  const candidate = hovered ?? selectedRow?.modelId ?? highlight;
 	const activeModel = rows.some((row) => row.modelId === candidate) ? candidate : null;
 	const [size, setSize] = useState({ width: 0, height: 500 });
-	const efforts = [...new Set(rows.map((row) => row.effort))].sort((a, b) => {
+	const { efforts, groups, modelIds, all, points, ticks, series } = useMemo(() => {
+ const efforts = [...new Set(rows.map((row) => row.effort))].sort((a, b) => {
 		const rank = (effort: string) => effortOrder.includes(effort) ? effortOrder.indexOf(effort) : effortOrder.length;
 		return rank(a) - rank(b) || a.localeCompare(b);
 	});
@@ -86,6 +107,8 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 	const points = all.filter((point) => !xValue || !log || point.x > 0);
 	const ticks = xValue && log ? dashboardLogTicks(points.map((point) => point.x)) : undefined;
 	const series = [...new Set(points.map((point) => point.row.modelId))].map((id) => ({ id, points: points.filter((point) => point.row.modelId === id).sort((a, b) => a.x - b.x) }));
+ return { efforts, groups, modelIds, all, points, ticks, series };
+ }, [rows, value, descending, groupModels, xValue, columns, log]);
 	const directLabels = labels && !columns && size.width >= 640 && series.length <= 14;
 	const yTicks = dashboardLinearTicks([...points.map((point) => point.y), ...(columns ? [0] : [])]);
 	const domain: [number, number] = [yTicks[0], yTicks.at(-1)!];
@@ -115,7 +138,8 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 						return <foreignObject x={x - width / 2} y={y + 21} width={width} height={66}><div className="flex flex-col items-center gap-1 px-1 text-center"><Logo id={row.creatorId} alt="" width={17} height={17} className="object-contain" /><button type="button" aria-pressed={pinned === row.modelId} onMouseEnter={() => inspection.hover({ kind: "model", id: row.modelId })} onMouseLeave={inspection.leave} onFocus={() => inspection.inspect({ kind: "model", id: row.modelId })} onBlur={inspection.leave} onClick={() => inspection.pin({ kind: "model", id: row.modelId })} className="line-clamp-2 rounded text-[10px] font-medium leading-tight hover:underline focus-visible:outline-2 focus-visible:outline-ring">{row.modelName}</button></div></foreignObject>;
 					} : axis} tickLine={false} axisLine={{ stroke: "var(--border)" }} tickFormatter={(n: number) => xValue ? xNumber(n) : columns ? rows.find((row) => row.modelId === modelIds[n])?.modelName ?? "" : localizedBenchmarkConfiguration(efforts[n], tx)} height={columns ? 90 : 30} interval={columns ? 0 : "preserveStartEnd"} label={columns ? undefined : { value: xLabel ?? tx("Common.ui.benchmarkChartCopy.modelConfiguration"), position: "bottom", offset: 12, ...axis }} />
 					<YAxis type="number" dataKey="y" domain={domain} ticks={yTicks} tick={axis} width={58} tickLine={false} axisLine={false} tickFormatter={(n: number) => number(n, true, tickPrecision)} label={xValue ? { value: tx("Catalogue.rankings.benchmarkMetrics.intelligence"), position: "insideTopLeft", dy: -22, ...axis } : undefined} />
-					{series.map((series) => <Scatter key={series.id} name={series.points[0].row.modelName} data={series.points} fill={dashboardColour(series.points[0].row)} stroke="var(--background)" strokeWidth={1} opacity={activeModel && activeModel !== series.id ? configuration ? 0.35 : 0.15 : 1}  line={!columns && new Set(series.points.map((point) => point.row.effort)).size === series.points.length ? { stroke: dashboardColour(series.points[0].row), strokeWidth: activeModel === series.id ? 2.5 : 1.75 } : false} lineType="joint" lineJointType="linear" isAnimationActive={false} shape={(props: unknown) => {
+					{series.map((series) => <Scatter key={series.id} data={series.points} shape={emptyShape} activeShape={false} isAnimationActive={false} />)}
+ <DashboardShapes series={series} columns={columns} activeModel={activeModel} configuration={configuration} render={(props, series) => {
 						const { cx, cy, payload } = props as { cx: number; cy: number; payload: typeof points[number] };
 						const last = payload.row.id === series.points.at(-1)!.row.id;
 						const labelY = labelPositions.get(series.id) ?? cy;
@@ -124,10 +148,10 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 							const index = configurations.findIndex((configuration) => configuration.row.id === payload.row.id);
 							const width = Math.max(1, Math.min(32, (size.width - 74) / Math.max(1, modelIds.length) * 0.8 / configurations.length - 2));
 							const abbreviation = effortAbbreviations[payload.row.effort] ?? payload.row.effort.slice(0, 3);
-							return <DashboardColumn cx={cx} cy={cy} width={width} label={`${payload.row.sourceName}: ${number(payload.y)}`} onHover={() => inspection.hover({ kind: "configuration", id: payload.row.id })} onFocus={() => inspection.inspect({ kind: "configuration", id: payload.row.id })} onBlur={inspection.leave} onClick={() => inspection.pin({ kind: "configuration", id: payload.row.id })} selected={configuration === payload.row.id} colour={dashboardColour(payload.row)} opacity={configuration ? configuration === payload.row.id ? 1 : 0.35 : 0.4 + 0.6 * (index + 1) / configurations.length} effort={abbreviation} formattedValue={unit === "tokens" ? new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 0 }).format(payload.y) : number(payload.y, true)} showValue={width >= 7} groupSize={configurations.length} />;
+							return <DashboardColumn cx={cx} cy={cy} width={width} label={`${payload.row.sourceName}: ${number(payload.y)}`} onHover={() => inspection.hover({ kind: "configuration", id: payload.row.id })} onFocus={() => inspection.inspect({ kind: "configuration", id: payload.row.id })} onBlur={inspection.leave} onClick={() => inspection.pin({ kind: "configuration", id: payload.row.id })} selected={configuration === payload.row.id} pinned={inspection.pinned?.id === payload.row.id} colour={dashboardColour(payload.row)} opacity={configuration ? configuration === payload.row.id ? 1 : 0.35 : 0.4 + 0.6 * (index + 1) / configurations.length} effort={abbreviation} formattedValue={unit === "tokens" ? new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 0 }).format(payload.y) : number(payload.y, true)} showValue={width >= 7} groupSize={configurations.length} />;
 						}
 						return <g><circle tabIndex={0} role="button" aria-pressed={inspection.pinned?.id === payload.row.id} aria-label={`${payload.row.sourceName}: ${number(payload.y)}${xValue ? `; ${xLabel}: ${new Intl.NumberFormat(locale, { maximumSignificantDigits: 12 }).format(payload.x)}` : ""}`} onMouseEnter={() => inspection.hover({ kind: "configuration", id: payload.row.id })} onMouseLeave={inspection.leave} onFocus={() => inspection.inspect({ kind: "configuration", id: payload.row.id })} onBlur={inspection.leave} onClick={() => inspection.pin({ kind: "configuration", id: payload.row.id })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); inspection.pin({ kind: "configuration", id: payload.row.id }); requestAnimationFrame(() => regionRef.current?.querySelector<HTMLButtonElement>('[role="status"] button')?.focus()); } }} className="focus-visible:outline-2 focus-visible:outline-ring" cx={cx} cy={cy} r={12} fillOpacity={0} fill={dashboardColour(payload.row)} stroke="transparent" strokeWidth={1.5} /><circle opacity={configuration && configuration !== payload.row.id && activeModel === series.id ? 0.4 : 1} aria-hidden="true" pointerEvents="none" cx={cx} cy={cy} r={configuration === payload.row.id ? 6 : activeModel === series.id ? 4.5 : 3.5} fill={dashboardColour(payload.row)} />{directLabels && last ? <g><path aria-hidden="true" d={`M${cx + 6},${cy} L${size.width - 178},${labelY}`} stroke={dashboardColour(payload.row)} strokeWidth={0.7} opacity={0.3} fill="none" /><foreignObject x={size.width - 174} y={labelY - 12} width={174} height={24}><button type="button" aria-pressed={pinned === series.id} onClick={() => inspection.pin({ kind: "model", id: series.id })} onMouseEnter={() => inspection.hover({ kind: "model", id: series.id })} onMouseLeave={inspection.leave} onFocus={() => inspection.inspect({ kind: "model", id: series.id })} onBlur={inspection.leave} className="flex h-6 w-full items-center gap-1.5 rounded px-1 text-left text-xs font-medium hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring" style={{ color: dashboardColour(payload.row) }}><Logo id={payload.row.creatorId} alt="" width={15} height={15} className="shrink-0 object-contain" /><span className="truncate">{payload.row.modelName}</span></button></foreignObject></g> : null}</g>;
-					}} />)}
+					}} />
 					<DashboardInspectionGuides point={points.find((point) => point.row.id === configuration)} columns={columns} colour={selectedRow ? dashboardColour(selectedRow) : "var(--foreground)"} number={(n) => number(n, true)} xNumber={xNumber} />{xValue && frontier ? <Scatter name={tx("Catalogue.benchmarks.explorer.pareto")} data={paretoPoints(points)} shape={() => <g />} line={{ stroke: "var(--foreground)", strokeDasharray: "5 4", strokeWidth: 1.5 }} lineType="joint" isAnimationActive={false} /> : null}
 				</ComposedChart>
 			</ResponsiveContainer>
