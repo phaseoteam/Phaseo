@@ -103,7 +103,7 @@ export default async function Page({
 		}),
 	} : benchmark;
 	const artificialAnalysisRankings = artificialAnalysis
-		? await (async () => {
+		? (async () => {
 			const metricDefinitions = artificialAnalysisMetricsForBenchmark(benchmark.id);
 			const [rankings, organisations] = await Promise.all([
 				Promise.all(metricDefinitions.map(async ({ id }) => {

@@ -127,7 +127,7 @@ export default async function BenchmarkOverview({
 	artificialAnalysisRankings = [],
 }: {
 	benchmark: BenchmarkPage;
-	artificialAnalysisRankings?: PublicBenchmarkRanking[];
+	artificialAnalysisRankings?: PublicBenchmarkRanking[] | Promise<PublicBenchmarkRanking[]>;
 }) {
 	const t = await getTranslations("Catalogue.benchmarks");
 	if (isArtificialAnalysisBenchmark(benchmark.id)) return <ArtificialAnalysisOverview benchmark={benchmark} rankings={artificialAnalysisRankings} />;

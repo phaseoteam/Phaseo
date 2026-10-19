@@ -1861,6 +1861,26 @@
 		"loadingModels": "モデルを読み込み中…"
 	},
 	"benchmarks": {
+		"explorer": {
+			"comparisons": "比較",
+			"tokenUsage": "トークン使用量",
+			"cost": "コスト",
+			"benchmarks": "個別ベンチマーク",
+			"capabilities": "分野別能力",
+			"tokensPerTask": "タスクあたりの出力トークン",
+			"totalOutputTokens": "出力トークン合計",
+			"costPerTask": "タスクあたりのコスト",
+			"totalCost": "評価コスト合計",
+			"timePerTask": "タスクあたりの時間",
+			"pareto": "パレートフロンティア",
+			"score": "スコア",
+			"financeAndAccounting": "財務・会計",
+			"strategyAndOps": "戦略・業務",
+			"legal": "法律",
+			"healthcareAndMedical": "医療・健康",
+			"engineering": "工学",
+			"economics": "経済"
+		},
 		"title": "ベンチマーク",
 		"description": "AIモデルのベンチマークを確認し、スコアを比較して、どの評価が広く使われているかを見つけます。",
 		"searchPlaceholder": "ベンチマークを検索…",
