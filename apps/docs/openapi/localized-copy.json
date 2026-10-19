@@ -8344,15 +8344,15 @@
 			"zh-Hans": "不支持。Phaseo 不存储响应，因此设置了 previous_response_id 或 conversation 的请求会返回 400 unsupported_param。请在 input 中发送完整对话。",
 			"ar": "غير مدعوم. لا تخزّن Phaseo الردود، لذا تعيد الطلبات التي تحدد previous_response_id أو conversation الخطأ 400 unsupported_param. أرسل المحادثة كاملة في input."
 		},
-		"Message content. Assistant messages that only call tools may set it to null.": {
-			"es": "Contenido del mensaje. Los mensajes del asistente que solo llaman a herramientas pueden establecerlo en null.",
-			"fr": "Contenu du message. Les messages de l’assistant qui ne font qu’appeler des outils peuvent le définir sur null.",
-			"de": "Inhalt der Nachricht. Assistant-Nachrichten, die nur Tools aufrufen, können ihn auf null setzen.",
-			"pt-BR": "Conteúdo da mensagem. Mensagens do assistente que apenas chamam ferramentas podem defini-lo como null.",
-			"hi": "संदेश की सामग्री। जो असिस्टेंट संदेश केवल टूल कॉल करते हैं, वे इसे null पर सेट कर सकते हैं।",
-			"ja": "メッセージの内容。ツールを呼び出すだけのアシスタントメッセージでは null に設定できます。",
-			"zh-Hans": "消息内容。仅调用工具的助手消息可以将其设为 null。",
-			"ar": "محتوى الرسالة. يمكن لرسائل المساعد التي تستدعي الأدوات فقط تعيينه إلى null."
+		"Message content: a string or an array of content parts. Only assistant messages that call tools (with tool_calls) may set it to null; the gateway rejects null content for other roles with a 400 error.": {
+			"es": "Contenido del mensaje: una cadena o un array de partes de contenido. Solo los mensajes del asistente que llaman a herramientas (con tool_calls) pueden establecerlo en null; la pasarela rechaza el contenido null en los demás roles con un error 400.",
+			"fr": "Contenu du message : une chaîne ou un tableau de parties de contenu. Seuls les messages de l’assistant qui appellent des outils (avec tool_calls) peuvent le définir sur null ; la passerelle refuse un contenu null pour les autres rôles avec une erreur 400.",
+			"de": "Inhalt der Nachricht: ein String oder ein Array von Inhaltsteilen. Nur Assistant-Nachrichten, die Tools aufrufen (mit tool_calls), können ihn auf null setzen; das Gateway lehnt null-Inhalte bei anderen Rollen mit einem 400-Fehler ab.",
+			"pt-BR": "Conteúdo da mensagem: uma string ou um array de partes de conteúdo. Somente mensagens do assistente que chamam ferramentas (com tool_calls) podem defini-lo como null; o gateway rejeita conteúdo null em outros papéis com um erro 400.",
+			"hi": "संदेश की सामग्री: एक स्ट्रिंग या सामग्री भागों का array। केवल वे असिस्टेंट संदेश जो टूल कॉल करते हैं (tool_calls के साथ), इसे null पर सेट कर सकते हैं; अन्य भूमिकाओं के लिए गेटवे null सामग्री को 400 त्रुटि के साथ अस्वीकार करता है।",
+			"ja": "メッセージの内容です。文字列またはコンテンツパーツの配列を指定します。null に設定できるのは、ツールを呼び出す（tool_calls を含む）アシスタントメッセージだけです。その他のロールで null を送ると、ゲートウェイは 400 エラーで拒否します。",
+			"zh-Hans": "消息内容：字符串或内容部件数组。只有调用工具（带 tool_calls）的助手消息可以将其设为 null；其他角色的 null 内容会被网关以 400 错误拒绝。",
+			"ar": "محتوى الرسالة: سلسلة نصية أو مصفوفة من أجزاء المحتوى. يمكن فقط لرسائل المساعد التي تستدعي الأدوات (مع tool_calls) تعيينه إلى null؛ وترفض البوابة المحتوى null للأدوار الأخرى بخطأ 400."
 		},
 		"File input, such as a PDF. Set file_data to a base64 data URL, or file_id to a file uploaded to the provider that serves the request.": {
 			"es": "Entrada de archivo, como un PDF. Define file_data como una URL de datos base64, o file_id como un archivo subido al proveedor que atiende la solicitud.",

@@ -9594,10 +9594,10 @@ components:
             - assistant
             - tool
         content:
-          description: Contenu du message. Les messages de l’assistant qui ne font qu’appeler des outils peuvent le définir sur null.
-          nullable: true
-          oneOf:
+          description: 'Contenu du message : une chaîne ou un tableau de parties de contenu. Seuls les messages de l’assistant qui appellent des outils (avec tool_calls) peuvent le définir sur null ; la passerelle refuse un contenu null pour les autres rôles avec une erreur 400.'
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9674,10 +9674,17 @@ components:
           properties:
             file_data:
               type: string
+              minLength: 1
             file_id:
               type: string
+              minLength: 1
             filename:
               type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
         cache_control:
           $ref: '#/components/schemas/CacheControl'
     TextContentPart:

@@ -9594,10 +9594,10 @@ components:
             - assistant
             - tool
         content:
-          description: संदेश की सामग्री। जो असिस्टेंट संदेश केवल टूल कॉल करते हैं, वे इसे null पर सेट कर सकते हैं।
-          nullable: true
-          oneOf:
+          description: 'संदेश की सामग्री: एक स्ट्रिंग या सामग्री भागों का array। केवल वे असिस्टेंट संदेश जो टूल कॉल करते हैं (tool_calls के साथ), इसे null पर सेट कर सकते हैं; अन्य भूमिकाओं के लिए गेटवे null सामग्री को 400 त्रुटि के साथ अस्वीकार करता है।'
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9674,10 +9674,17 @@ components:
           properties:
             file_data:
               type: string
+              minLength: 1
             file_id:
               type: string
+              minLength: 1
             filename:
               type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
         cache_control:
           $ref: '#/components/schemas/CacheControl'
     TextContentPart:

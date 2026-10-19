@@ -9594,10 +9594,10 @@ components:
             - assistant
             - tool
         content:
-          description: محتوى الرسالة. يمكن لرسائل المساعد التي تستدعي الأدوات فقط تعيينه إلى null.
-          nullable: true
-          oneOf:
+          description: 'محتوى الرسالة: سلسلة نصية أو مصفوفة من أجزاء المحتوى. يمكن فقط لرسائل المساعد التي تستدعي الأدوات (مع tool_calls) تعيينه إلى null؛ وترفض البوابة المحتوى null للأدوار الأخرى بخطأ 400.'
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9674,10 +9674,17 @@ components:
           properties:
             file_data:
               type: string
+              minLength: 1
             file_id:
               type: string
+              minLength: 1
             filename:
               type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
         cache_control:
           $ref: '#/components/schemas/CacheControl'
     TextContentPart:

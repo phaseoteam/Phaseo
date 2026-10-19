@@ -9594,10 +9594,10 @@ components:
             - assistant
             - tool
         content:
-          description: Conteúdo da mensagem. Mensagens do assistente que apenas chamam ferramentas podem defini-lo como null.
-          nullable: true
-          oneOf:
+          description: 'Conteúdo da mensagem: uma string ou um array de partes de conteúdo. Somente mensagens do assistente que chamam ferramentas (com tool_calls) podem defini-lo como null; o gateway rejeita conteúdo null em outros papéis com um erro 400.'
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9674,10 +9674,17 @@ components:
           properties:
             file_data:
               type: string
+              minLength: 1
             file_id:
               type: string
+              minLength: 1
             filename:
               type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
         cache_control:
           $ref: '#/components/schemas/CacheControl'
     TextContentPart:

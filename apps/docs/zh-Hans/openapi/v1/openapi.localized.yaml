@@ -9594,10 +9594,10 @@ components:
             - assistant
             - tool
         content:
-          description: 消息内容。仅调用工具的助手消息可以将其设为 null。
-          nullable: true
-          oneOf:
+          description: 消息内容：字符串或内容部件数组。只有调用工具（带 tool_calls）的助手消息可以将其设为 null；其他角色的 null 内容会被网关以 400 错误拒绝。
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9674,10 +9674,17 @@ components:
           properties:
             file_data:
               type: string
+              minLength: 1
             file_id:
               type: string
+              minLength: 1
             filename:
               type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
         cache_control:
           $ref: '#/components/schemas/CacheControl'
     TextContentPart:
