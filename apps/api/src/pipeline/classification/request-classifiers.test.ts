@@ -263,6 +263,16 @@ describe("applyRequestClassifiers", () => {
 		expect(state.queries).toEqual([]);
 	});
 
+	it("does not classify a settings test run, which carries the classifier label over HTTP", async () => {
+		const call = vi.fn(async () => answer({ d0: { value: "legal", confidence: 1 } }));
+		const labels = [{ key: CLASSIFIER_LABEL_KEY, value: "test" }];
+		const context = ctx({ requestClassifierCall: call, meta: { ...ctx().meta, labels } });
+		await applyRequestClassifiers(context, null);
+		expect(context.meta.labels).toEqual(labels);
+		expect(call).not.toHaveBeenCalled();
+		expect(state.queries).toEqual([]);
+	});
+
 	it("skips classifiers outside their scope or whose dimensions the caller already labelled", async () => {
 		state.classifiers = [
 			classifier({ id: "00000000-0000-4000-8000-0000000000c2", scope: { key_ids: ["00000000-0000-4000-8000-0000000000ff"] } }),

@@ -1,7 +1,13 @@
+// Generated from packages/shared/request-classifiers/index.ts by scripts/sync-request-classifiers.mjs. Do not edit.
 // Request classifiers: a workspace taxonomy that a chosen model applies to each
 // finished request. Each dimension's answer is written onto the request as a
 // label (key = dimension key), so classifier output filters and groups exactly
 // like labels sent in the x-phaseo-metadata header.
+//
+// This is the one definition of a valid classifier and of the structured-output
+// request the gateway sends for it. The gateway, the settings API and the
+// settings page each use a generated copy (scripts/sync-request-classifiers.mjs),
+// so validation and the request cannot drift apart. Keep it dependency-free.
 
 export const MAX_CLASSIFIERS_PER_WORKSPACE = 5;
 export const MAX_DIMENSIONS = 12;
@@ -84,7 +90,6 @@ function parseDimension(raw: unknown, path: string): Parsed<ClassifierDimension>
 	const record = raw as Record<string, unknown>;
 	const key = typeof record.key === "string" ? record.key.trim() : "";
 	if (!DIMENSION_KEY_PATTERN.test(key)) return fail(`${path}.key must be 1 to 64 letters, digits, or _ . : -`);
-	if (key.toLowerCase().startsWith("phaseo.")) return fail(`${path}.key cannot start with phaseo., which is reserved for Phaseo labels`);
 	const name = typeof record.name === "string" && record.name.trim() ? record.name.trim() : key;
 	if (name.length > 100 || CONTROL_CHARACTER_PATTERN.test(name)) return fail(`${path}.name must be at most 100 characters`);
 	const description = optionalText(record.description, `${path}.description`, 500);
@@ -202,10 +207,10 @@ const CLASSIFIER_INPUT_FIELDS = new Set([
 ]);
 
 export function parseClassifierFields(body: Record<string, unknown>): Parsed<ClassifierFields> {
+	const fields: ClassifierFields = {};
 	// A misspelt field would otherwise fall back to the defaults (full sampling, no budget).
 	const unknown = Object.keys(body).find((field) => !CLASSIFIER_INPUT_FIELDS.has(field));
 	if (unknown !== undefined) return fail(`Unknown field: ${unknown}`);
-	const fields: ClassifierFields = {};
 	if (body.name !== undefined) {
 		const name = typeof body.name === "string" ? body.name.trim() : "";
 		if (name.length < 1 || name.length > 100 || CONTROL_CHARACTER_PATTERN.test(name)) return fail("name must be 1 to 100 characters");
@@ -282,4 +287,144 @@ export function formatClassifier(row: ClassifierRow) {
 		created_at: row.created_at,
 		updated_at: row.updated_at,
 	};
+}
+
+// ---- Classifier request ---------------------------------------------------------
+
+/** Room for a dimension's key, confidence and JSON punctuation. */
+const OUTPUT_TOKENS_PER_DIMENSION = 40;
+
+export type ClassifierLabel = { key: string; value: string; confidence: number | null };
+/** The parts of a classifier its request depends on, so an unsaved draft can be tested too. */
+export type ClassifierRequestConfig = { model: string; instructions?: string | null };
+
+/** Text of a Chat Completions, Responses or Messages content value. */
+export function textOf(content: unknown): string {
+	if (typeof content === "string") return content;
+	if (!Array.isArray(content)) return "";
+	const parts: string[] = [];
+	for (const part of content) {
+		if (typeof part === "string") parts.push(part);
+		else if (part && typeof part === "object") {
+			const record = part as Record<string, unknown>;
+			if (typeof record.text === "string") parts.push(record.text);
+			else if (record.type === "image_url" || record.type === "input_image" || record.type === "image") parts.push("[image]");
+			else if (record.type === "input_file" || record.type === "file" || record.type === "document") parts.push("[file]");
+			else if (record.type === "input_audio") parts.push("[audio]");
+		}
+	}
+	return parts.join("\n");
+}
+
+/** The generated text of a Chat Completions, Responses or Messages result. */
+export function responseText(response: unknown): string {
+	const body = (response && typeof response === "object" ? response : {}) as Record<string, any>;
+	if (typeof body.output_text === "string") return body.output_text;
+	const parts: string[] = [];
+	for (const item of Array.isArray(body.output) ? body.output : []) {
+		if (item?.type === "function_call") parts.push(`[tool call: ${item.name ?? ""}]`);
+		else parts.push(textOf(item?.content));
+	}
+	for (const choice of Array.isArray(body.choices) ? body.choices : []) parts.push(textOf(choice?.message?.content));
+	if (Array.isArray(body.content)) parts.push(textOf(body.content));
+	return parts.filter(Boolean).join("\n");
+}
+
+/** The values a dimension can answer, including "other" when allow_other is set. */
+export function allowedValues(dimension: ClassifierDimension): string[] {
+	const values = dimension.values.map((entry) => entry.value);
+	return dimension.allow_other ? [...values, OTHER_VALUE] : values;
+}
+
+/** Dimension keys can contain characters some providers reject in property names, so the schema uses d0, d1, ... */
+export function buildClassifierSchema(dimensions: ClassifierDimension[]): Record<string, unknown> {
+	const properties: Record<string, unknown> = {};
+	dimensions.forEach((dimension, index) => {
+		const value = { type: "string", enum: allowedValues(dimension) };
+		properties[`d${index}`] = {
+			type: "object",
+			properties: {
+				value: dimension.multiple ? { type: "array", items: value } : value,
+				confidence: { type: "number" },
+			},
+			required: ["value", "confidence"],
+			additionalProperties: false,
+		};
+	});
+	return { type: "object", properties, required: Object.keys(properties), additionalProperties: false };
+}
+
+export function buildClassifierPrompt(classifier: { instructions?: string | null }, dimensions: ClassifierDimension[]): string {
+	const lines = [
+		"You label requests sent to an AI model. Read the transcript and answer every dimension below.",
+		"Pick only from the listed values. Judge what the request is for, not whether it was answered well.",
+		"Give confidence from 0 to 1 for each answer.",
+		"",
+	];
+	dimensions.forEach((dimension, index) => {
+		lines.push(`d${index}: ${dimension.name}${dimension.description ? ` - ${dimension.description}` : ""}`);
+		lines.push(dimension.multiple ? "  Choose every value that applies (at least one)." : "  Choose exactly one value.");
+		for (const entry of dimension.values) lines.push(`  - ${entry.value}${entry.description ? `: ${entry.description}` : ""}`);
+		if (dimension.allow_other) lines.push(`  - ${OTHER_VALUE}: none of the values above fit`);
+	});
+	if (classifier.instructions?.trim()) lines.push("", "Additional instructions from the workspace:", classifier.instructions.trim());
+	return lines.join("\n");
+}
+
+/** The Responses request body for one classification. */
+/** Enough output for the longest valid answer: every value of a multi-value dimension, about 3 characters per token. */
+export function classifierOutputTokens(dimensions: ClassifierDimension[]): number {
+	return 64 + dimensions.reduce((total, dimension) => {
+		const values = allowedValues(dimension);
+		const answer = dimension.multiple
+			? values.reduce((sum, value) => sum + Math.ceil(value.length / 3) + 2, 0)
+			: Math.ceil(Math.max(...values.map((value) => value.length)) / 3) + 2;
+		return total + OUTPUT_TOKENS_PER_DIMENSION + answer;
+	}, 0);
+}
+
+export function buildClassifierRequestBody(classifier: ClassifierRequestConfig, dimensions: ClassifierDimension[], transcript: string): Record<string, unknown> {
+	return {
+		model: classifier.model,
+		stream: false,
+		store: false,
+		temperature: 0,
+		max_output_tokens: classifierOutputTokens(dimensions),
+		text: {
+			format: { type: "json_schema", name: "request_classification", strict: true, schema: buildClassifierSchema(dimensions) },
+		},
+		input: [
+			{ role: "system", content: [{ type: "input_text", text: buildClassifierPrompt(classifier, dimensions) }] },
+			{ role: "user", content: [{ type: "input_text", text: `<transcript>\n${transcript}\n</transcript>` }] },
+		],
+	};
+}
+
+/** Validates the model's answer against the taxonomy; anything outside it is dropped. */
+export function parseClassifierAnswer(payload: unknown, dimensions: ClassifierDimension[]): ClassifierLabel[] | null {
+	const text = responseText(payload).trim();
+	if (!text) return null;
+	let parsed: Record<string, any>;
+	try {
+		parsed = JSON.parse(text);
+	} catch {
+		return null;
+	}
+	if (!parsed || typeof parsed !== "object") return null;
+	const labels: ClassifierLabel[] = [];
+	dimensions.forEach((dimension, index) => {
+		const answer = parsed[`d${index}`];
+		if (!answer || typeof answer !== "object") return;
+		const allowed = new Map(allowedValues(dimension).map((value) => [value.toLowerCase(), value]));
+		const raw: unknown[] = Array.isArray(answer.value) ? answer.value : [answer.value];
+		const values = [...new Set(raw
+			.map((value) => typeof value === "string" ? allowed.get(value.trim().toLowerCase()) : undefined)
+			.filter((value): value is string => Boolean(value)))];
+		const chosen = dimension.multiple ? values : values.slice(0, 1);
+		const confidence = Number(answer.confidence);
+		for (const value of chosen) {
+			labels.push({ key: dimension.key, value, confidence: Number.isFinite(confidence) ? Math.max(0, Math.min(1, confidence)) : null });
+		}
+	});
+	return labels;
 }
