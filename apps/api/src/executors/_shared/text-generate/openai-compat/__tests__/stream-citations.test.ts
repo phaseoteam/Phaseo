@@ -165,25 +165,50 @@ describe("citations and refusals from a Chat upstream", () => {
 		expect(refusalMessage.content).toEqual([{ type: "refusal", refusal: REFUSAL }]);
 	});
 
-	it("streams Messages citations on the text block and refusal text as text", async () => {
+	it("announces the refusal part before its first delta when text came first", async () => {
+		const upstream: Frame[] = [
+			chunk({ role: "assistant", content: "" }),
+			chunk({ content: "Partly " }),
+			chunk({ refusal: "I can't" }),
+			chunk({ refusal: " do that." }),
+			chunk({}, { finish_reason: "stop" }),
+			"[DONE]",
+		];
+		const frames = parseFrames(await clientStream(upstream, "openai.responses", "chat"));
+		const events = frames.map((frame) => frame.event);
+		const partAdded = frames.findIndex((frame) => frame.event === "response.content_part.added" && frame.data.part?.type === "refusal");
+		const firstDelta = events.indexOf("response.refusal.delta");
+		expect(partAdded).toBeGreaterThanOrEqual(0);
+		expect(partAdded).toBeLessThan(firstDelta);
+		expect(frames.filter((frame) => frame.event === "response.content_part.added" && frame.data.part?.type === "refusal")).toHaveLength(1);
+		const deltas = frames.filter((frame) => frame.event === "response.refusal.delta");
+		for (const delta of deltas) expect(delta.data.content_index).toBe(frames[partAdded].data.content_index);
+		expect(frames[partAdded].data.content_index).toBe(1);
+		const message = frames.find((frame) => frame.event === "response.completed")!.data.response.output.find((item: any) => item.type === "message");
+		expect(message.content).toEqual([
+			{ type: "output_text", text: "Partly ", annotations: [] },
+			{ type: "refusal", refusal: "I can't do that." },
+		]);
+	});
+
+	it("leaves URL citations off Messages streams, which have no valid form for them, and streams refusal text as text", async () => {
+		// web_search_result_location requires Claude's encrypted_index; a Chat URL citation has none.
 		const text = await clientStream(chatUpstream(), "anthropic.messages", "chat");
 		const frames = parseFrames(text);
 		messagesGrammarHolds(frames);
-		const textBlock = frames.find((frame) => frame.data.type === "content_block_start" && frame.data.content_block.type === "text")!.data.index;
-		const citation = frames.find((frame) => frame.data.delta?.type === "citations_delta");
-		expect(citation?.data).toMatchObject({ index: textBlock, delta: { citation: { type: "web_search_result_location", url: URL_1, title: "Cite one", cited_text: "Hello" } } });
+		expect(frames.some((frame) => frame.data.delta?.type === "citations_delta")).toBe(false);
+		expect(frames.flatMap((frame) => frame.data.delta?.type === "text_delta" ? [frame.data.delta.text] : []).join("")).toBe("Hello world");
 
 		const refusal = parseFrames(await clientStream(chatUpstream({ refusal: true }), "anthropic.messages", "chat"));
 		expect(refusal.some((frame) => frame.data.delta?.type === "text_delta" && frame.data.delta.text === REFUSAL)).toBe(true);
 	});
 
-	it("puts citations that arrive after the text block closed on their own block at the end", async () => {
+	it("opens no extra block for URL citations that arrive after the text block closed", async () => {
 		const frames = parseFrames(await clientStream(chatUpstream({ lateCitation: true }), "anthropic.messages", "chat"));
 		messagesGrammarHolds(frames);
-		const citation = frames.find((frame) => frame.data.delta?.type === "citations_delta")!;
-		const toolBlock = frames.find((frame) => frame.data.content_block?.type === "tool_use")!.data.index;
-		expect(citation.data.index).toBeGreaterThan(toolBlock);
-		expect(frames.findIndex((frame) => frame.data === citation.data)).toBeLessThan(frames.findIndex((frame) => frame.data.type === "message_delta"));
+		expect(frames.some((frame) => frame.data.delta?.type === "citations_delta")).toBe(false);
+		expect(frames.filter((frame) => frame.data.type === "content_block_start").map((frame) => frame.data.content_block.type))
+			.toEqual(["thinking", "text", "tool_use"]);
 	});
 
 	it("materialises buffered Chat and Messages responses with the citations and refusal", async () => {
@@ -196,7 +221,7 @@ describe("citations and refusals from a Chat upstream", () => {
 
 		const messages = await buffered(await clientStream(chatUpstream(), "anthropic.messages", "chat"), "anthropic.messages");
 		const textBlock = messages.encoded.content.find((block: any) => block.type === "text");
-		expect(textBlock.citations).toEqual([{ type: "web_search_result_location", url: URL_1, title: "Cite one", cited_text: "Hello" }]);
+		expect(textBlock).toMatchObject({ text: "Hello world", citations: null });
 	});
 });
 
@@ -214,12 +239,12 @@ describe("citations and refusals from a Responses upstream", () => {
 		expect(refusalDeltas.join("")).toBe(REFUSAL);
 	});
 
-	it("streams Messages citations and keeps them when buffered", async () => {
+	it("keeps URL citations off Messages, streamed and buffered, and on Chat", async () => {
 		const text = await clientStream(responsesUpstream(), "anthropic.messages", "responses");
 		messagesGrammarHolds(parseFrames(text));
-		expect(text).toContain("\"citations_delta\"");
+		expect(text).not.toContain("\"citations_delta\"");
 		const messages = await buffered(text, "anthropic.messages");
-		expect(messages.encoded.content[0].citations?.[0]).toMatchObject({ type: "web_search_result_location", url: URL_1 });
+		expect(messages.encoded.content[0]).toMatchObject({ type: "text", text: "Hello world", citations: null });
 
 		const chat = await buffered(await clientStream(responsesUpstream(), "openai.chat.completions", "responses"), "openai.chat.completions");
 		expect(chat.encoded.choices[0].message.annotations).toHaveLength(1);

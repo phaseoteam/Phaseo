@@ -253,7 +253,7 @@ function encodeOrderedContentParts(parts: IRContentPart[], origin?: ReasoningRes
 	for (const part of parts) {
 		if (part.type === "text") {
 			if (part.text.length > 0) {
-				const citations = toAnthropicCitations(part.annotations, part.text);
+				const citations = toAnthropicCitations(part.annotations);
 				content.push({
 					type: "text",
 					text: part.text,

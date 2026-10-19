@@ -98,26 +98,16 @@ export function toChatAnnotations(values: unknown): Array<Record<string, any>> {
 }
 
 /**
- * Messages `citations` on a text block. Claude's own citations pass through; a URL
- * citation becomes a web_search_result_location with the cited span when the text
- * offsets are known.
+ * Messages `citations` on a text block: Claude's own citations only.
+ * A plain URL citation from Chat, Responses or Gemini has no contract-valid Messages
+ * form. web_search_result_location requires Claude's opaque encrypted_index, which
+ * Claude reads back on the next turn; search_result_location and the document
+ * locations require indices into blocks of the request. Inventing those would give
+ * clients citations that fail validation or break replay, so URL citations are left
+ * off Messages responses. Chat and Responses clients still receive them.
  */
-export function toAnthropicCitations(values: unknown, text?: string): Array<Record<string, any>> {
-	return toIRAnnotations(values).flatMap((annotation) => {
-		if (ANTHROPIC_CITATION_TYPES.has(String(annotation.type))) return [annotation];
-		const citation = asUrlCitation(annotation);
-		if (!citation) return [];
-		const citedText =
-			typeof text === "string" && citation.start_index !== undefined && citation.end_index !== undefined
-				? text.slice(citation.start_index, citation.end_index)
-				: undefined;
-		return [{
-			type: "web_search_result_location",
-			url: citation.url,
-			title: citation.title ?? null,
-			...(citedText ? { cited_text: citedText } : {}),
-		}];
-	});
+export function toAnthropicCitations(values: unknown): Array<Record<string, any>> {
+	return toIRAnnotations(values).filter((annotation) => ANTHROPIC_CITATION_TYPES.has(String(annotation.type)));
 }
 
 /** URL citations from Gemini grounding metadata, with the cited span when Gemini gives one. */

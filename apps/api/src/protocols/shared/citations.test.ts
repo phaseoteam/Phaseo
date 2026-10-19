@@ -40,12 +40,24 @@ describe("citation shapes", () => {
 		]);
 	});
 
-	it("passes Claude citations through to Messages and maps URL citations to web results", () => {
-		expect(toAnthropicCitations([claudeWebCitation, claudeDocumentCitation, chatCitation], "Hello world")).toEqual([
+	it("passes Claude citations through to Messages and leaves plain URL citations off", () => {
+		// A URL citation has no truthful encrypted_index, search result or document
+		// index, so it has no contract-valid Messages citation form.
+		expect(toAnthropicCitations([claudeWebCitation, claudeDocumentCitation, chatCitation, responsesCitation])).toEqual([
 			claudeWebCitation,
 			claudeDocumentCitation,
-			{ type: "web_search_result_location", url: "https://example.com/a", title: "A", cited_text: "Hello" },
 		]);
+	});
+
+	it("only emits Messages citations that carry every field the Messages contract requires", () => {
+		// apps/api/openapi.anthropic.json ResponseWebSearchResultLocationCitation.required
+		const required = ["cited_text", "encrypted_index", "title", "type", "url"];
+		const geminiCitations = geminiGroundingToAnnotations({
+			groundingMetadata: { groundingChunks: [{ web: { uri: "https://example.com/g", title: "G" } }] },
+		});
+		for (const citation of toAnthropicCitations([chatCitation, responsesCitation, claudeWebCitation, ...geminiCitations])) {
+			for (const field of required) expect(citation).toHaveProperty(field);
+		}
 	});
 
 	it("turns Gemini grounding metadata into URL citations with the supported span", () => {

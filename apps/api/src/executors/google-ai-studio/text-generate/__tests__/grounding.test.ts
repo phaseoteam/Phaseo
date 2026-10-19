@@ -68,14 +68,12 @@ describe("google-ai-studio grounding citations", () => {
 		]);
 	});
 
-	it("streams grounding as Messages citations on the text block", async () => {
+	it("does not stream grounding as Messages citations it cannot fill truthfully", async () => {
+		// Messages web citations require Claude's encrypted_index; grounding has none.
 		const output = await new Response(transformStream(groundedStream(), args("anthropic.messages"))).text();
-		const citation = frames(output).find((event) => event.delta?.type === "citations_delta");
-		expect(citation?.delta.citation).toEqual({
-			type: "web_search_result_location",
-			url: "https://example.com/lyon",
-			title: "Lyon weather",
-			cited_text: "Lyon is sunny.",
-		});
+		const events = frames(output);
+		expect(events.some((event) => event.delta?.type === "citations_delta")).toBe(false);
+		expect(events.filter((event) => event.type === "content_block_start").map((event) => event.content_block.type)).toEqual(["text"]);
+		expect(events.flatMap((event) => event.delta?.type === "text_delta" ? [event.delta.text] : []).join("")).toBe("Lyon is sunny.");
 	});
 });

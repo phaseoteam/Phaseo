@@ -549,8 +549,6 @@ function transformResponsesStreamToAnthropic(
 				emittedContent: boolean;
 				toolId?: string;
 				toolName?: string;
-				// Text so far, so a URL citation can quote the span it covers.
-				text?: string;
 				emittedCitations?: boolean;
 			};
 			const blocksByAlias = new Map<string, AnthropicBlock>();
@@ -700,14 +698,15 @@ function transformResponsesStreamToAnthropic(
 				stopBlock(block);
 			};
 
-			// Citations go on the text block they cite. When that block has already
-			// closed (Gemini sends grounding after the text and tool calls), they wait
-			// for the end of the message and go on an empty text block of their own;
-			// the gateway drops empty text blocks when the conversation is replayed
-			// to Claude.
+			// Citations go on the text block they cite. Only Claude's own citations
+			// have a valid Messages form; plain URL citations are left off (see
+			// toAnthropicCitations). When the cited block has already closed, they
+			// wait for the end of the message and go on an empty text block of their
+			// own; the gateway drops empty text blocks when the conversation is
+			// replayed to Claude.
 			const lateCitations: Array<Record<string, any>> = [];
 			const emitCitations = (block: AnthropicBlock, annotations: unknown[]) => {
-				const citations = toAnthropicCitations(annotations, block.text);
+				const citations = toAnthropicCitations(annotations);
 				if (citations.length === 0) return;
 				block.emittedCitations = true;
 				if (!block.open) {
@@ -780,7 +779,6 @@ function transformResponsesStreamToAnthropic(
 										: { type: "text_delta", text },
 								});
 								block.emittedContent = true;
-								block.text = text;
 							}
 						}
 						if (!block.emittedCitations) {
@@ -860,7 +858,6 @@ function transformResponsesStreamToAnthropic(
 								delta: { type: "text_delta", text: payload.delta },
 							});
 							block.emittedContent = true;
-							block.text = (block.text ?? "") + payload.delta;
 							continue;
 						}
 						// Messages has no refusal field: refusal text is the assistant's text.
@@ -875,7 +872,6 @@ function transformResponsesStreamToAnthropic(
 								delta: { type: "text_delta", text: payload.delta },
 							});
 							block.emittedContent = true;
-							block.text = (block.text ?? "") + payload.delta;
 							continue;
 						}
 						if (normalizedEvent === "response.output_text.annotation.added" && payload?.annotation) {

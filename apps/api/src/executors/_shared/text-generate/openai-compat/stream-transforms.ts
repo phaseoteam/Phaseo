@@ -442,6 +442,8 @@ type ResponsesStreamChoiceState = {
 	text: string;
 	reasoning: string;
 	refusal: string;
+	// Content index of the refusal part, set when the part is announced.
+	refusalContentIndex?: number;
 	// Responses-shaped url_citation annotations on the message's output_text.
 	annotations: Array<Record<string, any>>;
 	emittedAnnotations: number;
@@ -549,16 +551,22 @@ export function transformChatStreamToResponses(
 		controller: ReadableStreamDefaultController<Uint8Array>,
 	) => {
 		const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
-		if (!entry.emittedText && entry.refusal.length === 0) {
-			// A refusal-only message: announce the item and its refusal part first.
-			await emitEvent("response.output_item.added", {
-				output_index: outputIndex,
-				item: { type: "message", id: itemId, status: "in_progress", role: "assistant", content: [] },
-			}, controller);
+		if (entry.refusalContentIndex === undefined) {
+			// The refusal part follows the output_text part when there is text.
+			entry.refusalContentIndex = entry.text.length > 0 ? 1 : 0;
+			if (!entry.emittedText) {
+				// No text delta has opened the message yet: announce the item first.
+				await emitEvent("response.output_item.added", {
+					output_index: outputIndex,
+					item: { type: "message", id: itemId, status: "in_progress", role: "assistant", content: [] },
+				}, controller);
+			}
+			// Always announce the refusal part before its first delta, including
+			// after streamed text.
 			await emitEvent("response.content_part.added", {
 				item_id: itemId,
 				output_index: outputIndex,
-				content_index: 0,
+				content_index: entry.refusalContentIndex,
 				part: { type: "refusal", refusal: "" },
 			}, controller);
 		}
@@ -566,7 +574,7 @@ export function transformChatStreamToResponses(
 		await emitEvent("response.refusal.delta", {
 			item_id: itemId,
 			output_index: outputIndex,
-			content_index: entry.text.length > 0 ? 1 : 0,
+			content_index: entry.refusalContentIndex,
 			delta: refusal,
 		}, controller);
 	};

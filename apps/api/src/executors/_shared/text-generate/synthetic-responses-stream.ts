@@ -59,14 +59,14 @@ export function createSyntheticResponsesStreamFromIR(
 							emit(controller, "response.output_text.delta", {
 								item_id: item.id,
 								output_index: outputIndex,
-								content_index: 0,
+								content_index: contentIndex,
 								delta: part.text,
 							});
 							for (const [annotationIndex, annotation] of (Array.isArray(part.annotations) ? part.annotations : []).entries()) {
 								emit(controller, "response.output_text.annotation.added", {
 									item_id: item.id,
 									output_index: outputIndex,
-									content_index: 0,
+									content_index: contentIndex,
 									annotation_index: annotationIndex,
 									annotation,
 								});
@@ -74,7 +74,7 @@ export function createSyntheticResponsesStreamFromIR(
 							emit(controller, "response.output_text.done", {
 								item_id: item.id,
 								output_index: outputIndex,
-								content_index: 0,
+								content_index: contentIndex,
 								text: part.text,
 							});
 						}
