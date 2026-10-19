@@ -6,6 +6,7 @@
 import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
+import { applyRequestClassifiers } from "../classification/request-classifiers";
 import type { PipelineContext } from "../before/types";
 import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
 import type { RequestResult } from "../execute";
@@ -393,6 +394,8 @@ export async function handleSuccessAudit(
 	if (ctx.lifecycle && !ctx.lifecycle.events.some((event) => event.type === "response.ready")) {
 		recordLifecycleEvent(ctx, { type: "response.ready", status: statusCode });
 	}
+	// Runs before anything is written so classifier labels land in the first insert.
+	await applyRequestClassifiers(ctx, gatewayResponse ?? null);
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -546,6 +549,7 @@ export async function handleSuccessAudit(
                 testing_mode: ctx.testingMode === true,
                 response_timeline: buildResponseTimeline(ctx),
                 labels: ctx.meta.labels ?? [],
+                classifications: ctx.requestClassifications ?? null,
                 client_source: ctx.meta.clientSource ?? null,
                 finish_reason: finishReason ?? null,
                 plugin_executions: sanitizeForAxiom(ctx.pluginExecutions ?? null),

@@ -17,6 +17,7 @@ import { ResponsesSchema } from "@core/schemas";
 import { MAX_REQUEST_MODEL_FALLBACKS } from "./before/requestModelFallbacks";
 import { everyAttemptRejectedRequest } from "./execute/attempt-outcomes";
 import { runAutoRouterClassifierGatewayRequest } from "./auto-router-classifier-gateway";
+import { attachRequestClassifierCall } from "./classification/request-classifiers";
 import {
 	buildPipelineExecutionErrorResponse,
 	logPipelineExecutionError,
@@ -271,8 +272,10 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             : null;
 
         const runner = resolvePipeline(endpoint);
-        const runWithHeaders = async (attempt: Parameters<typeof runner>[0]) =>
-            withDroppedParamsHeader(withModelSubstitutionHeaders(await runner(attempt), attempt.pre.ctx), attempt.pre.ctx);
+        const runWithHeaders = async (attempt: Parameters<typeof runner>[0]) => {
+            attachRequestClassifierCall(attempt.pre.ctx, req, getAutoRouterClassifierHandler);
+            return withDroppedParamsHeader(withModelSubstitutionHeaders(await runner(attempt), attempt.pre.ctx), attempt.pre.ctx);
+        };
 
         // Tries the configured fallback models in order after the first model
         // failed. Returns the first response that should not fall back further,

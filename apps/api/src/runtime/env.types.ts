@@ -63,6 +63,8 @@ export type GatewayBindings = {
 	CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED?: string;
 	/** Enforces workspace rate limit policies (requests per minute) through CUSTOMER_RATE_LIMITS. */
 	RATE_LIMIT_POLICIES_ENABLED?: string;
+	/** Kill switch: "false" stops request classifiers. On when unset. */
+	REQUEST_CLASSIFIERS_ENABLED?: string;
 	SPEND_LIMITS?: DurableObjectNamespace;
 	/** off | shadow | enforce for the SpendLimit Durable Object (default off). */
 	GATEWAY_SPEND_LIMIT_DO_MODE?: string;
