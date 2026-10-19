@@ -11,6 +11,8 @@ import { anthropicStopReasonFor, type AnthropicStopReason } from "@core/finish-r
 import { encodeAnthropicThinkingBlock, type ReasoningResponseOrigin } from "../shared/reasoning";
 import { toAnthropicCitations } from "../shared/citations";
 
+import { sealToolCallSignature } from "../shared/reasoning";
+
 /**
  * Anthropic Messages response type
  *
@@ -121,6 +123,12 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 				name: toolCall.name,
 				input: safeParseToolArguments(toolCall.arguments),
 			});
+		}
+		// Gemini function-call signatures go back as signature-only thinking blocks after the
+		// calls, as the stream sends them, so the next request can return each to its call.
+		for (const toolCall of mainChoice.message.toolCalls) {
+			const signature = sealToolCallSignature(toolCall, origin);
+			if (signature) content.push({ type: "thinking", thinking: "", signature });
 		}
 	}
 
