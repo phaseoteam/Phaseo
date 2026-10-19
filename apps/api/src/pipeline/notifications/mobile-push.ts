@@ -4,7 +4,9 @@ import { getSupabaseAdmin } from "@/runtime/env";
 // history into notification events (capture_catalogue_notification_events), matches each event
 // against users' rules and categories and queues it per device (enqueue_mobile_push_deliveries),
 // and hands out due pushes under a claim token, one per device and group with the text already
-// written (claim_mobile_push_deliveries). This job only moves pushes between the database and Expo.
+// written (claim_mobile_push_deliveries). Workspace alerts (money, traffic, security and
+// deprecations) are captured and queued per recipient by fan_out_workspace_push_events and go out
+// through the same claim. This job only moves pushes between the database and Expo.
 
 export const EXPO_PUSH_SEND_URL = "https://exp.host/--/api/v2/push/send";
 export const EXPO_PUSH_RECEIPTS_URL = "https://exp.host/--/api/v2/push/getReceipts";
@@ -34,6 +36,7 @@ const BULK_TRANSACTION_MODELS = 20;
 const EVENT_PAGE_SIZE = 50;
 const MAX_FANOUT_PASSES = 10;
 const MAX_SEND_BATCHES = 10;
+const WORKSPACE_EVENT_LIMIT = 200;
 // Expo ticket errors that no retry can fix.
 const TERMINAL_EXPO_ERRORS = new Set(["DeviceNotRegistered", "MessageTooBig"]);
 
@@ -54,6 +57,9 @@ export type ClaimedMobilePush = {
 	group_count: number | null;
 	tag: string | null;
 	deliveries: number;
+	// Set for workspace alerts; null for catalogue news.
+	workspace_id?: string | null;
+	workspace_name?: string | null;
 };
 
 type ExpoTicket =
@@ -74,6 +80,9 @@ export type MobilePushSummary = {
 	captured: number;
 	skippedTransactions: number;
 	events: number;
+	// Workspace alerts captured from their sources, and workspace events fanned out to devices.
+	workspaceCaptured: number;
+	workspaceEvents: number;
 	queued: number;
 	deferred: number;
 	suppressed: number;
@@ -89,6 +98,7 @@ export type MobilePushSummary = {
 	receiptsPending: number;
 	receiptErrors: number;
 	receiptError: string | null;
+	workspaceError: string | null;
 };
 
 function emptySummary(): MobilePushSummary {
@@ -96,6 +106,8 @@ function emptySummary(): MobilePushSummary {
 		captured: 0,
 		skippedTransactions: 0,
 		events: 0,
+		workspaceCaptured: 0,
+		workspaceEvents: 0,
 		queued: 0,
 		deferred: 0,
 		suppressed: 0,
@@ -109,11 +121,12 @@ function emptySummary(): MobilePushSummary {
 		receiptsPending: 0,
 		receiptErrors: 0,
 		receiptError: null,
+		workspaceError: null,
 	};
 }
 
 export function hasMobilePushActivity(summary: MobilePushSummary): boolean {
-	return Object.entries(summary).some(([key, value]) => key === "receiptError" ? Boolean(value) : Number(value) > 0);
+	return Object.entries(summary).some(([key, value]) => key.endsWith("Error") ? Boolean(value) : Number(value) > 0);
 }
 
 function count(value: unknown): number {
@@ -152,6 +165,8 @@ export function buildMobilePushMessage(push: ClaimedMobilePush) {
 			category: push.category,
 			modelId: push.model_slug,
 			group: push.group_key ? { key: push.group_key, count: count(push.group_count) || 1 } : null,
+			workspaceId: push.workspace_id ?? null,
+			workspaceName: push.workspace_name ?? null,
 		},
 		channelId: mobilePushChannelId(push.category, push.channel_scheme),
 		sound: null,
@@ -262,6 +277,19 @@ export async function runMobilePushJob(options: { accessToken?: string } = {}): 
 			summary.suppressed += count(result.suppressed);
 		}
 		if (rows.length < EVENT_PAGE_SIZE) break;
+	}
+
+	// Workspace alerts are queued separately, so a failure there never holds back catalogue news.
+	try {
+		const workspace = await supabase.rpc("fan_out_workspace_push_events", { p_limit: WORKSPACE_EVENT_LIMIT });
+		if (workspace.error) throw new Error(workspace.error.message);
+		const result = record(workspace.data);
+		summary.workspaceCaptured = count(result.captured);
+		summary.workspaceEvents = count(result.events);
+		summary.queued += count(result.queued);
+		summary.deferred += count(result.deferred);
+	} catch (error) {
+		summary.workspaceError = `mobile_push_workspace_fan_out_failed:${error instanceof Error ? error.message : String(error)}`.slice(0, 200);
 	}
 
 	for (let batch = 0; batch < MAX_SEND_BATCHES; batch += 1) {

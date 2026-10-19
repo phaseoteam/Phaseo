@@ -21,6 +21,7 @@ import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/
 import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-request";
 import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
 import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
+import { runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
@@ -112,6 +113,10 @@ function getModelDiscoveryStepMinutesUtc(hour: number): number {
 
 function isCoreJobsTick(event: ScheduledController): boolean {
 	return getScheduledMinuteUtc(event) % 5 === 0;
+}
+
+function isQuarterHourTick(event: ScheduledController): boolean {
+	return getScheduledMinuteUtc(event) % 15 === 0;
 }
 
 function isModelDiscoveryTick(event: ScheduledController): boolean {
@@ -394,6 +399,18 @@ async function handleMobilePushScheduledEvent(env: GatewayBindings): Promise<voi
 		}
 		const summary = await runMobilePushJob({ accessToken: env.EXPO_ACCESS_TOKEN });
 		if (hasMobilePushActivity(summary)) console.log("mobile_push_completed", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
+// Budget warnings are push-only, so they are swept only where mobile push runs.
+async function handleSpendLimitSweepScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.MOBILE_PUSH_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await runSpendLimitWarningSweep();
+		if (summary.warned > 0) console.log("spend_limit_warnings_swept", summary);
 	} finally {
 		clearRuntime();
 	}
@@ -759,6 +776,13 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleNotificationDeliveryScheduledEvent(env);
 		} catch (error) {
 			console.error("notification_delivery_scheduled_failed", serializeError(error));
+		}
+		if (isQuarterHourTick(event)) {
+			try {
+				await handleSpendLimitSweepScheduledEvent(env);
+			} catch (error) {
+				console.error("spend_limit_sweep_scheduled_failed", serializeError(error));
+			}
 		}
 		try {
 			await handleMobilePushScheduledEvent(env);

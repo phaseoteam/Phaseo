@@ -50,9 +50,12 @@ const grouped = push("lead", {
 
 type RpcHandler = (args: Record<string, unknown>) => { data: unknown; error: null | { message: string } };
 
+// Runs with no workspace alerts unless a test says otherwise.
+const idleWorkspace: RpcHandler = () => ({ data: { captured: 0, lowBalanceRepeats: 0, events: 0, queued: 0, deferred: 0 }, error: null });
+
 function mockRpc(handlers: Record<string, RpcHandler | RpcHandler[]>) {
 	state.rpc.mockImplementation(async (name: string, args: Record<string, unknown>) => {
-		const handler = handlers[name];
+		const handler = handlers[name] ?? (name === "fan_out_workspace_push_events" ? idleWorkspace : undefined);
 		if (Array.isArray(handler)) return (handler.shift() ?? (() => ({ data: [], error: null })))(args);
 		if (handler) return handler(args);
 		throw new Error(`unexpected rpc ${name}`);
@@ -79,6 +82,8 @@ describe("mobile push job", () => {
 			data: {
 				href: "/models/deepseek/deepseek-v4", kind: "price_changed", category: "prices-providers", modelId: "deepseek/deepseek-v4",
 				group: { key: "price:deepseek/deepseek-v4", count: 1 },
+				workspaceId: null,
+				workspaceName: null,
 			},
 			channelId: "prices-providers",
 			sound: null,
@@ -92,7 +97,10 @@ describe("mobile push job", () => {
 			to: "ExponentPushToken[lead]",
 			title: "DeepSeek released 10 models",
 			body: "DeepSeek V5, V5 Lite, V5 Coder and 7 more",
-			data: { href: "/organisations/deepseek", kind: "model_released", category: "new-models", modelId: null, group: { key: "release:deepseek", count: 10 } },
+			data: {
+				href: "/organisations/deepseek", kind: "model_released", category: "new-models", modelId: null, group: { key: "release:deepseek", count: 10 },
+				workspaceId: null, workspaceName: null,
+			},
 			channelId: "new-models",
 			sound: null,
 			tag: "release:deepseek:2026-10-19",
@@ -106,9 +114,33 @@ describe("mobile push job", () => {
 			href: "/api-providers/groq", group_key: null, group_count: null, tag: null,
 		});
 		const message = buildMobilePushMessage(launch);
-		expect(message.data).toEqual({ href: "/api-providers/groq", kind: "provider_launched", category: "prices-providers", modelId: null, group: null });
+		expect(message.data).toEqual({
+			href: "/api-providers/groq", kind: "provider_launched", category: "prices-providers", modelId: null, group: null, workspaceId: null, workspaceName: null,
+		});
 		expect(message).not.toHaveProperty("tag");
 		expect(message.channelId).toBe("prices-providers");
+	});
+
+	it("sends workspace alerts on their category's channel with the workspace in data", () => {
+		const lowBalance = push("w", {
+			kind: "low_balance", category: "money", model_slug: null, title: "Acme: balance is $3.20",
+			body: "Below your $5.00 alert. Add credits to keep requests running.", href: "/settings/credits", group_key: null, group_count: null, tag: null,
+			workspace_id: "50000000-0000-4000-8000-000000000001", workspace_name: "Acme",
+		});
+		const message = buildMobilePushMessage(lowBalance);
+		expect(message).toEqual({
+			to: "ExponentPushToken[w]",
+			title: "Acme: balance is $3.20",
+			body: "Below your $5.00 alert. Add credits to keep requests running.",
+			data: {
+				href: "/settings/credits", kind: "low_balance", category: "money", modelId: null, group: null,
+				workspaceId: "50000000-0000-4000-8000-000000000001", workspaceName: "Acme",
+			},
+			channelId: "money",
+			sound: null,
+		});
+		expect(buildMobilePushMessage({ ...lowBalance, category: "security" }).channelId).toBe("security");
+		expect(buildMobilePushMessage({ ...lowBalance, channel_scheme: 1 }).channelId).toBe("model-updates");
 	});
 
 	it("uses the single model-updates channel for app builds on channel scheme 1", () => {
@@ -142,6 +174,10 @@ describe("mobile push job", () => {
 				data: args.p_event_id === "event-1" ? { queued: 2, deferred: 1, suppressed: 0 } : { queued: 1, deferred: 0, suppressed: 1 },
 				error: null,
 			}),
+			fan_out_workspace_push_events: (args) => {
+				expect(args).toEqual({ p_limit: 200 });
+				return { data: { captured: 3, lowBalanceRepeats: 1, events: 2, queued: 4, deferred: 1 }, error: null };
+			},
 			claim_mobile_push_deliveries: [
 				(args) => {
 					expect(args.p_limit).toBe(100);
@@ -164,8 +200,8 @@ describe("mobile push job", () => {
 		const summary = await runMobilePushJob({ accessToken: "expo-secret" });
 
 		expect(summary).toMatchObject({
-			captured: 2, skippedTransactions: 1, events: 2, queued: 3, deferred: 1, suppressed: 1, claimed: 3, grouped: 9, sent: 1, retrying: 1, failed: 1,
-			invalidated: 1, receipts: 0,
+			captured: 2, skippedTransactions: 1, events: 2, workspaceCaptured: 3, workspaceEvents: 2, queued: 7, deferred: 2, suppressed: 1, claimed: 3,
+			grouped: 9, sent: 1, retrying: 1, failed: 1, invalidated: 1, receipts: 0, workspaceError: null,
 		});
 		expect(state.eventQueries[0]).toMatchObject({ table: "catalogue_notification_events", select: "id", filters: [["is", "fanned_out_at", null]] });
 		const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -182,7 +218,26 @@ describe("mobile push job", () => {
 			{ id: "b", status: "failed", errorCode: "DeviceNotRegistered", errorMessage: "not registered" },
 			{ id: "c", status: "retry", errorCode: "MessageRateExceeded", errorMessage: "slow down" },
 		]);
+		const order = state.rpc.mock.calls.map(([name]) => name);
+		expect(order.indexOf("fan_out_workspace_push_events")).toBeGreaterThan(order.lastIndexOf("enqueue_mobile_push_deliveries"));
+		expect(order.indexOf("fan_out_workspace_push_events")).toBeLessThan(order.indexOf("claim_mobile_push_deliveries"));
 		expect(hasMobilePushActivity(summary)).toBe(true);
+	});
+
+	it("still sends catalogue news when queueing workspace alerts fails, and reports the failure", async () => {
+		mockRpc({
+			capture_catalogue_notification_events: () => ({ data: { emitted: 0 }, error: null }),
+			fan_out_workspace_push_events: () => ({ data: null, error: { message: "statement timeout" } }),
+			claim_mobile_push_deliveries: [() => ({ data: [push("a")], error: null })],
+			complete_mobile_push_deliveries: () => ({ data: { sent: 1 }, error: null }),
+			claim_mobile_push_receipts: () => ({ data: [], error: null }),
+		});
+		fetchMock.mockResolvedValueOnce(Response.json({ data: [{ status: "ok", id: "ticket-a" }] }));
+
+		const summary = await runMobilePushJob();
+
+		expect(summary).toMatchObject({ claimed: 1, sent: 1, workspaceError: "mobile_push_workspace_fan_out_failed:statement timeout" });
+		expect(hasMobilePushActivity({ ...summary, claimed: 0, sent: 0 })).toBe(true);
 	});
 
 	it("sends in batches of 100 under a fresh claim each time and omits the token header when unset", async () => {

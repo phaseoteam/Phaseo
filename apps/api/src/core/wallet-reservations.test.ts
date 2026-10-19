@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const rpcMock = vi.fn();
 const invalidateGatewayCreditCacheMock = vi.fn();
 const setKeyVersionMock = vi.fn();
+const noteSpendLimitReachedMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
@@ -18,6 +19,10 @@ vi.mock("@core/kv", () => ({
 	setKeyVersion: (...args: unknown[]) => setKeyVersionMock(...args),
 }));
 
+vi.mock("@/pipeline/notifications/spend-limit-alerts", () => ({
+	noteSpendLimitReached: (...args: unknown[]) => noteSpendLimitReachedMock(...args),
+}));
+
 import {
 	captureWalletReservation,
 	releaseWalletReservation,
@@ -31,6 +36,19 @@ describe("wallet reservation RPC compatibility", () => {
 		rpcMock.mockReset();
 		invalidateGatewayCreditCacheMock.mockReset();
 		setKeyVersionMock.mockReset();
+		noteSpendLimitReachedMock.mockReset();
+	});
+
+	it("passes a hold refused for a used-up budget or key limit to the budget alerts, and not a successful one", async () => {
+		rpcMock
+			.mockResolvedValueOnce({ data: [{ ok: false, applied: false, reason: "workspace_monthly_cost_budget_reached", amount_nanos: 5 }], error: null })
+			.mockResolvedValueOnce({ data: [{ ok: true, applied: true, status: "held", amount_nanos: 5 }], error: null });
+
+		const refused = await reserveWalletCredits({ workspaceId: "ws_1", reservationId: "video_hold:1", amountNanos: 5, keyId: "key_1" });
+		await reserveWalletCredits({ workspaceId: "ws_1", reservationId: "video_hold:2", amountNanos: 5, keyId: "key_1" });
+
+		expect(refused.status).toBe("workspace_monthly_cost_budget_reached");
+		expect(noteSpendLimitReachedMock.mock.calls).toEqual([[{ workspaceId: "ws_1", keyId: "key_1", reason: "workspace_monthly_cost_budget_reached" }]]);
 	});
 
 	it("retries reserve calls against legacy p_team_id signatures", async () => {
