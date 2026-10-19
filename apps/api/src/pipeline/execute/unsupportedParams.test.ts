@@ -56,6 +56,45 @@ describe("dropUnsupportedParams", () => {
 		expect(result.ir).toBe(request);
 	});
 
+	// Route metadata the gateway reads from the same record: the catalogue tier,
+	// reasoning token limits, the data policy and modality flags.
+	const METADATA_ONLY = {
+		service_tier: { provider_catalog: { name: "flex", upstream: "flex" } },
+		reasoning: { maxReasoningTokens: 32000 },
+		data_policy: { tier: "private", confidence: "confirmed" },
+		box: true,
+		long_context: true,
+	};
+
+	it("treats a record holding only route metadata as declaring no params", () => {
+		expect(declaredRouteParams(METADATA_ONLY)).toBeNull();
+		expect(declaredRouteParams(["service_tier", "reasoning"])).toBeNull();
+		const request = ir({ temperature: 0.3, stop: ["END"], seed: 7, topK: 40 });
+		// Ambient's profile has no sampling overrides, so only the catalogue could drop these.
+		const result = dropUnsupportedParams(request, "ambient", METADATA_ONLY);
+		expect(result.dropped).toEqual([]);
+		expect(result.ir).toBe(request);
+	});
+
+	it("still applies the provider profile when the record holds only metadata", () => {
+		const result = dropUnsupportedParams(ir({ topK: 40, temperature: 0.3 }), "cohere", METADATA_ONLY);
+		expect(result.dropped).toEqual([{ param: "top_k", reason: "unsupported_by_provider", source: "provider_profile" }]);
+		expect(result.ir.temperature).toBe(0.3);
+	});
+
+	it("drops absent tracked params when a record with metadata also lists parameters", () => {
+		const params = { ...METADATA_ONLY, max_tokens: {}, tools: {} };
+		expect(declaredRouteParams(params)).toBe(params);
+		const result = dropUnsupportedParams(ir({ temperature: 0.3, stop: ["END"], seed: 7 }), "ambient", params);
+		expect(result.dropped).toEqual([
+			{ param: "temperature", reason: "unsupported_by_provider", source: "catalogue" },
+			{ param: "seed", reason: "unsupported_by_provider", source: "catalogue" },
+			{ param: "stop", reason: "unsupported_by_provider", source: "catalogue" },
+		]);
+		// A list of ids that names a request parameter, here `max_output_tokens`, also counts.
+		expect(declaredRouteParams(["service_tier", "max_output_tokens"])).toEqual({ service_tier: {}, max_output_tokens: {} });
+	});
+
 	it("drops what the provider profile marks unsupported even without catalogue params", () => {
 		const result = dropUnsupportedParams(ir({ topK: 40, parallelToolCalls: false, logprobs: true }), "cohere", undefined);
 		expect(result.dropped.map((entry) => [entry.param, entry.source])).toEqual([

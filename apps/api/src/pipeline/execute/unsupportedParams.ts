@@ -7,11 +7,14 @@
 // How: Runs per provider attempt in the execute stage, before the executor. The
 //      provider profile (`@providers/providerProfiles`) decides first; the
 //      route's catalogue params decide next, for the sampling parameters the
-//      catalogue tracks. A route with no declared params keeps everything.
+//      catalogue tracks. A route that declares no params (an empty record, or
+//      one holding only route metadata) skips the catalogue check; the
+//      profile's explicit exclusions still apply.
 
 import type { IRChatRequest } from "@core/ir";
 import {
 	expandCapabilityParamAliases,
+	gatewayMappedParamIds,
 	resolveProviderParamSupportOverride,
 } from "@pipeline/before/textParamPolicy";
 
@@ -62,14 +65,38 @@ function isPlainObject(value: unknown): value is Record<string, any> {
 	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+// Request parameters that the catalogue also uses to carry route metadata
+// (`service_tier.provider_catalog`, `reasoning.maxReasoningTokens`). A record
+// holding only these describes the route; it does not list its parameters.
+const METADATA_CARRYING_PARAMS = new Set(["service_tier", "serviceTier", "reasoning", "thinking"]);
+
+let requestParamKeys: Set<string> | null = null;
+
+/** Every key, with aliases, that names a text request parameter the gateway maps. */
+function isRequestParamKey(key: string): boolean {
+	if (!requestParamKeys) {
+		requestParamKeys = new Set<string>();
+		for (const id of gatewayMappedParamIds()) {
+			requestParamKeys.add(id);
+			for (const alias of expandCapabilityParamAliases(id)) requestParamKeys.add(alias);
+		}
+	}
+	return requestParamKeys.has(key) && !METADATA_CARRYING_PARAMS.has(key);
+}
+
 /**
  * The catalogue stores route params as a record (`{ top_k: {...} }`), a list of
  * ids, or a list of `{ param_id, ... }` rows. Returns null when the route
- * declares nothing, which means "unknown", not "unsupported".
+ * declares no parameters, which means "unknown", not "unsupported". The record
+ * also carries route metadata (`service_tier`, `reasoning`, `data_policy`,
+ * `box`, `long_context`), so it counts as a parameter list only when it names
+ * at least one other request parameter the gateway maps (`max_tokens`,
+ * `tools`, `temperature`, ...).
  */
 export function declaredRouteParams(capabilityParams: unknown): Record<string, any> | null {
+	let record: Record<string, any>;
 	if (Array.isArray(capabilityParams)) {
-		const record: Record<string, any> = {};
+		record = {};
 		for (const entry of capabilityParams) {
 			if (typeof entry === "string" && entry.trim()) record[entry.trim()] = {};
 			else if (isPlainObject(entry) && typeof entry.param_id === "string" && entry.param_id.trim()) {
@@ -77,10 +104,12 @@ export function declaredRouteParams(capabilityParams: unknown): Record<string, a
 				record[paramId.trim()] = config;
 			}
 		}
-		return Object.keys(record).length > 0 ? record : null;
+	} else if (isPlainObject(capabilityParams)) {
+		record = capabilityParams;
+	} else {
+		return null;
 	}
-	if (isPlainObject(capabilityParams) && Object.keys(capabilityParams).length > 0) return capabilityParams;
-	return null;
+	return Object.keys(record).some(isRequestParamKey) ? record : null;
 }
 
 function declaredConfig(params: Record<string, any>, param: string): { declared: boolean; config: Record<string, any> | null } {
