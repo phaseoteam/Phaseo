@@ -6,7 +6,7 @@ const object = (value: unknown): value is JsonObject => Boolean(value) && typeof
 const methodologyVersions = (html: string) => [...new Set([...html.matchAll(/(?:Intelligence Index|Current version:)[\s\S]{0,30}?v(\d+\.\d+(?:\.\d+)?)/g)].map((match) => match[1]))];
 
 export function publicDataManifest(html: string) {
-	const stream = [...html.matchAll(/<script\b[^>]*>self\.__next_f\.push\((\[1,[\s\S]*?\])\)\s*;?<\/script\s*>/gi)].map((match) => JSON.parse(match[1])[1]).join("");
+	const stream = [...html.matchAll(/<script\b[^>]*>self\.__next_f\.push\((\[1,[\s\S]*?\])\)\s*;?<\/script\b[^>]*>/gi)].map((match) => JSON.parse(match[1])[1]).join("");
 	const manifests: Array<{ path: string; key: string }> = [];
 	const walk = (value: unknown) => {
 		if (!value || typeof value !== "object") return;
@@ -55,7 +55,7 @@ export function extractFullPublicModels(html: string, bytes: Buffer, sourceUrl: 
 export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: string | null) {
 	const records = new Map<string, unknown>();
 	let stream = "";
-	for (const match of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)) {
+	for (const match of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi)) {
 		const push = match[1].match(/^self\.__next_f\.push\((\[1,[\s\S]*\])\)\s*;?$/);
 		if (!push) continue;
 		const chunk: unknown = JSON.parse(push[1]);
