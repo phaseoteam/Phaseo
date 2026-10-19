@@ -95,3 +95,11 @@ export function dashboardLogTicks(values: number[]) {
 	const ticks = steps.filter((value) => value >= lower && value <= upper);
 	return ticks.length > 1 ? ticks : undefined;
 }
+
+/** Use only the precision needed to distinguish adjacent unequal axis ticks. */
+export function dashboardTickPrecision(values: number[], format: (value: number, digits: number) => string) {
+	for (let digits = 3; digits < 12; digits++) {
+		if (values.every((value, index) => !index || value === values[index - 1] || format(value, digits) !== format(values[index - 1], digits))) return digits;
+	}
+	return 12;
+}

@@ -1,3 +1,4 @@
+import { dashboardTickPrecision } from "./artificialAnalysisDashboard";
 import { dashboardLabelPositions, dashboardLinearTicks, dashboardModelGroups, dashboardRows, loadDashboardData, paretoPoints } from "./artificialAnalysisDashboard";
 import type { ArtificialAnalysisPublicConfiguration, ArtificialAnalysisPublicData } from "@/lib/fetchers/benchmarks/types";
 
@@ -72,4 +73,11 @@ it("computes the lower-cost higher-score frontier without inventing configuratio
 	const points = [{ x: 2, y: 4 }, { x: 1, y: 2 }, { x: 2, y: 3 }, { x: 3, y: 1 }, { x: 0, y: 0 }];
 	expect(paretoPoints(points)).toEqual([{ x: 0, y: 0 }, { x: 1, y: 2 }, { x: 2, y: 4 }]);
 	expect(points[0]).toEqual({ x: 2, y: 4 });
+});
+
+it("increases tick precision only until adjacent unequal values are distinct", () => {
+	const format = (value: number, digits: number) => new Intl.NumberFormat("en-GB", { maximumSignificantDigits: digits }).format(value);
+	expect(dashboardTickPrecision([50.123, 50.124, 50.125], format)).toBe(5);
+	expect(dashboardTickPrecision([10, 10, 20, 10], format)).toBe(3);
+	expect(dashboardTickPrecision([-0.0000123, 0, 0.0000123], format)).toBe(3);
 });
