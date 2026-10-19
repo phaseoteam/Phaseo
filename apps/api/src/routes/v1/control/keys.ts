@@ -851,8 +851,10 @@ async function handleUpdateKey(req: Request) {
 			throw new Error(refetchError.message || "Failed to fetch updated API key");
 		}
 		if (!updated) throw new Error("Failed to fetch updated API key");
-		// Pausing and resuming are recorded as such, as the dashboard does.
-		const action = typeof body.disabled === "boolean" ? (body.disabled ? "api_key.paused" : "api_key.resumed") : "api_key.updated";
+		// Pausing and resuming are recorded as such, as the dashboard does, but only when the status
+		// changes: a retried request is an update, not another pause.
+		const statusChanged = typeof updatePayload.status === "string" && updatePayload.status !== String(existing.status ?? "");
+		const action = statusChanged ? (updatePayload.status === "paused" ? "api_key.paused" : "api_key.resumed") : "api_key.updated";
 		await auditApiKey(auth.value, action, updated as KeyRow, { changed_fields: Object.keys(updatePayload) });
 
 		return json({ data: formatApiKey(updated as KeyRow) }, 200, { "Cache-Control": "no-store" });

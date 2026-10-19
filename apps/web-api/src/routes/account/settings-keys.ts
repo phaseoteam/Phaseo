@@ -217,7 +217,9 @@ accountSettingsKeysRouter.put("/keys/:keyId", async (c) => {
         update.ip_allowlist = parsed.data;
     }
 	const result = await loaded.context.client.from("keys").update(update).eq("id", loaded.key.id).eq("workspace_id", loaded.context.workspaceId); if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const action = typeof body.paused === "boolean" ? (body.paused ? "api_key.paused" : "api_key.resumed") : "api_key.updated";
+	// Only a real status change is a pause or a resume; a retried request is an update.
+	const statusChanged = typeof update.status === "string" && update.status !== String(loaded.key.status ?? "");
+	const action = statusChanged ? (update.status === "paused" ? "api_key.paused" : "api_key.resumed") : "api_key.updated";
 	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action, targetType: "api_key", targetId: loaded.key.id, targetName: String(update.name ?? loaded.key.name ?? ""), metadata: { changedFields: Object.keys(update), ...(update.status ? { status: update.status } : {}) }, requestId: requestId(c) });
 	if ("ip_allowlist" in update) {
 		if (!await invalidateGatewayKey(c.env, loaded.key.id)) return c.json({ error: "key_gateway_sync_failed", message: "Settings saved, but gateway policy refresh failed. Retry saving to synchronize access restrictions." }, 503, PRIVATE_NO_STORE_HEADERS);
