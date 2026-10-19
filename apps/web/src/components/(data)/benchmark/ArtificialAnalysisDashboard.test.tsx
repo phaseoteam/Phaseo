@@ -10,7 +10,7 @@ let mockSection = "comparisons";
 
 jest.mock("nuqs", () => {
 	const parser = { withDefault: () => parser };
-	return { parseAsString: parser, parseAsArrayOf: () => parser, useQueryStates: () => [{ aaModels: null, aaEffort: "", aaBench: "terminalBench40", aaDomain: "financeAndAccounting", aaSection: mockSection, aaCompare: "cost", aaMeasure: "task" }, jest.fn()] };
+	return { parseAsString: parser, parseAsArrayOf: () => parser, useQueryStates: () => [{ aaModels: null, aaEffort: "", aaEfforts: null, aaCreator: "", aaLayout: "overview", aaBench: "terminalBench40", aaDomain: "financeAndAccounting", aaSection: mockSection, aaCompare: "cost", aaMeasure: "task" }, jest.fn()] };
 });
 jest.mock("@/i18n/navigation", () => ({ Link: ({ children, ...props }: React.ComponentProps<"a">) => createElement("a", props, children) }));
 jest.mock("@/components/Logo", () => ({ Logo: () => null }));
