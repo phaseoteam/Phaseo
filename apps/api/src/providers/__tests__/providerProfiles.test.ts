@@ -32,7 +32,7 @@ describe("providerProfiles", () => {
 		expect(anthropic?.text?.normalize?.defaultMaxTokensWhenMissing).toBe(4096);
 		const cohere = getProviderProfile("cohere");
 		expect(cohere?.text?.normalize?.maxTemperature).toBe(1);
-		expect(cohere?.text?.normalize?.reasoningEffortFallback).toEqual(["high"]);
+		expect(cohere?.text?.normalize?.reasoningEffortFallback).toEqual(["none", "high"]);
 		const deepseek = getProviderProfile("deepseek");
 		expect(deepseek?.text?.normalize?.maxTemperature).toBe(2);
 		expect(deepseek?.text?.normalize?.reasoningEffortFallback).toEqual(["high", "max"]);

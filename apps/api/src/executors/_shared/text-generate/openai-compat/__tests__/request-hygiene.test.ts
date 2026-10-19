@@ -222,7 +222,7 @@ describe("fields the client did not send", () => {
 // service_tier enums (https://platform.openai.com/docs/api-reference/chat/create,
 // https://docs.deepinfra.com/api-reference/chat-completions/openai-chat-completions).
 describe("provider service tier names", () => {
-	it.each(["openai", "openai-eu", "azure", "deepinfra"])("sends %s service_tier default for standard", (providerId) => {
+	it.each(["openai", "openai-eu", "azure", "deepinfra", "nebius-token-factory"])("sends %s service_tier default for standard", (providerId) => {
 		expect(irToOpenAIChat(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("default");
 		expect(irToOpenAIResponses(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("default");
 	});
@@ -241,4 +241,12 @@ describe("Atlas Cloud reasoning", () => {
 			expect(irToOpenAIChat(baseIR({ reasoning: reasoning as any }), "deepseek-ai/deepseek-v4.1-flash-1017", "atlascloud").thinking).toEqual({ type });
 		},
 	);
+});
+
+// io.net takes reasoning: { effort }, with "none" turning reasoning off
+// (https://io.net/docs/guides/intelligence/reasoning-for-chat-completions).
+describe("io.net reasoning", () => {
+	it.each([[{ effort: "high" }, "high"], [{ enabled: false }, "none"]] as const)("sends reasoning %j as reasoning.effort %s", (reasoning, effort) => {
+		expect(irToOpenAIChat(baseIR({ reasoning: reasoning as any }), "deepseek-ai/DeepSeek-V4.1-Flash", "io-net").reasoning).toEqual({ effort });
+	});
 });

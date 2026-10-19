@@ -38,6 +38,11 @@ function resolveReasoningConfig(providerId?: string): ReasoningConfig | null {
 	if (providerId === "openai" || providerId === "openai-eu" || providerId === "ovhcloud") {
 		return { mode: "effort", field: "reasoning" };
 	}
+	if (providerId === "io-net") {
+		// io.net documents reasoning: { effort: "none" | "low" | "medium" | "high" }.
+		// https://io.net/docs/guides/intelligence/reasoning-for-chat-completions
+		return { mode: "effort", field: "reasoning" };
+	}
 	if (providerId === "morph") {
 		// Morph's fast-model API documents reasoning: { effort: "low" | "medium" | "high" }.
 		return { mode: "effort", field: "reasoning" };

@@ -246,7 +246,8 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			},
 			normalize: {
 				maxTemperature: 1,
-				reasoningEffortFallback: ["high"],
+				// "Only none and high are currently supported" (https://docs.cohere.com/docs/compatibility-api).
+				reasoningEffortFallback: ["none", "high"],
 			},
 		},
 	},
@@ -405,7 +406,10 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			},
 			normalize: {
 				maxTemperature: 2,
-				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh"],
+				// https://docs.tokenfactory.nebius.com/api-reference/inference/create-chat-completion:
+				// service_tier is auto, default, flex or no-limit; reasoning_effort also accepts "max".
+				serviceTierAliases: { standard: "default" },
+				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh", "max"],
 			},
 		},
 	},
@@ -886,7 +890,9 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			},
 			normalize: {
 				maxTemperature: 2,
-				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh", "max"],
+				// reasoning.effort is none, low, medium or high
+				// (https://io.net/docs/guides/intelligence/reasoning-for-chat-completions).
+				reasoningEffortFallback: ["none", "low", "medium", "high"],
 			},
 		},
 	},
