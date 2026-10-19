@@ -1,4 +1,4 @@
-import type { EventKind, NotificationRule, RuleInput, ScopeMode } from "@/lib/api/notifications";
+import { EVENT_KINDS, LEGACY_EVENT_KINDS, type EventKind, type NotificationRule, type RuleInput, type ScopeMode } from "@/lib/api/notifications";
 import { modalityLabel } from "@/lib/format";
 
 export const EVENT_LABELS: Record<EventKind, { title: string; phrase: string; description: string }> = {
@@ -7,7 +7,24 @@ export const EVENT_LABELS: Record<EventKind, { title: string; phrase: string; de
   price_changed: { title: "Price changes", phrase: "price changes", description: "A provider changes a model's price" },
   deprecation_announced: { title: "Deprecations", phrase: "deprecations and retirements", description: "A model is deprecated or gets a retirement date" },
   provider_added: { title: "New providers", phrase: "new providers for a model", description: "Another provider starts serving a model" },
+  provider_launched: { title: "New providers on Phaseo", phrase: "new providers on Phaseo", description: "A provider joins Phaseo with its models" },
 };
+
+export function isEventKind(kind: string): kind is EventKind {
+  return (EVENT_KINDS as readonly string[]).includes(kind);
+}
+
+/** The kinds the rule editor offers: the ones both this app and the server know (servers list theirs in `eventKinds`). */
+export function availableEventKinds(serverKinds: readonly string[] | null | undefined): EventKind[] {
+  const known: readonly string[] = serverKinds?.length ? serverKinds : LEGACY_EVENT_KINDS;
+  return EVENT_KINDS.filter((kind) => known.includes(kind));
+}
+
+/** A rule's kinds that the server accepts. It rejects a rule with any kind it doesn't know, such as provider_launched before push v2. */
+export function savableEvents(events: string[], serverKinds: readonly string[] | null | undefined): string[] {
+  const known: readonly string[] = serverKinds?.length ? serverKinds : LEGACY_EVENT_KINDS;
+  return events.filter((kind) => known.includes(kind));
+}
 
 export const EMPTY_RULE: RuleInput = {
   name: null,
@@ -47,7 +64,9 @@ function scope(mode: ScopeMode, ids: string[], noun: string, name: (id: string) 
 
 /** One plain sentence describing a rule, shown in the list and live in the editor. */
 export function describeRule(rule: RuleInput | NotificationRule, names: { lab(id: string): string; provider(id: string): string; model(id: string): string }) {
-  const events = list(rule.events.map((event) => EVENT_LABELS[event].phrase), 5);
+  // Kinds from a newer server that this build has no words for are left out.
+  const phrases = rule.events.filter(isEventKind).map((event) => EVENT_LABELS[event].phrase);
+  const events = list(phrases.length ? phrases : ["other updates"], EVENT_KINDS.length);
   const parts = [`${rule.action === "mute" ? "Never notify me about" : "Notify me about"} ${events}`];
   if (rule.models.length) parts.push(`for ${list(rule.models.map(names.model))}`);
   else if (rule.labs.mode !== "all" || rule.labs.ids.length) parts.push(`from ${scope(rule.labs.mode, rule.labs.ids, "lab", names.lab)}`);

@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { request } from "./http";
 
-export const EVENT_KINDS = ["model_released", "gateway_available", "price_changed", "deprecation_announced", "provider_added"] as const;
+export const EVENT_KINDS = ["model_released", "gateway_available", "price_changed", "deprecation_announced", "provider_added", "provider_launched"] as const;
 export type EventKind = (typeof EVENT_KINDS)[number];
+/** What servers knew before push v2 added provider_launched. Servers list their own in `eventKinds`. */
+export const LEGACY_EVENT_KINDS: readonly EventKind[] = ["model_released", "gateway_available", "price_changed", "deprecation_announced", "provider_added"];
 export type ScopeMode = "all" | "only" | "except";
 
 const scopeSchema = z.object({ mode: z.enum(["all", "only", "except"]), ids: z.array(z.string()).default([]) });
@@ -12,7 +14,8 @@ const ruleSchema = z.object({
   name: z.string().nullish(),
   enabled: z.boolean(),
   action: z.enum(["notify", "mute"]),
-  events: z.array(z.enum(EVENT_KINDS)).min(1),
+  // Kept as sent, so a kind this build doesn't know survives an edit (the server rejects kinds it doesn't know).
+  events: z.array(z.string()),
   labs: scopeSchema,
   providers: scopeSchema,
   models: z.array(z.string()).default([]),
@@ -32,6 +35,8 @@ const settingsSchema = z.object({
   dailyCap: z.coerce.number().default(10),
   deviceRegistered: z.boolean().default(false),
   rules: z.array(ruleSchema).default([]),
+  // Came with push v2. Without it the app offers only the kinds every server knows.
+  eventKinds: z.array(z.string()).nullish(),
 });
 
 export type NotificationSettings = z.infer<typeof settingsSchema>;

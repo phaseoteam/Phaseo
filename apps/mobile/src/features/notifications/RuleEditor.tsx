@@ -5,10 +5,10 @@ import { useEffect, useRef } from "react";
 import { Pressable, ScrollView, Switch, View } from "react-native";
 import { Button, Chip, confirm, Header, Icon, ReadableWidth, Row, Screen, Section, Segmented, Text, TextField, toastError } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
-import { createRule, deleteRule, EVENT_KINDS, updateRule, type RuleInput, type ScopeMode } from "@/lib/api/notifications";
+import { createRule, deleteRule, updateRule, type RuleInput, type ScopeMode } from "@/lib/api/notifications";
 import { cn } from "@/lib/cn";
 import { modalityLabel } from "@/lib/format";
-import { describeRule, EVENT_LABELS, RULE_TEMPLATES, validateRule } from "./rules";
+import { availableEventKinds, describeRule, EVENT_LABELS, RULE_TEMPLATES, savableEvents, validateRule } from "./rules";
 import { draftRuleStore, useNotificationSettings, useRuleNames } from "./state";
 
 const MODALITIES = ["text", "image", "audio", "video"];
@@ -58,10 +58,14 @@ export function RuleEditor() {
     );
   }
 
-  const problem = validateRule(draft);
+  // Only kinds this server knows: one from before push v2 rejects a rule with provider_launched in it.
+  const serverKinds = settings.data?.eventKinds;
+  const kinds = availableEventKinds(serverKinds);
+  const rule = { ...draft, events: savableEvents(draft.events, serverKinds) };
+  const problem = validateRule(rule);
   return (
     <Screen>
-      <Header back title={isNew ? "New rule" : "Edit rule"} right={<Button label="Save" size="sm" disabled={Boolean(problem)} loading={save.isPending} onPress={() => save.mutate(draft)} />} />
+      <Header back title={isNew ? "New rule" : "Edit rule"} right={<Button label="Save" size="sm" disabled={Boolean(problem)} loading={save.isPending} onPress={() => save.mutate(rule)} />} />
       <ScrollView contentContainerClassName="pb-16" keyboardShouldPersistTaps="handled">
         <ReadableWidth>
           <View className="px-4">
@@ -81,14 +85,14 @@ export function RuleEditor() {
           </Section>
 
           <Section title="Updates">
-            {EVENT_KINDS.map((event, index) => (
+            {kinds.map((event, index) => (
               <Row
                 key={event}
                 title={EVENT_LABELS[event].title}
                 subtitle={EVENT_LABELS[event].description}
                 chevron={false}
-                trailing={<Switch value={draft.events.includes(event)} onValueChange={() => patchDraft({ events: toggle(draft.events, event) as RuleInput["events"] })} trackColorOnClassName="accent-primary" />}
-                last={index === EVENT_KINDS.length - 1}
+                trailing={<Switch value={draft.events.includes(event)} onValueChange={() => patchDraft({ events: toggle(draft.events, event) })} trackColorOnClassName="accent-primary" />}
+                last={index === kinds.length - 1}
               />
             ))}
           </Section>
