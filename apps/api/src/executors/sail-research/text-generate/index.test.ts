@@ -53,3 +53,15 @@ describe("Sail Research completion windows", () => {
 		expect(result.serviceTier).toBeUndefined();
 	});
 });
+
+// supercache_write bills a prefix write at 100x input (https://docs.sailresearch.com/supercache)
+// and the webhook keys send results elsewhere; clients must not set them through the gateway.
+describe("Sail reserved metadata", () => {
+	it("keeps client metadata but drops Sail's control keys", () => {
+		const ir = {
+			...request("standard"),
+			metadata: { app: "x", supercache_write: "true", completion_webhook: "https://evil.example", webhook_token: "t", completion_window: "flex" },
+		} as IRChatRequest;
+		expect(preprocess(ir, args("test/model")).metadata).toEqual({ app: "x", completion_window: "asap" });
+	});
+});

@@ -11,6 +11,8 @@ const BALANCED_MODEL_SLUGS = new Set([
 	"nvidia/Gemma-4-31B-IT-NVFP4",
 ]);
 
+const SAIL_RESERVED_METADATA_KEYS = ["supercache_write", "completion_webhook", "webhook_token", "completion_window"] as const;
+
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
 	const next = cherryPickIRParams(ir, args.capabilityParams);
 	{
@@ -20,7 +22,12 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
 			: requestedTier === "standard" && BALANCED_MODEL_SLUGS.has(args.providerModelSlug ?? "")
 				? "balanced"
 				: "asap";
-		next.metadata = { ...(next.metadata ?? {}), completion_window: completionWindow };
+		// Sail reads control keys from metadata: supercache_write bills a prefix write at 100x
+		// input (https://docs.sailresearch.com/supercache) and completion_webhook/webhook_token
+		// send results to a URL. A client must not set them through the gateway.
+		const clientMetadata = { ...(next.metadata ?? {}) } as Record<string, unknown>;
+		for (const key of SAIL_RESERVED_METADATA_KEYS) delete clientMetadata[key];
+		next.metadata = { ...clientMetadata, completion_window: completionWindow };
 		delete next.serviceTier;
 	}
 	return next;

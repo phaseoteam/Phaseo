@@ -19,3 +19,5 @@ Groq receives `service_tier: "on_demand"` (Chat) or `"default"` (Responses) for 
 DeepSeek requests on its Responses API carry reasoning effort as `reasoning.effort`, the field it reads there, instead of being ignored. gpt-oss on Cerebras no longer receives `reasoning_effort: "none"`, which it does not accept.
 
 Earlier turns' `reasoning_content` now reaches Baseten, Arcee, Together, DeepInfra and Wafer ZDR in tool loops; Baseten's Beam returns 400 without it. Reflection no longer receives `max_tool_calls` or `background`, which it rejects.
+
+Sail Research no longer receives a client's `supercache_write`, `completion_webhook` or `webhook_token` metadata. Those trigger billed prefix writes at 100× input and outbound webhooks. SambaNova models other than gpt-oss-120b, MiniMax-M3 and gemma-4-31B-it now go to Chat Completions, as `/v1/responses` supports only those three.

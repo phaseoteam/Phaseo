@@ -23,6 +23,13 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("venice", "openai-gpt-54")).toBe("responses");
 	});
 
+	it("sends SambaNova models without Responses support to Chat Completions", () => {
+		expect(resolveOpenAICompatRoute("sambanova", "DeepSeek-V3.2")).toBe("chat");
+		expect(resolveOpenAICompatRoute("sambanova", "Meta-Llama-3.3-70B-Instruct")).toBe("chat");
+		expect(resolveOpenAICompatRoute("sambanova", "gpt-oss-120b")).toBe("responses");
+		expect(resolveOpenAICompatRoute("sambanova", "MiniMax-M3")).toBe("responses");
+	});
+
 	it("routes openai chat-only models to chat", () => {
 		expect(resolveOpenAICompatRoute("openai", "openai/gpt-audio")).toBe("chat");
 		expect(resolveOpenAICompatRoute("openai", "gpt-audio-mini")).toBe("chat");
