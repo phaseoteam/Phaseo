@@ -7,6 +7,7 @@ export interface MonitorModelData {
     apiModelId?: string;
     organisationId?: string; // Add organisation ID for logo lookup
     organisationName?: string;
+    license?: string;
     provider: {
         name: string;
         id: string; // Add provider ID for logo lookup
@@ -51,6 +52,7 @@ export type MonitorModelTableRow = Pick<
     | "model"
     | "modelId"
     | "organisationId"
+    | "license"
     | "organisationName"
     | "endpoint"
     | "gatewayStatus"

@@ -13,6 +13,7 @@ export type ModelTableFilters = {
 	providers: string[];
 	regions: string[];
 	creators: string[];
+	licenses: string[];
 	contextMin: number;
 	endpoints: string[];
 	statuses: string[];
@@ -31,6 +32,7 @@ export const NO_MODEL_TABLE_FILTERS: ModelTableFilters = {
 	providers: [],
 	regions: [],
 	creators: [],
+	licenses: [],
 	contextMin: 0,
 	endpoints: [],
 	statuses: [],
@@ -119,6 +121,13 @@ export function matchesModelTableRow(
 	) {
 		return false;
 	}
+	if (
+		active("licenses") &&
+		filters.licenses.length > 0 &&
+		(!row.license || !filters.licenses.includes(row.license))
+	) {
+		return false;
+	}
 	if (active("contextMin") && filters.contextMin > 0 && row.context < filters.contextMin) return false;
 	if (active("endpoints") && filters.endpoints.length > 0 && !filters.endpoints.includes(row.endpoint)) {
 		return false;
@@ -156,6 +165,8 @@ export function modelTableFilterValues(row: ModelData, dimension: ModelTableFilt
 			return rowRegions(row);
 		case "creators":
 			return row.organisationId ? [row.organisationId] : [];
+		case "licenses":
+			return row.license ? [row.license] : [];
 		case "contextMin":
 			return [];
 		case "endpoints":

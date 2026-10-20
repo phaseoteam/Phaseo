@@ -6,6 +6,7 @@ export interface ModelData {
 	model: string;
 	modelId: string;
 	organisationId?: string;
+	license?: string;
 	provider: {
 		name: string;
 		id: string;
