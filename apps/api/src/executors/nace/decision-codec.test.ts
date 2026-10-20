@@ -22,6 +22,18 @@ const response = () => ({
 });
 
 describe("Nace decision IR", () => {
+	it.each(["image/png", "image/jpeg", "image/webp"] as const)("translates structured %s images from the shared IR", (content_type) => {
+		const body = encodeNaceDecisionRequest({ ...request, images: [{ content_type, base64: "YQ==" }] });
+		expect(body.images).toEqual([`data:${content_type};base64,YQ==`]);
+	});
+	it("rejects contradictory scores while allowing independently rounded values", () => {
+		const invalid = response();
+		invalid.answers.urgency.score = 0.8;
+		expect(() => decodeNaceDecisionResponse(invalid, request)).toThrow("inconsistent");
+		const rounded = response();
+		rounded.answers.urgency.score = 0.3001;
+		expect(() => decodeNaceDecisionResponse(rounded, request)).not.toThrow();
+	});
 	it("maps typed questions and preserves JSON state and inline images", () => {
 		const body = encodeNaceDecisionRequest({ ...request, images: ["data:image/png;base64,YQ=="] });
 		expect(body.model).toBe("drex-max");

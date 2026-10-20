@@ -25,7 +25,8 @@ export function encodeNaceDecisionRequest(request: IRDecisionsRequest) {
 	const model = request.model.replace(/^nace\//, "");
 	if (request.audio?.length || request.videos?.length) throw new Error("Nace decisions do not support audio or video");
 	if (request.providerOptions && Object.keys(request.providerOptions).length) throw new Error("Nace decision provider options are unsupported");
-	const parsed = requestSchema.parse({ model, state: request.state, questions: request.questions, ...(request.images === undefined ? {} : { images: request.images }) });
+	const images = request.images?.map((image) => typeof image === "string" ? image : `data:${image.content_type};base64,${image.base64}`);
+	const parsed = requestSchema.parse({ model, state: request.state, questions: request.questions, ...(images === undefined ? {} : { images }) });
 	const max = model === "drex-max";
 	if (Object.keys(parsed.questions).length > (max ? 16 : 512)) throw new Error("Too many decision questions");
 	if (parsed.images && !max) throw new Error("Images require Drex Max");
@@ -71,6 +72,9 @@ export function decodeNaceDecisionResponse(raw: unknown, request: IRDecisionsReq
 		if (a.type === "score" && q.type === "score") {
 			if (JSON.stringify(a.legend) !== JSON.stringify(q.criteria) || a.score > a.legend.length - 1) throw new Error("Nace returned an invalid score scale");
 			validateDistribution(a.probabilities, q.criteria.map((_, i) => String(i)));
+			const expectedScore = q.criteria.reduce((sum, _, i) => sum + i * a.probabilities[String(i)], 0);
+			// Match the shared native decision decoder's allowance for rounding.
+			if (Math.abs(a.score - expectedScore) > 0.02) throw new Error("Nace returned a score inconsistent with its probabilities");
 		}
 	}
 	if ((result.usage.image_tokens ?? 0) > result.usage.input_tokens) throw new Error("Invalid Nace image usage");
