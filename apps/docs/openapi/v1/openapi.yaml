@@ -11696,9 +11696,8 @@ components:
         encrypted_content:
           type: string
           description: >-
-            Reasoning state from an earlier response, sent back unchanged.
-            A raw value is read as OpenAI's unless format names another
-            provider.
+            Reasoning state from an earlier response, sent back unchanged. A raw
+            value is read as OpenAI's unless format names another provider.
         signature:
           type: string
           description: >-
