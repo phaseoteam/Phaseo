@@ -1,5 +1,5 @@
 import {
-  BURST_PEAK, DRIFT_SPEED, MAX_SPEED, MAX_STEP_S, RESTITUTION, bounceAxis, burstCurve, burstPosition, collideBox, dragTo, leaveBox, limitSpeed, ringLayout, settle, step,
+  BURST_PEAK, DRIFT_SPEED, MAX_SPEED, MAX_STEP_S, RESTITUTION, bounceAxis, burstCurve, burstPosition, collideBox, dragTo, fling, leaveBox, limitSpeed, ringLayout, settle, step,
   type Box, type StepOptions,
 } from "./floating";
 
@@ -48,13 +48,19 @@ describe("settle", () => {
   });
 });
 
-describe("limitSpeed", () => {
-  it("caps a fling's speed and keeps its direction", () => {
-    const capped = limitSpeed(6000, 8000);
+describe("limitSpeed and fling", () => {
+  it("caps a speed and keeps its direction", () => {
+    const capped = limitSpeed(600, 800, 100);
+    expect(Math.hypot(capped.vx, capped.vy)).toBeCloseTo(100, 6);
+    expect(capped.vy / capped.vx).toBeCloseTo(800 / 600, 6);
+    expect(limitSpeed(30, 40, 100)).toEqual({ vx: 30, vy: 40 });
+    expect(limitSpeed(Number.NaN, 4, 100)).toEqual({ vx: 0, vy: 0 });
+  });
+
+  it("caps a fling at MAX_SPEED", () => {
+    const capped = fling(6000, 8000);
     expect(Math.hypot(capped.vx, capped.vy)).toBeCloseTo(MAX_SPEED, 6);
-    expect(capped.vy / capped.vx).toBeCloseTo(8000 / 6000, 6);
-    expect(limitSpeed(30, 40)).toEqual({ vx: 30, vy: 40 });
-    expect(limitSpeed(Number.NaN, 4)).toEqual({ vx: 0, vy: 0 });
+    expect(fling(30, 40)).toEqual({ vx: 30, vy: 40 });
   });
 });
 

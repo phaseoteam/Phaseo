@@ -21,7 +21,7 @@ import { catalogueQuery, useCatalogue } from "@/features/models/state";
 import { BUILD_COMMIT, BUILD_NUMBER } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { useAppearance } from "@/providers/AppearanceProvider";
-import { burstCurve, burstPosition, clamp, DRIFT_SPEED, dragTo, limitSpeed, ringLayout, step, type Box, type Point } from "./floating";
+import { burstCurve, burstPosition, clamp, DRIFT_SPEED, dragTo, fling, ringLayout, step, type Box, type Point } from "./floating";
 import { catalogueFact, isLightColour, newestByLab, pickLabs, shortVersion, versionDetail, type ArtLab } from "./versionArt";
 
 /** The Phaseo mark, from apps/web/public/logo_light.svg (a 64 × 64 view box). */
@@ -341,9 +341,9 @@ const Floater = memo(function Floater({ lab, index, home, size, bounds, block, c
       y.set(moved.at.y);
     },
     onDeactivate: (event) => {
-      const fling = limitSpeed(event.velocityX, event.velocityY);
-      vx.set(fling.vx);
-      vy.set(fling.vy);
+      const thrown = fling(event.velocityX, event.velocityY);
+      vx.set(thrown.vx);
+      vy.set(thrown.vy);
     },
     onFinalize: () => {
       held.set(false);

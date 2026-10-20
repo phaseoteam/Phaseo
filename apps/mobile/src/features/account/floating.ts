@@ -29,12 +29,21 @@ export function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), Math.max(min, max));
 }
 
-/** A fling's velocity, capped at `max` without changing its direction. */
-export function limitSpeed(vx: number, vy: number, max = MAX_SPEED) {
+/**
+ * A velocity capped at `max` without changing its direction. No default for `max`: a worklet's default parameters
+ * run before its body unpacks the values it captured, so `max = MAX_SPEED` doesn't exist on the UI thread.
+ */
+export function limitSpeed(vx: number, vy: number, max: number) {
   "worklet";
   const speed = Math.hypot(vx, vy);
   if (!Number.isFinite(speed)) return { vx: 0, vy: 0 };
   return speed > max ? { vx: (vx / speed) * max, vy: (vy / speed) * max } : { vx, vy };
+}
+
+/** A released logo's velocity: the finger's, capped at MAX_SPEED (read here in the body, where it's captured). */
+export function fling(vx: number, vy: number) {
+  "worklet";
+  return limitSpeed(vx, vy, MAX_SPEED);
 }
 
 /** A velocity turned by `angle` radians. */
