@@ -173,7 +173,7 @@ async function runStream(args: {
 	provider: string;
 	model: string;
 	card: ReturnType<typeof textCard>;
-	executor: { stream: ReadableStream<Uint8Array>; usageFinalizer?: () => Promise<any>; usageFinalizerAuthoritative?: boolean; bill?: any };
+	executor: { stream: ReadableStream<Uint8Array>; usageFinalizer?: () => Promise<any>; usageFinalizerAuthoritative?: boolean; usageSnapshot?: () => any; bill?: any };
 }) {
 	const ctx = ctxFor(args.endpoint, args.model, true, args.card, args.provider);
 	const result: any = {
@@ -184,6 +184,7 @@ async function runStream(args: {
 		stream: args.executor.stream,
 		usageFinalizer: args.executor.usageFinalizer ?? (async () => null),
 		usageFinalizerAuthoritative: args.executor.usageFinalizerAuthoritative,
+		usageSnapshot: args.executor.usageSnapshot,
 		bill: args.executor.bill ?? { cost_cents: 0, currency: "USD", usage: undefined, finish_reason: null },
 	};
 	const response = await handleStreamResponse(ctx, result, args.card);
@@ -194,7 +195,11 @@ async function runStream(args: {
 		.filter((line) => line.startsWith("data: ") && line.includes("\"usage\""))
 		.map((line) => JSON.parse(line.slice(6)));
 	const last = usageFrames.at(-1);
-	return { nanos: charged(), usage: last?.usage ?? last?.response?.usage ?? null };
+	const nanos = charged();
+	const usage = last?.usage ?? last?.response?.usage ?? null;
+	// The final usage frame's cost is what settlement charged (-1: report mode, not billed).
+	if (nanos >= 0) expect(usage?.cost).toBe(nanos / 1e9);
+	return { nanos, usage };
 }
 
 function report(name: string, nanos: number, expected: number) {

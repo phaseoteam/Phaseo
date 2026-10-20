@@ -1349,6 +1349,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					mappedRequest,
 					usageFinalizer: usageRecorder.finalize,
 					usageFinalizerAuthoritative: true,
+					usageSnapshot: usageRecorder.snapshot,
 				};
 			}
 
@@ -1584,6 +1585,7 @@ export type GeminiStreamOptions = {
 export function createGeminiStreamUsageRecorder(bill: Bill): {
 	onUsage: (usage: IRUsage) => void;
 	finalize: () => Promise<Bill | null>;
+	snapshot: () => Bill["usage"] | null;
 } {
 	// Kept here rather than on bill.usage: the pipeline copies the bill when the executor
 	// returns, and the stream finaliser overwrites bill.usage with the client frames' usage.
@@ -1593,6 +1595,7 @@ export function createGeminiStreamUsageRecorder(bill: Bill): {
 			meters = normalizeTextUsageForPricing(usage) ?? meters;
 		},
 		finalize: async () => (meters ? { ...bill, usage: { ...meters } } : null),
+		snapshot: () => (meters ? { ...meters } : null),
 	};
 }
 

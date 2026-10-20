@@ -190,6 +190,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 						finish_reason: mapAnthropicStopReason(final.stopReason) };
 				},
 				usageFinalizerAuthoritative: accounting !== undefined || geminiUsage !== undefined,
+				usageSnapshot: () => {
+					if (geminiUsage) return geminiUsage.snapshot();
+					return accounting ? anthropicUsageForPricing(accounting.snapshot().usage) ?? null : null;
+				},
 				bill,
 				upstream: res,
 				keySource: keyInfo.source,

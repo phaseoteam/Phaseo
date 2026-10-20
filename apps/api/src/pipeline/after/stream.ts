@@ -237,15 +237,71 @@ export async function handleStreamResponse(
             mediaCounts: requestMediaCounts,
         });
     };
-    // Usage frames carry the request's price as priced from that frame's usage. A BYOK
-    // request is charged a service fee that is only worked out when the stream settles, so
-    // its frames give that price as the provider's cost on the customer's key, not as `cost`.
+    // Usage frames carry what settlement will charge. They are priced from the usage that
+    // settlement bills: an authoritative executor's own reading of the upstream stream when
+    // there is one (transformed frames can omit cache writes, modality tokens and server-tool
+    // requests), otherwise the frame's own usage. The zero-output waiver and the data-sharing
+    // discount are then applied as at settlement. Where the charge is not known yet, frames
+    // carry no `cost`: a BYOK request's service fee is only worked out when the stream
+    // settles, so its frames give the price as the provider's cost on the customer's key
+    // instead; a stream that has already failed is not charged; and when the usage
+    // settlement bills cannot be priced, settlement cannot charge it as priced either.
     const streamIsByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
-    const withStreamCostBasis = <T>(usage: T): T => {
+    const streamHasFailed = () => classifyProviderHealthImpact({
+        upstreamStatus: result.upstream.status,
+        credentialSource: result.keySource,
+        midStreamError: streamFailed,
+        finishReason: cachedFinishReason ?? result.bill.finish_reason ?? null,
+    }) === "failure";
+    const withStreamCostBasis = <T>(usage: T, costKnown: boolean): T => {
         const record = usage as any;
-        if (!streamIsByok || !record || typeof record !== "object" || typeof record.cost !== "number") return usage;
-        const { cost, ...rest } = record;
-        return { ...rest, cost_details: { ...(rest.cost_details ?? {}), upstream_inference_cost: cost } } as T;
+        if (!record || typeof record !== "object" || typeof record.cost !== "number") return usage;
+        const { cost, cost_details, ...rest } = record;
+        if (!costKnown) return rest as T;
+        if (!streamIsByok) return usage;
+        return { ...rest, cost_details: { ...(cost_details ?? {}), upstream_inference_cost: cost } } as T;
+    };
+    // Mirrors the authoritative branch of finalizeFromBill below.
+    const authoritativeUsageForFrame = () => {
+        if (!result.usageFinalizerAuthoritative || typeof result.usageSnapshot !== "function") return null;
+        const snapshot = result.usageSnapshot();
+        if (!hasBillableTokenUsage(snapshot)) return null;
+        const meters = attachToolUsageMetrics(stripUsagePricing(snapshot), buildToolUsage());
+        return withInputModalityTokenMeters(shapeStreamUsageForClient(meters), meters);
+    };
+    // Prices a frame's shaped usage. The priced usage keeps the frame's own token counts and
+    // carries the settled charge as its `pricing`.
+    const priceStreamFrameUsage = (shapedUsage: any): { pricedUsage: any; costKnown: boolean } => {
+        const tier = ctx.teamEnrichment?.tier ?? 'basic';
+        const priced = calculatePricing(shapedUsage, card, ctx.body, tier, ctx.meta);
+        let basis = priced;
+        try {
+            const billed = authoritativeUsageForFrame();
+            if (billed) basis = calculatePricing(billed, card, ctx.body, tier, ctx.meta);
+        } catch {
+            return { pricedUsage: priced.pricedUsage, costKnown: false };
+        }
+        let settled = basis.pricedUsage;
+        if (!streamIsByok) {
+            const successful = applySuccessfulResponseBillingPolicy({
+                endpoint: ctx.endpoint,
+                pricedUsage: attachToolUsageMetrics(basis.pricedUsage, buildToolUsage()),
+                totalNanos: basis.totalNanos,
+                totalCents: basis.totalCents,
+            });
+            settled = applyDataContributionDiscount({
+                pricedUsage: successful.pricedUsage,
+                totalNanos: successful.totalNanos,
+                enabled: ctx.teamSettings?.dataContributionEnabled === true,
+                isByok: false,
+                discountBps: ctx.teamSettings?.dataContributionDiscountBps,
+            }).pricedUsage;
+        }
+        const pricing = settled?.pricing;
+        return {
+            pricedUsage: pricing && typeof pricing === "object" ? { ...priced.pricedUsage, pricing } : priced.pricedUsage,
+            costKnown: !streamHasFailed(),
+        };
     };
     // Native Messages streams split usage: message_start carries input and cache tokens and
     // message_delta usually only output tokens. Merge them as the stream's final bill does.
@@ -259,14 +315,8 @@ export async function handleStreamResponse(
     const messagesStreamCostFields = (usage: any) => {
         if (!card || !usage || typeof usage !== "object") return undefined;
         try {
-            const { pricedUsage } = calculatePricing(
-                shapeStreamUsageForClient(usage),
-                card,
-                ctx.body,
-                ctx.teamEnrichment?.tier ?? 'basic',
-                ctx.meta
-            );
-            return withStreamCostBasis(usageCostFields((pricedUsage as any)?.pricing));
+            const { pricedUsage, costKnown } = priceStreamFrameUsage(shapeStreamUsageForClient(usage));
+            return withStreamCostBasis(usageCostFields((pricedUsage as any)?.pricing), costKnown);
         } catch {
             // Cost is informational on the frame; settlement prices the request separately.
             return undefined;
@@ -350,15 +400,7 @@ export async function handleStreamResponse(
                     next.usage = normalizeAnthropicUsage(next.usage);
                     if (costFields) Object.assign(next.usage, costFields);
                 } else if (card) {
-                    const shapedUsage = shapeStreamUsageForClient(next.usage);
-                    const tier = ctx.teamEnrichment?.tier ?? 'basic';
-                    const { pricedUsage } = calculatePricing(
-                        shapedUsage,
-                        card,
-                        ctx.body,
-                        tier,
-                        ctx.meta
-                    );
+                    const { pricedUsage, costKnown } = priceStreamFrameUsage(shapeStreamUsageForClient(next.usage));
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream frame priced usage", {
                             requestId: ctx.requestId,
@@ -369,7 +411,7 @@ export async function handleStreamResponse(
                     }
                     next.usage = withStreamCostBasis(presentUsageForClient(withProviderHint(pricedUsage), {
                         endpoint: ctx.endpoint,
-                    }));
+                    }), costKnown);
                 } else {
                     next.usage = presentUsageForClient(
                         shapeStreamUsageForClient(next.usage),
@@ -388,15 +430,7 @@ export async function handleStreamResponse(
                 if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
                     next.response.usage = normalizeAnthropicUsage(next.response.usage);
                 } else if (card) {
-                    const shapedUsage = shapeStreamUsageForClient(next.response.usage);
-                    const tier = ctx.teamEnrichment?.tier ?? 'basic';
-                    const { pricedUsage } = calculatePricing(
-                        shapedUsage,
-                        card,
-                        ctx.body,
-                        tier,
-                        ctx.meta
-                    );
+                    const { pricedUsage, costKnown } = priceStreamFrameUsage(shapeStreamUsageForClient(next.response.usage));
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream response priced usage", {
                             requestId: ctx.requestId,
@@ -407,7 +441,7 @@ export async function handleStreamResponse(
                     }
                     next.response.usage = withStreamCostBasis(presentUsageForClient(withProviderHint(pricedUsage), {
                         endpoint: ctx.endpoint,
-                    }));
+                    }), costKnown);
                 } else {
                     next.response.usage = presentUsageForClient(
                         shapeStreamUsageForClient(next.response.usage),

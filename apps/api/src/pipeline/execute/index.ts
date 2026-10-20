@@ -494,6 +494,8 @@ export type IRRequestResult = {
 	// The finalizer reads usage straight from the upstream stream; prefer it over usage in
 	// transformed client frames, which may omit meters such as Anthropic cache writes.
 	usageFinalizerAuthoritative?: boolean;
+	// The finalizer's usage so far, read synchronously; usage frames price from it.
+	usageSnapshot?: (() => Bill["usage"] | null) | null;
 	provider: string;
 	apiModelId?: string | null;
 	pricingKey?: string | null;
@@ -1389,6 +1391,7 @@ async function attemptProviderWithIR(
 			stream: executorResult.kind === "stream" ? executorResult.stream : undefined,
 			usageFinalizer: executorResult.kind === "stream" ? executorResult.usageFinalizer : undefined,
 			usageFinalizerAuthoritative: executorResult.kind === "stream" ? executorResult.usageFinalizerAuthoritative === true : undefined,
+			usageSnapshot: executorResult.kind === "stream" ? executorResult.usageSnapshot : undefined,
 			provider: candidate.providerId,
 			apiModelId: candidateApiModelId,
 			pricingKey:

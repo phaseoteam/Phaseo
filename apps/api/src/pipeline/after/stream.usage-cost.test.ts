@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const calculatePricingMock = vi.fn();
+const chargeMock = vi.fn(async (_args: any) => undefined);
+const healthImpactMock = vi.fn((_args: any) => "success");
 
 vi.mock("../audit", () => ({
 	auditSuccess: vi.fn(async () => undefined),
@@ -12,7 +14,7 @@ vi.mock("@observability/events", () => ({
 }));
 
 vi.mock("./charge", () => ({
-	recordUsageAndChargeOnce: vi.fn(async () => undefined),
+	recordUsageAndChargeOnce: (args: any) => chargeMock(args),
 }));
 
 vi.mock("@core/provider-rate-limits", () => ({
@@ -20,7 +22,7 @@ vi.mock("@core/provider-rate-limits", () => ({
 }));
 
 vi.mock("../execute/health", () => ({
-	classifyProviderHealthImpact: () => "success",
+	classifyProviderHealthImpact: (args: any) => healthImpactMock(args),
 	onCallEnd: vi.fn(async () => undefined),
 	reportProbeResult: vi.fn(async () => undefined),
 	maybeOpenOnRecentErrors: vi.fn(async () => undefined),
@@ -62,11 +64,11 @@ function sse(frames: Array<{ event?: string; data: unknown }>, done = false): Re
 	return new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
 }
 
-function chatStream(): Response {
+function chatStream(completionTokens = 4): Response {
 	return sse([
-		{ data: { id: "chatcmpl_cost", object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: "hello" }, finish_reason: null }] } },
+		{ data: { id: "chatcmpl_cost", object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: completionTokens ? "hello" : "" }, finish_reason: null }] } },
 		{ data: { id: "chatcmpl_cost", object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "stop" }] } },
-		{ data: { id: "chatcmpl_cost", object: "chat.completion.chunk", choices: [], usage: { prompt_tokens: 11, completion_tokens: 4, total_tokens: 15 } } },
+		{ data: { id: "chatcmpl_cost", object: "chat.completion.chunk", choices: [], usage: { prompt_tokens: 11, completion_tokens: completionTokens, total_tokens: 11 + completionTokens } } },
 	], true);
 }
 
@@ -112,14 +114,15 @@ function ctxFor(endpoint: string, protocol: string): any {
 	};
 }
 
-async function runStream(ctx: any, upstream: Response, keySource?: string) {
+async function runStream(ctx: any, upstream: Response, keySource?: string, authoritative?: { usage: any }) {
 	const response = await handleStreamResponse(ctx, {
 		kind: "stream",
 		stream: upstream.body,
 		upstream,
 		provider: "openai",
 		keySource,
-		usageFinalizer: async () => null,
+		usageFinalizer: async () => authoritative ? { cost_cents: 0, currency: "USD", usage: authoritative.usage, finish_reason: "stop" } : null,
+		...(authoritative ? { usageFinalizerAuthoritative: true, usageSnapshot: () => authoritative.usage } : {}),
 		bill: { cost_cents: 0, currency: "USD", usage: null, finish_reason: null },
 		mappedRequest: null,
 		rawResponse: null,
@@ -134,6 +137,8 @@ async function runStream(ctx: any, upstream: Response, keySource?: string) {
 
 describe("usage.cost on streamed text responses", () => {
 	beforeEach(() => {
+		chargeMock.mockClear();
+		healthImpactMock.mockReset().mockReturnValue("success");
 		calculatePricingMock.mockReset().mockImplementation((usage: any) => ({
 			pricedUsage: {
 				...usage,
@@ -195,5 +200,65 @@ describe("usage.cost on streamed text responses", () => {
 
 		expect(usage).not.toHaveProperty("cost");
 		expect(usage.cost_details).toEqual({ upstream_inference_cost: 0.0025 });
+	});
+
+	it("applies the data-sharing discount, as settlement does", async () => {
+		const ctx = { ...ctxFor("chat.completions", "openai.chat.completions"), teamSettings: { dataContributionEnabled: true, dataContributionDiscountBps: 1_000 } };
+		const frames = await runStream(ctx, chatStream());
+		const usage = frames.find((frame) => frame.usage)?.usage;
+
+		expect(chargeMock).toHaveBeenCalledWith(expect.objectContaining({ costNanos: 2_250_000 }));
+		expect(usage.cost).toBe(0.00225);
+		expect(usage.pricing.total_nanos).toBe(2_250_000);
+	});
+
+	it("applies the data-sharing discount to a Messages stream cost", async () => {
+		const ctx = { ...ctxFor("messages", "anthropic.messages"), teamSettings: { dataContributionEnabled: true, dataContributionDiscountBps: 1_000 } };
+		const frames = await runStream(ctx, messagesStream());
+		const usage = frames.find((frame) => frame.type === "message_delta")?.usage;
+
+		expect(chargeMock).toHaveBeenCalledWith(expect.objectContaining({ costNanos: 2_250_000 }));
+		expect(usage.cost).toBe(0.00225);
+	});
+
+	it("reports a zero-output stream as free, as settlement charges it", async () => {
+		const frames = await runStream(ctxFor("chat.completions", "openai.chat.completions"), chatStream(0));
+		const usage = frames.find((frame) => frame.usage)?.usage;
+
+		expect(chargeMock).toHaveBeenCalledWith(expect.objectContaining({ costNanos: 0 }));
+		expect(usage.cost).toBe(0);
+	});
+
+	it("prices the frame from an authoritative executor's usage, which settlement bills", async () => {
+		// Settlement bills the executor's own reading of the upstream stream, which here also
+		// counts a web search that the transformed client frame does not carry.
+		calculatePricingMock.mockImplementation((usage: any) => {
+			const totalNanos = usage?.server_tool_use?.web_search_requests ? 12_500_000 : FRAME_PRICE_NANOS;
+			return {
+				pricedUsage: { ...usage, pricing: { total_nanos: totalNanos, total_cents: 0, currency: "USD", lines: [] } },
+				totalNanos,
+				totalCents: 0,
+				currency: "USD",
+			};
+		});
+		const authoritative = { usage: { input_tokens: 11, output_tokens: 4, server_tool_use: { web_search_requests: 1 } } };
+		const frames = await runStream(ctxFor("responses", "openai.responses"), responsesStream(), undefined, authoritative);
+		const usage = frames.find((frame) => frame.type === "response.completed")?.response?.usage;
+
+		expect(chargeMock).toHaveBeenCalledWith(expect.objectContaining({ costNanos: 12_500_000 }));
+		expect(usage.cost).toBe(0.0125);
+		// The frame keeps its own token counts.
+		expect(usage.input_tokens).toBe(11);
+	});
+
+	it("omits cost from the frames of a stream that has already failed", async () => {
+		healthImpactMock.mockReturnValue("failure");
+		const frames = await runStream(ctxFor("chat.completions", "openai.chat.completions"), chatStream());
+		const usage = frames.find((frame) => frame.usage)?.usage;
+
+		expect(chargeMock).not.toHaveBeenCalled();
+		expect(usage.prompt_tokens).toBe(11);
+		expect(usage).not.toHaveProperty("cost");
+		expect(usage).not.toHaveProperty("cost_details");
 	});
 });

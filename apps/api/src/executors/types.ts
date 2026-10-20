@@ -170,6 +170,9 @@ export type ExecutorStreamingResult = {
 	// True when the finalizer reads usage from the upstream stream itself (Anthropic,
 	// Bedrock Messages, Vertex Claude). The after-stage then bills from it, not from frames.
 	usageFinalizerAuthoritative?: boolean;
+	// The authoritative usage observed so far, read without ending the stream. Its usage
+	// frames price from it so their cost matches what the finalizer will bill.
+	usageSnapshot?: () => Bill["usage"] | null;
 	bill: Bill;
 	upstream: Response;
 	keySource?: "gateway" | "byok";

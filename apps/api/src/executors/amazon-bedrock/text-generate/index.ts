@@ -153,6 +153,7 @@ async function executeBedrockMessages(
 				};
 			},
 			usageFinalizerAuthoritative: true,
+			usageSnapshot: () => anthropicUsageForPricing(accounting.snapshot().usage) ?? null,
 			bill,
 			upstream: res,
 			keySource: keyInfo.source,

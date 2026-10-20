@@ -11110,12 +11110,16 @@ components:
           format: double
           description: >-
             What the request costs you, in US dollars: the amount charged to
-            your credits, the same figure as `cost_nanos`. Returned on Chat
+            your credits, the same figure as `cost_nanos`, after any
+            data-sharing discount or zero-output waiver. Returned on Chat
             Completions, Responses, Messages and embeddings responses once the
-            request is priced. On a stream it is the price of the final usage; a
-            BYOK stream gives that price as
-            `cost_details.upstream_inference_cost` instead, because its service
-            fee is worked out when the stream ends.
+            request is priced. On a stream it is on the final usage frame (on
+            Messages, the final `message_delta`) and covers the whole stream. A
+            stream leaves it out when the charge is not known as that frame is
+            sent: on a BYOK stream, whose service fee is worked out when the
+            stream ends (`cost_details.upstream_inference_cost` gives the model
+            price instead), and on a stream that has already failed, which is
+            not charged.
           example: 0.001234567
         cost_details:
           $ref: '#/components/schemas/UsageCostDetails'
@@ -11424,12 +11428,16 @@ components:
           format: double
           description: >-
             What the request costs you, in US dollars: the amount charged to
-            your credits, the same figure as `cost_nanos`. Returned on Chat
+            your credits, the same figure as `cost_nanos`, after any
+            data-sharing discount or zero-output waiver. Returned on Chat
             Completions, Responses, Messages and embeddings responses once the
-            request is priced. On a stream it is the price of the final usage; a
-            BYOK stream gives that price as
-            `cost_details.upstream_inference_cost` instead, because its service
-            fee is worked out when the stream ends.
+            request is priced. On a stream it is on the final usage frame (on
+            Messages, the final `message_delta`) and covers the whole stream. A
+            stream leaves it out when the charge is not known as that frame is
+            sent: on a BYOK stream, whose service fee is worked out when the
+            stream ends (`cost_details.upstream_inference_cost` gives the model
+            price instead), and on a stream that has already failed, which is
+            not charged.
           example: 0.001234567
         cost_details:
           $ref: '#/components/schemas/UsageCostDetails'
