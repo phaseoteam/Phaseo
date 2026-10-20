@@ -10,6 +10,7 @@
 // phaseo.classifier=<id> so its spend can be filtered, is never classified
 // itself, and does not count against the caller's rate limit policies.
 
+import { isRequestClassifiersAccessEnabled } from "@core/feature-flags";
 import { tieredRead } from "@core/tiered-cache";
 import type { Endpoint, RequestLabel } from "@core/types";
 import {
@@ -373,6 +374,8 @@ export async function applyRequestClassifiers(ctx: PipelineContext, gatewayRespo
 	try {
 		const classifiers = await loadClassifiers(ctx.workspaceId);
 		if (!classifiers.length) return;
+		// Checked only once a workspace has classifiers, so other traffic never waits on Statsig.
+		if (!(await isRequestClassifiersAccessEnabled({ workspaceId: ctx.workspaceId }))) return;
 		const existing = ctx.meta.labels ?? [];
 		const transcriptCache: { prompt?: string; full?: string } = {};
 		let spendPromise: Promise<Map<string, number>> | null = null;

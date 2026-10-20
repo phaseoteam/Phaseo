@@ -5,6 +5,7 @@ import {
 	getGatewayIoLoggingFeatureGateName,
 	getDataContributionFeatureGateName,
 	getAutoRoutingFeatureGateName,
+	getRequestClassifiersFeatureGateName,
 	getVideoApiFeatureGateName,
 	getRealtimeVoiceFeatureGateName,
 	isBatchApiAccessEnabled,
@@ -59,6 +60,8 @@ describe("batch API feature gate", () => {
 		expect(getDataContributionFeatureGateName({})).toBe("gateway_data_contribution");
 		expect(getAutoRoutingFeatureGateName({ STATSIG_AUTO_ROUTING_GATE: "custom_auto_gate" })).toBe("custom_auto_gate");
 		expect(getAutoRoutingFeatureGateName({})).toBe("gateway_auto_routing");
+		expect(getRequestClassifiersFeatureGateName({ STATSIG_REQUEST_CLASSIFIERS_GATE: "custom_classifier_gate" })).toBe("custom_classifier_gate");
+		expect(getRequestClassifiersFeatureGateName({})).toBe("gateway_request_classifiers");
 	});
 
 	it("checks Auto Routing against its independent workspace gate", async () => {

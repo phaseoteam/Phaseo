@@ -7,7 +7,10 @@ const state = vi.hoisted(() => ({
 	queries: [] as string[],
 	bindings: {} as Record<string, string>,
 	background: [] as Promise<unknown>[],
+	gateEnabled: true,
 }));
+
+vi.mock("@core/feature-flags", () => ({ isRequestClassifiersAccessEnabled: async () => state.gateEnabled }));
 
 vi.mock("@/runtime/env", () => ({
 	getBindingsIfConfigured: () => state.bindings,
@@ -86,6 +89,7 @@ beforeEach(() => {
 	state.queries = [];
 	state.bindings = {};
 	state.background = [];
+	state.gateEnabled = true;
 });
 
 describe("transcript", () => {
@@ -300,6 +304,15 @@ describe("applyRequestClassifiers", () => {
 		await applyRequestClassifiers(broken, null);
 		expect(broken.meta.labels).toEqual([]);
 		expect(broken.requestClassifications).toMatchObject([{ status: "failed" }]);
+	});
+
+	it("does not classify until the workspace is in the beta gate", async () => {
+		state.gateEnabled = false;
+		const call = vi.fn(async () => answer({ d0: { value: "legal", confidence: 0.9 } }));
+		const context = ctx({ requestClassifierCall: call });
+		await applyRequestClassifiers(context, null);
+		expect(call).not.toHaveBeenCalled();
+		expect(context.meta.labels ?? []).toEqual([]);
 	});
 
 	it("only classifies the response when the classifier asks for it", async () => {

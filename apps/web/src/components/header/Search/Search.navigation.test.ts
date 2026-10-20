@@ -11,6 +11,9 @@ describe("global search navigation", () => {
 		expect(disabled).not.toContain("/settings/webhooks/new");
 		expect(disabled).not.toContain("/chat/video");
 		expect(disabled).not.toContain("/games");
+		expect(disabled).not.toContain("/settings/classifiers");
+		expect(isSearchDestinationEnabled("/settings/classifiers/new", DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
+		expect(getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, classifiers: true }).map((item) => item.href)).toContain("/settings/classifiers");
 		expect(disabled).toContain("/settings/routing");
 		const enabled = getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, autoRouting: true });
 		expect(enabled.map((item) => item.href)).toContain("/settings/routing/auto");

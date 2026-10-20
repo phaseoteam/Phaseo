@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
+import { requestClassifiersFlag } from "@/lib/flags";
 import type { SettingsClassifier } from "@/lib/fetchers/internal/settingsTypes";
 
 /** Classifier fields in API units, as built by draftToPayload. */
@@ -17,6 +18,7 @@ export type ClassifierTestResult = {
 };
 
 async function account(): Promise<{ accessToken: string; workspaceId: string }> {
+	if (!(await requestClassifiersFlag().catch(() => false))) throw new WebApiError("/api/account/settings/classifiers", 404);
 	const { accessToken, workspaceId } = await getServerAccountContext();
 	if (!accessToken) throw new WebApiError("/api/account/settings/classifiers", 401);
 	if (!workspaceId) throw new WebApiError("/api/account/settings/classifiers", 400, "Select a workspace first");

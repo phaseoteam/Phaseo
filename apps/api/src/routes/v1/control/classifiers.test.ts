@@ -13,6 +13,16 @@ const state = vi.hoisted(() => ({
 	audit: vi.fn(),
 	nextId: 100,
 	insertError: null as null | { code: string; message: string },
+	gateEnabled: true,
+	gateSubjects: [] as unknown[],
+}));
+
+vi.mock("@core/feature-flags", () => ({
+	getRequestClassifiersFeatureGateName: () => "gateway_request_classifiers",
+	isRequestClassifiersAccessEnabled: vi.fn(async (subject: unknown) => {
+		state.gateSubjects.push(subject);
+		return state.gateEnabled;
+	}),
 }));
 
 function tableQuery(table: string, operation: "select" | "insert" | "update" | "delete", payload?: Record<string, unknown>) {
@@ -107,6 +117,19 @@ describe("classifier management", () => {
 			workspace_request_classifiers: [existingRow(EXISTING, WORKSPACE, "Department"), existingRow(ELSEWHERE, OTHER_WORKSPACE, "Elsewhere")],
 		};
 		state.audit.mockReset();
+		state.gateEnabled = true;
+		state.gateSubjects = [];
+	});
+
+	it("is unavailable until the workspace is in the beta gate", async () => {
+		state.gateEnabled = false;
+		const response = await call("/");
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({ reason: "request_classifiers_feature_flag_disabled", feature_gate: "gateway_request_classifiers" });
+		expect((await call("/", "POST", { name: "x", model: "m", dimensions: [DEPARTMENT] })).status).toBe(403);
+		expect(state.tables.workspace_request_classifiers).toHaveLength(2);
+		// Decided for the workspace, as the gateway decides whether to classify.
+		expect(state.gateSubjects).toEqual([{ workspaceId: WORKSPACE }, { workspaceId: WORKSPACE }]);
 	});
 
 	it("lists only the caller's workspace classifiers, in API units", async () => {
