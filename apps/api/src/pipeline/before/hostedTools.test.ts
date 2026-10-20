@@ -3,6 +3,8 @@ import { resolveHostedTools } from "./hostedTools";
 import { prepareServerToolsForTextRequest } from "@pipeline/surfaces/server-tools";
 import { decodeProtocol } from "@protocols/index";
 import { isOpenAIHostedToolType } from "@core/nativeTools";
+import { applyServerToolPlugins } from "@/plugins/server-tool-plugins";
+import { normalizeGatewayPlugins } from "@/plugins/normalize";
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({ EXA_API_KEY: "exa_test_key" }),
@@ -126,5 +128,60 @@ describe("resolveHostedTools", () => {
 				expect(ir.tools?.some((tool) => isOpenAIHostedToolType(tool.type))).toBe(false);
 			}
 		}
+	});
+});
+
+describe("resolveHostedTools with native-engine gateway search", () => {
+	const plugins = normalizeGatewayPlugins([{ id: "web", engine: "native", max_results: 3 }]);
+
+	it("routes the web plugin's native engine to providers with their own search", () => {
+		const added = applyServerToolPlugins({
+			endpoint: "responses",
+			body: { model: "m", input: "news?" },
+			plugins,
+		});
+		if (!added.ok) throw new Error("expected ok");
+		const result = resolveHostedTools({
+			endpoint: "responses",
+			body: added.body,
+			providers: [candidate("openai"), candidate("google-ai-studio")],
+		});
+		expect(result).toEqual({
+			ok: true,
+			body: added.body,
+			providers: [candidate("openai")],
+			droppedProviderIds: ["google-ai-studio"],
+			webSearchMapped: false,
+		});
+	});
+
+	it("falls back to our own search when no provider has native search", () => {
+		for (const [endpoint, protocol, body] of [
+			["responses", "openai.responses", { model: "m", input: "news?" }],
+			["chat.completions", "openai.chat.completions", { model: "m", messages: [{ role: "user", content: "news?" }] }],
+		] as const) {
+			const added = applyServerToolPlugins({ endpoint, body, plugins });
+			if (!added.ok) throw new Error("expected ok");
+			const resolved = resolveHostedTools({ endpoint, body: added.body, providers: [candidate("google-ai-studio")] });
+			if (!resolved.ok) throw new Error("expected ok");
+			expect(resolved.webSearchMapped).toBe(true);
+			expect(resolved.body.tools).toEqual([{ type: "phaseo:web_search", parameters: { max_results: 3 } }]);
+
+			const prepared = prepareServerToolsForTextRequest(resolved.body, protocol);
+			if (!prepared.ok) throw new Error(prepared.message);
+			expect(prepared.config.webSearchEnabled).toBe(true);
+			const ir = decodeProtocol(protocol, prepared.body);
+			expect(ir.tools?.map((tool) => tool.name)).toEqual(["phaseo_web_search"]);
+			expect(ir.tools?.some((tool) => isOpenAIHostedToolType(tool.type))).toBe(false);
+		}
+	});
+
+	it("does the same for a client's own phaseo:web_search with engine native", () => {
+		const resolved = resolveHostedTools({
+			endpoint: "responses",
+			body: { model: "m", input: "hi", tools: [{ type: "phaseo:web_search", engine: "native", max_results: 2 }] },
+			providers: [candidate("anthropic")],
+		});
+		expect(resolved.ok && resolved.body.tools).toEqual([{ type: "phaseo:web_search", max_results: 2 }]);
 	});
 });

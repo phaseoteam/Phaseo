@@ -12,6 +12,10 @@
 //        server tool, which runs on any model; any other hosted tool fails the
 //        request with a 400 naming it. Tools are never dropped silently: a model
 //        missing a tool the conversation relies on would change the run.
+//      `phaseo:web_search` with `engine: "native"` (also what the `web` plugin
+//      adds for that engine) becomes OpenAI's hosted web search on these
+//      endpoints later in the request, so it is routed the same way: native
+//      candidates where there are any, otherwise our own search.
 
 import type { Endpoint } from "@core/types";
 import {
@@ -80,6 +84,23 @@ export function gatewayWebSearchToolFor(tool: Record<string, any>): Record<strin
 		: { type: "phaseo:web_search" };
 }
 
+/** Whether a gateway search tool asks for the provider's own search (see ../surfaces/server-tools.ts). */
+function isNativeEngineGatewaySearch(tool: unknown): tool is Record<string, any> {
+	if (!isPlainObject(tool) || !GATEWAY_WEB_SEARCH_TYPES.has(tool.type)) return false;
+	const engine = isPlainObject(tool.parameters) && tool.parameters.engine != null
+		? tool.parameters.engine
+		: tool.engine;
+	return typeof engine === "string" && engine.trim().toLowerCase() === "native";
+}
+
+/** The same gateway search tool on our own search engine (the default one). */
+function withoutNativeEngine(tool: Record<string, any>): Record<string, any> {
+	const { engine: _engine, ...rest } = tool;
+	if (!isPlainObject(rest.parameters)) return rest;
+	const { engine: _parameterEngine, ...parameters } = rest.parameters;
+	return { ...rest, parameters };
+}
+
 function namesHostedWebSearch(toolChoice: unknown): boolean {
 	if (typeof toolChoice === "string") return isOpenAINativeWebSearchToolType(toolChoice.trim());
 	if (!isPlainObject(toolChoice)) return false;
@@ -92,6 +113,10 @@ function rewriteHostedWebSearch(body: any): any {
 	const tools: any[] = [];
 	let hasGatewaySearch = body.tools.some((tool: any) => isPlainObject(tool) && GATEWAY_WEB_SEARCH_TYPES.has(tool.type));
 	for (const tool of body.tools) {
+		if (isNativeEngineGatewaySearch(tool)) {
+			tools.push(withoutNativeEngine(tool));
+			continue;
+		}
 		if (!isPlainObject(tool) || !isOpenAINativeWebSearchToolType(tool.type)) {
 			tools.push(tool);
 			continue;
@@ -125,7 +150,10 @@ export function resolveHostedTools(args: {
 		return unchanged;
 	}
 	const hosted = (args.body.tools as any[])
-		.map((tool, index) => ({ type: isPlainObject(tool) ? tool.type : undefined, index }))
+		.map((tool, index) => ({
+			type: isNativeEngineGatewaySearch(tool) ? "web_search" : isPlainObject(tool) ? tool.type : undefined,
+			index,
+		}))
 		.filter((entry): entry is { type: string; index: number } => isOpenAIHostedToolType(entry.type));
 	if (hosted.length === 0 || args.providers.length === 0) return unchanged;
 
