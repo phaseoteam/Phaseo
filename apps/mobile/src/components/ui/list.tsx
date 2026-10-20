@@ -1,6 +1,6 @@
 import { ChevronRight, type LucideIcon } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, View, type AccessibilityActionEvent } from "react-native";
 import { cn } from "@/lib/cn";
 import { Icon } from "./icon";
 import { Text } from "./text";
@@ -31,6 +31,9 @@ export type RowProps = {
   trailing?: ReactNode;
   value?: string | null;
   onPress?: () => void;
+  /** Also offered to screen readers as an action named `longPressLabel` ("Copy version"). */
+  onLongPress?: () => void;
+  longPressLabel?: string;
   selected?: boolean;
   destructive?: boolean;
   chevron?: boolean;
@@ -39,7 +42,7 @@ export type RowProps = {
   className?: string;
 };
 
-export function Row({ title, subtitle, icon, leading, trailing, value, onPress, selected, destructive, chevron, last, numberOfLines = 1, className }: RowProps) {
+export function Row({ title, subtitle, icon, leading, trailing, value, onPress, onLongPress, longPressLabel, selected, destructive, chevron, last, numberOfLines = 1, className }: RowProps) {
   const content = (
     <>
       {leading ?? (icon ? <View className="w-7 items-center"><Icon icon={icon} tone={destructive ? "destructive" : "muted"} size={19} /></View> : null)}
@@ -56,7 +59,12 @@ export function Row({ title, subtitle, icon, leading, trailing, value, onPress, 
   );
   const box = cn("flex-row items-center gap-3 pl-4 pr-3", selected && "bg-accent", className);
   if (!onPress) return <View className={box}>{content}</View>;
-  return <Pressable accessibilityRole="button" onPress={onPress} className={cn(box, "active:bg-accent")}>{content}</Pressable>;
+  const longPress = onLongPress ? {
+    onLongPress,
+    accessibilityActions: [{ name: "activate" }, { name: "longpress", label: longPressLabel }],
+    onAccessibilityAction: (event: AccessibilityActionEvent) => (event.nativeEvent.actionName === "longpress" ? onLongPress() : onPress()),
+  } : {};
+  return <Pressable accessibilityRole="button" onPress={onPress} {...longPress} className={cn(box, "active:bg-accent")}>{content}</Pressable>;
 }
 
 /** Label/value line for facts (pricing, limits, dates). */

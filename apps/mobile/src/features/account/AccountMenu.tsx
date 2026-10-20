@@ -1,21 +1,27 @@
+import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useFocusEffect, usePathname, useRouter, type Href } from "expo-router";
 import {
-  Activity, Bell, BookOpen, ChartNoAxesColumn, ExternalLink, FileText, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Palette, Plus, Scale,
+  Activity, Bell, BookOpen, ChartNoAxesColumn, ExternalLink, FileText, Gamepad2, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Palette, Plus, Scale,
   Shield, ShieldAlert, ShieldCheck, Sparkles, UserX, Users, Wallet, type LucideIcon,
 } from "lucide-react-native";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
-import { Button, confirm, Header, Icon, Row, Screen, Section, Text, toast } from "@/components/ui";
+import { Button, confirm, dismissToast, Header, Icon, Row, Screen, Section, Text, toast } from "@/components/ui";
 import { readStorageReport } from "@/features/chat/deviceStorage";
-import { VERSION_LABEL } from "@/lib/appInfo";
+import { catalogueQuery } from "@/features/models/state";
+import { FULL_VERSION_LABEL, VERSION_LABEL } from "@/lib/appInfo";
 import { formatBytes, formatNumber, formatUsd, nanosToUsd } from "@/lib/format";
 import { openWeb } from "@/lib/web";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
+import { buildPool, nextTap, TAPS_TO_UNLOCK, tapMessage, topLabs, type TapCount } from "./higherOrLower";
+import { higherOrLowerStore, unlockHigherOrLower } from "./higherOrLowerStore";
+import { FALLBACK_LABS, LogoBurst, type BurstLab } from "./LogoBurst";
 import { useBalance, useKeys, useStatus, useTeam, useTwoFactor, useWeekSpend } from "./queries";
 import { StatusDot } from "./StatusScreen";
 
@@ -33,6 +39,7 @@ const ITEMS = {
   feedback: { href: "/account/feedback", title: "Send feedback", icon: MessageSquareText },
   licences: { href: "/account/licences", title: "Open source licences", icon: Scale },
   diagnostics: { href: "/account/diagnostics", title: "Diagnostics", icon: Gauge },
+  higherOrLower: { href: "/account/higher-or-lower", title: "Higher or lower", icon: Gamepad2 },
 } as const satisfies Record<string, { href: Href; title: string; icon: LucideIcon }>;
 
 const roleLabel = (role?: string | null) => (role ? role.replace(/^\w/, (letter) => letter.toUpperCase()) : "Member");
@@ -64,6 +71,37 @@ export function AccountMenu() {
       setStorage(null);
     }
   }, []));
+
+  // Seven taps on Version and build unlock Higher or lower, as Android's build number unlocks developer options.
+  const queryClient = useQueryClient();
+  const unlocked = higherOrLowerStore.use((state) => state.unlocked);
+  const taps = useRef<TapCount | null>(null);
+  const countdown = useRef<number | null>(null);
+  const [burst, setBurst] = useState<BurstLab[] | null>(null);
+  const endBurst = useCallback(() => setBurst(null), []);
+  const copyVersion = () => void Clipboard.setStringAsync(FULL_VERSION_LABEL).then(() => toast("Version copied."));
+  const tapVersion = () => {
+    if (unlocked) return copyVersion();
+    const tap = nextTap(taps.current, Date.now());
+    taps.current = tap;
+    if (countdown.current != null) dismissToast(countdown.current);
+    countdown.current = null;
+    if (tap.count < TAPS_TO_UNLOCK) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+      // Fetch the catalogue now (it's usually cached) so the game and the celebration have it.
+      if (tap.count === 3) void queryClient.prefetchQuery(catalogueQuery);
+      const message = tapMessage(tap.count);
+      if (message) countdown.current = toast(message, { durationMs: 2500 });
+      return;
+    }
+    taps.current = null;
+    unlockHigherOrLower();
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    toast("It's under About and legal now.", { title: "You found Higher or lower", tone: "success" });
+    const catalogue = queryClient.getQueryData(catalogueQuery.queryKey);
+    const labs = catalogue ? topLabs(buildPool(catalogue.models, Date.now()), 12) : [];
+    setBurst(labs.length >= 6 ? labs : FALLBACK_LABS);
+  };
 
   const item = (key: keyof typeof ITEMS, extra: { subtitle?: string | null; value?: string | null; trailing?: ReactNode; last?: boolean } = {}) => {
     const entry = ITEMS[key];
@@ -154,9 +192,12 @@ export function AccountMenu() {
             title="Version and build"
             value={VERSION_LABEL}
             chevron={false}
-            last
-            onPress={() => void Clipboard.setStringAsync(VERSION_LABEL).then(() => toast("Version copied."))}
+            last={!unlocked}
+            onPress={tapVersion}
+            onLongPress={copyVersion}
+            longPressLabel="Copy version"
           />
+          {unlocked ? item("higherOrLower", { last: true }) : null}
         </Section>
         {session ? (
           <Section>
@@ -171,6 +212,7 @@ export function AccountMenu() {
           </Section>
         ) : null}
       </ScrollView>
+      {burst ? <LogoBurst labs={burst} onDone={endBurst} /> : null}
     </Screen>
   );
 }
