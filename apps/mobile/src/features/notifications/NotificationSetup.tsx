@@ -2,8 +2,8 @@ import { useMutation, useQueries } from "@tanstack/react-query";
 import { useFocusEffect, usePreventRemove, useRouter } from "expo-router";
 import { Check, Send, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AccessibilityInfo, Pressable, ScrollView, Switch, View } from "react-native";
-import { Button, confirm, DialogFrame, EmptyState, ErrorState, Header, Icon, IconButton, LoadingState, ReadableWidth, Row, Screen, Section, Text, toast, toastError, type ViewRef } from "@/components/ui";
+import { AccessibilityInfo, Pressable, ScrollView, View } from "react-native";
+import { Button, confirm, DialogFrame, EmptyState, ErrorState, Header, Icon, IconButton, LoadingState, ReadableWidth, Row, Screen, Section, Switch, switchHaptic, Text, toast, toastError, type ViewRef } from "@/components/ui";
 import { accountKeys } from "@/features/account/queries";
 import { useLayout } from "@/hooks/useLayout";
 import { getCredits, type Workspace } from "@/lib/api/account";
@@ -329,13 +329,16 @@ function Picks({ label, onPick, children }: { label: string; onPick(): void; chi
 /** A row that is one switch: tapping anywhere on it toggles, and screen readers hear a single control. */
 function Toggle({ title, subtitle, value, onChange, disabled, last }: { title: string; subtitle?: string; value: boolean; onChange(value: boolean): void; disabled?: boolean; last?: boolean }) {
   return (
-    <Pressable accessibilityRole="switch" accessibilityLabel={title} accessibilityHint={subtitle} accessibilityState={{ checked: value, disabled }} disabled={disabled} onPress={() => onChange(!value)} className={cn("flex-row items-center pl-4 pr-3 active:bg-accent", disabled && "opacity-50")}>
+    <Pressable accessibilityRole="switch" accessibilityLabel={title} accessibilityHint={subtitle} accessibilityState={{ checked: value, disabled }} disabled={disabled} onPress={() => { switchHaptic(); onChange(!value); }} className={cn("flex-row items-center pl-4 pr-3 active:bg-accent", disabled && "opacity-50")}>
       <View className={cn("min-h-[52px] flex-1 flex-row items-center gap-3 py-3", !last && "border-b border-border")}>
         <View className="flex-1">
           <Text variant="body">{title}</Text>
           {subtitle ? <Text variant="caption" className="mt-0.5">{subtitle}</Text> : null}
         </View>
-        <Switch value={value} disabled={disabled} onValueChange={onChange} trackColorOnClassName="accent-primary" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+        {/* Only a picture of the state: the row takes every tap (and dims itself when disabled). */}
+        <View pointerEvents="none">
+          <Switch value={value} focusable={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+        </View>
       </View>
     </Pressable>
   );
