@@ -6,15 +6,34 @@ icon: "bug"
 
 Auf dieser Seite erfährst du, was ein Phaseo-Fehler bedeutet und was als Nächstes zu tun ist.
 
-Alle Fehlerantworten verwenden dasselbe JSON-Format. So kann deine Anwendung Fehler bei allen Modellen und Anbietern einheitlich behandeln.
+Alle Fehlerantworten verwenden dasselbe JSON-Format. So kann deine Anwendung Fehler bei allen Modellen und Anbietern einheitlich behandeln. Das Feld `error` ist ein Objekt mit `code`, `message` und `type`, also in der Form, die OpenAI-kompatible SDKs lesen. Ihre Ausnahmen enthalten daher die Meldung des Gateways.
 
 ## Beispiel einer Fehlerantwort
 
 ```json
 {
+  "error": {
+    "code": "upstream_error",
+    "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+    "type": "server_error",
+    "param": null,
+    "metadata": {
+      "reason": "all_candidates_failed",
+      "attempt_count": 1,
+      "failed_providers": ["google-ai-studio"],
+      "failed_statuses": [403],
+      "upstream_error": {
+        "code": "PERMISSION_DENIED",
+        "message": "The caller does not have permission.",
+        "description": null,
+        "param": null
+      }
+    }
+  },
+  "code": "upstream_error",
+  "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
   "generation_id": "G-abc123",
   "status_code": 502,
-  "error": "upstream_error",
   "error_type": "system",
   "error_origin": "upstream",
   "reason": "all_candidates_failed",
@@ -53,7 +72,14 @@ Alle Fehlerantworten verwenden dasselbe JSON-Format. So kann deine Anwendung Feh
 
 - `generation_id`: stabile Anfrage-ID, die du an den Support weitergeben kannst.
 - `status_code`: entspricht dem HTTP-Statuscode.
-- `error`: maschinenlesbarer Fehlercode, z. B. `validation_error`.
+- `error`: ein Objekt, das den Fehler beschreibt:
+  - `error.code`: maschinenlesbarer Fehlercode, z. B. `validation_error`.
+  - `error.message`: verständliche Erklärung des Fehlers.
+  - `error.type`: der Fehlertyp (siehe Abschnitt Fehlertypen unten).
+  - `error.param`: der Anfrageparameter, der den Fehler verursacht hat, sofern das Gateway ihn kennt, sonst `null`.
+  - `error.metadata` (optional): strukturierte Details wie der fehlgeschlagene Anbieter, der Untergrund, die fehlgeschlagenen Statuscodes oder `retry_after_seconds`. Dieselben Werte werden auch auf oberster Ebene zurückgegeben.
+- `code`: derselbe Code wie `error.code`. Frühere Antworten lieferten diesen Code als String in `error`; lies `code`, wenn dein Client dort einen String erwartet hat.
+- `message`: derselbe Text wie `error.message`.
 - `error_type`: allgemeine Klasse, meist `user` oder `system`.
 - `error_origin`: gibt an, ob das Problem hauptsächlich durch den Aufrufer, Phaseo oder einen Upstream-Anbieter verursacht wurde.
 - `description`: verständliche Erklärung des Fehlers.
@@ -70,6 +96,24 @@ Einige Fehler enthalten zusätzliche Informationen, die bei der schnelleren Behe
 - `upstream_error` und `failure_sample`: bestmögliche Zusammenfassung des ersten Anbieterfehlers, falls die Anfrage einen Anbieter erreicht hat.
 - `failed_providers`, `failed_statuses` und `attempt_count`: zusätzlicher Kontext zu Wiederholungsversuchen und Failover.
 
+## Fehlertypen
+
+`error.type` folgt den [dokumentierten Fehlertypen von OpenAI](https://platform.openai.com/docs/guides/error-codes) und ergibt sich aus dem HTTP-Status:
+
+| Status | `error.type` |
+| --- | --- |
+| `400`, `409`, `410`, `413`, `422` und andere 4xx | `invalid_request_error` |
+| `401` | `authentication_error` |
+| `402` | `insufficient_quota` |
+| `403` | `permission_error` |
+| `404` | `not_found_error` |
+| `429` | `rate_limit_error` |
+| `503` | `service_unavailable` |
+| `529` | `overloaded` |
+| `500`, `502` und andere 5xx | `server_error` |
+
+Fehler bei `/v1/messages` verwenden denselben Body, sodass auch Anthropic-SDKs `error.type` und `error.message` finden.
+
 ## Bedeutung der Statusklassen
 
 | Status | Bedeutung | Empfohlene Aktion |
@@ -80,20 +124,21 @@ Einige Fehler enthalten zusätzliche Informationen, die bei der schnelleren Behe
 
 ## Häufige Fehlercodes
 
-| Typ | HTTP-Status | Beschreibung |
-| --- | --- | --- |
-| `authentication_error` | `401` | API-Schlüssel fehlt oder ist ungültig. |
-| `authorization_error` | `403` | Der Schlüssel hat keinen Zugriff auf diese Ressource. |
-| `not_found_error` | `404` | Endpunkt oder Ressource wurde nicht gefunden. |
-| `model_retired` | `410` | Das Modell ist eingestellt, und kein Anbieter stellt es mehr bereit. Wechsle zu `replacement_model`. |
-| `rate_limit_error` | `429` | Zu viele Anfragen. Versuche es nach der angegebenen Wartezeit erneut. |
-| `phaseo_free_model_limit_exceeded` | `429` | Das gemeinsame Tageskontingent für kostenlose Phaseo-Modelle ist ausgeschöpft (standardmäßig 1.500 Anfragen). Beachte `Retry-After`, warte bis zur Zurücksetzung um 00:00 UTC oder wähle ein kostenpflichtiges Modell. |
-| `rate_limit_exceeded` | `429` | Eine [Ratenlimit-Richtlinie](./limits.mdx) des Workspace ist ausgeschöpft. `policy_id` und `limit_scope` geben an, welche. Beachte `Retry-After` oder bitte einen Workspace-Admin, die Richtlinie zu ändern. |
-| `validation_error` | `400` | Ungültige Parameter oder ungültiger Anfrage-Body. |
-| `upstream_error` | `429` | Jeder für die Anfrage versuchte Anbieter hat sie wegen Ratenbegrenzung abgelehnt. Beachte `Retry-After`; BYOK-Anfragen enthalten zusätzlich die Header `X-Phaseo-Upstream-RateLimit-*`. Andere Anbieterfehler verwenden `502`. |
-| `provider_error` | `502` | Der Upstream-Modellanbieter hat nicht korrekt geantwortet. |
-| `upstream_stream_failure` | `502` | Eine Anfrage ohne Streaming, deren Anbieter nach Beginn der Generierung fehlgeschlagen ist. Es wird keine Teilausgabe zurückgegeben und die Anfrage wird nicht berechnet. |
-| `server_error` | `500` | In Phaseo ist ein unerwartetes Problem aufgetreten. |
+| `error.code` | HTTP-Status | `error.type` | Beschreibung |
+| --- | --- | --- | --- |
+| `unauthorised` | `401` | `authentication_error` | API-Schlüssel fehlt oder ist ungültig. |
+| `guardrail_blocked` | `403` | `permission_error` | Eine Guardrail oder Zugriffsrichtlinie des Workspace hat die Anfrage blockiert. |
+| `not_found` | `404` | `not_found_error` | Endpunkt oder Ressource wurde nicht gefunden. |
+| `model_retired` | `410` | `invalid_request_error` | Das Modell ist eingestellt, und kein Anbieter stellt es mehr bereit. Wechsle zu `replacement_model`. |
+| `insufficient_funds` | `402` | `insufficient_quota` | Der Workspace hat nicht genügend Guthaben für die Anfrage. |
+| `key_limit_exceeded` | `429` | `rate_limit_error` | Der API-Schlüssel hat eines seiner Limits erreicht. |
+| `phaseo_free_model_limit_exceeded` | `429` | `rate_limit_error` | Das gemeinsame Tageskontingent für kostenlose Phaseo-Modelle ist ausgeschöpft (standardmäßig 1.500 Anfragen). Beachte `Retry-After`, warte bis zur Zurücksetzung um 00:00 UTC oder wähle ein kostenpflichtiges Modell. |
+| `rate_limit_exceeded` | `429` | `rate_limit_error` | Eine [Ratenlimit-Richtlinie](./limits.mdx) des Workspace ist ausgeschöpft. `policy_id` und `limit_scope` geben an, welche. Beachte `Retry-After` oder bitte einen Workspace-Admin, die Richtlinie zu ändern. |
+| `validation_error` | `400` | `invalid_request_error` | Ungültige Parameter oder ungültiger Anfrage-Body. `error.param` nennt das erste ungültige Feld. |
+| `upstream_error` | `429` | `rate_limit_error` | Jeder für die Anfrage versuchte Anbieter hat sie wegen Ratenbegrenzung abgelehnt. Beachte `Retry-After`; BYOK-Anfragen enthalten zusätzlich die Header `X-Phaseo-Upstream-RateLimit-*`. |
+| `upstream_error` | `502` | `server_error` | Der Upstream-Modellanbieter hat nicht korrekt geantwortet. |
+| `upstream_stream_failure` | `502` | `server_error` | Eine Anfrage ohne Streaming, deren Anbieter nach Beginn der Generierung fehlgeschlagen ist. Es wird keine Teilausgabe zurückgegeben und die Anfrage wird nicht berechnet. |
+| `gateway_error` | `500` | `server_error` | In Phaseo ist ein unerwartetes Problem aufgetreten. |
 
 ## Wenn ein Anbieter ausfällt
 
@@ -149,9 +194,15 @@ Häufige Felder:
 
 ```json
 {
+  "error": {
+    "code": "unsupported_model_or_endpoint",
+    "message": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+    "type": "invalid_request_error",
+    "param": null
+  },
+  "code": "unsupported_model_or_endpoint",
   "generation_id": "G-unsupported123",
   "status_code": 400,
-  "error": "unsupported_model_or_endpoint",
   "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
   "provider_candidate_diagnostics": {
     "totalProviders": 3,
@@ -202,9 +253,19 @@ Ein eingestelltes Modell wird weiterhin bereitgestellt, solange ein Anbieter es 
 
 ```json
 {
+  "error": {
+    "code": "model_retired",
+    "message": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+    "type": "invalid_request_error",
+    "param": null,
+    "metadata": {
+      "retired_at": "2026-09-30T00:00:00Z",
+      "replacement_model": "lab/new-model"
+    }
+  },
+  "code": "model_retired",
   "generation_id": "G-retired123",
   "status_code": 410,
-  "error": "model_retired",
   "reason": "model_retired_without_providers",
   "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
   "model": "lab/old-model",
@@ -257,6 +318,21 @@ Lege eine maximale Anzahl von Versuchen und eine Gesamtfrist fest und ergänze d
 
 - Schlägt die Anfrage vor Beginn des Streamings fehl, erhältst du eine standardmäßige JSON-Fehlerantwort.
 - Schlägt sie während des Streams fehl, endet der Stream mit dem Fehlerereignis des Endpunkts statt mit einem normalen Abschluss: einem `error`-Frame bei Chat Completions, `response.failed` (oder `error`) bei Responses und einem `error`-Ereignis bei Messages. Behandle den Teilstream als unvollständig und biete einen erneuten Versuch an.
+- Der `error`-Frame bei Chat Completions enthält dasselbe Fehlerobjekt; `error.type` ergibt sich aus dem Code:
+
+  ```json
+  {
+    "object": "error",
+    "message": "The upstream stream ended before the response completed.",
+    "code": "upstream_stream_failure",
+    "error": {
+      "code": "upstream_stream_failure",
+      "message": "The upstream stream ended before the response completed.",
+      "type": "server_error",
+      "param": null
+    }
+  }
+  ```
 - Schlägt bei einer Anfrage ohne Streaming der Anbieter mittendrin fehl, erhältst du `502` mit `upstream_stream_failure` statt einer Teilantwort.
 - Protokolliere immer `generation_id` sowie Endpunkt- und Modellmetadaten.
 
@@ -295,7 +371,7 @@ Lege eine maximale Anzahl von Versuchen und eine Gesamtfrist fest und ergänze d
 <Visibility for="agents">
 Regeln zur Fehlerbehandlung für Agenten, als Zusammenfassung dieser Seite:
 
-- Entscheide anhand des JSON-Codes `error` und `status_code`, nicht anhand des Texts in `description`. Protokolliere bei jedem Fehler `generation_id`.
+- Entscheide anhand von `error.code` (auch als `code` auf oberster Ebene), `error.type` und `status_code`, nicht anhand des Meldungstexts. Protokolliere bei jedem Fehler `generation_id`.
 - `400`, `401`, `403` und `404`: Korrigiere zuerst Anfrage, Schlüssel oder Zugriff. Wiederhole dieselbe Anfrage nicht unverändert.
 - `410` mit `model_retired`: Wechsle zu `replacement_model`, wenn der Wert nicht `null` ist; andernfalls wähle mit `GET /v1/models` ein neues Modell.
 - `429`: Wenn `Retry-After` vorhanden ist (Sekunden oder HTTP-Datum), warte diese Zeit vor einem neuen Versuch ab; andernfalls nutze exponentielles Backoff mit Jitter. Ein `key_limit_exceeded`-Fehler ohne `Retry-After` setzt sich nicht von selbst zurück, also wiederhole ihn nicht.

@@ -6,15 +6,34 @@ icon: "bug"
 
 इस पेज का उपयोग यह समझने के लिए करें कि Phaseo की त्रुटि का क्या अर्थ है और आगे क्या करना है।
 
-हर त्रुटि प्रतिक्रिया एक ही JSON प्रारूप का उपयोग करती है, ताकि आपका ऐप मॉडल और प्रदाता के बीच होने वाली विफलताओं को एकसमान ढंग से संभाल सके।
+हर त्रुटि प्रतिक्रिया एक ही JSON प्रारूप का उपयोग करती है, ताकि आपका ऐप मॉडल और प्रदाता के बीच होने वाली विफलताओं को एकसमान ढंग से संभाल सके। `error` फ़ील्ड एक ऑब्जेक्ट है जिसमें `code`, `message` और `type` होते हैं, यानी वही रूप जिसे OpenAI-संगत SDK पढ़ते हैं, इसलिए उनके अपवादों में गेटवे का संदेश आता है।
 
 ## त्रुटि प्रतिक्रिया का उदाहरण
 
 ```json
 {
+  "error": {
+    "code": "upstream_error",
+    "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+    "type": "server_error",
+    "param": null,
+    "metadata": {
+      "reason": "all_candidates_failed",
+      "attempt_count": 1,
+      "failed_providers": ["google-ai-studio"],
+      "failed_statuses": [403],
+      "upstream_error": {
+        "code": "PERMISSION_DENIED",
+        "message": "The caller does not have permission.",
+        "description": null,
+        "param": null
+      }
+    }
+  },
+  "code": "upstream_error",
+  "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
   "generation_id": "G-abc123",
   "status_code": 502,
-  "error": "upstream_error",
   "error_type": "system",
   "error_origin": "upstream",
   "reason": "all_candidates_failed",
@@ -53,7 +72,14 @@ icon: "bug"
 
 - `generation_id`: स्थिर request ID जिसे आप support के साथ साझा कर सकते हैं।
 - `status_code`: HTTP स्थिति कोड से मेल खाता है।
-- `error`: मशीन-पठनीय त्रुटि कोड, जैसे `validation_error`।
+- `error`: विफलता का वर्णन करने वाला ऑब्जेक्ट:
+  - `error.code`: मशीन-पठनीय त्रुटि कोड, जैसे `validation_error`।
+  - `error.message`: जो हुआ उसकी सरल भाषा में व्याख्या।
+  - `error.type`: त्रुटि का प्रकार (नीचे त्रुटि प्रकार वाला खंड देखें)।
+  - `error.param`: अनुरोध का वह पैरामीटर जिससे त्रुटि हुई, यदि गेटवे को पता हो, अन्यथा `null`।
+  - `error.metadata` (वैकल्पिक): संरचित विवरण, जैसे विफल प्रदाता, उप-कारण, विफल स्टेटस या `retry_after_seconds`। यही मान शीर्ष स्तर पर भी लौटाए जाते हैं।
+- `code`: `error.code` वाला ही कोड। पहले के रिस्पॉन्स यह कोड `error` में स्ट्रिंग के रूप में लौटाते थे; यदि आपका क्लाइंट वहाँ स्ट्रिंग की अपेक्षा करता था, तो `code` पढ़ें।
+- `message`: `error.message` वाला ही टेक्स्ट।
 - `error_type`: उच्च-स्तरीय वर्ग, आम तौर पर `user` या `system`।
 - `error_origin`: बताता है कि समस्या मुख्य रूप से अनुरोध भेजने वाले, Phaseo या अपस्ट्रीम प्रदाता की वजह से हुई।
 - `description`: क्या हुआ इसका सरल विवरण।
@@ -70,6 +96,24 @@ icon: "bug"
 - `upstream_error` और `failure_sample`: यदि अनुरोध किसी प्रदाता तक पहुँचा हो, तो पहली प्रदाता विफलता का उपलब्ध जानकारी पर आधारित सारांश।
 - `failed_providers`, `failed_statuses` और `attempt_count`: दोबारा प्रयास और विफलता के बाद दूसरे प्रदाता पर जाने का अतिरिक्त संदर्भ।
 
+## त्रुटि प्रकार
+
+`error.type` OpenAI के [प्रलेखित त्रुटि प्रकारों](https://platform.openai.com/docs/guides/error-codes) का पालन करता है और HTTP स्टेटस से तय होता है:
+
+| स्थिति | `error.type` |
+| --- | --- |
+| `400`, `409`, `410`, `413`, `422` और अन्य 4xx | `invalid_request_error` |
+| `401` | `authentication_error` |
+| `402` | `insufficient_quota` |
+| `403` | `permission_error` |
+| `404` | `not_found_error` |
+| `429` | `rate_limit_error` |
+| `503` | `service_unavailable` |
+| `529` | `overloaded` |
+| `500`, `502` और अन्य 5xx | `server_error` |
+
+`/v1/messages` की त्रुटियाँ भी यही बॉडी इस्तेमाल करती हैं, इसलिए Anthropic SDK को भी `error.type` और `error.message` मिलते हैं।
+
 ## स्थिति श्रेणी संबंधी मार्गदर्शन
 
 | स्थिति | अर्थ | सुझाया गया कदम |
@@ -80,20 +124,21 @@ icon: "bug"
 
 ## आम त्रुटि कोड
 
-| प्रकार | HTTP स्थिति | विवरण |
-| --- | --- | --- |
-| `authentication_error` | `401` | API कुंजी मौजूद नहीं है या अमान्य है। |
-| `authorization_error` | `403` | इस कुंजी को संसाधन तक पहुँच की अनुमति नहीं है। |
-| `not_found_error` | `404` | एंडपॉइंट या संसाधन नहीं मिला। |
-| `model_retired` | `410` | मॉडल सेवानिवृत्त हो चुका है और अब कोई प्रदाता उसे उपलब्ध नहीं कराता। `replacement_model` पर स्विच करें। |
-| `rate_limit_error` | `429` | अनुरोधों की संख्या बहुत अधिक है। बताई गई देरी के बाद फिर प्रयास करें। |
-| `phaseo_free_model_limit_exceeded` | `429` | Phaseo के मुफ़्त मॉडलों का साझा दैनिक कोटा समाप्त हो गया है (डिफ़ॉल्ट रूप से 1,500 अनुरोध)। `Retry-After` का पालन करें, 00:00 UTC पर रीसेट होने तक प्रतीक्षा करें या सशुल्क मॉडल चुनें। |
-| `rate_limit_exceeded` | `429` | वर्कस्पेस की एक [दर सीमा नीति](./limits.mdx) समाप्त हो गई है। `policy_id` और `limit_scope` से उसकी पहचान होती है। `Retry-After` का पालन करें, या किसी वर्कस्पेस एडमिन से नीति बदलने को कहें। |
-| `validation_error` | `400` | पैरामीटर या अनुरोध का मुख्य भाग अमान्य है। |
-| `upstream_error` | `429` | अनुरोध के लिए आज़माए गए हर प्रदाता ने उस पर दर सीमा लगाई। `Retry-After` का पालन करें; BYOK अनुरोधों में `X-Phaseo-Upstream-RateLimit-*` हेडर भी होते हैं। प्रदाता की अन्य विफलताओं पर `502` लौटता है। |
-| `provider_error` | `502` | अपस्ट्रीम मॉडल प्रदाता ने सही जवाब नहीं दिया। |
-| `upstream_stream_failure` | `502` | बिना स्ट्रीमिंग वाला अनुरोध, जिसका प्रदाता जनरेशन शुरू होने के बाद विफल हो गया। कोई आंशिक आउटपुट नहीं लौटाया जाता और अनुरोध का शुल्क नहीं लिया जाता। |
-| `server_error` | `500` | Phaseo में अनपेक्षित समस्या हुई। |
+| `error.code` | HTTP स्थिति | `error.type` | विवरण |
+| --- | --- | --- | --- |
+| `unauthorised` | `401` | `authentication_error` | API कुंजी मौजूद नहीं है या अमान्य है। |
+| `guardrail_blocked` | `403` | `permission_error` | वर्कस्पेस की किसी गार्डरेल या एक्सेस नीति ने अनुरोध रोक दिया। |
+| `not_found` | `404` | `not_found_error` | एंडपॉइंट या संसाधन नहीं मिला। |
+| `model_retired` | `410` | `invalid_request_error` | मॉडल सेवानिवृत्त हो चुका है और अब कोई प्रदाता उसे उपलब्ध नहीं कराता। `replacement_model` पर स्विच करें। |
+| `insufficient_funds` | `402` | `insufficient_quota` | वर्कस्पेस में अनुरोध के लिए पर्याप्त क्रेडिट नहीं हैं। |
+| `key_limit_exceeded` | `429` | `rate_limit_error` | API कुंजी अपनी किसी सीमा तक पहुँच गई। |
+| `phaseo_free_model_limit_exceeded` | `429` | `rate_limit_error` | Phaseo के मुफ़्त मॉडलों का साझा दैनिक कोटा समाप्त हो गया है (डिफ़ॉल्ट रूप से 1,500 अनुरोध)। `Retry-After` का पालन करें, 00:00 UTC पर रीसेट होने तक प्रतीक्षा करें या सशुल्क मॉडल चुनें। |
+| `rate_limit_exceeded` | `429` | `rate_limit_error` | वर्कस्पेस की एक [दर सीमा नीति](./limits.mdx) समाप्त हो गई है। `policy_id` और `limit_scope` से उसकी पहचान होती है। `Retry-After` का पालन करें, या किसी वर्कस्पेस एडमिन से नीति बदलने को कहें। |
+| `validation_error` | `400` | `invalid_request_error` | पैरामीटर या अनुरोध का मुख्य भाग अमान्य है। `error.param` पहले अमान्य फ़ील्ड का नाम बताता है। |
+| `upstream_error` | `429` | `rate_limit_error` | अनुरोध के लिए आज़माए गए हर प्रदाता ने उस पर दर सीमा लगाई। `Retry-After` का पालन करें; BYOK अनुरोधों में `X-Phaseo-Upstream-RateLimit-*` हेडर भी होते हैं। |
+| `upstream_error` | `502` | `server_error` | अपस्ट्रीम मॉडल प्रदाता ने सही जवाब नहीं दिया। |
+| `upstream_stream_failure` | `502` | `server_error` | बिना स्ट्रीमिंग वाला अनुरोध, जिसका प्रदाता जनरेशन शुरू होने के बाद विफल हो गया। कोई आंशिक आउटपुट नहीं लौटाया जाता और अनुरोध का शुल्क नहीं लिया जाता। |
+| `gateway_error` | `500` | `server_error` | Phaseo में अनपेक्षित समस्या हुई। |
 
 ## प्रदाता विफल होने पर
 
@@ -149,9 +194,15 @@ icon: "bug"
 
 ```json
 {
+  "error": {
+    "code": "unsupported_model_or_endpoint",
+    "message": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+    "type": "invalid_request_error",
+    "param": null
+  },
+  "code": "unsupported_model_or_endpoint",
   "generation_id": "G-unsupported123",
   "status_code": 400,
-  "error": "unsupported_model_or_endpoint",
   "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
   "provider_candidate_diagnostics": {
     "totalProviders": 3,
@@ -201,9 +252,19 @@ icon: "bug"
 
 ```json
 {
+  "error": {
+    "code": "model_retired",
+    "message": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+    "type": "invalid_request_error",
+    "param": null,
+    "metadata": {
+      "retired_at": "2026-09-30T00:00:00Z",
+      "replacement_model": "lab/new-model"
+    }
+  },
+  "code": "model_retired",
   "generation_id": "G-retired123",
   "status_code": 410,
-  "error": "model_retired",
   "reason": "model_retired_without_providers",
   "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
   "model": "lab/old-model",
@@ -256,6 +317,21 @@ Debug mode केवल development या कड़ाई से नियं�
 
 - Streaming शुरू होने से पहले request विफल हो, तो standard JSON error payload मिलता है।
 - स्ट्रीम के बीच में विफलता हो, तो स्ट्रीम सामान्य समाप्ति के बजाय एंडपॉइंट के विफलता इवेंट पर खत्म होती है: Chat Completions पर `error` फ़्रेम, Responses पर `response.failed` (या `error`), और Messages पर `error` इवेंट। आंशिक स्ट्रीम को अधूरा मानें और पुनः प्रयास का विकल्प दें।
+- Chat Completions का `error` फ़्रेम भी यही त्रुटि ऑब्जेक्ट रखता है, और `error.type` कोड से तय होता है:
+
+  ```json
+  {
+    "object": "error",
+    "message": "The upstream stream ended before the response completed.",
+    "code": "upstream_stream_failure",
+    "error": {
+      "code": "upstream_stream_failure",
+      "message": "The upstream stream ended before the response completed.",
+      "type": "server_error",
+      "param": null
+    }
+  }
+  ```
 - बिना स्ट्रीमिंग वाले अनुरोध का प्रदाता बीच में विफल हो, तो आंशिक प्रतिक्रिया के बजाय `upstream_stream_failure` के साथ `502` लौटता है।
 - हमेशा `generation_id` और endpoint/model metadata रिकॉर्ड करें।
 
@@ -294,7 +370,7 @@ Debug mode केवल development या कड़ाई से नियं�
 <Visibility for="agents">
 एजेंट के लिए त्रुटि-प्रबंधन नियम, इस पेज का सार:
 
-- `description` के टेक्स्ट पर नहीं, बल्कि JSON के `error` कोड और `status_code` के आधार पर निर्णय लें। हर विफलता के साथ `generation_id` लॉग करें।
+- `error.code` (जो शीर्ष स्तर पर `code` के रूप में भी आता है), `error.type` और `status_code` के आधार पर निर्णय लें, संदेश के टेक्स्ट के आधार पर नहीं। हर विफलता के साथ `generation_id` लॉग करें।
 - `400`, `401`, `403` और `404`: पहले अनुरोध, कुंजी या एक्सेस ठीक करें। वही अनुरोध बिना बदलाव के दोबारा न भेजें।
 - `model_retired` वाला `410`: अगर `replacement_model` `null` न हो, तो उस पर स्विच करें; नहीं तो `GET /v1/models` से नया मॉडल चुनें।
 - `429`: अगर `Retry-After` मौजूद हो (सेकंड या HTTP तारीख), तो दोबारा प्रयास से पहले उतनी प्रतीक्षा करें; नहीं तो जिटर वाला एक्सपोनेंशियल बैकऑफ़ इस्तेमाल करें। `Retry-After` के बिना `key_limit_exceeded` त्रुटि अपने आप रीसेट नहीं होती, इसलिए उसे दोबारा न आज़माएँ।
