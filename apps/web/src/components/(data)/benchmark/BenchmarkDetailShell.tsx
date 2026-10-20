@@ -68,6 +68,7 @@ export default async function BenchmarkDetailShell({
 	const displayName = artificialAnalysis ? "Artificial Analysis" : epochCapabilitiesIndex ? "Epoch AI" : benchmark.name ?? benchmark.id;
 
 	if (artificialAnalysis) return <main className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><div className="flex items-center gap-2.5"><ArtificialAnalysisLogo size={22} /><h1 className="text-sm font-semibold tracking-tight">Artificial Analysis</h1></div><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</main>;
+	if (epochCapabilitiesIndex) return <main className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><h1 className="flex items-center gap-3 text-sm font-semibold"><Image src="/benchmarks/epoch-ai.svg" alt="Epoch AI" width={116} height={22} className="h-[22px] w-auto dark:hidden" /><Image src="/benchmarks/epoch-ai_dark.svg" alt="Epoch AI" width={116} height={22} className="hidden h-[22px] w-auto dark:block" /><span className="border-l pl-3 text-muted-foreground">{tChart("frontierAICapability")}</span></h1><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</main>;
 
 	return (
 		<main className="flex flex-col">
