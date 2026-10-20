@@ -22,6 +22,10 @@ export interface ResponsesResponse {
           type: "output_text";
         }
       | {
+          text: string;
+          type: "reasoning_text";
+        }
+      | {
           b64_json?: string;
           image_url?: {
             url?: string;
@@ -57,6 +61,10 @@ export interface ResponsesResponse {
           annotations?: {}[];
           text: string;
           type: "output_text";
+        }
+      | {
+          text: string;
+          type: "reasoning_text";
         }
       | {
           b64_json?: string;

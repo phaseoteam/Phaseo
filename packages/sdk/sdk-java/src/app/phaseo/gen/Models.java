@@ -620,6 +620,7 @@ public final class Models {
 		public Object content;
 		public java.util.List<Object> images;
 		public String name;
+		public String reasoning;
 		public String reasoning_content;
 		public java.util.List<Object> reasoning_details;
 		public Object role;
@@ -3072,8 +3073,10 @@ public final class Models {
 	public static class ResponsesInputItem {
 		public Object content;
 		public String encrypted_content;
+		public Object format;
 		public String id;
 		public Object role;
+		public String signature;
 		public java.util.List<Object> summary;
 		public String type;
 	}
@@ -3115,6 +3118,11 @@ public final class Models {
 	}
 
 	public static class ResponsesReasoningSummaryPart {
+		public String text;
+		public Object type;
+	}
+
+	public static class ResponsesReasoningTextPart {
 		public String text;
 		public Object type;
 	}

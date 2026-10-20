@@ -947,6 +947,8 @@ module Phaseo
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] name
     #   @return [String, nil]
+    # @!attribute [rw] reasoning
+    #   @return [String, nil]
     # @!attribute [rw] reasoning_content
     #   @return [String, nil]
     # @!attribute [rw] reasoning_details
@@ -957,7 +959,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] tool_calls
     #   @return [Array<Hash{String => Object}>, nil]
-    ChatMessage = Struct.new(:audios, :content, :images, :name, :reasoning_content, :reasoning_details, :role, :tool_call_id, :tool_calls, keyword_init: true)
+    ChatMessage = Struct.new(:audios, :content, :images, :name, :reasoning, :reasoning_content, :reasoning_details, :role, :tool_call_id, :tool_calls, keyword_init: true)
     # @!attribute [rw] data
     #   @return [String, nil]
     # @!attribute [rw] format
@@ -4321,15 +4323,19 @@ module Phaseo
     #   @return [String, Array<Hash{String => Object}>, Hash{String => Object}, nil]
     # @!attribute [rw] encrypted_content
     #   @return [String, nil]
+    # @!attribute [rw] format
+    #   @return [String, nil]
     # @!attribute [rw] id
     #   @return [String, nil]
     # @!attribute [rw] role
+    #   @return [String, nil]
+    # @!attribute [rw] signature
     #   @return [String, nil]
     # @!attribute [rw] summary
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] type
     #   @return [String, nil]
-    ResponsesInputItem = Struct.new(:content, :encrypted_content, :id, :role, :summary, :type, keyword_init: true)
+    ResponsesInputItem = Struct.new(:content, :encrypted_content, :format, :id, :role, :signature, :summary, :type, keyword_init: true)
     # @!attribute [rw] audio_url
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] b64_json
@@ -4382,6 +4388,11 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     ResponsesReasoningSummaryPart = Struct.new(:text, :type, keyword_init: true)
+    # @!attribute [rw] text
+    #   @return [String]
+    # @!attribute [rw] type
+    #   @return [String]
+    ResponsesReasoningTextPart = Struct.new(:text, :type, keyword_init: true)
     # @!attribute [rw] background
     #   @return [Boolean, nil]
     # @!attribute [rw] cache_control

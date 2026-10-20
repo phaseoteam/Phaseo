@@ -78,6 +78,7 @@ export interface ChatCompletionsResponse {
         type: "image_url";
       }[];
       name?: string;
+      reasoning?: string;
       reasoning_content?: string;
       reasoning_details?: {
         data?: string;
