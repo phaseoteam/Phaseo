@@ -136,6 +136,7 @@
     "models/EndpointCatalogueEntry.ts",
     "models/EndpointCatalogueResponse.ts",
     "models/ErrorFailureSampleItem.ts",
+    "models/ErrorObject.ts",
     "models/ErrorProviderCandidateDiagnostics.ts",
     "models/ErrorProviderEnablementDiagnostics.ts",
     "models/ErrorProviderFailureDiagnostics.ts",

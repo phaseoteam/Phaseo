@@ -1834,6 +1834,14 @@ type ErrorFailureSampleItem struct {
 	UpstreamPayloadPreview *string `json:"upstream_payload_preview,omitempty"`
 }
 
+type ErrorObject struct {
+	Code string `json:"code"`
+	Message string `json:"message"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Param *string `json:"param,omitempty"`
+	Type string `json:"type"`
+}
+
 type ErrorProviderCandidateDiagnostics struct {
 	CandidateCount *int `json:"candidateCount,omitempty"`
 	DroppedMissingAdapter *[]map[string]interface{} `json:"droppedMissingAdapter,omitempty"`
@@ -1857,6 +1865,7 @@ type ErrorProviderFailureDiagnostics struct {
 
 type ErrorResponse struct {
 	AttemptCount *int `json:"attempt_count,omitempty"`
+	Code *string `json:"code,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Details *[]map[string]interface{} `json:"details,omitempty"`
 	Error interface{} `json:"error"`

@@ -131,6 +131,7 @@ export type { EmbeddingsResponse } from "./EmbeddingsResponse.js";
 export type { EndpointCatalogueEntry } from "./EndpointCatalogueEntry.js";
 export type { EndpointCatalogueResponse } from "./EndpointCatalogueResponse.js";
 export type { ErrorFailureSampleItem } from "./ErrorFailureSampleItem.js";
+export type { ErrorObject } from "./ErrorObject.js";
 export type { ErrorProviderCandidateDiagnostics } from "./ErrorProviderCandidateDiagnostics.js";
 export type { ErrorProviderEnablementDiagnostics } from "./ErrorProviderEnablementDiagnostics.js";
 export type { ErrorProviderFailureDiagnostics } from "./ErrorProviderFailureDiagnostics.js";
