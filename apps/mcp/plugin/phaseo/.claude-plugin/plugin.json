@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "phaseo",
   "displayName": "Phaseo",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Build on the Phaseo AI gateway: integration, migration, model selection, SDK and CLI skills, plus the Phaseo MCP for live models, pricing and usage and the Phaseo Docs MCP.",
   "author": {
     "name": "Phaseo",
