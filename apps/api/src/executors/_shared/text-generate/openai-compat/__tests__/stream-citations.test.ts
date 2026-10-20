@@ -6,7 +6,7 @@ import { createAnthropicToResponsesStreamTransformer } from "../../../../anthrop
 import { consumeTextProtocolStreamToIR } from "@pipeline/surfaces/server-tools.stream";
 import { encodeProtocol } from "@protocols/index";
 import { ANTHROPIC_REASONING_FORMAT, sealReasoningState } from "@core/reasoning-state";
-import { createResponsesStreamNormaliser } from "@pipeline/after/responses-stream-normaliser";
+import { passthroughWithPricing } from "@pipeline/after/streaming";
 
 type Frame = { event?: string; data: any } | "[DONE]";
 type ClientProtocol = "openai.chat.completions" | "openai.responses" | "anthropic.messages";
@@ -256,15 +256,20 @@ describe("citations and refusals from a Responses upstream", () => {
 	});
 });
 
-/** What a Responses client receives: the executor's frames after the client boundary. */
-function atResponsesClient(frames: Array<{ event: string | null; data: any }>): Array<{ event: string | null; data: any }> {
-	const normaliser = createResponsesStreamNormaliser();
-	return frames.flatMap((frame) => normaliser.normalise(frame.event, frame.data).map((out) => ({ event: out.eventName, data: out.frame })));
+/** What a Responses client receives: the executor's stream after the client boundary. */
+async function atResponsesClient(text: string): Promise<Array<{ event: string | null; data: any }>> {
+	const response = await passthroughWithPricing({
+		upstream: new Response(text, { headers: { "Content-Type": "text/event-stream" } }),
+		ctx: { requestId: "req_cite", workspaceId: "team_test", endpoint: "responses", protocol: "openai.responses", meta: {} } as any,
+		provider: "anthropic",
+		priceCard: null,
+	});
+	return parseFrames(await response.text());
 }
 
 describe("citations from Claude", () => {
 	it("turns citations_delta into Responses annotations, streamed and in the completed response", async () => {
-		const frames = atResponsesClient(parseFrames(await claudeClientStream("openai.responses", [WEB_CITATION, DOCUMENT_CITATION])));
+		const frames = await atResponsesClient(await claudeClientStream("openai.responses", [WEB_CITATION, DOCUMENT_CITATION]));
 		// A document citation has no Responses annotation form.
 		expect(frames.filter((frame) => frame.event === "response.output_text.annotation.added")).toHaveLength(1);
 		expect(frames.find((frame) => frame.event === "response.output_text.annotation.added")?.data.annotation)
