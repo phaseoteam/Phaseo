@@ -140,7 +140,10 @@ describe("classifier settings writes", () => {
 
 	it("stores storage units in the caller's workspace and records an audit event", async () => {
 		const requests = database({ role: "admin" });
-		const response = await call("/classifiers", { method: "POST", body: JSON.stringify({ ...valid, workspace_id: "victim" }) });
+		const injected = await call("/classifiers", { method: "POST", body: JSON.stringify({ ...valid, workspace_id: "victim" }) });
+		expect(injected.status).toBe(400);
+		expect(((await injected.json()) as any).message).toBe("Unknown field: workspace_id");
+		const response = await call("/classifiers", { method: "POST", body: JSON.stringify(valid) });
 		expect(response.status).toBe(201);
 		const insert = requests.find((entry) => entry.method === "POST" && entry.url.pathname.endsWith("/workspace_request_classifiers"))!;
 		expect(insert.body).toMatchObject({ workspace_id: WORKSPACE, created_by: "user-a", sample_rate_bps: 2_500, monthly_budget_nanos: 5_000_000_000 });

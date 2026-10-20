@@ -48,6 +48,12 @@ function isManager(context: AccountWorkspaceContext): boolean {
 	return context.isOwner || ["owner", "admin"].includes(context.role.toLowerCase());
 }
 
+/** The body also carries workspaceId, which the shared parser would reject as an unknown field. */
+function classifierInput(body: Body): Body {
+	const { workspaceId: _workspaceId, ...input } = body;
+	return input;
+}
+
 async function managerContext(c: any, workspaceId: unknown) {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: String(workspaceId ?? "") });
 	if (!context) return { response: json(c, { error: "forbidden" }, 403) } as const;
@@ -146,7 +152,7 @@ accountSettingsClassifiersRouter.post("/classifiers", async (c) => {
 	for (const field of ["name", "model", "dimensions"] as const) {
 		if (body[field] === undefined) return badRequest(c, `${field} is required`);
 	}
-	const fields = parseClassifierFields(body);
+	const fields = parseClassifierFields(classifierInput(body));
 	if (fields.ok === false) return badRequest(c, fields.message);
 	const { context } = access;
 	const result = await context.client.from("workspace_request_classifiers").insert({
@@ -166,7 +172,7 @@ accountSettingsClassifiersRouter.put("/classifiers/:classifierId", async (c) => 
 	if ("response" in access) return access.response;
 	const id = classifierId(c);
 	if (!id) return badRequest(c, "A classifier id is required");
-	const fields = parseClassifierFields(body);
+	const fields = parseClassifierFields(classifierInput(body));
 	if (fields.ok === false) return badRequest(c, fields.message);
 	if (Object.keys(fields.value).length === 0) return badRequest(c, "Provide at least one field to update");
 	const { context } = access;
