@@ -17,7 +17,7 @@ import {
     stripUsagePricing,
     type RequestMediaCounts,
 } from "../usage";
-import { normalizeAnthropicUsage, presentUsageForClient, extractFinishReason } from "./payload";
+import { normalizeAnthropicUsage, presentUsageForClient, extractFinishReason, usageCostFields } from "./payload";
 import {
 	classifyProviderHealthImpact,
 	onCallEnd,
@@ -237,6 +237,34 @@ export async function handleStreamResponse(
             mediaCounts: requestMediaCounts,
         });
     };
+    // Usage frames carry the request's price as priced from that frame's usage. A BYOK
+    // request is charged a service fee that is only worked out when the stream settles, so
+    // its frames give that price as the provider's cost on the customer's key, not as `cost`.
+    const streamIsByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
+    const withStreamCostBasis = <T>(usage: T): T => {
+        const record = usage as any;
+        if (!streamIsByok || !record || typeof record !== "object" || typeof record.cost !== "number") return usage;
+        const { cost, ...rest } = record;
+        return { ...rest, cost_details: { ...(rest.cost_details ?? {}), upstream_inference_cost: cost } } as T;
+    };
+    // Messages usage frames are not otherwise priced for the client: add only the cost
+    // fields, priced the same way as the Chat and Responses usage frames.
+    const messagesStreamCostFields = (usage: any) => {
+        if (!card || !usage || typeof usage !== "object") return undefined;
+        try {
+            const { pricedUsage } = calculatePricing(
+                shapeStreamUsageForClient(usage),
+                card,
+                ctx.body,
+                ctx.teamEnrichment?.tier ?? 'basic',
+                ctx.meta
+            );
+            return withStreamCostBasis(usageCostFields((pricedUsage as any)?.pricing));
+        } catch {
+            // Cost is informational on the frame; settlement prices the request separately.
+            return undefined;
+        }
+    };
     if (ctx.meta?.debug) {
         void logDebugEvent("stream.start", {
             requestId: ctx.requestId,
@@ -308,7 +336,9 @@ export async function handleStreamResponse(
                     });
                 }
                 if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
+                    const costFields = next.type === "message_delta" ? messagesStreamCostFields(next.usage) : undefined;
                     next.usage = normalizeAnthropicUsage(next.usage);
+                    if (costFields) Object.assign(next.usage, costFields);
                 } else if (card) {
                     const shapedUsage = shapeStreamUsageForClient(next.usage);
                     const tier = ctx.teamEnrichment?.tier ?? 'basic';
@@ -327,9 +357,9 @@ export async function handleStreamResponse(
                             pricing: (pricedUsage as any)?.pricing ?? null,
                         });
                     }
-                    next.usage = presentUsageForClient(withProviderHint(pricedUsage), {
+                    next.usage = withStreamCostBasis(presentUsageForClient(withProviderHint(pricedUsage), {
                         endpoint: ctx.endpoint,
-                    });
+                    }));
                 } else {
                     next.usage = presentUsageForClient(
                         shapeStreamUsageForClient(next.usage),
@@ -365,9 +395,9 @@ export async function handleStreamResponse(
                             pricing: (pricedUsage as any)?.pricing ?? null,
                         });
                     }
-                    next.response.usage = presentUsageForClient(withProviderHint(pricedUsage), {
+                    next.response.usage = withStreamCostBasis(presentUsageForClient(withProviderHint(pricedUsage), {
                         endpoint: ctx.endpoint,
-                    });
+                    }));
                 } else {
                     next.response.usage = presentUsageForClient(
                         shapeStreamUsageForClient(next.response.usage),
