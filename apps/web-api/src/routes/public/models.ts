@@ -10,6 +10,7 @@ import { composeGatewayMetadata, fetchGatewayMetadataSource } from "@/models/gat
 import { fetchModelPricingSources, publicPricingRouteIdentity } from "@/models/pricing";
 import { publicProviderDisplayName, publicProviderPayload, STEALTH_PROVIDER_DISPLAY_NAME } from "@/models/provider-identity";
 import { buildFreeRouterCatalogueRow, fetchFreeRouterOverview } from "@/models/free-router";
+import { normalizeModelLicense } from "@/models/license";
 import { PRIVATE_NO_STORE_HEADERS, withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 // Public performance and usage telemetry is aggregated, cached, and excludes
@@ -462,6 +463,14 @@ export async function fetchGatewayMonitorRows(
 		fetchProviderStatuses(env, providerIds, signal),
 	]);
 
+	// `:free` variants without a licence of their own use their base model's.
+	const licenseByBaseModelId = new Map<string, string>();
+	for (const row of rows) {
+		const license = normalizeModelLicense(row.model_license);
+		const baseId = String(row.model_id ?? row.api_model_id ?? "").trim().replace(/:free$/i, "");
+		if (license && baseId && !licenseByBaseModelId.has(baseId)) licenseByBaseModelId.set(baseId, license);
+	}
+
 	const byModelId = new Map<string, Record<string, unknown>[]>();
 	for (const row of rows) {
 		const baseModelId = String(row.model_id ?? row.api_model_id ?? "").trim();
@@ -497,6 +506,9 @@ export async function fetchGatewayMonitorRows(
 			apiModelId,
 			organisationId: row.organisation_id ?? undefined,
 			organisationName: row.organisation_name ?? undefined,
+			license: normalizeModelLicense(row.model_license)
+				?? licenseByBaseModelId.get(modelId.replace(/:free$/i, ""))
+				?? undefined,
 			provider: {
 				name: publicProviderDisplayName(providerId, row.api_provider_name),
 				id: providerId,
@@ -630,6 +642,7 @@ function buildModelsTablePayload(
 			modelId: row.modelId,
 			organisationId: row.organisationId,
 			organisationName: row.organisationName,
+			license: row.license,
 			provider: {
 				name: provider.name,
 				id: provider.id,

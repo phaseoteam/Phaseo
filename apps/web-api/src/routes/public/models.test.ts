@@ -633,6 +633,40 @@ describe("public model routes", () => {
 		});
 	});
 
+	it("gives free table rows their base model's licence when they have none", async () => {
+		const base = {
+			model_name: "Laguna S 2.1", organisation_id: "poolside", organisation_name: "Poolside",
+			provider_id: "poolside", api_provider_name: "Poolside", capability_id: "text.generate",
+			capability_status: "active", is_active_gateway: true,
+			input_modalities: ["text"], output_modalities: ["text"],
+		};
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify([
+				{ ...base, model_id: "poolside/laguna-s-2.1:free", api_model_id: "poolside/laguna-s-2.1:free",
+					provider_api_model_id: "poolside:laguna:free", is_free_variant: true, model_license: null },
+				{ ...base, model_id: "poolside/laguna-s-2.1", api_model_id: "poolside/laguna-s-2.1",
+					provider_api_model_id: "poolside:laguna", model_license: "Apache-2.0" },
+			]), { status: 200 });
+			if (url.includes("v2_providers?")) return new Response(JSON.stringify([
+				{ provider_slug: "poolside", status: "active" },
+			]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models?catalogue_version=v2&shape=table&projection=2&limit=10000",
+			{},
+			env,
+		);
+
+		const payload = await response.json() as { models: Array<{ modelId: string; license?: string }> };
+		expect(Object.fromEntries(payload.models.map((model) => [model.modelId, model.license]))).toEqual({
+			"poolside/laguna-s-2.1": "Apache 2.0",
+			"poolside/laguna-s-2.1:free": "Apache 2.0",
+		});
+	});
+
 	it("reports unlisted token prices as null and keeps per-unit charges in the table projection", async () => {
 		const base = {
 			organisation_id: "alibaba", organisation_name: "Alibaba", provider_id: "venice",

@@ -57,6 +57,7 @@ import {
 	Globe2,
 	LockKeyhole,
 	Scale,
+	ScrollText,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -112,6 +113,12 @@ import type {
 	OptionCount,
 } from "./modelsDisplay.types";
 import { compareModelsByNewest } from "./modelOrdering";
+import { LicenseFilterList, useLicenseGroupLabel } from "./LicenseFilterList";
+import {
+	matchesLicenseSelection,
+	parseLicenseGroups,
+	type LicenseSelection,
+} from "@/lib/models/licenseFilter";
 
 interface ModelsDisplayProps {
 	modelsPageData: ModelsPageData;
@@ -131,6 +138,7 @@ type PreparedModel = {
 	supportedParametersSet: ReadonlySet<string>;
 	maxContextLength: number | null;
 	creator: string;
+	license: string;
 	modelYear: string;
 	searchIndex: string;
 	sortPrice: number | null;
@@ -152,6 +160,7 @@ type FilterDimension =
 	| "providers"
 	| "regions"
 	| "creators"
+	| "licenses"
 	| "years";
 
 const SORT_OPTION_KEYS: Record<ModelsSortOption, string> = {
@@ -179,6 +188,7 @@ const CONTEXT_LENGTH_STOPS = [
 ] as const;
 
 const MOBILE_FILTER_FAB_VISIBILITY_THRESHOLD = 240;
+const EMPTY_OPTIONS: OptionCount[] = [];
 const OUTPUT_MODALITY_DISPLAY_ORDER = [
 	"text",
 	"image",
@@ -925,6 +935,7 @@ function ModelsDisplayContent({
 	const { models, facets } = modelsPageData;
 	const t = useTranslations("Catalogue.models");
 	const tFilters = useTranslations("Catalogue.models.filtersUi");
+	const licenseGroupLabel = useLicenseGroupLabel();
 	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
 	const translateModality = (value: string) => {
@@ -1134,6 +1145,28 @@ function ModelsDisplayContent({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [selectedLicenses, setSelectedLicenses] = useQueryState("licenses", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedLicenseTypes, setSelectedLicenseTypes] = useQueryState("licenseType", {
+		defaultValue: [] as string[],
+		parse: (value) => parseLicenseGroups(parseCsvParam(value)),
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const licenseSelection = useMemo(
+		() => ({ groups: selectedLicenseTypes, licenses: selectedLicenses }),
+		[selectedLicenseTypes, selectedLicenses],
+	);
+	const setLicenseSelection = (selection: LicenseSelection) => {
+		void setSelectedLicenseTypes(selection.groups);
+		void setSelectedLicenses(selection.licenses);
+	};
 	const [selectedYears, setSelectedYears] = useQueryState("years", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
@@ -1195,6 +1228,7 @@ function ModelsDisplayContent({
 		providerOptions: baseProviderOptions,
 		regionOptions: baseRegionOptions,
 		creatorOptions: baseCreatorOptions,
+		licenseOptions: baseLicenseOptions = EMPTY_OPTIONS,
 		yearOptions: baseYearOptions,
 	} = facets;
 
@@ -1210,6 +1244,8 @@ function ModelsDisplayContent({
 		selectedProviders.length +
 		selectedRegions.length +
 		selectedCreators.length +
+		selectedLicenseTypes.length +
+		selectedLicenses.length +
 		selectedYears.length;
 
 	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
@@ -1265,6 +1301,7 @@ function ModelsDisplayContent({
 							model.organisation_id,
 						) ?? "",
 					).trim(),
+					license: String(model.license ?? "").trim(),
 					modelYear: getModelYear(model),
 					searchIndex: [
 						String(model.name ?? "").trim(),
@@ -1392,6 +1429,12 @@ function ModelsDisplayContent({
 				return false;
 			}
 			if (
+				exclude !== "licenses" &&
+				!matchesLicenseSelection(prepared.license, licenseSelection)
+			) {
+				return false;
+			}
+			if (
 				exclude !== "years" &&
 				selectedYears.length > 0 &&
 				!selectedYears.includes(prepared.modelYear)
@@ -1405,6 +1448,7 @@ function ModelsDisplayContent({
 			deferredSearch,
 			selectedContextMin,
 			selectedCreators,
+			licenseSelection,
 			effectiveSelectedStatuses,
 			selectedEndpoints,
 			selectedFeatures,
@@ -1481,6 +1525,7 @@ function ModelsDisplayContent({
 				providerOptions: baseProviderOptions,
 				regionOptions: baseRegionOptions,
 				creatorOptions: baseCreatorOptions,
+				licenseOptions: baseLicenseOptions,
 				yearOptions: baseYearOptions,
 			};
 		}
@@ -1567,6 +1612,13 @@ function ModelsDisplayContent({
 				),
 				selectedCreators,
 			),
+			licenseOptions: mergeOptionCounts(
+				baseLicenseOptions,
+				countPreparedValues(withAllExcept("licenses"), (prepared) =>
+					prepared.license ? [prepared.license] : [],
+				),
+				selectedLicenses,
+			),
 			yearOptions: mergeOptionCounts(
 				baseYearOptions,
 				countPreparedValues(withAllExcept("years"), (prepared) =>
@@ -1580,6 +1632,7 @@ function ModelsDisplayContent({
 		baseEndpointOptions,
 		baseFeatureOptions,
 		baseInputModalityOptions,
+		baseLicenseOptions,
 		baseOutputModalityOptions,
 		baseProviderOptions,
 		baseRegionOptions,
@@ -1594,6 +1647,7 @@ function ModelsDisplayContent({
 		selectedEndpoints,
 		selectedFeatures,
 		selectedInputModalities,
+		selectedLicenses,
 		selectedOutputModalities,
 		selectedProviders,
 		selectedRegions,
@@ -1615,6 +1669,8 @@ function ModelsDisplayContent({
 		setSelectedProviders([]);
 		setSelectedRegions([]);
 		setSelectedCreators([]);
+		setSelectedLicenses([]);
+		setSelectedLicenseTypes([]);
 		setSelectedYears([]);
 	};
 
@@ -1723,6 +1779,7 @@ function ModelsDisplayContent({
 		});
 	}, [dynamicSidebarCounts.regionOptions]);
 	const creatorOptions = dynamicSidebarCounts.creatorOptions;
+	const licenseOptions = dynamicSidebarCounts.licenseOptions;
 	const yearOptions = dynamicSidebarCounts.yearOptions;
 
 	const handleFilterSectionChange = (sections: string[]) => {
@@ -1753,6 +1810,8 @@ function ModelsDisplayContent({
 		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
 		...selectedRegions.map((value) => ({ key: `region-${value}`, label: tFilters("filterRegion", { value: translateRegion(value) }), onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
 		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: tFilters("filterCreator", { value }), onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
+		...selectedLicenseTypes.map((value) => ({ key: `license-type-${value}`, label: tFilters("filterLicense", { value: licenseGroupLabel(value) }), onRemove: () => setSelectedLicenseTypes(without(selectedLicenseTypes, value)) })),
+		...selectedLicenses.map((value) => ({ key: `license-${value}`, label: tFilters("filterLicense", { value }), onRemove: () => setSelectedLicenses(without(selectedLicenses, value)) })),
 		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: translateFeature(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
 		...selectedEndpoints.map((value) => ({ key: `endpoint-${value}`, label: tFilters("filterEndpoint", { value: translateEndpoint(value) }), onRemove: () => setSelectedEndpoints(without(selectedEndpoints, value)) })),
 		...selectedYears.map((value) => ({ key: `year-${value}`, label: tFilters("filterYear", { value }), onRemove: () => setSelectedYears(without(selectedYears, value)) })),
@@ -2102,6 +2161,22 @@ function ModelsDisplayContent({
 							<FilterLogo value={value} />
 						)}
 						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="licenses" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<ScrollText className="h-4 w-4 text-muted-foreground" />
+						{tFilters("license")}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<LicenseFilterList
+						options={licenseOptions}
+						selection={licenseSelection}
+						onChange={setLicenseSelection}
 					/>
 				</AccordionContent>
 			</AccordionItem>

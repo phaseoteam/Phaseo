@@ -37,6 +37,7 @@ export function toModelTableData(item: MonitorModelTableRow): ModelData {
 		),
 		modelId: item.modelId,
 		organisationId: item.organisationId,
+		license: item.license,
 		provider: item.provider,
 		endpoint: item.endpoint,
 		gatewayStatus: item.gatewayStatus,

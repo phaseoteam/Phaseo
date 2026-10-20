@@ -34,6 +34,7 @@ import {
 	CalendarDays,
 	XCircle,
 	LockKeyhole,
+	ScrollText,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,8 @@ import { formatExecutionRegionLabel } from "@/lib/providers/executionRegions";
 import { MODEL_TABLE_COLUMNS } from "@/components/monitor/MonitorDataTable";
 import { Logo } from "@/components/Logo";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
+import { LicenseFilterList, useLicenseGroupLabel } from "./LicenseFilterList";
+import { parseLicenseGroups, type LicenseSelection } from "@/lib/models/licenseFilter";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
 import { Slider } from "@/components/ui/slider";
 import TableSettings from "@/components/(gateway)/usage/TableSettings";
@@ -535,6 +538,7 @@ function countModelTableFacets(rows: ModelData[], filters: ModelTableFilters) {
 		providerMap: count("providers"),
 		regionMap: count("regions"),
 		creatorMap: count("creators"),
+		licenseMap: count("licenses"),
 		endpointMap: count("endpoints"),
 		statusMap: count("statuses"),
 		tierMap: count("tiers"),
@@ -551,6 +555,7 @@ export default function ModelsTableDisplay({
 	const t = useTranslations("Catalogue.models");
 	const tCountry = useTranslations("Catalogue.countryDetail");
 	const tFilters = useTranslations("Catalogue.models.filtersUi");
+	const licenseGroupLabel = useLicenseGroupLabel();
 	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
 	const translateModality = (value: string) => {
@@ -800,6 +805,28 @@ export default function ModelsTableDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [selectedLicenses, setSelectedLicenses] = useQueryState("licenses", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedLicenseTypes, setSelectedLicenseTypes] = useQueryState("licenseType", {
+		defaultValue: [] as string[],
+		parse: (value) => parseLicenseGroups(parseCsvParam(value)),
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const licenseSelection = useMemo(
+		() => ({ groups: selectedLicenseTypes, licenses: selectedLicenses }),
+		[selectedLicenseTypes, selectedLicenses],
+	);
+	const setLicenseSelection = (selection: LicenseSelection) => {
+		void setSelectedLicenseTypes(selection.groups);
+		void setSelectedLicenses(selection.licenses);
+	};
 	const [selectedContextMin, setSelectedContextMin] = useQueryState(
 		"contextMin",
 		{
@@ -868,6 +895,8 @@ export default function ModelsTableDisplay({
 		providers: selectedProviders,
 		regions: selectedRegions,
 		creators: selectedCreators,
+		licenses: selectedLicenses,
+		licenseTypes: selectedLicenseTypes,
 		contextMin: selectedContextMin,
 		endpoints: selectedEndpoints,
 		statuses: effectiveSelectedStatuses,
@@ -881,6 +910,8 @@ export default function ModelsTableDisplay({
 		selectedProviders,
 		selectedRegions,
 		selectedCreators,
+		selectedLicenses,
+		selectedLicenseTypes,
 		selectedContextMin,
 		selectedEndpoints,
 		effectiveSelectedStatuses,
@@ -950,6 +981,19 @@ export default function ModelsTableDisplay({
 			getOptionCounts(Array.from(available.creatorMap.keys()), available.creatorMap, counts.creatorMap),
 		[available.creatorMap, counts.creatorMap],
 	);
+	const licenseOptions = useMemo(
+		() =>
+			getOptionCounts(
+				Array.from(available.licenseMap.keys()).sort(
+					(a, b) =>
+						(available.licenseMap.get(b) ?? 0) - (available.licenseMap.get(a) ?? 0) ||
+						a.localeCompare(b),
+				),
+				available.licenseMap,
+				counts.licenseMap,
+			),
+		[available.licenseMap, counts.licenseMap],
+	);
 	const endpointOptions = useMemo(
 		() => getOptionCounts(allEndpoints, available.endpointMap, counts.endpointMap),
 		[allEndpoints, available.endpointMap, counts.endpointMap],
@@ -1016,6 +1060,8 @@ export default function ModelsTableDisplay({
 		selectedProviders.length +
 		selectedRegions.length +
 		selectedCreators.length +
+		selectedLicenseTypes.length +
+		selectedLicenses.length +
 		(selectedContextMin > 0 ? 1 : 0) +
 		(yearSelected > 0 ? 1 : 0);
 
@@ -1031,6 +1077,8 @@ export default function ModelsTableDisplay({
 		setSelectedProviders([]);
 		setSelectedRegions([]);
 		setSelectedCreators([]);
+		setSelectedLicenses([]);
+		setSelectedLicenseTypes([]);
 		setSelectedContextMin(0);
 		setYearSelected(0);
 	};
@@ -1056,6 +1104,8 @@ export default function ModelsTableDisplay({
 		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value: providerLabels.get(value) ?? value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
 		...selectedRegions.map((value) => ({ key: `region-${value}`, label: tFilters("filterRegion", { value: translateRegion(value) }), onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
 		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: tFilters("filterCreator", { value: creatorLabels.get(value) ?? value }), onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
+		...selectedLicenseTypes.map((value) => ({ key: `license-type-${value}`, label: tFilters("filterLicense", { value: licenseGroupLabel(value) }), onRemove: () => setSelectedLicenseTypes(without(selectedLicenseTypes, value)) })),
+		...selectedLicenses.map((value) => ({ key: `license-${value}`, label: tFilters("filterLicense", { value }), onRemove: () => setSelectedLicenses(without(selectedLicenses, value)) })),
 		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: translateFeature(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
 		...selectedEndpoints.map((value) => ({ key: `endpoint-${value}`, label: tFilters("filterEndpoint", { value: translateEndpoint(value) }), onRemove: () => setSelectedEndpoints(without(selectedEndpoints, value)) })),
 		...(yearSelected > 0 ? [{ key: "year", label: tFilters("filterYear", { value: yearSelected }), onRemove: () => setYearSelected(0) }] : []),
@@ -1481,6 +1531,22 @@ export default function ModelsTableDisplay({
 							<FilterLogo value={value} />
 						)}
 						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="licenses" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<ScrollText className="h-4 w-4 text-muted-foreground" />
+						{tFilters("license")}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<LicenseFilterList
+						options={licenseOptions}
+						selection={licenseSelection}
+						onChange={setLicenseSelection}
 					/>
 				</AccordionContent>
 			</AccordionItem>
