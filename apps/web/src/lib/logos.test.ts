@@ -1,6 +1,15 @@
 import { getLogoLabel, resolveLogo } from "@/lib/logos";
 
 describe("logos", () => {
+	test("resolves Nace's official mark in both themes", () => {
+		for (const theme of ["light", "dark"] as const) {
+			expect(resolveLogo("nace", { theme })).toMatchObject({
+				id: "nace",
+				label: "Nace.AI",
+				src: `/logos/nace_${theme}.svg`,
+			});
+		}
+	});
 	test("keeps Pioneer and Fastino as separate identities sharing their official mark", () => {
 		for (const id of ["pioneer", "fastino"]) {
 			for (const theme of ["light", "dark"] as const) {
