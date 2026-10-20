@@ -1,5 +1,5 @@
 import {
-  BURST_KICK, CRUISE_SPEED, LIFT_SCALE, MAX_SPEED, MAX_STEP_S, MAX_STRETCH, MIN_TILT, SQUASH_SCALE, STRETCH_PER_SPEED, blockShape, bounceAxis, collidePair, coverage, deformation,
+  BURST_KICK, CRUISE_RATE, CRUISE_SPEED, LIFT_SCALE, MAX_SPEED, MAX_STEP_S, MAX_STRETCH, MIN_TILT, SQUASH_SCALE, STRETCH_PER_SPEED, blockShape, bounceAxis, collidePair, coverage, deformation,
   dragTo, fling, holdAt, kick, launch, leaveBlock, leaveBox, letGo, limitSpeed, makeBody, pickUp, relax, ringLayout, separation, springStep, squashAmount, stepWorld,
   stretchFactor, throwBody, tileShape, toCruise, type Block, type Body, type Box, type Round, type World,
 } from "./floating";
@@ -121,7 +121,7 @@ describe("toCruise", () => {
   it("eases a fast logo down to the cruise without changing its direction or dropping below it", () => {
     let velocity = { vx: 1800, vy: -1350 };
     const speeds: number[] = [];
-    for (let frame = 0; frame < 120; frame += 1) {
+    for (let frame = 0; frame < 240; frame += 1) {
       velocity = toCruise(velocity.vx, velocity.vy, 1 / 60, 0);
       speeds.push(speed(velocity));
     }
@@ -134,7 +134,7 @@ describe("toCruise", () => {
   it("speeds a slow logo up to the cruise, and sets one at rest off along its heading", () => {
     let slow = { vx: 6, vy: 8 };
     let rest = { vx: 0, vy: 0 };
-    for (let frame = 0; frame < 120; frame += 1) {
+    for (let frame = 0; frame < 240; frame += 1) {
       slow = toCruise(slow.vx, slow.vy, 1 / 60, 0);
       rest = toCruise(rest.vx, rest.vy, 1 / 60, (3 * Math.PI) / 4);
     }
@@ -152,7 +152,7 @@ describe("toCruise", () => {
       expect(Math.min(tilt, Math.PI / 2 - tilt)).toBeCloseTo(MIN_TILT, 9);
       expect(Math.sign(velocity.vx)).toBe(start.vx < 0 ? -1 : 1);
       expect(Math.sign(velocity.vy)).toBe(start.vy < 0 ? -1 : 1);
-      expect(speed(velocity)).toBeCloseTo(CRUISE_SPEED, 1);
+      expect(speed(velocity)).toBeCloseTo(CRUISE_SPEED, 0);
     }
     // A diagonal-ish heading is left alone.
     const diagonal = toCruise(48, -40, 1 / 60, 0);
@@ -163,17 +163,26 @@ describe("toCruise", () => {
 describe("leaveBox (placing logos clear of the middle)", () => {
   const box: Box = { left: 100, top: 100, right: 200, bottom: 200 };
 
-  it("leaves a logo clear of the box alone", () => {
-    const motion = { x: 40, y: 40, vx: 5, vy: 5 };
-    expect(leaveBox(motion, 50, box)).toBe(motion);
-    expect(leaveBox({ x: 50, y: 120, vx: 5, vy: 0 }, 50, box)).toEqual({ x: 50, y: 120, vx: 5, vy: 0 });
+  const screen: Box = { left: 0, top: 0, right: 300, bottom: 300 };
+
+  it("leaves a logo clear of the box alone, and keeps it on screen", () => {
+    expect(leaveBox({ x: 40, y: 40 }, 50, box, screen)).toEqual({ x: 40, y: 40 });
+    expect(leaveBox({ x: 50, y: 120 }, 50, box, screen)).toEqual({ x: 50, y: 120 });
+    expect(leaveBox({ x: -20, y: 280 }, 50, box, screen)).toEqual({ x: 0, y: 250 });
   });
 
-  it("pushes a logo out of the nearest side, heading away", () => {
-    expect(leaveBox({ x: 60, y: 130, vx: 40, vy: 3 }, 50, box)).toEqual({ x: 50, y: 130, vx: -40, vy: 3 });
-    expect(leaveBox({ x: 190, y: 130, vx: -40, vy: 3 }, 50, box)).toEqual({ x: 200, y: 130, vx: 40, vy: 3 });
-    expect(leaveBox({ x: 130, y: 55, vx: 2, vy: 40 }, 50, box)).toEqual({ x: 130, y: 50, vx: 2, vy: -40 });
-    expect(leaveBox({ x: 130, y: 195, vx: 2, vy: -40 }, 50, box)).toEqual({ x: 130, y: 200, vx: 2, vy: 40 });
+  it("pushes a logo out of the nearest side", () => {
+    expect(leaveBox({ x: 60, y: 130 }, 50, box, screen)).toEqual({ x: 50, y: 130 });
+    expect(leaveBox({ x: 190, y: 130 }, 50, box, screen)).toEqual({ x: 200, y: 130 });
+    expect(leaveBox({ x: 130, y: 55 }, 50, box, screen)).toEqual({ x: 130, y: 50 });
+    expect(leaveBox({ x: 130, y: 195 }, 50, box, screen)).toEqual({ x: 130, y: 200 });
+  });
+
+  it("goes above or below when there's no room beside the box", () => {
+    // 40 pt either side of the box: too narrow for a 50 pt logo.
+    const narrow: Box = { left: 60, top: 0, right: 240, bottom: 300 };
+    expect(leaveBox({ x: 60, y: 110 }, 50, box, narrow)).toEqual({ x: 60, y: 50 });
+    expect(leaveBox({ x: 190, y: 160 }, 50, box, narrow)).toEqual({ x: 190, y: 200 });
   });
 });
 
@@ -328,7 +337,7 @@ describe("collidePair (logo on logo)", () => {
     expect(gap(c!, d!)).toBeCloseTo(0, 9);
   });
 
-  it("treats a held logo as a wall at its lifted size: it doesn't move and the other bounces straight off", () => {
+  it("treats a still held logo as a wall at its lifted size: it doesn't move and the other bounces straight off", () => {
     const held = body(100, 200, 999, 999, { held: true });
     const [a, b] = collidePair(held, body(130, 200, -200, 15), SIZE, RADIUS)!;
     expect(a).toMatchObject({ x: 100, y: 200, vx: 999, vy: 999, held: true });
@@ -341,6 +350,27 @@ describe("collidePair (logo on logo)", () => {
     expect(gap(c!, d!)).toBeCloseTo(0, 9);
     expect(c!.vx).toBe(-200);
     expect(collidePair(held, body(110, 200, 0, 0, { held: true }), SIZE, RADIUS)).toBeNull();
+  });
+
+  it("knocks a logo away from a held one swung into it, at up to twice the swing's speed, like a bat", () => {
+    // Swung right at 1,000 pt/s into one at rest, and into one coming the other way at the cruise.
+    const swung = body(100, 200, 0, 0, { held: true, dvx: 1000, dvy: 0 });
+    const [a, b] = collidePair(swung, body(145, 200, 0, 0), SIZE, RADIUS)!;
+    expect(a).toMatchObject({ x: 100, y: 200, vx: 0, vy: 0, held: true });
+    expect(b!.vx).toBeCloseTo(2000, 9);
+    expect(b!.vy).toBeCloseTo(0, 9);
+    expect(1 + b!.sq).toBeCloseTo(SQUASH_SCALE, 10);
+    const [, c] = collidePair(swung, body(145, 200, -CRUISE_SPEED, 0), SIZE, RADIUS)!;
+    expect(c!.vx).toBeCloseTo(2000 + CRUISE_SPEED, 9);
+    // Swung from the other side too, and capped.
+    const [d] = collidePair(body(55, 200, 0, 0), { ...swung, dvx: -4000 }, SIZE, RADIUS)!;
+    expect(d!.vx).toBeCloseTo(-MAX_SPEED, 9);
+    // Only the swing along the contact counts: swung past it, it's barely touched.
+    const [, e] = collidePair({ ...swung, dvx: 0, dvy: 1000 }, body(145, 200, 0, 0), SIZE, RADIUS)!;
+    expect(speed(e!)).toBe(0);
+    // Pulled away faster than the other follows, nothing bounces.
+    const [, f] = collidePair({ ...swung, dvx: -1000 }, body(145, 200, -CRUISE_SPEED, 0), SIZE, RADIUS)!;
+    expect(f!.vx).toBe(-CRUISE_SPEED);
   });
 
   it("squashes both logos against each other, hard hits fully and soft ones barely", () => {
@@ -427,20 +457,49 @@ describe("stepWorld", () => {
     expect(next!.x - 100).toBeLessThanOrEqual(300 * MAX_STEP_S);
   });
 
-  it("flings a released logo at the capped speed, then eases it back to the cruise within about a second", () => {
+  it("flings a released logo at the capped speed, coasting a long way, then eases it back to the cruise within three seconds", () => {
     const thrown = throwBody(pickUp([body(200, 100, CRUISE_SPEED, 0)], 0), 0, 6000, 8000);
     expect(thrown[0]!.held).toBe(false);
     expect(speed(thrown[0]!)).toBeCloseTo(MAX_SPEED, 6);
+    // Bounces keep its speed, so it eases back exactly as it would in the open.
     const later = run(thrown, 1, WORLD)[0]!;
-    expect(speed(later)).toBeLessThan(CRUISE_SPEED * 1.4);
-    expect(speed(run([later], 1, WORLD)[0]!)).toBeCloseTo(CRUISE_SPEED, 0);
+    expect(speed(later)).toBeCloseTo(CRUISE_SPEED + (MAX_SPEED - CRUISE_SPEED) * Math.exp(-CRUISE_RATE), 0);
+    expect(speed(later)).toBeGreaterThan(400);
+    expect(speed(run([later], 2, WORLD)[0]!)).toBeLessThan(CRUISE_SPEED * 1.1);
+    // How far a fling coasts past the cruise: the extra speed over the easing rate, a few screens.
+    let travelled = 0;
+    run([body(200, 400, 2000, 0)], 3, OPEN, ([b]) => { travelled += speed(b!) / 60; });
+    expect(travelled - CRUISE_SPEED * 3).toBeGreaterThan(((2000 - CRUISE_SPEED) / CRUISE_RATE) * 0.95);
   });
 
-  it("keeps eight logos apart, on screen and out of the mark, through flings and a burst", () => {
-    const home = ringLayout(8, SIZE, PHONE, { left: 70, top: 280, right: 342, bottom: 620 });
+  it("knocks a logo away when a held one is dragged into it, rather than nudging it aside", () => {
+    // A logo cruising slowly, and another dragged at it at 1,500 pt/s.
+    const wide = { ...OPEN, bounds: { ...PHONE, right: 2000 } };
+    let bodies = pickUp([body(60, 400, 0, CRUISE_SPEED), body(200, 400, 0, CRUISE_SPEED)], 0);
+    let x = 60;
+    let closest = Infinity;
+    let fastest = 0;
+    for (let frame = 0; frame < 12; frame += 1) {
+      x += 1500 / 60;
+      bodies = stepWorld(holdAt(bodies, 0, { x, y: 400 }), 1 / 60, wide);
+      closest = Math.min(closest, gap(bodies[0]!, bodies[1]!));
+      fastest = Math.max(fastest, speed(bodies[1]!));
+    }
+    // It's met at its surface (the held one moves a step at a time, never through it) and sent flying right, faster
+    // than the drag, then eases back as any fling does.
+    expect(closest).toBeGreaterThan(-0.5);
+    expect(fastest).toBeGreaterThan(2000);
+    expect(bodies[1]!.vx).toBeGreaterThan(1500);
+    expect(bodies[1]!.x).toBeGreaterThan(x + SIZE * LIFT_SCALE);
+    expect(bodies[0]).toMatchObject({ x, y: 400, held: true });
+  });
+
+  it("keeps sixteen logos apart, on screen and out of the mark, through flings, a swing and a burst", () => {
+    const home = ringLayout(16, SIZE, PHONE, { left: 70, top: 280, right: 342, bottom: 620 });
     let bodies = launch(home);
-    bodies = throwBody(bodies, 0, 2400, -1800);
-    bodies = throwBody(bodies, 3, -2000, 2000);
+    bodies = throwBody(bodies, 0, 4800, -3600);
+    bodies = throwBody(bodies, 5, -4000, 4000);
+    bodies = throwBody(bodies, 11, 3000, 500);
     const check = (list: Body[]) => {
       for (let i = 0; i < list.length; i += 1) {
         expect(onScreen(list[i]!)).toBe(true);
@@ -449,6 +508,16 @@ describe("stepWorld", () => {
       }
     };
     bodies = run(bodies, 5, WORLD, check);
+    // One held and swept across the screen and back at 2,000 pt/s, through the others.
+    bodies = pickUp(bodies, 2);
+    let at = { x: bodies[2]!.x, y: bodies[2]!.y };
+    for (let frame = 0; frame < 60; frame += 1) {
+      const target = { x: at.x + (frame < 30 ? 1 : -1) * (2000 / 60), y: at.y + (frame % 20 < 10 ? 600 : -600) / 60 };
+      at = dragTo(target, { x: 0, y: 0 }, at, WORLD).at;
+      bodies = stepWorld(holdAt(bodies, 2, at), 1 / 60, WORLD);
+      check(bodies);
+    }
+    bodies = throwBody(bodies, 2, 0, 0);
     bodies = kick(bodies, { x: (MARK.left + MARK.right) / 2, y: (MARK.top + MARK.bottom) / 2 }, SIZE);
     bodies = run(bodies, 10, WORLD, check);
     // Back to cruising once it settles (each new bump swaps speeds for a moment, then eases back).
@@ -459,15 +528,15 @@ describe("stepWorld", () => {
 
   it("lets every logo travel round the mark on a 360 × 780 phone, gliding under the text", () => {
     // A 360 dp phone with a 24 dp status bar and a 48 dp navigation bar: 44 pt logos and a 108 pt mark, with the
-    // version and catalogue line under it (as wide as the catalogue line) and a ring round both. Only the mark is
-    // solid. How long each logo takes to first get round is chance, DVD style (half of them within about 17 s on
-    // phones like this); every one gets round within two minutes, and they keep crossing.
+    // version and catalogue line under it (as wide as the catalogue line) and all sixteen logos round both. Only the
+    // mark is solid. How long each logo takes to first get round is chance, DVD style (half of them within about 20 s
+    // on phones like this); every one gets round within two minutes, and they keep crossing.
     const bounds: Box = { left: 8, top: 32, right: 352, bottom: 724 };
     const mark: Block = { left: 126, top: 243, right: 234, bottom: 351, radius: 8 };
     const text: Box = { left: 50, top: 375, right: 310, bottom: 514 };
     const world: World = { size: 44, radius: 8, bounds, block: mark, cover: text };
     const half = 390;
-    let bodies = launch(ringLayout(8, 44, bounds, { left: 38, top: 231, right: 322, bottom: 526 }));
+    let bodies = launch(ringLayout(16, 44, bounds, { left: 38, top: 231, right: 322, bottom: 526 }));
     const above = bodies.map(() => -1);
     const below = bodies.map(() => -1);
     const side = bodies.map((b) => b.y + 22 < half);
@@ -490,9 +559,9 @@ describe("stepWorld", () => {
     });
     const roundBy = above.map((t, index) => Math.max(t, below[index]!));
     expect(roundBy.every((t) => t > 0 && t <= 120)).toBe(true);
-    expect(roundBy.filter((t) => t <= 30).length).toBeGreaterThanOrEqual(6);
+    expect(roundBy.filter((t) => t <= 30).length).toBeGreaterThanOrEqual(8);
     // About four crossings per logo per minute.
-    expect(crossings / 8 / 2).toBeGreaterThan(3);
+    expect(crossings / 16 / 2).toBeGreaterThan(3);
     expect(underText).toBeGreaterThan(0);
   });
 
@@ -614,8 +683,10 @@ describe("squash", () => {
   });
 
   it("squashes a logo flung into a wall along the wall's normal, and it settles back to its shape", () => {
+    // Room on the left, so it doesn't reach the other wall while it settles.
+    const room = { ...OPEN, bounds: { ...PHONE, left: -2000 } };
     let bodies = [body(PHONE.right - SIZE - 10, 400, 1500, 0)];
-    bodies = stepWorld(bodies, 1 / 60, OPEN);
+    bodies = stepWorld(bodies, 1 / 60, room);
     const hit = bodies[0]!;
     expect(hit.vx).toBeLessThan(0);
     expect(hit.sqa).toBeCloseTo(0, 10);
@@ -624,11 +695,11 @@ describe("squash", () => {
     // Squashed along x, toward the wall it hit.
     expect(Math.abs(Math.sin(drawn.angle - Math.PI / 2))).toBeLessThan(0.01);
     expect(drawn.across).toBeLessThan(0.86);
-    bodies = run(bodies, 0.35, OPEN);
+    bodies = run(bodies, 0.35, room);
     expect(Math.abs(bodies[0]!.sq)).toBeLessThan(0.01);
     // Left alone, it comes to rest exactly.
     let resting = hit;
-    for (let step = 0; step < 120; step += 1) resting = relax(resting, 1 / 120, 0, 0);
+    for (let step = 0; step < 120; step += 1) resting = relax(resting, 1 / 120);
     expect(resting.sq).toBe(0);
     expect(resting.sqv).toBe(0);
   });
@@ -667,7 +738,7 @@ describe("squash", () => {
 
   it("relaxes a logo's jelly without moving it", () => {
     const squashed = body(100, 200, CRUISE_SPEED, 0, { sq: -0.1, sqa: 0.5 });
-    const next = relax(squashed, 1 / 60, 0, 0);
+    const next = relax(squashed, 1 / 60);
     expect(next).toMatchObject({ x: 100, y: 200, vx: CRUISE_SPEED, vy: 0, sqa: 0.5 });
     expect(next.sq).toBeGreaterThan(-0.1);
   });
@@ -746,11 +817,12 @@ describe("ringLayout", () => {
 
   it.each([
     ["a phone", PHONE, { left: 70, top: 280, right: 342, bottom: 620 }, 48],
+    ["a 360 × 780 phone", { left: 8, top: 32, right: 352, bottom: 724 }, { left: 38, top: 231, right: 322, bottom: 526 }, 44],
     ["a tablet", { left: 8, top: 32, right: 1272, bottom: 792 }, { left: 460, top: 230, right: 820, bottom: 590 }, 56],
     ["a phone on its side", { left: 48, top: 8, right: 860, bottom: 404 }, { left: 320, top: 60, right: 590, bottom: 350 }, 44],
-  ])("spreads eight logos evenly round the middle of %s, on screen and clear of it", (_, bounds, box, size) => {
-    const points = ringLayout(8, size, bounds, box);
-    expect(points).toHaveLength(8);
+  ])("spreads sixteen logos evenly round the middle of %s, on screen, clear of it and of each other", (_, bounds, box, size) => {
+    const points = ringLayout(16, size, bounds, box);
+    expect(points).toHaveLength(16);
     for (const point of points) {
       expect(point.x).toBeGreaterThanOrEqual(bounds.left);
       expect(point.x).toBeLessThanOrEqual(bounds.right - size);
@@ -759,7 +831,12 @@ describe("ringLayout", () => {
       expect(overlaps(point, size, box)).toBe(false);
     }
     const steps = points.slice(1).map((point, index) => point.angle - points[index]!.angle);
-    for (const gap of steps) expect(gap).toBeCloseTo((Math.PI * 2) / 8, 10);
-    expect(new Set(points.map((point) => `${Math.round(point.x)},${Math.round(point.y)}`)).size).toBe(8);
+    for (const gap of steps) expect(gap).toBeCloseTo((Math.PI * 2) / 16, 10);
+    // They stay put with reduced motion, so none may cover another.
+    for (let i = 0; i < points.length; i += 1) {
+      for (let j = i + 1; j < points.length; j += 1) {
+        expect(overlaps(points[i]!, size, { left: points[j]!.x, top: points[j]!.y, right: points[j]!.x + size, bottom: points[j]!.y + size })).toBe(false);
+      }
+    }
   });
 });

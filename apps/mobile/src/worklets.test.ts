@@ -215,7 +215,10 @@ const SAMPLES: ((api: typeof floating) => unknown)[] = [
   (api) => api.collidePair(api.makeBody(100, 100, 600, 600), api.makeBody(142, 142, -600, -600), 48, 8),
   (api) => api.separation(api.tileShape(0, 0, 48, 8, 1), api.blockShape(MARK)),
   (api) => api.leaveBlock({ x: 108, y: 258, vx: 200, vy: 200 }, 48, 8, MARK),
-  (api) => api.relax(api.squash(api.makeBody(0, 0, 900, 0), 1, 0, 900), 1 / 120, 0, 0),
+  (api) => api.relax(api.squash(api.makeBody(0, 0, 900, 0), 1, 0, 900), 1 / 120),
+  // A held logo swung into another, and sixteen logos placed on a narrow phone.
+  (api) => api.collidePair({ ...api.makeBody(100, 200, 0, 0), held: true, dvx: 1500, dvy: 200 }, api.makeBody(145, 205, -60, 0), 48, 8),
+  (api) => api.ringLayout(16, 44, { left: 8, top: 32, right: 352, bottom: 724 }, { left: 38, top: 231, right: 322, bottom: 526 }),
   (api) => [api.stretchFactor(1200), api.squashAmount(400), api.springStep(-0.18, 0, 1 / 60)],
 ];
 

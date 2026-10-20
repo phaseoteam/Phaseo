@@ -144,7 +144,10 @@ describe("the frontier labs", () => {
   const ORGANISATIONS = path.resolve(__dirname, "../../../../../packages/data/catalog/src/data/organisations");
 
   it("are a fixed list, in order", () => {
-    expect(FRONTIER_LABS.map((lab) => lab.name)).toEqual(["OpenAI", "Anthropic", "Google", "Meta", "SpaceXAI", "DeepSeek", "Mistral", "Qwen"]);
+    expect(FRONTIER_LABS.map((lab) => lab.name)).toEqual([
+      "OpenAI", "Anthropic", "Google", "Meta", "SpaceXAI", "DeepSeek", "Mistral", "Qwen",
+      "Moonshot", "z.AI", "MiniMax", "ByteDance", "Nvidia", "Microsoft", "Amazon", "Xiaomi",
+    ]);
   });
 
   it("use the catalogue's organisation IDs and names, so a tap finds the newest model", () => {
@@ -156,7 +159,7 @@ describe("the frontier labs", () => {
     expect(FRONTIER_LABS.map((lab) => lab.id)).toContain("spacex-ai");
   });
 
-  it("all have a logo the app can show, so all eight float", () => {
+  it("all have a logo the app can show, so all sixteen float", () => {
     expect(FRONTIER_LABS.every((lab) => hasLogo(lab.id))).toBe(true);
     expect(ART_LABS).toEqual(FRONTIER_LABS);
     // xAI's old IDs resolve to the same logo.

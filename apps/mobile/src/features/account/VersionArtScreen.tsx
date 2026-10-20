@@ -332,8 +332,9 @@ type FloaterProps = {
 
 /**
  * One lab's logo, drawn where its slot in the simulation says, exactly its collision shape: a `size` square with the
- * tile's own corner radius and nothing round it. A finger landing on it catches it, so it stays under the finger (and
- * the others bounce off it); holding or dragging lifts it with a little spring, and letting go after a drag flings it.
+ * tile's own corner radius and nothing round it. A finger landing on it catches it, so it stays under the finger (the
+ * others bounce off it, and fly off when it's swung into them); holding or dragging lifts it with a little spring, and
+ * letting go after a drag flings it.
  * A tap shows its newest model. Memoised, so a tap doesn't re-render the other logos.
  *
  * It's drawn as jelly from its slot's stretch and squash: rotate to the axis, scale along and across it, rotate back,

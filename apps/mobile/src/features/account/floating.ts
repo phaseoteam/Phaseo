@@ -1,7 +1,8 @@
 /**
  * The version art's logos as plain maths, like the DVD screensaver: each logo cruises at a steady speed in a straight
  * line and bounces off the screen's edges, the Phaseo mark in the middle and the other logos. A fling or a burst speeds
- * a logo up, then it eases back to the cruise. One step moves every logo together, because collisions need them all.
+ * a logo up, then it eases back to the cruise. A held logo swung into another knocks it away at the swing's speed.
+ * One step moves every logo together, because collisions need them all.
  * Positions are a logo's top-left corner, in points; speeds are points per second.
  *
  * Shapes are the drawn ones. A logo is a rounded square, and collides as one: its inner square (the square less its
@@ -32,14 +33,18 @@ export type Round = { cx: number; cy: number; hx: number; hy: number; r: number 
 export type Motion = { x: number; y: number; vx: number; vy: number };
 /**
  * A logo in the simulation: its motion, `held` while a finger has it, and `glow` (0 to 1), the fading tint after a
- * corner hit. The rest is how it's drawn:
- * - `px`, `py`: where it was at the end of the last frame, so a held logo's speed is how far the finger moved it.
+ * corner hit. A held logo also has:
+ * - `px`, `py`: where it was at the end of the last frame. Over a frame it moves from there to where the finger put
+ *   it, a step at a time, so it meets what's in its way at the speed it's going.
+ * - `dvx`, `dvy`: how fast the finger is moving it, smoothed over a few frames. What it hits bounces off it as off a
+ *   moving bat, and it stretches with it.
+ * The rest is how it's drawn:
  * - `sa`, `sb`: its stretch, eased toward its speed's. A stretch by s along the angle θ is stored as
  *   (ln s · cos 2θ, ln s · sin 2θ), so stretches along different axes add, and an axis and its opposite are the same.
  * - `sq`, `sqv`, `sqa`: its squash from the last hit: its scale along the contact normal less 1 (−0.18 is squashed to
  *   0.82), how fast that's changing, and the normal's angle, pointing at what it hit.
  */
-export type Body = Motion & { held: boolean; glow: number; px: number; py: number; sa: number; sb: number; sq: number; sqv: number; sqa: number };
+export type Body = Motion & { held: boolean; glow: number; px: number; py: number; dvx: number; dvy: number; sa: number; sb: number; sq: number; sqv: number; sqa: number };
 /**
  * What the logos move in: their size and corner radius (all the same rounded square), the screen inside its safe
  * area, the mark (the one solid thing in the middle), and the text drawn over the logos, which they dim under.
@@ -48,10 +53,10 @@ export type World = { size: number; radius: number; bounds: Box; block: Block | 
 
 /** The steady speed every logo cruises at. */
 export const CRUISE_SPEED = 64;
-/** The fastest a fling or a burst sends a logo. */
-export const MAX_SPEED = 2400;
-/** How quickly a logo returns to the cruise: the difference shrinks by a factor of e every 1 / CRUISE_RATE seconds, so even a full-speed fling is back to about the cruise within a second. */
-export const CRUISE_RATE = 4.6;
+/** The fastest a fling, a burst or a swing of a held logo sends a logo. */
+export const MAX_SPEED = 4800;
+/** How quickly a logo returns to the cruise: the difference shrinks by a factor of e every 1 / CRUISE_RATE seconds (0.43 s), so a full-speed fling coasts across the screen several times and is back to about the cruise within three seconds. */
+export const CRUISE_RATE = 2.3;
 /** Headings stay at least this far (radians, 25°) off flat and upright, so no logo ends up bouncing in a line between two edges, or between an edge and the mark, where it could never get round it. */
 export const MIN_TILT = (25 * Math.PI) / 180;
 /** How fast a heading too near flat or upright turns toward the diagonal (radians per second): within a third of a second. */
@@ -64,8 +69,10 @@ export const MAX_STEP_S = 1 / 30;
 export const SUB_STEP_S = 1 / 120;
 /** ...and short enough that no logo moves further than this in one, so a fast logo meets what it hits at its surface, never so deep inside that the shortest way out is the wrong side. */
 export const MAX_SUB_MOVE = 4;
-/** The most steps a frame takes (only a fling near the cap after a stall needs this many). */
-export const MAX_SUB_STEPS = 24;
+/** The most steps a frame takes: enough for a logo at MAX_SPEED after a stall (MAX_SPEED × MAX_STEP_S / MAX_SUB_MOVE). */
+export const MAX_SUB_STEPS = 40;
+/** A held logo's velocity follows the finger with this time constant (seconds), so touches arriving unevenly don't make it jump. */
+export const DRAG_EASE_S = 0.04;
 /** How close to the other wall a bounce has to be to count as hitting the corner. */
 export const CORNER_SLOP = 4;
 /** How long a corner hit's tint takes to fade by a factor of e. */
@@ -140,7 +147,7 @@ export function bounceAxis(position: number, velocity: number, min: number, max:
 /** A logo at (x, y) moving at (vx, vy), in its own shape: not held, no tint, no stretch or squash. */
 export function makeBody(x: number, y: number, vx: number, vy: number): Body {
   "worklet";
-  return { x, y, vx, vy, held: false, glow: 0, px: x, py: y, sa: 0, sb: 0, sq: 0, sqv: 0, sqa: 0 };
+  return { x, y, vx, vy, held: false, glow: 0, px: x, py: y, dvx: 0, dvy: 0, sa: 0, sb: 0, sq: 0, sqv: 0, sqa: 0 };
 }
 
 /** A logo's collision shape at (x, y): its `size` square with corners of `radius`, scaled by `scale` about its centre (1, or LIFT_SCALE while held). */
@@ -225,13 +232,16 @@ export function stretchFactor(speed: number) {
 
 /**
  * A logo's drawing state `dt` seconds on: its stretch eases toward its speed's (a free logo's speed above the cruise,
- * so a cruising logo isn't stretched; a held logo's finger speed, `dragVX`, `dragVY`), and its squash springs back.
- * While it's squashed the stretch waits, so a fast logo's hit reads as a squash before it stretches away again.
+ * so a cruising logo isn't stretched; a held logo's finger speed), and its squash springs back. While it's squashed
+ * the stretch waits, so a fast logo's hit reads as a squash before it stretches away again.
  */
-export function relax(body: Body, dt: number, dragVX: number, dragVY: number): Body {
+export function relax(body: Body, dt: number): Body {
   "worklet";
-  const vx = body.held ? dragVX : body.vx;
-  const vy = body.held ? dragVY : body.vy;
+  // A cruising logo with nothing to relax (most of them, most of the time) is left as it is.
+  const cruising = !body.held && body.vx * body.vx + body.vy * body.vy <= (CRUISE_SPEED + 0.01) * (CRUISE_SPEED + 0.01);
+  if (cruising && body.sa === 0 && body.sb === 0 && body.sq === 0 && body.sqv === 0) return body;
+  const vx = body.held ? body.dvx : body.vx;
+  const vy = body.held ? body.dvy : body.vy;
   const speed = Math.hypot(vx, vy);
   const waiting = body.sq < 0 ? clamp(1 + body.sq / (1 - SQUASH_SCALE), 0, 1) : 1;
   const stretch = waiting * Math.log(stretchFactor(body.held ? speed : speed - CRUISE_SPEED));
@@ -277,30 +287,45 @@ export function coverage(x: number, y: number, size: number, box: Box | null) {
   return (width * height) / (size * size);
 }
 
-/** A logo (a `size` square) overlapping the box leaves it by the shortest way, heading away from it. Places logos clear of the middle. */
-export function leaveBox(body: Motion, size: number, box: Box): Motion {
+/**
+ * A logo (a `size` square) put on screen and out of the box, by the shortest way that keeps it on screen: beside the
+ * box where there's room, otherwise above or below it. Places logos clear of the middle. If no way fits, it's only
+ * kept on screen.
+ */
+export function leaveBox(point: Point, size: number, box: Box, bounds: Box): Point {
   "worklet";
-  const right = body.x + size;
-  const bottom = body.y + size;
-  if (right <= box.left || body.x >= box.right || bottom <= box.top || body.y >= box.bottom) return body;
-  const toLeft = right - box.left;
-  const toRight = box.right - body.x;
-  const toTop = bottom - box.top;
-  const toBottom = box.bottom - body.y;
-  const least = Math.min(toLeft, toRight, toTop, toBottom);
-  if (least === toLeft) return { x: box.left - size, y: body.y, vx: -Math.abs(body.vx), vy: body.vy };
-  if (least === toRight) return { x: box.right, y: body.y, vx: Math.abs(body.vx), vy: body.vy };
-  if (least === toTop) return { x: body.x, y: box.top - size, vx: body.vx, vy: -Math.abs(body.vy) };
-  return { x: body.x, y: box.bottom, vx: body.vx, vy: Math.abs(body.vy) };
+  const maxX = bounds.right - size;
+  const maxY = bounds.bottom - size;
+  const x = clamp(point.x, bounds.left, maxX);
+  const y = clamp(point.y, bounds.top, maxY);
+  if (x + size <= box.left || x >= box.right || y + size <= box.top || y >= box.bottom) return { x, y };
+  let best = { x, y };
+  let least = Infinity;
+  const consider = (toX: number, toY: number, fits: boolean) => {
+    const distance = Math.abs(toX - x) + Math.abs(toY - y);
+    if (fits && distance < least) {
+      best = { x: toX, y: toY };
+      least = distance;
+    }
+  };
+  consider(box.left - size, y, box.left - size >= bounds.left);
+  consider(box.right, y, box.right <= maxX);
+  consider(x, box.top - size, box.top - size >= bounds.top);
+  consider(x, box.bottom, box.bottom <= maxY);
+  return best;
 }
 
 /**
  * A logo against the block: if they overlap it's pushed out along the contact normal until they just touch, and if
  * it's moving in it bounces off at the same speed (reflected about the normal, so off a rounded corner it leaves
- * diagonally). `hit` is the speed it hit at (0 if it didn't), along (nx, ny), pointing at the block.
+ * diagonally). `hit` is the speed it hit at (0 if it didn't), along (nx, ny), pointing at the block ((0, 0) when it's
+ * clear of the block's box, which most logos are, most of the time, so that's checked first).
  */
 export function leaveBlock(motion: Motion, size: number, radius: number, block: Block): Motion & { hit: number; nx: number; ny: number } {
   "worklet";
+  if (motion.x + size <= block.left || motion.x >= block.right || motion.y + size <= block.top || motion.y >= block.bottom) {
+    return { x: motion.x, y: motion.y, vx: motion.vx, vy: motion.vy, hit: 0, nx: 0, ny: 0 };
+  }
   const contact = separation(blockShape(block), tileShape(motion.x, motion.y, size, radius, 1));
   if (contact.gap >= 0) return { x: motion.x, y: motion.y, vx: motion.vx, vy: motion.vy, hit: 0, nx: -contact.nx, ny: -contact.ny };
   // The normal points from the block to the logo, so moving in is a negative speed along it.
@@ -364,12 +389,17 @@ export function dragTo(anchor: Point, travel: Point, current: Point, world: Worl
  * Two logos (equal rounded squares of equal mass) that overlap. They're pushed apart along the contact normal (side to
  * side it's an axis, corner to corner the line between the corners) until they just touch, so they never stick, and
  * if they're closing they swap their velocities along it, as in an elastic collision: momentum and energy are kept.
- * Both squash against each other. A held logo is a wall, at its lifted size: it doesn't move, and the other bounces
- * straight off it. Null when the two don't touch.
+ * Both squash against each other. A held logo is a bat, at its lifted size, moving at the finger's speed: nothing
+ * pushes it, and the other bounces off it as off a moving wall, their closing speed reversed. So a logo swung into
+ * flies off at up to twice the swing's speed (capped at MAX_SPEED), and one that runs into a still held logo bounces
+ * straight off. Null when the two don't touch.
  */
 export function collidePair(a: Body, b: Body, size: number, radius: number): Body[] | null {
   "worklet";
   if (a.held && b.held) return null;
+  // Most pairs are too far apart on one axis to touch: skip the exact test for them.
+  const reach = a.held || b.held ? (size * (1 + LIFT_SCALE)) / 2 : size;
+  if (Math.abs(b.x - a.x) >= reach || Math.abs(b.y - a.y) >= reach) return null;
   const contact = separation(tileShape(a.x, a.y, size, radius, a.held ? LIFT_SCALE : 1), tileShape(b.x, b.y, size, radius, b.held ? LIFT_SCALE : 1));
   if (contact.gap >= 0) return null;
   const nx = contact.nx;
@@ -377,29 +407,26 @@ export function collidePair(a: Body, b: Body, size: number, radius: number): Bod
   const depth = -contact.gap;
   const pushA = a.held ? 0 : b.held ? depth : depth / 2;
   const pushB = depth - pushA;
-  const va = a.vx * nx + a.vy * ny;
-  const vb = b.vx * nx + b.vy * ny;
+  // Their speeds along the normal (a held logo's is the finger's), and how fast b is moving away from a: below 0, they're closing.
+  const va = (a.held ? a.dvx : a.vx) * nx + (a.held ? a.dvy : a.vy) * ny;
+  const vb = (b.held ? b.dvx : b.vx) * nx + (b.held ? b.dvy : b.vy) * ny;
+  const parting = vb - va;
   // How each one's speed along the normal changes, and how hard they met.
   let da = 0;
   let db = 0;
-  let speed = 0;
-  if (a.held) {
-    if (vb < 0) {
-      db = -2 * vb;
-      speed = -vb;
+  if (parting < 0) {
+    if (a.held) db = -2 * parting;
+    else if (b.held) da = 2 * parting;
+    else {
+      da = parting;
+      db = -parting;
     }
-  } else if (b.held) {
-    if (va > 0) {
-      da = -2 * va;
-      speed = va;
-    }
-  } else if (vb - va < 0) {
-    da = vb - va;
-    db = va - vb;
-    speed = va - vb;
   }
-  const nextA = { ...a, x: a.x - nx * pushA, y: a.y - ny * pushA, vx: a.vx + da * nx, vy: a.vy + da * ny };
-  const nextB = { ...b, x: b.x + nx * pushB, y: b.y + ny * pushB, vx: b.vx + db * nx, vy: b.vy + db * ny };
+  const speed = parting < 0 ? -parting : 0;
+  const velocityA = limitSpeed(a.vx + da * nx, a.vy + da * ny, MAX_SPEED);
+  const velocityB = limitSpeed(b.vx + db * nx, b.vy + db * ny, MAX_SPEED);
+  const nextA = { ...a, x: a.x - nx * pushA, y: a.y - ny * pushA, vx: velocityA.vx, vy: velocityA.vy };
+  const nextB = { ...b, x: b.x + nx * pushB, y: b.y + ny * pushB, vx: velocityB.vx, vy: velocityB.vy };
   return [squash(nextA, nx, ny, speed), squash(nextB, -nx, -ny, speed)];
 }
 
@@ -446,36 +473,50 @@ export function keepInside(body: Body, world: World): Body {
   const minY = world.bounds.top;
   const maxY = world.bounds.bottom - world.size;
   const inside = { x: clamp(body.x, minX, maxX), y: clamp(body.y, minY, maxY), vx: body.vx, vy: body.vy };
-  if (!world.block) return { ...body, x: inside.x, y: inside.y };
-  const off = leaveBlock(inside, world.size, world.radius, world.block);
+  const block = world.block;
+  const clear = !block || inside.x + world.size <= block.left || inside.x >= block.right || inside.y + world.size <= block.top || inside.y >= block.bottom;
+  if (clear) return inside.x === body.x && inside.y === body.y ? body : { ...body, x: inside.x, y: inside.y };
+  const off = leaveBlock(inside, world.size, world.radius, block);
   const next = { ...body, x: clamp(off.x, minX, maxX), y: clamp(off.y, minY, maxY), vx: off.vx, vy: off.vy };
   return off.hit > 0 ? squash(next, off.nx, off.ny, off.hit) : next;
 }
 
 /**
  * Every logo, `seconds` on. The time is clamped to MAX_STEP_S and split into equal steps of at most SUB_STEP_S, and
- * more when something's fast, so nothing moves more than MAX_SUB_MOVE in one. Each step moves every free logo, settles
+ * more when something's fast, so nothing moves more than MAX_SUB_MOVE in one. A held logo's speed is how far the
+ * finger moved it this frame, smoothed, and it goes there a step at a time too. Each step moves every logo, settles
  * each pair that touches, puts any logo a push moved off screen or into the mark back, and moves each one's stretch
- * and squash on. A held logo's stretch follows how far the finger moved it this frame.
+ * and squash on.
  */
 export function stepWorld(bodies: Body[], seconds: number, world: World): Body[] {
   "worklet";
   const dt = clamp(seconds, 0, MAX_STEP_S);
+  const keep = Math.exp(-dt / DRAG_EASE_S);
   let fastest = 0;
-  const dragX: number[] = [];
-  const dragY: number[] = [];
+  let farthest = 0;
+  let next: Body[] = [];
   for (let index = 0; index < bodies.length; index += 1) {
     const body = bodies[index]!;
-    if (!body.held) fastest = Math.max(fastest, Math.hypot(body.vx, body.vy));
-    dragX.push(body.held && dt > 0 ? (body.x - body.px) / dt : 0);
-    dragY.push(body.held && dt > 0 ? (body.y - body.py) / dt : 0);
+    if (!body.held) {
+      fastest = Math.max(fastest, Math.hypot(body.vx, body.vy));
+      next.push(body);
+      continue;
+    }
+    // It starts the frame where it ended the last one.
+    const vx = dt > 0 ? (body.x - body.px) / dt : 0;
+    const vy = dt > 0 ? (body.y - body.py) / dt : 0;
+    farthest = Math.max(farthest, Math.hypot(body.x - body.px, body.y - body.py));
+    next.push({ ...body, x: body.px, y: body.py, dvx: vx + (body.dvx - vx) * keep, dvy: vy + (body.dvy - vy) * keep });
   }
-  const steps = clamp(Math.ceil(Math.max(dt / SUB_STEP_S, (fastest * dt) / MAX_SUB_MOVE) - 1e-6), 1, MAX_SUB_STEPS);
+  const steps = clamp(Math.ceil(Math.max(dt / SUB_STEP_S, (fastest * dt) / MAX_SUB_MOVE, farthest / MAX_SUB_MOVE) - 1e-6), 1, MAX_SUB_STEPS);
   const h = dt / steps;
-  let next = bodies;
-  for (let step = 0; step < steps; step += 1) {
+  for (let step = 1; step <= steps; step += 1) {
     const moved: Body[] = [];
-    for (let index = 0; index < next.length; index += 1) moved.push(moveBody(next[index]!, index, h, world));
+    for (let index = 0; index < next.length; index += 1) {
+      const body = next[index]!;
+      const to = bodies[index]!;
+      moved.push(body.held ? { ...body, x: to.px + ((to.x - to.px) * step) / steps, y: to.py + ((to.y - to.py) * step) / steps } : moveBody(body, index, h, world));
+    }
     for (let i = 0; i < moved.length; i += 1) {
       for (let j = i + 1; j < moved.length; j += 1) {
         const hit = collidePair(moved[i]!, moved[j]!, world.size, world.radius);
@@ -485,13 +526,14 @@ export function stepWorld(bodies: Body[], seconds: number, world: World): Body[]
         }
       }
     }
-    for (let index = 0; index < moved.length; index += 1) moved[index] = relax(keepInside(moved[index]!, world), h, dragX[index]!, dragY[index]!);
+    for (let index = 0; index < moved.length; index += 1) moved[index] = relax(keepInside(moved[index]!, world), h);
     next = moved;
   }
+  // A held logo's next frame starts where this one ended.
   const settled: Body[] = [];
   for (let index = 0; index < next.length; index += 1) {
     const body = next[index]!;
-    settled.push({ ...body, px: body.x, py: body.y });
+    settled.push(body.held ? { ...body, px: body.x, py: body.y } : body);
   }
   return settled;
 }
@@ -547,7 +589,7 @@ function replaceAt(bodies: Body[], index: number, body: Body): Body[] {
 export function pickUp(bodies: Body[], index: number): Body[] {
   "worklet";
   const body = bodies[index];
-  return body ? replaceAt(bodies, index, { ...body, held: true }) : bodies;
+  return body ? replaceAt(bodies, index, { ...body, held: true, px: body.x, py: body.y, dvx: 0, dvy: 0 }) : bodies;
 }
 
 /** A held logo moved to `at`. */
@@ -573,10 +615,17 @@ export function letGo(bodies: Body[], index: number): Body[] {
   return body && body.held ? replaceAt(bodies, index, { ...body, held: false }) : bodies;
 }
 
+/** Space kept between logos where they start. */
+export const RING_SPACING = 6;
+/** The most rounds of nudging apart that placing the logos takes (a crowded screen settles in a few dozen). */
+export const RING_ROUNDS = 200;
+
 /**
  * Where the logos start, and stay when the system reduces motion: evenly round an ellipse halfway between the middle
  * (the mark and its text) and the screen's edges, starting at the top, then moved out of the middle and kept on
- * screen. `angle` is each one's direction from the middle.
+ * screen. Where that crowds them (a narrow phone has no room beside the middle, so those logos go above and below it)
+ * they're nudged apart until none overlaps another, RING_SPACING between them. `angle` is each one's direction from
+ * the middle on the ellipse.
  */
 export function ringLayout(count: number, size: number, bounds: Box, box: Box): (Point & { angle: number })[] {
   "worklet";
@@ -586,11 +635,38 @@ export function ringLayout(count: number, size: number, bounds: Box, box: Box): 
   const radius = (inner: number, outer: number) => (outer > inner ? (inner + outer) / 2 : outer);
   const rx = radius((box.right - box.left) / 2 + half, Math.min(cx - bounds.left, bounds.right - cx) - half);
   const ry = radius((box.bottom - box.top) / 2 + half, Math.min(cy - bounds.top, bounds.bottom - cy) - half);
+  const place = (x: number, y: number) => leaveBox({ x, y }, size, box, bounds);
   const points: (Point & { angle: number })[] = [];
   for (let index = 0; index < count; index += 1) {
     const angle = -Math.PI / 2 + ((index + 0.5) / count) * Math.PI * 2;
-    const placed = leaveBox({ x: cx + rx * Math.cos(angle) - half, y: cy + ry * Math.sin(angle) - half, vx: 0, vy: 0 }, size, box);
-    points.push({ x: clamp(placed.x, bounds.left, bounds.right - size), y: clamp(placed.y, bounds.top, bounds.bottom - size), angle });
+    const placed = place(cx + rx * Math.cos(angle) - half, cy + ry * Math.sin(angle) - half);
+    points.push({ x: placed.x, y: placed.y, angle });
+  }
+  // Each overlapping pair moves apart, half each, along the axis they overlap least on (the way round the ring, as
+  // the ellipse lays them out) until no pair overlaps.
+  const reach = size + RING_SPACING;
+  for (let round = 0; round < RING_ROUNDS; round += 1) {
+    let crowded = false;
+    for (let i = 0; i < points.length; i += 1) {
+      for (let j = i + 1; j < points.length; j += 1) {
+        const a = points[i]!;
+        const b = points[j]!;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const overX = reach - Math.abs(dx);
+        const overY = reach - Math.abs(dy);
+        if (overX <= 0 || overY <= 0) continue;
+        crowded = true;
+        const alongX = overX < overY;
+        const way = (alongX ? dx : dy) < 0 ? -1 : 1;
+        const shift = ((alongX ? overX : overY) / 2) * way;
+        const movedA = place(a.x - (alongX ? shift : 0), a.y - (alongX ? 0 : shift));
+        const movedB = place(b.x + (alongX ? shift : 0), b.y + (alongX ? 0 : shift));
+        points[i] = { x: movedA.x, y: movedA.y, angle: a.angle };
+        points[j] = { x: movedB.x, y: movedB.y, angle: b.angle };
+      }
+    }
+    if (!crowded) break;
   }
   return points;
 }

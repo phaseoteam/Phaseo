@@ -56,8 +56,9 @@ export function catalogueFact(models: ModelCard[]): string | null {
 export type ArtLab = { id: string; name: string };
 
 /**
- * The frontier labs, a fixed list in this order. The IDs are the catalogue's organisation IDs, so a tapped logo can
- * show the lab's newest model; xAI is listed as SpaceXAI, the catalogue's and the logo's name since the merger.
+ * The frontier labs, a fixed list in this order. The IDs and names are the catalogue's organisations, so a tapped
+ * logo can show the lab's newest model; xAI is listed as SpaceXAI, the catalogue's and the logo's name since the
+ * merger.
  */
 export const FRONTIER_LABS: readonly ArtLab[] = [
   { id: "openai", name: "OpenAI" },
@@ -68,6 +69,14 @@ export const FRONTIER_LABS: readonly ArtLab[] = [
   { id: "deepseek", name: "DeepSeek" },
   { id: "mistral", name: "Mistral" },
   { id: "qwen", name: "Qwen" },
+  { id: "moonshotai", name: "Moonshot" },
+  { id: "z-ai", name: "z.AI" },
+  { id: "minimax", name: "MiniMax" },
+  { id: "bytedance", name: "ByteDance" },
+  { id: "nvidia", name: "Nvidia" },
+  { id: "microsoft", name: "Microsoft" },
+  { id: "amazon", name: "Amazon" },
+  { id: "xiaomi", name: "Xiaomi" },
 ];
 
 /** Whether the app has a logo for an ID in both themes (the same lookup the Logo component makes). */
