@@ -945,4 +945,58 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect(payload.details?.[0]?.keyword).toBe("invalid_gateway_plugin_config");
 		expect(payload.details?.[0]?.path).toEqual(["plugins", "engine"]);
 	});
+
+	it("runs hosted web search as phaseo:web_search when no candidate runs it natively", async () => {
+		const req = mockRequest({
+			model: "openai/gpt-4.1-mini",
+			input: "news?",
+			tools: [{ type: "web_search", search_context_size: "low", filters: { allowed_domains: ["example.com"] } }],
+			tool_choice: { type: "web_search" },
+		}, [providerNamed("anthropic"), providerNamed("google-ai-studio")]);
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect((result.ctx.body as any).tools).toEqual([
+			{ type: "phaseo:web_search", parameters: { search_context_size: "low", allowed_domains: ["example.com"] } },
+		]);
+		expect((result.ctx.body as any).tool_choice).toBe("phaseo:web_search");
+		expect(result.ctx.providers.map((provider) => provider.providerId)).toEqual(["anthropic", "google-ai-studio"]);
+	});
+
+	it("keeps hosted web search native and routes only to candidates that run it", async () => {
+		const tools = [{ type: "web_search_preview" }];
+		const req = mockRequest({ model: "openai/gpt-4.1-mini", input: "news?", tools }, [
+			providerNamed("anthropic"),
+			providerNamed("openai"),
+		]);
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect((result.ctx.body as any).tools).toEqual(tools);
+		expect(result.ctx.providers.map((provider) => provider.providerId)).toEqual(["openai"]);
+		expect(result.ctx.providerEnablementDiagnostics?.dropped).toContainEqual({
+			providerId: "anthropic",
+			reason: "hosted_tool_unsupported",
+		});
+	});
+
+	it("rejects a hosted tool no candidate can run, naming it", async () => {
+		const req = mockRequest({
+			model: "openai/gpt-4.1-mini",
+			input: "run it",
+			tools: [{ type: "web_search" }, { type: "code_interpreter", container: { type: "auto" } }],
+		}, [providerNamed("anthropic")]);
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		const payload = await result.response.json();
+		expect(payload.reason).toBe("unsupported_hosted_tool");
+		expect(payload.description).toContain("code_interpreter");
+		expect(payload.details).toEqual([expect.objectContaining({
+			path: ["tools", 1],
+			keyword: "unsupported_hosted_tool",
+			params: { tool: "code_interpreter", model: "openai/gpt-4.1-mini" },
+		})]);
+	});
 });

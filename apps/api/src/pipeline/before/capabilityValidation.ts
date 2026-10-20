@@ -9,6 +9,7 @@ import { err } from "./http";
 import {
 	providerParamSupportStatus,
 	extractRequestedParams,
+	getGatewayFallbackParams,
 	getUnknownTopLevelParams,
 } from "./paramCapabilities";
 import { isAlwaysSupportedParam } from "./textParamPolicy";
@@ -295,13 +296,15 @@ function validateParameterSupport(args: {
 	}
 
 	const requireParameters = getEffectiveRoutingHints(args.body).requireParameters;
+	const gatewayFallbackParams = getGatewayFallbackParams(args.endpoint, args.rawBody);
 	return {
 		ok: true,
 		providers: requireParameters
 			? filterProvidersForRequiredParams({
 				endpoint: args.endpoint,
 				providers: args.providers,
-				requestedParams: requested,
+				// Params the gateway can satisfy itself never exclude a provider.
+				requestedParams: requested.filter((param) => !gatewayFallbackParams.includes(param)),
 				supportMap,
 			})
 			: args.providers,

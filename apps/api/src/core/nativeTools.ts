@@ -157,3 +157,58 @@ export function isIRNativeToolDefinition(tool: unknown): boolean {
 			!type.startsWith("phaseo:"),
 	);
 }
+
+/**
+ * OpenAI hosted tools other than web search: OpenAI runs them inside its own
+ * Responses API (https://platform.openai.com/docs/guides/tools). No other
+ * provider API defines them, and the gateway has no stand-in for them.
+ */
+export const OPENAI_HOSTED_TOOL_TYPES = [
+	"file_search",
+	"code_interpreter",
+	"computer",
+	"computer_use",
+	"computer_use_preview",
+	"mcp",
+	"image_generation",
+	"local_shell",
+	"shell",
+	"apply_patch",
+] as const;
+
+export function isOpenAIHostedToolType(value: unknown): boolean {
+	return (
+		typeof value === "string" &&
+		(isOpenAINativeWebSearchToolType(value) ||
+			(OPENAI_HOSTED_TOOL_TYPES as readonly string[]).includes(value))
+	);
+}
+
+// Hosted tools xAI's Responses API also runs (https://docs.x.ai/docs/guides/tools/overview).
+const XAI_HOSTED_TOOL_TYPES = new Set<string>(["code_interpreter", "mcp"]);
+
+/**
+ * Whether the route sends the request to a Responses API that runs this
+ * OpenAI hosted tool itself: OpenAI (both endpoints; Chat requests carrying a
+ * hosted tool go to /v1/responses), Azure OpenAI deployments on /responses,
+ * and xAI for web search, code interpreter and MCP. Everything else would
+ * receive a tool definition its API does not define.
+ */
+export function routeRunsOpenAIHostedTool(args: {
+	providerId: string;
+	model?: string | null;
+	endpoint: string;
+	toolType: string;
+}): boolean {
+	const providerId = String(args.providerId ?? "").toLowerCase();
+	const model = String(args.model ?? "").toLowerCase();
+	if (providerId === "openai" || providerId === "openai-eu") return true;
+	if (providerId === "azure") {
+		// Azure also serves Claude and MAI models, which do not run on its Responses API.
+		return args.endpoint === "responses" && !/(?:^|\/)(?:claude-|mai-)/.test(model);
+	}
+	if (providerId === "x-ai" || providerId === "xai") {
+		return isOpenAINativeWebSearchToolType(args.toolType) || XAI_HOSTED_TOOL_TYPES.has(args.toolType);
+	}
+	return false;
+}

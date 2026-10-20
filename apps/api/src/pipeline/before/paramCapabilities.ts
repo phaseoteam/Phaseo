@@ -3,7 +3,7 @@
 // How: Uses code-first text param policy + provider capability metadata.
 
 import type { Endpoint } from "@core/types";
-import { isNativeWebSearchTool, isNativeWebSearchToolType } from "@core/nativeTools";
+import { isNativeWebSearchTool, isNativeWebSearchToolType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
 import type { ProviderCandidate } from "./types";
 import {
 	expandCapabilityParamAliases,
@@ -80,6 +80,22 @@ function hasNativeWebSearchToolUsage(tools: unknown, toolChoice: unknown): boole
 		isNativeWebSearchToolType(value.name) ||
 		isNativeWebSearchToolType((value.function as Record<string, unknown> | undefined)?.name)
 	);
+}
+
+/**
+ * Requested params the gateway can satisfy on a provider without native
+ * support, so `require_parameters` must not exclude providers for them. An
+ * OpenAI hosted web search tool asks for native search (`web_search_options`)
+ * where the provider has it; elsewhere it runs as the gateway's own
+ * phaseo:web_search (see ./hostedTools.ts). An explicit top-level
+ * `web_search_options` stays a real requirement.
+ */
+export function getGatewayFallbackParams(endpoint: Endpoint, rawBody: any): string[] {
+	if ((endpoint !== "chat.completions" && endpoint !== "responses") || !isPlainObject(rawBody)) return [];
+	if (rawBody.web_search_options != null || rawBody.webSearchOptions != null) return [];
+	const hasHostedWebSearch = Array.isArray(rawBody.tools)
+		&& rawBody.tools.some((tool: unknown) => isOpenAINativeWebSearchTool(tool));
+	return hasHostedWebSearch ? ["web_search_options"] : [];
 }
 
 export function getUnknownTopLevelParams(endpoint: Endpoint, rawBody: any): string[] {
