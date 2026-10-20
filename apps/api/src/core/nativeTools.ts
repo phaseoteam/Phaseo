@@ -2,6 +2,8 @@
 // Why: Preserve native tool identity across schema validation, decoding, and routing.
 // How: Exposes canonical native tool types and small detection helpers.
 
+import { normalizeProviderId } from "@/lib/config/providerAliases";
+
 export const OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES = [
 	"web_search",
 	"web_search_2025_08_26",
@@ -200,14 +202,15 @@ export function routeRunsOpenAIHostedTool(args: {
 	endpoint: string;
 	toolType: string;
 }): boolean {
-	const providerId = String(args.providerId ?? "").toLowerCase();
+	// Collapses xAI's ids (x-ai, xai and the routed spacex-ai) onto one id.
+	const providerId = normalizeProviderId(String(args.providerId ?? ""));
 	const model = String(args.model ?? "").toLowerCase();
 	if (providerId === "openai" || providerId === "openai-eu") return true;
 	if (providerId === "azure") {
 		// Azure also serves Claude and MAI models, which do not run on its Responses API.
 		return args.endpoint === "responses" && !/(?:^|\/)(?:claude-|mai-)/.test(model);
 	}
-	if (providerId === "x-ai" || providerId === "xai") {
+	if (providerId === "spacex-ai") {
 		return isOpenAINativeWebSearchToolType(args.toolType) || XAI_HOSTED_TOOL_TYPES.has(args.toolType);
 	}
 	return false;

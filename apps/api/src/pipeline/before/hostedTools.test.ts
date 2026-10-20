@@ -62,6 +62,22 @@ describe("resolveHostedTools", () => {
 		expect(shell).toEqual({ ok: false, unsupportedTools: [{ type: "shell", index: 0 }] });
 	});
 
+	it("treats the routed spacex-ai id as xAI", () => {
+		const body = {
+			model: "x-ai/grok-5",
+			input: "hi",
+			tools: [{ type: "web_search" }, { type: "code_interpreter", container: { type: "auto" } }],
+		};
+		const result = resolveHostedTools({ endpoint: "responses", body, providers: [candidate("spacex-ai")] });
+		expect(result).toEqual({
+			ok: true,
+			body,
+			providers: [candidate("spacex-ai")],
+			droppedProviderIds: [],
+			webSearchMapped: false,
+		});
+	});
+
 	it("maps OpenAI's web search fields and keeps a single search tool", () => {
 		const result = resolveHostedTools({
 			endpoint: "responses",
