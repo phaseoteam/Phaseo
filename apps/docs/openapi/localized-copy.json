@@ -694,16 +694,6 @@
 			"zh-Hans": "远程 HTTP(S) 图像 URL 或 base64 图像数据 URI。上限为 20 MB 和 5000 万像素，或解码后 200 MB。",
 			"ar": "عنوان URL بعيد لصورة عبر HTTP(S) أو URI لبيانات صورة بترميز base64. الحد الأقصى 20 MB و50 ميغابكسل، أو 200 MB بعد فك الترميز."
 		},
-		"Tool selection strategy. Phaseo server-tool types are accepted and rewritten into upstream function/tool targets.": {
-			"es": "Estrategia de selección de herramientas. Se aceptan los tipos de herramientas de servidor de Phaseo y se transforman en destinos de funciones o herramientas del proveedor de origen.",
-			"fr": "Stratégie de sélection des outils. Les types d’outils serveur Phaseo sont acceptés et convertis en cibles de fonctions ou d’outils du fournisseur amont.",
-			"de": "Strategie zur Toolauswahl. Phaseo-Servertool-Typen werden akzeptiert und in Funktions- oder Toolziele des Upstreams umgeschrieben.",
-			"pt-BR": "Estratégia de seleção de ferramentas. Os tipos de ferramentas de servidor do Phaseo são aceitos e convertidos em destinos de função ou ferramenta do provedor upstream.",
-			"hi": "टूल चयन रणनीति। Phaseo सर्वर-टूल प्रकार स्वीकार किए जाते हैं और upstream फ़ंक्शन/टूल लक्ष्यों में बदले जाते हैं।",
-			"ja": "ツール選択の方法です。Phaseo サーバーツールのタイプを受け付け、上流の関数またはツールの指定に変換します。",
-			"zh-Hans": "工具选择策略。接受 Phaseo 服务器工具类型，并将其改写为上游函数或工具目标。",
-			"ar": "استراتيجية اختيار الأدوات. تُقبل أنواع أدوات خادم Phaseo وتُحوّل إلى أهداف وظائف أو أدوات لدى المزوّد upstream."
-		},
 		"Gateway-managed server tool. The gateway executes the datetime lookup and injects the result back into the model tool loop.": {
 			"es": "Herramienta de servidor gestionada por el gateway. El gateway consulta la fecha y hora e inyecta el resultado en el ciclo de herramientas del modelo.",
 			"fr": "Outil serveur géré par la passerelle. Celle-ci effectue la recherche de date et d’heure, puis injecte le résultat dans la boucle d’outils du modèle.",
@@ -8753,6 +8743,76 @@
 			"ja": "API キーの平文で、`data.key` と同じ値です。作成時に一度だけ返されます。",
 			"zh-Hans": "API 密钥的明文，与 `data.key` 的值相同。仅在创建时返回一次。",
 			"ar": "مفتاح API بنص صريح، بالقيمة نفسها الموجودة في `data.key`. يُعرض مرة واحدة فقط عند إنشائه."
+		},
+		"Tool selection strategy. Phaseo server-tool types are accepted and rewritten into upstream function/tool targets. An allowed_tools object is sent as is to OpenAI; other providers receive its mode (auto or required), or a forced call when required allows exactly one tool.": {
+			"es": "Estrategia de selección de herramientas. Se aceptan los tipos de herramientas de servidor de Phaseo y se transforman en destinos de funciones o herramientas del proveedor de origen. Un objeto allowed_tools se envía tal cual a OpenAI; los demás proveedores reciben su modo (auto o required), o una llamada forzada cuando required permite exactamente una herramienta.",
+			"fr": "Stratégie de sélection des outils. Les types d’outils serveur Phaseo sont acceptés et convertis en cibles de fonctions ou d’outils du fournisseur amont. Un objet allowed_tools est transmis tel quel à OpenAI ; les autres fournisseurs reçoivent son mode (auto ou required), ou un appel forcé lorsque required n’autorise qu’un seul outil.",
+			"de": "Strategie zur Toolauswahl. Phaseo-Servertool-Typen werden akzeptiert und in Funktions- oder Toolziele des Upstreams umgeschrieben. Ein allowed_tools-Objekt wird unverändert an OpenAI gesendet; andere Anbieter erhalten dessen Modus (auto oder required) oder einen erzwungenen Aufruf, wenn required genau ein Tool erlaubt.",
+			"pt-BR": "Estratégia de seleção de ferramentas. Os tipos de ferramentas de servidor do Phaseo são aceitos e convertidos em destinos de função ou ferramenta do provedor upstream. Um objeto allowed_tools é enviado como está para a OpenAI; os demais provedores recebem seu modo (auto ou required) ou uma chamada forçada quando required permite exatamente uma ferramenta.",
+			"hi": "टूल चयन रणनीति। Phaseo सर्वर-टूल प्रकार स्वीकार किए जाते हैं और upstream फ़ंक्शन/टूल लक्ष्यों में बदले जाते हैं। allowed_tools ऑब्जेक्ट OpenAI को बिना बदलाव भेजा जाता है; अन्य प्रदाताओं को उसका मोड (auto या required) मिलता है, या जब required ठीक एक टूल की अनुमति देता है तो उस टूल की अनिवार्य कॉल।",
+			"ja": "ツール選択の方法です。Phaseo サーバーツールのタイプを受け付け、上流の関数またはツールの指定に変換します。allowed_tools オブジェクトは OpenAI にはそのまま送られます。その他のプロバイダーにはそのモード（auto または required）が送られ、required で許可されるツールが 1 つだけの場合はそのツールの呼び出しが強制されます。",
+			"zh-Hans": "工具选择策略。接受 Phaseo 服务器工具类型，并将其改写为上游函数或工具目标。allowed_tools 对象会原样发送给 OpenAI；其他提供商会收到其模式（auto 或 required），当 required 只允许一个工具时，则收到对该工具的强制调用。",
+			"ar": "استراتيجية اختيار الأدوات. تُقبل أنواع أدوات خادم Phaseo وتُحوّل إلى أهداف وظائف أو أدوات لدى المزوّد upstream. يُرسل كائن allowed_tools كما هو إلى OpenAI؛ ويتلقى المزوّدون الآخرون وضعه (auto أو required)، أو استدعاءً إلزاميًا للأداة عندما يسمح required بأداة واحدة فقط."
+		},
+		"The model's reasoning text, when the provider returns it. Streamed as delta.reasoning_content.": {
+			"es": "El texto de razonamiento del modelo, cuando el proveedor lo devuelve. Se transmite en streaming como delta.reasoning_content.",
+			"fr": "Le texte de raisonnement du modèle, lorsque le fournisseur le renvoie. Diffusé en streaming sous la forme delta.reasoning_content.",
+			"de": "Der Reasoning-Text des Modells, sofern der Anbieter ihn zurückgibt. Wird als delta.reasoning_content gestreamt.",
+			"pt-BR": "O texto de raciocínio do modelo, quando o provedor o retorna. Transmitido em streaming como delta.reasoning_content.",
+			"hi": "मॉडल का रीज़निंग टेक्स्ट, जब प्रदाता उसे लौटाता है। स्ट्रीमिंग में delta.reasoning_content के रूप में भेजा जाता है।",
+			"ja": "プロバイダーが返す場合の、モデルの推論テキストです。ストリーミングでは delta.reasoning_content として送られます。",
+			"zh-Hans": "模型的推理文本（在提供商返回时提供）。流式传输时以 delta.reasoning_content 发送。",
+			"ar": "نص الاستدلال الخاص بالنموذج، عندما يعيده المزوّد. يُرسل أثناء البث بوصفه delta.reasoning_content."
+		},
+		"The same reasoning text as reasoning_content, under the name some clients read. Streamed as delta.reasoning. Accepted on input as an alias for reasoning_content.": {
+			"es": "El mismo texto de razonamiento que reasoning_content, con el nombre que leen algunos clientes. Se transmite en streaming como delta.reasoning. En la entrada se acepta como alias de reasoning_content.",
+			"fr": "Le même texte de raisonnement que reasoning_content, sous le nom que lisent certains clients. Diffusé en streaming sous la forme delta.reasoning. Accepté en entrée comme alias de reasoning_content.",
+			"de": "Derselbe Reasoning-Text wie reasoning_content, unter dem Namen, den manche Clients lesen. Wird als delta.reasoning gestreamt. In der Eingabe als Alias für reasoning_content akzeptiert.",
+			"pt-BR": "O mesmo texto de raciocínio de reasoning_content, com o nome que alguns clientes leem. Transmitido em streaming como delta.reasoning. Aceito na entrada como alias de reasoning_content.",
+			"hi": "reasoning_content वाला ही रीज़निंग टेक्स्ट, उस नाम से जिसे कुछ क्लाइंट पढ़ते हैं। स्ट्रीमिंग में delta.reasoning के रूप में भेजा जाता है। इनपुट में reasoning_content के alias के रूप में स्वीकार किया जाता है।",
+			"ja": "reasoning_content と同じ推論テキストを、一部のクライアントが読み取る名前で返します。ストリーミングでは delta.reasoning として送られます。入力では reasoning_content のエイリアスとして受け付けます。",
+			"zh-Hans": "与 reasoning_content 相同的推理文本，使用部分客户端读取的字段名。流式传输时以 delta.reasoning 发送。在输入中可作为 reasoning_content 的别名。",
+			"ar": "نص الاستدلال نفسه الموجود في reasoning_content، تحت الاسم الذي يقرؤه بعض العملاء. يُرسل أثناء البث بوصفه delta.reasoning. ويُقبل في الإدخال اسمًا مستعارًا لـ reasoning_content."
+		},
+		"Reasoning state from an earlier response, sent back unchanged. A raw value is read as OpenAI's unless format names another provider.": {
+			"es": "Estado de razonamiento de una respuesta anterior, devuelto sin cambios. Un valor sin procesar se interpreta como de OpenAI, salvo que format indique otro proveedor.",
+			"fr": "État de raisonnement d’une réponse précédente, renvoyé tel quel. Une valeur brute est interprétée comme provenant d’OpenAI, sauf si format désigne un autre fournisseur.",
+			"de": "Reasoning-Zustand aus einer früheren Antwort, unverändert zurückgesendet. Ein Rohwert wird als OpenAI-Wert gelesen, sofern format keinen anderen Anbieter nennt.",
+			"pt-BR": "Estado de raciocínio de uma resposta anterior, enviado de volta sem alterações. Um valor bruto é lido como da OpenAI, a menos que format indique outro provedor.",
+			"hi": "पिछली प्रतिक्रिया की रीज़निंग स्थिति, जिसे बिना बदलाव वापस भेजा जाता है। कच्चे मान को OpenAI का माना जाता है, जब तक format किसी दूसरे प्रदाता का नाम न दे।",
+			"ja": "以前のレスポンスの推論状態で、変更せずに送り返します。生の値は、format で別のプロバイダーを指定しない限り OpenAI の値として扱われます。",
+			"zh-Hans": "来自先前响应的推理状态，原样发回。除非 format 指定了其他提供商，否则原始值按 OpenAI 的值解析。",
+			"ar": "حالة الاستدلال من استجابة سابقة، تُعاد دون تغيير. تُقرأ القيمة الخام على أنها من OpenAI ما لم يحدد format مزوّدًا آخر."
+		},
+		"On a reasoning item, a raw provider signature, such as a Claude thinking signature or a Gemini thought signature. Requires format.": {
+			"es": "En un elemento de razonamiento, una firma sin procesar del proveedor, como una firma de thinking de Claude o una firma de pensamiento de Gemini. Requiere format.",
+			"fr": "Sur un élément de raisonnement, une signature brute du fournisseur, comme une signature de thinking de Claude ou une signature de pensée de Gemini. Nécessite format.",
+			"de": "Bei einem Reasoning-Element eine rohe Anbietersignatur, etwa eine Claude-Thinking-Signatur oder eine Gemini-Thought-Signatur. Erfordert format.",
+			"pt-BR": "Em um item de raciocínio, uma assinatura bruta do provedor, como uma assinatura de thinking do Claude ou uma assinatura de pensamento do Gemini. Exige format.",
+			"hi": "रीज़निंग आइटम पर, प्रदाता का कच्चा सिग्नेचर, जैसे Claude का thinking सिग्नेचर या Gemini का थॉट सिग्नेचर। format आवश्यक है।",
+			"ja": "推論項目に付ける、プロバイダーの生の署名です。Claude の thinking 署名や Gemini の思考署名などです。format が必要です。",
+			"zh-Hans": "推理项上的原始提供商签名，例如 Claude 的 thinking 签名或 Gemini 的思考签名。需要同时提供 format。",
+			"ar": "في عنصر الاستدلال، توقيع خام من المزوّد، مثل توقيع التفكير في Claude أو توقيع التفكير في Gemini. يتطلب format."
+		},
+		"On a reasoning item, the provider format of signature or encrypted_content.": {
+			"es": "En un elemento de razonamiento, el formato del proveedor de signature o encrypted_content.",
+			"fr": "Sur un élément de raisonnement, le format fournisseur de signature ou d’encrypted_content.",
+			"de": "Bei einem Reasoning-Element das Anbieterformat von signature oder encrypted_content.",
+			"pt-BR": "Em um item de raciocínio, o formato do provedor de signature ou encrypted_content.",
+			"hi": "रीज़निंग आइटम पर, signature या encrypted_content का प्रदाता फ़ॉर्मैट।",
+			"ja": "推論項目で使う、signature または encrypted_content のプロバイダー形式です。",
+			"zh-Hans": "推理项上 signature 或 encrypted_content 的提供商格式。",
+			"ar": "في عنصر الاستدلال، صيغة المزوّد الخاصة بـ signature أو encrypted_content."
+		},
+		"Reasoning text in the content of a reasoning output item.": {
+			"es": "Texto de razonamiento en el contenido de un elemento de salida de razonamiento.",
+			"fr": "Texte de raisonnement dans le contenu d’un élément de sortie de raisonnement.",
+			"de": "Reasoning-Text im Inhalt eines Reasoning-Ausgabeelements.",
+			"pt-BR": "Texto de raciocínio no conteúdo de um item de saída de raciocínio.",
+			"hi": "रीज़निंग आउटपुट आइटम की सामग्री में रीज़निंग टेक्स्ट।",
+			"ja": "推論出力項目のコンテンツに含まれる推論テキストです。",
+			"zh-Hans": "推理输出项内容中的推理文本。",
+			"ar": "نص الاستدلال ضمن محتوى عنصر إخراج الاستدلال."
 		}
 	},
 	"GET /apps": {

@@ -9805,6 +9805,10 @@ components:
           type: string
         reasoning_content:
           type: string
+          description: O texto de raciocínio do modelo, quando o provedor o retorna. Transmitido em streaming como delta.reasoning_content.
+        reasoning:
+          type: string
+          description: O mesmo texto de raciocínio de reasoning_content, com o nome que alguns clientes leem. Transmitido em streaming como delta.reasoning. Aceito na entrada como alias de reasoning_content.
         reasoning_details:
           type: array
           items:
@@ -10378,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: Estratégia de seleção de ferramentas. Os tipos de ferramentas de servidor do Phaseo são aceitos e convertidos em destinos de função ou ferramenta do provedor upstream.
+      description: Estratégia de seleção de ferramentas. Os tipos de ferramentas de servidor do Phaseo são aceitos e convertidos em destinos de função ou ferramenta do provedor upstream. Um objeto allowed_tools é enviado como está para a OpenAI; os demais provedores recebem seu modo (auto ou required) ou uma chamada forçada quando required permite exatamente uma ferramenta.
       oneOf:
         - type: string
           enum:
@@ -11085,6 +11089,19 @@ components:
             $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
         encrypted_content:
           type: string
+          description: Estado de raciocínio de uma resposta anterior, enviado de volta sem alterações. Um valor bruto é lido como da OpenAI, a menos que format indique outro provedor.
+        signature:
+          type: string
+          description: Em um item de raciocínio, uma assinatura bruta do provedor, como uma assinatura de thinking do Claude ou uma assinatura de pensamento do Gemini. Exige format.
+        format:
+          type: string
+          description: Em um item de raciocínio, o formato do provedor de signature ou encrypted_content.
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: Item de saída da Responses API.
@@ -11126,8 +11143,22 @@ components:
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: Texto de raciocínio no conteúdo de um item de saída de raciocínio.
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:

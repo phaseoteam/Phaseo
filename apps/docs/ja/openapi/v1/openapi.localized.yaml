@@ -9805,6 +9805,10 @@ components:
           type: string
         reasoning_content:
           type: string
+          description: プロバイダーが返す場合の、モデルの推論テキストです。ストリーミングでは delta.reasoning_content として送られます。
+        reasoning:
+          type: string
+          description: reasoning_content と同じ推論テキストを、一部のクライアントが読み取る名前で返します。ストリーミングでは delta.reasoning として送られます。入力では reasoning_content のエイリアスとして受け付けます。
         reasoning_details:
           type: array
           items:
@@ -10378,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: ツール選択の方法です。Phaseo サーバーツールのタイプを受け付け、上流の関数またはツールの指定に変換します。
+      description: ツール選択の方法です。Phaseo サーバーツールのタイプを受け付け、上流の関数またはツールの指定に変換します。allowed_tools オブジェクトは OpenAI にはそのまま送られます。その他のプロバイダーにはそのモード（auto または required）が送られ、required で許可されるツールが 1 つだけの場合はそのツールの呼び出しが強制されます。
       oneOf:
         - type: string
           enum:
@@ -11085,6 +11089,19 @@ components:
             $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
         encrypted_content:
           type: string
+          description: 以前のレスポンスの推論状態で、変更せずに送り返します。生の値は、format で別のプロバイダーを指定しない限り OpenAI の値として扱われます。
+        signature:
+          type: string
+          description: 推論項目に付ける、プロバイダーの生の署名です。Claude の thinking 署名や Gemini の思考署名などです。format が必要です。
+        format:
+          type: string
+          description: 推論項目で使う、signature または encrypted_content のプロバイダー形式です。
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: Responses API の出力項目です。
@@ -11126,8 +11143,22 @@ components:
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: 推論出力項目のコンテンツに含まれる推論テキストです。
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:

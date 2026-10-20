@@ -9805,6 +9805,10 @@ components:
           type: string
         reasoning_content:
           type: string
+          description: نص الاستدلال الخاص بالنموذج، عندما يعيده المزوّد. يُرسل أثناء البث بوصفه delta.reasoning_content.
+        reasoning:
+          type: string
+          description: نص الاستدلال نفسه الموجود في reasoning_content، تحت الاسم الذي يقرؤه بعض العملاء. يُرسل أثناء البث بوصفه delta.reasoning. ويُقبل في الإدخال اسمًا مستعارًا لـ reasoning_content.
         reasoning_details:
           type: array
           items:
@@ -10378,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: استراتيجية اختيار الأدوات. تُقبل أنواع أدوات خادم Phaseo وتُحوّل إلى أهداف وظائف أو أدوات لدى المزوّد upstream.
+      description: استراتيجية اختيار الأدوات. تُقبل أنواع أدوات خادم Phaseo وتُحوّل إلى أهداف وظائف أو أدوات لدى المزوّد upstream. يُرسل كائن allowed_tools كما هو إلى OpenAI؛ ويتلقى المزوّدون الآخرون وضعه (auto أو required)، أو استدعاءً إلزاميًا للأداة عندما يسمح required بأداة واحدة فقط.
       oneOf:
         - type: string
           enum:
@@ -11085,6 +11089,19 @@ components:
             $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
         encrypted_content:
           type: string
+          description: حالة الاستدلال من استجابة سابقة، تُعاد دون تغيير. تُقرأ القيمة الخام على أنها من OpenAI ما لم يحدد format مزوّدًا آخر.
+        signature:
+          type: string
+          description: في عنصر الاستدلال، توقيع خام من المزوّد، مثل توقيع التفكير في Claude أو توقيع التفكير في Gemini. يتطلب format.
+        format:
+          type: string
+          description: في عنصر الاستدلال، صيغة المزوّد الخاصة بـ signature أو encrypted_content.
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: عنصر إخراج في Responses API.
@@ -11126,8 +11143,22 @@ components:
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: نص الاستدلال ضمن محتوى عنصر إخراج الاستدلال.
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:
