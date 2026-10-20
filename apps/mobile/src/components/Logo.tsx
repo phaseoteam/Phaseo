@@ -24,6 +24,11 @@ export function LogoMark({ id, size = 18 }: { id: string; size?: number }) {
   return <Image source={{ uri }} style={{ width: size, height: size }} contentFit="contain" cachePolicy="disk" onError={() => setFailed(true)} accessibilityElementsHidden importantForAccessibility="no" />;
 }
 
+/** A logo tile's corner radius: rounded-md (8 px) on normal tiles; small tiles scale down so they stay squares, not circles. */
+export function logoTileRadius(size: number) {
+  return Math.min(8, Math.round(size * 0.25));
+}
+
 /** `bare` draws the logo on its own (as web chat does beside model names); unknown labs still get a letter tile. */
 export function Logo({ id, label, colour, size = 32, className, bare }: { id?: string | null; label?: string | null; colour?: string | null; size?: number; className?: string; bare?: boolean }) {
   const { resolved } = useAppearance();
@@ -31,8 +36,7 @@ export function Logo({ id, label, colour, size = 32, className, bare }: { id?: s
   const logo = id ? resolveLogo(id, { theme: resolved, fallbackToColor: true }) : null;
   const src = logo?.src && !failed ? `${WEB_ORIGIN}${logo.src}` : null;
   const name = label ?? logo?.label ?? id ?? "?";
-  // rounded-md (8 px) on normal tiles; small tiles scale down so they stay squares, not circles.
-  const radius = Math.min(8, Math.round(size * 0.25));
+  const radius = logoTileRadius(size);
 
   if (src && bare) {
     return <Image source={{ uri: src }} style={{ width: size, height: size }} contentFit="contain" cachePolicy="disk" onError={() => setFailed(true)} accessibilityLabel={`${name} logo`} />;

@@ -14,17 +14,22 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, Path, RadialGradient, Rect, Stop } from "react-native-svg";
 import { scheduleOnRN, scheduleOnUI } from "react-native-worklets";
 import { useCSSVariable } from "uniwind";
-import { Logo, logoUri } from "@/components/Logo";
+import { Logo, logoTileRadius, logoUri } from "@/components/Logo";
 import { Icon, Text, useToneColor } from "@/components/ui";
 import { catalogueQuery, useCatalogue } from "@/features/models/state";
 import { BUILD_COMMIT, BUILD_NUMBER } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { useAppearance } from "@/providers/AppearanceProvider";
-import { clamp, dragTo, holdAt, kick, launch, letGo, pickUp, ringLayout, stepWorld, throwBody, type Body, type Box, type Point, type World } from "./floating";
+import {
+  clamp, COVER_DIM, coverage, dragTo, holdAt, kick, launch, letGo, LIFT_SCALE, pickUp, ringLayout, stepWorld, throwBody, type Block, type Body, type Box,
+  type Point, type World,
+} from "./floating";
 import { ART_LABS, catalogueFact, LABEL_FADE_MS, LABEL_MS, newestByLab, shortVersion, tapLabel, versionDetail, type ArtLab, type Label } from "./versionArt";
 
 /** The Phaseo mark, from apps/web/public/logo_light.svg (a 64 × 64 view box). */
 const MARK_PATH = "M19.8574 56H13V8H19.8574V56ZM31.7197 8C37.9368 8 42.8288 9.4856 46.3945 12.457C49.9601 15.4284 51.7432 19.5201 51.7432 24.7314C51.7432 29.9428 49.9601 34.0344 46.3945 37.0059C42.8288 39.9773 37.9368 41.4629 31.7197 41.4629H23.2852V35.4971H31.5146C35.8573 35.497 39.1714 34.5824 41.457 32.7539C43.7426 30.8796 44.8857 28.2056 44.8857 24.7314C44.8857 21.2572 43.7427 18.6059 41.457 16.7773C39.1714 14.9031 35.8573 13.9659 31.5146 13.9658H23.2852V8H31.7197Z";
+/** The mark's tile corners: rounded-md, and the radius the logos collide with, so they touch it where it's drawn. */
+const MARK_RADIUS = 8;
 
 /** With reduced motion the burst is a fade out and back, which is allowed to play. */
 const FADE_MS = 700;
@@ -35,9 +40,10 @@ const LIFT_MS = 220;
 /** How long a tapped logo's label takes to fade in. */
 const LABEL_IN_MS = 140;
 const LABEL_WIDTH = 200;
-/** Space kept between the logos and the safe area's edges, and round the middle block. */
+/** Space kept between the logos and the safe area's edges. */
 const EDGE = 8;
-const BLOCK_MARGIN = 12;
+/** Space kept round the mark and its text where the logos start (and stay, when the system reduces motion). */
+const RING_MARGIN = 12;
 
 const VERSION_DETAIL = versionDetail(APP_VERSION, { number: BUILD_NUMBER, commit: BUILD_COMMIT });
 const lift = () => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
@@ -52,10 +58,10 @@ export function prefetchVersionArt(queryClient: QueryClient, theme: "light" | "d
 /**
  * The version art, opened by five quick taps on Account → Version and build, like Android's version screen. The
  * Phaseo mark sits in the middle with the version and a line from the live catalogue, and the frontier labs' logos
- * cruise round it like the DVD screensaver, bouncing off the edges, the middle and each other. A logo can be held,
- * dragged and flung (it eases back to the cruise), and a tap shows its lab's newest model. Tapping the mark kicks
- * every logo outward; holding it for a second opens Higher or lower. With reduced motion the logos stay still, evenly
- * spaced, and the burst is a fade.
+ * cruise round it like the DVD screensaver, bouncing off the edges, the mark and each other, and gliding under the
+ * text. A logo can be held, dragged and flung (it eases back to the cruise), and a tap shows its lab's newest model.
+ * Tapping the mark kicks every logo outward; holding it for a second opens Higher or lower. With reduced motion the
+ * logos stay still, evenly spaced, and the burst is a fade.
  *
  * The motion is one simulation on the UI thread: a single frame callback steps every logo (floating.ts) in one shared
  * value, and each logo's style reads its own slot. It stops while the game is on top or the screen has closed.
@@ -69,7 +75,10 @@ export function VersionArtScreen() {
   const catalogue = useCatalogue();
   const models = catalogue.data?.models;
   const [area, setArea] = useState<{ width: number; height: number } | null>(null);
-  const [block, setBlock] = useState<Box | null>(null);
+  // The middle, measured: the column (in the screen), and the mark and the text in it.
+  const [column, setColumn] = useState<Box | null>(null);
+  const [markAt, setMarkAt] = useState<Box | null>(null);
+  const [textAt, setTextAt] = useState<Box | null>(null);
   const fade = useSharedValue(0);
   const markScale = useSharedValue(1);
 
@@ -89,12 +98,36 @@ export function VersionArtScreen() {
     right: area.width - insets.right - EDGE,
     bottom: area.height - insets.bottom - EDGE,
   } : null, [area, insets.bottom, insets.left, insets.right, insets.top]);
-  const ring = useMemo(() => (bounds && block ? ringLayout(labs.length, tile, bounds, block) : null), [block, bounds, labs, tile]);
+  // Only the mark is solid, exactly as drawn. The text is drawn over the logos, which glide under it, so they can
+  // travel all the way round the mark however wide the text is.
+  const mark = useMemo<Block | null>(() => (column && markAt ? {
+    left: column.left + markAt.left,
+    top: column.top + markAt.top,
+    right: column.left + markAt.right,
+    bottom: column.top + markAt.bottom,
+    radius: MARK_RADIUS,
+  } : null), [column, markAt]);
+  const cover = useMemo<Box | null>(() => (column && textAt ? {
+    left: column.left + textAt.left,
+    top: column.top + textAt.top,
+    right: column.left + textAt.right,
+    bottom: column.top + textAt.bottom,
+  } : null), [column, textAt]);
+  // The logos start clear of the mark and the text (and stay there with reduced motion, so they never hide it).
+  const middle = useMemo<Box | null>(() => (column ? {
+    left: column.left - RING_MARGIN,
+    top: column.top - RING_MARGIN,
+    right: column.right + RING_MARGIN,
+    bottom: column.bottom + RING_MARGIN,
+  } : null), [column]);
+  const ring = useMemo(() => (bounds && middle && mark ? ringLayout(labs.length, tile, bounds, middle) : null), [bounds, labs, mark, middle, tile]);
 
   // The simulation: every logo's position and velocity in one shared value, and the layout it moves in.
   const bodies = useSharedValue<Body[]>([]);
   const world = useSharedValue<World | null>(null);
-  useEffect(() => { world.set(bounds ? { size: tile, bounds, box: block } : null); }, [block, bounds, tile, world]);
+  useEffect(() => {
+    world.set(bounds && mark ? { size: tile, radius: logoTileRadius(tile), bounds, block: mark, cover } : null);
+  }, [bounds, cover, mark, tile, world]);
   // The logos set off from their places once. With reduced motion they sit at their places instead, which move when
   // the screen turns; moving logos are just kept inside by the next step.
   const launched = useRef(false);
@@ -167,8 +200,8 @@ export function VersionArtScreen() {
     scheduleOnUI(() => {
       "worklet";
       const layout = world.get();
-      if (!layout || !layout.box) return;
-      const centre = { x: (layout.box.left + layout.box.right) / 2, y: (layout.box.top + layout.box.bottom) / 2 };
+      if (!layout || !layout.block) return;
+      const centre = { x: (layout.block.left + layout.block.right) / 2, y: (layout.block.top + layout.block.bottom) / 2 };
       bodies.set(kick(bodies.get(), centre, layout.size));
     });
     markScale.set(withSequence(withTiming(0.9, { duration: 90 }), withSpring(1, { damping: 9, stiffness: 260 })));
@@ -183,31 +216,25 @@ export function VersionArtScreen() {
   const markStyle = useAnimatedStyle(() => ({ transform: [{ scale: markScale.get() }] }));
   const labelLab = label ? labs[label.index] : undefined;
 
+  const box = (layout: { x: number; y: number; width: number; height: number }): Box => ({ left: layout.x, top: layout.y, right: layout.x + layout.width, bottom: layout.y + layout.height });
+
+  // Back to front: the glow, the logos, the middle (so the text is drawn over logos gliding under it), a tapped logo's
+  // label, and the close button.
   return (
     <View className="flex-1 bg-background" onLayout={(event) => setArea({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}>
-      {area ? <Glow width={area.width} height={area.height} centre={block ? { x: (block.left + block.right) / 2, y: (block.top + block.bottom) / 2 } : null} dark={resolved === "dark"} /> : null}
+      {area ? <Glow width={area.width} height={area.height} centre={column ? { x: (column.left + column.right) / 2, y: (column.top + column.bottom) / 2 } : null} dark={resolved === "dark"} /> : null}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Close"
-        hitSlop={8}
-        onPress={close}
-        className="absolute h-11 w-11 items-center justify-center rounded-md active:bg-muted"
-        style={{ top: insets.top + 6, left: insets.left + 8, zIndex: 10 }}
-      >
-        <View pointerEvents="none"><Icon icon={X} tone="foreground" size={24} /></View>
-      </Pressable>
+      {ring ? (
+        <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+          {labs.map((lab, index) => (
+            <Floater key={lab.id} lab={lab} index={index} size={tile} bodies={bodies} world={world} fade={fade} reduced={reduced} onTap={tapLogo} />
+          ))}
+        </View>
+      ) : null}
 
       <View pointerEvents="box-none" className="absolute inset-0 items-center justify-center px-6" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
-        <View
-          pointerEvents="box-none"
-          className="max-w-[420px] items-center"
-          onLayout={(event) => {
-            const { x, y, width, height } = event.nativeEvent.layout;
-            setBlock({ left: x - BLOCK_MARGIN, top: y - BLOCK_MARGIN, right: x + width + BLOCK_MARGIN, bottom: y + height + BLOCK_MARGIN });
-          }}
-        >
-          <Animated.View style={markStyle}>
+        <View pointerEvents="box-none" className="max-w-[420px] items-center" onLayout={(event) => setColumn(box(event.nativeEvent.layout))}>
+          <Animated.View style={markStyle} onLayout={(event) => setMarkAt(box(event.nativeEvent.layout))}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Phaseo"
@@ -223,38 +250,47 @@ export function VersionArtScreen() {
               <Mark size={markSize} />
             </Pressable>
           </Animated.View>
-          <Text
-            accessibilityRole="header"
-            accessibilityLabel={VERSION_DETAIL}
-            className="mt-6 text-center font-bold tracking-tight text-link"
-            style={{ fontSize: bigText, lineHeight: Math.round(bigText * 1.1) }}
-          >
-            {shortVersion(APP_VERSION)}
-          </Text>
-          <Text variant="label" importantForAccessibility="no" accessibilityElementsHidden className="text-center text-foreground">{VERSION_DETAIL}</Text>
-          <Text variant="small" numberOfLines={2} className="mt-3 text-center text-muted-foreground">{factLine}</Text>
+          {/* Not solid and not touchable: logos glide under it and can still be caught there. */}
+          <View pointerEvents="none" className="mt-6 items-center" onLayout={(event) => setTextAt(box(event.nativeEvent.layout))}>
+            <Text
+              accessibilityRole="header"
+              accessibilityLabel={VERSION_DETAIL}
+              className="text-center font-bold tracking-tight text-link"
+              style={{ fontSize: bigText, lineHeight: Math.round(bigText * 1.1) }}
+            >
+              {shortVersion(APP_VERSION)}
+            </Text>
+            <Text variant="label" importantForAccessibility="no" accessibilityElementsHidden className="text-center text-foreground">{VERSION_DETAIL}</Text>
+            <Text variant="small" numberOfLines={2} className="mt-3 text-center text-muted-foreground">{factLine}</Text>
+          </View>
         </View>
       </View>
 
-      {ring ? (
-        <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-          {labs.map((lab, index) => (
-            <Floater key={lab.id} lab={lab} index={index} size={tile} bodies={bodies} world={world} fade={fade} reduced={reduced} onTap={tapLogo} />
-          ))}
-          {label && labelLab ? (
-            <LogoLabel lab={labelLab} newest={newest.get(labelLab.id) ?? null} shown={label.shown} index={labelIndex} opacity={labelOpacity} bodies={bodies} world={world} />
-          ) : null}
+      {ring && label && labelLab ? (
+        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+          <LogoLabel lab={labelLab} newest={newest.get(labelLab.id) ?? null} shown={label.shown} index={labelIndex} opacity={labelOpacity} bodies={bodies} world={world} />
         </View>
       ) : null}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+        hitSlop={8}
+        onPress={close}
+        className="absolute h-11 w-11 items-center justify-center rounded-md active:bg-muted"
+        style={{ top: insets.top + 6, left: insets.left + 8, zIndex: 10 }}
+      >
+        <View pointerEvents="none"><Icon icon={X} tone="foreground" size={24} /></View>
+      </Pressable>
     </View>
   );
 }
 
-/** The Phaseo mark on a rounded square accent tile, in the theme's colours. */
+/** The Phaseo mark on a rounded square accent tile, in the theme's colours. Its corners are the ones logos collide with. */
 function Mark({ size }: { size: number }) {
   const fill = useToneColor("primary-foreground");
   return (
-    <View className="items-center justify-center rounded-md bg-primary" style={{ width: size, height: size }}>
+    <View className="items-center justify-center bg-primary" style={{ width: size, height: size, borderRadius: MARK_RADIUS }}>
       <Svg width={size * 0.72} height={size * 0.72} viewBox="0 0 64 64"><Path d={MARK_PATH} fill={fill} /></Svg>
     </View>
   );
@@ -291,11 +327,14 @@ type FloaterProps = {
 };
 
 /**
- * One lab's logo, drawn where its slot in the simulation says. A finger landing on it catches it, so it stays under the
- * finger (and the others bounce off it); holding or dragging lifts it, and letting go after a drag flings it. A tap
- * shows its newest model. Memoised, so a tap doesn't re-render the other logos.
+ * One lab's logo, drawn where its slot in the simulation says, exactly its collision shape: a `size` square with the
+ * tile's own corner radius and nothing round it (lifted, it's LIFT_SCALE bigger, as the others see it). A finger
+ * landing on it catches it, so it stays under the finger (and the others bounce off it); holding or dragging lifts it,
+ * and letting go after a drag flings it. A tap shows its newest model. Under the text it fades, so the text stays
+ * readable. Memoised, so a tap doesn't re-render the other logos.
  */
 const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, reduced, onTap }: FloaterProps) {
+  const radius = logoTileRadius(size);
   const lifted = useSharedValue(0);
   const anchor = useSharedValue<Point>({ x: 0, y: 0 });
 
@@ -319,8 +358,8 @@ const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, r
       const current = bodies.get();
       const body = current[index];
       if (!layout || !body) return;
-      // The edges and the middle are solid: the logo slides along them and is never dropped inside the middle.
-      const moved = dragTo(anchor.get(), { x: event.translationX, y: event.translationY }, { x: body.x, y: body.y }, layout.size, layout.bounds, layout.box);
+      // The edges and the mark are solid: the logo slides along them and round the mark's corners, never into it.
+      const moved = dragTo(anchor.get(), { x: event.translationX, y: event.translationY }, { x: body.x, y: body.y }, layout);
       anchor.set(moved.anchor);
       bodies.set(holdAt(current, index, moved.at));
     },
@@ -342,11 +381,14 @@ const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, r
 
   const tileStyle = useAnimatedStyle(() => {
     const body = bodies.get()[index];
+    const layout = world.get();
     const t = clamp(fade.get(), 0, 1);
+    const lift = 1 + (LIFT_SCALE - 1) * lifted.get();
+    const under = body && layout ? coverage(body.x, body.y, size, layout.cover) : 0;
     return {
-      opacity: body ? 1 - 0.85 * Math.sin(Math.PI * t) : 0,
+      opacity: body ? (1 - 0.85 * Math.sin(Math.PI * t)) * (1 - COVER_DIM * under) : 0,
       zIndex: body && body.held ? 2 : 1,
-      transform: [{ translateX: body ? body.x : 0 }, { translateY: body ? body.y : 0 }, { scale: 1 + 0.12 * lifted.get() }],
+      transform: [{ translateX: body ? body.x : 0 }, { translateY: body ? body.y : 0 }, { scale: lift }],
     };
   });
   // A faint accent tint after it hits a corner exactly, as on the DVD screensaver.
@@ -367,7 +409,7 @@ const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, r
         style={[{ position: "absolute", left: 0, top: 0 }, tileStyle]}
       >
         <Logo id={lab.id} label={lab.name} size={size} />
-        <Animated.View pointerEvents="none" className="absolute inset-0 rounded-md bg-primary" style={tintStyle} />
+        <Animated.View pointerEvents="none" className="absolute inset-0 bg-primary" style={[{ borderRadius: radius }, tintStyle]} />
       </Animated.View>
     </GestureDetector>
   );
