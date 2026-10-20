@@ -10,6 +10,7 @@ import { fetchSettingsKeysInitialData } from "@/lib/fetchers/internal/fetchSetti
 import { fetchSettingsManagementApiKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsManagementApiKeysInitialData";
 import { fetchSettingsRoutingInitialData } from "@/lib/fetchers/internal/fetchSettingsRoutingInitialData";
 import { fetchSettingsGuardrailsInitialData } from "@/lib/fetchers/internal/fetchSettingsGuardrailsInitialData";
+import { fetchSettingsClassifiersInitialData } from "@/lib/fetchers/internal/fetchSettingsClassifiersInitialData";
 import { fetchSettingsPrivacyInitialData } from "@/lib/fetchers/internal/fetchSettingsPrivacyInitialData";
 import { fetchSettingsByokInitialData } from "@/lib/fetchers/internal/fetchSettingsByokInitialData";
 import { fetchSettingsPresetsInitialData } from "@/lib/fetchers/internal/fetchSettingsPresetsInitialData";
@@ -80,6 +81,7 @@ const readers = {
 	"management-api-keys": fetchSettingsManagementApiKeysInitialData,
 	routing: fetchSettingsRoutingInitialData,
 	guardrails: fetchSettingsGuardrailsInitialData,
+	classifiers: fetchSettingsClassifiersInitialData,
 	privacy: fetchSettingsPrivacyInitialData,
 	byok: fetchSettingsByokInitialData,
 	presets: fetchSettingsPresetsInitialData,

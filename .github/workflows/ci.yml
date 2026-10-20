@@ -178,6 +178,9 @@ jobs:
             - name: Validate shared Broadcast destination registry
               run: pnpm run validate:broadcast-destinations
 
+            - name: Validate shared request classifier rules
+              run: pnpm run validate:request-classifiers
+
             - name: Validate unique Supabase migration versions
               shell: bash
               run: |

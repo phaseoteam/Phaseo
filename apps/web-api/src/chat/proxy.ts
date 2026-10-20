@@ -92,7 +92,15 @@ export async function resolveChatWorkspace(request: Request, env: Env) {
 export async function resolveGatewayKeys(request: Request, env: Env, waitUntil: (promise: Promise<unknown>) => void): Promise<GatewayKeys | GatewayKeyError> {
 	const workspace = await resolveChatWorkspace(request, env);
 	if ("status" in workspace) return workspace as GatewayKeyError;
-	const { user, client, workspaceId } = workspace;
+	return ensureChatGatewayKey(env, workspace, waitUntil);
+}
+
+/** The signed-in member's managed gateway key for a workspace they belong to, created on first use. */
+export async function ensureChatGatewayKey(
+	env: Env,
+	{ user, client, workspaceId }: { user: { id: string; appMetadata: Record<string, unknown> }; client: ReturnType<typeof getDataClient>; workspaceId: string },
+	waitUntil: (promise: Promise<unknown>) => void,
+): Promise<GatewayKeys | GatewayKeyError> {
 	if (!hasReviewedChatPrivacy(user.appMetadata, workspaceId)) return {
 		status: 403, code: "chat_privacy_review_required",
 		message: "Review your workspace privacy settings before using Chat",

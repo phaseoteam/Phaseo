@@ -4421,7 +4421,10 @@
 		"enterprise": "Unternehmen",
 		"scimProvisioning": "SCIM-Bereitstellung",
 		"singleSignOn": "Einmalanmeldung",
-		"workspaces": "Arbeitsbereiche"
+		"workspaces": "Arbeitsbereiche",
+		"classifiers": "Klassifikatoren",
+		"newClassifier": "Neuer Klassifikator",
+		"classifier": "Klassifikator"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4647,7 +4650,8 @@
 		"searchPlaceholder": "Einstellungen suchen…",
 		"becomeProvider": "Anbieter werden",
 		"empty": "Keine Einstellungen gefunden.",
-		"providerProfile": "Anbieterprofil"
+		"providerProfile": "Anbieterprofil",
+		"classifiers": "Klassifikatoren"
 	},
 	"settingsAvailability": {
 		"title": "Die Einstellungen sind vorübergehend nicht verfügbar",
@@ -5958,6 +5962,191 @@
 			"invalid_model": "Gib eine Modell-ID wie lab/model ein.",
 			"invalid_successor": "Gib eine Ersatzmodell-ID oder „never“ ein.",
 			"too_many_replacements": "Dieser Workspace hat das Limit von 500 Ersatzmodellen erreicht."
+		}
+	},
+	"classifiers": {
+		"title": "Klassifikatoren",
+		"description": "Lass ein Modell Anfragen automatisch labeln und filtere und gruppiere die Nutzung dann nach diesen Labels.",
+		"newClassifier": "Neuer Klassifikator",
+		"feedback": "Wie könnten Klassifikatoren besser für dich funktionieren?",
+		"limitReached": "Dieser Workspace hat bereits {limit} Klassifikatoren, das erlaubte Maximum.",
+		"selectWorkspace": "Wähle einen Workspace aus, um seine Klassifikatoren zu verwalten.",
+		"adminsOnly": "Nur Inhaber und Admins des Workspace können Klassifikatoren sehen und ändern, weil sie festlegen, welche Anfrageinhalte an ein Modell gesendet werden.",
+		"emptyTitle": "Noch keine Klassifikatoren",
+		"emptyBody": "Erstelle einen aus einer Vorlage wie Abteilung oder Aufgabentyp und wähle dann ein Modell und den Anteil des Traffics, der klassifiziert wird.",
+		"billingNote": "Jede Klassifizierung ist eine normale Anfrage an das gewählte Modell und wird diesem Workspace zum üblichen Preis des Modells berechnet. Diese Anfragen erscheinen unter Nutzung und Protokolle mit dem Label phaseo.classifier.",
+		"statusOn": "An",
+		"statusOff": "Aus",
+		"listModel": "Modell",
+		"listLabels": "Label-Schlüssel",
+		"listSampling": "Stichprobe",
+		"sampledRequests": "{percent}% der Anfragen",
+		"sampledSessions": "{percent}% der Sitzungen",
+		"listThisMonth": "Dieser Monat",
+		"spendSummary": "{spend} für {count, plural, one {# Klassifizierung} other {# Klassifizierungen}}",
+		"noBudget": "kein Budget",
+		"budgetOf": "Budget {budget}",
+		"backToList": "Zurück zu den Klassifikatoren",
+		"newTitle": "Neuer Klassifikator",
+		"newDescription": "Wähle die Labels, ein Modell und den Anteil des Traffics, der klassifiziert wird.",
+		"editTitle": "Klassifikator",
+		"editDescription": "Ändere, was dieser Klassifikator labelt und wie oft er läuft.",
+		"notFound": "Diesen Klassifikator gibt es nicht mehr.",
+		"resultsNote": "Antworten werden als Anfrage-Labels gespeichert, mit dem Schlüssel der Dimension als Label-Schlüssel. So kannst du in Protokolle und Nutzung danach filtern und gruppieren. Sendet deine App bereits ein Label mit demselben Schlüssel, bleibt der Wert deiner App erhalten.",
+		"presets": {
+			"title": "Mit einer Vorlage beginnen",
+			"description": "Eine Vorlage füllt die Dimensionen aus. Danach kannst du alles ändern.",
+			"department": {
+				"title": "Abteilung",
+				"summary": "Für welches Team die Anfrage ist"
+			},
+			"audience": {
+				"title": "Zielgruppe",
+				"summary": "Wer die Ausgabe liest"
+			},
+			"task_type": {
+				"title": "Aufgabentyp",
+				"summary": "Programmierung, Analyse, Texte, Support und mehr"
+			},
+			"engineering_work": {
+				"title": "Entwicklungsarbeit",
+				"summary": "Features, Fehlerbehebungen, Reviews, Tests"
+			},
+			"agent_complexity": {
+				"title": "Agent-Komplexität",
+				"summary": "Wie schwer die Aufgabe ist und zu welcher Art sie gehört"
+			},
+			"compliance": {
+				"title": "Compliance",
+				"summary": "Personenbezogene Daten und regulierte Themen"
+			}
+		},
+		"sections": {
+			"details": "Details",
+			"model": "Modell",
+			"dimensions": "Dimensionen",
+			"instructions": "Anweisungen",
+			"sampling": "Stichprobe",
+			"scope": "Geltungsbereich",
+			"budget": "Monatsbudget",
+			"results": "Wo Ergebnisse erscheinen",
+			"test": "An einem Beispiel testen"
+		},
+		"fields": {
+			"name": "Name",
+			"namePlaceholder": "Abteilung",
+			"description": "Beschreibung",
+			"enabled": "Anfragen klassifizieren",
+			"enabledDescription": "Wenn das aus ist, wird nichts klassifiziert und nichts berechnet."
+		},
+		"model": {
+			"label": "Klassifikator-Modell",
+			"help": "Die Liste zeigt Modelle mit dokumentierter Unterstützung für strukturierte Ausgaben. Ein kleines, schnelles Modell reicht meist aus.",
+			"showAll": "Alle Modelle anzeigen"
+		},
+		"dimensions": {
+			"help": "Jede Dimension wird zu einem Label. Füge bis zu {max} Dimensionen mit jeweils bis zu {values} Werten hinzu.",
+			"addDimension": "Dimension hinzufügen",
+			"dimensionTitle": "Dimension {index}",
+			"moveDimensionUp": "Dimension {index} nach oben verschieben",
+			"moveDimensionDown": "Dimension {index} nach unten verschieben",
+			"removeDimension": "Dimension {index} entfernen",
+			"name": "Name",
+			"namePlaceholder": "Kostenstelle",
+			"key": "Label-Schlüssel",
+			"keyHelp": "Nur Buchstaben, Ziffern und _ . : -",
+			"description": "Bedeutung",
+			"descriptionPlaceholder": "Das Team, das die Antwort nutzt",
+			"multiple": "Mehrere Werte erlauben",
+			"allowOther": "other hinzufügen, wenn nichts passt",
+			"value": "Wert",
+			"valueDescription": "Beschreibung (hilft dem Modell bei der Wahl)",
+			"valueActions": "Aktionen",
+			"valueAt": "Wert {index}",
+			"valuePlaceholder": "engineering",
+			"valueDescriptionAt": "Beschreibung von Wert {index}",
+			"valueDescriptionPlaceholder": "Optional",
+			"moveValueUp": "Wert {index} nach oben verschieben",
+			"moveValueDown": "Wert {index} nach unten verschieben",
+			"removeValue": "Wert {index} entfernen",
+			"addValue": "Wert hinzufügen",
+			"otherAutomatic": "Das Modell kann auch other antworten."
+		},
+		"instructions": {
+			"help": "Optionale Hinweise für Grenzfälle. Sie werden nach den Dimensionen angefügt.",
+			"placeholder": "Behandle Vertragsfragen aus dem Vertrieb als legal."
+		},
+		"sampling": {
+			"percent": "Anteil des Traffics",
+			"percentHelp": "Von 0,01% bis 100%. Die Stichprobe ist deterministisch, eine Anfrage oder Sitzung bekommt also immer dieselbe Entscheidung.",
+			"sampleBy": "Stichprobe nach",
+			"byRequest": "Anfrage",
+			"bySession": "Sitzung",
+			"byRequestHelp": "Jede Anfrage wird einzeln ausgewählt.",
+			"bySessionHelp": "Anfragen mit derselben Sitzungs-ID werden gemeinsam ausgewählt. Spätere Anfragen der Sitzung verwenden bis zu einer Stunde lang die erste Antwort wieder, eine Sitzung wird also meist nur einmal berechnet.",
+			"includeResponse": "Antwort einbeziehen",
+			"includeResponseHelp": "Sendet auch die Antwort des Modells an den Klassifikator. Das hilft bei manchen Labels, kostet aber mehr."
+		},
+		"scope": {
+			"help": "Lass eine Liste leer, um den gesamten Traffic im Workspace zu klassifizieren.",
+			"keys": "API-Schlüssel",
+			"apps": "Apps",
+			"models": "Angefragte Modelle",
+			"allKeys": "Alle Schlüssel",
+			"allApps": "Alle Apps",
+			"allModels": "Alle Modelle",
+			"selected": "{count} ausgewählt",
+			"search": "Suchen",
+			"none": "Noch nichts zur Auswahl."
+		},
+		"budget": {
+			"label": "Budget in USD",
+			"placeholder": "Kein Budget",
+			"help": "Sobald die Ausgaben das Budget erreichen, pausiert die Klassifizierung bis zum nächsten Kalendermonat (UTC). Die Ausgaben werden etwa einmal pro Minute geprüft, daher kann das Budget leicht überschritten werden.",
+			"spent": "Ausgaben in diesem Monat: {spend} für {count, plural, one {# Klassifizierung} other {# Klassifizierungen}}."
+		},
+		"results": {
+			"viewValue": "Anfragen mit dem Label",
+			"classifierRequests": "Die eigenen Anfragen dieses Klassifikators und ihre Kosten in Protokolle",
+			"afterSave": "Links zu Protokolle, gefiltert nach jedem Label, erscheinen hier, sobald der Klassifikator gespeichert ist."
+		},
+		"test": {
+			"description": "Sendet ein Beispiel mit genau der Anfrage, die das Gateway erstellt, in deinem Namen. Es wird wie eine Klassifizierung berechnet und mit phaseo.classifier_test gelabelt. Es wird nichts gespeichert.",
+			"prompt": "Beispiel-Prompt",
+			"promptPlaceholder": "Kannst du diese Vertragsklausel prüfen, bevor ich sie an den Kunden schicke?",
+			"response": "Beispielantwort (optional)",
+			"run": "Test ausführen",
+			"running": "Läuft…",
+			"fixFirst": "Korrigiere den Klassifikator, bevor du ihn testest.",
+			"privacyReview": "Öffne einmal den Chat und prüfe die Datenschutzeinstellungen deines Workspace, dann versuche es erneut.",
+			"openChat": "Chat öffnen",
+			"failed": "Der Test ist fehlgeschlagen.",
+			"failedWithMessage": "Der Test ist fehlgeschlagen: {message}",
+			"labelKey": "Label-Schlüssel",
+			"labelValue": "Wert",
+			"confidence": "Konfidenz",
+			"noAnswer": "Das Modell hat keine verwertbare Antwort geliefert. Versuche ein anderes Modell oder vereinfache die Dimensionen.",
+			"costLine": "Kosten {cost} mit {model}"
+		},
+		"actions": {
+			"save": "Änderungen speichern",
+			"create": "Klassifikator erstellen",
+			"saving": "Wird gespeichert…",
+			"cancel": "Abbrechen",
+			"delete": "Klassifikator löschen",
+			"deleteTitle": "{name} löschen?",
+			"deleteBody": "Neue Anfragen werden nicht mehr klassifiziert. Bereits gespeicherte Labels bleiben an vergangenen Anfragen.",
+			"deleteConfirm": "Löschen",
+			"saved": "Klassifikator gespeichert",
+			"created": "Klassifikator erstellt",
+			"deleted": "Klassifikator gelöscht"
+		},
+		"errors": {
+			"invalid": "Prüfe den Klassifikator: {message}",
+			"saveFailed": "Der Klassifikator konnte nicht gespeichert werden.",
+			"deleteFailed": "Der Klassifikator konnte nicht gelöscht werden.",
+			"samplePercent": "Gib einen Anteil von 0,01% bis 100% ein.",
+			"budgetUsd": "Gib ein Budget über $0 ein oder lass das Feld leer."
 		}
 	}
 }

@@ -136,6 +136,10 @@
 					"title": "إنشاء ضابط حماية",
 					"subtitle": "إضافة سياسة للطلبات أو الاستجابات"
 				},
+				"action-create-classifier": {
+					"title": "إنشاء مصنِّف",
+					"subtitle": "صنِّف الطلبات حسب القسم أو المهمة أو الجمهور"
+				},
 				"action-copy-page-link": {
 					"title": "نسخ رابط الصفحة الحالية",
 					"subtitle": "نسخ عنوان URL لهذه الصفحة إلى الحافظة"
@@ -250,6 +254,7 @@
 				"nav-settings-presets": "إعدادات التوجيه المسبقة",
 				"nav-settings-privacy": "إعدادات الخصوصية",
 				"nav-settings-guardrails": "ضوابط الحماية",
+				"nav-settings-classifiers": "المصنِّفات",
 				"nav-settings-oauth": "تطبيقات OAuth",
 				"nav-settings-broadcast": "البث",
 				"nav-settings-webhooks": "Webhooks",
@@ -328,6 +333,7 @@
 				"nav-settings-account-privacy": "خصوصية الحساب",
 				"nav-settings-credits-onboarding": "إعداد الفوترة",
 				"nav-settings-guardrails-new": "إنشاء ضابط حماية",
+				"nav-settings-classifiers-new": "إنشاء مصنِّف",
 				"nav-settings-presets-new": "إنشاء إعداد مسبق للتوجيه",
 				"nav-how-phaseo-normalises-ai-benchmarks": "كيفية توحيد نتائج الاختبارات المعيارية",
 				"nav-how-phaseo-measures-latency-throughput": "كيفية قياس الأداء",

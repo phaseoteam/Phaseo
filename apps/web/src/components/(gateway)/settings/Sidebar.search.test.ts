@@ -9,6 +9,12 @@ describe("settings navigation search", () => {
 		expect(results[0].items[0].children?.map((child) => child.href)).toEqual(["/settings/payment-methods"]);
 		expect(filterSettingsNavigation(groups, "notifications")[0].scope).toBe("workspace");
 	});
+	it("finds Classifiers in English and in translation", () => {
+		const byName = filterSettingsNavigation(groups, "classifiers");
+		expect(byName.flatMap((group) => group.items.map((item) => item.href))).toEqual(["/settings/classifiers"]);
+		const translated = filterSettingsNavigation(groups, "klassifikatoren", (label) => label === "Classifiers" ? "Klassifikatoren" : label);
+		expect(translated.flatMap((group) => group.items.map((item) => item.href))).toEqual(["/settings/classifiers"]);
+	});
 	it("keeps all children when their parent matches", () => {
 		const result = filterSettingsNavigation(groups, "billing");
 		expect(result[0].items[0].children).toHaveLength(3);

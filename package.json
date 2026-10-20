@@ -64,6 +64,7 @@
 		"skills:validate": "node scripts/skills/validate.mjs",
 		"validate:domains": "node scripts/check-canonical-domain.mjs",
 		"validate:broadcast-destinations": "node scripts/sync-broadcast-destinations.mjs --check",
+		"validate:request-classifiers": "node scripts/sync-request-classifiers.mjs --check",
 		"data:update-statuses": "tsx scripts/update-database-model-statuses.ts",
 		"data:sync-artificial-analysis": "tsx scripts/sync-artificial-analysis-benchmarks.ts",
 		"data:sync-epoch-eci": "tsx scripts/sync-epoch-eci-benchmarks.ts",

@@ -33,6 +33,15 @@ describe("settings sidebar navigation", () => {
 		expect(getActiveSettingsNav("/settings/usage/logs/batches")?.item.label).toBe("Logs");
 	});
 
+	it("opens Classifiers for its list, new and edit pages", () => {
+		for (const path of ["/settings/classifiers", "/settings/classifiers/new", "/settings/classifiers/00000000-0000-4000-8000-0000000000c1"]) {
+			const active = getActiveSettingsNav(path);
+			expect(active?.item.label).toBe("Classifiers");
+			expect(active?.group.scope).toBe("workspace");
+		}
+		expect(getSettingsSidebar().flatMap((group) => group.items).find((item) => item.href === "/settings/classifiers")?.badge).toBe("Beta");
+	});
+
 	it("includes the workspace activity log under settings", () => {
 		const settings = getActiveSettingsNav("/settings/workspaces/activity")?.item;
 		expect(settings?.label).toBe("Settings");
@@ -68,6 +77,7 @@ describe("settings sidebar navigation", () => {
 				"Logs",
 				"Routing",
 				"Guardrails",
+				"Classifiers",
 				"Privacy",
 				"Presets",
 				"Private Models",

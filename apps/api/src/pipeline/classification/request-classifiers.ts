@@ -14,10 +14,18 @@ import { tieredRead } from "@core/tiered-cache";
 import type { Endpoint, RequestLabel } from "@core/types";
 import {
 	CLASSIFIER_COLUMNS,
-	OTHER_VALUE,
+	CLASSIFIER_TEST_LABEL_KEY,
+	buildClassifierRequestBody,
+	parseClassifierAnswer,
+	responseText,
+	textOf,
 	type ClassifierDimension,
 	type ClassifierRow,
 } from "@core/request-classifiers";
+
+// The request builders live with the shared classifier rules so the settings
+// page can test a draft with exactly the request the gateway sends.
+export { buildClassifierPrompt, buildClassifierRequestBody, buildClassifierSchema, classifierOutputTokens, parseClassifierAnswer, responseText } from "@core/request-classifiers";
 import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { RESERVED_CLASSIFIER_LABEL_KEY } from "../before/request-labels";
 import type { PipelineContext } from "../before/types";
@@ -33,8 +41,6 @@ const SESSION_CACHE_TTL_SECONDS = 3_600;
 const CLASSIFICATION_TIMEOUT_MS = 12_000;
 const MAX_TURN_CHARS = 4_000;
 const MAX_TRANSCRIPT_CHARS = 48_000;
-/** Room for a dimension's key, confidence and JSON punctuation. */
-const OUTPUT_TOKENS_PER_DIMENSION = 40;
 const SPEND_RECORD_ATTEMPTS = 3;
 
 export type ClassifierHandler = (request: Request) => Promise<Response>;
@@ -164,23 +170,6 @@ function clip(text: string, max = MAX_TURN_CHARS): string {
 	return text.length > max ? `${text.slice(0, max)}...[truncated]` : text;
 }
 
-function textOf(content: unknown): string {
-	if (typeof content === "string") return content;
-	if (!Array.isArray(content)) return "";
-	const parts: string[] = [];
-	for (const part of content) {
-		if (typeof part === "string") parts.push(part);
-		else if (part && typeof part === "object") {
-			const record = part as Record<string, unknown>;
-			if (typeof record.text === "string") parts.push(record.text);
-			else if (record.type === "image_url" || record.type === "input_image" || record.type === "image") parts.push("[image]");
-			else if (record.type === "input_file" || record.type === "file" || record.type === "document") parts.push("[file]");
-			else if (record.type === "input_audio") parts.push("[audio]");
-		}
-	}
-	return parts.join("\n");
-}
-
 function toolNames(tools: unknown): string[] {
 	if (!Array.isArray(tools)) return [];
 	return tools.map((tool) => {
@@ -228,20 +217,6 @@ export function buildTranscriptTurns(payload: unknown): string[] {
 	return turns;
 }
 
-/** The generated text of a Chat Completions, Responses or Messages result. */
-export function responseText(response: unknown): string {
-	const body = (response && typeof response === "object" ? response : {}) as Record<string, any>;
-	if (typeof body.output_text === "string") return body.output_text;
-	const parts: string[] = [];
-	for (const item of Array.isArray(body.output) ? body.output : []) {
-		if (item?.type === "function_call") parts.push(`[tool call: ${item.name ?? ""}]`);
-		else parts.push(textOf(item?.content));
-	}
-	for (const choice of Array.isArray(body.choices) ? body.choices : []) parts.push(textOf(choice?.message?.content));
-	if (Array.isArray(body.content)) parts.push(textOf(body.content));
-	return parts.filter(Boolean).join("\n");
-}
-
 /** Keeps the start and end of very long conversations, then redacts secrets. */
 export function buildTranscript(payload: unknown, response: unknown | null): string {
 	const turns = buildTranscriptTurns(payload);
@@ -255,105 +230,6 @@ export function buildTranscript(payload: unknown, response: unknown | null): str
 		transcript = `${transcript.slice(0, half)}\n\n...[earlier turns omitted]...\n\n${transcript.slice(-half)}`;
 	}
 	return String(sanitizeDataContributionPayload(transcript).value ?? "");
-}
-
-// ---- Classifier request -------------------------------------------------------
-
-function allowedValues(dimension: ClassifierDimension): string[] {
-	const values = dimension.values.map((entry) => entry.value);
-	return dimension.allow_other ? [...values, OTHER_VALUE] : values;
-}
-
-/** Dimension keys can contain characters some providers reject in property names, so the schema uses d0, d1, ... */
-export function buildClassifierSchema(dimensions: ClassifierDimension[]): Record<string, unknown> {
-	const properties: Record<string, unknown> = {};
-	dimensions.forEach((dimension, index) => {
-		const value = { type: "string", enum: allowedValues(dimension) };
-		properties[`d${index}`] = {
-			type: "object",
-			properties: {
-				value: dimension.multiple ? { type: "array", items: value } : value,
-				confidence: { type: "number" },
-			},
-			required: ["value", "confidence"],
-			additionalProperties: false,
-		};
-	});
-	return { type: "object", properties, required: Object.keys(properties), additionalProperties: false };
-}
-
-export function buildClassifierPrompt(classifier: ClassifierRow, dimensions: ClassifierDimension[]): string {
-	const lines = [
-		"You label requests sent to an AI model. Read the transcript and answer every dimension below.",
-		"Pick only from the listed values. Judge what the request is for, not whether it was answered well.",
-		"Give confidence from 0 to 1 for each answer.",
-		"",
-	];
-	dimensions.forEach((dimension, index) => {
-		lines.push(`d${index}: ${dimension.name}${dimension.description ? ` - ${dimension.description}` : ""}`);
-		lines.push(dimension.multiple ? "  Choose every value that applies (at least one)." : "  Choose exactly one value.");
-		for (const entry of dimension.values) lines.push(`  - ${entry.value}${entry.description ? `: ${entry.description}` : ""}`);
-		if (dimension.allow_other) lines.push(`  - ${OTHER_VALUE}: none of the values above fit`);
-	});
-	if (classifier.instructions?.trim()) lines.push("", "Additional instructions from the workspace:", classifier.instructions.trim());
-	return lines.join("\n");
-}
-
-/** Enough output for the longest valid answer: every value of a multi-value dimension, about 3 characters per token. */
-export function classifierOutputTokens(dimensions: ClassifierDimension[]): number {
-	return 64 + dimensions.reduce((total, dimension) => {
-		const values = allowedValues(dimension);
-		const answer = dimension.multiple
-			? values.reduce((sum, value) => sum + Math.ceil(value.length / 3) + 2, 0)
-			: Math.ceil(Math.max(...values.map((value) => value.length)) / 3) + 2;
-		return total + OUTPUT_TOKENS_PER_DIMENSION + answer;
-	}, 0);
-}
-
-export function buildClassifierRequestBody(classifier: ClassifierRow, dimensions: ClassifierDimension[], transcript: string): Record<string, unknown> {
-	return {
-		model: classifier.model,
-		stream: false,
-		store: false,
-		temperature: 0,
-		max_output_tokens: classifierOutputTokens(dimensions),
-		text: {
-			format: { type: "json_schema", name: "request_classification", strict: true, schema: buildClassifierSchema(dimensions) },
-		},
-		input: [
-			{ role: "system", content: [{ type: "input_text", text: buildClassifierPrompt(classifier, dimensions) }] },
-			{ role: "user", content: [{ type: "input_text", text: `<transcript>\n${transcript}\n</transcript>` }] },
-		],
-	};
-}
-
-/** Validates the model's answer against the taxonomy; anything outside it is dropped. */
-export function parseClassifierAnswer(payload: unknown, dimensions: ClassifierDimension[]): Array<RequestLabel & { confidence: number | null }> | null {
-	const text = responseText(payload).trim();
-	if (!text) return null;
-	let parsed: Record<string, any>;
-	try {
-		parsed = JSON.parse(text);
-	} catch {
-		return null;
-	}
-	if (!parsed || typeof parsed !== "object") return null;
-	const labels: Array<RequestLabel & { confidence: number | null }> = [];
-	dimensions.forEach((dimension, index) => {
-		const answer = parsed[`d${index}`];
-		if (!answer || typeof answer !== "object") return;
-		const allowed = new Map(allowedValues(dimension).map((value) => [value.toLowerCase(), value]));
-		const raw: unknown[] = Array.isArray(answer.value) ? answer.value : [answer.value];
-		const values = [...new Set(raw
-			.map((value) => typeof value === "string" ? allowed.get(value.trim().toLowerCase()) : undefined)
-			.filter((value): value is string => Boolean(value)))];
-		const chosen = dimension.multiple ? values : values.slice(0, 1);
-		const confidence = Number(answer.confidence);
-		for (const value of chosen) {
-			labels.push({ key: dimension.key, value, confidence: Number.isFinite(confidence) ? Math.max(0, Math.min(1, confidence)) : null });
-		}
-	});
-	return labels;
 }
 
 // ---- Session reuse ------------------------------------------------------------
@@ -492,6 +368,8 @@ export async function applyRequestClassifiers(ctx: PipelineContext, gatewayRespo
 	const call = ctx.requestClassifierCall;
 	if (!call || ctx.classifierSubrequest || ctx.testingMode || !CLASSIFIABLE_ENDPOINTS.has(ctx.endpoint) || isStealthRequest(ctx)) return;
 	if (getBindingsIfConfigured()?.REQUEST_CLASSIFIERS_ENABLED === "false") return;
+	// A classifier test run from settings is itself a classification; do not classify it again.
+	if ((ctx.meta.labels ?? []).some((label) => label.key === CLASSIFIER_TEST_LABEL_KEY)) return;
 	try {
 		const classifiers = await loadClassifiers(ctx.workspaceId);
 		if (!classifiers.length) return;

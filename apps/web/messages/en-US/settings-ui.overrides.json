@@ -15,5 +15,10 @@
   },
   "credits": {
     "checkoutCancelled": "Checkout canceled. No charges were made."
+  },
+  "classifiers": {
+    "dimensions": {
+      "namePlaceholder": "Cost center"
+    }
   }
 }

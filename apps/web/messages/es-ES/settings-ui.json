@@ -4421,7 +4421,10 @@
 		"enterprise": "Empresa",
 		"scimProvisioning": "Aprovisionamiento de SCIM",
 		"singleSignOn": "Inicio de sesión único",
-		"workspaces": "Espacios de trabajo"
+		"workspaces": "Espacios de trabajo",
+		"classifiers": "Clasificadores",
+		"newClassifier": "Nuevo clasificador",
+		"classifier": "Clasificador"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4647,7 +4650,8 @@
 		"searchPlaceholder": "Buscar ajustes…",
 		"becomeProvider": "Convertirse en proveedor",
 		"empty": "No se encontraron ajustes.",
-		"providerProfile": "Perfil del proveedor"
+		"providerProfile": "Perfil del proveedor",
+		"classifiers": "Clasificadores"
 	},
 	"settingsAvailability": {
 		"title": "Los ajustes no están disponibles temporalmente",
@@ -5958,6 +5962,191 @@
 			"invalid_model": "Escribe un ID de modelo como lab/model.",
 			"invalid_successor": "Escribe un ID de modelo sustituto o \"never\".",
 			"too_many_replacements": "Este espacio de trabajo ha alcanzado el límite de 500 sustitutos."
+		}
+	},
+	"classifiers": {
+		"title": "Clasificadores",
+		"description": "Etiqueta solicitudes automáticamente con un modelo y luego filtra y agrupa el uso por esas etiquetas.",
+		"newClassifier": "Nuevo clasificador",
+		"feedback": "¿Cómo podrían funcionar mejor los clasificadores para ti?",
+		"limitReached": "Este espacio de trabajo ya tiene {limit} clasificadores, el máximo permitido.",
+		"selectWorkspace": "Selecciona un espacio de trabajo para gestionar sus clasificadores.",
+		"adminsOnly": "Solo los propietarios y administradores del espacio de trabajo pueden ver y cambiar los clasificadores, porque deciden qué contenido de las solicitudes se envía a un modelo.",
+		"emptyTitle": "Aún no hay clasificadores",
+		"emptyBody": "Crea uno a partir de una plantilla como Departamento o Tipo de tarea y elige un modelo y cuánto tráfico clasificar.",
+		"billingNote": "Cada clasificación es una solicitud normal al modelo que elijas y se factura a este espacio de trabajo al precio habitual de ese modelo. Estas solicitudes aparecen en Uso y Registros con la etiqueta phaseo.classifier.",
+		"statusOn": "Activado",
+		"statusOff": "Desactivado",
+		"listModel": "Modelo",
+		"listLabels": "Claves de etiqueta",
+		"listSampling": "Muestreo",
+		"sampledRequests": "{percent}% de las solicitudes",
+		"sampledSessions": "{percent}% de las sesiones",
+		"listThisMonth": "Este mes",
+		"spendSummary": "{spend} por {count, plural, one {# clasificación} other {# clasificaciones}}",
+		"noBudget": "sin presupuesto",
+		"budgetOf": "presupuesto {budget}",
+		"backToList": "Volver a los clasificadores",
+		"newTitle": "Nuevo clasificador",
+		"newDescription": "Elige las etiquetas, un modelo y cuánto tráfico clasificar.",
+		"editTitle": "Clasificador",
+		"editDescription": "Cambia qué etiqueta este clasificador y con qué frecuencia se ejecuta.",
+		"notFound": "Este clasificador ya no existe.",
+		"resultsNote": "Las respuestas se guardan como etiquetas de la solicitud, con la clave de la dimensión como clave de etiqueta, para que puedas filtrar y agrupar por ellas en Registros y Uso. Si tu aplicación ya envía una etiqueta con la misma clave, se conserva el valor de tu aplicación.",
+		"presets": {
+			"title": "Empezar con una plantilla",
+			"description": "Una plantilla rellena las dimensiones. Después puedes cambiarlo todo.",
+			"department": {
+				"title": "Departamento",
+				"summary": "Para qué equipo es la solicitud"
+			},
+			"audience": {
+				"title": "Público",
+				"summary": "Quién leerá el resultado"
+			},
+			"task_type": {
+				"title": "Tipo de tarea",
+				"summary": "Programación, análisis, redacción, soporte y más"
+			},
+			"engineering_work": {
+				"title": "Trabajo de ingeniería",
+				"summary": "Funciones, correcciones, revisiones, pruebas"
+			},
+			"agent_complexity": {
+				"title": "Complejidad del agente",
+				"summary": "Lo difícil que es la tarea y su familia"
+			},
+			"compliance": {
+				"title": "Cumplimiento",
+				"summary": "Datos personales y temas regulados"
+			}
+		},
+		"sections": {
+			"details": "Detalles",
+			"model": "Modelo",
+			"dimensions": "Dimensiones",
+			"instructions": "Instrucciones",
+			"sampling": "Muestreo",
+			"scope": "Alcance",
+			"budget": "Presupuesto mensual",
+			"results": "Dónde aparecen los resultados",
+			"test": "Probar con un ejemplo"
+		},
+		"fields": {
+			"name": "Nombre",
+			"namePlaceholder": "Departamento",
+			"description": "Descripción",
+			"enabled": "Clasificar solicitudes",
+			"enabledDescription": "Si está desactivado, no se clasifica ni se factura nada."
+		},
+		"model": {
+			"label": "Modelo del clasificador",
+			"help": "La lista muestra modelos con compatibilidad documentada con salidas estructuradas. Normalmente basta con un modelo pequeño y rápido.",
+			"showAll": "Mostrar todos los modelos"
+		},
+		"dimensions": {
+			"help": "Cada dimensión se convierte en una etiqueta. Añade hasta {max} dimensiones con hasta {values} valores cada una.",
+			"addDimension": "Añadir dimensión",
+			"dimensionTitle": "Dimensión {index}",
+			"moveDimensionUp": "Subir la dimensión {index}",
+			"moveDimensionDown": "Bajar la dimensión {index}",
+			"removeDimension": "Quitar la dimensión {index}",
+			"name": "Nombre",
+			"namePlaceholder": "Centro de coste",
+			"key": "Clave de etiqueta",
+			"keyHelp": "Solo letras, dígitos y _ . : -",
+			"description": "Qué significa",
+			"descriptionPlaceholder": "El equipo que usará la respuesta",
+			"multiple": "Permitir varios valores",
+			"allowOther": "Añadir other cuando nada encaje",
+			"value": "Valor",
+			"valueDescription": "Descripción (ayuda al modelo a elegir)",
+			"valueActions": "Acciones",
+			"valueAt": "Valor {index}",
+			"valuePlaceholder": "engineering",
+			"valueDescriptionAt": "Descripción del valor {index}",
+			"valueDescriptionPlaceholder": "Opcional",
+			"moveValueUp": "Subir el valor {index}",
+			"moveValueDown": "Bajar el valor {index}",
+			"removeValue": "Quitar el valor {index}",
+			"addValue": "Añadir valor",
+			"otherAutomatic": "El modelo también puede responder other."
+		},
+		"instructions": {
+			"help": "Indicaciones opcionales para casos dudosos. Se añaden después de las dimensiones.",
+			"placeholder": "Trata las preguntas sobre contratos del equipo de ventas como legal."
+		},
+		"sampling": {
+			"percent": "Parte del tráfico",
+			"percentHelp": "Del 0,01% al 100%. El muestreo es determinista, así que una solicitud o sesión siempre recibe la misma decisión.",
+			"sampleBy": "Muestrear por",
+			"byRequest": "Solicitud",
+			"bySession": "Sesión",
+			"byRequestHelp": "Cada solicitud se muestrea por separado.",
+			"bySessionHelp": "Las solicitudes con el mismo ID de sesión se muestrean juntas. Las siguientes solicitudes de la sesión reutilizan la primera respuesta durante una hora como máximo, así que una sesión suele facturarse una sola vez.",
+			"includeResponse": "Incluir la respuesta",
+			"includeResponseHelp": "También envía la respuesta del modelo al clasificador. Ayuda con algunas etiquetas, pero cuesta más."
+		},
+		"scope": {
+			"help": "Deja una lista vacía para clasificar todo el tráfico del espacio de trabajo.",
+			"keys": "Claves de API",
+			"apps": "Aplicaciones",
+			"models": "Modelos solicitados",
+			"allKeys": "Todas las claves",
+			"allApps": "Todas las aplicaciones",
+			"allModels": "Todos los modelos",
+			"selected": "{count} seleccionados",
+			"search": "Buscar",
+			"none": "Todavía no hay nada para elegir."
+		},
+		"budget": {
+			"label": "Presupuesto en USD",
+			"placeholder": "Sin presupuesto",
+			"help": "Cuando el gasto alcanza el presupuesto, la clasificación se pausa hasta el siguiente mes natural (UTC). El gasto se comprueba aproximadamente una vez por minuto, así que puede superarse ligeramente.",
+			"spent": "Gasto de este mes: {spend} por {count, plural, one {# clasificación} other {# clasificaciones}}."
+		},
+		"results": {
+			"viewValue": "solicitudes etiquetadas",
+			"classifierRequests": "Las solicitudes de este clasificador y su coste en Registros",
+			"afterSave": "Cuando guardes el clasificador, aquí aparecerán enlaces a Registros filtrados por cada etiqueta."
+		},
+		"test": {
+			"description": "Envía un ejemplo con la misma solicitud que crea el gateway, en tu nombre. Se factura como una clasificación y se etiqueta con phaseo.classifier_test. No se guarda nada.",
+			"prompt": "Prompt de ejemplo",
+			"promptPlaceholder": "¿Puedes revisar esta cláusula del contrato antes de que se la envíe al cliente?",
+			"response": "Respuesta de ejemplo (opcional)",
+			"run": "Ejecutar prueba",
+			"running": "Ejecutando…",
+			"fixFirst": "Corrige el clasificador antes de probarlo.",
+			"privacyReview": "Abre Chat una vez y revisa la configuración de privacidad de tu espacio de trabajo; después vuelve a intentarlo.",
+			"openChat": "Abrir Chat",
+			"failed": "La prueba ha fallado.",
+			"failedWithMessage": "La prueba ha fallado: {message}",
+			"labelKey": "Clave de etiqueta",
+			"labelValue": "Valor",
+			"confidence": "Confianza",
+			"noAnswer": "El modelo no ha devuelto una respuesta utilizable. Prueba con otro modelo o simplifica las dimensiones.",
+			"costLine": "Coste {cost} con {model}"
+		},
+		"actions": {
+			"save": "Guardar cambios",
+			"create": "Crear clasificador",
+			"saving": "Guardando…",
+			"cancel": "Cancelar",
+			"delete": "Eliminar clasificador",
+			"deleteTitle": "¿Eliminar {name}?",
+			"deleteBody": "Las solicitudes nuevas dejarán de clasificarse. Las etiquetas ya guardadas se mantienen en las solicitudes anteriores.",
+			"deleteConfirm": "Eliminar",
+			"saved": "Clasificador guardado",
+			"created": "Clasificador creado",
+			"deleted": "Clasificador eliminado"
+		},
+		"errors": {
+			"invalid": "Revisa el clasificador: {message}",
+			"saveFailed": "No se ha podido guardar el clasificador.",
+			"deleteFailed": "No se ha podido eliminar el clasificador.",
+			"samplePercent": "Introduce una parte del 0,01% al 100%.",
+			"budgetUsd": "Introduce un presupuesto superior a $0 o deja el campo vacío."
 		}
 	}
 }
