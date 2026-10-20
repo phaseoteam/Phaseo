@@ -198,27 +198,6 @@ export default function CompareDashboard({
 		);
 	}
 
-	if (selected.length > 0 && comparisonData.length === 0) {
-		console.warn("[compare] No comparison data resolved", {
-			selection: selected,
-			resolvedIds: uniqueResolvedSelectionIds,
-		});
-		return (
-			<CompareFrame>
-				<div className="flex flex-col items-center justify-center min-h-[40vh] text-center text-muted-foreground space-y-2">
-				<p>{t("loadFailure")}</p>
-				<button
-					type="button"
-					className="text-sm font-medium underline underline-offset-4"
-					onClick={() => setSelected(uniqueResolvedSelectionIds)}
-				>
-					{t("refreshSelection")}
-				</button>
-				</div>
-			</CompareFrame>
-		);
-	}
-
 	return (
 		<CompareFrame>
 			<ComparisonDisplay
