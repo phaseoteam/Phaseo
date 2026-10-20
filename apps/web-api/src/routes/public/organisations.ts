@@ -62,6 +62,11 @@ function toModelCard(row: Record<string, unknown>, organisation: OrganisationIde
 	};
 }
 
+/** Newest release (or announcement) first, the order model pages list an organisation's models in. */
+function newestFirst<T extends { primary_timestamp?: unknown }>(models: T[]): T[] {
+	return [...models].sort((left, right) => Number(right.primary_timestamp ?? 0) - Number(left.primary_timestamp ?? 0));
+}
+
 function cacheTags(organisationId: string, resource: string) {
 	return [
 		"web-api-reference-data",
@@ -125,7 +130,9 @@ publicOrganisationsRouter.get("/organisations/:organisationId/models", async (c)
 			.order("released_at", { ascending: false });
 		if (error) throw error;
 		const models = (data ?? []).map((row) => toModelCard(row, organisation));
-		return withPublicCache(c.json({ models }), {
+		// Optional `limit` returns only the newest models, for pages that show a few.
+		const limit = c.req.query("limit");
+		return withPublicCache(c.json({ models: limit === undefined ? models : newestFirst(models).slice(0, parseLimit(limit)) }), {
 			...ORGANISATION_CACHE,
 			cacheTags: cacheTags(organisationId, "models"),
 		});
