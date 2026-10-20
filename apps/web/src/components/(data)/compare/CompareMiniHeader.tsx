@@ -98,7 +98,7 @@ export default function CompareMiniHeader({ models }: CompareMiniHeaderProps) {
 							<>
 								{!hasReachedMaxSelection ? (
 									<ModelCombobox
-										models={models}
+										selectedOptions={models}
 										selected={selected}
 										setSelected={setSelected}
 										open={comboboxOpen}
@@ -160,7 +160,7 @@ export default function CompareMiniHeader({ models }: CompareMiniHeaderProps) {
 								))}
 								{!hasReachedMaxSelection ? (
 									<ModelCombobox
-										models={models}
+										selectedOptions={models}
 										selected={selected}
 										setSelected={setSelected}
 										open={comboboxOpen}

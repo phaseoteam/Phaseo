@@ -42,7 +42,7 @@ import {
 type DecisionMatrixProps = {
 	selectedModels: ExtendedModel[];
 	usageByModel: CompareGatewayUsageByModel;
-	models: CompareModelOption[];
+	selectedOptions: CompareModelOption[];
 	selectedIds: string[];
 	onSelectedIdsChange: (ids: string[]) => void;
 };
@@ -525,7 +525,7 @@ function Highlight({
 export default function DecisionMatrix({
 	selectedModels,
 	usageByModel,
-	models,
+	selectedOptions,
 	selectedIds,
 	onSelectedIdsChange,
 }: DecisionMatrixProps) {
@@ -716,7 +716,7 @@ export default function DecisionMatrix({
 					<span>{t("highlightBest")}</span>
 				</label>
 				<ModelCombobox
-					models={models}
+					selectedOptions={selectedOptions}
 					selected={selectedIds}
 					setSelected={onSelectedIdsChange}
 					labelWhenEmpty={t("addModel")}
