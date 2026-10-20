@@ -113,6 +113,8 @@ export class WorkspaceRuntime {
 	onChange: (workspace: WorkspaceOverview) => void = () => {};
 	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
 	getTerminals?: () => { cwd: string; status: string }[];
+	/** Autopilot logged a decision; the Inbox reads the log again. */
+	onAutopilotLog?: () => void;
 	/** Closes a settled chat's terminals that sit at an idle prompt (TerminalService.closeIdle). */
 	closeIdleTerminals?: (taskId: string) => Promise<unknown>;
 	/** Starts a project script in a terminal of its own (TerminalService.runScript). */
@@ -187,7 +189,7 @@ export class WorkspaceRuntime {
 	 */
 	private async autopilotRespond(id: string, request: { kind: "question"; requestId: string; questions: AgentQuestion[] } | { kind: "form"; requestId: string; form: AgentForm } | { kind: "plan"; approvalId: string; plan: string } | { kind: "approval"; approvalId: string; title: string; details: string }, note: (activity: AgentActivity) => void) {
 		if (!this.autopilotActive(id)) return;
-		const say = (title: string, text: string) => note({ id: `autopilot:${randomUUID()}`, type: "tool", title, text, status: "completed" });
+		const say = (title: string, text: string) => { note({ id: `autopilot:${randomUUID()}`, type: "tool", title, text, status: "completed" }); this.logAutopilot(id, title, text); };
 		const pending = () => request.kind === "question" ? this.questions.has(request.requestId) : request.kind === "form" ? this.forms.has(request.requestId) : this.approvals.has(request.approvalId);
 		const caller = this.autopilotCaller(id, note);
 		if ("missing" in caller) { say("Autopilot passed this to you", caller.missing); return; }
@@ -197,7 +199,8 @@ export class WorkspaceRuntime {
 				if (!pending()) return;
 				if (result.decision === "escalate") { say("Autopilot passed this to you", result.reason); return; }
 				await this.command({ type: "answer", id, requestId: request.requestId, answers: result.answers });
-				say("Autopilot answered", result.reason);
+				const answered = request.questions.filter(question => result.answers[question.id]?.length).map(question => `${question.header || question.question}: ${result.answers[question.id]!.join(", ")}`);
+				say("Autopilot answered", [...answered, result.reason].join("\n"));
 			} else if (request.kind === "form") {
 				const result = await answerForm(caller.call, caller.brief, request.form);
 				if (!pending()) return;
@@ -221,6 +224,11 @@ export class WorkspaceRuntime {
 			// An answer the checks reject, or a failed call, leaves the request with the person.
 			if (pending()) say("Autopilot passed this to you", error instanceof Error ? error.message : "Autopilot could not answer.");
 		}
+	}
+	/** Keeps a decision in the Inbox's Autopilot log. The chat's own activity is the record, so a failed write is not fatal. */
+	private logAutopilot(id: string, title: string, text: string) {
+		try { this.store.recordAutopilotDecision(id, title, text); } catch { return; }
+		this.onAutopilotLog?.();
 	}
 	/** Adds an activity to a finished turn, counting it towards the chat's totals when it reports usage. */
 	private appendActivity(id: string, messageId: string, activity: AgentActivity) {
@@ -270,12 +278,15 @@ export class WorkspaceRuntime {
 			current.queue.push({ id: randomUUID(), text: verdict.message, createdAt: at, autopilot: true });
 			this.store.saveTask(current, true);
 			record({ id: `autopilot:${randomUUID()}`, type: "tool", title: "Autopilot: keep going", text: verdict.reason, status: "completed" });
+			this.logAutopilot(id, "Autopilot: keep going", `${verdict.message}\n${verdict.reason}`);
 			this.start(id); return;
 		}
 		const handback = verdict.status === "continue" ? { reason: "stalled" as const, summary: "Autopilot stopped: its last two follow-ups made no progress." } : { reason: verdict.status, summary: verdict.summary };
 		current.autopilot = { ...current.autopilot!, stalls: undefined, handback: { ...handback, at } };
 		this.store.saveTask(current, true);
-		record({ id: `autopilot:${randomUUID()}`, type: "tool", title: handback.reason === "done" ? "Autopilot finished" : "Autopilot needs you", text: handback.summary, status: "completed" });
+		const title = handback.reason === "done" ? "Autopilot finished" : "Autopilot needs you";
+		record({ id: `autopilot:${randomUUID()}`, type: "tool", title, text: handback.summary, status: "completed" });
+		this.logAutopilot(id, title, handback.summary);
 		this.broadcast();
 	}
 	/** At its spend cap, Autopilot stops the chat that set the cap and its agents, and hands the chat back. */
@@ -288,6 +299,7 @@ export class WorkspaceRuntime {
 		const task = this.store.getTask(owner.id);
 		task.autopilot = { ...task.autopilot!, stalls: undefined, handback: { reason: "cap", summary: `Autopilot paused at its ${formatCost(cap)} spend cap. Raise the cap or turn Autopilot off to carry on.`, at: new Date().toISOString() } };
 		this.store.saveTask(task, true); this.broadcastSoon();
+		this.logAutopilot(owner.id, "Autopilot reached its spend cap", task.autopilot.handback!.summary);
 		// Stopping a chat flushes and saves it, so it happens after the flush that noticed the cap.
 		const busy = (value: { status: string }) => value.status === "running" || value.status === "waiting";
 		const stop = tasks.filter(value => busy(value) && autopilotOwner(tasks, value.id)?.id === owner.id).map(value => value.id);

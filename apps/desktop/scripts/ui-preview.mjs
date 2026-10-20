@@ -10,7 +10,7 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
+import { openFixtureStore, storeFixtureTasks } from "./fixtures/workspaceFixture.mjs";
 
 const argument = (name, fallback) => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 const out = path.resolve(argument("out", "output/ui-preview"));
@@ -196,9 +196,11 @@ task("usage-fix", {
 	],
 	approvals: [{ id: "approval-1", method: "run_project_command", description: "pnpm --filter @phaseo/gateway-api exec vitest run src/routes/desktop-usage.test.ts" }],
 });
-task("revoke", { title: "Revoke key on sign-out", projectId: "phaseo", mode: "code", status: "running", age: 4 });
-task("ci", { title: "Desktop CI workflow", projectId: "phaseo", mode: "code", age: 70 });
-task("icymi", { title: "ICYMI October outline", projectId: "blog", mode: "code", age: 2900 });
+// Two chats in Autopilot (one still running, one handed back) and a failed run, for the Inbox.
+task("revoke", { title: "Revoke key on sign-out", projectId: "phaseo", mode: "code", status: "running", age: 4, permissionMode: "full-access", autopilot: { capNanos: 5_000_000_000, since: at(12) }, usageTotals: { tokens: 48_200, costNanos: 1_240_000_000 } });
+task("ci", { title: "Desktop CI workflow", projectId: "phaseo", mode: "code", age: 70, permissionMode: "full-access", usageTotals: { tokens: 91_400, costNanos: 2_870_000_000 },
+	autopilot: { capNanos: null, since: at(95), handback: { reason: "blocked", summary: "The deploy step needs a Cloudflare API token with Workers edit access. Add it as CLOUDFLARE_API_TOKEN in the repository's secrets, then reply here.", at: at(70) } } });
+task("icymi", { title: "ICYMI October outline", projectId: "blog", mode: "code", status: "failed", error: "The model provider stopped responding.", age: 2900 });
 task("pricing", {
 	title: "Compare Opus 5.5 and GPT-6 pricing", age: 30,
 	messages: [user("p1", "What does a 10k-token prompt with a 2k-token answer cost on Claude Opus 5.5 compared with GPT-6?", 32, 6), reply("p2", "On Phaseo list prices:\n\n| Model | Input | Output | Total |\n| --- | --- | --- | --- |\n| Claude Opus 5.5 | $0.050 | $0.050 | **$0.100** |\n| GPT-6 | $0.030 | $0.024 | **$0.054** |\n\nGPT-6 is about 46% cheaper for this shape of request. Opus 5.5 tends to need fewer retries on long, multi-step work, so the gap narrows on agentic tasks.", 31)],
@@ -261,6 +263,17 @@ if (stress > 0) {
 }
 db.close();
 await storeFixtureTasks(path.join(profile, "workspace", "workspace.sqlite"));
+// What Autopilot decided in the two Autopilot chats, oldest first, for the Inbox's log.
+const fixtureStore = await openFixtureStore(path.join(profile, "workspace", "workspace.sqlite"));
+try {
+	for (const [name, title, text, minutes] of [
+		["ci", "Autopilot approved the plan", "The plan adds a desktop build job with a pnpm cache, which covers the task.", 92],
+		["ci", "Autopilot: keep going", "Run the workflow with act and fix anything that fails.\nThe workflow was written but never run.", 82],
+		["ci", "Autopilot needs you", "The deploy step needs a Cloudflare API token with Workers edit access. Add it as CLOUDFLARE_API_TOKEN in the repository's secrets, then reply here.", 70],
+		["revoke", "Autopilot answered", "Scope: Revoke every key the grant issued\nSigning out should end every session the grant opened.", 9],
+		["revoke", "Autopilot: keep going", "Add a test that signs out with two active keys.\nThe revoke path has no test yet.", 5],
+	]) fixtureStore.recordAutopilotDecision(demoId(name), title, text, at(minutes));
+} finally { fixtureStore.close(); }
 
 const models = [
 	["anthropic/claude-opus-5.5", "Claude Opus 5.5", "anthropic", "Anthropic", 6],
@@ -314,6 +327,7 @@ app.whenReady().then(async () => {
 		"compare-hover": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.compareGroups": [{ id: "compare-1", title: "What does a 10k-token prompt with a 2k-token answer cost?", taskIds: ["pricing", "pricing-gpt", "pricing-gemini"].map(demoId), createdAt: at(30) }] }, hover: "aside [data-slot=tooltip-trigger]:nth-child(2)" },
 		"compare": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedCompare": "compare-1", "phaseo.desktop.compareGroups": [{ id: "compare-1", title: "What does a 10k-token prompt with a 2k-token answer cost?", taskIds: ["pricing", "pricing-gpt", "pricing-gemini"].map(demoId), createdAt: at(30) }] } },
 		"settings": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedTask": demoId("pricing") }, script: `document.querySelector('[aria-label="Settings"]').click()` },
+		"inbox": { storage: { "phaseo.desktop.workspaceMode": "code" }, script: `[...document.querySelectorAll('aside button')].find(button => button.textContent.startsWith('Inbox'))?.click()` },
 		"settings-experimental": { storage: { "phaseo.desktop.workspaceMode": "code" }, script: `(async () => { document.querySelector('[aria-label="Settings"]').click(); await new Promise(r => setTimeout(r, 500)); [...document.querySelectorAll('nav[aria-label="Settings sections"] button')].find(button => button.textContent.trim() === 'Experimental')?.click(); })()` },
 		"palette": { storage: { "phaseo.desktop.workspaceMode": "chat" }, script: `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))` },
 	};

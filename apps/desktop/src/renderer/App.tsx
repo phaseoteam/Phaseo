@@ -16,6 +16,7 @@ import { CommandPalette } from "./shell/CommandPalette";
 import { Toaster } from "./components/ui/toast";
 import { SettingsPage } from "./settings/SettingsPage";
 import { ScheduledTasks } from "./views/ScheduledTasks";
+import { Inbox } from "./views/Inbox";
 import { PullRequestsPage } from "./views/pullRequests/PullRequestsPage";
 import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
@@ -60,8 +61,9 @@ function useShortcuts() {
 }
 
 function Main() {
-	const { selectedId, compareId, compareGroups, settings, scheduled, pullRequestsPage } = useWorkspace();
+	const { selectedId, compareId, compareGroups, settings, scheduled, pullRequestsPage, inboxPage } = useWorkspace();
 	if (settings) return <SettingsPage />;
+	if (inboxPage) return <Inbox />;
 	if (scheduled) return <ScheduledTasks />;
 	if (pullRequestsPage) return <PullRequestsPage />;
 	const group = compareGroups.find(value => value.id === compareId);

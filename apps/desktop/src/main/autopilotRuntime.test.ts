@@ -68,6 +68,8 @@ describe("Autopilot runtime", () => {
 			expect(picked).toEqual({ theme: ["system"] });
 			expect(asked[0]).toContain("Add dark mode");
 			expect(titles(runtime, id)).toEqual(expect.arrayContaining(["Question answered", "Autopilot answered", "Autopilot finished"]));
+			// The Inbox's log keeps both decisions, with what was answered.
+			expect(runtime.store.autopilotLog().map(entry => [entry.taskId, entry.title, entry.text])).toEqual([[id, "Autopilot finished", "Dark mode follows the system theme."], [id, "Autopilot answered", "Theme: system\nLeast surprising default."]]);
 			// Both calls are billed to the chat.
 			expect(runtime.store.getTask(id).usageTotals).toEqual({ tokens: 240, costNanos: 2_000_000 });
 			expect(inboxReason(runtime.store.getTask(id))).toBe("Task completed");
@@ -132,6 +134,7 @@ describe("Autopilot runtime", () => {
 			expect(runtime.store.getTask(id).autopilot?.handback?.summary).toContain("$0.01 spend cap");
 			expect(prompts).toHaveLength(2);
 			expect(inboxReason(runtime.store.getTask(id))).toBe("Spend cap reached");
+			expect(runtime.store.autopilotLog()[0]).toMatchObject({ taskId: id, title: "Autopilot reached its spend cap" });
 			// Raising the cap clears the stop.
 			await runtime.command({ type: "update-task", id, autopilot: { capNanos: 50_000_000 } });
 			expect(runtime.store.getTask(id).autopilot?.handback).toBeUndefined();

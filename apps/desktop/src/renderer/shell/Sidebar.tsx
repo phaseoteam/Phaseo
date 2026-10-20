@@ -2,10 +2,11 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, CalendarClock, Columns3, GitPullRequestArrow, Ellipsis, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
+import { Archive, CalendarClock, Inbox, Columns3, GitPullRequestArrow, Ellipsis, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
+import { inboxLists } from "../../shared/inbox";
 import { usablePhaseoAccounts, useWorkspace, type CompareGroup } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { shortcut } from "../lib/keybindings";
@@ -171,12 +172,23 @@ function UndoNotice() {
 	</div>;
 }
 
+/** The Inbox, in both modes: it lists what needs the person across every chat and agent, with how many. */
+function InboxLink() {
+	const { inboxPage, openInbox, overview } = useWorkspace();
+	const count = useMemo(() => inboxLists(overview.tasks).needsYou.length, [overview.tasks]);
+	return <button type="button" aria-current={inboxPage ? "page" : undefined} onClick={openInbox}
+		className={cn("mt-1 flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", inboxPage && "bg-sidebar-accent text-sidebar-foreground")}>
+		<Inbox className="size-4 text-muted-foreground" />Inbox
+		{count > 0 && <span className="ml-auto text-[11px] font-semibold text-warning" title={`${count} waiting on you`}>{count}</span>}
+	</button>;
+}
+
 function ScheduledTasksLink() {
 	const { scheduled, openScheduled } = useWorkspace();
 	const { tasks } = useScheduledTasks();
 	const on = tasks.filter(task => task.enabled).length;
 	return <button type="button" aria-current={scheduled ? "page" : undefined} onClick={openScheduled}
-		className={cn("mt-1 flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", scheduled && "bg-sidebar-accent text-sidebar-foreground")}>
+		className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", scheduled && "bg-sidebar-accent text-sidebar-foreground")}>
 		<CalendarClock className="size-4 text-muted-foreground" />Scheduled tasks
 		{on > 0 && <span className="ml-auto text-[11px] text-muted-foreground" title={`${on} turned on`}>{on}</span>}
 	</button>;
@@ -218,9 +230,9 @@ function SidebarFrame({ label, children }: { label: string; children: ReactNode 
 }
 
 export function Sidebar() {
-	const { mode, select, selectedId, compareId, setNewChatProjectId, settings, scheduled, pullRequestsPage } = useWorkspace();
+	const { mode, select, selectedId, compareId, setNewChatProjectId, settings, scheduled, pullRequestsPage, inboxPage } = useWorkspace();
 	const [chatViewport, setChatViewport] = useState<HTMLDivElement | null>(null);
-	const fresh = !selectedId && !compareId && !scheduled && !pullRequestsPage;
+	const fresh = !selectedId && !compareId && !scheduled && !pullRequestsPage && !inboxPage;
 	if (settings) return <SidebarFrame label="Settings"><SettingsNav /></SidebarFrame>;
 	return <SidebarFrame label={mode === "chat" ? "Chats" : "Projects"}>
 		<div className="p-2.5">
@@ -228,6 +240,7 @@ export function Sidebar() {
 				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", fresh ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
 				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
 			</button>
+			<InboxLink />
 			<ScheduledTasksLink />
 			{mode === "code" && <PullRequestsLink />}
 		</div>

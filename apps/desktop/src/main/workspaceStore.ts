@@ -9,6 +9,7 @@ import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
 import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, UsageTotals, Workspace, WorkspaceCommand } from "../shared/workspace";
 import { usageTotalsOf } from "../shared/usageAmounts";
+import type { AutopilotDecision } from "../shared/inbox";
 import { publicMcpConnection, type McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
 import type { WorkspacePreferences } from "../shared/preferences";
@@ -38,6 +39,8 @@ type PartialTask = Task & { [partialEntries]?: EntryOffsets; [unreadEntries]?: (
 
 /** The layout this build writes. A database from another layout is set aside, not converted: there is nothing to keep. */
 const schemaVersion = 4;
+/** How many Autopilot decisions the Inbox's log keeps. */
+const autopilotLogSize = 500;
 function openWorkspaceDatabase(filename: string) {
 	let db = new DatabaseSync(filename);
 	const version = Number((db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version);
@@ -115,6 +118,9 @@ export class WorkspaceStore {
 			CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS mcp_connections (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS preferences (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+			-- Autopilot's decisions across chats, for the Inbox; each is also an activity in its chat.
+			CREATE TABLE IF NOT EXISTS autopilot_log (id INTEGER PRIMARY KEY, task_id TEXT NOT NULL, at TEXT NOT NULL, title TEXT NOT NULL, text TEXT NOT NULL);
+			CREATE TRIGGER IF NOT EXISTS autopilot_log_removed AFTER DELETE ON tasks BEGIN DELETE FROM autopilot_log WHERE task_id = old.id; END;
 			${taskEntriesSchema}
 			PRAGMA user_version=${schemaVersion};`);
 		this.missions = new MissionStore(this.db);
@@ -371,6 +377,15 @@ export class WorkspaceStore {
 		return task;
 	}
 	private assertAutopilotAllowed() { if (!this.getPreferences().autopilot) throw new Error("Turn on Autopilot in Settings → Experimental first."); }
+	/** Keeps one Autopilot decision for the Inbox's log, which holds the latest `autopilotLogSize`. */
+	recordAutopilotDecision(taskId: string, title: string, text: string, at = new Date().toISOString()) {
+		const { lastInsertRowid } = this.statement("INSERT INTO autopilot_log (task_id, at, title, text) VALUES (?, ?, ?, ?)").run(taskId, at, title, text.slice(0, 4000));
+		this.statement("DELETE FROM autopilot_log WHERE id <= ?").run(Number(lastInsertRowid) - autopilotLogSize);
+	}
+	/** Autopilot's latest decisions across chats, newest first. */
+	autopilotLog(limit = autopilotLogSize): AutopilotDecision[] {
+		return this.statement("SELECT id, task_id AS taskId, at, title, text FROM autopilot_log ORDER BY id DESC LIMIT ?").all(limit) as AutopilotDecision[];
+	}
 	/** A chat's Phaseo usage totals from its stored usage reports. */
 	phaseoUsageTotals(id: string): UsageTotals { return usageTotalsOf(this.entries.phaseoUsageReports(this.getHead(id).key)); }
 	/** Fills in the usage totals of up to `limit` chats saved before totals were kept, in one transaction; how many it filled. */

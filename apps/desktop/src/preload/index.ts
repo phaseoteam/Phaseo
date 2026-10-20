@@ -25,6 +25,8 @@ const desktopApi: PhaseoDesktopApi = {
 		missions: () => ipcRenderer.invoke("workspace:missions"),
 		mission: command => ipcRenderer.invoke("workspace:mission", command),
 		onMissionsChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, missions: Parameters<typeof listener>[0]) => listener(missions); ipcRenderer.on("workspace:missions-changed", subscription); return () => ipcRenderer.removeListener("workspace:missions-changed", subscription); },
+		autopilotLog: () => ipcRenderer.invoke("workspace:autopilot-log"),
+		onAutopilotLogChange: listener => { const subscription = () => listener(); ipcRenderer.on("workspace:autopilot-log-changed", subscription); return () => ipcRenderer.removeListener("workspace:autopilot-log-changed", subscription); },
 		preferences: () => ipcRenderer.invoke("workspace:preferences"),
 		savePreferences: preferences => ipcRenderer.invoke("workspace:save-preferences", preferences),
 		globalInstructions: () => ipcRenderer.invoke("workspace:global-instructions"),
