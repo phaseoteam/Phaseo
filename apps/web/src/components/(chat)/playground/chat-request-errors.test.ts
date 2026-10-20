@@ -1,5 +1,6 @@
 import {
 	createChatStreamTextError,
+	parseChatErrorResponse,
 	parseChatStreamErrorFrame,
 } from "./chat-request-errors";
 
@@ -71,5 +72,51 @@ describe("createChatStreamTextError", () => {
 		expect(error.rawPayload).toEqual({
 			frame_event_type: "error",
 		});
+	});
+});
+
+describe("parseChatErrorResponse", () => {
+	function jsonResponse(body: unknown, status: number) {
+		return new Response(JSON.stringify(body), {
+			status,
+			headers: { "content-type": "application/json" },
+		});
+	}
+
+	it("reads the gateway error object and its top-level code", async () => {
+		const error = await parseChatErrorResponse(jsonResponse({
+			error: {
+				code: "validation_error",
+				message: "Unknown parameter: foo",
+				type: "invalid_request_error",
+				param: "foo",
+			},
+			code: "validation_error",
+			description: "Unknown parameter: foo",
+			status_code: 400,
+		}, 400));
+
+		expect(error.message).toBe("Unknown parameter: foo");
+		expect(error.code).toBe("validation_error");
+		expect(error.status).toBe(400);
+	});
+
+	it("still reads bodies whose error is the code string", async () => {
+		const error = await parseChatErrorResponse(jsonResponse({
+			error: "upstream_error",
+			description: "Provider failed.",
+		}, 502));
+
+		expect(error.message).toBe("Provider failed.");
+		expect(error.code).toBe("upstream_error");
+	});
+
+	it("falls back to the error object message", async () => {
+		const error = await parseChatErrorResponse(jsonResponse({
+			error: { code: "rate_limit_exceeded", message: "Slow down.", type: "rate_limit_error" },
+		}, 429));
+
+		expect(error.message).toBe("Slow down.");
+		expect(error.code).toBe("rate_limit_exceeded");
 	});
 });
