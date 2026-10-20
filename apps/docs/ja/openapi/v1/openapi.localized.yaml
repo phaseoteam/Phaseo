@@ -10582,6 +10582,23 @@ components:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: このリクエストのコスト（米ドル）。クレジットから差し引かれる金額で、`cost_nanos` と同じ値です。データ提供割引や出力ゼロ時の免除があれば適用後の額です。リクエストの価格が確定すると、Chat Completions、Responses、Messages、埋め込みのレスポンスで返されます。ストリームでは最後の使用量フレーム（Messages では最後の `message_delta`）に含まれ、ストリーム全体のコストを表します。そのフレームの送信時点で請求額が確定していない場合、ストリームはこのフィールドを省略します。対象は、サービス手数料がストリーム終了時に算出される BYOK ストリーム（代わりに `cost_details.upstream_inference_cost` がモデル価格を示します）と、すでに失敗していて課金されないストリームです。
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: リクエストのコストの内訳。
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: BYOK リクエストで、持ち込んだキーに対してプロバイダーが推論分として請求する額（米ドル、モデルの掲載価格で算出）。リクエストが Phaseo クレジットで実行される場合は null で、`cost` が請求額のすべてです。
+          example: null
     InputTokensDetails:
       type: object
       description: 入力トークンの内訳。
@@ -10842,6 +10859,13 @@ components:
               description: 1時間のキャッシュ有効期間で書き込まれた入力トークン。
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: このリクエストのコスト（米ドル）。クレジットから差し引かれる金額で、`cost_nanos` と同じ値です。データ提供割引や出力ゼロ時の免除があれば適用後の額です。リクエストの価格が確定すると、Chat Completions、Responses、Messages、埋め込みのレスポンスで返されます。ストリームでは最後の使用量フレーム（Messages では最後の `message_delta`）に含まれ、ストリーム全体のコストを表します。そのフレームの送信時点で請求額が確定していない場合、ストリームはこのフィールドを省略します。対象は、サービス手数料がストリーム終了時に算出される BYOK ストリーム（代わりに `cost_details.upstream_inference_cost` がモデル価格を示します）と、すでに失敗していて課金されないストリームです。
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
       description: '`null` として送信された省略可能なトップレベルのフィールドは、省略した場合と同じく未設定として扱われます。'
@@ -16001,8 +16025,13 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: API キーの平文で、`data.key` と同じ値です。作成時に一度だけ返されます。
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false

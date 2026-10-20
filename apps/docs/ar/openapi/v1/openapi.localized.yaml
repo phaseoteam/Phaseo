@@ -10582,6 +10582,23 @@ components:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: 'تكلفة الطلب عليك بالدولار الأمريكي: المبلغ المخصوم من أرصدتك، وهو الرقم نفسه في `cost_nanos`، بعد أي خصم لمساهمة البيانات أو إعفاء عند انعدام المخرجات. يُعرض في استجابات Chat Completions وResponses وMessages والتضمينات بعد تسعير الطلب. في التدفق يظهر في آخر إطار للاستخدام (في Messages، آخر `message_delta`) ويغطي التدفق كاملًا. يحذفه التدفق عندما لا تكون الرسوم معروفة لحظة إرسال ذلك الإطار: في تدفق BYOK، الذي تُحسب رسوم خدمته عند انتهاء التدفق (ويعطي `cost_details.upstream_inference_cost` سعر النموذج بدلًا منه)، وفي تدفق فشل بالفعل، فلا يُفوتر.'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: تفصيل تكلفة الطلب.
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: في طلب BYOK، ما يفرضه المزوّد على مفتاحك الخاص مقابل الاستدلال، بالدولار الأمريكي، وفق أسعار النموذج المعلنة. يكون null عندما يعمل الطلب بأرصدة Phaseo، إذ يمثل `cost` الرسوم كاملة.
+          example: null
     InputTokensDetails:
       type: object
       description: تفصيل رموز الإدخال.
@@ -10842,6 +10859,13 @@ components:
               description: رموز الإدخال المكتوبة بمدة صلاحية تخزين مؤقت قدرها ساعة واحدة.
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: 'تكلفة الطلب عليك بالدولار الأمريكي: المبلغ المخصوم من أرصدتك، وهو الرقم نفسه في `cost_nanos`، بعد أي خصم لمساهمة البيانات أو إعفاء عند انعدام المخرجات. يُعرض في استجابات Chat Completions وResponses وMessages والتضمينات بعد تسعير الطلب. في التدفق يظهر في آخر إطار للاستخدام (في Messages، آخر `message_delta`) ويغطي التدفق كاملًا. يحذفه التدفق عندما لا تكون الرسوم معروفة لحظة إرسال ذلك الإطار: في تدفق BYOK، الذي تُحسب رسوم خدمته عند انتهاء التدفق (ويعطي `cost_details.upstream_inference_cost` سعر النموذج بدلًا منه)، وفي تدفق فشل بالفعل، فلا يُفوتر.'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
       description: يُعامَل أي حقل اختياري في المستوى الأعلى يُرسَل بالقيمة `null` على أنه غير مضبوط، تمامًا كما لو حُذف.
@@ -16001,8 +16025,13 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: مفتاح API بنص صريح، بالقيمة نفسها الموجودة في `data.key`. يُعرض مرة واحدة فقط عند إنشائه.
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false

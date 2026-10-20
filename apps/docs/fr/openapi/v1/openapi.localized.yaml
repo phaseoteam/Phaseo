@@ -10582,6 +10582,23 @@ components:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: 'Ce que la requête vous coûte, en dollars américains : le montant débité de vos crédits, la même valeur que `cost_nanos`, après toute remise pour contribution de données ou exonération en l’absence de sortie. Renvoyé dans les réponses Chat Completions, Responses, Messages et embeddings dès que la requête est tarifée. En streaming, il figure dans le dernier événement d’usage (pour Messages, le dernier `message_delta`) et couvre tout le flux. Un flux l’omet lorsque le montant n’est pas encore connu à l’envoi de cet événement : sur un flux BYOK, dont les frais de service sont calculés à la fin du flux (`cost_details.upstream_inference_cost` donne alors le prix du modèle), et sur un flux déjà en échec, qui n’est pas facturé.'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: Détail du coût de la requête.
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: Pour une requête BYOK, ce que le fournisseur facture à votre propre clé pour l’inférence, en dollars américains, aux prix affichés du modèle. Null lorsque la requête utilise des crédits Phaseo, auquel cas `cost` représente la totalité du montant.
+          example: null
     InputTokensDetails:
       type: object
       description: Détail des jetons d’entrée.
@@ -10842,6 +10859,13 @@ components:
               description: Jetons d’entrée écrits avec une durée de vie du cache d’une heure.
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: 'Ce que la requête vous coûte, en dollars américains : le montant débité de vos crédits, la même valeur que `cost_nanos`, après toute remise pour contribution de données ou exonération en l’absence de sortie. Renvoyé dans les réponses Chat Completions, Responses, Messages et embeddings dès que la requête est tarifée. En streaming, il figure dans le dernier événement d’usage (pour Messages, le dernier `message_delta`) et couvre tout le flux. Un flux l’omet lorsque le montant n’est pas encore connu à l’envoi de cet événement : sur un flux BYOK, dont les frais de service sont calculés à la fin du flux (`cost_details.upstream_inference_cost` donne alors le prix du modèle), et sur un flux déjà en échec, qui n’est pas facturé.'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
       description: Un champ facultatif de premier niveau envoyé avec la valeur `null` est traité comme non défini, comme s’il était omis.
@@ -16001,8 +16025,13 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: Clé API en texte brut, même valeur que `data.key`. Renvoyée une seule fois, lors de sa création.
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false

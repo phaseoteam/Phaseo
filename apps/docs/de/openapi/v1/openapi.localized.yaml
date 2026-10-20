@@ -10582,6 +10582,23 @@ components:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: 'Was dich die Anfrage kostet, in US-Dollar: der von deinem Guthaben abgebuchte Betrag, derselbe Wert wie `cost_nanos`, nach einem etwaigen Rabatt für Datenweitergabe oder Erlass bei leerer Ausgabe. Wird in Antworten von Chat Completions, Responses, Messages und Embeddings zurückgegeben, sobald die Anfrage bepreist ist. Bei einem Stream steht er im letzten Nutzungs-Frame (bei Messages im letzten `message_delta`) und deckt den ganzen Stream ab. Ein Stream lässt ihn weg, wenn die Belastung beim Senden dieses Frames noch nicht feststeht: bei einem BYOK-Stream, dessen Servicegebühr erst am Ende des Streams berechnet wird (`cost_details.upstream_inference_cost` liefert stattdessen den Modellpreis), und bei einem bereits fehlgeschlagenen Stream, der nicht berechnet wird.'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: Aufschlüsselung der Kosten der Anfrage.
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: Bei einer BYOK-Anfrage der Betrag, den der Anbieter deinem eigenen Schlüssel für die Inferenz berechnet, in US-Dollar zu den gelisteten Preisen des Modells. Null, wenn die Anfrage über Phaseo-Guthaben läuft; dann ist `cost` die gesamte Belastung.
+          example: null
     InputTokensDetails:
       type: object
       description: Aufschlüsselung der Eingabetoken.
@@ -10842,6 +10859,13 @@ components:
               description: Mit einer Cache-Lebensdauer von 1 Stunde geschriebene Eingabetoken.
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: 'Was dich die Anfrage kostet, in US-Dollar: der von deinem Guthaben abgebuchte Betrag, derselbe Wert wie `cost_nanos`, nach einem etwaigen Rabatt für Datenweitergabe oder Erlass bei leerer Ausgabe. Wird in Antworten von Chat Completions, Responses, Messages und Embeddings zurückgegeben, sobald die Anfrage bepreist ist. Bei einem Stream steht er im letzten Nutzungs-Frame (bei Messages im letzten `message_delta`) und deckt den ganzen Stream ab. Ein Stream lässt ihn weg, wenn die Belastung beim Senden dieses Frames noch nicht feststeht: bei einem BYOK-Stream, dessen Servicegebühr erst am Ende des Streams berechnet wird (`cost_details.upstream_inference_cost` liefert stattdessen den Modellpreis), und bei einem bereits fehlgeschlagenen Stream, der nicht berechnet wird.'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
       description: Ein optionales Feld der obersten Ebene, das als `null` gesendet wird, gilt als nicht gesetzt, genau wie ein weggelassenes Feld.
@@ -16001,8 +16025,13 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: API-Schlüssel im Klartext, derselbe Wert wie `data.key`. Wird nur einmal bei der Erstellung zurückgegeben.
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false

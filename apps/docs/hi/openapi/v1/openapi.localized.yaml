@@ -10582,6 +10582,23 @@ components:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: 'अनुरोध की आपकी लागत, US डॉलर में: आपके क्रेडिट से काटी गई राशि, `cost_nanos` के बराबर, किसी भी डेटा योगदान छूट या शून्य आउटपुट पर शुल्क माफ़ी के बाद। अनुरोध का मूल्य तय होते ही Chat Completions, Responses, Messages और embeddings रिस्पॉन्स में लौटाया जाता है। स्ट्रीम में यह अंतिम उपयोग फ़्रेम में होता है (Messages में, अंतिम `message_delta` में) और पूरी स्ट्रीम को कवर करता है। जब वह फ़्रेम भेजते समय शुल्क ज्ञात नहीं होता, तब स्ट्रीम इसे छोड़ देती है: BYOK स्ट्रीम पर, जिसका सेवा शुल्क स्ट्रीम खत्म होने पर तय होता है (इसके बजाय `cost_details.upstream_inference_cost` मॉडल की कीमत देता है), और पहले से विफल हो चुकी स्ट्रीम पर, जिसका शुल्क नहीं लिया जाता।'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: अनुरोध की लागत का विवरण।
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: BYOK अनुरोध पर, प्रदाता इनफ़रेंस के लिए आपकी अपनी कुंजी से जितना शुल्क लेता है, US डॉलर में, मॉडल की सूचीबद्ध कीमतों पर। जब अनुरोध Phaseo क्रेडिट पर चलता है तब null होता है, क्योंकि तब `cost` ही पूरा शुल्क है।
+          example: null
     InputTokensDetails:
       type: object
       description: इनपुट टोकन का विवरण।
@@ -10842,6 +10859,13 @@ components:
               description: 1 घंटे की कैश अवधि के साथ लिखे गए इनपुट टोकन।
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: 'अनुरोध की आपकी लागत, US डॉलर में: आपके क्रेडिट से काटी गई राशि, `cost_nanos` के बराबर, किसी भी डेटा योगदान छूट या शून्य आउटपुट पर शुल्क माफ़ी के बाद। अनुरोध का मूल्य तय होते ही Chat Completions, Responses, Messages और embeddings रिस्पॉन्स में लौटाया जाता है। स्ट्रीम में यह अंतिम उपयोग फ़्रेम में होता है (Messages में, अंतिम `message_delta` में) और पूरी स्ट्रीम को कवर करता है। जब वह फ़्रेम भेजते समय शुल्क ज्ञात नहीं होता, तब स्ट्रीम इसे छोड़ देती है: BYOK स्ट्रीम पर, जिसका सेवा शुल्क स्ट्रीम खत्म होने पर तय होता है (इसके बजाय `cost_details.upstream_inference_cost` मॉडल की कीमत देता है), और पहले से विफल हो चुकी स्ट्रीम पर, जिसका शुल्क नहीं लिया जाता।'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
       description: '`null` के रूप में भेजे गए किसी वैकल्पिक शीर्ष-स्तरीय फ़ील्ड को सेट न किया गया माना जाता है, ठीक वैसे ही जैसे उसे छोड़ दिया गया हो।'
@@ -16001,8 +16025,13 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: API कुंजी का plaintext मान, `data.key` के समान। केवल बनाते समय एक बार लौटाया जाता है।
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false
