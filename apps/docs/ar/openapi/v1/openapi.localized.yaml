@@ -8866,6 +8866,7 @@ components:
         data_collection:
           type: string
           nullable: true
+          description: القيمة `allow` (الافتراضية) لا تُصفّي شيئًا. القيمة `deny` غير مدعومة بعد وتعيد الخطأ 400 unsupported_routing_filter.
           enum:
             - allow
             - deny
@@ -8875,6 +8876,7 @@ components:
         enforce_distillable_text:
           type: boolean
           nullable: true
+          description: القيمة `false` (الافتراضية) لا تُصفّي شيئًا. القيمة `true` غير مدعومة بعد وتعيد الخطأ 400 unsupported_routing_filter.
         quantizations:
           type: array
           nullable: true
@@ -9558,6 +9560,7 @@ components:
         - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
+      description: يُعامَل أي حقل اختياري في المستوى الأعلى يُرسَل بالقيمة `null` على أنه غير مضبوط، تمامًا كما لو حُذف.
       required:
         - model
         - messages
@@ -9699,8 +9702,31 @@ components:
           type: string
         user:
           type: string
+        include_reasoning:
+          type: boolean
+          description: يُقبل للتوافق. يُعاد الاستدلال كلما أنتجه النموذج (`reasoning_content` و`reasoning_details`)، أيًّا كانت قيمة هذا الحقل.
+        prediction:
+          type: object
+          description: المخرجات المتوقعة، للحصول على استجابات أسرع عندما يكون معظم الرد معروفًا مسبقًا. تُمرَّر إلى نماذج OpenAI وMistral وMoonshot، ويتجاهلها المزوّدون الآخرون.
+          required:
+            - type
+            - content
+          properties:
+            type:
+              type: string
+              enum:
+                - content
+            content:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: object
+                    additionalProperties: true
         service_tier:
           type: string
+          nullable: true
+          description: يحدد مستوى توجيه أو تسعير مدعومًا. القيمة `auto` (أو null) لا تطلب مستوى بعينه، ويُوجَّه الطلب ويُفوتر كما لو لم يُضبط الحقل؛ وتُعامَل `scale` على أنها `default`، أي المستوى القياسي.
           enum:
             - standard
             - default
@@ -9709,6 +9735,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         prompt_cache_key:
           type: string
           nullable: true
@@ -10264,7 +10292,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: مستوى جهد الاستدلال. عند حذفه أو ضبطه على null، يحدد `max_tokens` أو `enabled` أو الإعداد الافتراضي للنموذج نفسه مقدار استدلال النموذج.
         mode:
           type: string
           enum:
@@ -10296,7 +10325,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: مستوى جهد الاستدلال. عند حذفه أو ضبطه على null، يحدد `max_tokens` أو `enabled` أو الإعداد الافتراضي للنموذج نفسه مقدار استدلال النموذج.
         mode:
           type: string
           enum:
@@ -10417,6 +10447,7 @@ components:
           description: رموز الإدخال المكتوبة في ذاكرة المطالبات المؤقتة لدى المزوّد.
     AnthropicMessagesRequest:
       type: object
+      description: يُعامَل أي حقل اختياري في المستوى الأعلى يُرسَل بالقيمة `null` على أنه غير مضبوط، تمامًا كما لو حُذف.
       required:
         - model
         - messages
@@ -10501,6 +10532,24 @@ components:
           description: معرّف فريد لتجميع الطلبات المرتبطة (مثل محادثة أو سير عمل وكيل) لأغراض قابلية المراقبة.
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
+        context_management:
+          type: object
+          description: تحرير السياق من Anthropic. يقبل `edits` استراتيجيات `clear_tool_uses_*` و`clear_thinking_*`، ويُرسَل إلى Anthropic مع ترويسة beta الخاصة بها. يشغّل المزوّدون الآخرون الطلب من دونه ويُدرجون `context_management` في `X-Phaseo-Dropped-Params`. تعيد تعديلات الضغط (`compact_*`) الخطأ 400.
+          properties:
+            edits:
+              type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                additionalProperties: true
+          additionalProperties: true
+        user:
+          type: string
+          description: معرّف المستخدم النهائي، كما في Chat Completions. تستلمه نماذج Claude بوصفه `metadata.user_id` ما لم يُضبط `metadata.user_id`.
         stop_sequences:
           type: array
           items:
@@ -10542,6 +10591,15 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AnthropicUsage'
+        context_management:
+          type: object
+          description: يظهر عندما يستخدم الطلب `context_management` وتطبّق Anthropic تعديلًا. يسرد `applied_edits` كل تعديل مع ما أزاله. وفي التدفقات، يرد في حدث `message_delta` الأخير.
+          properties:
+            applied_edits:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     AnthropicMessage:
       type: object
       required:
@@ -10634,6 +10692,7 @@ components:
           type: integer
     ResponsesRequest:
       type: object
+      description: يُعامَل أي حقل اختياري في المستوى الأعلى يُرسَل بالقيمة `null` على أنه غير مضبوط، تمامًا كما لو حُذف.
       required:
         - model
         - input
@@ -10677,6 +10736,8 @@ components:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
+          nullable: true
+          description: يحدد مستوى توجيه أو تسعير مدعومًا. القيمة `auto` (أو null) لا تطلب مستوى بعينه، ويُوجَّه الطلب ويُفوتر كما لو لم يُضبط الحقل؛ وتُعامَل `scale` على أنها `default`، أي المستوى القياسي.
           enum:
             - standard
             - default
@@ -10685,6 +10746,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         store:
           type: boolean
         stream:

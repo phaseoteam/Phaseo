@@ -436,14 +436,14 @@ route के अनुसार यह request control, सीमा या resp
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-समर्थन होने पर response में reasoning content या summaries माँगता है।
+Chat Completions पर संगतता के लिए स्वीकार किया जाता है। Model जब भी reasoning content और summaries देता है, वे लौटाए जाते हैं, चाहे इसका मान कुछ भी हो।
 
 | फ़ील्ड | मान |
 | --- | --- |
 | प्रकार | `boolean` |
-| डिफ़ॉल्ट | `false` |
+| डिफ़ॉल्ट | `true` |
 
-इसे सावधानी से उपयोग करें। Reasoning payload बड़े हो सकते हैं, हर model पर उपलब्ध नहीं होते और ऐसे production responses के लिए अनुपयुक्त हो सकते हैं जिन्हें अतिरिक्त diagnostic विवरण नहीं चाहिए।
+Reasoning payload बड़े हो सकते हैं और हर model पर उपलब्ध नहीं होते। Reasoning कम करने के लिए `reasoning.effort` घटाएँ या `reasoning.enabled` को `false` पर सेट करें।
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -464,6 +464,7 @@ Phaseo इन gateway-normalized tier मानों को आंतरिक 
 
 - `Batch` एक अलग API flow है, service-tier मान नहीं।
 - समर्थन endpoint और provider के अनुसार बदलता है।
+- OpenAI के मान भी स्वीकार किए जाते हैं: `auto` (या `null`) कोई खास स्तर नहीं माँगता और उसे फ़ील्ड छोड़ने जैसा माना जाता है, और `scale` को `default`, यानी मानक स्तर, माना जाता है।
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

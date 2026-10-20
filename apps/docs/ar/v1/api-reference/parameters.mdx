@@ -436,14 +436,14 @@ icon: "sliders-horizontal"
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-يطلب إرفاق محتوى الاستدلال أو ملخصاته في الاستجابات عند توفر الدعم.
+يُقبل في Chat Completions للتوافق. يُعاد محتوى الاستدلال وملخصاته كلما أنتجها النموذج، أيًّا كانت قيمة هذا الحقل.
 
 | الحقل | القيمة |
 | --- | --- |
 | النوع | `boolean` |
-| الافتراضي | `false` |
+| الافتراضي | `true` |
 
-استخدمه بحذر. قد تكون بيانات الاستدلال أكبر حجمًا، وقد لا تتوفر في كل النماذج، وقد لا تلائم استجابات الإنتاج التي لا تحتاج إلى تفاصيل تشخيصية إضافية.
+قد تكون بيانات الاستدلال كبيرة الحجم، ولا تتوفر في كل النماذج. لتقليل الاستدلال، اخفض `reasoning.effort` أو اضبط `reasoning.enabled` على `false`.
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -464,6 +464,7 @@ icon: "sliders-horizontal"
 
 - `Batch` مسار API منفصل وليس قيمةً لفئة الخدمة.
 - يختلف الدعم حسب نقطة النهاية والمزوّد.
+- تُقبل أيضًا قيم OpenAI: القيمة `auto` (أو `null`) لا تطلب مستوى بعينه وتُعامَل كأن الحقل محذوف، وتُعامَل `scale` على أنها `default`، أي المستوى القياسي.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

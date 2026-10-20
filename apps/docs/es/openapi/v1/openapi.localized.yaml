@@ -8866,6 +8866,7 @@ components:
         data_collection:
           type: string
           nullable: true
+          description: '`allow` (el valor predeterminado) no filtra nada. `deny` aún no es compatible y devuelve 400 unsupported_routing_filter.'
           enum:
             - allow
             - deny
@@ -8875,6 +8876,7 @@ components:
         enforce_distillable_text:
           type: boolean
           nullable: true
+          description: '`false` (el valor predeterminado) no filtra nada. `true` aún no es compatible y devuelve 400 unsupported_routing_filter.'
         quantizations:
           type: array
           nullable: true
@@ -9558,6 +9560,7 @@ components:
         - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
+      description: Un campo opcional de nivel superior enviado como `null` se trata como no definido, igual que si se omitiera.
       required:
         - model
         - messages
@@ -9699,8 +9702,31 @@ components:
           type: string
         user:
           type: string
+        include_reasoning:
+          type: boolean
+          description: Se acepta por compatibilidad. El razonamiento se devuelve siempre que el modelo lo genera (`reasoning_content` y `reasoning_details`), sea cual sea el valor de este campo.
+        prediction:
+          type: object
+          description: Salida prevista, para obtener respuestas más rápidas cuando se conoce de antemano la mayor parte de la respuesta. Se reenvía a los modelos de OpenAI, Mistral y Moonshot; los demás proveedores la ignoran.
+          required:
+            - type
+            - content
+          properties:
+            type:
+              type: string
+              enum:
+                - content
+            content:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: object
+                    additionalProperties: true
         service_tier:
           type: string
+          nullable: true
+          description: Selecciona un nivel de enrutamiento o precios compatible. `auto` (o null) no pide ningún nivel concreto y se enruta y factura como si el campo no estuviera definido; `scale` se trata como `default`, el nivel estándar.
           enum:
             - standard
             - default
@@ -9709,6 +9735,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         prompt_cache_key:
           type: string
           nullable: true
@@ -10264,7 +10292,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: Esfuerzo de razonamiento. Si se omite o es null, `max_tokens`, `enabled` o el valor predeterminado del propio modelo determinan cuánto razona el modelo.
         mode:
           type: string
           enum:
@@ -10296,7 +10325,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: Esfuerzo de razonamiento. Si se omite o es null, `max_tokens`, `enabled` o el valor predeterminado del propio modelo determinan cuánto razona el modelo.
         mode:
           type: string
           enum:
@@ -10417,6 +10447,7 @@ components:
           description: Tokens de entrada escritos en la caché de prompts del proveedor.
     AnthropicMessagesRequest:
       type: object
+      description: Un campo opcional de nivel superior enviado como `null` se trata como no definido, igual que si se omitiera.
       required:
         - model
         - messages
@@ -10501,6 +10532,24 @@ components:
           description: Identificador único para agrupar solicitudes relacionadas (por ejemplo, una conversación o un flujo de trabajo de agente) y facilitar la observabilidad.
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
+        context_management:
+          type: object
+          description: Edición de contexto de Anthropic. `edits` admite las estrategias `clear_tool_uses_*` y `clear_thinking_*` y se envía a Anthropic con su cabecera beta. Los demás proveedores ejecutan la solicitud sin este campo e incluyen `context_management` en `X-Phaseo-Dropped-Params`. Las ediciones de compactación (`compact_*`) devuelven 400.
+          properties:
+            edits:
+              type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                additionalProperties: true
+          additionalProperties: true
+        user:
+          type: string
+          description: Identificador del usuario final, igual que en Chat Completions. Los modelos Claude lo reciben como `metadata.user_id`, salvo que `metadata.user_id` ya esté definido.
         stop_sequences:
           type: array
           items:
@@ -10542,6 +10591,15 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AnthropicUsage'
+        context_management:
+          type: object
+          description: Aparece cuando la solicitud usó `context_management` y Anthropic aplicó una edición. `applied_edits` enumera cada edición con lo que eliminó. En streaming, llega en el evento `message_delta` final.
+          properties:
+            applied_edits:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     AnthropicMessage:
       type: object
       required:
@@ -10634,6 +10692,7 @@ components:
           type: integer
     ResponsesRequest:
       type: object
+      description: Un campo opcional de nivel superior enviado como `null` se trata como no definido, igual que si se omitiera.
       required:
         - model
         - input
@@ -10677,6 +10736,8 @@ components:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
+          nullable: true
+          description: Selecciona un nivel de enrutamiento o precios compatible. `auto` (o null) no pide ningún nivel concreto y se enruta y factura como si el campo no estuviera definido; `scale` se trata como `default`, el nivel estándar.
           enum:
             - standard
             - default
@@ -10685,6 +10746,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         store:
           type: boolean
         stream:

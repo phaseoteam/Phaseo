@@ -436,14 +436,14 @@ Selon la route, il peut s’agir d’un réglage de requête, d’une limite ou 
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-Demande le contenu ou des résumés de raisonnement dans les réponses si cette option est prise en charge.
+Accepté sur Chat Completions pour des raisons de compatibilité. Le contenu et les résumés de raisonnement sont renvoyés chaque fois que le modèle en produit, quelle que soit la valeur de ce champ.
 
 | Champ | Valeur |
 | --- | --- |
 | Type | `boolean` |
-| Valeur par défaut | `false` |
+| Valeur par défaut | `true` |
 
-Utilisez-le avec précaution. Les données de raisonnement peuvent être volumineuses, indisponibles sur certains modèles et peu adaptées aux réponses de production qui n’ont pas besoin de détails de diagnostic supplémentaires.
+Les données de raisonnement peuvent être volumineuses et ne sont pas disponibles sur tous les modèles. Pour réduire le raisonnement, baissez `reasoning.effort` ou définissez `reasoning.enabled` sur `false`.
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -464,6 +464,7 @@ Remarques :
 
 - `Batch` correspond à un flux d’API distinct, pas à une valeur de niveau de service.
 - La prise en charge varie selon le point de terminaison et le fournisseur.
+- Les valeurs d’OpenAI sont également acceptées : `auto` (ou `null`) ne demande aucun niveau particulier et équivaut à omettre le champ, et `scale` est traité comme `default`, le niveau standard.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
