@@ -11109,12 +11109,13 @@ components:
           type: number
           format: double
           description: >-
-            What the request costs you, in US dollars: the amount charged to your
-            credits, the same figure as `cost_nanos`. Returned on Chat Completions,
-            Responses, Messages and embeddings responses once the request is priced.
-            On a stream it is the price of the final usage; a BYOK stream gives
-            that price as `cost_details.upstream_inference_cost` instead, because
-            its service fee is worked out when the stream ends.
+            What the request costs you, in US dollars: the amount charged to
+            your credits, the same figure as `cost_nanos`. Returned on Chat
+            Completions, Responses, Messages and embeddings responses once the
+            request is priced. On a stream it is the price of the final usage; a
+            BYOK stream gives that price as
+            `cost_details.upstream_inference_cost` instead, because its service
+            fee is worked out when the stream ends.
           example: 0.001234567
         cost_details:
           $ref: '#/components/schemas/UsageCostDetails'
@@ -11422,12 +11423,13 @@ components:
           type: number
           format: double
           description: >-
-            What the request costs you, in US dollars: the amount charged to your
-            credits, the same figure as `cost_nanos`. Returned on Chat Completions,
-            Responses, Messages and embeddings responses once the request is priced.
-            On a stream it is the price of the final usage; a BYOK stream gives
-            that price as `cost_details.upstream_inference_cost` instead, because
-            its service fee is worked out when the stream ends.
+            What the request costs you, in US dollars: the amount charged to
+            your credits, the same figure as `cost_nanos`. Returned on Chat
+            Completions, Responses, Messages and embeddings responses once the
+            request is priced. On a stream it is the price of the final usage; a
+            BYOK stream gives that price as
+            `cost_details.upstream_inference_cost` instead, because its service
+            fee is worked out when the stream ends.
           example: 0.001234567
         cost_details:
           $ref: '#/components/schemas/UsageCostDetails'
