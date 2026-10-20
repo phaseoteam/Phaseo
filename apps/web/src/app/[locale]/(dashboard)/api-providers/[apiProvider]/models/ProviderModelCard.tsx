@@ -498,7 +498,6 @@ function ParameterButton({ param }: { param: string }) {
 // A worked example makes per-million prices easier to read at a glance.
 const EXAMPLE_INPUT_TOKENS = 10_000;
 const EXAMPLE_OUTPUT_TOKENS = 1_000;
-const PRICE_COLUMNS = 3;
 
 export function ProviderModelDetailsSheet({
 	model,
@@ -522,7 +521,6 @@ export function ProviderModelDetailsSheet({
 	const format = useDisplayFormatters();
 	const formatUsd = useUsdFormatter();
 	const meterDisplay = useMeterDisplay();
-	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
 	const tProviders = useTranslations("Catalogue.providers");
 	const statusDescription = useStatusDescription(model);
 	const organisationId = model ? organisationIdFor(model) : null;
@@ -611,30 +609,29 @@ export function ProviderModelDetailsSheet({
 
 								<InspectorSection title={t("pricing")}>
 									{meters.length > 0 ? (
-										<div className="grid" style={{ gridTemplateColumns: `repeat(${Math.min(PRICE_COLUMNS, meters.length)}, minmax(0, 1fr))` }}>
-											{meters.map((meter, meterIndex) => {
+										<dl className="divide-y divide-zinc-200/60 dark:divide-zinc-800/80">
+											{meters.map((meter) => {
 												const display = meterDisplay(meter);
 												return (
-													<div
-														key={meter.meter}
-														className={cn(
-															"min-h-[78px] min-w-0 py-2.5",
-															meterIndex % PRICE_COLUMNS === 0 ? "pr-3" : "border-l border-zinc-200/80 px-3 dark:border-zinc-800",
-															meterIndex >= PRICE_COLUMNS && "border-t border-zinc-200/80 dark:border-zinc-800",
-														)}
-													>
-														<div className="truncate text-[11px] text-muted-foreground">{display.label}</div>
-														<div className="mt-0.5 text-lg font-semibold tabular-nums">{display.amount === 0 ? tProviders("free") : formatUsd(display.amount)}</div>
-														<div className="mt-0.5 text-[10px] text-muted-foreground">
-															{display.unitLabel === t("oneMillionTokens") ? tPricing("perMillionTokens") : display.unitLabel}
-															{meter.meter === "image_pixels" && meter.estimated_price_per_image_usd != null
-																? ` · ${t("estimatedImagePrice", { price: formatUsd(meter.estimated_price_per_image_usd), size: "1024×1024" })}`
-																: null}
-														</div>
+													<div key={meter.meter} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 py-2">
+														<dt className="min-w-0 text-sm text-muted-foreground">{display.label}</dt>
+														<dd className="text-right tabular-nums">
+															<span className="text-sm font-semibold text-foreground">
+																{display.amount === 0 ? tProviders("free") : formatUsd(display.amount)}
+															</span>
+															{display.amount === 0 ? null : (
+																<span className="text-[11px] text-muted-foreground"> / {display.unitLabel}</span>
+															)}
+															{meter.meter === "image_pixels" && meter.estimated_price_per_image_usd != null ? (
+																<span className="block text-[11px] text-muted-foreground">
+																	{t("estimatedImagePrice", { price: formatUsd(meter.estimated_price_per_image_usd), size: "1024×1024" })}
+																</span>
+															) : null}
+														</dd>
 													</div>
 												);
 											})}
-										</div>
+										</dl>
 									) : (
 										<div className="rounded-md border border-dashed border-zinc-200/80 bg-zinc-50/60 px-3 py-2.5 text-xs text-muted-foreground dark:border-zinc-800 dark:bg-zinc-900/30">
 											{t("noPricing")}
