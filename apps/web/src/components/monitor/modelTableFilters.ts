@@ -1,5 +1,6 @@
 import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { canonicalOutputGroup } from "@/lib/models/modelGroupModalities";
+import { matchesLicenseSelection } from "@/lib/models/licenseFilter";
 import { modelRowKey, type ModelData } from "./modelTableGrouping";
 
 export type ModelTableFilters = {
@@ -14,12 +15,14 @@ export type ModelTableFilters = {
 	regions: string[];
 	creators: string[];
 	licenses: string[];
+	// Open / Closed groups; filtered together with `licenses`.
+	licenseTypes: string[];
 	contextMin: number;
 	endpoints: string[];
 	statuses: string[];
 };
 
-export type ModelTableFilterDimension = Exclude<keyof ModelTableFilters, "search">;
+export type ModelTableFilterDimension = Exclude<keyof ModelTableFilters, "search" | "licenseTypes">;
 
 export const NO_MODEL_TABLE_FILTERS: ModelTableFilters = {
 	search: "",
@@ -33,6 +36,7 @@ export const NO_MODEL_TABLE_FILTERS: ModelTableFilters = {
 	regions: [],
 	creators: [],
 	licenses: [],
+	licenseTypes: [],
 	contextMin: 0,
 	endpoints: [],
 	statuses: [],
@@ -123,8 +127,10 @@ export function matchesModelTableRow(
 	}
 	if (
 		active("licenses") &&
-		filters.licenses.length > 0 &&
-		(!row.license || !filters.licenses.includes(row.license))
+		!matchesLicenseSelection(row.license, {
+			groups: filters.licenseTypes,
+			licenses: filters.licenses,
+		})
 	) {
 		return false;
 	}

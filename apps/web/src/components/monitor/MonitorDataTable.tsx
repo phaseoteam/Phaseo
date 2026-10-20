@@ -476,6 +476,12 @@ export function MonitorDataTable({
 		serialize: (value) => value.join(","),
 	});
 
+	const [selectedLicenseTypes] = useQueryState("licenseType", {
+		defaultValue: [],
+		parse: (value) => (value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
+
 	const [selectedContextMin] = useQueryState("contextMin", {
 		defaultValue: 0,
 		parse: (value) => {
@@ -591,6 +597,7 @@ export function MonitorDataTable({
 		regions: selectedRegions,
 		creators: selectedCreators,
 		licenses: selectedLicenses,
+		licenseTypes: selectedLicenseTypes,
 		contextMin: selectedContextMin,
 		endpoints: selectedEndpoints,
 		statuses: selectedStatuses,
@@ -606,6 +613,7 @@ export function MonitorDataTable({
 		selectedRegions,
 		selectedCreators,
 		selectedLicenses,
+		selectedLicenseTypes,
 		selectedContextMin,
 		selectedEndpoints,
 		selectedStatuses,

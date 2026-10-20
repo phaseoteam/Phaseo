@@ -62,6 +62,12 @@ describe("licence filter", () => {
 			.toEqual(["mistral/mistral-large-4.0", "mistral/mistral-large-4.0"]);
 	});
 
+	it("keeps routes in a selected Open / Closed group", () => {
+		const active = filters({ licenseTypes: ["open"] });
+		expect(licensed.filter((row) => matchesModelTableRow(row, active)).map((row) => row.provider.id))
+			.toEqual(["mistral", "mistral-eu"]);
+	});
+
 	it("counts models, not routes, per licence and leaves out models without one", () => {
 		const counts = countModelsByFilterValue(licensed, filters({ licenses: ["Proprietary"] }), "licenses");
 		expect(Object.fromEntries(counts)).toEqual({ "Apache 2.0": 1, Proprietary: 1 });

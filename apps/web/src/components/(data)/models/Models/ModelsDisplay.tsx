@@ -113,6 +113,12 @@ import type {
 	OptionCount,
 } from "./modelsDisplay.types";
 import { compareModelsByNewest } from "./modelOrdering";
+import { LicenseFilterList, useLicenseGroupLabel } from "./LicenseFilterList";
+import {
+	matchesLicenseSelection,
+	parseLicenseGroups,
+	type LicenseSelection,
+} from "@/lib/models/licenseFilter";
 
 interface ModelsDisplayProps {
 	modelsPageData: ModelsPageData;
@@ -929,6 +935,7 @@ function ModelsDisplayContent({
 	const { models, facets } = modelsPageData;
 	const t = useTranslations("Catalogue.models");
 	const tFilters = useTranslations("Catalogue.models.filtersUi");
+	const licenseGroupLabel = useLicenseGroupLabel();
 	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
 	const translateModality = (value: string) => {
@@ -1145,6 +1152,21 @@ function ModelsDisplayContent({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [selectedLicenseTypes, setSelectedLicenseTypes] = useQueryState("licenseType", {
+		defaultValue: [] as string[],
+		parse: (value) => parseLicenseGroups(parseCsvParam(value)),
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const licenseSelection = useMemo(
+		() => ({ groups: selectedLicenseTypes, licenses: selectedLicenses }),
+		[selectedLicenseTypes, selectedLicenses],
+	);
+	const setLicenseSelection = (selection: LicenseSelection) => {
+		void setSelectedLicenseTypes(selection.groups);
+		void setSelectedLicenses(selection.licenses);
+	};
 	const [selectedYears, setSelectedYears] = useQueryState("years", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
@@ -1222,6 +1244,7 @@ function ModelsDisplayContent({
 		selectedProviders.length +
 		selectedRegions.length +
 		selectedCreators.length +
+		selectedLicenseTypes.length +
 		selectedLicenses.length +
 		selectedYears.length;
 
@@ -1407,8 +1430,7 @@ function ModelsDisplayContent({
 			}
 			if (
 				exclude !== "licenses" &&
-				selectedLicenses.length > 0 &&
-				!selectedLicenses.includes(prepared.license)
+				!matchesLicenseSelection(prepared.license, licenseSelection)
 			) {
 				return false;
 			}
@@ -1426,7 +1448,7 @@ function ModelsDisplayContent({
 			deferredSearch,
 			selectedContextMin,
 			selectedCreators,
-			selectedLicenses,
+			licenseSelection,
 			effectiveSelectedStatuses,
 			selectedEndpoints,
 			selectedFeatures,
@@ -1648,6 +1670,7 @@ function ModelsDisplayContent({
 		setSelectedRegions([]);
 		setSelectedCreators([]);
 		setSelectedLicenses([]);
+		setSelectedLicenseTypes([]);
 		setSelectedYears([]);
 	};
 
@@ -1787,6 +1810,7 @@ function ModelsDisplayContent({
 		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
 		...selectedRegions.map((value) => ({ key: `region-${value}`, label: tFilters("filterRegion", { value: translateRegion(value) }), onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
 		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: tFilters("filterCreator", { value }), onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
+		...selectedLicenseTypes.map((value) => ({ key: `license-type-${value}`, label: tFilters("filterLicense", { value: licenseGroupLabel(value) }), onRemove: () => setSelectedLicenseTypes(without(selectedLicenseTypes, value)) })),
 		...selectedLicenses.map((value) => ({ key: `license-${value}`, label: tFilters("filterLicense", { value }), onRemove: () => setSelectedLicenses(without(selectedLicenses, value)) })),
 		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: translateFeature(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
 		...selectedEndpoints.map((value) => ({ key: `endpoint-${value}`, label: tFilters("filterEndpoint", { value: translateEndpoint(value) }), onRemove: () => setSelectedEndpoints(without(selectedEndpoints, value)) })),
@@ -2149,14 +2173,10 @@ function ModelsDisplayContent({
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
-					<FilterCheckboxList
+					<LicenseFilterList
 						options={licenseOptions}
-						selected={selectedLicenses}
-						onToggle={(value) =>
-							setSelectedLicenses(toggleInList(selectedLicenses, value))
-						}
-						labelForValue={(value) => value}
-						collapsedLimit={5}
+						selection={licenseSelection}
+						onChange={setLicenseSelection}
 					/>
 				</AccordionContent>
 			</AccordionItem>
