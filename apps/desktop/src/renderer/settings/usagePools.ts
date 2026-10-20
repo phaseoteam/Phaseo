@@ -66,3 +66,26 @@ export function accountHue(text: string) {
 	let hash = 0; for (const character of text.toLowerCase()) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
 	return hash % 360;
 }
+
+export type UsageRing = { label: string; remaining: number; resetsAt: number | null };
+/** A provider's two rings: the short window inside (5-hour), the long one outside (weekly). */
+export type ProviderRings = { provider: UsageProvider; inner: UsageRing | null; outer: UsageRing | null };
+
+/**
+ * The sidebar's rings, one pair per provider. Readings are kept between checks, so an account whose window has
+ * reset since it was read counts as full again rather than showing the old figure.
+ */
+export function usageRings(pools: ProviderPool[], now = Date.now()): ProviderRings[] {
+	const ring = (window: PoolWindow | undefined): UsageRing | null => {
+		if (!window) return null;
+		const columns = window.columns.map(column => column.resetsAt !== null && column.resetsAt * 1000 <= now ? { remaining: 100, resetsAt: null } : column);
+		const remaining = Math.round(columns.reduce((sum, column) => sum + column.remaining, 0) / columns.length);
+		const resets = columns.filter(column => column.resetsAt !== null && column.remaining < 100).map(column => column.resetsAt!).sort((a, b) => a - b);
+		return { label: window.label, remaining, resetsAt: resets[0] ?? null };
+	};
+	return pools.map(pool => {
+		const short = pool.windows.find(window => window.label === "5-hour") ?? pool.windows.find(window => window.label === "Daily");
+		const long = pool.windows.find(window => window.label === "Weekly") ?? pool.windows.find(window => window !== short);
+		return { provider: pool.provider, inner: ring(short), outer: ring(long) };
+	}).filter(rings => rings.inner || rings.outer);
+}

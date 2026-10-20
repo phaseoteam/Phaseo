@@ -328,12 +328,23 @@ app.whenReady().then(async () => {
 		"compare": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedCompare": "compare-1", "phaseo.desktop.compareGroups": [{ id: "compare-1", title: "What does a 10k-token prompt with a 2k-token answer cost?", taskIds: ["pricing", "pricing-gpt", "pricing-gemini"].map(demoId), createdAt: at(30) }] } },
 		"settings": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedTask": demoId("pricing") }, script: `document.querySelector('[aria-label="Settings"]').click()` },
 		"inbox": { storage: { "phaseo.desktop.workspaceMode": "code" }, script: `[...document.querySelectorAll('aside button')].find(button => button.textContent.startsWith('Inbox'))?.click()` },
+		// Sample subscription limits, read as just checked so the rings don't start the real agents.
+		"rings": { storage: { "phaseo.desktop.workspaceMode": "code", "phaseo.desktop.usageLimits": { checkedAt: Date.now(), hubs: [], snapshots: {}, statuses: {
+			claude: { checkedAt: new Date().toISOString(), authenticated: true, plan: "Claude Max", identity: "you@example.com", usage: [{ id: "claude", name: "Claude", primary: { usedPercent: 38, windowDurationMins: 300, resetsAt: Math.floor(Date.now() / 1000) + 8040 }, secondary: { usedPercent: 61, windowDurationMins: 10080, resetsAt: Math.floor(Date.now() / 1000) + 266400 }, spendControlReached: null }] },
+			codex: { checkedAt: new Date().toISOString(), authenticated: true, plan: "ChatGPT Pro", identity: "you@example.com", usage: [{ id: "codex", name: "Codex", primary: { usedPercent: 12, windowDurationMins: 300, resetsAt: Math.floor(Date.now() / 1000) + 11200 }, secondary: { usedPercent: 93, windowDurationMins: 10080, resetsAt: Math.floor(Date.now() / 1000) + 97200 }, spendControlReached: null }] },
+		} } }, script: `document.querySelector('[aria-label^="Usage limits"]')?.click()` },
 		"settings-experimental": { storage: { "phaseo.desktop.workspaceMode": "code" }, script: `(async () => { document.querySelector('[aria-label="Settings"]').click(); await new Promise(r => setTimeout(r, 500)); [...document.querySelectorAll('nav[aria-label="Settings sections"] button')].find(button => button.textContent.trim() === 'Experimental')?.click(); })()` },
 		"palette": { storage: { "phaseo.desktop.workspaceMode": "chat" }, script: `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))` },
 	};
+	// Captures never read real subscriptions: limits count as just checked with none found, so the rings stay idle.
+	// The first page may already have started a check; one reload with this in place leaves nothing in flight.
+	const noLimits = { "phaseo.desktop.usageLimits": { checkedAt: Date.now(), statuses: {}, hubs: [], snapshots: {} } };
+	await run(`localStorage.setItem("phaseo.desktop.usageLimits", ${JSON.stringify(JSON.stringify(noLimits["phaseo.desktop.usageLimits"]))});`);
+	window.webContents.reload();
+	await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
 	for (const [name, state] of Object.entries(states)) {
 		if (only.length && !only.includes(name)) continue;
-		await run(`localStorage.clear(); ${Object.entries(state.storage).map(([key, value]) => `localStorage.setItem(${JSON.stringify(key)}, ${JSON.stringify(JSON.stringify(value))});`).join(" ")}`);
+		await run(`localStorage.clear(); ${Object.entries({ ...noLimits, ...state.storage }).map(([key, value]) => `localStorage.setItem(${JSON.stringify(key)}, ${JSON.stringify(JSON.stringify(value))});`).join(" ")}`);
 		window.webContents.reload();
 		await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
 		await settle(1400);

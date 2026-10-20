@@ -16,6 +16,7 @@ import { SettingsNav } from "../settings/SettingsPage";
 import { ModelStack } from "../chat/ModelPicker";
 import { useScheduledTasks } from "../views/ScheduledTasks";
 import { CodeThreadList } from "./CodeThreadList";
+import { UsageRings } from "./UsageRings";
 import { dismissUndo, runUndo, undoLabel, useThreadUndo } from "./threadUndo";
 import { TagChip, TagDots, TagMenu } from "../components/Tags";
 import { tagsInUse } from "../../shared/tags";
@@ -157,6 +158,7 @@ function AccountFooter() {
 				<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{account.name}</span><span className="block truncate text-[11px] text-muted-foreground">Signed in to Phaseo</span></span>
 			</button>
 			: <button type="button" onClick={() => openSettings("accounts")} className="flex flex-1 items-center gap-2 rounded-md p-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in to Phaseo</button>}
+		<UsageRings />
 		<button type="button" aria-label="Settings" title={`Settings (${shortcut("settings.open")})`} onClick={() => openSettings()} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Settings className="size-4" /></button>
 	</div>;
 }

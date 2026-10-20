@@ -1,62 +1,32 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Monitor, Plus, RotateCw, Server } from "lucide-react";
-import type { AccountStatus, Harness } from "../../shared/workspace";
 import type { ImportableHub, UsageHub, UsageHubSnapshot } from "../../shared/usageHubs";
 import { errorText, useWorkspace } from "../app/workspace";
 import { SettingsButton, SettingsField, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
-import { usagePools, type UsageAccount, type UsageProvider } from "./usagePools";
+import { usagePools, type UsageProvider } from "./usagePools";
 import { ProviderPoolSection } from "./UsageLimits";
+import { checkAllUsage, checkUsageHub, setT3Hubs, setUsageError, setUsageHubs, usageAccounts, usageChecking, usageLocals, useUsageLimits, type UsageLocal as Local, type UsageResult as Result } from "./usageLimitsStore";
 
-type Local = { key: string; harness: UsageProvider; accountId?: string; title: string };
-type Result = AccountStatus | { error: string } | "checking";
 const names: Record<UsageProvider, string> = { codex: "Codex", claude: "Claude Code", cursor: "Cursor", grok: "Grok" };
 
 /**
  * Limits pooled per provider across every account Phaseo can read, like T3 Code's Usage page: logins on this
- * computer, accounts added here, and accounts on usage hubs. Everything is read once per visit.
+ * computer, accounts added here, and accounts on usage hubs. Everything is read once per visit; the readings are
+ * shared with the sidebar's rings.
  */
 export function UsageSettings() {
 	const { api, overview } = useWorkspace();
-	const locals: Local[] = useMemo(() => [
-		{ key: "codex", harness: "codex", title: "Codex login" },
-		{ key: "claude", harness: "claude", title: "Claude Code login" },
-		...overview.accounts.filter(account => !account.archived && account.kind === "native" && (["codex", "claude", "cursor", "grok"] as Harness[]).includes(account.harness))
-			.map(account => ({ key: account.id, harness: account.harness as UsageProvider, accountId: account.id, title: account.name })),
-	], [overview.accounts]);
-	const [statuses, setStatuses] = useState<Record<string, Result>>({});
-	const [hubs, setHubs] = useState<UsageHub[]>([]);
-	const [snapshots, setSnapshots] = useState<Record<string, UsageHubSnapshot | "checking">>({});
-	const [t3Hubs, setT3Hubs] = useState<ImportableHub[]>([]);
-	const [error, setError] = useState("");
-
-	const checkLocal = useCallback(async (local: Local) => {
-		if (!api) return;
-		setStatuses(current => ({ ...current, [local.key]: "checking" }));
-		try { const status = await api.accountStatus(local.harness, local.accountId); setStatuses(current => ({ ...current, [local.key]: status })); }
-		catch (reason) { setStatuses(current => ({ ...current, [local.key]: { error: errorText(reason) } })); }
-	}, [api]);
-	const checkHub = useCallback(async (hub: UsageHub) => {
-		if (!api) return;
-		setSnapshots(current => ({ ...current, [hub.id]: "checking" }));
-		try { const snapshot = await api.usageHubs({ type: "check", id: hub.id }); setSnapshots(current => ({ ...current, [hub.id]: snapshot })); }
-		catch (reason) { setSnapshots(current => ({ ...current, [hub.id]: { hubId: hub.id, checkedAt: new Date().toISOString(), accounts: [], skipped: 0, error: errorText(reason) } })); }
-	}, [api]);
-	const checkAll = useCallback(async () => {
-		if (!api) return;
-		for (const local of locals) void checkLocal(local);
-		try { const list = await api.usageHubs({ type: "list" }); setHubs(list); for (const hub of list) void checkHub(hub); } catch (reason) { setError(errorText(reason)); }
-		void api.usageHubs({ type: "t3-hubs" }).then(setT3Hubs, () => {});
-	}, [api, locals, checkLocal, checkHub]);
+	const locals = useMemo(() => usageLocals(overview.accounts), [overview.accounts]);
+	const limits = useUsageLimits();
+	const { statuses, hubs, snapshots, t3Hubs, error } = limits;
+	const checkHub = (hub: UsageHub) => { if (api) void checkUsageHub(api, hub); };
+	const checkAll = () => { if (api) void checkAllUsage(api, locals); };
 	const keys = locals.map(local => local.key).join("|");
 	// Each check starts an agent or calls a hub, so they run once per visit rather than on a timer.
-	useEffect(() => { void checkAll(); }, [keys, api]);
+	useEffect(() => { checkAll(); }, [keys, api]);
 
-	const accounts = useMemo((): UsageAccount[] => [
-		...locals.flatMap(local => { const status = statuses[local.key]; return status && status !== "checking" && !("error" in status) && status.authenticated ? [{ key: local.key, provider: local.harness, email: status.identity, label: local.title, plan: status.plan, source: local.accountId ? "Phaseo account" : "This computer", status }] : []; }),
-		...hubs.flatMap(hub => { const snapshot = snapshots[hub.id]; return snapshot && snapshot !== "checking" ? snapshot.accounts.map(account => ({ key: `${hub.id}:${account.id}`, provider: account.provider, email: account.email, label: account.id.replace(/\.json$/, ""), plan: account.status.plan, source: hub.label, status: account.status })) : []; }),
-	], [locals, statuses, hubs, snapshots]);
-	const pools = usagePools(accounts);
-	const busy = Object.values(statuses).includes("checking") || Object.values(snapshots).includes("checking");
+	const pools = usagePools(usageAccounts(locals, limits));
+	const busy = usageChecking(limits);
 	// Limits nobody could read, said once at the top rather than repeated per account.
 	const unread: string[] = [
 		...locals.flatMap((local): string[] => { const status = statuses[local.key]; if (!status || status === "checking") return []; return "error" in status ? [`${local.title}: ${status.error}`] : status.usageError && status.authenticated ? [`${local.title}: ${status.usageError}`] : []; }),
@@ -64,12 +34,12 @@ export function UsageSettings() {
 	];
 
 	return <SettingsPageLayout title="Usage & limits" description="How much is left across your subscriptions, pooled per provider. Hover an account for its details."
-		actions={<SettingsButton variant="ghost" disabled={busy || !api} onClick={() => void checkAll()}><RotateCw className={busy ? "animate-spin" : undefined} />{busy ? "Checking…" : "Check again"}</SettingsButton>}>
+		actions={<SettingsButton variant="ghost" disabled={busy || !api} onClick={checkAll}><RotateCw className={busy ? "animate-spin" : undefined} />{busy ? "Checking…" : "Check again"}</SettingsButton>}>
 		{pools.map(pool => <ProviderPoolSection key={pool.provider} pool={pool} />)}
 		{!pools.length && <p className="text-[13px] text-muted-foreground">{busy ? "Checking your subscriptions…" : "No limits to show yet. Sign in to Codex or Claude Code, or add a usage hub below."}</p>}
 		{unread.length > 0 && <div role="status" className="flex flex-col gap-1 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-xs text-muted-foreground">{unread.map(line => <p key={line}>{line}</p>)}</div>}
 		<Sources locals={locals} statuses={statuses} hubs={hubs} snapshots={snapshots} t3Hubs={t3Hubs} error={error}
-			onCheckHub={hub => void checkHub(hub)} onHubs={list => { const added = list.filter(hub => !hubs.some(existing => existing.id === hub.id)); setHubs(list); for (const hub of added) void checkHub(hub); }} onT3Hubs={setT3Hubs} onError={setError} />
+			onCheckHub={checkHub} onHubs={list => { const added = list.filter(hub => !hubs.some(existing => existing.id === hub.id)); setUsageHubs(list); for (const hub of added) checkHub(hub); }} onT3Hubs={setT3Hubs} onError={setUsageError} />
 		<p className="px-0.5 text-xs text-muted-foreground">Phaseo API usage and credits are on your dashboard at phaseo.app.</p>
 	</SettingsPageLayout>;
 }

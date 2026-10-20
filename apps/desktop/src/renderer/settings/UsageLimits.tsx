@@ -6,9 +6,9 @@ import { resetText } from "./UsageMeters";
 import { RedactedText } from "../components/RedactedText";
 import { accountHue, initials, type PoolColumn, type PoolWindow, type ProviderPool, type UsageAccount } from "./usagePools";
 
-const providerNames: Record<ProviderPool["provider"], string> = { codex: "Codex", claude: "Claude", cursor: "Cursor", grok: "Grok" };
+export const providerNames: Record<ProviderPool["provider"], string> = { codex: "Codex", claude: "Claude", cursor: "Cursor", grok: "Grok" };
 /** The bar's fill per provider, drawn at low opacity so text on it stays readable in any theme. */
-const providerFill: Record<ProviderPool["provider"], string> = { codex: "#339cff", claude: "#d97757", cursor: "#a1a1aa", grok: "#a1a1aa" };
+export const providerFill: Record<ProviderPool["provider"], string> = { codex: "#339cff", claude: "#d97757", cursor: "#a1a1aa", grok: "#a1a1aa" };
 
 /** Two initials on a colour that stays the same for an account everywhere. */
 export function AccountChip({ account, className }: { account: UsageAccount; className?: string }) {

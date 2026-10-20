@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountHue, initials, uniqueAccounts, usagePools, type UsageAccount } from "./usagePools";
+import { accountHue, initials, uniqueAccounts, usagePools, usageRings, type UsageAccount } from "./usagePools";
 
 const account = (key: string, provider: UsageAccount["provider"], email: string | undefined, usage: NonNullable<UsageAccount["status"]["usage"]>, source = "Hub"): UsageAccount =>
 	({ key, provider, email, label: email ?? key, source, status: { checkedAt: "2026-10-15T12:00:00Z", authenticated: true, usage } });
@@ -26,5 +26,18 @@ describe("usage pools", () => {
 	it("makes initials and a stable colour per account", () => {
 		expect(initials("daniel@gmail.com")).toBe("DG"); expect(initials("work")).toBe("WO");
 		expect(accountHue("a@x.io")).toBe(accountHue("A@X.IO"));
+	});
+	it("gives each provider a 5-hour ring inside a weekly one, counting a window that has since reset as full", () => {
+		const now = 3_000_000;
+		const rings = usageRings(usagePools([
+			account("a", "claude", "a@x.io", [{ id: "claude", name: "Claude", primary: window(40, 300, 2000), secondary: window(70, 10080, 9000), spendControlReached: null }]),
+			account("b", "claude", "b@x.io", [{ id: "claude", name: "Claude", primary: window(80, 300, 4000), secondary: window(30, 10080, 8000), spendControlReached: null }]),
+			account("c", "codex", "c@x.io", [{ id: "codex", name: "Codex", primary: window(3, 10080, 5000), secondary: null, spendControlReached: null }]),
+		]), now);
+		// Account a's 5-hour window reset at 2,000 s, before now (3,000 s), so it counts as 100% left.
+		expect(rings).toEqual([
+			{ provider: "codex", inner: null, outer: { label: "Weekly", remaining: 97, resetsAt: 5000 } },
+			{ provider: "claude", inner: { label: "5-hour", remaining: 60, resetsAt: 4000 }, outer: { label: "Weekly", remaining: 50, resetsAt: 8000 } },
+		]);
 	});
 });
