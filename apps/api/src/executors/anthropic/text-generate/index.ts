@@ -287,7 +287,11 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 
                         const model = args.providerModelSlug || args.ir.model;
 						const responsesStream = res.body.pipeThrough(
-                                createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
+                                createAnthropicToResponsesStreamTransformer(args.requestId, model, {
+									accounting,
+									providerId: args.providerId,
+									keepContextManagement: args.protocol === "anthropic.messages",
+								}),
                         );
                         const normalized = resolveStreamForProtocol(
                                 new Response(responsesStream, {
@@ -517,6 +521,10 @@ export async function bufferAnthropicStreamToMessage(res: Response, upstreamStar
 				}
 				if (typeof delta?.stop_sequence === "string" || delta?.stop_sequence === null) {
 					message.stop_sequence = delta.stop_sequence;
+				}
+				// Context editing reports the edits it applied on the final message_delta.
+				if (isPlainObject(payload?.context_management)) {
+					message.context_management = payload.context_management;
 				}
 				applyUsage(payload?.usage);
 				continue;
@@ -1259,6 +1267,9 @@ export function anthropicMessagesToIR(
 		console.warn(`[ID-VALIDATION] Provider ${provider} (Anthropic Messages) did not return response ID`);
 	}
 	const serviceTier = resolveAnthropicServiceTierFromResponse(json);
+	// Edits applied by context editing, for Messages clients
+	// (https://platform.claude.com/docs/en/build-with-claude/context-editing).
+	const contextManagement = isPlainObject(json.context_management) ? json.context_management : undefined;
 
 	return {
 		id: requestId,
@@ -1285,7 +1296,12 @@ export function anthropicMessagesToIR(
 			}
 			: undefined,
 		serviceTier,
+		...(contextManagement ? { anthropicContextManagement: contextManagement } : {}),
 	};
+}
+
+function isPlainObject(value: unknown): value is Record<string, any> {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 export function anthropicThinkingBlockToIR(

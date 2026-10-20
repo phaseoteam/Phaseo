@@ -13,6 +13,7 @@ import { resolveCacheTokenUsage, uncachedInputTokens } from "@core/cache-usage";
 import {
 	anthropicStopReasonFor,
 	normalizeFinishReason,
+	readGatewayContextManagement,
 	readGatewayStop,
 	responsesOutputHasRefusal,
 	type AnthropicStopReason,
@@ -826,6 +827,8 @@ function transformResponsesStreamToAnthropic(
 				const usage = normalizeUsageToAnthropic(response?.usage);
 				const stopReason = mapResponsesStatusToAnthropicStopReason(response, hasToolUse);
 				const stopSequence = stopReason === "stop_sequence" ? readGatewayStop(response)?.sequence ?? null : null;
+				// Context editing reports its applied edits on the final message_delta.
+				const contextManagement = readGatewayContextManagement(response);
 				emit(controller, "message_delta", {
 					type: "message_delta",
 					delta: {
@@ -833,6 +836,7 @@ function transformResponsesStreamToAnthropic(
 						stop_sequence: stopSequence,
 					},
 					usage,
+					...(contextManagement ? { context_management: contextManagement } : {}),
 				});
 				emit(controller, "message_stop", { type: "message_stop" });
 			};

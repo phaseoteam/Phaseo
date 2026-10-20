@@ -38,6 +38,8 @@ export type AnthropicMessagesResponse = {
 		server_tool_use: any | null;
 		service_tier: "standard" | "priority" | "batch" | null;
 	};
+	/** Edits applied by Anthropic context editing, when the request used `context_management`. */
+	context_management?: Record<string, any>;
 };
 
 export type AnthropicResponseContent =
@@ -82,6 +84,7 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 			stop_reason: "end_turn",
 			stop_sequence: null,
 			usage: encodeUsage(ir.usage, ir.serviceTier),
+			...contextManagementEntry(ir),
 		};
 	}
 
@@ -152,7 +155,12 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 		stop_reason: stopReason,
 		stop_sequence: mainChoice.stopSequence ?? null,
 		usage: encodeUsage(ir.usage, ir.serviceTier),
+		...contextManagementEntry(ir),
 	};
+}
+
+function contextManagementEntry(ir: IRChatResponse): Pick<AnthropicMessagesResponse, "context_management"> {
+	return ir.anthropicContextManagement ? { context_management: ir.anthropicContextManagement } : {};
 }
 
 function encodeUsage(

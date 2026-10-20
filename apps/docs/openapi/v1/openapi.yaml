@@ -11104,6 +11104,18 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AnthropicUsage'
+        context_management:
+          type: object
+          description: >-
+            Present when the request used `context_management` and Anthropic
+            applied an edit. `applied_edits` lists each edit with what it
+            cleared. Streams carry it on the final `message_delta` event.
+          properties:
+            applied_edits:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     AnthropicMessage:
       type: object
       required:

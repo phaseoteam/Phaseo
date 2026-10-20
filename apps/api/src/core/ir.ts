@@ -1018,6 +1018,11 @@ export type IRChatResponse = {
 	images?: Array<Record<string, any>>;
 	relatedQuestions?: string[];
 	reasoningSteps?: Array<Record<string, any>>;
+	/**
+	 * Anthropic's response `context_management` ({ applied_edits: [...] }), returned
+	 * only to Messages clients.
+	 */
+	anthropicContextManagement?: Record<string, any>;
 
 	// Debug-only fields (never logged)
 	rawResponse?: any;
