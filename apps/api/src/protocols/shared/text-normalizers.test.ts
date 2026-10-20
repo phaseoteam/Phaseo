@@ -161,6 +161,30 @@ describe("normalizeOpenAIToolChoice", () => {
 		).toEqual({ name: "web_search_preview" });
 	});
 
+	it("maps allowed_tools to its mode instead of a tool named allowed_tools", () => {
+		// Responses keeps the fields flat.
+		expect(normalizeOpenAIToolChoice({
+			type: "allowed_tools",
+			mode: "auto",
+			tools: [{ type: "function", name: "get_weather" }, { type: "function", name: "search" }],
+		})).toBe("auto");
+		expect(normalizeOpenAIToolChoice({
+			type: "allowed_tools",
+			mode: "required",
+			tools: [{ type: "function", name: "get_weather" }, { type: "function", name: "search" }],
+		})).toBe("required");
+		// Chat nests them under allowed_tools; required with one tool forces that tool.
+		expect(normalizeOpenAIToolChoice({
+			type: "allowed_tools",
+			allowed_tools: { mode: "required", tools: [{ type: "function", function: { name: "get_weather" } }] },
+		})).toEqual({ name: "get_weather" });
+		expect(normalizeOpenAIToolChoice({ type: "allowed_tools" })).toBe("auto");
+	});
+
+	it("maps a custom tool choice to the named tool", () => {
+		expect(normalizeOpenAIToolChoice({ type: "custom", name: "grammar" })).toEqual({ name: "grammar" });
+	});
+
 	it("applies unknown string fallback when configured", () => {
 		expect(
 			normalizeOpenAIToolChoice("something-else", {

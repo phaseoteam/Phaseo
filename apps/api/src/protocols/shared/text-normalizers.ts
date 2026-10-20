@@ -177,6 +177,7 @@ export function normalizeOpenAIToolChoice(
 
 	if (typeof choice === "object") {
 		const value = choice as Record<string, any>;
+		if (value.type === "allowed_tools") return normalizeAllowedToolsChoice(value);
 		const typeName =
 			typeof value.type === "string" && value.type !== "function" && value.type !== "tool"
 				? value.type
@@ -188,11 +189,13 @@ export function normalizeOpenAIToolChoice(
 					? value.function.name
 					: undefined;
 		if (
-			(value.type === "function" || value.type === "tool") &&
+			(value.type === "function" || value.type === "tool" || value.type === "custom") &&
 			functionName
 		) {
 			return { name: functionName };
 		}
+		// A hosted tool (web_search_preview, file_search, ...) is named by its type,
+		// the name its decoded tool definition carries.
 		if (typeName) {
 			return { name: typeName };
 		}
@@ -202,6 +205,27 @@ export function normalizeOpenAIToolChoice(
 	}
 
 	return undefined;
+}
+
+/**
+ * `allowed_tools` limits the model to a subset of `tools` with `mode` auto or
+ * required. OpenAI routes receive the original object (kept in the IR vendor
+ * options); everywhere else it becomes that mode, or a forced call when
+ * `required` allows exactly one tool. Chat nests the fields under
+ * `allowed_tools`; Responses keeps them flat.
+ * https://platform.openai.com/docs/api-reference/responses/create#responses_create-tool_choice
+ */
+function normalizeAllowedToolsChoice(value: Record<string, any>): IRChatRequest["toolChoice"] {
+	const config = value.allowed_tools && typeof value.allowed_tools === "object" ? value.allowed_tools : value;
+	const mode = config.mode === "required" ? "required" : "auto";
+	const tools: any[] = Array.isArray(config.tools) ? config.tools : [];
+	if (mode === "required" && tools.length === 1) {
+		const name = typeof tools[0]?.name === "string"
+			? tools[0].name
+			: typeof tools[0]?.function?.name === "string" ? tools[0].function.name : undefined;
+		if (name) return { name };
+	}
+	return mode;
 }
 
 export function resolveTextServiceTier(input: {
