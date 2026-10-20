@@ -185,3 +185,64 @@ describe("resolveHostedTools with native-engine gateway search", () => {
 		expect(resolved.ok && resolved.body.tools).toEqual([{ type: "phaseo:web_search", max_results: 2 }]);
 	});
 });
+
+describe("resolveHostedTools with allowed_tools choices", () => {
+	it("points a Responses allowed_tools choice at the mapped search function", () => {
+		const result = resolveHostedTools({
+			endpoint: "responses",
+			body: {
+				model: "m",
+				input: "news?",
+				tools: [{ type: "web_search" }, { type: "function", name: "lookup", parameters: {} }],
+				tool_choice: {
+					type: "allowed_tools",
+					mode: "required",
+					tools: [{ type: "web_search" }, { type: "web_search_preview" }, { type: "function", name: "lookup" }],
+				},
+			},
+			providers: [candidate("google-ai-studio")],
+		});
+		if (!result.ok) throw new Error("expected ok");
+		expect(result.body.tool_choice).toEqual({
+			type: "allowed_tools",
+			mode: "required",
+			tools: [{ type: "function", name: "phaseo_web_search" }, { type: "function", name: "lookup" }],
+		});
+
+		const prepared = prepareServerToolsForTextRequest(result.body, "openai.responses");
+		if (!prepared.ok) throw new Error(prepared.message);
+		const names = decodeProtocol("openai.responses", prepared.body).tools?.map((tool) => tool.name);
+		for (const entry of prepared.body.tool_choice.tools) expect(names).toContain(entry.name);
+	});
+
+	it("points a Chat Completions allowed_tools choice at the mapped search function", () => {
+		const result = resolveHostedTools({
+			endpoint: "chat.completions",
+			body: {
+				model: "m",
+				messages: [{ role: "user", content: "news?" }],
+				tools: [{ type: "web_search_preview" }],
+				tool_choice: {
+					type: "allowed_tools",
+					allowed_tools: { mode: "auto", tools: [{ type: "web_search_preview" }] },
+				},
+			},
+			providers: [candidate("anthropic")],
+		});
+		expect(result.ok && result.body.tool_choice).toEqual({
+			type: "allowed_tools",
+			allowed_tools: { mode: "auto", tools: [{ type: "function", function: { name: "phaseo_web_search" } }] },
+		});
+	});
+
+	it("leaves allowed_tools alone when the providers run hosted search", () => {
+		const body = {
+			model: "m",
+			input: "news?",
+			tools: [{ type: "web_search" }],
+			tool_choice: { type: "allowed_tools", mode: "required", tools: [{ type: "web_search" }] },
+		};
+		const result = resolveHostedTools({ endpoint: "responses", body, providers: [candidate("openai")] });
+		expect(result.ok && result.body).toBe(body);
+	});
+});

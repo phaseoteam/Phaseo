@@ -23,6 +23,7 @@ import {
 	isOpenAINativeWebSearchToolType,
 	routeRunsOpenAIHostedTool,
 } from "@core/nativeTools";
+import { WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME } from "@pipeline/surfaces/server-tools";
 import type { ProviderCandidate } from "./types";
 
 const HOSTED_TOOL_ENDPOINTS = new Set<Endpoint>(["chat.completions", "responses"]);
@@ -109,6 +110,42 @@ function namesHostedWebSearch(toolChoice: unknown): boolean {
 		|| isOpenAINativeWebSearchToolType(toolChoice.function?.name);
 }
 
+/**
+ * Points the hosted web search entries of an `allowed_tools` choice at the
+ * function `phaseo:web_search` is exposed as, in the choice's own shape:
+ * Responses lists `{type, name}` entries under `tools`, Chat Completions
+ * `{type, function: {name}}` entries under `allowed_tools.tools`
+ * (https://platform.openai.com/docs/api-reference/responses/create#responses-create-tool_choice,
+ * https://platform.openai.com/docs/api-reference/chat/create#chat-create-tool_choice).
+ * Returns null when the choice is not one that names hosted web search.
+ */
+function rewriteAllowedToolsChoice(toolChoice: unknown): Record<string, any> | null {
+	if (!isPlainObject(toolChoice) || toolChoice.type !== "allowed_tools") return null;
+	const chatShape = isPlainObject(toolChoice.allowed_tools);
+	const entries = chatShape ? toolChoice.allowed_tools.tools : toolChoice.tools;
+	if (!Array.isArray(entries) || !entries.some(namesHostedWebSearch)) return null;
+	const searchEntry = chatShape
+		? { type: "function", function: { name: WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME } }
+		: { type: "function", name: WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME };
+	const isSearchEntry = (entry: unknown) => isPlainObject(entry)
+		&& entry.type === "function"
+		&& (entry.name ?? entry.function?.name) === WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME;
+	const rewritten: unknown[] = [];
+	let hasSearchEntry = entries.some(isSearchEntry);
+	for (const entry of entries) {
+		if (!namesHostedWebSearch(entry)) {
+			rewritten.push(entry);
+			continue;
+		}
+		if (hasSearchEntry) continue;
+		rewritten.push(searchEntry);
+		hasSearchEntry = true;
+	}
+	return chatShape
+		? { ...toolChoice, allowed_tools: { ...toolChoice.allowed_tools, tools: rewritten } }
+		: { ...toolChoice, tools: rewritten };
+}
+
 function rewriteHostedWebSearch(body: any): any {
 	const tools: any[] = [];
 	let hasGatewaySearch = body.tools.some((tool: any) => isPlainObject(tool) && GATEWAY_WEB_SEARCH_TYPES.has(tool.type));
@@ -126,10 +163,13 @@ function rewriteHostedWebSearch(body: any): any {
 		tools.push(gatewayWebSearchToolFor(tool));
 		hasGatewaySearch = true;
 	}
+	const allowedToolsChoice = rewriteAllowedToolsChoice(body.tool_choice);
 	return {
 		...body,
 		tools,
-		...(namesHostedWebSearch(body.tool_choice) ? { tool_choice: "phaseo:web_search" } : {}),
+		...(allowedToolsChoice
+			? { tool_choice: allowedToolsChoice }
+			: namesHostedWebSearch(body.tool_choice) ? { tool_choice: "phaseo:web_search" } : {}),
 	};
 }
 
