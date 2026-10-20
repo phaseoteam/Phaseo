@@ -39,7 +39,7 @@ describe("Opus 5.5 request preflight", () => {
 		if (result.ok) throw new Error("expected validation failure");
 		expect(result.response.status).toBe(400);
 		const error = await result.response.json() as any;
-		expect(error.error).toBe("validation_error");
+		expect(error.code).toBe("validation_error");
 		expect(JSON.stringify(error)).toContain("Opus 5.5");
 	});
 

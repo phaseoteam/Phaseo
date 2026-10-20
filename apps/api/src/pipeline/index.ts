@@ -8,6 +8,7 @@ import { modelSubstitutionHeader, noteModelSubstitutionServed, type ModelSubstit
 import { DROPPED_PARAMS_HEADER, droppedParamsForClient, droppedParamsHeader } from "./execute/unsupportedParams";
 import type { Endpoint } from "@core/types";
 import { handleError } from "@core/error-handler";
+import { errorCodeOf, withErrorObject, withErrorObjectResponse } from "@core/error-object";
 import { auditFailure } from "./audit";
 import { Timer } from "./telemetry/timer";
 import { gatewayTraceFor } from "./telemetry/gateway-trace";
@@ -114,9 +115,9 @@ export async function settleMixedRateLimitAcrossModels(response: Response, attem
 	const executed = attempts.filter((attempt) => attempt.stage === "execute");
 	if (executed.every((attempt) => attempt.status === 429)) return response;
 	const body = await response.clone().json().catch(() => null) as Record<string, unknown> | null;
-	if (!body || body.error !== "upstream_error") return response;
+	if (!body || errorCodeOf(body) !== "upstream_error") return response;
 	discardResponseBody(response);
-	return new Response(JSON.stringify({ ...body, status_code: 502 }), { status: 502, headers: response.headers });
+	return new Response(JSON.stringify(withErrorObject({ ...body, status_code: 502 }, 502)), { status: 502, headers: response.headers });
 }
 
 function hasBlobValue(value: unknown): boolean {
@@ -281,9 +282,10 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             : null;
 
         const runner = resolvePipeline(endpoint);
+        // Surfaces that build their own error bodies get the same `error` object.
         const runWithHeaders = async (attempt: Parameters<typeof runner>[0]) => {
             attachRequestClassifierCall(attempt.pre.ctx, req, getRequestClassifierHandler);
-            return withDroppedParamsHeader(withModelSubstitutionHeaders(await runner(attempt), attempt.pre.ctx), attempt.pre.ctx);
+            return withDroppedParamsHeader(withModelSubstitutionHeaders(await withErrorObjectResponse(await runner(attempt)), attempt.pre.ctx), attempt.pre.ctx);
         };
 
         // Tries the configured fallback models in order after the first model

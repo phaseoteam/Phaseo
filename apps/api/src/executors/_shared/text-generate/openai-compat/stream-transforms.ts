@@ -10,6 +10,7 @@ import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
 import { SseParser } from "@core/sse-parser";
 import { isBareChatErrorFrame, readUpstreamStreamError } from "@core/stream-errors";
+import { chatStreamErrorFrame } from "@core/error-object";
 import type { GatewayReasoningDetail } from "@core/types";
 import { toChatAnnotations, toResponsesAnnotations } from "@protocols/shared/citations";
 import {
@@ -423,13 +424,8 @@ export function transformResponsesStreamToChat(
 							case "response.failed":
 							case "error":
 								{
-									// OpenAI SDKs raise on a frame's `error` field; object/message stay for existing readers.
 									const failure = readUpstreamStreamError(payload);
-									await emit({
-										object: "error",
-										message: failure.message,
-										error: { message: failure.message, type: failure.code ?? "upstream_error", code: failure.code },
-									}, controller);
+									await emit(chatStreamErrorFrame({ message: failure.message, code: failure.code }), controller);
 								}
 								break;
 							default:

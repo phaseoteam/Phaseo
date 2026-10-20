@@ -428,7 +428,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(400);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("unsupported_model_or_endpoint");
+		expect(payload.code).toBe("unsupported_model_or_endpoint");
 		expect(payload.reason).toBe("pricing_not_configured");
 		expect(payload.provider_candidate_diagnostics).toEqual({
 			totalProviders: 1,
@@ -514,7 +514,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(403);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("guardrail_blocked");
+		expect(payload.code).toBe("guardrail_blocked");
 		expect(payload.reason).toBe("model_restricted_by_policy");
 		expect(payload.details?.[0]?.keyword).toBe("model_restricted_by_policy");
 		expect(payload.guardrail).toMatchObject({ type: "route_access", scope: "workspace" });
@@ -569,7 +569,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(403);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("guardrail_blocked");
+		expect(payload.code).toBe("guardrail_blocked");
 		expect(payload.reason).toBe("provider_restricted_by_policy");
 		expect(payload.details?.[0]?.keyword).toBe("no_providers_after_route_access_policy");
 		expect(payload.guardrail).toMatchObject({ type: "route_access", scope: "workspace" });
@@ -621,7 +621,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect(result.response.status).toBe(403);
 		const payload = await result.response.json();
 		expect(payload).toMatchObject({
-			error: "guardrail_blocked",
+			code: "guardrail_blocked",
 			reason: "data_handling_policy_no_routes",
 			guardrail: { type: "data_handling", scope: "workspace" },
 		});
@@ -796,7 +796,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(400);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("validation_error");
+		expect(payload.code).toBe("validation_error");
 		expect(payload.details?.[0]?.keyword).toBe("unknown_gateway_plugin");
 		expect(payload.details?.[0]?.params?.pluginIds).toEqual(["nonexistent-plugin"]);
 	});

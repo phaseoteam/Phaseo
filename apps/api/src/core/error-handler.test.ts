@@ -149,7 +149,7 @@ describe("handleError", () => {
 		expect(response.headers.get("Retry-After")).toBe("3600");
 		expect(response.headers.get("X-Gateway-Error-Attribution")).toBe("user");
 		expect(response.headers.get("Authorization")).toBeNull();
-		expect(await response.json()).toMatchObject({ error: "phaseo_free_model_limit_exceeded", error_origin: "gateway", error_type: "user" });
+		expect(await response.json()).toMatchObject({ code: "phaseo_free_model_limit_exceeded", error_origin: "gateway", error_type: "user" });
 		expect(capturedAuditArgs).toMatchObject({ errorCode: "gateway:phaseo_free_model_limit_exceeded", provider: null });
 		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ errorCode: "gateway:phaseo_free_model_limit_exceeded", provider: null }));
 	});
@@ -179,7 +179,7 @@ describe("handleError", () => {
 		expect(response.headers.get("Retry-After")).toBe("9");
 		expect(response.headers.get("X-Phaseo-Upstream-RateLimit-Remaining-Requests")).toBe("0");
 		expect(response.headers.get("x-ratelimit-remaining-tokens")).toBeNull();
-		expect(await response.json()).toMatchObject({ status_code: 429, error: "upstream_error", error_origin: "upstream" });
+		expect(await response.json()).toMatchObject({ status_code: 429, code: "upstream_error", error_origin: "upstream" });
 	});
 
 	it("attributes a rate limit policy rejection to the caller and keeps the policy fields", async () => {
@@ -203,7 +203,7 @@ describe("handleError", () => {
 		expect(response.headers.get("Retry-After")).toBe("9");
 		expect(response.headers.get("X-Gateway-Error-Attribution")).toBe("user");
 		expect(await response.json()).toMatchObject({
-			error: "rate_limit_exceeded", error_origin: "user", reason: "policy_requests_per_minute", policy_id: "policy-1", limit_scope: "key",
+			code: "rate_limit_exceeded", error_origin: "user", reason: "policy_requests_per_minute", policy_id: "policy-1", limit_scope: "key",
 		});
 		expect(capturedAuditArgs).toMatchObject({ errorCode: "user:rate_limit_exceeded", provider: null });
 	});
@@ -360,7 +360,7 @@ describe("handleError", () => {
 			},
 		});
 			const payload = await res.json();
-			expect(payload.error).toBe("upstream_error");
+			expect(payload.code).toBe("upstream_error");
 			expect(payload.error_origin).toBe("upstream");
 			expect(payload.reason).toBe("all_candidates_failed");
 			expect(payload.attempt_count).toBe(1);
@@ -400,7 +400,7 @@ describe("handleError", () => {
 			retryable: false,
 		}]);
 		expect(capturedAuditArgs?.errorPayload).toMatchObject({
-			error: "upstream_error",
+			code: "upstream_error",
 			reason: "all_candidates_failed",
 			provider_failure_diagnostics: {
 				category: "credentials_not_configured",
@@ -503,7 +503,7 @@ describe("handleError", () => {
 
 		expect(res.status).toBe(410);
 		expect(await res.json()).toMatchObject({
-			error: "model_retired",
+			code: "model_retired",
 			error_type: "user",
 			description: 'Model "a/b" was retired on 2026-10-01 and no provider serves it any more. Use "a/c" instead.',
 			model: "a/b",
@@ -559,7 +559,7 @@ describe("handleError", () => {
 			},
 		});
 			const payload = await res.json();
-			expect(payload.error).toBe("unsupported_model_or_endpoint");
+			expect(payload.code).toBe("unsupported_model_or_endpoint");
 			expect(payload.error_type).toBe("system");
 			expect(payload.error_origin).toBe("gateway");
 			expect(payload.error_operational_kind).toBe("gateway_provider_availability_gap");
@@ -584,7 +584,7 @@ describe("handleError", () => {
 		});
 		expect(payload.missing_pricing_providers).toEqual(["openai"]);
 		expect(capturedAuditArgs?.errorPayload).toMatchObject({
-			error: "unsupported_model_or_endpoint",
+			code: "unsupported_model_or_endpoint",
 			error_type: "system",
 			error_origin: "gateway",
 			error_operational_kind: "gateway_provider_availability_gap",
@@ -788,9 +788,125 @@ describe("handleError", () => {
 			auditFailure: async () => { },
 		});
 		const payload = await res.json();
-		expect(payload.error).toBe("pipeline_execution_error");
+		expect(payload.code).toBe("pipeline_execution_error");
 		expect(payload.error_type).toBe("system");
 		expect(payload.error_origin).toBe("gateway");
 		expect(res.headers.get("X-Gateway-Error-Origin")).toBe("gateway");
+	});
+});
+
+describe("handleError error object", () => {
+	it("returns validation failures with an invalid_request_error object and the old top-level fields", async () => {
+		const response = await handleError({
+			stage: "before",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "validation_error",
+				message: "Unknown parameter: foo",
+				details: [{ message: "Unknown parameter", path: ["foo"] }],
+			}), { status: 400 }),
+			ctx: { requestId: "G-VALIDATION", meta: {} } as any,
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(400);
+		const body = await response.json();
+		expect(body.error).toEqual({
+			code: "validation_error",
+			message: "Unknown parameter: foo",
+			type: "invalid_request_error",
+			param: "foo",
+		});
+		expect(body).toMatchObject({
+			code: "validation_error",
+			message: "Unknown parameter: foo",
+			description: "Unknown parameter: foo",
+			status_code: 400,
+			generation_id: "G-VALIDATION",
+			error_type: "user",
+		});
+	});
+
+	it("returns auth failures as authentication_error", async () => {
+		const response = await handleError({
+			stage: "before",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({ error: "unauthorised", message: "Invalid API key." }), { status: 401 }),
+			auditFailure: async () => {},
+		});
+		const body = await response.json();
+		expect(body.error).toMatchObject({ code: "unauthorised", message: "Invalid API key.", type: "authentication_error" });
+		expect(body).toMatchObject({ code: "unauthorised", status_code: 401, message: "Invalid API key." });
+	});
+
+	it("returns rate limits as rate_limit_error with Retry-After in metadata", async () => {
+		const response = await handleError({
+			stage: "execute",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "rate_limit_exceeded",
+				error_origin: "user",
+				reason: "policy_requests_per_minute",
+				policy_id: "policy-1",
+				limit_scope: "key",
+				description: "Retry after 9 seconds.",
+			}), { status: 429, headers: { "Retry-After": "9" } }),
+			ctx: { requestId: "G-LIMIT", workspaceId: "workspace", meta: {} } as any,
+			auditFailure: async () => {},
+		});
+		const body = await response.json();
+		expect(body.error).toEqual({
+			code: "rate_limit_exceeded",
+			message: "Retry after 9 seconds.",
+			type: "rate_limit_error",
+			param: null,
+			metadata: {
+				reason: "policy_requests_per_minute",
+				policy_id: "policy-1",
+				limit_scope: "key",
+				retry_after_seconds: 9,
+			},
+		});
+		expect(body).toMatchObject({ code: "rate_limit_exceeded", status_code: 429, policy_id: "policy-1" });
+	});
+
+	it.each([
+		[502, "server_error"],
+		[503, "service_unavailable"],
+		[529, "overloaded"],
+	])("returns upstream %i failures with the provider detail in metadata", async (status, type) => {
+		const response = await handleError({
+			stage: "execute",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "upstream_error",
+				reason: "all_candidates_failed",
+				attempt_count: 1,
+				failed_providers: ["openai"],
+				failed_statuses: [status],
+				description: "All providers failed.",
+			}), { status }),
+			ctx: { requestId: "G-UPSTREAM", workspaceId: "workspace", meta: {} } as any,
+			auditFailure: async () => {},
+		});
+		expect(response.status).toBe(status);
+		const body = await response.json();
+		expect(body.error).toEqual({
+			code: "upstream_error",
+			message: "All providers failed.",
+			type,
+			param: null,
+			metadata: {
+				reason: "all_candidates_failed",
+				attempt_count: 1,
+				failed_providers: ["openai"],
+				failed_statuses: [status],
+			},
+		});
+		expect(body).toMatchObject({
+			code: "upstream_error",
+			status_code: status,
+			error_origin: "upstream",
+			failed_providers: ["openai"],
+		});
 	});
 });

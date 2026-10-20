@@ -64,7 +64,8 @@ describe("passthroughWithPricing when the upstream ends without a stop", () => {
 		expect(blocks.map((block) => block.data)).not.toContain("[DONE]");
 		expect(blocks.at(-1)?.data).toMatchObject({
 			object: "error",
-			error: { type: "upstream_error", code: "upstream_stream_failure" },
+			code: "upstream_stream_failure",
+			error: { type: "server_error", code: "upstream_stream_failure", message: "The upstream stream ended before the response completed." },
 		});
 		expect(blocks.flatMap((block) => block.data?.choices ?? []).some((choice: any) => choice.finish_reason)).toBe(false);
 		expect(usageInfo).toEqual([{ aborted: true, sawFinalUsage: false }]);

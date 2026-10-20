@@ -440,7 +440,7 @@ describe("settleMixedRateLimitAcrossModels", () => {
 			{ model: "b/fallback", status: 429, stage: "execute" },
 		]);
 		expect(response.status).toBe(502);
-		expect(await response.json()).toMatchObject({ error: "upstream_error", status_code: 502 });
+		expect(await response.json()).toMatchObject({ code: "upstream_error", status_code: 502 });
 	});
 
 	it("leaves a workspace rate-limit policy 429 alone", async () => {

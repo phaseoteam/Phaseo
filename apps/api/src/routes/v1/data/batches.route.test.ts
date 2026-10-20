@@ -609,7 +609,7 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "offset_too_large",
 			max_offset: 10_000,
 		});
@@ -672,7 +672,7 @@ describe("batchRoutes", () => {
 			}),
 		});
 		expect(response.status).toBe(400);
-		expect(await response.json()).toMatchObject({ error: "validation_error", reason: "batch_provider_not_allowed" });
+		expect(await response.json()).toMatchObject({ code: "validation_error", reason: "batch_provider_not_allowed" });
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
@@ -699,7 +699,7 @@ describe("batchRoutes", () => {
 		});
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "batch_mixed_endpoints_not_supported",
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -727,7 +727,7 @@ describe("batchRoutes", () => {
 		});
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "batch_streaming_not_supported",
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -747,7 +747,7 @@ describe("batchRoutes", () => {
 		});
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "models_not_supported_for_endpoint",
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -1138,7 +1138,7 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(404);
 		await expect(response.json()).resolves.toMatchObject({
-			error: "not_found",
+			code: "not_found",
 			reason: "batch_input_file_not_found_or_not_owned",
 			file_id: "file_unowned_123",
 		});
@@ -1176,7 +1176,7 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(400);
 		await expect(response.json()).resolves.toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "batch_webhook_endpoint_required",
 		});
 		expect(state.fetchCalls).toEqual([]);
@@ -1210,7 +1210,7 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(400);
 		await expect(response.json()).resolves.toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "batch_webhook_endpoint_not_found_or_inactive",
 			webhook_endpoint_id: "missing_endpoint",
 		});
@@ -1582,7 +1582,7 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "batch_multiple_models_not_supported",
 			provider: "openai",
 			models: ["openai/gpt-5.4-nano", "openai/gpt-5.4-mini"],

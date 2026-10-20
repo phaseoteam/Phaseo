@@ -174,7 +174,7 @@ describe("guardContext credit gating for free models", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("insufficient_funds");
+		expect(payload.code).toBe("insufficient_funds");
 	});
 
 	it("allows :free model requests with zero credits", async () => {
@@ -220,7 +220,7 @@ describe("guardContext credit gating for free models", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("insufficient_funds");
+		expect(payload.code).toBe("insufficient_funds");
 	});
 
 	// Production, 2026-10-18: a $0 workspace got 402 for :free models and
@@ -330,7 +330,7 @@ describe("guardContext credit gating for free models", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("insufficient_funds");
+		expect(payload.code).toBe("insufficient_funds");
 	});
 
 	it("keeps insufficient_funds for a workspace private model's $0 placeholder card", async () => {
@@ -382,7 +382,7 @@ describe("guardContext credit gating for free models", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("insufficient_funds");
+		expect(payload.code).toBe("insufficient_funds");
 	});
 
 	it("fails closed when a routable provider has missing pricing", async () => {
@@ -413,7 +413,7 @@ describe("guardContext credit gating for free models", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(402);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("insufficient_funds");
+		expect(payload.code).toBe("insufficient_funds");
 	});
 
 	it("ignores providers that are not routable for free-credit bypass", async () => {
@@ -486,7 +486,7 @@ describe("guardContext credit gating for free models", () => {
 		expect(result.response.headers.get("Retry-After")).toBe("43199");
 		const payload = await result.response.json();
 		expect(payload).toMatchObject({
-			error: "key_limit_exceeded",
+			code: "key_limit_exceeded",
 			reason: "daily_request_limit_reached",
 			reset_at: "2026-05-09T23:59:59.000Z",
 			now: "2026-05-09T12:00:00.000Z",

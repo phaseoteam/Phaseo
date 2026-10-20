@@ -149,7 +149,12 @@ describe("mid-stream upstream errors from Anthropic", () => {
 
 	it("gives Chat clients an error frame", async () => {
 		const events = frames(await new Response(claudeStream("openai.chat.completions")).text());
-		expect(events.at(-1)?.data).toMatchObject({ object: "error", message: "Overloaded", error: { message: "Overloaded", type: "overloaded_error" } });
+		expect(events.at(-1)?.data).toMatchObject({
+			object: "error",
+			message: "Overloaded",
+			code: "overloaded_error",
+			error: { message: "Overloaded", type: "overloaded", code: "overloaded_error", param: null },
+		});
 	});
 
 	it("opens with response.created when Anthropic fails before message_start", async () => {

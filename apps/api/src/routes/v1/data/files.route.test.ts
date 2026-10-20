@@ -342,7 +342,7 @@ describe("filesRoutes", () => {
 
 		expect(retrieveResponse.status).toBe(404);
 		expect(await retrieveResponse.json()).toMatchObject({
-			error: "not_found",
+			code: "not_found",
 			reason: "file_not_found_or_not_owned",
 			file_id: "file_missing_123",
 		});
@@ -353,7 +353,7 @@ describe("filesRoutes", () => {
 
 		expect(contentResponse.status).toBe(404);
 		expect(await contentResponse.json()).toMatchObject({
-			error: "not_found",
+			code: "not_found",
 			reason: "file_not_found_or_not_owned",
 			file_id: "file_missing_123",
 		});

@@ -4,6 +4,7 @@
 
 import type { UnifiedStreamEvent } from "@pipeline/after/stream-events";
 import { anthropicStopReasonFor, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
+import { chatStreamErrorFrame } from "@core/error-object";
 
 export type StreamProtocol =
 	| "openai.chat.completions"
@@ -37,14 +38,7 @@ function encodeOpenAIChat(
 		const message = event.message ?? "stream_error";
 		const rawCode = event.payload?.error?.code ?? event.payload?.error?.type ?? event.payload?.response?.error?.code ?? event.payload?.code;
 		const code = typeof rawCode === "string" && rawCode && rawCode !== "error" ? rawCode : null;
-		return {
-			frame: {
-				object: "error",
-				message,
-				// OpenAI SDKs raise on a frame's `error` field; object/message stay for existing readers.
-				error: { message, type: code ?? "upstream_error", code },
-			},
-		};
+		return { frame: chatStreamErrorFrame({ message, code }) };
 	}
 	if (event.type === "start") {
 		return {
