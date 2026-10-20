@@ -33,13 +33,14 @@ describe("Inbox lists", () => {
 		], now);
 		expect(needsYou.map(value => value.id)).toEqual(["agent", "answer", "failed", "raised"]);
 	});
-	it("lists chats Autopilot is still running, but not their agents or chats it handed back", () => {
+	it("lists chats Autopilot is still running, but not their agents, chats it handed back, or chats already waiting on the person", () => {
 		const { inAutopilot, needsYou } = inboxLists([
 			task("running", { status: "running", autopilot: { capNanos: null, since: "2026-10-20T09:00:00.000Z" } }),
+			task("stopped", { status: "interrupted", attentionReason: "Task interrupted", updatedAt: "2026-10-20T09:00:00.000Z", autopilot: { capNanos: null, since: "2026-10-20T09:00:00.000Z" } }),
 			task("agent", { status: "running", autopilot: { capNanos: null, since: "2026-10-20T09:00:00.000Z", inherited: true } }),
 			task("blocked", { autopilot: { capNanos: 5_000_000_000, since: "2026-10-20T09:00:00.000Z", handback: { reason: "blocked", summary: "Needs the API key.", at: "2026-10-20T10:00:00.000Z" } }, attentionReason: "Autopilot needs you" }),
 		], now);
 		expect(inAutopilot.map(value => value.id)).toEqual(["running"]);
-		expect(needsYou.map(value => value.id)).toEqual(["blocked"]);
+		expect(needsYou.map(value => value.id)).toEqual(["blocked", "stopped"]);
 	});
 });

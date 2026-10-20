@@ -38,7 +38,9 @@ export type AutopilotDecision = { id: number; taskId: string; at: string; title:
  */
 export function inboxLists<T extends TaskOverview>(tasks: readonly T[], now = Date.now()) {
 	const needsYou = tasks.filter(task => !task.archived && task.attentionReason && task.attentionReason !== "Task completed" && !["snoozed", "settled"].includes(sidebarSection(task, now)));
-	const inAutopilot = tasks.filter(task => !task.archived && task.autopilot && !task.autopilot.inherited && !task.autopilot.handback);
+	// A chat Autopilot is running that already waits on the person (stopped, failed) is listed once, under Needs you.
+	const waiting = new Set(needsYou);
+	const inAutopilot = tasks.filter(task => !task.archived && task.autopilot && !task.autopilot.inherited && !task.autopilot.handback && !waiting.has(task));
 	const newest = (a: T, b: T) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id);
 	return { needsYou: needsYou.sort(newest), inAutopilot: inAutopilot.sort(newest) };
 }
