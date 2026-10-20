@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { type AccessibilityActionEvent, type LayoutChangeEvent, View } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
@@ -6,6 +5,7 @@ import Animated, { FadeIn, useAnimatedStyle, useSharedValue } from "react-native
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from "react-native-svg";
 import { Text, useToneColor } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 import { barLayout, nearestIndex, niceTicks, placeTooltip, slotIndex, stepIndex } from "./chartMath";
 
 export { niceTicks } from "./chartMath";
@@ -72,7 +72,7 @@ function ChartSurface({ height, width, onLayout, count, anchor, hitTest, active,
       if (index === selected.current) return;
       selected.current = index;
       latest.current.onActive(index);
-      void Haptics.selectionAsync().catch(() => undefined);
+      haptic("tick");
     };
     return {
       activateAfterLongPress: INSPECT_HOLD_MS,

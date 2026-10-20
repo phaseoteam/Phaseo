@@ -1,5 +1,4 @@
 import type { QueryClient } from "@tanstack/react-query";
-import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useIsFocused, useRouter } from "expo-router";
 import { X } from "lucide-react-native";
@@ -19,6 +18,7 @@ import { Icon, Text, useToneColor } from "@/components/ui";
 import { catalogueQuery, useCatalogue } from "@/features/models/state";
 import { BUILD_COMMIT, BUILD_NUMBER } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
+import { haptic } from "@/lib/haptics";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import {
   clamp, COVER_DIM, coverage, deformation, dragTo, holdAt, kick, launch, letGo, LIFT_SCALE, pickUp, ringLayout, stepWorld, throwBody, type Block, type Body, type Box,
@@ -48,8 +48,18 @@ const EDGE = 8;
 /** Space kept round the mark and its text where the logos start (and stay, when the system reduces motion). */
 const RING_MARGIN = 12;
 
+/**
+ * Hits are felt when they squash a logo at least this much (by 0.05, from about 240 pt/s closing; fully, 0.15, from
+ * about 670), so cruising logos meeting each other or an edge stay quiet and a fling or a burst rattles.
+ */
+const BUMP_SQUASH = 0.05;
+const THUD_SQUASH = 0.15;
+/** At most one hit felt in this long (ms), whatever is colliding. */
+const HIT_GAP_MS = 60;
+
 const VERSION_DETAIL = versionDetail(APP_VERSION, { number: BUILD_NUMBER, commit: BUILD_COMMIT });
-const lift = () => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+const lift = () => haptic("lift");
+const drop = () => haptic("drop");
 
 /** Starts loading what the art shows (the catalogue and the labs' logos) while the taps are still coming. */
 export function prefetchVersionArt(queryClient: QueryClient, theme: "light" | "dark") {
@@ -141,11 +151,29 @@ export function VersionArtScreen() {
     launched.current = !reduced;
   }, [bodies, reduced, ring]);
 
+  // The hardest new hit each frame is felt (a bump or a thud, by how much it squashed a logo), and a logo hitting a
+  // screen corner exactly, DVD style, gets the success haptic.
+  const lastHit = useSharedValue(0);
   const frame = useFrameCallback((info) => {
     const layout = world.get();
     const current = bodies.get();
     if (!layout || current.length === 0) return;
-    bodies.set(stepWorld(current, (info.timeSincePreviousFrame ?? 0) / 1000, layout));
+    const next = stepWorld(current, (info.timeSincePreviousFrame ?? 0) / 1000, layout);
+    bodies.set(next);
+    let hardest = 0;
+    let corner = false;
+    for (let index = 0; index < next.length; index += 1) {
+      const before = current[index];
+      const after = next[index]!;
+      if (!before) continue;
+      hardest = Math.max(hardest, before.sq - after.sq);
+      if (after.glow === 1 && before.glow < 1) corner = true;
+    }
+    if (corner) scheduleOnRN(haptic, "success");
+    else if (hardest >= BUMP_SQUASH && info.timestamp - lastHit.get() >= HIT_GAP_MS) {
+      lastHit.set(info.timestamp);
+      scheduleOnRN(haptic, hardest >= THUD_SQUASH ? "thud" : "bump");
+    }
   }, false);
   const running = focused && !reduced && ring != null;
   useEffect(() => {
@@ -161,7 +189,7 @@ export function VersionArtScreen() {
   const labelIndex = useSharedValue(-1);
   const labelOpacity = useSharedValue(0);
   const tapLogo = useCallback((index: number) => {
-    void Haptics.selectionAsync().catch(() => undefined);
+    haptic("selection");
     const next = tapLabel(labelNow.current, index, Date.now());
     labelNow.current = next;
     clearTimeout(labelTimer.current);
@@ -193,7 +221,7 @@ export function VersionArtScreen() {
   }, [fade, labelOpacity, markScale]);
 
   const playBurst = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
+    haptic("thud");
     if (reduced) {
       // From the start every time, even if the last fade is still playing.
       cancelAnimation(fade);
@@ -211,7 +239,7 @@ export function VersionArtScreen() {
     markScale.set(withSequence(withTiming(0.9, { duration: 90 }), withSpring(1, { damping: 9, stiffness: 260 })));
   };
   const openGame = () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    haptic("success");
     markScale.set(withSpring(1));
     router.push("/higher-or-lower");
   };
@@ -378,8 +406,9 @@ const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, r
       bodies.set(throwBody(bodies.get(), index, event.velocityX, event.velocityY));
     },
     onFinalize: () => {
-      // A tap, or a hold that never moved, lets it carry on as it was going.
+      // A tap, or a hold that never moved, lets it carry on as it was going. One that was lifted is put down with a tick.
       bodies.set(letGo(bodies.get(), index));
+      if (lifted.get() >= LIFT_TICK_AT) scheduleOnRN(drop);
       lifted.set(withSpring(0, LIFT_SPRING));
     },
   });

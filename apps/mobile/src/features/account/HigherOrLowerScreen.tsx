@@ -1,4 +1,3 @@
-import * as Haptics from "expo-haptics";
 import { Check, Share2, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Share, View } from "react-native";
@@ -7,6 +6,7 @@ import { Button, EmptyState, ErrorState, Header, Icon, LoadingState, ReadableWid
 import { useCatalogue } from "@/features/models/state";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 import { buildPool, describeFigure, pickRound, QUESTIONS, shareMessage, type Contestant, type Round, type Side } from "./higherOrLower";
 import { higherOrLowerStore, recordStreak } from "./higherOrLowerStore";
 
@@ -49,9 +49,9 @@ export function HigherOrLowerScreen() {
       const next = streak + 1;
       setStreak(next);
       if (recordStreak(next)) setNewBest(true);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+      haptic("success");
     } else {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => undefined);
+      haptic("error");
     }
   };
 

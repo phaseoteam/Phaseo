@@ -35,6 +35,21 @@ export function onChatError(listener: ErrorListener) {
   return () => { errorListeners.delete(listener); };
 }
 
+/** How a chat's answers to a message went, once all have ended: "error" if any failed, else "stopped" if any was stopped. */
+export type ChatOutcome = "done" | "stopped" | "error";
+const OUTCOME_RANK: Record<ChatOutcome, number> = { done: 0, stopped: 1, error: 2 };
+const worseOutcome = (a: ChatOutcome, b: ChatOutcome) => (OUTCOME_RANK[b] > OUTCOME_RANK[a] ? b : a);
+type SettledListener = (chatId: string, outcome: ChatOutcome) => void;
+const settledListeners = new Set<SettledListener>();
+/** How the answers that have ended so far went, for each chat with answers still running. */
+const outcomes = new Map<string, ChatOutcome>();
+
+/** Hears when a chat's last running answer ends, with how they went (the chat screen plays a haptic). */
+export function onChatSettled(listener: SettledListener) {
+  settledListeners.add(listener);
+  return () => { settledListeners.delete(listener); };
+}
+
 // ---- Streaming writes (desktop's workspaceRuntime flushes) ----
 // Streamed text goes to the database in small appended rows. Flushes from every running answer share one
 // clock on a 20 ms grid and commit together, and an answer whose flushes cost more waits longer (4× the
@@ -211,7 +226,9 @@ async function answer(chatId: string, parent: ChatMessage, model: string, worksp
   let prepared: PreparedThread | null = null;
   perf?.streamStarted(message.id);
 
+  let outcome: ChatOutcome = "error";
   const finish = (patch: MessagePatch) => {
+    if (patch.status === "done" || patch.status === "stopped" || patch.status === "error") outcome = patch.status;
     writer.close();
     finishMessage(message.id, patch);
     messageChanged(chatId, message.id, patch);
@@ -265,6 +282,13 @@ async function answer(chatId: string, parent: ChatMessage, model: string, worksp
     perf?.streamFinished(message.id, { chars: live.get().content.length, reasoningChars: live.get().reasoning.length });
     running.delete(message.id);
     setRunning(chatId, -1);
+    // The last of the chat's answers to end reports how they all went.
+    const overall = worseOutcome(outcomes.get(chatId) ?? "done", outcome);
+    if ([...running.values()].some((entry) => entry.chatId === chatId)) outcomes.set(chatId, overall);
+    else {
+      outcomes.delete(chatId);
+      for (const listener of settledListeners) listener(chatId, overall);
+    }
     // The window already holds the final text, so clearing the live copy doesn't flash.
     live.close();
     updateChat(chatId, { updatedAt: Date.now() });

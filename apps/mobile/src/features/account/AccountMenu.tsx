@@ -1,6 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
-import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useFocusEffect, usePathname, useRouter, type Href } from "expo-router";
 import {
@@ -15,6 +14,7 @@ import { Button, confirm, Header, Icon, Row, Screen, Section, Text, toast } from
 import { readStorageReport } from "@/features/chat/deviceStorage";
 import { FULL_VERSION_LABEL, VERSION_LABEL } from "@/lib/appInfo";
 import { formatBytes, formatNumber, formatUsd, nanosToUsd } from "@/lib/format";
+import { haptic } from "@/lib/haptics";
 import { openWeb } from "@/lib/web";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { useAuth } from "@/providers/AuthProvider";
@@ -76,7 +76,7 @@ export function AccountMenu() {
   const { resolved } = useAppearance();
   const taps = useRef<TapRun | null>(null);
   const openVersionArt = () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    haptic("success");
     router.push("/version");
   };
   const tapVersion = () => {

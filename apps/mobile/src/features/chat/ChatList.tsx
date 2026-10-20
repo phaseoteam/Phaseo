@@ -7,6 +7,7 @@ import { useOpenDetail } from "@/components/shell/SplitStack";
 import { EmptyState, Header, Icon, IconButton, pointAnchor, Screen, SearchField, showActions, Text } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatRelativeDay } from "@/lib/format";
+import { haptic } from "@/lib/haptics";
 import { perf } from "@/perf";
 import { chatActions } from "./chatActions";
 import { searchChats } from "./db";
@@ -80,7 +81,10 @@ const ChatRow = memo(function ChatRow({ chat, selected, labels, onOpen, onMenu }
       accessibilityLabel={chat.title}
       accessibilityHint="Long press for rename, pin and delete"
       onPress={() => onOpen(chat)}
-      onLongPress={(event) => onMenu(chat, pointAnchor(event))}
+      onLongPress={(event) => {
+        haptic("longPress");
+        onMenu(chat, pointAnchor(event));
+      }}
       delayLongPress={300}
       className={cn("mx-2 rounded-md px-3 py-2.5 active:bg-accent", selected && "bg-accent")}
     >

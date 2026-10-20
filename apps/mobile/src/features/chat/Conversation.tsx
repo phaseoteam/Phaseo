@@ -1,11 +1,12 @@
 import { LegendList, type LegendListRef } from "@legendapp/list/react-native";
-import { useRouter } from "expo-router";
+import { useIsFocused, useRouter } from "expo-router";
 import { ArrowDown, BookOpenText, Code2, Lightbulb, MessageSquareOff, MoreHorizontal, PenLine, type LucideIcon } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { ActivityIndicator, AppState, Pressable, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Button, EmptyState, Header, Icon, IconButton, measureAnchor, Screen, showActions, Text, useToneColor, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
+import { haptic } from "@/lib/haptics";
 import { useAuth } from "@/providers/AuthProvider";
 import { perf } from "@/perf";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
@@ -17,7 +18,7 @@ import { getLive, liveShapes } from "./live";
 import { ConversationContext, ConversationRow, selectedAnswers } from "./Messages";
 import { ModelChipRow, useOpenModelPicker } from "./ModelChips";
 import { useChatModelOptions, useModelLabels } from "./models";
-import { onChatError, sendMessage, startChat, stopChat } from "./runner";
+import { onChatError, onChatSettled, sendMessage, startChat, stopChat } from "./runner";
 import { chatModelStore, draftSettingsStore, useChat, useChatRunning } from "./state";
 import { chatReloaded, useChatWindow } from "./window";
 
@@ -29,6 +30,22 @@ function useChatErrors(chatId: string | null) {
     if (error.code === "chat_privacy_review_required") router.push({ pathname: "/sheets/[kind]", params: { kind: "privacy" } });
     else if (error.code === "unauthorized" || error.code === "signed_out") router.push("/sign-in");
   }), [chatId, router]);
+}
+
+/**
+ * When this chat's answers finish while it's on screen and the app is in front, it's felt: the success haptic, or the
+ * error one if any failed. A stop isn't (the stop press was).
+ */
+function useSettledHaptic(chatId: string) {
+  const focused = useIsFocused();
+  useEffect(() => {
+    if (!focused) return;
+    return onChatSettled((id, outcome) => {
+      if (id !== chatId || AppState.currentState !== "active") return;
+      if (outcome === "done") haptic("success");
+      else if (outcome === "error") haptic("error");
+    });
+  }, [chatId, focused]);
 }
 
 const EMPTY: string[] = [];
@@ -66,6 +83,7 @@ export function Conversation({ chatId, focusMessage, search }: { chatId: string;
   const context = useMemo(() => ({ chatId, labels, settings, workspaceId, focus }), [chatId, labels, settings, workspaceId, focus]);
   const [away, setAway] = useState(false);
   useChatErrors(chatId);
+  useSettledHaptic(chatId);
 
   const renderItem = useCallback(({ item }: { item: ConversationItem }) => <ConversationRow item={item} />, []);
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
