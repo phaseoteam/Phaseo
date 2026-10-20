@@ -132,18 +132,28 @@ publicCompareRouter.get("/compare/selection", async (c) => {
 	}
 });
 
-publicCompareRouter.get("/compare/models", async (c) => {
-	try {
-		const { data, error } = await getDataClient(c.env)
+const COMPARE_CATALOGUE_PAGE_SIZE = 1000;
+
+/**
+ * Every public model in the shape the compare page uses. PostgREST returns at
+ * most 1,000 rows per request, so read the catalogue in pages.
+ */
+async function loadCompareCatalogue(env: Env) {
+	const client = getDataClient(env);
+	const models = [];
+	for (let offset = 0; ; offset += COMPARE_CATALOGUE_PAGE_SIZE) {
+		const { data, error } = await client
 			.from("v2_models")
 			.select("model_slug,name,lab_slug,status,announced_at,released_at,deprecated_at,retired_at,input_modalities,output_modalities,license,metadata,lab:v2_labs!v2_models_lab_slug_fkey(lab_slug,name,country_code,metadata)")
 			.eq("hidden", false)
-			.order("name", { ascending: true });
+			// Names repeat across organisations, so the slug keeps pages stable.
+			.order("name", { ascending: true })
+			.order("model_slug", { ascending: true })
+			.range(offset, offset + COMPARE_CATALOGUE_PAGE_SIZE - 1);
 		if (error) throw error;
-
-		const models = (data ?? []).map((row) => {
+		for (const row of data ?? []) {
 			const organisation = Array.isArray(row.lab) ? row.lab[0] : row.lab;
-			return {
+			models.push({
 				id: row.model_slug,
 				name: row.name,
 				status: row.status ?? null,
@@ -183,12 +193,36 @@ publicCompareRouter.get("/compare/models", async (c) => {
 					socials: [],
 				},
 				model_details: null,
-			};
-		});
+			});
+		}
+		if ((data ?? []).length < COMPARE_CATALOGUE_PAGE_SIZE) return models;
+	}
+}
 
+publicCompareRouter.get("/compare/models", async (c) => {
+	try {
+		const models = await loadCompareCatalogue(c.env);
 		return withPublicCache(c.json({ models }), COMPARE_CACHE);
 	} catch (error) {
 		console.error("[web-api/compare] models failed", error);
 		return c.json({ error: "compare_models_unavailable" }, 503);
+	}
+});
+
+/** Only what the compare picker lists and filters on, so browsers can load it when the picker opens. */
+publicCompareRouter.get("/compare/options", async (c) => {
+	try {
+		const models = (await loadCompareCatalogue(c.env)).map((model) => ({
+			id: model.id,
+			name: model.name,
+			release_date: model.release_date,
+			input_types: model.input_types,
+			output_types: model.output_types,
+			provider: { provider_id: model.provider.provider_id, name: model.provider.name },
+		}));
+		return withPublicCache(c.json({ models }), COMPARE_CACHE);
+	} catch (error) {
+		console.error("[web-api/compare] options failed", error);
+		return c.json({ error: "compare_options_unavailable" }, 503);
 	}
 });
