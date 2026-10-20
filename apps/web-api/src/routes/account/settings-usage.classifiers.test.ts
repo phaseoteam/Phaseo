@@ -80,13 +80,16 @@ describe("request classifier summaries", () => {
 
 	it("applies label filters as jsonb containment", () => {
 		const calls: unknown[][] = [];
-		const query = { contains: (...args: unknown[]) => { calls.push(["contains", ...args]); return query; }, not: (...args: unknown[]) => { calls.push(["not", ...args]); return query; } };
+		const query = { contains: (...args: unknown[]) => { calls.push(["contains", ...args]); return query; }, or: (...args: unknown[]) => { calls.push(["or", ...args]); return query; } };
 		applyRequestLabelFilter(query, { key: "team", value: null, exclude: false });
 		applyRequestLabelFilter(query, { key: "team", value: "search", exclude: true });
+		applyRequestLabelFilter(query, { key: "team", value: "a,b (c)", exclude: true });
 		applyRequestLabelFilter(query, null);
 		expect(calls).toEqual([
 			["contains", "detail_metadata", { labels: [{ key: "team" }] }],
-			["not", "detail_metadata", "cs", '{"labels":[{"key":"team","value":"search"}]}'],
+			// Requests without metadata have no labels, so "is not" includes them.
+			["or", 'detail_metadata.is.null,detail_metadata.not.cs."{\\"labels\\":[{\\"key\\":\\"team\\",\\"value\\":\\"search\\"}]}"'],
+			["or", 'detail_metadata.is.null,detail_metadata.not.cs."{\\"labels\\":[{\\"key\\":\\"team\\",\\"value\\":\\"a,b (c)\\"}]}"'],
 		]);
 	});
 });
@@ -113,11 +116,11 @@ describe("usage routes with request classifiers", () => {
 		]);
 		expect(anyValue.status).toBe(200);
 		expect(notValue.status).toBe(200);
-		const requestFilters = calls.filter((call) => call.url.pathname.endsWith("/gateway_requests")).map((call) => call.url.searchParams.get("detail_metadata"));
-		expect(requestFilters).toEqual(expect.arrayContaining([
-			'cs.{"labels":[{"key":"department"}]}',
-			'not.cs.{"labels":[{"key":"department","value":"legal"}]}',
-		]));
+		const requestCalls = calls.filter((call) => call.url.pathname.endsWith("/gateway_requests"));
+		expect(requestCalls.map((call) => call.url.searchParams.get("detail_metadata"))).toContain('cs.{"labels":[{"key":"department"}]}');
+		expect(requestCalls.flatMap((call) => call.url.searchParams.getAll("or"))).toContain(
+			'(detail_metadata.is.null,detail_metadata.not.cs."{\\"labels\\":[{\\"key\\":\\"department\\",\\"value\\":\\"legal\\"}]}")',
+		);
 		// Only an exact key and value has rollup totals.
 		expect(calls.some((call) => call.url.pathname.endsWith("/rpc/get_private_usage_overview"))).toBe(false);
 		expect((await anyValue.json() as any).data.labelSummary).toBeNull();
@@ -211,7 +214,7 @@ describe("usage routes with request classifiers", () => {
 			body: JSON.stringify({ workspaceId: "workspace-1", operation: "paginatedRequests", args: [{ timeRange: { from: "2026-10-01T00:00:00Z", to: "2026-10-02T00:00:00Z" }, pageSize: 25, labelKey: "department", labelValue: null, labelOperator: "is_not" }] }),
 		}, env);
 		expect(response.status).toBe(200);
-		const filters = calls.filter((call) => call.url.pathname.endsWith("/gateway_requests")).map((call) => call.url.searchParams.get("detail_metadata"));
-		expect(filters[0]).toBe('not.cs.{"labels":[{"key":"department"}]}');
+		const filters = calls.filter((call) => call.url.pathname.endsWith("/gateway_requests")).map((call) => call.url.searchParams.getAll("or"));
+		expect(filters[0]).toContain('(detail_metadata.is.null,detail_metadata.not.cs."{\\"labels\\":[{\\"key\\":\\"department\\"}]}")');
 	});
 });

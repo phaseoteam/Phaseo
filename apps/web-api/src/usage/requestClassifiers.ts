@@ -100,14 +100,16 @@ export function isExactLabelFilter(filter: RequestLabelFilter | null): filter is
 /**
  * Applies the filter with jsonb containment on detail_metadata, the same
  * per-row check the existing key and value filter uses; "any value" and
- * "is not" cost the same.
+ * "is not" cost the same. NOT on a null column is null rather than true, so
+ * "is not" names requests without metadata explicitly.
  */
-export function applyRequestLabelFilter<Q extends { contains: (column: string, value: any) => Q; not: (column: string, operator: string, value: any) => Q }>(query: Q, filter: RequestLabelFilter | null): Q {
+export function applyRequestLabelFilter<Q extends { contains: (column: string, value: any) => Q; or: (filters: string) => Q }>(query: Q, filter: RequestLabelFilter | null): Q {
 	if (!filter) return query;
 	const label = filter.value == null ? { key: filter.key } : { key: filter.key, value: filter.value };
-	return filter.exclude
-		? query.not("detail_metadata", "cs", JSON.stringify({ labels: [label] }))
-		: query.contains("detail_metadata", { labels: [label] });
+	if (!filter.exclude) return query.contains("detail_metadata", { labels: [label] });
+	// Quoted so commas and parentheses in a label value stay part of the value.
+	const quoted = JSON.stringify(JSON.stringify({ labels: [label] }));
+	return query.or(`detail_metadata.is.null,detail_metadata.not.cs.${quoted}`);
 }
 
 /** Builds a filter from pagination params, ignoring anything malformed rather than failing the page. */
