@@ -11105,6 +11105,33 @@ components:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: >-
+            What the request costs you, in US dollars: the amount charged to your
+            credits, the same figure as `cost_nanos`. Returned on Chat Completions,
+            Responses, Messages and embeddings responses once the request is priced.
+            On a stream it is the price of the final usage; a BYOK stream gives
+            that price as `cost_details.upstream_inference_cost` instead, because
+            its service fee is worked out when the stream ends.
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: Breakdown of the request's cost.
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            On a BYOK request, what the provider charges your own key for the
+            inference, in US dollars, at the model's listed prices. Null when
+            the request runs on Phaseo credits, where `cost` is the whole
+            charge.
+          example: null
     InputTokensDetails:
       type: object
       description: Breakdown of the input tokens.
@@ -11391,6 +11418,19 @@ components:
               description: Input tokens written with a 1-hour cache lifetime.
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: >-
+            What the request costs you, in US dollars: the amount charged to your
+            credits, the same figure as `cost_nanos`. Returned on Chat Completions,
+            Responses, Messages and embeddings responses once the request is priced.
+            On a stream it is the price of the final usage; a BYOK stream gives
+            that price as `cost_details.upstream_inference_cost` instead, because
+            its service fee is worked out when the stream ends.
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
       description: >-
@@ -16744,8 +16784,15 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: >-
+            Plaintext API key, the same value as `data.key`. Returned only once,
+            at creation time.
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false
