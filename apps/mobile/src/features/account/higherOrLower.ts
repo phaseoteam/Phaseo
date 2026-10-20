@@ -164,14 +164,3 @@ export function describeFigure(contestant: Contestant, kind: QuestionKind): stri
 export function shareMessage(streak: number) {
   return `I got a streak of ${streak} on Phaseo's Higher or lower`;
 }
-
-/** Labs with the most models in the game: the logos that float in the version art. */
-export function topLabs(pool: Contestant[], limit: number) {
-  const labs = new Map<string, { id: string; name: string; colour: string | null; count: number }>();
-  for (const contestant of pool) {
-    const lab = labs.get(contestant.orgId) ?? { id: contestant.orgId, name: contestant.orgName, colour: contestant.colour, count: 0 };
-    lab.count += 1;
-    labs.set(contestant.orgId, lab);
-  }
-  return [...labs.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)).slice(0, limit).map(({ id, name, colour }) => ({ id, name, colour }));
-}

@@ -1,6 +1,8 @@
+import fs from "fs";
+import path from "path";
 import type { ModelCard } from "@/lib/api/models";
 import {
-  ART_LABS, FALLBACK_LABS, TAP_GAP_MS, TAPS_TO_OPEN, catalogueFact, isLightColour, newestByLab, nextTap, pickLabs, shortVersion, versionDetail,
+  ART_LABS, FRONTIER_LABS, TAP_GAP_MS, TAPS_TO_OPEN, catalogueFact, hasLogo, isLightColour, newestByLab, nextTap, shortVersion, versionDetail,
   type TapRun,
 } from "./versionArt";
 
@@ -117,18 +119,28 @@ describe("newestByLab", () => {
   });
 });
 
-describe("pickLabs", () => {
-  it("takes the labs with the most playable models", () => {
-    const models = Array.from({ length: 14 }, (_, lab) => Array.from({ length: 14 - lab }, (_, index) => card(`lab${lab}/m${index}`))).flat();
-    const labs = pickLabs(models, NOW);
-    expect(labs).toHaveLength(ART_LABS);
-    expect(labs[0]).toEqual({ id: "lab0", name: "lab0", colour: null });
+describe("the frontier labs", () => {
+  const ORGANISATIONS = path.resolve(__dirname, "../../../../../packages/data/catalog/src/data/organisations");
+
+  it("are a fixed list, in order", () => {
+    expect(FRONTIER_LABS.map((lab) => lab.name)).toEqual(["OpenAI", "Anthropic", "Google", "Meta", "SpaceXAI", "DeepSeek", "Mistral", "Qwen"]);
   });
 
-  it("falls back to the fixed labs offline or with too few", () => {
-    expect(pickLabs([], NOW)).toBe(FALLBACK_LABS);
-    expect(pickLabs([card("a/x"), card("b/y")], NOW)).toBe(FALLBACK_LABS);
-    expect(FALLBACK_LABS).toHaveLength(ART_LABS);
+  it("use the catalogue's organisation IDs and names, so a tap finds the newest model", () => {
+    for (const lab of FRONTIER_LABS) {
+      const organisation = JSON.parse(fs.readFileSync(path.join(ORGANISATIONS, lab.id, "organisation.json"), "utf8")) as { organisation_id: string; name: string };
+      expect({ id: organisation.organisation_id, name: organisation.name }).toEqual(lab);
+    }
+    // xAI's models are listed under SpaceXAI.
+    expect(FRONTIER_LABS.map((lab) => lab.id)).toContain("spacex-ai");
+  });
+
+  it("all have a logo the app can show, so all eight float", () => {
+    expect(FRONTIER_LABS.every((lab) => hasLogo(lab.id))).toBe(true);
+    expect(ART_LABS).toEqual(FRONTIER_LABS);
+    // xAI's old IDs resolve to the same logo.
+    expect(hasLogo("x-ai")).toBe(true);
+    expect(hasLogo("not-a-lab")).toBe(false);
   });
 });
 

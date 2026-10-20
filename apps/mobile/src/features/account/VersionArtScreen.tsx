@@ -22,7 +22,7 @@ import { BUILD_COMMIT, BUILD_NUMBER } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { burstCurve, burstPosition, clamp, DRIFT_SPEED, dragTo, fling, ringLayout, step, type Box, type Point } from "./floating";
-import { catalogueFact, isLightColour, newestByLab, pickLabs, shortVersion, versionDetail, type ArtLab } from "./versionArt";
+import { ART_LABS, catalogueFact, isLightColour, newestByLab, shortVersion, versionDetail, type ArtLab } from "./versionArt";
 
 /** The Phaseo mark, from apps/web/public/logo_light.svg (a 64 × 64 view box). */
 const MARK_PATH = "M19.8574 56H13V8H19.8574V56ZM31.7197 8C37.9368 8 42.8288 9.4856 46.3945 12.457C49.9601 15.4284 51.7432 19.5201 51.7432 24.7314C51.7432 29.9428 49.9601 34.0344 46.3945 37.0059C42.8288 39.9773 37.9368 41.4629 31.7197 41.4629H23.2852V35.4971H31.5146C35.8573 35.497 39.1714 34.5824 41.457 32.7539C43.7426 30.8796 44.8857 28.2056 44.8857 24.7314C44.8857 21.2572 43.7427 18.6059 41.457 16.7773C39.1714 14.9031 35.8573 13.9659 31.5146 13.9658H23.2852V8H31.7197Z";
@@ -36,8 +36,6 @@ const HOLD_MS = 1000;
 const INFO_MS = 2600;
 const INFO_WIDTH = 184;
 const INFO_HEIGHT = 50;
-/** If the catalogue hasn't come by then, the fixed labs float instead. */
-const LABS_WAIT_MS = 1500;
 /** Space kept between the logos and the safe area's edges, and round the middle block. */
 const EDGE = 8;
 const BLOCK_MARGIN = 12;
@@ -48,8 +46,7 @@ const lift = () => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).c
 /** Starts loading what the art shows (the catalogue and the labs' logos) while the taps are still coming. */
 export function prefetchVersionArt(queryClient: QueryClient, theme: "light" | "dark") {
   void queryClient.prefetchQuery(catalogueQuery);
-  const catalogue = queryClient.getQueryData(catalogueQuery.queryKey);
-  const uris = pickLabs(catalogue?.models ?? [], Date.now()).map((lab) => logoUri(lab.id, theme)).filter((uri): uri is string => Boolean(uri));
+  const uris = ART_LABS.map((lab) => logoUri(lab.id, theme)).filter((uri): uri is string => Boolean(uri));
   void Image.prefetch(uris, "disk").catch(() => false);
 }
 
@@ -79,15 +76,8 @@ export function VersionArtScreen() {
   const burst = useSharedValue(0);
   const markScale = useSharedValue(1);
 
-  // The labs are chosen once per opening, so logos never swap mid-flight: the catalogue's top labs when it's in, or
-  // the fixed list if it hasn't come within LABS_WAIT_MS.
-  const [labs, setLabs] = useState<ArtLab[] | null>(null);
-  const [waited, setWaited] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setWaited(true), LABS_WAIT_MS);
-    return () => clearTimeout(timer);
-  }, []);
-  if (!labs && (models || waited)) setLabs(pickLabs(models ?? [], catalogue.dataUpdatedAt));
+  // The frontier labs, a fixed list, so they float straight away; the catalogue only adds each one's newest model.
+  const labs = ART_LABS;
   const newest = useMemo(() => newestByLab(models ?? [], catalogue.dataUpdatedAt), [models, catalogue.dataUpdatedAt]);
   const fact = models ? catalogueFact(models) : null;
   const factLine = fact ?? (catalogue.isFetching ? "Counting models…" : "Can't reach the catalogue right now");
@@ -102,7 +92,7 @@ export function VersionArtScreen() {
     right: area.width - insets.right - EDGE,
     bottom: area.height - insets.bottom - EDGE,
   } : null, [area, insets.bottom, insets.left, insets.right, insets.top]);
-  const ring = useMemo(() => (labs && bounds && block ? ringLayout(labs.length, tile, bounds, block) : null), [block, bounds, labs, tile]);
+  const ring = useMemo(() => (bounds && block ? ringLayout(labs.length, tile, bounds, block) : null), [block, bounds, labs, tile]);
 
   // The gestures and frame callbacks read the layout from here, on the UI thread.
   const boundsValue = useSharedValue<Box>({ left: 0, top: 0, right: 0, bottom: 0 });
@@ -199,7 +189,7 @@ export function VersionArtScreen() {
         </View>
       </View>
 
-      {labs && ring ? (
+      {ring ? (
         <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
           {labs.map((lab, index) => (
             <Floater
@@ -404,7 +394,7 @@ const Floater = memo(function Floater({ lab, index, home, size, bounds, block, c
           style={[{ position: "absolute", left: 0, top: 0 }, tileStyle]}
         >
           <View className="rounded-md bg-background" style={{ elevation: 3, shadowColor: "#000", shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } }}>
-            <Logo id={lab.id} label={lab.name} colour={lab.colour} size={size} />
+            <Logo id={lab.id} label={lab.name} size={size} />
           </View>
         </Animated.View>
       </GestureDetector>

@@ -1,6 +1,6 @@
 import type { ModelCard } from "@/lib/api/models";
 import {
-  buildPool, describeFigure, pickRound, QUESTION_KINDS, questionsFor, shareMessage, topLabs, toContestant, winner,
+  buildPool, describeFigure, pickRound, QUESTION_KINDS, questionsFor, shareMessage, toContestant, winner,
   type Contestant,
 } from "./higherOrLower";
 
@@ -197,13 +197,8 @@ describe("describeFigure", () => {
   });
 });
 
-describe("sharing and the celebration", () => {
+describe("sharing", () => {
   it("shares the streak in a plain sentence", () => {
     expect(shareMessage(12)).toBe("I got a streak of 12 on Phaseo's Higher or lower");
-  });
-
-  it("celebrates with the labs that have the most models", () => {
-    const pool = [contestant("1", { orgId: "qwen", orgName: "Qwen" }), contestant("2", { orgId: "qwen", orgName: "Qwen" }), contestant("3", { orgId: "openai", orgName: "OpenAI" }), contestant("4", { orgId: "anthropic", orgName: "Anthropic" })];
-    expect(topLabs(pool, 2).map((lab) => lab.id)).toEqual(["qwen", "anthropic"]);
   });
 });

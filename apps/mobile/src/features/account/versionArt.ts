@@ -1,7 +1,8 @@
 import type { ModelCard } from "@/lib/api/models";
 import { isRetired, modelName, organisationName } from "@/lib/catalogue";
 import { formatNumber } from "@/lib/format";
-import { buildPool, topLabs } from "./higherOrLower";
+// The web's logo resolver is plain data and functions (the Logo component uses it too).
+import { resolveLogo } from "../../../../web/src/lib/logos";
 
 /**
  * The version art, Phaseo's take on Android's version easter egg: five quick taps on Account → Version and build
@@ -51,31 +52,31 @@ export function catalogueFact(models: ModelCard[]): string | null {
   return `Tracking ${plural(ids.size, "model", "models")} from ${plural(labs.size, "lab", "labs")}`;
 }
 
-export type ArtLab = { id: string; name: string; colour: string | null };
+/** A lab whose logo floats in the art: its catalogue organisation ID (also its logo's ID) and its name. */
+export type ArtLab = { id: string; name: string };
 
-/** Big labs for when the catalogue hasn't loaded (offline, or the first open). */
-export const FALLBACK_LABS: ArtLab[] = [
-  { id: "openai", name: "OpenAI", colour: null },
-  { id: "anthropic", name: "Anthropic", colour: null },
-  { id: "google", name: "Google", colour: null },
-  { id: "meta", name: "Meta", colour: null },
-  { id: "mistral", name: "Mistral", colour: null },
-  { id: "deepseek", name: "DeepSeek", colour: null },
-  { id: "qwen", name: "Qwen", colour: null },
-  { id: "z-ai", name: "Z.ai", colour: null },
-  { id: "minimax", name: "MiniMax", colour: null },
-  { id: "moonshotai", name: "Moonshot AI", colour: null },
-  { id: "nvidia", name: "NVIDIA", colour: null },
-  { id: "cohere", name: "Cohere", colour: null },
+/**
+ * The frontier labs, a fixed list in this order. The IDs are the catalogue's organisation IDs, so a tapped logo can
+ * show the lab's newest model; xAI is listed as SpaceXAI, the catalogue's and the logo's name since the merger.
+ */
+export const FRONTIER_LABS: readonly ArtLab[] = [
+  { id: "openai", name: "OpenAI" },
+  { id: "anthropic", name: "Anthropic" },
+  { id: "google", name: "Google" },
+  { id: "meta", name: "Meta" },
+  { id: "spacex-ai", name: "SpaceXAI" },
+  { id: "deepseek", name: "DeepSeek" },
+  { id: "mistral", name: "Mistral" },
+  { id: "qwen", name: "Qwen" },
 ];
 
-export const ART_LABS = 12;
-
-/** The labs that float: the twelve with the most models in Higher or lower, or the fixed list when that's too few. */
-export function pickLabs(models: ModelCard[], now: number): ArtLab[] {
-  const top = topLabs(buildPool(models, now), ART_LABS);
-  return top.length >= 6 ? top : FALLBACK_LABS;
+/** Whether the app has a logo for an ID in both themes (the same lookup the Logo component makes). */
+export function hasLogo(id: string) {
+  return (["light", "dark"] as const).every((theme) => Boolean(resolveLogo(id, { theme, fallbackToColor: true })?.src));
 }
+
+/** The labs that float: the frontier labs the app has a logo for, so none shows as a letter. */
+export const ART_LABS: readonly ArtLab[] = FRONTIER_LABS.filter((lab) => hasLogo(lab.id));
 
 /**
  * Each lab's newest model that has been released, for the line under a tapped logo. Retired models and `:free`
