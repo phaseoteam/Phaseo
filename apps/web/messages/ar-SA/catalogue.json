@@ -2976,7 +2976,14 @@
 			"rerank": "إعادة الترتيب",
 			"embeddings": "التضمينات"
 		},
-		"scheduledRelease": "غير قابل للتوجيه بعد. مقرر لإصدار مستقبلي."
+		"scheduledRelease": "غير قابل للتوجيه بعد. مقرر لإصدار مستقبلي.",
+		"viewDetails": "عرض الأسعار والمعلمات",
+		"details": "التفاصيل",
+		"endpoints": "نقاط النهاية",
+		"parametersCount": "{count, plural, zero {لا معلمات} one {معلمة واحدة} two {معلمتان} few {# معلمات} many {# معلمة} other {# معلمة}}",
+		"openModelPage": "فتح صفحة النموذج",
+		"released": "الإصدار",
+		"noPricing": "الأسعار غير مدرجة"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "نظرة على الذكاء الاصطناعي في {country}",

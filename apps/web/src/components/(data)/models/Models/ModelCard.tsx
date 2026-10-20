@@ -14,24 +14,9 @@ import {
 } from "react";
 import {
 	ArrowUpRight,
-	ArrowUpDown,
 	Check,
 	Copy,
-	Type,
-	ImageIcon,
-	Captions,
-	Headphones,
-	Music4,
-	Radio,
-	Speech,
-	Video,
-	Binary,
 	BadgeAlert,
-	FileText,
-	CircleDot,
-	Scale,
-	TextSelect,
-	type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -42,6 +27,7 @@ import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import { hasPassedLifecycleDate } from "@/lib/models/modelLifecycle";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
+import { getModalityIcon } from "./modalityIcons";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?:
@@ -417,42 +403,6 @@ function summarizeDuplicatePricingItems(
 	if (uniqueValues.length === 0) return null;
 	if (uniqueValues.length === 1) return uniqueValues[0] ?? null;
 	return summarizePricingValues(uniqueValues, formatNumber);
-}
-
-function getModalityIcon(value: string): LucideIcon {
-	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
-	if (normalized.includes("extract")) return TextSelect;
-	if (normalized.includes("decision")) return Scale;
-	if (normalized.includes("realtime") || normalized.includes("real time")) {
-		return Radio;
-	}
-	if (normalized.includes("embed")) return Binary;
-	if (normalized.includes("rerank") || normalized.includes("re rank")) {
-		return ArrowUpDown;
-	}
-	if (normalized.includes("moderat")) return BadgeAlert;
-	if (normalized.includes("file")) return FileText;
-	if (normalized.includes("image")) return ImageIcon;
-	if (normalized.includes("music")) return Music4;
-	if (
-		normalized.includes("transcri") ||
-		normalized.includes("speech to text") ||
-		normalized.includes("stt")
-	) {
-		return Captions;
-	}
-	if (
-		normalized.includes("text to speech") ||
-		normalized.includes("audio speech") ||
-		normalized.includes("speech synth") ||
-		normalized.includes("tts")
-	) {
-		return Speech;
-	}
-	if (normalized.includes("video")) return Video;
-	if (normalized.includes("audio")) return Headphones;
-	if (normalized.includes("text")) return Type;
-	return CircleDot;
 }
 
 function ModelCardScrollRail({

@@ -2976,7 +2976,14 @@
 			"rerank": "Reclassificação",
 			"embeddings": "Vetores de incorporação"
 		},
-		"scheduledRelease": "Ainda não pode ser roteado. Programado para um lançamento futuro."
+		"scheduledRelease": "Ainda não pode ser roteado. Programado para um lançamento futuro.",
+		"viewDetails": "Ver preços e parâmetros",
+		"details": "Detalhes",
+		"endpoints": "Endpoints",
+		"parametersCount": "{count, plural, one {# parâmetro} other {# parâmetros}}",
+		"openModelPage": "Abrir página do modelo",
+		"released": "Lançamento",
+		"noPricing": "Preços não informados"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "Panorama de IA: {country}",

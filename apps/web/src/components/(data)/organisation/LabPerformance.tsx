@@ -8,6 +8,7 @@ import type { OrganisationModelCards } from "@/lib/fetchers/organisations/types"
 
 type Metric = {
 	icon: typeof Gauge;
+	barClassName: string;
 	id: "throughput" | "latency" | "usage";
 	label: string;
 	format: (value: number, model: OrganisationModelCards) => ReactNode;
@@ -29,6 +30,7 @@ export default async function LabPerformance({
 	const metrics: Metric[] = [
 		{
 			icon: Gauge,
+			barClassName: "bg-[hsl(189,90%,45%)]",
 			id: "throughput",
 			label: t("throughput"),
 			format: (value) => <><DisplayNumber value={value} options={{ maximumFractionDigits: 1, notation: "standard" }} /> t/s</>,
@@ -36,6 +38,7 @@ export default async function LabPerformance({
 		},
 		{
 			icon: Timer,
+			barClassName: "bg-[hsl(32,95%,44%)]",
 			id: "latency",
 			label: t("timeToFirstToken"),
 			format: (value) => <><DisplayNumber value={Math.round(value)} options={{ maximumFractionDigits: 0, notation: "standard" }} /> ms</>,
@@ -43,6 +46,7 @@ export default async function LabPerformance({
 		},
 		{
 			icon: Activity,
+			barClassName: "bg-[hsl(262,83%,58%)]",
 			id: "usage",
 			label: t("weeklyUsage"),
 			format: (value, model) => {
@@ -64,7 +68,11 @@ export default async function LabPerformance({
 			.sort((a, b) =>
 				metric.id === "latency" ? a.value - b.value : b.value - a.value,
 			)
-			.slice(0, 3),
+			.slice(0, 5),
+	})).map((panel) => ({
+		...panel,
+		leaderUnit: panel.models[0]?.model.weekly_usage_unit ?? null,
+		max: Math.max(0, ...panel.models.map((entry) => entry.value)),
 	}));
 	const hasTelemetry = panels.some((panel) => panel.models.length > 0);
 
@@ -86,19 +94,31 @@ export default async function LabPerformance({
 								{panel.models[0] ? panel.format(panel.models[0].value, panel.models[0].model) : "—"}
 							</p>
 							<div className="mt-4 space-y-1">
-								{panel.models.map(({ model, value }) => (
-									<Link
-										key={model.model_id}
-										href={`/models/${model.model_id}`}
-										className="group flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted/60"
-									>
-										<span className="truncate font-medium">{model.name}</span>
-										<span className="flex shrink-0 items-center gap-1 text-muted-foreground">
-											{panel.format(value, model)}
-											<ArrowUpRight className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
-										</span>
-									</Link>
-								))}
+								{panel.models.map(({ model, value }) => {
+									// Usage units differ between models (tokens, images), so
+									// only compare bars within the same unit as the leader.
+									const comparable = panel.id !== "usage" || model.weekly_usage_unit === panel.leaderUnit;
+									const max = panel.max;
+									const width = comparable && max > 0 ? Math.max(4, (value / max) * 100) : 0;
+									return (
+										<Link
+											key={model.model_id}
+											href={`/models/${model.model_id}`}
+											className="group block rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted/60"
+										>
+											<span className="flex items-center justify-between gap-3">
+												<span className="truncate font-medium">{model.name}</span>
+												<span className="flex shrink-0 items-center gap-1 tabular-nums text-muted-foreground">
+													{panel.format(value, model)}
+													<ArrowUpRight className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+												</span>
+											</span>
+											<span aria-hidden="true" className="mt-1.5 block h-1.5 overflow-hidden rounded-[2px] bg-muted">
+												<span className={`block h-full rounded-[2px] ${panel.barClassName}`} style={{ width: `${width}%` }} />
+											</span>
+										</Link>
+									);
+								})}
 								{panel.models.length === 0 ? (
 									<p className="px-2 py-1.5 text-xs text-muted-foreground">
 										{t("noRecentData")}

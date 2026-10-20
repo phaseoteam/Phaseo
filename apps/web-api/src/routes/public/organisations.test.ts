@@ -43,17 +43,7 @@ describe("public organisation routes", () => {
 					organisation_links: [{ platform: "website", url: "https://openai.com" }],
 				}]), { status: 200 });
 			}
-			if (url.includes("/v2_models?")) {
-				return new Response(JSON.stringify([{
-					model_slug: "openai/gpt-test",
-					name: "GPT Test",
-					status: "active",
-					lab_slug: "openai",
-					hidden: false,
-					released_at: "2026-07-01",
-					announced_at: "2026-06-30",
-				}]), { status: 200 });
-			}
+			if (url.includes("/v2_models?")) throw new Error("organisation models must come from the catalogue");
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 
@@ -92,7 +82,12 @@ describe("public organisation routes", () => {
 			},
 		});
 		await expect(models.json()).resolves.toMatchObject({
-			models: [{ model_id: "openai/gpt-test", status: "active" }],
+			models: [{
+				model_id: "openai/gpt-test",
+				organisation_name: "OpenAI",
+				status: "active",
+				primary_group_key: "2026-07",
+			}],
 		});
 	});
 

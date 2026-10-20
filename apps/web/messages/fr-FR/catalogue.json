@@ -2976,7 +2976,14 @@
 			"rerank": "Reclassement",
 			"embeddings": "Représentations vectorielles"
 		},
-		"scheduledRelease": "Pas encore routable. Publication prévue ultérieurement."
+		"scheduledRelease": "Pas encore routable. Publication prévue ultérieurement.",
+		"viewDetails": "Voir les tarifs et les paramètres",
+		"details": "Détails",
+		"endpoints": "Endpoints",
+		"parametersCount": "{count, plural, one {# paramètre} other {# paramètres}}",
+		"openModelPage": "Ouvrir la page du modèle",
+		"released": "Sortie",
+		"noPricing": "Tarifs non indiqués"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "Panorama de l’IA : {country}",

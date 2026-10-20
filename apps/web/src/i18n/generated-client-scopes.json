@@ -894,6 +894,8 @@
     "Catalogue.modelDetail.providerTable.statusDescriptions.internalTesting",
     "Catalogue.modelDetail.providerTable.statuses.comingSoon",
     "Catalogue.modelDetail.providerTable.statuses.inactive",
+    "Catalogue.models.priceInputOutput",
+    "Catalogue.models.viewDetails",
     "Catalogue.providerModelList",
     "Catalogue.providers",
     "Common.ui.publicModelCopy.changePercent",

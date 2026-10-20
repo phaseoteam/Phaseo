@@ -75,6 +75,7 @@ export default async function Page({
 }) {
 	const t = await getTranslations("Catalogue.organisations");
 	const tNav = await getTranslations("Common.nav");
+	const tSections = await getTranslations("Catalogue.models.detail.navigation");
 	const { organisationId } = await params;
 
 	const organisation = await fetchFrontendOrganisation(organisationId, 12).catch(() => null);
@@ -185,7 +186,7 @@ export default async function Page({
 				organisationId={organisationId}
 				tocItems={[
 					...(organisation.description
-						? [{ id: "about", label: t("aboutHeading", { name: organisation.name }) }]
+						? [{ id: "about", label: tSections("about") }]
 						: []),
 					{ id: "performance", label: t("performanceTitle") },
 					{ id: "latest-models", label: t("latestModelsTitle") },
