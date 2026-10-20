@@ -10291,6 +10291,15 @@ components:
           type: string
         reasoning_content:
           type: string
+          description: >-
+            The model's reasoning text, when the provider returns it. Streamed
+            as delta.reasoning_content.
+        reasoning:
+          type: string
+          description: >-
+            The same reasoning text as reasoning_content, under the name some
+            clients read. Streamed as delta.reasoning. Accepted on input as an
+            alias for reasoning_content.
         reasoning_details:
           type: array
           items:
@@ -10897,7 +10906,9 @@ components:
     TextToolChoice:
       description: >
         Tool selection strategy. Phaseo server-tool types are accepted and
-        rewritten into upstream function/tool targets.
+        rewritten into upstream function/tool targets. An allowed_tools object
+        is sent as is to OpenAI; other providers receive its mode (auto or
+        required), or a forced call when required allows exactly one tool.
       oneOf:
         - type: string
           enum:
@@ -11684,6 +11695,26 @@ components:
             $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
         encrypted_content:
           type: string
+          description: >-
+            Reasoning state from an earlier response, sent back unchanged.
+            A raw value is read as OpenAI's unless format names another
+            provider.
+        signature:
+          type: string
+          description: >-
+            On a reasoning item, a raw provider signature, such as a Claude
+            thinking signature or a Gemini thought signature. Requires format.
+        format:
+          type: string
+          description: >-
+            On a reasoning item, the provider format of signature or
+            encrypted_content.
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: Responses API output item.
@@ -11725,8 +11756,22 @@ components:
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: Reasoning text in the content of a reasoning output item.
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:
