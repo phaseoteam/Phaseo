@@ -1,0 +1,58 @@
+{
+  "model_id": "mistral/voxtral-mini-transcribe-realtime-3",
+  "organisation_id": "mistral",
+  "name": "Voxtral Mini Transcribe Realtime 3",
+  "status": "Available",
+  "previous_model_id": "mistral/voxtral-mini-transcribe-realtime",
+  "description": "Voxtral Mini Transcribe Realtime 3 is Mistral's streaming speech-to-text model for agentic and live-audio use. It has adjustable latency from 80 ms to 2,400 ms, built-in end-of-turn detection, context biasing, and speaker diarization in a single WebSocket session. It is in public preview.",
+  "announced_date": "2026-10-20T00:00:00",
+  "release_date": "2026-10-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "audio",
+  "output_types": "text,audio_stt",
+  "api_model_id": "mistral/voxtral-mini-transcribe-realtime-3",
+  "links": [
+    {
+      "kind": "documentation",
+      "title": "Official model card",
+      "url": "https://docs.mistral.ai/models/voxtral-mini-transcribe-realtime-3-0"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "audio",
+  "knowledge_cutoff": null,
+  "limits": { "context": null, "input": null, "output": null },
+  "modalities": { "input": ["audio/*"], "output": ["text"] },
+  "reasoning": { "supported": false, "options": [] },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": false,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": false,
+  "sources": [
+    {
+      "kind": "model_card",
+      "url": "https://docs.mistral.ai/models/voxtral-mini-transcribe-realtime-3-0",
+      "accessed_at": "2026-10-20T00:00:00Z",
+      "notes": "Official identity, version, public-preview status, latency range, turn detection, and $0.008 per-minute price. The card shows October 20, 2026 as its date, used here as the release date."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-10-20T00:00:00Z",
+    "notes": "Identity, price, and realtime capabilities verified against Mistral's model card."
+  },
+  "last_updated": "2026-10-20T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

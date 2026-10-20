@@ -1,0 +1,40 @@
+{
+  "key": "mistral:mistral/voxtral-mini-transcribe-realtime-3:audio.transcribe",
+  "api_provider_id": "mistral",
+  "provider_slug": "mistral",
+  "api_model_id": "mistral/voxtral-mini-transcribe-realtime-3",
+  "capability_id": "audio.transcribe",
+  "rules": [
+    {
+      "meter": "input_audio_minutes",
+      "unit": "minute",
+      "unit_size": 1,
+      "price_per_unit": 0.008,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Mistral lists Voxtral Mini Transcribe Realtime 3 at $0.008 per input audio minute.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-10-20T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.mistral.ai/models/voxtral-mini-transcribe-realtime-3-0"
+    }
+  ],
+  "regions": [],
+  "service_tiers": ["standard"],
+  "sources": [
+    {
+      "kind": "pricing",
+      "url": "https://docs.mistral.ai/models/voxtral-mini-transcribe-realtime-3-0",
+      "accessed_at": "2026-10-20T00:00:00Z",
+      "notes": "First-party per-minute price on the model card. The general pricing page did not list this model on the day it launched."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-10-20T00:00:00Z",
+    "notes": "Price and billing unit verified against Mistral's model card."
+  }
+}

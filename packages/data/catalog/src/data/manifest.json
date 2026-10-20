@@ -741,7 +741,9 @@
       "mistral/mistral-nemo-2407",
       "mistral/mistral-small-24b-2501",
       "mistral/leanstral-1.5:free",
-      "mistral/mistral-small-3.2-24b-instruct"
+      "mistral/mistral-small-3.2-24b-instruct",
+      "mistral/voxtral-mini-transcribe-3",
+      "mistral/voxtral-small-transcribe-3"
     ],
     "moonshotai": [
       "moonshotai/kimi-k1.5",

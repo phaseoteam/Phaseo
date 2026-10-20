@@ -1,0 +1,70 @@
+{
+  "model_id": "mistral/voxtral-tts-3",
+  "organisation_id": "mistral",
+  "name": "Voxtral TTS 3",
+  "status": "Available",
+  "previous_model_id": "mistral/voxtral-tts",
+  "description": "Voxtral TTS 3 is Mistral's text-to-speech model with zero-shot and professional voice cloning across 9 languages. It streams audio with a time to first audio of about 90 ms and supports 34 emotion tags and 2 pace tags. It is in public preview.",
+  "announced_date": "2026-10-20T00:00:00",
+  "release_date": "2026-10-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,audio",
+  "output_types": "audio_tts",
+  "api_model_id": "mistral/voxtral-tts-3",
+  "links": [
+    {
+      "kind": "documentation",
+      "title": "Official model card",
+      "url": "https://docs.mistral.ai/models/voxtral-mini-tts-3-0"
+    },
+    {
+      "kind": "api_reference",
+      "title": "API Reference",
+      "url": "https://docs.mistral.ai/studio-api/audio/text_to_speech"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "audio",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": null,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": ["text", "audio/*"],
+    "output": ["audio/*"]
+  },
+  "reasoning": { "supported": false, "options": [] },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": false,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": false,
+  "sources": [
+    {
+      "kind": "model_card",
+      "url": "https://docs.mistral.ai/models/voxtral-mini-tts-3-0",
+      "accessed_at": "2026-10-20T00:00:00Z",
+      "notes": "Official identity, version, public-preview status, voice cloning, streaming, and $16 per million characters price. The card shows October 20, 2026 as its date, used here as the release date."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-10-20T00:00:00Z",
+    "notes": "Identity, price, and capabilities verified against Mistral's model card."
+  },
+  "last_updated": "2026-10-20T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}

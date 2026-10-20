@@ -3740,5 +3740,250 @@
             "notes": "Provider support is verified; Phaseo routing remains disabled because the Mistral adapter does not expose the realtime WebSocket transport."
         },
         "rate_limits": []
+    },
+    {
+        "api_model_id": "mistral/voxtral-mini-transcribe-3",
+        "provider_api_model_id": "mistral:mistral/voxtral-mini-transcribe-3",
+        "provider_model_slug": "voxtral-mini-transcribe-3-0",
+        "internal_model_id": "mistral/voxtral-mini-transcribe-3",
+        "is_active_gateway": true,
+        "quantization_scheme": null,
+        "input_modalities": "audio",
+        "output_modalities": "text",
+        "context_length": 32000,
+        "max_output_tokens": null,
+        "effective_from": "2026-10-20T00:00:00Z",
+        "effective_to": null,
+        "capabilities": [
+            {
+                "capability_id": "audio.transcribe",
+                "status": "active",
+                "params": [
+                    { "param_id": "language", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Cannot be combined with timestamp_granularities." },
+                    { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+                    { "param_id": "stream", "provider_min": null, "provider_max": null, "provider_default": false, "notes": "Returns Mistral transcription SSE events when true." },
+                    { "param_id": "timestamp_granularities", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Supports segment and word timestamps." },
+                    { "param_id": "diarize", "provider_min": null, "provider_max": null, "provider_default": false, "notes": "Enables speaker diarization." },
+                    { "param_id": "context_bias", "provider_min": null, "provider_max": 100, "provider_default": null, "notes": "Up to 100 custom words or phrases." }
+                ],
+                "reasoning": null,
+                "tool_call": false,
+                "structured_output": false,
+                "temperature": true,
+                "attachment": true,
+                "input_modalities": ["audio"],
+                "output_modalities": ["text"],
+                "modes": ["sync", "stream"]
+            }
+        ],
+        "routing_status": "active",
+        "routable": true,
+        "regions": { "execution": ["global"], "data": null },
+        "service_tiers": ["standard"],
+        "api": {
+            "formats": ["mistral.audio.transcriptions"],
+            "endpoint": "https://api.mistral.ai/v1/audio/transcriptions",
+            "deployment": "global"
+        },
+        "sources": [
+            {
+                "kind": "model_card",
+                "url": "https://docs.mistral.ai/models/voxtral-mini-transcribe-3-0",
+                "accessed_at": "2026-10-20T00:00:00Z",
+                "notes": "Documents model ID voxtral-mini-transcribe-3-0 (public preview) and the /v1/audio/transcriptions route."
+            },
+            {
+                "kind": "docs",
+                "url": "https://docs.mistral.ai/api/endpoint/audio/transcriptions",
+                "accessed_at": "2026-10-20T00:00:00Z",
+                "notes": "Documents the shared transcription request parameters, JSON response, usage, and SSE streaming."
+            }
+        ],
+        "verification": {
+            "status": "verified",
+            "checked_at": "2026-10-20T00:00:00Z",
+            "notes": "Model ID, route, and price verified against Mistral's model card and API reference. Not yet called live."
+        },
+        "rate_limits": []
+    },
+    {
+        "api_model_id": "mistral/voxtral-small-transcribe-3",
+        "provider_api_model_id": "mistral:mistral/voxtral-small-transcribe-3",
+        "provider_model_slug": "voxtral-small-transcribe-3-0",
+        "internal_model_id": "mistral/voxtral-small-transcribe-3",
+        "is_active_gateway": true,
+        "quantization_scheme": null,
+        "input_modalities": "audio",
+        "output_modalities": "text",
+        "context_length": 32000,
+        "max_output_tokens": null,
+        "effective_from": "2026-10-20T00:00:00Z",
+        "effective_to": null,
+        "capabilities": [
+            {
+                "capability_id": "audio.transcribe",
+                "status": "active",
+                "params": [
+                    { "param_id": "language", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Cannot be combined with timestamp_granularities." },
+                    { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+                    { "param_id": "stream", "provider_min": null, "provider_max": null, "provider_default": false, "notes": "Returns Mistral transcription SSE events when true." },
+                    { "param_id": "timestamp_granularities", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Supports segment and word timestamps." },
+                    { "param_id": "diarize", "provider_min": null, "provider_max": null, "provider_default": false, "notes": "Enables speaker diarization." },
+                    { "param_id": "context_bias", "provider_min": null, "provider_max": 100, "provider_default": null, "notes": "Up to 100 custom words or phrases." }
+                ],
+                "reasoning": null,
+                "tool_call": false,
+                "structured_output": false,
+                "temperature": true,
+                "attachment": true,
+                "input_modalities": ["audio"],
+                "output_modalities": ["text"],
+                "modes": ["sync", "stream"]
+            }
+        ],
+        "routing_status": "active",
+        "routable": true,
+        "regions": { "execution": ["global"], "data": null },
+        "service_tiers": ["standard"],
+        "api": {
+            "formats": ["mistral.audio.transcriptions"],
+            "endpoint": "https://api.mistral.ai/v1/audio/transcriptions",
+            "deployment": "global"
+        },
+        "sources": [
+            {
+                "kind": "model_card",
+                "url": "https://docs.mistral.ai/models/voxtral-small-transcribe-3-0",
+                "accessed_at": "2026-10-20T00:00:00Z",
+                "notes": "Documents model ID voxtral-small-transcribe-3-0 (public preview) and the /v1/audio/transcriptions route."
+            },
+            {
+                "kind": "docs",
+                "url": "https://docs.mistral.ai/api/endpoint/audio/transcriptions",
+                "accessed_at": "2026-10-20T00:00:00Z",
+                "notes": "Documents the shared transcription request parameters, JSON response, usage, and SSE streaming."
+            }
+        ],
+        "verification": {
+            "status": "verified",
+            "checked_at": "2026-10-20T00:00:00Z",
+            "notes": "Model ID, route, and price verified against Mistral's model card and API reference. Not yet called live."
+        },
+        "rate_limits": []
+    },
+    {
+        "api_model_id": "mistral/voxtral-mini-transcribe-realtime-3",
+        "provider_api_model_id": "mistral:mistral/voxtral-mini-transcribe-realtime-3",
+        "provider_model_slug": "voxtral-mini-transcribe-realtime-3-0",
+        "internal_model_id": "mistral/voxtral-mini-transcribe-realtime-3",
+        "is_active_gateway": false,
+        "quantization_scheme": null,
+        "input_modalities": "audio",
+        "output_modalities": "text",
+        "context_length": null,
+        "max_output_tokens": null,
+        "effective_from": "2026-10-20T00:00:00Z",
+        "effective_to": null,
+        "capabilities": [
+            {
+                "capability_id": "audio.transcribe",
+                "status": "active",
+                "params": [
+                    { "param_id": "stream", "provider_min": null, "provider_max": null, "provider_default": true, "notes": "Realtime WebSocket transcription is always streamed." },
+                    { "param_id": "target_streaming_delay_ms", "provider_min": 80, "provider_max": 2400, "provider_default": null, "notes": "Controls the target transcription delay." },
+                    { "param_id": "diarize", "provider_min": null, "provider_max": null, "provider_default": false, "notes": "Speaker diarization is listed on the model card." },
+                    { "param_id": "context_bias", "provider_min": null, "provider_max": null, "provider_default": null, "notes": "Context biasing is listed on the model card." }
+                ],
+                "reasoning": false,
+                "tool_call": false,
+                "structured_output": false,
+                "temperature": false,
+                "attachment": true,
+                "input_modalities": ["audio"],
+                "output_modalities": ["text"],
+                "modes": ["realtime"]
+            }
+        ],
+        "routing_status": null,
+        "routable": false,
+        "regions": { "execution": ["global"], "data": null },
+        "service_tiers": ["standard"],
+        "api": {
+            "formats": ["mistral.audio.transcriptions.realtime"],
+            "endpoint": "wss://api.mistral.ai/v1/audio/transcriptions/realtime",
+            "deployment": "global"
+        },
+        "sources": [
+            {
+                "kind": "model_card",
+                "url": "https://docs.mistral.ai/models/voxtral-mini-transcribe-realtime-3-0",
+                "accessed_at": "2026-10-20T00:00:00Z",
+                "notes": "Documents model ID voxtral-mini-transcribe-realtime-3-0 (public preview), 80 to 2,400 ms latency, turn detection, and the $0.008 per-minute price."
+            },
+            {
+                "kind": "docs",
+                "url": "https://docs.mistral.ai/studio/audio/speech_to_text/realtime_transcription",
+                "accessed_at": "2026-10-20T00:00:00Z",
+                "notes": "Documents the realtime WebSocket transport."
+            }
+        ],
+        "verification": {
+            "status": "verified",
+            "checked_at": "2026-10-20T00:00:00Z",
+            "notes": "Provider support is verified; Phaseo routing remains disabled because the Mistral adapter does not expose the realtime WebSocket transport."
+        },
+        "rate_limits": []
+    },
+    {
+        "api_model_id": "mistral/voxtral-tts-3",
+        "provider_api_model_id": "mistral:mistral/voxtral-tts-3",
+        "provider_model_slug": "voxtral-mini-tts-3-0",
+        "internal_model_id": "mistral/voxtral-tts-3",
+        "is_active_gateway": false,
+        "quantization_scheme": null,
+        "input_modalities": "text,audio",
+        "output_modalities": "audio_tts",
+        "context_length": null,
+        "max_output_tokens": null,
+        "effective_from": "2026-10-20T00:00:00Z",
+        "effective_to": null,
+        "capabilities": [
+            {
+                "capability_id": "audio.speech",
+                "status": "active",
+                "params": [],
+                "reasoning": null,
+                "tool_call": null,
+                "structured_output": null,
+                "temperature": null,
+                "attachment": null,
+                "input_modalities": null,
+                "output_modalities": null,
+                "modes": []
+            }
+        ],
+        "routing_status": null,
+        "routable": false,
+        "regions": { "execution": ["global"], "data": null },
+        "service_tiers": ["standard"],
+        "api": {
+            "formats": ["mistral.audio.speech"],
+            "endpoint": "https://api.mistral.ai/v1/audio/speech",
+            "deployment": "global"
+        },
+        "sources": [
+            {
+                "kind": "model_card",
+                "url": "https://docs.mistral.ai/models/voxtral-mini-tts-3-0",
+                "accessed_at": "2026-10-20T00:00:00Z",
+                "notes": "Documents model ID voxtral-mini-tts-3-0 (public preview), the /v1/audio/speech route, and the $16 per million characters price."
+            }
+        ],
+        "verification": {
+            "status": "verified",
+            "checked_at": "2026-10-20T00:00:00Z",
+            "notes": "Provider support is verified; Phaseo routing remains disabled because the Mistral adapter has no text-to-speech endpoint."
+        },
+        "rate_limits": []
     }
 ]

@@ -1,0 +1,74 @@
+{
+  "model_id": "mistral/voxtral-small-transcribe-3",
+  "organisation_id": "mistral",
+  "name": "Voxtral Small Transcribe 3",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Voxtral Small Transcribe 3 is Mistral's flagship speech-to-text model, with speaker diarization and timestamps. Mistral reports it ahead of Whisper large-v3, GPT-Transcribe, Scribe v2, and Gemini 3.5 Transcribe on its transcription benchmarks, and it also handles translation, speech Q&A, summarization, and function calling. It is in public preview.",
+  "announced_date": "2026-10-20T00:00:00",
+  "release_date": "2026-10-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "audio",
+  "output_types": "text,audio_stt",
+  "api_model_id": "mistral/voxtral-small-transcribe-3",
+  "links": [
+    {
+      "kind": "documentation",
+      "title": "Official model card",
+      "url": "https://docs.mistral.ai/models/voxtral-small-transcribe-3-0"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "family_id": null,
+  "page_notice": null,
+  "model_type": "audio",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 32000,
+    "input": null,
+    "output": null
+  },
+  "modalities": {
+    "input": ["audio/*"],
+    "output": ["text"]
+  },
+  "reasoning": {
+    "supported": false,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": true,
+    "tool_call": false,
+    "structured_output": false,
+    "temperature": true,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": false,
+  "sources": [
+    {
+      "kind": "model_card",
+      "url": "https://docs.mistral.ai/models/voxtral-small-transcribe-3-0",
+      "accessed_at": "2026-10-20T00:00:00Z",
+      "notes": "Official model identity, version, public-preview status, transcription route, and $0.004 per-minute price. The card shows October 20, 2026 as its date, used here as the release date."
+    },
+    {
+      "kind": "docs",
+      "url": "https://docs.mistral.ai/api/endpoint/audio/transcriptions",
+      "accessed_at": "2026-10-20T00:00:00Z",
+      "notes": "Endpoint-level transcription parameters (language, temperature, stream, diarize, context_bias, timestamp_granularities)."
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "checked_at": "2026-10-20T00:00:00Z",
+    "notes": "Identity, price, and route verified against Mistral's model card. Parameter support is taken from the shared transcription endpoint reference; the card does not list it per model."
+  },
+  "last_updated": "2026-10-20T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
