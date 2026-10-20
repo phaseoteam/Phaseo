@@ -6094,8 +6094,12 @@
 		},
 		"model": {
 			"label": "Modelo del clasificador",
-			"help": "La lista muestra modelos con compatibilidad documentada con salidas estructuradas. Normalmente basta con un modelo pequeño y rápido.",
-			"showAll": "Mostrar todos los modelos"
+			"help": "Sirve cualquier modelo de texto o de decisiones. Normalmente basta con un modelo pequeño y rápido.",
+			"format": {
+				"json_schema": "Responde con salidas estructuradas, así que las respuestas siempre coinciden con tus valores.",
+				"decisions": "Responde mediante Decisions, con la probabilidad del propio modelo para cada valor.",
+				"json": "Este modelo no tiene salidas estructuradas, así que se le pide JSON en el prompt. Las respuestas fuera de tus valores se descartan, lo que puede dejar una dimensión sin etiqueta."
+			}
 		},
 		"dimensions": {
 			"help": "Cada dimensión se convierte en una etiqueta. Añade hasta {max} dimensiones con hasta {values} valores cada una.",

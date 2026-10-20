@@ -13,7 +13,7 @@ import { Timer } from "./telemetry/timer";
 import { gatewayTraceFor } from "./telemetry/gateway-trace";
 import type { PipelineTiming } from "./execute";
 import { resolvePipeline } from "./registry";
-import { ResponsesSchema } from "@core/schemas";
+import { DecisionsSchema, ResponsesSchema } from "@core/schemas";
 import { MAX_REQUEST_MODEL_FALLBACKS } from "./before/requestModelFallbacks";
 import { everyAttemptRejectedRequest } from "./execute/attempt-outcomes";
 import { runAutoRouterClassifierGatewayRequest } from "./auto-router-classifier-gateway";
@@ -30,9 +30,18 @@ const MODEL_FALLBACK_STATUSES = new Set([429, 500, 502, 503, 504]);
 const CONFIGURED_MODEL_FALLBACK_LIMIT = 8;
 let autoRouterClassifierHandler: ReturnType<typeof makeEndpointHandler> | null = null;
 
+let decisionsClassifierHandler: ReturnType<typeof makeEndpointHandler> | null = null;
+
 function getAutoRouterClassifierHandler() {
 	autoRouterClassifierHandler ??= makeEndpointHandler({ endpoint: "responses", schema: ResponsesSchema });
 	return autoRouterClassifierHandler;
+}
+
+/** Request classifiers call Responses, or Decisions for decision models. */
+function getRequestClassifierHandler(path: "responses" | "decisions") {
+	if (path === "responses") return getAutoRouterClassifierHandler();
+	decisionsClassifierHandler ??= makeEndpointHandler({ endpoint: "decisions", schema: DecisionsSchema });
+	return decisionsClassifierHandler;
 }
 
 type ModelFallbackSource = "dynamic_route" | "request" | "auto_router";
@@ -273,7 +282,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 
         const runner = resolvePipeline(endpoint);
         const runWithHeaders = async (attempt: Parameters<typeof runner>[0]) => {
-            attachRequestClassifierCall(attempt.pre.ctx, req, getAutoRouterClassifierHandler);
+            attachRequestClassifierCall(attempt.pre.ctx, req, getRequestClassifierHandler);
             return withDroppedParamsHeader(withModelSubstitutionHeaders(await runner(attempt), attempt.pre.ctx), attempt.pre.ctx);
         };
 

@@ -6094,8 +6094,12 @@
 		},
 		"model": {
 			"label": "Klassifikator-Modell",
-			"help": "Die Liste zeigt Modelle mit dokumentierter Unterstützung für strukturierte Ausgaben. Ein kleines, schnelles Modell reicht meist aus.",
-			"showAll": "Alle Modelle anzeigen"
+			"help": "Jedes Text- oder Entscheidungsmodell funktioniert. Ein kleines, schnelles Modell reicht meist aus.",
+			"format": {
+				"json_schema": "Antwortet mit strukturierten Ausgaben, daher passen Antworten immer zu deinen Werten.",
+				"decisions": "Antwortet über Decisions, mit der eigenen Wahrscheinlichkeit des Modells für jeden Wert.",
+				"json": "Dieses Modell hat keine strukturierten Ausgaben, daher wird im Prompt nach JSON gefragt. Antworten außerhalb deiner Werte werden verworfen, sodass eine Dimension ohne Label bleiben kann."
+			}
 		},
 		"dimensions": {
 			"help": "Jede Dimension wird zu einem Label. Füge bis zu {max} Dimensionen mit jeweils bis zu {values} Werten hinzu.",

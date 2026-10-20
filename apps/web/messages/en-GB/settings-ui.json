@@ -6094,8 +6094,12 @@
 		},
 		"model": {
 			"label": "Classifier model",
-			"help": "The list shows models with documented structured output support. A small, fast model is usually enough.",
-			"showAll": "Show all models"
+			"help": "Any text or decision model works. A small, fast model is usually enough.",
+			"format": {
+				"json_schema": "Answers with structured outputs, so replies always match your values.",
+				"decisions": "Answers through Decisions, with the model's own probability for each value.",
+				"json": "This model has no structured outputs, so it is asked for JSON in the prompt. Replies outside your values are dropped, which can leave a dimension unlabelled."
+			}
 		},
 		"dimensions": {
 			"help": "Each dimension becomes one label. Add up to {max} dimensions with up to {values} values each.",

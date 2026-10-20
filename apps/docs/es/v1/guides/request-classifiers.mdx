@@ -16,7 +16,7 @@ Usa clasificadores cuando tu código no conoce la categoría: para quién se esc
 
 1. La solicitud termina y su respuesta se devuelve a tu aplicación. La clasificación nunca añade latencia.
 2. Phaseo crea una transcripción de la solicitud: instrucciones del sistema, mensajes, nombres de herramientas (no sus esquemas) y resultados de herramientas. Cada turno se limita a 4.000 caracteres y se ocultan secretos como las claves API. Si el clasificador incluye la respuesta, también se añade la salida generada.
-3. El modelo clasificador responde con una salida estructurada que solo admite tus valores.
+3. El modelo del clasificador elige entre tus valores. Cualquier respuesta fuera de ellos se descarta (consulta «Elegir un modelo» más abajo).
 4. Las respuestas se guardan como etiquetas en la solicitud, junto con la confianza de cada una, antes de que la solicitud aparezca en tus registros.
 
 Los clasificadores se ejecutan en las solicitudes correctas a `chat/completions`, `responses` y `messages`. Si la clasificación falla o se agota el tiempo, la solicitud se registra igualmente, solo que sin esas etiquetas.
@@ -61,6 +61,18 @@ curl https://api.phaseo.app/v1/classifiers \
 | `monthly_budget_usd` | Pausa el clasificador durante el resto del mes UTC cuando haya gastado esta cantidad. |
 
 Un espacio de trabajo puede tener hasta cinco clasificadores. Los cambios llegan al gateway en aproximadamente un minuto.
+
+## Elegir un modelo
+
+Cualquier modelo de texto o [modelo de decisiones](../api-reference/endpoint/decisions.mdx) puede clasificar. Phaseo decide cómo preguntarle según lo que admiten los proveedores del modelo:
+
+| Modelo | Cómo se le pregunta |
+| --- | --- |
+| Modelo de texto con salidas estructuradas | Una solicitud `responses` con un esquema JSON estricto, así que cada respuesta es uno de tus valores. |
+| Modelo de decisiones | Una solicitud `decisions` con una pregunta de elección por dimensión. Una dimensión con `multiple` hace una pregunta de sí/no por valor y conserva cada valor con una probabilidad de al menos 0,5 (si un clasificador necesitara más de 128 preguntas, esa dimensión recibe solo su mejor valor). La confianza es la probabilidad propia del modelo. |
+| Otros modelos de texto | Una solicitud `responses` que pide el mismo JSON en el prompt. Las respuestas fuera de tus valores se descartan, así que una dimensión puede quedarse sin etiqueta más a menudo. También es la alternativa cuando un proveedor rechaza el esquema. |
+
+Normalmente basta con un modelo pequeño y rápido. Usa **Probar con un ejemplo** en el editor del clasificador para comprobar un modelo antes de guardar.
 
 ## Filtrar y agrupar por los resultados
 

@@ -6094,8 +6094,12 @@
 		},
 		"model": {
 			"label": "Modèle du classificateur",
-			"help": "La liste affiche les modèles dont la prise en charge des sorties structurées est documentée. Un petit modèle rapide suffit généralement.",
-			"showAll": "Afficher tous les modèles"
+			"help": "Tout modèle de texte ou de décision convient. Un petit modèle rapide suffit généralement.",
+			"format": {
+				"json_schema": "Répond avec des sorties structurées, donc les réponses correspondent toujours à vos valeurs.",
+				"decisions": "Répond via Decisions, avec la probabilité propre au modèle pour chaque valeur.",
+				"json": "Ce modèle n'a pas de sorties structurées, donc le JSON est demandé dans le prompt. Les réponses hors de vos valeurs sont ignorées, ce qui peut laisser une dimension sans libellé."
+			}
 		},
 		"dimensions": {
 			"help": "Chaque dimension devient une étiquette. Ajoutez jusqu'à {max} dimensions avec jusqu'à {values} valeurs chacune.",

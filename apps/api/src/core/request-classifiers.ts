@@ -4,8 +4,8 @@
 // label (key = dimension key), so classifier output filters and groups exactly
 // like labels sent in the x-phaseo-metadata header.
 //
-// This is the one definition of a valid classifier and of the structured-output
-// request the gateway sends for it. The gateway, the settings API and the
+// This is the one definition of a valid classifier and of the requests the
+// gateway sends for it (see "Request formats"). The gateway, the settings API and the
 // settings page each use a generated copy (scripts/sync-request-classifiers.mjs),
 // so validation and the request cannot drift apart. Keep it dependency-free.
 
@@ -366,6 +366,7 @@ export function buildClassifierPrompt(classifier: { instructions?: string | null
 		"You label requests sent to an AI model. Read the transcript and answer every dimension below.",
 		"Pick only from the listed values. Judge what the request is for, not whether it was answered well.",
 		"Give confidence from 0 to 1 for each answer.",
+		`Reply with only a JSON object with one entry per dimension, like {"d0": {"value": "${dimensions[0]?.values[0]?.value ?? "value"}", "confidence": 0.9}}. A dimension that allows several values answers a list of values.`,
 		"",
 	];
 	dimensions.forEach((dimension, index) => {
@@ -378,7 +379,6 @@ export function buildClassifierPrompt(classifier: { instructions?: string | null
 	return lines.join("\n");
 }
 
-/** The Responses request body for one classification. */
 /** Enough output for the longest valid answer: every value of a multi-value dimension, about 3 characters per token. */
 export function classifierOutputTokens(dimensions: ClassifierDimension[]): number {
 	return 64 + dimensions.reduce((total, dimension) => {
@@ -390,16 +390,87 @@ export function classifierOutputTokens(dimensions: ClassifierDimension[]): numbe
 	}, 0);
 }
 
-export function buildClassifierRequestBody(classifier: ClassifierRequestConfig, dimensions: ClassifierDimension[], transcript: string): Record<string, unknown> {
+// ---- Request formats ------------------------------------------------------------
+
+/**
+ * How a classifier asks its model:
+ * - json_schema: a Responses request with a strict JSON schema (structured outputs).
+ * - decisions: a Decisions request, one question per dimension (or per value of
+ *   a multi-value dimension), answered with the model's own probabilities.
+ * - json: a Responses request that asks for the same JSON in the prompt, for
+ *   text models without structured outputs. Answers are checked against the
+ *   taxonomy either way, so a bad reply only leaves dimensions unlabelled.
+ */
+export const CLASSIFIER_REQUEST_FORMATS = ["json_schema", "decisions", "json"] as const;
+export type ClassifierRequestFormat = (typeof CLASSIFIER_REQUEST_FORMATS)[number];
+export type ClassifierModelCapability = { capability_id: string; params?: unknown };
+
+const TEXT_CAPABILITY = "text.generate";
+const DECISIONS_CAPABILITY = "decisions.make";
+/** A classifier can use any model with one of these capabilities. */
+export const CLASSIFIER_MODEL_CAPABILITIES: readonly string[] = [TEXT_CAPABILITY, DECISIONS_CAPABILITY];
+/** Param names the gateway accepts as structured-output support on a text route. */
+const STRUCTURED_OUTPUT_PARAMS = ["structured_outputs", "response_format", "text"];
+/** The most questions one Decisions request may carry. */
+export const MAX_DECISION_QUESTIONS = 128;
+
+/**
+ * A route with no documented params is treated as able to take a schema, as the
+ * gateway does; if it ignores the schema, the reply is still parsed as JSON.
+ */
+function routeTakesSchema(params: unknown): boolean {
+	if (!params || typeof params !== "object" || Array.isArray(params)) return true;
+	const keys = Object.keys(params);
+	return keys.length === 0 || STRUCTURED_OUTPUT_PARAMS.some((param) => keys.includes(param));
+}
+
+/** Prefers structured outputs, then Decisions, then a prompted JSON reply. */
+export function classifierRequestFormat(capabilities: ClassifierModelCapability[]): ClassifierRequestFormat {
+	const text = capabilities.filter((capability) => capability.capability_id === TEXT_CAPABILITY);
+	if (text.some((capability) => routeTakesSchema(capability.params))) return "json_schema";
+	if (capabilities.some((capability) => capability.capability_id === DECISIONS_CAPABILITY)) return "decisions";
+	return text.length ? "json" : "json_schema";
+}
+
+type CatalogResult = { data: Array<Record<string, unknown>> | null; error: { message: string } | null };
+/** The slice of a Supabase client the catalog lookup needs; the catalog tables are publicly readable. */
+export type ClassifierCatalogClient = { from: (table: string) => any };
+const ROUTE_STATUSES = ["active", "degraded"];
+const CAPABILITY_STATUSES = ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"];
+
+function inWindow(row: Record<string, unknown>, now: number): boolean {
+	const from = typeof row.effective_from === "string" ? Date.parse(row.effective_from) : NaN;
+	const to = typeof row.effective_to === "string" ? Date.parse(row.effective_to) : NaN;
+	return !(from > now) && !(to <= now);
+}
+
+/** The text and Decisions capabilities of a model's routable providers. */
+export async function loadClassifierModelCapabilities(client: ClassifierCatalogClient, model: string, now = Date.now()): Promise<ClassifierModelCapability[]> {
+	const routes = await client.from("v2_model_provider_routes")
+		.select("provider_model_id,effective_from,effective_to")
+		.eq("model_slug", model).eq("routing_enabled", true).in("status", ROUTE_STATUSES) as CatalogResult;
+	if (routes.error) throw new Error(`classifier_model_routes_failed:${routes.error.message}`);
+	const ids = [...new Set((routes.data ?? []).filter((row) => inWindow(row, now)).map((row) => String(row.provider_model_id ?? "")).filter(Boolean))];
+	if (!ids.length) return [];
+	const capabilities = await client.from("v2_route_capabilities")
+		.select("capability_id,params,effective_from,effective_to")
+		.in("provider_model_id", ids).in("capability_id", CLASSIFIER_MODEL_CAPABILITIES).in("status", CAPABILITY_STATUSES) as CatalogResult;
+	if (capabilities.error) throw new Error(`classifier_model_capabilities_failed:${capabilities.error.message}`);
+	return (capabilities.data ?? []).filter((row) => inWindow(row, now))
+		.map((row) => ({ capability_id: String(row.capability_id), params: row.params }));
+}
+
+/** The Responses request body for one classification. */
+export function buildClassifierRequestBody(classifier: ClassifierRequestConfig, dimensions: ClassifierDimension[], transcript: string, format: Exclude<ClassifierRequestFormat, "decisions"> = "json_schema"): Record<string, unknown> {
 	return {
 		model: classifier.model,
 		stream: false,
 		store: false,
 		temperature: 0,
 		max_output_tokens: classifierOutputTokens(dimensions),
-		text: {
-			format: { type: "json_schema", name: "request_classification", strict: true, schema: buildClassifierSchema(dimensions) },
-		},
+		...(format === "json_schema"
+			? { text: { format: { type: "json_schema", name: "request_classification", strict: true, schema: buildClassifierSchema(dimensions) } } }
+			: {}),
 		input: [
 			{ role: "system", content: [{ type: "input_text", text: buildClassifierPrompt(classifier, dimensions) }] },
 			{ role: "user", content: [{ type: "input_text", text: `<transcript>\n${transcript}\n</transcript>` }] },
@@ -407,17 +478,130 @@ export function buildClassifierRequestBody(classifier: ClassifierRequestConfig, 
 	};
 }
 
-/** Validates the model's answer against the taxonomy; anything outside it is dropped. */
+type DecisionQuestion =
+	| { type: "choice"; name: string; instructions: string; choices: Array<{ value: string; description?: string }> }
+	| { type: "predicate"; name: string; instructions: string };
+
+function choiceOptions(dimension: ClassifierDimension): Array<{ value: string; description?: string }> {
+	const choices = dimension.values.map((entry) => entry.description ? { value: entry.value, description: entry.description } : { value: entry.value });
+	return dimension.allow_other ? [...choices, { value: OTHER_VALUE, description: "None of the values above fit" }] : choices;
+}
+
+/**
+ * One choice question per dimension. A multi-value dimension asks one yes/no
+ * question per value instead, unless that would pass the question limit, in
+ * which case it is answered with its single best value.
+ */
+export function buildClassifierDecisionQuestions(classifier: { instructions?: string | null }, dimensions: ClassifierDimension[]): DecisionQuestion[] {
+	const extra = classifier.instructions?.trim() ? `\n\nAdditional instructions from the workspace:\n${classifier.instructions.trim()}` : "";
+	const about = (dimension: ClassifierDimension) => `${dimension.name}${dimension.description ? ` (${dimension.description})` : ""}`;
+	const preamble = "This is a request sent to an AI model. Judge what it is for, not whether it was answered well.";
+	let budget = MAX_DECISION_QUESTIONS - dimensions.length;
+	const questions: DecisionQuestion[] = [];
+	dimensions.forEach((dimension, index) => {
+		const choices = choiceOptions(dimension);
+		if (dimension.multiple && choices.length - 1 <= budget) {
+			budget -= choices.length - 1;
+			choices.forEach((choice, valueIndex) => questions.push({
+				type: "predicate",
+				name: `d${index}:${valueIndex}`,
+				instructions: `${preamble} For ${about(dimension)}, does "${choice.value}" apply${choice.description ? ` (${choice.description})` : ""}?${extra}`,
+			}));
+			return;
+		}
+		questions.push({
+			type: "choice",
+			name: `d${index}`,
+			instructions: `${preamble} Which value best describes its ${about(dimension)}?${extra}`,
+			choices,
+		});
+	});
+	return questions;
+}
+
+/** The Decisions request body for one classification. */
+export function buildClassifierDecisionsBody(classifier: ClassifierRequestConfig, dimensions: ClassifierDimension[], transcript: string): Record<string, unknown> {
+	return {
+		model: classifier.model,
+		input: `<transcript>\n${transcript}\n</transcript>`,
+		questions: buildClassifierDecisionQuestions(classifier, dimensions),
+	};
+}
+
+/** The gateway path (under /v1) and body for one classification in the given format. */
+export function buildClassifierRequest(classifier: ClassifierRequestConfig, dimensions: ClassifierDimension[], transcript: string, format: ClassifierRequestFormat): { path: "responses" | "decisions"; body: Record<string, unknown> } {
+	return format === "decisions"
+		? { path: "decisions", body: buildClassifierDecisionsBody(classifier, dimensions, transcript) }
+		: { path: "responses", body: buildClassifierRequestBody(classifier, dimensions, transcript, format) };
+}
+
+// ---- Answers --------------------------------------------------------------------
+
+function clampConfidence(value: unknown): number | null {
+	const number = Number(value);
+	return value != null && value !== "" && Number.isFinite(number) ? Math.max(0, Math.min(1, number)) : null;
+}
+
+/** The JSON object in a reply, also when a model without structured outputs wraps it in a code fence or a sentence. */
+function extractJsonObject(text: string): Record<string, any> | null {
+	const stripped = text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+	const candidates = [stripped];
+	const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(stripped)?.[1];
+	if (fenced) candidates.push(fenced.trim());
+	const start = stripped.indexOf("{");
+	const end = stripped.lastIndexOf("}");
+	if (start >= 0 && end > start) candidates.push(stripped.slice(start, end + 1));
+	for (const candidate of candidates) {
+		try {
+			const parsed = JSON.parse(candidate);
+			if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+		} catch {
+			// Try the next candidate.
+		}
+	}
+	return null;
+}
+
+function parseDecisionAnswers(answers: unknown[], dimensions: ClassifierDimension[]): ClassifierLabel[] {
+	const byName = new Map<string, Record<string, any>>();
+	for (const answer of answers) {
+		const record = answer as Record<string, any> | null;
+		if (record && typeof record === "object" && typeof record.name === "string") byName.set(record.name, record);
+	}
+	const labels: ClassifierLabel[] = [];
+	dimensions.forEach((dimension, index) => {
+		const values = allowedValues(dimension);
+		const choice = byName.get(`d${index}`);
+		if (choice) {
+			if (choice.type === "choice" && typeof choice.choice === "string" && values.includes(choice.choice)) {
+				labels.push({ key: dimension.key, value: choice.choice, confidence: clampConfidence(choice.confidence) });
+			}
+			return;
+		}
+		const scored = values.map((value, valueIndex) => {
+			const answer = byName.get(`d${index}:${valueIndex}`);
+			return { value, probability: answer?.type === "predicate" ? clampConfidence(answer.probability) : null };
+		}).filter((entry): entry is { value: string; probability: number } => entry.probability != null);
+		if (!scored.length) return;
+		const likely = scored.filter((entry) => entry.probability >= 0.5);
+		// "other" means none of the listed values fit, so it only stands alone.
+		const listed = likely.filter((entry) => entry.value !== OTHER_VALUE);
+		const chosen = listed.length ? listed : likely;
+		// Like the JSON formats, a multi-value dimension always answers at least one value.
+		const picks = chosen.length ? chosen : [scored.reduce((best, entry) => entry.probability > best.probability ? entry : best)];
+		for (const pick of picks) labels.push({ key: dimension.key, value: pick.value, confidence: pick.probability });
+	});
+	return labels;
+}
+
+/** Validates the model's answer against the taxonomy; anything outside it is dropped. Accepts Responses and Decisions results. */
 export function parseClassifierAnswer(payload: unknown, dimensions: ClassifierDimension[]): ClassifierLabel[] | null {
+	const answers = payload && typeof payload === "object" ? (payload as Record<string, unknown>).answers : undefined;
+	if (Array.isArray(answers)) return parseDecisionAnswers(answers, dimensions);
 	const text = responseText(payload).trim();
 	if (!text) return null;
-	let parsed: Record<string, any>;
-	try {
-		parsed = JSON.parse(text);
-	} catch {
-		return null;
-	}
-	if (!parsed || typeof parsed !== "object") return null;
+	const parsed = extractJsonObject(text);
+	if (!parsed) return null;
 	const labels: ClassifierLabel[] = [];
 	dimensions.forEach((dimension, index) => {
 		const answer = parsed[`d${index}`];
@@ -428,10 +612,8 @@ export function parseClassifierAnswer(payload: unknown, dimensions: ClassifierDi
 			.map((value) => typeof value === "string" ? allowed.get(value.trim().toLowerCase()) : undefined)
 			.filter((value): value is string => Boolean(value)))];
 		const chosen = dimension.multiple ? values : values.slice(0, 1);
-		const confidence = Number(answer.confidence);
-		for (const value of chosen) {
-			labels.push({ key: dimension.key, value, confidence: Number.isFinite(confidence) ? Math.max(0, Math.min(1, confidence)) : null });
-		}
+		const confidence = clampConfidence(answer.confidence);
+		for (const value of chosen) labels.push({ key: dimension.key, value, confidence });
 	});
 	return labels;
 }

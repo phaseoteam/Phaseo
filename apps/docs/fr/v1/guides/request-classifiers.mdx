@@ -16,7 +16,7 @@ Utilisez des classificateurs quand votre code ne connaît pas la catégorie : à
 
 1. La requête se termine et sa réponse est renvoyée à votre application. La classification n’ajoute jamais de latence.
 2. Phaseo construit une transcription de la requête : instructions système, messages, noms des outils (pas leurs schémas) et résultats des outils. Chaque tour est limité à 4 000 caractères et les secrets comme les clés API sont masqués. Si le classificateur inclut la réponse, la sortie générée est aussi ajoutée.
-3. Le modèle classificateur répond avec une sortie structurée qui n’autorise que vos valeurs.
+3. Le modèle du classificateur choisit parmi vos valeurs. Toute réponse en dehors est ignorée (voir « Choisir un modèle » plus bas).
 4. Les réponses sont enregistrées comme étiquettes de la requête, avec la confiance de chacune, avant que la requête n’apparaisse dans vos journaux.
 
 Les classificateurs s’exécutent sur les requêtes réussies vers `chat/completions`, `responses` et `messages`. Si la classification échoue ou expire, la requête est tout de même journalisée, simplement sans ces étiquettes.
@@ -61,6 +61,18 @@ curl https://api.phaseo.app/v1/classifiers \
 | `monthly_budget_usd` | Met le classificateur en pause pour le reste du mois UTC une fois ce montant dépensé. |
 
 Un espace de travail peut compter jusqu’à cinq classificateurs. Les modifications atteignent la passerelle en une minute environ.
+
+## Choisir un modèle
+
+Tout modèle de texte ou [modèle de décision](../api-reference/endpoint/decisions.mdx) peut classer. Phaseo choisit comment l'interroger selon ce que prennent en charge les fournisseurs du modèle :
+
+| Modèle | Comment il est interrogé |
+| --- | --- |
+| Modèle de texte avec sorties structurées | Une requête `responses` avec un schéma JSON strict, donc chaque réponse est l'une de vos valeurs. |
+| Modèle de décision | Une requête `decisions` avec une question à choix par dimension. Une dimension avec `multiple` pose une question oui/non par valeur et garde chaque valeur dont la probabilité est d'au moins 0,5 (si un classificateur nécessitait plus de 128 questions, une telle dimension reçoit seulement sa meilleure valeur). La confiance est la probabilité propre au modèle. |
+| Autres modèles de texte | Une requête `responses` qui demande le même JSON dans le prompt. Les réponses hors de vos valeurs sont ignorées, donc une dimension peut plus souvent rester sans libellé. C'est aussi la solution de repli quand un fournisseur refuse le schéma. |
+
+Un petit modèle rapide suffit généralement. Utilisez **Essayer sur un exemple** dans l'éditeur du classificateur pour vérifier un modèle avant d'enregistrer.
 
 ## Filtrer et regrouper par résultat
 

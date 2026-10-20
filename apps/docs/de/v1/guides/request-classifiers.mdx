@@ -16,7 +16,7 @@ Verwende Klassifikatoren, wenn die Kategorie in deinem Code nicht bekannt ist: f
 
 1. Die Anfrage wird abgeschlossen und ihre Antwort an deine Anwendung zurückgegeben. Die Klassifizierung verursacht nie zusätzliche Latenz.
 2. Phaseo erstellt ein Transkript der Anfrage: Systemanweisungen, Nachrichten, Tool-Namen (nicht ihre Schemas) und Tool-Ergebnisse. Jeder Gesprächsschritt ist auf 4.000 Zeichen begrenzt, und Geheimnisse wie API-Schlüssel werden geschwärzt. Wenn der Klassifikator die Antwort einbezieht, wird auch die generierte Ausgabe hinzugefügt.
-3. Das Klassifikatormodell antwortet mit strukturierter Ausgabe, die nur deine Werte zulässt.
+3. Das Klassifikatormodell wählt aus deinen Werten. Antworten außerhalb davon werden verworfen (siehe unten, „Ein Modell wählen“).
 4. Die Antworten werden zusammen mit der Konfidenz jeder Antwort als Labels an der Anfrage gespeichert, bevor die Anfrage in deinen Protokollen erscheint.
 
 Klassifikatoren laufen bei erfolgreichen Anfragen an `chat/completions`, `responses` und `messages`. Wenn die Klassifizierung fehlschlägt oder abläuft, wird die Anfrage trotzdem protokolliert, nur ohne diese Labels.
@@ -61,6 +61,18 @@ curl https://api.phaseo.app/v1/classifiers \
 | `monthly_budget_usd` | Pausiert den Klassifikator für den Rest des UTC-Monats, sobald er so viel ausgegeben hat. |
 
 Ein Workspace kann bis zu fünf Klassifikatoren haben. Änderungen erreichen das Gateway innerhalb von etwa einer Minute.
+
+## Ein Modell wählen
+
+Jedes Textmodell und jedes [Entscheidungsmodell](../api-reference/endpoint/decisions.mdx) kann klassifizieren. Phaseo entscheidet anhand dessen, was die Anbieter des Modells unterstützen, wie es gefragt wird:
+
+| Modell | So wird es gefragt |
+| --- | --- |
+| Textmodell mit strukturierten Ausgaben | Eine `responses`-Anfrage mit strengem JSON-Schema, sodass jede Antwort einer deiner Werte ist. |
+| Entscheidungsmodell | Eine `decisions`-Anfrage mit einer Auswahlfrage pro Dimension. Eine Dimension mit `multiple` stellt pro Wert eine Ja/Nein-Frage und behält jeden Wert mit einer Wahrscheinlichkeit von mindestens 0,5 (bräuchte ein Klassifikator mehr als 128 Fragen, erhält eine solche Dimension stattdessen nur ihren besten Wert). Die Konfidenz ist die eigene Wahrscheinlichkeit des Modells. |
+| Andere Textmodelle | Eine `responses`-Anfrage, die im Prompt nach demselben JSON fragt. Antworten außerhalb deiner Werte werden verworfen, daher bleibt eine Dimension öfter ohne Label. So wird auch gefragt, wenn ein Anbieter das Schema ablehnt. |
+
+Ein kleines, schnelles Modell reicht meist aus. Mit **An einem Beispiel testen** im Klassifikator-Editor kannst du ein Modell vor dem Speichern prüfen.
 
 ## Nach den Ergebnissen filtern und gruppieren
 
