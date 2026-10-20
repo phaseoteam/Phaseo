@@ -6,6 +6,7 @@ import { createAnthropicToResponsesStreamTransformer } from "../../../../anthrop
 import { consumeTextProtocolStreamToIR } from "@pipeline/surfaces/server-tools.stream";
 import { encodeProtocol } from "@protocols/index";
 import { ANTHROPIC_REASONING_FORMAT, sealReasoningState } from "@core/reasoning-state";
+import { createResponsesStreamNormaliser } from "@pipeline/after/responses-stream-normaliser";
 
 type Frame = { event?: string; data: any } | "[DONE]";
 type ClientProtocol = "openai.chat.completions" | "openai.responses" | "anthropic.messages";
@@ -96,12 +97,14 @@ function responsesUpstream(options: { refusal?: boolean } = {}): Frame[] {
 	return frames;
 }
 
-function claudeUpstream(): Frame[] {
-	const citation = { type: "web_search_result_location", url: URL_1, title: "Cite one", cited_text: "source quote", encrypted_index: "enc_1" };
+const WEB_CITATION = { type: "web_search_result_location", url: URL_1, title: "Cite one", cited_text: "source quote", encrypted_index: "enc_1" };
+const DOCUMENT_CITATION = { type: "char_location", cited_text: "quote", document_index: 0, document_title: "Doc", start_char_index: 0, end_char_index: 5 };
+
+function claudeUpstream(citations: Array<Record<string, unknown>> = [WEB_CITATION]): Frame[] {
 	const frames: Array<[string, any]> = [
 		["message_start", { message: { id: "msg_claude", type: "message", role: "assistant", model: "claude", content: [], usage: { input_tokens: 3, output_tokens: 1 } } }],
 		["content_block_start", { index: 0, content_block: { type: "text", text: "" } }],
-		["content_block_delta", { index: 0, delta: { type: "citations_delta", citation } }],
+		...citations.map((citation): [string, any] => ["content_block_delta", { index: 0, delta: { type: "citations_delta", citation } }]),
 		["content_block_delta", { index: 0, delta: { type: "text_delta", text: "Hello world" } }],
 		["content_block_stop", { index: 0 }],
 		["message_delta", { delta: { stop_reason: "end_turn" }, usage: { output_tokens: 4 } }],
@@ -114,8 +117,8 @@ async function clientStream(upstream: Frame[], protocol: ClientProtocol, route: 
 	return await new Response(resolveStreamForProtocol(sse(upstream), args(protocol, providerId), route)).text();
 }
 
-async function claudeClientStream(protocol: ClientProtocol): Promise<string> {
-	const responses = sse(claudeUpstream()).body!.pipeThrough(createAnthropicToResponsesStreamTransformer("req_cite", "claude", { providerId: "anthropic" }));
+async function claudeClientStream(protocol: ClientProtocol, citations?: Array<Record<string, unknown>>): Promise<string> {
+	const responses = sse(claudeUpstream(citations)).body!.pipeThrough(createAnthropicToResponsesStreamTransformer("req_cite", "claude", { providerId: "anthropic" }));
 	return await new Response(resolveStreamForProtocol(new Response(responses), args(protocol, "anthropic"), "responses", { canonicalResponsesEvents: true })).text();
 }
 
@@ -253,9 +256,17 @@ describe("citations and refusals from a Responses upstream", () => {
 	});
 });
 
+/** What a Responses client receives: the executor's frames after the client boundary. */
+function atResponsesClient(frames: Array<{ event: string | null; data: any }>): Array<{ event: string | null; data: any }> {
+	const normaliser = createResponsesStreamNormaliser();
+	return frames.flatMap((frame) => normaliser.normalise(frame.event, frame.data).map((out) => ({ event: out.eventName, data: out.frame })));
+}
+
 describe("citations from Claude", () => {
 	it("turns citations_delta into Responses annotations, streamed and in the completed response", async () => {
-		const frames = parseFrames(await claudeClientStream("openai.responses"));
+		const frames = atResponsesClient(parseFrames(await claudeClientStream("openai.responses", [WEB_CITATION, DOCUMENT_CITATION])));
+		// A document citation has no Responses annotation form.
+		expect(frames.filter((frame) => frame.event === "response.output_text.annotation.added")).toHaveLength(1);
 		expect(frames.find((frame) => frame.event === "response.output_text.annotation.added")?.data.annotation)
 			.toEqual({ type: "url_citation", url: URL_1, title: "Cite one" });
 		const completed = frames.find((frame) => frame.event === "response.completed")!.data.response;
@@ -269,6 +280,17 @@ describe("citations from Claude", () => {
 		expect(text).toContain(URL_1);
 		const chat = await buffered(text, "openai.chat.completions");
 		expect(chat.encoded.choices[0].message.annotations[0]).toMatchObject({ type: "url_citation", url_citation: { url: URL_1 } });
+	});
+
+	it("reaches Messages clients unchanged, streamed and buffered", async () => {
+		const text = await claudeClientStream("anthropic.messages", [WEB_CITATION, DOCUMENT_CITATION]);
+		const frames = parseFrames(text);
+		messagesGrammarHolds(frames);
+		expect(frames.filter((frame) => frame.data.delta?.type === "citations_delta").map((frame) => frame.data.delta.citation))
+			.toEqual([WEB_CITATION, DOCUMENT_CITATION]);
+		const messages = await buffered(text, "anthropic.messages");
+		const textBlock = messages.encoded.content.find((block: any) => block.type === "text");
+		expect(textBlock.citations).toEqual([WEB_CITATION, DOCUMENT_CITATION]);
 	});
 });
 
