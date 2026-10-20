@@ -10013,8 +10013,8 @@ components:
     ChatCompletionsRequest:
       type: object
       description: >-
-        An optional top-level field sent as `null` is treated as unset, the
-        same as leaving it out.
+        An optional top-level field sent as `null` is treated as unset, the same
+        as leaving it out.
       required:
         - model
         - messages
@@ -10947,8 +10947,8 @@ components:
     AnthropicMessagesRequest:
       type: object
       description: >-
-        An optional top-level field sent as `null` is treated as unset, the
-        same as leaving it out.
+        An optional top-level field sent as `null` is treated as unset, the same
+        as leaving it out.
       required:
         - model
         - messages
@@ -11044,8 +11044,8 @@ components:
             Anthropic context editing. `edits` takes `clear_tool_uses_*` and
             `clear_thinking_*` strategies and is sent to Anthropic with its beta
             header. Other providers run the request without it and list
-            `context_management` in `X-Phaseo-Dropped-Params`. Compaction
-            edits (`compact_*`) return 400.
+            `context_management` in `X-Phaseo-Dropped-Params`. Compaction edits
+            (`compact_*`) return 400.
           properties:
             edits:
               type: array
@@ -11061,8 +11061,8 @@ components:
         user:
           type: string
           description: >-
-            End-user identifier, as on Chat Completions. Claude models receive it
-            as `metadata.user_id` unless `metadata.user_id` is set.
+            End-user identifier, as on Chat Completions. Claude models receive
+            it as `metadata.user_id` unless `metadata.user_id` is set.
         stop_sequences:
           type: array
           items:
@@ -11201,8 +11201,8 @@ components:
     ResponsesRequest:
       type: object
       description: >-
-        An optional top-level field sent as `null` is treated as unset, the
-        same as leaving it out.
+        An optional top-level field sent as `null` is treated as unset, the same
+        as leaving it out.
       required:
         - model
         - input
