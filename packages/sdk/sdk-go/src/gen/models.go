@@ -55,6 +55,7 @@ type AnthropicMessage struct {
 
 type AnthropicMessagesRequest struct {
 	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	ContextManagement *map[string]interface{} `json:"context_management,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	MaxTokens int `json:"max_tokens"`
@@ -77,10 +78,12 @@ type AnthropicMessagesRequest struct {
 	TopK *int `json:"top_k,omitempty"`
 	TopP *float64 `json:"top_p,omitempty"`
 	Usage *bool `json:"usage,omitempty"`
+	User *string `json:"user,omitempty"`
 }
 
 type AnthropicMessagesResponse struct {
 	Content *[]map[string]interface{} `json:"content,omitempty"`
+	ContextManagement *map[string]interface{} `json:"context_management,omitempty"`
 	Id *string `json:"id,omitempty"`
 	Model *string `json:"model,omitempty"`
 	Role *string `json:"role,omitempty"`
@@ -1222,6 +1225,7 @@ type ChatCompletionsRequest struct {
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	FrequencyPenalty *float64 `json:"frequency_penalty,omitempty"`
 	ImageConfig *map[string]interface{} `json:"image_config,omitempty"`
+	IncludeReasoning *bool `json:"include_reasoning,omitempty"`
 	LogitBias *map[string]interface{} `json:"logit_bias,omitempty"`
 	Logprobs *bool `json:"logprobs,omitempty"`
 	MaxCompletionTokens *int `json:"max_completion_tokens,omitempty"`
@@ -1234,6 +1238,7 @@ type ChatCompletionsRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
+	Prediction *map[string]interface{} `json:"prediction,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	PromptCacheOptions *map[string]interface{} `json:"prompt_cache_options,omitempty"`

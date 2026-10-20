@@ -1,3 +1,6 @@
+/**
+ * An optional top-level field sent as `null` is treated as unset, the same as leaving it out.
+ */
 export interface ResponsesRequest {
   background?: boolean;
   cache_control?: {
@@ -142,7 +145,8 @@ export interface ResponsesRequest {
       | "medium"
       | "high"
       | "xhigh"
-      | "max";
+      | "max"
+      | null;
     enabled?: boolean;
     max_tokens?: number;
     mode?: "standard" | "pro";
@@ -156,7 +160,10 @@ export interface ResponsesRequest {
     | "ultrafast"
     | "priority"
     | "flex"
-    | "batch";
+    | "batch"
+    | "auto"
+    | "scale"
+    | null;
   session_id?: string;
   store?: boolean;
   stream?: boolean;

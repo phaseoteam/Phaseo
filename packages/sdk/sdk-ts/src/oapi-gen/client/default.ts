@@ -856,6 +856,13 @@ export type CreateAnthropicMessageParams = {
       type?: string;
       [key: string]: unknown;
     };
+    context_management?: {
+      edits?: {
+        type: string;
+        [key: string]: unknown;
+      }[];
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -970,7 +977,8 @@ export type CreateAnthropicMessageParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      effort?:
+        "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -1079,6 +1087,7 @@ export type CreateAnthropicMessageParams = {
     top_k?: number;
     top_p?: number;
     usage?: boolean;
+    user?: string;
   };
 };
 
@@ -1110,6 +1119,11 @@ export async function createAnthropicMessage(
     tool_use_id?: string;
     type?: "text" | "image" | "tool_use" | "tool_result";
   }[];
+  context_management?: {
+    applied_edits?: {
+      [key: string]: unknown;
+    }[];
+  };
   id?: string;
   model?: string;
   role?: "assistant";
@@ -1151,6 +1165,11 @@ export async function createAnthropicMessage(
       tool_use_id?: string;
       type?: "text" | "image" | "tool_use" | "tool_result";
     }[];
+    context_management?: {
+      applied_edits?: {
+        [key: string]: unknown;
+      }[];
+    };
     id?: string;
     model?: string;
     role?: "assistant";
@@ -2042,6 +2061,7 @@ export type CreateChatCompletionParams = {
       super_resolution_references?: string[];
       [key: string]: unknown;
     };
+    include_reasoning?: boolean;
     logit_bias?: {
       [key: string]: number;
     };
@@ -2157,6 +2177,14 @@ export type CreateChatCompletionParams = {
     model: string;
     models?: string[];
     parallel_tool_calls?: boolean;
+    prediction?: {
+      content:
+        | string
+        | {
+            [key: string]: unknown;
+          }[];
+      type: "content";
+    };
     presence_penalty?: number;
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
@@ -2256,7 +2284,8 @@ export type CreateChatCompletionParams = {
         | "medium"
         | "high"
         | "xhigh"
-        | "max";
+        | "max"
+        | null;
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -2286,7 +2315,10 @@ export type CreateChatCompletionParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch";
+      | "batch"
+      | "auto"
+      | "scale"
+      | null;
     session_id?: string;
     stop?: string | string[];
     store?: boolean;
@@ -5679,7 +5711,8 @@ export type CreateResponseParams = {
         | "medium"
         | "high"
         | "xhigh"
-        | "max";
+        | "max"
+        | null;
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -5693,7 +5726,10 @@ export type CreateResponseParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch";
+      | "batch"
+      | "auto"
+      | "scale"
+      | null;
     session_id?: string;
     store?: boolean;
     stream?: boolean;

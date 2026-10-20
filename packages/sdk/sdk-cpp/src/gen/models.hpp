@@ -61,6 +61,7 @@ struct AnthropicMessage {
 
 struct AnthropicMessagesRequest {
 	std::map<std::string, std::any> cache_control;
+	std::map<std::string, std::any> context_management;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	int max_tokens;
@@ -83,10 +84,12 @@ struct AnthropicMessagesRequest {
 	std::optional<int> top_k;
 	std::optional<double> top_p;
 	std::optional<bool> usage;
+	std::string user;
 };
 
 struct AnthropicMessagesResponse {
 	std::vector<std::map<std::string, std::any>> content;
+	std::map<std::string, std::any> context_management;
 	std::string id;
 	std::string model;
 	std::any role;
@@ -550,6 +553,7 @@ struct ChatCompletionsRequest {
 	std::optional<bool> echo_upstream_request;
 	std::optional<double> frequency_penalty;
 	std::map<std::string, std::any> image_config;
+	std::optional<bool> include_reasoning;
 	std::map<std::string, std::any> logit_bias;
 	std::optional<bool> logprobs;
 	std::optional<int> max_completion_tokens;
@@ -562,6 +566,7 @@ struct ChatCompletionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::optional<bool> parallel_tool_calls;
+	std::map<std::string, std::any> prediction;
 	std::optional<double> presence_penalty;
 	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> prompt_cache_options;
@@ -573,7 +578,7 @@ struct ChatCompletionsRequest {
 	std::any response_format;
 	std::optional<std::string> safety_identifier;
 	std::optional<int> seed;
-	std::any service_tier;
+	std::optional<std::any> service_tier;
 	std::string session_id;
 	std::any stop;
 	std::optional<bool> store;
@@ -2465,7 +2470,7 @@ struct OpenAIModelsResponse {
 };
 
 struct OpenAIReasoningConfig {
-	std::any effort;
+	std::optional<std::any> effort;
 	std::optional<bool> enabled;
 	std::optional<int> max_tokens;
 	std::any mode;
@@ -2976,7 +2981,7 @@ struct RateLimitPolicyUpdateInput {
 using RateLimitTargetType = std::any;
 
 struct ReasoningConfig {
-	std::any effort;
+	std::optional<std::any> effort;
 	std::optional<bool> enabled;
 	std::optional<int> max_tokens;
 	std::any mode;
@@ -3090,7 +3095,7 @@ struct ResponsesRequest {
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
 	std::optional<std::string> safety_identifier;
-	std::any service_tier;
+	std::optional<std::any> service_tier;
 	std::string session_id;
 	std::optional<bool> store;
 	std::optional<bool> stream;

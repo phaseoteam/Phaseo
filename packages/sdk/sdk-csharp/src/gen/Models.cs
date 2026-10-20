@@ -133,6 +133,9 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("cache_control")]
 	public Dictionary<string, object>? CacheControl { get; set; }
 
+	[JsonPropertyName("context_management")]
+	public Dictionary<string, object>? ContextManagement { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -199,12 +202,18 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("usage")]
 	public bool? Usage { get; set; }
 
+	[JsonPropertyName("user")]
+	public string? User { get; set; }
+
 }
 
 public sealed class AnthropicMessagesResponse
 {
 	[JsonPropertyName("content")]
 	public List<Dictionary<string, object>>? Content { get; set; }
+
+	[JsonPropertyName("context_management")]
+	public Dictionary<string, object>? ContextManagement { get; set; }
 
 	[JsonPropertyName("id")]
 	public string? Id { get; set; }
@@ -1367,6 +1376,9 @@ public sealed class ChatCompletionsRequest
 	[JsonPropertyName("image_config")]
 	public Dictionary<string, object>? ImageConfig { get; set; }
 
+	[JsonPropertyName("include_reasoning")]
+	public bool? IncludeReasoning { get; set; }
+
 	[JsonPropertyName("logit_bias")]
 	public Dictionary<string, object>? LogitBias { get; set; }
 
@@ -1402,6 +1414,9 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("parallel_tool_calls")]
 	public bool? ParallelToolCalls { get; set; }
+
+	[JsonPropertyName("prediction")]
+	public Dictionary<string, object>? Prediction { get; set; }
 
 	[JsonPropertyName("presence_penalty")]
 	public double? PresencePenalty { get; set; }

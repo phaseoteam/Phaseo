@@ -100,6 +100,8 @@ class AnthropicMessagesRequest
 	/** @var array<string, mixed>|null */
 	public $cache_control;
 	/** @var array<string, mixed>|null */
+	public $context_management;
+	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -143,12 +145,16 @@ class AnthropicMessagesRequest
 	public $top_p;
 	/** @var bool|null */
 	public $usage;
+	/** @var string|null */
+	public $user;
 }
 
 class AnthropicMessagesResponse
 {
 	/** @var array|null */
 	public $content;
+	/** @var array<string, mixed>|null */
+	public $context_management;
 	/** @var string|null */
 	public $id;
 	/** @var string|null */
@@ -983,6 +989,8 @@ class ChatCompletionsRequest
 	public $frequency_penalty;
 	/** @var array<string, mixed>|null */
 	public $image_config;
+	/** @var bool|null */
+	public $include_reasoning;
 	/** @var array<string, mixed>|null */
 	public $logit_bias;
 	/** @var bool|null */
@@ -1007,6 +1015,8 @@ class ChatCompletionsRequest
 	public $models;
 	/** @var bool|null */
 	public $parallel_tool_calls;
+	/** @var array<string, mixed>|null */
+	public $prediction;
 	/** @var float|null */
 	public $presence_penalty;
 	/** @var string|null */

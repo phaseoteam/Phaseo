@@ -51,6 +51,7 @@ class AnthropicMessage(TypedDict):
 
 class AnthropicMessagesRequest(TypedDict):
 	cache_control: NotRequired[CacheControl]
+	context_management: NotRequired[Dict[str, Any]]
 	debug: NotRequired[DebugOptions]
 	echo_upstream_request: NotRequired[bool]
 	max_tokens: int
@@ -73,9 +74,11 @@ class AnthropicMessagesRequest(TypedDict):
 	top_k: NotRequired[int]
 	top_p: NotRequired[float]
 	usage: NotRequired[bool]
+	user: NotRequired[str]
 
 class AnthropicMessagesResponse(TypedDict):
 	content: NotRequired[List[AnthropicContentBlock]]
+	context_management: NotRequired[Dict[str, Any]]
 	id: NotRequired[str]
 	model: NotRequired[str]
 	role: NotRequired[Literal["assistant"]]
@@ -496,6 +499,7 @@ class ChatCompletionsRequest(TypedDict):
 	echo_upstream_request: NotRequired[bool]
 	frequency_penalty: NotRequired[float]
 	image_config: NotRequired[ImageConfig]
+	include_reasoning: NotRequired[bool]
 	logit_bias: NotRequired[Dict[str, Any]]
 	logprobs: NotRequired[bool]
 	max_completion_tokens: NotRequired[int]
@@ -508,6 +512,7 @@ class ChatCompletionsRequest(TypedDict):
 	model: str
 	models: NotRequired[List[str]]
 	parallel_tool_calls: NotRequired[bool]
+	prediction: NotRequired[Dict[str, Any]]
 	presence_penalty: NotRequired[float]
 	prompt_cache_key: NotRequired[Optional[str]]
 	prompt_cache_options: NotRequired[PromptCacheOptions]
@@ -519,7 +524,7 @@ class ChatCompletionsRequest(TypedDict):
 	response_format: NotRequired[Union[str, Dict[str, Any]]]
 	safety_identifier: NotRequired[Optional[str]]
 	seed: NotRequired[int]
-	service_tier: NotRequired[Literal["standard", "default", "fast", "ultrafast", "priority", "flex", "batch"]]
+	service_tier: NotRequired[Optional[Literal["standard", "default", "fast", "ultrafast", "priority", "flex", "batch", "auto", "scale"]]]
 	session_id: NotRequired[str]
 	stop: NotRequired[Union[str, List[str]]]
 	store: NotRequired[bool]
@@ -2202,7 +2207,7 @@ class OpenAIModelsResponse(TypedDict):
 	object: Literal["list"]
 
 class OpenAIReasoningConfig(TypedDict):
-	effort: NotRequired[Literal["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]]
+	effort: NotRequired[Optional[Literal["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]]]
 	enabled: NotRequired[bool]
 	max_tokens: NotRequired[int]
 	mode: NotRequired[Literal["standard", "pro"]]
@@ -2653,7 +2658,7 @@ class RateLimitPolicyUpdateInput(TypedDict):
 RateLimitTargetType = Literal["key", "member", "department", "guardrail", "end_user_default"]
 
 class ReasoningConfig(TypedDict):
-	effort: NotRequired[Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]]
+	effort: NotRequired[Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]]]
 	enabled: NotRequired[bool]
 	max_tokens: NotRequired[int]
 	mode: NotRequired[Literal["standard", "pro"]]
@@ -2757,7 +2762,7 @@ class ResponsesRequest(TypedDict):
 	provider_options: NotRequired[ProviderOptions]
 	reasoning: NotRequired[OpenAIReasoningConfig]
 	safety_identifier: NotRequired[Optional[str]]
-	service_tier: NotRequired[Literal["standard", "default", "fast", "ultrafast", "priority", "flex", "batch"]]
+	service_tier: NotRequired[Optional[Literal["standard", "default", "fast", "ultrafast", "priority", "flex", "batch", "auto", "scale"]]]
 	session_id: NotRequired[str]
 	store: NotRequired[bool]
 	stream: NotRequired[bool]
