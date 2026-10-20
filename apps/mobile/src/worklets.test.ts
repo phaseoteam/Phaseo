@@ -186,12 +186,24 @@ describe("compiled worklets", () => {
 });
 
 /** Calls to replay on the bare runtime, compared with the same call on the JS thread. */
+const SCREEN = { left: 8, top: 40, right: 404, bottom: 860 };
+const MIDDLE = { left: 70, top: 280, right: 342, bottom: 620 };
 const SAMPLES: ((api: typeof floating) => unknown)[] = [
   (api) => api.fling(6000, 8000),
   (api) => api.fling(30, 40),
   (api) => api.limitSpeed(300, 400, 100),
   (api) => api.dragTo({ x: 300, y: 40 }, { x: 200, y: 0 }, { x: 340, y: 40 }, 50, { left: 0, top: 0, right: 400, bottom: 800 }, { left: 100, top: 300, right: 300, bottom: 500 }),
-  (api) => api.ringLayout(8, 48, { left: 8, top: 40, right: 404, bottom: 860 }, { left: 70, top: 280, right: 342, bottom: 620 }),
+  (api) => api.ringLayout(8, 48, SCREEN, MIDDLE),
+  // A second of the whole world on the UI thread: a fling, a burst, a held logo, collisions and bounces.
+  (api) => {
+    let bodies = api.launch(api.ringLayout(8, 48, SCREEN, MIDDLE));
+    bodies = api.throwBody(api.pickUp(bodies, 0), 0, 6000, -8000);
+    bodies = api.holdAt(api.pickUp(bodies, 1), 1, { x: 200, y: 100 });
+    bodies = api.kick(bodies, { x: 206, y: 450 }, 48);
+    for (let frame = 0; frame < 60; frame += 1) bodies = api.stepWorld(bodies, 1 / 60, { size: 48, bounds: SCREEN, box: MIDDLE });
+    return api.letGo(bodies, 1);
+  },
+  (api) => api.collidePair({ x: 100, y: 200, vx: 120, vy: 40, held: false, glow: 0 }, { x: 140, y: 210, vx: -60, vy: -30, held: false, glow: 0 }, 48),
 ];
 
 /**

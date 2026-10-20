@@ -7,12 +7,12 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type AccessibilityActionEvent } from "react-native";
 import { GestureDetector, useCompetingGestures, usePanGesture, useTapGesture } from "react-native-gesture-handler";
 import Animated, {
-  cancelAnimation, Easing, FadeIn, FadeOut, ReduceMotion, useAnimatedStyle, useDerivedValue, useFrameCallback, useReducedMotion, useSharedValue, withSequence,
-  withSpring, withTiming, type SharedValue,
+  cancelAnimation, Easing, FadeIn, FadeOut, ReduceMotion, useAnimatedStyle, useFrameCallback, useReducedMotion, useSharedValue, withDelay, withSequence, withSpring,
+  withTiming, type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, Path, RadialGradient, Rect, Stop } from "react-native-svg";
-import { scheduleOnRN } from "react-native-worklets";
+import { scheduleOnRN, scheduleOnUI } from "react-native-worklets";
 import { useCSSVariable } from "uniwind";
 import { Logo, logoUri } from "@/components/Logo";
 import { Icon, Text, useToneColor } from "@/components/ui";
@@ -20,21 +20,21 @@ import { catalogueQuery, useCatalogue } from "@/features/models/state";
 import { BUILD_COMMIT, BUILD_NUMBER } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { useAppearance } from "@/providers/AppearanceProvider";
-import { burstCurve, burstPosition, clamp, DRIFT_SPEED, dragTo, fling, ringLayout, step, type Box, type Point } from "./floating";
+import { clamp, dragTo, holdAt, kick, launch, letGo, pickUp, ringLayout, stepWorld, throwBody, type Body, type Box, type Point, type World } from "./floating";
 import { ART_LABS, catalogueFact, newestByLab, shortVersion, versionDetail, type ArtLab } from "./versionArt";
 
 /** The Phaseo mark, from apps/web/public/logo_light.svg (a 64 × 64 view box). */
 const MARK_PATH = "M19.8574 56H13V8H19.8574V56ZM31.7197 8C37.9368 8 42.8288 9.4856 46.3945 12.457C49.9601 15.4284 51.7432 19.5201 51.7432 24.7314C51.7432 29.9428 49.9601 34.0344 46.3945 37.0059C42.8288 39.9773 37.9368 41.4629 31.7197 41.4629H23.2852V35.4971H31.5146C35.8573 35.497 39.1714 34.5824 41.457 32.7539C43.7426 30.8796 44.8857 28.2056 44.8857 24.7314C44.8857 21.2572 43.7427 18.6059 41.457 16.7773C39.1714 14.9031 35.8573 13.9659 31.5146 13.9658H23.2852V8H31.7197Z";
 
-const BURST_MS = 1400;
 /** With reduced motion the burst is a fade out and back, which is allowed to play. */
 const FADE_MS = 700;
 /** Holding the mark this long opens Higher or lower. */
 const HOLD_MS = 1000;
+/** A logo held this long without moving lifts, as a dragged one does. */
+const LIFT_MS = 220;
 /** A tapped logo's name and newest model stay this long. */
 const INFO_MS = 2600;
-const INFO_WIDTH = 184;
-const INFO_HEIGHT = 50;
+const LABEL_WIDTH = 200;
 /** Space kept between the logos and the safe area's edges, and round the middle block. */
 const EDGE = 8;
 const BLOCK_MARGIN = 12;
@@ -51,13 +51,14 @@ export function prefetchVersionArt(queryClient: QueryClient, theme: "light" | "d
 
 /**
  * The version art, opened by five quick taps on Account → Version and build, like Android's version screen. The
- * Phaseo mark sits in the middle with the version and a line from the live catalogue, and the labs' logos float round
- * it. A logo can be dragged and flung (it bounces off the edges and settles back to a slow drift), and a tap shows
- * its lab's newest model. Tapping the mark bursts the logos out and back; holding it for a second opens Higher or
- * lower. With reduced motion the logos stay still, evenly spaced, and the burst is a fade.
+ * Phaseo mark sits in the middle with the version and a line from the live catalogue, and the frontier labs' logos
+ * cruise round it like the DVD screensaver, bouncing off the edges, the middle and each other. A logo can be held,
+ * dragged and flung (it eases back to the cruise), and a tap shows its lab's newest model. Tapping the mark kicks
+ * every logo outward; holding it for a second opens Higher or lower. With reduced motion the logos stay still, evenly
+ * spaced, and the burst is a fade.
  *
- * The motion runs on the UI thread (a frame callback per logo, writing shared values) and stops while the game is on
- * top or the screen has closed.
+ * The motion is one simulation on the UI thread: a single frame callback steps every logo (floating.ts) in one shared
+ * value, and each logo's style reads its own slot. It stops while the game is on top or the screen has closed.
  */
 export function VersionArtScreen() {
   const router = useRouter();
@@ -69,9 +70,9 @@ export function VersionArtScreen() {
   const models = catalogue.data?.models;
   const [area, setArea] = useState<{ width: number; height: number } | null>(null);
   const [block, setBlock] = useState<Box | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [info, setInfo] = useState<number | null>(null);
   const infoTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const burst = useSharedValue(0);
+  const fade = useSharedValue(0);
   const markScale = useSharedValue(1);
 
   // The frontier labs, a fixed list, so they float straight away; the catalogue only adds each one's newest model.
@@ -92,36 +93,61 @@ export function VersionArtScreen() {
   } : null, [area, insets.bottom, insets.left, insets.right, insets.top]);
   const ring = useMemo(() => (bounds && block ? ringLayout(labs.length, tile, bounds, block) : null), [block, bounds, labs, tile]);
 
-  // The gestures and frame callbacks read the layout from here, on the UI thread.
-  const boundsValue = useSharedValue<Box>({ left: 0, top: 0, right: 0, bottom: 0 });
-  const blockValue = useSharedValue<Box | null>(null);
-  const centre = useSharedValue<Point>({ x: 0, y: 0 });
-  useEffect(() => { if (bounds) boundsValue.set(bounds); }, [bounds, boundsValue]);
+  // The simulation: every logo's position and velocity in one shared value, and the layout it moves in.
+  const bodies = useSharedValue<Body[]>([]);
+  const world = useSharedValue<World | null>(null);
+  useEffect(() => { world.set(bounds ? { size: tile, bounds, box: block } : null); }, [block, bounds, tile, world]);
+  // The logos set off from their places once. With reduced motion they sit at their places instead, which move when
+  // the screen turns; moving logos are just kept inside by the next step.
+  const launched = useRef(false);
   useEffect(() => {
-    blockValue.set(block);
-    if (block) centre.set({ x: (block.left + block.right) / 2, y: (block.top + block.bottom) / 2 });
-  }, [block, blockValue, centre]);
+    if (!ring) return;
+    if (reduced || !launched.current) bodies.set(launch(ring));
+    launched.current = !reduced;
+  }, [bodies, reduced, ring]);
+
+  const frame = useFrameCallback((info) => {
+    const layout = world.get();
+    const current = bodies.get();
+    if (!layout || current.length === 0) return;
+    bodies.set(stepWorld(current, (info.timeSincePreviousFrame ?? 0) / 1000, layout));
+  }, false);
+  const running = focused && !reduced && ring != null;
+  useEffect(() => {
+    frame.setActive(running);
+    return () => frame.setActive(false);
+  }, [frame, running]);
 
   useEffect(() => () => {
     clearTimeout(infoTimer.current);
-    cancelAnimation(burst);
+    cancelAnimation(fade);
     cancelAnimation(markScale);
-  }, [burst, markScale]);
+  }, [fade, markScale]);
 
-  const showInfo = useCallback((id: string) => {
+  const showInfo = useCallback((index: number) => {
     void Haptics.selectionAsync().catch(() => undefined);
-    setInfo(id);
+    setInfo(index);
     clearTimeout(infoTimer.current);
     infoTimer.current = setTimeout(() => setInfo(null), INFO_MS);
   }, []);
 
   const playBurst = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
-    // From the start every time, even if the last burst is still playing.
-    cancelAnimation(burst);
-    burst.set(0);
-    burst.set(withTiming(1, { duration: reduced ? FADE_MS : BURST_MS, easing: Easing.linear, reduceMotion: ReduceMotion.Never }));
-    if (!reduced) markScale.set(withSequence(withTiming(0.9, { duration: 90 }), withSpring(1, { damping: 9, stiffness: 260 })));
+    if (reduced) {
+      // From the start every time, even if the last fade is still playing.
+      cancelAnimation(fade);
+      fade.set(0);
+      fade.set(withTiming(1, { duration: FADE_MS, easing: Easing.linear, reduceMotion: ReduceMotion.Never }));
+      return;
+    }
+    scheduleOnUI(() => {
+      "worklet";
+      const layout = world.get();
+      if (!layout || !layout.box) return;
+      const centre = { x: (layout.box.left + layout.box.right) / 2, y: (layout.box.top + layout.box.bottom) / 2 };
+      bodies.set(kick(bodies.get(), centre, layout.size));
+    });
+    markScale.set(withSequence(withTiming(0.9, { duration: 90 }), withSpring(1, { damping: 9, stiffness: 260 })));
   };
   const openGame = () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
@@ -131,6 +157,7 @@ export function VersionArtScreen() {
   const close = () => (router.canGoBack() ? router.back() : router.replace("/account"));
   const markAction = (event: AccessibilityActionEvent) => (event.nativeEvent.actionName === "longpress" ? openGame() : playBurst());
   const markStyle = useAnimatedStyle(() => ({ transform: [{ scale: markScale.get() }] }));
+  const infoLab = info != null ? labs[info] : undefined;
 
   return (
     <View className="flex-1 bg-background" onLayout={(event) => setArea({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}>
@@ -188,24 +215,18 @@ export function VersionArtScreen() {
       {ring ? (
         <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
           {labs.map((lab, index) => (
-            <Floater
-              key={lab.id}
-              lab={lab}
-              index={index}
-              home={ring[index]!}
-              size={tile}
-              bounds={boundsValue}
-              block={blockValue}
-              centre={centre}
-              burst={burst}
-              reach={short * 0.3}
-              running={focused && !reduced}
-              reduced={reduced}
-              newest={newest.get(lab.id) ?? null}
-              shown={info === lab.id}
-              onTap={showInfo}
-            />
+            <Floater key={lab.id} lab={lab} index={index} size={tile} bodies={bodies} world={world} fade={fade} reduced={reduced} onTap={showInfo} />
           ))}
+          {info != null && infoLab ? (
+            <Animated.View
+              key={info}
+              pointerEvents="none"
+              entering={FadeIn.duration(140).reduceMotion(ReduceMotion.Never)}
+              exiting={FadeOut.duration(180).reduceMotion(ReduceMotion.Never)}
+            >
+              <LogoLabel lab={infoLab} newest={newest.get(infoLab.id) ?? null} index={info} bodies={bodies} world={world} />
+            </Animated.View>
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -243,160 +264,128 @@ function Glow({ width, height, centre, dark }: { width: number; height: number; 
 type FloaterProps = {
   lab: ArtLab;
   index: number;
-  /** Its place in the ring: where it starts, and where it stays with reduced motion. */
-  home: Point & { angle: number };
   size: number;
-  bounds: SharedValue<Box>;
-  block: SharedValue<Box | null>;
-  centre: SharedValue<Point>;
-  burst: SharedValue<number>;
-  reach: number;
-  running: boolean;
+  bodies: SharedValue<Body[]>;
+  world: SharedValue<World | null>;
+  /** The reduced-motion burst, 0 to 1: the logos fade out and back. */
+  fade: SharedValue<number>;
   reduced: boolean;
-  newest: string | null;
-  shown: boolean;
-  onTap(id: string): void;
+  onTap(index: number): void;
 };
 
 /**
- * One lab's logo: it drifts, can be dragged and flung, joins the burst, and on a tap shows its newest model. Memoised,
- * so a tap on one logo doesn't re-render (and re-register the frame callbacks of) the others.
+ * One lab's logo, drawn where its slot in the simulation says. A finger landing on it catches it, so it stays under the
+ * finger (and the others bounce off it); holding or dragging lifts it, and letting go after a drag flings it. A tap
+ * shows its newest model. Memoised, so a tap doesn't re-render the other logos.
  */
-const Floater = memo(function Floater({ lab, index, home, size, bounds, block, centre, burst, reach, running, reduced, newest, shown, onTap }: FloaterProps) {
-  const id = lab.id;
-  // A little variety, so they don't move in step: drift speed, the way each sets off (round the ring, alternately
-  // clockwise), how its path wanders, and its spin in the burst.
-  const drift = DRIFT_SPEED * (0.8 + ((index * 7) % 5) / 10);
-  const heading = home.angle + (index % 2 ? Math.PI / 2 : -Math.PI / 2);
-  const phase = index * 1.7;
-  const spin = (index % 2 ? 1 : -1) * (14 + (index % 4) * 6);
-  const x = useSharedValue(home.x);
-  const y = useSharedValue(home.y);
-  const vx = useSharedValue(Math.cos(heading) * drift);
-  const vy = useSharedValue(Math.sin(heading) * drift);
-  const held = useSharedValue(false);
+const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, reduced, onTap }: FloaterProps) {
   const lifted = useSharedValue(0);
-  const grab = useSharedValue<Point>({ x: 0, y: 0 });
-
-  // Still logos sit at their place in the ring, which moves when the screen turns.
-  useEffect(() => {
-    if (!reduced) return;
-    x.set(home.x);
-    y.set(home.y);
-  }, [home.x, home.y, reduced, x, y]);
-
-  const frame = useFrameCallback((info) => {
-    const area = bounds.get();
-    if (held.get() || area.right - area.left < size) return;
-    const turn = 0.35 * Math.sin(info.timeSinceFirstFrame / 1600 + phase);
-    const next = step({ x: x.get(), y: y.get(), vx: vx.get(), vy: vy.get() }, (info.timeSincePreviousFrame ?? 16) / 1000, { size, bounds: area, box: block.get(), drift, heading, turn });
-    x.set(next.x);
-    y.set(next.y);
-    vx.set(next.vx);
-    vy.set(next.vy);
-  }, false);
-  useEffect(() => {
-    frame.setActive(running);
-    return () => frame.setActive(false);
-  }, [frame, running]);
+  const anchor = useSharedValue<Point>({ x: 0, y: 0 });
 
   const pan = usePanGesture({
     enabled: !reduced,
+    onBegin: () => {
+      bodies.set(pickUp(bodies.get(), index));
+      // A hold lifts it after a moment, with a tick, so it's clear it's been picked up.
+      lifted.set(withDelay(LIFT_MS, withTiming(1, { duration: 120 }, (finished) => {
+        if (finished) scheduleOnRN(lift);
+      })));
+    },
     onActivate: () => {
-      held.set(true);
-      grab.set({ x: x.get(), y: y.get() });
+      const body = bodies.get()[index];
+      if (body) anchor.set({ x: body.x, y: body.y });
+      if (lifted.get() < 1) scheduleOnRN(lift);
       lifted.set(withSpring(1));
-      scheduleOnRN(lift);
     },
     onUpdate: (event) => {
+      const layout = world.get();
+      const current = bodies.get();
+      const body = current[index];
+      if (!layout || !body) return;
       // The edges and the middle are solid: the logo slides along them and is never dropped inside the middle.
-      const moved = dragTo(grab.get(), { x: event.translationX, y: event.translationY }, { x: x.get(), y: y.get() }, size, bounds.get(), block.get());
-      grab.set(moved.anchor);
-      x.set(moved.at.x);
-      y.set(moved.at.y);
+      const moved = dragTo(anchor.get(), { x: event.translationX, y: event.translationY }, { x: body.x, y: body.y }, layout.size, layout.bounds, layout.box);
+      anchor.set(moved.anchor);
+      bodies.set(holdAt(current, index, moved.at));
     },
     onDeactivate: (event) => {
-      const thrown = fling(event.velocityX, event.velocityY);
-      vx.set(thrown.vx);
-      vy.set(thrown.vy);
+      bodies.set(throwBody(bodies.get(), index, event.velocityX, event.velocityY));
     },
     onFinalize: () => {
-      held.set(false);
+      // A tap, or a hold that never moved, lets it carry on as it was going.
+      bodies.set(letGo(bodies.get(), index));
       lifted.set(withSpring(0));
     },
   });
   const tap = useTapGesture({
     onActivate: () => {
-      scheduleOnRN(onTap, id);
+      scheduleOnRN(onTap, index);
     },
   });
   const gesture = useCompetingGestures(pan, tap);
 
-  // Where it's drawn: its body, pushed out during the burst. Held logos stay under the finger.
-  const place = useDerivedValue(() => {
-    const t = burst.get();
-    if (reduced || held.get() || t <= 0 || t >= 1) return { x: x.get(), y: y.get() };
-    return burstPosition({ x: x.get(), y: y.get() }, size, centre.get(), reach, t, home.angle, bounds.get());
-  });
   const tileStyle = useAnimatedStyle(() => {
-    const t = clamp(burst.get(), 0, 1);
-    const out = reduced ? 0 : burstCurve(t);
-    const at = place.get();
+    const body = bodies.get()[index];
+    const t = clamp(fade.get(), 0, 1);
     return {
-      opacity: reduced ? 1 - 0.85 * Math.sin(Math.PI * t) : 1,
-      zIndex: held.get() ? 2 : 1,
-      transform: [
-        { translateX: at.x },
-        { translateY: at.y },
-        // A tilt with speed, so a fling leans into its throw.
-        { rotate: `${clamp(vx.get() * 0.012, -12, 12) + spin * out}deg` },
-        { scale: 1 + 0.14 * lifted.get() + 0.12 * out },
-      ],
+      opacity: body ? 1 - 0.85 * Math.sin(Math.PI * t) : 0,
+      zIndex: body && body.held ? 2 : 1,
+      transform: [{ translateX: body ? body.x : 0 }, { translateY: body ? body.y : 0 }, { scale: 1 + 0.12 * lifted.get() }],
     };
   });
-  const infoStyle = useAnimatedStyle(() => {
-    const area = bounds.get();
-    const at = place.get();
-    const below = at.y + size + 8;
-    return {
-      transform: [
-        { translateX: clamp(at.x + size / 2 - INFO_WIDTH / 2, area.left, area.right - INFO_WIDTH) },
-        { translateY: below + INFO_HEIGHT > area.bottom ? at.y - 8 - INFO_HEIGHT : below },
-      ],
-    };
+  // A faint accent tint after it hits a corner exactly, as on the DVD screensaver.
+  const tintStyle = useAnimatedStyle(() => {
+    const body = bodies.get()[index];
+    return { opacity: body ? 0.3 * body.glow : 0 };
   });
 
   return (
-    <>
-      <GestureDetector gesture={gesture}>
-        <Animated.View
-          accessible
-          accessibilityRole="button"
-          accessibilityLabel={lab.name}
-          accessibilityHint="Shows its newest model"
-          accessibilityActions={[{ name: "activate" }]}
-          onAccessibilityAction={() => onTap(id)}
-          style={[{ position: "absolute", left: 0, top: 0 }, tileStyle]}
-        >
-          <View className="rounded-md bg-background">
-            <Logo id={lab.id} label={lab.name} size={size} />
-          </View>
-        </Animated.View>
-      </GestureDetector>
-      {shown ? (
-        <Animated.View
-          pointerEvents="none"
-          entering={FadeIn.duration(140).reduceMotion(ReduceMotion.Never)}
-          exiting={FadeOut.duration(180).reduceMotion(ReduceMotion.Never)}
-          accessibilityLiveRegion="polite"
-          style={[{ position: "absolute", left: 0, top: 0, width: INFO_WIDTH, zIndex: 5 }, infoStyle]}
-        >
-          <View className="items-center rounded-md border border-border bg-card px-2.5 py-1.5">
-            <Text variant="label" numberOfLines={1} className="text-card-foreground">{lab.name}</Text>
-            {newest ? <Text variant="caption" numberOfLines={1}>{`Newest: ${newest}`}</Text> : null}
-          </View>
-        </Animated.View>
-      ) : null}
-    </>
+    <GestureDetector gesture={gesture}>
+      <Animated.View
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={lab.name}
+        accessibilityHint="Shows its newest model"
+        accessibilityActions={[{ name: "activate" }]}
+        onAccessibilityAction={() => onTap(index)}
+        style={[{ position: "absolute", left: 0, top: 0 }, tileStyle]}
+      >
+        <Logo id={lab.id} label={lab.name} size={size} />
+        <Animated.View pointerEvents="none" className="absolute inset-0 rounded-md bg-primary" style={tintStyle} />
+      </Animated.View>
+    </GestureDetector>
   );
 });
+
+type LogoLabelProps = { lab: ArtLab; newest: string | null; index: number; bodies: SharedValue<Body[]>; world: SharedValue<World | null> };
+
+/** A tapped logo's lab and newest model, under the logo (above it near the bottom), following it as it moves. */
+function LogoLabel({ lab, newest, index, bodies, world }: LogoLabelProps) {
+  const height = useSharedValue(0);
+  const style = useAnimatedStyle(() => {
+    const layout = world.get();
+    const body = bodies.get()[index];
+    if (!layout || !body) return { opacity: 0, transform: [{ translateX: 0 }, { translateY: 0 }] };
+    const below = body.y + layout.size + 8;
+    const above = body.y - 8 - height.get();
+    return {
+      opacity: height.get() > 0 ? 1 : 0,
+      transform: [
+        { translateX: clamp(body.x + layout.size / 2 - LABEL_WIDTH / 2, layout.bounds.left, layout.bounds.right - LABEL_WIDTH) },
+        { translateY: below + height.get() > layout.bounds.bottom ? above : below },
+      ],
+    };
+  });
+  return (
+    <Animated.View
+      pointerEvents="none"
+      accessibilityLiveRegion="polite"
+      className="items-center"
+      style={[{ position: "absolute", left: 0, top: 0, width: LABEL_WIDTH, zIndex: 5 }, style]}
+    >
+      <View className="items-center rounded-md border border-border bg-card px-2.5 py-1.5" onLayout={(event) => height.set(event.nativeEvent.layout.height)}>
+        <Text variant="label" numberOfLines={1} className="text-card-foreground">{lab.name}</Text>
+        {newest ? <Text variant="caption" numberOfLines={1}>{`Newest: ${newest}`}</Text> : null}
+      </View>
+    </Animated.View>
+  );
+}
