@@ -1,4 +1,7 @@
 import "../global.css";
+// Applies the stored theme as soon as it loads, after global.css has registered its variables.
+import "@/lib/theme/store";
+import { NavigationBar } from "expo-navigation-bar";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -9,6 +12,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useCSSVariable } from "uniwind";
 import { OverlayHost, routeSheetOptions } from "@/components/ui";
+import { ThemeSync } from "@/features/account/ThemeSync";
 import { NotificationObserver } from "@/features/notifications/NotificationObserver";
 import { useLayout } from "@/hooks/useLayout";
 import { AppearanceProvider, useAppearance } from "@/providers/AppearanceProvider";
@@ -68,6 +72,9 @@ function RootNavigator() {
   return (
     <ThemeProvider value={theme}>
       <StatusBar style={resolved === "dark" ? "light" : "dark"} />
+      {/* Follows the app's own light or dark choice, which can differ from the phone's. */}
+      <NavigationBar style={resolved === "dark" ? "dark" : "light"} />
+      <ThemeSync />
       <NotificationObserver />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(app)" />
