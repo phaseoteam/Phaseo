@@ -485,6 +485,29 @@ describe("google-ai-studio stream transform", () => {
 		]);
 	});
 
+	it("numbers reasoning_details entries across chunks so each signature keeps its own index", async () => {
+		const upstream = makeGoogleSseStream([
+			{
+				candidates: [{ index: 0, content: { role: "model", parts: [{ text: "Plan.", thought: true, thoughtSignature: "sig-thought" }] } }],
+				usageMetadata: { promptTokenCount: 10 },
+			},
+			functionCallFrame({ id: "call_up_1", name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ id: "call_up_2", name: "search", args: { query: "lyon" } }, true),
+		]);
+
+		const details = (await readStreamText(transformStream(upstream, baseArgs())))
+			.split("\n")
+			.filter((line) => line.startsWith("data: {"))
+			.map((line) => JSON.parse(line.slice(6)))
+			.flatMap((chunk) => chunk.choices ?? [])
+			.flatMap((choice: any) => choice.delta?.reasoning_details ?? []);
+
+		expect(details.length).toBeGreaterThanOrEqual(3);
+		expect(details.map((detail: any) => detail.index)).toEqual(details.map((_: unknown, index: number) => index));
+		expect(details.filter((detail: any) => detail.id === "call_up_1" || detail.id === "call_up_2").map((detail: any) => detail.id))
+			.toEqual(["call_up_1", "call_up_2"]);
+	});
+
 	it("keeps two same-name calls without upstream ids apart and an identical re-send as one call", async () => {
 		const upstream = makeGoogleSseStream([
 			functionCallFrame({ name: "get_weather", args: { city: "Lyon" } }),

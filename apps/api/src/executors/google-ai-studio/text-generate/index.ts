@@ -1635,6 +1635,8 @@ export function transformStream(
 	let interactionSawFunctionCall = false;
 	let sawUsableOutput = false;
 	const emittedAnnotationKeys = new Set<string>();
+	// reasoning_details entries are numbered across the whole stream, per choice.
+	const reasoningDetailIndexes = new Map<number, number>();
 
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
@@ -1678,7 +1680,7 @@ export function transformStream(
 				// Usage observers must never break the client stream.
 			}
 		}
-		const openAIChunk = encodeIRChunkToOpenAI(irChunk);
+		const openAIChunk = encodeIRChunkToOpenAI(irChunk, reasoningDetailIndexes);
 		controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
 	};
 	const buildBaseIRChunk = (): IRStreamChunk => ({
@@ -2163,9 +2165,12 @@ export function transformStream(
 }
 
 /**
- * Helper to encode IR Chunk to OpenAI Protocol Chunk
+ * Helper to encode IR Chunk to OpenAI Protocol Chunk. `reasoningDetailIndexes`
+ * holds the next reasoning_details index per choice, so each entry keeps its own
+ * index across chunks: a client that merges stream entries by index would
+ * otherwise collapse every Gemini signature into one.
  */
-function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
+function encodeIRChunkToOpenAI(chunk: IRStreamChunk, reasoningDetailIndexes?: Map<number, number>): any {
 	const choices = chunk.choices.map(c => {
 		const delta: any = {};
 		if (c.delta.role) delta.role = c.delta.role;
@@ -2218,7 +2223,9 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 		}
 		const reasoningDetails = (c.delta as any).reasoningDetails;
 		if (Array.isArray(reasoningDetails) && reasoningDetails.length > 0) {
-			delta.reasoning_details = reasoningDetails.map((detail: Record<string, any>, index: number) => ({ ...detail, index }));
+			const start = reasoningDetailIndexes?.get(c.index) ?? 0;
+			delta.reasoning_details = reasoningDetails.map((detail: Record<string, any>, offset: number) => ({ ...detail, index: start + offset }));
+			reasoningDetailIndexes?.set(c.index, start + reasoningDetails.length);
 		}
 		const annotations = toChatAnnotations((c.delta as any).annotations);
 		if (annotations.length > 0) delta.annotations = annotations;
