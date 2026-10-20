@@ -119,7 +119,7 @@ export function encodeOpenAIResponsesResponse(
 					type: "reasoning",
 					id: `rs_${responseId}_${choice.index}_${reasoningIndex}`,
 					summary: [],
-					content: [{ type: "output_text", text: part.block.thinking, annotations: [] }],
+					content: [{ type: "reasoning_text", text: part.block.thinking }],
 				};
 			}
 			if (!item) continue;

@@ -101,7 +101,7 @@ export type ResponsesReasoningItem = {
 	type: "reasoning";
 	id: string;
 	summary: Array<{ type: "summary_text"; text: string }>;
-	content: Array<{ type: "output_text"; text: string; annotations?: any[] }>;
+	content: Array<{ type: "reasoning_text"; text: string }>;
 	encrypted_content?: string;
 	status?: "completed";
 };
@@ -116,7 +116,8 @@ export function encodeResponsesReasoningItem(
 		type: "reasoning",
 		id: part.reasoningId ?? fallbackId,
 		summary: part.summary ? [{ type: "summary_text", text: part.summary }] : [],
-		content: part.text ? [{ type: "output_text", text: part.text, annotations: [] }] : [],
+		// Reasoning text is a reasoning_text content part, as OpenAI's Responses API types it.
+		content: part.text ? [{ type: "reasoning_text", text: part.text }] : [],
 		...(sealed ? { encrypted_content: sealed } : {}),
 	};
 }

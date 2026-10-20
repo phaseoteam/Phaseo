@@ -476,9 +476,8 @@ export const minimaxQuirks: ProviderQuirks = {
 					id: `${item.id ?? "reasoning"}_minimax_reasoning`,
 					status: item.status ?? "completed",
 					content: [{
-						type: "output_text",
+						type: "reasoning_text",
 						text: reasoningText,
-						annotations: [],
 					}],
 				});
 			}

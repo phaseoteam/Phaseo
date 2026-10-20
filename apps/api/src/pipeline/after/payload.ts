@@ -332,9 +332,8 @@ function buildResponsesOutput(ir: IRChatResponse, requestId: string) {
                 status: "completed",
                 content: [
                     {
-                        type: "output_text",
+                        type: "reasoning_text",
                         text: reasoningPart.text,
-                        annotations: [],
                     },
                 ],
             });

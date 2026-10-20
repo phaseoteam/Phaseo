@@ -168,9 +168,8 @@ export function createAnthropicToResponsesStreamTransformer(
 			status: "completed",
 			summary: [],
 			content: redacted ? [] : [{
-				type: "output_text",
+				type: "reasoning_text",
 				text: block.text || "",
-				annotations: [],
 			}],
 			...(value
 				? {

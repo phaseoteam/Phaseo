@@ -227,7 +227,7 @@ function buildUnifiedEventsFromResponsesPayload(payload: any): UnifiedStreamEven
 		if (itemType === "reasoning") {
 			const contentParts = Array.isArray(item?.content) ? item.content : [];
 			for (const part of contentParts) {
-				if (part?.type === "output_text" && typeof part?.text === "string" && part.text.length > 0) {
+				if ((part?.type === "reasoning_text" || part?.type === "output_text") && typeof part?.text === "string" && part.text.length > 0) {
 					events.push({
 						type: "delta_text",
 						channel: "reasoning_text",
