@@ -1,11 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Activity, ArrowLeft, Bell, Bot, Keyboard, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { Activity, ArrowLeft, Bell, Bot, FlaskConical, Keyboard, Gauge, Palette, Plug, Search, SlidersHorizontal, UserRound } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { useWorkspace, type SettingsPage as Page } from "../app/workspace";
 import { cn } from "../lib/utils";
-import { GeneralSettings, NotificationSettings } from "./GeneralSettings";
+import { ExperimentalSettings, GeneralSettings, NotificationSettings } from "./GeneralSettings";
 import { UsageSettings } from "./UsageSettings";
 import { DiagnosticsSettings } from "./DiagnosticsSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
@@ -34,6 +34,7 @@ const groups: { label: string; pages: Entry[] }[] = [
 	// Listed after the projects, at the bottom, like T3's.
 	{ label: "Advanced", pages: [
 		{ id: "diagnostics", label: "Diagnostics", icon: <Activity />, keywords: "processes cpu memory performance slow traces spans logs failures errors debug kill stop" },
+		{ id: "experimental", label: "Experimental", icon: <FlaskConical />, keywords: "autopilot beta labs experimental preview yolo" },
 	] },
 ];
 const bottomGroups = new Set(["Advanced"]);
@@ -94,5 +95,6 @@ export function SettingsPage() {
 		{settings === "project" && <ProjectSettingsPage />}
 		{settings === "mcp" && <McpConnections />}
 		{settings === "diagnostics" && <DiagnosticsSettings />}
+		{settings === "experimental" && <ExperimentalSettings />}
 	</ScrollArea>;
 }

@@ -34,9 +34,9 @@ export type Account = { id: string; name: string; harness: Harness; kind: "nativ
 export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
-export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
+export type Message = { startedAt?: string; completedAt?: string; /** Working-tree snapshots around the turn this message started (user messages in a project). */ checkpoint?: TurnCheckpoint; timelineOrder?: number; threadReferences?: string[]; nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer" | "subagent"; /** Sent by Autopilot to keep the task going, not by the person. */ autopilot?: true; /** A wake the app sent (a watched pull request changed): shown as a compact notice, not as the person's message. */ notice?: MessageNotice; /** Delegated results: the first child, and every child batched into this message. */ sourceTaskId?: string; sourceTaskIds?: string[]; createdAt: string };
 export type MessageNotice = { kind: "pull-request"; summary: string; outcome: "failed" | "completed" | "updated"; url?: string };
-export type QueuedMessage = { notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
+export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { timelineOrder?: number; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string } };
 /** How the person's own answer is typed: text by default, or a typed control with bounds. */
@@ -51,6 +51,13 @@ export type QuestionRequest = { id: string; questions: AgentQuestion[]; response
 /** A pending approval. Plans show as a proposed-plan card; always and never carry the agent's labels for its lasting choices. */
 export type ApprovalRequest = { id: string; method: string; description: string; kind?: "plan"; always?: string; never?: string };
 export type ApprovalDecision = "accept" | "decline" | "always" | "never";
+/**
+ * Autopilot (experimental): models answer the agent and keep the task going until a model judges it done. capNanos
+ * stops it at that Phaseo spend for the chat and its agents (null for no cap); a delegated agent inherits its parent's
+ * and counts towards the parent's cap. handback is why it last returned the chat to the person, cleared by their next message.
+ */
+export type AutopilotState = { capNanos: number | null; since: string; inherited?: true; stalls?: number; handback?: { reason: "done" | "blocked" | "stalled" | "cap"; summary: string; at: string } };
+export const autopilotCap = { minimumNanos: 10_000_000, maximumNanos: 10_000_000_000_000 };
 /** Tokens, and the gateway's price in nanodollars. */
 export type UsageTotals = { tokens: number; costNanos: number };
 export type Task = {
@@ -77,6 +84,7 @@ export type Task = {
 	tags?: string[];
 	/** What the chat's Phaseo turns have used, kept as they stream; filled in from its history for older chats. */
 	usageTotals?: UsageTotals;
+	autopilot?: AutopilotState;
 	/** Code-mode lifecycle after T3 Code (see shared/threadLifecycle.ts). */
 	settledOverride?: "settled" | "active"; settledAt?: string; unsettledAt?: string;
 	snoozedUntil?: string; snoozedAt?: string; lastSnoozeWakeAt?: string;
@@ -144,9 +152,9 @@ export type WorkspaceCommand =
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
-	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
+	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues; autopilot?: { capNanos: number | null } }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
-	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; tags?: string[]; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues }
+	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; tags?: string[]; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues; /** Turns Autopilot on with a spend cap, or off with null. */ autopilot?: { capNanos: number | null } | null }
 	| { type: "send"; id: string; text: string; threadReferences?: string[]; attachments?: string[]; nativeAction?: NativeAction }
 	| { type: "steer"; id: string; text: string; attachments?: string[] }
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
@@ -293,6 +301,12 @@ function validateApiEndpoint(endpoint: string) {
 	if (url.username || url.password || (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)))) throw new Error("Use HTTPS or a local model endpoint.");
 }
 
+/** An Autopilot setting: a spend cap of whole nanodollars from a cent to $10,000, or null for none. */
+function validAutopilot(value: unknown) {
+	if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some(key => key !== "capNanos")) return false;
+	const cap = (value as { capNanos?: unknown }).capNanos;
+	return cap === null || (typeof cap === "number" && Number.isInteger(cap) && cap >= autopilotCap.minimumNanos && cap <= autopilotCap.maximumNanos);
+}
 export function validateCommand(value: unknown): WorkspaceCommand {
 	if (!value || typeof value !== "object") throw new Error("Invalid workspace command.");
 	const command = value as Record<string, unknown>;
@@ -323,6 +337,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 		if (command.serviceTier !== undefined && (typeof command.serviceTier !== "string" || command.serviceTier.length > 100 || [...command.serviceTier].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid speed setting.");
 		if (command.reasoningEffort !== undefined && (typeof command.reasoningEffort !== "string" || command.reasoningEffort.length > 100 || [...command.reasoningEffort].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid reasoning effort.");
 		validateModelOptions(command.modelOptions);
+		if (command.autopilot !== undefined && (command.type !== "create-task" || !validAutopilot(command.autopilot))) throw new Error("Invalid Autopilot setting.");
 	} else {
 		string("id");
 		switch (command.type) {
@@ -337,6 +352,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				if (command.archived !== undefined && typeof command.archived !== "boolean") throw new Error("Invalid archived state.");
 				break;
 			case "update-task":
+				if (command.autopilot !== undefined && command.autopilot !== null && !validAutopilot(command.autopilot)) throw new Error("Invalid Autopilot setting.");
 				if (command.permissionMode !== undefined && !["supervised", "accept-edits", "full-access"].includes(command.permissionMode as string)) throw new Error("Invalid permissions.");
 				string("title", false, 200);
 				if (command.serviceTier !== undefined && (typeof command.serviceTier !== "string" || command.serviceTier.length > 100 || [...command.serviceTier].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid speed setting.");

@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, Paperclip, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
+import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, Paperclip, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
@@ -42,6 +42,7 @@ function CopyButton({ text }: { text: string }) {
 
 function UserMessage({ message, projectId, onAttachment, onBranch, canBranch }: { message: Message; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; canBranch: boolean }) {
 	return <div data-conversation-id={`message:${message.id}`} className="group/message flex flex-col items-end gap-1">
+		{message.autopilot && <span title="Autopilot sent this to keep the task going" className="flex items-center gap-1 text-[11px] font-medium text-warning"><Plane className="size-3" />Autopilot</span>}
 		<div data-selectable className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-4 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap"><MessageText text={message.text} projectId={projectId} />
 			{!!message.attachments?.length && <div className="mt-2 flex flex-wrap gap-1.5">{message.attachments.map(attachment => <button key={attachment.id} type="button" onClick={() => onAttachment(attachment.id)} className="inline-flex h-6 items-center gap-1 rounded-md bg-background/70 px-2 text-xs hover:bg-background"><Paperclip className="size-3" />{attachment.name}</button>)}</div>}
 		</div>

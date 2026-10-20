@@ -73,13 +73,50 @@ if (demo) {
 			response.end(JSON.stringify({ ok: true, offset, limit, total: live.length, models: live.slice(offset, offset + limit) }));
 			return;
 		}
+		// Code chats on Phaseo stream through /responses: answer with the canned reply as Responses events.
+		if (request.method === "POST" && request.url?.endsWith("/responses")) {
+			let body = "";
+			request.on("data", chunk => { body += chunk; });
+			request.on("end", async () => {
+				const { model, input } = JSON.parse(body);
+				const textOf = content => typeof content === "string" ? content : Array.isArray(content) ? content.map(part => part?.text ?? "").join("") : "";
+				const question = textOf((Array.isArray(input) ? [...input].reverse().find(item => item?.role === "user") : { content: input })?.content);
+				const reply = demoReply(model, question || "your message");
+				response.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" });
+				await sleep(500);
+				const send = packet => response.write(`event: ${packet.type}\ndata: ${JSON.stringify(packet)}\n\n`);
+				for (const piece of reply.match(/\S+\s*|\n+/g)) { send({ type: "response.output_text.delta", output_index: 0, content_index: 0, delta: piece }); await sleep(28); }
+				const item = { type: "message", id: "msg_demo", role: "assistant", status: "completed", content: [{ type: "output_text", text: reply }] };
+				send({ type: "response.output_item.done", output_index: 0, item });
+				// Priced like the gateway, at $3/M input and $15/M output.
+				const prompt = Math.ceil(body.length / 4), completion = Math.ceil(reply.length / 4);
+				const usage = { input_tokens: prompt, output_tokens: completion, total_tokens: prompt + completion, pricing_breakdown: { total_nanos: prompt * 3000 + completion * 15000, currency: "USD" } };
+				send({ type: "response.completed", response: { id: `resp_demo_${Date.now()}`, object: "response", model, status: "completed", output: [item], usage } });
+				response.end();
+			});
+			return;
+		}
 		if (request.method !== "POST" || !request.url?.endsWith("/chat/completions")) { response.writeHead(404).end(); return; }
 		let body = "";
 		request.on("data", chunk => { body += chunk; });
 		request.on("end", async () => {
-			const { model, messages, tools } = JSON.parse(body);
+			const { model, messages, tools, stream } = JSON.parse(body);
 			const question = [...messages].reverse().find(message => message.role === "user")?.content;
 			const last = messages.at(-1), lastText = typeof last?.content === "string" ? last.content : "";
+			// Autopilot's model (one non-streamed call): answer with the first option, approve plans, and send one follow-up before calling a task done.
+			if (stream === false && String(messages[0]?.content ?? "").startsWith("You are Autopilot")) {
+				const ask = String(lastText), option = /"value": "([^"]*)"/.exec(ask)?.[1], id = /"id": "([^"]*)"/.exec(ask)?.[1];
+				const verdict = ask.includes("The agent asks:") ? (id && option !== undefined ? { decision: "answer", answers: { [id]: [option] }, reason: "The first option fits the task." } : { decision: "escalate", reason: "Only you can answer this one." })
+					: ask.includes("proposes this plan") ? { decision: "accept", reason: "The plan covers the task." }
+					: ask.includes("asks to:") ? { decision: "accept", reason: "Needed for the task." }
+					: ask.includes("finished a turn") ? (/has sent 0 follow-ups/.test(ask) ? { status: "continue", message: "Double-check the result, then summarise what changed.", reason: "Not verified yet." } : { status: "done", summary: "The demo task is done and checked." })
+					: { decision: "escalate", reason: "This demo can't answer forms." };
+				const usage = { prompt_tokens: Math.ceil(body.length / 4), completion_tokens: 40, total_tokens: Math.ceil(body.length / 4) + 40, pricing: { total_nanos: Math.ceil(body.length / 4) * 3000 + 40 * 15000, currency: "USD" } };
+				await sleep(400);
+				response.writeHead(200, { "Content-Type": "application/json" });
+				response.end(JSON.stringify({ choices: [{ index: 0, message: { role: "assistant", content: JSON.stringify(verdict) }, finish_reason: "stop" }], usage }));
+				return;
+			}
 			response.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" });
 			await sleep(500);
 			const send = packet => response.write(`data: ${JSON.stringify(packet)}\n\n`);
@@ -277,6 +314,7 @@ app.whenReady().then(async () => {
 		"compare-hover": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.compareGroups": [{ id: "compare-1", title: "What does a 10k-token prompt with a 2k-token answer cost?", taskIds: ["pricing", "pricing-gpt", "pricing-gemini"].map(demoId), createdAt: at(30) }] }, hover: "aside [data-slot=tooltip-trigger]:nth-child(2)" },
 		"compare": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedCompare": "compare-1", "phaseo.desktop.compareGroups": [{ id: "compare-1", title: "What does a 10k-token prompt with a 2k-token answer cost?", taskIds: ["pricing", "pricing-gpt", "pricing-gemini"].map(demoId), createdAt: at(30) }] } },
 		"settings": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedTask": demoId("pricing") }, script: `document.querySelector('[aria-label="Settings"]').click()` },
+		"settings-experimental": { storage: { "phaseo.desktop.workspaceMode": "code" }, script: `(async () => { document.querySelector('[aria-label="Settings"]').click(); await new Promise(r => setTimeout(r, 500)); [...document.querySelectorAll('nav[aria-label="Settings sections"] button')].find(button => button.textContent.trim() === 'Experimental')?.click(); })()` },
 		"palette": { storage: { "phaseo.desktop.workspaceMode": "chat" }, script: `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))` },
 	};
 	for (const [name, state] of Object.entries(states)) {

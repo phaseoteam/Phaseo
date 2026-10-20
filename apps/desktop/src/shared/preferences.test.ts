@@ -12,4 +12,10 @@ describe("workspace preferences", () => {
 		expect(() => validatePreferences({ ...defaultPreferences, openPullRequestsInApp: "yes" })).toThrow("pull request");
 		expect(() => validatePreferences({ ...defaultPreferences, diffFilesCollapsed: 1 })).toThrow("diff");
 	});
+	it("keeps Autopilot off unless it is turned on, with an optional model", () => {
+		expect(validatePreferences({ notifications: "off", notificationTitles: false })).toMatchObject({ autopilot: false, autopilotModel: null });
+		expect(validatePreferences({ ...defaultPreferences, autopilot: true, autopilotModel: "openai/gpt-6-mini" })).toMatchObject({ autopilot: true, autopilotModel: "openai/gpt-6-mini" });
+		expect(() => validatePreferences({ ...defaultPreferences, autopilot: "on" })).toThrow("Autopilot");
+		expect(() => validatePreferences({ ...defaultPreferences, autopilotModel: " " })).toThrow("Autopilot");
+	});
 });
