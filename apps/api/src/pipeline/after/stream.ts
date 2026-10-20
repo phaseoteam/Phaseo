@@ -247,6 +247,13 @@ export async function handleStreamResponse(
         const { cost, ...rest } = record;
         return { ...rest, cost_details: { ...(rest.cost_details ?? {}), upstream_inference_cost: cost } } as T;
     };
+    // Native Messages streams split usage: message_start carries input and cache tokens and
+    // message_delta usually only output tokens. Merge them as the stream's final bill does.
+    let messagesStreamUsage: Record<string, unknown> | null = null;
+    const accumulateMessagesStreamUsage = (usage: any) => {
+        if (!usage || typeof usage !== "object") return;
+        messagesStreamUsage = { ...(messagesStreamUsage ?? {}), ...usage };
+    };
     // Messages usage frames are not otherwise priced for the client: add only the cost
     // fields, priced the same way as the Chat and Responses usage frames.
     const messagesStreamCostFields = (usage: any) => {
@@ -326,6 +333,9 @@ export async function handleStreamResponse(
                 delete next.meta;
             }
 
+            const isMessagesStream = ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages";
+            if (isMessagesStream) accumulateMessagesStreamUsage(next.message?.usage ?? next.usage);
+
             if (next.usage) {
                 if (ctx.meta.debug) {
                     console.log("[gateway][pricing] stream frame usage", {
@@ -335,8 +345,8 @@ export async function handleStreamResponse(
                         usage: next.usage,
                     });
                 }
-                if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
-                    const costFields = next.type === "message_delta" ? messagesStreamCostFields(next.usage) : undefined;
+                if (isMessagesStream) {
+                    const costFields = next.type === "message_delta" ? messagesStreamCostFields(messagesStreamUsage) : undefined;
                     next.usage = normalizeAnthropicUsage(next.usage);
                     if (costFields) Object.assign(next.usage, costFields);
                 } else if (card) {

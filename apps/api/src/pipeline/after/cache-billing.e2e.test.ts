@@ -363,6 +363,37 @@ describe("Claude on Vertex", () => {
 	}
 });
 
+// Opus 5.5 Messages streams reach the client as the provider sent them: message_start
+// carries the input and cache usage and message_delta only the output tokens.
+describe("Claude Opus 5.5 native Messages streams", () => {
+	const expected = expectedCost(claudeTokens, sonnetPrices);
+	const withRuntime = async (env: Record<string, string>, run: () => Promise<void>) => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv(env as any);
+		try { await run(); } finally { teardownTestRuntime(); setupTestRuntime(); }
+	};
+
+	it("reports the settled charge as usage.cost on Bedrock", async () => withRuntime({ AMAZON_BEDROCK_API_KEY: "test-key", AMAZON_BEDROCK_REGION: "us-east-1" }, async () => {
+		const card = textCard("amazon-bedrock", "anthropic/claude-opus-5-5", sonnetPrices);
+		stubFetch(() => new Response(claudeSse(), { headers: { "content-type": "text/event-stream", "x-amzn-requestid": "aws_req_1" } }));
+		const executor: any = await executeBedrock({ ...executorArgs("messages", "amazon-bedrock", "anthropic.claude-opus-5-5", true), byokMeta: [] });
+		const { nanos, usage } = await runStream({ endpoint: "messages", provider: "amazon-bedrock", model: "anthropic/claude-opus-5-5", card, executor });
+		expect(nanos).toBe(expected);
+		// The client's message_delta carries only output tokens; cost still covers the input.
+		expect(usage).toEqual(expect.objectContaining({ output_tokens: 850 }));
+		expect(usage.cost).toBe(nanos / 1e9);
+	}));
+
+	it("reports the settled charge as usage.cost on Vertex", async () => withRuntime({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" }, async () => {
+		const card = textCard("google-vertex", "anthropic/claude-opus-5-5", sonnetPrices);
+		stubFetch(() => new Response(claudeSse(), { headers: { "content-type": "text/event-stream" } }));
+		const executor: any = await executeVertex(executorArgs("messages", "google-vertex", "claude-opus-5-5", true));
+		const { nanos, usage } = await runStream({ endpoint: "messages", provider: "google-vertex", model: "anthropic/claude-opus-5-5", card, executor });
+		expect(nanos).toBe(expected);
+		expect(usage.cost).toBe(nanos / 1e9);
+	}));
+});
+
 // ---------------------------------------------------------------------------------------
 // OpenAI-compatible families. Each uses the provider's documented usage shape.
 // ---------------------------------------------------------------------------------------
