@@ -1,6 +1,7 @@
 import type { PipelineContext } from "@/pipeline/before/types";
 import type { RequestResult } from "@/pipeline/execute";
 import { applyResponseHealingPlugin } from "./response-healing";
+import { isServerToolPluginId, SERVER_TOOL_PLUGIN_IDS } from "./server-tool-plugins";
 import type {
 	GatewayPluginExecutionMetadata,
 	GatewayResponsePluginHandler,
@@ -19,9 +20,11 @@ const RESPONSE_PLUGIN_HANDLER_MAP = new Map(
 	RESPONSE_PLUGIN_HANDLERS.map((handler) => [handler.id, handler] as const),
 );
 
-export const KNOWN_GATEWAY_PLUGIN_IDS = new Set(
-	RESPONSE_PLUGIN_HANDLERS.map((handler) => handler.id),
-);
+// Response plugins plus the request plugins that add a server tool before routing.
+export const KNOWN_GATEWAY_PLUGIN_IDS = new Set<string>([
+	...RESPONSE_PLUGIN_HANDLERS.map((handler) => handler.id),
+	...SERVER_TOOL_PLUGIN_IDS,
+]);
 
 export function getResponsePluginHandler(id: string): GatewayResponsePluginHandler | null {
 	return RESPONSE_PLUGIN_HANDLER_MAP.get(String(id ?? "").trim().toLowerCase()) ?? null;
@@ -52,6 +55,8 @@ export function applyResponsePlugins(args: {
 
 	for (const plugin of plugins) {
 		if (!plugin.enabled) continue;
+		// Applied to the request before routing (see ./server-tool-plugins.ts).
+		if (isServerToolPluginId(plugin.id)) continue;
 
 		const handler = getResponsePluginHandler(plugin.id);
 		if (handler) {

@@ -879,4 +879,70 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect((result.ctx.rawBody as any).messages?.[0]?.content).toBe("[EMAIL]");
 		expect((result.ctx as any).guardrailEnforcement?.source).toBe("sensitive_info");
 	});
+
+	function mockRequest(body: any, providers: any[]) {
+		guardJsonMock.mockResolvedValue({ ok: true, value: body });
+		guardZodMock.mockReturnValue({ ok: true, value: body });
+		guardContextMock.mockResolvedValue({
+			ok: true,
+			value: {
+				context: {
+					pricing: Object.fromEntries(providers.map((provider) => [provider.providerId, provider.pricingCard])),
+					key: { ok: true, reason: null, resetAt: null },
+					keyLimit: { ok: true, reason: null, resetAt: null },
+					credit: { ok: true, reason: null, resetAt: null },
+					teamSettings: { billingMode: "wallet" },
+				},
+				providers,
+				resolvedModel: body.model,
+				candidateDiagnostics: {
+					totalProviders: providers.length,
+					supportsEndpointCount: providers.length,
+					droppedUnsupportedEndpoint: [],
+					droppedMissingAdapter: [],
+					candidateCount: providers.length,
+				},
+			},
+		});
+		return new Request("https://gateway.local/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(body),
+		});
+	}
+
+	function providerNamed(providerId: string): any {
+		return { ...providerWithPricingRules(1), providerId };
+	}
+
+	it("turns the web plugin into a phaseo:web_search tool before routing", async () => {
+		const req = mockRequest({
+			model: "openai/gpt-4.1-mini",
+			input: "news?",
+			plugins: [{ id: "web", max_results: 3, include_domains: ["example.com"] }],
+		}, [providerNamed("anthropic")]);
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect((result.ctx.body as any).tools).toEqual([
+			{ type: "phaseo:web_search", parameters: { max_results: 3, allowed_domains: ["example.com"] } },
+		]);
+		expect(validateCapabilitiesMock.mock.calls[0][0].requiredParams).toContain("tools");
+		expect(result.ctx.plugins.map((plugin) => plugin.id)).toEqual(["web"]);
+	});
+
+	it("rejects an invalid web plugin option before routing", async () => {
+		const req = mockRequest({
+			model: "openai/gpt-4.1-mini",
+			input: "news?",
+			plugins: [{ id: "web", engine: "bing" }],
+		}, [providerNamed("anthropic")]);
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		const payload = await result.response.json();
+		expect(payload.details?.[0]?.keyword).toBe("invalid_gateway_plugin_config");
+		expect(payload.details?.[0]?.path).toEqual(["plugins", "engine"]);
+	});
 });
