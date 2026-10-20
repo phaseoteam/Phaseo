@@ -90,6 +90,51 @@ function getReleaseDate(model: CompareModelOption): Date | null {
 	return parsed;
 }
 
+const NO_GROUPS: GroupedModels[] = [];
+
+/**
+ * Groups models by release month, newest first, and sorts each month newest first
+ * then by name. Each date is parsed once and each month labelled once: the list
+ * holds every catalogue model, so per-model formatting is the expensive part.
+ */
+export function groupModelsByReleaseMonth(
+	models: CompareModelOption[],
+	monthLabel: (date: Date) => string,
+	unknownLabel: string,
+): GroupedModels[] {
+	const collator = new Intl.Collator(undefined, { sensitivity: "base" });
+	const groups = new Map<string, GroupedModels & { entries: Array<{ model: CompareModelOption; time: number }> }>();
+	for (const model of models) {
+		const releaseDate = getReleaseDate(model);
+		const monthKey = releaseDate
+			? `${releaseDate.getUTCFullYear()}-${String(releaseDate.getUTCMonth() + 1).padStart(2, "0")}`
+			: "unknown";
+		let group = groups.get(monthKey);
+		if (!group) {
+			group = {
+				monthKey,
+				monthLabel: releaseDate ? monthLabel(releaseDate) : unknownLabel,
+				monthTimestamp: releaseDate
+					? Date.UTC(releaseDate.getUTCFullYear(), releaseDate.getUTCMonth(), 1)
+					: Number.NEGATIVE_INFINITY,
+				models: [],
+				entries: [],
+			};
+			groups.set(monthKey, group);
+		}
+		group.entries.push({ model, time: releaseDate ? releaseDate.getTime() : Number.NEGATIVE_INFINITY });
+	}
+
+	return Array.from(groups.values())
+		.map(({ entries, ...group }) => ({
+			...group,
+			models: entries
+				.sort((a, b) => (a.time !== b.time ? b.time - a.time : collator.compare(a.model.name, b.model.name)))
+				.map((entry) => entry.model),
+		}))
+		.sort((a, b) => b.monthTimestamp - a.monthTimestamp);
+}
+
 export default function ModelCombobox({
 	models,
 	selected,
@@ -137,48 +182,12 @@ export default function ModelCombobox({
 		});
 	}, [selected, dialogOpen]);
 
-	const groupedModels = React.useMemo<GroupedModels[]>(() => {
-		const map = new Map<string, GroupedModels>();
-		models.forEach((model) => {
-			const releaseDate = getReleaseDate(model);
-			const monthKey = releaseDate
-				? `${releaseDate.getUTCFullYear()}-${String(releaseDate.getUTCMonth() + 1).padStart(2, "0")}`
-				: "unknown";
-			const monthLabel = releaseDate
-				? getReleaseMonthLabel(releaseDate)
-				: t("unknownReleaseDate");
-			const monthTimestamp = releaseDate
-				? Date.UTC(releaseDate.getUTCFullYear(), releaseDate.getUTCMonth(), 1)
-				: Number.NEGATIVE_INFINITY;
-			if (!map.has(monthKey)) {
-				map.set(monthKey, {
-					monthKey,
-					monthLabel,
-					monthTimestamp,
-					models: [],
-				});
-			}
-			map.get(monthKey)!.models.push(model);
-		});
-
-		return Array.from(map.values())
-			.map((group) => ({
-				...group,
-				models: group.models
-					.slice()
-					.sort((a, b) => {
-						const aDate = getReleaseDate(a);
-						const bDate = getReleaseDate(b);
-						const aTime = aDate ? aDate.getTime() : Number.NEGATIVE_INFINITY;
-						const bTime = bDate ? bDate.getTime() : Number.NEGATIVE_INFINITY;
-						if (aTime !== bTime) return bTime - aTime;
-						return a.name.localeCompare(b.name, undefined, {
-							sensitivity: "base",
-						});
-					}),
-			}))
-			.sort((a, b) => b.monthTimestamp - a.monthTimestamp);
-	}, [getReleaseMonthLabel, models, t]);
+	// The list only shows in the open dialog, so a closed picker (every server
+	// render, and hydration) skips grouping the whole catalogue.
+	const groupedModels = React.useMemo<GroupedModels[]>(
+		() => (dialogOpen ? groupModelsByReleaseMonth(models, getReleaseMonthLabel, t("unknownReleaseDate")) : NO_GROUPS),
+		[dialogOpen, getReleaseMonthLabel, models, t],
+	);
 
 	const filteredGroups = React.useMemo(() => {
 		const term = searchTerm.trim().toLowerCase();
