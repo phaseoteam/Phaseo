@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import { useIsFocused, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { X } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type AccessibilityActionEvent } from "react-native";
 import { GestureDetector, useCompetingGestures, usePanGesture, useTapGesture } from "react-native-gesture-handler";
 import Animated, {
@@ -283,8 +283,11 @@ type FloaterProps = {
   onTap(id: string): void;
 };
 
-/** One lab's logo: it drifts, can be dragged and flung, joins the burst, and on a tap shows its newest model. */
-function Floater({ lab, index, home, size, bounds, block, centre, burst, reach, running, reduced, newest, shown, onTap }: FloaterProps) {
+/**
+ * One lab's logo: it drifts, can be dragged and flung, joins the burst, and on a tap shows its newest model. Memoised,
+ * so a tap on one logo doesn't re-render (and re-register the frame callbacks of) the others.
+ */
+const Floater = memo(function Floater({ lab, index, home, size, bounds, block, centre, burst, reach, running, reduced, newest, shown, onTap }: FloaterProps) {
   const id = lab.id;
   // A little variety, so they don't move in step: drift speed, the way each sets off (round the ring, alternately
   // clockwise), how its path wanders, and its spin in the burst.
@@ -423,4 +426,4 @@ function Floater({ lab, index, home, size, bounds, block, centre, burst, reach, 
       ) : null}
     </>
   );
-}
+});
