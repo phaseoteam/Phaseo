@@ -48,6 +48,22 @@ describe("audit service tier attribution", () => {
 	it("preserves the batch tier", () => {
 		expect(resolveAuditServiceTiers({ endpoint: "batch" }).effective).toBe("batch");
 	});
+	it("records a requested scale tier as standard, as it runs", () => {
+		for (const endpoint of ["chat.completions", "responses"] as const) {
+			expect(resolveAuditServiceTiers({ endpoint, requestPayload: { service_tier: "scale" } })).toEqual({
+				requested: "standard",
+				observed: null,
+				effective: "standard",
+			});
+		}
+	});
+	it("leaves a provider-reported tier to the provider", () => {
+		expect(resolveAuditServiceTiers({
+			endpoint: "responses",
+			requestPayload: { service_tier: "scale" },
+			usage: { service_tier: "priority" },
+		})).toEqual({ requested: "standard", observed: "priority", effective: "priority" });
+	});
 });
 
 describe("audit request detail persistence", () => {

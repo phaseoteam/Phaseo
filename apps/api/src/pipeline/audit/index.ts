@@ -62,6 +62,14 @@ function canonicalServiceTier(value: unknown): CanonicalServiceTier | null {
     return normalized ?? null;
 }
 
+// The requested tier is read from the raw body, before the request schema runs
+// OpenAI's "scale" as the standard tier, so it is mapped the same way here. A tier
+// the provider reports keeps canonicalServiceTier, as pricing does.
+function canonicalRequestedServiceTier(value: unknown): CanonicalServiceTier | null {
+    if (typeof value === "string" && value.trim().toLowerCase() === "scale") return "standard";
+    return canonicalServiceTier(value);
+}
+
 function nestedValue(root: unknown, path: string[]): unknown {
     let current = root;
     for (const key of path) {
@@ -83,7 +91,7 @@ export function resolveAuditServiceTiers(args: {
 } {
     const requested = args.endpoint === "batch"
         ? "batch"
-        : canonicalServiceTier(readRequestedServiceTier(args.requestPayload).value);
+        : canonicalRequestedServiceTier(readRequestedServiceTier(args.requestPayload).value);
     const observedCandidates = [
         nestedValue(args.usage, ["service_tier"]),
         nestedValue(args.usage, ["serviceTier"]),
