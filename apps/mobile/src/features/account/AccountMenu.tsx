@@ -11,7 +11,7 @@ import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { Logo, logoUri } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
-import { Button, confirm, dismissToast, Header, Icon, Row, Screen, Section, Text, toast } from "@/components/ui";
+import { Button, confirm, Header, Icon, Row, Screen, Section, Text, toast } from "@/components/ui";
 import { readStorageReport } from "@/features/chat/deviceStorage";
 import { catalogueQuery } from "@/features/models/state";
 import { FULL_VERSION_LABEL, VERSION_LABEL } from "@/lib/appInfo";
@@ -78,17 +78,15 @@ export function AccountMenu() {
   const unlocked = higherOrLowerStore.use((state) => state.unlocked);
   const { resolved } = useAppearance();
   const taps = useRef<TapCount | null>(null);
-  const countdown = useRef<number | null>(null);
   const burstLabs = useRef<{ labs: BurstLab[]; logos: Promise<unknown> } | null>(null);
-  const [burst, setBurst] = useState<BurstLab[] | null>(null);
+  // `run` remounts the burst, so a replay starts from the beginning even if the last one is still playing.
+  const [burst, setBurst] = useState<{ labs: BurstLab[]; run: number } | null>(null);
   const endBurst = useCallback(() => setBurst(null), []);
-  const copyVersion = () => void Clipboard.setStringAsync(FULL_VERSION_LABEL).then(() => toast("Version copied."));
+  const copyVersion = () => void Clipboard.setStringAsync(FULL_VERSION_LABEL).then(() => toast("Version copied.", { key: "version" }));
+  // One toast for the whole sequence: each tap updates it in place rather than stacking another.
   const tapVersion = () => {
-    if (unlocked) return copyVersion();
     const tap = nextTap(taps.current, Date.now());
     taps.current = tap;
-    if (countdown.current != null) dismissToast(countdown.current);
-    countdown.current = null;
     if (tap.count < TAPS_TO_UNLOCK) {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
       if (tap.count === 3) {
@@ -101,18 +99,22 @@ export function AccountMenu() {
         const uris = labs.map((lab) => logoUri(lab.id, resolved)).filter((uri): uri is string => Boolean(uri));
         burstLabs.current = { labs, logos: Image.prefetch(uris, "disk").catch(() => false) };
       }
-      const message = tapMessage(tap.count);
-      if (message) countdown.current = toast(message, { durationMs: 2500 });
+      const message = tapMessage(tap.count, unlocked);
+      if (message) toast(message, { durationMs: 2500, key: "version" });
       return;
     }
     taps.current = null;
-    unlockHigherOrLower();
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
-    toast("It's under About and legal now.", { title: "You found Higher or lower", tone: "success" });
+    if (unlocked) {
+      toast("Higher or lower is under About and legal.", { title: "Again!", tone: "success", key: "version" });
+    } else {
+      unlockHigherOrLower();
+      toast("It's under About and legal now.", { title: "You found Higher or lower", tone: "success", key: "version" });
+    }
     const { labs, logos } = burstLabs.current ?? { labs: FALLBACK_LABS, logos: Promise.resolve() };
     burstLabs.current = null;
     // The burst starts once the logos are in, or after 0.8 s at the most.
-    void Promise.race([logos, new Promise((resolve) => setTimeout(resolve, 800))]).then(() => setBurst(labs));
+    void Promise.race([logos, new Promise((resolve) => setTimeout(resolve, 800))]).then(() => setBurst((previous) => ({ labs, run: (previous?.run ?? 0) + 1 })));
   };
 
   const item = (key: keyof typeof ITEMS, extra: { subtitle?: string | null; value?: string | null; trailing?: ReactNode; last?: boolean } = {}) => {
@@ -224,7 +226,7 @@ export function AccountMenu() {
           </Section>
         ) : null}
       </ScrollView>
-      {burst ? <LogoBurst labs={burst} onDone={endBurst} /> : null}
+      {burst ? <LogoBurst key={burst.run} labs={burst.labs} onDone={endBurst} /> : null}
     </Screen>
   );
 }

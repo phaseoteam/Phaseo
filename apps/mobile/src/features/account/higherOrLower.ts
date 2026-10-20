@@ -19,11 +19,15 @@ export function nextTap(previous: TapCount | null, now: number): TapCount {
   return { count: Math.min(count, TAPS_TO_UNLOCK), at: now };
 }
 
-/** The countdown after the third tap: "4 taps away from something…", down to "1 tap away…". */
-export function tapMessage(count: number): string | null {
+/**
+ * The countdown after the third tap: "4 taps away from something…", down to "1 tap away…". Once the game is
+ * unlocked, the same seven taps replay the logo burst, and the countdown says so.
+ */
+export function tapMessage(count: number, unlocked = false): string | null {
   const left = TAPS_TO_UNLOCK - count;
   if (count < 3 || left <= 0) return null;
-  return `${left} ${left === 1 ? "tap" : "taps"} away from something…`;
+  const taps = `${left} ${left === 1 ? "tap" : "taps"}`;
+  return unlocked ? `${taps} to the logo burst` : `${taps} away from something…`;
 }
 
 export type Contestant = {

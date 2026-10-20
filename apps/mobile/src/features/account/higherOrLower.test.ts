@@ -61,7 +61,7 @@ describe("the seven taps", () => {
   });
 
   it("counts down from the third tap", () => {
-    expect([1, 2, 3, 4, 5, 6, 7].map(tapMessage)).toEqual([
+    expect([1, 2, 3, 4, 5, 6, 7].map((count) => tapMessage(count))).toEqual([
       null,
       null,
       "4 taps away from something…",
@@ -70,6 +70,10 @@ describe("the seven taps", () => {
       "1 tap away from something…",
       null,
     ]);
+  });
+
+  it("counts down to a replay once unlocked", () => {
+    expect([2, 3, 6, 7].map((count) => tapMessage(count, true))).toEqual([null, "4 taps to the logo burst", "1 tap to the logo burst", null]);
   });
 });
 
