@@ -31,6 +31,17 @@ export function buildExamplePayload(
 ) {
 	const normalized = normalizeEndpointValue(endpoint);
 	switch (normalized) {
+		case "extractions":
+		case "extraction.extract":
+			return {
+				model,
+				input: "Invoice INV-2291. Total due: USD 1080. No purchase order is listed.",
+				fields: {
+					invoice_number: { type: "text" },
+					total: { type: "number" },
+					purchase_order: { type: "text" },
+				},
+			};
 		case "responses":
 			return {
 				model,

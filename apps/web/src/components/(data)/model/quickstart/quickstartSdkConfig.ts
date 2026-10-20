@@ -103,6 +103,7 @@ export const INSTALLABLE_LANGUAGES = new Set([
 ]);
 
 export const PHASEO_METHODS: Record<string, { ts: string; py: string }> = {
+	extractions: { ts: "extractions.create", py: "extractions.create" },
 	"chat.completions": { ts: "generateText", py: "generate_text" },
 	responses: { ts: "generateResponse", py: "generate_response" },
 	decisions: { ts: "decisions.make", py: "decisions.make" },
