@@ -98,6 +98,27 @@ function ChatTitles({ preferences, save, disabled }: { preferences: WorkspacePre
 	</>;
 }
 
+/** Features still being built: each is off until it is turned on here. */
+export function ExperimentalSettings() {
+	const { preferences, loading, busy, error, save, ready } = usePreferences();
+	const [modelError, setModelError] = useState("");
+	const disabled = !ready || busy;
+	return <SettingsPageLayout title="Experimental">
+		<SettingsSection title="Autopilot" description="Very experimental. It may change, break or be removed, and it acts without asking you. Check what it did." label="Autopilot">
+			<SettingsRow title="Allow Autopilot" description="Adds an Autopilot switch to Code chats. A chat in Autopilot runs with Full access: a model answers the agent's questions, forms and plans for you, and after each turn sends the next instruction until it judges the task done or needs you. It can spend money without asking, up to the cap you set when you turn it on. Turning this off stops Autopilot in every chat."
+				control={<Switch aria-label="Allow Autopilot" disabled={disabled} checked={preferences.autopilot} onCheckedChange={value => void save({ ...preferences, autopilot: value })} />} />
+			{preferences.autopilot && <SettingsRow title="Autopilot model" description={preferences.autopilotModel ? "Answers for chats whose own model is not on Phaseo, such as Claude and Codex chats. Agents are answered with their parent chat's model when it is on Phaseo." : "For chats whose own model is not on Phaseo. Without one, Autopilot uses the title model."}
+				control={<div className="flex items-center gap-1.5">
+					<ModelPicker disabled={disabled} selections={preferences.autopilotModel ? [{ harness: "phaseo", model: preferences.autopilotModel }] : []}
+						onChange={values => { const next = values[0]; if (!next) return; if (next.harness !== "phaseo") { setModelError("Choose a Phaseo model: Autopilot asks it through your Phaseo account."); return; } setModelError(""); void save({ ...preferences, autopilotModel: next.model }); }} />
+					{preferences.autopilotModel && <SettingsButton variant="ghost" disabled={disabled} onClick={() => void save({ ...preferences, autopilotModel: null })}>Clear</SettingsButton>}
+				</div>} />}
+			{modelError && <SettingsNote tone="error" role="alert">{modelError}</SettingsNote>}
+			{(loading || error) && <SettingsNote tone={error ? "error" : "muted"} role={error ? "alert" : "status"}>{error || "Loading settings…"}</SettingsNote>}
+		</SettingsSection>
+	</SettingsPageLayout>;
+}
+
 export function GeneralSettings() {
 	const [autoOpenPanes, setAutoOpenPanes] = usePersistedState("phaseo.desktop.panes.autoOpen", true);
 	const [workingSection, setWorkingSection] = usePersistedState(workingSectionKey, false);

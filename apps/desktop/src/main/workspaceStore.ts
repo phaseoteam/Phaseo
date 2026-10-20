@@ -241,6 +241,8 @@ export class WorkspaceStore {
 			this.assertAgentCapacity(maxActive);
 			const child = this.apply(command);
 			child.parentId = delegation.parentTaskId; child.delegation = delegation; child.title = title;
+			const parent = this.getTask(delegation.parentTaskId);
+			if (parent.autopilot && this.getPreferences().autopilot && child.permissionMode === "full-access" && child.mode !== "chat") child.autopilot = { capNanos: null, since: new Date().toISOString(), inherited: true };
 			child.queue.push({ id: randomUUID(), text: prompt, createdAt: new Date().toISOString() });
 			this.saveTask(child); this.db.exec("COMMIT"); return child;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
@@ -368,6 +370,7 @@ export class WorkspaceStore {
 		task.messages = page.entries as Task["messages"]; task.activities = this.entries.turnActivities(key, page);
 		return task;
 	}
+	private assertAutopilotAllowed() { if (!this.getPreferences().autopilot) throw new Error("Turn on Autopilot in Settings → Experimental first."); }
 	/** A chat's Phaseo usage totals from its stored usage reports. */
 	phaseoUsageTotals(id: string): UsageTotals { return usageTotalsOf(this.entries.phaseoUsageReports(this.getHead(id).key)); }
 	/** Fills in the usage totals of up to `limit` chats saved before totals were kept, in one transaction; how many it filled. */
@@ -538,6 +541,7 @@ export class WorkspaceStore {
 			if (command.harness === "acp" && !this.getAgents().some(agent => agent.id === command.agentId && !agent.archived)) throw new Error("Choose an active connected ACP agent.");
 			const now = new Date().toISOString();
 			const task: Task = { id: randomUUID(), title: "New task", projectId: command.projectId, harness: command.harness, accountId: command.accountId, agentId: command.agentId, model: command.model, mode: command.mode, permissionMode: command.permissionMode, reasoningEffort: command.reasoningEffort, serviceTier: command.serviceTier, modelOptions: command.modelOptions, nativeModels: initialModels, status: "idle", messages: [], queue: [], pinned: false, archived: false, createdAt: now, updatedAt: now };
+			if (command.autopilot) { this.assertAutopilotAllowed(); if (command.mode === "chat") throw new Error("Autopilot runs Code and Plan chats."); task.permissionMode = "full-access"; task.autopilot = { capNanos: command.autopilot.capNanos, since: now }; }
 			this.saveTask(task); return task;
 		}
 		const task = this.getTask(command.id);
@@ -546,6 +550,17 @@ export class WorkspaceStore {
 				if (command.permissionMode !== undefined) {
 					if (task.status === "running" || task.status === "waiting" || task.archived) throw new Error("Stop and restore this chat before changing permissions.");
 					task.permissionMode = command.permissionMode;
+					// Autopilot runs with Full access; narrower permissions end it.
+					if (command.permissionMode !== "full-access") task.autopilot = undefined;
+				}
+				// Turning Autopilot off is always allowed and leaves Full access on; turning it on needs the setting and a stopped chat.
+				if (command.autopilot === null) task.autopilot = undefined;
+				else if (command.autopilot !== undefined) {
+					this.assertAutopilotAllowed();
+					if (task.archived) throw new Error("Restore this chat before turning on Autopilot.");
+					if (task.mode === "chat") throw new Error("Autopilot runs Code and Plan chats.");
+					if (!task.autopilot && (task.status === "running" || task.status === "waiting")) throw new Error("Stop this chat before turning on Autopilot.");
+					task.permissionMode = "full-access"; task.autopilot = { ...task.autopilot, capNanos: command.autopilot.capNanos, since: task.autopilot?.since ?? new Date().toISOString(), inherited: undefined, handback: task.autopilot?.handback?.reason === "cap" ? undefined : task.autopilot?.handback };
 				}
 				if (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined || command.serviceTier !== undefined || command.modelOptions !== undefined) {
 					if (task.status === "running" || task.status === "waiting") throw new Error("Stop this task before changing its model or mode.");
@@ -588,6 +603,7 @@ export class WorkspaceStore {
 				// Anything new brings a parked chat back and wakes it.
 				if (task.settledOverride === "settled") task.unsettledAt = new Date().toISOString();
 				task.settledOverride = task.settledAt = task.snoozedUntil = task.snoozedAt = undefined;
+				if (task.autopilot) { task.autopilot.handback = undefined; task.autopilot.stalls = undefined; }
 				break;
 			case "fork": {
 				if ((task.status === "running" || task.status === "waiting") && !command.messageId) throw new Error("Choose a message boundary or stop this task before forking it.");

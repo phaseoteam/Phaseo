@@ -32,6 +32,8 @@ import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type Com
 import { Requests } from "./Requests";
 import { AgentThreads } from "./AgentThreads";
 import { ChatSpend } from "./ChatSpend";
+import { AutopilotControl } from "./Autopilot";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { optionHarnesses, selectionSettings } from "./startChat";
 import { ProjectScriptsControl } from "../components/ProjectScripts";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
@@ -113,6 +115,7 @@ function ChatComposer({ task }: { task: Task }) {
 	};
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
+	const preferences = useWorkspacePreferences();
 	// While the agent waits on a question, the composer is its own-answer field, as in T3 Code.
 	const answerer = useQuestionAnswerer(task.id);
 	const editor = useComposerEditor({ value: draft.text, onChange: draft.setText, disabled: task.archived, onFiles: files => void upload(files),
@@ -220,6 +223,7 @@ function ChatComposer({ task }: { task: Task }) {
 				<ModelPicker selections={[selection]} onChange={values => void changeModel(values[0])} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} />
 				<ModelSettings selection={selection} onChange={next => void changeSettings(next)} disabled={running || task.archived} />
 				{code && <PermissionMenu value={task.permissionMode} onChange={permissionMode => void command({ type: "update-task", id: task.id, permissionMode })} />}
+				{code && (preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}
 				{plan && <PlanIndicator onClear={running ? undefined : () => void command({ type: "update-task", id: task.id, mode: "code" })} />}
 			</>} />
 	</div>;

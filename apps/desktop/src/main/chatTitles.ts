@@ -8,7 +8,7 @@ export function cleanTitle(raw: string) {
 }
 
 /** One non-streamed `/chat/completions` call through the person's Phaseo account; the reply's text, if any. */
-export async function completeChat({ endpoint, token, model, system, user, maxTokens, timeoutMs, fetcher = fetch, signal, label = "The title model" }: { endpoint: string; token: string; model: string; system: string; user: string; maxTokens: number; timeoutMs: number; fetcher?: typeof fetch; signal?: AbortSignal; label?: string }) {
+export async function completeChat({ endpoint, token, model, system, user, maxTokens, timeoutMs, fetcher = fetch, signal, label = "The title model", onUsage }: { endpoint: string; token: string; model: string; system: string; user: string; maxTokens: number; timeoutMs: number; fetcher?: typeof fetch; signal?: AbortSignal; label?: string; onUsage?: (usage: Record<string, unknown>) => void }) {
 	const timeout = AbortSignal.timeout(timeoutMs);
 	const response = await fetcher(`${endpoint.replace(/\/$/, "")}/chat/completions`, {
 		method: "POST",
@@ -17,7 +17,9 @@ export async function completeChat({ endpoint, token, model, system, user, maxTo
 		signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
 	});
 	if (!response.ok) throw new Error(`${label} returned ${response.status}.`);
-	const body = await response.json() as { choices?: { message?: { content?: unknown } }[] };
+	const body = await response.json() as { choices?: { message?: { content?: unknown } }[]; usage?: unknown };
+	// The gateway's priced usage, for callers that count what a chat spends.
+	if (body.usage && typeof body.usage === "object" && !Array.isArray(body.usage)) onUsage?.(body.usage as Record<string, unknown>);
 	const content = body.choices?.[0]?.message?.content;
 	return typeof content === "string" ? content : undefined;
 }

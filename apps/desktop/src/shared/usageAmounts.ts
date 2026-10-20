@@ -25,10 +25,10 @@ export function usageAmounts(text: string): UsageAmounts {
 }
 
 /**
- * The Phaseo harness's usage reports: one per step (`usage:<step>`) and one per compaction (`compaction:<time>:usage`),
- * after the turn's message id once stored. Other harnesses report cumulative context usage under other ids.
+ * Phaseo usage reports: one per Phaseo step (`usage:<step>`), compaction (`compaction:<time>:usage`) and Autopilot call
+ * (`autopilot:<time>:usage`), after the turn's message id once stored. Other harnesses report cumulative context usage under other ids.
  */
-export const isPhaseoUsageId = (id: string) => /(?:^|:)usage:\d+$/.test(id) || /(?:^|:)compaction:\d+:usage$/.test(id);
+export const isPhaseoUsageId = (id: string) => /(?:^|:)usage:\d+$/.test(id) || /(?:^|:)(?:compaction|autopilot):\d+:usage$/.test(id);
 
 /** Adds one usage report to a chat's totals; a report that replaces an earlier one counts only the difference. */
 export function addUsage(totals: UsageTotals, text: string, replaced?: string) {

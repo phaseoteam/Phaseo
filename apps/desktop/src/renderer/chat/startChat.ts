@@ -8,6 +8,8 @@ export type StartChat = {
 	mode: Task["mode"];
 	projectId?: string;
 	permissionMode?: Task["permissionMode"];
+	/** Starts the chat in Autopilot (experimental), with this spend cap. */
+	autopilot?: { capNanos: number | null };
 	text: string;
 	images?: File[];
 	/** Chats mentioned with `@`, which the agent can read. */
@@ -33,6 +35,7 @@ export async function startChat(api: WorkspaceApi, command: (value: WorkspaceCom
 	const state = await command({
 		type: "create-task", harness: selection.harness, model: selection.model, mode: input.mode,
 		...(input.permissionMode ? { permissionMode: input.permissionMode } : {}),
+		...(input.autopilot ? { autopilot: input.autopilot } : {}),
 		...(input.projectId ? { projectId: input.projectId } : {}),
 		...(selection.accountId ? { accountId: selection.accountId } : {}),
 		...selectionSettings(selection),

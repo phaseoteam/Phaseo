@@ -4,7 +4,10 @@ import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
-import { addUsage, isPhaseoUsageId } from "../shared/usageAmounts";
+import { addUsage, formatCost, isPhaseoUsageId } from "../shared/usageAmounts";
+import { autopilotOwner, chatSpend } from "../shared/chatSpend";
+import { answerForm, answerQuestions, autopilotBrief, autopilotModel, judgeTurn, reviewAction, reviewPlan, type AutopilotCall, type TurnVerdict } from "./autopilot";
+import type { AgentForm } from "../shared/agentForms";
 import { autoSettleRules, settingsProject, settleScriptTarget, worktreeCreateScripts, type ProjectScript, type ProjectUpdate } from "../shared/projectSettings";
 import { runProjectCommand } from "./runProjectCommand";
 import { mkdirSync, realpathSync } from "node:fs";
@@ -99,6 +102,9 @@ export class WorkspaceRuntime {
 	private readonly wakeTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private closing = false;
 	private usageBackfill?: ReturnType<typeof setTimeout>;
+	/** The last turn Autopilot judged in each chat (by the message that started it), so a turn is judged once. */
+	private readonly autopilotJudged = new Map<string, string>();
+	private autopilotCalls = 0;
 	discoverThreadModels?: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
 	/** The composer's installation check, reused by list_agents. */
 	discoverInstallations?: () => Promise<{ harness: Harness; installed: boolean; error?: string }[]>;
@@ -148,14 +154,158 @@ export class WorkspaceRuntime {
 		this.usageBackfill.unref?.();
 	}
 	private readonly threads: WorkspaceThreads;
+
+	/** Whether Autopilot acts for this chat: the experimental setting is on, the chat is in Autopilot, and its spend cap has not stopped it. */
+	private autopilotActive(id: string) {
+		if (this.closing || !this.store.getPreferences().autopilot) return false;
+		let task; try { task = this.store.getTask(id); } catch { return false; }
+		if (!task.autopilot || task.archived || task.permissionMode !== "full-access") return false;
+		const owner = autopilotOwner(this.store.getOverview().tasks, id);
+		return Boolean(owner) && owner!.autopilot?.handback?.reason !== "cap";
+	}
+	/**
+	 * The model Autopilot asks for this chat, through the person's Phaseo account, and what it is told. Each call's priced
+	 * usage is recorded in the chat, so it counts towards the chat's total and cap.
+	 */
+	private autopilotCaller(id: string, record: (activity: AgentActivity) => void): { call: AutopilotCall; brief: ReturnType<typeof autopilotBrief> } | { missing: string } {
+		const task = this.store.getTask(id), parentId = task.delegation?.parentTaskId;
+		let parent; try { parent = parentId ? this.store.getTask(parentId) : undefined; } catch { parent = undefined; }
+		const model = autopilotModel(task, parent, this.store.getPreferences());
+		if (!model) return { missing: "Autopilot has no model to ask. Choose one in Settings → Experimental." };
+		const call: AutopilotCall = request => this.askAutopilotModel(model, request, usage => record({ id: `autopilot:${Date.now() * 1000 + (this.autopilotCalls++ % 1000)}:usage`, type: "usage", title: "Autopilot usage", text: JSON.stringify(usage) }));
+		return { call, brief: autopilotBrief(task, parent) };
+	}
+	/** One request to the Autopilot model through the person's Phaseo account; tests replace it. */
+	askAutopilotModel = async (model: string, request: Parameters<AutopilotCall>[0], onUsage: (usage: Record<string, unknown>) => void) => {
+		const account = this.phaseoAccount();
+		if (!account || !this.vault) throw new Error("Autopilot needs a signed-in Phaseo account to ask its model.");
+		return completeChat({ endpoint: account.endpoint, token: await this.vault.get(account.secretId), model, ...request, timeoutMs: 90_000, label: "The Autopilot model", onUsage });
+	};
+	/**
+	 * Autopilot's answer to something the agent is waiting on. The request stays on screen meanwhile, so the person can still
+	 * answer first; Autopilot answers through the same commands they would, so its answers are checked the same way.
+	 */
+	private async autopilotRespond(id: string, request: { kind: "question"; requestId: string; questions: AgentQuestion[] } | { kind: "form"; requestId: string; form: AgentForm } | { kind: "plan"; approvalId: string; plan: string } | { kind: "approval"; approvalId: string; title: string; details: string }, note: (activity: AgentActivity) => void) {
+		if (!this.autopilotActive(id)) return;
+		const say = (title: string, text: string) => note({ id: `autopilot:${randomUUID()}`, type: "tool", title, text, status: "completed" });
+		const pending = () => request.kind === "question" ? this.questions.has(request.requestId) : request.kind === "form" ? this.forms.has(request.requestId) : this.approvals.has(request.approvalId);
+		const caller = this.autopilotCaller(id, note);
+		if ("missing" in caller) { say("Autopilot passed this to you", caller.missing); return; }
+		try {
+			if (request.kind === "question") {
+				const result = await answerQuestions(caller.call, caller.brief, request.questions);
+				if (!pending()) return;
+				if (result.decision === "escalate") { say("Autopilot passed this to you", result.reason); return; }
+				await this.command({ type: "answer", id, requestId: request.requestId, answers: result.answers });
+				say("Autopilot answered", result.reason);
+			} else if (request.kind === "form") {
+				const result = await answerForm(caller.call, caller.brief, request.form);
+				if (!pending()) return;
+				if (result.decision === "escalate") { say("Autopilot passed this to you", result.reason); return; }
+				await this.command({ type: "form-answer", id, requestId: request.requestId, answer: result.answer });
+				say("Autopilot filled in the form", result.reason);
+			} else if (request.kind === "plan") {
+				const result = await reviewPlan(caller.call, caller.brief, request.plan);
+				if (!pending()) return;
+				if (result.decision === "escalate") { say("Autopilot passed this to you", result.reason); return; }
+				await this.command({ type: "approval", id, approvalId: request.approvalId, decision: result.decision === "accept" ? "accept" : "decline", ...result.decision === "revise" ? { feedback: result.feedback } : {} });
+				say(result.decision === "accept" ? "Autopilot approved the plan" : "Autopilot asked for changes to the plan", result.decision === "revise" ? `${result.feedback}\n\n${result.reason}` : result.reason);
+			} else {
+				const result = await reviewAction(caller.call, caller.brief, request);
+				if (!pending()) return;
+				if (result.decision === "escalate") { say("Autopilot passed this to you", result.reason); return; }
+				await this.command({ type: "approval", id, approvalId: request.approvalId, decision: result.decision });
+				say(result.decision === "accept" ? `Autopilot allowed: ${request.title}` : `Autopilot declined: ${request.title}`, result.reason);
+			}
+		} catch (error) {
+			// An answer the checks reject, or a failed call, leaves the request with the person.
+			if (pending()) say("Autopilot passed this to you", error instanceof Error ? error.message : "Autopilot could not answer.");
+		}
+	}
+	/** Adds an activity to a finished turn, counting it towards the chat's totals when it reports usage. */
+	private appendActivity(id: string, messageId: string, activity: AgentActivity) {
+		const task = this.store.getTaskTail(id, messageId);
+		task.activities ??= [];
+		const timelineOrder = [...task.messages, ...task.activities].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), 0) + 1;
+		const stored = { ...activity, id: `${messageId}:${activity.id}`, timelineOrder };
+		task.activities.push(stored);
+		const usage = activity.type === "usage" && isPhaseoUsageId(stored.id);
+		if (usage) addUsage(task.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text);
+		this.store.saveTask(task, true); this.broadcastSoon();
+		if (usage) this.enforceAutopilotCap(id);
+	}
+	/**
+	 * When a turn ends in Autopilot, a model judges whether the task is done. If not, it sends the agent its next instruction;
+	 * otherwise the chat goes back to the person, with a summary or what is needed from them. Two follow-ups in a row that
+	 * use no tools also hand it back, so a run cannot spin.
+	 */
+	private async autopilotAfterTurn(id: string) {
+		if (!this.autopilotActive(id)) return;
+		const head = this.store.getTask(id);
+		if (head.status !== "completed" || head.queue.length || head.autopilot?.handback) return;
+		// Agents still working will wake the chat with their results; it is judged then.
+		if (this.store.getOverview().tasks.some(task => task.delegation?.parentTaskId === id && !task.archived && (task.status === "running" || task.status === "waiting" || Boolean(task.queueCount)))) return;
+		const task = this.store.getTask(id);
+		const lastUser = task.messages.findLast(message => message.role === "user" && !message.notice);
+		if (!lastUser || this.autopilotJudged.get(id) === lastUser.id) return;
+		this.autopilotJudged.set(id, lastUser.id);
+		const ofTurn = (value: { id: string }) => value.id.startsWith(`${lastUser.id}:`);
+		const answer = task.messages.findLast(message => message.role === "assistant" && ofTurn(message))?.text ?? "";
+		const usedTools = (task.activities ?? []).some(activity => ofTurn(activity) && activity.type === "tool" && !activity.id.includes(":autopilot:") && !activity.id.includes(":question:"));
+		const person = task.messages.findLastIndex(message => message.role === "user" && !message.notice && !message.autopilot);
+		const followUps = task.messages.slice(person + 1).filter(message => message.role === "user" && message.autopilot).length;
+		const record = (activity: AgentActivity) => this.appendActivity(id, lastUser.id, activity);
+		const caller = this.autopilotCaller(id, record);
+		let verdict: TurnVerdict;
+		if ("missing" in caller) verdict = { status: "blocked", summary: caller.missing };
+		else try { verdict = await judgeTurn(caller.call, caller.brief, { answer, usedTools, followUps }); }
+		catch (error) { verdict = { status: "blocked", summary: `Autopilot could not check this turn: ${error instanceof Error ? error.message : "the model request failed"}` }; }
+		// The chat may have moved on while the model thought: the person replied, stopped it, or turned Autopilot off.
+		const current = this.store.getTask(id);
+		if (!this.autopilotActive(id) || current.status !== "completed" || current.queue.length || current.autopilot?.handback || current.messages.findLast(message => message.role === "user" && !message.notice)?.id !== lastUser.id) return;
+		const stalls = verdict.status === "continue" && lastUser.autopilot && !usedTools ? (current.autopilot!.stalls ?? 0) + 1 : 0;
+		const at = new Date().toISOString();
+		if (verdict.status === "continue" && stalls < 2) {
+			current.autopilot = { ...current.autopilot!, stalls };
+			current.queue.push({ id: randomUUID(), text: verdict.message, createdAt: at, autopilot: true });
+			this.store.saveTask(current, true);
+			record({ id: `autopilot:${randomUUID()}`, type: "tool", title: "Autopilot: keep going", text: verdict.reason, status: "completed" });
+			this.start(id); return;
+		}
+		const handback = verdict.status === "continue" ? { reason: "stalled" as const, summary: "Autopilot stopped: its last two follow-ups made no progress." } : { reason: verdict.status, summary: verdict.summary };
+		current.autopilot = { ...current.autopilot!, stalls: undefined, handback: { ...handback, at } };
+		this.store.saveTask(current, true);
+		record({ id: `autopilot:${randomUUID()}`, type: "tool", title: handback.reason === "done" ? "Autopilot finished" : "Autopilot needs you", text: handback.summary, status: "completed" });
+		this.broadcast();
+	}
+	/** At its spend cap, Autopilot stops the chat that set the cap and its agents, and hands the chat back. */
+	private enforceAutopilotCap(id: string) {
+		if (!this.store.getPreferences().autopilot) return;
+		const tasks = this.store.getOverview().tasks, owner = autopilotOwner(tasks, id), cap = owner?.autopilot?.capNanos;
+		if (!owner || cap === null || cap === undefined || owner.autopilot?.handback?.reason === "cap") return;
+		const { own, agents } = chatSpend(tasks, owner.id);
+		if ((own?.costNanos ?? 0) + agents.costNanos < cap) return;
+		const task = this.store.getTask(owner.id);
+		task.autopilot = { ...task.autopilot!, stalls: undefined, handback: { reason: "cap", summary: `Autopilot paused at its ${formatCost(cap)} spend cap. Raise the cap or turn Autopilot off to carry on.`, at: new Date().toISOString() } };
+		this.store.saveTask(task, true); this.broadcastSoon();
+		// Stopping a chat flushes and saves it, so it happens after the flush that noticed the cap.
+		const busy = (value: { status: string }) => value.status === "running" || value.status === "waiting";
+		const stop = tasks.filter(value => busy(value) && autopilotOwner(tasks, value.id)?.id === owner.id).map(value => value.id);
+		setTimeout(() => { for (const value of stop) void this.command({ type: "cancel", id: value }).catch(() => {}); }, 0);
+	}
 	/** Names a chat with the title model (Settings → General), as T3 does; without one, the first message stays its title. A rename in the meantime wins. */
 	/** The title model (Settings → General) and the Phaseo account it runs through, or which of the two is missing. */
 	titleModelAccount(): { model: string; endpoint: string; secretId: string } | { missing: "model" | "account" } {
 		const model = this.store.getPreferences().titleModel;
 		if (!model) return { missing: "model" };
+		const account = this.phaseoAccount();
+		if (!account || !this.vault) return { missing: "account" };
+		return { model, ...account };
+	}
+	/** The person's signed-in Phaseo account, for requests the app makes on their behalf. */
+	private phaseoAccount() {
 		const account = this.store.getAccounts().find(value => value.harness === "phaseo" && value.configured && !value.archived && value.endpoint && (!value.oauthExpiresAt || Date.parse(value.oauthExpiresAt) > Date.now()));
-		if (!account?.endpoint || !this.vault) return { missing: "account" };
-		return { model, endpoint: account.endpoint, secretId: account.secretId ?? account.id };
+		return account?.endpoint ? { endpoint: account.endpoint, secretId: account.secretId ?? account.id } : undefined;
 	}
 	/** Runs a prompt on the title model through the person's Phaseo account (pull request guides use it). */
 	async completeWithTitleModel(input: { system: string; user: string; maxTokens: number; timeoutMs: number; signal?: AbortSignal; label: string }) {
@@ -704,6 +854,7 @@ export class WorkspaceRuntime {
 			this.executions.delete(id);
 			if (this.settledByTurn.delete(id)) this.settled(id);
 			if (!this.closing && this.store.getTask(id).status === "completed" && this.store.getTask(id).queue.length) this.start(id);
+			else if (!this.closing) void this.autopilotAfterTurn(id).catch(() => {});
 		});
 		this.executions.set(id, execution);
 		// Failures outside provider execution must be visible rather than unhandled.
@@ -784,7 +935,7 @@ export class WorkspaceRuntime {
 		const flush = () => {
 			this.streamFlushes.delete(id);
 			if (!deltas.size && !activities.length) return;
-			const started = performance.now(); let rewritten = 0;
+			const started = performance.now(); let rewritten = 0, priced = false;
 			// Only this turn changes while it streams, so only this turn is read and written back.
 			const current = this.store.getTaskTail(id, message.id);
 			for (const [itemId, text] of deltas) {
@@ -797,15 +948,20 @@ export class WorkspaceRuntime {
 				current.activities ??= [];
 				const activityId = `${message.id}:${activity.id}`;
 				const existing = current.activities.find(value => value.id === activityId);
+				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) priced = true;
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) addUsage(current.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text, existing?.type === "usage" ? existing.text : undefined);
 				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; existing.proposed = activity.proposed; }
 				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}) });
 			}
 			this.store.saveTask(current); deltas.clear(); activities = []; this.broadcastSoon();
+			if (priced) this.enforceAutopilotCap(id);
 			// Each flush rewrites the answer so far, so a long answer flushes less often: about a millisecond per 100 characters.
 			flushDelay = Math.min(1000, Math.max(40, Math.round((performance.now() - started) * 4), Math.round(rewritten / 100)));
 		};
 		const scheduleFlush = () => this.queueStreamFlush(id, flushDelay, () => { try { flush(); } catch (error) { streamError = error; void adapter.cancel().catch(() => {}); } });
+		// Autopilot can note something after the turn has ended (its answer let the turn finish); that goes on the finished turn.
+		let ended = false;
+		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); };
 		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
 			flush();
 			const signal = request?.signal;
@@ -828,6 +984,7 @@ export class WorkspaceRuntime {
 			this.questions.set(requestId, { taskId: id, resolve: answers => { signal?.removeEventListener("abort", abort); activities.push(questionRecord(requestId, questions, answers)); scheduleFlush(); resolve(answers); } });
 			current.status = "waiting"; current.questions.push({ id: requestId, questions, ...(origin ? { origin } : {}) });
 			this.store.saveTask(current); this.broadcast(); signal?.addEventListener("abort", abort, { once: true });
+			void this.autopilotRespond(id, { kind: "question", requestId, questions }, note);
 		});
 		asker.ask = onQuestion;
 		try {
@@ -852,7 +1009,7 @@ export class WorkspaceRuntime {
 				onDelta: (itemId, text) => {
 					order(`message:${itemId}`); deltas.set(itemId, (deltas.get(itemId) ?? "") + text); scheduleFlush();
 				},
-				onActivity: activity => { order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); },
+				onActivity: note,
 				onApproval: (method, description, choices, options) => new Promise(resolve => {
 					flush();
 					if (this.closing || this.store.getTask(id).status === "interrupted") { resolve("decline"); return; }
@@ -860,6 +1017,7 @@ export class WorkspaceRuntime {
 					const approvalId = randomUUID(); this.approvals.set(approvalId, { taskId: id, resolve });
 					const current = this.store.getTask(id); current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method, description, ...(choices?.always ? { always: choices.always.slice(0, 200) } : {}), ...(choices?.never ? { never: choices.never.slice(0, 200) } : {}) });
 					this.store.saveTask(current); this.broadcast();
+					void this.autopilotRespond(id, { kind: "approval", approvalId, title: method, details: description }, note);
 				}),
 				// Plans wait for the person even with full access: implementing is their call, as in T3 Code.
 				onPlan: plan => new Promise(resolve => {
@@ -873,6 +1031,7 @@ export class WorkspaceRuntime {
 					} });
 					const current = this.store.getTask(id); current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method: "Proposed plan", description: markdown, kind: "plan" });
 					this.store.saveTask(current); this.broadcast();
+					void this.autopilotRespond(id, { kind: "plan", approvalId, plan: markdown }, note);
 				}),
 				onForm: (form, signal) => new Promise(resolve => {
 					flush();
@@ -889,10 +1048,11 @@ export class WorkspaceRuntime {
 					this.forms.set(requestId, { taskId: id, resolve: complete });
 					const current = this.store.getTask(id); current.status = "waiting"; current.forms ??= []; current.forms.push({ id: requestId, form });
 					this.store.saveTask(current); this.broadcast(); signal?.addEventListener("abort", abort, { once: true });
+					void this.autopilotRespond(id, { kind: "form", requestId, form }, note);
 				}),
 				onQuestion,
 			}, this.store.getAccounts().find(account => account.id === task.accountId), attachments, message.nativeAction ? { ...message.nativeAction, arguments: handoffPrompt(task, message.nativeAction.arguments) } : undefined);
-			flush(); if (streamError) throw streamError;
+			flush(); ended = true; if (streamError) throw streamError;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "completed";
 			// T3: an agent that settled its own chat mid-turn settles it now, but only when the turn completed.
@@ -900,13 +1060,14 @@ export class WorkspaceRuntime {
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = [];
 			this.store.saveTask(current);
 		} catch (error) {
-			flush();
+			flush(); ended = true;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "failed";
 			if (error instanceof AgentInputRejectedError && !current.messages.some(value => value.role === "assistant" && value.id.startsWith(`${message.id}:`))) { current.messages = current.messages.filter(value => value.id !== message.id); if (!current.queue.some(value => value.id === message.id)) current.queue.unshift(message); }
 			current.error = error instanceof Error ? error.message : "Agent execution failed.";
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
+			ended = true;
 			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			turn.setAttributes({ outcome: finished.status }); turn.end(finished.status === "failed" ? finished.error ?? "The turn failed." : undefined);
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));

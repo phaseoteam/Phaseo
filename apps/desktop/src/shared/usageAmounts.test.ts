@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addUsage, formatCost, isPhaseoUsageId, usageAmounts, usageTotalsOf } from "./usageAmounts";
-import { chatSpend } from "../renderer/lib/chatSpend";
+import { chatSpend } from "./chatSpend";
 import { turnUsage } from "../renderer/lib/turnUsage";
 import type { TaskOverview } from "./workspaceOverview";
 import type { AgentActivity, UsageTotals } from "./workspace";

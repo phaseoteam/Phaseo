@@ -1,4 +1,4 @@
-import type { TaskOverview } from "../../shared/workspaceOverview";
+import type { TaskOverview } from "./workspaceOverview";
 
 /** A chat's own totals, and its agents' (delegated children at any depth that used Phaseo), from the sidebar's overview. */
 export function chatSpend(tasks: readonly TaskOverview[], id: string) {
@@ -15,4 +15,12 @@ export function chatSpend(tasks: readonly TaskOverview[], id: string) {
 		agents.tokens += totals.tokens; agents.costNanos += totals.costNanos; agents.count++;
 	}
 	return { own, agents };
+}
+
+/** The chat whose Autopilot cap covers this one: it, or the nearest ancestor that turned Autopilot on itself. */
+export function autopilotOwner(tasks: readonly Pick<TaskOverview, "id" | "delegation" | "autopilot">[], id: string) {
+	const byId = new Map(tasks.map(task => [task.id, task]));
+	let current = byId.get(id);
+	for (let depth = 0; current?.autopilot?.inherited && current.delegation?.parentTaskId && depth < 50; depth++) current = byId.get(current.delegation.parentTaskId);
+	return current?.autopilot && !current.autopilot.inherited ? current : undefined;
 }

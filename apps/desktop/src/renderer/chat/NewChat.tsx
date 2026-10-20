@@ -20,6 +20,8 @@ import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from 
 import { ModelSettings } from "./ModelSettings";
 import { SignInCard } from "./SignInCard";
 import { startChat } from "./startChat";
+import { AutopilotControl, type AutopilotSetting } from "./Autopilot";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { newChatDraftEvent, newChatDraftKey } from "../lib/newChatDraft";
 
 const suggestions = [
@@ -63,6 +65,9 @@ export function NewChat() {
 
 	const [planMode, setPlanMode] = usePersistedState<Task["mode"]>("phaseo.desktop.draftMode", "code");
 	const [permissionMode, setPermissionMode] = usePersistedState<NonNullable<Task["permissionMode"]>>("phaseo.desktop.draftPermissions", "supervised");
+	// Autopilot is chosen afresh for each new chat, never remembered.
+	const [autopilot, setAutopilot] = useState<AutopilotSetting>();
+	const workspacePreferences = useWorkspacePreferences();
 	const preferences = useModelPreferences();
 	const phaseoAccount = usablePhaseoAccounts(overview)[0];
 	const connected = useConnectedHarnesses();
@@ -133,8 +138,8 @@ export function NewChat() {
 					saveCompareGroup(group); setDraft(""); setImages({}); openCompare(group.id);
 				}
 			} else {
-				const id = await startChat(api, command, known, { selection: selections[0], mode: code ? planMode : "chat", projectId: code ? project?.id : undefined, permissionMode: code ? permissionMode : undefined, ...shared });
-				if (id) { setDraft(""); setImages({}); select(id); }
+				const id = await startChat(api, command, known, { selection: selections[0], mode: code ? planMode : "chat", projectId: code ? project?.id : undefined, permissionMode: code ? permissionMode : undefined, ...code && autopilot && workspacePreferences.autopilot ? { autopilot } : {}, ...shared });
+				if (id) { setDraft(""); setImages({}); setAutopilot(undefined); select(id); }
 			}
 		} catch (reason) { setError(errorText(reason)); }
 		finally { setBusy(false); }
@@ -181,7 +186,8 @@ export function NewChat() {
 				tools={<>
 					<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} />
 					{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}
-					{code && <PermissionMenu value={permissionMode} onChange={setPermissionMode} />}
+					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}
+					{code && workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
 					{code && plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
 				</>}
 				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p>} />
