@@ -1,5 +1,6 @@
 import { DEFAULT_SEARCH_CAPABILITIES, getGlobalNavigationItems, GLOBAL_NAVIGATION_ITEMS, isSearchDestinationEnabled } from "@/components/header/Search/Search.navigation";
 import { getSettingsSidebar } from "@/components/(gateway)/settings/Sidebar.config";
+import { GLOBAL_ACTION_ITEMS } from "@/components/header/Search/Search.commands";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -11,6 +12,13 @@ describe("global search navigation", () => {
 		expect(disabled).not.toContain("/settings/webhooks/new");
 		expect(disabled).not.toContain("/chat/video");
 		expect(disabled).not.toContain("/games");
+		expect(disabled).not.toContain("/settings/classifiers");
+		expect(isSearchDestinationEnabled("/settings/classifiers/new", DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
+		expect(getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, classifiers: true }).map((item) => item.href)).toContain("/settings/classifiers");
+		// The palette filters its actions the same way, so "Create a classifier" is hidden too.
+		const createClassifier = GLOBAL_ACTION_ITEMS.find((item) => item.id === "action-create-classifier");
+		expect(isSearchDestinationEnabled(createClassifier?.href, DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
+		expect(isSearchDestinationEnabled(createClassifier?.href, { ...DEFAULT_SEARCH_CAPABILITIES, classifiers: true })).toBe(true);
 		expect(disabled).toContain("/settings/routing");
 		const enabled = getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, autoRouting: true });
 		expect(enabled.map((item) => item.href)).toContain("/settings/routing/auto");

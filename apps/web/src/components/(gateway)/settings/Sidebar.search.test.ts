@@ -2,7 +2,7 @@ import { getSettingsSidebar } from "@/components/(gateway)/settings/Sidebar.conf
 import { filterSettingsNavigation } from "@/components/(gateway)/settings/Sidebar.search";
 
 describe("settings navigation search", () => {
-	const groups = getSettingsSidebar({ showEnterprise: false, showAutoRouting: false });
+	const groups = getSettingsSidebar({ showEnterprise: false, showAutoRouting: false, showClassifiers: true });
 	it("finds nested pages across scopes and retains their parent", () => {
 		const results = filterSettingsNavigation(groups, "payment methods");
 		expect(results[0].scope).toBe("personal");

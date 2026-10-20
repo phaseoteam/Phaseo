@@ -347,7 +347,7 @@ const WORKSPACE_NAV_ORDER = [
 	"/settings/webhooks",
 ] as const;
 
-export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showInternal?: boolean; providerMode?: boolean }): NavGroup[] {
+export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showClassifiers?: boolean; showInternal?: boolean; providerMode?: boolean }): NavGroup[] {
 	if (options?.providerMode) {
 		return [
 			{ scope: "personal", items: BASE_SETTINGS_SIDEBAR[0].items.filter((item) => ["/settings/profile", "/settings/account"].includes(item.href)) },
@@ -362,6 +362,7 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 	const showWebhooks = options?.showWebhooks ?? true;
 	const showEnterprise = options?.showEnterprise ?? true;
 	const showAutoRouting = options?.showAutoRouting ?? false;
+	const showClassifiers = options?.showClassifiers ?? false;
 	const showInternal = options?.showInternal ?? false;
 	const groups = BASE_SETTINGS_SIDEBAR.map((group) => ({
 		...group,
@@ -370,6 +371,7 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 				(showBroadcast ? true : item.href !== "/settings/broadcast") &&
 				(showWebhooks ? true : item.href !== "/settings/webhooks") &&
 				(showEnterprise ? true : item.href !== "/settings/workspaces/enterprise") &&
+				(showClassifiers ? true : item.href !== "/settings/classifiers") &&
 				(showInternal ? true : !item.href.startsWith("/settings/internal/")),
 			)
 			.map((item) => ({
@@ -411,7 +413,7 @@ export function isSettingsNavChildActive(
 
 export function getActiveSettingsNav(
 	pathname: string,
-	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean; providerMode?: boolean },
+	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean; showClassifiers?: boolean; providerMode?: boolean },
 ): ResolvedSettingsNav | null {
 	const navGroups = getSettingsSidebar(options);
 

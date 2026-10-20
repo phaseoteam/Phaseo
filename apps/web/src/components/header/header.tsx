@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import HeaderShell from "./HeaderShell";
 import SettingsSidebarTrigger from "@/components/(gateway)/settings/SettingsSidebarTrigger";
 import { BrandMenu } from "./BrandMenu";
-import { autoRoutingFlag } from "@/lib/flags";
+import { autoRoutingFlag, requestClassifiersFlag } from "@/lib/flags";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { getSettingsNavigationMessages } from "@/i18n/settings-navigation-messages";
 import { getPublicMessages } from "@/i18n/messages";
@@ -28,12 +28,12 @@ async function GatedSettingsSidebarTrigger() {
 	await connection();
 	const locale = await getLocale();
 	const publicLocale = isPublicLocale(locale) ? locale : "en-GB";
-	const [showAutoRouting, messages, navigationMessages, account] = await Promise.all([
-		autoRoutingFlag(), getPublicMessages(publicLocale), getSettingsNavigationMessages(publicLocale),
+	const [showAutoRouting, showClassifiers, messages, navigationMessages, account] = await Promise.all([
+		autoRoutingFlag(), requestClassifiersFlag().catch(() => false), getPublicMessages(publicLocale), getSettingsNavigationMessages(publicLocale),
 		getHeaderAccountData(),
 	]);
 	const copy = getSettingsNavigationCopy(navigationMessages, messages.SettingsUI.sidebarNew);
-	return <SettingsSidebarTrigger showAutoRouting={showAutoRouting} copy={copy} providerMode={account.providerMode === true} />;
+	return <SettingsSidebarTrigger showAutoRouting={showAutoRouting} showClassifiers={showClassifiers} copy={copy} providerMode={account.providerMode === true} />;
 }
 
 export default async function Header() {

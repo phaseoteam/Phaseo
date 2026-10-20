@@ -3,6 +3,7 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { getSupabaseAdmin } from "@/runtime/env";
+import { getRequestClassifiersFeatureGateName, isRequestClassifiersAccessEnabled } from "@core/feature-flags";
 import {
 	CLASSIFIER_COLUMNS,
 	MAX_CLASSIFIERS_PER_WORKSPACE,
@@ -43,6 +44,16 @@ function limitReached() {
 	return badRequest(`A workspace can have at most ${MAX_CLASSIFIERS_PER_WORKSPACE} classifiers`);
 }
 
+function featureDisabled(workspaceId: string) {
+	return json({
+		error: "forbidden",
+		reason: "request_classifiers_feature_flag_disabled",
+		message: "Request classifiers are in beta and not yet enabled for this workspace.",
+		feature_gate: getRequestClassifiersFeatureGateName(),
+		workspace_id: workspaceId,
+	}, 403, NO_STORE);
+}
+
 function parseId(req: Request): string | null {
 	const id = parsePathId(new URL(req.url), "classifiers");
 	return id && UUID_PATTERN.test(id) ? id.toLowerCase() : null;
@@ -60,6 +71,10 @@ async function authorize(req: Request, capability: string) {
 	if (scopeError) return { response: scopeError } as const;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError } as const;
+	// Decided for the workspace (its owner), the same way the gateway decides whether to classify.
+	if (!(await isRequestClassifiersAccessEnabled({ workspaceId: auth.value.workspaceId }))) {
+		return { response: featureDisabled(auth.value.workspaceId) } as const;
+	}
 	return { auth: auth.value } as const;
 }
 

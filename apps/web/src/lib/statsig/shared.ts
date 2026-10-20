@@ -29,6 +29,8 @@ export const GATEWAY_IO_LOGGING_GATE =
 export const GATEWAY_TRACE_VIEW_GATE = "gateway_trace_view";
 export const AUTO_ROUTING_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_AUTO_ROUTING_GATE ?? "gateway_auto_routing";
+export const REQUEST_CLASSIFIERS_GATE =
+	process.env.NEXT_PUBLIC_STATSIG_REQUEST_CLASSIFIERS_GATE ?? "gateway_request_classifiers";
 export const PRESET_EXPERIMENTS_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_PRESET_EXPERIMENTS_GATE ?? "preset_experiments";
 export const SAML_SSO_GATE =

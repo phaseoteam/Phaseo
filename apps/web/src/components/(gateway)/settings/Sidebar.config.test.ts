@@ -35,11 +35,13 @@ describe("settings sidebar navigation", () => {
 
 	it("opens Classifiers for its list, new and edit pages", () => {
 		for (const path of ["/settings/classifiers", "/settings/classifiers/new", "/settings/classifiers/00000000-0000-4000-8000-0000000000c1"]) {
-			const active = getActiveSettingsNav(path);
+			const active = getActiveSettingsNav(path, { showClassifiers: true });
 			expect(active?.item.label).toBe("Classifiers");
 			expect(active?.group.scope).toBe("workspace");
 		}
-		expect(getSettingsSidebar().flatMap((group) => group.items).find((item) => item.href === "/settings/classifiers")?.badge).toBe("Beta");
+		expect(getSettingsSidebar({ showClassifiers: true }).flatMap((group) => group.items).find((item) => item.href === "/settings/classifiers")?.badge).toBe("Beta");
+		// Hidden until the workspace is in the beta gate.
+		expect(getSettingsSidebar().flatMap((group) => group.items).some((item) => item.href === "/settings/classifiers")).toBe(false);
 	});
 
 	it("includes the workspace activity log under settings", () => {
@@ -60,7 +62,7 @@ describe("settings sidebar navigation", () => {
 	});
 
 	it("orders workspace settings by task", () => {
-		const workspaceGroups = getSettingsSidebar()
+		const workspaceGroups = getSettingsSidebar({ showClassifiers: true })
 			.filter((group) => group.scope === "workspace")
 			.map((group) => ({
 				heading: group.heading,
