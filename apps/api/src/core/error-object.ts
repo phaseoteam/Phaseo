@@ -196,7 +196,7 @@ export function withErrorObject(
 	};
 	const metadata = metadataOf(body, opts.retryAfter);
 	if (metadata) error.metadata = metadata;
-	return { ...body, error, code: typeof body.code === "string" ? body.code : code };
+	return { ...body, error, code };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -86,6 +86,15 @@ describe("withErrorObject", () => {
 		expect(second.code).toBe("upstream_error");
 	});
 
+	it("keeps top-level code equal to error.code when the body carries a different code", () => {
+		const body = withErrorObject({ error: "upstream_error", code: "rate_limit_exceeded", message: "failed" }, 429);
+		expect(body.code).toBe("upstream_error");
+		expect((body.error as any).code).toBe("upstream_error");
+		expect(errorCodeOf(body)).toBe("upstream_error");
+		const refreshed = withErrorObject({ ...body, status_code: 502 }, 502);
+		expect((refreshed.error as any).type).toBe("server_error");
+	});
+
 	it("leaves an upstream's own error object alone", () => {
 		const upstream = { error: { message: "bad", type: "invalid_request_error", code: null } };
 		expect(withErrorObject(upstream, 400)).toBe(upstream);
