@@ -78,6 +78,22 @@ export function hasLogo(id: string) {
 /** The labs that float: the frontier labs the app has a logo for, so none shows as a letter. */
 export const ART_LABS: readonly ArtLab[] = FRONTIER_LABS.filter((lab) => hasLogo(lab.id));
 
+/** A tapped logo's name and newest model show for this long, the last LABEL_FADE_MS of it fading out. */
+export const LABEL_MS = 2500;
+export const LABEL_FADE_MS = 300;
+
+/** The label on show: which logo it's for, and when it goes. */
+export type Label = { index: number; until: number };
+
+/**
+ * The label after a tap on logo `index` at `now`. It shows for LABEL_MS and then goes by itself; a tap on another logo
+ * moves it there (for a fresh LABEL_MS), and a tap on the logo it's showing hides it. Nothing stays shown.
+ */
+export function tapLabel(current: Label | null, index: number, now: number): Label | null {
+  if (current && current.index === index && now < current.until) return null;
+  return { index, until: now + LABEL_MS };
+}
+
 /**
  * Each lab's newest model that has been released, for the line under a tapped logo. Retired models and `:free`
  * listings are left out, so the name is one people can use today.

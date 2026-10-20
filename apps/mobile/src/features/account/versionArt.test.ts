@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import type { ModelCard } from "@/lib/api/models";
 import {
-  ART_LABS, FRONTIER_LABS, TAP_GAP_MS, TAPS_TO_OPEN, catalogueFact, hasLogo, newestByLab, nextTap, shortVersion, versionDetail,
+  ART_LABS, FRONTIER_LABS, LABEL_FADE_MS, LABEL_MS, TAP_GAP_MS, TAPS_TO_OPEN, catalogueFact, hasLogo, newestByLab, nextTap, shortVersion, tapLabel, versionDetail,
   type TapRun,
 } from "./versionArt";
 
@@ -116,6 +116,27 @@ describe("newestByLab", () => {
       card("nodate/x", { primary_timestamp: null }),
     ], NOW);
     expect(Object.fromEntries(newest)).toEqual({ openai: "GPT-6", anthropic: "Claude" });
+  });
+});
+
+describe("tapLabel", () => {
+  it("shows a tapped logo's label for LABEL_MS, then it's gone by itself", () => {
+    const shown = tapLabel(null, 2, 1000);
+    expect(shown).toEqual({ index: 2, until: 1000 + LABEL_MS });
+    expect(LABEL_MS).toBe(2500);
+    expect(LABEL_FADE_MS).toBeLessThan(LABEL_MS);
+  });
+
+  it("moves to another logo when that one is tapped, for a fresh LABEL_MS", () => {
+    expect(tapLabel({ index: 2, until: 3500 }, 5, 2000)).toEqual({ index: 5, until: 2000 + LABEL_MS });
+  });
+
+  it("hides when the logo it's showing is tapped again", () => {
+    expect(tapLabel({ index: 2, until: 3500 }, 2, 2000)).toBeNull();
+  });
+
+  it("shows again for a logo whose label has already gone", () => {
+    expect(tapLabel({ index: 2, until: 3500 }, 2, 3500)).toEqual({ index: 2, until: 3500 + LABEL_MS });
   });
 });
 

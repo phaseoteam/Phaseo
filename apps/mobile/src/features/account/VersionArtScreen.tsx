@@ -7,7 +7,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type AccessibilityActionEvent } from "react-native";
 import { GestureDetector, useCompetingGestures, usePanGesture, useTapGesture } from "react-native-gesture-handler";
 import Animated, {
-  cancelAnimation, Easing, FadeIn, FadeOut, ReduceMotion, useAnimatedStyle, useFrameCallback, useReducedMotion, useSharedValue, withDelay, withSequence, withSpring,
+  cancelAnimation, Easing, ReduceMotion, useAnimatedStyle, useFrameCallback, useReducedMotion, useSharedValue, withDelay, withSequence, withSpring,
   withTiming, type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,7 +21,7 @@ import { BUILD_COMMIT, BUILD_NUMBER } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { clamp, dragTo, holdAt, kick, launch, letGo, pickUp, ringLayout, stepWorld, throwBody, type Body, type Box, type Point, type World } from "./floating";
-import { ART_LABS, catalogueFact, newestByLab, shortVersion, versionDetail, type ArtLab } from "./versionArt";
+import { ART_LABS, catalogueFact, LABEL_FADE_MS, LABEL_MS, newestByLab, shortVersion, tapLabel, versionDetail, type ArtLab, type Label } from "./versionArt";
 
 /** The Phaseo mark, from apps/web/public/logo_light.svg (a 64 × 64 view box). */
 const MARK_PATH = "M19.8574 56H13V8H19.8574V56ZM31.7197 8C37.9368 8 42.8288 9.4856 46.3945 12.457C49.9601 15.4284 51.7432 19.5201 51.7432 24.7314C51.7432 29.9428 49.9601 34.0344 46.3945 37.0059C42.8288 39.9773 37.9368 41.4629 31.7197 41.4629H23.2852V35.4971H31.5146C35.8573 35.497 39.1714 34.5824 41.457 32.7539C43.7426 30.8796 44.8857 28.2056 44.8857 24.7314C44.8857 21.2572 43.7427 18.6059 41.457 16.7773C39.1714 14.9031 35.8573 13.9659 31.5146 13.9658H23.2852V8H31.7197Z";
@@ -32,8 +32,8 @@ const FADE_MS = 700;
 const HOLD_MS = 1000;
 /** A logo held this long without moving lifts, as a dragged one does. */
 const LIFT_MS = 220;
-/** A tapped logo's name and newest model stay this long. */
-const INFO_MS = 2600;
+/** How long a tapped logo's label takes to fade in. */
+const LABEL_IN_MS = 140;
 const LABEL_WIDTH = 200;
 /** Space kept between the logos and the safe area's edges, and round the middle block. */
 const EDGE = 8;
@@ -70,8 +70,6 @@ export function VersionArtScreen() {
   const models = catalogue.data?.models;
   const [area, setArea] = useState<{ width: number; height: number } | null>(null);
   const [block, setBlock] = useState<Box | null>(null);
-  const [info, setInfo] = useState<number | null>(null);
-  const infoTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const fade = useSharedValue(0);
   const markScale = useSharedValue(1);
 
@@ -118,18 +116,44 @@ export function VersionArtScreen() {
     return () => frame.setActive(false);
   }, [frame, running]);
 
+  // A tapped logo's label (tapLabel has the rules). Its fade in, stay and fade out run on the UI thread, so it goes
+  // by itself even if React is busy; the state only says which lab it shows and whether screen readers can find it.
+  const [label, setLabel] = useState<{ index: number; shown: boolean } | null>(null);
+  const labelNow = useRef<Label | null>(null);
+  const labelTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const labelIndex = useSharedValue(-1);
+  const labelOpacity = useSharedValue(0);
+  const tapLogo = useCallback((index: number) => {
+    void Haptics.selectionAsync().catch(() => undefined);
+    const next = tapLabel(labelNow.current, index, Date.now());
+    labelNow.current = next;
+    clearTimeout(labelTimer.current);
+    const hide = () => setLabel((current) => (current ? { index: current.index, shown: false } : null));
+    // Fades are allowed with reduced motion, so these always play.
+    if (!next) {
+      labelOpacity.set(withTiming(0, { duration: LABEL_FADE_MS, reduceMotion: ReduceMotion.Never }));
+      hide();
+      return;
+    }
+    labelIndex.set(next.index);
+    setLabel({ index: next.index, shown: true });
+    labelOpacity.set(withSequence(
+      ReduceMotion.Never,
+      withTiming(1, { duration: LABEL_IN_MS, reduceMotion: ReduceMotion.Never }),
+      withDelay(LABEL_MS - LABEL_IN_MS - LABEL_FADE_MS, withTiming(0, { duration: LABEL_FADE_MS, reduceMotion: ReduceMotion.Never }), ReduceMotion.Never),
+    ));
+    labelTimer.current = setTimeout(() => {
+      labelNow.current = null;
+      hide();
+    }, LABEL_MS);
+  }, [labelIndex, labelOpacity]);
+
   useEffect(() => () => {
-    clearTimeout(infoTimer.current);
+    clearTimeout(labelTimer.current);
     cancelAnimation(fade);
     cancelAnimation(markScale);
-  }, [fade, markScale]);
-
-  const showInfo = useCallback((index: number) => {
-    void Haptics.selectionAsync().catch(() => undefined);
-    setInfo(index);
-    clearTimeout(infoTimer.current);
-    infoTimer.current = setTimeout(() => setInfo(null), INFO_MS);
-  }, []);
+    cancelAnimation(labelOpacity);
+  }, [fade, labelOpacity, markScale]);
 
   const playBurst = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
@@ -157,7 +181,7 @@ export function VersionArtScreen() {
   const close = () => (router.canGoBack() ? router.back() : router.replace("/account"));
   const markAction = (event: AccessibilityActionEvent) => (event.nativeEvent.actionName === "longpress" ? openGame() : playBurst());
   const markStyle = useAnimatedStyle(() => ({ transform: [{ scale: markScale.get() }] }));
-  const infoLab = info != null ? labs[info] : undefined;
+  const labelLab = label ? labs[label.index] : undefined;
 
   return (
     <View className="flex-1 bg-background" onLayout={(event) => setArea({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}>
@@ -215,17 +239,10 @@ export function VersionArtScreen() {
       {ring ? (
         <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
           {labs.map((lab, index) => (
-            <Floater key={lab.id} lab={lab} index={index} size={tile} bodies={bodies} world={world} fade={fade} reduced={reduced} onTap={showInfo} />
+            <Floater key={lab.id} lab={lab} index={index} size={tile} bodies={bodies} world={world} fade={fade} reduced={reduced} onTap={tapLogo} />
           ))}
-          {info != null && infoLab ? (
-            <Animated.View
-              key={info}
-              pointerEvents="none"
-              entering={FadeIn.duration(140).reduceMotion(ReduceMotion.Never)}
-              exiting={FadeOut.duration(180).reduceMotion(ReduceMotion.Never)}
-            >
-              <LogoLabel lab={infoLab} newest={newest.get(infoLab.id) ?? null} index={info} bodies={bodies} world={world} />
-            </Animated.View>
+          {label && labelLab ? (
+            <LogoLabel lab={labelLab} newest={newest.get(labelLab.id) ?? null} shown={label.shown} index={labelIndex} opacity={labelOpacity} bodies={bodies} world={world} />
           ) : null}
         </View>
       ) : null}
@@ -356,19 +373,32 @@ const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, r
   );
 });
 
-type LogoLabelProps = { lab: ArtLab; newest: string | null; index: number; bodies: SharedValue<Body[]>; world: SharedValue<World | null> };
+type LogoLabelProps = {
+  lab: ArtLab;
+  newest: string | null;
+  /** False once it has gone, so screen readers skip it. */
+  shown: boolean;
+  /** The logo it's under, and how visible it is (both set on a tap). */
+  index: SharedValue<number>;
+  opacity: SharedValue<number>;
+  bodies: SharedValue<Body[]>;
+  world: SharedValue<World | null>;
+};
 
-/** A tapped logo's lab and newest model, under the logo (above it near the bottom), following it as it moves. */
-function LogoLabel({ lab, newest, index, bodies, world }: LogoLabelProps) {
+/**
+ * A tapped logo's lab, and its newest model once the catalogue is in, under the logo (above it near the bottom),
+ * following it as it moves. It stays mounted and fades by its opacity, so nothing can be left on screen.
+ */
+function LogoLabel({ lab, newest, shown, index, opacity, bodies, world }: LogoLabelProps) {
   const height = useSharedValue(0);
   const style = useAnimatedStyle(() => {
     const layout = world.get();
-    const body = bodies.get()[index];
+    const body = bodies.get()[index.get()];
     if (!layout || !body) return { opacity: 0, transform: [{ translateX: 0 }, { translateY: 0 }] };
     const below = body.y + layout.size + 8;
     const above = body.y - 8 - height.get();
     return {
-      opacity: height.get() > 0 ? 1 : 0,
+      opacity: height.get() > 0 ? opacity.get() : 0,
       transform: [
         { translateX: clamp(body.x + layout.size / 2 - LABEL_WIDTH / 2, layout.bounds.left, layout.bounds.right - LABEL_WIDTH) },
         { translateY: below + height.get() > layout.bounds.bottom ? above : below },
@@ -379,6 +409,8 @@ function LogoLabel({ lab, newest, index, bodies, world }: LogoLabelProps) {
     <Animated.View
       pointerEvents="none"
       accessibilityLiveRegion="polite"
+      importantForAccessibility={shown ? "yes" : "no-hide-descendants"}
+      accessibilityElementsHidden={!shown}
       className="items-center"
       style={[{ position: "absolute", left: 0, top: 0, width: LABEL_WIDTH, zIndex: 5 }, style]}
     >
