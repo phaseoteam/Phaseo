@@ -1,0 +1,85 @@
+---
+title: "请求分类器"
+description: "用你选择的模型，按你自己的类别为每个请求打标签，并按结果筛选日志和用量。"
+icon: "list-tree"
+---
+
+<Note>
+请求分类器处于 Beta 阶段。所有者和管理员可以在 **设置 → 分类器** 中管理它们，也可以使用带有 `classifiers:*` 权限范围的[管理密钥](../developers/management-api-keys.mdx)调用管理 API `/v1/classifiers`。
+</Note>
+
+分类器描述一套分类体系（例如部门、受众或任务类型），并指定应用它的模型。每个符合条件的请求完成后，Phaseo 会把该请求发送给这个模型，由它为每个维度选择一个值。每个答案都会作为[请求标签](./request-labels.mdx)添加到请求上，因此你可以像使用代码发送的标签一样，按它筛选和分组日志、用量和分析数据。
+
+当代码中无法得知类别时使用分类器：提示词是写给谁的、代理在做哪类工作，或者请求是否涉及受监管的话题。
+
+## 请求如何被分类
+
+1. 请求完成，响应返回给你的应用。分类从不增加延迟。
+2. Phaseo 会生成请求的对话记录：系统指令、消息、工具名称（不含其 schema）和工具结果。每一轮最多 4,000 个字符，API 密钥等机密信息会被隐去。如果分类器包含响应，生成的输出也会被加入。
+3. 分类器模型使用只允许你的取值的结构化输出作答。
+4. 答案会连同每个答案的置信度一起作为标签保存到请求上，然后请求才会出现在日志中。
+
+分类器会在发往 `chat/completions`、`responses` 和 `messages` 的成功请求上运行。如果分类失败或超时，请求仍会被记录，只是没有这些标签。
+
+## 创建分类器
+
+可以从控制台中的预设开始，也可以自己发送分类体系：
+
+```bash
+curl https://api.phaseo.app/v1/classifiers \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Department",
+    "model": "google/gemini-2.5-flash-lite",
+    "dimensions": [{
+      "key": "department",
+      "name": "Department",
+      "allow_other": true,
+      "values": [
+        { "value": "engineering", "description": "Writing, reviewing, or debugging code" },
+        { "value": "legal", "description": "Contracts, policies, and compliance" },
+        { "value": "sales" },
+        { "value": "support" }
+      ]
+    }],
+    "sample_rate": 0.25,
+    "monthly_budget_usd": 20
+  }'
+```
+
+| 字段 | 含义 |
+| --- | --- |
+| `dimensions` | 1 到 12 个问题。每个 `key` 会成为标签键；每个维度列出 2 到 50 个值（使用 `allow_other` 时最少 1 个）。 |
+| `multiple` | 允许一个维度有多个值。每个值都会成为一个键相同的独立标签。 |
+| `allow_other` | 当没有合适的值时，允许模型回答 `other`。 |
+| `instructions` | 添加到分类提示词中的额外说明。 |
+| `sample_rate` | 要分类的符合条件请求的比例，范围为 `0.0001` 到 `1`。 |
+| `sample_by` | `request` 按单个请求抽样。`session` 让整个会话一起被纳入或排除，并在一小时内复用其答案，因此一次较长的代理运行只会被分类一次。 |
+| `input_scope` | `prompt` 对请求进行分类。`prompt_and_response` 还会把响应提供给模型。 |
+| `scope` | 只对来自这些 `key_ids`、`app_ids` 或 `models` 的请求进行分类。 |
+| `monthly_budget_usd` | 花费达到该金额后，在当月（UTC）剩余时间内暂停该分类器。 |
+
+一个工作区最多可以有五个分类器。更改会在大约一分钟内同步到网关。
+
+## 按结果筛选和分组
+
+分类器的答案就是普通的请求标签：
+
+- 在 **日志** 和 **用量** 中，按 `department` = `legal` 这样的标签筛选。
+- 通过 API 时，使用 `label_key` 和 `label_value`：
+
+```text
+GET /v1/analytics?label_key=department&label_value=legal
+```
+
+- [Broadcast](./integrations/observability.mdx) 目标会以 span 属性 `phaseo.label.<key>` 的形式收到标签。
+
+如果你的代码已经发送了与某个维度键相同的标签，Phaseo 会保留你的值并跳过该维度。当两个分类器使用同一个键时，以先创建的为准。
+
+## 成本与隐私
+
+- 每次分类都是一次发往分类器模型的独立请求，使用与原始请求相同的 API 密钥或 OAuth 令牌。它按该模型的正常价格计费，并遵循你工作区的提供商、数据保留和 BYOK 设置。
+- 分类器请求带有标签 `phaseo.classifier`，值为分类器 ID，因此你可以在 **用量** 中查看其花费。它们本身不会被分类，也不计入你的速率限制策略。
+- 使用小而快的模型、抽样比例、按会话抽样、适用范围或月度预算来控制成本。
+- 对话记录只会发送给分类器模型。分类器请求和其他请求一样会被记录，因此其输入是否被保存取决于你工作区的日志设置。

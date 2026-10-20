@@ -1,0 +1,85 @@
+---
+title: "Classificateurs de requêtes"
+description: "Étiquetez chaque requête avec le modèle de votre choix, selon vos propres catégories, et filtrez les journaux et l’utilisation par résultat."
+icon: "list-tree"
+---
+
+<Note>
+Les classificateurs de requêtes sont en bêta. Les propriétaires et les administrateurs les gèrent dans **Paramètres → Classificateurs** ou avec l’API de gestion `/v1/classifiers`, à l’aide d’une [clé de gestion](../developers/management-api-keys.mdx) dotée des portées `classifiers:*`.
+</Note>
+
+Un classificateur décrit une taxonomie, par exemple le service, le public ou le type de tâche, et désigne le modèle qui l’applique. À la fin de chaque requête concernée, Phaseo envoie la requête à ce modèle, qui choisit une valeur pour chaque dimension. Chaque réponse est ajoutée à la requête sous forme d’[étiquette de requête](./request-labels.mdx) : vous pouvez donc filtrer et regrouper les journaux, l’utilisation et les analyses comme avec les étiquettes envoyées par votre code.
+
+Utilisez des classificateurs quand votre code ne connaît pas la catégorie : à qui s’adresse un prompt, quel type de travail effectue un agent ou si une requête porte sur un sujet réglementé.
+
+## Comment une requête est classée
+
+1. La requête se termine et sa réponse est renvoyée à votre application. La classification n’ajoute jamais de latence.
+2. Phaseo construit une transcription de la requête : instructions système, messages, noms des outils (pas leurs schémas) et résultats des outils. Chaque tour est limité à 4 000 caractères et les secrets comme les clés API sont masqués. Si le classificateur inclut la réponse, la sortie générée est aussi ajoutée.
+3. Le modèle classificateur répond avec une sortie structurée qui n’autorise que vos valeurs.
+4. Les réponses sont enregistrées comme étiquettes de la requête, avec la confiance de chacune, avant que la requête n’apparaisse dans vos journaux.
+
+Les classificateurs s’exécutent sur les requêtes réussies vers `chat/completions`, `responses` et `messages`. Si la classification échoue ou expire, la requête est tout de même journalisée, simplement sans ces étiquettes.
+
+## Créer un classificateur
+
+Partez d’un modèle prédéfini dans le tableau de bord ou envoyez vous-même la taxonomie :
+
+```bash
+curl https://api.phaseo.app/v1/classifiers \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Department",
+    "model": "google/gemini-2.5-flash-lite",
+    "dimensions": [{
+      "key": "department",
+      "name": "Department",
+      "allow_other": true,
+      "values": [
+        { "value": "engineering", "description": "Writing, reviewing, or debugging code" },
+        { "value": "legal", "description": "Contracts, policies, and compliance" },
+        { "value": "sales" },
+        { "value": "support" }
+      ]
+    }],
+    "sample_rate": 0.25,
+    "monthly_budget_usd": 20
+  }'
+```
+
+| Champ | Signification |
+| --- | --- |
+| `dimensions` | De 1 à 12 questions. Chaque `key` devient la clé de l’étiquette ; chaque dimension liste de 2 à 50 valeurs (1 avec `allow_other`). |
+| `multiple` | Autorise plusieurs valeurs pour une dimension. Chaque valeur devient une étiquette distincte avec la même clé. |
+| `allow_other` | Permet au modèle de répondre `other` quand rien ne convient. |
+| `instructions` | Consignes supplémentaires ajoutées au prompt de classification. |
+| `sample_rate` | Part des requêtes concernées à classer, de `0.0001` à `1`. |
+| `sample_by` | `request` échantillonne chaque requête. `session` garde une session entière dedans ou dehors et réutilise ses réponses pendant une heure, de sorte qu’une longue exécution d’agent n’est classée qu’une fois. |
+| `input_scope` | `prompt` classe la requête. `prompt_and_response` montre aussi la réponse au modèle. |
+| `scope` | Ne classe que les requêtes provenant de ces `key_ids`, `app_ids` ou `models`. |
+| `monthly_budget_usd` | Met le classificateur en pause pour le reste du mois UTC une fois ce montant dépensé. |
+
+Un espace de travail peut compter jusqu’à cinq classificateurs. Les modifications atteignent la passerelle en une minute environ.
+
+## Filtrer et regrouper par résultat
+
+Les réponses des classificateurs sont des étiquettes de requête ordinaires :
+
+- Dans **Journaux** et **Utilisation**, filtrez par une étiquette comme `department` = `legal`.
+- Avec l’API, utilisez `label_key` et `label_value` :
+
+```text
+GET /v1/analytics?label_key=department&label_value=legal
+```
+
+- Les destinations [Broadcast](./integrations/observability.mdx) reçoivent les étiquettes sous forme d’attributs de span `phaseo.label.<key>`.
+
+Si votre code envoie déjà une étiquette avec la clé d’une dimension, Phaseo conserve votre valeur et ignore cette dimension. Quand deux classificateurs utilisent la même clé, celui créé en premier l’emporte.
+
+## Coût et confidentialité
+
+- Chaque classification est une requête distincte envoyée au modèle classificateur, avec la même clé API ou le même jeton OAuth que la requête d’origine. Elle est facturée au prix normal de ce modèle et suit les paramètres de fournisseurs, de conservation des données et de BYOK de votre espace de travail.
+- Les requêtes du classificateur portent l’étiquette `phaseo.classifier` avec l’identifiant du classificateur, ce qui vous permet de voir leurs dépenses dans **Utilisation**. Elles ne sont pas classées elles-mêmes et ne comptent pas dans vos politiques de limites de débit.
+- Maîtrisez les coûts avec un modèle petit et rapide, un taux d’échantillonnage, l’échantillonnage par session, une portée ou un budget mensuel.
+- La transcription n’est envoyée qu’au modèle classificateur. La requête du classificateur est journalisée comme toute autre requête ; le stockage de son entrée dépend donc des paramètres de journalisation de votre espace de travail.

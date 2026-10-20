@@ -1,0 +1,85 @@
+---
+title: "Clasificadores de solicitudes"
+description: "Etiqueta cada solicitud con un modelo que elijas, según tus propias categorías, y filtra los registros y el uso por los resultados."
+icon: "list-tree"
+---
+
+<Note>
+Los clasificadores de solicitudes están en beta. Los propietarios y administradores los gestionan en **Ajustes → Clasificadores** o con la API de gestión `/v1/classifiers`, usando una [clave de gestión](../developers/management-api-keys.mdx) con los alcances `classifiers:*`.
+</Note>
+
+Un clasificador describe una taxonomía, como departamento, audiencia o tipo de tarea, e indica el modelo que la aplica. Cuando termina cada solicitud que cumple los requisitos, Phaseo la envía a ese modelo, que elige un valor para cada dimensión. Cada respuesta se añade a la solicitud como una [etiqueta de solicitud](./request-labels.mdx), así que puedes filtrar y agrupar los registros, el uso y las analíticas por ella igual que con las etiquetas que envía tu código.
+
+Usa clasificadores cuando tu código no conoce la categoría: para quién se escribió un prompt, qué tipo de trabajo hace un agente o si una solicitud toca un tema regulado.
+
+## Cómo se clasifica una solicitud
+
+1. La solicitud termina y su respuesta se devuelve a tu aplicación. La clasificación nunca añade latencia.
+2. Phaseo crea una transcripción de la solicitud: instrucciones del sistema, mensajes, nombres de herramientas (no sus esquemas) y resultados de herramientas. Cada turno se limita a 4.000 caracteres y se ocultan secretos como las claves API. Si el clasificador incluye la respuesta, también se añade la salida generada.
+3. El modelo clasificador responde con una salida estructurada que solo admite tus valores.
+4. Las respuestas se guardan como etiquetas en la solicitud, junto con la confianza de cada una, antes de que la solicitud aparezca en tus registros.
+
+Los clasificadores se ejecutan en las solicitudes correctas a `chat/completions`, `responses` y `messages`. Si la clasificación falla o se agota el tiempo, la solicitud se registra igualmente, solo que sin esas etiquetas.
+
+## Crear un clasificador
+
+Empieza con una plantilla en el panel o envía tú mismo la taxonomía:
+
+```bash
+curl https://api.phaseo.app/v1/classifiers \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Department",
+    "model": "google/gemini-2.5-flash-lite",
+    "dimensions": [{
+      "key": "department",
+      "name": "Department",
+      "allow_other": true,
+      "values": [
+        { "value": "engineering", "description": "Writing, reviewing, or debugging code" },
+        { "value": "legal", "description": "Contracts, policies, and compliance" },
+        { "value": "sales" },
+        { "value": "support" }
+      ]
+    }],
+    "sample_rate": 0.25,
+    "monthly_budget_usd": 20
+  }'
+```
+
+| Campo | Significado |
+| --- | --- |
+| `dimensions` | De 1 a 12 preguntas. Cada `key` se convierte en la clave de la etiqueta; cada dimensión enumera de 2 a 50 valores (1 con `allow_other`). |
+| `multiple` | Permite más de un valor por dimensión. Cada valor se convierte en su propia etiqueta con la misma clave. |
+| `allow_other` | Permite que el modelo responda `other` cuando nada encaja. |
+| `instructions` | Indicaciones adicionales que se añaden al prompt de clasificación. |
+| `sample_rate` | Proporción de solicitudes que cumplen los requisitos que se clasifican, de `0.0001` a `1`. |
+| `sample_by` | `request` muestrea cada solicitud. `session` incluye o excluye una sesión completa y reutiliza sus respuestas durante una hora, de modo que una ejecución larga de un agente se clasifica una sola vez. |
+| `input_scope` | `prompt` clasifica la solicitud. `prompt_and_response` también muestra la respuesta al modelo. |
+| `scope` | Solo clasifica solicitudes de estos `key_ids`, `app_ids` o `models`. |
+| `monthly_budget_usd` | Pausa el clasificador durante el resto del mes UTC cuando haya gastado esta cantidad. |
+
+Un espacio de trabajo puede tener hasta cinco clasificadores. Los cambios llegan al gateway en aproximadamente un minuto.
+
+## Filtrar y agrupar por los resultados
+
+Las respuestas de los clasificadores son etiquetas de solicitud normales:
+
+- En **Registros** y **Uso**, filtra por una etiqueta como `department` = `legal`.
+- Con la API, usa `label_key` y `label_value`:
+
+```text
+GET /v1/analytics?label_key=department&label_value=legal
+```
+
+- Los destinos de [Broadcast](./integrations/observability.mdx) reciben las etiquetas como atributos de span `phaseo.label.<key>`.
+
+Si tu código ya envía una etiqueta con la clave de una dimensión, Phaseo conserva tu valor y omite esa dimensión. Si dos clasificadores usan la misma clave, gana el que se creó primero.
+
+## Coste y privacidad
+
+- Cada clasificación es una solicitud independiente al modelo clasificador, hecha con la misma clave API o el mismo token OAuth que la solicitud original. Se factura al precio normal de ese modelo y sigue la configuración de proveedores, retención de datos y BYOK de tu espacio de trabajo.
+- Las solicitudes del clasificador llevan la etiqueta `phaseo.classifier` con el ID del clasificador, así que puedes ver su gasto en **Uso**. No se clasifican a sí mismas y no cuentan para tus políticas de límites de frecuencia.
+- Mantén los costes bajos con un modelo pequeño y rápido, una tasa de muestreo, muestreo por sesión, un alcance o un presupuesto mensual.
+- La transcripción solo se envía al modelo clasificador. La solicitud del clasificador se registra como cualquier otra, por lo que el almacenamiento de su entrada depende de la configuración de registro de tu espacio de trabajo.
