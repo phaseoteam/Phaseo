@@ -255,6 +255,59 @@ function checkPlugin() {
 	}
 }
 
+// Directory listing rules: Anthropic's plugin directory needs a README; OpenAI's needs these interface limits and
+// links, and exactly five positive and three negative review cases for the one MCP server it connects.
+// https://developers.openai.com/plugins/deploy/submission
+const LISTING_URLS = ["websiteURL", "supportURL", "privacyPolicyURL", "termsOfServiceURL"];
+const SUBMISSION_FORBIDDEN = ["test_credentials", "reviewer_instructions"];
+
+function checkListing() {
+	const readme = join(pluginRoot, "README.md");
+	if (!existsSync(readme)) error(readme, "the plugin needs a README for directory listings");
+	else if (readFileSync(readme, "utf8").split(/\s+/).filter(Boolean).length < 40) error(readme, "README needs at least 40 words");
+
+	const interfaces = {
+		[join(pluginRoot, "plugin.json")]: readJson(join(pluginRoot, "plugin.json"))?.extensions?.["com.openai"]?.interface,
+		[join(pluginRoot, ".codex-plugin/plugin.json")]: readJson(join(pluginRoot, ".codex-plugin/plugin.json"))?.interface,
+	};
+	for (const [path, listing] of Object.entries(interfaces)) {
+		if (!listing) {
+			error(path, "missing the OpenAI interface");
+			continue;
+		}
+		for (const [field, max] of [["displayName", 30], ["shortDescription", 30], ["longDescription", 4000], ["developerName", 80]]) {
+			const value = listing[field] ?? "";
+			if (!value) error(path, `interface.${field} is required`);
+			else if (value.length > max) error(path, `interface.${field} must be at most ${max} characters (has ${value.length})`);
+		}
+		for (const field of LISTING_URLS) if (!/^https:\/\//.test(listing[field] ?? "")) error(path, `interface.${field} needs an https URL`);
+		const prompts = [listing.defaultPrompt ?? []].flat();
+		if (prompts.length > 3 || prompts.some((prompt) => prompt.length > 128)) error(path, "interface.defaultPrompt allows up to 3 prompts of at most 128 characters");
+	}
+	const [portable, codex] = Object.values(interfaces);
+	if (portable && codex && JSON.stringify(portable) !== JSON.stringify(codex)) error(join(pluginRoot, ".codex-plugin/plugin.json"), "interface differs from plugin.json");
+
+	const submissionPath = join(pluginRoot, "../openai-submission.json");
+	const submission = readJson(submissionPath);
+	if (!submission) return;
+	const toolSource = ["index.ts", "inference.ts"].map((file) => readFileSync(join(pluginRoot, "../../src", file), "utf8")).join("\n");
+	const cases = submission.review?.test_cases ?? {};
+	if (cases.positive?.length !== 5) error(submissionPath, `review.test_cases.positive needs exactly 5 cases (has ${cases.positive?.length ?? 0})`);
+	if (cases.negative?.length !== 3) error(submissionPath, `review.test_cases.negative needs exactly 3 cases (has ${cases.negative?.length ?? 0})`);
+	for (const [kind, list] of Object.entries(cases)) {
+		for (const [index, testCase] of (list ?? []).entries()) {
+			const fields = kind === "positive" ? ["description", "prompt", "tools_triggered", "expected_behavior"] : ["description", "prompt"];
+			for (const field of fields) if (!testCase[field]?.trim()) error(submissionPath, `${kind} case ${index + 1} needs ${field}`);
+			for (const tool of (testCase.tools_triggered ?? "").split(",").map((name) => name.trim()).filter(Boolean)) {
+				if (!toolSource.includes(`"${tool}"`)) error(submissionPath, `${kind} case ${index + 1}: no MCP tool is named ${tool}`);
+			}
+		}
+	}
+	const keys = JSON.stringify(submission);
+	for (const field of SUBMISSION_FORBIDDEN) if (keys.includes(`"${field}"`)) error(submissionPath, `${field} belongs in the dashboard, never in the package`);
+	if (!submission.publication?.release_notes?.trim()) error(submissionPath, "publication.release_notes is required");
+}
+
 function checkMarketplaces() {
 	const marketplaces = [join(repoRoot, ".claude-plugin/marketplace.json"), join(repoRoot, ".agents/plugins/marketplace.json")];
 	for (const path of marketplaces) {
@@ -282,6 +335,7 @@ for (const skill of PUBLIC_SKILLS) if (!existsSync(join(skillsRoot, skill))) err
 for (const skillDir of skillDirs) checkSkill(skillDir, catalogue, today);
 for (const skill of PLUGIN_ONLY_SKILLS) checkSkill(join(pluginRoot, "skills", skill), catalogue, today);
 checkPlugin();
+checkListing();
 checkMarketplaces();
 
 for (const message of warnings) process.stdout.write(`warning ${message}\n`);

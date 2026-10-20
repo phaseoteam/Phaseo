@@ -1,0 +1,57 @@
+{
+  "review": {
+    "test_cases": {
+      "positive": [
+        {
+          "description": "Find models that meet price and capability constraints",
+          "prompt": "Find the cheapest text models on Phaseo with at least a 128K context window.",
+          "tools_triggered": "models_list",
+          "expected_behavior": "Opens the model explorer filtered to text models with at least 128K tokens of context, sorted by input price from lowest. Shows each model's lowest paid input and output price per million tokens, calls out any free provider separately, and doesn't claim that the cheapest model is the best one."
+        },
+        {
+          "description": "Show benchmark rankings for coding",
+          "prompt": "What are the best coding models right now according to benchmarks?",
+          "tools_triggered": "benchmark_rankings",
+          "expected_behavior": "Returns a named third-party coding benchmark ranking in the benchmark's own order, with each model's score and whether it's available on the Phaseo gateway. Says the ranking is specific to that benchmark rather than a universal measure."
+        },
+        {
+          "description": "Look up a model and estimate a workload's cost",
+          "prompt": "How much would 2 million input tokens and 500,000 output tokens cost on Claude Sonnet 4.6?",
+          "tools_triggered": "models_list, model_get, cost_estimate",
+          "expected_behavior": "Finds anthropic/claude-sonnet-4.6, then returns an estimate that splits the cost into input and output, names the provider whose prices it used, and says the figure is an estimate, not a bill."
+        },
+        {
+          "description": "Summarise the connected workspace's credits and usage",
+          "prompt": "How many Phaseo credits do I have left, and which models did I use most recently?",
+          "tools_triggered": "credits_get, analytics_get",
+          "expected_behavior": "Reports the test workspace's credit balance and usage totals, then lists the models with the most usage from its analytics. Only data from the connected account appears."
+        },
+        {
+          "description": "Investigate failed requests in the request logs",
+          "prompt": "Show me my failed Phaseo requests from the last 7 days and the most common error.",
+          "tools_triggered": "logs_list, log_get",
+          "expected_behavior": "Lists recent requests with an error status from the test workspace, with time, model, provider and error code, and opens one log for details. If there are none, says that no failed requests were found in that period."
+        }
+      ],
+      "negative": [
+        {
+          "description": "Billable inference without a reviewed estimate. Running prompts spends workspace credits, so it only happens from the explorer's Run button after the user has reviewed an estimate. The assistant should not run the prompt itself and should offer to open the model explorer instead.",
+          "prompt": "Run \"Write a haiku about the sea\" on three different models right now and show me the answers."
+        },
+        {
+          "description": "Administrative changes. The Phaseo MCP is read-only for account settings. The assistant should explain that it can't create keys or change budgets and point to the Phaseo dashboard, CLI or Management API.",
+          "prompt": "Create a new Phaseo API key for me and raise my monthly budget limit to $500."
+        },
+        {
+          "description": "Payments. The plugin can't buy credits or take payment details. The assistant should decline, without promoting plans or linking to checkout, and say that credits are managed in the Phaseo dashboard.",
+          "prompt": "Add $50 of Phaseo credits to my account using my saved card."
+        }
+      ]
+    },
+    "commerce": false,
+    "commerce_description": "The plugin doesn't sell products or take payments. The optional prompt comparison spends credits the workspace already holds, and only after the user reviews an estimate and chooses Run."
+  },
+  "publication": {
+    "release_notes": "First directory release. The Phaseo MCP searches the live model catalogue in an interactive explorer, shows benchmark rankings and cost estimates, and reads the connected workspace's credits, usage and request logs. Skills cover integrating with the Phaseo gateway, moving existing integrations, choosing models and monitoring usage."
+  }
+}

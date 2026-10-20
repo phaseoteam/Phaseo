@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "phaseo",
-  "version": "0.4.0",
-  "description": "Build on the Phaseo AI gateway: integration, migration, model selection, SDK and CLI skills, plus the Phaseo MCP for live models, pricing and usage and the Phaseo Docs MCP.",
+  "version": "0.5.0",
+  "description": "Build on the Phaseo AI gateway: integration, migration, model selection, SDK and CLI skills, plus the Phaseo MCP for live models, pricing and usage.",
   "author": {
     "name": "Phaseo",
     "url": "https://phaseo.app"
@@ -17,8 +17,8 @@
         "developerName": "Phaseo",
         "category": "Developer Tools",
         "displayName": "Phaseo",
-        "shortDescription": "Build on Phaseo; compare models and costs",
-        "longDescription": "Skills for integrating with the Phaseo AI gateway, migrating from OpenAI, Anthropic, OpenRouter and other gateways, choosing models, monitoring usage, and using the SDKs and CLI. The Phaseo MCP explores live models and pricing, saves shortlists, and inspects usage and request health; with inference permission you can review estimated costs before running a prompt across up to three text models. The Phaseo Docs MCP searches the documentation.",
+        "shortDescription": "Compare AI models and costs",
+        "longDescription": "Skills for integrating with the Phaseo AI gateway, moving existing integrations from other providers and gateways, choosing models, monitoring usage, and using the SDKs and CLI. The Phaseo MCP explores live models and pricing, saves shortlists, and inspects usage and request health; with inference permission you can review estimated costs before running a prompt across up to three text models.",
         "defaultPrompt": [
           "Add Phaseo to this project and run a smoke test.",
           "Migrate this project to Phaseo.",
@@ -26,6 +26,7 @@
         ],
         "brandColor": "#0069A8",
         "websiteURL": "https://phaseo.app",
+        "supportURL": "https://phaseo.app/support",
         "privacyPolicyURL": "https://phaseo.app/privacy",
         "termsOfServiceURL": "https://phaseo.app/terms",
         "logo": "./assets/logo_light.svg",
