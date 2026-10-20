@@ -177,6 +177,7 @@ export function getSupportedEndpointOptions(
 	const inputs = supportedEndpoints.length > 0 ? supportedEndpoints : [endpoint ?? ""];
 	for (const input of inputs) {
 		const normalized = input.toLowerCase().replace(/^\//, "").replace(/\//g, ".").replace(/^v1\./, "");
+		values.add(normalized);
 		const paths = capabilityToEndpoints[normalized] ?? [normalized];
 		for (const path of paths) {
 			values.add(path.replace(/^\//, "").replace(/\//g, "."));

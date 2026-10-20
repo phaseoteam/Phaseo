@@ -65,6 +65,10 @@ describe("model endpoint compatibility", () => {
 		expect(getSupportedEndpointOptions([], "decisions.make").map((option) => option.value)).toEqual(["decisions"]);
 		expect(getSupportedEndpointOptions(["/embeddings"]).map((option) => option.value)).toEqual(["embeddings"]);
 	});
+	test("preserves endpoint-valued capabilities alongside their expanded paths", () => {
+		expect(getSupportedEndpointOptions(["music.generate"]).map((option) => option.value)).toEqual(["music.generate"]);
+		expect(getSupportedEndpointOptions(["batch.create"]).map((option) => option.value)).toEqual(["batch.create"]);
+	});
 });
 
 describe("getVisibleEndpointRoutes", () => {
