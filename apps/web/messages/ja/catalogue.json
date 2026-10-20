@@ -2987,8 +2987,6 @@
 		"previousModel": "前のモデル",
 		"nextModel": "次のモデル",
 		"modelIndex": "{total} 件中 {current} 件目のモデル",
-		"caching": "キャッシュ",
-		"otherCharges": "その他の料金",
 		"exampleRequest": "例：入力 10K + 出力 1K トークン",
 		"compareProviders": "プロバイダーを比較"
 	},

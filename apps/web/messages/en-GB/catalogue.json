@@ -2987,8 +2987,6 @@
 		"previousModel": "Previous model",
 		"nextModel": "Next model",
 		"modelIndex": "{current} of {total} models",
-		"caching": "Caching",
-		"otherCharges": "Other charges",
 		"exampleRequest": "Example: 10K input + 1K output tokens",
 		"compareProviders": "Compare providers"
 	},

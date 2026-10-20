@@ -1,7 +1,7 @@
 "use client";
 
-import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
-import { ArrowUpRight, ChevronLeft, ChevronRight, PanelRight } from "lucide-react";
+import { useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { ArrowUpRight, Ban, ChevronLeft, ChevronRight, CircleCheck, Clock3, Info, PanelRight } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/Logo";
@@ -9,6 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { prettifyParamName } from "@/components/(data)/model/pricing/ProviderModelParameters";
+import { getLocalizedDocsHref } from "@/lib/docs";
+import {
+	ALL_PARAMETERS_DOCS_HREF,
+	getParameterDocsHref,
+	getParameterReference,
+	getParameterReferenceTranslationKey,
+} from "@/lib/parameters/reference";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -355,47 +364,141 @@ export function ProviderModelCard({
 
 function InspectorSection({
 	title,
-	action,
+	href,
+	badge,
 	children,
 }: {
 	title: string;
-	action?: ReactNode;
+	href?: string;
+	badge?: ReactNode;
 	children: ReactNode;
 }) {
 	return (
-		<section className="space-y-3 border-b border-zinc-200/80 py-4 last:border-b-0 dark:border-zinc-800">
-			<div className="flex items-center justify-between gap-2">
-				<h3 className="text-[15px] font-semibold text-foreground">{title}</h3>
-				{action}
+		<section className="space-y-1 border-t border-zinc-200/80 py-2 first:border-t-0 dark:border-zinc-800">
+			<div className="flex items-center justify-between gap-3">
+				<h3 className="text-[15px] font-semibold text-foreground">
+					{href ? (
+						<a
+							href={href}
+							target="_blank"
+							rel="noreferrer"
+							className="group inline-flex items-center gap-1.5 underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+						>
+							{title}
+							<ArrowUpRight className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+						</a>
+					) : title}
+				</h3>
+				{badge}
 			</div>
 			{children}
 		</section>
 	);
 }
 
-type MeterGroup = "input" | "output" | "cache" | "other";
-
-function meterGroup(meter: APIProviderModelPricingMeter): MeterGroup {
-	if (meter.meter.includes("cache")) return "cache";
-	if (meter.meter.startsWith("input_")) return "input";
-	if (meter.meter.startsWith("output_")) return "output";
-	return "other";
+function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+	return (
+		<div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4">
+			<div className="text-[11px] text-muted-foreground">{label}</div>
+			<div className="flex max-w-[20rem] flex-wrap items-center justify-end gap-1.5 text-right text-sm font-medium text-foreground">
+				{children}
+			</div>
+		</div>
+	);
 }
 
-const METER_GROUP_ORDER: MeterGroup[] = ["input", "output", "cache", "other"];
+// Click-to-copy ID pill, like the provider model IDs in the pricing inspector.
+function CopyPill({ value }: { value: string }) {
+	const tSections = useTranslations("Catalogue.modelDetail.sections");
+	const [copied, setCopied] = useState(false);
+	return (
+		<button
+			type="button"
+			onClick={() => {
+				void navigator.clipboard?.writeText(value).then(() => {
+					setCopied(true);
+					window.setTimeout(() => setCopied(false), 1500);
+				});
+			}}
+			className="min-w-0 max-w-full rounded-md bg-muted px-2 py-1 font-mono text-xs text-foreground transition-colors hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:hover:bg-zinc-800"
+			title={tSections("copyProviderModelId")}
+		>
+			<span className="block truncate">{copied ? tSections("copied") : value}</span>
+		</button>
+	);
+}
+
+function GatewayStatus({ model }: { model: APIProviderModelListItem }) {
+	const tStatus = useTranslations("Catalogue.modelDetail.providerTable");
+	if (model.availability_status === "coming_soon" || model.is_unreleased) {
+		return <><Clock3 className="size-4 text-blue-600 dark:text-blue-400" /><span>{tStatus("statuses.comingSoon")}</span></>;
+	}
+	if (model.availability_status === "not_active" || model.is_active_gateway === false) {
+		return <><Ban className="size-4 text-red-600 dark:text-red-400" /><span>{tStatus("statuses.inactive")}</span></>;
+	}
+	return <><CircleCheck className="size-4 text-emerald-600 dark:text-emerald-400" /><span>{tStatus("statuses.active")}</span></>;
+}
+
+function ParameterButton({ param }: { param: string }) {
+	const locale = useLocale();
+	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
+	const reference = getParameterReference(param);
+	const descriptionKey = getParameterReferenceTranslationKey(param);
+	return (
+		<HoverCard openDelay={120} closeDelay={80}>
+			<HoverCardTrigger asChild>
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					className="h-7 min-h-0 justify-start rounded-md px-2 py-1 font-mono text-[11px]"
+				>
+					{prettifyParamName(param)}
+				</Button>
+			</HoverCardTrigger>
+			<HoverCardContent align="start" className="w-80 p-3 text-xs">
+				<div className="space-y-2">
+					<div className="space-y-1">
+						<div className="flex items-center justify-between gap-3">
+							<code className="font-mono text-[11px] text-foreground">{param}</code>
+							<a
+								href={getLocalizedDocsHref(locale, getParameterDocsHref(param))}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-[11px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
+							>
+								{tQuickstart("docsLabel")}
+							</a>
+						</div>
+						<p className="leading-relaxed text-muted-foreground">
+							{tQuickstart(`parameterDescriptions.${descriptionKey}` as never)}
+						</p>
+					</div>
+					<div className="flex items-center gap-4 border-t border-zinc-200/70 pt-2 text-[11px] text-muted-foreground dark:border-zinc-800">
+						<span>
+							{tQuickstart("typeLabel")} <span className="text-foreground">{reference.type}</span>
+						</span>
+						<span>
+							{tQuickstart("defaultLabel")}{" "}
+							<span className="text-foreground">
+								{reference.defaultValue === "Provider specific"
+									? tQuickstart("defaultProviderSpecific")
+									: reference.defaultValue === "Unset"
+										? tQuickstart("defaultUnset")
+										: reference.defaultValue}
+							</span>
+						</span>
+					</div>
+				</div>
+			</HoverCardContent>
+		</HoverCard>
+	);
+}
 
 // A worked example makes per-million prices easier to read at a glance.
 const EXAMPLE_INPUT_TOKENS = 10_000;
 const EXAMPLE_OUTPUT_TOKENS = 1_000;
-
-function SummaryTile({ label, value }: { label: string; value: ReactNode }) {
-	return (
-		<div className="min-w-0 px-3 py-2.5">
-			<div className="truncate text-[11px] text-muted-foreground">{label}</div>
-			<div className="mt-0.5 truncate text-sm font-semibold tabular-nums">{value}</div>
-		</div>
-	);
-}
+const PRICE_COLUMNS = 3;
 
 export function ProviderModelDetailsSheet({
 	model,
@@ -413,9 +516,14 @@ export function ProviderModelDetailsSheet({
 	onOpenChange: (open: boolean) => void;
 }) {
 	const t = useTranslations("Catalogue.providerModelList");
+	const tSections = useTranslations("Catalogue.modelDetail.sections");
+	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const formatUsd = useUsdFormatter();
 	const meterDisplay = useMeterDisplay();
+	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
+	const tProviders = useTranslations("Catalogue.providers");
 	const statusDescription = useStatusDescription(model);
 	const organisationId = model ? organisationIdFor(model) : null;
 
@@ -426,46 +534,23 @@ export function ProviderModelDetailsSheet({
 		inputMeter?.price_per_1m_usd != null && outputMeter?.price_per_1m_usd != null
 			? (inputMeter.price_per_1m_usd * EXAMPLE_INPUT_TOKENS + outputMeter.price_per_1m_usd * EXAMPLE_OUTPUT_TOKENS) / 1_000_000
 			: null;
-	const groupLabels: Record<MeterGroup, string> = {
-		input: t("input"),
-		output: t("output"),
-		cache: t("caching"),
-		other: t("otherCharges"),
-	};
-	const groupedMeters = METER_GROUP_ORDER.map((group) => ({
-		group,
-		meters: meters.filter((meter) => meterGroup(meter) === group),
-	})).filter((entry) => entry.meters.length > 0);
 	const params = model ? uniqueSorted(listify(model.supported_params)) : [];
 	const endpoints = model ? Array.from(new Set(model.endpoints ?? [])).sort((a, b) => a.localeCompare(b)) : [];
+	const providerModelId = model?.provider_model_slug?.trim() || model?.api_model_id || "";
 	const date = model ? primaryDate(model) : null;
 
 	return (
 		// Non-modal like the pricing inspector: the page stays scrollable and
 		// clicking another card swaps the content instead of closing the panel.
 		<ProviderInspectorSheet open={model != null} onOpenChange={onOpenChange} disablePointerDismissal>
-			<ProviderInspectorSheetContent className="w-full gap-0 overflow-hidden p-0 sm:w-[28rem] lg:w-[32rem]">
+			<ProviderInspectorSheetContent className="w-full gap-0 overflow-hidden p-0 sm:w-[30rem] md:w-[50vw] lg:w-[44vw] xl:w-[40vw] 2xl:w-[36vw]">
 				{model ? (
 					<>
 						<div className="absolute right-14 top-4 z-10 flex items-center gap-1">
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								disabled={!onPrevious}
-								aria-label={t("previousModel")}
-								onClick={onPrevious}
-							>
+							<Button type="button" variant="ghost" size="icon-sm" disabled={!onPrevious} aria-label={t("previousModel")} onClick={onPrevious}>
 								<ChevronLeft className="h-4 w-4" />
 							</Button>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								disabled={!onNext}
-								aria-label={t("nextModel")}
-								onClick={onNext}
-							>
+							<Button type="button" variant="ghost" size="icon-sm" disabled={!onNext} aria-label={t("nextModel")} onClick={onNext}>
 								<ChevronRight className="h-4 w-4" />
 							</Button>
 							{index >= 0 ? (
@@ -478,18 +563,18 @@ export function ProviderModelDetailsSheet({
 							) : null}
 						</div>
 
-						<ProviderInspectorSheetHeader className="gap-3 border-b border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
+						<ProviderInspectorSheetHeader className="border-b border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
 							<div className="flex min-w-0 items-center gap-3 pr-32">
-								{organisationId ? (
-									<Link href={`/organisations/${organisationId}`} prefetch={false} className="shrink-0">
-										<ModelLogo model={model} className="size-11" />
-									</Link>
-								) : (
-									<ModelLogo model={model} className="size-11" />
-								)}
+								<div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800">
+									{organisationId ? (
+										<Link href={`/organisations/${organisationId}`} prefetch={false} className="relative h-7 w-7">
+											<Logo id={organisationId} alt={organisationId} className="object-contain" fill sizes="22px" />
+										</Link>
+									) : null}
+								</div>
 								<div className="min-w-0 flex-1">
 									<div className="flex min-w-0 items-center gap-2">
-										<ProviderInspectorSheetTitle className="truncate text-base font-semibold">
+										<ProviderInspectorSheetTitle className="truncate pr-2 text-base">
 											<Link
 												href={`/models/${model.model_id}`}
 												prefetch={false}
@@ -512,9 +597,6 @@ export function ProviderModelDetailsSheet({
 									</ProviderInspectorSheetDescription>
 								</div>
 							</div>
-							{statusDescription ? (
-								<p className="text-xs text-muted-foreground">{statusDescription}</p>
-							) : null}
 						</ProviderInspectorSheetHeader>
 
 						<ScrollArea
@@ -522,80 +604,94 @@ export function ProviderModelDetailsSheet({
 							viewportClassName="pb-5 overscroll-contain"
 							scrollBarOrientation="vertical"
 						>
-							<div className="grid grid-cols-2 border-b border-zinc-200/80 dark:border-zinc-800 [&>*:nth-child(even)]:border-l [&>*:nth-child(n+3)]:border-t [&>*]:border-zinc-200/80 dark:[&>*]:border-zinc-800">
-								<SummaryTile label={`${t("input")} / ${t("oneMillionTokens")}`} value={inputMeter ? formatUsd(inputMeter.price_per_1m_usd) : "—"} />
-								<SummaryTile label={`${t("output")} / ${t("oneMillionTokens")}`} value={outputMeter ? formatUsd(outputMeter.price_per_1m_usd) : "—"} />
-								<SummaryTile label={t("supportedParameters")} value={params.length || "—"} />
-								<SummaryTile label={t("released")} value={date ? format.calendarDate(date) : "—"} />
-							</div>
-
 							<div className="px-5">
+								{statusDescription ? (
+									<p className="border-b border-zinc-200/80 py-2.5 text-xs text-muted-foreground dark:border-zinc-800">{statusDescription}</p>
+								) : null}
+
 								<InspectorSection title={t("pricing")}>
-									{groupedMeters.length > 0 ? (
-										<div className="overflow-hidden rounded-md border border-zinc-200/80 dark:border-zinc-800">
-											{groupedMeters.map(({ group, meters: groupMeters }) => (
-												<div key={group} className="border-b border-zinc-200/80 last:border-b-0 dark:border-zinc-800">
-													<div className="bg-muted/40 px-3 py-1.5 text-[11px] font-medium text-muted-foreground">
-														{groupLabels[group]}
+									{meters.length > 0 ? (
+										<div className="grid" style={{ gridTemplateColumns: `repeat(${Math.min(PRICE_COLUMNS, meters.length)}, minmax(0, 1fr))` }}>
+											{meters.map((meter, meterIndex) => {
+												const display = meterDisplay(meter);
+												return (
+													<div
+														key={meter.meter}
+														className={cn(
+															"min-h-[78px] min-w-0 py-2.5",
+															meterIndex % PRICE_COLUMNS === 0 ? "pr-3" : "border-l border-zinc-200/80 px-3 dark:border-zinc-800",
+															meterIndex >= PRICE_COLUMNS && "border-t border-zinc-200/80 dark:border-zinc-800",
+														)}
+													>
+														<div className="truncate text-[11px] text-muted-foreground">{display.label}</div>
+														<div className="mt-0.5 text-lg font-semibold tabular-nums">{display.amount === 0 ? tProviders("free") : formatUsd(display.amount)}</div>
+														<div className="mt-0.5 text-[10px] text-muted-foreground">
+															{display.unitLabel === t("oneMillionTokens") ? tPricing("perMillionTokens") : display.unitLabel}
+															{meter.meter === "image_pixels" && meter.estimated_price_per_image_usd != null
+																? ` · ${t("estimatedImagePrice", { price: formatUsd(meter.estimated_price_per_image_usd), size: "1024×1024" })}`
+																: null}
+														</div>
 													</div>
-													<dl className="divide-y divide-zinc-200/60 dark:divide-zinc-800/80">
-														{groupMeters.map((meter) => {
-															const display = meterDisplay(meter);
-															return (
-																<div key={meter.meter} className="flex items-start justify-between gap-4 px-3 py-2 text-sm">
-																	<dt className="min-w-0 text-muted-foreground">{display.label}</dt>
-																	<dd className="shrink-0 text-right tabular-nums">
-																		<span className="font-medium">{formatUsd(display.amount)}</span>
-																		<span className="text-muted-foreground"> / {display.unitLabel}</span>
-																		{meter.meter === "image_pixels" && meter.estimated_price_per_image_usd != null ? (
-																			<span className="block text-xs text-muted-foreground">
-																				{t("estimatedImagePrice", {
-																					price: formatUsd(meter.estimated_price_per_image_usd),
-																					size: "1024×1024",
-																				})}
-																			</span>
-																		) : null}
-																	</dd>
-																</div>
-															);
-														})}
-													</dl>
-												</div>
-											))}
+												);
+											})}
 										</div>
 									) : (
-										<p className="text-sm text-muted-foreground">{t("noPricing")}</p>
+										<div className="rounded-md border border-dashed border-zinc-200/80 bg-zinc-50/60 px-3 py-2.5 text-xs text-muted-foreground dark:border-zinc-800 dark:bg-zinc-900/30">
+											{t("noPricing")}
+										</div>
 									)}
 									{exampleCost != null ? (
-										<div className="flex items-center justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 text-xs">
-											<span className="text-muted-foreground">{t("exampleRequest")}</span>
-											<span className="font-semibold tabular-nums">≈ {formatUsd(exampleCost)}</span>
+										<div className="flex items-center justify-between gap-3 pb-1 pt-1.5 text-[11px] text-muted-foreground">
+											<span>{t("exampleRequest")}</span>
+											<span className="font-medium tabular-nums text-foreground">≈ {formatUsd(exampleCost)}</span>
 										</div>
 									) : null}
 								</InspectorSection>
 
-								<InspectorSection title={t("modalities")}>
-									<div className="space-y-1.5 text-xs">
-										<div className="flex items-center gap-2">
-											<span className="w-11 shrink-0 text-[11px] text-muted-foreground">{t("input")}</span>
-											<div className="flex flex-wrap gap-1"><ModalityBadges values={uniqueSorted(listify(model.input_modalities))} /></div>
-										</div>
-										<div className="flex items-center gap-2">
-											<span className="w-11 shrink-0 text-[11px] text-muted-foreground">{t("output")}</span>
-											<div className="flex flex-wrap gap-1"><ModalityBadges values={uniqueSorted(listify(model.output_modalities))} /></div>
-										</div>
+								<InspectorSection title={tSections("routingDetails")}>
+									<div className="space-y-2">
+										<DetailRow label={tSections("gatewayStatus")}><GatewayStatus model={model} /></DetailRow>
+										<DetailRow label={tSections("providerModelIds")}><CopyPill value={providerModelId} /></DetailRow>
+										<DetailRow label={t("endpoints")}>
+											{endpoints.length > 0 ? endpoints.map((endpoint) => (
+												<span key={endpoint} className="rounded-md bg-muted px-2 py-1 font-mono text-xs">{endpoint}</span>
+											)) : <span className="text-xs text-muted-foreground">--</span>}
+										</DetailRow>
+									</div>
+								</InspectorSection>
+
+								<InspectorSection title={tQuickstart("technicalDetails")}>
+									<div className="space-y-2">
+										<DetailRow label={t("input")}><ModalityBadges values={uniqueSorted(listify(model.input_modalities))} /></DetailRow>
+										<DetailRow label={t("output")}><ModalityBadges values={uniqueSorted(listify(model.output_modalities))} /></DetailRow>
+										<DetailRow label={t("released")}><span className="tabular-nums">{date ? format.calendarDate(date) : "--"}</span></DetailRow>
 									</div>
 								</InspectorSection>
 
 								<InspectorSection
-									title={t("supportedParameters")}
-									action={params.length > 0 ? <span className="text-xs tabular-nums text-muted-foreground">{params.length}</span> : null}
+									title={tQuickstart("parameterSupport")}
+									href={getLocalizedDocsHref(locale, ALL_PARAMETERS_DOCS_HREF)}
+									badge={params.length > 0 ? <span className="text-xs tabular-nums text-muted-foreground">{params.length}</span> : (
+										<span className="rounded-md border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+											{tQuickstart("unknown")}
+										</span>
+									)}
 								>
-									<ChipList values={params} />
-								</InspectorSection>
-
-								<InspectorSection title={t("endpoints")}>
-									<ChipList values={endpoints} />
+									{params.length > 0 ? (
+										<div className="flex flex-wrap items-start gap-1.5 pt-1">
+											{params.map((param) => <ParameterButton key={param} param={param} />)}
+										</div>
+									) : (
+										<div className="rounded-md border border-amber-200/80 bg-amber-50/60 px-3 py-3 dark:border-amber-900/70 dark:bg-amber-950/20">
+											<div className="flex items-start gap-2">
+												<Info aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" />
+												<div>
+													<p className="text-sm font-medium text-foreground">{tQuickstart("supportNotDocumented")}</p>
+													<p className="mt-1 text-xs leading-relaxed text-muted-foreground">{tQuickstart("supportNotDocumentedDescription")}</p>
+												</div>
+											</div>
+										</div>
+									)}
 								</InspectorSection>
 							</div>
 						</ScrollArea>
@@ -617,21 +713,5 @@ export function ProviderModelDetailsSheet({
 				) : null}
 			</ProviderInspectorSheetContent>
 		</ProviderInspectorSheet>
-	);
-}
-
-function ChipList({ values }: { values: string[] }) {
-	if (values.length === 0) return <p className="text-sm text-muted-foreground">-</p>;
-	return (
-		<div className="flex flex-wrap gap-1.5">
-			{values.map((value) => (
-				<span
-					key={value}
-					className="inline-flex items-center rounded-md border border-border/60 bg-muted/30 px-2 py-1 font-mono text-[11px] text-muted-foreground"
-				>
-					{value}
-				</span>
-			))}
-		</div>
 	);
 }

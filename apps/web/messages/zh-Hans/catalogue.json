@@ -2987,8 +2987,6 @@
 		"previousModel": "上一个模型",
 		"nextModel": "下一个模型",
 		"modelIndex": "第 {current} 个，共 {total} 个模型",
-		"caching": "缓存",
-		"otherCharges": "其他费用",
 		"exampleRequest": "示例：10K 输入 + 1K 输出 token",
 		"compareProviders": "比较提供商"
 	},
