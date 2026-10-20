@@ -24,8 +24,16 @@ export type DroppedParam = {
 	/** Client-facing parameter name, for example `top_k`. */
 	param: string;
 	reason: DroppedParamReason;
-	/** Where the decision came from. */
-	source: "provider_profile" | "catalogue";
+	/**
+	 * Where the decision came from. `provider_api`: the provider's API has no
+	 * such field or item at all (see ./responsesItems.ts).
+	 */
+	source: "provider_profile" | "catalogue" | "provider_api";
+	/**
+	 * Set when the request body itself, not a preset or default, carried what
+	 * was dropped and the top-level parameter list cannot tell (input items).
+	 */
+	clientSent?: boolean;
 };
 
 type OptionalParam = {
@@ -228,10 +236,10 @@ export function recordDroppedParams(ctx: DroppedParamsContext, providerId: strin
 	const names = SURFACE_PARAM_NAMES[String(ctx.endpoint ?? "")] ?? {};
 	const record: DroppedParamsRecord = {
 		provider: providerId,
-		params: dropped.map((entry) => ({
+		params: dropped.map(({ clientSent, ...entry }) => ({
 			...entry,
 			param: names[entry.param] ?? entry.param,
-			client_sent: requested.has(entry.param),
+			client_sent: clientSent ?? requested.has(entry.param),
 		})),
 	};
 	// Copy on write: sub-requests (advisor, image tools) run on shallow copies of
