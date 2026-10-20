@@ -1,5 +1,6 @@
 import type { HttpMethod } from "@/components/HttpMethodBadge";
 import { resolveGatewayPath } from "./endpoint-paths";
+import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 
 export type EndpointOption = {
 	value: string;
@@ -16,6 +17,13 @@ export type EndpointRoute = {
 };
 
 const ENDPOINT_ROUTE_META: Record<string, Omit<EndpointRoute, "value">> = {
+	extractions: {
+		method: "POST",
+		path: "/v1/extractions",
+		title: "Extractions",
+		description: "Extract typed values with confidence and missing-value probabilities.",
+		tag: "Recommended",
+	},
 	responses: {
 		method: "POST",
 		path: "/v1/responses",
@@ -138,6 +146,7 @@ const ENDPOINT_ROUTE_META: Record<string, Omit<EndpointRoute, "value">> = {
 };
 
 export const ENDPOINT_OPTIONS: EndpointOption[] = [
+	{ value: "extractions", label: "Extractions" },
 	{ value: "responses", label: "Responses" },
 	{ value: "decisions", label: "Decisions" },
 	{ value: "chat.completions", label: "Chat Completions" },
@@ -158,6 +167,23 @@ export const ENDPOINT_OPTIONS: EndpointOption[] = [
 ];
 
 export const ENDPOINT_ROUTE_PREVIEW_LIMIT = 4;
+
+export function getSupportedEndpointOptions(
+	supportedEndpoints: string[],
+	endpoint?: string | null,
+): EndpointOption[] {
+	const values = new Set<string>();
+	// Explicit model support is authoritative; a preferred endpoint must not add support.
+	const inputs = supportedEndpoints.length > 0 ? supportedEndpoints : [endpoint ?? ""];
+	for (const input of inputs) {
+		const normalized = input.toLowerCase().replace(/^\//, "").replace(/\//g, ".").replace(/^v1\./, "");
+		const paths = capabilityToEndpoints[normalized] ?? [normalized];
+		for (const path of paths) {
+			values.add(path.replace(/^\//, "").replace(/\//g, "."));
+		}
+	}
+	return ENDPOINT_OPTIONS.filter((option) => values.has(option.value));
+}
 
 export function buildEndpointRoutes(
 	availableEndpoints: EndpointOption[],

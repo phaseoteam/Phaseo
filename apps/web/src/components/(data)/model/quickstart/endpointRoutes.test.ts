@@ -1,5 +1,6 @@
 import {
 	getVisibleEndpointRoutes,
+	getSupportedEndpointOptions,
 	type EndpointRoute,
 } from "./endpointRoutes";
 
@@ -45,6 +46,26 @@ const ROUTES: EndpointRoute[] = [
 		tag: "Recommended",
 	},
 ];
+
+describe("model endpoint compatibility", () => {
+	test("only offers extraction for Clairic, even with an incompatible preference", () => {
+		expect(getSupportedEndpointOptions(["extraction.extract"], "chat.completions"))
+			.toEqual([{ value: "extractions", label: "Extractions" }]);
+	});
+	test("does not offer unrelated endpoints for unknown or missing support", () => {
+		expect(getSupportedEndpointOptions(["future.capability"])).toEqual([]);
+		expect(getSupportedEndpointOptions([])).toEqual([]);
+	});
+	test("maps text capabilities to the supported compatibility protocols", () => {
+		expect(getSupportedEndpointOptions(["text.generate"]).map((option) => option.value))
+			.toEqual(["responses", "chat.completions", "messages"]);
+	});
+	test("preserves explicit endpoint support and legacy preferred endpoint metadata", () => {
+		expect(getSupportedEndpointOptions(["/v1/extractions"]).map((option) => option.value)).toEqual(["extractions"]);
+		expect(getSupportedEndpointOptions([], "decisions.make").map((option) => option.value)).toEqual(["decisions"]);
+		expect(getSupportedEndpointOptions(["/embeddings"]).map((option) => option.value)).toEqual(["embeddings"]);
+	});
+});
 
 describe("getVisibleEndpointRoutes", () => {
 	test("keeps the selected endpoint visible in collapsed mode", () => {
