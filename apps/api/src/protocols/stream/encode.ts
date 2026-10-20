@@ -73,9 +73,10 @@ function encodeOpenAIChat(
 				choices: [
 					{
 						index: event.choiceIndex ?? 0,
+						// Reasoning text goes out under both names Chat clients read.
 						delta:
 							event.channel === "reasoning_text"
-								? { reasoning_content: event.text }
+								? { reasoning_content: event.text, reasoning: event.text }
 								: { content: event.text },
 						finish_reason: null,
 					},
