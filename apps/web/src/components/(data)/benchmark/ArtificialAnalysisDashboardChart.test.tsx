@@ -18,7 +18,7 @@ it.each(["bars", "scatter", "cost"] as const)("retains SVG focus through inspect
  const node = document.createElement("div"); document.body.appendChild(node); const root = createRoot(node);
  const row: DashboardRow = { id: "low", modelId: "lab/model", modelName: "Model", sourceName: "Model low", creatorId: "lab", colour: null, effort: "low", intelligence: 40, tokensPerTask: 200, totalTokens: null, costPerTask: cost ? 0.0000123 : 1, totalCost: null, timePerTask: null, benchmarks: {}, capabilities: {} };
  try {
- await act(async () => root.render(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><ArtificialAnalysisDashboardChart title="Output tokens per task" rows={[row]} value={(item) => cost ? item.costPerTask : scatter ? item.intelligence : item.tokensPerTask} xValue={scatter ? (item) => item.costPerTask : undefined} xLabel="Cost per task" xUnit="usd" unit={cost ? "usd" : scatter ? "score" : "tokens"} highlight={null} /></NextIntlClientProvider>));
+ await act(async () => root.render(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><ArtificialAnalysisDashboardChart title={cost ? "Cost per task" : "Output tokens per task"} rows={[row]} value={(item) => cost ? item.costPerTask : scatter ? item.intelligence : item.tokensPerTask} xValue={scatter ? (item) => item.costPerTask : undefined} xLabel="Cost per task" xUnit="usd" unit={cost ? "usd" : scatter ? "score" : "tokens"} highlight={null} /></NextIntlClientProvider>));
  const point = node.querySelector<SVGElement>('[role="button"][aria-label^="Model low:"]');
  expect(point).not.toBeNull();
  await act(async () => point!.focus());

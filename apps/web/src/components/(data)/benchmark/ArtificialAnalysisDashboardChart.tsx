@@ -134,11 +134,15 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
 	const number = (n: number, compact = false, precision = 3) => unit === "usd" ? formatDashboardCost(n, locale, compact, compact ? precision : 5) : new Intl.NumberFormat(locale, { ...(compact ? { ...(Math.abs(n) >= 1000 ? { notation: "compact" as const } : {}), maximumSignificantDigits: precision } : { maximumSignificantDigits: 5 }) }).format(n);
 	const tickPrecision = dashboardTickPrecision(yTicks, (value, digits) => number(value, true, digits));
 	const xNumber = (n: number) => xUnit === "usd" ? formatDashboardCost(n, locale, true, 3) : xUnit === "seconds" ? new Intl.NumberFormat(locale, { maximumSignificantDigits: 2, style: "unit", unit: n >= 3600 ? "hour" : n >= 60 ? "minute" : "second", unitDisplay: "narrow" }).format(n / (n >= 3600 ? 3600 : n >= 60 ? 60 : 1)) : new Intl.NumberFormat(locale, { maximumSignificantDigits: 3, ...(xUnit === "tokens" ? { notation: "compact" as const } : {}) }).format(n);
- const costLabels = columns && unit === "usd" ? dashboardVisibleValueLabels(points.map((point) => {
+ const lower = domain[0], upper = domain[1];
+ const costLabels = useMemo(() => {
+ if (!columns || unit !== "usd") return null;
+ return dashboardVisibleValueLabels(points.map((point) => {
  const group = groups[modelIds.indexOf(groupModels ? point.row.modelId : point.row.id)];
  const maximum = group?.configurations.find((item) => item.value === group.maximum);
- return { id: point.row.id, x: 58 + (point.x + 0.5) / Math.max(1, groups.length) * (size.width - 74), y: 24 + (domain[1] - point.y) / (domain[1] - domain[0]) * Math.max(1, size.height - 146) + (point.y < 0 ? 13 : -7), label: number(point.y, true), priority: maximum?.row.id === point.row.id };
- }), 58, size.width - 4) : null;
+ return { id: point.row.id, x: 58 + (point.x + 0.5) / Math.max(1, groups.length) * (size.width - 74), y: 24 + (upper - point.y) / (upper - lower) * Math.max(1, size.height - 146) + (point.y < 0 ? 13 : -7), label: formatDashboardCost(point.y, locale, true, 3), priority: maximum?.row.id === point.row.id };
+ }), 58, size.width - 4);
+ }, [columns, unit, points, groups, modelIds, groupModels, size.width, size.height, lower, upper, locale]);
 	const axis = { fontSize: 11, fill: "var(--muted-foreground)" };
 	return <section ref={regionRef} className="min-w-0" aria-label={title} onKeyDown={(event) => { if (event.key === "Escape") { inspection.clear(); event.stopPropagation(); } }}>
 		<div className="mb-3 flex flex-wrap items-center justify-between gap-3">
