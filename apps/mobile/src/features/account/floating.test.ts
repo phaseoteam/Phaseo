@@ -1,6 +1,7 @@
 import {
-  BURST_KICK, CRUISE_SPEED, LIFT_SCALE, MAX_SPEED, MAX_STEP_S, blockShape, bounceAxis, collidePair, coverage, dragTo, fling, holdAt, kick, launch, leaveBlock, leaveBox,
-  letGo, limitSpeed, makeBody, pickUp, ringLayout, separation, stepWorld, throwBody, tileShape, toCruise, type Block, type Body, type Box, type Round, type World,
+  BURST_KICK, CRUISE_SPEED, LIFT_SCALE, MAX_SPEED, MAX_STEP_S, MAX_STRETCH, SQUASH_SCALE, STRETCH_PER_SPEED, blockShape, bounceAxis, collidePair, coverage, deformation,
+  dragTo, fling, holdAt, kick, launch, leaveBlock, leaveBox, letGo, limitSpeed, makeBody, pickUp, relax, ringLayout, separation, springStep, squashAmount, stepWorld,
+  stretchFactor, throwBody, tileShape, toCruise, type Block, type Body, type Box, type Round, type World,
 } from "./floating";
 
 const PHONE: Box = { left: 8, top: 40, right: 404, bottom: 860 };
@@ -326,6 +327,21 @@ describe("collidePair (logo on logo)", () => {
     expect(c!.vx).toBe(-200);
     expect(collidePair(held, body(110, 200, 0, 0, { held: true }), SIZE, RADIUS)).toBeNull();
   });
+
+  it("squashes both logos against each other, hard hits fully and soft ones barely", () => {
+    const [a, b] = collidePair(body(100, 200, 500, 0), body(140, 200, -500, 0), SIZE, RADIUS)!;
+    expect(1 + a!.sq).toBeCloseTo(SQUASH_SCALE, 10);
+    expect(1 + b!.sq).toBeCloseTo(SQUASH_SCALE, 10);
+    // Each squashes toward the other.
+    expect(a!.sqa).toBeCloseTo(0, 10);
+    expect(Math.abs(b!.sqa)).toBeCloseTo(Math.PI, 10);
+    const [c] = collidePair(body(100, 200, CRUISE_SPEED, 0), body(140, 200, -CRUISE_SPEED, 0), SIZE, RADIUS)!;
+    expect(1 + c!.sq).toBeGreaterThan(0.97);
+    expect(c!.sq).toBeLessThan(0);
+    // Not closing: no squash.
+    const [e] = collidePair(body(100, 200, 50, 0), body(130, 205, 50, 0), SIZE, RADIUS)!;
+    expect(e!.sq).toBe(0);
+  });
 });
 
 describe("stepWorld", () => {
@@ -359,6 +375,9 @@ describe("stepWorld", () => {
     expect(onScreen(hit!)).toBe(true);
     // Lit by the hit (and fading from the step it hit in).
     expect(hit!.glow).toBeGreaterThan(0.95);
+    // It squashes into the corner along the diagonal.
+    expect(hit!.sqa).toBeCloseTo(-Math.PI / 4, 9);
+    expect(hit!.sq).toBeLessThan(-0.05);
     // No sticking or jitter: every frame after, it's further from the corner, heading the same way.
     const corner = { x: PHONE.right - SIZE, y: PHONE.top };
     let last = Math.hypot(hit!.x - corner.x, hit!.y - corner.y);
@@ -433,6 +452,173 @@ describe("stepWorld", () => {
   });
 });
 
+describe("stretch", () => {
+  it("grows with speed, in proportion at first, and never past MAX_STRETCH", () => {
+    expect(stretchFactor(0)).toBe(1);
+    expect(stretchFactor(-20)).toBe(1);
+    expect(stretchFactor(10)).toBeCloseTo(1 + STRETCH_PER_SPEED * 10, 6);
+    const speeds = [0, 100, 300, 600, 1000, 1600, 2400, 5000, 1e9];
+    const factors = speeds.map(stretchFactor);
+    expect(factors.every((value, index) => index === 0 || value > factors[index - 1]!)).toBe(true);
+    expect(Math.max(...factors)).toBeLessThanOrEqual(MAX_STRETCH);
+    expect(stretchFactor(MAX_SPEED)).toBeGreaterThan(1.28);
+  });
+
+  it("keeps the area: along × across is 1 however stretch and squash combine", () => {
+    const states: Partial<Body>[] = [
+      { sa: 0.2, sb: 0 },
+      { sa: 0.1, sb: -0.15, sq: -0.18, sqa: 1.1 },
+      { sq: -0.1, sqa: -Math.PI / 4 },
+      { sa: -0.05, sb: 0.2, sq: 0.04, sqa: 2.5 },
+    ];
+    for (const state of states) {
+      const drawn = deformation(body(0, 0, 0, 0, state), SIZE, RADIUS);
+      expect(drawn.along * drawn.across).toBeCloseTo(1, 12);
+      expect(drawn.along).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("isn't there at the cruise", () => {
+    const [cruising] = run([body(100, 300, CRUISE_SPEED * 0.6, CRUISE_SPEED * 0.8)], 2, OPEN);
+    expect(deformation(cruising!, SIZE, RADIUS)).toMatchObject({ along: 1, across: 1, dx: 0, dy: 0 });
+  });
+
+  it("stretches a flung logo along its motion, capped, then relaxes as it slows", () => {
+    let bodies = [body(100, 400, 2000, -1000)];
+    bodies = run(bodies, 0.1, OPEN);
+    const fast = bodies[0]!;
+    const drawn = deformation(fast, SIZE, RADIUS);
+    expect(drawn.along).toBeGreaterThan(1.15);
+    expect(drawn.along).toBeLessThanOrEqual(MAX_STRETCH);
+    // Along its velocity (an axis, so either way along it).
+    const heading = Math.atan2(fast.vy, fast.vx);
+    expect(Math.abs(Math.sin(drawn.angle - heading))).toBeLessThan(0.05);
+    const slow = run(bodies, 2, OPEN)[0]!;
+    expect(deformation(slow, SIZE, RADIUS).along).toBeLessThan(1.01);
+  });
+
+  it("stretches a dragged logo along the drag with the finger's speed, and rounds it again when the finger stops", () => {
+    let bodies = pickUp([body(60, 300, CRUISE_SPEED, 0)], 0);
+    // 1,000 pt/s to the right, down a little.
+    for (let frame = 1; frame <= 18; frame += 1) {
+      bodies = holdAt(bodies, 0, { x: 60 + (frame * 1000) / 60, y: 300 + (frame * 200) / 60 });
+      bodies = stepWorld(bodies, 1 / 60, OPEN);
+    }
+    const dragged = deformation(bodies[0]!, SIZE, RADIUS);
+    expect(dragged.along).toBeCloseTo(stretchFactor(Math.hypot(1000, 200)), 2);
+    expect(Math.abs(Math.sin(dragged.angle - Math.atan2(200, 1000)))).toBeLessThan(0.01);
+    bodies = run(bodies, 0.3, OPEN);
+    expect(deformation(bodies[0]!, SIZE, RADIUS).along).toBeLessThan(1.01);
+  });
+
+  it("doesn't flicker when the finger's moves arrive unevenly", () => {
+    let bodies = pickUp([body(60, 300, 0, 0)], 0);
+    let x = 60;
+    const along: number[] = [];
+    for (let frame = 0; frame < 40; frame += 1) {
+      // 1,000 pt/s on average, but alternately nothing and two frames' worth.
+      x += frame % 2 === 0 ? 0 : 2000 / 60;
+      bodies = stepWorld(holdAt(bodies, 0, { x, y: 300 }), 1 / 60, { ...OPEN, bounds: { ...PHONE, right: 2000 } });
+      along.push(deformation(bodies[0]!, SIZE, RADIUS).along);
+    }
+    const settled = along.slice(20);
+    for (let i = 1; i < settled.length; i += 1) expect(Math.abs(settled[i]! - settled[i - 1]!)).toBeLessThan(0.05);
+  });
+});
+
+describe("squash", () => {
+  it("is nothing for soft touches and SQUASH_SCALE for hard hits", () => {
+    expect(squashAmount(0)).toBe(0);
+    expect(squashAmount(20)).toBe(0);
+    expect(squashAmount(CRUISE_SPEED)).toBeLessThan(0.01);
+    expect(1 - squashAmount(5000)).toBeCloseTo(SQUASH_SCALE, 10);
+  });
+
+  it("springs back to 1 with one slight wobble, settled within 0.35 s", () => {
+    let state = { q: SQUASH_SCALE - 1, v: 0 };
+    const values: number[] = [];
+    for (let step = 0; step < 42; step += 1) {
+      state = springStep(state.q, state.v, 1 / 120);
+      values.push(1 + state.q);
+    }
+    // Back past 1 within about 70 ms, a small overshoot, then settled.
+    const crossing = values.findIndex((value) => value >= 1);
+    expect(crossing / 120).toBeGreaterThan(0.04);
+    expect(crossing / 120).toBeLessThan(0.1);
+    expect(Math.max(...values)).toBeGreaterThan(1.02);
+    expect(Math.max(...values)).toBeLessThan(1.07);
+    expect(Math.abs(values.at(-1)! - 1)).toBeLessThan(0.01);
+  });
+
+  it("is the same at any frame rate", () => {
+    let coarse = { q: -0.18, v: 0 };
+    let fine = { q: -0.18, v: 0 };
+    for (let step = 0; step < 6; step += 1) coarse = springStep(coarse.q, coarse.v, 1 / 60);
+    for (let step = 0; step < 24; step += 1) fine = springStep(fine.q, fine.v, 1 / 240);
+    expect(coarse.q).toBeCloseTo(fine.q, 12);
+    expect(coarse.v).toBeCloseTo(fine.v, 10);
+  });
+
+  it("squashes a logo flung into a wall along the wall's normal, and it settles back to its shape", () => {
+    let bodies = [body(PHONE.right - SIZE - 10, 400, 1500, 0)];
+    bodies = stepWorld(bodies, 1 / 60, OPEN);
+    const hit = bodies[0]!;
+    expect(hit.vx).toBeLessThan(0);
+    expect(hit.sqa).toBeCloseTo(0, 10);
+    const drawn = deformation(hit, SIZE, RADIUS);
+    expect(drawn.along * drawn.across).toBeCloseTo(1, 12);
+    // Squashed along x, toward the wall it hit.
+    expect(Math.abs(Math.sin(drawn.angle - Math.PI / 2))).toBeLessThan(0.01);
+    expect(drawn.across).toBeLessThan(0.86);
+    bodies = run(bodies, 0.35, OPEN);
+    expect(Math.abs(bodies[0]!.sq)).toBeLessThan(0.01);
+    // Left alone, it comes to rest exactly.
+    let resting = hit;
+    for (let step = 0; step < 120; step += 1) resting = relax(resting, 1 / 120, 0, 0);
+    expect(resting.sq).toBe(0);
+    expect(resting.sqv).toBe(0);
+  });
+
+  it("keeps the squashed side where it touched, flat or at a corner", () => {
+    // The farthest a sampled outline of the drawn logo reaches along a direction, from its undeformed centre.
+    const reach = (state: Partial<Body>, nx: number, ny: number) => {
+      const drawn = deformation(body(0, 0, 0, 0, state), SIZE, RADIUS);
+      const c = Math.cos(drawn.angle);
+      const s = Math.sin(drawn.angle);
+      let best = -Infinity;
+      for (let corner = 0; corner < 4; corner += 1) {
+        const ox = (corner % 2 ? 1 : -1) * (SIZE / 2 - RADIUS);
+        const oy = (corner < 2 ? 1 : -1) * (SIZE / 2 - RADIUS);
+        for (let k = 0; k <= 720; k += 1) {
+          const t = (k / 720) * Math.PI * 2;
+          const px = ox + RADIUS * Math.cos(t);
+          const py = oy + RADIUS * Math.sin(t);
+          // Rotate back, scale along and across the axis, rotate forward, then shift.
+          const u = px * c + py * s;
+          const v = -px * s + py * c;
+          const x = u * drawn.along * c - v * drawn.across * s + drawn.dx;
+          const y = u * drawn.along * s + v * drawn.across * c + drawn.dy;
+          best = Math.max(best, x * nx + y * ny);
+        }
+      }
+      return best;
+    };
+    // Against a wall on the right, the right side stays at the wall.
+    expect(reach({ sq: SQUASH_SCALE - 1, sqa: 0 }, 1, 0)).toBeCloseTo(SIZE / 2, 3);
+    // Into a top-right corner, the corner stays in the corner.
+    const n = { x: Math.SQRT1_2, y: -Math.SQRT1_2 };
+    const undeformed = (SIZE / 2 - RADIUS) * Math.SQRT2 + RADIUS;
+    expect(reach({ sq: SQUASH_SCALE - 1, sqa: -Math.PI / 4 }, n.x, n.y)).toBeCloseTo(undeformed, 3);
+  });
+
+  it("relaxes a logo's jelly without moving it", () => {
+    const squashed = body(100, 200, CRUISE_SPEED, 0, { sq: -0.1, sqa: 0.5 });
+    const next = relax(squashed, 1 / 60, 0, 0);
+    expect(next).toMatchObject({ x: 100, y: 200, vx: CRUISE_SPEED, vy: 0, sqa: 0.5 });
+    expect(next.sq).toBeGreaterThan(-0.1);
+  });
+});
+
 describe("coverage (fading under the text)", () => {
   const text: Box = { left: 100, top: 100, right: 300, bottom: 200 };
 
@@ -484,14 +670,14 @@ describe("kick (the burst)", () => {
 });
 
 describe("launch", () => {
-  it("starts every logo at its place, cruising diagonally away from the middle", () => {
+  it("starts every logo at its place in its own shape, cruising diagonally away from the middle", () => {
     const box = { left: 70, top: 280, right: 342, bottom: 620 };
     const home = ringLayout(8, SIZE, PHONE, box);
     const bodies = launch(home);
     const cx = (box.left + box.right) / 2;
     const cy = (box.top + box.bottom) / 2;
     bodies.forEach((b, index) => {
-      expect(b).toEqual({ x: home[index]!.x, y: home[index]!.y, vx: b.vx, vy: b.vy, held: false, glow: 0 });
+      expect(b).toMatchObject({ x: home[index]!.x, y: home[index]!.y, px: home[index]!.x, py: home[index]!.y, held: false, glow: 0, sa: 0, sb: 0, sq: 0, sqv: 0 });
       expect(speed(b)).toBeCloseTo(CRUISE_SPEED, 9);
       expect(Math.abs(b.vx)).toBeGreaterThan(CRUISE_SPEED * 0.5);
       expect(Math.abs(b.vy)).toBeGreaterThan(CRUISE_SPEED * 0.5);

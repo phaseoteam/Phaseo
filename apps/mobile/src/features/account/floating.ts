@@ -9,6 +9,10 @@
  * sharp box's corners would be. The mark is a rounded square the same way. The screen's edges are flat. The text under
  * the mark isn't solid: logos glide under it, so they can travel all the way round the mark.
  *
+ * Logos are drawn as jelly. They stretch along their motion when faster than the cruise or dragged, and squash against
+ * what they hit, then spring back with a small wobble. That's drawing only: collisions always use the undeformed
+ * shape. The state for it lives in each body, so the one frame callback runs it all on the UI thread.
+ *
  * A frame callback, gestures and animated styles call these on the UI thread, so every function here is a worklet,
  * the small helpers too: a plain function called from a worklet crashes there. Worklets also take no default
  * parameters that refer to other values: a default runs before the body unpacks what the worklet captured, so on the
@@ -26,8 +30,16 @@ export type Block = Box & { radius: number };
 export type Round = { cx: number; cy: number; hx: number; hy: number; r: number };
 /** Where a logo is and how fast it's going. */
 export type Motion = { x: number; y: number; vx: number; vy: number };
-/** A logo in the simulation: `held` while a finger has it, and `glow` (0 to 1), the fading tint after a corner hit. */
-export type Body = Motion & { held: boolean; glow: number };
+/**
+ * A logo in the simulation: its motion, `held` while a finger has it, and `glow` (0 to 1), the fading tint after a
+ * corner hit. The rest is how it's drawn:
+ * - `px`, `py`: where it was at the end of the last frame, so a held logo's speed is how far the finger moved it.
+ * - `sa`, `sb`: its stretch, eased toward its speed's. A stretch by s along the angle θ is stored as
+ *   (ln s · cos 2θ, ln s · sin 2θ), so stretches along different axes add, and an axis and its opposite are the same.
+ * - `sq`, `sqv`, `sqa`: its squash from the last hit: its scale along the contact normal less 1 (−0.18 is squashed to
+ *   0.82), how fast that's changing, and the normal's angle, pointing at what it hit.
+ */
+export type Body = Motion & { held: boolean; glow: number; px: number; py: number; sa: number; sb: number; sq: number; sqv: number; sqa: number };
 /**
  * What the logos move in: their size and corner radius (all the same rounded square), the screen inside its safe
  * area, the mark (the one solid thing in the middle), and the text drawn over the logos, which they dim under.
@@ -58,6 +70,21 @@ export const GLOW_FADE_S = 0.8;
 export const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 /** A held logo is lifted: drawn this much bigger, and just as big to the logos that hit it and the edges it's dragged along. */
 export const LIFT_SCALE = 1.08;
+/** How much speed stretches a logo: at first its length grows by this per pt/s (a free logo's speed above the cruise, a held one's finger speed). */
+export const STRETCH_PER_SPEED = 0.0003;
+/** The longest a logo stretches (and 1 / this as wide, so its area stays), approached smoothly. */
+export const MAX_STRETCH = 1.3;
+/** The stretch follows the speed with this time constant (seconds), so a jittery finger doesn't make it flicker. */
+export const STRETCH_EASE_S = 0.06;
+/** A hard hit squashes a logo along the contact normal to this (and 1 / this across it, so its area stays). */
+export const SQUASH_SCALE = 0.82;
+/** A hit closing at this speed or faster squashes fully; slower ones less, in proportion. */
+export const SQUASH_FULL_SPEED = 800;
+/** Hits slower than this don't squash at all (a graze, a logo pushed along another). */
+export const SQUASH_MIN_SPEED = 30;
+/** The squash springs back as a damped spring with this natural frequency (rad/s) and damping ratio: one small overshoot, about a quarter of the squash, and settled within about 0.3 s. */
+export const SQUASH_FREQUENCY = 26;
+export const SQUASH_DAMPING = 0.4;
 /** How much a logo fades under the text: fully under it, it's drawn at 1 − this. */
 export const COVER_DIM = 0.65;
 
@@ -101,10 +128,10 @@ export function bounceAxis(position: number, velocity: number, min: number, max:
   return { position, velocity, hit: false };
 }
 
-/** A logo at (x, y) moving at (vx, vy): not held, no tint. */
+/** A logo at (x, y) moving at (vx, vy), in its own shape: not held, no tint, no stretch or squash. */
 export function makeBody(x: number, y: number, vx: number, vy: number): Body {
   "worklet";
-  return { x, y, vx, vy, held: false, glow: 0 };
+  return { x, y, vx, vy, held: false, glow: 0, px: x, py: y, sa: 0, sb: 0, sq: 0, sqv: 0, sqa: 0 };
 }
 
 /** A logo's collision shape at (x, y): its `size` square with corners of `radius`, scaled by `scale` about its centre (1, or LIFT_SCALE while held). */
@@ -147,6 +174,89 @@ export function separation(a: Round, b: Round): { nx: number; ny: number; gap: n
   }
   if (gx > 0 || (gy <= 0 && gx >= gy)) return { nx: sx, ny: 0, gap: gx - radii };
   return { nx: 0, ny: sy, gap: gy - radii };
+}
+
+/** How much a hit closing at `speed` squashes a logo: nothing for soft touches, up to 1 − SQUASH_SCALE for hard ones. */
+export function squashAmount(speed: number) {
+  "worklet";
+  return (1 - SQUASH_SCALE) * clamp((speed - SQUASH_MIN_SPEED) / (SQUASH_FULL_SPEED - SQUASH_MIN_SPEED), 0, 1);
+}
+
+/**
+ * A logo hit along (nx, ny), pointing at what it hit, at `speed`: squashed along that normal if this hit squashes it
+ * more than it is already. The hit spends its stretch, so a fast logo squashes flat rather than staying long.
+ */
+export function squash(body: Body, nx: number, ny: number, speed: number): Body {
+  "worklet";
+  const amount = squashAmount(speed);
+  if (amount <= 0 || amount <= -body.sq) return body;
+  return { ...body, sq: -amount, sqv: 0, sqa: Math.atan2(ny, nx), sa: 0, sb: 0 };
+}
+
+/** The squash and its rate `dt` seconds on, as an exact damped spring back to 0, so it's the same at any frame rate. */
+export function springStep(q: number, v: number, dt: number) {
+  "worklet";
+  const w = SQUASH_FREQUENCY;
+  const decay = SQUASH_DAMPING * w;
+  const wd = w * Math.sqrt(1 - SQUASH_DAMPING * SQUASH_DAMPING);
+  const e = Math.exp(-decay * dt);
+  const c = Math.cos(wd * dt);
+  const s = Math.sin(wd * dt);
+  const b = (v + decay * q) / wd;
+  return { q: e * (q * c + b * s), v: e * (v * c - ((decay * v + w * w * q) / wd) * s) };
+}
+
+/** How long a logo moving at `speed` is drawn along its motion: 1 at rest, then 1 + STRETCH_PER_SPEED per pt/s, easing into MAX_STRETCH. Its width is the inverse. */
+export function stretchFactor(speed: number) {
+  "worklet";
+  if (!(speed > 0)) return 1;
+  const extra = MAX_STRETCH - 1;
+  return 1 + extra * Math.tanh((STRETCH_PER_SPEED * speed) / extra);
+}
+
+/**
+ * A logo's drawing state `dt` seconds on: its stretch eases toward its speed's (a free logo's speed above the cruise,
+ * so a cruising logo isn't stretched; a held logo's finger speed, `dragVX`, `dragVY`), and its squash springs back.
+ * While it's squashed the stretch waits, so a fast logo's hit reads as a squash before it stretches away again.
+ */
+export function relax(body: Body, dt: number, dragVX: number, dragVY: number): Body {
+  "worklet";
+  const vx = body.held ? dragVX : body.vx;
+  const vy = body.held ? dragVY : body.vy;
+  const speed = Math.hypot(vx, vy);
+  const waiting = body.sq < 0 ? clamp(1 + body.sq / (1 - SQUASH_SCALE), 0, 1) : 1;
+  const stretch = waiting * Math.log(stretchFactor(body.held ? speed : speed - CRUISE_SPEED));
+  const angle = 2 * Math.atan2(vy, vx);
+  const ta = stretch > 0 ? stretch * Math.cos(angle) : 0;
+  const tb = stretch > 0 ? stretch * Math.sin(angle) : 0;
+  const keep = Math.exp(-dt / STRETCH_EASE_S);
+  const sa = ta + (body.sa - ta) * keep;
+  const sb = tb + (body.sb - tb) * keep;
+  const spring = springStep(body.sq, body.sqv, dt);
+  const still = Math.abs(spring.q) < 1e-4 && Math.abs(spring.v) < 1e-3;
+  const round = Math.hypot(sa, sb) < 1e-5;
+  return { ...body, sa: round ? 0 : sa, sb: round ? 0 : sb, sq: still ? 0 : spring.q, sqv: still ? 0 : spring.v };
+}
+
+/**
+ * How to draw a logo: scale it by `along` along `angle` (radians) and by `across` across it (their product is 1, so
+ * its area stays), then shift it by (dx, dy), which keeps a squashed logo's side on what it hit. Stretch and squash add
+ * as logarithms in the doubled-angle plane, so together they're still one area-keeping stretch along one axis.
+ */
+export function deformation(body: Body, size: number, radius: number) {
+  "worklet";
+  const scale = Math.max(0.5, 1 + body.sq);
+  const log = Math.log(scale);
+  const a = body.sa + log * Math.cos(2 * body.sqa);
+  const b = body.sb + log * Math.sin(2 * body.sqa);
+  const amount = Math.hypot(a, b);
+  // The squash takes (1 − scale) of the logo's reach toward the contact off that side; moving it that far back keeps
+  // the side where it touched. The reach of a rounded square along an angle is its inner square's plus the radius.
+  const c = Math.cos(body.sqa);
+  const s = Math.sin(body.sqa);
+  const r = clamp(radius, 0, size / 2);
+  const shift = (1 - scale) * ((size / 2 - r) * (Math.abs(c) + Math.abs(s)) + r);
+  return { angle: amount > 0 ? Math.atan2(b, a) / 2 : 0, along: Math.exp(amount), across: Math.exp(-amount), dx: shift * c, dy: shift * s };
 }
 
 /** How much of a logo at (x, y) is under `box` (0 to 1, by area), for fading it under the text. */
@@ -245,7 +355,7 @@ export function dragTo(anchor: Point, travel: Point, current: Point, world: Worl
  * Two logos (equal rounded squares of equal mass) that overlap. They're pushed apart along the contact normal (side to
  * side it's an axis, corner to corner the line between the corners) until they just touch, so they never stick, and
  * if they're closing they swap their velocities along it, as in an elastic collision: momentum and energy are kept.
- * A held logo is a wall, at its lifted size: it doesn't move, and the other bounces
+ * Both squash against each other. A held logo is a wall, at its lifted size: it doesn't move, and the other bounces
  * straight off it. Null when the two don't touch.
  */
 export function collidePair(a: Body, b: Body, size: number, radius: number): Body[] | null {
@@ -260,26 +370,34 @@ export function collidePair(a: Body, b: Body, size: number, radius: number): Bod
   const pushB = depth - pushA;
   const va = a.vx * nx + a.vy * ny;
   const vb = b.vx * nx + b.vy * ny;
-  // How each one's speed along the normal changes.
+  // How each one's speed along the normal changes, and how hard they met.
   let da = 0;
   let db = 0;
+  let speed = 0;
   if (a.held) {
-    if (vb < 0) db = -2 * vb;
+    if (vb < 0) {
+      db = -2 * vb;
+      speed = -vb;
+    }
   } else if (b.held) {
-    if (va > 0) da = -2 * va;
+    if (va > 0) {
+      da = -2 * va;
+      speed = va;
+    }
   } else if (vb - va < 0) {
     da = vb - va;
     db = va - vb;
+    speed = va - vb;
   }
   const nextA = { ...a, x: a.x - nx * pushA, y: a.y - ny * pushA, vx: a.vx + da * nx, vy: a.vy + da * ny };
   const nextB = { ...b, x: b.x + nx * pushB, y: b.y + ny * pushB, vx: b.vx + db * nx, vy: b.vy + db * ny };
-  return [nextA, nextB];
+  return [squash(nextA, nx, ny, speed), squash(nextB, -nx, -ny, speed)];
 }
 
 /**
  * One logo nobody holds, `dt` seconds on: it eases toward the cruise, moves, and bounces off the edges and the mark.
- * Both edges in one step is a corner: it bounces off both at once. Hitting a corner (both edges at once, near enough)
- * lights its tint, which otherwise fades.
+ * Both edges in one step is a corner: it bounces off both at once and squashes along the diagonal. Hitting a corner
+ * (both edges at once, near enough) lights its tint, which otherwise fades.
  */
 export function moveBody(body: Body, index: number, dt: number, world: World): Body {
   "worklet";
@@ -295,12 +413,19 @@ export function moveBody(body: Body, index: number, dt: number, world: World): B
   const nearY = y.position - bounds.top <= CORNER_SLOP || maxY - y.position <= CORNER_SLOP;
   const corner = (x.hit && nearY) || (y.hit && nearX);
   const glow = corner ? 1 : body.glow * Math.exp(-dt / GLOW_FADE_S);
+  // Everything it hit, as one push toward what it hit at the speed it hit: a corner pushes along the diagonal.
+  let pushX = x.hit ? -x.velocity : 0;
+  let pushY = y.hit ? -y.velocity : 0;
   let moved: Motion = { x: x.position, y: y.position, vx: x.velocity, vy: y.velocity };
   if (world.block) {
     const off = leaveBlock(moved, size, world.radius, world.block);
     moved = { x: off.x, y: off.y, vx: off.vx, vy: off.vy };
+    pushX += off.nx * off.hit;
+    pushY += off.ny * off.hit;
   }
-  return { ...body, x: moved.x, y: moved.y, vx: moved.vx, vy: moved.vy, glow: glow < 0.01 ? 0 : glow };
+  const next = { ...body, x: moved.x, y: moved.y, vx: moved.vx, vy: moved.vy, glow: glow < 0.01 ? 0 : glow };
+  const push = Math.hypot(pushX, pushY);
+  return push > 0 ? squash(next, pushX / push, pushY / push, push) : next;
 }
 
 /** After the logos push each other apart: back on screen and out of the mark (the screen wins if both can't). */
@@ -314,21 +439,27 @@ export function keepInside(body: Body, world: World): Body {
   const inside = { x: clamp(body.x, minX, maxX), y: clamp(body.y, minY, maxY), vx: body.vx, vy: body.vy };
   if (!world.block) return { ...body, x: inside.x, y: inside.y };
   const off = leaveBlock(inside, world.size, world.radius, world.block);
-  return { ...body, x: clamp(off.x, minX, maxX), y: clamp(off.y, minY, maxY), vx: off.vx, vy: off.vy };
+  const next = { ...body, x: clamp(off.x, minX, maxX), y: clamp(off.y, minY, maxY), vx: off.vx, vy: off.vy };
+  return off.hit > 0 ? squash(next, off.nx, off.ny, off.hit) : next;
 }
 
 /**
  * Every logo, `seconds` on. The time is clamped to MAX_STEP_S and split into equal steps of at most SUB_STEP_S, and
  * more when something's fast, so nothing moves more than MAX_SUB_MOVE in one. Each step moves every free logo, settles
- * each pair that touches, and puts any logo a push moved off screen or into the mark back.
+ * each pair that touches, puts any logo a push moved off screen or into the mark back, and moves each one's stretch
+ * and squash on. A held logo's stretch follows how far the finger moved it this frame.
  */
 export function stepWorld(bodies: Body[], seconds: number, world: World): Body[] {
   "worklet";
   const dt = clamp(seconds, 0, MAX_STEP_S);
   let fastest = 0;
+  const dragX: number[] = [];
+  const dragY: number[] = [];
   for (let index = 0; index < bodies.length; index += 1) {
     const body = bodies[index]!;
     if (!body.held) fastest = Math.max(fastest, Math.hypot(body.vx, body.vy));
+    dragX.push(body.held && dt > 0 ? (body.x - body.px) / dt : 0);
+    dragY.push(body.held && dt > 0 ? (body.y - body.py) / dt : 0);
   }
   const steps = clamp(Math.ceil(Math.max(dt / SUB_STEP_S, (fastest * dt) / MAX_SUB_MOVE) - 1e-6), 1, MAX_SUB_STEPS);
   const h = dt / steps;
@@ -345,10 +476,15 @@ export function stepWorld(bodies: Body[], seconds: number, world: World): Body[]
         }
       }
     }
-    for (let index = 0; index < moved.length; index += 1) moved[index] = keepInside(moved[index]!, world);
+    for (let index = 0; index < moved.length; index += 1) moved[index] = relax(keepInside(moved[index]!, world), h, dragX[index]!, dragY[index]!);
     next = moved;
   }
-  return next;
+  const settled: Body[] = [];
+  for (let index = 0; index < next.length; index += 1) {
+    const body = next[index]!;
+    settled.push({ ...body, px: body.x, py: body.y });
+  }
+  return settled;
 }
 
 /**

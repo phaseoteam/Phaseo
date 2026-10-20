@@ -21,7 +21,7 @@ import { BUILD_COMMIT, BUILD_NUMBER } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import {
-  clamp, COVER_DIM, coverage, dragTo, holdAt, kick, launch, letGo, LIFT_SCALE, pickUp, ringLayout, stepWorld, throwBody, type Block, type Body, type Box,
+  clamp, COVER_DIM, coverage, deformation, dragTo, holdAt, kick, launch, letGo, LIFT_SCALE, pickUp, ringLayout, stepWorld, throwBody, type Block, type Body, type Box,
   type Point, type World,
 } from "./floating";
 import { ART_LABS, catalogueFact, LABEL_FADE_MS, LABEL_MS, newestByLab, shortVersion, tapLabel, versionDetail, type ArtLab, type Label } from "./versionArt";
@@ -37,6 +37,9 @@ const FADE_MS = 700;
 const HOLD_MS = 1000;
 /** A logo held this long without moving lifts, as a dragged one does. */
 const LIFT_MS = 220;
+/** The lift's spring: up to LIFT_SCALE with a small overshoot. The hold's tick plays once it's this far up. */
+const LIFT_SPRING = { damping: 16, stiffness: 300 };
+const LIFT_TICK_AT = 0.4;
 /** How long a tapped logo's label takes to fade in. */
 const LABEL_IN_MS = 140;
 const LABEL_WIDTH = 200;
@@ -60,8 +63,9 @@ export function prefetchVersionArt(queryClient: QueryClient, theme: "light" | "d
  * Phaseo mark sits in the middle with the version and a line from the live catalogue, and the frontier labs' logos
  * cruise round it like the DVD screensaver, bouncing off the edges, the mark and each other, and gliding under the
  * text. A logo can be held, dragged and flung (it eases back to the cruise), and a tap shows its lab's newest model.
- * Tapping the mark kicks every logo outward; holding it for a second opens Higher or lower. With reduced motion the
- * logos stay still, evenly spaced, and the burst is a fade.
+ * Logos are jelly: they stretch when fast or dragged and squash when they hit something. Tapping the mark kicks every
+ * logo outward; holding it for a second opens Higher or lower. With reduced motion the logos stay still, evenly
+ * spaced, and the burst is a fade.
  *
  * The motion is one simulation on the UI thread: a single frame callback steps every logo (floating.ts) in one shared
  * value, and each logo's style reads its own slot. It stops while the game is on top or the screen has closed.
@@ -122,7 +126,7 @@ export function VersionArtScreen() {
   } : null), [column]);
   const ring = useMemo(() => (bounds && middle && mark ? ringLayout(labs.length, tile, bounds, middle) : null), [bounds, labs, mark, middle, tile]);
 
-  // The simulation: every logo's position and velocity in one shared value, and the layout it moves in.
+  // The simulation: every logo's position, velocity and jelly in one shared value, and the layout it moves in.
   const bodies = useSharedValue<Body[]>([]);
   const world = useSharedValue<World | null>(null);
   useEffect(() => {
@@ -328,10 +332,12 @@ type FloaterProps = {
 
 /**
  * One lab's logo, drawn where its slot in the simulation says, exactly its collision shape: a `size` square with the
- * tile's own corner radius and nothing round it (lifted, it's LIFT_SCALE bigger, as the others see it). A finger
- * landing on it catches it, so it stays under the finger (and the others bounce off it); holding or dragging lifts it,
- * and letting go after a drag flings it. A tap shows its newest model. Under the text it fades, so the text stays
- * readable. Memoised, so a tap doesn't re-render the other logos.
+ * tile's own corner radius and nothing round it. A finger landing on it catches it, so it stays under the finger (and
+ * the others bounce off it); holding or dragging lifts it with a little spring, and letting go after a drag flings it.
+ * A tap shows its newest model. Memoised, so a tap doesn't re-render the other logos.
+ *
+ * It's drawn as jelly from its slot's stretch and squash: rotate to the axis, scale along and across it, rotate back,
+ * so the stretch can lie any way while the logo stays upright. Under the text it fades, so the text stays readable.
  */
 const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, reduced, onTap }: FloaterProps) {
   const radius = logoTileRadius(size);
@@ -343,15 +349,19 @@ const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, r
     onBegin: () => {
       bodies.set(pickUp(bodies.get(), index));
       // A hold lifts it after a moment, with a tick, so it's clear it's been picked up.
-      lifted.set(withDelay(LIFT_MS, withTiming(1, { duration: 120 }, (finished) => {
-        if (finished) scheduleOnRN(lift);
-      })));
+      lifted.set(withDelay(LIFT_MS, withSequence(
+        withTiming(LIFT_TICK_AT, { duration: 40 }, (finished) => {
+          if (finished) scheduleOnRN(lift);
+        }),
+        withSpring(1, LIFT_SPRING),
+      )));
     },
     onActivate: () => {
       const body = bodies.get()[index];
       if (body) anchor.set({ x: body.x, y: body.y });
-      if (lifted.get() < 1) scheduleOnRN(lift);
-      lifted.set(withSpring(1));
+      // A drag lifts it straight away; the tick plays unless the hold's has.
+      if (lifted.get() < LIFT_TICK_AT) scheduleOnRN(lift);
+      lifted.set(withSpring(1, LIFT_SPRING));
     },
     onUpdate: (event) => {
       const layout = world.get();
@@ -369,7 +379,7 @@ const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, r
     onFinalize: () => {
       // A tap, or a hold that never moved, lets it carry on as it was going.
       bodies.set(letGo(bodies.get(), index));
-      lifted.set(withSpring(0));
+      lifted.set(withSpring(0, LIFT_SPRING));
     },
   });
   const tap = useTapGesture({
@@ -384,11 +394,21 @@ const Floater = memo(function Floater({ lab, index, size, bodies, world, fade, r
     const layout = world.get();
     const t = clamp(fade.get(), 0, 1);
     const lift = 1 + (LIFT_SCALE - 1) * lifted.get();
+    // Reduced motion: no jelly.
+    const shape = body && !reduced ? deformation(body, size, radius) : null;
+    const angle = shape ? shape.angle : 0;
     const under = body && layout ? coverage(body.x, body.y, size, layout.cover) : 0;
     return {
       opacity: body ? (1 - 0.85 * Math.sin(Math.PI * t)) * (1 - COVER_DIM * under) : 0,
       zIndex: body && body.held ? 2 : 1,
-      transform: [{ translateX: body ? body.x : 0 }, { translateY: body ? body.y : 0 }, { scale: lift }],
+      transform: [
+        { translateX: body ? body.x + (shape ? shape.dx : 0) : 0 },
+        { translateY: body ? body.y + (shape ? shape.dy : 0) : 0 },
+        { rotate: `${angle}rad` },
+        { scaleX: (shape ? shape.along : 1) * lift },
+        { scaleY: (shape ? shape.across : 1) * lift },
+        { rotate: `${-angle}rad` },
+      ],
     };
   });
   // A faint accent tint after it hits a corner exactly, as on the DVD screensaver.

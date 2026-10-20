@@ -198,7 +198,8 @@ const SAMPLES: ((api: typeof floating) => unknown)[] = [
   (api) => api.dragTo({ x: 300, y: 40 }, { x: 200, y: 0 }, { x: 340, y: 40 }, { size: 50, radius: 8, bounds: { left: 0, top: 0, right: 400, bottom: 800 }, block: { left: 100, top: 300, right: 300, bottom: 500, radius: 8 }, cover: null }),
   (api) => api.dragTo({ x: 40, y: 270 }, { x: 160, y: 0 }, { x: 60, y: 270 }, { size: 50, radius: 8, bounds: { left: 0, top: 0, right: 400, bottom: 800 }, block: { left: 100, top: 300, right: 300, bottom: 500, radius: 8 }, cover: null }),
   (api) => api.ringLayout(8, 48, SCREEN, MIDDLE),
-  // A second of the whole world on the UI thread: a fling, a burst, a held logo being dragged, collisions and bounces.
+  // A second of the whole world on the UI thread: a fling, a burst, a held logo being dragged, collisions, bounces,
+  // stretch and squash.
   (api) => {
     let bodies = api.launch(api.ringLayout(8, 48, SCREEN, MIDDLE));
     bodies = api.throwBody(api.pickUp(bodies, 0), 0, 6000, -8000);
@@ -208,12 +209,14 @@ const SAMPLES: ((api: typeof floating) => unknown)[] = [
       bodies = api.holdAt(bodies, 1, { x: 40 + frame * 4, y: 100 });
       bodies = api.stepWorld(bodies, 1 / 60, WORLD);
     }
-    return { bodies: api.letGo(bodies, 1), under: bodies.map((body) => api.coverage(body.x, body.y, 48, TEXT)) };
+    return { bodies: api.letGo(bodies, 1), drawn: bodies.map((body) => api.deformation(body, 48, 8)), under: bodies.map((body) => api.coverage(body.x, body.y, 48, TEXT)) };
   },
   (api) => api.collidePair(api.makeBody(100, 200, 120, 40), api.makeBody(140, 210, -60, -30), 48, 8),
   (api) => api.collidePair(api.makeBody(100, 100, 600, 600), api.makeBody(142, 142, -600, -600), 48, 8),
   (api) => api.separation(api.tileShape(0, 0, 48, 8, 1), api.blockShape(MARK)),
   (api) => api.leaveBlock({ x: 108, y: 258, vx: 200, vy: 200 }, 48, 8, MARK),
+  (api) => api.relax(api.squash(api.makeBody(0, 0, 900, 0), 1, 0, 900), 1 / 120, 0, 0),
+  (api) => [api.stretchFactor(1200), api.squashAmount(400), api.springStep(-0.18, 0, 1 / 60)],
 ];
 
 /**
