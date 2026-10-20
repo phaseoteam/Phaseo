@@ -17,7 +17,7 @@ Use classifiers when the category is not known in your code: who a prompt was wr
 
 1. The request finishes and its response is returned to your application. Classification never adds latency.
 2. Phaseo builds a transcript of the request: system instructions, messages, tool names (not their schemas), and tool results. Each turn is limited to 4,000 characters and secrets such as API keys are redacted. If the classifier includes the response, the generated output is added too.
-3. The classifier model answers with structured output that only allows your values.
+3. The classifier model picks from your values. Anything it answers outside them is dropped (see [Choose a model](#choose-a-model)).
 4. The answers are stored as labels on the request, along with each answer's confidence, before the request appears in your logs.
 
 Classifiers run on `chat/completions`, `responses`, and `messages` requests that succeed. If classification fails or times out, the request is still logged, just without those labels.
@@ -62,6 +62,18 @@ curl https://api.phaseo.app/v1/classifiers \
 | `monthly_budget_usd` | Pause the classifier for the rest of the UTC month once it has spent this much. |
 
 A workspace can have up to five classifiers. Changes reach the gateway within about a minute.
+
+## Choose a model
+
+Any text model or [decision model](/v1/api-reference/endpoint/decisions) can classify. Phaseo picks how to ask it from what the model's providers support:
+
+| Model | How it is asked |
+| --- | --- |
+| Text model with structured outputs | A `responses` request with a strict JSON schema, so every answer is one of your values. |
+| Decision model | A `decisions` request with one choice question per dimension. A dimension with `multiple` asks a yes/no question per value and keeps every value with a probability of at least 0.5 (if a classifier would need more than 128 questions, such a dimension gets its single best value instead). Confidence is the model's own probability. |
+| Other text models | A `responses` request that asks for the same JSON in the prompt. Answers outside your values are dropped, so a dimension can stay unlabelled more often. It is also the fallback when a provider refuses the schema. |
+
+A small, fast model is usually enough. Use **Try it on a sample** in the classifier editor to check a model before saving.
 
 ## Filter and group by the results
 

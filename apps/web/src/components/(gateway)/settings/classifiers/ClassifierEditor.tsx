@@ -43,7 +43,7 @@ import {
 } from "./classifierForm";
 import { DimensionsEditor } from "./DimensionsEditor";
 import { ClassifierTestPanel } from "./ClassifierTestPanel";
-import { MAX_INSTRUCTIONS_LENGTH, MAX_SCOPE_ENTRIES, allowedValues } from "./requestClassifiers";
+import { CLASSIFIER_MODEL_CAPABILITIES, MAX_INSTRUCTIONS_LENGTH, MAX_SCOPE_ENTRIES, allowedValues, classifierRequestFormat } from "./requestClassifiers";
 
 const CLASSIFIER_LABEL_KEY = "phaseo.classifier";
 
@@ -117,11 +117,11 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 	const write = useSettingsWrite();
 	const [draft, setDraft] = useState<ClassifierDraft>(() => classifier ? draftFromClassifier(classifier) : emptyDraft());
 	const [problem, setProblem] = useState<DraftProblem | null>(null);
-	const [showAllModels, setShowAllModels] = useState(false);
 	const [saving, startSaving] = useTransition();
 	const [deleting, startDeleting] = useTransition();
 	const models = useGatewayModelOptions();
-	const anyStructured = models.options.some((option) => option.structuredOutputs);
+	const selectedModel = models.options.find((option) => option.id === draft.model);
+	const requestFormat = selectedModel ? classifierRequestFormat(selectedModel.routeCapabilities) : null;
 	const set = <K extends keyof ClassifierDraft>(field: K, value: ClassifierDraft[K]) => {
 		setDraft((current) => ({ ...current, [field]: value }));
 		setProblem(null);
@@ -227,14 +227,12 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 					value={draft.model}
 					onChange={(model) => set("model", model)}
 					options={models.options}
-					filter={showAllModels || !anyStructured ? undefined : (option) => option.structuredOutputs}
+					filter={(option) => option.capabilities.some((capability) => CLASSIFIER_MODEL_CAPABILITIES.includes(capability))}
 					ariaLabel={t("model.label")}
 					loading={models.loading}
 					error={models.error}
 				/>
-				<label className="flex items-center gap-2 text-sm text-muted-foreground">
-					<Switch size="sm" checked={showAllModels} onCheckedChange={setShowAllModels} />{t("model.showAll")}
-				</label>
+				{requestFormat ? <p className="text-xs text-muted-foreground">{t(`model.format.${requestFormat}`)}</p> : null}
 			</Section>
 
 			<Section title={t("sections.dimensions")}>

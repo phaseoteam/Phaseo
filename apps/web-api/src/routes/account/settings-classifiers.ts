@@ -8,10 +8,13 @@ import {
 	CLASSIFIER_COLUMNS,
 	CLASSIFIER_TEST_LABEL_KEY,
 	MAX_CLASSIFIERS_PER_WORKSPACE,
-	buildClassifierRequestBody,
+	buildClassifierRequest,
+	classifierRequestFormat,
 	formatClassifier,
+	loadClassifierModelCapabilities,
 	parseClassifierAnswer,
 	parseClassifierFields,
+	type ClassifierRequestFormat,
 	type ClassifierRow,
 } from "./request-classifiers";
 
@@ -28,6 +31,8 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3
 const DRAFT_LABEL_VALUE = "draft";
 const MAX_SAMPLE_CHARS = 8_000;
 const TEST_TIMEOUT_MS = 30_000;
+/** A refused schema request is retried once as prompted JSON, as the gateway does. */
+const SCHEMA_REFUSED_STATUSES = new Set([400, 422]);
 
 type Body = Record<string, unknown>;
 
@@ -213,7 +218,7 @@ function sampleText(value: unknown, field: string, required: boolean): { ok: tru
 
 /**
  * Runs a draft classifier once on a sample, with the same request the gateway
- * sends, through the gateway as the signed-in member. It is billed like any
+ * sends (in the same format), through the gateway as the signed-in member. It is billed like any
  * classification and labelled phaseo.classifier_test (the saved id, or "draft");
  * phaseo.classifier itself is reserved for the gateway's own classifier calls.
  */
@@ -245,23 +250,37 @@ accountSettingsClassifiersRouter.post("/classifiers/test", async (c) => {
 
 	const dimensions = fields.value.dimensions!;
 	const transcript = [`USER: ${prompt.value}`, ...(reply.value ? [`RESPONSE: ${reply.value}`] : [])].join("\n\n");
-	const request = buildClassifierRequestBody({ model: fields.value.model!, instructions: fields.value.instructions ?? "" }, dimensions, transcript);
-	let response: Response;
-	try {
-		response = await fetch(`${baseUrl}/responses`, {
+	const config = { model: fields.value.model!, instructions: fields.value.instructions ?? "" };
+	// The same choice the gateway makes: structured outputs, then Decisions, then prompted JSON.
+	let format: ClassifierRequestFormat = await loadClassifierModelCapabilities(context.client, config.model)
+		.then(classifierRequestFormat)
+		.catch(() => "json_schema" as const);
+	const send = (requestFormat: ClassifierRequestFormat) => {
+		const request = buildClassifierRequest(config, dimensions, transcript, requestFormat);
+		return fetch(`${baseUrl}/${request.path}`, {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${key.apiKey}`,
 				"Content-Type": "application/json",
 				"x-phaseo-metadata": JSON.stringify({ labels: [{ key: CLASSIFIER_TEST_LABEL_KEY, value: savedId ?? DRAFT_LABEL_VALUE }] }),
 			},
-			body: JSON.stringify(request),
+			body: JSON.stringify(request.body),
 			signal: AbortSignal.timeout(TEST_TIMEOUT_MS),
 		});
+	};
+	let response: Response;
+	let payload: Record<string, any> | null;
+	try {
+		response = await send(format);
+		payload = await response.json().catch(() => null) as Record<string, any> | null;
+		if (format === "json_schema" && SCHEMA_REFUSED_STATUSES.has(response.status)) {
+			format = "json";
+			response = await send(format);
+			payload = await response.json().catch(() => null) as Record<string, any> | null;
+		}
 	} catch {
 		return json(c, { error: "gateway_unavailable", message: "The gateway did not answer in time" }, 504);
 	}
-	const payload = await response.json().catch(() => null) as Record<string, any> | null;
 	if (!response.ok) {
 		const message = typeof payload?.error?.message === "string" ? payload.error.message
 			: typeof payload?.message === "string" ? payload.message
@@ -275,6 +294,8 @@ accountSettingsClassifiersRouter.post("/classifiers/test", async (c) => {
 		answered: labels !== null,
 		costUsd: costNanos / 1e9,
 		model: typeof payload?.model === "string" ? payload.model : fields.value.model,
-		requestId: response.headers.get("x-phaseo-request-id") ?? response.headers.get("x-request-id") ?? (typeof payload?.id === "string" ? payload.id : null),
+		format,
+		requestId: response.headers.get("x-phaseo-request-id") ?? response.headers.get("x-request-id")
+			?? (typeof payload?.id === "string" ? payload.id : typeof payload?.request_id === "string" ? payload.request_id : null),
 	});
 });

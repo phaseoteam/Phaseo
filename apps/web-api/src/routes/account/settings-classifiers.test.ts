@@ -33,7 +33,9 @@ type Fixture = {
 	role?: string | null;
 	reviewed?: boolean;
 	insertError?: { code: string; message: string } | null;
-	gateway?: (request: Request) => Response;
+	gateway?: (request: Request) => Response | Promise<Response>;
+	/** Catalog rows for the classifier model; none means the default schema request. */
+	capabilities?: Array<{ capability_id: string; params: unknown }>;
 };
 
 function database(fixture: Fixture = {}) {
@@ -65,6 +67,8 @@ function database(fixture: Fixture = {}) {
 		}
 		if (url.pathname.endsWith("/api_apps")) return Response.json([{ id: "00000000-0000-4000-8000-0000000000b1", title: "Support bot" }]);
 		if (url.pathname.endsWith("/workspace_audit_events")) return new Response(null, { status: 201 });
+		if (url.pathname.endsWith("/v2_model_provider_routes")) return Response.json(fixture.capabilities ? [{ provider_model_id: "p:m", effective_from: null, effective_to: null }] : []);
+		if (url.pathname.endsWith("/v2_route_capabilities")) return Response.json((fixture.capabilities ?? []).map((entry) => ({ ...entry, effective_from: null, effective_to: null })));
 		throw new Error(`Unexpected fixture request: ${request.method} ${url.pathname}`);
 	}));
 	return requests;
@@ -204,6 +208,7 @@ describe("classifier test run", () => {
 			answered: true,
 			costUsd: 0.000042,
 			model: "google/gemini-2.5-flash-lite",
+			format: "json_schema",
 			requestId: "resp_1",
 		});
 		const sent = requests.find((entry) => entry.url.hostname === "gateway.test")!;
@@ -216,6 +221,35 @@ describe("classifier test run", () => {
 		expect(sent.body.input[1].content[0].text).toBe("<transcript>\nUSER: Review this NDA clause\n</transcript>");
 	});
 
+	it("tests a decision model through Decisions", async () => {
+		const requests = database({
+			role: "admin",
+			reviewed: true,
+			capabilities: [{ capability_id: "decisions.make", params: {} }],
+			gateway: () => Response.json({ request_id: "req_d", model: "cloudflare/clef", cost_nanos: 3_000, answers: [{ type: "choice", name: "d0", choice: "legal", confidence: 0.96, probabilities: [] }] }),
+		});
+		const response = await call("/classifiers/test", { method: "POST", body: JSON.stringify({ ...testBody, classifier: { ...testBody.classifier, model: "cloudflare/clef" } }) });
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ labels: [{ key: "department", value: "legal", confidence: 0.96 }], answered: true, format: "decisions", requestId: "req_d" });
+		const sent = requests.find((entry) => entry.url.hostname === "gateway.test")!;
+		expect(sent.url.pathname).toBe("/v1/decisions");
+		expect(sent.body.questions).toEqual([expect.objectContaining({ type: "choice", name: "d0" })]);
+	});
+
+	it("asks for JSON in the prompt when the gateway refuses the schema", async () => {
+		const requests = database({
+			role: "admin",
+			reviewed: true,
+			gateway: async (request) => (await request.clone().json() as any).text
+				? Response.json({ error: { message: "json_schema is not supported by this provider" } }, { status: 422 })
+				: Response.json({ id: "resp_2", cost_nanos: 1_000, output_text: "Sure: {\"d0\": {\"value\": \"legal\", \"confidence\": 0.7}}" }),
+		});
+		const response = await call("/classifiers/test", { method: "POST", body: JSON.stringify(testBody) });
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ labels: [{ key: "department", value: "legal", confidence: 0.7 }], format: "json" });
+		expect(requests.filter((entry) => entry.url.hostname === "gateway.test")).toHaveLength(2);
+	});
+
 	it("rejects an invalid draft before calling the gateway", async () => {
 		const requests = database({ role: "admin", reviewed: true });
 		const response = await call("/classifiers/test", { method: "POST", body: JSON.stringify({ ...testBody, classifier: { ...testBody.classifier, dimensions: [] } }) });
@@ -225,6 +259,7 @@ describe("classifier test run", () => {
 
 	it("reports a gateway error", async () => {
 		database({ role: "admin", reviewed: true, gateway: () => Response.json({ error: { message: "Model does not support structured outputs" } }, { status: 400 }) });
+		// Also after the prompted-JSON retry.
 		const response = await call("/classifiers/test", { method: "POST", body: JSON.stringify(testBody) });
 		expect(response.status).toBe(502);
 		expect(await response.json()).toMatchObject({ error: "classifier_test_failed", status: 400, message: "Model does not support structured outputs" });

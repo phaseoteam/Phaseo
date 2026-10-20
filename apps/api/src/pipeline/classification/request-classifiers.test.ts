@@ -8,6 +8,8 @@ const state = vi.hoisted(() => ({
 	bindings: {} as Record<string, string>,
 	background: [] as Promise<unknown>[],
 	gateEnabled: true,
+	routes: [] as any[],
+	capabilities: [] as any[],
 }));
 
 vi.mock("@core/feature-flags", () => ({ isRequestClassifiersAccessEnabled: async () => state.gateEnabled }));
@@ -18,10 +20,14 @@ vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		from: (table: string) => {
 			state.queries.push(table);
-			const rows = table === "workspace_request_classifiers" ? state.classifiers : state.spend;
+			const rows = table === "workspace_request_classifiers" ? state.classifiers
+				: table === "v2_model_provider_routes" ? state.routes
+				: table === "v2_route_capabilities" ? state.capabilities
+				: state.spend;
 			const query: any = {
 				select: () => query,
 				eq: () => query,
+				in: () => query,
 				order: () => query,
 				then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: rows, error: null }).then(resolve),
 			};
@@ -37,12 +43,14 @@ import {
 	CLASSIFIER_LABEL_KEY,
 	applyRequestClassifiers,
 	attachRequestClassifierCall,
+	buildClassifierDecisionsBody,
 	buildClassifierPrompt,
 	buildClassifierRequestBody,
 	buildClassifierSchema,
 	buildTranscript,
 	buildTranscriptTurns,
 	classifierOutputTokens,
+	classifierRequestFormat,
 	excludeFromRequestClassification,
 	mergeClassifierLabels,
 	parseClassifierAnswer,
@@ -90,6 +98,8 @@ beforeEach(() => {
 	state.bindings = {};
 	state.background = [];
 	state.gateEnabled = true;
+	state.routes = [];
+	state.capabilities = [];
 });
 
 describe("transcript", () => {
@@ -167,6 +177,73 @@ describe("classifier request", () => {
 		expect(parseClassifierAnswer({ output_text: JSON.stringify({ d0: { value: "finance", confidence: 0.9 } }) }, [DEPARTMENT])).toEqual([]);
 		expect(parseClassifierAnswer({ output_text: "not json" }, [DEPARTMENT])).toBeNull();
 	});
+
+	it("reads JSON from a model without structured outputs, also inside a fence or a sentence", () => {
+		const body = buildClassifierRequestBody(classifier(), [DEPARTMENT], "USER: hi", "json") as any;
+		expect(body.text).toBeUndefined();
+		expect(body.input[0].content[0].text).toContain('Reply with only a JSON object');
+		const expected = [{ key: "department", value: "legal", confidence: 0.8 }];
+		const json = JSON.stringify({ d0: { value: "legal", confidence: 0.8 } });
+		expect(parseClassifierAnswer({ output_text: "```json\n" + json + "\n```" }, [DEPARTMENT])).toEqual(expected);
+		expect(parseClassifierAnswer({ output_text: `Here is the classification: ${json} Hope that helps.` }, [DEPARTMENT])).toEqual(expected);
+		expect(parseClassifierAnswer({ output_text: `<think>{"d0": "draft"}</think>${json}` }, [DEPARTMENT])).toEqual(expected);
+	});
+});
+
+describe("decisions", () => {
+	it("asks one choice per single-value dimension and one yes/no question per value of a multi-value one", () => {
+		const body = buildClassifierDecisionsBody(classifier({ instructions: "Treat contracts as legal." }), [DEPARTMENT, TOPICS], "USER: hi") as any;
+		expect(body).toMatchObject({ model: "google/gemini-2.5-flash-lite", input: "<transcript>\nUSER: hi\n</transcript>" });
+		expect(body.questions.map((question: any) => [question.type, question.name])).toEqual([
+			["choice", "d0"], ["predicate", "d1:0"], ["predicate", "d1:1"], ["predicate", "d1:2"],
+		]);
+		expect(body.questions[0].choices).toEqual([
+			{ value: "engineering", description: "Code" }, { value: "legal" }, { value: "other", description: "None of the values above fit" },
+		]);
+		expect(body.questions[0].instructions).toContain("Department (Business function)");
+		expect(body.questions[1].instructions).toContain('does "billing" apply');
+		expect(body.questions[1].instructions).toContain("Treat contracts as legal.");
+	});
+
+	it("answers a multi-value dimension with one choice when per-value questions would pass the limit", () => {
+		const wide = (key: string) => ({ ...TOPICS, key, values: Array.from({ length: 50 }, (_, index) => ({ value: `v${index}`, description: null })) });
+		const questions = (buildClassifierDecisionsBody(classifier(), [wide("a"), wide("b"), wide("c")], "USER: hi") as any).questions;
+		expect(questions.map((question: any) => question.type).filter((type: string) => type === "choice")).toHaveLength(1);
+		expect(questions.length).toBeLessThanOrEqual(128);
+	});
+
+	it("maps choices and probabilities to labels, keeping only listed values", () => {
+		const payload = {
+			request_id: "req_decision",
+			answers: [
+				{ type: "choice", name: "d0", choice: "legal", confidence: 0.93, probabilities: [] },
+				{ type: "predicate", name: "d1:0", probability: 0.81 },
+				{ type: "predicate", name: "d1:1", probability: 0.2 },
+				{ type: "predicate", name: "d1:2", probability: 0.64 },
+			],
+		};
+		expect(parseClassifierAnswer(payload, [DEPARTMENT, TOPICS])).toEqual([
+			{ key: "department", value: "legal", confidence: 0.93 },
+			{ key: "topics", value: "billing", confidence: 0.81 },
+			{ key: "topics", value: "hiring", confidence: 0.64 },
+		]);
+		// No value reaches 0.5: the most likely one is still given. A refusal or unknown choice leaves the dimension unlabelled.
+		expect(parseClassifierAnswer({ answers: [
+			{ type: "refusal", name: "d0" },
+			{ type: "predicate", name: "d1:0", probability: 0.1 }, { type: "predicate", name: "d1:1", probability: 0.3 }, { type: "predicate", name: "d1:2", probability: 0.2 },
+		] }, [DEPARTMENT, TOPICS])).toEqual([{ key: "topics", value: "security", confidence: 0.3 }]);
+		expect(parseClassifierAnswer({ answers: [{ type: "choice", name: "d0", choice: "finance", confidence: 1 }] }, [DEPARTMENT])).toEqual([]);
+	});
+
+	it("picks structured outputs, then Decisions, then prompted JSON from the model's capabilities", () => {
+		expect(classifierRequestFormat([{ capability_id: "text.generate", params: { structured_outputs: {} } }])).toBe("json_schema");
+		// Undocumented params are sent a schema, as the gateway would accept it.
+		expect(classifierRequestFormat([{ capability_id: "text.generate", params: {} }])).toBe("json_schema");
+		expect(classifierRequestFormat([{ capability_id: "text.generate", params: { temperature: {} } }, { capability_id: "decisions.make", params: {} }])).toBe("decisions");
+		expect(classifierRequestFormat([{ capability_id: "decisions.make", params: {} }])).toBe("decisions");
+		expect(classifierRequestFormat([{ capability_id: "text.generate", params: { temperature: {} } }])).toBe("json");
+		expect(classifierRequestFormat([])).toBe("json_schema");
+	});
 });
 
 describe("labels", () => {
@@ -214,12 +291,45 @@ describe("applyRequestClassifiers", () => {
 		expect(context.meta.labels).toEqual([{ key: "department", value: "legal" }]);
 		expect(context.requestClassifications).toEqual([{
 			classifier_id: classifier().id, status: "classified", model: "google/gemini-2.5-flash-lite",
-			labels: [{ key: "department", value: "legal", confidence: 0.9 }], response_id: "resp_classifier", cost_nanos: 25_000,
+			labels: [{ key: "department", value: "legal", confidence: 0.9 }], response_id: "resp_classifier", cost_nanos: 25_000, format: "json_schema",
 		}]);
-		expect(call).toHaveBeenCalledWith(expect.objectContaining({ model: "google/gemini-2.5-flash-lite" }), classifier().id);
-		const sent = (call.mock.calls[0] as any)[0].input[1].content[0].text as string;
+		expect(call).toHaveBeenCalledWith({ path: "responses", body: expect.objectContaining({ model: "google/gemini-2.5-flash-lite", text: expect.any(Object) }) }, classifier().id);
+		const sent = (call.mock.calls[0] as any)[0].body.input[1].content[0].text as string;
 		expect(sent).toContain("USER: Review this contract clause");
 		expect(state.rpc).toHaveBeenCalledWith("record_request_classifier_spend", { p_workspace_id: WORKSPACE, p_classifier_id: classifier().id, p_cost_nanos: 25_000 });
+	});
+
+	it("sends decision models a Decisions request", async () => {
+		state.routes = [{ provider_model_id: "cloudflare:clef", effective_from: null, effective_to: null }];
+		state.capabilities = [{ capability_id: "decisions.make", params: {}, effective_from: null, effective_to: null }];
+		state.classifiers = [classifier({ model: "cloudflare/clef" })];
+		const call = vi.fn(async () => new Response(JSON.stringify({
+			request_id: "req_decision", cost_nanos: 4_000, answers: [{ type: "choice", name: "d0", choice: "legal", confidence: 0.97, probabilities: [] }],
+		}), { status: 200 }));
+		const context = ctx({ requestClassifierCall: call });
+		await applyRequestClassifiers(context, null);
+		expect((call.mock.calls[0] as any)[0]).toMatchObject({ path: "decisions", body: { model: "cloudflare/clef", questions: [{ type: "choice", name: "d0" }] } });
+		expect(context.meta.labels).toEqual([{ key: "department", value: "legal" }]);
+		expect(context.requestClassifications[0]).toMatchObject({ status: "classified", format: "decisions", response_id: "req_decision", cost_nanos: 4_000 });
+	});
+
+	it("asks for JSON in the prompt when the model has no structured outputs, and when the gateway refuses the schema", async () => {
+		state.routes = [{ provider_model_id: "p:m", effective_from: null, effective_to: null }];
+		state.capabilities = [{ capability_id: "text.generate", params: { temperature: {} }, effective_from: null, effective_to: null }];
+		const prompted = vi.fn(async () => answer({ d0: { value: "legal", confidence: 0.7 } }));
+		const first = ctx({ requestClassifierCall: prompted });
+		await applyRequestClassifiers(first, null);
+		expect((prompted.mock.calls[0] as any)[0].body.text).toBeUndefined();
+		expect(first.requestClassifications[0]).toMatchObject({ status: "classified", format: "json" });
+
+		state.capabilities = [];
+		const refused = new Response(JSON.stringify({ error: { message: "response_format is not supported" } }), { status: 400 });
+		const retried = vi.fn(async (request: any) => request.body.text ? refused : answer({ d0: { value: "legal", confidence: 0.7 } }));
+		const second = ctx({ requestClassifierCall: retried });
+		await applyRequestClassifiers(second, null);
+		expect(retried).toHaveBeenCalledTimes(2);
+		expect(second.meta.labels).toEqual([{ key: "department", value: "legal" }]);
+		expect(second.requestClassifications[0]).toMatchObject({ status: "classified", format: "json" });
 	});
 
 	it("retries a failed spend write so the budget still sees the cost", async () => {
@@ -319,7 +429,7 @@ describe("applyRequestClassifiers", () => {
 		state.classifiers = [classifier({ input_scope: "prompt_and_response" })];
 		const call = vi.fn(async () => answer({ d0: { value: "legal", confidence: 1 } }));
 		await applyRequestClassifiers(ctx({ requestClassifierCall: call }), { choices: [{ message: { content: "Clause 3 is unenforceable" } }] });
-		expect((call.mock.calls[0] as any)[0].input[1].content[0].text).toContain("RESPONSE: Clause 3 is unenforceable");
+		expect((call.mock.calls[0] as any)[0].body.input[1].content[0].text).toContain("RESPONSE: Clause 3 is unenforceable");
 	});
 
 	it("respects the sample rate", async () => {
@@ -339,8 +449,11 @@ describe("attachRequestClassifierCall", () => {
 		const handler = vi.fn(async (_request: Request) => new Response("{}"));
 		const parent = ctx();
 		attachRequestClassifierCall(parent, new Request("https://gateway.test/v1/chat/completions", { headers: { Authorization: "Bearer key" } }), () => handler);
-		await parent.requestClassifierCall({ model: "m" }, "clf_1");
+		await parent.requestClassifierCall({ path: "responses", body: { model: "m" } }, "clf_1");
 		const sent = handler.mock.calls[0][0];
+		expect(new URL(sent.url).pathname).toBe("/v1/responses");
+		await parent.requestClassifierCall({ path: "decisions", body: { model: "m" } }, "clf_1");
+		expect(new URL(handler.mock.calls[1][0].url).pathname).toBe("/v1/decisions");
 		expect(sent.headers.get("authorization")).toBe("Bearer key");
 		expect(JSON.parse(sent.headers.get("x-phaseo-metadata")!)).toEqual({ labels: [{ key: CLASSIFIER_LABEL_KEY, value: "clf_1" }] });
 

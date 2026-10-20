@@ -25,6 +25,8 @@ export type GatewayModelOption = {
 	releaseDate: string | null;
 	/** At least one provider documents JSON schema (structured output) support. */
 	structuredOutputs: boolean;
+	/** Each provider's capabilities with their documented params. */
+	routeCapabilities: Array<{ capability_id: string; params: unknown }>;
 };
 
 const STRUCTURED_OUTPUT_PARAMS = ["structured_outputs", "response_format"];
@@ -52,6 +54,10 @@ export function buildGatewayModelOptions(models: GatewaySupportedModel[]): Gatew
 		const existing = byId.get(id);
 		const providerName = model.providerName ?? model.providerId;
 		const structuredOutputs = hasStructuredOutputs(model);
+		const routeCapabilities = (model.capabilities ?? []).map((capability) => ({
+			capability_id: capability,
+			params: model.capabilityParamsById && typeof model.capabilityParamsById === "object" ? (model.capabilityParamsById as Record<string, unknown>)[capability] ?? null : null,
+		}));
 		if (!existing) {
 			byId.set(id, {
 				id,
@@ -62,6 +68,7 @@ export function buildGatewayModelOptions(models: GatewaySupportedModel[]): Gatew
 				capabilities: [...new Set(model.capabilities ?? [])],
 				releaseDate: model.releaseDate ?? model.announcementDate ?? null,
 				structuredOutputs,
+				routeCapabilities,
 			});
 			continue;
 		}
@@ -70,6 +77,7 @@ export function buildGatewayModelOptions(models: GatewaySupportedModel[]): Gatew
 		const releaseDate = model.releaseDate ?? model.announcementDate ?? null;
 		if (!existing.releaseDate && releaseDate) existing.releaseDate = releaseDate;
 		existing.structuredOutputs ||= structuredOutputs;
+		existing.routeCapabilities.push(...routeCapabilities);
 	}
 	return [...byId.values()].sort((left, right) => {
 		const leftTime = left.releaseDate ? Date.parse(left.releaseDate) : Number.NEGATIVE_INFINITY;

@@ -6094,8 +6094,12 @@
 		},
 		"model": {
 			"label": "Modelo do classificador",
-			"help": "A lista mostra modelos com suporte documentado a saídas estruturadas. Um modelo pequeno e rápido costuma bastar.",
-			"showAll": "Mostrar todos os modelos"
+			"help": "Qualquer modelo de texto ou de decisões funciona. Um modelo pequeno e rápido costuma bastar.",
+			"format": {
+				"json_schema": "Responde com saídas estruturadas, então as respostas sempre correspondem aos seus valores.",
+				"decisions": "Responde pelo Decisions, com a probabilidade do próprio modelo para cada valor.",
+				"json": "Este modelo não tem saídas estruturadas, então o JSON é pedido no prompt. Respostas fora dos seus valores são descartadas, o que pode deixar uma dimensão sem rótulo."
+			}
 		},
 		"dimensions": {
 			"help": "Cada dimensão vira um rótulo. Adicione até {max} dimensões com até {values} valores cada.",
