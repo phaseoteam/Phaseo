@@ -46,6 +46,7 @@ import {
 	RotateCcw,
 	Route,
 	ScanText,
+	TextSelect,
 	SearchX,
 	Sparkles,
 	Speech,
@@ -574,6 +575,7 @@ function getEndpointSortRank(value: string): number {
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 
+	if (normalized.includes("extract")) return TextSelect;
 	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
@@ -617,6 +619,7 @@ function getModalityIcon(modality: string): LucideIcon {
 
 function getEndpointIcon(endpoint: string): LucideIcon {
 	const normalized = normalizeEndpointValue(endpoint);
+	if (normalized.includes("extract")) return TextSelect;
 	if (
 		normalized === "decisions" ||
 		normalized === "/decisions" ||
