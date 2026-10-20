@@ -86,6 +86,13 @@ const BetaOptionsSchema = lazySchema(() => z.object({
 
 const ServiceTierSchema = lazySchema(() => z.enum(["standard", "default", "fast", "ultrafast", "priority", "flex", "batch"]));
 
+// Chat and Responses also take OpenAI's own values
+// (https://platform.openai.com/docs/api-reference/chat/create#chat-create-service_tier).
+// "auto" asks for no particular tier and is routed and priced as if the field
+// were unset; "scale" is read as the standard tier, like "default".
+const OpenAIServiceTierSchema = lazySchema(() => z.union([ServiceTierSchema, z.enum(["auto", "scale"])])
+	.transform((tier) => (tier === "scale" ? "default" : tier)));
+
 const ImageConfigSchema = lazySchema(() => z.object({
     aspect_ratio: z.string().optional(),
     image_size: z.enum(["0.5K", "1K", "2K", "4K"]).optional(),
@@ -314,7 +321,7 @@ export const ResponsesSchema = lazySchema(() => z.object({
         max_tokens: z.number().int().nonnegative().nullable().optional(),
     }).optional(),
 
-    service_tier: ServiceTierSchema.optional(),
+    service_tier: OpenAIServiceTierSchema.optional(),
     store: z.boolean().optional(),
     stream: z.boolean().optional(),
     n: z.never().optional(),
@@ -867,15 +874,24 @@ export const ChatCompletionsSchema = lazySchema(() => z.object({
         ])
     ).min(1),
     reasoning: z.object({
-        effort: z.enum(["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]).optional().default("medium"),
-        mode: z.enum(["standard", "pro"]).optional(),
-        summary: z.enum(["auto", "concise", "detailed"]).optional().default("auto"),
-        enabled: z.boolean().optional(),
-        max_tokens: z.number().int().nonnegative().optional(),
+        // No default: an unset (or null) effort leaves max_tokens, enabled or
+        // the model's own default in charge instead of forcing medium.
+        effort: z.enum(["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
+        mode: z.enum(["standard", "pro"]).nullable().optional(),
+        summary: z.enum(["auto", "concise", "detailed"]).nullable().optional().transform((summary) => summary ?? "auto"),
+        enabled: z.boolean().nullable().optional(),
+        max_tokens: z.number().int().nonnegative().nullable().optional(),
     }).optional(),
     reasoning_effort: z.enum(["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
 	reasoning_summary: z.union([z.boolean(), z.enum(["auto", "concise", "detailed"])]).optional(),
 	reasoning_summary_wait: z.boolean().optional(),
+	// Accepted for compatibility: reasoning is returned whenever the model produces it.
+	include_reasoning: z.boolean().optional(),
+	// OpenAI predicted outputs (https://platform.openai.com/docs/guides/predicted-outputs).
+	prediction: z.object({
+		type: z.literal("content"),
+		content: z.union([z.string(), z.array(z.record(z.string(), z.any()))]),
+	}).passthrough().optional(),
 	diffusing: z.boolean().optional(),
 	realtime: z.boolean().optional(),
 
@@ -944,7 +960,7 @@ export const ChatCompletionsSchema = lazySchema(() => z.object({
     user: z.string().optional(),
     user_id: z.string().optional(),
 
-    service_tier: ServiceTierSchema.optional(),
+    service_tier: OpenAIServiceTierSchema.optional(),
     prompt_cache_key: z.string().nullable().optional(),
 	prompt_cache_options: OpenAIPromptCacheOptionsSchema.optional(),
 	verbosity: z.enum(["low", "medium", "high"]).optional(),
@@ -1105,11 +1121,24 @@ export const AnthropicMessagesSchema = lazySchema(() => z.object({
 		}).nullable().optional(),
 	}).passthrough().optional(),
     reasoning: z.object({
-        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
-        enabled: z.boolean().optional(),
-        summary: z.enum(["auto", "concise", "detailed"]).optional(),
-        max_tokens: z.number().int().nonnegative().optional(),
+        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
+        enabled: z.boolean().nullable().optional(),
+        summary: z.enum(["auto", "concise", "detailed"]).nullable().optional(),
+        max_tokens: z.number().int().nonnegative().nullable().optional(),
     }).optional(),
+	// Anthropic context editing (https://platform.claude.com/docs/en/build-with-claude/context-editing),
+	// forwarded to Anthropic and dropped (and reported) for other providers.
+	// Compaction edits are refused: the gateway's responses do not carry the
+	// compaction blocks a client must send back, so the summary would be lost.
+	context_management: z.object({
+		edits: z.array(z.object({
+			type: z.string().min(1).refine((type) => !type.startsWith("compact_"), {
+				message: "Compaction edits are not supported; use clear_tool_uses or clear_thinking edits.",
+			}),
+		}).passthrough()).optional(),
+	}).passthrough().optional(),
+	// Same end-user identifier as Chat's `user`; sent to Anthropic as metadata.user_id.
+	user: z.string().optional(),
 
     stop_sequences: z.array(z.string()).optional(),
     web_search_options: z.record(z.string(), z.any()).optional(),

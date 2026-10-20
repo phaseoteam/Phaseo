@@ -37,7 +37,20 @@ type OptionalParam = {
 	 * dropped only when the provider profile marks them unsupported.
 	 */
 	catalogueTracked: boolean;
+	/**
+	 * Providers whose executor sends the parameter. Every other provider drops
+	 * it, whatever its profile or catalogue says.
+	 */
+	onlyProviders?: ReadonlySet<string>;
 };
+
+// Executors that send Anthropic's context_management with its beta header.
+const ANTHROPIC_CONTEXT_MANAGEMENT_PROVIDERS: ReadonlySet<string> = new Set([
+	"anthropic",
+	"anthropic-us",
+	"anthropic-aws",
+	"anthropic-aws-us",
+]);
 
 // Optional generation controls: removing one changes sampling, never the
 // conversation, the tools or the output format. Messages, tools, tool_choice,
@@ -59,6 +72,14 @@ const OPTIONAL_PARAMS: OptionalParam[] = [
 	{ param: "parallel_tool_calls", field: "parallelToolCalls", catalogueTracked: false },
 	{ param: "max_tool_calls", field: "maxToolCalls", catalogueTracked: false },
 	{ param: "image_config", field: "imageConfig", catalogueTracked: false },
+	// Anthropic context editing from /v1/messages: it changes what the model
+	// sees of the history, never the conversation sent, so other routes run without it.
+	{
+		param: "context_management",
+		field: "anthropicContextManagement",
+		catalogueTracked: false,
+		onlyProviders: ANTHROPIC_CONTEXT_MANAGEMENT_PROVIDERS,
+	},
 ];
 
 function isPlainObject(value: unknown): value is Record<string, any> {
@@ -147,7 +168,9 @@ export function dropUnsupportedParams(
 		if (value === undefined || value === null) continue;
 		const override = resolveProviderParamSupportOverride(providerId, entry.param);
 		let decision: DroppedParam | null = null;
-		if (override === false) {
+		if (entry.onlyProviders && !entry.onlyProviders.has(providerId)) {
+			decision = { param: entry.param, reason: "unsupported_by_provider", source: "provider_profile" };
+		} else if (override === false) {
 			decision = { param: entry.param, reason: "unsupported_by_provider", source: "provider_profile" };
 		} else if (params) {
 			const { declared, config } = declaredConfig(params, entry.param);

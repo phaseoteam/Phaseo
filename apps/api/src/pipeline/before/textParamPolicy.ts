@@ -82,6 +82,10 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"imageConfig",
 			"thinking",
 			"reasoning_split",
+			// Accepted for compatibility; reasoning is returned whenever the model produces it.
+			"include_reasoning",
+			// Predicted outputs: forwarded to OpenAI, Mistral and Moonshot, ignored elsewhere.
+			"prediction",
 			"user_id",
 			"user",
 			"service_tier",
@@ -319,6 +323,9 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			// Documented on AnthropicMessagesRequest and decoded like Chat and
 			// Responses; they used to fail as unknown_param.
 			"reasoning",
+			// Anthropic context editing, and Chat's end-user identifier.
+			"context_management",
+			"user",
 			"session_id",
 			"provider_options",
 			"providerOptions",
@@ -356,6 +363,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			provider_options: "provider_options",
 			providerOptions: "provider_options",
 			safety_identifier: "safety_identifier",
+			context_management: "context_management",
 		},
 	},
 };
@@ -421,6 +429,26 @@ export function textEndpointRegistryFor(
 		return TEXT_ENDPOINT_REGISTRY[endpoint];
 	}
 	return null;
+}
+
+/**
+ * Removes top-level parameters sent as JSON null. Many clients serialise unset
+ * options as null (`temperature: null`, `stop: null`, `service_tier: null`), so
+ * on the text endpoints null means "not set", exactly as if the key were absent.
+ * Runs before validation, routing and decoding, so none of them sees the null.
+ * Only parameters the endpoint accepts are removed; an unknown key is still
+ * reported as unknown. Returns the body unchanged (same object) when nothing is null.
+ */
+export function withoutNullTextParams<T>(endpoint: Endpoint, body: T): T {
+	const registry = textEndpointRegistryFor(endpoint);
+	if (!registry || !body || typeof body !== "object" || Array.isArray(body)) return body;
+	let next: Record<string, unknown> | null = null;
+	for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
+		if (value !== null || !registry.allowedTopLevel.has(key)) continue;
+		next ??= { ...(body as Record<string, unknown>) };
+		delete next[key];
+	}
+	return (next ?? body) as T;
 }
 
 /**

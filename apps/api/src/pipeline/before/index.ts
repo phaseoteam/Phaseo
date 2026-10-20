@@ -34,6 +34,7 @@ import {
 import { normalizeGatewayPlugins, resolveGatewayPlugins } from "@/plugins/normalize";
 import { findUnknownGatewayPluginIds } from "@/plugins/registry";
 import { validateSynchronousTextServiceTierRequest } from "./serviceTierValidation";
+import { withoutNullTextParams } from "./textParamPolicy";
 import { normalizeLegacySpeedModel } from "./legacySpeedModels";
 import {
 	applyProviderQualifiedModelConstraint,
@@ -318,7 +319,8 @@ export async function beforeRequest(
         guardJson(req, workspaceId, requestId, { endpoint }),
     );
     if (!j.ok) return j as { ok: false; response: Response };
-    let rawBody = j.value;
+    // Optional text parameters sent as null count as unset from here on.
+    let rawBody = withoutNullTextParams(endpoint, j.value);
     const requestLabels = parseRequestLabels(req, { allowClassifierLabel: isClassifierSubrequest(req) });
     if (requestLabels.ok === false) {
         return {

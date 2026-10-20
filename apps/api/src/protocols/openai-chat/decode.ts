@@ -115,13 +115,14 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			? { ...(req.tool_choice as Record<string, any>) }
 			: undefined;
 
+	// A null field means "not set", like an absent one.
 	const reasoningFromRequest = req.reasoning
 		? {
-			effort: req.reasoning.effort,
-			mode: req.reasoning.mode,
-			summary: req.reasoning.summary as any,
-			enabled: req.reasoning.enabled,
-			maxTokens: req.reasoning.max_tokens,
+			effort: req.reasoning.effort ?? undefined,
+			mode: req.reasoning.mode ?? undefined,
+			summary: (req.reasoning.summary ?? undefined) as any,
+			enabled: req.reasoning.enabled ?? undefined,
+			maxTokens: req.reasoning.max_tokens ?? undefined,
 		}
 		: undefined;
 	const reasoningEffortAlias =

@@ -321,6 +321,8 @@ export type IRChatRequest = {
 		type: "compaction";
 		compact_threshold?: number;
 	}>;
+	/** Anthropic Messages `context_management` ({ edits: [...] }), sent unchanged to Anthropic. */
+	anthropicContextManagement?: Record<string, any>;
 	anthropicCacheControl?: IRCacheControl & {
 		scope?: "all_text" | "last_user_message" | "agent" | "conversation" | "none" | string;
 	};

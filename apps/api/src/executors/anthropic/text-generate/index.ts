@@ -156,6 +156,14 @@ function usesAnthropicNativeAdvisor(requestBody: any): boolean {
 		requestBody.tools.some((tool: any) => tool?.type === "advisor_20260301");
 }
 
+// Context editing (clear_tool_uses_*, clear_thinking_*) is a beta:
+// https://platform.claude.com/docs/en/build-with-claude/context-editing
+const ANTHROPIC_CONTEXT_MANAGEMENT_BETA = "context-management-2025-06-27";
+
+function anthropicContextManagementBetas(requestBody: any): string[] {
+	return requestBody?.context_management ? [ANTHROPIC_CONTEXT_MANAGEMENT_BETA] : [];
+}
+
 function usesAnthropicFileReference(value: unknown): boolean {
 	if (Array.isArray(value)) return value.some(usesAnthropicFileReference);
 	if (!value || typeof value !== "object") return false;
@@ -220,6 +228,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 		usesAnthropicNativeWebFetch(requestBody) ? "web-fetch-2026-02-09" : null,
 		usesAnthropicNativeAdvisor(requestBody) ? ANTHROPIC_ADVISOR_BETA : null,
 		usesAnthropicFileReference(requestBody) ? "files-api-2025-04-14" : null,
+		...anthropicContextManagementBetas(requestBody),
 	].filter((entry): entry is string => Boolean(entry));
 
 		// Execute upstream call
@@ -692,6 +701,11 @@ export function irToAnthropicMessages(
 	// is still sent, so a US-only request fails rather than running outside the US.
 	if (options?.inferenceGeo && (options.inferenceGeo === "us" || supportsAnthropicInferenceGeo(resolvedModel))) {
 		request.inference_geo = options.inferenceGeo;
+	}
+	// Context editing from /v1/messages. Routes that cannot send its beta header
+	// never see it: the execute stage drops it for them (unsupportedParams.ts).
+	if (ir.anthropicContextManagement) {
+		request.context_management = ir.anthropicContextManagement;
 	}
 
 	// Adaptive-thinking Claude models reject non-default sampling params, so omit them.
