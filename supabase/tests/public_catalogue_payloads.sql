@@ -19,7 +19,7 @@ begin
   with original as materialized (
     select payload from public.get_public_models_page_rows() payload
   ), wrapped as materialized (
-    select payload from jsonb_array_elements(public.get_public_models_page_payload()) payload
+    select payload - 'license' from jsonb_array_elements(public.get_public_models_page_payload()) payload
   )
   select count(*) into difference_count from (
     (select * from original except all select * from wrapped)
@@ -30,7 +30,7 @@ begin
 
   select coalesce(
     jsonb_agg(
-      payload order by
+      payload || jsonb_build_object('license', nullif(btrim(model.license), '')) order by
         nullif(payload->>'primary_timestamp', '')::numeric desc nulls last,
         model.created_at desc nulls last,
         position
@@ -52,7 +52,7 @@ begin
   with original as materialized (
     select payload from public.get_v2_public_models_page_rows('us', 'standard') payload
   ), wrapped as materialized (
-    select payload from jsonb_array_elements(public.get_public_models_page_payload('us', 'standard')) payload
+    select payload - 'license' from jsonb_array_elements(public.get_public_models_page_payload('us', 'standard')) payload
   )
   select count(*) into difference_count from (
     (select * from original except all select * from wrapped)
@@ -63,7 +63,7 @@ begin
 
   select coalesce(
     jsonb_agg(
-      payload order by
+      payload || jsonb_build_object('license', nullif(btrim(model.license), '')) order by
         nullif(payload->>'primary_timestamp', '')::numeric desc nulls last,
         model.created_at desc nulls last,
         position
@@ -83,7 +83,7 @@ begin
   with original as materialized (
     select to_jsonb(row) payload from public.get_monitor_model_rows(false) row
   ), wrapped as materialized (
-    select payload from jsonb_array_elements(public.get_public_monitor_rows_payload()) payload
+    select payload - 'model_license' from jsonb_array_elements(public.get_public_monitor_rows_payload()) payload
   )
   select count(*) into difference_count from (
     (select * from original except all select * from wrapped)
