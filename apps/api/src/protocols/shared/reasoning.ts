@@ -146,7 +146,10 @@ export type DecodedResponsesReasoning =
 
 /**
  * Decode a Responses `reasoning` item from a request. Raw `encrypted_content`
- * without a gateway seal is treated as OpenAI's, the format that field carries.
+ * without a gateway seal is treated as OpenAI's, the format that field carries,
+ * unless the item names another `format`. An item may instead carry its state
+ * as a raw `signature` with a `format` (a Claude thinking signature or a Gemini
+ * thought signature), the same pair Chat `reasoning_details` entries use.
  */
 export function decodeResponsesReasoningItem(item: any): DecodedResponsesReasoning {
 	if (!item || typeof item !== "object") return null;
@@ -154,7 +157,13 @@ export function decodeResponsesReasoningItem(item: any): DecodedResponsesReasoni
 	const summaryText = textsOf(item.summary);
 	const text = contentText || summaryText;
 	const reasoningId = typeof item.id === "string" && item.id ? item.id : undefined;
-	const state = openReasoningState(item.encrypted_content, { format: OPENAI_REASONING_FORMAT, kind: "encrypted" });
+	const format = isReasoningFormat(item.format) ? item.format as ReasoningFormat : null;
+	const state = openReasoningState(item.encrypted_content, format
+		? { format, kind: defaultKindForFormat(format) }
+		: { format: OPENAI_REASONING_FORMAT, kind: "encrypted" })
+		?? openReasoningState(item.signature, format
+			? { format, kind: format === ANTHROPIC_REASONING_FORMAT ? "signature" : defaultKindForFormat(format) }
+			: undefined);
 	if (!state) {
 		if (!text) return null;
 		return {
