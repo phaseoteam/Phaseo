@@ -9643,6 +9643,11 @@ components:
           default: true
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
+        plugins:
+          type: array
+          description: इस अनुरोध के लिए गेटवे प्लगइन। `web` किसी भी मॉडल में वेब खोज और `web-fetch` पेज पढ़ना जोड़ता है; `response-healing` बिना स्ट्रीमिंग वाले स्ट्रक्चर्ड रिस्पॉन्स में खराब JSON ठीक करता है। वर्कस्पेस और प्रीसेट के डिफ़ॉल्ट इस सूची के साथ मिलाए जाते हैं। अज्ञात प्लगइन id पर 400 `unknown_gateway_plugin` लौटता है।
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         logprobs:
           type: boolean
           default: false
@@ -10170,6 +10175,147 @@ components:
           minimum: 1
           maximum: 100000
       additionalProperties: false
+    GatewayPlugin:
+      oneOf:
+        - $ref: '#/components/schemas/WebSearchPlugin'
+        - $ref: '#/components/schemas/WebFetchPlugin'
+        - $ref: '#/components/schemas/ResponseHealingPlugin'
+      discriminator:
+        propertyName: id
+        mapping:
+          web: '#/components/schemas/WebSearchPlugin'
+          web-fetch: '#/components/schemas/WebFetchPlugin'
+          response-healing: '#/components/schemas/ResponseHealingPlugin'
+    WebSearchPlugin:
+      type: object
+      description: अनुरोध में `phaseo:web_search` सर्वर टूल जोड़ता है, ताकि कोई भी मॉडल वेब खोज सके। अनुरोध ठीक वैसे ही चलता है, और खोजें वैसे ही गिनी और बिल की जाती हैं, जैसे `phaseo:web_search` टूल के साथ। यदि अनुरोध में पहले से वेब खोज टूल है, तो प्लगइन कुछ नहीं जोड़ता। अन्य विकल्पों को अनदेखा किया जाता है।
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - exa
+            - firecrawl
+            - parallel
+            - perplexity
+            - tinyfish
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 25
+        max_uses:
+          type: integer
+          minimum: 1
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        include_domains:
+          type: array
+          items:
+            type: string
+        exclude_domains:
+          type: array
+          items:
+            type: string
+    WebFetchPlugin:
+      type: object
+      description: अनुरोध में `phaseo:web_fetch` सर्वर टूल जोड़ता है, ताकि कोई भी मॉडल वेब पेज पढ़ सके। अनुरोध ठीक वैसे ही चलता है, और फ़ेच वैसे ही गिने और बिल किए जाते हैं, जैसे `phaseo:web_fetch` टूल के साथ। यदि अनुरोध में पहले से वेब फ़ेच टूल है, तो प्लगइन कुछ नहीं जोड़ता।
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web-fetch
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - direct
+            - exa
+            - firecrawl
+            - parallel
+        max_uses:
+          type: integer
+          minimum: 1
+        max_content_tokens:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        allowed_domains:
+          type: array
+          items:
+            type: string
+        blocked_domains:
+          type: array
+          items:
+            type: string
+    ResponseHealingPlugin:
+      type: object
+      description: उन बिना स्ट्रीमिंग वाले रिस्पॉन्स में खराब JSON ठीक करता है जिनमें `json_object` या `json_schema` आउटपुट माँगा गया था। स्ट्रीम पर इसे छोड़ दिया जाता है।
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - response-healing
+        enabled:
+          type: boolean
+          default: true
+        mode:
+          type: string
+          enum:
+            - safe
+            - strict
+          default: safe
+    OpenAIWebSearchToolDefinition:
+      type: object
+      description: 'OpenAI का होस्टेड वेब खोज टूल। OpenAI, Azure OpenAI (Responses) और xAI इसे नेटिव रूप से चलाते हैं। जिन मॉडलों के प्रदाता इसे नहीं चला सकते, उन पर गेटवे इसे `phaseo:web_search` के रूप में चलाता है: `search_context_size`, `filters.allowed_domains`, `max_results` और `engine` बने रहते हैं, और खोजें `phaseo:web_search` खोजों की तरह बिल की जाती हैं। OpenAI के अन्य होस्टेड टूल (`file_search`, `code_interpreter`, `computer_use_preview`, `mcp`, `image_generation`, `shell`, `local_shell`, `apply_patch`) उन मॉडलों पर 400 `unsupported_hosted_tool` के साथ विफल होते हैं जिनके प्रदाता उन्हें नहीं चला सकते।'
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - web_search
+            - web_search_2025_08_26
+            - web_search_preview
+            - web_search_preview_2025_03_11
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        filters:
+          type: object
+          properties:
+            allowed_domains:
+              type: array
+              items:
+                type: string
+        user_location:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
@@ -10179,6 +10325,7 @@ components:
         - $ref: '#/components/schemas/SubagentToolDefinition'
         - $ref: '#/components/schemas/FusionToolDefinition'
         - $ref: '#/components/schemas/SearchModelsToolDefinition'
+        - $ref: '#/components/schemas/OpenAIWebSearchToolDefinition'
     SubagentToolDefinition:
       type: object
       required:
@@ -10521,6 +10668,11 @@ components:
           oneOf:
             - type: object
             - type: string
+        plugins:
+          type: array
+          description: इस अनुरोध के लिए गेटवे प्लगइन। `web` किसी भी मॉडल में वेब खोज और `web-fetch` पेज पढ़ना जोड़ता है; `response-healing` बिना स्ट्रीमिंग वाले स्ट्रक्चर्ड रिस्पॉन्स में खराब JSON ठीक करता है। वर्कस्पेस और प्रीसेट के डिफ़ॉल्ट इस सूची के साथ मिलाए जाते हैं। अज्ञात प्लगइन id पर 400 `unknown_gateway_plugin` लौटता है।
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         stream:
           type: boolean
         metadata:
@@ -10758,6 +10910,11 @@ components:
           maximum: 2
         text:
           type: object
+        plugins:
+          type: array
+          description: इस अनुरोध के लिए गेटवे प्लगइन। `web` किसी भी मॉडल में वेब खोज और `web-fetch` पेज पढ़ना जोड़ता है; `response-healing` बिना स्ट्रीमिंग वाले स्ट्रक्चर्ड रिस्पॉन्स में खराब JSON ठीक करता है। वर्कस्पेस और प्रीसेट के डिफ़ॉल्ट इस सूची के साथ मिलाए जाते हैं। अज्ञात प्लगइन id पर 400 `unknown_gateway_plugin` लौटता है।
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
         tools:

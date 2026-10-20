@@ -9643,6 +9643,11 @@ components:
           default: true
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
+        plugins:
+          type: array
+          description: 此请求使用的网关插件。`web` 为任意模型添加网页搜索，`web-fetch` 添加网页读取；`response-healing` 修复非流式结构化响应中格式错误的 JSON。工作区和预设的默认值会与此列表合并。未知的插件 id 返回 400 `unknown_gateway_plugin`。
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         logprobs:
           type: boolean
           default: false
@@ -10170,6 +10175,147 @@ components:
           minimum: 1
           maximum: 100000
       additionalProperties: false
+    GatewayPlugin:
+      oneOf:
+        - $ref: '#/components/schemas/WebSearchPlugin'
+        - $ref: '#/components/schemas/WebFetchPlugin'
+        - $ref: '#/components/schemas/ResponseHealingPlugin'
+      discriminator:
+        propertyName: id
+        mapping:
+          web: '#/components/schemas/WebSearchPlugin'
+          web-fetch: '#/components/schemas/WebFetchPlugin'
+          response-healing: '#/components/schemas/ResponseHealingPlugin'
+    WebSearchPlugin:
+      type: object
+      description: 向请求添加 `phaseo:web_search` 服务器工具，让任意模型都能搜索网页。请求的运行方式以及搜索的计数和计费，与使用 `phaseo:web_search` 工具完全相同。如果请求已包含网页搜索工具，插件不会添加任何内容。其他选项会被忽略。
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - exa
+            - firecrawl
+            - parallel
+            - perplexity
+            - tinyfish
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 25
+        max_uses:
+          type: integer
+          minimum: 1
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        include_domains:
+          type: array
+          items:
+            type: string
+        exclude_domains:
+          type: array
+          items:
+            type: string
+    WebFetchPlugin:
+      type: object
+      description: 向请求添加 `phaseo:web_fetch` 服务器工具，让任意模型都能读取网页。请求的运行方式以及读取的计数和计费，与使用 `phaseo:web_fetch` 工具完全相同。如果请求已包含网页读取工具，插件不会添加任何内容。
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web-fetch
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - direct
+            - exa
+            - firecrawl
+            - parallel
+        max_uses:
+          type: integer
+          minimum: 1
+        max_content_tokens:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        allowed_domains:
+          type: array
+          items:
+            type: string
+        blocked_domains:
+          type: array
+          items:
+            type: string
+    ResponseHealingPlugin:
+      type: object
+      description: 修复请求了 `json_object` 或 `json_schema` 输出的非流式响应中格式错误的 JSON。流式响应会跳过。
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - response-healing
+        enabled:
+          type: boolean
+          default: true
+        mode:
+          type: string
+          enum:
+            - safe
+            - strict
+          default: safe
+    OpenAIWebSearchToolDefinition:
+      type: object
+      description: OpenAI 托管的网页搜索工具。OpenAI、Azure OpenAI（Responses）和 xAI 会原生运行它。在提供商无法运行它的模型上，网关将其作为 `phaseo:web_search` 运行：`search_context_size`、`filters.allowed_domains`、`max_results` 和 `engine` 会保留，搜索按 `phaseo:web_search` 搜索计费。其他 OpenAI 托管工具（`file_search`、`code_interpreter`、`computer_use_preview`、`mcp`、`image_generation`、`shell`、`local_shell`、`apply_patch`）在提供商无法运行它们的模型上会返回 400 `unsupported_hosted_tool`。
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - web_search
+            - web_search_2025_08_26
+            - web_search_preview
+            - web_search_preview_2025_03_11
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        filters:
+          type: object
+          properties:
+            allowed_domains:
+              type: array
+              items:
+                type: string
+        user_location:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
@@ -10179,6 +10325,7 @@ components:
         - $ref: '#/components/schemas/SubagentToolDefinition'
         - $ref: '#/components/schemas/FusionToolDefinition'
         - $ref: '#/components/schemas/SearchModelsToolDefinition'
+        - $ref: '#/components/schemas/OpenAIWebSearchToolDefinition'
     SubagentToolDefinition:
       type: object
       required:
@@ -10521,6 +10668,11 @@ components:
           oneOf:
             - type: object
             - type: string
+        plugins:
+          type: array
+          description: 此请求使用的网关插件。`web` 为任意模型添加网页搜索，`web-fetch` 添加网页读取；`response-healing` 修复非流式结构化响应中格式错误的 JSON。工作区和预设的默认值会与此列表合并。未知的插件 id 返回 400 `unknown_gateway_plugin`。
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         stream:
           type: boolean
         metadata:
@@ -10758,6 +10910,11 @@ components:
           maximum: 2
         text:
           type: object
+        plugins:
+          type: array
+          description: 此请求使用的网关插件。`web` 为任意模型添加网页搜索，`web-fetch` 添加网页读取；`response-healing` 修复非流式结构化响应中格式错误的 JSON。工作区和预设的默认值会与此列表合并。未知的插件 id 返回 400 `unknown_gateway_plugin`。
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
         tools:
