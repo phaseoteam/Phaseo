@@ -13,14 +13,16 @@ CREATE OR REPLACE FUNCTION public.capture_catalogue_notification_events (
 --   price_changed          a standard, global price of a public route changed, in place or
 --                          through a new SKU version (one event per model, provider and transaction)
 --   deprecation_announced  a model newly marked deprecated or retired
+--   provider_launched      a bulk transaction gave a provider its first public routes
 -- model_released comes from the public announcer (private.record_model_released_notification).
 --
 -- Rows are read in id order, but only up to the sequence position the previous call recorded
 -- and only once every transaction older than that call has finished, so a long transaction
 -- that commits after later ids cannot be skipped. A transaction touching more than
--- p_max_models_per_transaction models is a bulk sync or backfill: it is recorded and skipped.
--- It is sized by all of its unread rows before any of them is read, so a transaction that
--- spans several calls is skipped from its first row.
+-- p_max_models_per_transaction models is a bulk sync or backfill: it is recorded and its rows
+-- are skipped, and it produces at most one provider_launched event per provider it brings to
+-- Phaseo. It is sized by all of its unread rows before any of them is read, so a transaction
+-- that spans several calls is skipped from its first row.
 -- Rows older than two days only move the cursor, so resuming the job sends no stale news.
 declare
   v_source constant text := 'v2_catalogue_row_history';
@@ -32,6 +34,7 @@ declare
   v_last bigint;
   v_ids bigint[] := '{}';
   v_transactions bigint[] := '{}';
+  v_bulk bigint[] := '{}';
   v_fresh boolean := false;
   v_relevant bigint[] := '{}';
   v_scanned integer := 0;
@@ -93,16 +96,111 @@ begin
     where h.event_id = any (v_ids);
 
     if v_fresh and cardinality(v_transactions) > 0 then
-      insert into public.catalogue_notification_skipped_transactions (transaction_id, model_count, row_count, first_history_event_id)
-      select h.transaction_id, count(distinct h.model_slug)::integer, count(*)::integer, min(h.event_id)
-      from public.v2_catalogue_row_history h
-      where h.event_id > v_cursor.last_history_event_id
-        and h.transaction_id = any (v_transactions)
-        and h.operation <> 'BASELINE'
-      group by h.transaction_id
-      having count(distinct h.model_slug) > p_max_models_per_transaction
-      on conflict (transaction_id) do nothing;
-      get diagnostics v_skipped = row_count;
+      with recorded as (
+        insert into public.catalogue_notification_skipped_transactions (transaction_id, model_count, row_count, first_history_event_id)
+        select h.transaction_id, count(distinct h.model_slug)::integer, count(*)::integer, min(h.event_id)
+        from public.v2_catalogue_row_history h
+        where h.event_id > v_cursor.last_history_event_id
+          and h.transaction_id = any (v_transactions)
+          and h.operation <> 'BASELINE'
+        group by h.transaction_id
+        having count(distinct h.model_slug) > p_max_models_per_transaction
+        on conflict (transaction_id) do nothing
+        returning transaction_id
+      )
+      select coalesce(array_agg(r.transaction_id), '{}'), count(*)::integer into v_bulk, v_skipped from recorded r;
+    end if;
+
+    -- A bulk transaction that switches on public routes for a provider with none before is one
+    -- piece of news: the provider launched on Phaseo, with the newest of its models named. A
+    -- provider counts as already public when one of its routes is routed now and the history
+    -- does not show that route switched on in this transaction or later, or when this
+    -- transaction changed a route that was routed before it.
+    if cardinality(v_bulk) > 0 then
+      with launched_models as (
+        select distinct on (h.transaction_id, r.provider_slug, r.model_slug)
+          h.transaction_id,
+          s.first_history_event_id,
+          r.provider_slug,
+          r.model_slug,
+          h.event_id,
+          h.recorded_at,
+          coalesce(nullif(btrim(m.name), ''), m.model_slug) as model_name,
+          m.released_at
+        from public.catalogue_notification_skipped_transactions s
+        join public.v2_catalogue_row_history h on h.event_id >= s.first_history_event_id and h.transaction_id = s.transaction_id
+        join public.v2_model_provider_routes r on r.provider_model_id = h.after_state ->> 'provider_model_id'
+        join public.v2_models m on m.model_slug = r.model_slug
+        where s.transaction_id = any (v_bulk)
+          and h.table_name = 'v2_model_provider_routes'
+          and h.operation in ('INSERT', 'UPDATE')
+          and h.after_state ->> 'routing_enabled' = 'true'
+          and coalesce(h.before_state ->> 'routing_enabled', 'false') <> 'true'
+          and h.recorded_at > now() - interval '2 days'
+          and r.routing_enabled and r.access_scope = 'public' and not r.is_stealth and r.status in ('active', 'degraded')
+          and public.catalog_model_is_public(r.model_slug)
+        order by h.transaction_id, r.provider_slug, r.model_slug, h.event_id
+      ),
+      launched as (
+        select
+          lm.transaction_id,
+          lm.provider_slug,
+          min(lm.first_history_event_id) as first_event_id,
+          count(*)::integer as model_count,
+          (array_agg(lm.model_name order by lm.released_at desc nulls last, lm.model_name))[1:3] as names,
+          (array_agg(lm.model_slug order by lm.released_at desc nulls last, lm.model_name))[1:3] as model_slugs,
+          min(lm.event_id) as event_id,
+          max(lm.recorded_at) as recorded_at
+        from launched_models lm
+        group by lm.transaction_id, lm.provider_slug
+      )
+      insert into public.catalogue_notification_events (
+        kind, dedupe_key, provider_slug, title, body, href, payload, source_history_event_id, occurred_at
+      )
+      select
+        'provider_launched',
+        'provider_launched:' || l.provider_slug || ':' || l.transaction_id,
+        l.provider_slug,
+        left(v.provider_name || ' is now on Phaseo', 300),
+        left(case
+          when l.model_count = 1 then 'Serving ' || l.names[1] || '.'
+          when l.model_count <= 3 then 'Serving ' || array_to_string(l.names[1:l.model_count - 1], ', ') || ' and ' || l.names[l.model_count] || '.'
+          else l.model_count || ' models, including ' || l.names[1] || ', ' || l.names[2] || ' and ' || l.names[3] || '.'
+        end, 1000),
+        '/api-providers/' || l.provider_slug,
+        jsonb_build_object('providerName', v.provider_name, 'modelCount', l.model_count, 'modelIds', to_jsonb(l.model_slugs)),
+        l.event_id,
+        l.recorded_at
+      from launched l
+      left join public.v2_providers p on p.provider_slug = l.provider_slug
+      cross join lateral (select coalesce(nullif(btrim(p.name), ''), l.provider_slug) as provider_name) v
+      where not exists (
+          select 1
+          from public.v2_model_provider_routes o
+          where o.provider_slug = l.provider_slug
+            and o.routing_enabled and o.access_scope = 'public' and not o.is_stealth and o.status in ('active', 'degraded')
+            and not exists (
+              select 1 from public.v2_catalogue_row_history e
+              where e.model_slug = o.model_slug and e.event_id >= l.first_event_id
+                and e.table_name = 'v2_model_provider_routes'
+                and e.after_state ->> 'provider_model_id' = o.provider_model_id
+                and e.after_state ->> 'routing_enabled' = 'true'
+                and coalesce(e.before_state ->> 'routing_enabled', 'false') <> 'true'
+            )
+            and public.catalog_model_is_public(o.model_slug)
+        )
+        and not exists (
+          select 1 from public.v2_catalogue_row_history b
+          where b.event_id >= l.first_event_id and b.transaction_id = l.transaction_id
+            and b.table_name = 'v2_model_provider_routes'
+            and b.before_state ->> 'provider_slug' = l.provider_slug
+            and b.before_state ->> 'routing_enabled' = 'true'
+            and coalesce(b.before_state ->> 'access_scope', 'public') = 'public'
+            and coalesce(b.before_state ->> 'is_stealth', 'false') <> 'true'
+        )
+      on conflict (dedupe_key) do nothing;
+      get diagnostics v_count = row_count;
+      v_emitted := v_emitted + v_count;
     end if;
 
     select coalesce(array_agg(h.event_id), '{}') into v_relevant

@@ -38,6 +38,11 @@ function resolveReasoningConfig(providerId?: string): ReasoningConfig | null {
 	if (providerId === "openai" || providerId === "openai-eu" || providerId === "ovhcloud") {
 		return { mode: "effort", field: "reasoning" };
 	}
+	if (providerId === "io-net") {
+		// io.net documents reasoning: { effort: "none" | "low" | "medium" | "high" }.
+		// https://io.net/docs/guides/intelligence/reasoning-for-chat-completions
+		return { mode: "effort", field: "reasoning" };
+	}
 	if (providerId === "morph") {
 		// Morph's fast-model API documents reasoning: { effort: "low" | "medium" | "high" }.
 		return { mode: "effort", field: "reasoning" };
@@ -49,10 +54,12 @@ function resolveReasoningConfig(providerId?: string): ReasoningConfig | null {
 	// Note: Google is no longer OpenAI-compatible - it uses native implementation
 	// Thinking mode is handled in the Google executor via generationConfig.thinkingBudget
 
-	if (providerId === "deepseek" || providerId === "wafer") {
+	if (providerId === "deepseek" || providerId === "wafer" || providerId === "atlascloud") {
 		// DeepSeek uses thinking: {type: "enabled"} for thinking mode
 		// https://api-docs.deepseek.com/guides/thinking_mode
 		// Wafer's first-party model quick starts document the same shape.
+		// Atlas Cloud's chat API takes a `thinking` object and unifies `thinking.type` with
+		// its other reasoning flags (https://www.atlascloud.ai/docs/llm-protocols).
 		return { mode: "enabled", field: "thinking", format: "type" };
 	}
 
@@ -67,8 +74,11 @@ export function applyReasoningParams(args: {
 }): void {
 	const reasoning = args.ir.reasoning;
 	if (!reasoning) return;
-	if (args.providerId === "wafer") {
-		const effort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+	if (args.providerId === "wafer" || args.providerId === "wafer-zdr") {
+		// Chat Completions accepts none, low, medium, high, xhigh or max; anything else,
+		// minimal included, is a 400 (https://docs.wafer.ai/serverless/models).
+		const requested = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		const effort = requested === "minimal" || requested === "instant" ? "low" : requested;
 		if (effort && effort !== "none") {
 			args.request.reasoning_effort = effort;
 		} else if (reasoning.enabled !== undefined || effort === "none") {
@@ -264,12 +274,16 @@ export function applyReasoningParams(args: {
 			reasoning.effort !== "none" &&
 			args.request.reasoning_effort == null
 		) {
-			args.request.reasoning_effort =
+			const deepseekEffort =
 				reasoning.effort === "minimal"
 					? "low"
 					: reasoning.effort === "low" || reasoning.effort === "max"
 						? reasoning.effort
 					: "high";
+			// DeepSeek's Responses API reads reasoning.effort and silently ignores unknown
+			// fields (https://api-docs.deepseek.com/guides/responses_api/).
+			if ("input" in args.request) args.request.reasoning = { effort: deepseekEffort };
+			else args.request.reasoning_effort = deepseekEffort;
 		}
 		if (args.request[field] == null) {
 			const format = config.format ?? "type";

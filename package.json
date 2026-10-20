@@ -2,7 +2,7 @@
 	"name": "phaseo-monorepo",
 	"private": true,
 	"engines": {
-		"node": "^22.13.0 || >=24.0.0"
+		"node": "^22.19.0 || >=24.0.0"
 	},
 	"packageManager": "pnpm@10.33.0",
 	"workspaces": [
@@ -147,7 +147,7 @@
 		"precommit": "pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway && pnpm run openapi:lint && pnpm run validate:docs && pnpm run validate:web && pnpm run validate:api && pnpm run validate:packages && pnpm run sdk:check-version-literals && (cd apps/web && pnpm run test) && pnpm run test"
 	},
 	"devDependencies": {
-		"@changesets/changelog-github": "^1.0.0",
+		"@changesets/changelog-github": "^1.0.1",
 		"@changesets/cli": "^3.0.2",
 		"@electric-sql/pglite": "0.5.8",
 		"@stoplight/spectral-cli": "^6.16.3",
@@ -204,6 +204,7 @@
 			"socket.io-parser@^4": "^4.2.7",
 			"tar@<=7.5.20": "7.5.21",
 			"front-matter>js-yaml": "3.15.2",
+			"@apidevtools/json-schema-ref-parser>js-yaml": "^5.4.3",
 			"undici@^6": "^6.28.1",
 			"undici@^7": "^7.29.1",
 			"undici@^8": "^8.10.2",

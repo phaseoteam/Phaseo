@@ -86,6 +86,8 @@ import type {
 	IRRerankResponse,
 	IRDecisionsRequest,
 	IRDecisionsResponse,
+	IRExtractionRequest,
+	IRExtractionResponse,
 	IROcrRequest,
 	IROcrResponse,
 	IRParseRequest,
@@ -98,6 +100,7 @@ import type {
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { createUpstreamTimingTracker } from "@executors/_shared/timing/upstream";
 import { getReasoningEffortAllowlist, normalizeIRForProvider } from "./normalize";
+import { clearDroppedParams, recordDroppedParams } from "./unsupportedParams";
 import { normalizeCapability } from "@/executors";
 import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
@@ -475,6 +478,7 @@ export type IRRequestResult = {
 		| IRModerationsResponse
 		| IRRerankResponse
 		| IRDecisionsResponse
+		| IRExtractionResponse
 		| IRImageGenerationResponse
 		| IRAudioSpeechResponse
 		| IRAudioTranscriptionResponse
@@ -520,6 +524,7 @@ export async function doRequestWithIR(
 		| IRModerationsRequest
 		| IRRerankRequest
 		| IRDecisionsRequest
+		| IRExtractionRequest
 		| IRImageGenerationRequest
 		| IRAudioSpeechRequest
 		| IRAudioTranscriptionRequest
@@ -541,6 +546,10 @@ export async function doRequestWithIR(
 
 	// 1.5) Filter providers by requested input/output modalities
 	const normalizedCapability = normalizeCapability(ctx.capability);
+	if (normalizedCapability === "extraction.extract" && (ir as IRExtractionRequest).images?.length) {
+		candidates = candidates.filter(candidate => candidate.inputModalities?.includes("image") && candidate.capabilityParams?.images === true);
+		if (!candidates.length) return Response.json({ error: "unsupported_parameter", message: "No extraction route supports image input.", request_id: ctx.requestId }, { status: 400 });
+	}
 	if (normalizedCapability === "decisions.make" && (ir as IRDecisionsRequest).decisionContext) {
 		const native = (ir as IRDecisionsRequest).decisionContext!;
 		const requestsImageDetail = typeof native.input !== "string" && native.input.some(message =>
@@ -755,6 +764,7 @@ async function attemptProviderWithIR(
 		| IRModerationsRequest
 		| IRRerankRequest
 		| IRDecisionsRequest
+		| IRExtractionRequest
 		| IRImageGenerationRequest
 		| IRAudioSpeechRequest
 		| IRAudioTranscriptionRequest
@@ -958,6 +968,7 @@ async function attemptProviderWithIR(
 			ctx.teamSettings?.ioLoggingEnabled === true &&
 			ctx.teamSettings?.ioLoggingIncludeProviderPayloads === true;
 
+		if (isTextGenerate) clearDroppedParams(ctx);
 		const normalizedIr = await timing.timer.span(`${attemptPrefix}_normalize_ir`, () =>
 			isTextGenerate
 				? normalizeIRForProvider(
@@ -968,6 +979,7 @@ async function attemptProviderWithIR(
 						capabilityParams: candidate.capabilityParams,
 						providerMaxOutputTokens: candidate.maxOutputTokens,
 						modelForReasoning,
+						onDroppedParams: (dropped) => recordDroppedParams(ctx, candidate.providerId, dropped),
 					},
 				)
 				: normalizedCapability === "video.generate"
@@ -1192,7 +1204,7 @@ async function attemptProviderWithIR(
 			? Math.max(0, Date.now() - selectedUpstreamTiming.dispatchAtMs)
 			: generationTimeMs;
 		ctx.meta.provider_duration_ms = selectedProviderDurationMs;
-		if (normalizedCapability === "decisions.make" && executorResult.upstream.ok) {
+		if ((normalizedCapability === "decisions.make" || normalizedCapability === "extraction.extract") && executorResult.upstream.ok) {
 			// Decisions are non-streaming, so generation ends once the selected
 			// provider response has been fully received and parsed.
 			ctx.meta.generation_ms = Math.max(
@@ -1230,7 +1242,7 @@ async function attemptProviderWithIR(
 				normalizedCapability === "image.generate" ||
 				normalizedCapability === "audio.speech";
 			const preservesStructuredProviderTiming =
-				(normalizedCapability === "moderations" || normalizedCapability === "decisions.make") &&
+				(normalizedCapability === "moderations" || normalizedCapability === "decisions.make" || normalizedCapability === "extraction.extract") &&
 				executorResult.upstream.ok;
 			if (!isTextGenerate && !preservesStructuredProviderTiming) {
 				delete (ctx.meta as Record<string, unknown>).latency_ms;

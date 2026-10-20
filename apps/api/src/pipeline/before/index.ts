@@ -1292,6 +1292,7 @@ export async function beforeRequest(
         "moderations",
         "rerank",
         "decisions.make",
+        "extraction.extract",
         "systemone",
         "image.generate",
         "image.edit",

@@ -256,7 +256,9 @@
 			"endpointDocumentParsing": "ドキュメント解析",
 			"tierPrivate": "プライベート",
 			"capabilityTextGeneration": "テキスト生成",
-			"modalityDecisions": "判断"
+			"modalityDecisions": "判断",
+			"modalityClassification": "分類",
+			"modalityExtraction": "抽出"
 		},
 		"freeRouter": {
 			"title": "無料モデルプール",

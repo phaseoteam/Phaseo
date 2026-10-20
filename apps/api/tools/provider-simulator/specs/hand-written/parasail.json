@@ -1,0 +1,40 @@
+{
+	"id": "parasail",
+	"source": {
+		"url": null,
+		"docs": "https://docs.parasail.io/parasail-docs/api-reference/chat-completions",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. tool_choice: auto (default), required, none, or a specific tool. /v1/responses available on serverless. Python example uses max_completion_tokens though the table lists max_tokens."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"temperature": {},
+					"top_p": {},
+					"top_k": {},
+					"max_tokens": {},
+					"repetition_penalty": {},
+					"presence_penalty": {},
+					"frequency_penalty": {},
+					"seed": {},
+					"tools": {},
+					"tool_choice": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

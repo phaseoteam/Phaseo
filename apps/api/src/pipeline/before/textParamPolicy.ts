@@ -310,6 +310,12 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"imageConfig",
 			"stop_sequences",
 			"thinking",
+			// Anthropic's effort and structured-output object; the decoder splits it into the
+			// IR reasoning effort and response format, so it has no single canonical param.
+			"output_config",
+			// Documented Messages field; the decoder maps it to the IR geo. (Anthropic's
+			// `speed` stays rejected: service_tier "fast" is the public fast-mode control.)
+			"inference_geo",
 			// Documented on AnthropicMessagesRequest and decoded like Chat and
 			// Responses; they used to fail as unknown_param.
 			"reasoning",

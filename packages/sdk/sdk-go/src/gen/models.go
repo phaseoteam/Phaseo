@@ -1301,6 +1301,101 @@ type ChatReasoningDetail struct {
 	Type string `json:"type"`
 }
 
+type Classifier struct {
+	CreatedAt string `json:"created_at"`
+	CreatedBy *string `json:"created_by"`
+	Description *string `json:"description"`
+	Dimensions []map[string]interface{} `json:"dimensions"`
+	Enabled bool `json:"enabled"`
+	Id string `json:"id"`
+	InputScope string `json:"input_scope"`
+	Instructions string `json:"instructions"`
+	Model string `json:"model"`
+	MonthlyBudgetUsd *float64 `json:"monthly_budget_usd"`
+	Name string `json:"name"`
+	SampleBy string `json:"sample_by"`
+	SampleRate float64 `json:"sample_rate"`
+	Scope map[string]interface{} `json:"scope"`
+	UpdatedAt string `json:"updated_at"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type ClassifierCreateInput struct {
+	Description *string `json:"description,omitempty"`
+	Dimensions []map[string]interface{} `json:"dimensions"`
+	Enabled *bool `json:"enabled,omitempty"`
+	InputScope *string `json:"input_scope,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Model string `json:"model"`
+	MonthlyBudgetUsd *float64 `json:"monthly_budget_usd,omitempty"`
+	Name string `json:"name"`
+	SampleBy *string `json:"sample_by,omitempty"`
+	SampleRate *float64 `json:"sample_rate,omitempty"`
+	Scope *map[string]interface{} `json:"scope,omitempty"`
+}
+
+type ClassifierDeleteResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type ClassifierDimension struct {
+	AllowOther *bool `json:"allow_other,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Key string `json:"key"`
+	Multiple *bool `json:"multiple,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Values []map[string]interface{} `json:"values"`
+}
+
+type ClassifierInputScope string
+
+const (
+	ClassifierInputScopePrompt ClassifierInputScope = "prompt"
+	ClassifierInputScopePromptAndResponse ClassifierInputScope = "prompt_and_response"
+)
+
+
+type ClassifierListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type ClassifierResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type ClassifierSampleBy string
+
+const (
+	ClassifierSampleByRequest ClassifierSampleBy = "request"
+	ClassifierSampleBySession ClassifierSampleBy = "session"
+)
+
+
+type ClassifierScope struct {
+	AppIds *[]string `json:"app_ids,omitempty"`
+	KeyIds *[]string `json:"key_ids,omitempty"`
+	Models *[]string `json:"models,omitempty"`
+}
+
+type ClassifierUpdateInput struct {
+	Description *string `json:"description,omitempty"`
+	Dimensions *[]map[string]interface{} `json:"dimensions,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+	InputScope *string `json:"input_scope,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Model *string `json:"model,omitempty"`
+	MonthlyBudgetUsd *float64 `json:"monthly_budget_usd,omitempty"`
+	Name *string `json:"name,omitempty"`
+	SampleBy *string `json:"sample_by,omitempty"`
+	SampleRate *float64 `json:"sample_rate,omitempty"`
+	Scope *map[string]interface{} `json:"scope,omitempty"`
+}
+
+type ClassifierValue struct {
+	Description *string `json:"description,omitempty"`
+	Value string `json:"value"`
+}
+
 type CreditsResponse struct {
 	Credits map[string]interface{} `json:"credits"`
 	Ok bool `json:"ok"`
@@ -1783,6 +1878,99 @@ type ErrorUpstreamError struct {
 	Description *string `json:"description,omitempty"`
 	Message *string `json:"message,omitempty"`
 	Param *string `json:"param,omitempty"`
+}
+
+type ExtractionAnswer = interface{}
+
+type ExtractionDateField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionDatetimeField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionDurationField struct {
+	Decimals *int `json:"decimals,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Integer *bool `json:"integer,omitempty"`
+	Type string `json:"type"`
+	Unit *string `json:"unit,omitempty"`
+}
+
+type ExtractionField = interface{}
+
+type ExtractionImage struct {
+	Base64 string `json:"base64"`
+	ContentType string `json:"content_type"`
+}
+
+type ExtractionListAnswer struct {
+	Confidence float64 `json:"confidence"`
+	Type string `json:"type"`
+	Value []interface{} `json:"value"`
+}
+
+type ExtractionListField struct {
+	Decimals *int `json:"decimals,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Items string `json:"items"`
+	Type string `json:"type"`
+}
+
+type ExtractionNumberAnswer struct {
+	Confidence float64 `json:"confidence"`
+	PNull float64 `json:"p_null"`
+	Type string `json:"type"`
+	Value *float64 `json:"value"`
+}
+
+type ExtractionNumberField struct {
+	Decimals *int `json:"decimals,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Integer *bool `json:"integer,omitempty"`
+	Type string `json:"type"`
+	Unit *string `json:"unit,omitempty"`
+}
+
+type ExtractionRequest struct {
+	Fields map[string]interface{} `json:"fields"`
+	Images *[]map[string]interface{} `json:"images,omitempty"`
+	Input string `json:"input"`
+	Model string `json:"model"`
+	ReferenceDate *string `json:"reference_date,omitempty"`
+}
+
+type ExtractionResponse struct {
+	Answers map[string]interface{} `json:"answers"`
+	Model string `json:"model"`
+	Truncated bool `json:"truncated"`
+	Usage map[string]interface{} `json:"usage"`
+}
+
+type ExtractionStringAnswer struct {
+	Confidence float64 `json:"confidence"`
+	PNull float64 `json:"p_null"`
+	Type string `json:"type"`
+	Value *string `json:"value"`
+}
+
+type ExtractionTextField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionTimeField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionUsage struct {
+	InputTokens int `json:"input_tokens"`
+	OutputTokens string `json:"output_tokens"`
+	TotalTokens int `json:"total_tokens"`
 }
 
 type FileContentPart struct {

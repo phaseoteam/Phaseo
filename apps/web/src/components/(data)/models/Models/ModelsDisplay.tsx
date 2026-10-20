@@ -185,6 +185,8 @@ const OUTPUT_MODALITY_DISPLAY_ORDER = [
 	"audio",
 	"embeddings",
 	"decisions",
+	"decision",
+	"extraction",
 	"moderations",
 	"rerank",
 	"documents",
@@ -493,6 +495,8 @@ function toTitleCase(value: string): string {
 		return "Decisions";
 	}
 	if (normalized === "realtime") return "Realtime";
+	if (normalized === "decision") return "Classification";
+	if (normalized === "extraction" || normalized === "extraction.extract") return "Extraction";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
@@ -933,6 +937,8 @@ function ModelsDisplayContent({
 			moderations: "modalityModeration",
 		};
 		const filtersKeys: Record<string, string> = {
+			decision: "modalityClassification",
+			extraction: "modalityExtraction",
 			realtime: "modalityRealtime",
 			file: "modalityFile",
 			rerank: "modalityRerank",
@@ -959,6 +965,7 @@ function ModelsDisplayContent({
 		const keys: Record<string, string> = {
 			"text.generate": "capabilityTextGeneration",
 			"decisions.make": "modalityDecisions",
+			"extraction.extract": "modalityExtraction",
 			responses: "endpointResponses",
 			"chat/completions": "endpointChatCompletions",
 			messages: "endpointMessages",

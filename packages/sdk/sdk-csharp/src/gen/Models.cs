@@ -1580,6 +1580,202 @@ public sealed class ChatReasoningDetail
 
 }
 
+public sealed class Classifier
+{
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("dimensions")]
+	public List<Dictionary<string, object>> Dimensions { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool Enabled { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("input_scope")]
+	public string InputScope { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string Instructions { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("monthly_budget_usd")]
+	public double? MonthlyBudgetUsd { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("sample_by")]
+	public string SampleBy { get; set; }
+
+	[JsonPropertyName("sample_rate")]
+	public double SampleRate { get; set; }
+
+	[JsonPropertyName("scope")]
+	public Dictionary<string, object> Scope { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class ClassifierCreateInput
+{
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("dimensions")]
+	public List<Dictionary<string, object>> Dimensions { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("input_scope")]
+	public string? InputScope { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("monthly_budget_usd")]
+	public double? MonthlyBudgetUsd { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("sample_by")]
+	public string? SampleBy { get; set; }
+
+	[JsonPropertyName("sample_rate")]
+	public double? SampleRate { get; set; }
+
+	[JsonPropertyName("scope")]
+	public Dictionary<string, object>? Scope { get; set; }
+
+}
+
+public sealed class ClassifierDeleteResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class ClassifierDimension
+{
+	[JsonPropertyName("allow_other")]
+	public bool? AllowOther { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("key")]
+	public string Key { get; set; }
+
+	[JsonPropertyName("multiple")]
+	public bool? Multiple { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("values")]
+	public List<Dictionary<string, object>> Values { get; set; }
+
+}
+
+public sealed class ClassifierInputScope { }
+
+public sealed class ClassifierListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class ClassifierResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class ClassifierSampleBy { }
+
+public sealed class ClassifierScope
+{
+	[JsonPropertyName("app_ids")]
+	public List<string>? AppIds { get; set; }
+
+	[JsonPropertyName("key_ids")]
+	public List<string>? KeyIds { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<string>? Models { get; set; }
+
+}
+
+public sealed class ClassifierUpdateInput
+{
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("dimensions")]
+	public List<Dictionary<string, object>>? Dimensions { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("input_scope")]
+	public string? InputScope { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("monthly_budget_usd")]
+	public double? MonthlyBudgetUsd { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("sample_by")]
+	public string? SampleBy { get; set; }
+
+	[JsonPropertyName("sample_rate")]
+	public double? SampleRate { get; set; }
+
+	[JsonPropertyName("scope")]
+	public Dictionary<string, object>? Scope { get; set; }
+
+}
+
+public sealed class ClassifierValue
+{
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("value")]
+	public string Value { get; set; }
+
+}
+
 public sealed class CreditsResponse
 {
 	[JsonPropertyName("credits")]
@@ -2688,6 +2884,207 @@ public sealed class ErrorUpstreamError
 
 	[JsonPropertyName("param")]
 	public string? Param { get; set; }
+
+}
+
+public sealed class ExtractionAnswer { }
+
+public sealed class ExtractionDateField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionDatetimeField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionDurationField
+{
+	[JsonPropertyName("decimals")]
+	public long? Decimals { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("integer")]
+	public bool? Integer { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("unit")]
+	public string? Unit { get; set; }
+
+}
+
+public sealed class ExtractionField { }
+
+public sealed class ExtractionImage
+{
+	[JsonPropertyName("base64")]
+	public string Base64 { get; set; }
+
+	[JsonPropertyName("content_type")]
+	public string ContentType { get; set; }
+
+}
+
+public sealed class ExtractionListAnswer
+{
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("value")]
+	public List<object> Value { get; set; }
+
+}
+
+public sealed class ExtractionListField
+{
+	[JsonPropertyName("decimals")]
+	public long? Decimals { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("items")]
+	public string Items { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionNumberAnswer
+{
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("p_null")]
+	public double PNull { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("value")]
+	public double? Value { get; set; }
+
+}
+
+public sealed class ExtractionNumberField
+{
+	[JsonPropertyName("decimals")]
+	public long? Decimals { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("integer")]
+	public bool? Integer { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("unit")]
+	public string? Unit { get; set; }
+
+}
+
+public sealed class ExtractionRequest
+{
+	[JsonPropertyName("fields")]
+	public Dictionary<string, object> Fields { get; set; }
+
+	[JsonPropertyName("images")]
+	public List<Dictionary<string, object>>? Images { get; set; }
+
+	[JsonPropertyName("input")]
+	public string Input { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("reference_date")]
+	public string? ReferenceDate { get; set; }
+
+}
+
+public sealed class ExtractionResponse
+{
+	[JsonPropertyName("answers")]
+	public Dictionary<string, object> Answers { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("truncated")]
+	public bool Truncated { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object> Usage { get; set; }
+
+}
+
+public sealed class ExtractionStringAnswer
+{
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("p_null")]
+	public double PNull { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("value")]
+	public string? Value { get; set; }
+
+}
+
+public sealed class ExtractionTextField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionTimeField
+{
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ExtractionUsage
+{
+	[JsonPropertyName("input_tokens")]
+	public long InputTokens { get; set; }
+
+	[JsonPropertyName("output_tokens")]
+	public string OutputTokens { get; set; }
+
+	[JsonPropertyName("total_tokens")]
+	public long TotalTokens { get; set; }
 
 }
 

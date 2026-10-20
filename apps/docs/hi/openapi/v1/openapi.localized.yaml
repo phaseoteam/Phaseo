@@ -750,6 +750,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -800,6 +802,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -921,6 +925,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -1012,6 +1018,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DecisionCreateResponse'
+  /extractions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createExtraction
+      summary: टाइप किए गए मान निकालें
+      description: टेक्स्ट या एम्बेड की गई इमेज से टेक्स्ट, संख्याएँ, तारीखें, समय, अवधियाँ और टाइप की गई सूचियाँ निकालता है। टाइप किए गए मान और मॉडल द्वारा बताई गई अनिश्चितता लौटाता है। अनुमान, पूर्वानुमान, स्ट्रीमिंग और रिमोट इमेज URL समर्थित नहीं हैं।
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractionRequest'
+      responses:
+        '200':
+          description: टाइप किए गए निष्कर्षण उत्तर
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResponse'
   /audio/speech:
     post:
       x-beta: true
@@ -4721,6 +4748,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RateLimitDeleteResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listClassifiers
+      summary: List classifiers
+      description: Lists the workspace's request classifiers. A workspace can have up to five. Owners and admins only.
+      responses:
+        '200':
+          description: Classifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierListResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createClassifier
+      summary: Create a classifier
+      description: Creates a classifier. After each eligible request finishes, the chosen model places it in every dimension and the answers are added to the request as labels, so they can be filtered and grouped in logs, usage and analytics. Classification runs after the response is sent and is billed to the workspace at the model's normal price.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierCreateInput'
+      responses:
+        '201':
+          description: Classifier बनाया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Classifier id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getClassifier
+      summary: Get a classifier
+      description: Returns one classifier. Owners and admins only.
+      responses:
+        '200':
+          description: Classifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateClassifier
+      summary: Update a classifier
+      description: Updates the fields you send. Changes reach the gateway within about a minute. Labels already written to past requests are not changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierUpdateInput'
+      responses:
+        '200':
+          description: Classifier अपडेट किया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteClassifier
+      summary: Delete a classifier
+      description: Deletes a classifier. Labels it already wrote stay on past requests.
+      responses:
+        '200':
+          description: Classifier deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierDeleteResponse'
         default:
           description: अनुरोध विफल हुआ
           content:
@@ -8568,6 +8717,10 @@ components:
       description: अनुरोधित मॉडल को क्यों और कैसे बदला गया, उदाहरण के लिए `reason=unserved; from=lab/old-model; to=lab/new-model`। यह केवल तब भेजा जाता है जब सेवानिवृत्त मॉडल रूटिंग ने अनुरोध का उत्तर किसी प्रतिस्थापन मॉडल से दिया हो।
       schema:
         type: string
+    DroppedParams:
+      description: क्लाइंट के भेजे वे पैरामीटर जिनका सर्व करने वाला प्रदाता समर्थन नहीं करता और जिन्हें गेटवे ने प्रदाता को भेजने या अनुरोध अस्वीकार करने के बजाय हटा दिया, उदाहरण के लिए `top_k, min_p`। यह केवल सफल रिस्पॉन्स में भेजा जाता है, और तभी जब अनुरोध बॉडी का कम से कम एक पैरामीटर हटाया गया हो। किसी प्रीसेट या डिफ़ॉल्ट मान से आने वाले पैरामीटर सूची में नहीं होते।
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: केवल BYOK के लिए प्रदाता कोटा मेटाडेटा। प्रबंधित-प्रदाता अनुरोधों में शामिल नहीं होता।
       schema:
@@ -11215,6 +11368,310 @@ components:
         - type: string
         - type: object
           additionalProperties: true
+    ExtractionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - model
+        - input
+        - fields
+      properties:
+        model:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: extraction.extract क्षमता वाला मॉडल ID।
+        input:
+          type: string
+          maxLength: 16384
+          description: स्रोत टेक्स्ट। इमेज दिए जाने पर खाली हो सकता है।
+        fields:
+          type: object
+          minProperties: 1
+          maxProperties: 64
+          description: फ़ील्ड नाम ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$ से मेल खाते हैं।
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionField'
+        images:
+          type: array
+          maxItems: 4
+          description: एम्बेड की गई PNG, JPEG या WebP इमेज; डिकोड करने के बाद प्रति इमेज 4 MiB और कुल 8 MiB।
+          items:
+            $ref: '#/components/schemas/ExtractionImage'
+        reference_date:
+          type: string
+          format: date
+          description: अधूरी तारीखों के लिए स्पष्ट तारीख संदर्भ।
+    ExtractionImage:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - image/png
+            - image/jpeg
+            - image/webp
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Base64 में एन्कोड किए गए इमेज बाइट, डेटा URL प्रीफ़िक्स के बिना।
+    ExtractionField:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionTextField'
+        - $ref: '#/components/schemas/ExtractionNumberField'
+        - $ref: '#/components/schemas/ExtractionDateField'
+        - $ref: '#/components/schemas/ExtractionTimeField'
+        - $ref: '#/components/schemas/ExtractionDatetimeField'
+        - $ref: '#/components/schemas/ExtractionDurationField'
+        - $ref: '#/components/schemas/ExtractionListField'
+    ExtractionTextField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionNumberField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          maxLength: 64
+    ExtractionDateField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionTimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - time
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDatetimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - datetime
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDurationField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - duration
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          enum:
+            - seconds
+            - minutes
+            - hours
+            - days
+            - weeks
+            - months
+            - years
+    ExtractionListField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - items
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        instructions:
+          type: string
+          maxLength: 2048
+        items:
+          type: string
+          enum:
+            - text
+            - number
+            - date
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+    ExtractionResponse:
+      type: object
+      required:
+        - model
+        - answers
+        - truncated
+        - usage
+      properties:
+        model:
+          type: string
+        answers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionAnswer'
+        truncated:
+          type: boolean
+          description: बताता है कि प्रदाता ने स्रोत टेक्स्ट काटा है या नहीं।
+        usage:
+          $ref: '#/components/schemas/ExtractionUsage'
+    ExtractionAnswer:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionStringAnswer'
+        - $ref: '#/components/schemas/ExtractionNumberAnswer'
+        - $ref: '#/components/schemas/ExtractionListAnswer'
+    ExtractionStringAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+            - date
+            - time
+            - datetime
+        value:
+          type: string
+          description: निकाला गया टेक्स्ट या ISO तारीख/समय; मान अनिर्धारित होने पर null।
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: मॉडल द्वारा बताया गया विश्वास; शुद्धता की गारंटी नहीं।
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: मान अनिर्धारित होने की संभावना।
+    ExtractionNumberAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+            - duration
+        value:
+          type: number
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionListAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        value:
+          type: array
+          maxItems: 4096
+          items:
+            oneOf:
+              - type: string
+              - type: number
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionUsage:
+      type: object
+      required:
+        - input_tokens
+        - output_tokens
+        - total_tokens
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+          description: सभी पास के कुल इनपुट टोकन, जैसा प्रदाता ने बताया है।
+        output_tokens:
+          type: integer
+          enum:
+            - 0
+        total_tokens:
+          type: integer
+          minimum: 0
     DecisionCreateRequest:
       description: OpenAI प्रारूप पसंदीदा है। पुराना प्रारूप समर्थित है। उत्तर अनुरोध जैसा होता है; प्रारूप न मिलाएँ।
       oneOf:
@@ -19649,6 +20106,300 @@ components:
             $ref: '#/components/schemas/WorkspaceBudget'
       additionalProperties: false
     WorkspaceBudgetDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    ClassifierValue:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        description:
+          type: string
+          maxLength: 300
+          nullable: true
+          description: Tells the model when to pick this value.
+      additionalProperties: false
+    ClassifierDimension:
+      type: object
+      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      required:
+        - key
+        - values
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        multiple:
+          type: boolean
+          default: false
+          description: Allow more than one value per request.
+        allow_other:
+          type: boolean
+          default: false
+          description: Let the model answer "other" when no listed value fits.
+        values:
+          type: array
+          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ClassifierValue'
+      additionalProperties: false
+    ClassifierScope:
+      type: object
+      description: Limits which requests are classified. Leave a list out to include everything.
+      properties:
+        key_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        app_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        models:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+      additionalProperties: false
+    ClassifierSampleBy:
+      type: string
+      description: request samples each request on its own. session keeps every request in a session in or out together.
+      enum:
+        - request
+        - session
+    ClassifierInputScope:
+      type: string
+      description: prompt classifies the request messages. prompt_and_response also shows the model the generated response.
+      enum:
+        - prompt
+        - prompt_and_response
+    Classifier:
+      type: object
+      description: A workspace taxonomy that a chosen model applies to requests after they finish.
+      required:
+        - id
+        - workspace_id
+        - name
+        - description
+        - enabled
+        - model
+        - instructions
+        - dimensions
+        - sample_rate
+        - sample_by
+        - input_scope
+        - scope
+        - monthly_budget_usd
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          description: Model that classifies requests, for example google/gemini-2.5-flash-lite.
+        instructions:
+          type: string
+          maxLength: 8000
+          description: Extra guidance for the model, added to the classification prompt.
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          description: Share of eligible requests to classify. 1 classifies every request.
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          nullable: true
+          description: Most the classifier may spend in a UTC calendar month. Classification pauses for the rest of the month once it is reached. null means no cap.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    ClassifierCreateInput:
+      type: object
+      required:
+        - name
+        - model
+        - dimensions
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+          default: true
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          default: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
+          nullable: true
+      additionalProperties: false
+    ClassifierUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
+          nullable: true
+      additionalProperties: false
+    ClassifierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierDeleteResponse:
       type: object
       required:
         - data

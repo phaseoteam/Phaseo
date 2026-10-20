@@ -386,7 +386,8 @@
                 "group": "Decisions",
                 "icon": "signpost",
                 "pages": [
-                  "v1/api-reference/endpoint/decisions"
+                  "v1/api-reference/endpoint/decisions",
+                  "v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -2040,7 +2041,8 @@
                 "group": "Decisiones",
                 "icon": "signpost",
                 "pages": [
-                  "es/v1/api-reference/endpoint/decisions"
+                  "es/v1/api-reference/endpoint/decisions",
+                  "es/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -3728,7 +3730,8 @@
                 "group": "Décisions",
                 "icon": "signpost",
                 "pages": [
-                  "fr/v1/api-reference/endpoint/decisions"
+                  "fr/v1/api-reference/endpoint/decisions",
+                  "fr/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -5416,7 +5419,8 @@
                 "group": "Entscheidungen",
                 "icon": "signpost",
                 "pages": [
-                  "de/v1/api-reference/endpoint/decisions"
+                  "de/v1/api-reference/endpoint/decisions",
+                  "de/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -7104,7 +7108,8 @@
                 "group": "Decisões",
                 "icon": "signpost",
                 "pages": [
-                  "pt-BR/v1/api-reference/endpoint/decisions"
+                  "pt-BR/v1/api-reference/endpoint/decisions",
+                  "pt-BR/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -8792,7 +8797,8 @@
                 "group": "判断",
                 "icon": "signpost",
                 "pages": [
-                  "ja/v1/api-reference/endpoint/decisions"
+                  "ja/v1/api-reference/endpoint/decisions",
+                  "ja/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -10480,7 +10486,8 @@
                 "group": "决策",
                 "icon": "signpost",
                 "pages": [
-                  "zh-Hans/v1/api-reference/endpoint/decisions"
+                  "zh-Hans/v1/api-reference/endpoint/decisions",
+                  "zh-Hans/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -12168,7 +12175,8 @@
                 "group": "निर्णय",
                 "icon": "signpost",
                 "pages": [
-                  "hi/v1/api-reference/endpoint/decisions"
+                  "hi/v1/api-reference/endpoint/decisions",
+                  "hi/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -13856,7 +13864,8 @@
                 "group": "القرارات",
                 "icon": "signpost",
                 "pages": [
-                  "ar/v1/api-reference/endpoint/decisions"
+                  "ar/v1/api-reference/endpoint/decisions",
+                  "ar/v1/api-reference/endpoint/extractions"
                 ]
               },
               {

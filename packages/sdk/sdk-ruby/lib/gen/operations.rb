@@ -103,6 +103,12 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createClassifier(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/classifiers"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createDataContributionClassifier(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/data-contribution/classifiers"
@@ -118,6 +124,12 @@ module Phaseo
       def self.createEmbedding(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/embeddings"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.createExtraction(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/extractions"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -341,6 +353,13 @@ module Phaseo
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.deleteClassifier(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/classifiers/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.deleteDataContributionClassifier(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
@@ -546,6 +565,13 @@ module Phaseo
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/keys/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getClassifier(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/classifiers/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -847,6 +873,12 @@ module Phaseo
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/batch/#{URI.encode_uri_component(path["id"].to_s)}/requests"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listClassifiers(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/classifiers"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -1321,6 +1353,13 @@ module Phaseo
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/keys/#{URI.encode_uri_component(path["id"].to_s)}"
+        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.updateClassifier(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/classifiers/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 

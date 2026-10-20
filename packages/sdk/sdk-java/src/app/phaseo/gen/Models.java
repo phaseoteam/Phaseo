@@ -628,6 +628,91 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class Classifier {
+		public String created_at;
+		public String created_by;
+		public String description;
+		public java.util.List<Object> dimensions;
+		public Boolean enabled;
+		public String id;
+		public Object input_scope;
+		public String instructions;
+		public String model;
+		public Double monthly_budget_usd;
+		public String name;
+		public Object sample_by;
+		public Double sample_rate;
+		public Object scope;
+		public String updated_at;
+		public String workspace_id;
+	}
+
+	public static class ClassifierCreateInput {
+		public String description;
+		public java.util.List<Object> dimensions;
+		public Boolean enabled;
+		public Object input_scope;
+		public String instructions;
+		public String model;
+		public Double monthly_budget_usd;
+		public String name;
+		public Object sample_by;
+		public Double sample_rate;
+		public Object scope;
+	}
+
+	public static class ClassifierDeleteResponse {
+		public Object data;
+	}
+
+	public static class ClassifierDimension {
+		public Boolean allow_other;
+		public String description;
+		public String key;
+		public Boolean multiple;
+		public String name;
+		public java.util.List<Object> values;
+	}
+
+	public static class ClassifierInputScope {
+	}
+
+	public static class ClassifierListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class ClassifierResponse {
+		public Object data;
+	}
+
+	public static class ClassifierSampleBy {
+	}
+
+	public static class ClassifierScope {
+		public java.util.List<String> app_ids;
+		public java.util.List<String> key_ids;
+		public java.util.List<String> models;
+	}
+
+	public static class ClassifierUpdateInput {
+		public String description;
+		public java.util.List<Object> dimensions;
+		public Boolean enabled;
+		public Object input_scope;
+		public String instructions;
+		public String model;
+		public Double monthly_budget_usd;
+		public String name;
+		public Object sample_by;
+		public Double sample_rate;
+		public Object scope;
+	}
+
+	public static class ClassifierValue {
+		public String description;
+		public String value;
+	}
+
 	public static class CreditsResponse {
 		public Object credits;
 		public Object ok;
@@ -1114,6 +1199,101 @@ public final class Models {
 		public String description;
 		public String message;
 		public String param;
+	}
+
+	public static class ExtractionAnswer {
+	}
+
+	public static class ExtractionDateField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionDatetimeField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionDurationField {
+		public Integer decimals;
+		public String instructions;
+		public Boolean integer;
+		public Object type;
+		public Object unit;
+	}
+
+	public static class ExtractionField {
+	}
+
+	public static class ExtractionImage {
+		public String base64;
+		public Object content_type;
+	}
+
+	public static class ExtractionListAnswer {
+		public Double confidence;
+		public Object type;
+		public java.util.List<Object> value;
+	}
+
+	public static class ExtractionListField {
+		public Integer decimals;
+		public String instructions;
+		public Object items;
+		public Object type;
+	}
+
+	public static class ExtractionNumberAnswer {
+		public Double confidence;
+		public Double p_null;
+		public Object type;
+		public Double value;
+	}
+
+	public static class ExtractionNumberField {
+		public Integer decimals;
+		public String instructions;
+		public Boolean integer;
+		public Object type;
+		public String unit;
+	}
+
+	public static class ExtractionRequest {
+		public Object fields;
+		public java.util.List<Object> images;
+		public String input;
+		public String model;
+		public String reference_date;
+	}
+
+	public static class ExtractionResponse {
+		public Object answers;
+		public String model;
+		public Boolean truncated;
+		public Object usage;
+	}
+
+	public static class ExtractionStringAnswer {
+		public Double confidence;
+		public Double p_null;
+		public Object type;
+		public String value;
+	}
+
+	public static class ExtractionTextField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionTimeField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionUsage {
+		public Integer input_tokens;
+		public Object output_tokens;
+		public Integer total_tokens;
 	}
 
 	public static class FileContentPart {

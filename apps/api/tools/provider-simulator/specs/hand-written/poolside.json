@@ -1,0 +1,32 @@
+{
+	"id": "poolside",
+	"source": {
+		"url": null,
+		"docs": "https://docs.poolside.ai/api/overview",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary. Responses include reasoning_content; docs ask clients to send prior reasoning_content back. A third-party profile mentions an OpenAPI at https://api.poolsi.de/openai/openapi.json for self-hosted deployments (not checked)."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"tools": {},
+					"chat_template_kwargs": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

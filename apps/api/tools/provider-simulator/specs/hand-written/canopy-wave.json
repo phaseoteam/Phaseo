@@ -1,0 +1,32 @@
+{
+	"id": "canopy-wave",
+	"source": {
+		"url": null,
+		"docs": "https://canopywave.com/docs/get-started/openai-compatible",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary; structured outputs and tool calling shown in examples."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"tools": {},
+					"tool_choice": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

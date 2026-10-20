@@ -208,11 +208,21 @@ export const minimaxQuirks: ProviderQuirks = {
 		const minimaxOptions = (ir.vendor as any)?.minimax;
 
 		if (isChatRequest && isM3 && ir.reasoning) {
+			const modelName = String(request.model ?? ir.model ?? "").toLowerCase();
+			const isM31Flash = modelName.includes("minimax-m3.1-flash");
 			const disabled = ir.reasoning.enabled === false || ir.reasoning.effort === "none";
 			const enabled = ir.reasoning.enabled === true || (
 				typeof ir.reasoning.effort === "string" && ir.reasoning.effort !== "none"
 			);
-			if (disabled || enabled) {
+			// MiniMax-M3.1-Flash always thinks: thinking "disabled" (or effort none) returns 400,
+			// and reasoning_effort (low, medium, high, xhigh, max) sets its depth instead.
+			// https://platform.minimax.io/docs/api-reference/text-openai-api
+			if (isM31Flash) {
+				const effort = ir.reasoning.effort === "minimal" ? "low" : ir.reasoning.effort;
+				if (typeof effort === "string" && ["low", "medium", "high", "xhigh", "max"].includes(effort)) {
+					request.reasoning_effort = effort;
+				}
+			} else if (disabled || enabled) {
 				request.thinking = { type: disabled ? "disabled" : "adaptive" };
 			}
 		}

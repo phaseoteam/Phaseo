@@ -2,6 +2,7 @@
 export const capabilityToEndpoints: Record<string, string[]> = {
     "text.generate": ["/chat/completions", "/responses", "/messages"],
     "decisions.make": ["/decisions"],
+    "extraction.extract": ["/extractions"],
     // Compatibility aliases for the legacy capability names. The public route is /decisions.
     "systemone": ["/decisions"],
     "system.one": ["/decisions"],

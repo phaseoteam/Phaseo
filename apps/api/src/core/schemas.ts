@@ -1088,13 +1088,17 @@ export const AnthropicMessagesSchema = lazySchema(() => z.object({
 	thinking: z.discriminatedUnion("type", [
 		z.object({ type: z.literal("enabled"), budget_tokens: z.number().int().min(1024) }).passthrough(),
 		z.object({ type: z.literal("disabled") }).passthrough(),
+		// Claude Sonnet 5.5's lowest setting; it rejects `disabled`.
+		z.object({ type: z.literal("between_tools") }).passthrough(),
 		z.object({
 			type: z.literal("adaptive"),
 			display: z.enum(["summarized", "omitted"]).optional(),
 		}).passthrough(),
 	]).optional(),
+	// https://platform.claude.com/docs/en/api/messages/create
+	inference_geo: z.string().nullable().optional(),
 	output_config: z.object({
-		effort: z.enum(["low", "medium", "high", "max"]).optional(),
+		effort: z.enum(["low", "medium", "high", "xhigh", "max"]).optional(),
 		format: z.object({
 			type: z.literal("json_schema"),
 			schema: z.record(z.string(), z.any()),

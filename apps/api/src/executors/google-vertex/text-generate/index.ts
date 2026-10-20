@@ -395,6 +395,9 @@ export function resolveVertexApiBase(bindings: Record<string, any>, providerId?:
 	const project = String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
 	const configuredLocation = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
 	const requiredLocation = providerId === "google-vertex-eu" && family === "anthropic" ? "eu"
+		// Served only on global and the us/eu multi-regions, no single region
+		// (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-1-flash-lite).
+		: providerId === "google-vertex-eu" && family === "gemini" && /^(?:google\/)?gemini-3\.1-flash-lite$/.test(model ?? "") ? "eu"
 		: providerId === "google-vertex" && family === "anthropic" ? "global"
 		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-3\.1-flash-lite)$/.test(model ?? "") ? "global"
 		: providerId === "google-vertex" && family === "openapi_chat" && model?.endsWith("-maas")
@@ -499,6 +502,8 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	if (ir.topP !== undefined) generationConfig.topP = ir.topP;
 	if (ir.topK !== undefined) generationConfig.topK = ir.topK;
 	if (ir.stop) generationConfig.stopSequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
+	// GenerationConfig.seed (https://docs.cloud.google.com/vertex-ai/generative-ai/docs/reference/rest/v1/GenerationConfig).
+	if (ir.seed !== undefined) generationConfig.seed = ir.seed;
 
 	if (
 		ir.reasoning?.enabled ||
@@ -675,11 +680,18 @@ function mapGeminiFinishReason(reason: string | undefined): IRChoice["finishReas
 			return "stop";
 		case "MAX_TOKENS":
 			return "length";
+		// Filter outcomes documented for the Gemini API and Vertex; each can end a candidate with no content.
 		case "SAFETY":
 		case "RECITATION":
 		case "PROHIBITED_CONTENT":
 		case "SPII":
 		case "BLOCKLIST":
+		case "LANGUAGE":
+		case "MODEL_ARMOR":
+		case "ESCALATION":
+		case "IMAGE_SAFETY":
+		case "IMAGE_PROHIBITED_CONTENT":
+		case "IMAGE_RECITATION":
 			return "content_filter";
 		case "MALFORMED_FUNCTION_CALL":
 			return "error";

@@ -73,6 +73,7 @@ type PricingCondition = {
 const PRICING_OPERATION_OPTIONS = [
 	"text.generate", "text.embed", "text.rerank", "text.moderate",
 	"decisions.make",
+	"extraction.extract",
 	"image.generate", "image.edit", "audio.generate", "audio.speech",
 	"audio.transcribe", "audio.transcription", "audio.translations", "audio.realtime",
 	"music.generate", "video.generate", "video.edit", "voice.design", "ocr",

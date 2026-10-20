@@ -23,6 +23,7 @@ import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import { getBaseModel } from "../execute/utils";
+import { cachedDroppedParams, droppedParamsForClient } from "../execute/unsupportedParams";
 import { dispatchBackground, ensureRuntimeForBackground, getResponseCache } from "@/runtime/env";
 import { resolveNonStreamLatencyMs } from "./timing";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
@@ -199,6 +200,8 @@ function dispatchNonStreamSuccessSideEffects(args: {
                         routingMode: ctx.routingMode ?? null,
                         presetId: ctx.preset?.id ?? null,
                         presetSlug: ctx.preset?.slug ?? null,
+                        // Cache hits report the same X-Phaseo-Dropped-Params as this response.
+                        droppedParams: cachedDroppedParams(ctx),
                         ttlSeconds: cacheState.ttlSeconds,
                     });
                     await responseCache.set(
@@ -297,6 +300,8 @@ export function attachGatewaySuccessMeta(args: {
                     provider: entry.providerId,
                     unsupported_params: entry.unsupportedParams,
                 })) ?? [],
+            // Parameters the serving provider does not support, removed before the call.
+            dropped_params: droppedParamsForClient(ctx).map(({ param, reason }) => ({ param, reason })),
         },
         ...(ctx.responseCache ? { response_cache: ctx.responseCache } : {}),
         ...(ctx.guardrailEnforcement

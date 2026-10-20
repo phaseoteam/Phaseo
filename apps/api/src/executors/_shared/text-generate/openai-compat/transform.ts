@@ -12,6 +12,7 @@ import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
 import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
+import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
 import {
 	canReplayReasoning,
 	openReasoningState,
@@ -406,7 +407,10 @@ export function irToOpenAIResponses(
 	if (ir.topLogprobs) request.top_logprobs = ir.topLogprobs;
 	if (ir.maxToolCalls !== undefined) request.max_tool_calls = ir.maxToolCalls;
 	if (ir.background !== undefined) request.background = ir.background;
-	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
+	if (ir.serviceTier !== undefined) {
+		// The provider's own name for the tier (OpenAI, Azure and DeepInfra call standard "default").
+		request.service_tier = normalizeTextProviderServiceTier(actualProviderId ?? providerId ?? "", ir.serviceTier) ?? ir.serviceTier;
+	}
 	if (ir.store !== undefined) request.store = ir.store;
 	if (ir.streamOptions !== undefined) request.stream_options = ir.streamOptions;
 	if (ir.truncation !== undefined) request.truncation = ir.truncation;

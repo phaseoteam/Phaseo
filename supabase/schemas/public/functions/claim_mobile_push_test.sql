@@ -7,18 +7,19 @@ CREATE OR REPLACE FUNCTION public.claim_mobile_push_test (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
--- Allows three test pushes per user in any ten minutes. Returns the device's token to send
--- to, or {"error": "device_not_registered" | "rate_limited", "retryAfterSeconds"}.
+-- Allows three test pushes per user in any ten minutes. Returns the device's token and channel
+-- scheme, or {"error": "device_not_registered" | "rate_limited", "retryAfterSeconds"}.
 declare
   v_recent timestamp with time zone[];
   v_device_id uuid;
   v_token text;
+  v_channel_scheme smallint;
 begin
   if p_user_id is null or p_installation_id is null then
     return jsonb_build_object('error', 'device_not_registered');
   end if;
 
-  select d.id, d.expo_push_token into v_device_id, v_token
+  select d.id, d.expo_push_token, d.channel_scheme into v_device_id, v_token, v_channel_scheme
   from public.mobile_push_devices d
   where d.user_id = p_user_id and d.installation_id = p_installation_id and d.status = 'active';
   if v_device_id is null then
@@ -44,7 +45,7 @@ begin
   set test_push_sent_at = v_recent || now(), updated_at = now()
   where user_id = p_user_id;
 
-  return jsonb_build_object('deviceId', v_device_id, 'expoPushToken', v_token);
+  return jsonb_build_object('deviceId', v_device_id, 'expoPushToken', v_token, 'channelScheme', v_channel_scheme);
 end;
 $function$;
 

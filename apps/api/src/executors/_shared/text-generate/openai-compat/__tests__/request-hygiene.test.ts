@@ -217,3 +217,84 @@ describe("fields the client did not send", () => {
 		expect(providerAcceptsStreamOptions("deepinfra")).toBe(true);
 	});
 });
+
+// OpenAI, Azure and DeepInfra name the standard tier "default"; "standard" is not in their
+// service_tier enums (https://platform.openai.com/docs/api-reference/chat/create,
+// https://docs.deepinfra.com/api-reference/chat-completions/openai-chat-completions).
+describe("provider service tier names", () => {
+	it.each(["openai", "openai-eu", "azure", "deepinfra", "nebius-token-factory", "fireworks", "reflection"])("sends %s service_tier default for standard", (providerId) => {
+		expect(irToOpenAIChat(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("default");
+		expect(irToOpenAIResponses(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("default");
+	});
+
+	// Mistral's RequestedServiceTier is auto or standard_only (https://docs.mistral.ai/openapi.yaml).
+	it.each(["mistral", "mistral-eu"])("sends %s service_tier standard_only for standard", (providerId) => {
+		expect(irToOpenAIChat(baseIR({ serviceTier: "standard" }), "m", providerId).service_tier).toBe("standard_only");
+	});
+
+	it("leaves tiers without an alias unchanged", () => {
+		expect(irToOpenAIChat(baseIR({ serviceTier: "priority" }), "m", "deepinfra").service_tier).toBe("priority");
+	});
+});
+
+// Atlas Cloud takes a `thinking` object and unifies thinking.type with its other
+// reasoning flags (https://www.atlascloud.ai/docs/llm-protocols).
+describe("Atlas Cloud reasoning", () => {
+	it.each([[{ enabled: false }, "disabled"], [{ effort: "high" }, "enabled"], [{ effort: "none" }, "disabled"]] as const)(
+		"sends reasoning %j as thinking.type %s",
+		(reasoning, type) => {
+			expect(irToOpenAIChat(baseIR({ reasoning: reasoning as any }), "deepseek-ai/deepseek-v4.1-flash-1017", "atlascloud").thinking).toEqual({ type });
+		},
+	);
+});
+
+// io.net takes reasoning: { effort }, with "none" turning reasoning off
+// (https://io.net/docs/guides/intelligence/reasoning-for-chat-completions).
+describe("io.net reasoning", () => {
+	it.each([[{ effort: "high" }, "high"], [{ enabled: false }, "none"]] as const)("sends reasoning %j as reasoning.effort %s", (reasoning, effort) => {
+		expect(irToOpenAIChat(baseIR({ reasoning: reasoning as any }), "deepseek-ai/DeepSeek-V4.1-Flash", "io-net").reasoning).toEqual({ effort });
+	});
+});
+
+// Upstage: "A streaming response carries no usage statistics by default, so token counts are
+// unavailable unless this is set" (stream_options.include_usage, https://console.upstage.ai/api/chat).
+describe("Upstage stream usage", () => {
+	it("accepts stream_options so streamed usage can be billed", () => {
+		expect(providerAcceptsStreamOptions("upstage")).toBe(true);
+	});
+});
+
+// Wafer Chat Completions: minimal returns 400; none, low, medium, high, xhigh, max are accepted
+// (https://docs.wafer.ai/serverless/models). wafer-zdr is the same API with a ZDR header.
+describe("Wafer reasoning effort", () => {
+	it.each(["wafer", "wafer-zdr"])("sends %s minimal as low", (providerId) => {
+		expect(irToOpenAIChat(baseIR({ reasoning: { effort: "minimal" } as any }), "zai-org/GLM-5.3", providerId).reasoning_effort).toBe("low");
+	});
+});
+
+// DeepSeek's Responses API reads reasoning.effort; reasoning_effort is ignored there
+// (https://api-docs.deepseek.com/guides/responses_api/).
+describe("DeepSeek Responses reasoning", () => {
+	it("sends effort as reasoning.effort on Responses and reasoning_effort on Chat", () => {
+		const ir = baseIR({ reasoning: { effort: "high" } as any });
+		const responses = irToOpenAIResponses(ir, "deepseek-v4-pro", "deepseek");
+		expect(responses.reasoning).toEqual({ effort: "high" });
+		expect(responses).not.toHaveProperty("reasoning_effort");
+		expect(irToOpenAIChat(ir, "deepseek-v4-pro", "deepseek").reasoning_effort).toBe("high");
+	});
+});
+
+// Providers that document reasoning_content on earlier assistant messages get it back in tool
+// loops (Baseten Beam returns 400 without it: https://docs.baseten.co/inference/model-apis/reasoning).
+describe("assistant reasoning_content pass-back", () => {
+	it.each(["baseten", "arcee-ai", "together", "deepinfra", "wafer-zdr"])("sends %s the earlier turn's reasoning", (providerId) => {
+		const request = irToOpenAIChat(baseIR({
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "hi" }] },
+				{ role: "assistant", content: [{ type: "reasoning_text", text: "thinking" }, { type: "text", text: "ok" }] },
+				{ role: "user", content: [{ type: "text", text: "next" }] },
+			] as any,
+		}), "m", providerId);
+		expect(request.messages[1].reasoning_content).toBe("thinking");
+	});
+});

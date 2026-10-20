@@ -1131,6 +1131,150 @@ class ChatReasoningDetail
 	public $type;
 }
 
+class Classifier
+{
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string|null */
+	public $description;
+	/** @var array */
+	public $dimensions;
+	/** @var bool */
+	public $enabled;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $input_scope;
+	/** @var string */
+	public $instructions;
+	/** @var string */
+	public $model;
+	/** @var float|null */
+	public $monthly_budget_usd;
+	/** @var string */
+	public $name;
+	/** @var string */
+	public $sample_by;
+	/** @var float */
+	public $sample_rate;
+	/** @var array<string, mixed> */
+	public $scope;
+	/** @var string */
+	public $updated_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class ClassifierCreateInput
+{
+	/** @var string|null */
+	public $description;
+	/** @var array */
+	public $dimensions;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $input_scope;
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $model;
+	/** @var float|null */
+	public $monthly_budget_usd;
+	/** @var string */
+	public $name;
+	/** @var string|null */
+	public $sample_by;
+	/** @var float|null */
+	public $sample_rate;
+	/** @var array<string, mixed>|null */
+	public $scope;
+}
+
+class ClassifierDeleteResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class ClassifierDimension
+{
+	/** @var bool|null */
+	public $allow_other;
+	/** @var string|null */
+	public $description;
+	/** @var string */
+	public $key;
+	/** @var bool|null */
+	public $multiple;
+	/** @var string|null */
+	public $name;
+	/** @var array */
+	public $values;
+}
+
+class ClassifierInputScope { }
+
+class ClassifierListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class ClassifierResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class ClassifierSampleBy { }
+
+class ClassifierScope
+{
+	/** @var array|null */
+	public $app_ids;
+	/** @var array|null */
+	public $key_ids;
+	/** @var array|null */
+	public $models;
+}
+
+class ClassifierUpdateInput
+{
+	/** @var string|null */
+	public $description;
+	/** @var array|null */
+	public $dimensions;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $input_scope;
+	/** @var string|null */
+	public $instructions;
+	/** @var string|null */
+	public $model;
+	/** @var float|null */
+	public $monthly_budget_usd;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $sample_by;
+	/** @var float|null */
+	public $sample_rate;
+	/** @var array<string, mixed>|null */
+	public $scope;
+}
+
+class ClassifierValue
+{
+	/** @var string|null */
+	public $description;
+	/** @var string */
+	public $value;
+}
+
 class CreditsResponse
 {
 	/** @var array<string, mixed> */
@@ -1959,6 +2103,160 @@ class ErrorUpstreamError
 	public $message;
 	/** @var string|null */
 	public $param;
+}
+
+class ExtractionAnswer { }
+
+class ExtractionDateField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionDatetimeField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionDurationField
+{
+	/** @var int|null */
+	public $decimals;
+	/** @var string|null */
+	public $instructions;
+	/** @var bool|null */
+	public $integer;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $unit;
+}
+
+class ExtractionField { }
+
+class ExtractionImage
+{
+	/** @var string */
+	public $base64;
+	/** @var string */
+	public $content_type;
+}
+
+class ExtractionListAnswer
+{
+	/** @var float */
+	public $confidence;
+	/** @var string */
+	public $type;
+	/** @var array */
+	public $value;
+}
+
+class ExtractionListField
+{
+	/** @var int|null */
+	public $decimals;
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $items;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionNumberAnswer
+{
+	/** @var float */
+	public $confidence;
+	/** @var float */
+	public $p_null;
+	/** @var string */
+	public $type;
+	/** @var float|null */
+	public $value;
+}
+
+class ExtractionNumberField
+{
+	/** @var int|null */
+	public $decimals;
+	/** @var string|null */
+	public $instructions;
+	/** @var bool|null */
+	public $integer;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $unit;
+}
+
+class ExtractionRequest
+{
+	/** @var array<string, mixed> */
+	public $fields;
+	/** @var array|null */
+	public $images;
+	/** @var string */
+	public $input;
+	/** @var string */
+	public $model;
+	/** @var string|null */
+	public $reference_date;
+}
+
+class ExtractionResponse
+{
+	/** @var array<string, mixed> */
+	public $answers;
+	/** @var string */
+	public $model;
+	/** @var bool */
+	public $truncated;
+	/** @var array<string, mixed> */
+	public $usage;
+}
+
+class ExtractionStringAnswer
+{
+	/** @var float */
+	public $confidence;
+	/** @var float */
+	public $p_null;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $value;
+}
+
+class ExtractionTextField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionTimeField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionUsage
+{
+	/** @var int */
+	public $input_tokens;
+	/** @var string */
+	public $output_tokens;
+	/** @var int */
+	public $total_tokens;
 }
 
 class FileContentPart

@@ -35,6 +35,7 @@ mount("/embeddings", () => import("./embeddings").then(m => m.embeddingsRoutes))
 mount("/moderations", () => import("./moderations").then(m => m.moderationsRoutes));
 mount("/rerank", () => import("./rerank").then(m => m.rerankRoutes));
 mount("/decisions", () => import("./decisions").then(m => m.decisionsRoutes));
+mount("/extractions", () => import("./extractions").then(m => m.extractionsRoutes));
 mount("/audio/speech", () => import("./audio-speech").then(m => m.audioSpeechRoutes));
 mount("/audio/transcriptions", () => import("./audio-transcription").then(m => m.audioTranscriptionRoutes));
 mount("/audio/translations", () => import("./audio-translation").then(m => m.audioTranslationRoutes));

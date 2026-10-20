@@ -10,10 +10,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	AUDIO_FAMILY_GROUPS,
 	isAudioFamilyGroup,
-	isAudioFamilyOpen,
-	toggleOutputModality,
 } from "@/lib/models/audioFamily";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { DECISIONS_FAMILY_GROUPS, outputFamily, selectedOutputFamily, toggleOutputFamily } from "@/lib/models/outputFamilies";
 import { cn } from "@/lib/utils";
 import type { OptionCount } from "./modelsDisplay.types";
 
@@ -145,17 +144,20 @@ export function OutputModalityChipRow({
 	const [shownSelected, setShownSelected] = useOptimistic(selected);
 	const reduceMotion = Boolean(useReducedMotion());
 
-	const audioOption = options.find((option) => option.value === "audio");
-	const subOptions = AUDIO_FAMILY_GROUPS.flatMap((value) => {
+	const selectedFamily = selectedOutputFamily(shownSelected);
+	const family = selectedFamily ?? "audio";
+	const audioOption = options.find((option) => option.value === family);
+	const familyGroups = family === "decisions" ? DECISIONS_FAMILY_GROUPS : AUDIO_FAMILY_GROUPS;
+	const subOptions = familyGroups.flatMap((value) => {
 		const option = options.find((candidate) => candidate.value === value);
 		return option ? [option] : [];
 	});
-	const mainOptions = options.filter((option) => !isAudioFamilyGroup(option.value));
+	const mainOptions = options.filter((option) => !isAudioFamilyGroup(option.value) && !(DECISIONS_FAMILY_GROUPS as readonly string[]).includes(option.value));
 	const hasFamily = Boolean(audioOption) && subOptions.length > 0;
-	const open = hasFamily && isAudioFamilyOpen(shownSelected);
+	const open = hasFamily && selectedFamily !== null;
 	const mainCollapsed = open && mainSettledHidden;
 	const hiddenSelectionCount = shownSelected.filter(
-		(value) => value !== "audio" && !isAudioFamilyGroup(value),
+		(value) => outputFamily(value) !== family,
 	).length;
 
 	useEffect(() => {
@@ -195,7 +197,7 @@ export function OutputModalityChipRow({
 	if (options.length === 0) return null;
 
 	const toggle = (value: string) => {
-		const next = toggleOutputModality(shownSelected, value);
+		const next = toggleOutputFamily(shownSelected, value);
 		startTransition(() => {
 			setShownSelected(next);
 			onChange(next);
@@ -235,7 +237,8 @@ export function OutputModalityChipRow({
 					aria-hidden={open}
 				>
 					{mainOptions.map((option) => {
-						const isAudio = option.value === "audio";
+						const isAudio = option.value === "audio" || option.value === "decisions";
+						const optionHasFamily = isAudio && options.some(candidate => candidate.value !== option.value && outputFamily(candidate.value) === option.value);
 						return (
 							<Chip
 								key={option.value}
@@ -244,7 +247,7 @@ export function OutputModalityChipRow({
 								Icon={iconForValue(option.value)}
 								checked={
 									isAudio
-										? !hasFamily && shownSelected.includes("audio")
+										? !optionHasFamily && shownSelected.includes(option.value)
 										: shownSelected.includes(option.value)
 								}
 								onClick={() => toggle(option.value)}
@@ -252,9 +255,9 @@ export function OutputModalityChipRow({
 								hiddenShift={-14}
 								durationMs={MAIN_OUT_MS}
 								reduceMotion={reduceMotion}
-								expanded={isAudio && hasFamily ? false : undefined}
+								expanded={optionHasFamily ? false : undefined}
 								trailing={
-									isAudio && hasFamily ? (
+									optionHasFamily ? (
 										<ChevronRight className="-mr-0.5 h-3 w-3 shrink-0" aria-hidden />
 									) : null
 								}
@@ -277,10 +280,10 @@ export function OutputModalityChipRow({
 					>
 						<Chip
 							option={audioOption}
-							label={labelForValue("audio")}
-							Icon={iconForValue("audio")}
+							label={labelForValue(family)}
+							Icon={iconForValue(family)}
 							checked
-							onClick={() => toggle("audio")}
+							onClick={() => toggle(family)}
 							hidden={!open}
 							hiddenShift={14}
 							durationMs={AUDIO_IN_MS}

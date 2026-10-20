@@ -12,10 +12,14 @@ export const OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES = [
 export const ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES = [
 	"web_search_20250305",
 	"web_search_20260209",
+	"web_search_20260318",
 ] as const;
 
 export const ANTHROPIC_NATIVE_WEB_FETCH_TOOL_TYPES = [
+	"web_fetch_20250910",
 	"web_fetch_20260209",
+	"web_fetch_20260309",
+	"web_fetch_20260318",
 ] as const;
 
 export const ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES = [

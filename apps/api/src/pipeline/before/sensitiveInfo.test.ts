@@ -17,6 +17,18 @@ const workspacePolicy = {
 };
 
 describe("sensitive info guardrails", () => {
+	it.each(["block", "redact"] as const)("enforces %s on extraction field instructions", (action) => {
+		const body = { input: "Invoice", fields: { "contact.email": { type: "text", instructions: "Contact test@example.com" } } };
+		const result = applySensitiveInfoGuardrails({ body, rawBody: structuredClone(body), endpoint: "extractions",
+			workspacePolicy: { ...workspacePolicy, sensitiveInfoRules: [{ id: "email_address", kind: "builtin", action }] },
+			requestId: "extraction", workspaceId: "ws_123" });
+		expect(result.ok).toBe(action === "redact");
+		if (result.ok) {
+			expect(result.body.fields["contact.email"].instructions).toBe("Contact [EMAIL]");
+			expect(result.rawBody.fields["contact.email"].instructions).toBe("Contact [EMAIL]");
+			expect(result.body.fields["contact.email"].type).toBe("text");
+		}
+	});
 	it.each([
 		"Contact test@example.com",
 		[{ role: "user", content: [{ type: "input_text", text: "Contact test@example.com" }] }],

@@ -6,6 +6,10 @@ import {
 } from "./provider-rate-limits";
 
 describe("provider rate-limit configuration", () => {
+	it("reserves repeated extraction passes without requiring output tokens", () => {
+		expect(estimateProviderTokenReservation({ capability: "extraction.extract", body: { fields: { total: { type: "number" }, po: { type: "text" } } } })).toBe(131072);
+		expect(estimateProviderTokenReservation({ capability: "extraction.extract", body: { fields: {} } })).toBeNull();
+	});
 	it("reserves every request in a provider fan-out before dispatch", () => {
 		const nowMs = Date.UTC(2026, 8, 3, 12, 30);
 		const config = { providerId: "together", requestsPerMinute: 10, requestsPerDay: 100,

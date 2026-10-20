@@ -256,7 +256,9 @@
 			"endpointDocumentParsing": "تحليل المستندات",
 			"tierPrivate": "خاصة",
 			"capabilityTextGeneration": "توليد النص",
-			"modalityDecisions": "القرارات"
+			"modalityDecisions": "القرارات",
+			"modalityClassification": "التصنيف",
+			"modalityExtraction": "الاستخراج"
 		},
 		"freeRouter": {
 			"title": "مجموعة النماذج المجانية",

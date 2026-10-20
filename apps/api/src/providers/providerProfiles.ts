@@ -56,8 +56,19 @@ function openAIReasoningFallback(model: string): TextReasoningEffort[] {
 	if (m.includes("gpt-5.6")) {
 		return ["none", "low", "medium", "high", "xhigh", "max"];
 	}
-	if (m.includes("gpt-5.4-pro")) {
+	// Model pages on developers.openai.com/api/docs/models (gpt-5.5, gpt-5.5-pro, gpt-5.2-pro,
+	// gpt-5.3-codex, gpt-5-pro). Keep in step with OPENAI_REASONING_EFFORT_SUPPORT in the executor.
+	if (m.includes("gpt-5.4-pro") || m.includes("gpt-5.5-pro") || m.includes("gpt-5.2-pro")) {
 		return ["medium", "high", "xhigh"];
+	}
+	if (m.includes("gpt-5.5")) {
+		return ["none", "low", "medium", "high", "xhigh"];
+	}
+	if (m.includes("gpt-5.3-codex")) {
+		return ["low", "medium", "high", "xhigh"];
+	}
+	if (/gpt-5-pro/.test(m)) {
+		return ["high"];
 	}
 	if (m.includes("gpt-5.4")) {
 		return ["none", "low", "medium", "high", "xhigh"];
@@ -81,7 +92,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		text: {
 			paramPolicy: {
 				supportedParams: ["max_tokens", "temperature", "top_p", "seed", "frequency_penalty", "presence_penalty", "stream_options", "tools", "tool_choice", "parallel_tool_calls", "response_format", "reasoning.effort"],
-				unsupportedParams: ["stop", "n", "logprobs", "logit_bias", "modalities", "verbosity", "metadata", "user", "user_id", "top_logprobs", "top_k", "min_p", "repetition_penalty", "web_search_options", "image_config", "audio", "prompt_cache_key", "prompt_cache_retention", "safety_identifier", "reasoning.max_tokens", "reasoning.summary"],
+				unsupportedParams: ["stop", "n", "logprobs", "logit_bias", "modalities", "verbosity", "metadata", "user", "user_id", "top_logprobs", "top_k", "min_p", "repetition_penalty", "web_search_options", "image_config", "audio", "prompt_cache_key", "prompt_cache_retention", "safety_identifier", "reasoning.max_tokens", "reasoning.summary", "max_tool_calls", "background"],
 			},
 			normalize: {
 				preserveReasoningEffort: true,
@@ -178,13 +189,15 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "openai",
-		aliases: ["azure"],
+		aliases: ["azure", "openai-eu"],
 		text: {
 			paramPolicy: {
 				supportedParams: [
 					"provider_options.openai.context_management",
 					"reasoning.mode",
 				],
+				// Not in OpenAI's Chat or Responses API.
+				unsupportedParams: ["image_config"],
 			},
 			normalize: {
 				maxTemperature: 2,
@@ -244,7 +257,8 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			},
 			normalize: {
 				maxTemperature: 1,
-				reasoningEffortFallback: ["high"],
+				// "Only none and high are currently supported" (https://docs.cohere.com/docs/compatibility-api).
+				reasoningEffortFallback: ["none", "high"],
 			},
 		},
 	},
@@ -374,11 +388,19 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "mistral",
 		text: {
 			paramPolicy: {
-				supportedParams: ["max_tokens", "reasoning.enabled", "reasoning.effort", "service_tier"],
-				// Not in Mistral's API; its streams end with usage without it.
-				unsupportedParams: ["stream_options"],
+				// Sampling fields from Mistral's chat API spec; seed is sent as random_seed.
+				supportedParams: ["max_tokens", "reasoning.enabled", "reasoning.effort", "service_tier", "seed", "top_k", "repetition_penalty", "logprobs", "top_logprobs"],
+				// Not in Mistral's API, which rejects unknown fields; its streams end with usage
+				// without stream_options.
+				unsupportedParams: ["stream_options", "max_tool_calls", "user", "web_search_options"],
 			},
-			normalize: { reasoningEffortFallback: ["none", "low", "medium", "high", "max"] },
+			// https://docs.mistral.ai/openapi.yaml ChatCompletionRequest: additionalProperties false,
+			// temperature 0 to 1.5, reasoning_effort none to xhigh, service_tier auto or standard_only.
+			normalize: {
+				maxTemperature: 1.5,
+				serviceTierAliases: { standard: "standard_only" },
+				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh"],
+			},
 		},
 	},
 	{
@@ -402,7 +424,10 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			},
 			normalize: {
 				maxTemperature: 2,
-				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh"],
+				// https://docs.tokenfactory.nebius.com/api-reference/inference/create-chat-completion:
+				// service_tier is auto, default, flex or no-limit; reasoning_effort also accepts "max".
+				serviceTierAliases: { standard: "default" },
+				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh", "max"],
 			},
 		},
 	},
@@ -459,8 +484,15 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		textOnly: true,
 		text: {
 			paramPolicy: {
-				supportedParams: ["service_tier"],
-				unsupportedParams: ["stream_options"],
+				supportedParams: ["service_tier", "seed", "top_k", "repetition_penalty", "logprobs", "top_logprobs"],
+				unsupportedParams: ["stream_options", "max_tool_calls", "user", "web_search_options"],
+			},
+			// https://docs.mistral.ai/openapi.yaml ChatCompletionRequest: additionalProperties false,
+			// temperature 0 to 1.5, reasoning_effort none to xhigh, service_tier auto or standard_only.
+			normalize: {
+				maxTemperature: 1.5,
+				serviceTierAliases: { standard: "standard_only" },
+				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh"],
 			},
 		},
 	},
@@ -470,7 +502,9 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "together",
 		text: {
 			paramPolicy: {
-				unsupportedParams: ["stream_options"],
+				// In Together's chat API; not every catalogue route lists them.
+				supportedParams: ["seed", "logprobs"],
+				unsupportedParams: ["stream_options", "max_tool_calls", "image_config"],
 			},
 		},
 	},
@@ -637,7 +671,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 					"response_format", "top_logprobs", "service_tier", "reasoning.effort",
 				],
 				unsupportedParams: [
-					"frequency_penalty", "presence_penalty", "logit_bias", "logprobs",
+					"frequency_penalty", "presence_penalty", "logit_bias", "logprobs", "image_config",
 				],
 			},
 			normalize: {
@@ -682,6 +716,10 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "ambient",
+		text: {
+			// Not in Ambient's published API spec.
+			paramPolicy: { unsupportedParams: ["image_config"] },
+		},
 	},
 	{
 		id: "empiriolabs",
@@ -791,6 +829,13 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "baidu",
+		text: {
+			paramPolicy: {
+				// In Qianfan's v2 chat API (https://cloud.baidu.com/doc/qianfan-api/s/3m7of64lb).
+				supportedParams: ["seed", "repetition_penalty"],
+				unsupportedParams: ["image_config"],
+			},
+		},
 	},
 	{
 		id: "minimax",
@@ -870,7 +915,9 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			},
 			normalize: {
 				maxTemperature: 2,
-				reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh", "max"],
+				// reasoning.effort is none, low, medium or high
+				// (https://io.net/docs/guides/intelligence/reasoning-for-chat-completions).
+				reasoningEffortFallback: ["none", "low", "medium", "high"],
 			},
 		},
 	},
@@ -1138,10 +1185,12 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 				unsupportedParams: [
 					"top_k", "min_p", "repetition_penalty", "parallel_tool_calls",
 					"max_tool_calls", "modalities", "image_config", "metadata", "background",
-					"service_tier", "web_search_options", "stream_options",
+					"service_tier", "web_search_options",
 				],
 			},
-			normalize: { maxTemperature: 2, reasoningEffortFallback: ["low", "medium", "high"] },
+			// https://console.upstage.ai/api/chat: stream_options.include_usage is the only way to
+			// get usage on a stream; reasoning_effort runs none..max, with none and minimal off.
+			normalize: { maxTemperature: 2, reasoningEffortFallback: ["none", "minimal", "low", "medium", "high", "xhigh", "max"] },
 		},
 	},
 	{

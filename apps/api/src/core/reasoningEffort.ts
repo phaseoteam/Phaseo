@@ -24,7 +24,8 @@ export function mapAnthropicEffortToIr(
 ): IRReasoning["effort"] | undefined {
 	if (typeof effort !== "string") return undefined;
 	const normalized = effort.toLowerCase();
-	if (normalized === "max" || normalized === "xhigh") return "xhigh";
+	// `max` and `xhigh` are separate Anthropic levels; Chat and Responses keep them apart too.
+	if (normalized === "max" || normalized === "xhigh") return normalized;
 	if (
 		normalized === "none" ||
 		normalized === "minimal" ||

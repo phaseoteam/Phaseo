@@ -12,6 +12,7 @@ import {
 	Radio,
 	Scale,
 	ScanText,
+	TextSelect,
 	Speech,
 	Type,
 	Video,
@@ -20,6 +21,7 @@ import {
 
 export function getModalityIcon(value: string): LucideIcon {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("extract")) return TextSelect;
 	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;

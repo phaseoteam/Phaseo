@@ -96,6 +96,9 @@ describe("google-vertex route resolution", () => {
 		expect(() => resolveVertexApiBase(bindings, "google-vertex-eu", "gemini")).toThrow("google-vertex_eu_location_required");
 		expect(() => resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_BASE_URL: "https://aiplatform.googleapis.com/v1/projects/test-project/locations/global" }, "google-vertex-eu", "anthropic")).toThrow("google-vertex_endpoint_region_mismatch");
 		expect(resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_LOCATION: "europe-west4" }, "google-vertex-eu", "gemini")).toContain("europe-west4-aiplatform.googleapis.com");
+		// Gemini 3.1 Flash-Lite is served on the eu multi-region only, not in europe-west4.
+		expect(resolveVertexApiBase({ ...bindings, GOOGLE_VERTEX_LOCATION: "europe-west4" }, "google-vertex-eu", "gemini", "gemini-3.1-flash-lite"))
+			.toContain("aiplatform.eu.rep.googleapis.com/v1/projects/test-project/locations/eu");
 	});
 	it.each(["us", "eu"])("uses the %s multi-region Claude streaming endpoint", async location => {
 		teardownTestRuntime();
@@ -168,6 +171,16 @@ describe("google-vertex empty response handling", () => {
 });
 
 describe("google-vertex irToGemini", () => {
+	it("sends seed as generationConfig.seed", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.8-flash",
+			stream: false,
+			seed: 42,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+		} as any);
+		expect(request.generationConfig?.seed).toBe(42);
+	});
+
 	it("keeps Vertex tier controls out of the Gemini body while mapping structured output", async () => {
 		const request = await irToGemini({
 			model: "gemini-3.8-flash",

@@ -315,6 +315,26 @@ describe("prepareServerToolsForTextRequest", () => {
 		expect(result.body.tool_choice).toBe("web_search_preview");
 	});
 
+	it("sends Claude a flat user_location when the client used OpenAI's nested shape", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "anthropic/claude-sonnet-5",
+				tools: [
+					{
+						type: "phaseo:web_search",
+						parameters: {
+							engine: "native",
+							user_location: { type: "approximate", approximate: { city: "London", country: "GB" } },
+						},
+					},
+				],
+			},
+			"anthropic.messages",
+		);
+		if (!result.ok) throw new Error("Expected prepareServerToolsForTextRequest to succeed");
+		expect(result.body.tools[0].user_location).toEqual({ type: "approximate", city: "London", country: "GB" });
+	});
+
 	it("rewrites Phaseo web fetch into a callable function tool", () => {
 		const result = prepareServerToolsForTextRequest(
 			{
