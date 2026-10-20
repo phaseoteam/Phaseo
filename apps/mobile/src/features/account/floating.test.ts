@@ -1,5 +1,5 @@
 import {
-  BURST_PEAK, DRIFT_SPEED, MAX_SPEED, MAX_STEP_S, RESTITUTION, bounceAxis, burstCurve, burstPosition, collideBox, leaveBox, limitSpeed, ringLayout, settle, step,
+  BURST_PEAK, DRIFT_SPEED, MAX_SPEED, MAX_STEP_S, RESTITUTION, bounceAxis, burstCurve, burstPosition, collideBox, dragTo, leaveBox, limitSpeed, ringLayout, settle, step,
   type Box, type StepOptions,
 } from "./floating";
 
@@ -104,6 +104,46 @@ describe("collideBox", () => {
 
   it("lets a logo that was already inside leave by the shortest way", () => {
     expect(collideBox({ x: 120, y: 150 }, { x: 110, y: 150, vx: 0, vy: 0 }, 50, box)).toEqual(leaveBox({ x: 110, y: 150, vx: 0, vy: 0 }, 50, box));
+  });
+});
+
+describe("dragTo", () => {
+  const screen: Box = { left: 0, top: 0, right: 400, bottom: 800 };
+  const box: Box = { left: 100, top: 300, right: 300, bottom: 500 };
+
+  it("follows the finger where nothing is in the way", () => {
+    expect(dragTo({ x: 20, y: 40 }, { x: 30, y: -10 }, { x: 25, y: 35 }, 50, screen, box)).toEqual({ at: { x: 50, y: 30 }, anchor: { x: 20, y: 40 } });
+  });
+
+  it("stops at the screen's edge and follows again as soon as the finger turns back", () => {
+    const pushed = dragTo({ x: 300, y: 40 }, { x: 200, y: 0 }, { x: 340, y: 40 }, 50, screen, null);
+    expect(pushed.at).toEqual({ x: 350, y: 40 });
+    const back = dragTo(pushed.anchor, { x: 190, y: 0 }, pushed.at, 50, screen, null);
+    expect(back.at).toEqual({ x: 340, y: 40 });
+  });
+
+  it("never jumps across the middle, however far the finger goes", () => {
+    // Held against the block's left side; the finger sweeps right past it, then up and over, in small steps.
+    let anchor = { x: 40, y: 380 };
+    let at = { x: 40, y: 380 };
+    const path: { x: number; y: number }[] = [];
+    for (let i = 1; i <= 40; i += 1) path.push({ x: i * 10, y: 0 });
+    for (let i = 1; i <= 30; i += 1) path.push({ x: 400, y: -i * 10 });
+    for (let i = 1; i <= 30; i += 1) path.push({ x: 400 + i * 10, y: -300 });
+    let previous = { x: 0, y: 0 };
+    for (const travel of path) {
+      const moved = dragTo(anchor, travel, at, 50, screen, box);
+      const finger = Math.hypot(travel.x - previous.x, travel.y - previous.y);
+      expect(Math.hypot(moved.at.x - at.x, moved.at.y - at.y)).toBeLessThanOrEqual(finger + 1e-9);
+      const inside = moved.at.x + 50 > box.left && moved.at.x < box.right && moved.at.y + 50 > box.top && moved.at.y < box.bottom;
+      expect(inside).toBe(false);
+      anchor = moved.anchor;
+      at = moved.at;
+      previous = travel;
+    }
+    // It went round the top of the block and ended on its right.
+    expect(at.y + 50).toBeLessThanOrEqual(box.top);
+    expect(at.x).toBeGreaterThan(box.left);
   });
 });
 

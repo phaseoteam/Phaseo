@@ -110,6 +110,22 @@ export function collideBox(from: Point, next: Body, size: number, box: Box): Bod
   return { x: next.x, y: fromTop ? box.top - size : box.bottom, vx: next.vx, vy: (fromTop ? -1 : 1) * Math.abs(next.vy) * RESTITUTION };
 }
 
+/**
+ * Where a held logo goes as the finger moves: where it was grabbed (`anchor`) plus the finger's travel, kept on screen
+ * and out of the middle (sliding along it). When an edge or the middle stops it, the travel it couldn't follow is let
+ * go (the anchor moves), so it follows the finger again as soon as the finger turns back instead of jumping to catch
+ * up, or through the middle.
+ */
+export function dragTo(anchor: Point, travel: Point, current: Point, size: number, bounds: Box, box: Box | null): { at: Point; anchor: Point } {
+  "worklet";
+  const freeX = anchor.x + travel.x;
+  const freeY = anchor.y + travel.y;
+  const kept = { x: clamp(freeX, bounds.left, bounds.right - size), y: clamp(freeY, bounds.top, bounds.bottom - size), vx: 0, vy: 0 };
+  const hit = box ? collideBox(current, kept, size, box) : kept;
+  const at = { x: hit.x, y: hit.y };
+  return { at, anchor: at.x === freeX && at.y === freeY ? anchor : { x: at.x - travel.x, y: at.y - travel.y } };
+}
+
 export type StepOptions = {
   size: number;
   /** Where logos can go: the screen inside its safe area. */

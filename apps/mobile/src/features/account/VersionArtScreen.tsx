@@ -21,7 +21,7 @@ import { catalogueQuery, useCatalogue } from "@/features/models/state";
 import { BUILD_COMMIT, BUILD_NUMBER } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { useAppearance } from "@/providers/AppearanceProvider";
-import { burstCurve, burstPosition, clamp, collideBox, DRIFT_SPEED, limitSpeed, ringLayout, step, type Box, type Point } from "./floating";
+import { burstCurve, burstPosition, clamp, DRIFT_SPEED, dragTo, limitSpeed, ringLayout, step, type Box, type Point } from "./floating";
 import { catalogueFact, isLightColour, newestByLab, pickLabs, shortVersion, versionDetail, type ArtLab } from "./versionArt";
 
 /** The Phaseo mark, from apps/web/public/logo_light.svg (a 64 × 64 view box). */
@@ -334,13 +334,11 @@ const Floater = memo(function Floater({ lab, index, home, size, bounds, block, c
       scheduleOnRN(lift);
     },
     onUpdate: (event) => {
-      const area = bounds.get();
-      const middle = block.get();
-      const next = { x: clamp(grab.get().x + event.translationX, area.left, area.right - size), y: clamp(grab.get().y + event.translationY, area.top, area.bottom - size), vx: 0, vy: 0 };
-      // The middle is solid: the logo slides along its edge, so it's never dropped inside it.
-      const at = middle ? collideBox({ x: x.get(), y: y.get() }, next, size, middle) : next;
-      x.set(at.x);
-      y.set(at.y);
+      // The edges and the middle are solid: the logo slides along them and is never dropped inside the middle.
+      const moved = dragTo(grab.get(), { x: event.translationX, y: event.translationY }, { x: x.get(), y: y.get() }, size, bounds.get(), block.get());
+      grab.set(moved.anchor);
+      x.set(moved.at.x);
+      y.set(moved.at.y);
     },
     onDeactivate: (event) => {
       const fling = limitSpeed(event.velocityX, event.velocityY);
