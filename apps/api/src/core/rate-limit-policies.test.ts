@@ -243,6 +243,13 @@ describe("rate limit policy enforcement", () => {
 		expect(mocks.getByName).toHaveBeenCalledWith(`rate-limit-policy:v1:${WS}:${LOOSE}:key:key-1`);
 	});
 
+	it("does not count a request classifier's own call against the caller's policies", async () => {
+		publishPlan(plan);
+		expect(await guardRateLimitPolicies(ctx({ classifierSubrequest: true }))).toBeNull();
+		await settle();
+		expect(mocks.admit).not.toHaveBeenCalled();
+	});
+
 	it("reads the plan once per request and counts fallback attempts once", async () => {
 		publishPlan(plan);
 		const request = ctx();
