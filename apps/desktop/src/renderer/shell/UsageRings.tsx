@@ -4,34 +4,56 @@ import { useWorkspace } from "../app/workspace";
 import { HarnessLogo } from "../components/HarnessLogo";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { cn } from "../lib/utils";
-import { providerFill, providerNames } from "../settings/UsageLimits";
+import { RedactedText } from "../components/RedactedText";
+import { AccountChip, providerNames } from "../settings/UsageLimits";
 import { resetText } from "../settings/UsageMeters";
 import { checkAllUsage, refreshUsageIfStale, usageAccounts, usageChecking, usageLocals, useUsageLimits } from "../settings/usageLimitsStore";
-import { usagePools, usageRings, type ProviderRings, type UsageRing } from "../settings/usagePools";
+import { usagePools, usageRings, type ProviderRings, type RingAccount, type UsageRing } from "../settings/usagePools";
 import { relativeTime } from "../views/pullRequests/pullRequestLogic";
 
 const minute = 60_000;
-/** Below this much left a ring turns red, whatever the provider's colour. */
-const low = 10;
+/** Colour only says how much is left, never which provider: the logo beside each pair does that. */
+const tone = (remaining: number) => remaining <= 10 ? "text-destructive" : remaining <= 25 ? "text-warning" : "text-foreground/85";
 
-/** One provider's pair: the weekly window as the outer ring, the 5-hour window inside it. Each ring empties as it is used. */
+/**
+ * One provider's pair: the weekly window as the outer ring, the 5-hour window inside it. Each ring empties as it is
+ * used. With several accounts the outer ring has one arc per account, each emptying on its own.
+ */
 function RingPair({ rings, size = 22 }: { rings: ProviderRings; size?: number }) {
-	const arc = (ring: UsageRing | null, radius: number) => {
+	const arc = (remaining: number, radius: number, key: string, part = 0, parts = 1) => {
 		const length = 2 * Math.PI * radius;
-		return <g className={ring && ring.remaining <= low ? "text-destructive" : undefined}>
-			<circle cx={11} cy={11} r={radius} fill="none" strokeWidth={2.5} className="stroke-muted-foreground/15" />
-			{ring && ring.remaining > 0 && <circle cx={11} cy={11} r={radius} fill="none" strokeWidth={2.5} strokeLinecap="round" transform="rotate(-90 11 11)"
-				stroke={ring.remaining <= low ? "currentColor" : providerFill[rings.provider]} strokeDasharray={`${length * ring.remaining / 100} ${length}`} className="transition-[stroke-dasharray] duration-500" />}
-		</g>;
+		// Round caps reach past each end, so split arcs leave a gap wider than the stroke.
+		const gap = parts > 1 ? 5 : 0, span = length / parts - gap;
+		return remaining > 0 && <circle key={key} cx={11} cy={11} r={radius} fill="none" strokeWidth={2.5} strokeLinecap="round" stroke="currentColor"
+			transform={`rotate(${-90 + part * 360 / parts + gap / 2 / length * 360} 11 11)`} strokeDasharray={`${Math.max(0.01, span * remaining / 100)} ${length}`}
+			className={cn("transition-[stroke-dasharray] duration-500", tone(remaining))} />;
 	};
-	return <svg aria-hidden viewBox="0 0 22 22" width={size} height={size} className="shrink-0">{arc(rings.outer, 9.25)}{arc(rings.inner, 4.75)}</svg>;
+	const track = (radius: number) => <circle cx={11} cy={11} r={radius} fill="none" strokeWidth={2.5} className="stroke-muted-foreground/15" />;
+	return <svg aria-hidden viewBox="0 0 22 22" width={size} height={size} className="shrink-0">
+		{track(9.25)}{track(4.75)}
+		{rings.segments ? rings.segments.map((remaining, index) => arc(remaining, 9.25, `outer-${index}`, index, rings.segments!.length)) : rings.outer && arc(rings.outer.remaining, 9.25, "outer")}
+		{rings.inner && arc(rings.inner.remaining, 4.75, "inner")}
+	</svg>;
 }
 
-function RingLine({ ring }: { ring: UsageRing }) {
+const Logo = ({ provider }: { provider: ProviderRings["provider"] }) => <span className="flex size-3.5 shrink-0 items-center justify-center [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><HarnessLogo harness={provider} /></span>;
+
+function RingLine({ ring, pooled }: { ring: UsageRing; pooled?: boolean }) {
 	return <div className="contents">
 		<span className="text-muted-foreground">{ring.label}</span>
-		<span className={cn("font-medium tabular-nums", ring.remaining <= low && "text-destructive")}>{ring.remaining}% left</span>
-		<span className="text-right text-muted-foreground">{resetText(ring.resetsAt)}</span>
+		<span className={cn("font-medium tabular-nums", ring.remaining <= 25 && tone(ring.remaining))}>{ring.remaining}% left{pooled ? " overall" : ""}</span>
+		<span className="text-right whitespace-nowrap text-muted-foreground">{resetText(ring.resetsAt)}</span>
+	</div>;
+}
+
+/** One account of several: who it is, then what it has left in each window. */
+function AccountLine({ value }: { value: RingAccount }) {
+	const { account, inner, outer } = value;
+	const figure = (ring: UsageRing | null) => ring && <span title={`${ring.label}: ${resetText(ring.resetsAt) || "no reset reported"}`} className={cn("tabular-nums", ring.remaining <= 25 ? tone(ring.remaining) : "text-muted-foreground")}>{ring.label === "5-hour" ? "5h" : ring.label === "Weekly" ? "wk" : ring.label} {ring.remaining}%</span>;
+	return <div className="flex min-w-0 items-center gap-2">
+		<AccountChip account={account} className="size-4.5 text-[8px]" />
+		<span className="min-w-0 flex-1 truncate">{account.email ? <RedactedText text={account.email} /> : account.label}</span>
+		{figure(inner)}{figure(outer)}
 	</div>;
 }
 
@@ -56,17 +78,18 @@ export function UsageRings() {
 	if (!rings.length) return null;
 	const busy = usageChecking(limits);
 	const summary = rings.map(pair => [providerNames[pair.provider], pair.inner && `${pair.inner.label} ${pair.inner.remaining}% left`, pair.outer && `${pair.outer.label} ${pair.outer.remaining}% left`].filter(Boolean).join(", ")).join("; ");
-	return <Popover onOpenChange={open => { if (open) refresh(minute); }}>
-		<PopoverTrigger openOnHover delay={200} render={<button type="button" aria-label={`Usage limits: ${summary}`} className="flex h-7 shrink-0 items-center gap-1 rounded-md px-1 outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:bg-sidebar-accent" />}>
-			{rings.map(pair => <RingPair key={pair.provider} rings={pair} />)}
+	return <div className="px-2.5 pt-2"><Popover onOpenChange={open => { if (open) refresh(minute); }}>
+		<PopoverTrigger openOnHover delay={200} render={<button type="button" aria-label={`Usage limits: ${summary}`} className="flex h-8 w-full items-center gap-3 rounded-md px-2 outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:bg-sidebar-accent" />}>
+			{rings.map(pair => <span key={pair.provider} className="flex items-center gap-1"><Logo provider={pair.provider} /><RingPair rings={pair} /></span>)}
 		</PopoverTrigger>
-		<PopoverContent side="top" align="end" sideOffset={8} className="w-76 gap-3 p-3 text-xs">
+		<PopoverContent side="top" align="start" sideOffset={6} className="w-80 gap-3 p-3 text-xs">
 			{rings.map(pair => <section key={pair.provider} aria-label={`${providerNames[pair.provider]} limits`} className="flex flex-col gap-1.5">
-				<h3 className="flex items-center gap-2 text-[13px] font-semibold"><span className="flex size-4 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><HarnessLogo harness={pair.provider} /></span>{providerNames[pair.provider]}<span className="ml-auto"><RingPair rings={pair} size={18} /></span></h3>
+				<h3 className="flex items-center gap-2 text-[13px] font-semibold"><Logo provider={pair.provider} />{providerNames[pair.provider]}{pair.accounts.length > 1 && <span className="font-normal text-muted-foreground">· {pair.accounts.length} accounts</span>}<span className="ml-auto"><RingPair rings={pair} size={18} /></span></h3>
 				<div className="grid grid-cols-[4.5rem_auto_minmax(0,1fr)] gap-x-3 gap-y-1">
-					{pair.inner && <RingLine ring={pair.inner} />}
-					{pair.outer && <RingLine ring={pair.outer} />}
+					{pair.inner && <RingLine ring={pair.inner} pooled={pair.accounts.length > 1} />}
+					{pair.outer && <RingLine ring={pair.outer} pooled={pair.accounts.length > 1} />}
 				</div>
+				{pair.accounts.length > 1 && <div className="mt-1 flex max-h-48 flex-col gap-1 overflow-y-auto">{pair.accounts.map(value => <AccountLine key={value.account.key} value={value} />)}</div>}
 			</section>)}
 			<div className="flex items-center gap-1 border-t border-border/60 pt-2 text-muted-foreground">
 				<span className="min-w-0 flex-1 truncate">{busy ? "Checking…" : limits.checkedAt ? `Checked ${relativeTime(new Date(limits.checkedAt).toISOString(), now)}` : ""}</span>
@@ -74,5 +97,5 @@ export function UsageRings() {
 				<button type="button" onClick={() => openSettings("usage")} className="rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Usage & limits</button>
 			</div>
 		</PopoverContent>
-	</Popover>;
+	</Popover></div>;
 }

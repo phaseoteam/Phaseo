@@ -329,7 +329,14 @@ app.whenReady().then(async () => {
 		"settings": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedTask": demoId("pricing") }, script: `document.querySelector('[aria-label="Settings"]').click()` },
 		"inbox": { storage: { "phaseo.desktop.workspaceMode": "code" }, script: `[...document.querySelectorAll('aside button')].find(button => button.textContent.startsWith('Inbox'))?.click()` },
 		// Sample subscription limits, read as just checked so the rings don't start the real agents.
-		"rings": { storage: { "phaseo.desktop.workspaceMode": "code", "phaseo.desktop.usageLimits": { checkedAt: Date.now(), hubs: [], snapshots: {}, statuses: {
+		"rings": { storage: { "phaseo.desktop.workspaceMode": "code", "phaseo.desktop.usageLimits": { checkedAt: Date.now(),
+			// Two more Claude accounts on a usage hub, so the weekly ring splits into one arc per account.
+			hubs: [{ id: "hub-1", label: "Home hub", url: "http://127.0.0.1:8317", createdAt: new Date().toISOString() }],
+			snapshots: { "hub-1": { hubId: "hub-1", checkedAt: new Date().toISOString(), skipped: 0, accounts: [
+				{ id: "work.json", provider: "claude", email: "work@example.com", status: { checkedAt: new Date().toISOString(), authenticated: true, plan: "Claude Max", usage: [{ id: "claude", name: "Claude", primary: { usedPercent: 20, windowDurationMins: 300, resetsAt: Math.floor(Date.now() / 1000) + 9000 }, secondary: { usedPercent: 60, windowDurationMins: 10080, resetsAt: Math.floor(Date.now() / 1000) + 180000 }, spendControlReached: null }] } },
+				{ id: "spare.json", provider: "claude", email: "spare@example.com", status: { checkedAt: new Date().toISOString(), authenticated: true, plan: "Claude Pro", usage: [{ id: "claude", name: "Claude", primary: { usedPercent: 70, windowDurationMins: 300, resetsAt: Math.floor(Date.now() / 1000) + 4000 }, secondary: { usedPercent: 95, windowDurationMins: 10080, resetsAt: Math.floor(Date.now() / 1000) + 50000 }, spendControlReached: null }] } },
+			] } },
+			statuses: {
 			claude: { checkedAt: new Date().toISOString(), authenticated: true, plan: "Claude Max", identity: "you@example.com", usage: [{ id: "claude", name: "Claude", primary: { usedPercent: 38, windowDurationMins: 300, resetsAt: Math.floor(Date.now() / 1000) + 8040 }, secondary: { usedPercent: 61, windowDurationMins: 10080, resetsAt: Math.floor(Date.now() / 1000) + 266400 }, spendControlReached: null }] },
 			codex: { checkedAt: new Date().toISOString(), authenticated: true, plan: "ChatGPT Pro", identity: "you@example.com", usage: [{ id: "codex", name: "Codex", primary: { usedPercent: 12, windowDurationMins: 300, resetsAt: Math.floor(Date.now() / 1000) + 11200 }, secondary: { usedPercent: 93, windowDurationMins: 10080, resetsAt: Math.floor(Date.now() / 1000) + 97200 }, spendControlReached: null }] },
 		} } }, script: `document.querySelector('[aria-label^="Usage limits"]')?.click()` },

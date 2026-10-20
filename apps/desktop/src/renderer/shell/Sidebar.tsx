@@ -151,16 +151,15 @@ function ChatList({ viewport }: { viewport: HTMLDivElement | null }) {
 function AccountFooter() {
 	const { overview, openSettings } = useWorkspace();
 	const account = usablePhaseoAccounts(overview)[0];
-	return <div className="flex items-center gap-2.5 border-t border-sidebar-border p-2.5">
+	return <div className="border-t border-sidebar-border"><UsageRings /><div className="flex items-center gap-2.5 p-2.5">
 		{account
 			? <button type="button" onClick={() => openSettings("accounts")} className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md p-1 text-left hover:bg-sidebar-accent/70">
 				<span className="grid size-7 shrink-0 place-items-center rounded-full bg-linear-to-br from-[#0078b8] to-[#7c3aed] text-[11px] font-bold text-white">{account.name.slice(0, 2).toUpperCase()}</span>
 				<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{account.name}</span><span className="block truncate text-[11px] text-muted-foreground">Signed in to Phaseo</span></span>
 			</button>
 			: <button type="button" onClick={() => openSettings("accounts")} className="flex flex-1 items-center gap-2 rounded-md p-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in to Phaseo</button>}
-		<UsageRings />
 		<button type="button" aria-label="Settings" title={`Settings (${shortcut("settings.open")})`} onClick={() => openSettings()} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Settings className="size-4" /></button>
-	</div>;
+	</div></div>;
 }
 
 /** T3's undo notice: the last settle, snooze, unpin or archive, for five seconds. */

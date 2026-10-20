@@ -35,9 +35,18 @@ describe("usage pools", () => {
 			account("c", "codex", "c@x.io", [{ id: "codex", name: "Codex", primary: window(3, 10080, 5000), secondary: null, spendControlReached: null }]),
 		]), now);
 		// Account a's 5-hour window reset at 2,000 s, before now (3,000 s), so it counts as 100% left.
-		expect(rings).toEqual([
-			{ provider: "codex", inner: null, outer: { label: "Weekly", remaining: 97, resetsAt: 5000 } },
-			{ provider: "claude", inner: { label: "5-hour", remaining: 60, resetsAt: 4000 }, outer: { label: "Weekly", remaining: 50, resetsAt: 8000 } },
+		expect(rings.map(({ provider, inner, outer, segments }) => ({ provider, inner, outer, segments }))).toEqual([
+			{ provider: "codex", inner: null, outer: { label: "Weekly", remaining: 97, resetsAt: 5000 }, segments: undefined },
+			// Two Claude accounts: the weekly ring has one arc per account.
+			{ provider: "claude", inner: { label: "5-hour", remaining: 60, resetsAt: 4000 }, outer: { label: "Weekly", remaining: 50, resetsAt: 8000 }, segments: [30, 70] },
 		]);
+		expect(rings[1].accounts.map(({ account, inner, outer }) => [account.key, inner?.remaining, outer?.remaining])).toEqual([["a", 100, 30], ["b", 20, 70]]);
+	});
+	it("pools the weekly ring instead of splitting it when a provider has more than six accounts", () => {
+		const many = Array.from({ length: 7 }, (_, index) => account(`h${index}`, "claude", `h${index}@x.io`, [{ id: "claude", name: "Claude", primary: null, secondary: window(index * 10, 10080), spendControlReached: null }]));
+		const [claude] = usageRings(usagePools(many), 0);
+		expect(claude.segments).toBeUndefined();
+		expect(claude.outer?.remaining).toBe(70);
+		expect(claude.accounts).toHaveLength(7);
 	});
 });

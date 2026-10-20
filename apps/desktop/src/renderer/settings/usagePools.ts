@@ -68,24 +68,36 @@ export function accountHue(text: string) {
 }
 
 export type UsageRing = { label: string; remaining: number; resetsAt: number | null };
-/** A provider's two rings: the short window inside (5-hour), the long one outside (weekly). */
-export type ProviderRings = { provider: UsageProvider; inner: UsageRing | null; outer: UsageRing | null };
+export type RingAccount = { account: UsageAccount; inner: UsageRing | null; outer: UsageRing | null };
+/**
+ * A provider's two rings: the short window inside (5-hour), the long one outside (weekly). With two to
+ * `maxSegments` accounts the outer ring is split into one arc per account, so a spent account shows.
+ */
+export type ProviderRings = { provider: UsageProvider; inner: UsageRing | null; outer: UsageRing | null; accounts: RingAccount[]; segments?: number[] };
+export const maxSegments = 6;
 
 /**
  * The sidebar's rings, one pair per provider. Readings are kept between checks, so an account whose window has
  * reset since it was read counts as full again rather than showing the old figure.
  */
 export function usageRings(pools: ProviderPool[], now = Date.now()): ProviderRings[] {
-	const ring = (window: PoolWindow | undefined): UsageRing | null => {
-		if (!window) return null;
-		const columns = window.columns.map(column => column.resetsAt !== null && column.resetsAt * 1000 <= now ? { remaining: 100, resetsAt: null } : column);
+	const current = (column: PoolColumn): PoolColumn => column.resetsAt !== null && column.resetsAt * 1000 <= now ? { ...column, remaining: 100, resetsAt: null } : column;
+	const ring = (label: string, columns: PoolColumn[]): UsageRing | null => {
+		if (!columns.length) return null;
 		const remaining = Math.round(columns.reduce((sum, column) => sum + column.remaining, 0) / columns.length);
 		const resets = columns.filter(column => column.resetsAt !== null && column.remaining < 100).map(column => column.resetsAt!).sort((a, b) => a - b);
-		return { label: window.label, remaining, resetsAt: resets[0] ?? null };
+		return { label, remaining, resetsAt: resets[0] ?? null };
 	};
 	return pools.map(pool => {
 		const short = pool.windows.find(window => window.label === "5-hour") ?? pool.windows.find(window => window.label === "Daily");
 		const long = pool.windows.find(window => window.label === "Weekly") ?? pool.windows.find(window => window !== short);
-		return { provider: pool.provider, inner: ring(short), outer: ring(long) };
+		const shortColumns = short?.columns.map(current) ?? [], longColumns = long?.columns.map(current) ?? [];
+		const keys = [...new Set([...longColumns, ...shortColumns].map(column => column.account.key))];
+		const accounts = keys.map(key => {
+			const inner = shortColumns.find(column => column.account.key === key), outer = longColumns.find(column => column.account.key === key);
+			return { account: (outer ?? inner)!.account, inner: inner && short ? ring(short.label, [inner]) : null, outer: outer && long ? ring(long.label, [outer]) : null };
+		});
+		const segments = longColumns.length > 1 && longColumns.length <= maxSegments ? longColumns.map(column => column.remaining) : undefined;
+		return { provider: pool.provider, inner: short ? ring(short.label, shortColumns) : null, outer: long ? ring(long.label, longColumns) : null, accounts, ...segments ? { segments } : {} };
 	}).filter(rings => rings.inner || rings.outer);
 }
