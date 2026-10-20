@@ -22,9 +22,9 @@
         },
         {
           "description": "Summarise the connected workspace's credits and usage",
-          "prompt": "How many Phaseo credits do I have left, and which models did I use most recently?",
+          "prompt": "How many Phaseo credits do I have left, and which models have I used most?",
           "tools_triggered": "credits_get, analytics_get",
-          "expected_behavior": "Reports the test workspace's credit balance and usage totals, then lists the models with the most usage from its analytics. Only data from the connected account appears."
+          "expected_behavior": "Reports the test workspace's credit balance and usage totals, then lists the models with the most requests or spend in its usage analytics. Only data from the connected account appears."
         },
         {
           "description": "Investigate failed requests in the request logs",
