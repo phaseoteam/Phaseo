@@ -66,7 +66,7 @@ export function bounceAxis(position: number, velocity: number, min: number, max:
   return { position, velocity };
 }
 
-/** A logo (a `size` square) overlapping the box leaves it by the shortest way, heading away from it. */
+/** A logo (a `size` square) overlapping the box leaves it by the shortest way, heading away from it. For placing. */
 export function leaveBox(body: Body, size: number, box: Box): Body {
   "worklet";
   const right = body.x + size;
@@ -81,6 +81,33 @@ export function leaveBox(body: Body, size: number, box: Box): Body {
   if (least === toRight) return { x: box.right, y: body.y, vx: Math.abs(body.vx) * RESTITUTION, vy: body.vy };
   if (least === toTop) return { x: body.x, y: box.top - size, vx: body.vx, vy: -Math.abs(body.vy) * RESTITUTION };
   return { x: body.x, y: box.bottom, vx: body.vx, vy: Math.abs(body.vy) * RESTITUTION };
+}
+
+/** How far through a move (0 to 1) one axis entered the box's span, or -1 when that axis didn't cross into it. */
+function entry(from: number, to: number, size: number, min: number, max: number) {
+  "worklet";
+  if (from + size <= min && to + size > min) return (min - (from + size)) / (to - from);
+  if (from >= max && to < max) return (from - max) / (from - to);
+  return -1;
+}
+
+/**
+ * A move from `from` to `next` that ends overlapping the box stops at the side it came in through, and bounces off it:
+ * the axis that crossed into the box last is the one that hit. A logo that was already inside leaves by the shortest
+ * way. Dragging uses it too, so a held logo slides along the block's edge rather than through it.
+ */
+export function collideBox(from: Point, next: Body, size: number, box: Box): Body {
+  "worklet";
+  if (next.x + size <= box.left || next.x >= box.right || next.y + size <= box.top || next.y >= box.bottom) return next;
+  const alongX = entry(from.x, next.x, size, box.left, box.right);
+  const alongY = entry(from.y, next.y, size, box.top, box.bottom);
+  if (alongX < 0 && alongY < 0) return leaveBox(next, size, box);
+  if (alongX >= alongY) {
+    const fromLeft = from.x + size <= box.left;
+    return { x: fromLeft ? box.left - size : box.right, y: next.y, vx: (fromLeft ? -1 : 1) * Math.abs(next.vx) * RESTITUTION, vy: next.vy };
+  }
+  const fromTop = from.y + size <= box.top;
+  return { x: next.x, y: fromTop ? box.top - size : box.bottom, vx: next.vx, vy: (fromTop ? -1 : 1) * Math.abs(next.vy) * RESTITUTION };
 }
 
 export type StepOptions = {
@@ -105,7 +132,7 @@ export function step(body: Body, seconds: number, options: StepOptions): Body {
   const x = bounceAxis(body.x + velocity.vx * dt, velocity.vx, options.bounds.left, options.bounds.right - options.size);
   const y = bounceAxis(body.y + velocity.vy * dt, velocity.vy, options.bounds.top, options.bounds.bottom - options.size);
   const moved = { x: x.position, y: y.position, vx: x.velocity, vy: y.velocity };
-  return options.box ? leaveBox(moved, options.size, options.box) : moved;
+  return options.box ? collideBox(body, moved, options.size, options.box) : moved;
 }
 
 /** How far out the burst is over its run (0 to 1): out fast to full reach by BURST_PEAK, then eased back to 0. */

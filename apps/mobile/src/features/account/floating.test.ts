@@ -1,5 +1,5 @@
 import {
-  BURST_PEAK, DRIFT_SPEED, MAX_SPEED, MAX_STEP_S, RESTITUTION, bounceAxis, burstCurve, burstPosition, leaveBox, limitSpeed, ringLayout, settle, step,
+  BURST_PEAK, DRIFT_SPEED, MAX_SPEED, MAX_STEP_S, RESTITUTION, bounceAxis, burstCurve, burstPosition, collideBox, leaveBox, limitSpeed, ringLayout, settle, step,
   type Box, type StepOptions,
 } from "./floating";
 
@@ -73,6 +73,37 @@ describe("leaveBox", () => {
     expect(leaveBox({ x: 190, y: 130, vx: -40, vy: 3 }, 50, box)).toEqual({ x: 200, y: 130, vx: 40 * RESTITUTION, vy: 3 });
     expect(leaveBox({ x: 130, y: 55, vx: 2, vy: 40 }, 50, box)).toEqual({ x: 130, y: 50, vx: 2, vy: -40 * RESTITUTION });
     expect(leaveBox({ x: 130, y: 195, vx: 2, vy: -40 }, 50, box)).toEqual({ x: 130, y: 200, vx: 2, vy: 40 * RESTITUTION });
+  });
+});
+
+describe("collideBox", () => {
+  const box: Box = { left: 100, top: 100, right: 200, bottom: 200 };
+
+  it("lets a move that stays clear of the box through", () => {
+    const next = { x: 30, y: 30, vx: 5, vy: 5 };
+    expect(collideBox({ x: 20, y: 20 }, next, 50, box)).toBe(next);
+  });
+
+  it("stops a logo at the side it came in through and bounces it off", () => {
+    expect(collideBox({ x: 45, y: 130 }, { x: 70, y: 130, vx: 900, vy: 10 }, 50, box)).toEqual({ x: 50, y: 130, vx: -900 * RESTITUTION, vy: 10 });
+    expect(collideBox({ x: 205, y: 130 }, { x: 180, y: 130, vx: -900, vy: 10 }, 50, box)).toEqual({ x: 200, y: 130, vx: 900 * RESTITUTION, vy: 10 });
+    expect(collideBox({ x: 130, y: 45 }, { x: 130, y: 70, vx: 10, vy: 900 }, 50, box)).toEqual({ x: 130, y: 50, vx: 10, vy: -900 * RESTITUTION });
+    expect(collideBox({ x: 130, y: 205 }, { x: 130, y: 180, vx: 10, vy: -900 }, 50, box)).toEqual({ x: 130, y: 200, vx: 10, vy: 900 * RESTITUTION });
+  });
+
+  it("resolves a corner entry on the axis that crossed last", () => {
+    // From above-left: x crossed at 1/3 of the move, y at 4/5, so it hit the top.
+    const hit = collideBox({ x: 40, y: 10 }, { x: 70, y: 60, vx: 300, vy: 500 }, 50, box);
+    expect(hit).toEqual({ x: 70, y: 50, vx: 300, vy: -500 * RESTITUTION });
+  });
+
+  it("slides a dragged logo along the edge instead of into the box", () => {
+    // Held against the left side and dragged right and down: it stays on the left, following the finger down.
+    expect(collideBox({ x: 50, y: 120 }, { x: 90, y: 160, vx: 0, vy: 0 }, 50, box)).toMatchObject({ x: 50, y: 160 });
+  });
+
+  it("lets a logo that was already inside leave by the shortest way", () => {
+    expect(collideBox({ x: 120, y: 150 }, { x: 110, y: 150, vx: 0, vy: 0 }, 50, box)).toEqual(leaveBox({ x: 110, y: 150, vx: 0, vy: 0 }, 50, box));
   });
 });
 
