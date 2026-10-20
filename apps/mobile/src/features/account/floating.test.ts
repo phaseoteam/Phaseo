@@ -1,5 +1,5 @@
 import {
-  BURST_KICK, CRUISE_SPEED, LIFT_SCALE, MAX_SPEED, MAX_STEP_S, MAX_STRETCH, SQUASH_SCALE, STRETCH_PER_SPEED, blockShape, bounceAxis, collidePair, coverage, deformation,
+  BURST_KICK, CRUISE_SPEED, LIFT_SCALE, MAX_SPEED, MAX_STEP_S, MAX_STRETCH, MIN_TILT, SQUASH_SCALE, STRETCH_PER_SPEED, blockShape, bounceAxis, collidePair, coverage, deformation,
   dragTo, fling, holdAt, kick, launch, leaveBlock, leaveBox, letGo, limitSpeed, makeBody, pickUp, relax, ringLayout, separation, springStep, squashAmount, stepWorld,
   stretchFactor, throwBody, tileShape, toCruise, type Block, type Body, type Box, type Round, type World,
 } from "./floating";
@@ -142,6 +142,21 @@ describe("toCruise", () => {
     expect(slow.vy / slow.vx).toBeCloseTo(8 / 6, 9);
     expect(rest.vx).toBeCloseTo(-CRUISE_SPEED * Math.SQRT1_2, 0);
     expect(rest.vy).toBeCloseTo(CRUISE_SPEED * Math.SQRT1_2, 0);
+  });
+
+  it("turns a flat or upright heading toward the diagonal within a third of a second, keeping its way", () => {
+    for (const start of [{ vx: -CRUISE_SPEED, vy: 0 }, { vx: 3, vy: -CRUISE_SPEED }, { vx: CRUISE_SPEED, vy: 5 }]) {
+      let velocity = start;
+      for (let frame = 0; frame < 20; frame += 1) velocity = toCruise(velocity.vx, velocity.vy, 1 / 60, 0);
+      const tilt = Math.atan2(Math.abs(velocity.vy), Math.abs(velocity.vx));
+      expect(Math.min(tilt, Math.PI / 2 - tilt)).toBeCloseTo(MIN_TILT, 9);
+      expect(Math.sign(velocity.vx)).toBe(start.vx < 0 ? -1 : 1);
+      expect(Math.sign(velocity.vy)).toBe(start.vy < 0 ? -1 : 1);
+      expect(speed(velocity)).toBeCloseTo(CRUISE_SPEED, 1);
+    }
+    // A diagonal-ish heading is left alone.
+    const diagonal = toCruise(48, -40, 1 / 60, 0);
+    expect(diagonal.vy / diagonal.vx).toBeCloseTo(-40 / 48, 12);
   });
 });
 
@@ -440,6 +455,45 @@ describe("stepWorld", () => {
     const speeds = bodies.map(speed);
     expect(speeds.reduce((sum, value) => sum + value, 0) / speeds.length).toBeCloseTo(CRUISE_SPEED, -1);
     expect(Math.max(...speeds)).toBeLessThan(CRUISE_SPEED * 2);
+  });
+
+  it("lets every logo travel round the mark on a 360 × 780 phone, gliding under the text", () => {
+    // A 360 dp phone with a 24 dp status bar and a 48 dp navigation bar: 44 pt logos and a 108 pt mark, with the
+    // version and catalogue line under it (as wide as the catalogue line) and a ring round both. Only the mark is
+    // solid. How long each logo takes to first get round is chance, DVD style (half of them within about 17 s on
+    // phones like this); every one gets round within two minutes, and they keep crossing.
+    const bounds: Box = { left: 8, top: 32, right: 352, bottom: 724 };
+    const mark: Block = { left: 126, top: 243, right: 234, bottom: 351, radius: 8 };
+    const text: Box = { left: 50, top: 375, right: 310, bottom: 514 };
+    const world: World = { size: 44, radius: 8, bounds, block: mark, cover: text };
+    const half = 390;
+    let bodies = launch(ringLayout(8, 44, bounds, { left: 38, top: 231, right: 322, bottom: 526 }));
+    const above = bodies.map(() => -1);
+    const below = bodies.map(() => -1);
+    const side = bodies.map((b) => b.y + 22 < half);
+    let crossings = 0;
+    let underText = 0;
+    let frame = 0;
+    run(bodies, 120, world, (list) => {
+      frame += 1;
+      list.forEach((b, index) => {
+        const top = b.y + 22 < half;
+        if (top && above[index]! < 0) above[index] = frame / 60;
+        if (!top && below[index]! < 0) below[index] = frame / 60;
+        if (top !== side[index]) crossings += 1;
+        side[index] = top;
+        if (coverage(b.x, b.y, 44, text) > 0.5) underText += 1;
+        expect(separation(blockShape(mark), tileShape(b.x, b.y, 44, 8, 1)).gap).toBeGreaterThan(-0.5);
+        expect(onScreen(b, bounds, 44)).toBe(true);
+      });
+      bodies = list;
+    });
+    const roundBy = above.map((t, index) => Math.max(t, below[index]!));
+    expect(roundBy.every((t) => t > 0 && t <= 120)).toBe(true);
+    expect(roundBy.filter((t) => t <= 30).length).toBeGreaterThanOrEqual(6);
+    // About four crossings per logo per minute.
+    expect(crossings / 8 / 2).toBeGreaterThan(3);
+    expect(underText).toBeGreaterThan(0);
   });
 
   it("lights a logo that hits a corner exactly, and the tint fades", () => {

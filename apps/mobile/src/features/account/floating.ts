@@ -52,6 +52,10 @@ export const CRUISE_SPEED = 64;
 export const MAX_SPEED = 2400;
 /** How quickly a logo returns to the cruise: the difference shrinks by a factor of e every 1 / CRUISE_RATE seconds, so even a full-speed fling is back to about the cruise within a second. */
 export const CRUISE_RATE = 4.6;
+/** Headings stay at least this far (radians, 25°) off flat and upright, so no logo ends up bouncing in a line between two edges, or between an edge and the mark, where it could never get round it. */
+export const MIN_TILT = (25 * Math.PI) / 180;
+/** How fast a heading too near flat or upright turns toward the diagonal (radians per second): within a third of a second. */
+export const TILT_RATE = 1.5;
 /** The outward speed a burst (a tap on the mark) adds to every logo. */
 export const BURST_KICK = 900;
 /** The longest frame simulated: after a stall (a dropped frame, the app coming back) logos move one frame, not jump. */
@@ -109,14 +113,19 @@ export function fling(vx: number, vy: number) {
 
 /**
  * The velocity after `dt` seconds of easing back to the cruise: faster logos slow down, slower ones speed up, and the
- * direction stays. A logo at rest sets off along `heading` (radians).
+ * direction stays, unless a hit has knocked it within MIN_TILT of flat or upright: then it turns toward the diagonal
+ * (at TILT_RATE, keeping which way it's going), as the DVD logo always moves. A logo at rest sets off along `heading`
+ * (radians).
  */
 export function toCruise(vx: number, vy: number, dt: number, heading: number) {
   "worklet";
   const speed = Math.hypot(vx, vy);
   const target = CRUISE_SPEED + (speed - CRUISE_SPEED) * Math.exp(-CRUISE_RATE * dt);
   if (speed < 0.001) return { vx: Math.cos(heading) * target, vy: Math.sin(heading) * target };
-  return { vx: (vx / speed) * target, vy: (vy / speed) * target };
+  const tilt = Math.atan2(Math.abs(vy), Math.abs(vx));
+  if (tilt >= MIN_TILT && tilt <= Math.PI / 2 - MIN_TILT) return { vx: (vx / speed) * target, vy: (vy / speed) * target };
+  const turned = tilt < MIN_TILT ? Math.min(MIN_TILT, tilt + TILT_RATE * dt) : Math.max(Math.PI / 2 - MIN_TILT, tilt - TILT_RATE * dt);
+  return { vx: (vx < 0 ? -1 : 1) * Math.cos(turned) * target, vy: (vy < 0 ? -1 : 1) * Math.sin(turned) * target };
 }
 
 /** One axis against two walls: past a wall, the logo is reflected back inside and heads away at the same speed. */
