@@ -58,7 +58,6 @@ public final class Models {
 
 	public static class AnthropicMessagesRequest {
 		public Object cache_control;
-		public Object context_management;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Integer max_tokens;
@@ -67,6 +66,7 @@ public final class Models {
 		public Object metadata;
 		public String model;
 		public java.util.List<String> models;
+		public java.util.List<Object> plugins;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -81,12 +81,10 @@ public final class Models {
 		public Integer top_k;
 		public Double top_p;
 		public Boolean usage;
-		public String user;
 	}
 
 	public static class AnthropicMessagesResponse {
 		public java.util.List<Object> content;
-		public Object context_management;
 		public String id;
 		public String model;
 		public Object role;
@@ -552,7 +550,6 @@ public final class Models {
 		public Boolean echo_upstream_request;
 		public Double frequency_penalty;
 		public Object image_config;
-		public Boolean include_reasoning;
 		public Object logit_bias;
 		public Boolean logprobs;
 		public Integer max_completion_tokens;
@@ -565,7 +562,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public Boolean parallel_tool_calls;
-		public Object prediction;
+		public java.util.List<Object> plugins;
 		public Double presence_penalty;
 		public String prompt_cache_key;
 		public Object prompt_cache_options;
@@ -1501,6 +1498,9 @@ public final class Models {
 
 	public static class GatewayObservabilityEventResponse {
 		public Object data;
+	}
+
+	public static class GatewayPlugin {
 	}
 
 	public static class GatewayPricing {
@@ -2494,6 +2494,13 @@ public final class Models {
 		public Object summary;
 	}
 
+	public static class OpenAIWebSearchToolDefinition {
+		public Object filters;
+		public Object search_context_size;
+		public Object type;
+		public Object user_location;
+	}
+
 	public static class OrganisationId {
 	}
 
@@ -3048,6 +3055,12 @@ public final class Models {
 		public Double relevance_score;
 	}
 
+	public static class ResponseHealingPlugin {
+		public Boolean enabled;
+		public Object id;
+		public Object mode;
+	}
+
 	public static class ResponsesInputItem {
 		public Object content;
 		public String encrypted_content;
@@ -3114,6 +3127,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public Boolean parallel_tool_calls;
+		public java.util.List<Object> plugins;
 		public String previous_response_id;
 		public String prompt_cache_key;
 		public Object prompt_cache_options;
@@ -3423,6 +3437,16 @@ public final class Models {
 		public Object access;
 	}
 
+	public static class WebFetchPlugin {
+		public java.util.List<String> allowed_domains;
+		public java.util.List<String> blocked_domains;
+		public Boolean enabled;
+		public Object engine;
+		public Object id;
+		public Integer max_content_tokens;
+		public Integer max_uses;
+	}
+
 	public static class WebhookEndpoint {
 		public String createdAt;
 		public String createdBy;
@@ -3491,6 +3515,17 @@ public final class Models {
 		public String name;
 		public Object status;
 		public String url;
+	}
+
+	public static class WebSearchPlugin {
+		public Boolean enabled;
+		public Object engine;
+		public java.util.List<String> exclude_domains;
+		public Object id;
+		public java.util.List<String> include_domains;
+		public Integer max_results;
+		public Integer max_uses;
+		public Object search_context_size;
 	}
 
 	public static class Workspace {

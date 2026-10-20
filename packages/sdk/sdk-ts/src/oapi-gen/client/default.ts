@@ -856,13 +856,6 @@ export type CreateAnthropicMessageParams = {
       type?: string;
       [key: string]: unknown;
     };
-    context_management?: {
-      edits?: {
-        type: string;
-        [key: string]: unknown;
-      }[];
-      [key: string]: unknown;
-    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -904,6 +897,40 @@ export type CreateAnthropicMessageParams = {
     };
     model: string;
     models?: string[];
+    plugins?: (
+      | {
+          enabled?: boolean;
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
+          exclude_domains?: string[];
+          id: "web";
+          include_domains?: string[];
+          max_results?: number;
+          max_uses?: number;
+          search_context_size?: "low" | "medium" | "high";
+        }
+      | {
+          allowed_domains?: string[];
+          blocked_domains?: string[];
+          enabled?: boolean;
+          engine?:
+            "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+          id: "web-fetch";
+          max_content_tokens?: number;
+          max_uses?: number;
+        }
+      | {
+          enabled?: boolean;
+          id: "response-healing";
+          mode?: "safe" | "strict";
+        }
+    )[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -977,8 +1004,7 @@ export type CreateAnthropicMessageParams = {
       };
     };
     reasoning?: {
-      effort?:
-        "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -1087,7 +1113,6 @@ export type CreateAnthropicMessageParams = {
     top_k?: number;
     top_p?: number;
     usage?: boolean;
-    user?: string;
   };
 };
 
@@ -1119,11 +1144,6 @@ export async function createAnthropicMessage(
     tool_use_id?: string;
     type?: "text" | "image" | "tool_use" | "tool_result";
   }[];
-  context_management?: {
-    applied_edits?: {
-      [key: string]: unknown;
-    }[];
-  };
   id?: string;
   model?: string;
   role?: "assistant";
@@ -1165,11 +1185,6 @@ export async function createAnthropicMessage(
       tool_use_id?: string;
       type?: "text" | "image" | "tool_use" | "tool_result";
     }[];
-    context_management?: {
-      applied_edits?: {
-        [key: string]: unknown;
-      }[];
-    };
     id?: string;
     model?: string;
     role?: "assistant";
@@ -2061,7 +2076,6 @@ export type CreateChatCompletionParams = {
       super_resolution_references?: string[];
       [key: string]: unknown;
     };
-    include_reasoning?: boolean;
     logit_bias?: {
       [key: string]: number;
     };
@@ -2177,14 +2191,40 @@ export type CreateChatCompletionParams = {
     model: string;
     models?: string[];
     parallel_tool_calls?: boolean;
-    prediction?: {
-      content:
-        | string
-        | {
-            [key: string]: unknown;
-          }[];
-      type: "content";
-    };
+    plugins?: (
+      | {
+          enabled?: boolean;
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
+          exclude_domains?: string[];
+          id: "web";
+          include_domains?: string[];
+          max_results?: number;
+          max_uses?: number;
+          search_context_size?: "low" | "medium" | "high";
+        }
+      | {
+          allowed_domains?: string[];
+          blocked_domains?: string[];
+          enabled?: boolean;
+          engine?:
+            "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+          id: "web-fetch";
+          max_content_tokens?: number;
+          max_uses?: number;
+        }
+      | {
+          enabled?: boolean;
+          id: "response-healing";
+          mode?: "safe" | "strict";
+        }
+    )[];
     presence_penalty?: number;
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
@@ -2284,8 +2324,7 @@ export type CreateChatCompletionParams = {
         | "medium"
         | "high"
         | "xhigh"
-        | "max"
-        | null;
+        | "max";
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -2315,10 +2354,7 @@ export type CreateChatCompletionParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch"
-      | "auto"
-      | "scale"
-      | null;
+      | "batch";
     session_id?: string;
     stop?: string | string[];
     store?: boolean;
@@ -2420,6 +2456,21 @@ export type CreateChatCompletionParams = {
             max_results?: number;
           };
           type: "phaseo:search_models";
+        }
+      | {
+          filters?: {
+            allowed_domains?: string[];
+          };
+          search_context_size?: "low" | "medium" | "high";
+          type:
+            | "web_search"
+            | "web_search_2025_08_26"
+            | "web_search_preview"
+            | "web_search_preview_2025_03_11";
+          user_location?: {
+            [key: string]: unknown;
+          };
+          [key: string]: unknown;
         }
     )[];
     top_logprobs?: number;
@@ -5622,6 +5673,40 @@ export type CreateResponseParams = {
     model: string;
     models?: string[];
     parallel_tool_calls?: boolean;
+    plugins?: (
+      | {
+          enabled?: boolean;
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
+          exclude_domains?: string[];
+          id: "web";
+          include_domains?: string[];
+          max_results?: number;
+          max_uses?: number;
+          search_context_size?: "low" | "medium" | "high";
+        }
+      | {
+          allowed_domains?: string[];
+          blocked_domains?: string[];
+          enabled?: boolean;
+          engine?:
+            "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+          id: "web-fetch";
+          max_content_tokens?: number;
+          max_uses?: number;
+        }
+      | {
+          enabled?: boolean;
+          id: "response-healing";
+          mode?: "safe" | "strict";
+        }
+    )[];
     previous_response_id?: string;
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
@@ -5711,8 +5796,7 @@ export type CreateResponseParams = {
         | "medium"
         | "high"
         | "xhigh"
-        | "max"
-        | null;
+        | "max";
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -5726,10 +5810,7 @@ export type CreateResponseParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch"
-      | "auto"
-      | "scale"
-      | null;
+      | "batch";
     session_id?: string;
     store?: boolean;
     stream?: boolean;
@@ -5830,6 +5911,21 @@ export type CreateResponseParams = {
             max_results?: number;
           };
           type: "phaseo:search_models";
+        }
+      | {
+          filters?: {
+            allowed_domains?: string[];
+          };
+          search_context_size?: "low" | "medium" | "high";
+          type:
+            | "web_search"
+            | "web_search_2025_08_26"
+            | "web_search_preview"
+            | "web_search_preview_2025_03_11";
+          user_location?: {
+            [key: string]: unknown;
+          };
+          [key: string]: unknown;
         }
     )[];
     top_p?: number;

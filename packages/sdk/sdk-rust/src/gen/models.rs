@@ -62,7 +62,6 @@ pub struct AnthropicMessage {
 
 pub struct AnthropicMessagesRequest {
 	pub cache_control: Option<HashMap<String, String>>,
-	pub context_management: Option<HashMap<String, String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub max_tokens: i64,
@@ -71,6 +70,7 @@ pub struct AnthropicMessagesRequest {
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
+	pub plugins: Option<Vec<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -85,12 +85,10 @@ pub struct AnthropicMessagesRequest {
 	pub top_k: Option<i64>,
 	pub top_p: Option<f64>,
 	pub usage: Option<bool>,
-	pub user: Option<String>,
 }
 
 pub struct AnthropicMessagesResponse {
 	pub content: Option<Vec<HashMap<String, String>>>,
-	pub context_management: Option<HashMap<String, String>>,
 	pub id: Option<String>,
 	pub model: Option<String>,
 	pub role: Option<String>,
@@ -554,7 +552,6 @@ pub struct ChatCompletionsRequest {
 	pub echo_upstream_request: Option<bool>,
 	pub frequency_penalty: Option<f64>,
 	pub image_config: Option<HashMap<String, String>>,
-	pub include_reasoning: Option<bool>,
 	pub logit_bias: Option<HashMap<String, String>>,
 	pub logprobs: Option<bool>,
 	pub max_completion_tokens: Option<i64>,
@@ -567,7 +564,7 @@ pub struct ChatCompletionsRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub parallel_tool_calls: Option<bool>,
-	pub prediction: Option<HashMap<String, String>>,
+	pub plugins: Option<Vec<String>>,
 	pub presence_penalty: Option<f64>,
 	pub prompt_cache_key: Option<Option<String>>,
 	pub prompt_cache_options: Option<HashMap<String, String>>,
@@ -579,7 +576,7 @@ pub struct ChatCompletionsRequest {
 	pub response_format: Option<String>,
 	pub safety_identifier: Option<Option<String>>,
 	pub seed: Option<i64>,
-	pub service_tier: Option<Option<String>>,
+	pub service_tier: Option<String>,
 	pub session_id: Option<String>,
 	pub stop: Option<String>,
 	pub store: Option<bool>,
@@ -1494,6 +1491,8 @@ pub struct GatewayObservabilityEventListResponse {
 pub struct GatewayObservabilityEventResponse {
 	pub data: HashMap<String, String>,
 }
+
+pub type GatewayPlugin = JsonValue;
 
 pub struct GatewayPricing {
 	pub meters: HashMap<String, String>,
@@ -2471,11 +2470,18 @@ pub struct OpenAIModelsResponse {
 }
 
 pub struct OpenAIReasoningConfig {
-	pub effort: Option<Option<String>>,
+	pub effort: Option<String>,
 	pub enabled: Option<bool>,
 	pub max_tokens: Option<i64>,
 	pub mode: Option<String>,
 	pub summary: Option<String>,
+}
+
+pub struct OpenAIWebSearchToolDefinition {
+	pub filters: Option<HashMap<String, String>>,
+	pub search_context_size: Option<String>,
+	pub r#type: String,
+	pub user_location: Option<HashMap<String, String>>,
 }
 
 pub type OrganisationId = JsonValue;
@@ -2982,7 +2988,7 @@ pub struct RateLimitPolicyUpdateInput {
 pub type RateLimitTargetType = JsonValue;
 
 pub struct ReasoningConfig {
-	pub effort: Option<Option<String>>,
+	pub effort: Option<String>,
 	pub enabled: Option<bool>,
 	pub max_tokens: Option<i64>,
 	pub mode: Option<String>,
@@ -3021,6 +3027,12 @@ pub struct RerankResult {
 	pub document: Option<String>,
 	pub index: Option<i64>,
 	pub relevance_score: Option<f64>,
+}
+
+pub struct ResponseHealingPlugin {
+	pub enabled: Option<bool>,
+	pub id: String,
+	pub mode: Option<String>,
 }
 
 pub struct ResponsesInputItem {
@@ -3088,6 +3100,7 @@ pub struct ResponsesRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub parallel_tool_calls: Option<bool>,
+	pub plugins: Option<Vec<String>>,
 	pub previous_response_id: Option<String>,
 	pub prompt_cache_key: Option<Option<String>>,
 	pub prompt_cache_options: Option<HashMap<String, String>>,
@@ -3096,7 +3109,7 @@ pub struct ResponsesRequest {
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
 	pub safety_identifier: Option<Option<String>>,
-	pub service_tier: Option<Option<String>>,
+	pub service_tier: Option<String>,
 	pub session_id: Option<String>,
 	pub store: Option<bool>,
 	pub stream: Option<bool>,
@@ -3393,6 +3406,16 @@ pub struct VideoOutputConfig {
 	pub access: Option<String>,
 }
 
+pub struct WebFetchPlugin {
+	pub allowed_domains: Option<Vec<String>>,
+	pub blocked_domains: Option<Vec<String>>,
+	pub enabled: Option<bool>,
+	pub engine: Option<String>,
+	pub id: String,
+	pub max_content_tokens: Option<i64>,
+	pub max_uses: Option<i64>,
+}
+
 pub struct WebhookEndpoint {
 	pub createdAt: Option<Option<String>>,
 	pub createdBy: Option<Option<String>>,
@@ -3460,6 +3483,17 @@ pub struct WebhookEndpointUpdateRequest {
 	pub name: Option<String>,
 	pub status: Option<String>,
 	pub url: Option<String>,
+}
+
+pub struct WebSearchPlugin {
+	pub enabled: Option<bool>,
+	pub engine: Option<String>,
+	pub exclude_domains: Option<Vec<String>>,
+	pub id: String,
+	pub include_domains: Option<Vec<String>>,
+	pub max_results: Option<i64>,
+	pub max_uses: Option<i64>,
+	pub search_context_size: Option<String>,
 }
 
 pub struct Workspace {

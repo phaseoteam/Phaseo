@@ -73,8 +73,6 @@ module Phaseo
     AnthropicMessage = Struct.new(:content, :role, keyword_init: true)
     # @!attribute [rw] cache_control
     #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] context_management
-    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -91,6 +89,8 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] models
     #   @return [Array<String>, nil]
+    # @!attribute [rw] plugins
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider_options
@@ -119,13 +119,9 @@ module Phaseo
     #   @return [Float, nil]
     # @!attribute [rw] usage
     #   @return [Boolean, nil]
-    # @!attribute [rw] user
-    #   @return [String, nil]
-    AnthropicMessagesRequest = Struct.new(:cache_control, :context_management, :debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, :user, keyword_init: true)
+    AnthropicMessagesRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :plugins, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
-    # @!attribute [rw] context_management
-    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] id
     #   @return [String, nil]
     # @!attribute [rw] model
@@ -140,7 +136,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
-    AnthropicMessagesResponse = Struct.new(:content, :context_management, :id, :model, :role, :stop_reason, :stop_sequence, :type, :usage, keyword_init: true)
+    AnthropicMessagesResponse = Struct.new(:content, :id, :model, :role, :stop_reason, :stop_sequence, :type, :usage, keyword_init: true)
     # @!attribute [rw] async
     #   @return [Boolean, nil]
     # @!attribute [rw] description
@@ -826,8 +822,6 @@ module Phaseo
     #   @return [Float, nil]
     # @!attribute [rw] image_config
     #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] include_reasoning
-    #   @return [Boolean, nil]
     # @!attribute [rw] logit_bias
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] logprobs
@@ -852,8 +846,8 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] parallel_tool_calls
     #   @return [Boolean, nil]
-    # @!attribute [rw] prediction
-    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] plugins
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] presence_penalty
     #   @return [Float, nil]
     # @!attribute [rw] prompt_cache_key
@@ -904,7 +898,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] user_id
     #   @return [String, nil]
-    ChatCompletionsRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :frequency_penalty, :image_config, :include_reasoning, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :prediction, :presence_penalty, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :reasoning_effort, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
+    ChatCompletionsRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :frequency_penalty, :image_config, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :plugins, :presence_penalty, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :reasoning_effort, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
     # @!attribute [rw] choices
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] created
@@ -2105,6 +2099,7 @@ module Phaseo
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     GatewayObservabilityEventResponse = Struct.new(:data, keyword_init: true)
+    GatewayPlugin = Object
     # @!attribute [rw] meters
     #   @return [Hash{String => Object}]
     # @!attribute [rw] pricing_plan
@@ -3547,6 +3542,15 @@ module Phaseo
     # @!attribute [rw] summary
     #   @return [String, nil]
     OpenAIReasoningConfig = Struct.new(:effort, :enabled, :max_tokens, :mode, :summary, keyword_init: true)
+    # @!attribute [rw] filters
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] search_context_size
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    # @!attribute [rw] user_location
+    #   @return [Hash{String => Object}, nil]
+    OpenAIWebSearchToolDefinition = Struct.new(:filters, :search_context_size, :type, :user_location, keyword_init: true)
     OrganisationId = Object
     OrganisationIdList = Object
     ParseBlock = Object
@@ -4290,6 +4294,13 @@ module Phaseo
     # @!attribute [rw] relevance_score
     #   @return [Float, nil]
     RerankResult = Struct.new(:document, :index, :relevance_score, keyword_init: true)
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] mode
+    #   @return [String, nil]
+    ResponseHealingPlugin = Struct.new(:enabled, :id, :mode, keyword_init: true)
     # @!attribute [rw] content
     #   @return [String, Array<Hash{String => Object}>, Hash{String => Object}, nil]
     # @!attribute [rw] encrypted_content
@@ -4385,6 +4396,8 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] parallel_tool_calls
     #   @return [Boolean, nil]
+    # @!attribute [rw] plugins
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] previous_response_id
     #   @return [String, nil]
     # @!attribute [rw] prompt_cache_key
@@ -4425,7 +4438,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ResponsesRequest = Struct.new(:background, :cache_control, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :previous_response_id, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
+    ResponsesRequest = Struct.new(:background, :cache_control, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :plugins, :previous_response_id, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] cost_cents
@@ -4840,6 +4853,21 @@ module Phaseo
     # @!attribute [rw] access
     #   @return [String, nil]
     VideoOutputConfig = Struct.new(:access, keyword_init: true)
+    # @!attribute [rw] allowed_domains
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] blocked_domains
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] engine
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] max_content_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] max_uses
+    #   @return [Integer, nil]
+    WebFetchPlugin = Struct.new(:allowed_domains, :blocked_domains, :enabled, :engine, :id, :max_content_tokens, :max_uses, keyword_init: true)
     # @!attribute [rw] createdAt
     #   @return [String, nil]
     # @!attribute [rw] createdBy
@@ -4935,6 +4963,23 @@ module Phaseo
     # @!attribute [rw] url
     #   @return [String, nil]
     WebhookEndpointUpdateRequest = Struct.new(:events, :name, :status, :url, keyword_init: true)
+    # @!attribute [rw] enabled
+    #   @return [Boolean, nil]
+    # @!attribute [rw] engine
+    #   @return [String, nil]
+    # @!attribute [rw] exclude_domains
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] include_domains
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] max_results
+    #   @return [Integer, nil]
+    # @!attribute [rw] max_uses
+    #   @return [Integer, nil]
+    # @!attribute [rw] search_context_size
+    #   @return [String, nil]
+    WebSearchPlugin = Struct.new(:enabled, :engine, :exclude_domains, :id, :include_domains, :max_results, :max_uses, :search_context_size, keyword_init: true)
     # @!attribute [rw] created_at
     #   @return [String, nil]
     # @!attribute [rw] created_by

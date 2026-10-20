@@ -1,6 +1,3 @@
-/**
- * An optional top-level field sent as `null` is treated as unset, the same as leaving it out.
- */
 export interface ChatCompletionsRequest {
   cache_control?: {
     scope?: string;
@@ -31,7 +28,6 @@ export interface ChatCompletionsRequest {
     super_resolution_references?: string[];
     [key: string]: unknown;
   };
-  include_reasoning?: boolean;
   logit_bias?: {
     [key: string]: number;
   };
@@ -147,14 +143,40 @@ export interface ChatCompletionsRequest {
   model: string;
   models?: string[];
   parallel_tool_calls?: boolean;
-  prediction?: {
-    content:
-      | string
-      | {
-          [key: string]: unknown;
-        }[];
-    type: "content";
-  };
+  plugins?: (
+    | {
+        enabled?: boolean;
+        engine?:
+          | "auto"
+          | "native"
+          | "exa"
+          | "firecrawl"
+          | "parallel"
+          | "perplexity"
+          | "tinyfish";
+        exclude_domains?: string[];
+        id: "web";
+        include_domains?: string[];
+        max_results?: number;
+        max_uses?: number;
+        search_context_size?: "low" | "medium" | "high";
+      }
+    | {
+        allowed_domains?: string[];
+        blocked_domains?: string[];
+        enabled?: boolean;
+        engine?:
+          "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+        id: "web-fetch";
+        max_content_tokens?: number;
+        max_uses?: number;
+      }
+    | {
+        enabled?: boolean;
+        id: "response-healing";
+        mode?: "safe" | "strict";
+      }
+  )[];
   presence_penalty?: number;
   prompt_cache_key?: string | null;
   prompt_cache_options?: {
@@ -254,8 +276,7 @@ export interface ChatCompletionsRequest {
       | "medium"
       | "high"
       | "xhigh"
-      | "max"
-      | null;
+      | "max";
     enabled?: boolean;
     max_tokens?: number;
     mode?: "standard" | "pro";
@@ -285,10 +306,7 @@ export interface ChatCompletionsRequest {
     | "ultrafast"
     | "priority"
     | "flex"
-    | "batch"
-    | "auto"
-    | "scale"
-    | null;
+    | "batch";
   session_id?: string;
   stop?: string | string[];
   store?: boolean;
@@ -390,6 +408,21 @@ export interface ChatCompletionsRequest {
           max_results?: number;
         };
         type: "phaseo:search_models";
+      }
+    | {
+        filters?: {
+          allowed_domains?: string[];
+        };
+        search_context_size?: "low" | "medium" | "high";
+        type:
+          | "web_search"
+          | "web_search_2025_08_26"
+          | "web_search_preview"
+          | "web_search_preview_2025_03_11";
+        user_location?: {
+          [key: string]: unknown;
+        };
+        [key: string]: unknown;
       }
   )[];
   top_logprobs?: number;
