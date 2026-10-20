@@ -11,8 +11,11 @@ import { EmptyBox, PageSection } from "./parts";
 import { averageUptime, formatPercentile, hasPerformanceHistory, PERCENTILES, performanceView, RANGE_DAYS, showsLeastStableProvider, TREND_METRICS, trendSeries, uptimeHours, type RangeDays, type TrendMetric } from "./performance";
 import type { SectionId } from "./sections";
 
-/** Providers without a brand colour use the chart tokens, as the website's trend charts do. */
-const CHART_TOKENS = ["--color-chart-1", "--color-chart-2", "--color-chart-3", "--color-chart-4", "--color-chart-5"];
+/**
+ * Providers without a brand colour use the chart tokens, as the website's trend charts do, strongest
+ * first: the steps mixed towards the background are faint on dark palettes.
+ */
+const CHART_TOKENS = ["--color-chart-4", "--color-chart-5", "--color-chart-3", "--color-chart-2", "--color-chart-1"];
 
 /** Shared by Performance and Uptime: the website requests percentile 50 over three days by default. */
 export function usePerformance(modelId: string, options: { range?: RangeDays; colo?: string | null; percentile?: number } = {}, enabled = true) {

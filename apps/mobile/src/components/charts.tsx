@@ -168,7 +168,7 @@ export function ShareBar({ fraction, label }: { fraction: number; label?: string
       accessibilityValue={{ min: 0, max: 100, now: Math.round(percent) }}
       className="mt-1.5 h-1.5 overflow-hidden rounded-[2px] bg-muted"
     >
-      <View className="h-full rounded-[2px] bg-chart-3" style={{ width: `${Math.max(2, percent)}%` }} />
+      <View className="h-full rounded-[2px] bg-chart-4" style={{ width: `${Math.max(2, percent)}%` }} />
     </View>
   );
 }
