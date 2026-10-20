@@ -1,6 +1,6 @@
 import { Check, Pipette, TriangleAlert } from "lucide-react-native";
 import { useState } from "react";
-import { Text as NativeText, Pressable, View } from "react-native";
+import { Text as NativeText, Pressable, ScrollView, View } from "react-native";
 import { Button, Icon, Sheet, Text } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
@@ -78,16 +78,19 @@ function AccentEditor({ scheme, theme, onClose, onApply }: { scheme: Scheme; the
   const initial = accentFor(theme, scheme);
   const [draft, setDraft] = useState(initial);
   const [valid, setValid] = useState(true);
+  const [dragging, setDragging] = useState(false);
   const palette = paletteOf(theme, scheme);
   const check = checkAccent(draft, palette, scheme);
   const colours = previewColours({ ...theme, [accentKey(scheme)]: draft }, scheme);
 
+  // Scrolls when the sheet is shorter than the editor (small or landscape phones). Scrolling pauses
+  // while a finger is on the colour square or hue bar, so a drag picks a colour instead.
   return (
-    <View className={split ? "p-5" : "px-4 pb-1 pt-5"}>
+    <ScrollView scrollEnabled={!dragging} keyboardShouldPersistTaps="handled" contentContainerClassName={split ? "p-5" : "px-4 pb-1 pt-5"}>
       <Text variant="heading">{`${schemeName(scheme)} accent`}</Text>
       <Text variant="muted" className="mt-1">Drag to choose a colour, or type its hex code.</Text>
       <View className="mt-4">
-        <ColourPicker value={initial} onChange={setDraft} onValidChange={setValid} />
+        <ColourPicker value={initial} onChange={setDraft} onValidChange={setValid} onDragChange={setDragging} />
       </View>
       <View accessible accessibilityLabel={`Sample on the ${PALETTE_NAMES[palette]} ${scheme} background, contrast ${check.ratio.toFixed(1)} to 1`} className="mt-3 flex-row items-center gap-3 rounded-md border p-3" style={{ backgroundColor: colours.background, borderColor: colours.border }}>
         <View className="h-8 justify-center rounded-[6px] px-3" style={{ backgroundColor: colours.primary }}>
@@ -108,6 +111,6 @@ function AccentEditor({ scheme, theme, onClose, onApply }: { scheme: Scheme; the
           <Button label="Cancel" variant="outline" onPress={onClose} />
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 }

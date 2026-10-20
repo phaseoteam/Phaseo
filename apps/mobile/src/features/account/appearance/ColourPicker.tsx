@@ -11,7 +11,7 @@ const THUMB = 18;
 const HUES = ["#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff", "#ff0000"];
 
 /** A drag area that reports where the finger is as 0–1 on each axis (the slider's responder pattern). */
-function useDrag(onMove: (x: number, y: number) => void) {
+function useDrag(onMove: (x: number, y: number) => void, onDragChange?: (dragging: boolean) => void) {
   const size = useRef({ width: 0, height: 0 });
   const start = useRef({ x: 0, y: 0, pageX: 0, pageY: 0 });
   const at = (event: GestureResponderEvent) => {
@@ -26,9 +26,12 @@ function useDrag(onMove: (x: number, y: number) => void) {
     onResponderTerminationRequest: () => false,
     onResponderGrant: (event: GestureResponderEvent) => {
       start.current = { x: event.nativeEvent.locationX, y: event.nativeEvent.locationY, pageX: event.nativeEvent.pageX, pageY: event.nativeEvent.pageY };
+      onDragChange?.(true);
       at(event);
     },
     onResponderMove: at,
+    onResponderRelease: () => onDragChange?.(false),
+    onResponderTerminate: () => onDragChange?.(false),
   };
 }
 
@@ -46,7 +49,7 @@ function Thumb({ colour, left, top }: { colour: string; left: number | `${number
  * (across) and brightness (down), the bar for hue, or type a hex code. HSV is the state, so the hue
  * survives dragging through greys.
  */
-export function ColourPicker({ value, onChange, onValidChange }: { value: string; onChange(hex: string): void; onValidChange?(valid: boolean): void }) {
+export function ColourPicker({ value, onChange, onValidChange, onDragChange }: { value: string; onChange(hex: string): void; onValidChange?(valid: boolean): void; onDragChange?(dragging: boolean): void }) {
   const ids = useId().replace(/[^a-zA-Z0-9]/g, "");
   const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(value));
   const [draft, setDraft] = useState(value);
@@ -61,8 +64,8 @@ export function ColourPicker({ value, onChange, onValidChange }: { value: string
     onValidChange?.(true);
     onChange(nextHex);
   };
-  const plane = useDrag((x, y) => update({ ...hsv, s: x, v: 1 - y }));
-  const hue = useDrag((x) => update({ ...hsv, h: x * 359.9 }));
+  const plane = useDrag((x, y) => update({ ...hsv, s: x, v: 1 - y }), onDragChange);
+  const hue = useDrag((x) => update({ ...hsv, h: x * 359.9 }), onDragChange);
 
   const typed = (text: string) => {
     setDraft(text);
