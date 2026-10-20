@@ -1,6 +1,6 @@
 import type { ModelCard } from "@/lib/api/models";
 import {
-  buildPool, describeFigure, nextTap, pickRound, QUESTION_KINDS, questionsFor, shareMessage, TAP_GAP_MS, tapMessage, topLabs, toContestant, winner,
+  buildPool, describeFigure, pickRound, QUESTION_KINDS, questionsFor, shareMessage, topLabs, toContestant, winner,
   type Contestant,
 } from "./higherOrLower";
 
@@ -44,38 +44,6 @@ function seeded(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-describe("the seven taps", () => {
-  it("counts taps that follow each other and starts again after a pause", () => {
-    let tap = nextTap(null, 0);
-    expect(tap.count).toBe(1);
-    tap = nextTap(tap, 800);
-    expect(tap.count).toBe(2);
-    expect(nextTap(tap, 800 + TAP_GAP_MS + 1).count).toBe(1);
-  });
-
-  it("stops counting at seven", () => {
-    let tap = nextTap(null, 0);
-    for (let i = 1; i < 10; i += 1) tap = nextTap(tap, i * 100);
-    expect(tap.count).toBe(7);
-  });
-
-  it("counts down from the third tap", () => {
-    expect([1, 2, 3, 4, 5, 6, 7].map((count) => tapMessage(count))).toEqual([
-      null,
-      null,
-      "4 taps away from something…",
-      "3 taps away from something…",
-      "2 taps away from something…",
-      "1 tap away from something…",
-      null,
-    ]);
-  });
-
-  it("counts down to a replay once unlocked", () => {
-    expect([2, 3, 6, 7].map((count) => tapMessage(count, true))).toEqual([null, "4 taps to the logo burst", "1 tap to the logo burst", null]);
-  });
-});
 
 describe("toContestant", () => {
   it("takes a routable text model's figures", () => {

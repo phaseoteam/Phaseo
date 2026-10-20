@@ -4,27 +4,25 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useFocusEffect, usePathname, useRouter, type Href } from "expo-router";
 import {
-  Activity, Bell, BookOpen, ChartNoAxesColumn, ExternalLink, FileText, Gamepad2, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Palette, Plus, Scale,
+  Activity, Bell, BookOpen, ChartNoAxesColumn, ExternalLink, FileText, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Palette, Plus, Scale,
   Shield, ShieldAlert, ShieldCheck, Sparkles, UserX, Users, Wallet, type LucideIcon,
 } from "lucide-react-native";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { Logo, logoUri } from "@/components/Logo";
+import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Button, confirm, Header, Icon, Row, Screen, Section, Text, toast } from "@/components/ui";
 import { readStorageReport } from "@/features/chat/deviceStorage";
-import { catalogueQuery } from "@/features/models/state";
 import { FULL_VERSION_LABEL, VERSION_LABEL } from "@/lib/appInfo";
 import { formatBytes, formatNumber, formatUsd, nanosToUsd } from "@/lib/format";
 import { openWeb } from "@/lib/web";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
-import { buildPool, nextTap, TAPS_TO_UNLOCK, tapMessage, topLabs, type TapCount } from "./higherOrLower";
-import { higherOrLowerStore, unlockHigherOrLower } from "./higherOrLowerStore";
-import { FALLBACK_LABS, LogoBurst, type BurstLab } from "./LogoBurst";
 import { useBalance, useKeys, useStatus, useTeam, useTwoFactor, useWeekSpend } from "./queries";
 import { StatusDot } from "./StatusScreen";
+import { nextTap, TAPS_TO_OPEN, type TapRun } from "./versionArt";
+import { prefetchVersionArt } from "./VersionArtScreen";
 
 const ITEMS = {
   usage: { href: "/account/usage", title: "Usage", icon: ChartNoAxesColumn },
@@ -40,7 +38,6 @@ const ITEMS = {
   feedback: { href: "/account/feedback", title: "Send feedback", icon: MessageSquareText },
   licences: { href: "/account/licences", title: "Open source licences", icon: Scale },
   diagnostics: { href: "/account/diagnostics", title: "Diagnostics", icon: Gauge },
-  higherOrLower: { href: "/account/higher-or-lower", title: "Higher or lower", icon: Gamepad2 },
 } as const satisfies Record<string, { href: Href; title: string; icon: LucideIcon }>;
 
 const roleLabel = (role?: string | null) => (role ? role.replace(/^\w/, (letter) => letter.toUpperCase()) : "Member");
@@ -73,49 +70,23 @@ export function AccountMenu() {
     }
   }, []));
 
-  // Seven taps on Version and build unlock Higher or lower, as Android's build number unlocks developer options.
+  // Five quick taps on Version and build open the version art, as on Android. Nothing shows while tapping (no
+  // countdown), and it opens every time.
   const queryClient = useQueryClient();
-  const unlocked = higherOrLowerStore.use((state) => state.unlocked);
   const { resolved } = useAppearance();
-  const taps = useRef<TapCount | null>(null);
-  const burstLabs = useRef<{ labs: BurstLab[]; logos: Promise<unknown> } | null>(null);
-  // `run` remounts the burst, so a replay starts from the beginning even if the last one is still playing.
-  const [burst, setBurst] = useState<{ labs: BurstLab[]; run: number } | null>(null);
-  const endBurst = useCallback(() => setBurst(null), []);
-  const copyVersion = () => void Clipboard.setStringAsync(FULL_VERSION_LABEL).then(() => toast("Version copied.", { key: "version" }));
-  // One toast for the whole sequence: each tap updates it in place rather than stacking another.
-  const tapVersion = () => {
-    const tap = nextTap(taps.current, Date.now());
-    taps.current = tap;
-    if (tap.count < TAPS_TO_UNLOCK) {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
-      if (tap.count === 3) {
-        // Get the game's catalogue (usually cached) and the celebration's logos while the countdown runs, so the
-        // burst isn't blank tiles on a phone that hasn't shown those logos yet.
-        void queryClient.prefetchQuery(catalogueQuery);
-        const catalogue = queryClient.getQueryData(catalogueQuery.queryKey);
-        const top = catalogue ? topLabs(buildPool(catalogue.models, Date.now()), 12) : [];
-        const labs = top.length >= 6 ? top : FALLBACK_LABS;
-        const uris = labs.map((lab) => logoUri(lab.id, resolved)).filter((uri): uri is string => Boolean(uri));
-        burstLabs.current = { labs, logos: Image.prefetch(uris, "disk").catch(() => false) };
-      }
-      const message = tapMessage(tap.count, unlocked);
-      if (message) toast(message, { durationMs: 2500, key: "version" });
-      return;
-    }
-    taps.current = null;
+  const taps = useRef<TapRun | null>(null);
+  const openVersionArt = () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
-    if (unlocked) {
-      toast("Higher or lower is under About and legal.", { title: "Again!", tone: "success", key: "version" });
-    } else {
-      unlockHigherOrLower();
-      toast("It's under About and legal now.", { title: "You found Higher or lower", tone: "success", key: "version" });
-    }
-    const { labs, logos } = burstLabs.current ?? { labs: FALLBACK_LABS, logos: Promise.resolve() };
-    burstLabs.current = null;
-    // The burst starts once the logos are in, or after 0.8 s at the most.
-    void Promise.race([logos, new Promise((resolve) => setTimeout(resolve, 800))]).then(() => setBurst((previous) => ({ labs, run: (previous?.run ?? 0) + 1 })));
+    router.push("/version");
   };
+  const tapVersion = () => {
+    const { run, open } = nextTap(taps.current, Date.now());
+    taps.current = run;
+    // Halfway there, start loading the catalogue and the labs' logos, so the art opens with them.
+    if (run?.count === Math.ceil(TAPS_TO_OPEN / 2)) prefetchVersionArt(queryClient, resolved);
+    if (open) openVersionArt();
+  };
+  const copyVersion = () => void Clipboard.setStringAsync(FULL_VERSION_LABEL).then(() => toast("Version copied.", { key: "version" }));
 
   const item = (key: keyof typeof ITEMS, extra: { subtitle?: string | null; value?: string | null; trailing?: ReactNode; last?: boolean } = {}) => {
     const entry = ITEMS[key];
@@ -206,12 +177,12 @@ export function AccountMenu() {
             title="Version and build"
             value={VERSION_LABEL}
             chevron={false}
-            last={!unlocked}
+            last
             onPress={tapVersion}
             onLongPress={copyVersion}
             longPressLabel="Copy version"
+            actions={[{ label: "Show version art", run: openVersionArt }]}
           />
-          {unlocked ? item("higherOrLower", { last: true }) : null}
         </Section>
         {session ? (
           <Section>
@@ -226,7 +197,6 @@ export function AccountMenu() {
           </Section>
         ) : null}
       </ScrollView>
-      {burst ? <LogoBurst key={burst.run} labs={burst.labs} onDone={endBurst} /> : null}
     </Screen>
   );
 }

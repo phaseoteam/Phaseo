@@ -14,9 +14,9 @@ import { higherOrLowerStore, recordStreak } from "./higherOrLowerStore";
 const RESTING = 8;
 
 /**
- * Higher or lower, unlocked by tapping Version and build seven times: two models from the live catalogue and a
- * question about their prices, context windows or release dates. Each right answer adds to the streak; the best
- * streak stays on this device.
+ * Higher or lower, the game inside the version art (hold the Phaseo mark there): two models from the live catalogue
+ * and a question about their prices, context windows or release dates. Each right answer adds to the streak; the
+ * best streak stays on this device. It opens full screen on top of the art, so back returns to it.
  */
 export function HigherOrLowerScreen() {
   const { split } = useLayout();
@@ -70,7 +70,7 @@ export function HigherOrLowerScreen() {
 
   return (
     <Screen>
-      <Header back={!split} title="Higher or lower" />
+      <Header back title="Higher or lower" />
       <ScrollView contentContainerClassName="pb-16">
         <ReadableWidth>
           {catalogue.isLoading ? <LoadingState /> : catalogue.isError && !catalogue.data ? <ErrorState error={catalogue.error} onRetry={() => void catalogue.refetch()} /> : !round ? (

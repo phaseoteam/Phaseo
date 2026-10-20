@@ -3,32 +3,10 @@ import { contextWindow, isOnPhaseo, isRetired, modelName, organisationName } fro
 import { formatDate, formatPrice, formatTokens } from "@/lib/format";
 
 /**
- * "Higher or lower", the game behind the version row (seven taps unlock it, like Android's developer options).
- * Each round puts two models from the live catalogue side by side and asks which one wins on a figure both have.
- * Everything here is plain data, so the rules can be tested.
+ * "Higher or lower", the game inside the version art (long-press the Phaseo mark there, as on Android's version
+ * screen). Each round puts two models from the live catalogue side by side and asks which one wins on a figure both
+ * have. Everything here is plain data, so the rules can be tested.
  */
-
-export const TAPS_TO_UNLOCK = 7;
-/** Taps further apart than this start the count again. Generous, so screen reader double-taps keep up. */
-export const TAP_GAP_MS = 5000;
-
-export type TapCount = { count: number; at: number };
-
-export function nextTap(previous: TapCount | null, now: number): TapCount {
-  const count = previous && now - previous.at <= TAP_GAP_MS ? previous.count + 1 : 1;
-  return { count: Math.min(count, TAPS_TO_UNLOCK), at: now };
-}
-
-/**
- * The countdown after the third tap: "4 taps away from something…", down to "1 tap away…". Once the game is
- * unlocked, the same seven taps replay the logo burst, and the countdown says so.
- */
-export function tapMessage(count: number, unlocked = false): string | null {
-  const left = TAPS_TO_UNLOCK - count;
-  if (count < 3 || left <= 0) return null;
-  const taps = `${left} ${left === 1 ? "tap" : "taps"}`;
-  return unlocked ? `${taps} to the logo burst` : `${taps} away from something…`;
-}
 
 export type Contestant = {
   id: string;
@@ -187,7 +165,7 @@ export function shareMessage(streak: number) {
   return `I got a streak of ${streak} on Phaseo's Higher or lower`;
 }
 
-/** Labs with the most models in the game, for the unlock celebration. */
+/** Labs with the most models in the game: the logos that float in the version art. */
 export function topLabs(pool: Contestant[], limit: number) {
   const labs = new Map<string, { id: string; name: string; colour: string | null; count: number }>();
   for (const contestant of pool) {
