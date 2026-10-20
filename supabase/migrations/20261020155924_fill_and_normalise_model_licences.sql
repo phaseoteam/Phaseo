@@ -7,7 +7,8 @@
 --    at it), API-only models with no published weights as Proprietary. Rows
 --    whose licence could not be confirmed stay empty.
 -- 3. Rows labelled only "Open weights" get their actual licence where known.
--- 4. Free variants take their base model's licence when they have none.
+-- 4. Hermes fine-tunes labelled Llama 3 move to the Llama release they are built on.
+-- 5. Free variants take their base model's licence when they have none.
 --
 -- Every update is guarded on the value seen in prod on 2026-10-20, so a newer
 -- admin edit is never overwritten. Row-level history is recorded by the
@@ -283,10 +284,10 @@ values
   ('moonshotai/kimi-k2-0905', 'Modified MIT', 'https://huggingface.co/moonshotai/Kimi-K2-Instruct-0905'),
   ('nace/drex-v1.5', 'Nace AI OpenRAIL-M', 'https://huggingface.co/nace-ai/drex-v1.5'),
   ('nace/drex-v2.0', 'Nace AI OpenRAIL-M', 'https://huggingface.co/nace-ai/drex-v2.0'),
-  ('nousresearch/hermes-3-llama-3.1-405b', 'Llama 3 Community License', 'https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-405B'),
-  ('nousresearch/hermes-3-llama-3.1-70b', 'Llama 3 Community License', 'https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-70B'),
-  ('nousresearch/hermes-4-405b', 'Llama 3 Community License', 'https://huggingface.co/NousResearch/Hermes-4-405B'),
-  ('nousresearch/hermes-4-70b', 'Llama 3 Community License', 'https://huggingface.co/NousResearch/Hermes-4-70B'),
+  ('nousresearch/hermes-3-llama-3.1-405b', 'Llama 3.1 Community License', 'https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-405B'),
+  ('nousresearch/hermes-3-llama-3.1-70b', 'Llama 3.1 Community License', 'https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-70B'),
+  ('nousresearch/hermes-4-405b', 'Llama 3.1 Community License', 'https://huggingface.co/NousResearch/Hermes-4-405B'),
+  ('nousresearch/hermes-4-70b', 'Llama 3.1 Community License', 'https://huggingface.co/NousResearch/Hermes-4-70B'),
   ('nvidia/llama-3.1-nemotron-nano-4b-v1.1', 'NVIDIA Open Model License', 'https://huggingface.co/nvidia/Llama-3.1-Nemotron-Nano-4B-v1.1'),
   ('nvidia/llama-3.3-nemotron-super-49b-v1.5', 'NVIDIA Open Model License', 'https://huggingface.co/nvidia/Llama-3_3-Nemotron-Super-49B-v1_5'),
   ('nvidia/nemotron-3-nano-omni', 'NVIDIA Open Model Agreement', 'https://huggingface.co/nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16'),
@@ -615,6 +616,24 @@ set license = refinements.license,
 from refinements
 where model.model_slug = refinements.model_slug
   and model.license = 'Open weights';
+
+-- Rows already labelled Llama 3 whose base model is a later Llama release.
+with corrections (model_slug, old_license, license) as (
+values
+  ('nous/hermes-3-llama-3.1-405b', 'Llama 3 Community License', 'Llama 3.1 Community License'),
+  ('nous/hermes-3-llama-3.1-70b', 'Llama 3 Community License', 'Llama 3.1 Community License'),
+  ('nous/hermes-3-llama-3.1-8b', 'Llama 3 Community License', 'Llama 3.1 Community License'),
+  ('nous/hermes-3-llama-3.2-3b', 'Llama 3 Community License', 'Llama 3.2 Community License'),
+  ('nousresearch/hermes-3-llama-3.1-405b', 'Llama 3 Community License', 'Llama 3.1 Community License'),
+  ('nousresearch/hermes-3-llama-3.1-70b', 'Llama 3 Community License', 'Llama 3.1 Community License'),
+  ('nousresearch/hermes-4-405b', 'Llama 3 Community License', 'Llama 3.1 Community License'),
+  ('nousresearch/hermes-4-70b', 'Llama 3 Community License', 'Llama 3.1 Community License')
+)
+update public.v2_models model
+set license = corrections.license
+from corrections
+where model.model_slug = corrections.model_slug
+  and model.license = corrections.old_license;
 
 update public.v2_models model
 set license = base.license,
