@@ -34,6 +34,8 @@ export type RowProps = {
   /** Also offered to screen readers as an action named `longPressLabel` ("Copy version"). */
   onLongPress?: () => void;
   longPressLabel?: string;
+  /** More screen reader actions, for things a gesture does that a double-tap can't ("Show version art"). */
+  actions?: { label: string; run: () => void }[];
   selected?: boolean;
   destructive?: boolean;
   chevron?: boolean;
@@ -42,7 +44,7 @@ export type RowProps = {
   className?: string;
 };
 
-export function Row({ title, subtitle, icon, leading, trailing, value, onPress, onLongPress, longPressLabel, selected, destructive, chevron, last, numberOfLines = 1, className }: RowProps) {
+export function Row({ title, subtitle, icon, leading, trailing, value, onPress, onLongPress, longPressLabel, actions = [], selected, destructive, chevron, last, numberOfLines = 1, className }: RowProps) {
   const content = (
     <>
       {leading ?? (icon ? <View className="w-7 items-center"><Icon icon={icon} tone={destructive ? "destructive" : "muted"} size={19} /></View> : null)}
@@ -59,12 +61,20 @@ export function Row({ title, subtitle, icon, leading, trailing, value, onPress, 
   );
   const box = cn("flex-row items-center gap-3 pl-4 pr-3", selected && "bg-accent", className);
   if (!onPress) return <View className={box}>{content}</View>;
-  const longPress = onLongPress ? {
-    onLongPress,
-    accessibilityActions: [{ name: "activate" }, { name: "longpress", label: longPressLabel }],
-    onAccessibilityAction: (event: AccessibilityActionEvent) => (event.nativeEvent.actionName === "longpress" ? onLongPress() : onPress()),
+  const a11y = onLongPress || actions.length ? {
+    accessibilityActions: [
+      { name: "activate" },
+      ...(onLongPress ? [{ name: "longpress", label: longPressLabel }] : []),
+      ...actions.map((action) => ({ name: action.label, label: action.label })),
+    ],
+    onAccessibilityAction: (event: AccessibilityActionEvent) => {
+      const name = event.nativeEvent.actionName;
+      if (name === "longpress" && onLongPress) onLongPress();
+      else if (name === "activate") onPress();
+      else actions.find((action) => action.label === name)?.run();
+    },
   } : {};
-  return <Pressable accessibilityRole="button" onPress={onPress} {...longPress} className={cn(box, "active:bg-accent")}>{content}</Pressable>;
+  return <Pressable accessibilityRole="button" onPress={onPress} onLongPress={onLongPress} {...a11y} className={cn(box, "active:bg-accent")}>{content}</Pressable>;
 }
 
 /** Label/value line for facts (pricing, limits, dates). */
