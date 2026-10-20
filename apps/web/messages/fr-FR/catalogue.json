@@ -2983,7 +2983,14 @@
 		"parametersCount": "{count, plural, one {# paramètre} other {# paramètres}}",
 		"openModelPage": "Ouvrir la page du modèle",
 		"released": "Sortie",
-		"noPricing": "Tarifs non indiqués"
+		"noPricing": "Tarifs non indiqués",
+		"previousModel": "Modèle précédent",
+		"nextModel": "Modèle suivant",
+		"modelIndex": "{current} sur {total} modèles",
+		"caching": "Cache",
+		"otherCharges": "Autres frais",
+		"exampleRequest": "Exemple : 10K tokens en entrée + 1K en sortie",
+		"compareProviders": "Comparer les fournisseurs"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "Panorama de l’IA : {country}",

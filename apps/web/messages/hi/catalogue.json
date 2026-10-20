@@ -2983,7 +2983,14 @@
 		"parametersCount": "{count, plural, one {# पैरामीटर} other {# पैरामीटर}}",
 		"openModelPage": "मॉडल पेज खोलें",
 		"released": "रिलीज़",
-		"noPricing": "मूल्य सूचीबद्ध नहीं"
+		"noPricing": "मूल्य सूचीबद्ध नहीं",
+		"previousModel": "पिछला मॉडल",
+		"nextModel": "अगला मॉडल",
+		"modelIndex": "{total} में से {current} मॉडल",
+		"caching": "कैशिंग",
+		"otherCharges": "अन्य शुल्क",
+		"exampleRequest": "उदाहरण: 10K इनपुट + 1K आउटपुट टोकन",
+		"compareProviders": "प्रदाताओं की तुलना करें"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "{country}: AI देश अवलोकन",

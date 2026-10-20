@@ -2983,7 +2983,14 @@
 		"parametersCount": "{count, plural, one {# parameter} other {# parameters}}",
 		"openModelPage": "Open model page",
 		"released": "Released",
-		"noPricing": "Pricing not listed"
+		"noPricing": "Pricing not listed",
+		"previousModel": "Previous model",
+		"nextModel": "Next model",
+		"modelIndex": "{current} of {total} models",
+		"caching": "Caching",
+		"otherCharges": "Other charges",
+		"exampleRequest": "Example: 10K input + 1K output tokens",
+		"compareProviders": "Compare providers"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "AI country view: {country}",

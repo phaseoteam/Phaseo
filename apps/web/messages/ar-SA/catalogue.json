@@ -2983,7 +2983,14 @@
 		"parametersCount": "{count, plural, zero {لا معلمات} one {معلمة واحدة} two {معلمتان} few {# معلمات} many {# معلمة} other {# معلمة}}",
 		"openModelPage": "فتح صفحة النموذج",
 		"released": "الإصدار",
-		"noPricing": "الأسعار غير مدرجة"
+		"noPricing": "الأسعار غير مدرجة",
+		"previousModel": "النموذج السابق",
+		"nextModel": "النموذج التالي",
+		"modelIndex": "{current} من {total} نموذج",
+		"caching": "التخزين المؤقت",
+		"otherCharges": "رسوم أخرى",
+		"exampleRequest": "مثال: 10K رمز إدخال + 1K رمز إخراج",
+		"compareProviders": "مقارنة المزوّدين"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "نظرة على الذكاء الاصطناعي في {country}",

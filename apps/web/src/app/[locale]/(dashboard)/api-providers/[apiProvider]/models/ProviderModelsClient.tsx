@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, FilePlus, Search, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -216,6 +216,37 @@ export default function ProviderModelsClient({
 
 	const clearHref = `/api-providers/${apiProvider}#models`;
 
+	const detailsIndex = detailsModel
+		? filteredModels.findIndex((model) => model.model_id === detailsModel.model_id)
+		: -1;
+	const showModelAt = useCallback((index: number) => {
+		const next = filteredModels[index];
+		if (!next) return;
+		setDetailsModel(next);
+		document
+			.querySelector(`[data-provider-model-card="${CSS.escape(next.model_id)}"]`)
+			?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+	}, [filteredModels]);
+
+	// Arrow keys step through the list while the inspector is open, unless typing.
+	useEffect(() => {
+		if (detailsIndex < 0) return;
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+			const target = event.target as HTMLElement | null;
+			if (target?.closest("input, textarea, select, [contenteditable='true'], [role='listbox']")) return;
+			if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+				event.preventDefault();
+				showModelAt(detailsIndex - 1);
+			} else if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+				event.preventDefault();
+				showModelAt(detailsIndex + 1);
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [detailsIndex, showModelAt]);
+
 	function toggleParam(param: string) {
 		if (selectedParams.includes(param)) {
 			void setSelectedParams(selectedParams.filter((item) => item !== param));
@@ -356,8 +387,12 @@ export default function ProviderModelsClient({
 				) : (
 					<div className={MODEL_CARD_GRID_CLASS_NAME}>
 						{filteredModels.map((model) => (
-							<div key={`${model.model_id}:${model.created_at ?? "na"}`}>
-								<ProviderModelCard model={model} onOpenDetails={setDetailsModel} />
+							<div key={`${model.model_id}:${model.created_at ?? "na"}`} data-provider-model-card={model.model_id}>
+								<ProviderModelCard
+									model={model}
+									selected={detailsModel?.model_id === model.model_id}
+									onOpenDetails={setDetailsModel}
+								/>
 							</div>
 						))}
 					</div>
@@ -366,6 +401,10 @@ export default function ProviderModelsClient({
 
 			<ProviderModelDetailsSheet
 				model={detailsModel}
+				index={detailsIndex}
+				total={filteredModels.length}
+				onPrevious={detailsIndex > 0 ? () => showModelAt(detailsIndex - 1) : undefined}
+				onNext={detailsIndex >= 0 && detailsIndex < filteredModels.length - 1 ? () => showModelAt(detailsIndex + 1) : undefined}
 				onOpenChange={(open) => {
 					if (!open) setDetailsModel(null);
 				}}

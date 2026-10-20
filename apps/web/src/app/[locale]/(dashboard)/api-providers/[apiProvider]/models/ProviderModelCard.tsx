@@ -1,20 +1,21 @@
 "use client";
 
 import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
-import { ArrowUpRight, PanelRight } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight, PanelRight } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
+	ProviderInspectorSheet,
+	ProviderInspectorSheetContent,
+	ProviderInspectorSheetDescription,
+	ProviderInspectorSheetHeader,
+	ProviderInspectorSheetTitle,
+} from "@/components/(data)/model/pricing/ProviderInspectorSheet";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import UnreleasedBadge from "@/components/(data)/model/UnreleasedBadge";
 import { getModalityIcon } from "@/components/(data)/models/Models/modalityIcons";
@@ -234,9 +235,11 @@ function primaryDate(model: APIProviderModelListItem): string | null {
 
 export function ProviderModelCard({
 	model,
+	selected = false,
 	onOpenDetails,
 }: {
 	model: APIProviderModelListItem;
+	selected?: boolean;
 	onOpenDetails: (model: APIProviderModelListItem) => void;
 }) {
 	const t = useTranslations("Catalogue.providerModelList");
@@ -266,10 +269,12 @@ export function ProviderModelCard({
 		<div
 			role="button"
 			tabIndex={0}
+			aria-pressed={selected}
+			data-selected={selected ? "true" : undefined}
 			aria-label={`${t("viewDetails")}: ${name}`}
 			onClick={openFromCard}
 			onKeyDown={openFromKeyboard}
-			className="group h-full cursor-pointer py-4 outline-none transition-colors hover:bg-muted/20 focus-visible:bg-muted/30 md:py-5"
+			className="group h-full cursor-pointer py-4 outline-none transition-colors hover:bg-muted/20 focus-visible:bg-muted/30 data-[selected=true]:bg-muted/40 md:py-5"
 		>
 			<div className="flex h-full flex-col gap-4 px-4 md:px-5">
 				<div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
@@ -348,20 +353,63 @@ export function ProviderModelCard({
 	);
 }
 
-function SheetSection({ title, children }: { title: string; children: ReactNode }) {
+function InspectorSection({
+	title,
+	action,
+	children,
+}: {
+	title: string;
+	action?: ReactNode;
+	children: ReactNode;
+}) {
 	return (
-		<section className="space-y-2 border-t border-border/70 pt-4">
-			<h3 className="text-xs font-medium text-muted-foreground">{title}</h3>
+		<section className="space-y-3 border-b border-zinc-200/80 py-4 last:border-b-0 dark:border-zinc-800">
+			<div className="flex items-center justify-between gap-2">
+				<h3 className="text-[15px] font-semibold text-foreground">{title}</h3>
+				{action}
+			</div>
 			{children}
 		</section>
 	);
 }
 
+type MeterGroup = "input" | "output" | "cache" | "other";
+
+function meterGroup(meter: APIProviderModelPricingMeter): MeterGroup {
+	if (meter.meter.includes("cache")) return "cache";
+	if (meter.meter.startsWith("input_")) return "input";
+	if (meter.meter.startsWith("output_")) return "output";
+	return "other";
+}
+
+const METER_GROUP_ORDER: MeterGroup[] = ["input", "output", "cache", "other"];
+
+// A worked example makes per-million prices easier to read at a glance.
+const EXAMPLE_INPUT_TOKENS = 10_000;
+const EXAMPLE_OUTPUT_TOKENS = 1_000;
+
+function SummaryTile({ label, value }: { label: string; value: ReactNode }) {
+	return (
+		<div className="min-w-0 px-3 py-2.5">
+			<div className="truncate text-[11px] text-muted-foreground">{label}</div>
+			<div className="mt-0.5 truncate text-sm font-semibold tabular-nums">{value}</div>
+		</div>
+	);
+}
+
 export function ProviderModelDetailsSheet({
 	model,
+	index,
+	total,
+	onPrevious,
+	onNext,
 	onOpenChange,
 }: {
 	model: APIProviderModelListItem | null;
+	index: number;
+	total: number;
+	onPrevious?: () => void;
+	onNext?: () => void;
 	onOpenChange: (open: boolean) => void;
 }) {
 	const t = useTranslations("Catalogue.providerModelList");
@@ -369,18 +417,90 @@ export function ProviderModelDetailsSheet({
 	const formatUsd = useUsdFormatter();
 	const meterDisplay = useMeterDisplay();
 	const statusDescription = useStatusDescription(model);
+	const organisationId = model ? organisationIdFor(model) : null;
+
+	const meters = model?.pricing_meters ?? [];
+	const inputMeter = findTokenMeter(meters, "input");
+	const outputMeter = findTokenMeter(meters, "output");
+	const exampleCost =
+		inputMeter?.price_per_1m_usd != null && outputMeter?.price_per_1m_usd != null
+			? (inputMeter.price_per_1m_usd * EXAMPLE_INPUT_TOKENS + outputMeter.price_per_1m_usd * EXAMPLE_OUTPUT_TOKENS) / 1_000_000
+			: null;
+	const groupLabels: Record<MeterGroup, string> = {
+		input: t("input"),
+		output: t("output"),
+		cache: t("caching"),
+		other: t("otherCharges"),
+	};
+	const groupedMeters = METER_GROUP_ORDER.map((group) => ({
+		group,
+		meters: meters.filter((meter) => meterGroup(meter) === group),
+	})).filter((entry) => entry.meters.length > 0);
+	const params = model ? uniqueSorted(listify(model.supported_params)) : [];
+	const endpoints = model ? Array.from(new Set(model.endpoints ?? [])).sort((a, b) => a.localeCompare(b)) : [];
+	const date = model ? primaryDate(model) : null;
 
 	return (
-		<Sheet open={model != null} onOpenChange={onOpenChange}>
-			<SheetContent side="right" className="w-full gap-0 overflow-y-auto sm:max-w-md">
+		// Non-modal like the pricing inspector: the page stays scrollable and
+		// clicking another card swaps the content instead of closing the panel.
+		<ProviderInspectorSheet open={model != null} onOpenChange={onOpenChange} disablePointerDismissal>
+			<ProviderInspectorSheetContent className="w-full gap-0 overflow-hidden p-0 sm:w-[28rem] lg:w-[32rem]">
 				{model ? (
 					<>
-						<SheetHeader className="gap-3 p-5 pr-12">
-							<div className="flex items-center gap-3">
-								<ModelLogo model={model} />
-								<div className="min-w-0">
-									<SheetTitle className="truncate text-base">{model.model_name || model.model_id}</SheetTitle>
-									<SheetDescription className="flex min-w-0 items-center gap-1 font-mono text-xs">
+						<div className="absolute right-14 top-4 z-10 flex items-center gap-1">
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								disabled={!onPrevious}
+								aria-label={t("previousModel")}
+								onClick={onPrevious}
+							>
+								<ChevronLeft className="h-4 w-4" />
+							</Button>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								disabled={!onNext}
+								aria-label={t("nextModel")}
+								onClick={onNext}
+							>
+								<ChevronRight className="h-4 w-4" />
+							</Button>
+							{index >= 0 ? (
+								<span
+									aria-label={t("modelIndex", { current: index + 1, total })}
+									className="min-w-8 text-right text-[10px] font-medium tabular-nums text-muted-foreground"
+								>
+									{index + 1} / {total}
+								</span>
+							) : null}
+						</div>
+
+						<ProviderInspectorSheetHeader className="gap-3 border-b border-zinc-200/80 px-5 py-4 dark:border-zinc-800">
+							<div className="flex min-w-0 items-center gap-3 pr-32">
+								{organisationId ? (
+									<Link href={`/organisations/${organisationId}`} prefetch={false} className="shrink-0">
+										<ModelLogo model={model} className="size-11" />
+									</Link>
+								) : (
+									<ModelLogo model={model} className="size-11" />
+								)}
+								<div className="min-w-0 flex-1">
+									<div className="flex min-w-0 items-center gap-2">
+										<ProviderInspectorSheetTitle className="truncate text-base font-semibold">
+											<Link
+												href={`/models/${model.model_id}`}
+												prefetch={false}
+												className="text-foreground underline-offset-4 hover:underline focus-visible:underline"
+											>
+												{model.model_name || model.model_id}
+											</Link>
+										</ProviderInspectorSheetTitle>
+										<StatusBadge model={model} />
+									</div>
+									<ProviderInspectorSheetDescription className="mt-1 flex min-w-0 items-center gap-1 font-mono text-[11px]">
 										<span className="truncate">{model.api_model_id}</span>
 										<CopyButton
 											content={model.api_model_id}
@@ -389,84 +509,114 @@ export function ProviderModelDetailsSheet({
 											className="h-5 w-5 shrink-0 p-0"
 											aria-label={t("copyModelId")}
 										/>
-									</SheetDescription>
+									</ProviderInspectorSheetDescription>
 								</div>
-							</div>
-							<div className="flex flex-wrap items-center gap-2">
-								<StatusBadge model={model} />
-								<Button asChild variant="outline" size="sm" className="h-8 rounded-md">
-									<Link href={`/models/${model.model_id}`} prefetch={false}>
-										{t("openModelPage")}
-										<ArrowUpRight className="size-3.5" />
-									</Link>
-								</Button>
 							</div>
 							{statusDescription ? (
 								<p className="text-xs text-muted-foreground">{statusDescription}</p>
 							) : null}
-						</SheetHeader>
+						</ProviderInspectorSheetHeader>
 
-						<div className="space-y-4 px-5 pb-6">
-							<SheetSection title={t("pricing")}>
-								{(model.pricing_meters ?? []).length > 0 ? (
-									<dl className="divide-y divide-border/60 rounded-md border border-border/70">
-										{(model.pricing_meters ?? []).map((meter) => {
-											const display = meterDisplay(meter);
-											return (
-												<div key={meter.meter} className="flex items-start justify-between gap-4 px-3 py-2 text-sm">
-													<dt className="min-w-0 text-muted-foreground">{display.label}</dt>
-													<dd className="shrink-0 text-right tabular-nums">
-														<span className="font-medium">{formatUsd(display.amount)}</span>
-														<span className="text-muted-foreground"> / {display.unitLabel}</span>
-														{meter.meter === "image_pixels" && meter.estimated_price_per_image_usd != null ? (
-															<span className="block text-xs text-muted-foreground">
-																{t("estimatedImagePrice", {
-																	price: formatUsd(meter.estimated_price_per_image_usd),
-																	size: "1024×1024",
-																})}
-															</span>
-														) : null}
-													</dd>
+						<ScrollArea
+							className="min-h-0 flex-1 overscroll-contain"
+							viewportClassName="pb-5 overscroll-contain"
+							scrollBarOrientation="vertical"
+						>
+							<div className="grid grid-cols-2 border-b border-zinc-200/80 dark:border-zinc-800 [&>*:nth-child(even)]:border-l [&>*:nth-child(n+3)]:border-t [&>*]:border-zinc-200/80 dark:[&>*]:border-zinc-800">
+								<SummaryTile label={`${t("input")} / ${t("oneMillionTokens")}`} value={inputMeter ? formatUsd(inputMeter.price_per_1m_usd) : "—"} />
+								<SummaryTile label={`${t("output")} / ${t("oneMillionTokens")}`} value={outputMeter ? formatUsd(outputMeter.price_per_1m_usd) : "—"} />
+								<SummaryTile label={t("supportedParameters")} value={params.length || "—"} />
+								<SummaryTile label={t("released")} value={date ? format.calendarDate(date) : "—"} />
+							</div>
+
+							<div className="px-5">
+								<InspectorSection title={t("pricing")}>
+									{groupedMeters.length > 0 ? (
+										<div className="overflow-hidden rounded-md border border-zinc-200/80 dark:border-zinc-800">
+											{groupedMeters.map(({ group, meters: groupMeters }) => (
+												<div key={group} className="border-b border-zinc-200/80 last:border-b-0 dark:border-zinc-800">
+													<div className="bg-muted/40 px-3 py-1.5 text-[11px] font-medium text-muted-foreground">
+														{groupLabels[group]}
+													</div>
+													<dl className="divide-y divide-zinc-200/60 dark:divide-zinc-800/80">
+														{groupMeters.map((meter) => {
+															const display = meterDisplay(meter);
+															return (
+																<div key={meter.meter} className="flex items-start justify-between gap-4 px-3 py-2 text-sm">
+																	<dt className="min-w-0 text-muted-foreground">{display.label}</dt>
+																	<dd className="shrink-0 text-right tabular-nums">
+																		<span className="font-medium">{formatUsd(display.amount)}</span>
+																		<span className="text-muted-foreground"> / {display.unitLabel}</span>
+																		{meter.meter === "image_pixels" && meter.estimated_price_per_image_usd != null ? (
+																			<span className="block text-xs text-muted-foreground">
+																				{t("estimatedImagePrice", {
+																					price: formatUsd(meter.estimated_price_per_image_usd),
+																					size: "1024×1024",
+																				})}
+																			</span>
+																		) : null}
+																	</dd>
+																</div>
+															);
+														})}
+													</dl>
 												</div>
-											);
-										})}
-									</dl>
-								) : (
-									<p className="text-sm text-muted-foreground">{t("noPricing")}</p>
-								)}
-							</SheetSection>
+											))}
+										</div>
+									) : (
+										<p className="text-sm text-muted-foreground">{t("noPricing")}</p>
+									)}
+									{exampleCost != null ? (
+										<div className="flex items-center justify-between gap-3 rounded-md bg-muted/40 px-3 py-2 text-xs">
+											<span className="text-muted-foreground">{t("exampleRequest")}</span>
+											<span className="font-semibold tabular-nums">≈ {formatUsd(exampleCost)}</span>
+										</div>
+									) : null}
+								</InspectorSection>
 
-							<SheetSection title={t("modalities")}>
-								<div className="space-y-1.5 text-xs">
-									<div className="flex items-center gap-2">
-										<span className="w-11 shrink-0 text-[11px] text-muted-foreground">{t("input")}</span>
-										<div className="flex flex-wrap gap-1"><ModalityBadges values={uniqueSorted(listify(model.input_modalities))} /></div>
+								<InspectorSection title={t("modalities")}>
+									<div className="space-y-1.5 text-xs">
+										<div className="flex items-center gap-2">
+											<span className="w-11 shrink-0 text-[11px] text-muted-foreground">{t("input")}</span>
+											<div className="flex flex-wrap gap-1"><ModalityBadges values={uniqueSorted(listify(model.input_modalities))} /></div>
+										</div>
+										<div className="flex items-center gap-2">
+											<span className="w-11 shrink-0 text-[11px] text-muted-foreground">{t("output")}</span>
+											<div className="flex flex-wrap gap-1"><ModalityBadges values={uniqueSorted(listify(model.output_modalities))} /></div>
+										</div>
 									</div>
-									<div className="flex items-center gap-2">
-										<span className="w-11 shrink-0 text-[11px] text-muted-foreground">{t("output")}</span>
-										<div className="flex flex-wrap gap-1"><ModalityBadges values={uniqueSorted(listify(model.output_modalities))} /></div>
-									</div>
-								</div>
-							</SheetSection>
+								</InspectorSection>
 
-							<SheetSection title={t("supportedParameters")}>
-								<ChipList values={uniqueSorted(listify(model.supported_params))} />
-							</SheetSection>
+								<InspectorSection
+									title={t("supportedParameters")}
+									action={params.length > 0 ? <span className="text-xs tabular-nums text-muted-foreground">{params.length}</span> : null}
+								>
+									<ChipList values={params} />
+								</InspectorSection>
 
-							<SheetSection title={t("endpoints")}>
-								<ChipList values={Array.from(new Set(model.endpoints ?? [])).sort((a, b) => a.localeCompare(b))} />
-							</SheetSection>
+								<InspectorSection title={t("endpoints")}>
+									<ChipList values={endpoints} />
+								</InspectorSection>
+							</div>
+						</ScrollArea>
 
-							{primaryDate(model) ? (
-								<SheetSection title={t("released")}>
-									<p className="text-sm">{format.calendarDate(primaryDate(model))}</p>
-								</SheetSection>
-							) : null}
+						<div className="flex items-center gap-2 border-t border-zinc-200/80 px-5 py-3 dark:border-zinc-800">
+							<Button asChild size="sm" className="h-8 rounded-md">
+								<Link href={`/models/${model.model_id}`} prefetch={false}>
+									{t("openModelPage")}
+									<ArrowUpRight className="size-3.5" />
+								</Link>
+							</Button>
+							<Button asChild variant="outline" size="sm" className="h-8 rounded-md">
+								<Link href={`/models/${model.model_id}/pricing`} prefetch={false}>
+									{t("compareProviders")}
+								</Link>
+							</Button>
 						</div>
 					</>
 				) : null}
-			</SheetContent>
-		</Sheet>
+			</ProviderInspectorSheetContent>
+		</ProviderInspectorSheet>
 	);
 }
 
