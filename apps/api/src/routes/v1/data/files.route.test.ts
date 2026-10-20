@@ -74,6 +74,16 @@ vi.mock("@/runtime/env", () => ({
 			};
 		}),
 		from: vi.fn(() => ({
+			// Credential-mode and BYOK lookups: no route rows, no BYOK keys.
+			select: () => {
+				const chain: Record<string, unknown> = {
+					eq: () => chain,
+					limit: async () => ({ data: [], error: null }),
+					maybeSingle: async () => ({ data: null, error: null }),
+					then: (resolve: (value: unknown) => unknown) => resolve({ data: [], error: null }),
+				};
+				return chain;
+			},
 			update: (patch: Record<string, unknown>) => ({
 				eq: (workspaceColumn: string, workspaceId: string) => ({
 					eq: async (uploadColumn: string, uploadId: string) => {
@@ -150,7 +160,17 @@ describe("filesRoutes", () => {
 			body: "{}",
 		});
 		expect(response.status).toBe(413);
-		await expect(response.json()).resolves.toMatchObject({ error: { reason: "batch_file_too_large" } });
+		await expect(response.json()).resolves.toMatchObject({
+			code: "validation_error",
+			error: {
+				code: "validation_error",
+				message: "The batch file exceeds the 104857600-byte upload limit for this provider.",
+				type: "invalid_request_error",
+				param: null,
+				reason: "batch_file_too_large",
+				metadata: { reason: "batch_file_too_large" },
+			},
+		});
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
@@ -289,7 +309,7 @@ describe("filesRoutes", () => {
 
 		expect(listResponse.status).toBe(400);
 		expect(await listResponse.json()).toMatchObject({
-			error: "not_supported",
+			code: "not_supported",
 			reason: "file_list_not_supported_with_shared_gateway_key",
 		});
 
@@ -498,7 +518,7 @@ describe("filesRoutes", () => {
 		});
 		expect(retrieveResponse.status).toBe(404);
 		expect(await retrieveResponse.json()).toMatchObject({
-			error: "not_found",
+			code: "not_found",
 			reason: "file_not_found_or_not_owned",
 			file_id: "file_workspace_123",
 		});

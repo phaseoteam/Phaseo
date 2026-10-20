@@ -1836,8 +1836,10 @@ describe("batchRoutes", () => {
 
 		expect(response.status).toBe(501);
 		expect(await response.json()).toMatchObject({
+			code: "not_implemented",
 			error: {
-				type: "not_implemented",
+				code: "not_implemented",
+				type: "server_error",
 				reason: "batch_multi_provider_requests_not_supported",
 				input_mode: "requests",
 				requested_providers: ["openai", "anthropic"],
@@ -2522,7 +2524,15 @@ describe("batchRoutes", () => {
 			body: JSON.stringify({ provider: "openai", model: "gpt-4.1-mini", max_output_tokens: 16, prompts: ["hello"] }),
 		});
 		expect(response.status).toBe(503);
-		expect(await response.json()).toMatchObject({ error: { reason: "batch_submission_persistence_failed" } });
+		expect(await response.json()).toMatchObject({
+			code: "gateway_error",
+			error: {
+				code: "gateway_error",
+				message: "The batch could not be recorded before submission. Try again.",
+				type: "service_unavailable",
+				reason: "batch_submission_persistence_failed",
+			},
+		});
 		expect(state.fetchCalls.some((call) => call.url.endsWith("/batches"))).toBe(false);
 		expect(state.batchMeta.size).toBe(0);
 	});
@@ -2551,8 +2561,10 @@ describe("batchRoutes", () => {
 		const payload = await response.json();
 		expect(response.status).toBe(502);
 		expect(payload).toMatchObject({
+			code: "async_job_persistence_failed",
 			error: {
-				type: "async_job_persistence_failed",
+				code: "async_job_persistence_failed",
+				type: "server_error",
 				batch_id: expect.stringMatching(/^batch_/),
 				native_batch_id: "batch_native_post_submit_failure",
 				reservation_status: "held",
@@ -2619,8 +2631,10 @@ describe("batchRoutes", () => {
 		const payload = await response.json();
 		expect(response.status).toBe(502);
 		expect(payload).toMatchObject({
+			code: "upstream_outcome_unknown",
 			error: {
-				type: "upstream_outcome_unknown",
+				code: "upstream_outcome_unknown",
+				type: "server_error",
 				reason: "batch_provider_create_outcome_unknown",
 				reservation_status: "held",
 				batch_id: expect.stringMatching(/^batch_/),

@@ -119,8 +119,11 @@ describe("asyncJobsRoutes", () => {
 		expect(response.status).toBe(426);
 		expect(response.headers.get("upgrade")).toBe("websocket");
 		expect(await response.json()).toMatchObject({
+			code: "websocket_upgrade_required",
 			error: {
 				code: "websocket_upgrade_required",
+				message: "Use WebSocket upgrade for async job updates.",
+				type: "invalid_request_error",
 			},
 		});
 	});

@@ -199,6 +199,59 @@ export function withErrorObject(
 	return { ...body, error, code: typeof body.code === "string" ? body.code : code };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+/**
+ * The same as withErrorObject for a body the gateway built itself, which may also
+ * hold `error` as an object in an older shape: `{ type: <code>, reason, message,
+ * ... }` (batch and file routes) or `{ code, message }` without a type. That object
+ * becomes the full error object: its code moves to `error.code` and top-level
+ * `code`, `type` is set from the status, and its other fields stay where they were.
+ * Never pass it an upstream's own error body; use withErrorObject for those.
+ */
+export function withGatewayErrorObject(
+	body: Record<string, unknown>,
+	status: number,
+	opts: { retryAfter?: string | null } = {},
+): Record<string, unknown> {
+	const existing = body.error;
+	if (!isRecord(existing)) return withErrorObject(body, status, opts);
+	const {
+		code: existingCode,
+		type: existingType,
+		message: existingMessage,
+		param: existingParam,
+		metadata: existingMetadata,
+		...rest
+	} = existing;
+	const code =
+		nonEmptyString(existingCode) ??
+		nonEmptyString(existingType) ??
+		(status >= 500 ? "gateway_error" : "invalid_request");
+	const topLevel: Record<string, unknown> = { ...body };
+	delete topLevel.error;
+	const shaped = withErrorObject(
+		{
+			...rest,
+			...topLevel,
+			error: code,
+			message:
+				nonEmptyString(existingMessage) ??
+				nonEmptyString(topLevel.message) ??
+				nonEmptyString(rest.reason) ??
+				code,
+			param: nonEmptyString(existingParam) ?? topLevel.param,
+		},
+		status,
+		opts,
+	);
+	const error = { ...rest, ...(shaped.error as GatewayErrorObject) } as Record<string, unknown>;
+	if (isRecord(existingMetadata)) error.metadata = { ...existingMetadata, ...(isRecord(error.metadata) ? error.metadata : {}) };
+	return { ...body, error, code };
+}
+
 /**
  * Reshapes a JSON error response whose body still holds `error` as a code string.
  * Other responses are returned as they are.

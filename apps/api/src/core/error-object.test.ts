@@ -5,6 +5,7 @@ import {
 	errorTypeFor,
 	withErrorObject,
 	withErrorObjectResponse,
+	withGatewayErrorObject,
 } from "./error-object";
 import { err } from "@pipeline/before/http";
 import { encodeStreamInterruption } from "@pipeline/after/stream-reencode";
@@ -95,6 +96,55 @@ describe("withErrorObject", () => {
 		expect(errorCodeOf(withErrorObject({ error: "validation_error" }, 400))).toBe("validation_error");
 		expect(errorCodeOf({ error: { code: "x" } })).toBe("x");
 		expect(errorCodeOf(null)).toBeNull();
+	});
+});
+
+describe("withGatewayErrorObject", () => {
+	it("turns a batch-route error object keyed by type into the full error object", () => {
+		const body = withGatewayErrorObject(
+			{ error: { type: "validation_error", reason: "batch_file_too_large", message: "Too large." }, request_id: "req_1" },
+			413,
+		);
+		expect(body).toEqual({
+			error: {
+				code: "validation_error",
+				message: "Too large.",
+				type: "invalid_request_error",
+				param: null,
+				reason: "batch_file_too_large",
+				metadata: { reason: "batch_file_too_large" },
+			},
+			code: "validation_error",
+			request_id: "req_1",
+		});
+	});
+
+	it("falls back to the reason for the message and keeps the object's other fields", () => {
+		const body = withGatewayErrorObject(
+			{ error: { type: "upstream_outcome_unknown", reason: "provider_timeout", batch_id: "batch_1", provider: "openai" } },
+			502,
+		);
+		expect(body.code).toBe("upstream_outcome_unknown");
+		expect(body.error).toMatchObject({
+			code: "upstream_outcome_unknown",
+			message: "provider_timeout",
+			type: "server_error",
+			batch_id: "batch_1",
+			metadata: { reason: "provider_timeout", provider: "openai" },
+		});
+	});
+
+	it("fills in the type and top-level code for an object that has only code and message", () => {
+		const body = withGatewayErrorObject({ error: { code: "websocket_upgrade_required", message: "Use WebSocket." } }, 426);
+		expect(body).toEqual({
+			error: { code: "websocket_upgrade_required", message: "Use WebSocket.", type: "invalid_request_error", param: null },
+			code: "websocket_upgrade_required",
+		});
+	});
+
+	it("shapes a code-string body exactly as withErrorObject does", () => {
+		const legacy = { error: "forbidden", reason: "batch_api_feature_flag_disabled", message: "Off." };
+		expect(withGatewayErrorObject(legacy, 403)).toEqual(withErrorObject(legacy, 403));
 	});
 });
 
