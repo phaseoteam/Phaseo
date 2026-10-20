@@ -94,27 +94,3 @@ export function newestByLab(models: ModelCard[], now: number): Map<string, strin
   }
   return new Map([...newest].map(([lab, { name }]) => [lab, name]));
 }
-
-/**
- * Whether a colour is light (so text and status bar icons on it should be dark), from "#fff", "#ffffff",
- * "#ffffffcc" or "rgb(…)"/"rgba(…)". Null for anything else.
- */
-export function isLightColour(colour: string): boolean | null {
-  const value = colour.trim().toLowerCase();
-  let rgb: number[] | null = null;
-  const hex = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/.exec(value)?.[1];
-  if (hex) {
-    const full = hex.length <= 4 ? [...hex].map((digit) => digit + digit).join("") : hex;
-    rgb = [0, 2, 4].map((start) => parseInt(full.slice(start, start + 2), 16));
-  } else {
-    const parts = /^rgba?\(([^)]+)\)$/.exec(value)?.[1]?.split(/[\s,/]+/).filter(Boolean).slice(0, 3).map(Number);
-    if (parts?.length === 3 && parts.every(Number.isFinite)) rgb = parts;
-  }
-  if (!rgb) return null;
-  // Relative luminance (WCAG); above about 0.18 dark text reads better than white.
-  const [r, g, b] = rgb.map((channel) => {
-    const c = channel / 255;
-    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  }) as [number, number, number];
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.18;
-}

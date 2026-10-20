@@ -2,7 +2,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useIsFocused, useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { X } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type AccessibilityActionEvent } from "react-native";
@@ -12,7 +11,7 @@ import Animated, {
   withSpring, withTiming, type SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Defs, Path, RadialGradient, Rect, Stop } from "react-native-svg";
 import { scheduleOnRN } from "react-native-worklets";
 import { useCSSVariable } from "uniwind";
 import { Logo, logoUri } from "@/components/Logo";
@@ -22,7 +21,7 @@ import { BUILD_COMMIT, BUILD_NUMBER } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { burstCurve, burstPosition, clamp, DRIFT_SPEED, dragTo, fling, ringLayout, step, type Box, type Point } from "./floating";
-import { ART_LABS, catalogueFact, isLightColour, newestByLab, shortVersion, versionDetail, type ArtLab } from "./versionArt";
+import { ART_LABS, catalogueFact, newestByLab, shortVersion, versionDetail, type ArtLab } from "./versionArt";
 
 /** The Phaseo mark, from apps/web/public/logo_light.svg (a 64 × 64 view box). */
 const MARK_PATH = "M19.8574 56H13V8H19.8574V56ZM31.7197 8C37.9368 8 42.8288 9.4856 46.3945 12.457C49.9601 15.4284 51.7432 19.5201 51.7432 24.7314C51.7432 29.9428 49.9601 34.0344 46.3945 37.0059C42.8288 39.9773 37.9368 41.4629 31.7197 41.4629H23.2852V35.4971H31.5146C35.8573 35.497 39.1714 34.5824 41.457 32.7539C43.7426 30.8796 44.8857 28.2056 44.8857 24.7314C44.8857 21.2572 43.7427 18.6059 41.457 16.7773C39.1714 14.9031 35.8573 13.9659 31.5146 13.9658H23.2852V8H31.7197Z";
@@ -68,7 +67,6 @@ export function VersionArtScreen() {
   const { resolved } = useAppearance();
   const catalogue = useCatalogue();
   const models = catalogue.data?.models;
-  const onPrimary = useToneColor("primary-foreground");
   const [area, setArea] = useState<{ width: number; height: number } | null>(null);
   const [block, setBlock] = useState<Box | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -135,20 +133,18 @@ export function VersionArtScreen() {
   const markStyle = useAnimatedStyle(() => ({ transform: [{ scale: markScale.get() }] }));
 
   return (
-    <View className="flex-1 bg-primary" onLayout={(event) => setArea({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}>
-      {/* Only while it's on screen: the game on top has its own background. */}
-      {focused ? <StatusBar style={isLightColour(onPrimary) === false ? "dark" : "light"} /> : null}
-      {area ? <Backdrop width={area.width} height={area.height} centre={block ? { x: (block.left + block.right) / 2, y: (block.top + block.bottom) / 2 } : null} dark={resolved === "dark"} /> : null}
+    <View className="flex-1 bg-background" onLayout={(event) => setArea({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}>
+      {area ? <Glow width={area.width} height={area.height} centre={block ? { x: (block.left + block.right) / 2, y: (block.top + block.bottom) / 2 } : null} dark={resolved === "dark"} /> : null}
 
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Close"
         hitSlop={8}
         onPress={close}
-        className="absolute h-11 w-11 items-center justify-center rounded-md active:bg-primary-foreground/15"
+        className="absolute h-11 w-11 items-center justify-center rounded-md active:bg-muted"
         style={{ top: insets.top + 6, left: insets.left + 8, zIndex: 10 }}
       >
-        <View pointerEvents="none"><Icon icon={X} tone="primary-foreground" size={24} /></View>
+        <View pointerEvents="none"><Icon icon={X} tone="foreground" size={24} /></View>
       </Pressable>
 
       <View pointerEvents="box-none" className="absolute inset-0 items-center justify-center px-6" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
@@ -179,13 +175,13 @@ export function VersionArtScreen() {
           <Text
             accessibilityRole="header"
             accessibilityLabel={VERSION_DETAIL}
-            className="mt-6 text-center font-bold tracking-tight text-primary-foreground"
+            className="mt-6 text-center font-bold tracking-tight text-link"
             style={{ fontSize: bigText, lineHeight: Math.round(bigText * 1.1) }}
           >
             {shortVersion(APP_VERSION)}
           </Text>
-          <Text variant="label" importantForAccessibility="no" accessibilityElementsHidden className="text-center text-primary-foreground">{VERSION_DETAIL}</Text>
-          <Text variant="small" numberOfLines={2} className="mt-3 text-center text-primary-foreground/80">{factLine}</Text>
+          <Text variant="label" importantForAccessibility="no" accessibilityElementsHidden className="text-center text-foreground">{VERSION_DETAIL}</Text>
+          <Text variant="small" numberOfLines={2} className="mt-3 text-center text-muted-foreground">{factLine}</Text>
         </View>
       </View>
 
@@ -216,40 +212,29 @@ export function VersionArtScreen() {
   );
 }
 
-/** The Phaseo mark on a rounded square tile, in the theme's colours. */
+/** The Phaseo mark on a rounded square accent tile, in the theme's colours. */
 function Mark({ size }: { size: number }) {
-  const fill = useToneColor("primary");
+  const fill = useToneColor("primary-foreground");
   return (
-    <View
-      className="items-center justify-center rounded-md bg-primary-foreground"
-      style={{ width: size, height: size, elevation: 8, shadowColor: "#000", shadowOpacity: 0.22, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } }}
-    >
+    <View className="items-center justify-center rounded-md bg-primary" style={{ width: size, height: size }}>
       <Svg width={size * 0.72} height={size * 0.72} viewBox="0 0 64 64"><Path d={MARK_PATH} fill={fill} /></Svg>
     </View>
   );
 }
 
-/**
- * The accent background's depth, from theme tokens only: a soft glow of the foreground colour behind the mark, and a
- * shade toward the bottom (the dark background in dark mode, so the accent turns deep rather than flat).
- */
-function Backdrop({ width, height, centre, dark }: { width: number; height: number; centre: Point | null; dark: boolean }) {
-  const [glow, shade] = useCSSVariable(["--color-primary-foreground", dark ? "--color-background" : "--color-foreground"]);
-  if (glow == null || shade == null) return null;
+/** A soft glow of the accent behind the mark, on the normal background, so the screen stays calm in light and dark. */
+function Glow({ width, height, centre, dark }: { width: number; height: number; centre: Point | null; dark: boolean }) {
+  const accent = useCSSVariable("--color-primary");
+  if (accent == null) return null;
   const at = centre ?? { x: width / 2, y: height / 2 };
   return (
     <Svg pointerEvents="none" width={width} height={height} style={StyleSheet.absoluteFill}>
       <Defs>
-        <LinearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0.3" stopColor={String(shade)} stopOpacity={0} />
-          <Stop offset="1" stopColor={String(shade)} stopOpacity={dark ? 0.5 : 0.16} />
-        </LinearGradient>
-        <RadialGradient id="glow" cx={at.x} cy={at.y} r={Math.max(width, height) * 0.5} gradientUnits="userSpaceOnUse">
-          <Stop offset="0" stopColor={String(glow)} stopOpacity={dark ? 0.2 : 0.24} />
-          <Stop offset="1" stopColor={String(glow)} stopOpacity={0} />
+        <RadialGradient id="glow" cx={at.x} cy={at.y} r={Math.min(Math.max(width, height) * 0.42, Math.min(width, height) * 0.8)} gradientUnits="userSpaceOnUse">
+          <Stop offset="0" stopColor={String(accent)} stopOpacity={dark ? 0.3 : 0.14} />
+          <Stop offset="1" stopColor={String(accent)} stopOpacity={0} />
         </RadialGradient>
       </Defs>
-      <Rect width={width} height={height} fill="url(#shade)" />
       <Rect width={width} height={height} fill="url(#glow)" />
     </Svg>
   );
@@ -393,7 +378,7 @@ const Floater = memo(function Floater({ lab, index, home, size, bounds, block, c
           onAccessibilityAction={() => onTap(id)}
           style={[{ position: "absolute", left: 0, top: 0 }, tileStyle]}
         >
-          <View className="rounded-md bg-background" style={{ elevation: 3, shadowColor: "#000", shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } }}>
+          <View className="rounded-md bg-background">
             <Logo id={lab.id} label={lab.name} size={size} />
           </View>
         </Animated.View>

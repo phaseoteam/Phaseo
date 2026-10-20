@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import type { ModelCard } from "@/lib/api/models";
 import {
-  ART_LABS, FRONTIER_LABS, TAP_GAP_MS, TAPS_TO_OPEN, catalogueFact, hasLogo, isLightColour, newestByLab, nextTap, shortVersion, versionDetail,
+  ART_LABS, FRONTIER_LABS, TAP_GAP_MS, TAPS_TO_OPEN, catalogueFact, hasLogo, newestByLab, nextTap, shortVersion, versionDetail,
   type TapRun,
 } from "./versionArt";
 
@@ -141,23 +141,5 @@ describe("the frontier labs", () => {
     // xAI's old IDs resolve to the same logo.
     expect(hasLogo("x-ai")).toBe(true);
     expect(hasLogo("not-a-lab")).toBe(false);
-  });
-});
-
-describe("isLightColour", () => {
-  it("reads hex and rgb colours", () => {
-    expect(isLightColour("#ffffff")).toBe(true);
-    expect(isLightColour("#FFF")).toBe(true);
-    expect(isLightColour("#0b0b0b")).toBe(false);
-    expect(isLightColour("#0b0b0bcc")).toBe(false);
-    expect(isLightColour("rgb(245, 250, 255)")).toBe(true);
-    expect(isLightColour("rgba(11 11 11 / 0.8)")).toBe(false);
-    // The light theme's primary blue takes white text.
-    expect(isLightColour("#0069a8")).toBe(false);
-  });
-
-  it("gives up on anything else", () => {
-    expect(isLightColour("oklch(1 0 0)")).toBeNull();
-    expect(isLightColour("tomato")).toBeNull();
   });
 });
