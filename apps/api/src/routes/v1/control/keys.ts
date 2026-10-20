@@ -676,8 +676,11 @@ async function handleCreateKey(req: Request) {
 		if (!data) throw new Error("Failed to create API key");
 		await auditApiKey(auth.value, "api_key.created", data as KeyRow);
 
+		// The secret is shown once. Return it at the top level, where key-creation clients
+		// read it, and keep data.key for existing callers.
 		return json(
 			{
+				key: generated.plaintext,
 				data: {
 					...formatApiKey(data as KeyRow),
 					key: generated.plaintext,
