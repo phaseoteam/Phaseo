@@ -1185,7 +1185,7 @@ pub struct ErrorResponse {
 	pub code: Option<String>,
 	pub description: Option<String>,
 	pub details: Option<Vec<HashMap<String, String>>>,
-	pub error: String,
+	pub error: serde_json::Value,
 	pub error_origin: Option<String>,
 	pub error_type: Option<String>,
 	pub failed_providers: Option<Vec<String>>,
