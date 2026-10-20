@@ -60,6 +60,10 @@ describe("model endpoint compatibility", () => {
 		expect(getSupportedEndpointOptions(["text.generate"]).map((option) => option.value))
 			.toEqual(["responses", "chat.completions", "messages"]);
 	});
+	test("retains the legacy chat.generate capability without unrelated routes", () => {
+		expect(getSupportedEndpointOptions(["chat.generate"]).map((option) => option.value))
+			.toEqual(["responses", "chat.completions", "messages"]);
+	});
 	test("preserves explicit endpoint support and legacy preferred endpoint metadata", () => {
 		expect(getSupportedEndpointOptions(["/v1/extractions"]).map((option) => option.value)).toEqual(["extractions"]);
 		expect(getSupportedEndpointOptions([], "decisions.make").map((option) => option.value)).toEqual(["decisions"]);
