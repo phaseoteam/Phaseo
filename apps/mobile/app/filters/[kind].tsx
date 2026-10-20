@@ -23,7 +23,7 @@ export default function FilterSheet() {
 }
 
 function Check_({ on }: { on: boolean }) {
-  return on ? <Icon icon={Check} tone="primary" size={18} /> : null;
+  return on ? <Icon icon={Check} tone="link" size={18} /> : null;
 }
 
 function SortSheet() {

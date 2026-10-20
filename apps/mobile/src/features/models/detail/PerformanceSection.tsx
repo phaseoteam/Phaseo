@@ -12,7 +12,8 @@ import { averageUptime, formatPercentile, hasPerformanceHistory, PERCENTILES, pe
 import type { SectionId } from "./sections";
 
 /** Providers without a brand colour use the chart tokens, as the website's trend charts do. */
-const CHART_TOKENS = ["--color-chart-1", "--color-chart-2", "--color-chart-3", "--color-chart-4", "--color-chart-5"];
+// Fallbacks for providers without a brand colour, strongest first: the lighter steps sit close to dark backgrounds.
+const CHART_TOKENS = ["--color-chart-4", "--color-chart-5", "--color-chart-3", "--color-chart-2", "--color-chart-1"];
 
 /** Shared by Performance and Uptime: the website requests percentile 50 over three days by default. */
 export function usePerformance(modelId: string, options: { range?: RangeDays; colo?: string | null; percentile?: number } = {}, enabled = true) {
