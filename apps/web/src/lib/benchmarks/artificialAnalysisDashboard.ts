@@ -103,3 +103,21 @@ export function dashboardTickPrecision(values: number[], format: (value: number,
 	}
 	return 12;
 }
+
+/** Preserve sub-cent costs while keeping plotted currency labels short. */
+export function formatDashboardCost(value: number, locale: string, compact = false, precision = 4) {
+ return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", currencyDisplay: "narrowSymbol", maximumSignificantDigits: precision, ...(compact && Math.abs(value) >= 1000 ? { notation: "compact" } : {}) }).format(value);
+}
+
+/** Prioritise group maxima, then retain only value labels whose padded bounds do not overlap. */
+export function dashboardVisibleValueLabels(items: { id: string; x: number; y: number; label: string; priority: boolean }[], left: number, right: number) {
+ const occupied: { left: number; right: number; top: number; bottom: number }[] = [];
+ const visible = new Set<string>();
+ for (const item of [...items].sort((a, b) => Number(b.priority) - Number(a.priority) || a.y - b.y || a.id.localeCompare(b.id))) {
+ const halfWidth = item.label.length * 3.25 + 4;
+ const box = { left: item.x - halfWidth, right: item.x + halfWidth, top: item.y - 12, bottom: item.y + 4 };
+ if (box.left < left || box.right > right || occupied.some((other) => box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top)) continue;
+ occupied.push(box); visible.add(item.id);
+ }
+ return visible;
+}
