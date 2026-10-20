@@ -86,6 +86,15 @@ describe("extractUnifiedStreamEvents", () => {
 		).toBe(true);
 	});
 
+	it("reads reasoning once when a chunk carries both reasoning_content and reasoning", () => {
+		const reasoningTexts = (delta: Record<string, unknown>) => extractUnifiedStreamEvents({
+			protocol: "openai.chat.completions",
+			frame: { object: "chat.completion.chunk", choices: [{ index: 0, delta, finish_reason: null }] },
+		}).flatMap((event) => (event.type === "delta_text" && event.channel === "reasoning_text" ? [event.text] : []));
+		expect(reasoningTexts({ reasoning_content: "think", reasoning: "think" })).toEqual(["think"]);
+		expect(reasoningTexts({ reasoning: "think" })).toEqual(["think"]);
+	});
+
 	it("extracts usage and stop from final chat completion snapshot", () => {
 		const events = extractUnifiedStreamEvents({
 			protocol: "openai.chat.completions",
