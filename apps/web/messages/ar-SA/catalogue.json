@@ -2987,7 +2987,6 @@
 		"previousModel": "النموذج السابق",
 		"nextModel": "النموذج التالي",
 		"modelIndex": "{current} من {total} نموذج",
-		"exampleRequest": "مثال: 10K رمز إدخال + 1K رمز إخراج",
 		"compareProviders": "مقارنة المزوّدين"
 	},
 	"countryDetail": {

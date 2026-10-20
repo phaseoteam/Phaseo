@@ -2987,7 +2987,6 @@
 		"previousModel": "Modèle précédent",
 		"nextModel": "Modèle suivant",
 		"modelIndex": "{current} sur {total} modèles",
-		"exampleRequest": "Exemple : 10K tokens en entrée + 1K en sortie",
 		"compareProviders": "Comparer les fournisseurs"
 	},
 	"countryDetail": {

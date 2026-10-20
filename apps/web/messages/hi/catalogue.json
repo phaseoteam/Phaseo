@@ -2987,7 +2987,6 @@
 		"previousModel": "पिछला मॉडल",
 		"nextModel": "अगला मॉडल",
 		"modelIndex": "{total} में से {current} मॉडल",
-		"exampleRequest": "उदाहरण: 10K इनपुट + 1K आउटपुट टोकन",
 		"compareProviders": "प्रदाताओं की तुलना करें"
 	},
 	"countryDetail": {

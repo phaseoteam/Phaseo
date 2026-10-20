@@ -495,10 +495,6 @@ function ParameterButton({ param }: { param: string }) {
 	);
 }
 
-// A worked example makes per-million prices easier to read at a glance.
-const EXAMPLE_INPUT_TOKENS = 10_000;
-const EXAMPLE_OUTPUT_TOKENS = 1_000;
-
 export function ProviderModelDetailsSheet({
 	model,
 	index,
@@ -526,12 +522,6 @@ export function ProviderModelDetailsSheet({
 	const organisationId = model ? organisationIdFor(model) : null;
 
 	const meters = model?.pricing_meters ?? [];
-	const inputMeter = findTokenMeter(meters, "input");
-	const outputMeter = findTokenMeter(meters, "output");
-	const exampleCost =
-		inputMeter?.price_per_1m_usd != null && outputMeter?.price_per_1m_usd != null
-			? (inputMeter.price_per_1m_usd * EXAMPLE_INPUT_TOKENS + outputMeter.price_per_1m_usd * EXAMPLE_OUTPUT_TOKENS) / 1_000_000
-			: null;
 	const params = model ? uniqueSorted(listify(model.supported_params)) : [];
 	const endpoints = model ? Array.from(new Set(model.endpoints ?? [])).sort((a, b) => a.localeCompare(b)) : [];
 	const providerModelId = model?.provider_model_slug?.trim() || model?.api_model_id || "";
@@ -637,12 +627,6 @@ export function ProviderModelDetailsSheet({
 											{t("noPricing")}
 										</div>
 									)}
-									{exampleCost != null ? (
-										<div className="flex items-center justify-between gap-3 pb-1 pt-1.5 text-[11px] text-muted-foreground">
-											<span>{t("exampleRequest")}</span>
-											<span className="font-medium tabular-nums text-foreground">≈ {formatUsd(exampleCost)}</span>
-										</div>
-									) : null}
 								</InspectorSection>
 
 								<InspectorSection title={tSections("routingDetails")}>
