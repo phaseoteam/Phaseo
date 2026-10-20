@@ -1,4 +1,6 @@
 import type { Task, TaskStatus } from "./workspace";
+import type { TaskOverview } from "./workspaceOverview";
+import { sidebarSection } from "./threadLifecycle";
 
 export type TaskAttention = { archived: boolean; status: TaskStatus; approvalsCount: number; answersCount: number; steeringReviewCount: number; autopilot?: Task["autopilot"] };
 
@@ -24,4 +26,21 @@ export function inboxReasonFromCounts(task: TaskAttention): string | undefined {
 export function needsAttention(task: Task) {
 	const reason = inboxReason(task);
 	return Boolean(reason) && reason !== "Task completed";
+}
+
+/** One decision Autopilot made in a chat, kept for the Inbox's log. */
+export type AutopilotDecision = { id: number; taskId: string; at: string; title: string; text: string };
+
+/**
+ * The Inbox's lists: chats and agents waiting on the person, most recently changed first, and chats Autopilot is still
+ * running. Settled and snoozed chats stay out, as in the sidebar; a snoozed chat that raises its hand comes back. An agent
+ * in Autopilot follows its parent, so only the chats that set Autopilot are listed as running.
+ */
+export function inboxLists<T extends TaskOverview>(tasks: readonly T[], now = Date.now()) {
+	const needsYou = tasks.filter(task => !task.archived && task.attentionReason && task.attentionReason !== "Task completed" && !["snoozed", "settled"].includes(sidebarSection(task, now)));
+	// A chat Autopilot is running that already waits on the person (stopped, failed) is listed once, under Needs you.
+	const waiting = new Set(needsYou);
+	const inAutopilot = tasks.filter(task => !task.archived && task.autopilot && !task.autopilot.inherited && !task.autopilot.handback && !waiting.has(task));
+	const newest = (a: T, b: T) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id);
+	return { needsYou: needsYou.sort(newest), inAutopilot: inAutopilot.sort(newest) };
 }

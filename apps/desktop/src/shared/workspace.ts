@@ -1,4 +1,5 @@
 import type { Delegation, Launch } from "./orchestration";
+import type { AutopilotDecision } from "./inbox";
 import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
 import type { ImportableHub, UsageHub, UsageHubRequest, UsageHubSnapshot } from "./usageHubs";
 import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
@@ -182,6 +183,9 @@ export type WorkspaceApi = {
 	missions: () => Promise<Mission[]>;
 	mission: (command: MissionCommand) => Promise<Mission[]>;
 	onMissionsChange: (listener: (missions: Mission[]) => void) => () => void;
+	/** Autopilot's latest decisions across chats, newest first (the Inbox's log). */
+	autopilotLog: () => Promise<AutopilotDecision[]>;
+	onAutopilotLogChange: (listener: () => void) => () => void;
 	preferences: () => Promise<{ preferences: WorkspacePreferences; notificationsSupported: boolean }>;
 	savePreferences: (preferences: WorkspacePreferences) => Promise<WorkspacePreferences>;
 	globalInstructions: () => Promise<InstructionDocument>;

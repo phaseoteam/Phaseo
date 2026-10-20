@@ -226,4 +226,21 @@ describe("IPC validation", () => {
 			expect(store.backfillUsageTotals(10)).toBe(0);
 		} finally { store.close(); }
 	});
+
+	it("keeps the latest 500 Autopilot decisions, newest first, and drops a deleted chat's", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const kept = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "code" }), gone = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "code" });
+			store.recordAutopilotDecision(gone.id, "Autopilot answered", "Theme: system", "2026-10-20T10:00:00.000Z");
+			for (let index = 0; index < 501; index++) store.recordAutopilotDecision(kept.id, "Autopilot: keep going", `Step ${index}`);
+			const log = store.autopilotLog();
+			expect(log).toHaveLength(500);
+			expect(log[0]).toMatchObject({ taskId: kept.id, title: "Autopilot: keep going", text: "Step 500" });
+			expect(log.at(-1)?.text).toBe("Step 1");
+			store.recordAutopilotDecision(gone.id, "Autopilot finished", "Done.");
+			expect(store.autopilotLog(1)[0]).toMatchObject({ taskId: gone.id, text: "Done." });
+			store.deleteTasks([gone.id]);
+			expect(store.autopilotLog().some(entry => entry.taskId === gone.id)).toBe(false);
+		} finally { store.close(); }
+	});
 });
