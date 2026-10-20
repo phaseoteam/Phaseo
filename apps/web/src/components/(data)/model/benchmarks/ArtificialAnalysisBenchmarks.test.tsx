@@ -12,7 +12,7 @@ import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
 import ModelBenchmarks from "./ModelBenchmarks";
 import type { ModelBenchmarkHighlight } from "@/lib/fetchers/models/getModelBenchmarkData";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { summarizeArtificialAnalysisRankings } from "@/lib/benchmarks/artificialAnalysis";
+import { artificialAnalysisRankSummaries, summarizeArtificialAnalysisRankings } from "@/lib/benchmarks/artificialAnalysis";
 import { selectEpochLeaderboardEntries } from "@/lib/benchmarks/epoch";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 
@@ -181,6 +181,23 @@ describe("Artificial Analysis benchmark panel", () => {
 		expect(html).toContain("View full leaderboard");
 		expect(html).toContain("/benchmarks/epoch-capabilities-index");
 	});
+	it("ranks the same from the web API's per-model view, where other models' scores are pooled", () => {
+		const id = "aa-intelligence-index-v4";
+		const configurations = (...scores: number[]) => scores.map((score) => ({ score, variant: null, result_key: null, other_info: null, source_link: null, updated_at: null }));
+		const ranking: PublicBenchmarkRanking = { benchmark_id: id, name: "Intelligence", category: null, benchmark_type: null, lower_is_better: false, total_models: 3, entries: [
+			{ model_id: "test/leader", model_name: "Leader", organisation_id: null, organisation_name: null, score: 61, rank: 1, other_info: "Intelligence Index v4.3", configurations: configurations(61) },
+			{ model_id: "test/second", model_name: "Second", organisation_id: null, organisation_name: null, score: 50, rank: 2, other_info: "Intelligence Index v4.3", configurations: configurations(50, 48) },
+			{ model_id: "test/older", model_name: "Older", organisation_id: null, organisation_name: null, score: 70, rank: 3, other_info: "Intelligence Index v4.2", configurations: configurations(70) },
+		] };
+		const pooled = artificialAnalysisRankSummaries({ [id]: { lower_is_better: false, entries: [
+			{ model_id: null, version: "4.3", scores: [48, 50, 61] },
+			{ model_id: null, version: "4.2", scores: [70] },
+		] } });
+		const render = (rankSummaries: ReturnType<typeof artificialAnalysisRankSummaries>) => renderLocalized(<ArtificialAnalysisBenchmarks highlights={[highlight(id, 49)]} rankSummaries={rankSummaries} loadRankings modelId="test/current" />);
+		const translate = createTranslator({ locale: "en-GB", messages: { Common: common }, namespace: "Common.ui.benchmarkChartCopy" } as never);
+		expect(render(pooled)).toContain(translate("rankRankOfTotalEvaluatedConfigurations", { rank: 3, total: 4 }));
+		expect(render(pooled)).toBe(render(summarizeArtificialAnalysisRankings([ranking])));
+	});
 	it.each([0, 40, 99, -1])("keeps Epoch markup identical with the server's compact window (index %s)", async (index) => {
 		const entries: PublicBenchmarkRanking["entries"] = Array.from({ length: 100 }, (_, i) => ({
 			model_id: `test/model-${i}`, model_name: `Model ${i}`, organisation_id: "test", organisation_name: "Test",
@@ -192,7 +209,7 @@ describe("Artificial Analysis benchmark panel", () => {
 		};
 		const modelId = `test/model-${index}`;
 		const highlights = [{ ...highlight(ranking.benchmark_id, 200 - index), rank: index + 1 }];
-		const tree = await ModelBenchmarks({ highlightCards: highlights, benchmarkRankings: [ranking], modelId });
+		const tree = await ModelBenchmarks({ highlightCards: highlights, epochRanking: ranking, modelId });
 		const epoch = React.Children.toArray(tree.props.children).find(child => React.isValidElement(child) && child.type === EpochCapabilitiesIndex) as React.ReactElement<{ ranking: PublicBenchmarkRanking }>;
 		expect(epoch.props.ranking.entries).toEqual(selectEpochLeaderboardEntries(entries, modelId));
 		expect(epoch.props.ranking.entries).toHaveLength(12);

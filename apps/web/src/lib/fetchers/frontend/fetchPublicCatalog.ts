@@ -653,12 +653,15 @@ export async function fetchFrontendOrganisationHeader(
 	return payload?.organisation ?? null;
 }
 
+/** `limit` returns only the organisation's newest models (by release or announcement date). */
 export async function fetchFrontendOrganisationModels(
 	organisationId: string,
+	{ limit }: { limit?: number } = {},
 ): Promise<OrganisationModelCards[]> {
+	const query = limit === undefined ? "" : `?limit=${encodeURIComponent(String(limit))}`;
 	const payload = await fetchOptionalPublicWebApi<{
 		models: OrganisationModelCards[];
-	}>(`/api/_web/organisations/${encodeURIComponent(organisationId)}/models`);
+	}>(`/api/_web/organisations/${encodeURIComponent(organisationId)}/models${query}`);
 	return payload?.models ?? [];
 }
 
@@ -1122,10 +1125,6 @@ export async function fetchFrontendOrganisationLogoIdsByNames(
 ): Promise<Record<string, string>> {
 	if (!names.length) return {};
 	return (await fetchPublicWebApi<{ organisations: Record<string, string> }>(`/api/_web/rankings/organisation-logo-ids?names=${encodeURIComponent([...new Set(names)].sort().join(","))}`)).organisations;
-}
-
-export async function fetchFrontendCompareModels(): Promise<ExtendedModel[]> {
-	return (await fetchPublicWebApi<{ models: ExtendedModel[] }>("/api/_web/compare/models")).models;
 }
 
 export async function fetchFrontendComparisonModels(

@@ -54,6 +54,7 @@ const publicKeys = {
 	gatewayModels: () => [...publicKeys.all(), "gateway-models"] as const,
 	chatGatewayModels: () => [...publicKeys.all(), "chat-gateway-models", "available-only"] as const,
 	benchmarkRankings: () => [...publicKeys.all(), "benchmark-rankings"] as const,
+	compareModelOptions: () => [...publicKeys.all(), "compare-model-options"] as const,
 	modelsWeeklyMetrics: () => [...publicKeys.all(), "models-weekly-metrics"] as const,
 	freeRouterUsage: () => [...publicKeys.all(), "free-router-usage"] as const,
 	modelPerformance: (args: {

@@ -1,5 +1,6 @@
 import type { BenchmarkPage, BenchmarkResult } from "@/lib/fetchers/benchmarks/types";
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry, PublicIntelligenceValue, PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { ModelBenchmarkRanks } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { parseBenchmarkScore } from "@/lib/benchmarks/scoreFormat";
 
 export const artificialAnalysisMetrics = [
@@ -102,8 +103,17 @@ export function buildArtificialAnalysisValue(benchmarks: PublicBenchmarkRanking[
 
 export type ArtificialAnalysisRankSummary = {
 	lowerIsBetter: boolean;
-	entries: Array<{ modelId: string; version: string | null; scores: number[] }>;
+	/** `modelId` is null for other models' scores pooled by the web API. */
+	entries: Array<{ modelId: string | null; version: string | null; scores: number[] }>;
 };
+
+/** Rank summaries from the web API's per-model view; ranks match the full leaderboards'. */
+export function artificialAnalysisRankSummaries(ranks: ModelBenchmarkRanks["artificial_analysis"]): Record<string, ArtificialAnalysisRankSummary> {
+	return Object.fromEntries(Object.entries(ranks).map(([benchmarkId, summary]) => [benchmarkId, {
+		lowerIsBetter: summary.lower_is_better,
+		entries: summary.entries.map((entry) => ({ modelId: entry.model_id, version: entry.version, scores: entry.scores })),
+	} satisfies ArtificialAnalysisRankSummary]));
+}
 
 export function summarizeArtificialAnalysisRankings(rankings: PublicBenchmarkRanking[]) {
 	return Object.fromEntries(rankings.filter((ranking) => isArtificialAnalysisBenchmark(ranking.benchmark_id)).map((ranking) => [ranking.benchmark_id, {

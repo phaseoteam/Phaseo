@@ -6,11 +6,11 @@ import type { CompareModelOption } from "./types";
 import { useTranslations } from "next-intl";
 
 export default function MainCard({
-	models,
+	selectedOptions,
 	selected,
 	setSelected,
 }: {
-	models: CompareModelOption[];
+	selectedOptions: CompareModelOption[];
 	selected: string[];
 	setSelected: (ids: string[]) => void;
 }) {
@@ -23,7 +23,7 @@ export default function MainCard({
 				</h2>
 				<div className="flex justify-center mb-4">
 					<ModelCombobox
-						models={models}
+						selectedOptions={selectedOptions}
 						selected={selected}
 						setSelected={setSelected}
 					/>

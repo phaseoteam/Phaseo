@@ -20,10 +20,12 @@ import {
 } from "@/components/ai-elements/model-selector";
 import type { CompareModelOption } from "./types";
 import { ProviderLogo } from "./ProviderLogo";
+import { useCompareModelOptions, usePrefetchCompareModelOptions } from "./useCompareModelOptions";
 import { useLocale, useTranslations } from "next-intl";
 
 interface ModelComboboxProps {
-	models: CompareModelOption[];
+	/** Options the page already has: the selected models. The full list loads when the picker opens. */
+	selectedOptions: CompareModelOption[];
 	selected: string[];
 	setSelected: (ids: string[]) => void;
 	open?: boolean;
@@ -136,7 +138,7 @@ export function groupModelsByReleaseMonth(
 }
 
 export default function ModelCombobox({
-	models,
+	selectedOptions,
 	selected,
 	setSelected,
 	open,
@@ -182,11 +184,14 @@ export default function ModelCombobox({
 		});
 	}, [selected, dialogOpen]);
 
-	// The list only shows in the open dialog, so a closed picker (every server
-	// render, and hydration) skips grouping the whole catalogue.
+	// The list only shows in the open dialog, so it loads when a picker first
+	// opens: pages, server renders and closed pickers carry no catalogue.
+	const optionsQuery = useCompareModelOptions(dialogOpen);
+	const prefetchOptions = usePrefetchCompareModelOptions();
+	const catalogue = optionsQuery.data;
 	const groupedModels = React.useMemo<GroupedModels[]>(
-		() => (dialogOpen ? groupModelsByReleaseMonth(models, getReleaseMonthLabel, t("unknownReleaseDate")) : NO_GROUPS),
-		[dialogOpen, getReleaseMonthLabel, models, t],
+		() => (dialogOpen && catalogue ? groupModelsByReleaseMonth(catalogue, getReleaseMonthLabel, t("unknownReleaseDate")) : NO_GROUPS),
+		[catalogue, dialogOpen, getReleaseMonthLabel, t],
 	);
 
 	const filteredGroups = React.useMemo(() => {
@@ -215,9 +220,10 @@ export default function ModelCombobox({
 
 	const modelsById = React.useMemo(() => {
 		const lookup = new Map<string, CompareModelOption>();
-		models.forEach((model) => lookup.set(model.id, model));
+		for (const model of catalogue ?? []) lookup.set(model.id, model);
+		for (const model of selectedOptions) lookup.set(model.id, model);
 		return lookup;
-	}, [models]);
+	}, [catalogue, selectedOptions]);
 
 	const activeReplaceTarget = React.useMemo(() => {
 		if (!replaceTargetId) return null;
@@ -336,6 +342,8 @@ export default function ModelCombobox({
 						selected.length === 0 && "text-muted-foreground",
 						className
 					)}
+					onPointerEnter={prefetchOptions}
+					onFocus={prefetchOptions}
 				>
 					<Plus className="size-4" />
 					{buttonLabel}
@@ -376,7 +384,20 @@ export default function ModelCombobox({
 					</p>
 				) : null}
 				<ModelSelectorList className="max-h-[70vh]" viewportClassName="p-2">
-					<ModelSelectorEmpty>{t("noModelsFound")}</ModelSelectorEmpty>
+					{!catalogue && optionsQuery.isError ? (
+						<div role="alert" className="flex flex-col items-center gap-3 px-3 py-6 text-center text-sm text-muted-foreground">
+							<p>{t("modelsUnavailable")}</p>
+							<Button type="button" variant="outline" size="sm" onClick={() => void optionsQuery.refetch()}>
+								{t("tryAgain")}
+							</Button>
+						</div>
+					) : !catalogue ? (
+						<p role="status" className="px-3 py-6 text-center text-sm text-muted-foreground">
+							{t("loadingModels")}
+						</p>
+					) : (
+						<ModelSelectorEmpty>{t("noModelsFound")}</ModelSelectorEmpty>
+					)}
 					{filteredGroups.map((group) => (
 						<ModelSelectorGroup
 							key={group.monthKey}

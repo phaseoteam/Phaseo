@@ -6,9 +6,11 @@ function withProviderDisplayName(model: GatewaySupportedModel): GatewaySupported
 	return { ...model, providerName: resolveProviderDisplayName({ providerId: model.providerId, providerName: model.providerName || model.providerId, offerLabel: model.providerOfferLabel, offerScope: model.providerOfferScope }) };
 }
 
-export async function fetchFrontendGatewayModels(options: { credentials?: RequestCredentials } = {}): Promise<GatewaySupportedModel[]> {
+/** `ids` limits the catalogue to those `modelId`s, for pages that show a few models. */
+export async function fetchFrontendGatewayModels({ ids, ...options }: { credentials?: RequestCredentials; ids?: readonly string[] } = {}): Promise<GatewaySupportedModel[]> {
+	const filter = ids ? `&ids=${encodeURIComponent([...new Set(ids)].sort().join(","))}` : "";
 	return (await fetchPublicWebApi<{ models: GatewaySupportedModel[] }>(
-		"/api/_web/gateway/models?available_only=true",
+		`/api/_web/gateway/models?available_only=true${filter}`,
 		options,
 	)).models.map(withProviderDisplayName);
 }

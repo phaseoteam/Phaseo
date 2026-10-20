@@ -11,7 +11,6 @@ import {
 	type SubscriptionPlan,
 	getModelSubscriptionPlansCached,
 } from "../models/getModelSubscriptionPlans";
-import { loadCompareModelsCached } from "@/lib/fetchers/compare/loadCompareModels";
 import {
 	benchmarkOrderFromAscending,
 	normalizeBenchmarkScoreType,
@@ -353,54 +352,17 @@ export async function getComparisonModelsCached(
 
 	if (uniqueOrdered.length === 0) return [];
 
-	console.log("[compare] Resolving comparison models", uniqueOrdered);
-
 	// stable key so different orderings share the same cache entry
 	const cacheKey = [...uniqueOrdered].sort().join(",");
-	console.log("[compare] Fetching models for cache key", cacheKey);
 
 	// The Worker endpoint is the sole cache boundary; this layer only preserves ordering.
-	let resultMap = await fetchComparisonModels(cacheKey, includeHidden);
+	const resultMap = await fetchComparisonModels(cacheKey, includeHidden);
 
-	console.log("[compare] Received detailed models", resultMap);
-
+	// The selection reads the same visible models as the full compare list, so a
+	// model missing here doesn't exist; don't fetch the whole catalogue to confirm.
 	const missingIds = uniqueOrdered.filter((id) => !resultMap[id]);
 	if (missingIds.length > 0) {
-		console.warn(
-			"[compare] Missing detailed data for some models, falling back to cached list:",
-			missingIds
-		);
-
-		const fallbackModels = await loadCompareModelsCached(includeHidden);
-		console.log(
-			"[compare] Fallback compare models count",
-			fallbackModels.length
-		);
-
-		const fallbackMap = new Map(
-			fallbackModels.map((model) => [model.id, model])
-		);
-
-		resultMap = {
-			...resultMap,
-			...Object.fromEntries(
-				missingIds
-					.map((id) => {
-						const model = fallbackMap.get(id);
-						return model ? [id, model] : null;
-					})
-					.filter(Boolean) as Array<[string, ExtendedModel]>
-			),
-		};
-
-		const stillMissing = missingIds.filter((id) => !resultMap[id]);
-		console.warn("[compare] Post fallback map", resultMap);
-		if (stillMissing.length > 0) {
-			console.warn(
-				"[compare] Still missing models after fallback",
-				stillMissing
-			);
-		}
+		console.warn("[compare] No comparison data for models", missingIds);
 	}
 
 	return uniqueOrdered.map((id) => resultMap[id]).filter(Boolean);

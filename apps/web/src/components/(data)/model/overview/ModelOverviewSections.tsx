@@ -40,7 +40,6 @@ import {
 } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import {
-	fetchFrontendBenchmark,
 	fetchFrontendModelApps,
 	fetchFrontendModelBenchmarkHighlights,
 	fetchFrontendModelBenchmarkResults,
@@ -51,13 +50,12 @@ import {
 	fetchFrontendModelPerformance,
 	fetchFrontendModelTimeline,
 	fetchFrontendModelUsageDailyBreakdown,
-	fetchFrontendOrganisations,
 	fetchFrontendOrganisationModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { applyArtificialAnalysisOrganisationColours } from "@/lib/benchmarks/artificialAnalysis";
+import { artificialAnalysisRankSummaries } from "@/lib/benchmarks/artificialAnalysis";
 import { isEpochConfidenceIntervalForScore } from "@/lib/benchmarks/epoch";
 import { epochModelKey, fetchEpochConfidenceIntervals } from "@/lib/benchmarks/epochData";
-import { fetchFrontendRankingBenchmarks } from "@/lib/fetchers/frontend/fetchRankingSections";
+import { fetchFrontendModelBenchmarkRanks } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
@@ -626,7 +624,7 @@ export async function ModelBenchmarksSection({
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
 	const emptyStateT = await getTranslations("Catalogue.models.detail.emptyStates");
 	const t = await getTranslations("Catalogue.models.detail");
-	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, organisations, pendingApiRelease, epochBenchmark, epochConfidenceIntervals, modelHeader] = await Promise.all([
+	const [benchmarkHighlights, benchmarkResults, benchmarkRanks, pendingApiRelease, epochConfidenceIntervals, modelHeader] = await Promise.all([
 		withOptionalSectionTimeout(
 			fetchFrontendModelBenchmarkHighlights(modelId, includeHidden),
 			[],
@@ -637,57 +635,33 @@ export async function ModelBenchmarksSection({
 			[],
 			"benchmark results"
 		),
+		// This model's place on the leaderboards (~10 KB), not every leaderboard (~1 MB).
 		withOptionalSectionTimeout(
-			fetchFrontendRankingBenchmarks().then((payload) => payload.benchmarks),
-			[],
+			fetchFrontendModelBenchmarkRanks(modelId),
+			null,
 			"benchmark rankings"
-		),
-		withOptionalSectionTimeout(
-			fetchFrontendOrganisations(),
-			[],
-			"organisation colours"
 		),
 		withOptionalSectionTimeout(
 			fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
 			null,
 			"benchmark pending API release state"
 		),
-		withOptionalSectionTimeout(fetchFrontendBenchmark("epoch-capabilities-index"), null, "Epoch benchmark leaderboard"),
 		withOptionalSectionTimeout(fetchEpochConfidenceIntervals(), {}, "Epoch confidence intervals"),
 		withOptionalSectionTimeout(fetchFrontendModelHeader(modelId, includeHidden), null, "benchmark model identity"),
 	]);
-	const organisationColours = new Map(organisations.map((organisation) => [organisation.organisation_id, organisation.colour]));
-	const epochRanking = epochBenchmark ? {
-		benchmark_id: epochBenchmark.id,
-		name: epochBenchmark.name ?? "Epoch Capabilities Index",
-		category: epochBenchmark.category,
-		benchmark_type: epochBenchmark.type ?? null,
-		lower_is_better: epochBenchmark.ascending_order === false,
-		total_models: epochBenchmark.total_models,
-		entries: epochBenchmark.results.flatMap((result) => result.model && result.score !== null && Number.isFinite(Number(result.score)) ? [{
-			model_id: result.model_id,
-			model_name: result.model.name ?? result.model_id,
-			organisation_id: result.model.organisation?.organisation_id ?? null,
-			organisation_name: result.model.organisation?.name ?? null,
-			organisation_colour: result.model.organisation?.colour ?? null,
-			release_date: result.model.release_date ?? null,
-			score: Number(result.score),
-			rank: result.rank ?? 0,
+	const epochRanking = benchmarkRanks?.epoch ? {
+		...benchmarkRanks.epoch,
+		entries: benchmarkRanks.epoch.entries.map((entry) => ({
+			...entry,
 			other_info: (() => {
-				const base = typeof result.other_info === "string" ? result.other_info : "";
-				const interval = epochConfidenceIntervals[epochModelKey(result.model.name ?? result.model_id)];
-				return isEpochConfidenceIntervalForScore(interval, result.score)
+				const base = typeof entry.other_info === "string" ? entry.other_info : "";
+				const interval = epochConfidenceIntervals[epochModelKey(entry.model_name)];
+				return isEpochConfidenceIntervalForScore(interval, entry.score)
 					? `${base}${base ? "; " : ""}95% CI ${interval.low}–${interval.high}`
 					: base || null;
 			})(),
-			source_link: result.source_link ?? null,
-			updated_at: result.updated_at ?? null,
-		}] : []),
+		})),
 	} : null;
-	const allBenchmarkRankings = epochRanking && !benchmarkRankings.some((item) => item.benchmark_id === epochRanking.benchmark_id)
-		? [...benchmarkRankings, epochRanking]
-		: benchmarkRankings;
-	const enrichedBenchmarkRankings = applyArtificialAnalysisOrganisationColours(allBenchmarkRankings, organisationColours);
 	const shouldShowPendingApiBanner =
 		benchmarkHighlights.length === 0 && pendingApiRelease?.isPendingApiRelease;
 	if (hideWhenEmpty && benchmarkHighlights.length === 0 && !shouldShowPendingApiBanner) {
@@ -700,7 +674,8 @@ export async function ModelBenchmarksSection({
 				<ModelBenchmarks
 					highlightCards={benchmarkHighlights}
 					benchmarkResults={benchmarkResults}
-					benchmarkRankings={enrichedBenchmarkRankings}
+					rankSummaries={benchmarkRanks ? artificialAnalysisRankSummaries(benchmarkRanks.artificial_analysis) : undefined}
+					epochRanking={epochRanking}
 					modelId={modelId}
 					modelName={modelHeader?.name}
 					mode="summary"
@@ -992,8 +967,9 @@ export async function ModelCreatorModelsSection({
 	const t = await getTranslations("Catalogue.models.detail");
 	const locale = await getLocale();
 	const creatorName = model.organisation?.name ?? t("sections.thisCreator");
+	// Nine others are shown; ten newest always include them, with or without this model.
 	const creatorModels = await withOptionalSectionTimeout(
-		fetchFrontendOrganisationModels(model.organisation_id),
+		fetchFrontendOrganisationModels(model.organisation_id, { limit: 10 }),
 		[],
 		"creator models"
 	);
