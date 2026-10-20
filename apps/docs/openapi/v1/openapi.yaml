@@ -10690,8 +10690,8 @@ components:
         Adds the `phaseo:web_search` server tool to the request, so any model
         can search the web. The request runs, and searches are counted and
         billed, exactly as with a `phaseo:web_search` tool. If the request
-        already has a web search tool, the plugin adds nothing. Other options are
-        ignored.
+        already has a web search tool, the plugin adds nothing. Other options
+        are ignored.
       required:
         - id
       properties:
@@ -10736,10 +10736,10 @@ components:
     WebFetchPlugin:
       type: object
       description: >
-        Adds the `phaseo:web_fetch` server tool to the request, so any model
-        can read web pages. The request runs, and fetches are counted and
-        billed, exactly as with a `phaseo:web_fetch` tool. If the request
-        already has a web fetch tool, the plugin adds nothing.
+        Adds the `phaseo:web_fetch` server tool to the request, so any model can
+        read web pages. The request runs, and fetches are counted and billed,
+        exactly as with a `phaseo:web_fetch` tool. If the request already has a
+        web fetch tool, the plugin adds nothing.
       required:
         - id
       properties:
@@ -10802,11 +10802,10 @@ components:
         xAI run it natively. On models whose providers cannot run it, the
         gateway runs it as `phaseo:web_search`: `search_context_size`,
         `filters.allowed_domains`, `max_results` and `engine` carry over, and
-        searches are billed as `phaseo:web_search` searches. Other OpenAI
-        hosted tools (`file_search`, `code_interpreter`,
-        `computer_use_preview`, `mcp`, `image_generation`, `shell`,
-        `local_shell`, `apply_patch`) fail with 400 `unsupported_hosted_tool`
-        on models whose providers cannot run them.
+        searches are billed as `phaseo:web_search` searches. Other OpenAI hosted
+        tools (`file_search`, `code_interpreter`, `computer_use_preview`, `mcp`,
+        `image_generation`, `shell`, `local_shell`, `apply_patch`) fail with 400
+        `unsupported_hosted_tool` on models whose providers cannot run them.
       required:
         - type
       properties:
