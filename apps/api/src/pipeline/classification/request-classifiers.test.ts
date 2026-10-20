@@ -242,6 +242,18 @@ describe("decisions", () => {
 		expect(parseClassifierAnswer({ answers: [{ type: "choice", name: "d0", choice: "finance", confidence: 1 }] }, [DEPARTMENT])).toEqual([]);
 	});
 
+	it("keeps other only when no listed value is likely in a multi-value dimension", () => {
+		const topics = { ...TOPICS, allow_other: true };
+		const answers = (other: number, billing: number) => ({ answers: [
+			{ type: "predicate", name: "d0:0", probability: billing },
+			{ type: "predicate", name: "d0:1", probability: 0.1 },
+			{ type: "predicate", name: "d0:2", probability: 0.1 },
+			{ type: "predicate", name: "d0:3", probability: other },
+		] });
+		expect(parseClassifierAnswer(answers(0.7, 0.6), [topics])).toEqual([{ key: "topics", value: "billing", confidence: 0.6 }]);
+		expect(parseClassifierAnswer(answers(0.7, 0.2), [topics])).toEqual([{ key: "topics", value: "other", confidence: 0.7 }]);
+	});
+
 	it("picks structured outputs, then Decisions, then prompted JSON from the model's capabilities", () => {
 		expect(classifierRequestFormat([{ capability_id: "text.generate", params: { structured_outputs: {} } }])).toBe("json_schema");
 		// Undocumented params are sent a schema, as the gateway would accept it.

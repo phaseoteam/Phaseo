@@ -582,7 +582,10 @@ function parseDecisionAnswers(answers: unknown[], dimensions: ClassifierDimensio
 			return { value, probability: answer?.type === "predicate" ? clampConfidence(answer.probability) : null };
 		}).filter((entry): entry is { value: string; probability: number } => entry.probability != null);
 		if (!scored.length) return;
-		const chosen = scored.filter((entry) => entry.probability >= 0.5);
+		const likely = scored.filter((entry) => entry.probability >= 0.5);
+		// "other" means none of the listed values fit, so it only stands alone.
+		const listed = likely.filter((entry) => entry.value !== OTHER_VALUE);
+		const chosen = listed.length ? listed : likely;
 		// Like the JSON formats, a multi-value dimension always answers at least one value.
 		const picks = chosen.length ? chosen : [scored.reduce((best, entry) => entry.probability > best.probability ? entry : best)];
 		for (const pick of picks) labels.push({ key: dimension.key, value: pick.value, confidence: pick.probability });
