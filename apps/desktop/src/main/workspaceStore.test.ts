@@ -203,4 +203,27 @@ describe("IPC validation", () => {
 			expect(store.getPreferences()).toEqual({ notifications: "all", notificationTitles: true, maxActiveAgents: 32, autoSettleAfterDays: 3, autoSettleOnMerge: true, keepPullRequests: false, titleModel: null, openPullRequestsInApp: true, pullRequestMergeMethod: null, diffFilesCollapsed: false });
 		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
+
+	it("fills in older chats' usage totals from their Phaseo usage reports alone", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			// A chat that moved between harnesses keeps what its Phaseo turns used, whatever it runs on now.
+			const task = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "code" });
+			const saved = store.getTask(task.id);
+			saved.messages = [{ id: "turn", role: "user", text: "Hello", createdAt: "" }];
+			// Two priced steps (one large enough to be stored compressed), a compaction, and another harness's cumulative report.
+			saved.activities = [
+				{ id: "turn:usage:0", type: "usage", title: "Usage", text: JSON.stringify({ prompt_tokens: 100, completion_tokens: 20, pricing: { total_nanos: 1_500_000, lines: Array.from({ length: 80 }, (_, index) => ({ meter: `line-${index}` })) } }) },
+				{ id: "turn:usage:1", type: "usage", title: "Usage", text: JSON.stringify({ input_tokens: 200, output_tokens: 30, total_tokens: 230, pricing_breakdown: { total_nanos: 2_500_000 } }) },
+				{ id: "turn:compaction:123:usage", type: "usage", title: "Compaction usage", text: JSON.stringify({ prompt_tokens: 50, completion_tokens: 10, pricing: { total_nanos: 100_000 } }) },
+				{ id: "turn:usage", type: "usage", title: "Context usage", text: JSON.stringify({ total: { input_tokens: 9999 } }) },
+				{ id: "turn:tool", type: "tool", title: "usage:1", text: "{}" },
+			];
+			delete saved.usageTotals; store.saveTask(saved);
+			expect(store.getOverview().tasks.find(value => value.id === task.id)?.usageTotals).toBeUndefined();
+			expect(store.backfillUsageTotals(10)).toBe(1);
+			expect(store.getOverview().tasks.find(value => value.id === task.id)?.usageTotals).toEqual({ tokens: 410, costNanos: 4_100_000 });
+			expect(store.backfillUsageTotals(10)).toBe(0);
+		} finally { store.close(); }
+	});
 });

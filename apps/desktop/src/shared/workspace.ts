@@ -51,6 +51,8 @@ export type QuestionRequest = { id: string; questions: AgentQuestion[]; response
 /** A pending approval. Plans show as a proposed-plan card; always and never carry the agent's labels for its lasting choices. */
 export type ApprovalRequest = { id: string; method: string; description: string; kind?: "plan"; always?: string; never?: string };
 export type ApprovalDecision = "accept" | "decline" | "always" | "never";
+/** Tokens, and the gateway's price in nanodollars. */
+export type UsageTotals = { tokens: number; costNanos: number };
 export type Task = {
 	delegation?: Delegation;
 	/** Top-level chats started by an agent's launch_thread; not orchestration children. */
@@ -73,6 +75,8 @@ export type Task = {
 	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
 	/** Labels for grouping and filtering chats, set by the person or the chat's agent. */
 	tags?: string[];
+	/** What the chat's Phaseo turns have used, kept as they stream; filled in from its history for older chats. */
+	usageTotals?: UsageTotals;
 	/** Code-mode lifecycle after T3 Code (see shared/threadLifecycle.ts). */
 	settledOverride?: "settled" | "active"; settledAt?: string; unsettledAt?: string;
 	snoozedUntil?: string; snoozedAt?: string; lastSnoozeWakeAt?: string;

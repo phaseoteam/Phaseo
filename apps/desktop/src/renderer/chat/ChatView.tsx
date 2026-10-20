@@ -31,6 +31,7 @@ import { PermissionMenu, PlanIndicator } from "./NewChat";
 import { openModelPickerEvent, renameChatEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { Requests } from "./Requests";
 import { AgentThreads } from "./AgentThreads";
+import { ChatSpend } from "./ChatSpend";
 import { optionHarnesses, selectionSettings } from "./startChat";
 import { ProjectScriptsControl } from "../components/ProjectScripts";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
@@ -212,6 +213,7 @@ function ChatComposer({ task }: { task: Task }) {
 		<Composer editor={editor} onSubmit={() => void send()} canSend={canSend} disabled={task.archived}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
 			menu={task.archived ? undefined : menu}
+			footer={<ChatSpend taskId={task.id} />}
 			model={task.projectId && <PullRequestBadge taskId={task.id} projectId={task.projectId} links={overview.tasks.find(value => value.id === task.id)?.pullRequests} branch className="mr-1 h-7 px-1.5 hover:bg-accent/60" />}
 			tools={<>
 				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>

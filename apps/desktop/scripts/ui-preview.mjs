@@ -96,7 +96,10 @@ if (demo) {
 				response.write(`data: ${JSON.stringify({ choices: [{ index: 0, delta: { content: piece } }] })}\n\n`);
 				await sleep(28);
 			}
-			response.write(`data: ${JSON.stringify({ choices: [{ index: 0, delta: {}, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`);
+			// Priced like the gateway: a usage frame after the finish, at $3/M input and $15/M output.
+			const prompt = Math.ceil(body.length / 4), completion = Math.ceil(reply.length / 4);
+			const usage = { prompt_tokens: prompt, completion_tokens: completion, total_tokens: prompt + completion, pricing: { total_nanos: prompt * 3000 + completion * 15000, currency: "USD" } };
+			response.write(`data: ${JSON.stringify({ choices: [{ index: 0, delta: {}, finish_reason: "stop" }] })}\n\ndata: ${JSON.stringify({ choices: [], usage })}\n\ndata: [DONE]\n\n`);
 			response.end();
 		});
 	});
@@ -152,7 +155,7 @@ task("usage-fix", {
 		{ id: "u1:t2", type: "tool", title: "Search", text: "oauth_client_id · 9 results", status: "completed", timelineOrder: 3 },
 		{ id: "u1:t3", type: "tool", title: "write_project_file", text: "apps/api/src/routes/desktop-usage.ts (+14 −6)", status: "completed", timelineOrder: 4 },
 		{ id: "u1:t4", type: "tool", title: "write_project_file", text: "apps/api/src/routes/desktop-usage.test.ts (+4 −1)", status: "completed", timelineOrder: 5 },
-		{ id: "u1:usage", type: "usage", title: "Usage", text: JSON.stringify({ input_tokens: 2410, output_tokens: 712 }) },
+		{ id: "u1:usage:0", type: "usage", title: "Usage", text: JSON.stringify({ input_tokens: 2410, output_tokens: 712, total_tokens: 3122, pricing_breakdown: { total_nanos: 29_850_000, currency: "USD" } }) },
 	],
 	approvals: [{ id: "approval-1", method: "run_project_command", description: "pnpm --filter @phaseo/gateway-api exec vitest run src/routes/desktop-usage.test.ts" }],
 });
@@ -162,7 +165,7 @@ task("icymi", { title: "ICYMI October outline", projectId: "blog", mode: "code",
 task("pricing", {
 	title: "Compare Opus 5.5 and GPT-6 pricing", age: 30,
 	messages: [user("p1", "What does a 10k-token prompt with a 2k-token answer cost on Claude Opus 5.5 compared with GPT-6?", 32, 6), reply("p2", "On Phaseo list prices:\n\n| Model | Input | Output | Total |\n| --- | --- | --- | --- |\n| Claude Opus 5.5 | $0.050 | $0.050 | **$0.100** |\n| GPT-6 | $0.030 | $0.024 | **$0.054** |\n\nGPT-6 is about 46% cheaper for this shape of request. Opus 5.5 tends to need fewer retries on long, multi-step work, so the gap narrows on agentic tasks.", 31)],
-	activities: [{ id: "p1:usage", type: "usage", title: "Usage", text: JSON.stringify({ input_tokens: 61, output_tokens: 188 }) }],
+	activities: [{ id: "p1:usage:0", type: "usage", title: "Usage", text: JSON.stringify({ prompt_tokens: 61, completion_tokens: 188, total_tokens: 249, pricing: { total_nanos: 5_005_000, currency: "USD" } }) }],
 });
 task("pricing-gpt", {
 	title: "Compare Opus 5.5 and GPT-6 pricing", model: "openai/gpt-6", age: 30,

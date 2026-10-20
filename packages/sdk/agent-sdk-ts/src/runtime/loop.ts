@@ -59,13 +59,22 @@ function usageNumber(usage: Record<string, unknown> | undefined, ...keys: string
 	return 0;
 }
 
+/** The Phaseo gateway prices each request in its usage: `pricing` on Chat Completions, `pricing_breakdown` on Responses. */
+function gatewayPrice(usage: Record<string, unknown> | undefined) {
+	for (const key of ["pricing_breakdown", "pricing"]) {
+		const nanos = (usage?.[key] as Record<string, unknown> | null | undefined)?.total_nanos;
+		if (typeof nanos === "number" && Number.isFinite(nanos) && nanos >= 0) return nanos / 1_000_000_000;
+	}
+	return undefined;
+}
+
 function normalizeUsage(response: AgentModelResponse): AgentUsageSummary {
 	const usage = response.usage;
 	const inputTokens = usageNumber(usage, "input_tokens", "prompt_tokens", "inputTokens", "promptTokens");
 	const outputTokens = usageNumber(usage, "output_tokens", "completion_tokens", "outputTokens", "completionTokens");
 	const cachedTokens = usageNumber(usage, "cached_tokens", "cache_read_input_tokens", "cachedTokens");
 	const explicitTotal = usageNumber(usage, "total_tokens", "totalTokens");
-	const cost = response.cost ?? usageNumber(usage, "cost", "total_cost", "totalCost");
+	const cost = response.cost ?? gatewayPrice(usage) ?? usageNumber(usage, "cost", "total_cost", "totalCost");
 	return { inputTokens, outputTokens, cachedTokens, totalTokens: explicitTotal || inputTokens + outputTokens, cost };
 }
 

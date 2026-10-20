@@ -7,7 +7,8 @@ import { mentionPlainText } from "../shared/mentions";
 import { DatabaseSync, type StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
-import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, Workspace, WorkspaceCommand } from "../shared/workspace";
+import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, UsageTotals, Workspace, WorkspaceCommand } from "../shared/workspace";
+import { usageTotalsOf } from "../shared/usageAmounts";
 import { publicMcpConnection, type McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
 import type { WorkspacePreferences } from "../shared/preferences";
@@ -366,6 +367,14 @@ export class WorkspaceStore {
 		task.conversationCounts = { messages: this.entries.count(key, 0), activities: this.entries.count(key, 1) };
 		task.messages = page.entries as Task["messages"]; task.activities = this.entries.turnActivities(key, page);
 		return task;
+	}
+	/** A chat's Phaseo usage totals from its stored usage reports. */
+	phaseoUsageTotals(id: string): UsageTotals { return usageTotalsOf(this.entries.phaseoUsageReports(this.getHead(id).key)); }
+	/** Fills in the usage totals of up to `limit` chats saved before totals were kept, in one transaction; how many it filled. */
+	backfillUsageTotals(limit: number): number {
+		const rows = this.statement("SELECT id FROM tasks WHERE json_extract(data, '$.usageTotals') IS NULL LIMIT ?").all(limit);
+		this.batch(() => { for (const row of rows) { const task = this.getTask(row.id as string); task.usageTotals = this.phaseoUsageTotals(task.id); this.saveTask(task, true); } });
+		return rows.length;
 	}
 	/** Parsed overviews by chat with the revision they were built at; the chat rows stay the truth. */
 	private readonly overviews = new Map<string, { revision: number; overview: TaskOverview }>();

@@ -6,6 +6,7 @@ import type { AgentActivity, Message, Task } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
 import { conversationTurns, turnDuration, type TurnEntry } from "../lib/conversationTurns";
 import { contextShare, turnUsage } from "../lib/turnUsage";
+import { formatCost } from "../../shared/usageAmounts";
 import { cn } from "../lib/utils";
 import { MessageContent } from "../components/MessageContent";
 import { MessageText } from "../components/MessageChips";
@@ -169,6 +170,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 				<CopyButton text={final.value.text} />
 				<ActionButton label="Branch from this answer" disabled={!canBranch} onClick={() => onBranch(final.value.id)}><GitBranch /></ActionButton>
 				{usage.Total !== undefined && <span className="ml-2 font-mono text-[11px] text-muted-foreground">{new Intl.NumberFormat(undefined, { notation: "compact" }).format(usage.Total)} tokens</span>}
+				{usage.Cost !== undefined && usage.Cost > 0 && <span title="What this answer cost, as the Phaseo gateway priced it." className="font-mono text-[11px] text-muted-foreground">· {formatCost(usage.Cost)}</span>}
 				{context !== undefined && <span title="How much of the model's context window the conversation used at the end of this turn. Phaseo compacts it automatically when it nears the limit." className={cn("font-mono text-[11px]", context >= 0.8 ? "text-warning" : "text-muted-foreground")}>· {Math.round(context * 100)}% of context</span>}
 			</div>}
 		</div>}

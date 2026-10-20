@@ -93,7 +93,7 @@ function transcriptText(messages: AgentMessage[], budget: number) {
 const summaryInstructions = "You are compacting a coding agent's conversation so it can continue with less context. Write a summary another instance of the agent can rely on. Include: the user's goal and every explicit instruction or preference; decisions made; files read or changed, with the relevant details (paths, function names, line-level facts that matter); commands run and their outcomes; errors and how they were resolved; the current state; and the exact next steps. Be specific and complete but concise. Plain Markdown, no preamble.";
 
 /** Summarises all but the latest part of the history into one message, keeping the tail verbatim so the current step can continue. */
-export async function compactMessages(messages: AgentMessage[], options: { client: AgentModelClient; model: string; signal?: AbortSignal; contextTokens: number }) {
+export async function compactMessages(messages: AgentMessage[], options: { client: AgentModelClient; model: string; signal?: AbortSignal; contextTokens: number; onUsage?: (usage: Record<string, unknown>) => void }) {
 	const body = messages.filter(message => message.role !== "system");
 	const system = messages.filter(message => message.role === "system");
 	// Keep a quarter of the window verbatim, starting at a message that is not a tool result.
@@ -104,6 +104,8 @@ export async function compactMessages(messages: AgentMessage[], options: { clien
 	const head = body.slice(0, tail);
 	const request = [...head].reverse().find(message => message.role === "user" && typeof message.content === "string" && !message.content.startsWith("<conversation_summary>"));
 	const response = await options.client.generate({ agentId: "phaseo-compaction", model: options.model, instructions: summaryInstructions, messages: [{ role: "user", content: `${transcriptText(head, options.contextTokens * 1.4)}${request ? `\n\nThe user's latest request was:\n${clip(String(request.content), 8000)}` : ""}\n\nWrite the summary now.` }], tools: [], context: undefined, signal: options.signal, maxOutputTokens: 6000 });
+	// The summary is a billed request of its own, so its usage counts towards the chat.
+	if (response.usage || response.cost !== undefined) options.onUsage?.({ ...response.usage, ...response.cost !== undefined ? { cost: response.cost } : {} });
 	const summary = response.message.content.trim();
 	if (!summary) throw new Error("The model returned an empty summary.");
 	const rest = body.slice(tail);
@@ -143,7 +145,7 @@ export async function runPhaseoTurn(turn: PhaseoTurn): Promise<AgentRunResult<un
 		const id = `compaction:${Date.now()}`, before = estimateTokens(messages), started = Date.now();
 		callbacks.onActivity?.({ id, type: "compaction", title: "Compacting context", text: "", status: "running", compaction: { beforeTokens: before } });
 		try {
-			const next = await compactMessages(messages, { client: turn.client, model: task.model, signal, contextTokens });
+			const next = await compactMessages(messages, { client: turn.client, model: task.model, signal, contextTokens, onUsage: usage => callbacks.onActivity?.({ id: `${id}:usage`, type: "usage", title: "Compaction usage", text: JSON.stringify(usage, null, 2) }) });
 			callbacks.onActivity?.({ id, type: "compaction", title: next ? "Context compacted" : "Nothing to compact yet", text: "", status: "completed", compaction: { beforeTokens: before, ...next ? { afterTokens: estimateTokens(next) } : {}, durationMs: Date.now() - started } });
 			return next;
 		} catch (error) {
