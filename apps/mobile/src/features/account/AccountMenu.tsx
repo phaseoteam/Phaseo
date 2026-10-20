@@ -9,7 +9,7 @@ import {
 } from "lucide-react-native";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { Logo } from "@/components/Logo";
+import { Logo, logoUri } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Button, confirm, dismissToast, Header, Icon, Row, Screen, Section, Text, toast } from "@/components/ui";
 import { readStorageReport } from "@/features/chat/deviceStorage";
@@ -17,6 +17,7 @@ import { catalogueQuery } from "@/features/models/state";
 import { FULL_VERSION_LABEL, VERSION_LABEL } from "@/lib/appInfo";
 import { formatBytes, formatNumber, formatUsd, nanosToUsd } from "@/lib/format";
 import { openWeb } from "@/lib/web";
+import { useAppearance } from "@/providers/AppearanceProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { buildPool, nextTap, TAPS_TO_UNLOCK, tapMessage, topLabs, type TapCount } from "./higherOrLower";
@@ -75,8 +76,10 @@ export function AccountMenu() {
   // Seven taps on Version and build unlock Higher or lower, as Android's build number unlocks developer options.
   const queryClient = useQueryClient();
   const unlocked = higherOrLowerStore.use((state) => state.unlocked);
+  const { resolved } = useAppearance();
   const taps = useRef<TapCount | null>(null);
   const countdown = useRef<number | null>(null);
+  const burstLabs = useRef<{ labs: BurstLab[]; logos: Promise<unknown> } | null>(null);
   const [burst, setBurst] = useState<BurstLab[] | null>(null);
   const endBurst = useCallback(() => setBurst(null), []);
   const copyVersion = () => void Clipboard.setStringAsync(FULL_VERSION_LABEL).then(() => toast("Version copied."));
@@ -88,8 +91,16 @@ export function AccountMenu() {
     countdown.current = null;
     if (tap.count < TAPS_TO_UNLOCK) {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
-      // Fetch the catalogue now (it's usually cached) so the game and the celebration have it.
-      if (tap.count === 3) void queryClient.prefetchQuery(catalogueQuery);
+      if (tap.count === 3) {
+        // Get the game's catalogue (usually cached) and the celebration's logos while the countdown runs, so the
+        // burst isn't blank tiles on a phone that hasn't shown those logos yet.
+        void queryClient.prefetchQuery(catalogueQuery);
+        const catalogue = queryClient.getQueryData(catalogueQuery.queryKey);
+        const top = catalogue ? topLabs(buildPool(catalogue.models, Date.now()), 12) : [];
+        const labs = top.length >= 6 ? top : FALLBACK_LABS;
+        const uris = labs.map((lab) => logoUri(lab.id, resolved)).filter((uri): uri is string => Boolean(uri));
+        burstLabs.current = { labs, logos: Image.prefetch(uris, "disk").catch(() => false) };
+      }
       const message = tapMessage(tap.count);
       if (message) countdown.current = toast(message, { durationMs: 2500 });
       return;
@@ -98,9 +109,10 @@ export function AccountMenu() {
     unlockHigherOrLower();
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
     toast("It's under About and legal now.", { title: "You found Higher or lower", tone: "success" });
-    const catalogue = queryClient.getQueryData(catalogueQuery.queryKey);
-    const labs = catalogue ? topLabs(buildPool(catalogue.models, Date.now()), 12) : [];
-    setBurst(labs.length >= 6 ? labs : FALLBACK_LABS);
+    const { labs, logos } = burstLabs.current ?? { labs: FALLBACK_LABS, logos: Promise.resolve() };
+    burstLabs.current = null;
+    // The burst starts once the logos are in, or after 0.8 s at the most.
+    void Promise.race([logos, new Promise((resolve) => setTimeout(resolve, 800))]).then(() => setBurst(labs));
   };
 
   const item = (key: keyof typeof ITEMS, extra: { subtitle?: string | null; value?: string | null; trailing?: ReactNode; last?: boolean } = {}) => {
