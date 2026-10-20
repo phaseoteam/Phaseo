@@ -69,6 +69,14 @@ describe("state changes", () => {
     expect(withAccountTheme(pending, "user-1", EMBER, true)).toEqual({ ...pending, theme: EMBER, pending: null, synced: { userId: "user-1", theme: EMBER } });
   });
 
+  it("keeps another account's pending change when a late save reports the same theme", () => {
+    const otherAccount = state({ theme: CUSTOM, pending: { userId: "user-2", changedAt: 2 } });
+    expect(withAccountTheme(otherAccount, "user-1", CUSTOM, false).pending).toEqual({ userId: "user-2", changedAt: 2 });
+    // A change made signed out is cleared by whichever account saves it.
+    const signedOut = state({ theme: CUSTOM, pending: { userId: null, changedAt: 2 } });
+    expect(withAccountTheme(signedOut, "user-1", CUSTOM, false).pending).toBeNull();
+  });
+
   it("sends the account's other preferences back unchanged with the theme", () => {
     const account = { locale: "en-GB", timeZone: "Europe/London", lightPalette: "phaseo", darkPalette: "phaseo", lightAccent: "#0069a8", darkAccent: "#0078b8", maskSensitiveData: true, landingPage: "monitor" };
     expect(mergeThemeIntoPreferences(account, EMBER)).toEqual({ ...account, ...EMBER });

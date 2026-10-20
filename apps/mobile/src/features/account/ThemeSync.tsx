@@ -35,7 +35,11 @@ async function syncTheme() {
     const decision = decideSync(appearanceStore.get(), userId, account.theme);
     if (decision.kind === "adopt") appearanceStore.setAccountTheme(userId, decision.theme, true);
     else if (decision.kind === "settled") appearanceStore.setAccountTheme(userId, account.theme, false);
-    else appearanceStore.setAccountTheme(userId, await saveAccountTheme(account.preferences, appearanceStore.get().theme), false);
+    else {
+      const saved = await saveAccountTheme(account.preferences, appearanceStore.get().theme);
+      // Signed out or switched accounts while saving: that save says nothing about who's signed in now.
+      if (appearanceStore.account() === userId) appearanceStore.setAccountTheme(userId, saved, false);
+    }
   } catch {
     // Offline or the account API is down: the theme stays on the device and is saved on a later round.
   } finally {

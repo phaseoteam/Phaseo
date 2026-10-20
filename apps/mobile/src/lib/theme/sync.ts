@@ -73,15 +73,17 @@ export function withLocalChange(state: StoredAppearance, theme: ThemeFields, use
 }
 
 /**
- * After the account's theme is known (read, or just saved). The pending flag clears only when the
- * device still shows that theme, so a change made while the save was in flight is kept for the next save.
+ * After the account's theme is known (read, or just saved). Adopting it replaces the device's theme
+ * and whatever was waiting. Otherwise the pending flag clears only when the device still shows that
+ * theme and the change was this account's (or made signed out), so a change made while the save was
+ * in flight, or under another account, is kept for its own save.
  */
 export function withAccountTheme(state: StoredAppearance, userId: string, theme: ThemeFields, adopt: boolean): StoredAppearance {
-  const next = adopt ? theme : state.theme;
+  if (adopt) return { ...state, theme, pending: null, synced: { userId, theme } };
+  const ours = state.pending == null || state.pending.userId === null || state.pending.userId === userId;
   return {
     ...state,
-    theme: next,
-    pending: sameTheme(next, theme) ? null : state.pending,
+    pending: ours && sameTheme(state.theme, theme) ? null : state.pending,
     synced: { userId, theme },
   };
 }
