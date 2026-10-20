@@ -77,7 +77,7 @@ Alle Fehlerantworten verwenden dasselbe JSON-Format. So kann deine Anwendung Feh
   - `error.message`: verständliche Erklärung des Fehlers.
   - `error.type`: der Fehlertyp (siehe Abschnitt Fehlertypen unten).
   - `error.param`: der Anfrageparameter, der den Fehler verursacht hat, sofern das Gateway ihn kennt, sonst `null`.
-  - `error.metadata` (optional): strukturierte Details wie der fehlgeschlagene Anbieter, der Untergrund, die fehlgeschlagenen Statuscodes oder `retry_after_seconds`. Dieselben Werte werden auch auf oberster Ebene zurückgegeben.
+  - `error.metadata` (optional): strukturierte Details wie der fehlgeschlagene Anbieter, der genauere Grund, die fehlgeschlagenen Statuscodes oder `retry_after_seconds`. Dieselben Werte werden auch auf oberster Ebene zurückgegeben.
 - `code`: derselbe Code wie `error.code`. Frühere Antworten lieferten diesen Code als String in `error`; lies `code`, wenn dein Client dort einen String erwartet hat.
 - `message`: derselbe Text wie `error.message`.
 - `error_type`: allgemeine Klasse, meist `user` oder `system`.
@@ -89,7 +89,7 @@ Alle Fehlerantworten verwenden dasselbe JSON-Format. So kann deine Anwendung Feh
 
 Einige Fehler enthalten zusätzliche Informationen, die bei der schnelleren Behebung helfen:
 
-- `reason`: genauerer Untergrund, z. B. `all_candidates_failed` oder `pricing_not_configured`.
+- `reason`: genauerer Grund, z. B. `all_candidates_failed` oder `pricing_not_configured`.
 - `provider_candidate_diagnostics` und `provider_enablement`: erklären, warum ein Modell für den angeforderten Endpunkt nicht verwendet werden konnte.
 - `routing_diagnostics`: zusätzliche Angaben dazu, wie Routing- oder Verfügbarkeitsprüfungen die Anfrageauswahl eingeschränkt haben.
 - `provider_failure_diagnostics`: Hinweise zu fehlenden Zugangsdaten, Zugriffsproblemen, regionalen Einschränkungen, Ratenbegrenzungen und ähnlichen Anbieterfehlern.

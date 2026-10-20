@@ -77,7 +77,7 @@ Todas las respuestas de error usan el mismo formato JSON, para que tu aplicació
   - `error.message`: explicación clara de lo que ocurrió.
   - `error.type`: el tipo de error (consulta la sección Tipos de error más abajo).
   - `error.param`: el parámetro de la solicitud que causó el error, cuando el gateway lo conoce; si no, `null`.
-  - `error.metadata` (opcional): detalles estructurados como el proveedor que falló, el subtipo, los estados fallidos o `retry_after_seconds`. Los mismos valores también se devuelven en el nivel superior.
+  - `error.metadata` (opcional): detalles estructurados como el proveedor que falló, el motivo específico, los estados fallidos o `retry_after_seconds`. Los mismos valores también se devuelven en el nivel superior.
 - `code`: el mismo código que `error.code`. Las respuestas anteriores devolvían este código como cadena en `error`; lee `code` si tu cliente esperaba ahí una cadena.
 - `message`: el mismo texto que `error.message`.
 - `error_type`: categoría general, normalmente `user` o `system`.
