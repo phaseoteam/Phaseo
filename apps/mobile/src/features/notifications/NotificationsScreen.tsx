@@ -2,8 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { BellOff, LayoutList, ListChecks, Plus, Send } from "lucide-react-native";
-import { AppState, Platform, RefreshControl, ScrollView, Switch, View } from "react-native";
-import { Button, EmptyState, ErrorState, Header, LoadingState, measureAnchor, ReadableWidth, Row, Screen, Section, showActions, Text, toast, toastError, type ViewRef } from "@/components/ui";
+import { AppState, Platform, RefreshControl, ScrollView, View } from "react-native";
+import { Button, EmptyState, ErrorState, Header, LoadingState, measureAnchor, ReadableWidth, Row, Screen, Section, showActions, Switch, Text, toast, toastError, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { ApiError } from "@/lib/api/http";
 import { createRule, sendTestNotification, updateNotificationSettings, updateRule, type NotificationRule, type NotificationSettings, type SettingsPatch } from "@/lib/api/notifications";
@@ -134,7 +134,7 @@ export function NotificationsScreen() {
             title="Notifications on this phone"
             subtitle={on ? "On. Only updates that match your rules are sent." : data.enabled ? "On for your account, but this phone isn't registered." : "Off"}
             chevron={false}
-            trailing={<Switch value={on} disabled={enable.isPending} accessibilityLabel="Notifications on this phone" onValueChange={(value) => enable.mutate(value)} trackColorOnClassName="accent-primary" />}
+            trailing={<Switch value={on} disabled={enable.isPending} accessibilityLabel="Notifications on this phone" onValueChange={(value) => enable.mutate(value)} />}
             last
           />
           {/* Up here rather than below the settings, so checking that notifications arrive is one tap after switching them on. */}
@@ -162,7 +162,7 @@ export function NotificationsScreen() {
                 subtitle={describeRule(rule, names)}
                 numberOfLines={1}
                 onPress={() => openRule(rule)}
-                trailing={<Switch value={rule.enabled} accessibilityLabel={`${rule.name || "Rule"} on`} onValueChange={(enabled) => toggleRule.mutate({ rule, enabled })} trackColorOnClassName="accent-primary" />}
+                trailing={<Switch value={rule.enabled} accessibilityLabel={`${rule.name || "Rule"} on`} onValueChange={(enabled) => toggleRule.mutate({ rule, enabled })} />}
                 chevron={false}
                 last={index === data.rules.length - 1}
               />
@@ -179,7 +179,7 @@ export function NotificationsScreen() {
                   subtitle={blocked.has(channel.id) ? "Off in Android settings. Tap to change." : channel.id === "security" && !admin ? "Only alerts about API keys you created" : channel.description}
                   onPress={android ? () => void openChannelSettings(channel.id) : undefined}
                   chevron={false}
-                  trailing={<Switch value={data.categories?.[channel.id] ?? true} accessibilityLabel={channel.name} onValueChange={(on) => setCategory.mutate({ category: channel.id, on })} trackColorOnClassName="accent-primary" />}
+                  trailing={<Switch value={data.categories?.[channel.id] ?? true} accessibilityLabel={channel.name} onValueChange={(on) => setCategory.mutate({ category: channel.id, on })} />}
                   last={index === categoryRows.length - 1}
                 />
               ))}

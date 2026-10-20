@@ -9,7 +9,7 @@ import { databasePages } from "@/features/chat/db";
 import { readStorageReport, type StorageReport } from "@/features/chat/deviceStorage";
 import { SCHEMA_VERSION } from "@/features/chat/migrations";
 import { useLayout } from "@/hooks/useLayout";
-import { BUILD_COMMIT, BUILT_AT, deviceName, osName } from "@/lib/appInfo";
+import { BUILD_COMMIT, BUILD_NUMBER, BUILT_AT, deviceName, osName } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { slowLog } from "@/lib/diagnostics";
 import { formatBytes, formatNumber } from "@/lib/format";
@@ -50,7 +50,8 @@ export function DiagnosticsScreen() {
   const sections: DiagnosticsSection[] = [
     { title: "App", rows: [
       ["Version", APP_VERSION],
-      ["Build", BUILD_COMMIT ? `${BUILD_COMMIT}${BUILT_AT ? `, ${when.format(Date.parse(BUILT_AT))}` : ""}` : "Not recorded"],
+      ["Build", BUILD_NUMBER != null ? String(BUILD_NUMBER) : "Not recorded"],
+      ["Commit", BUILD_COMMIT ? `${BUILD_COMMIT}${BUILT_AT ? `, built ${when.format(Date.parse(BUILT_AT))}` : ""}` : "Not recorded"],
       ["Updates", "Built in (no over-the-air update channel)"],
       ["Engine", `${engine}, ${fabric}`],
     ] },

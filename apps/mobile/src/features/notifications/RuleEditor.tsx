@@ -2,9 +2,9 @@ import { useMutation } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { X } from "lucide-react-native";
 import { useEffect, useRef } from "react";
-import { Pressable, ScrollView, Switch, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import { LogoMark } from "@/components/Logo";
-import { Button, Chip, confirm, Header, Icon, ReadableWidth, Row, Screen, Section, Segmented, Text, TextField, toastError } from "@/components/ui";
+import { Button, Chip, confirm, Header, Icon, ReadableWidth, Row, Screen, Section, Segmented, Switch, Text, TextField, toastError } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { createRule, deleteRule, updateRule, type RuleInput, type ScopeMode } from "@/lib/api/notifications";
 import { cn } from "@/lib/cn";
@@ -95,7 +95,7 @@ export function RuleEditor() {
                 title={EVENT_LABELS[event].title}
                 subtitle={EVENT_LABELS[event].description}
                 chevron={false}
-                trailing={<Switch value={draft.events.includes(event)} onValueChange={() => patchDraft({ events: toggle(draft.events, event) })} trackColorOnClassName="accent-primary" />}
+                trailing={<Switch value={draft.events.includes(event)} accessibilityLabel={EVENT_LABELS[event].title} onValueChange={() => patchDraft({ events: toggle(draft.events, event) })} />}
                 last={index === kinds.length - 1}
               />
             ))}
@@ -140,8 +140,8 @@ export function RuleEditor() {
           </Section>
 
           <Section title="More">
-            <Row title="Only models on Phaseo" subtitle="Skip models you can't call through Phaseo yet" chevron={false} trailing={<Switch value={draft.onlyOnPhaseo} onValueChange={(onlyOnPhaseo) => patchDraft({ onlyOnPhaseo })} trackColorOnClassName="accent-primary" />} />
-            <Row title="Include free variants" subtitle="Separate :free listings of the same model" chevron={false} last trailing={<Switch value={draft.includeFreeVariants} onValueChange={(includeFreeVariants) => patchDraft({ includeFreeVariants })} trackColorOnClassName="accent-primary" />} />
+            <Row title="Only models on Phaseo" subtitle="Skip models you can't call through Phaseo yet" chevron={false} trailing={<Switch value={draft.onlyOnPhaseo} accessibilityLabel="Only models on Phaseo" onValueChange={(onlyOnPhaseo) => patchDraft({ onlyOnPhaseo })} />} />
+            <Row title="Include free variants" subtitle="Separate :free listings of the same model" chevron={false} last trailing={<Switch value={draft.includeFreeVariants} accessibilityLabel="Include free variants" onValueChange={(includeFreeVariants) => patchDraft({ includeFreeVariants })} />} />
           </Section>
 
           {!isNew ? (

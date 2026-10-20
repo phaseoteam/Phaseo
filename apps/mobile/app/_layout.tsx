@@ -77,6 +77,9 @@ function RootNavigator() {
         {/* A full-screen flow on phones; on tablets a centred dialog, drawn by the screen itself. */}
         <Stack.Screen name="notification-setup" options={split ? routeSheetOptions(split, []) : { presentation: "fullScreenModal", animation: "slide_from_bottom" }} />
         <Stack.Screen name="auth/callback" options={{ presentation: "transparentModal", animation: "fade" }} />
+        {/* The version art fills the screen on phones and tablets; Higher or lower opens on top of it, so back returns there. */}
+        <Stack.Screen name="version" options={{ presentation: "fullScreenModal", animation: "fade" }} />
+        <Stack.Screen name="higher-or-lower" />
       </Stack>
       <OverlayHost />
     </ThemeProvider>

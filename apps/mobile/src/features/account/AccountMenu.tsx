@@ -1,23 +1,28 @@
+import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useFocusEffect, usePathname, useRouter, type Href } from "expo-router";
 import {
   Activity, Bell, BookOpen, ChartNoAxesColumn, ExternalLink, FileText, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Palette, Plus, Scale,
   Shield, ShieldAlert, ShieldCheck, Sparkles, UserX, Users, Wallet, type LucideIcon,
 } from "lucide-react-native";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Button, confirm, Header, Icon, Row, Screen, Section, Text, toast } from "@/components/ui";
 import { readStorageReport } from "@/features/chat/deviceStorage";
-import { VERSION_LABEL } from "@/lib/appInfo";
+import { FULL_VERSION_LABEL, VERSION_LABEL } from "@/lib/appInfo";
 import { formatBytes, formatNumber, formatUsd, nanosToUsd } from "@/lib/format";
 import { openWeb } from "@/lib/web";
+import { useAppearance } from "@/providers/AppearanceProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
 import { useBalance, useKeys, useStatus, useTeam, useTwoFactor, useWeekSpend } from "./queries";
 import { StatusDot } from "./StatusScreen";
+import { nextTap, TAPS_TO_OPEN, type TapRun } from "./versionArt";
+import { prefetchVersionArt } from "./VersionArtScreen";
 
 const ITEMS = {
   usage: { href: "/account/usage", title: "Usage", icon: ChartNoAxesColumn },
@@ -64,6 +69,24 @@ export function AccountMenu() {
       setStorage(null);
     }
   }, []));
+
+  // Five quick taps on Version and build open the version art, as on Android. Nothing shows while tapping (no
+  // countdown), and it opens every time.
+  const queryClient = useQueryClient();
+  const { resolved } = useAppearance();
+  const taps = useRef<TapRun | null>(null);
+  const openVersionArt = () => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    router.push("/version");
+  };
+  const tapVersion = () => {
+    const { run, open } = nextTap(taps.current, Date.now());
+    taps.current = run;
+    // Halfway there, start loading the catalogue and the labs' logos, so the art opens with them.
+    if (run?.count === Math.ceil(TAPS_TO_OPEN / 2)) prefetchVersionArt(queryClient, resolved);
+    if (open) openVersionArt();
+  };
+  const copyVersion = () => void Clipboard.setStringAsync(FULL_VERSION_LABEL).then(() => toast("Version copied.", { key: "version" }));
 
   const item = (key: keyof typeof ITEMS, extra: { subtitle?: string | null; value?: string | null; trailing?: ReactNode; last?: boolean } = {}) => {
     const entry = ITEMS[key];
@@ -155,7 +178,10 @@ export function AccountMenu() {
             value={VERSION_LABEL}
             chevron={false}
             last
-            onPress={() => void Clipboard.setStringAsync(VERSION_LABEL).then(() => toast("Version copied."))}
+            onPress={tapVersion}
+            onLongPress={copyVersion}
+            longPressLabel="Copy version"
+            actions={[{ label: "Show version art", run: openVersionArt }]}
           />
         </Section>
         {session ? (

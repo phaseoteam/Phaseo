@@ -37,6 +37,30 @@ describe("in-app dialogs", () => {
     expect(overlayStore.get().toasts).toHaveLength(MAX_TOASTS - 1);
   });
 
+  test("a toast with the same key replaces the shown one in place and restarts its timer", () => {
+    const other = toast("Saved", { durationMs: 10_000 });
+    const first = toast("4 taps away", { key: "version", durationMs: 2500 });
+    jest.advanceTimersByTime(2000);
+    const second = toast("3 taps away", { key: "version", durationMs: 2500 });
+    expect(second).toBe(first);
+    expect(overlayStore.get().toasts.map((entry) => [entry.id, entry.message])).toEqual([[other, "Saved"], [first, "3 taps away"]]);
+    jest.advanceTimersByTime(2000);
+    expect(overlayStore.get().toasts.map((entry) => entry.message)).toEqual(["Saved", "3 taps away"]);
+    jest.advanceTimersByTime(500);
+    expect(overlayStore.get().toasts.map((entry) => entry.message)).toEqual(["Saved"]);
+  });
+
+  test("the same notice twice shows once", () => {
+    const first = toast("Version copied.");
+    jest.advanceTimersByTime(TOAST_MS - 100);
+    expect(toast("Version copied.")).toBe(first);
+    expect(overlayStore.get().toasts).toHaveLength(1);
+    jest.advanceTimersByTime(TOAST_MS - 100);
+    expect(overlayStore.get().toasts).toHaveLength(1);
+    expect(toast("Version copied.", { tone: "error" })).not.toBe(first);
+    expect(overlayStore.get().toasts).toHaveLength(2);
+  });
+
   test("an action menu opens with its anchor and closes without losing its rows", () => {
     showActions({ title: "Chat", anchor: { x: 10, y: 20, width: 0, height: 0 }, actions: [{ key: "pin", label: "Pin", onPress: () => undefined }] });
     expect(overlayStore.get().menu).toMatchObject({ title: "Chat", open: true, anchor: { x: 10, y: 20 } });
