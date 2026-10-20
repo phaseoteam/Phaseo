@@ -158,11 +158,15 @@ module Phaseo
     #   @return [Integer, nil]
     # @!attribute [rw] cache_read_input_tokens
     #   @return [Integer, nil]
+    # @!attribute [rw] cost
+    #   @return [Float, nil]
+    # @!attribute [rw] cost_details
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] input_tokens
     #   @return [Integer, nil]
     # @!attribute [rw] output_tokens
     #   @return [Integer, nil]
-    AnthropicUsage = Struct.new(:cache_creation, :cache_creation_input_tokens, :cache_read_input_tokens, :input_tokens, :output_tokens, keyword_init: true)
+    AnthropicUsage = Struct.new(:cache_creation, :cache_creation_input_tokens, :cache_read_input_tokens, :cost, :cost_details, :input_tokens, :output_tokens, keyword_init: true)
     # @!attribute [rw] created_at
     #   @return [String, nil]
     # @!attribute [rw] created_by
@@ -378,7 +382,9 @@ module Phaseo
     ApiKeyWithValue = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :key, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
-    ApiKeyWithValueResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] key
+    #   @return [String]
+    ApiKeyWithValueResponse = Struct.new(:data, :key, keyword_init: true)
     # @!attribute [rw] type
     #   @return [String]
     AsyncJobWebSocketClientEvent = Struct.new(:type, keyword_init: true)
@@ -4616,6 +4622,10 @@ module Phaseo
     UpdatedResponse = Struct.new(:data, keyword_init: true)
     # @!attribute [rw] completion_tokens
     #   @return [Integer, nil]
+    # @!attribute [rw] cost
+    #   @return [Float, nil]
+    # @!attribute [rw] cost_details
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] input_tokens
     #   @return [Integer, nil]
     # @!attribute [rw] input_tokens_details
@@ -4630,7 +4640,10 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] total_tokens
     #   @return [Integer, nil]
-    Usage = Struct.new(:completion_tokens, :input_tokens, :input_tokens_details, :output_tokens, :prompt_tokens, :prompt_tokens_details, :server_tool_use, :total_tokens, keyword_init: true)
+    Usage = Struct.new(:completion_tokens, :cost, :cost_details, :input_tokens, :input_tokens_details, :output_tokens, :prompt_tokens, :prompt_tokens_details, :server_tool_use, :total_tokens, keyword_init: true)
+    # @!attribute [rw] upstream_inference_cost
+    #   @return [Float, nil]
+    UsageCostDetails = Struct.new(:upstream_inference_cost, keyword_init: true)
     # @!attribute [rw] billable
     #   @return [Boolean, nil]
     # @!attribute [rw] billed_at

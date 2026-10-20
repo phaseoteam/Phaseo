@@ -193,6 +193,10 @@ class AnthropicUsage
 	public $cache_creation_input_tokens;
 	/** @var int|null */
 	public $cache_read_input_tokens;
+	/** @var float|null */
+	public $cost;
+	/** @var array<string, mixed>|null */
+	public $cost_details;
 	/** @var int|null */
 	public $input_tokens;
 	/** @var int|null */
@@ -459,6 +463,8 @@ class ApiKeyWithValueResponse
 {
 	/** @var array<string, mixed> */
 	public $data;
+	/** @var string */
+	public $key;
 }
 
 class AsyncJobWebSocketClientEvent
@@ -5723,6 +5729,10 @@ class Usage
 {
 	/** @var int|null */
 	public $completion_tokens;
+	/** @var float|null */
+	public $cost;
+	/** @var array<string, mixed>|null */
+	public $cost_details;
 	/** @var int|null */
 	public $input_tokens;
 	/** @var array<string, mixed>|null */
@@ -5737,6 +5747,12 @@ class Usage
 	public $server_tool_use;
 	/** @var int|null */
 	public $total_tokens;
+}
+
+class UsageCostDetails
+{
+	/** @var float|null */
+	public $upstream_inference_cost;
 }
 
 class VideoBillingSummary

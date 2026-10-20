@@ -1171,6 +1171,10 @@ export async function createAnthropicMessage(
     };
     cache_creation_input_tokens?: number;
     cache_read_input_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
     input_tokens?: number;
     output_tokens?: number;
   };
@@ -1217,6 +1221,10 @@ export async function createAnthropicMessage(
       };
       cache_creation_input_tokens?: number;
       cache_read_input_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
       input_tokens?: number;
       output_tokens?: number;
     };
@@ -1328,6 +1336,7 @@ export async function createApiKey(
     usage_weekly: number;
     workspace_id: string;
   };
+  key: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/keys";
@@ -1392,6 +1401,7 @@ export async function createApiKey(
       usage_weekly: number;
       workspace_id: string;
     };
+    key: string;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -2632,6 +2642,10 @@ export async function createChatCompletion(
   provider?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
     input_tokens?: number;
     input_tokens_details?: {
       cache_write_tokens?: number;
@@ -2778,6 +2792,10 @@ export async function createChatCompletion(
     provider?: string;
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
       input_tokens?: number;
       input_tokens_details?: {
         cache_write_tokens?: number;
@@ -3426,6 +3444,10 @@ export async function createEmbedding(
   object?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
     input_tokens?: number;
     input_tokens_details?: {
       cache_write_tokens?: number;
@@ -3463,6 +3485,10 @@ export async function createEmbedding(
     object?: string;
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
       input_tokens?: number;
       input_tokens_details?: {
         cache_write_tokens?: number;
@@ -5570,6 +5596,10 @@ export async function createRerank(
   }[];
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
     input_tokens?: number;
     input_tokens_details?: {
       cache_write_tokens?: number;
@@ -5613,6 +5643,10 @@ export async function createRerank(
     }[];
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
       input_tokens?: number;
       input_tokens_details?: {
         cache_write_tokens?: number;
@@ -6076,6 +6110,10 @@ export async function createResponse(
   type?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
     input_tokens?: number;
     input_tokens_details?: {
       cache_write_tokens?: number;
@@ -6202,6 +6240,10 @@ export async function createResponse(
     type?: string;
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
       input_tokens?: number;
       input_tokens_details?: {
         cache_write_tokens?: number;

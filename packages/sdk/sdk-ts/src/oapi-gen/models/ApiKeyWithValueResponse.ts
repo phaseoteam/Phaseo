@@ -59,4 +59,5 @@ export interface ApiKeyWithValueResponse {
     usage_weekly: number;
     workspace_id: string;
   };
+  key: string;
 }

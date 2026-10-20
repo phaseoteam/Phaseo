@@ -111,6 +111,8 @@ struct AnthropicUsage {
 	std::map<std::string, std::any> cache_creation;
 	std::optional<int> cache_creation_input_tokens;
 	std::optional<int> cache_read_input_tokens;
+	std::optional<double> cost;
+	std::map<std::string, std::any> cost_details;
 	std::optional<int> input_tokens;
 	std::optional<int> output_tokens;
 };
@@ -260,6 +262,7 @@ struct ApiKeyWithValue {
 
 struct ApiKeyWithValueResponse {
 	std::map<std::string, std::any> data;
+	std::string key;
 };
 
 struct AsyncJobWebSocketClientEvent {
@@ -3256,6 +3259,8 @@ struct UpdatedResponse {
 
 struct Usage {
 	std::optional<int> completion_tokens;
+	std::optional<double> cost;
+	std::map<std::string, std::any> cost_details;
 	std::optional<int> input_tokens;
 	std::map<std::string, std::any> input_tokens_details;
 	std::optional<int> output_tokens;
@@ -3263,6 +3268,10 @@ struct Usage {
 	std::map<std::string, std::any> prompt_tokens_details;
 	std::map<std::string, std::any> server_tool_use;
 	std::optional<int> total_tokens;
+};
+
+struct UsageCostDetails {
+	std::optional<double> upstream_inference_cost;
 };
 
 struct VideoBillingSummary {

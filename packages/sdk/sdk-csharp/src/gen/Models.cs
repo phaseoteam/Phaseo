@@ -268,6 +268,12 @@ public sealed class AnthropicUsage
 	[JsonPropertyName("cache_read_input_tokens")]
 	public long? CacheReadInputTokens { get; set; }
 
+	[JsonPropertyName("cost")]
+	public double? Cost { get; set; }
+
+	[JsonPropertyName("cost_details")]
+	public Dictionary<string, object>? CostDetails { get; set; }
+
 	[JsonPropertyName("input_tokens")]
 	public long? InputTokens { get; set; }
 
@@ -635,6 +641,9 @@ public sealed class ApiKeyWithValueResponse
 {
 	[JsonPropertyName("data")]
 	public Dictionary<string, object> Data { get; set; }
+
+	[JsonPropertyName("key")]
+	public string Key { get; set; }
 
 }
 
@@ -7837,6 +7846,12 @@ public sealed class Usage
 	[JsonPropertyName("completion_tokens")]
 	public long? CompletionTokens { get; set; }
 
+	[JsonPropertyName("cost")]
+	public double? Cost { get; set; }
+
+	[JsonPropertyName("cost_details")]
+	public Dictionary<string, object>? CostDetails { get; set; }
+
 	[JsonPropertyName("input_tokens")]
 	public long? InputTokens { get; set; }
 
@@ -7857,6 +7872,13 @@ public sealed class Usage
 
 	[JsonPropertyName("total_tokens")]
 	public long? TotalTokens { get; set; }
+
+}
+
+public sealed class UsageCostDetails
+{
+	[JsonPropertyName("upstream_inference_cost")]
+	public double? UpstreamInferenceCost { get; set; }
 
 }
 

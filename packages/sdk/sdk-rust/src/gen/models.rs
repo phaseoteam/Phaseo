@@ -112,6 +112,8 @@ pub struct AnthropicUsage {
 	pub cache_creation: Option<HashMap<String, String>>,
 	pub cache_creation_input_tokens: Option<i64>,
 	pub cache_read_input_tokens: Option<i64>,
+	pub cost: Option<f64>,
+	pub cost_details: Option<HashMap<String, String>>,
 	pub input_tokens: Option<i64>,
 	pub output_tokens: Option<i64>,
 }
@@ -261,6 +263,7 @@ pub struct ApiKeyWithValue {
 
 pub struct ApiKeyWithValueResponse {
 	pub data: HashMap<String, String>,
+	pub key: String,
 }
 
 pub struct AsyncJobWebSocketClientEvent {
@@ -3257,6 +3260,8 @@ pub struct UpdatedResponse {
 
 pub struct Usage {
 	pub completion_tokens: Option<i64>,
+	pub cost: Option<f64>,
+	pub cost_details: Option<HashMap<String, String>>,
 	pub input_tokens: Option<i64>,
 	pub input_tokens_details: Option<HashMap<String, String>>,
 	pub output_tokens: Option<i64>,
@@ -3264,6 +3269,10 @@ pub struct Usage {
 	pub prompt_tokens_details: Option<HashMap<String, String>>,
 	pub server_tool_use: Option<HashMap<String, String>>,
 	pub total_tokens: Option<i64>,
+}
+
+pub struct UsageCostDetails {
+	pub upstream_inference_cost: Option<Option<f64>>,
 }
 
 pub struct VideoBillingSummary {

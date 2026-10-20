@@ -108,6 +108,8 @@ public final class Models {
 		public Object cache_creation;
 		public Integer cache_creation_input_tokens;
 		public Integer cache_read_input_tokens;
+		public Double cost;
+		public Object cost_details;
 		public Integer input_tokens;
 		public Integer output_tokens;
 	}
@@ -258,6 +260,7 @@ public final class Models {
 
 	public static class ApiKeyWithValueResponse {
 		public Object data;
+		public String key;
 	}
 
 	public static class AsyncJobWebSocketClientEvent {
@@ -3287,6 +3290,8 @@ public final class Models {
 
 	public static class Usage {
 		public Integer completion_tokens;
+		public Double cost;
+		public Object cost_details;
 		public Integer input_tokens;
 		public Object input_tokens_details;
 		public Integer output_tokens;
@@ -3294,6 +3299,10 @@ public final class Models {
 		public Object prompt_tokens_details;
 		public Object server_tool_use;
 		public Integer total_tokens;
+	}
+
+	public static class UsageCostDetails {
+		public Double upstream_inference_cost;
 	}
 
 	public static class VideoBillingSummary {
