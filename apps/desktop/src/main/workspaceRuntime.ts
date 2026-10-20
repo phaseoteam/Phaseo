@@ -4,6 +4,7 @@ import { completeChat, generateTitle } from "./chatTitles";
 import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
+import { addUsage, isPhaseoUsageId } from "../shared/usageAmounts";
 import { autoSettleRules, settingsProject, settleScriptTarget, worktreeCreateScripts, type ProjectScript, type ProjectUpdate } from "../shared/projectSettings";
 import { runProjectCommand } from "./runProjectCommand";
 import { mkdirSync, realpathSync } from "node:fs";
@@ -97,6 +98,7 @@ export class WorkspaceRuntime {
 	private readonly projectMutations = new Map<Promise<unknown>, string>();
 	private readonly wakeTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private closing = false;
+	private usageBackfill?: ReturnType<typeof setTimeout>;
 	discoverThreadModels?: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
 	/** The composer's installation check, reused by list_agents. */
 	discoverInstallations?: () => Promise<{ harness: Harness; installed: boolean; error?: string }[]>;
@@ -134,6 +136,16 @@ export class WorkspaceRuntime {
 		const finished = (id: string) => { try { return this.store.getTask(id).status !== "interrupted"; } catch { return false; } };
 		const worthWaking = (id: string) => { try { return this.store.getTask(id).queue.some(item => (item.sourceTaskIds ?? (item.sourceTaskId ? [item.sourceTaskId] : [])).some(finished)); } catch { return false; } };
 		for (const id of new Set([...this.store.collectDelegationResults(), ...this.store.pendingDeliveryParents()])) if (worthWaking(id)) this.wake(id);
+		this.backfillUsageTotals();
+	}
+	/** Chats saved before usage totals were kept get them from their history, a few at a time so startup stays quick. */
+	private backfillUsageTotals() {
+		this.usageBackfill = setTimeout(() => {
+			if (this.closing) return;
+			try { if (!this.store.backfillUsageTotals(25)) return; } catch { return; }
+			this.broadcastSoon(); this.backfillUsageTotals();
+		}, 50);
+		this.usageBackfill.unref?.();
 	}
 	private readonly threads: WorkspaceThreads;
 	/** Names a chat with the title model (Settings → General), as T3 does; without one, the first message stays its title. A rename in the meantime wins. */
@@ -752,6 +764,8 @@ export class WorkspaceRuntime {
 		if (!task.queue.length) { orchestration?.close(); this.orchestrationSessions.delete(id); return; }
 		this.running.set(id, adapter);
 		const message = task.queue.shift()!;
+		// The running total of what the chat used through Phaseo starts from its history, then grows as the turn streams.
+		if (!task.usageTotals) task.usageTotals = this.store.phaseoUsageTotals(id);
 		let timelineOrder = [...task.messages, ...(task.activities ?? [])].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), task.messages.length + (task.activities?.length ?? 0)) + 1;
 		task.messages.push({ ...message, startedAt: new Date().toISOString(), timelineOrder: timelineOrder++, role: "user", ...(message.sourceTaskId ? { delivery: "subagent" as const } : {}) }); task.status = "running"; task.error = undefined;
 		// Chats starting together (a burst of sends, a scheduled batch) share one chat-list update.
@@ -783,6 +797,7 @@ export class WorkspaceRuntime {
 				current.activities ??= [];
 				const activityId = `${message.id}:${activity.id}`;
 				const existing = current.activities.find(value => value.id === activityId);
+				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) addUsage(current.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text, existing?.type === "usage" ? existing.text : undefined);
 				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; existing.proposed = activity.proposed; }
 				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}) });
 			}
@@ -905,7 +920,7 @@ export class WorkspaceRuntime {
 		}
 	}
 	async close() {
-		this.closing = true; this.settleAbort.abort(); clearTimeout(this.broadcastTimer); clearTimeout(this.flushClock); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
+		this.closing = true; this.settleAbort.abort(); clearTimeout(this.broadcastTimer); clearTimeout(this.usageBackfill); clearTimeout(this.flushClock); for (const timer of this.wakeTimers.values()) clearTimeout(timer); this.wakeTimers.clear(); for (const close of this.orchestrationSessions.values()) close(); this.broadcast();
 		for (const id of this.running.keys()) this.store.apply({ type: "cancel", id });
 		for (const pending of this.approvals.values()) pending.resolve("decline");
 		for (const pending of this.questions.values()) pending.resolve({});

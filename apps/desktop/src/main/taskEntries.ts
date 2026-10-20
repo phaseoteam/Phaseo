@@ -1,6 +1,7 @@
 import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 import { activitiesForWindow, conversationPageBytes, type ConversationPage, type ConversationPageQuery } from "../shared/conversationPage";
+import { isPhaseoUsageId } from "../shared/usageAmounts";
 import type { AgentActivity, Message, Task } from "../shared/workspace";
 
 type Kind = 0 | 1;
@@ -173,5 +174,11 @@ export class TaskEntries {
 		const unowned = this.statement(`SELECT ${entryColumns} FROM task_entries WHERE task_key = ? AND kind = 1 AND owner IS NULL`).all(key) as Row[];
 		const rows = [...owned, ...unowned].sort((a, b) => a.rowid - b.rowid);
 		return activitiesForWindow(window, rows.map(row => decode(row)) as AgentActivity[], new Set(users), { next, latest: page.later === 0 });
+	}
+
+	/** The texts of a chat's Phaseo usage reports (steps and compactions), read by id from its activities alone. */
+	phaseoUsageReports(key: number): string[] {
+		const rows = this.statement(`SELECT ${entryColumns} FROM task_entries WHERE rowid >= ? AND rowid < ? AND (id GLOB '*usage:[0-9]*' OR id GLOB '*compaction:*:usage')`).all(base(key, 1), base(key, 1) + kindSpan) as Row[];
+		return rows.filter(row => isPhaseoUsageId(row.id)).map(row => decode(row) as AgentActivity).filter(activity => activity.type === "usage").map(activity => activity.text);
 	}
 }

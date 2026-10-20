@@ -85,6 +85,17 @@ describe("Phaseo turns", () => {
 		expect(callbacks.onActivity).toHaveBeenCalledWith(expect.objectContaining({ type: "compaction", title: "Context compacted" }));
 	});
 
+	it("reports each step's gateway price, and the compaction's own request", async () => {
+		const big = defineTool({ id: "read_file", execute: async () => "x".repeat(3000) });
+		const priced = (response: AgentModelResponse, nanos: number): AgentModelResponse => ({ ...response, usage: { prompt_tokens: 100, completion_tokens: 10, pricing: { total_nanos: nanos, currency: "USD" } } });
+		const { turn, callbacks } = setup([priced(call("read_file", {}, "a"), 1_000_000), priced(call("read_file", {}, "b"), 2_000_000), priced(say("Summary of the work so far."), 300_000), priced(say("Finished"), 4_000_000)], { tools: [big], facts: { contextTokens: 2000 } });
+		await runPhaseoTurn(turn("Read files", null));
+		const usage = callbacks.onActivity.mock.calls.map(([activity]) => activity as { id: string; type: string; text: string }).filter(activity => activity.type === "usage");
+		expect(usage.filter(activity => activity.id.startsWith("usage:")).map(activity => JSON.parse(activity.text).pricing.total_nanos)).toEqual([1_000_000, 2_000_000, 4_000_000]);
+		expect(usage.find(activity => activity.id.startsWith("compaction:"))).toMatchObject({ id: expect.stringMatching(/^compaction:\d+:usage$/), title: "Compaction usage" });
+		expect(JSON.parse(usage.find(activity => activity.id.startsWith("compaction:"))!.text)).toMatchObject({ pricing: { total_nanos: 300_000 } });
+	});
+
 	it("turns optional tool sets on with load_tools", () => {
 		const tools = ["read_file", "delegate_task", "watch_pull_request", "browser_open", "schedule_task", "send_thread"].map(id => defineTool({ id, execute: async () => id }));
 		expect(activeToolIds(tools, {})).toEqual(["read_file", "delegate_task"]);
