@@ -39,6 +39,7 @@ vi.mock("@/runtime/env", () => ({
 // The real cache keeps rows per isolate; tests read straight through.
 vi.mock("@core/tiered-cache", () => ({ tieredRead: async (options: { loader: () => Promise<unknown> }) => options.loader() }));
 
+import { DecisionsSchema } from "@core/schemas";
 import {
 	CLASSIFIER_LABEL_KEY,
 	applyRequestClassifiers,
@@ -203,6 +204,12 @@ describe("decisions", () => {
 		expect(body.questions[0].instructions).toContain("Department (Business function)");
 		expect(body.questions[1].instructions).toContain('does "billing" apply');
 		expect(body.questions[1].instructions).toContain("Treat contracts as legal.");
+	});
+
+	it("builds a body the Decisions endpoint accepts", () => {
+		const body = buildClassifierDecisionsBody(classifier({ instructions: "Be strict." }), [DEPARTMENT, TOPICS], "USER: hi");
+		expect(DecisionsSchema.safeParse(body).success).toBe(true);
+		expect(DecisionsSchema.safeParse({ ...body, questions: [{ type: "choice", instructions: "x", choices: [] }] }).success).toBe(false);
 	});
 
 	it("answers a multi-value dimension with one choice when per-value questions would pass the limit", () => {
