@@ -609,12 +609,12 @@ export function ProviderModelDetailsSheet({
 
 								<InspectorSection title={t("pricing")}>
 									{meters.length > 0 ? (
-										<dl className="divide-y divide-zinc-200/60 dark:divide-zinc-800/80">
+										<dl className="space-y-2">
 											{meters.map((meter) => {
 												const display = meterDisplay(meter);
 												return (
-													<div key={meter.meter} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 py-2">
-														<dt className="min-w-0 text-sm text-muted-foreground">{display.label}</dt>
+													<div key={meter.meter} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4">
+														<dt className="min-w-0 text-[11px] text-muted-foreground">{display.label}</dt>
 														<dd className="text-right tabular-nums">
 															<span className="text-sm font-semibold text-foreground">
 																{display.amount === 0 ? tProviders("free") : formatUsd(display.amount)}
