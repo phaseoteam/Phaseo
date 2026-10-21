@@ -580,6 +580,14 @@ accountSettingsSlackRouter.patch("/slack", bodyLimit({ maxSize: 128 * 1024 }), a
 	if (status !== undefined && current.status === "payment_due") {
 		return json(c, { error: "payment_due", message: "Answers resume once last month's Slack agent charge is paid" }, 409);
 	}
+	// The month-end charge leaves a paused installation paused when credits are short,
+	// so resuming checks for an unpaid month itself.
+	if (status === "active" && current.status !== "active") {
+		const unpaid = await context.client.from("slack_agent_charges").select("period_start")
+			.eq("installation_id", current.id).eq("status", "pending").limit(1).maybeSingle();
+		if (unpaid.error) return json(c, { error: "settings_unavailable" }, 503);
+		if (unpaid.data) return json(c, { error: "payment_due", message: "Answers resume once last month's Slack agent charge is paid" }, 409);
+	}
 	const problem = planProblem({
 		plan_people: update.plan_people ?? current.plan_people,
 		max_people: "max_people" in update ? update.max_people ?? null : current.max_people,

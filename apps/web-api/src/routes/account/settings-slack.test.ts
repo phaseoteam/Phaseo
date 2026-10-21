@@ -582,6 +582,20 @@ describe("Slack agent settings changes", () => {
 		expect((await patch({ status: "active" })).status).toBe(409);
 	});
 
+	it("won't resume a paused installation while a month's charge is unpaid", async () => {
+		// The month-end charge leaves a paused installation paused when credits are short.
+		const unpaid = database({ role: "admin", installation: { status: "paused" }, charges: [{ period_start: "2026-09-01" }] });
+		const response = await patch({ status: "active" });
+		expect(response.status).toBe(409);
+		expect(await response.json()).toMatchObject({ error: "payment_due" });
+		const lookup = find(unpaid, "GET", "/slack_agent_charges")[0];
+		expect(lookup.url.searchParams.get("status")).toBe("eq.pending");
+		expect(find(unpaid, "PATCH", "/slack_installations")).toHaveLength(0);
+
+		database({ role: "admin", installation: { status: "paused" }, charges: [] });
+		expect((await patch({ status: "active" })).status).toBe(200);
+	});
+
 	it("is for admins, and 404s without an installation", async () => {
 		database({ role: "member", installation: {} });
 		expect((await patch({ status: "paused" })).status).toBe(403);
