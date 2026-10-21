@@ -115,12 +115,13 @@ export function LicenseFilterList({
 				const partial =
 					!groupChecked &&
 					groupOptions.some((option) => selection.licenses.includes(option.value));
-				// Licences with no models under the other filters are hidden unless
-				// selected. A group left with one licence (Proprietary) has nothing to expand.
+				// A group with one licence (Proprietary) has nothing to expand. Inside a
+				// group, licences with no models under the other filters are hidden
+				// unless selected.
+				const expandable = groupOptions.length > 1;
 				const listedOptions = groupOptions.filter(
 					(option) => option.count > 0 || selection.licenses.includes(option.value),
 				);
-				const expandable = listedOptions.length > 1;
 				const isExpanded = expandable && expanded.includes(group);
 				const label = groupLabel(group);
 				return (
