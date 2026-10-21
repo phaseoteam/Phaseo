@@ -102,6 +102,9 @@ import {
 	type RequestColumnPreference,
 } from "./requestColumns";
 
+import RequestLabelBadges from "./RequestLabelBadges";
+import type { RequestClassifierSummary } from "./requestClassifierLabels";
+
 const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 
 interface UnifiedRequestsTableProps {
@@ -121,6 +124,8 @@ interface UnifiedRequestsTableProps {
 	initialNextCursor: { createdAt: string; id: string } | null;
 	initialPageSize: number;
 	detailBasePath?: string;
+	/** Names for classifier labels in the table and request sheet. */
+	requestClassifiers?: RequestClassifierSummary[];
 	onExportRef?: React.MutableRefObject<
 		((format: "csv" | "pdf") => void) | null
 	>;
@@ -342,6 +347,7 @@ export default function UnifiedRequestsTable({
 	initialNextCursor,
 	initialPageSize,
 	detailBasePath,
+	requestClassifiers = [],
 	onExportRef,
 }: UnifiedRequestsTableProps) {
 	const tUi = useTranslations("Common.ui");
@@ -1525,6 +1531,11 @@ export default function UnifiedRequestsTable({
 													)}
 												</TableCell>
 											),
+											labels: (
+												<TableCell key="labels" className="max-w-[18rem] py-2">
+													<RequestLabelBadges labels={row.labels} classifiers={requestClassifiers} />
+												</TableCell>
+											),
 											finish: (
 												<TableCell
 													key="finish"
@@ -1673,6 +1684,7 @@ export default function UnifiedRequestsTable({
 
 			{/* Detail Dialog */}
 			<RequestDetailDialog
+				classifiers={requestClassifiers}
 				open={dialogOpen}
 				loading={detailLoading}
 				presentation={detailBasePath ? "sheet" : undefined}

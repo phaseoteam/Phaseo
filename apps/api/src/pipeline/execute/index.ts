@@ -103,6 +103,7 @@ import { getReasoningEffortAllowlist, normalizeIRForProvider } from "./normalize
 import { clearDroppedParams, recordDroppedParams } from "./unsupportedParams";
 import { preferTwelveHourCacheRoutes } from "./prompt-cache-ttl";
 import { normalizeCapability } from "@/executors";
+import { isSynchronousMediaCapability } from "@core/synchronous-media";
 import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
@@ -110,7 +111,7 @@ import { getEffectiveRoutingHints } from "../requestRouting";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
-import { guardRateLimitPolicies } from "@core/rate-limit-policies";
+import { chargeRateLimitPolicyTokens, guardRateLimitPolicies } from "@core/rate-limit-policies";
 import { shouldRecordLastUsed } from "@core/last-used-throttle";
 import { applyUpstreamPromptCacheKey, resolveUpstreamPromptCacheKey } from "./prompt-cache-key";
 import { resolveSessionAffinityPreference } from "./sticky-routing";
@@ -128,6 +129,12 @@ const ATTEMPT_PREVIEW_LIMIT = 320;
 const MAX_UPSTREAM_ERROR_BODY_BYTES = 32 * 1024;
 const MAX_RETRYABLE_EXECUTOR_RETRIES = 0;
 const SINGLE_PROVIDER_FAILURE_RETRIES = 0;
+// Synchronous media operations bill per call and have no cross-provider idempotency. Once a
+// provider has answered 2xx (and so charged), the request must not move to another provider,
+// even if mapping or pricing the answer then fails.
+export function stopsFallbackAfterProviderCharge(capability: string, providerSuccessCount: number): boolean {
+	return isSynchronousMediaCapability(normalizeCapability(capability)) && providerSuccessCount > 0;
+}
 // Matches the database's per-workspace/provider storage limit. A configured
 // credential must not be silently retained while being impossible to attempt.
 export const MAX_BYOK_CREDENTIAL_ATTEMPTS = BYOK_KEYS_PER_PROVIDER_LIMIT;
@@ -1302,6 +1309,8 @@ async function attemptProviderWithIR(
 				usageCandidates: [executorResult.bill?.usage, payloadUsage, upstreamFailure.payload],
 				upstreamRequestCount: upstreamTiming.upstreamRequestCount,
 			});
+			// A failed attempt that reports usage still consumed the policy's tokens.
+			chargeRateLimitPolicyTokens(ctx, [executorResult.bill?.usage, payloadUsage, upstreamFailure.payload], `attempt:${attemptNumber}:${candidate.providerId}`);
 			if (terminalFailure && upstreamTiming.upstreamRequestCount === 0 && !reservationHandled) {
 				await releaseManagedProviderReservation(providerRateLimitReservation);
 			}
@@ -1382,12 +1391,12 @@ async function attemptProviderWithIR(
 			}
 			return {
 				ok: false,
-				stopFallback: normalizedCapability === "video.generate" && (
+				stopFallback: (normalizedCapability === "video.generate" && (
 					// A dispatched create owns a durable job and reservation lifecycle.
 					// Do not reuse that job for a second provider after rejection either.
 					upstreamTracker.snapshot().upstreamRequestCount > 0 ||
 					executorResult.upstream.status >= 500 || executorResult.upstream.status === 408
-				),
+				)) || stopsFallbackAfterProviderCharge(normalizedCapability, upstreamTracker.providerSuccessCount()),
 			};
 		}
 
@@ -1542,6 +1551,15 @@ async function attemptProviderWithIR(
 				await maybeOpenOnRecentErrors(ctx.endpoint, healthProvider, baseModel);
 			}
 		});
-		return { ok: false, stopFallback: ctx.capability === "video.generate" };
+		const chargedMediaFailure = stopsFallbackAfterProviderCharge(ctx.capability, upstreamTracker.providerSuccessCount());
+		if (chargedMediaFailure) {
+			console.error("[gateway] media request failed after the provider answered; not retrying elsewhere", {
+				requestId: ctx.requestId,
+				provider: candidate.providerId,
+				capability: ctx.capability,
+				message,
+			});
+		}
+		return { ok: false, stopFallback: ctx.capability === "video.generate" || chargedMediaFailure };
 	}
 }

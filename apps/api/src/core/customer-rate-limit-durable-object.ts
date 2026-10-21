@@ -18,6 +18,10 @@ const MINUTE_CHECKPOINT_INTERVAL_MS = 5_000;
  * fresh allowance, at a bounded number of billed row writes rather than one
  * per admission. Daily free-model admissions stay in SQLite exactly.
  *
+ * Rate limit policy scopes also keep a rolling minute of token usage, charged
+ * after each request attempt completes with its real usage, in one-second
+ * buckets (at most 60, however busy the scope) checkpointed the same way.
+ *
  * Limits are supplied by the caller (see `resolveCustomerLimits`); this object
  * performs no KV or network reads.
  */
@@ -26,6 +30,10 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 	/** Admission ID -> start time, in arrival order. */
 	private readonly minute = new Map<string, number>();
 	private lastMinuteCheckpoint = 0;
+	/** Second (epoch ms) -> tokens charged in it, oldest first. */
+	private readonly tokens = new Map<number, number>();
+	private tokensUsed = 0;
+	private lastTokenCheckpoint = 0;
 	private freeDay = -1;
 	private freeUsed = 0;
 
@@ -35,9 +43,11 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 			const sql = ctx.storage.sql;
 			sql.exec("CREATE TABLE IF NOT EXISTS free_requests (admission_id TEXT PRIMARY KEY, day INTEGER NOT NULL)");
 			sql.exec("CREATE TABLE IF NOT EXISTS minute_checkpoint (id INTEGER PRIMARY KEY CHECK (id = 1), entries TEXT NOT NULL)");
+			sql.exec("CREATE TABLE IF NOT EXISTS token_checkpoint (id INTEGER PRIMARY KEY CHECK (id = 1), entries TEXT NOT NULL)");
 			// Earlier versions persisted one row per minute admission.
 			sql.exec("DROP TABLE IF EXISTS minute_requests");
 			this.restoreMinute(Date.now());
+			this.restoreTokens(Date.now());
 			this.rollFreeDay(Math.floor(Date.now() / DAY_MS));
 		});
 	}
@@ -62,6 +72,82 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 			"INSERT OR REPLACE INTO minute_checkpoint (id, entries) VALUES (1, ?)",
 			JSON.stringify([...this.minute]),
 		);
+	}
+
+	private restoreTokens(now: number): void {
+		const row = this.ctx.storage.sql.exec<{ entries: string }>("SELECT entries FROM token_checkpoint WHERE id = 1").toArray()[0];
+		if (!row) return;
+		try {
+			const entries = JSON.parse(row.entries) as Array<[number, number]>;
+			for (const [second, tokens] of entries) {
+				if (!Number.isFinite(second) || !Number.isSafeInteger(tokens) || tokens <= 0 || second <= now - MINUTE_MS) continue;
+				this.tokens.set(second, tokens);
+				this.tokensUsed += tokens;
+			}
+		} catch {
+			console.warn("customer_rate_limit_token_checkpoint_unreadable");
+		}
+	}
+
+	private checkpointTokens(now: number): void {
+		if (now - this.lastTokenCheckpoint < MINUTE_CHECKPOINT_INTERVAL_MS) return;
+		this.lastTokenCheckpoint = now;
+		this.ctx.storage.sql.exec(
+			"INSERT OR REPLACE INTO token_checkpoint (id, entries) VALUES (1, ?)",
+			JSON.stringify([...this.tokens]),
+		);
+	}
+
+	private expireTokens(now: number): void {
+		for (const [second, tokens] of this.tokens) {
+			if (second > now - MINUTE_MS) break;
+			this.tokens.delete(second);
+			this.tokensUsed -= tokens;
+		}
+	}
+
+	/** Seconds until usage falls below `limit` as buckets leave the rolling minute. */
+	private tokenRetryAfter(now: number, limit: number): number {
+		let used = this.tokensUsed;
+		for (const [second, tokens] of this.tokens) {
+			used -= tokens;
+			if (used < limit) return Math.max(1, Math.ceil((second + MINUTE_MS - now) / 1000));
+		}
+		return 1;
+	}
+
+	private tokenStatus(now: number, limit: number): CustomerAdmission {
+		const remaining = Math.max(0, limit - this.tokensUsed);
+		return { allowed: remaining > 0, limit, remaining, retryAfterSeconds: remaining ? 0 : this.tokenRetryAfter(now, limit) };
+	}
+
+	/**
+	 * Charges one completed attempt's token usage to the rolling minute and
+	 * reports what is left. The caller charges each attempt once.
+	 */
+	async chargeTokens(scopeKey: string, tokens: number, tokensPerMinute: number): Promise<CustomerAdmission> {
+		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
+		this.scope = scopeKey;
+		const limit = Number.isSafeInteger(tokensPerMinute) && tokensPerMinute > 0 ? tokensPerMinute : Number.MAX_SAFE_INTEGER;
+		const now = Date.now();
+		this.expireTokens(now);
+		if (Number.isSafeInteger(tokens) && tokens > 0) {
+			const second = Math.floor(now / 1000) * 1000;
+			this.tokens.set(second, (this.tokens.get(second) ?? 0) + tokens);
+			this.tokensUsed += tokens;
+			this.checkpointTokens(now);
+		}
+		return this.tokenStatus(now, limit);
+	}
+
+	/** The scope's token allowance left in the rolling minute, without charging anything. */
+	async peekTokens(scopeKey: string, tokensPerMinute: number): Promise<CustomerAdmission> {
+		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
+		this.scope = scopeKey;
+		const limit = Number.isSafeInteger(tokensPerMinute) && tokensPerMinute > 0 ? tokensPerMinute : Number.MAX_SAFE_INTEGER;
+		const now = Date.now();
+		this.expireTokens(now);
+		return this.tokenStatus(now, limit);
 	}
 
 	private rollFreeDay(day: number): void {

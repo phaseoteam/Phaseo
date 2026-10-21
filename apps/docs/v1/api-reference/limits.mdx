@@ -34,16 +34,18 @@ An API key's daily, weekly or monthly request and spend limits, and the workspac
 
 ## Rate limit policies
 
-Workspace admins can create named rate limit policies through the `/v1/rate-limits` management API and assign them to API keys, workspace members, guardrails, or as the default for each end user. The gateway enforces a policy's `requests_per_minute`, measured over a rolling minute:
+Workspace admins can create named rate limit policies through the `/v1/rate-limits` management API and assign them to API keys, workspace members, guardrails, or as the default for each end user. The gateway enforces a policy's `requests_per_minute` and `tokens_per_minute`, each measured over a rolling minute:
 
 - **Key:** the key's own allowance.
 - **Member:** one allowance shared by the member's keys and OAuth requests.
 - **Guardrail:** a separate allowance for each key (or OAuth user) the guardrail covers.
 - **End-user default:** a separate allowance for each end user, identified by the request's `user` field or `X-Phaseo-User-Id` header. Requests without an end-user ID are not limited by it.
 
-When several policies apply, each is counted and the first one exhausted rejects the request. Policy limits apply in addition to the gateway limits above. `tokens_per_minute`, `concurrent_requests` and department assignments are not enforced yet. Policy changes take effect within about a minute.
+When several policies apply, each is counted and the first one exhausted rejects the request. Policy limits apply in addition to the gateway limits above. `concurrent_requests` and department assignments are not enforced yet. Policy changes take effect within about a minute.
 
-A rejected request returns `429` with the `rate_limit_exceeded` error code, reason `policy_requests_per_minute`, the `policy_id` and the `limit_scope` (`key`, `member`, `guardrail` or `end_user`), plus `Retry-After` in seconds. Responses to requests a policy applies to include `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` and `x-ratelimit-reset-requests` (for example `60s`) for the most restrictive policy. Counting happens in the background, so `remaining` is approximate. Provider fallbacks within one request count once, and response cache hits are not counted.
+`tokens_per_minute` counts each request's input and output tokens once it completes, including streamed and failed requests that used tokens. A request is rejected once an allowance's usage over the last minute reaches its limit, so requests already in progress can take usage past the limit.
+
+A rejected request returns `429` with the `rate_limit_exceeded` error code, reason `policy_requests_per_minute` or `policy_tokens_per_minute`, the `policy_id` and the `limit_scope` (`key`, `member`, `guardrail` or `end_user`), plus `Retry-After` in seconds. Responses to requests a policy applies to include `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` and `x-ratelimit-reset-requests` (for example `60s`) for the most restrictive request limit, and `x-ratelimit-limit-tokens`, `x-ratelimit-remaining-tokens` and `x-ratelimit-reset-tokens` for the most restrictive token limit. A rejected request carries only the headers of the limit that rejected it. Counting happens in the background, so `remaining` is approximate, and token headers do not yet include the current request's own usage. Provider fallbacks within one request count once, and response cache hits are not counted.
 
 ## Provider limits
 

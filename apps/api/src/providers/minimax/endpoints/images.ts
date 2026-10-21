@@ -4,7 +4,7 @@
 
 import { ImagesEditSchema, ImagesGenerationSchema } from "@core/schemas";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
@@ -175,7 +175,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		finish_reason: null,
 	};
 	if (response.ok && args.pricingCard) {
-		const priced = computeBill(normalized.usage, args.pricingCard, buildImagePricingRequestOptions(args.body, normalized.usage));
+		const priced = computeBillAfterProviderCharge(normalized.usage, args.pricingCard, buildImagePricingRequestOptions(args.body, normalized.usage));
 		bill.cost_cents = priced.pricing.total_cents;
 		bill.currency = priced.pricing.currency;
 		bill.usage = priced;
