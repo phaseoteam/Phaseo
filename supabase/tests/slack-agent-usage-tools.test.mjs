@@ -5,7 +5,7 @@ const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pgli
 const db = new PGlite();
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
-const migration = await read('../migrations/20261021221806_slack_agent_usage_tools.sql');
+const migration = await read('../migrations/20261021232402_slack_agent_usage_tools.sql');
 const FUNCTIONS = ['get_workspace_spend_buckets', 'get_workspace_key_spend'];
 const WORKSPACE = '10000000-0000-4000-8000-000000000001';
 const OTHER = '10000000-0000-4000-8000-000000000002';
