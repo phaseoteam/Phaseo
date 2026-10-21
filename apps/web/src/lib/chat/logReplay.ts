@@ -122,6 +122,8 @@ class ReplayBuilder {
 	turns: LogReplayTurn[] = [];
 	systemParts: string[] = [];
 	warnings = new Set<LogReplayWarningCode>();
+	/** Turns before this index belong to the request; the response never merges into them. */
+	responseStart = 0;
 
 	warn(code: LogReplayWarningCode) {
 		this.warnings.add(code);
@@ -137,7 +139,8 @@ class ReplayBuilder {
 		const last = this.turns[this.turns.length - 1];
 		// Responses input lists an assistant message and its function calls as
 		// separate items; they are one assistant turn.
-		if (last?.role === "assistant" && (last.toolCalls.length === 0 || !text)) {
+		const sameSide = this.turns.length > this.responseStart;
+		if (sameSide && last?.role === "assistant" && (last.toolCalls.length === 0 || !text)) {
 			last.text = [last.text, text].filter(Boolean).join("\n\n");
 			last.reasoning = [last.reasoning, reasoning].filter(Boolean).join("\n\n");
 			last.toolCalls.push(...toolCalls);
@@ -480,6 +483,7 @@ export function readLogReplay(input: {
 		readMessagesRequest(body, builder);
 	}
 	const requestTurnCount = builder.turns.length;
+	builder.responseStart = requestTurnCount;
 	readResponse(input.gatewayResponse, builder);
 	markUnansweredToolCalls(builder.turns, builder);
 
