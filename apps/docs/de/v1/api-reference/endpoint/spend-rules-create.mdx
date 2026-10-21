@@ -1,0 +1,9 @@
+---
+title: "Ausgabenregel erstellen"
+sidebarTitle: "Regel erstellen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /spend-rules"
+description: "Erstellt eine Ausgabenwarnung, auf Wunsch eine, die Anfragen ab einem Limit sperrt."
+---
+
+Erfordert `spend_rules:write`. OAuth-Aufrufer müssen Inhaber oder Administratoren des Arbeitsbereichs sein. Sende jeden Betrag in USD (`*_usd`) oder in Nanodollar (`*_nanos`), nicht beides. Ein Arbeitsbereich kann 50 Ausgabenregeln haben. Metriken, Basen, Geltungsbereiche und Zeiträume erklärt der [Leitfaden zu Ausgabenwarnungen](../../guides/spend-alerts.mdx).

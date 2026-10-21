@@ -1,0 +1,9 @@
+---
+title: "Vorschau einer Ausgabenregel"
+sidebarTitle: "Regelvorschau"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/preview"
+description: "Zeigt den aktuellen Wert, die Basis und die nächste Schwelle einer Ausgabenregel."
+---
+
+Erfordert `spend_rules:read`. Es wird nichts gesendet oder gespeichert. Prognose-, Spitzen- und Guthabenregeln enthalten ihr eigenes Objekt `forecast`, `spike` oder `balance`.

@@ -1,0 +1,9 @@
+---
+title: "テスト用の支出アラートを送信"
+sidebarTitle: "テストを送信"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /spend-rules/{id}/test"
+description: "支出ルールが今送信するアラートを、TEST と表示して送信します。"
+---
+
+`spend_rules:write` が必要です。テストはルールの通知先、または通知先がない場合は **支出アラート** のルートに送信されます。何も記録されません。ワークスペースは 1 分あたり 5 回までテストを送信でき、それを超えると `Retry-After` 付きの `429` が返されます。

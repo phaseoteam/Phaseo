@@ -1,0 +1,9 @@
+---
+title: "Excluir uma regra de gastos"
+sidebarTitle: "Excluir regra"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml DELETE /spend-rules/{id}"
+description: "Exclui uma regra de gastos e remove qualquer bloqueio iniciado por ela."
+---
+
+Requer `spend_rules:delete`. A regra deixa de ser avaliada e não conta mais para o limite de 50 regras. O bloqueio ativo dela, se houver, é removido.

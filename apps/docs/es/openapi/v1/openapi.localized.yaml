@@ -4787,7 +4787,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: Crear una regla de gasto
-      description: Crea una regla de gasto y define sus destinos de notificación. Se acepta cualquier métrica; las reglas que se devuelven con evaluated en false se guardan y empezarán a activarse en una versión posterior. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.
+      description: Crea una regla de gasto y define sus destinos de notificación. Se evalúan todas las métricas. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.
       requestBody:
         required: true
         content:
@@ -23614,42 +23614,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -23719,8 +23683,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -23818,42 +23780,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
         created_at:
           type: string
           format: date-time
@@ -23965,42 +23891,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.
             created_at:
               type: string
               format: date-time

@@ -4787,7 +4787,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: Créer une règle de dépenses
-      description: Crée une règle de dépenses et définit ses destinations de notification. Toutes les métriques sont acceptées ; les règles renvoyées avec evaluated à false sont enregistrées et se déclencheront à partir d’une version ultérieure. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil ; utilisez les limites de clé et les budgets d’espace de travail pour des plafonds exacts. Un espace de travail peut avoir 50 règles de dépenses.
+      description: Crée une règle de dépenses et définit ses destinations de notification. Toutes les métriques sont évaluées. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil ; utilisez les limites de clé et les budgets d’espace de travail pour des plafonds exacts. Un espace de travail peut avoir 50 règles de dépenses.
       requestBody:
         required: true
         content:
@@ -23614,42 +23614,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -23719,8 +23683,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -23818,42 +23780,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
         created_at:
           type: string
           format: date-time
@@ -23965,42 +23891,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.
             created_at:
               type: string
               format: date-time

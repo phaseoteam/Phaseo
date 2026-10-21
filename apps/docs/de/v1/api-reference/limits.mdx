@@ -31,6 +31,8 @@ Bei ausgeschöpftem Gateway-Kontingent wird `429` mit `Retry-After` in Sekunden 
 
 Sind die täglichen, wöchentlichen oder monatlichen Anfrage- und Ausgabenlimits eines API-Schlüssels oder die [Budgets](./endpoint/budgets-list.mdx) des Arbeitsbereichs erreicht, wird `429` mit dem Fehlercode `key_limit_exceeded` zurückgegeben. Die Felder `reason`, `limit_window` und `reset_at` im Antworttext nennen das Limit und den Zeitpunkt, zu dem sein Zeitraum zurückgesetzt wird. `Retry-After` gibt die Sekunden bis zu diesem Zurücksetzen an. Der Header fehlt, wenn sich das Limit nicht von selbst zurücksetzt, etwa bei einem Gesamtbudget oder einem vorübergehend gesperrten Schlüssel; erhöhe dann statt eines erneuten Versuchs das Arbeitsbereichsbudget oder, bei einem Schlüssellimit, das Limit des Schlüssels, oder verwende einen anderen Schlüssel.
 
+[Ausgabenwarnungen](../guides/spend-alerts.mdx) können warnen, bevor diese Limits erreicht sind. Eine sperrende Ausgabenregel gibt stattdessen `429` mit dem Fehlercode `spend_rule_blocked` zurück; sie arbeitet nach bestem Bemühen und greift einige Minuten, nachdem die Ausgaben ihr Limit überschritten haben. Für exakte Obergrenzen verwende daher Schlüssellimits und Budgets.
+
 ## Ratenlimit-Richtlinien
 
 Workspace-Admins können über die Management-API `/v1/rate-limits` benannte Ratenlimit-Richtlinien erstellen und sie API-Schlüsseln, Workspace-Mitgliedern, Sicherheitsleitplanken oder als Standard für jeden Endnutzer zuweisen. Das Gateway setzt die Werte `requests_per_minute` und `tokens_per_minute` einer Richtlinie durch, jeweils gemessen über eine gleitende Minute:
@@ -73,6 +75,7 @@ Regeln zu Ratenlimits für Agenten, als Zusammenfassung dieser Seite:
 
 - Gateway-Kontingente liefern `429` mit dem Grund `customer_requests_per_minute` oder `free_requests_per_day`; warte die Sekunden aus `Retry-After` ab. Ist die Kontingentprüfung nicht verfügbar, liefert das Gateway `503` mit Hinweisen zur Wiederholung.
 - Schlüssellimits und Budgets liefern `429` mit `key_limit_exceeded` und einem `reset_at`. Ohne `Retry-After` setzt sich das Limit nicht von selbst zurück: Erhöhe das Limit oder nutze einen anderen Schlüssel, statt es erneut zu versuchen.
+- Sperrende Ausgabenregeln geben `429` mit `spend_rule_blocked` zurück; warte `Retry-After` ab oder bitte einen Inhaber oder Administrator, die Sperre aufzuheben. `x-phaseo-spend-warning` bedeutet, dass eine Sperre folgen kann.
 - Ratenlimit-Richtlinien des Workspace liefern `429` mit `rate_limit_exceeded`, `policy_id` und `limit_scope`. `x-ratelimit-remaining-requests` ist ein Näherungswert.
 - `Retry-After` kann eine Sekundenzahl oder ein HTTP-Datum sein; prüfe den Wert, bevor du eine Wiederholung planst. Reiche einen unklaren Video- oder Stapelauftrag nie erneut ein, sondern prüfe seinen Status.
 </Visibility>

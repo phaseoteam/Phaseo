@@ -1,0 +1,9 @@
+---
+title: "Enviar una alerta de gasto de prueba"
+sidebarTitle: "Enviar prueba"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /spend-rules/{id}/test"
+description: "Envía la alerta que enviaría ahora una regla de gasto, marcada como TEST."
+---
+
+Requiere `spend_rules:write`. La prueba va a los destinos de la regla, o a la ruta **Alertas de gasto** si la regla no tiene ninguno. No se registra nada. Un espacio de trabajo puede enviar cinco pruebas por minuto; las demás devuelven `429` con `Retry-After`.

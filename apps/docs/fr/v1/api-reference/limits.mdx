@@ -31,6 +31,8 @@ Un quota du gateway épuisé entraîne une réponse `429` avec `Retry-After` en 
 
 Lorsque les limites quotidiennes, hebdomadaires ou mensuelles de requêtes et de dépenses d’une clé API, ou les [budgets](./endpoint/budgets-list.mdx) de l’espace de travail, sont atteintes, la réponse est `429` avec le code d’erreur `key_limit_exceeded`. Les champs `reason`, `limit_window` et `reset_at` du corps identifient la limite et le moment où sa période se réinitialise. `Retry-After` indique le nombre de secondes avant cette réinitialisation. Il est omis lorsque la limite ne se réinitialise pas d’elle-même, comme un budget à vie ou une clé temporairement bloquée ; au lieu de réessayer, augmentez alors le budget de l’espace de travail ou, pour une limite de clé, augmentez la limite de la clé ou utilisez une autre clé.
 
+Les [alertes de dépenses](../guides/spend-alerts.mdx) peuvent prévenir avant que ces limites soient atteintes. Une règle de dépenses configurée pour bloquer renvoie à la place `429` avec le code d'erreur `spend_rule_blocked` ; elle est appliquée au mieux et démarre quelques minutes après que les dépenses ont dépassé sa limite, utilisez donc les limites de clé et les budgets pour des plafonds exacts.
+
 ## Politiques de limite de débit
 
 Les administrateurs de l’espace de travail peuvent créer des politiques de limite de débit nommées via l’API de gestion `/v1/rate-limits` et les attribuer à des clés API, à des membres de l’espace de travail, à des garde-fous, ou comme valeur par défaut pour chaque utilisateur final. Le gateway applique les valeurs `requests_per_minute` et `tokens_per_minute` d’une politique, chacune mesurée sur une minute glissante :
@@ -73,6 +75,7 @@ Règles de limites de débit pour les agents, en résumé de cette page :
 
 - Les quotas du Gateway renvoient `429` avec le motif `customer_requests_per_minute` ou `free_requests_per_day` ; attendez les secondes de `Retry-After`. Si l’application des quotas est indisponible, le Gateway renvoie `503` avec des indications de nouvelle tentative.
 - Les limites de clé et les budgets renvoient `429` avec `key_limit_exceeded` et un `reset_at`. Sans `Retry-After`, la limite ne se réinitialise pas d’elle-même : augmentez-la ou utilisez une autre clé au lieu de réessayer.
+- Les règles de dépenses qui bloquent renvoient `429` avec `spend_rule_blocked` ; attendez `Retry-After` ou demandez à un propriétaire ou administrateur de lever le blocage. `x-phaseo-spend-warning` signifie qu'un blocage peut suivre.
 - Les politiques de limite de débit de l’espace de travail renvoient `429` avec `rate_limit_exceeded`, `policy_id` et `limit_scope`. `x-ratelimit-remaining-requests` est approximatif.
 - `Retry-After` peut être un nombre de secondes ou une date HTTP ; validez-le avant de planifier une nouvelle tentative. Ne soumettez jamais à nouveau une tâche vidéo ou par lots ambiguë ; consultez plutôt son état.
 </Visibility>

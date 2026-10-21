@@ -1,0 +1,9 @@
+---
+title: "预览支出规则"
+sidebarTitle: "预览规则"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/preview"
+description: "查看支出规则的当前值、基准和下一个阈值。"
+---
+
+需要 `spend_rules:read`。不会发送或记录任何内容。预测、激增和余额规则会包含各自的 `forecast`、`spike` 或 `balance` 对象。

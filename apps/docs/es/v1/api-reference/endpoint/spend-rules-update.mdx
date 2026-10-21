@@ -1,0 +1,9 @@
+---
+title: "Actualizar una regla de gasto"
+sidebarTitle: "Actualizar regla"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml PATCH /spend-rules/{id}"
+description: "Cambia los campos, los destinos o la acción de una regla de gasto."
+---
+
+Requiere `spend_rules:write`. Los campos que envías se combinan con la regla guardada y se vuelve a comprobar la regla completa. `destination_ids` reemplaza los destinos de la regla; omítelo para conservarlos. Cambiar la acción, el ámbito, el periodo o la base de una regla que bloquea levanta su bloqueo activo.

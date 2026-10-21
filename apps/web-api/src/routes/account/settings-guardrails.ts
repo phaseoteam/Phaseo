@@ -5,7 +5,7 @@ import { requireAccountWorkspace } from "./context";
 
 type GuardrailPayload = Record<string, any>;
 
-function guardrailRow(payload: GuardrailPayload, includeName = true): Record<string, unknown> {
+export function guardrailRow(payload: GuardrailPayload, includeName = true): Record<string, unknown> {
 	const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
 	if (includeName) {
 		const name = String(payload.name ?? "").trim();
@@ -14,6 +14,7 @@ function guardrailRow(payload: GuardrailPayload, includeName = true): Record<str
 		row.description = payload.description ?? null;
 		row.enabled = payload.enabled ?? true;
 	}
+	// A legacy `budgets` object (the removed guardrail request and spend limits) is ignored.
 	const fields: Array<[string, string]> = [
 		["privacyEnablePaidMayTrain", "privacy_enable_paid_may_train"],
 		["privacyEnableFreeMayTrain", "privacy_enable_free_may_train"],
@@ -51,17 +52,6 @@ function guardrailRow(payload: GuardrailPayload, includeName = true): Record<str
 			payload.ioLoggingIncludeProviderPayloads;
 	}
 	if (ioLoggingUpdated) row.io_logging_updated_at = row.updated_at;
-	if (includeName) {
-		const budgets = payload.budgets ?? {};
-		Object.assign(row, {
-			daily_limit_requests: budgets.dailyRequests ?? 0,
-			weekly_limit_requests: budgets.weeklyRequests ?? 0,
-			monthly_limit_requests: budgets.monthlyRequests ?? 0,
-			daily_limit_cost_nanos: budgets.dailyCostNanos ?? 0,
-			weekly_limit_cost_nanos: budgets.weeklyCostNanos ?? 0,
-			monthly_limit_cost_nanos: budgets.monthlyCostNanos ?? 0,
-		});
-	}
 	return row;
 }
 

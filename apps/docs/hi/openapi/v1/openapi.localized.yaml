@@ -4787,7 +4787,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: खर्च नियम बनाएँ
-      description: एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक स्वीकार की जाती है; evaluated false के साथ लौटाए गए नियम सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।
+      description: एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक का मूल्यांकन किया जाता है। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।
       requestBody:
         required: true
         content:
@@ -23614,42 +23614,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -23719,8 +23683,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -23818,42 +23780,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
         created_at:
           type: string
           format: date-time
@@ -23965,42 +23891,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।
             created_at:
               type: string
               format: date-time

@@ -1,0 +1,9 @@
+---
+title: "Prévisualiser une règle de dépenses"
+sidebarTitle: "Prévisualiser une règle"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/preview"
+description: "Affiche la valeur actuelle, la base et le prochain seuil d'une règle de dépenses."
+---
+
+Nécessite `spend_rules:read`. Rien n'est envoyé ni enregistré. Les règles de prévision, de pic et de solde incluent leur propre objet `forecast`, `spike` ou `balance`.

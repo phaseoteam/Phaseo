@@ -36,6 +36,8 @@ A página de notificações lista os tipos de alerta disponíveis para o espaço
 
 Além dos destinatários integrados exibidos no painel, os alertas também são enviados aos destinos configurados.
 
+<span id="spend-reports"></span>
+
 ## Relatórios de gastos
 
 Os proprietários do workspace recebem toda segunda-feira às 09:00, no fuso horário de cobrança do workspace, um e-mail com o relatório de gastos da semana anterior, de segunda a domingo. Altere isso em **Alertas de gastos → Configurações de gastos do espaço de trabalho** na página de notificações: diário (às 09:00, do dia anterior), semanal, mensal (no dia 1º, do mês anterior) ou desativado, e se os administradores também o recebem. Períodos sem gastos são ignorados.
@@ -43,6 +45,8 @@ Os proprietários do workspace recebem toda segunda-feira às 09:00, no fuso hor
 Cada relatório mostra os gastos e a variação em relação ao período anterior, as principais chaves, modelos, membros e departamentos, a previsão do mês, a autonomia do saldo e os alertas e bloqueios de gastos do período. Quem o recebe pode cancelar a inscrição pelo link no e-mail; isso interrompe apenas a própria cópia do relatório daquele workspace. Os destinos associados a **Spend Reports** recebem um resumo por relatório.
 
 As mesmas configurações são `spend.report_cadence` e `spend.report_include_admins` na [API de configurações de notificação](../api-reference/endpoint/notifications-settings-update.mdx).
+
+Para receber alertas sobre gastos, orçamentos, previsões, picos e saldo baixo, e para bloquear requisições quando os gastos passam de um limite, veja [Alertas de gastos](./spend-alerts.mdx).
 
 <Note>Os e-mails de relatório de gastos estão sendo liberados aos poucos. Até que sejam ativados, sua escolha fica salva, mas nenhum relatório é enviado.</Note>
 

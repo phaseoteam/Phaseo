@@ -1,0 +1,9 @@
+---
+title: "Supprimer une règle de dépenses"
+sidebarTitle: "Supprimer une règle"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml DELETE /spend-rules/{id}"
+description: "Supprime une règle de dépenses et lève tout blocage qu'elle a déclenché."
+---
+
+Nécessite `spend_rules:delete`. La règle n'est plus évaluée et ne compte plus dans la limite de 50 règles. Son blocage actif éventuel est levé.

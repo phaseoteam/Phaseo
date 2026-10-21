@@ -4787,7 +4787,7 @@ paths:
         - Gateway
       operationId: createSpendRule
       summary: 创建支出规则
-      description: 创建支出规则并设置其通知目标。接受所有指标；返回 evaluated 为 false 的规则会被保存，并将在后续版本中开始触发。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。
+      description: 创建支出规则并设置其通知目标。所有指标都会被评估。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。
       requestBody:
         required: true
         content:
@@ -23614,42 +23614,6 @@ components:
           enum:
             - true
       additionalProperties: false
-    GuardrailBudgetInput:
-      type: object
-      deprecated: true
-      description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-      properties:
-        dailyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyRequests:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        dailyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        weeklyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-        monthlyCostNanos:
-          type: integer
-          format: int64
-          minimum: 0
-          nullable: true
-      additionalProperties: false
     GuardrailPolicyInput:
       type: object
       properties:
@@ -23719,8 +23683,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        budgets:
-          $ref: '#/components/schemas/GuardrailBudgetInput'
       additionalProperties: false
     GuardrailCreateRequest:
       allOf:
@@ -23818,42 +23780,6 @@ components:
           items:
             type: object
             additionalProperties: true
-        daily_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        weekly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        monthly_limit_requests:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        daily_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        weekly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-        monthly_limit_cost_nanos:
-          type: integer
-          format: int64
-          nullable: true
-          deprecated: true
-          description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
         created_at:
           type: string
           format: date-time
@@ -23965,42 +23891,6 @@ components:
               items:
                 type: object
                 additionalProperties: true
-            daily_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            weekly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            monthly_limit_requests:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            daily_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            weekly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
-            monthly_limit_cost_nanos:
-              type: integer
-              format: int64
-              nullable: true
-              deprecated: true
-              description: 已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。
             created_at:
               type: string
               format: date-time

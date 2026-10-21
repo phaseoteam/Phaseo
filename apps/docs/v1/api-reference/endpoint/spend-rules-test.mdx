@@ -1,0 +1,10 @@
+---
+title: "Send a test spend alert"
+sidebarTitle: "Send test"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml POST /spend-rules/{id}/test"
+description: "Send the alert a spend rule would send now, marked TEST."
+"og:image": "https://phaseo.app/og/dynamic?title=Send%20a%20test%20spend%20alert&description=Send%20the%20alert%20a%20spend%20rule%20would%20send%20now%2C%20marked%20TEST.&pathname=/docs/v1/api-reference/endpoint/spend-rules-test"
+---
+
+Requires `spend_rules:write`. The test goes to the rule's destinations, or to the Spend Alerts route when the rule has none. Nothing is recorded. A workspace can send five tests a minute; more return `429` with `Retry-After`.
