@@ -122,7 +122,7 @@ begin
       nullif(model ->> 'availableFrom', '')::timestamptz,
       nullif(model ->> 'deprecatedAt', '')::timestamptz,
       nullif(model ->> 'shutdownAt', '')::timestamptz,
-      jsonb_build_object('pricing', coalesce(model -> 'pricing', '[]'::jsonb), 'serviceTiers', coalesce(model->'serviceTiers','[]'::jsonb))
+      jsonb_build_object('pricing', coalesce(model -> 'pricing', '[]'::jsonb), 'serviceTiers', coalesce(model->'serviceTiers','[]'::jsonb), 'declarations', model->'declarations')
     )
     on conflict (run_id, model_slug) do update set
       provider_model_slug = excluded.provider_model_slug,
@@ -158,7 +158,7 @@ begin
       nullif(model ->> 'deprecatedAt', '')::timestamptz,
       nullif(model ->> 'shutdownAt', '')::timestamptz,
       'active', now(), p_run_id,
-      jsonb_build_object('pricing', coalesce(model -> 'pricing', '[]'::jsonb), 'serviceTiers', coalesce(model->'serviceTiers','[]'::jsonb)),
+      jsonb_build_object('pricing', coalesce(model -> 'pricing', '[]'::jsonb), 'serviceTiers', coalesce(model->'serviceTiers','[]'::jsonb), 'declarations', model->'declarations'),
       now()
     )
     on conflict (provider_slug, model_slug) do update set

@@ -55,7 +55,7 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 	for (let index = 0; index < providerModelIds.length; index += 100) {
 		const batch = providerModelIds.slice(index, index + 100);
 		for (let offset = 0; ; offset += 500) {
-			const result = await context.client.from("v2_route_capabilities")
+			const result = await context.client.from("v2_effective_route_capabilities")
 				.select("provider_model_id,capability_id,status,metadata")
 				.in("provider_model_id", batch)
 				.or("metadata->data_policy.not.is.null,capability_id.in.(batch,files.upload,files.list,files.retrieve)")

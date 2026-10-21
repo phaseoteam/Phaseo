@@ -46,7 +46,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_pricing_without_stealth_redaction
       capability.capability_id,
       capability.status as capability_status,
       capability.params,
-      capability.metadata->'data_policy' as data_policy,
+      public.resolve_catalog_data_policy(route.provider_model_id, capability.capability_id) as data_policy,
       capability.max_input_tokens,
       capability.max_output_tokens as capability_max_output_tokens
     from public.v2_model_provider_routes route

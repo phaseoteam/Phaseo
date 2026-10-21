@@ -117,7 +117,7 @@ function nextPollAt(intervalSeconds: number, failures: number): string {
 }
 
 function publicPreview(preview: ProviderCatalogPreview) {
-	return { valid: preview.valid, modelCount: preview.modelCount, truncated: preview.truncated, issues: preview.issues, models: preview.models };
+	return { valid: preview.valid, modelCount: preview.modelCount, truncated: preview.truncated, issues: preview.issues, warnings: preview.warnings ?? [], models: preview.models };
 }
 
 /**
@@ -215,7 +215,7 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 		if (!("preview" in catalog)) {
 			const now = new Date().toISOString();
 			await client.from("provider_catalog_sync_runs").update({ status: "not_modified", completed_at: now }).eq("id", runId);
-			await client.from("provider_catalog_sources").update({ last_polled_at: now, consecutive_failures: 0, last_error: null, etag: catalog.etag, last_modified: catalog.lastModified, updated_at: now }).eq("provider_slug", providerSlug);
+			await client.from("provider_catalog_sources").update({ last_polled_at: now, last_success_at: now, consecutive_failures: 0, last_error: null, etag: catalog.etag, last_modified: catalog.lastModified, updated_at: now }).eq("provider_slug", providerSlug);
 			// A review or edit arriving during the fetch keeps its refresh flag and due time.
 			await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
 			return { status: "not_modified", runId };
@@ -273,9 +273,9 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 		}
 		await renewLease(true);
 		const now = new Date().toISOString();
-		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], checked_at: now }, completed_at: now }).eq("id", runId);
-		await client.from("provider_catalog_sources").update({ last_success_at: source.management_mode === "managed" ? now : undefined, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: rateLimitsError, ...(rateLimitsError ? { refresh_requested: true, next_poll_at: new Date(Date.now() + 5 * 60_000).toISOString() } : {}), updated_at: now }).eq("provider_slug", providerSlug);
-		if (source.management_mode === "remote") await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
+		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], warnings: preview.warnings ?? [], checked_at: now }, completed_at: now }).eq("id", runId);
+		await client.from("provider_catalog_sources").update({ last_success_at: now, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: rateLimitsError, ...(rateLimitsError ? { refresh_requested: true, next_poll_at: new Date(Date.now() + 5 * 60_000).toISOString() } : {}), updated_at: now }).eq("provider_slug", providerSlug);
+		await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
 		await notifyPendingProviderModels(env).catch(() => { console.error("provider_model_notification_failed"); });
 		return { status: "applied", runId, modelCount: Number(applied.data ?? preview.modelCount) };
 	} catch (error) {
@@ -294,7 +294,7 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 export async function runProviderCatalogPollingJob(env: Env, limit = 20): Promise<{ attempted: number; applied: number; failed: number }> {
 	const client = getDataClient(env);
 	const now = new Date().toISOString();
-	const sources = await client.from("provider_catalog_sources").select("provider_slug").eq("status", "active").or(`next_poll_at.lte.${now},and(refresh_requested.eq.true,next_poll_at.is.null)`).or("management_mode.eq.remote,refresh_requested.eq.true").order("next_poll_at", { ascending: true, nullsFirst: true }).limit(limit);
+	const sources = await client.from("provider_catalog_sources").select("provider_slug").eq("status", "active").or(`next_poll_at.lte.${now},and(refresh_requested.eq.true,next_poll_at.is.null)`).order("next_poll_at", { ascending: true, nullsFirst: true }).limit(limit);
 	if (sources.error) throw sources.error;
 	let applied = 0;
 	let failed = 0;

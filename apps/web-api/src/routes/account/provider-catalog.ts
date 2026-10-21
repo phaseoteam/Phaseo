@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { catalogDeclarationsJsonSchema, type CatalogDeclarations } from "./provider-catalog-declarations";
+import { catalogDataPolicyJsonSchema } from "./provider-catalog-data-policy";
 import { normalizeTieredProviderCatalog, type ProviderCatalogTier } from "./provider-catalog-tiers";
 import { normalizeProviderRateLimits, rateLimitJsonSchema, rateLimitsJsonSchema, upstreamModelSlugs, type ProviderCatalogRateLimit } from "./provider-catalog-rate-limits";
 
@@ -22,6 +24,8 @@ export type ProviderCatalogPriceCondition = {
 
 export type ProviderCatalogModelPreview = {
 	serviceTiers?: ProviderCatalogTier[];
+	catalogVersion?: "1.2";
+	declarations?: CatalogDeclarations;
 	id: string;
 	name: string;
 	description: string | null;
@@ -124,7 +128,22 @@ export const providerCatalogV11JsonSchema = {
 	},
 } as const;
 
+export const providerCatalogV12JsonSchema = {
+ ...providerCatalogV11JsonSchema,
+ $id: "https://phaseo.app/schemas/provider-catalog.v1.2.json",
+ description: "Version 1.2. Typed model/media, parameter, pricing, capacity and deployment declarations, plus capability-scoped privacy policy. Claims stored for review do not enable execution or billing. Phaseo owns privacy approval.",
+ properties: { ...providerCatalogV11JsonSchema.properties, schema_version: { const: "1.2" } },
+ $defs: { ...providerCatalogV11JsonSchema.$defs,
+ catalogDeclarations: catalogDeclarationsJsonSchema,
+ model: { ...providerCatalogV11JsonSchema.$defs.model, properties: { ...providerCatalogV11JsonSchema.$defs.model.properties, declarations: { $ref: "#/$defs/catalogDeclarations" } } },
+ serviceTier: {
+  ...providerCatalogV11JsonSchema.$defs.serviceTier,
+  properties: { ...providerCatalogV11JsonSchema.$defs.serviceTier.properties, data_policy: catalogDataPolicyJsonSchema, declarations: { $ref: "#/$defs/catalogDeclarations" } },
+ } },
+} as const;
+
 export type ProviderCatalogPreview = {
+	warnings?: ProviderCatalogIssue[];
 	valid: boolean;
 	modelCount: number;
 	models: ProviderCatalogModelPreview[];
@@ -295,9 +314,9 @@ function parametersForCapability(value: Record<string, unknown>): string[] {
 
 export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPreview {
 	const versioned = asRecord(payload);
-	if (versioned?.schema_version === "1.1") return normalizeTieredProviderCatalog(versioned, normalizeProviderCatalog);
+	if (["1.1", "1.2"].includes(String(versioned?.schema_version))) return normalizeTieredProviderCatalog(versioned!, normalizeProviderCatalog);
 	if (versioned?.schema_version === "1.0") { const { schema_version: _version, ...legacy } = versioned; return normalizeProviderCatalog(legacy); }
-	if (versioned?.schema_version !== undefined) return { valid: false, modelCount: 0, models: [], allModels: [], issues: [{ path: "schema_version", message: "Unsupported catalog version. Use 1.0 or 1.1." }], truncated: false };
+	if (versioned?.schema_version !== undefined) return { valid: false, modelCount: 0, models: [], allModels: [], issues: [{ path: "schema_version", message: "Unsupported catalog version. Use 1.0, 1.1 or 1.2." }], truncated: false };
 	const entries = modelEntries(payload);
 	const issues: ProviderCatalogIssue[] = [];
 	const body = asRecord(payload);
@@ -369,7 +388,7 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		const deprecatedAt = timestamp(model.deprecated_at);
 		const shutdownAt = timestamp(model.shutdown_at);
 		for (const [key, rawValue, normalized] of [["available_from", model.available_from, availableFrom], ["deprecated_at", model.deprecated_at, deprecatedAt], ["shutdown_at", model.shutdown_at, shutdownAt]] as const) {
-			if (rawValue != null && normalized === null) issues.push({ path: `data[${index}].${key}`, message: "Expected an ISO 8601 timestamp with an explicit timezone (Z or ±HH:MM)." });
+			if (rawValue != null && normalized === null) issues.push({ path: `data[${index}].${key}`, message: "Expected an ISO 8601 timestamp with an explicit timezone (Z or Ã‚Â±HH:MM)." });
 		}
 		if ((availableFrom && deprecatedAt && deprecatedAt <= availableFrom) || (deprecatedAt && shutdownAt && shutdownAt <= deprecatedAt) || (availableFrom && shutdownAt && shutdownAt <= availableFrom)) { issues.push({ path: `data[${index}]`, message: "Lifecycle timestamps must be in chronological order." }); continue; }
 		if (issues.some((issue) => issue.path.startsWith(`data[${index}].`) && issue.message.includes("timestamp"))) continue;

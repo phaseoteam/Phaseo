@@ -1,4 +1,6 @@
 "use client";
+
+import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
 
 import React, {
@@ -524,7 +526,7 @@ export function getPlanZdrEligibility(
 ): boolean | null {
 	const providerZdr = provider.provider.zero_data_retention;
 	const tierPolicy = provider.provider.service_tier_data_policies?.[plan];
-	const policies = getProviderModelScopeForPlan(provider, plan).map((model) => model.data_policy);
+	const policies = getProviderModelScopeForPlan(provider, plan).map((model) => currentCatalogDataPolicy(model.data_policy));
 	return resolveScopedZdr(providerZdr, policies, tierPolicy);
 }
 
@@ -630,7 +632,7 @@ function ProviderServiceTierInfoIcons({
 						: "statusDescriptions.inactive";
 	const tierPolicy = provider.provider.service_tier_data_policies?.[plan] ?? null;
 	const capabilityPolicies = providerModels
-		.map((providerModel) => providerModel.data_policy)
+		.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy))
 		.filter((policy): policy is NonNullable<typeof policy> => Boolean(policy));
 	const policies = tierPolicy ? [tierPolicy] : capabilityPolicies;
 	const dataPolicy = (policies.length > 0 ? policies : [null]).map((policy) => ({
@@ -640,7 +642,7 @@ function ProviderServiceTierInfoIcons({
 		contractNotes: provider.provider.data_policy_contract_notes ?? null,
 		notes: policy?.reason ?? provider.provider.prompt_training_notes ?? null,
 		sourceUrl: policy?.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
-		promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
+		promptTrainingPolicy: policy?.trainingPolicy ?? provider.provider.prompt_training_policy ?? null,
 		zeroDataRetention: getPlanZdrEligibility(provider, plan),
 	}));
 

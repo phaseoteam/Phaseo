@@ -12,7 +12,7 @@ const loadPriceCardMock = vi.hoisted(() => vi.fn());
 vi.mock("@/runtime/env", () => ({
     getSupabaseAdmin: () => ({
         from: (table: string) => {
-            if (table === "v2_model_provider_routes" || table === "v2_route_capabilities") {
+            if (table === "v2_model_provider_routes" || table === "v2_effective_route_capabilities") {
                 const rows = table === "v2_model_provider_routes"
                     ? queryState.providerRows.map((row) => ({
                         ...row,

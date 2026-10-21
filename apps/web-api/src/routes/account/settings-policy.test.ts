@@ -143,7 +143,7 @@ describe("account policy settings routes", () => {
 				{ provider_model_id: "pm-openai", model_slug: "openai/gpt-test" },
 				{ provider_model_id: "pm-anthropic", model_slug: "anthropic/claude-test" },
 			]), { status: 200 });
-			if (url.includes("v2_route_capabilities")) return new Response(JSON.stringify([
+			if (url.includes("v2_effective_route_capabilities")) return new Response(JSON.stringify([
 				{ provider_model_id: "pm-openai", capability_id: "responses" },
 				{ provider_model_id: "pm-anthropic", capability_id: "messages" },
 			]), { status: 200 });
@@ -352,7 +352,7 @@ describe("account policy settings routes", () => {
 				return new Response(JSON.stringify(providers), { status: 200 });
 			}
 			if (url.includes("data_api_provider_models")) return new Response(JSON.stringify([{ provider_id: "openai", api_model_id: "gpt-test", internal_model_id: "openai/gpt-test", is_active_gateway: true }]), { status: 200 });
-			if (url.includes("v2_route_capabilities")) {
+			if (url.includes("v2_effective_route_capabilities")) {
                 expect(new URL(url).searchParams.get("or")).toContain("metadata->data_policy.not.is.null");
                 expect(new URL(url).searchParams.get("provider_model_id")).toBe("in.(pm-native)");
                 expect(new URL(url).searchParams.get("limit")).toBe("500");

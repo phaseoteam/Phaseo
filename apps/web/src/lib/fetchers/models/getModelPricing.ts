@@ -127,6 +127,11 @@ export interface ProviderModel {
 }
 
 export interface ProviderModelDataPolicy {
+    catalogManaged?: boolean;
+    validUntil?: string | null;
+    trainingPolicy?: string | null;
+    termsOfServiceUrl?: string | null;
+    requirements?: { contract_mode: string; account_settings: Array<{ id: string; description: string; documentation_url: string }> } | null;
     zeroDataRetention?: boolean | null;
     tier?: string | null;
     confidence?: string | null;

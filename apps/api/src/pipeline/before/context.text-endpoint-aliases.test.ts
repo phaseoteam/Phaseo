@@ -179,6 +179,8 @@ describe("fetchGatewayContext text endpoint aliases", () => {
 			"mistral",
 			"mistral/devstral-2",
 			expect.any(String),
+			null,
+			false,
 		);
 	});
 

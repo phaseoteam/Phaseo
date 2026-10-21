@@ -23,7 +23,7 @@ describe("signed provider catalog webhook",()=>{
  }
  it("accepts a valid signed event and forwards its id to the idempotent sync",async()=>{expect((await send()).status).toBe(202);expect(syncProviderCatalog).toHaveBeenCalledWith(env,"sample","webhook","event-1");});
  it("publishes provider-declared rate limits in the schema and OpenAPI contract",async()=>{
-  for(const version of ["1.0","1.1"]){const schema=await (await app.request(`https://phaseo.app/api/internal/provider-catalog/schema?version=${version}`)).json() as any;expect(schema.properties.rate_limits.items).toEqual({$ref:"#/$defs/rateLimit"});expect(Object.keys(schema.$defs.rateLimit.properties)).toEqual(["model","requests_per_minute","requests_per_day","tokens_per_minute","tokens_per_day"]);}
+  for(const version of ["1.0","1.1","1.2"]){const schema=await (await app.request(`https://phaseo.app/api/internal/provider-catalog/schema?version=${version}`)).json() as any;expect(schema.properties.rate_limits.items).toEqual({$ref:"#/$defs/rateLimit"});expect(Object.keys(schema.$defs.rateLimit.properties)).toEqual(["model","requests_per_minute","requests_per_day","tokens_per_minute","tokens_per_day"]);if(version==="1.2")expect(schema.$defs.serviceTier.properties.data_policy).toBeDefined();}
   const openapi=await (await app.request("https://phaseo.app/api/internal/provider-catalog/openapi")).json() as any;
   expect(openapi.info.description).toContain("rate_limits");expect(openapi.components.schemas.ProviderCatalogRateLimits.items).toEqual({$ref:"#/components/schemas/ProviderCatalogRateLimit"});
  });

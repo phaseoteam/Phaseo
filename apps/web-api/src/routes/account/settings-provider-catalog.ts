@@ -120,6 +120,7 @@ function pricingDocument(value: unknown): Record<string, unknown>[] {
 
 function catalogModelDocument(model: any, capabilities: Array<{ id: string; parameters: string[] }>, pricing: unknown): Record<string, unknown> {
 	return {
+		...(model.metadata?.declarations ? { declarations: model.metadata.declarations } : {}),
 		id: String(model.model_slug),
 		name: String(model.name ?? model.model_slug),
 		description: model.description ?? null,
@@ -136,6 +137,8 @@ function catalogModelDocument(model: any, capabilities: Array<{ id: string; para
 		pricing: pricingDocument(pricing),
 		...(Array.isArray(model.metadata?.serviceTiers) && model.metadata.serviceTiers.length ? {
 			service_tiers: model.metadata.serviceTiers.map((tier: any) => ({
+				...(tier.declarations ? { declarations: tier.declarations } : {}),
+				...(tier.dataPolicy !== undefined ? { data_policy: tier.dataPolicy } : {}),
 				service_tier: tier.serviceTier, provider_model_slug: tier.providerModelSlug,
 				upstream_service_tier: tier.upstreamServiceTier, availability: tier.availability,
 				pricing: pricingDocument(tier.pricing),
@@ -146,7 +149,7 @@ function catalogModelDocument(model: any, capabilities: Array<{ id: string; para
 
 function catalogDocument(data: Record<string, any>[]) {
 	if (!data.some((model) => model.service_tiers?.length)) return { data };
-	return { schema_version: "1.1", data: data.map(({ pricing, provider_model_slug, ...model }) => ({
+	return { schema_version: data.some((model) => model.declarations !== undefined || model.service_tiers?.some((tier: any) => tier.data_policy !== undefined || tier.declarations !== undefined)) ? "1.2" : "1.1", data: data.map(({ pricing, provider_model_slug, ...model }) => ({
 		...model,
 		service_tiers: model.service_tiers?.length ? model.service_tiers : [{ service_tier: "standard", provider_model_slug, pricing, availability: model.availability }],
 	})) };
@@ -229,6 +232,7 @@ async function readProviderCatalog(client: any, providerSlug: string, canEditDes
 			return standard ? { ...model, provider_model_slug: standard.provider_model_slug, pricing: standard.pricing } : model;
 		}) : observedModels,
 		latest_run: runResult.data?.[0] ?? null,
+		declaration_warnings: normalizeProviderCatalog(effectiveDocument ?? managedCatalog ?? observedDocument).warnings ?? [],
 		rate_limits: { version: sourceResult.data.rate_limits_updated_at ?? null, limits: rateLimitsFromRows(rateLimitsResult.data ?? []) },
 	};
 }
@@ -385,7 +389,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			return c.json({ ok: true, ...catalog, sync_warning: syncWarning }, 200, PRIVATE_NO_STORE_HEADERS);
 		}
 		const managedDocument = catalogDocument(preview.allModels.map((model) => catalogModelDocument({
-			metadata: { serviceTiers: model.serviceTiers },
+			metadata: { serviceTiers: model.serviceTiers, declarations: model.declarations },
 			model_slug: model.id,
 			provider_model_slug: model.providerModelSlug,
 			name: model.name,

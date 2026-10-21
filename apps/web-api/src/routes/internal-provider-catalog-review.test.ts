@@ -14,6 +14,25 @@ const CONTACT_ID = "22222222-2222-4222-8222-222222222222";
 describe("provider application review API", () => {
 	afterEach(() => vi.unstubAllGlobals());
 
+	it.each(["user", "admin"])("restricts privacy approval to Phaseo admins (%s)", async (role) => {
+		let saved: any = null;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return Response.json({ id: ADMIN_ID });
+			if (url.includes("/rest/v1/users")) return Response.json([{ role }]);
+			if (url.includes("provider_catalog_sources")) return Response.json({ catalog_url: "https://provider.example/catalog", management_mode: "remote" });
+			if (url.includes("provider_catalog_policy_approvals")) { saved = JSON.parse(String(init?.body)); return Response.json([]); }
+			throw new Error("Unexpected privacy approval request");
+		}));
+		const response = await app.request("https://phaseo.app/api/internal/provider-catalog/providers/sample/data-policy-approval", {
+			method: "PUT", headers: { authorization: "Bearer test", "content-type": "application/json" },
+			body: JSON.stringify({ enabled: true, privacy_policy_url: "https://provider.example/privacy" }),
+		}, env, { waitUntil() {}, passThroughOnException() {} } as never);
+		expect(response.status).toBe(role === "admin" ? 200 : 401);
+		if (role === "admin") expect(saved).toMatchObject({ provider_slug: "sample", approved_by: ADMIN_ID, catalog_url: "https://provider.example/catalog", enabled: true });
+		else expect(saved).toBeNull();
+	});
+
 	it("preserves submitted service tiers when approving a model revision", async () => {
 		const tiers = [{ serviceTier: "standard", providerModelSlug: "base", pricing: [] }, { serviceTier: "fast", providerModelSlug: "fast", pricing: [] }];
 		let staged: Record<string, unknown> | null = null;
