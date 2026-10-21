@@ -27,6 +27,8 @@ import type { PriceCard } from "../pricing";
 import { parseW3cTraceContext } from "@observability/trace-context";
 import { detectClientAttribution } from "./clientAttribution";
 import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
+import { hasConfiguredKeyLimits } from "./context.shared";
+import { shadowSpendLimitOnce } from "@core/spend-limits";
 export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
@@ -452,6 +454,8 @@ export async function guardContext(args: {
     model: string;
     requestId: string;
     internal?: boolean;
+    /** OAuth requests carry the client ID in apiKeyId; the spend-limit shadow skips them. */
+    oauth?: boolean;
     testingMode?: boolean;
     internalOnly?: boolean;
     disableCache?: boolean;
@@ -478,6 +482,11 @@ export async function guardContext(args: {
                     workspace_id: args.workspaceId,
                 }),
             };
+        }
+
+        if (!args.internal && !args.oauth && (!context.keyLimit.ok || hasConfiguredKeyLimits(context.keyLimit))) {
+            // Shadow mode only: compares the spend-limit coordinator with this check, in the background.
+            shadowSpendLimitOnce({ workspaceId: args.workspaceId, keyId: args.apiKeyId, requestId: args.requestId }, context.keyLimit);
         }
 
         if (!args.internal && !context.keyLimit.ok) {

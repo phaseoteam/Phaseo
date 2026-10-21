@@ -7,6 +7,8 @@ import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
 import { applyRequestClassifiers } from "../classification/request-classifiers";
+import { recordShadowSpend } from "@core/spend-limits";
+import { hasConfiguredKeyLimits } from "../before/context.shared";
 import type { PipelineContext } from "../before/types";
 import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
 import type { RequestResult } from "../execute";
@@ -645,6 +647,18 @@ export async function handleSuccessAudit(
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     });
+
+	// Shadow mode only: the success row now exists, so the spend-limit coordinator can count it.
+	if (shouldPersistGatewayAudit(ctx) && ctx.meta.authMethod !== "oauth" && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
+		recordShadowSpend({
+			workspaceId: ctx.workspaceId,
+			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
+			billingRequestId: ctx.billingRequestId,
+			requestId: ctx.requestId,
+			costNanos: totalNanos,
+			internal: ctx.internal,
+		});
+	}
 
 	if (!isStealthRequest(ctx) && !byok && ctx.teamSettings?.dataContributionEnabled === true) {
 		const pricing = (usageWithMultimodal as any)?.pricing;
