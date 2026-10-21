@@ -29,6 +29,7 @@ import {
 	type PromptVariableType,
 	type RenderedPromptMessage,
 } from "./promptTemplates";
+import { PresetTemplateCode, PresetTemplateRun } from "./PresetTemplateRun";
 
 type DraftPart = { key: string; type: "text"; text: string } | { key: string; type: "variable"; name: string };
 /** Parts stay in their saved order, so text and image variables can interleave. */
@@ -239,10 +240,16 @@ export function PresetPromptTemplateEditor({
 	draft,
 	onChange,
 	presetReference,
+	savedReference = null,
+	hasUnsavedChanges = false,
 }: {
 	draft: PromptTemplateDraft;
 	onChange: (next: PromptTemplateDraft) => void;
 	presetReference: string;
+	/** How requests reach the saved preset; null until it is saved. */
+	savedReference?: string | null;
+	/** True when the template differs from the saved one, which is what runs. */
+	hasUnsavedChanges?: boolean;
 }) {
 	const t = useTranslations("SettingsUI");
 	const build = useMemo(() => buildPromptTemplate(draft), [draft]);
@@ -260,12 +267,6 @@ export function PresetPromptTemplateEditor({
 		if (next.type !== "string") delete next.max_length;
 		onChange({ ...draft, variables: { ...draft.variables, [name]: next } });
 	};
-
-	const requestBody = JSON.stringify(
-		{ prompt: { id: presetReference, variables: preview.ok ? preview.values : {} } },
-		null,
-		2,
-	);
 
 	return (
 		<div className="space-y-8">
@@ -468,9 +469,8 @@ export function PresetPromptTemplateEditor({
 									))}
 								</div>
 							</div>
-							<div className="space-y-2">
-								<div className="text-xs font-medium text-muted-foreground">{t("presetTemplate.requestTitle")}</div>
-								<pre className="overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">{requestBody}</pre>
+							<div className="min-w-0 space-y-2">
+								<PresetTemplateCode reference={presetReference} variables={preview.values} />
 								<p className="text-xs text-muted-foreground">{t("presetTemplate.requestHelp")}</p>
 							</div>
 						</div>
@@ -480,6 +480,7 @@ export function PresetPromptTemplateEditor({
 							<IssueList issues={preview.issues} />
 						</div>
 					)}
+					<PresetTemplateRun savedReference={savedReference} hasUnsavedChanges={hasUnsavedChanges} variables={preview.ok ? preview.values : null} />
 				</section>
 			) : null}
 		</div>
