@@ -3672,6 +3672,8 @@ struct WorkspaceAutoTopUpUpdate {
 	std::optional<std::string> payment_method_id;
 };
 
+using WorkspaceBillingTimeZone = std::any;
+
 struct WorkspaceBudget {
 	std::string created_at;
 	std::optional<std::string> created_by;
@@ -3999,6 +4001,9 @@ struct WorkspaceNotificationRouteMap {
 	std::vector<std::string> model_substitution;
 	std::vector<std::string> payment_method_expiring;
 	std::vector<std::string> rate_limit_throttled;
+	std::vector<std::string> spend_alert;
+	std::vector<std::string> spend_blocked;
+	std::vector<std::string> spend_report;
 };
 
 struct WorkspaceNotificationRouteResponse {
@@ -4156,10 +4161,12 @@ struct WorkspaceSettingsUpdateRequest {
 using WorkspaceSpendAttribution = std::any;
 
 struct WorkspaceSpendSettings {
+	std::string billing_time_zone;
 	std::any department_attribution;
 };
 
 struct WorkspaceSpendSettingsUpdate {
+	std::string billing_time_zone;
 	std::any department_attribution;
 };
 

@@ -337,7 +337,8 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 
 	// Routed notifications have their own destination snapshot and delivery job.
 	// Keep them out of the legacy owner-email drain so a routed model_deprecation
-	// event is not also emailed here. The owner and admin copies of a deprecation
+	// event is not also emailed here. Spend rule events (spend_alert, spend_blocked,
+	// spend_report) are routed-only too. The owner and admin copies of a deprecation
 	// notice are separate model_deprecation_email rows, which this drain sends.
 	// Feedback requests are drained separately below so a daily batch never delays
 	// transactional email.
@@ -346,7 +347,7 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 		.select(columns)
 		.is("sent_at", null)
 		.lt("attempts", 5)
-		.not("kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled")')
+		.not("kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled","spend_alert","spend_blocked","spend_report")')
 		.order("created_at", { ascending: true })
 		.limit(limit);
 

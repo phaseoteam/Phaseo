@@ -15,6 +15,7 @@ CREATE TABLE "public"."notification_destinations" (
   "updated_at"         timestamp with time zone NOT NULL DEFAULT now(),
   "deleted_at"         timestamp with time zone,
   CONSTRAINT "notification_destinations_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "notification_destinations_id_workspace_id_key" UNIQUE (id, workspace_id),
   CONSTRAINT "notification_destinations_name_check" CHECK (((char_length(name) >= 1) AND (char_length(name) <= 100))),
   CONSTRAINT "notification_destinations_pkey" PRIMARY KEY (id),
   CONSTRAINT "notification_destinations_status_check" CHECK ((status = ANY (ARRAY['active'::text, 'disabled'::text, 'deleted'::text]))),

@@ -8953,6 +8953,16 @@
 			"ja": "キーに部門が設定されていない場合に、支出ルールが個人の支出をどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門が常に優先されます。",
 			"zh-Hans": "当某人的密钥没有自己的部门时，支出规则如何将其支出计入部门：all 计入其所属的所有部门；primary 仅计入其主要部门。密钥自身的部门始终优先。",
 			"ar": "كيف تحتسب قواعد الإنفاق إنفاق الشخص ضمن الأقسام عندما لا يكون لمفتاحه قسم خاص به: all تحتسبه في كل الأقسام التي ينتمي إليها؛ وprimary في قسمه الأساسي فقط. ويُقدَّم دائمًا القسم الخاص بالمفتاح."
+		},
+		"IANA time zone for the calendar periods of spend rules that have no time zone of their own, and for spend reports. Defaults to UTC. Enforced key limits and workspace budgets always use UTC.": {
+			"es": "Zona horaria IANA para los periodos naturales de las reglas de gasto que no tienen zona horaria propia y para los informes de gasto. El valor predeterminado es UTC. Los límites de clave y los presupuestos del espacio de trabajo que se aplican siempre usan UTC.",
+			"fr": "Fuseau horaire IANA des périodes calendaires des règles de dépenses qui n’ont pas de fuseau propre, et des rapports de dépenses. UTC par défaut. Les limites de clé et les budgets d’espace de travail appliqués utilisent toujours UTC.",
+			"de": "IANA-Zeitzone für die Kalenderzeiträume von Ausgabenregeln ohne eigene Zeitzone und für Ausgabenberichte. Standard ist UTC. Durchgesetzte Schlüssellimits und Workspace-Budgets verwenden immer UTC.",
+			"pt-BR": "Fuso horário IANA para os períodos de calendário das regras de gastos que não têm fuso próprio e para os relatórios de gastos. O padrão é UTC. Os limites de chave e os orçamentos do workspace aplicados sempre usam UTC.",
+			"hi": "उन खर्च नियमों की कैलेंडर अवधियों के लिए IANA समय क्षेत्र जिनका अपना कोई समय क्षेत्र नहीं है, और खर्च रिपोर्ट के लिए। डिफ़ॉल्ट UTC है। लागू की गई कुंजी सीमाएँ और वर्कस्पेस बजट हमेशा UTC का उपयोग करते हैं।",
+			"ja": "独自のタイムゾーンを持たない支出ルールの暦期間と支出レポートに使う IANA タイムゾーン。既定値は UTC です。適用されるキーの上限とワークスペース予算は常に UTC を使います。",
+			"zh-Hans": "用于没有自身时区的支出规则的日历周期以及支出报告的 IANA 时区。默认为 UTC。强制执行的密钥限额和工作区预算始终使用 UTC。",
+			"ar": "المنطقة الزمنية وفق IANA للفترات التقويمية لقواعد الإنفاق التي ليست لها منطقة زمنية خاصة بها، ولتقارير الإنفاق. القيمة الافتراضية UTC. تستخدم حدود المفاتيح وميزانيات مساحة العمل المطبقة دائمًا UTC."
 		}
 	},
 	"GET /apps": {

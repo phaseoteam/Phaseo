@@ -138,6 +138,18 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						<div><h3 className="text-sm font-medium">{s("Rate Limit Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Get an alert when rate limit policies reject requests, at most once an hour.")}</p></div>
 						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="rate_limit_throttled" initialDestinationIds={initialNotificationRoutes.rate_limit_throttled ?? []} /></div>
 					</div>
+					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+						<div><h3 className="text-sm font-medium">{s("Spend Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Get an alert when a spend rule crosses one of its thresholds.")}</p></div>
+						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="spend_alert" initialDestinationIds={initialNotificationRoutes.spend_alert ?? []} /></div>
+					</div>
+					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+						<div><h3 className="text-sm font-medium">{s("Spend Blocks")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Get an alert when a spend rule starts or lifts a block on requests.")}</p></div>
+						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="spend_blocked" initialDestinationIds={initialNotificationRoutes.spend_blocked ?? []} /></div>
+					</div>
+					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+						<div><h3 className="text-sm font-medium">{s("Spend Reports")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Also send the daily, weekly or monthly spend report to these destinations.")}</p></div>
+						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="spend_report" initialDestinationIds={initialNotificationRoutes.spend_report ?? []} /></div>
+					</div>
 				</div>
 			</section>
 

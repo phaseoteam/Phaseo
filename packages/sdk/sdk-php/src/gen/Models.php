@@ -6465,6 +6465,8 @@ class WorkspaceAutoTopUpUpdate
 	public $payment_method_id;
 }
 
+class WorkspaceBillingTimeZone { }
+
 class WorkspaceBudget
 {
 	/** @var string */
@@ -7009,6 +7011,12 @@ class WorkspaceNotificationRouteMap
 	public $payment_method_expiring;
 	/** @var array */
 	public $rate_limit_throttled;
+	/** @var array */
+	public $spend_alert;
+	/** @var array */
+	public $spend_blocked;
+	/** @var array */
+	public $spend_report;
 }
 
 class WorkspaceNotificationRouteResponse
@@ -7274,11 +7282,15 @@ class WorkspaceSpendAttribution { }
 class WorkspaceSpendSettings
 {
 	/** @var string */
+	public $billing_time_zone;
+	/** @var string */
 	public $department_attribution;
 }
 
 class WorkspaceSpendSettingsUpdate
 {
+	/** @var string|null */
+	public $billing_time_zone;
 	/** @var string|null */
 	public $department_attribution;
 }

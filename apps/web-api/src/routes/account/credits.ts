@@ -3,10 +3,9 @@ import { requireUser } from "@/auth/requireUser";
 import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
-import { encryptNotificationTarget, NOTIFICATION_DESTINATION_TYPES, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
+import { encryptNotificationTarget, isNotificationEventKind, NOTIFICATION_DESTINATION_TYPES, parseIanaTimeZone, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
 
 const EMPTY_TIER_SUMMARY = { lastMonthCents: 0, mtdCents: 0, teamTier: "basic" as const };
-const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled"] as const;
 
 export function parseLowBalanceThresholdNanos(value: unknown): number | null {
 	const thresholdUsd = Number(value);
@@ -267,9 +266,15 @@ creditsRouter.put("/notification-preferences", async (c) => {
 		if (body.departmentSpendAttribution !== "all" && body.departmentSpendAttribution !== "primary") return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
 		update.department_spend_attribution = body.departmentSpendAttribution;
 	}
-	if (!("auto_top_up_failure_email_enabled" in update) && !("payment_method_expiring_email_enabled" in update) && !("model_deprecation_alerts_enabled" in update) && !("model_deprecation_alerts_include_admins" in update) && !("department_spend_attribution" in update)) return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (body.billingTimeZone !== undefined) {
+		const zone = parseIanaTimeZone(body.billingTimeZone);
+		if (!zone) return c.json({ error: "invalid_time_zone" }, 400, PRIVATE_NO_STORE_HEADERS);
+		update.billing_time_zone = zone;
+	}
+	if (!("auto_top_up_failure_email_enabled" in update) && !("payment_method_expiring_email_enabled" in update) && !("model_deprecation_alerts_enabled" in update) && !("model_deprecation_alerts_include_admins" in update) && !("department_spend_attribution" in update) && !("billing_time_zone" in update)) return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.from("workspace_settings").upsert(update, { onConflict: "workspace_id" });
-	if (result.error) return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	// The database re-checks the zone against pg_timezone_names (validate_billing_time_zone trigger).
+	if (result.error) return result.error.message?.includes("invalid_time_zone") ? c.json({ error: "invalid_time_zone" }, 400, PRIVATE_NO_STORE_HEADERS) : c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
@@ -315,7 +320,7 @@ creditsRouter.put("/notification-routes/:eventKind", async (c) => {
 	if (!context) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const membership = await context.client.from("workspace_members").select("role").eq("workspace_id", workspaceId).eq("user_id", context.user.id).maybeSingle();
 	if (membership.error || !["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	if (!NOTIFICATION_EVENT_KINDS.includes(eventKind as typeof NOTIFICATION_EVENT_KINDS[number]) || destinationIds.length > 50 || destinationIds.some((id) => !/^[0-9a-f-]{36}$/i.test(id))) return c.json({ error: "invalid_notification_route" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (!isNotificationEventKind(eventKind) || destinationIds.length > 50 || destinationIds.some((id) => !/^[0-9a-f-]{36}$/i.test(id))) return c.json({ error: "invalid_notification_route" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.rpc("set_notification_event_destinations", { p_workspace_id: workspaceId, p_event_kind: eventKind, p_destination_ids: destinationIds });
 	if (result.error) return c.json({ error: result.error.message.includes("notification_destination_not_found") ? "notification_destination_not_found" : "notification_route_update_failed" }, result.error.message.includes("notification_destination_not_found") ? 404 : 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);

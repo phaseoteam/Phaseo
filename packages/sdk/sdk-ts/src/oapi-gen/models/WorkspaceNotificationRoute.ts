@@ -6,5 +6,8 @@ export interface WorkspaceNotificationRoute {
     | "payment_method_expiring"
     | "model_deprecation"
     | "model_substitution"
-    | "rate_limit_throttled";
+    | "rate_limit_throttled"
+    | "spend_alert"
+    | "spend_blocked"
+    | "spend_report";
 }

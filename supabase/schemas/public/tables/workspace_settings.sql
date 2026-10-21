@@ -63,6 +63,7 @@ CREATE TABLE "public"."workspace_settings" (
   "model_successor_price_policy"                 text                     NOT NULL DEFAULT 'never'::text,
   "model_successor_max_price_increase_percent"   integer                  NOT NULL DEFAULT 0,
   "department_spend_attribution"                 text                     NOT NULL DEFAULT 'all'::text,
+  "billing_time_zone"                            text                     NOT NULL DEFAULT 'UTC'::text,
   CONSTRAINT "workspace_settings_alpha_requires_beta_channel_check" CHECK (((alpha_channel_enabled = false) OR (beta_channel_enabled = true))),
   CONSTRAINT "workspace_settings_auto_routing_custom_prices_valid" CHECK (((auto_routing_spend_profile <> 'custom'::text) OR ((auto_routing_max_input_price_per_million IS
     NOT NULL) AND (auto_routing_max_input_price_per_million >= (0)::numeric) AND (auto_routing_max_output_price_per_million IS
@@ -71,6 +72,7 @@ CREATE TABLE "public"."workspace_settings" (
   CONSTRAINT "workspace_settings_auto_routing_pattern_count_valid" CHECK ((cardinality(auto_routing_allowed_patterns) <= 16)),
   CONSTRAINT "workspace_settings_auto_routing_spend_profile_valid"
     CHECK ((auto_routing_spend_profile = ANY (ARRAY['economy'::text, 'standard'::text, 'premium'::text, 'unrestricted'::text, 'custom'::text]))),
+  CONSTRAINT "workspace_settings_billing_time_zone_check" CHECK (((char_length(billing_time_zone) >= 1) AND (char_length(billing_time_zone) <= 64))),
   CONSTRAINT "workspace_settings_data_contribution_classifier_sample_rate_che"
     CHECK (((data_contribution_classifier_sample_rate_bps >= 0) AND (data_contribution_classifier_sample_rate_bps <= 10000))),
   CONSTRAINT "workspace_settings_data_contribution_consent_check" CHECK (((NOT data_contribution_enabled) OR ((data_contribution_policy_version IS
@@ -111,6 +113,11 @@ CREATE TRIGGER protect_data_contribution_settings
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_data_contribution_settings();
 
+CREATE TRIGGER validate_billing_time_zone
+  BEFORE INSERT OR UPDATE OF billing_time_zone ON public.workspace_settings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.validate_workspace_billing_time_zone();
+
 CREATE POLICY "team_settings_insert_own_team" ON "public"."workspace_settings"
   FOR INSERT
   TO "authenticated"
@@ -136,6 +143,8 @@ COMMENT ON COLUMN "public"."workspace_settings"."auto_routing_revision" IS 'Immu
 COMMENT ON COLUMN "public"."workspace_settings"."auto_routing_spend_profile" IS 'Hard price-ceiling profile applied before phaseo/auto scores candidates.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."auto_top_up_failure_email_enabled" IS 'Email the workspace owner when an automatic credit top-up cannot be completed.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."billing_time_zone" IS 'IANA time zone for spend rule calendar periods (rules with a null time_zone) and spend reports. Validated against pg_timezone_names by public.validate_workspace_billing_time_zone. Enforced key limits and workspace budgets stay on UTC.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."department_spend_attribution" IS 'How spend rules count a person''s spend toward departments when their key has no department: all (every department they belong to) or primary (only their primary one). A key''s own department always wins. See private.spend_scope_departments.';
 

@@ -433,6 +433,7 @@ export type { WorkspaceAuditEventListResponse } from "./WorkspaceAuditEventListR
 export type { WorkspaceAuditEventMetadata } from "./WorkspaceAuditEventMetadata.js";
 export type { WorkspaceAutoTopUpSettings } from "./WorkspaceAutoTopUpSettings.js";
 export type { WorkspaceAutoTopUpUpdate } from "./WorkspaceAutoTopUpUpdate.js";
+export type { WorkspaceBillingTimeZone } from "./WorkspaceBillingTimeZone.js";
 export type { WorkspaceBudget } from "./WorkspaceBudget.js";
 export type { WorkspaceBudgetDeleteResponse } from "./WorkspaceBudgetDeleteResponse.js";
 export type { WorkspaceBudgetInput } from "./WorkspaceBudgetInput.js";

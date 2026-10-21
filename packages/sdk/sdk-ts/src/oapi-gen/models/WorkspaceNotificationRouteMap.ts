@@ -5,4 +5,7 @@ export interface WorkspaceNotificationRouteMap {
   model_substitution: string[];
   payment_method_expiring: string[];
   rate_limit_throttled: string[];
+  spend_alert: string[];
+  spend_blocked: string[];
+  spend_report: string[];
 }

@@ -8864,6 +8864,8 @@ public sealed class WorkspaceAutoTopUpUpdate
 
 }
 
+public sealed class WorkspaceBillingTimeZone { }
+
 public sealed class WorkspaceBudget
 {
 	[JsonPropertyName("created_at")]
@@ -9574,6 +9576,15 @@ public sealed class WorkspaceNotificationRouteMap
 	[JsonPropertyName("rate_limit_throttled")]
 	public List<string> RateLimitThrottled { get; set; }
 
+	[JsonPropertyName("spend_alert")]
+	public List<string> SpendAlert { get; set; }
+
+	[JsonPropertyName("spend_blocked")]
+	public List<string> SpendBlocked { get; set; }
+
+	[JsonPropertyName("spend_report")]
+	public List<string> SpendReport { get; set; }
+
 }
 
 public sealed class WorkspaceNotificationRouteResponse
@@ -9924,6 +9935,9 @@ public sealed class WorkspaceSpendAttribution { }
 
 public sealed class WorkspaceSpendSettings
 {
+	[JsonPropertyName("billing_time_zone")]
+	public string BillingTimeZone { get; set; }
+
 	[JsonPropertyName("department_attribution")]
 	public string DepartmentAttribution { get; set; }
 
@@ -9931,6 +9945,9 @@ public sealed class WorkspaceSpendSettings
 
 public sealed class WorkspaceSpendSettingsUpdate
 {
+	[JsonPropertyName("billing_time_zone")]
+	public string? BillingTimeZone { get; set; }
+
 	[JsonPropertyName("department_attribution")]
 	public string? DepartmentAttribution { get; set; }
 

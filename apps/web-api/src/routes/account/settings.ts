@@ -1300,6 +1300,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 		modelDeprecationAlertsEnabled: false,
 		modelDeprecationAlertsIncludeAdmins: false,
 		departmentSpendAttribution: "all",
+		billingTimeZone: "UTC",
 		notificationDestinations: [],
 		notificationRoutes: {},
 		obfuscateInfo: false,
@@ -1320,7 +1321,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 			.select("workspace_id,stripe_customer_id,balance_nanos,reserved_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id")
 			.eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("workspace_settings")
-			.select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled,model_deprecation_alerts_enabled,model_deprecation_alerts_include_admins,department_spend_attribution")
+			.select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled,model_deprecation_alerts_enabled,model_deprecation_alerts_include_admins,department_spend_attribution,billing_time_zone")
 			.eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("credit_ledger").select("event_time,status,amount_nanos")
 			.eq("workspace_id", workspaceId).eq("ref_type", "Stripe_Payment_Intent")
@@ -1357,6 +1358,8 @@ accountSettingsRouter.get("/credits", async (c) => {
 		modelDeprecationAlertsIncludeAdmins: Boolean(settingsResult.data?.model_deprecation_alerts_include_admins),
 		// Spend rules count a person toward all their departments unless the workspace picks primary.
 		departmentSpendAttribution: settingsResult.data?.department_spend_attribution === "primary" ? "primary" : "all",
+		// Calendar periods of spend rules without their own zone, and spend reports.
+		billingTimeZone: typeof settingsResult.data?.billing_time_zone === "string" && settingsResult.data.billing_time_zone ? settingsResult.data.billing_time_zone : "UTC",
 		notificationDestinations: (destinationsResult.data ?? []).map((row) => ({ id: String(row.id), name: String(row.name), type: String(row.type), status: String(row.status), targetPreview: String(row.target_preview), createdAt: row.created_at ?? null })),
 		notificationRoutes: (routesResult.data ?? []).reduce<Record<string, string[]>>((routes, row) => {
 			const kind = String(row.event_kind); (routes[kind] ??= []).push(String(row.destination_id)); return routes;

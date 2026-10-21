@@ -21227,13 +21227,21 @@ components:
       enum:
         - all
         - primary
+    WorkspaceBillingTimeZone:
+      type: string
+      maxLength: 64
+      description: Zona horaria IANA para los periodos naturales de las reglas de gasto que no tienen zona horaria propia y para los informes de gasto. El valor predeterminado es UTC. Los límites de clave y los presupuestos del espacio de trabajo que se aplican siempre usan UTC.
+      example: Europe/London
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
+        - billing_time_zone
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
+        billing_time_zone:
+          $ref: '#/components/schemas/WorkspaceBillingTimeZone'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -21323,6 +21331,8 @@ components:
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
+        billing_time_zone:
+          $ref: '#/components/schemas/WorkspaceBillingTimeZone'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -21442,6 +21452,9 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - spend_alert
+        - spend_blocked
+        - spend_report
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -21451,6 +21464,9 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - spend_alert
+        - spend_blocked
+        - spend_report
       properties:
         low_balance:
           type: array
@@ -21478,6 +21494,21 @@ components:
             type: string
             format: uuid
         rate_limit_throttled:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_alert:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_blocked:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_report:
           type: array
           items:
             type: string
