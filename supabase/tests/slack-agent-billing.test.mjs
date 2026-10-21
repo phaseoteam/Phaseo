@@ -141,6 +141,15 @@ try {
   await assert.rejects(record(first.id, '2026-09-01', [{ ...september[0], slack_user_id: 'bot' }]), /slack_user_id_check/);
   assert.equal(await record(reinstalled.id, '2026-09-01', [september[0]]), 1);
   assert.equal(await record(first.id, '2026-10-01', [september[0]]), 1, 'the current month is recorded but not yet due');
+  // A person listed twice in one flush keeps the earliest first answer and the highest total, instead of failing the batch.
+  assert.equal(await record(reinstalled.id, '2026-10-01', [
+    { slack_user_id: 'U0REPEAT1', first_answer_at: '2026-10-05T10:00:00Z', answers: 65 },
+    { slack_user_id: 'U0REPEAT1', first_answer_at: '2026-10-02T08:00:00Z', answers: 70 },
+    { slack_user_id: 'U0PERSON2', first_answer_at: '2026-10-03T10:00:00Z', answers: 4 },
+  ]), 2);
+  const [repeated] = await rows(`select answers, first_answer_at from public.slack_agent_monthly_people where slack_user_id = 'U0REPEAT1'`);
+  assert.equal(Number(repeated.answers), 70);
+  assert.equal(new Date(repeated.first_answer_at).toISOString(), '2026-10-02T08:00:00.000Z');
 
   // Due charges aggregate in the database: people and pooled answers per installation and month.
   const due = () => rows(`select * from public.list_slack_agent_due_charges('2026-10-01')`);

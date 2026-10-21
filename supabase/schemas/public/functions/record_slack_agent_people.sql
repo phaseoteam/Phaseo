@@ -25,7 +25,12 @@ begin
   select installation.id, p_period_start, entry.slack_user_id, entry.first_answer_at,
     greatest(coalesce(entry.answers, 0), 0), now()
   from public.slack_installations installation
-  cross join jsonb_to_recordset(p_people) as entry(slack_user_id text, first_answer_at timestamptz, answers bigint)
+  -- One row per person: a repeated person would make the upsert touch the same row twice and fail the whole flush.
+  cross join (
+    select raw.slack_user_id, min(raw.first_answer_at) as first_answer_at, max(raw.answers) as answers
+    from jsonb_to_recordset(p_people) as raw(slack_user_id text, first_answer_at timestamptz, answers bigint)
+    group by raw.slack_user_id
+  ) as entry
   where installation.id = p_installation_id
   on conflict (installation_id, period_start, slack_user_id) do update
   set answers = greatest(person.answers, excluded.answers),
