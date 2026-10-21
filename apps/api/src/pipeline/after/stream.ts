@@ -50,6 +50,7 @@ import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } f
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
+import { alertUnexpectedZeroCostMedia } from "./media-zero-cost";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -765,6 +766,7 @@ export async function handleStreamResponse(
                     totalNanosOverride = repriced.totalNanos;
                     currencyHint = repriced.currency ?? currencyHint;
                 }
+                alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos: totalNanosOverride });
 
                 const pricedWithByokSubtotal = await applyByokServiceFee({
                     workspaceId: ctx.workspaceId,
@@ -916,6 +918,7 @@ export async function handleStreamResponse(
                 tier,
                 ctx.meta
             );
+            alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final priced usage", {
                     requestId: ctx.requestId,

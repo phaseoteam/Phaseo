@@ -6,7 +6,7 @@
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import { ImagesGenerationSchema, type ImagesGenerationRequest } from "@core/schemas";
 import { sanitizePayload } from "../../utils";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { buildImagePricingRequestOptions, normalizeOpenAIImageTokenUsage } from "@core/image-request-options";
 import { upstreamTestHeaders } from "@providers/shared/testing";
@@ -160,11 +160,16 @@ function resolveOutputImageCount(body: ImagesGenerationRequest, normalized: any)
     return 1;
 }
 
-export async function collectStreamUsage(stream: ReadableStream<Uint8Array>): Promise<Record<string, unknown>> {
+/**
+ * Read an image stream's usage and count its finished images: the
+ * `image_generation.completed` / `image_edit.completed` events of the OpenAI Images API.
+ */
+export async function collectImageStreamSummary(stream: ReadableStream<Uint8Array>): Promise<{ usage: Record<string, unknown>; completedImages: number }> {
 	const reader = stream.getReader();
 	const decoder = new TextDecoder();
 	let buffer = "";
 	let usage: Record<string, unknown> = {};
+	let completedImages = 0;
 	const consume = (frame: string) => {
 		const lines = frame.split(/\r?\n/);
 		const data = lines.filter((line) => line.startsWith("data:")).map((line) => line.slice(5).trim()).join("\n");
@@ -172,6 +177,7 @@ export async function collectStreamUsage(stream: ReadableStream<Uint8Array>): Pr
 		try {
 			const payload = JSON.parse(data);
 			if (payload?.usage && typeof payload.usage === "object") usage = payload.usage;
+			if (typeof payload?.type === "string" && payload.type.endsWith(".completed")) completedImages += 1;
 		} catch {
 			// Forward malformed upstream frames unchanged; they cannot be priced.
 		}
@@ -188,7 +194,26 @@ export async function collectStreamUsage(stream: ReadableStream<Uint8Array>): Pr
 		if (done) break;
 	}
 	if (buffer.trim()) consume(buffer);
-	return usage;
+	return { usage, completedImages };
+}
+
+/**
+ * Meters for a finished image stream. Models priced per image (not by GPT Image tokens) get
+ * `output_image` from the completed events, else the requested count.
+ */
+export function imageStreamUsageMeters(
+	summary: { usage: Record<string, unknown>; completedImages: number },
+	gptImageTokenPricing: boolean,
+	requestedCount: number | undefined,
+): Record<string, unknown> {
+	const usageMeters = gptImageTokenPricing ? normalizeOpenAIImageTokenUsage(summary.usage) : { ...summary.usage };
+	usageMeters.requests = 1;
+	if (!gptImageTokenPricing && typeof usageMeters.output_image !== "number") {
+		usageMeters.output_image = summary.completedImages > 0
+			? summary.completedImages
+			: typeof requestedCount === "number" && Number.isFinite(requestedCount) && requestedCount > 0 ? requestedCount : 1;
+	}
+	return usageMeters;
 }
 
 export function usesGptImageTokenPricing(...modelIds: Array<string | null | undefined>): boolean {
@@ -218,14 +243,15 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     if (res.ok && args.stream && res.body) {
         const [clientStream, accountingStream] = res.body.tee();
         const usageFinalizer = async () => {
-            const completedUsage = await collectStreamUsage(accountingStream);
-            const usageMeters = usesGptImageTokenPricing(args.model, modifiedBody.model)
-                ? normalizeOpenAIImageTokenUsage(completedUsage)
-                : completedUsage;
-            usageMeters.requests = 1;
+            const usageMeters = imageStreamUsageMeters(
+                await collectImageStreamSummary(accountingStream),
+                usesGptImageTokenPricing(args.model, modifiedBody.model),
+                modifiedBody.n,
+            );
             const imagePixels = resolveOutputImagePixels(req, modifiedBody.n ?? 1, args.providerId);
             if (imagePixels !== undefined) usageMeters.image_pixels = imagePixels;
-            const pricedUsage = computeBill(usageMeters as Record<string, any>, args.pricingCard, buildImagePricingRequestOptions(modifiedBody, usageMeters));
+            if (!args.pricingCard) return { ...bill, usage: usageMeters };
+            const pricedUsage = computeBillAfterProviderCharge(usageMeters as Record<string, any>, args.pricingCard, buildImagePricingRequestOptions(modifiedBody, usageMeters));
             return {
                 ...bill,
                 cost_cents: pricedUsage.pricing.total_cents,
@@ -275,7 +301,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         if (typeof normalized?.quality === "string") usageMeters.quality = normalized.quality;
         if (typeof normalized?.output_format === "string") usageMeters.output_format = normalized.output_format;
 
-        const pricedUsage = computeBill(
+        const pricedUsage = computeBillAfterProviderCharge(
             usageMeters as Record<string, any>,
             args.pricingCard,
             buildImagePricingRequestOptions(modifiedBody, usageMeters),

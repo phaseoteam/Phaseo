@@ -884,12 +884,21 @@ function cacheMeterFallbackRule(
     return null;
 }
 
+export type PricingEngineOptions = {
+    /**
+     * Price a meter whose rules all have unmet conditions at its base rate instead of
+     * failing (or billing $0). Only for usage a provider has already charged for.
+     */
+    baseRateFallback?: boolean;
+};
+
 /** Main public API -- build a full pricing summary from raw usage. */
 export function computeBillSummary(
     usageRaw: Record<string, any>,
     cardInput: PriceCard,
     requestOptions?: Record<string, any>,
-    requestedPricingPlan: string = "standard"
+    requestedPricingPlan: string = "standard",
+    engineOptions?: PricingEngineOptions,
 ): PricingResult {
     // Cards from either loader may still name the fast tier `fast`; the engine prices it as `priority`.
     const card = normalizePriceCardPlans(cardInput);
@@ -947,7 +956,8 @@ export function computeBillSummary(
     });
 
     const lines: PricingBreakdownLine[] = [];
-    const unmatchedConfiguredMeters: string[] = [];
+    let unmatchedConfiguredMeters: string[] = [];
+    const unmatchedConfiguredJobs: Array<{ dim: PricingDimensionKey; ruleMeter: PricingDimensionKey; qty: number }> = [];
     const missingRequiredCacheMeters: string[] = [];
     // Tier conditions on `input_tokens` compare the full prompt length; the input_tokens
     // meter itself is still billed at its reported quantity.
@@ -1063,6 +1073,7 @@ export function computeBillSummary(
                 missingRequiredCacheMeters.push(dim);
             } else if (card.rules.some((rule) => rule.meter === ruleMeter)) {
                 unmatchedConfiguredMeters.push(dim);
+                unmatchedConfiguredJobs.push({ dim, ruleMeter, qty });
             }
             continue;
         }
@@ -1210,6 +1221,55 @@ export function computeBillSummary(
 			fallback: cachePricingFallback,
 		});
 	}
+    const baseRateFallback: NonNullable<PricingResult["base_rate_fallback"]> = [];
+    if (engineOptions?.baseRateFallback && unmatchedConfiguredJobs.length > 0) {
+        // The provider has already charged for this usage. A rule whose condition the request
+        // did not meet (an unexpected resolution, say) is a catalogue gap: bill the meter at its
+        // base rate, the cheapest of its rules on this plan, rather than failing or billing $0.
+        const stillUnmatched = new Set<string>();
+        for (const job of unmatchedConfiguredJobs) {
+            const planRules = (plan: string) => card.rules.filter((rule) => rule.pricing_plan === plan && rule.meter === job.ruleMeter);
+            const candidates = planRules(pricingPlan).length > 0 ? planRules(pricingPlan) : planRules(basePlan);
+            if (!candidates.length) {
+                stillUnmatched.add(job.dim);
+                continue;
+            }
+            const priced = candidates
+                .map((rule) => ({ rule, priced: priceWithRule(job.qty, rule, requestOptions) }))
+                .reduce((cheapest, next) => (next.priced.lineNanos < cheapest.priced.lineNanos ? next : cheapest));
+            lines.push({
+                dimension: job.dim,
+                quantity: job.qty,
+                billable_units: priced.priced.billableUnits,
+                unit_size: priced.rule.unit_size,
+                unit_price_usd: priced.priced.unitPriceUsd,
+                line_cost_usd: priced.priced.lineCostUsd,
+                line_nanos: priced.priced.lineNanos,
+                bill_mode: (priced.rule.included_quantity ?? 0) > 0 ? "over" : "all",
+                included_quantity: priced.rule.included_quantity,
+                rule_priority: effectiveRulePriority(priced.rule),
+                rule_id: priced.rule.id,
+                billing_timestamp_basis: priced.priced.billingTimestampBasis,
+                billing_timestamp_basis_configured: priced.priced.billingTimestampBasisConfigured,
+                billing_timestamp_ms: priced.priced.billingTimestampMs,
+                billing_timestamp_iso: priced.priced.billingTimestampMs === null
+                    ? null
+                    : new Date(priced.priced.billingTimestampMs).toISOString(),
+                pricing_time_window: priced.priced.pricingTimeWindow,
+                pricing_fallback: "base_rate",
+            });
+            baseRateFallback.push({ meter: job.dim, quantity: job.qty, rule_id: priced.rule.id ?? null });
+        }
+        unmatchedConfiguredMeters = unmatchedConfiguredMeters.filter((meter) => stillUnmatched.has(meter));
+        if (baseRateFallback.length > 0) {
+            console.warn("[pricing] meter priced at base-rate fallback", {
+                provider: card.provider,
+                model: card.model,
+                pricing_plan: pricingPlan,
+                fallback: baseRateFallback,
+            });
+        }
+    }
     if (unpricedCacheMeters.length > 0) {
 		throw new Error(`pricing_rule_missing:${unpricedCacheMeters.join(",")}`);
     }
@@ -1234,6 +1294,7 @@ export function computeBillSummary(
         currency: "USD",
         lines,
         ...(cachePricingFallback.length > 0 ? { cache_pricing_fallback: cachePricingFallback } : {}),
+        ...(baseRateFallback.length > 0 ? { base_rate_fallback: baseRateFallback } : {}),
     };
 }
 
@@ -1242,13 +1303,15 @@ export function computeBill(
     usageRaw: Record<string, any>,
     card: PriceCard,
     requestOptions?: Record<string, any>,
-    pricingPlan?: string
+    pricingPlan?: string,
+    engineOptions?: PricingEngineOptions,
 ): Record<string, any> {
     const summary = computeBillSummary(
         usageRaw,
         card,
         requestOptions,
-        pricingPlan ?? (requestOptions as any)?.pricing_plan ?? "standard"
+        pricingPlan ?? (requestOptions as any)?.pricing_plan ?? "standard",
+        engineOptions,
     );
 
     // Use precomputed line_nanos to preserve exact totals when billable_units is fractional.
@@ -1289,6 +1352,21 @@ export function computeBill(
             currency: "USD",
             lines: slimLines,
             ...(summary.cache_pricing_fallback ? { cache_pricing_fallback: summary.cache_pricing_fallback } : {}),
+            ...(summary.base_rate_fallback ? { base_rate_fallback: summary.base_rate_fallback } : {}),
         },
     };
+}
+
+/**
+ * Price usage a provider has already charged for. A synchronous media adapter must never
+ * throw here: the request would fail (or move to another provider) after the charge. A meter
+ * whose conditions do not match is priced at its base rate and logged.
+ */
+export function computeBillAfterProviderCharge(
+    usageRaw: Record<string, any>,
+    card: PriceCard,
+    requestOptions?: Record<string, any>,
+    pricingPlan?: string,
+): Record<string, any> {
+    return computeBill(usageRaw, card, requestOptions, pricingPlan, { baseRateFallback: true });
 }
