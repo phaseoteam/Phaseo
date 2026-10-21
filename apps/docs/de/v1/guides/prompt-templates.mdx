@@ -135,9 +135,15 @@ Werte werden als reiner Text ohne HTML-Escaping eingefügt. Ein Wert kann den Te
 Besteht eine Nachricht nach dem Ausfüllen nur aus Leerraum, wird sie verworfen. So lässt sich eine ganze Nachricht optional machen:
 
 ```text
-{{#examples}}Here are examples of good replies:
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+Um Text für jedes Element einer Liste zu wiederholen, öffne einen Abschnitt für die Liste und verwende `{{.}}` für das aktuelle Element:
+
+```text
+Examples of good replies:
 {{#examples}}- {{.}}
-{{/examples}}{{/examples}}
+{{/examples}}
 ```
 
 Partials (`{{> name}}`), nicht maskierte Tags (`{{{name}}}` und `{{& name}}`), geänderte Trennzeichen und Lambdas werden nicht unterstützt; Editor und API lehnen Vorlagen ab, die sie verwenden.
@@ -163,7 +169,7 @@ Jede Variable kann außerdem Folgendes haben:
 - `default`: Wird verwendet, wenn die Anfrage den Wert weglässt. Er muss zum Typ passen.
 - `description`: Wird im Editor und in Fehlermeldungen angezeigt, bis zu 500 Zeichen.
 
-Ein Name, der nur einen Abschnitt öffnet, wie `examples` oben, ist optional und akzeptiert jeden Wert.
+Ein Name, der nur Abschnitte öffnet, wie `notes` und `examples` oben, ist optional und akzeptiert jeden Wert.
 
 Anfragen werden streng geprüft. Ein fehlender erforderlicher Wert, ein Wert vom falschen Typ oder ein Name, den die Vorlage nicht kennt, führt zu einem `400`, der alle Probleme auf einmal auflistet. So kann ein Tippfehler nicht unbemerkt einen Teil des Prompts entfallen lassen.
 

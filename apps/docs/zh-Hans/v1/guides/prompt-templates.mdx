@@ -135,9 +135,15 @@ completion = client.generate_text({
 如果一条消息渲染后只剩空白，它会被丢弃。可以用这一点让整条消息变为可选：
 
 ```text
-{{#examples}}Here are examples of good replies:
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+要为列表中的每一项重复文本，请用该列表开启一个区块，并用 `{{.}}` 表示当前项：
+
+```text
+Examples of good replies:
 {{#examples}}- {{.}}
-{{/examples}}{{/examples}}
+{{/examples}}
 ```
 
 不支持 partial（`{{> name}}`）、不转义标签（`{{{name}}}` 和 `{{& name}}`）、更改分隔符和 lambda，编辑器和 API 会拒绝使用它们的模板。
@@ -163,7 +169,7 @@ completion = client.generate_text({
 - `default`：请求省略该值时使用。它必须与类型匹配。
 - `description`：显示在编辑器和错误信息中，最多 500 个字符。
 
-只用于开启区块的名称（例如上面的 `examples`）是可选的，可以接受任何值。
+只用于开启区块的名称（例如上面的 `notes` 和 `examples`）是可选的，可以接受任何值。
 
 请求会被严格检查。缺少必填值、值的类型错误或使用了模板中不存在的名称时，会返回 `400` 并一次列出所有问题，因此拼写错误不会悄悄丢掉提示词的一部分。
 

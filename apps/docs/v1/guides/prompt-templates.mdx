@@ -136,9 +136,15 @@ Values are inserted as plain text, without HTML escaping. A value can change the
 If a message renders to nothing but whitespace, it is dropped. Use this to make a whole message optional:
 
 ```text
-{{#examples}}Here are examples of good replies:
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+To repeat text for each item of a list, open a section on the list and use `{{.}}` for the current item:
+
+```text
+Examples of good replies:
 {{#examples}}- {{.}}
-{{/examples}}{{/examples}}
+{{/examples}}
 ```
 
 Partials (`{{> name}}`), unescaped tags (`{{{name}}}` and `{{& name}}`), delimiter changes and lambdas are not supported, and the editor and API refuse templates that use them.
@@ -164,7 +170,7 @@ Each variable can also have:
 - `default`: used when the request leaves the value out. It must match the type.
 - `description`: shown in the editor and in error messages, up to 500 characters.
 
-A name used only to open a section, such as `examples` above, is optional and accepts any value.
+A name used only to open sections, such as `notes` and `examples` above, is optional and accepts any value.
 
 Requests are checked strictly. A missing required value, a value of the wrong type or a name the template does not have returns a `400` that lists every problem at once, so a typo cannot silently drop part of a prompt.
 

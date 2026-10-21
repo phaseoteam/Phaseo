@@ -135,9 +135,15 @@ Os valores são inseridos como texto simples, sem escape de HTML. Um valor pode 
 Se uma mensagem ficar só com espaços em branco depois de gerada, ela é descartada. Use isso para tornar uma mensagem inteira opcional:
 
 ```text
-{{#examples}}Here are examples of good replies:
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+Para repetir texto para cada item de uma lista, abra uma seção na lista e use `{{.}}` para o item atual:
+
+```text
+Examples of good replies:
 {{#examples}}- {{.}}
-{{/examples}}{{/examples}}
+{{/examples}}
 ```
 
 Parciais (`{{> name}}`), tags sem escape (`{{{name}}}` e `{{& name}}`), mudanças de delimitador e lambdas não são compatíveis, e o editor e a API recusam templates que os usem.
@@ -163,7 +169,7 @@ Cada variável também pode ter:
 - `default`: usado quando a solicitação omite o valor. Precisa corresponder ao tipo.
 - `description`: exibida no editor e nas mensagens de erro, com até 500 caracteres.
 
-Um nome usado apenas para abrir uma seção, como `examples` acima, é opcional e aceita qualquer valor.
+Um nome usado apenas para abrir seções, como `notes` e `examples` acima, é opcional e aceita qualquer valor.
 
 As solicitações são verificadas de forma rigorosa. Um valor obrigatório ausente, um valor do tipo errado ou um nome que o template não tem retorna um `400` que lista todos os problemas de uma vez, para que um erro de digitação não remova silenciosamente parte de um prompt.
 

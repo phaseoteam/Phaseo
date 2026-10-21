@@ -135,9 +135,15 @@ Les valeurs sont insérées en texte brut, sans échappement HTML. Une valeur pe
 Si un message ne contient plus que des espaces après génération, il est supprimé. Utilisez ce comportement pour rendre un message entier facultatif :
 
 ```text
-{{#examples}}Here are examples of good replies:
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+Pour répéter du texte pour chaque élément d’une liste, ouvrez une section sur la liste et utilisez `{{.}}` pour l’élément courant :
+
+```text
+Examples of good replies:
 {{#examples}}- {{.}}
-{{/examples}}{{/examples}}
+{{/examples}}
 ```
 
 Les partiels (`{{> name}}`), les balises non échappées (`{{{name}}}` et `{{& name}}`), les changements de délimiteurs et les lambdas ne sont pas pris en charge ; l’éditeur et l’API refusent les modèles qui les utilisent.
@@ -163,7 +169,7 @@ Chaque variable peut aussi avoir :
 - `default` : utilisée lorsque la requête omet la valeur. Elle doit correspondre au type.
 - `description` : affichée dans l’éditeur et dans les messages d’erreur, jusqu’à 500 caractères.
 
-Un nom utilisé uniquement pour ouvrir une section, comme `examples` ci-dessus, est facultatif et accepte n’importe quelle valeur.
+Un nom utilisé uniquement pour ouvrir des sections, comme `notes` et `examples` ci-dessus, est facultatif et accepte n’importe quelle valeur.
 
 Les requêtes sont vérifiées de façon stricte. Une valeur obligatoire absente, une valeur du mauvais type ou un nom que le modèle ne contient pas renvoie une erreur `400` qui liste tous les problèmes en une fois, afin qu’une faute de frappe ne supprime pas silencieusement une partie d’un prompt.
 
