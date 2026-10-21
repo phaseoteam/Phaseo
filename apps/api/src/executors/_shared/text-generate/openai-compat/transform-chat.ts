@@ -16,6 +16,16 @@ import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/
 import { toIRAnnotations } from "@protocols/shared/citations";
 import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
 
+// Chat routes whose API documents an assistant message's `audio: { id }`, the
+// reference to an earlier audio response: OpenAI
+// (https://platform.openai.com/docs/api-reference/chat/create) and Azure OpenAI
+// (ChatCompletionRequestAssistantMessageAudio in its v1 inference spec).
+const ASSISTANT_AUDIO_REFERENCE_PROVIDERS: ReadonlySet<string> = new Set(["openai", "openai-eu", "azure"]);
+
+export function sendsAssistantAudioReference(providerId: string | undefined): boolean {
+	return providerId != null && ASSISTANT_AUDIO_REFERENCE_PROVIDERS.has(providerId);
+}
+
 /**
  * Transform IR request to OpenAI Chat Completions format
  * Used when provider only supports /chat/completions (not /responses)
@@ -107,6 +117,10 @@ export function irToOpenAIChat(
 				} else {
 					message.reasoning_content = assistantReasoning;
 				}
+			}
+
+			if (msg.audio?.id && sendsAssistantAudioReference(providerId)) {
+				message.audio = { id: msg.audio.id };
 			}
 
 			if (msg.toolCalls && msg.toolCalls.length > 0) {
@@ -552,6 +566,28 @@ function applySealedReasoningDetails(
 	}
 }
 
+/**
+ * OpenAI Chat audio output: `choices[].message.audio` is `{ id, data, expires_at, transcript }`
+ * with base64 audio in the requested `audio.format`
+ * (https://platform.openai.com/docs/api-reference/chat/object).
+ */
+export function toChatMessageAudioPart(audio: unknown): IRContentPart | null {
+	if (!audio || typeof audio !== "object" || Array.isArray(audio)) return null;
+	const value = audio as Record<string, unknown>;
+	const data = typeof value.data === "string" ? value.data : "";
+	const transcript = typeof value.transcript === "string" ? value.transcript : undefined;
+	const audioId = typeof value.id === "string" && value.id ? value.id : undefined;
+	if (!data && !transcript && !audioId) return null;
+	return {
+		type: "audio",
+		source: "data",
+		data,
+		...(audioId ? { audioId } : {}),
+		...(typeof value.expires_at === "number" ? { expiresAt: value.expires_at } : {}),
+		...(transcript !== undefined ? { transcript } : {}),
+	};
+}
+
 export function openAIChatToIR(
 	json: any,
 	requestId: string,
@@ -753,6 +789,8 @@ export function openAIChatToIR(
 		contentParts.push(...extractInlineImages(choice.message?.images));
 		contentParts.push(...extractInlineAudios(choice.message?.content));
 		contentParts.push(...extractInlineAudios(choice.message?.audios));
+		const messageAudio = toChatMessageAudioPart(choice.message?.audio);
+		if (messageAudio) contentParts.push(messageAudio);
 
 		choices.push({
 			index: choice.index || 0,

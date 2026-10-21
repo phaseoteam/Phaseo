@@ -180,6 +180,25 @@ export type ChatThread = {
     messages: ChatMessage[];
     settings: ChatSettings;
     tags?: ChatTag[];
+    /** Set when the chat was opened from a logged gateway request. */
+    replay?: ChatThreadReplay;
+};
+
+export type ChatThreadReplay = {
+    source: {
+        requestId: string;
+        workspaceId: string | null;
+        endpoint: string;
+        loggedAt?: string | null;
+    };
+    /**
+     * The original Responses input items for each imported message. They are sent
+     * in place of the message's text while its content is unchanged, so tool calls,
+     * tool results and attachments survive the next turn.
+     */
+    messages: Record<string, { content: string; items: unknown[] }>;
+    /** Function tool definitions from the logged request, in Responses form. */
+    functionTools?: Array<Record<string, unknown>>;
 };
 
 const DB_NAME = "phaseo-chat";

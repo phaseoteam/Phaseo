@@ -1297,6 +1297,7 @@ type ChatImageOutputPart struct {
 }
 
 type ChatMessage struct {
+	Audio *map[string]interface{} `json:"audio,omitempty"`
 	Audios *[]map[string]interface{} `json:"audios,omitempty"`
 	Content interface{} `json:"content,omitempty"`
 	Images *[]map[string]interface{} `json:"images,omitempty"`
@@ -1318,6 +1319,20 @@ type ChatReasoningDetail struct {
 	Summary *string `json:"summary,omitempty"`
 	Text *string `json:"text,omitempty"`
 	Type string `json:"type"`
+}
+
+type ChatResponseMessage struct {
+	Audio *map[string]interface{} `json:"audio,omitempty"`
+	Audios *[]map[string]interface{} `json:"audios,omitempty"`
+	Content interface{} `json:"content,omitempty"`
+	Images *[]map[string]interface{} `json:"images,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Reasoning *string `json:"reasoning,omitempty"`
+	ReasoningContent *string `json:"reasoning_content,omitempty"`
+	ReasoningDetails *[]map[string]interface{} `json:"reasoning_details,omitempty"`
+	Role string `json:"role"`
+	ToolCallId *string `json:"tool_call_id,omitempty"`
+	ToolCalls *[]map[string]interface{} `json:"tool_calls,omitempty"`
 }
 
 type Classifier struct {

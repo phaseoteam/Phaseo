@@ -626,6 +626,7 @@ pub struct ChatImageOutputPart {
 }
 
 pub struct ChatMessage {
+	pub audio: Option<Option<HashMap<String, String>>>,
 	pub audios: Option<Vec<HashMap<String, String>>>,
 	pub content: Option<String>,
 	pub images: Option<Vec<HashMap<String, String>>>,
@@ -647,6 +648,20 @@ pub struct ChatReasoningDetail {
 	pub summary: Option<String>,
 	pub text: Option<String>,
 	pub r#type: String,
+}
+
+pub struct ChatResponseMessage {
+	pub audio: Option<HashMap<String, String>>,
+	pub audios: Option<Vec<HashMap<String, String>>>,
+	pub content: Option<String>,
+	pub images: Option<Vec<HashMap<String, String>>>,
+	pub name: Option<String>,
+	pub reasoning: Option<String>,
+	pub reasoning_content: Option<String>,
+	pub reasoning_details: Option<Vec<HashMap<String, String>>>,
+	pub role: String,
+	pub tool_call_id: Option<String>,
+	pub tool_calls: Option<Vec<HashMap<String, String>>>,
 }
 
 pub struct Classifier {

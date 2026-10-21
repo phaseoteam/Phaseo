@@ -61,6 +61,7 @@ import * as deepinfraAudioSpeech from "@providers/deepinfra/endpoints/audio-spee
 import * as friendliAudioTranscription from "@providers/friendli/audio-transcription";
 import * as stepfunAudioSpeech from "@providers/stepfun/audio-speech";
 import * as stepfunImages from "@providers/stepfun/images";
+import * as fireworksImages from "@providers/fireworks/images";
 import * as stepfunAudioTranscription from "@providers/stepfun/audio-transcription";
 
 type NonTextEndpoint =
@@ -628,6 +629,7 @@ async function executeProviderEndpoint(
 	switch (endpoint) {
 		case "images.generations":
 			if (providerId === "stepfun") return stepfunImages.exec(providerArgs);
+			if (providerId === "fireworks") return fireworksImages.exec(providerArgs);
 			if (providerId === "minimax" || providerId === "minimax-lightning") {
 				return minimaxImages.exec(providerArgs);
 			}

@@ -1257,6 +1257,7 @@
 			"enableConnection": "Enable connection",
 			"deleteDestination": "Delete destination",
 			"openRequestDetails": "Open request details",
+			"openInChat": "Open in Chat",
 			"copyRequestId": "Copy request ID",
 			"copySessionId": "Copy session ID",
 			"copyNativeResponseId": "Copy native response ID",

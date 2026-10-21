@@ -9807,6 +9807,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          nullable: true
+          description: पिछला ऑडियो जवाब, जिसे ऑडियो बातचीत जारी रखने के लिए असिस्टेंट संदेश पर उसकी id (message.audio.id) से वापस भेजा जाता है। OpenAI और Azure OpenAI रूट इसे लेते हैं; दूसरे प्रोवाइडर इसे हटा देते हैं और messages.audio को हटाए गए पैरामीटर के रूप में रिपोर्ट करते हैं।
+          required:
+            - id
+          properties:
+            id:
+              type: string
         tool_call_id:
           type: string
         reasoning_content:
@@ -9821,6 +9830,65 @@ components:
             $ref: '#/components/schemas/ChatReasoningDetail'
       discriminator:
         propertyName: role
+    ChatResponseMessage:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+            - tool
+        content:
+          description: 'संदेश की सामग्री: एक स्ट्रिंग या सामग्री भागों का array। केवल वे असिस्टेंट संदेश जो टूल कॉल करते हैं (tool_calls के साथ), इसे null पर सेट कर सकते हैं; अन्य भूमिकाओं के लिए गेटवे null सामग्री को 400 त्रुटि के साथ अस्वीकार करता है।'
+          anyOf:
+            - type: string
+              nullable: true
+            - type: array
+              items:
+                $ref: '#/components/schemas/MessageContentPart'
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: 'जब अनुरोध ऑडियो आउटपुट माँगता है, तब असिस्टेंट संदेश पर बोला गया ऑडियो: ऑडियो id, अनुरोधित फ़ॉर्मैट में base64 ऑडियो, ऑडियो की समाप्ति का समय (Unix सेकंड) और उसका ट्रांसक्रिप्ट। delta.audio हिस्सों में स्ट्रीम होता है।'
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
+        tool_call_id:
+          type: string
+        reasoning_content:
+          type: string
+          description: मॉडल का रीज़निंग टेक्स्ट, जब प्रदाता उसे लौटाता है। स्ट्रीमिंग में delta.reasoning_content के रूप में भेजा जाता है।
+        reasoning:
+          type: string
+          description: reasoning_content वाला ही रीज़निंग टेक्स्ट, उस नाम से जिसे कुछ क्लाइंट पढ़ते हैं। स्ट्रीमिंग में delta.reasoning के रूप में भेजा जाता है। इनपुट में reasoning_content के alias के रूप में स्वीकार किया जाता है।
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
     ChatReasoningDetail:
       type: object
       required:
@@ -10563,7 +10631,7 @@ components:
         index:
           type: integer
         message:
-          $ref: '#/components/schemas/ChatMessage'
+          $ref: '#/components/schemas/ChatResponseMessage'
         finish_reason:
           type: string
           enum:

@@ -9,6 +9,7 @@ import { fetchChatEffectivePolicy } from "@/lib/fetchers/internal/fetchChatEffec
 import { fetchServerProviderCatalogPreviews } from "@/lib/fetchers/internal/fetchServerProviderCatalogPreviews";
 import { providerCatalogPreviewsToGatewayModels } from "@/lib/chat/providerCatalogPreviewModels";
 import { fetchServerAdminChatModels } from "@/lib/fetchers/internal/fetchServerAdminChatModels";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Product.chat");
@@ -28,13 +29,16 @@ export default function ChatPlaygroundPage({ searchParams }: ChatPageProps) {
 }
 
 async function ChatPlaygroundContent({ searchParams }: ChatPageProps) {
-	const [effectivePolicy, providerPreviews, internalModels] = await Promise.all([
+	const resolvedParams = (await searchParams) ?? {};
+	// Opening a logged request compares its workspace with the one Chat bills.
+	const opensLoggedRequest = Boolean(resolvedParams.fromRequest);
+	const [effectivePolicy, providerPreviews, internalModels, accountContext] = await Promise.all([
 		fetchChatEffectivePolicy().catch(() => null),
 		fetchServerProviderCatalogPreviews(),
 		fetchServerAdminChatModels(),
+		opensLoggedRequest ? getServerAccountContext().catch(() => null) : null,
 	]);
 	const previewModels = providerCatalogPreviewsToGatewayModels(providerPreviews);
-	const resolvedParams = (await searchParams) ?? {};
 	const modelParamRaw = resolvedParams.model;
 	const promptParamRaw = resolvedParams.prompt;
 	const modelParam = Array.isArray(modelParamRaw)
@@ -51,6 +55,7 @@ async function ChatPlaygroundContent({ searchParams }: ChatPageProps) {
 			effectivePolicy={effectivePolicy}
 			modelParam={modelParam ?? null}
 			promptParam={promptParam ?? null}
+			activeWorkspaceId={accountContext?.workspaceId ?? null}
 		/>
 	);
 }
