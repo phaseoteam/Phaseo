@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { captureAgentRunDevtools } from "../devtools.js";
 import { AgentGatewayError, toAgentGatewayErrorDetails } from "../errors.js";
-import { agentItemKey, responseItems, toolResultItem } from "../items.js";
+import { agentItemKey, isGatewayServerToolName, responseItems, toolResultItem } from "../items.js";
 import { parseAgentSchema } from "../schema.js";
 import type {
 	AgentContinueOptions, AgentDefinition, AgentDynamicValue, AgentEvent, AgentEventHandler, AgentItem,
@@ -269,6 +269,19 @@ async function generateResponse<TContext>(args: {
 	throw new Error("Unreachable model retry state");
 }
 
+/**
+ * Calls with no local tool that the gateway handles itself, so they are neither run here nor reported as missing:
+ * ones whose result came back in the same response (the gateway ran the server tool), and server-tool calls
+ * the gateway left unrun because the same turn also called a local tool.
+ */
+function gatewayToolCalls(response: AgentModelResponse, tools: AgentTool<any, any, any>[]): AgentToolCall[] {
+	const calls = response.message.toolCalls ?? [];
+	const isLocal = (call: AgentToolCall) => tools.some((tool) => tool.id === call.name);
+	const answered = new Set((response.items ?? []).flatMap((item) => (item.type === "tool_result" || item.type === "error") && item.toolCallId ? [item.toolCallId] : []));
+	const callsLocalTool = calls.some(isLocal);
+	return calls.filter((call) => !isLocal(call) && (answered.has(call.id) || (callsLocalTool && isGatewayServerToolName(call.name))));
+}
+
 async function stopReason(stopWhen: AgentStopWhen | undefined, context: Parameters<Exclude<AgentStopWhen, any[]>>[0]): Promise<string | undefined> {
 	if (!stopWhen) return undefined;
 	for (const condition of Array.isArray(stopWhen) ? stopWhen : [stopWhen]) {
@@ -342,6 +355,12 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 			await emit(options.onEvent, { type: "step.started", runId: run.id, agentId: run.agentId, timestamp: nowIso(), status: run.status, stepIndex });
 			const request: AgentModelRequest<TContext> = { agentId: run.agentId, model: dynamic.model, instructions: dynamic.instructions, messages: structuredClone(run.messages), tools: tools.map((tool) => ({ id: tool.id, description: tool.description, parameters: toolParameters(tool) })), context: currentContext, signal: options.signal, temperature: dynamic.temperature, maxOutputTokens: dynamic.maxOutputTokens, topP: dynamic.topP, stream: options.streaming };
 			const response = await generateResponse({ client: options.client, request, retry: options.modelRetry ?? definition.modelRetry, run, step, handler: options.onEvent, streaming: options.streaming ?? false });
+			// Gateway-handled calls stay in response.items, but leave the history so the next request has no call without an output.
+			const gatewayCalls = gatewayToolCalls(response, tools);
+			if (gatewayCalls.length) {
+				const localCalls = (response.message.toolCalls ?? []).filter((call) => !gatewayCalls.includes(call));
+				if (localCalls.length) response.message.toolCalls = localCalls; else delete response.message.toolCalls;
+			}
 			run.messages.push(response.message); run.stepCount++; run.updatedAt = nowIso();
 			const normalized = normalizeUsage(response);
 			Object.assign(step, { requestId: response.requestId, nativeResponseId: response.nativeResponseId ?? null, provider: response.provider, model: response.model ?? dynamic.model, usage: response.usage, normalizedUsage: normalized, toolCalls: response.message.toolCalls ?? [], responseMeta: response.responseMeta, finishReason: response.finishReason, warnings: response.warnings });

@@ -1,6 +1,6 @@
 import Phaseo, { type PhaseoOptions, type ResponsesRequest, type ResponsesResponse } from "@phaseo/sdk";
 import { AgentGatewayError } from "../errors.js";
-import { normalizeAgentItems } from "../items.js";
+import { isExecutedToolCallItem, normalizeAgentItems } from "../items.js";
 import type { AgentMessage, AgentModelClient, AgentModelRequest, AgentToolCall } from "../types.js";
 
 export type GatewayAgentClientOptions = {
@@ -127,8 +127,9 @@ function extractToolCalls(response: ResponsesResponse): AgentToolCall[] | undefi
 			? response.output
 			: [];
 
+	// Server tools the gateway already ran come back with their result and are not left for the agent to run.
 	const toolCalls = items
-		.filter((item) => String(item?.type ?? "").toLowerCase() === "function_call")
+		.filter((item) => String(item?.type ?? "").toLowerCase() === "function_call" && !isExecutedToolCallItem(item))
 		.map((item, index) => ({
 			id: item.call_id ?? `tool_call_${index}`,
 			name: item.name ?? "tool",
