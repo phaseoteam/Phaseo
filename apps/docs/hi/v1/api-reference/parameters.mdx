@@ -23,6 +23,8 @@ icon: "sliders-horizontal"
 
 केवल ये पैरामीटर हटाए जा सकते हैं: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`/v1/messages` पर `stop_sequences`), `parallel_tool_calls`, `max_tool_calls` और `image_config`। संदेश, टूल, `tool_choice`, `response_format`, रीज़निंग सेटिंग और आउटपुट सीमाएँ कभी नहीं हटाई जातीं।
 
+इसके अलावा, जो रूट OpenAI का 12 घंटे का कैश स्वीकार नहीं करते, उन पर प्रॉम्प्ट कैश के `ttl` का `12h` मान हटा दिया जाता है, और उन्हीं जगहों पर `prompt_cache_options.ttl` या `prompt_cache_breakpoint.ttl` के रूप में बताया जाता है; देखें [प्रॉम्प्ट कैशिंग](../guides/prompt-caching.mdx)।
+
 सफल रिस्पॉन्स में, Phaseo उन हटाए गए पैरामीटर की सूचना देता है जिन्हें अनुरोध ने ख़ुद भेजा था:
 
 - `X-Phaseo-Dropped-Params` रिस्पॉन्स हेडर में, उदाहरण के लिए `X-Phaseo-Dropped-Params: top_k, min_p`

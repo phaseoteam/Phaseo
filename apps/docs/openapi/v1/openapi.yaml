@@ -9389,18 +9389,28 @@ components:
       description: >-
         OpenAI cache breakpoint. Caches everything up to and including this
         block. Sent to OpenAI and Azure OpenAI GPT-5.6 and later and to
-        DeepInfra; Claude routes receive it as cache_control.
+        DeepInfra; Claude routes receive it as cache_control. Only OpenAI
+        receives its ttl.
       properties:
         mode:
           type: string
           enum:
             - explicit
+        ttl:
+          type: string
+          description: >-
+            Minimum cache lifetime for this breakpoint on OpenAI GPT-5.6 and
+            later: 30m or 12h. Without it the breakpoint uses
+            prompt_cache_options.ttl. A 12h write is billed at 2.5x the input
+            rate; a route that cannot take 12h receives the request without it,
+            and the removal is reported in X-Phaseo-Dropped-Params.
       additionalProperties: true
     PromptCacheOptions:
       type: object
       description: >-
         Prompt cache mode and TTL for OpenAI and Azure OpenAI GPT-5.6 and later
-        (ttl 30m) and for DeepInfra (ttl 5m or 1h). Removed for other providers.
+        (ttl 30m, or 12h on OpenAI) and for DeepInfra (ttl 5m or 1h). Removed
+        for other providers.
       properties:
         mode:
           type: string
@@ -9409,6 +9419,12 @@ components:
             - explicit
         ttl:
           type: string
+          description: >-
+            Minimum cache lifetime. OpenAI GPT-5.6 and later: 30m (default) or
+            12h; a request asking for 12h runs on OpenAI's Responses API. Azure
+            OpenAI: 30m. DeepInfra: 5m or 1h. A route that cannot take 12h
+            receives the request without it, and the removal is reported in
+            X-Phaseo-Dropped-Params.
       additionalProperties: true
     ProviderOptions:
       type: object
@@ -11164,6 +11180,23 @@ components:
         cache_write_tokens:
           type: integer
           description: Input tokens written to the provider's prompt cache.
+        cache_write_tokens_details:
+          type: object
+          description: >-
+            Cache writes split by lifetime, on Responses usage from OpenAI
+            GPT-5.6 and later. The two counts sum to cache_write_tokens. Not
+            returned in Chat Completions prompt_tokens_details.
+          properties:
+            ttl_30m_tokens:
+              type: integer
+              description: >-
+                Input tokens written to the cache with a 30-minute lifetime,
+                billed at 1.25x the input rate.
+            ttl_12h_tokens:
+              type: integer
+              description: >-
+                Input tokens written to the cache with a 12-hour lifetime,
+                billed at 2.5x the input rate.
     AnthropicMessagesRequest:
       type: object
       description: >-

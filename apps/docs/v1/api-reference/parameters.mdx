@@ -24,6 +24,8 @@ If the provider serving a request does not support one of its sampling parameter
 
 Only these parameters can be dropped: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` on `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` and `image_config`. Messages, tools, `tool_choice`, `response_format`, reasoning settings and output limits are never dropped.
 
+Separately, a prompt-cache `ttl` of `12h` is removed on routes that cannot take OpenAI's 12-hour cache, and reported in the same places as `prompt_cache_options.ttl` or `prompt_cache_breakpoint.ttl`; see [Prompt Caching](../guides/prompt-caching.mdx#12-hour-cache-on-openai).
+
 On successful responses, Phaseo reports the dropped parameters that the request itself sent:
 
 - in the `X-Phaseo-Dropped-Params` response header, for example `X-Phaseo-Dropped-Params: top_k, min_p`

@@ -8953,16 +8953,19 @@ components:
       additionalProperties: true
     PromptCacheBreakpoint:
       type: object
-      description: Punto de corte de caché de OpenAI. Almacena en caché todo lo anterior, incluido este bloque. Se envía a OpenAI y Azure OpenAI desde GPT-5.6 y a DeepInfra; las rutas de Claude lo reciben como cache_control.
+      description: Punto de corte de caché de OpenAI. Almacena en caché todo lo anterior, incluido este bloque. Se envía a OpenAI y Azure OpenAI desde GPT-5.6 y a DeepInfra; las rutas de Claude lo reciben como cache_control. Solo OpenAI recibe su ttl.
       properties:
         mode:
           type: string
           enum:
             - explicit
+        ttl:
+          type: string
+          description: 'Duración mínima de la caché para este punto de corte en OpenAI GPT-5.6 y posteriores: 30m o 12h. Sin ella, el punto de corte usa prompt_cache_options.ttl. Una escritura de 12h se cobra a 2,5x la tarifa de entrada; una ruta que no admite 12h recibe la solicitud sin ella, y la eliminación se informa en X-Phaseo-Dropped-Params.'
       additionalProperties: true
     PromptCacheOptions:
       type: object
-      description: Modo y TTL de la caché de prompts para OpenAI y Azure OpenAI desde GPT-5.6 (ttl 30m) y para DeepInfra (ttl 5m o 1h). Se elimina para los demás proveedores.
+      description: Modo y TTL de la caché de prompts para OpenAI y Azure OpenAI desde GPT-5.6 (ttl 30m, o 12h en OpenAI) y para DeepInfra (ttl 5m o 1h). Se elimina para los demás proveedores.
       properties:
         mode:
           type: string
@@ -8971,6 +8974,7 @@ components:
             - explicit
         ttl:
           type: string
+          description: 'Duración mínima de la caché. OpenAI GPT-5.6 y posteriores: 30m (predeterminado) o 12h; una solicitud que pide 12h se ejecuta en la API Responses de OpenAI. Azure OpenAI: 30m. DeepInfra: 5m o 1h. Una ruta que no admite 12h recibe la solicitud sin ella, y la eliminación se informa en X-Phaseo-Dropped-Params.'
       additionalProperties: true
     ProviderOptions:
       type: object
@@ -10613,6 +10617,16 @@ components:
         cache_write_tokens:
           type: integer
           description: Tokens de entrada escritos en la caché de prompts del proveedor.
+        cache_write_tokens_details:
+          type: object
+          description: Escrituras en caché desglosadas por duración, en el uso de Responses de OpenAI GPT-5.6 y posteriores. Las dos cifras suman cache_write_tokens. No se devuelve en prompt_tokens_details de Chat Completions.
+          properties:
+            ttl_30m_tokens:
+              type: integer
+              description: Tokens de entrada escritos en la caché con una duración de 30 minutos, cobrados a 1,25x la tarifa de entrada.
+            ttl_12h_tokens:
+              type: integer
+              description: Tokens de entrada escritos en la caché con una duración de 12 horas, cobrados a 2,5x la tarifa de entrada.
     AnthropicMessagesRequest:
       type: object
       description: Un campo opcional de nivel superior enviado como `null` se trata como no definido, igual que si se omitiera.

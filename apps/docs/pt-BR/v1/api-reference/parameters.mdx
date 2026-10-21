@@ -23,6 +23,8 @@ Se o provedor que atende uma solicitação não suportar um dos seus parâmetros
 
 Somente estes parâmetros podem ser descartados: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` em `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` e `image_config`. Mensagens, ferramentas, `tool_choice`, `response_format`, configurações de raciocínio e limites de saída nunca são descartados.
 
+Além disso, um `ttl` de cache de prompts de `12h` é removido nas rotas que não aceitam o cache de 12 horas da OpenAI, e informado nos mesmos lugares como `prompt_cache_options.ttl` ou `prompt_cache_breakpoint.ttl`; consulte [Cache de prompts](../guides/prompt-caching.mdx).
+
 Em respostas bem-sucedidas, a Phaseo informa os parâmetros descartados que a própria solicitação enviou:
 
 - no cabeçalho de resposta `X-Phaseo-Dropped-Params`, por exemplo `X-Phaseo-Dropped-Params: top_k, min_p`

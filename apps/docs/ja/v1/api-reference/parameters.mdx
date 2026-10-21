@@ -23,6 +23,8 @@ icon: "sliders-horizontal"
 
 削除される可能性があるのは次のパラメーターだけです: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`（`/v1/messages` では `stop_sequences`）、`parallel_tool_calls`、`max_tool_calls`、`image_config`。メッセージ、ツール、`tool_choice`、`response_format`、推論設定、出力上限は削除されません。
 
+これとは別に、OpenAIの12時間キャッシュを受け付けないルートでは、プロンプトキャッシュの`ttl`の`12h`が削除され、同じ場所で`prompt_cache_options.ttl`または`prompt_cache_breakpoint.ttl`として報告されます。[プロンプトキャッシュ](../guides/prompt-caching.mdx)を参照してください。
+
 成功したレスポンスでは、リクエスト自体が送信したパラメーターのうち削除されたものが次の場所で通知されます。
 
 - `X-Phaseo-Dropped-Params` レスポンスヘッダー。例: `X-Phaseo-Dropped-Params: top_k, min_p`

@@ -23,6 +23,8 @@ icon: "sliders-horizontal"
 
 يمكن حذف هذه المعلمات فقط: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` على `/v1/messages`)، و`parallel_tool_calls` و`max_tool_calls` و`image_config`. لا تُحذف أبدًا الرسائل والأدوات و`tool_choice` و`response_format` وإعدادات الاستدلال وحدود المخرجات.
 
+وبشكل منفصل، تُحذف قيمة `12h` من `ttl` التخزين المؤقت للمطالبات على المسارات التي لا تقبل التخزين المؤقت لمدة 12 ساعة في OpenAI، ويُبلَّغ عنها في المواضع نفسها باسم `prompt_cache_options.ttl` أو `prompt_cache_breakpoint.ttl`؛ راجع [تخزين المطالبات مؤقتًا](../guides/prompt-caching.mdx).
+
 في الاستجابات الناجحة، يبلّغ Phaseo عن المعلمات المحذوفة التي أرسلها الطلب نفسه:
 
 - في ترويسة الاستجابة `X-Phaseo-Dropped-Params`، مثل `X-Phaseo-Dropped-Params: top_k, min_p`

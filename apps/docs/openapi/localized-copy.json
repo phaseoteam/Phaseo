@@ -8364,25 +8364,25 @@
 			"zh-Hans": "prompt 缓存控制。使用 type ephemeral，并可选设置 ttl 为 5m 或 1h。scope 仅适用于顶层 Claude 缓存策略。Amazon Bedrock 和 Google Vertex AI 对 Claude 3.7 Sonnet、3.5 Sonnet 和 3 Opus 只提供 5 分钟缓存；在这些路由上 ttl 会被移除，被移除的 1h 会在 X-Phaseo-Dropped-Params 中报告为 cache_control.ttl。",
 			"ar": "التحكم في ذاكرة المطالبات المؤقتة. استخدم type ephemeral مع ttl اختياري قيمته 5m أو 1h. ولا ينطبق scope إلا على سياسة تخزين مؤقت لـ Claude على المستوى الأعلى. تخزّن Amazon Bedrock وGoogle Vertex AI نماذج Claude 3.7 Sonnet و3.5 Sonnet و3 Opus مؤقتًا لمدة 5 دقائق فقط؛ وهناك يُحذف ttl، ويُبلَغ عن قيمة 1h المحذوفة في X-Phaseo-Dropped-Params باسم cache_control.ttl."
 		},
-		"OpenAI cache breakpoint. Caches everything up to and including this block. Sent to OpenAI and Azure OpenAI GPT-5.6 and later and to DeepInfra; Claude routes receive it as cache_control.": {
-			"es": "Punto de corte de caché de OpenAI. Almacena en caché todo lo anterior, incluido este bloque. Se envía a OpenAI y Azure OpenAI desde GPT-5.6 y a DeepInfra; las rutas de Claude lo reciben como cache_control.",
-			"fr": "Point d’arrêt de cache OpenAI. Met en cache tout ce qui précède, ce bloc compris. Envoyé à OpenAI et Azure OpenAI à partir de GPT-5.6 et à DeepInfra ; les routes Claude le reçoivent sous forme de cache_control.",
-			"de": "OpenAI-Cache-Breakpoint. Cacht alles bis einschließlich dieses Blocks. Wird an OpenAI und Azure OpenAI ab GPT-5.6 sowie an DeepInfra gesendet; Claude-Routen erhalten ihn als cache_control.",
-			"pt-BR": "Ponto de interrupção de cache da OpenAI. Armazena em cache tudo até este bloco, inclusive. Enviado à OpenAI e à Azure OpenAI a partir do GPT-5.6 e à DeepInfra; as rotas do Claude o recebem como cache_control.",
-			"hi": "OpenAI कैश ब्रेकपॉइंट। इस ब्लॉक तक (इसे मिलाकर) सब कुछ कैश करता है। GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों तथा DeepInfra को भेजा जाता है; Claude रूट इसे cache_control के रूप में पाते हैं।",
-			"ja": "OpenAIのキャッシュブレークポイント。このブロックまでのすべてをキャッシュします。GPT-5.6以降のOpenAIとAzure OpenAI、およびDeepInfraに送られ、Claudeのルートにはcache_controlとして届きます。",
-			"zh-Hans": "OpenAI 缓存断点。缓存到该块为止（含该块）的全部内容。会发送给 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra；Claude 路由会以 cache_control 的形式收到它。",
-			"ar": "نقطة توقف للتخزين المؤقت في OpenAI. تخزّن مؤقتًا كل ما يسبقها حتى هذه الكتلة، بما فيها الكتلة نفسها. تُرسل إلى OpenAI وAzure OpenAI بدءًا من GPT-5.6 وإلى DeepInfra؛ وتتلقاها مسارات Claude بصيغة cache_control."
+		"OpenAI cache breakpoint. Caches everything up to and including this block. Sent to OpenAI and Azure OpenAI GPT-5.6 and later and to DeepInfra; Claude routes receive it as cache_control. Only OpenAI receives its ttl.": {
+			"es": "Punto de corte de caché de OpenAI. Almacena en caché todo lo anterior, incluido este bloque. Se envía a OpenAI y Azure OpenAI desde GPT-5.6 y a DeepInfra; las rutas de Claude lo reciben como cache_control. Solo OpenAI recibe su ttl.",
+			"fr": "Point d’arrêt de cache OpenAI. Met en cache tout ce qui précède, ce bloc compris. Envoyé à OpenAI et Azure OpenAI à partir de GPT-5.6 et à DeepInfra ; les routes Claude le reçoivent sous forme de cache_control. Seul OpenAI reçoit son ttl.",
+			"de": "OpenAI-Cache-Breakpoint. Cacht alles bis einschließlich dieses Blocks. Wird an OpenAI und Azure OpenAI ab GPT-5.6 sowie an DeepInfra gesendet; Claude-Routen erhalten ihn als cache_control. Nur OpenAI erhält seine ttl.",
+			"pt-BR": "Ponto de interrupção de cache da OpenAI. Armazena em cache tudo até este bloco, inclusive. Enviado à OpenAI e à Azure OpenAI a partir do GPT-5.6 e à DeepInfra; as rotas do Claude o recebem como cache_control. Só a OpenAI recebe seu ttl.",
+			"hi": "OpenAI कैश ब्रेकपॉइंट। इस ब्लॉक तक (इसे मिलाकर) सब कुछ कैश करता है। GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों तथा DeepInfra को भेजा जाता है; Claude रूट इसे cache_control के रूप में पाते हैं। इसका ttl केवल OpenAI को भेजा जाता है।",
+			"ja": "OpenAIのキャッシュブレークポイント。このブロックまでのすべてをキャッシュします。GPT-5.6以降のOpenAIとAzure OpenAI、およびDeepInfraに送られ、Claudeのルートにはcache_controlとして届きます。ttlはOpenAIにだけ送られます。",
+			"zh-Hans": "OpenAI 缓存断点。缓存到该块为止（含该块）的全部内容。会发送给 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra；Claude 路由会以 cache_control 的形式收到它。只有 OpenAI 会收到它的 ttl。",
+			"ar": "نقطة توقف للتخزين المؤقت في OpenAI. تخزّن مؤقتًا كل ما يسبقها حتى هذه الكتلة، بما فيها الكتلة نفسها. تُرسل إلى OpenAI وAzure OpenAI بدءًا من GPT-5.6 وإلى DeepInfra؛ وتتلقاها مسارات Claude بصيغة cache_control. ولا يتلقى ttl الخاص بها إلا OpenAI."
 		},
-		"Prompt cache mode and TTL for OpenAI and Azure OpenAI GPT-5.6 and later (ttl 30m) and for DeepInfra (ttl 5m or 1h). Removed for other providers.": {
-			"es": "Modo y TTL de la caché de prompts para OpenAI y Azure OpenAI desde GPT-5.6 (ttl 30m) y para DeepInfra (ttl 5m o 1h). Se elimina para los demás proveedores.",
-			"fr": "Mode et TTL du cache de prompts pour OpenAI et Azure OpenAI à partir de GPT-5.6 (ttl 30m) et pour DeepInfra (ttl 5m ou 1h). Retiré pour les autres fournisseurs.",
-			"de": "Prompt-Cache-Modus und TTL für OpenAI und Azure OpenAI ab GPT-5.6 (ttl 30m) sowie für DeepInfra (ttl 5m oder 1h). Wird für andere Anbieter entfernt.",
-			"pt-BR": "Modo e TTL do cache de prompts para OpenAI e Azure OpenAI a partir do GPT-5.6 (ttl 30m) e para a DeepInfra (ttl 5m ou 1h). Removido para os demais provedores.",
-			"hi": "GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों (ttl 30m) तथा DeepInfra (ttl 5m या 1h) के लिए प्रॉम्प्ट कैश मोड और TTL। अन्य प्रदाताओं के लिए हटा दिया जाता है।",
-			"ja": "GPT-5.6以降のOpenAIとAzure OpenAI（ttl 30m）、およびDeepInfra（ttl 5mまたは1h）向けのプロンプトキャッシュのモードとTTL。ほかのプロバイダーでは削除されます。",
-			"zh-Hans": "适用于 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI（ttl 30m）以及 DeepInfra（ttl 5m 或 1h）的 prompt 缓存模式和 TTL。对其他提供商会被移除。",
-			"ar": "وضع ذاكرة المطالبات المؤقتة ومدة صلاحيتها لـ OpenAI وAzure OpenAI بدءًا من GPT-5.6 (ttl 30m) ولـ DeepInfra (ttl 5m أو 1h). يُحذف للمزوّدين الآخرين."
+		"Prompt cache mode and TTL for OpenAI and Azure OpenAI GPT-5.6 and later (ttl 30m, or 12h on OpenAI) and for DeepInfra (ttl 5m or 1h). Removed for other providers.": {
+			"es": "Modo y TTL de la caché de prompts para OpenAI y Azure OpenAI desde GPT-5.6 (ttl 30m, o 12h en OpenAI) y para DeepInfra (ttl 5m o 1h). Se elimina para los demás proveedores.",
+			"fr": "Mode et TTL du cache de prompts pour OpenAI et Azure OpenAI à partir de GPT-5.6 (ttl 30m, ou 12h chez OpenAI) et pour DeepInfra (ttl 5m ou 1h). Retiré pour les autres fournisseurs.",
+			"de": "Prompt-Cache-Modus und TTL für OpenAI und Azure OpenAI ab GPT-5.6 (ttl 30m, bei OpenAI auch 12h) sowie für DeepInfra (ttl 5m oder 1h). Wird für andere Anbieter entfernt.",
+			"pt-BR": "Modo e TTL do cache de prompts para OpenAI e Azure OpenAI a partir do GPT-5.6 (ttl 30m, ou 12h na OpenAI) e para a DeepInfra (ttl 5m ou 1h). Removido para os demais provedores.",
+			"hi": "GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों (ttl 30m, या OpenAI पर 12h) तथा DeepInfra (ttl 5m या 1h) के लिए प्रॉम्प्ट कैश मोड और TTL। अन्य प्रदाताओं के लिए हटा दिया जाता है।",
+			"ja": "GPT-5.6以降のOpenAIとAzure OpenAI（ttl 30m、OpenAIでは12hも可）、およびDeepInfra（ttl 5mまたは1h）向けのプロンプトキャッシュのモードとTTL。ほかのプロバイダーでは削除されます。",
+			"zh-Hans": "适用于 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI（ttl 30m，OpenAI 上也可为 12h）以及 DeepInfra（ttl 5m 或 1h）的 prompt 缓存模式和 TTL。对其他提供商会被移除。",
+			"ar": "وضع ذاكرة المطالبات المؤقتة ومدة صلاحيتها لـ OpenAI وAzure OpenAI بدءًا من GPT-5.6 (ttl 30m، أو 12h في OpenAI) ولـ DeepInfra (ttl 5m أو 1h). يُحذف للمزوّدين الآخرين."
 		},
 		"xAI conversation ID, sent as the x-grok-conv-id header.": {
 			"es": "ID de conversación de xAI, enviado en el encabezado x-grok-conv-id.",
@@ -8893,6 +8893,56 @@
 			"ja": "トップレベルにも返される構造化された詳細。失敗したプロバイダー、`reason`、`failed_statuses`、`retry_after_seconds`、`upstream_error` などです。",
 			"zh-Hans": "同样在顶层返回的结构化详情，例如失败的提供商、`reason`、`failed_statuses`、`retry_after_seconds` 或 `upstream_error`。",
 			"ar": "تفاصيل منظّمة تُرجع أيضًا على المستوى الأعلى، مثل المزوّد الذي أخفق و`reason` و`failed_statuses` و`retry_after_seconds` و`upstream_error`."
+		},
+		"Minimum cache lifetime for this breakpoint on OpenAI GPT-5.6 and later: 30m or 12h. Without it the breakpoint uses prompt_cache_options.ttl. A 12h write is billed at 2.5x the input rate; a route that cannot take 12h receives the request without it, and the removal is reported in X-Phaseo-Dropped-Params.": {
+			"es": "Duración mínima de la caché para este punto de corte en OpenAI GPT-5.6 y posteriores: 30m o 12h. Sin ella, el punto de corte usa prompt_cache_options.ttl. Una escritura de 12h se cobra a 2,5x la tarifa de entrada; una ruta que no admite 12h recibe la solicitud sin ella, y la eliminación se informa en X-Phaseo-Dropped-Params.",
+			"fr": "Durée minimale du cache pour ce point d’arrêt sur OpenAI GPT-5.6 et versions ultérieures : 30m ou 12h. Sans elle, le point d’arrêt utilise prompt_cache_options.ttl. Une écriture de 12h est facturée 2,5x le tarif d’entrée ; une route qui n’accepte pas 12h reçoit la requête sans cette durée, et le retrait est signalé dans X-Phaseo-Dropped-Params.",
+			"de": "Mindestlebensdauer des Caches für diesen Breakpoint bei OpenAI ab GPT-5.6: 30m oder 12h. Ohne sie verwendet der Breakpoint prompt_cache_options.ttl. Ein 12h-Schreibvorgang wird mit dem 2,5-Fachen des Eingabepreises berechnet; eine Route, die 12h nicht annimmt, erhält die Anfrage ohne sie, und das Entfernen wird in X-Phaseo-Dropped-Params gemeldet.",
+			"pt-BR": "Duração mínima do cache para este ponto de interrupção na OpenAI GPT-5.6 e posteriores: 30m ou 12h. Sem ela, o ponto de interrupção usa prompt_cache_options.ttl. Uma gravação de 12h é cobrada a 2,5x a tarifa de entrada; uma rota que não aceita 12h recebe a solicitação sem ela, e a remoção é informada em X-Phaseo-Dropped-Params.",
+			"hi": "GPT-5.6 और बाद के OpenAI मॉडलों पर इस ब्रेकपॉइंट के लिए कैश की न्यूनतम अवधि: 30m या 12h। इसके बिना ब्रेकपॉइंट prompt_cache_options.ttl का उपयोग करता है। 12h वाले लेखन पर इनपुट दर का 2.5x शुल्क लगता है; जो रूट 12h स्वीकार नहीं करता, उसे अनुरोध इसके बिना मिलता है, और इसे हटाए जाने की जानकारी X-Phaseo-Dropped-Params में दी जाती है।",
+			"ja": "GPT-5.6以降のOpenAIでのこのブレークポイントのキャッシュの最低保持期間: 30mまたは12h。指定しない場合はprompt_cache_options.ttlが使われます。12hの書き込みは入力料金の2.5倍で請求されます。12hを受け付けないルートには12hを外したリクエストが送られ、外したことはX-Phaseo-Dropped-Paramsで報告されます。",
+			"zh-Hans": "GPT-5.6 及以后版本的 OpenAI 上此断点的最短缓存保留时长：30m 或 12h。未设置时，断点使用 prompt_cache_options.ttl。12h 写入按输入价格的 2.5 倍计费；不支持 12h 的路由收到的请求不含该值，并在 X-Phaseo-Dropped-Params 中报告此次移除。",
+			"ar": "أقل مدة صلاحية للتخزين المؤقت لنقطة التوقف هذه في OpenAI بدءًا من GPT-5.6: 30m أو 12h. وبدونها تستخدم نقطة التوقف prompt_cache_options.ttl. تُحتسب كتابة 12h بـ 2.5x سعر الإدخال؛ والمسار الذي لا يقبل 12h يتلقى الطلب بدونها، ويُبلَّغ عن الحذف في X-Phaseo-Dropped-Params."
+		},
+		"Minimum cache lifetime. OpenAI GPT-5.6 and later: 30m (default) or 12h; a request asking for 12h runs on OpenAI's Responses API. Azure OpenAI: 30m. DeepInfra: 5m or 1h. A route that cannot take 12h receives the request without it, and the removal is reported in X-Phaseo-Dropped-Params.": {
+			"es": "Duración mínima de la caché. OpenAI GPT-5.6 y posteriores: 30m (predeterminado) o 12h; una solicitud que pide 12h se ejecuta en la API Responses de OpenAI. Azure OpenAI: 30m. DeepInfra: 5m o 1h. Una ruta que no admite 12h recibe la solicitud sin ella, y la eliminación se informa en X-Phaseo-Dropped-Params.",
+			"fr": "Durée minimale du cache. OpenAI GPT-5.6 et versions ultérieures : 30m (par défaut) ou 12h ; une requête qui demande 12h passe par l’API Responses d’OpenAI. Azure OpenAI : 30m. DeepInfra : 5m ou 1h. Une route qui n’accepte pas 12h reçoit la requête sans cette durée, et le retrait est signalé dans X-Phaseo-Dropped-Params.",
+			"de": "Mindestlebensdauer des Caches. OpenAI ab GPT-5.6: 30m (Standard) oder 12h; eine Anfrage mit 12h läuft über die Responses API von OpenAI. Azure OpenAI: 30m. DeepInfra: 5m oder 1h. Eine Route, die 12h nicht annimmt, erhält die Anfrage ohne sie, und das Entfernen wird in X-Phaseo-Dropped-Params gemeldet.",
+			"pt-BR": "Duração mínima do cache. OpenAI GPT-5.6 e posteriores: 30m (padrão) ou 12h; uma solicitação que pede 12h é executada na API Responses da OpenAI. Azure OpenAI: 30m. DeepInfra: 5m ou 1h. Uma rota que não aceita 12h recebe a solicitação sem ela, e a remoção é informada em X-Phaseo-Dropped-Params.",
+			"hi": "कैश की न्यूनतम अवधि। GPT-5.6 और बाद के OpenAI मॉडल: 30m (डिफ़ॉल्ट) या 12h; 12h माँगने वाला अनुरोध OpenAI के Responses API पर चलता है। Azure OpenAI: 30m। DeepInfra: 5m या 1h। जो रूट 12h स्वीकार नहीं करता, उसे अनुरोध इसके बिना मिलता है, और इसे हटाए जाने की जानकारी X-Phaseo-Dropped-Params में दी जाती है।",
+			"ja": "キャッシュの最低保持期間。GPT-5.6以降のOpenAI: 30m（デフォルト）または12h。12hを指定したリクエストはOpenAIのResponses APIで実行されます。Azure OpenAI: 30m。DeepInfra: 5mまたは1h。12hを受け付けないルートには12hを外したリクエストが送られ、外したことはX-Phaseo-Dropped-Paramsで報告されます。",
+			"zh-Hans": "最短缓存保留时长。GPT-5.6 及以后版本的 OpenAI：30m（默认）或 12h；请求 12h 的请求会在 OpenAI 的 Responses API 上运行。Azure OpenAI：30m。DeepInfra：5m 或 1h。不支持 12h 的路由收到的请求不含该值，并在 X-Phaseo-Dropped-Params 中报告此次移除。",
+			"ar": "أقل مدة صلاحية للتخزين المؤقت. OpenAI بدءًا من GPT-5.6: 30m (الافتراضية) أو 12h؛ ويُنفَّذ الطلب الذي يطلب 12h عبر Responses API من OpenAI. Azure OpenAI: 30m. DeepInfra: 5m أو 1h. والمسار الذي لا يقبل 12h يتلقى الطلب بدونها، ويُبلَّغ عن الحذف في X-Phaseo-Dropped-Params."
+		},
+		"Cache writes split by lifetime, on Responses usage from OpenAI GPT-5.6 and later. The two counts sum to cache_write_tokens. Not returned in Chat Completions prompt_tokens_details.": {
+			"es": "Escrituras en caché desglosadas por duración, en el uso de Responses de OpenAI GPT-5.6 y posteriores. Las dos cifras suman cache_write_tokens. No se devuelve en prompt_tokens_details de Chat Completions.",
+			"fr": "Écritures dans le cache réparties par durée, dans l’utilisation Responses d’OpenAI GPT-5.6 et versions ultérieures. Les deux valeurs totalisent cache_write_tokens. Non renvoyé dans prompt_tokens_details de Chat Completions.",
+			"de": "Cache-Schreibvorgänge nach Lebensdauer aufgeteilt, in der Responses-Nutzung von OpenAI ab GPT-5.6. Die beiden Werte ergeben zusammen cache_write_tokens. Wird in prompt_tokens_details von Chat Completions nicht zurückgegeben.",
+			"pt-BR": "Gravações no cache divididas por duração, no uso de Responses da OpenAI GPT-5.6 e posteriores. Os dois valores somam cache_write_tokens. Não é retornado em prompt_tokens_details de Chat Completions.",
+			"hi": "GPT-5.6 और बाद के OpenAI मॉडलों के Responses उपयोग में अवधि के अनुसार बँटे कैश लेखन। दोनों संख्याओं का योग cache_write_tokens होता है। Chat Completions के prompt_tokens_details में नहीं लौटाया जाता।",
+			"ja": "GPT-5.6以降のOpenAIのResponses使用量における、保持期間別のキャッシュ書き込み。2つの値の合計がcache_write_tokensです。Chat Completionsのprompt_tokens_detailsには返されません。",
+			"zh-Hans": "GPT-5.6 及以后版本的 OpenAI 在 Responses 用量中按保留时长拆分的缓存写入。两个数值之和等于 cache_write_tokens。Chat Completions 的 prompt_tokens_details 中不返回。",
+			"ar": "كتابات التخزين المؤقت مقسّمة حسب المدة، في استخدام Responses من OpenAI بدءًا من GPT-5.6. ومجموع القيمتين يساوي cache_write_tokens. لا يُعاد في prompt_tokens_details الخاص بـ Chat Completions."
+		},
+		"Input tokens written to the cache with a 30-minute lifetime, billed at 1.25x the input rate.": {
+			"es": "Tokens de entrada escritos en la caché con una duración de 30 minutos, cobrados a 1,25x la tarifa de entrada.",
+			"fr": "Jetons d’entrée écrits dans le cache avec une durée de 30 minutes, facturés 1,25x le tarif d’entrée.",
+			"de": "Mit einer Lebensdauer von 30 Minuten in den Cache geschriebene Eingabetoken, berechnet mit dem 1,25-Fachen des Eingabepreises.",
+			"pt-BR": "Tokens de entrada gravados no cache com duração de 30 minutos, cobrados a 1,25x a tarifa de entrada.",
+			"hi": "30 मिनट की अवधि के साथ कैश में लिखे गए इनपुट टोकन, जिन पर इनपुट दर का 1.25x शुल्क लगता है।",
+			"ja": "保持期間30分でキャッシュに書き込まれた入力トークン。入力料金の1.25倍で請求されます。",
+			"zh-Hans": "以 30 分钟保留时长写入缓存的输入 token，按输入价格的 1.25 倍计费。",
+			"ar": "رموز الإدخال المكتوبة في التخزين المؤقت لمدة 30 دقيقة، وتُحتسب بـ 1.25x سعر الإدخال."
+		},
+		"Input tokens written to the cache with a 12-hour lifetime, billed at 2.5x the input rate.": {
+			"es": "Tokens de entrada escritos en la caché con una duración de 12 horas, cobrados a 2,5x la tarifa de entrada.",
+			"fr": "Jetons d’entrée écrits dans le cache avec une durée de 12 heures, facturés 2,5x le tarif d’entrée.",
+			"de": "Mit einer Lebensdauer von 12 Stunden in den Cache geschriebene Eingabetoken, berechnet mit dem 2,5-Fachen des Eingabepreises.",
+			"pt-BR": "Tokens de entrada gravados no cache com duração de 12 horas, cobrados a 2,5x a tarifa de entrada.",
+			"hi": "12 घंटे की अवधि के साथ कैश में लिखे गए इनपुट टोकन, जिन पर इनपुट दर का 2.5x शुल्क लगता है।",
+			"ja": "保持期間12時間でキャッシュに書き込まれた入力トークン。入力料金の2.5倍で請求されます。",
+			"zh-Hans": "以 12 小时保留时长写入缓存的输入 token，按输入价格的 2.5 倍计费。",
+			"ar": "رموز الإدخال المكتوبة في التخزين المؤقت لمدة 12 ساعة، وتُحتسب بـ 2.5x سعر الإدخال."
 		}
 	},
 	"GET /apps": {

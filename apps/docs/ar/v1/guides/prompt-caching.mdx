@@ -101,7 +101,7 @@ icon: "database-zap"
 ضع علامة تخزين مؤقت على كتلة محتوى لتخزين كل ما يسبقها مؤقتًا، بما فيها الكتلة نفسها. تقبل Phaseo صيغتين:
 
 - `cache_control`: `{"type": "ephemeral"}`، مع `ttl` اختياري قيمته `5m` أو `1h`.
-- `prompt_cache_breakpoint`: صيغة OpenAI `{"mode": "explicit"}`. عندما تحمل الكتلة الصيغتين، تُعتمد `prompt_cache_breakpoint`.
+- `prompt_cache_breakpoint`: صيغة OpenAI `{"mode": "explicit"}`، مع `ttl` اختياري قيمته `30m` أو `12h`. عندما تحمل الكتلة الصيغتين، تُعتمد `prompt_cache_breakpoint`.
 
 ```json
 {
@@ -121,7 +121,8 @@ icon: "database-zap"
 | المزوّد | `cache_control` على الكتل | `prompt_cache_breakpoint` |
 | --- | --- | --- |
 | Claude على Anthropic وClaude on AWS وAmazon Bedrock وGoogle Vertex AI | تُرسل بصيغة `{"type": "ephemeral"}` مع `ttl` الذي حددته | تُرسل بصيغة `cache_control: {"type": "ephemeral"}` |
-| OpenAI وAzure OpenAI، بدءًا من GPT-5.6 | تُرسل بصيغة `prompt_cache_breakpoint: {"mode": "explicit"}`؛ ويُحذف `ttl` | تُرسل |
+| OpenAI، بدءًا من GPT-5.6 | تُرسل بصيغة `prompt_cache_breakpoint: {"mode": "explicit"}`؛ ويُحذف `ttl` | تُرسل مع `ttl` الخاص بها |
+| Azure OpenAI، بدءًا من GPT-5.6 | تُرسل بصيغة `prompt_cache_breakpoint: {"mode": "explicit"}`؛ ويُحذف `ttl` | تُرسل دون `ttl` |
 | OpenAI وAzure OpenAI، النماذج الأقدم | تُحذف | تُحذف |
 | DeepInfra | تُحذف | تُرسل |
 | Alibaba Model Studio وVenice | تُرسل | تُحذف |
@@ -138,10 +139,10 @@ icon: "database-zap"
 
 | الحقل | القيم | يُرسل إلى |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m` | OpenAI وAzure OpenAI بدءًا من GPT-5.6، وDeepInfra |
+| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m`، أو `12h` في OpenAI | OpenAI وAzure OpenAI بدءًا من GPT-5.6، وDeepInfra |
 | `prompt_cache_retention` | `in_memory` أو `24h` | نماذج OpenAI وAzure OpenAI السابقة لـ GPT-5.6 |
 
-بدءًا من GPT-5.6، لا يقبل OpenAI قيمة `ttl` سوى `30m`، ولا يخزّن الوضع `explicit` إلا نقاط التوقف التي تضعها. ويستخدم DeepInfra الكائن نفسه مع `ttl` قيمته `5m` أو `1h`، ويتطلب `prompt_cache_key` في كل طلب ضمن الجلسة. ولا يتلقى المزوّدون الآخرون أيًّا من الحقلين.
+بدءًا من GPT-5.6، يقبل OpenAI قيمة `ttl` هي `30m` (الافتراضية) أو `12h`، بينما لا يقبل Azure OpenAI سوى `30m`. ولا يخزّن الوضع `explicit` إلا نقاط التوقف التي تضعها. ويستخدم DeepInfra الكائن نفسه مع `ttl` قيمته `5m` أو `1h`، ويتطلب `prompt_cache_key` في كل طلب ضمن الجلسة. ولا يتلقى المزوّدون الآخرون أيًّا من الحقلين.
 
 أرسل أيًّا من الحقلين على المستوى الأعلى أو ضمن `provider_options.openai`. عند وجود الاثنين، تُعتمد قيمة المستوى الأعلى:
 
@@ -160,6 +161,33 @@ icon: "database-zap"
   }
 }
 ```
+
+### التخزين المؤقت لمدة 12 ساعة في OpenAI
+
+بدءًا من GPT-5.6، يحتفظ OpenAI بإدخال التخزين المؤقت لمدة 12 ساعة على الأقل عندما تضبط `ttl: "12h"`، إما للطلب كله في `prompt_cache_options` أو لنقطة توقف واحدة في `prompt_cache_breakpoint`. وتأخذ نقطة التوقف التي ليس لها `ttl` خاص بها قيمة الطلب. ويحتسب OpenAI الكتابة لمدة 12 ساعة بـ 2.5× سعر الإدخال، والكتابة لمدة 30 دقيقة بـ 1.25×، أما القراءات من التخزين المؤقت فسعرها واحد في الحالتين.
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "prompt_cache_options": { "ttl": "30m" },
+  "input": [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Shared tool manual...",
+          "prompt_cache_breakpoint": { "mode": "explicit", "ttl": "12h" }
+        }
+      ]
+    },
+    { "role": "user", "content": "Find the failing test." }
+  ]
+}
+```
+
+- يوثّق OpenAI مدة الـ 12 ساعة في Responses API فقط. لذلك يُنفَّذ طلب Chat Completions الذي يطلبها عبر Responses API من OpenAI، ويبقى الرد بتنسيق Chat Completions.
+- تُجرَّب أولًا المسارات التي تقبل تخزينًا مؤقتًا لمدة 12 ساعة (واجهة OpenAI العامة). أما أي مسار آخر، مثل Azure OpenAI أو مزوّد آخر أو نموذج أقدم من GPT-5.6، فيتلقى الطلب بدونها، فتُطبَّق المدة الافتراضية البالغة 30 دقيقة. ويُنفَّذ الطلب مع ذلك، ويُبلَّغ عن الحقل المحذوف باسم `prompt_cache_options.ttl` أو `prompt_cache_breakpoint.ttl` في ترويسة `X-Phaseo-Dropped-Params` وفي `meta.routing.dropped_params`.
 
 ### Google Gemini
 
@@ -309,10 +337,10 @@ curl https://api.phaseo.app/v1/messages \
 | نقطة النهاية | إجمالي الإدخال | القراءات من التخزين المؤقت | الكتابات إلى التخزين المؤقت |
 | --- | --- | --- | --- |
 | Chat Completions | `prompt_tokens`، بما فيه القراءات والكتابات | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
-| Responses | `input_tokens`، بما فيه القراءات والكتابات | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens` |
+| Responses | `input_tokens`، بما فيه القراءات والكتابات | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`، مقسّمة حسب المدة في OpenAI بدءًا من GPT-5.6 إلى `input_tokens_details.cache_write_tokens_details.ttl_30m_tokens` و`ttl_12h_tokens` |
 | Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`، مقسّمًا حسب مدة الصلاحية في `cache_creation.ephemeral_5m_input_tokens` و`cache_creation.ephemeral_1h_input_tokens` |
 
-في Chat Completions وResponses، يساوي الإدخال غير المخزّن إجمالي الإدخال مطروحًا منه القراءات والكتابات. وتحمل ردود Anthropic Messages المتدفقة حقول التخزين المؤقت في `message_delta`.
+في Chat Completions وResponses، يساوي الإدخال غير المخزّن إجمالي الإدخال مطروحًا منه القراءات والكتابات. وتحمل ردود Anthropic Messages المتدفقة حقول التخزين المؤقت في `message_delta`. ولا يقسّم استخدام Chat Completions الكتابات حسب المدة، لأن OpenAI لا يوثّق حقلًا لذلك هناك، لكن تفاصيل الطلب تسجّل هذا التقسيم.
 
 <Note>
 كانت الردود السابقة تُبلّغ عن الكتابات إلى التخزين المؤقت في `output_tokens_details.cached_tokens` (و`completion_tokens_details.cached_tokens` في Chat Completions)، وكانت مسارات Claude تستبعد القراءات والكتابات من `input_tokens` في Chat Completions وResponses. لم يعد أي من ذلك قائمًا: اقرأ الكتابات من `cache_write_tokens`. وكانت ردود Anthropic Messages غير المتدفقة تعيد `cache_creation_input_tokens: null`؛ أما الآن فتعيد القيم الفعلية.
@@ -326,6 +354,8 @@ curl https://api.phaseo.app/v1/messages \
 | `cached_write_text_tokens` | عداد تسعير لكتابات التخزين المؤقت عندما يفرض المزوّد سعرًا واحدًا لها. |
 | `cached_write_text_tokens_5m` | رموز كتابة التخزين المؤقت لمدة 5 دقائق عندما يبلّغ المزوّد عن الكتابات حسب مدة الصلاحية. |
 | `cached_write_text_tokens_1h` | رموز كتابة التخزين المؤقت لمدة ساعة عندما يبلّغ المزوّد عن الكتابات حسب مدة الصلاحية. |
+| `cached_write_text_tokens_30m` | رموز الكتابة إلى التخزين المؤقت في OpenAI لمدة 30 دقيقة. |
+| `cached_write_text_tokens_12h` | رموز الكتابة إلى التخزين المؤقت في OpenAI لمدة 12 ساعة. |
 
 ### كيفية تسعير الرموز المخزّنة مؤقتًا
 
@@ -333,7 +363,7 @@ curl https://api.phaseo.app/v1/messages \
 
 - الإدخال غير المخزّن بسعر الإدخال
 - القراءات من التخزين المؤقت بسعر القراءة
-- الكتابات إلى التخزين المؤقت بسعر الكتابة، أو بسعري 5 دقائق وساعة واحدة عندما يسعّرهما المزوّد بشكل منفصل
+- الكتابات إلى التخزين المؤقت بسعر الكتابة، أو بسعري 5 دقائق وساعة واحدة (Claude) أو 30 دقيقة و12 ساعة (OpenAI) عندما يسعّرها المزوّد بشكل منفصل
 
 يحتسب بعض المزوّدين الكتابات ضمن إجمالي الإدخال، ويُبلّغ عنها آخرون بشكل منفصل. تحتسب Phaseo الحالتين بالطريقة نفسها، فلا يُحتسب الرمز المكتوب مرة أخرى كإدخال عادي.
 
@@ -347,10 +377,12 @@ curl https://api.phaseo.app/v1/messages \
 | 850 إخراج | $30.00 | $0.02550 |
 | الإجمالي | | $0.07875 |
 
+ولو كانت مدة 2,000 من هذه الكتابات 12 ساعة، لكلّفت $12.50 لكل مليون بدلًا من $6.25، ولكلّف الطلب $0.09125.
+
 إذا أبلغ مزوّد عن رموز مخزّنة مؤقتًا على مسار ليس له سعر تخزين مؤقت في الكتالوج بعد، فلا تُفشل Phaseo الطلب:
 
 - تُحتسب القراءات من التخزين المؤقت بسعر الإدخال للمسار.
-- تُحتسب الكتابات بسعر الإدخال مضروبًا في معامل الكتابة الذي يوثّقه المزوّد: 1.25× لكتابات Claude لمدة 5 دقائق و2× لكتابات الساعة؛ و1.25× لـ OpenAI وAzure OpenAI وAlibaba؛ و1× لكتابات Kimi K3 لمدة 5 دقائق و2× لكتابات الساعة؛ و1× للمزوّدين الآخرين.
+- تُحتسب الكتابات بسعر الإدخال مضروبًا في معامل الكتابة الذي يوثّقه المزوّد: 1.25× لكتابات Claude لمدة 5 دقائق و2× لكتابات الساعة؛ و1.25× لـ OpenAI وAzure OpenAI وAlibaba؛ و1× لكتابات Kimi K3 لمدة 5 دقائق و2× لكتابات الساعة؛ و2.5× لكتابات OpenAI لمدة 12 ساعة على أي مسار؛ و1× للمزوّدين الآخرين.
 - يحمل سطر السعر العلامة `pricing_fallback: "input_rate"`.
 
 على مسار Claude الذي لا يحتوي كتالوجه إلا على سعر واحد لكتابات التخزين المؤقت، يكون هذا السعر هو سعر كتابات الدقائق الخمس. وتُحتسب الكتابات التي يُبلغ عنها المزوّد على أنها كتابات لمدة ساعة بضعف سعر الإدخال، في سطر `cached_write_text_tokens_1h` يحمل العلامة `pricing_fallback: "input_rate"`.
@@ -383,6 +415,7 @@ curl https://api.phaseo.app/v1/messages \
 | `cache_control` من Anthropic مع `ttl: "1h"` | 90 دقيقة |
 | OpenAI أو Azure OpenAI مع `prompt_cache_retention: "24h"` | 24 ساعة |
 | OpenAI أو Azure OpenAI مع الاحتفاظ في الذاكرة (الافتراضي) | 90 دقيقة |
+| OpenAI مع `ttl: "12h"` في `prompt_cache_options` أو على نقطة توقف، أو عند الإبلاغ عن كتابة لمدة 12 ساعة | 18 ساعة |
 | OpenAI أو Azure OpenAI مع `prompt_cache_options.ttl: "30m"` | 45 دقيقة |
 | أي حالة أخرى | 15 دقيقة |
 

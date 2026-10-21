@@ -23,6 +23,8 @@ Si el proveedor que atiende una solicitud no admite uno de sus parámetros de mu
 
 Solo se pueden descartar estos parámetros: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` en `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` e `image_config`. Los mensajes, las herramientas, `tool_choice`, `response_format`, la configuración de razonamiento y los límites de salida nunca se descartan.
 
+Aparte de esto, un `ttl` de caché de prompts de `12h` se elimina en las rutas que no admiten el caché de 12 horas de OpenAI, y se informa en los mismos lugares como `prompt_cache_options.ttl` o `prompt_cache_breakpoint.ttl`; consulta [Caché de prompts](../guides/prompt-caching.mdx).
+
 En las respuestas satisfactorias, Phaseo indica los parámetros descartados que envió la propia solicitud:
 
 - en el encabezado de respuesta `X-Phaseo-Dropped-Params`, por ejemplo `X-Phaseo-Dropped-Params: top_k, min_p`
