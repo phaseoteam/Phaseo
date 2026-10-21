@@ -467,6 +467,37 @@
 		},
 		"defaultTitle": "新对话",
 		"branchTitle": "分支：{title}",
+		"logImport": {
+			"title": "继续已记录的请求",
+			"description": "将请求作为一个拥有独立会话的新聊天打开，并保存在此浏览器中。请选择要保留的内容。",
+			"loading": "正在加载请求…",
+			"failed": "无法加载此请求。请确认你已登录该请求所属的工作区。",
+			"unavailable": { "not_stored": "此请求的提示和回复未被存储。请在隐私设置中开启网关 I/O 日志以存储新的请求。", "too_large": "此请求过大，无法存储，因此无法打开。", "deleted": "此请求存储的提示和回复已过期或已被删除。", "unsupported": "只有 Chat Completions、Responses 和 Messages 请求可以在聊天中打开。" },
+			"summary": "{count, plural, other {# 条消息}} · {model}",
+			"modelUnavailable": "{model} 在聊天中不可用，因此聊天将使用 {fallback}。打开后你可以切换模型。",
+			"carryOver": "保留内容",
+			"options": {
+				"pinProvider": "固定提供商（{provider}）",
+				"keepParams": "参数（温度、最大 token 数、推理）",
+				"keepSystemPrompt": "系统提示",
+				"keepServerTools": "服务器工具",
+				"keepFunctionTools": "{count, plural, other {# 个函数工具}}",
+				"keepFunctionToolsHint": "聊天无法运行它们。声明后，之前的工具调用会以调用形式发送；不声明则以文本形式发送。",
+				"includeResponse": "已记录的回复"
+			},
+			"workspaceMismatch": "聊天从你当前的工作区发送，而它并非此请求所属的工作区。",
+			"warnings": {
+				"earlier_history_missing": "此请求通过 ID 延续了之前的回复，因此不包含之前的轮次。",
+				"unsupported_content": "部分内容无法显示，已被省略。",
+				"attachment_reference": "部分附件通过 ID 引用，未随请求一起存储。",
+				"no_response": "已记录的回复缺失或失败，因此聊天以请求结束。",
+				"response_truncated": "已记录的回复被截断了。",
+				"extra_choices": "只包含回复的第一个候选项。",
+				"unanswered_tool_calls": "部分工具调用没有结果。继续时它们会以文本形式发送。"
+			},
+			"cancel": "取消",
+			"continue": "在聊天中打开"
+		},
 		"errors": {
 			"signInToChat": "登录后即可开始聊天。",
 			"selectModelToChat": "请选择一个模型以开始聊天。",

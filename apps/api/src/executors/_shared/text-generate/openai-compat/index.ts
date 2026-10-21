@@ -1231,6 +1231,7 @@ export async function bufferStreamToIR(
 		throw new Error("openai_stream_missing_response");
 	}
 
+	finaliseChatAudio(finalResponse);
 	const isChatLikeResponse = isChatCompletionResponse(finalResponse);
 
 	// Convert to IR using appropriate transformer
@@ -1374,6 +1375,43 @@ function mergeUsageSnapshots(prev: any, next: any): any {
 	return merged;
 }
 
+const CHAT_AUDIO_DATA_CHUNKS = Symbol("chatAudioDataChunks");
+
+/**
+ * OpenAI streams Chat audio output as `choices[].delta.audio` pieces: the id and
+ * expires_at once, and base64 `data` and `transcript` in fragments
+ * (https://platform.openai.com/docs/api-reference/chat-streaming/streaming).
+ */
+function appendChatAudioDelta(message: any, delta: any): void {
+	const audio = message.audio && typeof message.audio === "object" ? message.audio : (message.audio = {});
+	if (typeof delta.id === "string" && delta.id) audio.id = delta.id;
+	if (typeof delta.expires_at === "number") audio.expires_at = delta.expires_at;
+	if (typeof delta.transcript === "string") audio.transcript = (audio.transcript ?? "") + delta.transcript;
+	if (typeof delta.data === "string" && delta.data) {
+		(audio[CHAT_AUDIO_DATA_CHUNKS] ??= []).push(delta.data);
+	}
+}
+
+/** Each base64 fragment is encoded on its own, so padded fragments are re-encoded as one. */
+export function joinBase64Chunks(chunks: string[]): string {
+	if (chunks.slice(0, -1).every((chunk) => chunk.length % 4 === 0 && !chunk.includes("="))) {
+		return chunks.join("");
+	}
+	let binary = "";
+	for (const chunk of chunks) binary += atob(chunk);
+	return btoa(binary);
+}
+
+function finaliseChatAudio(response: any): void {
+	for (const choice of Array.isArray(response?.choices) ? response.choices : []) {
+		const audio = choice?.message?.audio;
+		const chunks: string[] | undefined = audio?.[CHAT_AUDIO_DATA_CHUNKS];
+		if (!chunks) continue;
+		audio.data = joinBase64Chunks(chunks);
+		delete audio[CHAT_AUDIO_DATA_CHUNKS];
+	}
+}
+
 function accumulateChatCompletion(finalResponse: any, payload: any): any {
 	if (!payload || !Array.isArray(payload?.choices)) {
 		if (payload?.usage && finalResponse) {
@@ -1415,6 +1453,7 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
 				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
 				...(Array.isArray(message.audios) ? { audios: message.audios } : Array.isArray(previousMessage.audios) ? { audios: previousMessage.audios } : {}),
+				...(message.audio && typeof message.audio === "object" ? { audio: message.audio } : previousMessage.audio ? { audio: previousMessage.audio } : {}),
 				...(Array.isArray(message._contentParts)
 					? { _contentParts: message._contentParts }
 					: Array.isArray(previousMessage._contentParts)
@@ -1463,6 +1502,9 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				choice.message.audios = [];
 			}
 			choice.message.audios.push(...chunk.delta.audios);
+		}
+		if (chunk.delta?.audio && typeof chunk.delta.audio === "object") {
+			appendChatAudioDelta(choice.message, chunk.delta.audio);
 		}
 		if (chunk.finish_reason) {
 			choice.finish_reason = chunk.finish_reason;

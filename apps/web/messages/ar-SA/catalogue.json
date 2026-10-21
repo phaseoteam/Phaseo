@@ -1225,6 +1225,8 @@
 				"audio_seconds": "ثواني الصوت",
 				"cached_write_text_tokens_5m": "رموز كتابة النص في الذاكرة المؤقتة (مدة 5 دقائق)",
 				"cached_write_text_tokens_1h": "رموز كتابة النص في الذاكرة المؤقتة (مدة ساعة)",
+				"cached_write_text_tokens_30m": "رموز كتابة النص في الذاكرة المؤقتة (مدة 30 دقيقة)",
+				"cached_write_text_tokens_12h": "رموز كتابة النص في الذاكرة المؤقتة (مدة 12 ساعة)",
 				"output_video_seconds": "ثواني الفيديو للإخراج",
 				"output_video_frames": "إطارات الفيديو للإخراج",
 				"bfl_credits": "أرصدة BFL",

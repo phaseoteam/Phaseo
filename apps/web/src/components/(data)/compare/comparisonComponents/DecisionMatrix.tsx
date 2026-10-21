@@ -28,6 +28,13 @@ import { cn } from "@/lib/utils";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { ExternalLink, Info, MessageSquare } from "lucide-react";
 import { ProviderLogo } from "../ProviderLogo";
+import {
+	formatServiceTierLabel,
+	getRoutableProviderIds,
+	pickHeadlinePrice,
+	preferStandardPlan,
+	type HeadlinePriceKind,
+} from "../comparePricing";
 import ModelCombobox from "../ModelCombobox";
 import type { CompareGatewayUsageByModel, CompareModelOption } from "../types";
 import { useLocale, useTranslations } from "next-intl";
@@ -94,8 +101,11 @@ type BenchmarkSummary = {
 
 type CapabilityChip = {
 	label: string;
-	active: boolean;
+	/** null when the catalogue doesn't say. */
+	active: boolean | null;
 };
+
+const NO_PROVIDER = "__none__";
 
 const BEST_TONE =
 	"border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300";
@@ -264,60 +274,36 @@ function getProviderOptions(model: ExtendedModel): ProviderOption[] {
 	);
 }
 
-function isMeterMatch(
-	price: Price,
-	kind: "input" | "output" | "cached"
-): boolean {
-	const meter = String(price.meter ?? "").trim().toLowerCase();
-	if (!meter) return true;
-	if (kind === "cached") return meter.includes("cached");
-	if (kind === "input") {
-		return (
-			meter.includes("input") &&
-			!meter.includes("cached") &&
-			!meter.includes("output")
-		);
-	}
-	return meter.includes("output");
-}
-
 function getPricePoint(
 	model: ExtendedModel,
 	providerId: string | null | undefined,
-	kind: "input" | "output" | "cached",
+	kind: HeadlinePriceKind,
 	pricingPlan?: string | null
 ): PricePoint {
-	let best: PricePoint = { valuePerMillion: null, providerName: null, price: null };
-
-	for (const price of getModelPrices(model)) {
-		if (price.meter === "summary") continue;
-		if (providerId && getProviderId(price) !== providerId) continue;
-		if (pricingPlan && price.pricing_plan !== pricingPlan) continue;
-		if (!isMeterMatch(price, kind)) continue;
-
-		const rawValue =
+	const candidates = getModelPrices(model).filter(
+		(price) =>
+			price.meter !== "summary" &&
+			(!providerId || getProviderId(price) === providerId)
+	);
+	const scoped = pricingPlan
+		? candidates.filter((price) => price.pricing_plan === pricingPlan)
+		: preferStandardPlan(candidates);
+	const best = pickHeadlinePrice(scoped, kind, (price) =>
+		normalizePricePerMillion(
 			kind === "cached"
 				? price.cached_input_token_price
 				: kind === "input"
 					? price.input_token_price
-					: price.output_token_price;
-
-		const valuePerMillion = normalizePricePerMillion(
-			rawValue,
+					: price.output_token_price,
 			price.unit_size ?? null
-		);
-		if (valuePerMillion == null) continue;
-
-		if (best.valuePerMillion == null || valuePerMillion < best.valuePerMillion) {
-			best = {
-				valuePerMillion,
-				providerName: getProviderName(price),
-				price,
-			};
-		}
-	}
-
-	return best;
+		)
+	);
+	if (!best) return { valuePerMillion: null, providerName: null, price: null };
+	return {
+		valuePerMillion: best.valuePerMillion,
+		providerName: getProviderName(best.price),
+		price: best.price,
+	};
 }
 
 function getPriceBundle(
@@ -347,7 +333,9 @@ function getDefaultServiceTier(tiers: string[]): string | null {
 }
 
 function selectDefaultProviderId(model: ExtendedModel): string | null {
-	let best: { id: string; score: number } | null = null;
+	let best: { id: string; rank: number[] } | null = null;
+	const routable = getRoutableProviderIds(model);
+	const lab = model.provider.provider_id;
 
 	for (const option of getProviderOptions(model)) {
 		const prices = getPriceBundle(model, option.id);
@@ -355,16 +343,28 @@ function selectDefaultProviderId(model: ExtendedModel): string | null {
 			prices.input.valuePerMillion,
 			prices.output.valuePerMillion,
 		].filter((value): value is number => value != null && Number.isFinite(value));
+		if (!scoredValues.length) continue;
 
-		const score = scoredValues.length
-			? scoredValues.reduce((sum, value) => sum + value, 0)
-			: Number.POSITIVE_INFINITY;
-		if (!best || score < best.score) {
-			best = { id: option.id, score };
+		// Providers Phaseo routes to first, then the cheapest, then the model's own lab.
+		const rank = [
+			routable.has(option.id) ? 0 : 1,
+			scoredValues.reduce((sum, value) => sum + value, 0),
+			option.id === lab || option.id.startsWith(`${lab}-`) ? 0 : 1,
+		];
+		if (!best || compareRank(rank, best.rank) < 0) {
+			best = { id: option.id, rank };
 		}
 	}
 
+	// Without any priced provider the picker says so rather than choosing an arbitrary one.
 	return best?.id ?? null;
+}
+
+function compareRank(a: number[], b: number[]): number {
+	for (let index = 0; index < a.length; index += 1) {
+		if (a[index] !== b[index]) return a[index] < b[index] ? -1 : 1;
+	}
+	return 0;
 }
 
 function toTypeList(value: ExtendedModel["input_types"]): string[] {
@@ -378,10 +378,14 @@ function toTypeList(value: ExtendedModel["input_types"]): string[] {
 
 function buildCapabilityChips(model: ExtendedModel): CapabilityChip[] {
 	return [
-		{ label: "Reasoning", active: Boolean(model.reasoning) },
-		{ label: "Web", active: Boolean(model.web_access) },
-		{ label: "Fine-tune", active: Boolean(model.fine_tunable) },
+		{ label: "Reasoning", active: model.reasoning ?? null },
+		{ label: "Web", active: model.web_access ?? null },
+		{ label: "Fine-tune", active: model.fine_tunable ?? null },
 	];
+}
+
+function hasCapabilityData(models: ExtendedModel[]): boolean {
+	return models.some((model) => buildCapabilityChips(model).some((chip) => chip.active != null));
 }
 
 function buildBenchmarkSummaries(models: ExtendedModel[]): Map<string, BenchmarkSummary> {
@@ -565,6 +569,7 @@ export default function DecisionMatrix({
 		() => buildBenchmarkSummaries(selectedModels),
 		[selectedModels]
 	);
+	const showCapabilities = hasCapabilityData(selectedModels);
 
 	React.useEffect(() => {
 		const node = modelBarRef.current;
@@ -796,7 +801,12 @@ export default function DecisionMatrix({
 								</div>
 							</div>
 							<Select
-								value={selectedProviderId ?? "__none__"}
+								value={selectedProviderId ?? NO_PROVIDER}
+								// Labels for the trigger, which otherwise shows the raw provider id.
+								items={[
+									...options.map((option) => ({ value: option.id, label: option.name })),
+									{ value: NO_PROVIDER, label: t("noPricedProviders") },
+								]}
 								disabled={!options.length}
 								onValueChange={(value) => {
 									setSelectedTierByModel((current) => ({ ...current, [model.id]: "" }));
@@ -824,7 +834,7 @@ export default function DecisionMatrix({
 								</SelectTrigger>
 								<SelectContent>
 									{!options.length ? (
-										<SelectItem value="__none__" disabled>
+										<SelectItem value={NO_PROVIDER} disabled>
 											{t("noPricedProviders")}
 										</SelectItem>
 									) : null}
@@ -841,6 +851,7 @@ export default function DecisionMatrix({
 							{serviceTiers.length > 1 ? (
 								<Select
 									value={selectedTier}
+									items={serviceTiers.map((tier) => ({ value: tier, label: formatServiceTierLabel(tier) }))}
 									onValueChange={(value) =>
 										setSelectedTierByModel((current) => ({ ...current, [model.id]: value }))
 									}
@@ -850,7 +861,7 @@ export default function DecisionMatrix({
 									</SelectTrigger>
 									<SelectContent>
 										{serviceTiers.map((tier) => (
-											<SelectItem key={tier} value={tier} className="capitalize">{tier.replace(/[_-]+/g, " ")}</SelectItem>
+											<SelectItem key={tier} value={tier}>{formatServiceTierLabel(tier)}</SelectItem>
 										))}
 									</SelectContent>
 								</Select>
@@ -928,22 +939,27 @@ export default function DecisionMatrix({
 							<MetricRow label={t("release")}>
 								{formatMonthYear(model.release_date)}
 							</MetricRow>
-							<MetricRow label={t("capabilities")}>
-								<div className="flex flex-wrap justify-end gap-1">
-									{buildCapabilityChips(model).map((chip) => (
-										<Badge
-											key={`${model.id}-${chip.label}`}
-											variant="outline"
-											className={cn(
-												"h-5 rounded px-1.5 text-[10px]",
-												!chip.active && "opacity-35"
-											)}
-										>
-											{chip.label}
-										</Badge>
-									))}
-								</div>
-							</MetricRow>
+							{/* Unknown isn't "unsupported", so skip the row when the catalogue has no flags. */}
+							{showCapabilities ? (
+								<MetricRow label={t("capabilities")}>
+									<div className="flex flex-wrap justify-end gap-1">
+										{buildCapabilityChips(model)
+											.filter((chip) => chip.active != null)
+											.map((chip) => (
+												<Badge
+													key={`${model.id}-${chip.label}`}
+													variant="outline"
+													className={cn(
+														"h-5 rounded px-1.5 text-[10px]",
+														!chip.active && "opacity-35"
+													)}
+												>
+													{chip.label}
+												</Badge>
+											))}
+									</div>
+								</MetricRow>
+							) : null}
 						</div>
 					);
 				})}
@@ -1076,12 +1092,17 @@ export default function DecisionMatrix({
 								{providerThroughput ?? "-"}
 							</MetricRow>
 							<MetricRow label={t("visualisePerformance")}>
-								<a
-									href="#compare-benchmarks"
-									className="underline underline-offset-2"
-								>
-									{t("viewCharts")}
-								</a>
+								{/* The model page only renders its performance section when it has metrics. */}
+								{usage?.latencyP50Ms30m != null || usage?.throughputP50TokPerSec30m != null ? (
+									<Link
+										href={`/models/${model.id}#performance`}
+										className="underline underline-offset-2"
+									>
+										{t("viewCharts")}
+									</Link>
+								) : (
+									"-"
+								)}
 							</MetricRow>
 						</div>
 					);
@@ -1225,7 +1246,7 @@ export default function DecisionMatrix({
 								</Highlight>
 							</MetricRow>
 							<MetricRow label={t("pricingBasis")}>
-								<span className="truncate">
+								<span className="block truncate">
 									{formatUsd(row?.inputPrice?.valuePerMillion)} {t("input")} /{" "}
 									{formatUsd(row?.outputPrice?.valuePerMillion)} {t("output")}
 								</span>

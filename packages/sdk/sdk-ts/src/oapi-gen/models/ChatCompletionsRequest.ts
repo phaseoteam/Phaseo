@@ -40,6 +40,9 @@ export interface ChatCompletionsRequest {
   max_tokens?: number;
   max_tool_calls?: number;
   messages: {
+    audio?: {
+      id: string;
+    } | null;
     audios?: {
       audio_url: {
         url: string;

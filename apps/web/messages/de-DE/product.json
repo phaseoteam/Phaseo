@@ -467,6 +467,37 @@
 		},
 		"defaultTitle": "Neuer Chat",
 		"branchTitle": "Abzweigung: {title}",
+		"logImport": {
+			"title": "Protokollierte Anfrage fortsetzen",
+			"description": "Öffnet die Anfrage als neuen Chat mit eigener Sitzung, gespeichert in diesem Browser. Wähle aus, was übernommen wird.",
+			"loading": "Anfrage wird geladen…",
+			"failed": "Diese Anfrage konnte nicht geladen werden. Prüfe, ob du im zugehörigen Workspace angemeldet bist.",
+			"unavailable": { "not_stored": "Prompt und Antwort dieser Anfrage wurden nicht gespeichert. Aktiviere Gateway-I/O-Protokolle in den Datenschutzeinstellungen, um neue Anfragen zu speichern.", "too_large": "Diese Anfrage war zu groß zum Speichern und kann daher nicht geöffnet werden.", "deleted": "Der gespeicherte Prompt und die Antwort dieser Anfrage sind abgelaufen oder wurden gelöscht.", "unsupported": "Nur Anfragen an Chat Completions, Responses und Messages können im Chat geöffnet werden." },
+			"summary": "{count, plural, one {# Nachricht} other {# Nachrichten}} · {model}",
+			"modelUnavailable": "{model} ist im Chat nicht verfügbar, daher verwendet der Chat {fallback}. Du kannst das Modell nach dem Öffnen wechseln.",
+			"carryOver": "Übernehmen",
+			"options": {
+				"pinProvider": "Anbieter festlegen ({provider})",
+				"keepParams": "Parameter (Temperatur, maximale Tokens, Reasoning)",
+				"keepSystemPrompt": "System-Prompt",
+				"keepServerTools": "Server-Tools",
+				"keepFunctionTools": "{count, plural, one {# Funktions-Tool} other {# Funktions-Tools}}",
+				"keepFunctionToolsHint": "Der Chat kann sie nicht ausführen. Deklariert werden frühere Tool-Aufrufe als Aufrufe gesendet, sonst als Text.",
+				"includeResponse": "Die protokollierte Antwort"
+			},
+			"workspaceMismatch": "Der Chat sendet aus deinem aktiven Workspace, der nicht der Workspace dieser Anfrage ist.",
+			"warnings": {
+				"earlier_history_missing": "Diese Anfrage hat eine frühere Antwort per ID fortgesetzt, daher fehlen die Züge davor.",
+				"unsupported_content": "Einige Inhalte konnten nicht angezeigt werden und wurden weggelassen.",
+				"attachment_reference": "Einige Anhänge wurden per ID referenziert und nicht mit der Anfrage gespeichert.",
+				"no_response": "Die protokollierte Antwort fehlt oder ist fehlgeschlagen, daher endet der Chat mit der Anfrage.",
+				"response_truncated": "Die protokollierte Antwort wurde abgeschnitten.",
+				"extra_choices": "Nur die erste der Antwortvarianten wird übernommen.",
+				"unanswered_tool_calls": "Einige Tool-Aufrufe haben kein Ergebnis. Sie werden beim Fortsetzen als Text gesendet."
+			},
+			"cancel": "Abbrechen",
+			"continue": "Im Chat öffnen"
+		},
 		"errors": {
 			"signInToChat": "Melde dich an, um den Chat zu starten.",
 			"selectModelToChat": "Wähle ein Modell aus, um den Chat zu starten.",

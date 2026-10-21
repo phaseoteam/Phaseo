@@ -1569,6 +1569,9 @@ public sealed class ChatImageOutputPart
 
 public sealed class ChatMessage
 {
+	[JsonPropertyName("audio")]
+	public Dictionary<string, object>? Audio { get; set; }
+
 	[JsonPropertyName("audios")]
 	public List<Dictionary<string, object>>? Audios { get; set; }
 
@@ -1626,6 +1629,43 @@ public sealed class ChatReasoningDetail
 
 	[JsonPropertyName("type")]
 	public string Type { get; set; }
+
+}
+
+public sealed class ChatResponseMessage
+{
+	[JsonPropertyName("audio")]
+	public Dictionary<string, object>? Audio { get; set; }
+
+	[JsonPropertyName("audios")]
+	public List<Dictionary<string, object>>? Audios { get; set; }
+
+	[JsonPropertyName("content")]
+	public object? Content { get; set; }
+
+	[JsonPropertyName("images")]
+	public List<Dictionary<string, object>>? Images { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("reasoning")]
+	public string? Reasoning { get; set; }
+
+	[JsonPropertyName("reasoning_content")]
+	public string? ReasoningContent { get; set; }
+
+	[JsonPropertyName("reasoning_details")]
+	public List<Dictionary<string, object>>? ReasoningDetails { get; set; }
+
+	[JsonPropertyName("role")]
+	public string Role { get; set; }
+
+	[JsonPropertyName("tool_call_id")]
+	public string? ToolCallId { get; set; }
+
+	[JsonPropertyName("tool_calls")]
+	public List<Dictionary<string, object>>? ToolCalls { get; set; }
 
 }
 
