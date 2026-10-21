@@ -11,7 +11,7 @@ import {
 	resolveOpenAICompatKey,
 } from "../../openai-compatible/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 
 function invalidParameterResponse(param: string, message: string): Response {
 	return new Response(
@@ -34,7 +34,7 @@ function usageMeters(usage: unknown): Record<string, any> {
 
 function pricedBill(usage: unknown, args: ProviderExecuteArgs, upstreamId: string | null) {
 	const meters = usageMeters(usage);
-	const pricedUsage = computeBill(meters, args.pricingCard);
+	const pricedUsage = computeBillAfterProviderCharge(meters, args.pricingCard);
 	return {
 		cost_cents: Number(pricedUsage?.pricing?.total_cents ?? 0),
 		currency: "USD" as const,

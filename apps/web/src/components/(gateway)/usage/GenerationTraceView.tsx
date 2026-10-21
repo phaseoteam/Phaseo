@@ -631,7 +631,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 					<div className="flex flex-wrap gap-1.5">
 						<StatusPill tone={responseTone}>{request.success ? <CheckCircle2 className="size-3" aria-hidden="true" /> : <AlertCircle className="size-3" aria-hidden="true" />}{request.success ? t("chatGaps.copyCompleted" as never) : t("chatGaps.copyFailed" as never)}</StatusPill>
 						<StatusPill>{routeProviderName}</StatusPill>
-						{ioLog ? <StatusPill tone={payloadTone}>R2 {ioLog.status}</StatusPill> : null}
+						{ioLog ? <StatusPill tone={payloadTone}>{t("trace.payloadStatus" as never, { status: ioLog.status } as never)}</StatusPill> : null}
 					</div>
 				</div>
 				<div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 pt-3 sm:grid-cols-4">
@@ -764,7 +764,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 				</LifecycleStep> : null}
 				<LifecycleStep id="trace-response" title={t("strings.Response" as never)}
 					summary={response.text ? t("trace.finalResponseReturnedByTheGateway" as never) : t("trace.noFinalTextResponseWasCaptured" as never)}
-					icon={MessageSquareText} badge={<StatusPill tone={responseTone}>{request.status_code ?? (request.success ? "Complete" : "Error")}</StatusPill>}>
+					icon={MessageSquareText} badge={<StatusPill tone={responseTone}>{request.status_code ?? (request.success ? t("chatGaps.copyCompleted" as never) : t("chatGaps.copyFailed" as never))}</StatusPill>}>
 					<div className="border-l-2 border-border bg-muted/20 px-3.5 py-3">
 						<div className="flex flex-wrap items-center justify-between gap-2">
 							<div className="flex items-center gap-2 text-xs font-medium"><CheckCircle2 className="size-3.5 text-muted-foreground" aria-hidden="true" />{response.label === "Response" ? t("strings.Response" as never) : t(("trace." + response.label.replaceAll(" ", "")) as never)}</div>
@@ -775,7 +775,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 				</LifecycleStep>
 
 				<LifecycleStep id="trace-capture" title={t("trace.logCapture" as never)}
-					summary={ioLog?.status === "stored" ? t("trace.requestAndResponsePayloadRetainedInCloudflareR2" as never) : t("trace.iOPayloadStorageStatusAndRetentionDetails" as never)}
+					summary={ioLog?.status === "stored" ? t("trace.payloadStored" as never) : t("trace.iOPayloadStorageStatusAndRetentionDetails" as never)}
 					icon={Database} badge={<StatusPill tone={payloadTone}>{ioLog?.status ?? t("realtimeCopy.copyUnavailable" as never)}</StatusPill>}>
 					<div className="space-y-3">
 						<div className="grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border/60 py-3 sm:grid-cols-3">

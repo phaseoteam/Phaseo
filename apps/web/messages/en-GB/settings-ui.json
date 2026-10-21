@@ -2924,6 +2924,7 @@
 		"phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible": "When disabled, free endpoints flagged as publishing prompts become ineligible.",
 		"Store Gateway I/O logs": "Store Gateway I/O logs",
 		"phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView": "Store request prompts and completions in private R2 storage for the Logs detail view.",
+		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "Off while zero data retention is required. Prompts and completions aren't stored.",
 		"90 days": "90 days",
 		"180 days": "180 days",
 		"365 days": "365 days",
@@ -5167,19 +5168,18 @@
 		"total": "Total",
 		"multiValueNote": "A request with several values counts once under each.",
 		"notFilteredByLabel": "This table ignores the label filter above.",
-		"classificationsTitle": "Classifications",
 		"labelsTitle": "Labels",
 		"thisIsClassifierCall": "This request is a classifier call for {name}.",
-		"statusClassified": "Classified",
 		"statusSessionCache": "Reused from session",
 		"statusBudgetReached": "Budget reached",
 		"statusFailed": "Failed",
 		"confidence": "{value} confidence",
 		"noAnswer": "No value fitted",
-		"model": "Model",
-		"cost": "Cost",
-		"openClassifierCall": "Open classifier call",
-		"callerLabels": "Sent with the request"
+		"callerLabels": "Sent with the request",
+		"showLabelled": "Show requests where {key} is {value}",
+		"viewCall": "View call",
+		"classifierCallBadge": "Classifier call",
+		"moreLabels": "+{count}"
 	},
 	"providerCatalogCopy": {
 		"serviceTier": "Service tier",
@@ -5838,7 +5838,6 @@
 		"noFinalTextResponseWasCaptured": "No final text response was captured.",
 		"copyModelOutput": "Copy model output",
 		"logCapture": "Log capture",
-		"requestAndResponsePayloadRetainedInCloudflareR2": "Request and response payload retained in Cloudflare R2.",
 		"iOPayloadStorageStatusAndRetentionDetails": "I/O payload storage status and retention details.",
 		"storage": "Storage",
 		"cloudflareR2": "Cloudflare R2",
@@ -5872,7 +5871,9 @@
 		"toolApplypatch": "Apply patch",
 		"toolSubagent": "Subagent",
 		"toolFusion": "Fusion",
-		"toolModelsearch": "Model search"
+		"toolModelsearch": "Model search",
+		"payloadStatus": "Payload {status}",
+		"payloadStored": "Request and response payload stored."
 	},
 	"keyDetail": {
 		"back": "Back to API keys",

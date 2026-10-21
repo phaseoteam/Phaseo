@@ -62,6 +62,9 @@ type RelayUsageAggregate = LiveUsage & {
 	output_audio_tokens?: number;
 	cached_read_text_tokens?: number;
 	cached_read_audio_tokens?: number;
+	input_image_tokens?: number;
+	input_video_tokens?: number;
+	cached_read_image_tokens?: number;
 	input_audio_ms?: number;
 	received_audio_ms?: number;
 	output_audio_ms?: number;
@@ -238,6 +241,9 @@ function addOpenAIUsage(current: RelayUsageAggregate, usage: Record<string, unkn
 			toNumber(current.cached_read_text_tokens) + toNumber(normalized.cached_read_text_tokens),
 		cached_read_audio_tokens:
 			toNumber(current.cached_read_audio_tokens) + toNumber(normalized.cached_read_audio_tokens),
+		input_image_tokens: toNumber(current.input_image_tokens) + toNumber(normalized.input_image_tokens),
+		cached_read_image_tokens:
+			toNumber(current.cached_read_image_tokens) + toNumber(normalized.cached_read_image_tokens),
 	};
 }
 
@@ -250,6 +256,8 @@ export function googleUsageSnapshot(usage: Record<string, unknown>): RelayUsageA
 		input_audio_tokens: getGoogleModalityTokens(promptDetails, "audio"),
 		output_text_tokens: getGoogleModalityTokens(responseDetails, "text") + thoughts,
 		output_audio_tokens: getGoogleModalityTokens(responseDetails, "audio"),
+		input_image_tokens: getGoogleModalityTokens(promptDetails, "image"),
+		input_video_tokens: getGoogleModalityTokens(promptDetails, "video"),
 	};
 }
 
@@ -264,6 +272,10 @@ function addTokenUsage(current: RelayUsageAggregate, addition: RelayUsageAggrega
 			toNumber(current.cached_read_text_tokens) + toNumber(addition.cached_read_text_tokens),
 		cached_read_audio_tokens:
 			toNumber(current.cached_read_audio_tokens) + toNumber(addition.cached_read_audio_tokens),
+		input_image_tokens: toNumber(current.input_image_tokens) + toNumber(addition.input_image_tokens),
+		input_video_tokens: toNumber(current.input_video_tokens) + toNumber(addition.input_video_tokens),
+		cached_read_image_tokens:
+			toNumber(current.cached_read_image_tokens) + toNumber(addition.cached_read_image_tokens),
 	};
 }
 
@@ -276,6 +288,8 @@ export function mergeGoogleUsageSnapshot(
 		input_audio_tokens: Math.max(toNumber(current.input_audio_tokens), toNumber(next.input_audio_tokens)),
 		output_text_tokens: Math.max(toNumber(current.output_text_tokens), toNumber(next.output_text_tokens)),
 		output_audio_tokens: Math.max(toNumber(current.output_audio_tokens), toNumber(next.output_audio_tokens)),
+		input_image_tokens: Math.max(toNumber(current.input_image_tokens), toNumber(next.input_image_tokens)),
+		input_video_tokens: Math.max(toNumber(current.input_video_tokens), toNumber(next.input_video_tokens)),
 	};
 }
 
@@ -902,6 +916,8 @@ export class RealtimeRelayDurableObject {
 		const hasUsage =
 			toNumber(turnUsage.input_text_tokens) +
 			toNumber(turnUsage.input_audio_tokens) +
+			toNumber(turnUsage.input_image_tokens) +
+			toNumber(turnUsage.input_video_tokens) +
 			toNumber(turnUsage.output_text_tokens) +
 			toNumber(turnUsage.output_audio_tokens) > 0;
 		if (!hasUsage) return;

@@ -90,6 +90,7 @@ describe("account usage settings routes", () => {
 			expect(query.searchParams.get("workspace_id")).toBe("eq.workspace-1");
 			const fields = query.searchParams.get("select")!.replace(/\s/g, "").split(",");
 			expect(fields).toContain("response_timeline:detail_metadata->response_timeline");
+			expect(fields).toContain("labels:detail_metadata->labels");
 			expect(fields).not.toContain("detail_metadata");
 		}
 	});

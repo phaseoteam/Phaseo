@@ -499,7 +499,7 @@ def createRealtimeSession(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> OcrResponse:
 	path = path or {}
 	resolved_path = "/audio/realtime/sessions"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -1409,7 +1409,7 @@ def getProviderDerankStatus(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> OcrResponse:
 	path = path or {}
 	resolved_path = f"/health/providers/{_path_segment(path.get('provider_id', ''))}/derank"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)

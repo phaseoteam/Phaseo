@@ -120,6 +120,8 @@ class AnthropicMessagesRequest
 	/** @var array|null */
 	public $plugins;
 	/** @var array<string, mixed>|null */
+	public $prompt;
+	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
 	public $provider_options;
@@ -1037,6 +1039,8 @@ class ChatCompletionsRequest
 	public $prediction;
 	/** @var float|null */
 	public $presence_penalty;
+	/** @var array<string, mixed>|null */
+	public $prompt;
 	/** @var string|null */
 	public $prompt_cache_key;
 	/** @var array<string, mixed>|null */
@@ -4531,6 +4535,8 @@ class Preset
 
 class PresetConfig
 {
+	/** @var array<string, mixed>|null */
+	public $prompt;
 }
 
 class PresetCreateRequest
@@ -4569,6 +4575,46 @@ class PresetListResponse
 	public $data;
 	/** @var int */
 	public $total_count;
+}
+
+class PresetPromptTemplate
+{
+	/** @var array */
+	public $messages;
+	/** @var array<string, mixed>|null */
+	public $response_format;
+	/** @var string|null */
+	public $syntax;
+	/** @var mixed|null */
+	public $tool_choice;
+	/** @var array|null */
+	public $tools;
+	/** @var array<string, mixed>|null */
+	public $variables;
+}
+
+class PresetPromptTemplateMessage
+{
+	/** @var string|array */
+	public $content;
+	/** @var string */
+	public $role;
+}
+
+class PresetPromptVariable
+{
+	/** @var mixed|null */
+	public $default;
+	/** @var string|null */
+	public $description;
+	/** @var array|null */
+	public $enum;
+	/** @var int|null */
+	public $max_length;
+	/** @var bool|null */
+	public $required;
+	/** @var string */
+	public $type;
 }
 
 class PresetPublisher
@@ -4923,6 +4969,14 @@ class PromptCacheOptions
 	public $mode;
 	/** @var string|null */
 	public $ttl;
+}
+
+class PromptTemplateReference
+{
+	/** @var string */
+	public $id;
+	/** @var array<string, mixed>|null */
+	public $variables;
 }
 
 class Provider
@@ -5511,6 +5565,8 @@ class ResponsesRequest
 	public $plugins;
 	/** @var string|null */
 	public $previous_response_id;
+	/** @var array<string, mixed>|null */
+	public $prompt;
 	/** @var string|null */
 	public $prompt_cache_key;
 	/** @var array<string, mixed>|null */

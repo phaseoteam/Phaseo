@@ -7,6 +7,8 @@ import type { RequestClassifierSummary } from "@/lib/fetchers/internal/settingsT
 
 export interface RequestRow {
 	response_timeline?: { version?: number; routing_ms?: number | null } | null;
+	/** detail_metadata.labels, selected on its own for list rows. */
+	labels?: Array<{ key: string; value: string }> | null;
 	stream?: boolean | null;
 	latency_ms?: number | null;
 	generation_ms?: number | null;
