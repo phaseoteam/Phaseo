@@ -13,6 +13,7 @@ type Fetch = typeof fetch;
 
 const CODEX_USAGE = "https://chatgpt.com/backend-api/wham/usage";
 const CLAUDE_USAGE = "https://api.anthropic.com/api/oauth/usage";
+const CLAUDE_PROFILE = "https://api.anthropic.com/api/oauth/profile";
 const object = (value: unknown) => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 const text = (value: unknown) => typeof value === "string" && value.trim() ? value.trim().slice(0, 200) : undefined;
 
@@ -33,6 +34,21 @@ export function codexHubUsage(value: unknown, fallbackPlan?: string): Pick<Accou
 /** Anthropic's oauth/usage, the same windows Claude Code's /usage shows. */
 export function claudeHubUsage(value: unknown): Pick<AccountStatus, "usage" | "extraUsage"> {
 	return claudeLimits(object(value) as Parameters<typeof claudeLimits>[0]);
+}
+
+/**
+ * The plan from Claude's OAuth profile, which usage doesn't report: Team seats by seat tier, Max by its multiplier.
+ * Accounts on different plans have different-sized limits, so the rings group by it.
+ */
+export function claudeProfilePlan(value: unknown): string | undefined {
+	const organization = object(object(value).organization);
+	const type = text(organization.organization_type), seat = text(organization.seat_tier), multiplier = text(organization.rate_limit_tier)?.match(/max_(\d+x)\b/)?.[1];
+	// A premium seat's rate tier says how big it is (max_5x), which is what the tag beside its rings shows.
+	if (type === "claude_team") return seat === "team_standard" ? "Team standard" : seat ? `Team premium${multiplier ? ` ${multiplier}` : ""}` : "Claude Team";
+	if (type === "claude_max") return multiplier ? `Claude Max ${multiplier}` : "Claude Max";
+	if (type === "claude_pro") return "Claude Pro";
+	if (type === "claude_enterprise") return "Claude Enterprise";
+	return undefined;
 }
 
 /** Runs tasks a few at a time, keeping their order. */
@@ -63,6 +79,8 @@ export function t3CodeHubs(userData = path.join(homedir(), ".t3", "userdata")): 
 
 export class UsageHubs {
 	private hubs: UsageHub[];
+	/** Plans rarely change, so each account's profile is read once per launch. */
+	private readonly plans = new Map<string, string | null>();
 	constructor(private readonly file: string, private readonly secrets: HubSecrets, private readonly fetcher: Fetch = fetch, private readonly t3Hubs: () => ReturnType<typeof t3CodeHubs> = () => t3CodeHubs()) {
 		try { const stored = JSON.parse(readFileSync(file, "utf8")) as unknown; this.hubs = Array.isArray(stored) ? stored.filter((hub): hub is UsageHub => typeof hub?.id === "string" && typeof hub?.url === "string" && typeof hub?.label === "string") : []; }
 		catch { this.hubs = []; }
@@ -120,6 +138,14 @@ export class UsageHubs {
 		try { return JSON.parse(typeof result.body === "string" ? result.body : "null") as unknown; } catch { throw new HubError("The provider sent usage Phaseo couldn't read."); }
 	}
 
+	/** Best effort: without a plan the account is still shown, just not grouped by tier. */
+	private async claudePlan(hub: UsageHub, key: string, file: Record<string, unknown>) {
+		const id = `${hub.id}:${String(file.id ?? file.auth_index)}`;
+		if (this.plans.has(id)) return this.plans.get(id) ?? undefined;
+		try { const plan = claudeProfilePlan(await this.upstream(hub, key, file.auth_index as string, CLAUDE_PROFILE, { Authorization: "Bearer $TOKEN$", "anthropic-beta": "oauth-2025-04-20" })); this.plans.set(id, plan ?? null); return plan; }
+		catch { return undefined; }
+	}
+
 	async check(hub: UsageHub, key: string): Promise<UsageHubSnapshot> {
 		const checkedAt = new Date().toISOString();
 		let files: Record<string, unknown>[];
@@ -135,7 +161,10 @@ export class UsageHubs {
 					const body = await this.upstream(hub, key, file.auth_index as string, CODEX_USAGE, { Authorization: "Bearer $TOKEN$", "Content-Type": "application/json", "OpenAI-Beta": "codex-1", Originator: "Codex Desktop", ...account ? { "Chatgpt-Account-Id": account } : {} });
 					// CLIProxyAPI names the plan plan_type in the token summary.
 					Object.assign(base, codexHubUsage(body, text(token.plan_type) ?? text(token.chatgpt_plan_type)));
-				} else Object.assign(base, claudeHubUsage(await this.upstream(hub, key, file.auth_index as string, CLAUDE_USAGE, { Authorization: "Bearer $TOKEN$", "anthropic-beta": "oauth-2025-04-20" })));
+				} else {
+					const [usage, plan] = await Promise.all([this.upstream(hub, key, file.auth_index as string, CLAUDE_USAGE, { Authorization: "Bearer $TOKEN$", "anthropic-beta": "oauth-2025-04-20" }), this.claudePlan(hub, key, file)]);
+					Object.assign(base, claudeHubUsage(usage), plan ? { plan } : {});
+				}
 			} catch (error) { base.usageError = error instanceof HubError ? error.message : "Phaseo couldn't read this account's usage."; }
 			return { id: text(file.id) ?? (file.auth_index as string), provider, ...email ? { email } : {}, status: base };
 		});

@@ -31,7 +31,7 @@ import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
-import type { Harness } from "../shared/workspace";
+import type { AccountStatus, Harness } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { harnessVersion } from "./harnessVersion";
@@ -109,6 +109,8 @@ const nativeCatalogChecks = new Set<AbortController>();
 const mcpPromptChecks = new Map<string, { controller: AbortController; taskId: string; senderId: number }>();
 let harnessUpdate: { harness: "codex" | "claude" | "pi"; controller: AbortController; completed: Promise<void> } | undefined;
 const accountChecks = new Map<string, AbortController>();
+/** A status check already running answers anyone who asks again (the sidebar and Usage & limits both read limits). */
+const accountStatusRuns = new Map<string, Promise<AccountStatus>>();
 const agentChecks = new Map<string, AbortController>();
 let credentialVault: SecretVault;
 let terminalService: TerminalService;
@@ -291,16 +293,19 @@ ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: u
 	const account = id ? workspaceRuntime.store.getAccounts().find(value => value.id === id && value.harness === harness && (value.kind === "native" || harness === "cursor")) : undefined;
 	if (id && !account) throw new Error("Account no longer exists.");
 	workspaceRuntime.assertHarnessAvailable(harness);
-	const key = id as string | undefined ?? harness; if (accountChecks.has(key) || (id && signIns.has(id))) throw new Error("An account check or sign-in is already in progress.");
+	const key = id as string | undefined ?? harness; const running = accountStatusRuns.get(key); if (running) return running;
+	if (accountChecks.has(key) || (id && signIns.has(id))) throw new Error("An account check or sign-in is already in progress.");
 	const controller = new AbortController(); accountChecks.set(key, controller);
-	try {
+	const run = (async () => {
 		const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]);
 		const cwd = account?.configDirectory ?? app.getPath("userData");
 		const status = harness === "cursor" ? await cursorAccountStatus(account?.configured ? await credentialVault.get(account.secretId ?? account.id) : undefined) : harness === "grok" ? await grokAccountStatus(cwd, account, signal) : await nativeAccountStatus(harness, cwd, account, signal);
 		if (shutdownStarted) throw new Error("The workspace is shutting down.");
 		if (account && status.authenticated !== null) { const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id); if (current) { current.configured = status.authenticated; workspaceRuntime.store.saveAccount(current); workspaceRuntime.onChange(workspaceRuntime.store.getOverview()); } }
 		return status;
-	} finally { accountChecks.delete(key); }
+	})().finally(() => { accountChecks.delete(key); accountStatusRuns.delete(key); });
+	accountStatusRuns.set(key, run);
+	return run;
 });
 ipcMain.handle("workspace:check-agent", async (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid agent check.");
