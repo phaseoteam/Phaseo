@@ -58,6 +58,7 @@ export type { ChatCompletionsResponse } from "./ChatCompletionsResponse.js";
 export type { ChatImageOutputPart } from "./ChatImageOutputPart.js";
 export type { ChatMessage } from "./ChatMessage.js";
 export type { ChatReasoningDetail } from "./ChatReasoningDetail.js";
+export type { ChatResponseMessage } from "./ChatResponseMessage.js";
 export type { Classifier } from "./Classifier.js";
 export type { ClassifierCreateInput } from "./ClassifierCreateInput.js";
 export type { ClassifierDeleteResponse } from "./ClassifierDeleteResponse.js";
