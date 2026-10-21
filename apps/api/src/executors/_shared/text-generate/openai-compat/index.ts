@@ -1024,6 +1024,8 @@ function normalizeUsageToAnthropic(usage: any): {
 	cache_read_input_tokens?: number;
 	cache_creation_input_tokens?: number;
 	cache_creation?: { ephemeral_5m_input_tokens: number; ephemeral_1h_input_tokens: number };
+	cached_write_text_tokens_30m?: number;
+	cached_write_text_tokens_12h?: number;
 } {
 	const inputTokens = Number(
 		usage?.input_tokens ??
@@ -1056,6 +1058,10 @@ function normalizeUsageToAnthropic(usage: any): {
 				},
 			}
 			: {}),
+		// Messages has no field for OpenAI write lifetimes; these internal meters carry the
+		// split to billing and are not part of the client usage.
+		...(typeof cache.write30mTokens === "number" ? { cached_write_text_tokens_30m: cache.write30mTokens } : {}),
+		...(typeof cache.write12hTokens === "number" ? { cached_write_text_tokens_12h: cache.write12hTokens } : {}),
 	};
 }
 

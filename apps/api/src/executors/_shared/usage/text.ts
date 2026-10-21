@@ -130,6 +130,15 @@ export function normalizeTextUsageForPricing(
 	) {
 		meters.cached_write_text_tokens = (cachedWrite5mTokens ?? 0) + (cachedWrite1hTokens ?? 0);
 	}
+	// OpenAI 30-minute / 12-hour split. The aggregate above stays the write total.
+	if (typeof cache.write30mTokens === "number") meters.cached_write_text_tokens_30m = cache.write30mTokens;
+	if (typeof cache.write12hTokens === "number") meters.cached_write_text_tokens_12h = cache.write12hTokens;
+	if (
+		typeof meters.cached_write_text_tokens !== "number" &&
+		(typeof cache.write30mTokens === "number" || typeof cache.write12hTokens === "number")
+	) {
+		meters.cached_write_text_tokens = (cache.write30mTokens ?? 0) + (cache.write12hTokens ?? 0);
+	}
 	if (typeof reasoningTokens === "number") meters.reasoning_tokens = reasoningTokens;
 	if (typeof inputImageTokens === "number") meters.input_image_tokens = inputImageTokens;
 	if (typeof inputAudioTokens === "number") meters.input_audio_tokens = inputAudioTokens;

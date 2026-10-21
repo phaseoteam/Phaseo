@@ -1157,6 +1157,15 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 		usage.cached_write_text_tokens_1h,
 		usage.cache_creation?.ephemeral_1h_input_tokens,
 	);
+	// OpenAI GPT-5.6+ (Responses): writes split by lifetime, summing to cache_write_tokens.
+	const cachedWriteTokens30m = firstFiniteUsageNumber(
+		usage.cached_write_text_tokens_30m,
+		inputDetails?.cache_write_tokens_details?.ttl_30m_tokens,
+	);
+	const cachedWriteTokens12h = firstFiniteUsageNumber(
+		usage.cached_write_text_tokens_12h,
+		inputDetails?.cache_write_tokens_details?.ttl_12h_tokens,
+	);
 	const reasoningTokens = outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
 	const cachedWriteTokensAreSubsetOfInput = typeof nestedCachedWriteTokens === "number" || typeof usage.cache_write_tokens === "number"
@@ -1239,6 +1248,8 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 			cachedWriteTokens,
 			...(cachedWriteTokens5m !== undefined ? { cachedWriteTokens5m } : {}),
 			...(cachedWriteTokens1h !== undefined ? { cachedWriteTokens1h } : {}),
+			...(cachedWriteTokens30m !== undefined ? { cachedWriteTokens30m } : {}),
+			...(cachedWriteTokens12h !== undefined ? { cachedWriteTokens12h } : {}),
 			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};

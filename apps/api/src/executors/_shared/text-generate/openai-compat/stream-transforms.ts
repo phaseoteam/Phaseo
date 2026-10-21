@@ -1,6 +1,6 @@
 import type { ExecutorExecuteArgs } from "@executors/types";
 import type { IRChatResponse, IRContentPart } from "@core/ir";
-import { irUsageToOpenAIStyle } from "@core/cache-usage";
+import { irUsageToOpenAIStyle, openAICacheWriteTtlDetails } from "@core/cache-usage";
 import { gatewayStopEntry } from "@core/finish-reason";
 import { openAIResponsesToIR } from "./transform";
 import { openAIChatToIR } from "./transform-chat";
@@ -1379,7 +1379,7 @@ function deriveResponsesCompletionFromFinish(finishReason?: string | null): {
 
 function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 	if (!usage) return undefined;
-	const inputDetails: Record<string, number> = {};
+	const inputDetails: Record<string, any> = {};
 	const outputDetails: Record<string, number> = {};
 	// OpenAI semantics: input_tokens includes cache reads and writes.
 	const cache = irUsageToOpenAIStyle(usage);
@@ -1389,6 +1389,8 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 	if (typeof cache.writeTokens === "number") {
 		inputDetails.cache_write_tokens = cache.writeTokens;
 	}
+	const writeTtlDetails = openAICacheWriteTtlDetails(cache);
+	if (writeTtlDetails) inputDetails.cache_write_tokens_details = writeTtlDetails;
 	if (typeof usage._ext?.inputImageTokens === "number") {
 		inputDetails.input_images = usage._ext.inputImageTokens;
 	}
@@ -1418,6 +1420,8 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 	};
 	if (typeof cache.write5mTokens === "number") out.cached_write_text_tokens_5m = cache.write5mTokens;
 	if (typeof cache.write1hTokens === "number") out.cached_write_text_tokens_1h = cache.write1hTokens;
+	if (typeof cache.write30mTokens === "number") out.cached_write_text_tokens_30m = cache.write30mTokens;
+	if (typeof cache.write12hTokens === "number") out.cached_write_text_tokens_12h = cache.write12hTokens;
 	if (typeof cache.writeTokens === "number") out.cached_write_tokens_are_subset_of_input = true;
 	if (typeof usage._ext?.citationTokens === "number") out.citation_tokens = usage._ext.citationTokens;
 	if (typeof usage._ext?.numSearchQueries === "number") out.num_search_queries = usage._ext.numSearchQueries;
