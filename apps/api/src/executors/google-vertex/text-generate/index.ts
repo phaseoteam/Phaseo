@@ -509,10 +509,11 @@ export function resolveVertexCachedContentScope(
 	};
 }
 
-function isGoogleVertexHost(rawBase: string): boolean {
+export function isGoogleVertexHost(rawBase: string): boolean {
 	try {
 		const host = new URL(rawBase).hostname;
-		return host.endsWith("aiplatform.googleapis.com") || /^aiplatform\.[a-z0-9-]+\.rep\.googleapis\.com$/.test(host);
+		// Exact Vertex host shapes only: global, "{location}-aiplatform" and the regional "rep" hosts.
+		return /^(?:[a-z0-9-]+-)?aiplatform\.googleapis\.com$/.test(host) || /^aiplatform\.[a-z0-9-]+\.rep\.googleapis\.com$/.test(host);
 	} catch {
 		return false;
 	}
