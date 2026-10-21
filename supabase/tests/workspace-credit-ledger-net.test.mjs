@@ -27,7 +27,7 @@ await db.exec(`
     from generate_series(1, 1500) as n;
   grant select on public.credit_ledger to service_role;
 `);
-await db.exec(await readFile(new URL('../migrations/20261020062900_workspace_credit_ledger_net.sql', import.meta.url), 'utf8'));
+await db.exec(await readFile(new URL('../migrations/20261021062644_workspace_credit_ledger_net.sql', import.meta.url), 'utf8'));
 
 const net = async (workspaceId) => (await db.query(
   'select public.get_workspace_credit_ledger_net($1, $2) as nanos', [workspaceId, '2026-09-21T00:00:00Z'],
