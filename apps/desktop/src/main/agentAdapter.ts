@@ -3,6 +3,7 @@ import type { NativeAction } from "../shared/nativeActions";
 import type { Account, AgentActivity, AgentQuestion, ApprovalDecision, ModelOption, QueuedMessage, Task } from "../shared/workspace";
 import type { AttachmentContent } from "./attachments";
 import type { AgentForm, FormAnswer } from "../shared/agentForms";
+import type { HarnessUsage } from "../shared/usageLedger";
 
 export type AgentCallbacks = {
 	threads?: ThreadTools;
@@ -12,6 +13,8 @@ export type AgentCallbacks = {
 	onModes?: (modes: ModelOption[]) => void;
 	onTerminalAuth?: (args: string[], env: Record<string, string>, title: string, signal: AbortSignal) => Promise<void>;
 	onActivity?: (activity: AgentActivity & { append?: boolean }) => void;
+	/** One model response's tokens, from a harness Phaseo doesn't bill; the same key again replaces it as it grows. */
+	onUsage?: (usage: HarnessUsage) => void;
 	/**
 	 * Answers keyed by question id; {} when dismissed. A "message" request resolves at once with {}: the person's
 	 * answer reaches the agent later as a user message (Codex async questions). origin names who is asking.

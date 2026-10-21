@@ -159,10 +159,10 @@ const Avatar = ({ name, className }: { name: string; className?: string }) => <s
 
 /**
  * The sidebar's footer: the limit rings, then the profile as an avatar (its menu has the account and settings) and the
- * pages that don't need a full row: Today, Scheduled tasks, Settings.
+ * pages that don't need a full row: Usage, Scheduled tasks, Settings.
  */
 function AccountFooter() {
-	const { overview, openSettings, settings, todayPage, openToday, scheduled, openScheduled } = useWorkspace();
+	const { overview, openSettings, settings, usagePage, openUsage, scheduled, openScheduled } = useWorkspace();
 	const { tasks } = useScheduledTasks();
 	const on = tasks.filter(task => task.enabled).length;
 	const account = usablePhaseoAccounts(overview)[0];
@@ -179,13 +179,13 @@ function AccountFooter() {
 					</div>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={() => openSettings("accounts")}><UserRound />Accounts</DropdownMenuItem>
-					<DropdownMenuItem onClick={() => openSettings("usage")}><Gauge />Usage & limits</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => openUsage("limits")}><Gauge />Usage limits</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openSettings()}><Settings />Settings<DropdownMenuShortcut>{shortcut("settings.open")}</DropdownMenuShortcut></DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 			: <button type="button" onClick={() => openSettings("accounts")} className="flex h-7 items-center gap-1.5 rounded-md px-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in</button>}
 		<span className="flex-1" />
-		<FooterButton name="Today" tip="Today: spend and what finished" active={todayPage} onClick={openToday}><ChartLine /></FooterButton>
+		<FooterButton name="Usage" tip="Usage: cost, tokens and limits" active={usagePage} onClick={() => openUsage()}><ChartLine /></FooterButton>
 		<FooterButton name="Scheduled tasks" tip={on ? `Scheduled tasks · ${on} on` : "Scheduled tasks"} active={scheduled} onClick={openScheduled}>
 			<CalendarClock />{on > 0 && <span aria-hidden className="absolute top-1 right-1 size-1.5 rounded-[2px] bg-primary" />}
 		</FooterButton>

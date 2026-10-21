@@ -13,7 +13,10 @@ function perMillion(pricing: unknown, names: string[]) {
 		if (meter.price_per_unit !== null && meter.price_per_unit !== "" && Number.isFinite(price) && price >= 0 && Number.isFinite(size) && size > 0) return price / size * 1_000_000;
 	}
 }
-const prices = (pricing: unknown) => ({ input: perMillion(pricing, ["input_text_tokens", "input_tokens"]), output: perMillion(pricing, ["output_text_tokens", "output_tokens"]) });
+const prices = (pricing: unknown) => ({
+	input: perMillion(pricing, ["input_text_tokens", "input_tokens"]), output: perMillion(pricing, ["output_text_tokens", "output_tokens"]),
+	cacheRead: perMillion(pricing, ["cached_read_text_tokens", "cache_read_tokens", "cached_read_tokens"]), cacheWrite: perMillion(pricing, ["cached_write_text_tokens", "cache_write_tokens", "cached_write_tokens"]),
+});
 
 /** Context, input types, price and providers from a /v1/models entry, for the model card shown on Phaseo answers. */
 export function phaseoModelFacts(model: Record<string, unknown>): ModelFacts | undefined {
@@ -28,6 +31,8 @@ export function phaseoModelFacts(model: Record<string, unknown>): ModelFacts | u
 		...(Array.isArray(input) && input.every(value => typeof value === "string") && input.length ? { input: input as string[] } : {}),
 		...(priced.input !== undefined ? { inputPrice: priced.input } : {}),
 		...(priced.output !== undefined ? { outputPrice: priced.output } : {}),
+		...(priced.cacheRead !== undefined ? { cacheReadPrice: priced.cacheRead } : {}),
+		...(priced.cacheWrite !== undefined ? { cacheWritePrice: priced.cacheWrite } : {}),
 		...(providers.length ? { providers } : {}),
 	};
 	return Object.keys(facts).length ? facts : undefined;

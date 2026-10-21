@@ -8,8 +8,8 @@ import { DatabaseSync, type StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
 import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, UsageTotals, Workspace, WorkspaceCommand } from "../shared/workspace";
-import { usageAmounts, usageTotalsOf } from "../shared/usageAmounts";
-import { localDay, usageIdTime, usageKind, type TodayReport } from "../shared/usageLedger";
+import { reportTokens, usageAmounts, usageTokens, usageTotalsOf } from "../shared/usageAmounts";
+import { estimateNanos, localDay, noCost, noTokens, tokenTotal, usageIdTime, usageKind, usagePeriods, type HarnessUsage, type TokenPrices, type UsageCost, type UsagePeriod, type UsageReport, type UsageTokens } from "../shared/usageLedger";
 import type { AutopilotDecision } from "../shared/inbox";
 import { publicMcpConnection, type McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
@@ -85,6 +85,9 @@ export class WorkspaceStore {
 		this.db.function("history_lower", { deterministic: true }, value => typeof value === "string" ? value.toLowerCase() : "");
 		// A second connection waits for a lock rather than failing; with WAL, NORMAL syncs at checkpoints, not every commit,
 		// and a power cut can lose only the last commits, never corrupt the file. The WAL file shrinks back after checkpoints.
+		// The ledger first kept Phaseo spend alone; one without harnesses and token types is rebuilt from the chats.
+		const ledger = this.db.prepare("SELECT name FROM pragma_table_info('usage_ledger')").all() as { name: string }[];
+		if (ledger.length && !ledger.some(column => column.name === "harness")) this.db.exec("DROP TABLE usage_ledger; DELETE FROM preferences WHERE id = 'usage-ledger-backfilled';");
 		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL; PRAGMA journal_size_limit=4194304;
 			CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			-- key is what entry rows refer to. data is the chat without its messages and activities (see TaskEntries) or
@@ -122,8 +125,10 @@ export class WorkspaceStore {
 			-- Autopilot's decisions across chats, for the Inbox; each is also an activity in its chat.
 			CREATE TABLE IF NOT EXISTS autopilot_log (id INTEGER PRIMARY KEY, task_id TEXT NOT NULL, at TEXT NOT NULL, title TEXT NOT NULL, text TEXT NOT NULL);
 			CREATE TRIGGER IF NOT EXISTS autopilot_log_removed AFTER DELETE ON tasks BEGIN DELETE FROM autopilot_log WHERE task_id = old.id; END;
-			-- Every billed Phaseo request with when it happened, for the Today page. Rows outlive deleted chats: the spend happened.
-			CREATE TABLE IF NOT EXISTS usage_ledger (key TEXT PRIMARY KEY, task_id TEXT NOT NULL, at TEXT NOT NULL, kind TEXT NOT NULL, autopilot INTEGER NOT NULL, model TEXT NOT NULL, project_id TEXT, tokens INTEGER NOT NULL, cost_nanos INTEGER NOT NULL);
+			-- Every model response any harness reported, with when it happened and its tokens by type, for the Usage page. cost_nanos is
+			-- what Phaseo charged; it is NULL for harnesses Phaseo doesn't bill. Rows outlive deleted chats: the usage happened.
+			CREATE TABLE IF NOT EXISTS usage_ledger (key TEXT PRIMARY KEY, task_id TEXT NOT NULL, at TEXT NOT NULL, kind TEXT NOT NULL, autopilot INTEGER NOT NULL, harness TEXT NOT NULL, model TEXT NOT NULL, project_id TEXT,
+				input INTEGER NOT NULL, cached INTEGER NOT NULL, cache_write INTEGER NOT NULL, output INTEGER NOT NULL, reasoning INTEGER NOT NULL, tokens INTEGER NOT NULL, cost_nanos INTEGER);
 			CREATE INDEX IF NOT EXISTS usage_ledger_at ON usage_ledger (at);
 			${taskEntriesSchema}
 			PRAGMA user_version=${schemaVersion};`);
@@ -391,35 +396,66 @@ export class WorkspaceStore {
 		return this.statement("SELECT id, task_id AS taskId, at, title, text FROM autopilot_log ORDER BY id DESC LIMIT ?").all(limit) as AutopilotDecision[];
 	}
 	/**
-	 * Keeps one usage report in the ledger the Today page sums. A report rewritten as it streams keeps the time it was
-	 * first seen and its latest amounts; one without a price or token count isn't kept.
+	 * Keeps one Phaseo usage report in the ledger the Usage page sums; Phaseo charged for it. A report rewritten as it
+	 * streams keeps the time it was first seen and its latest amounts; one without a price or token count isn't kept.
 	 */
 	recordUsage(task: Pick<Task, "id" | "model" | "projectId">, key: string, text: string, autopilot: boolean, at = new Date().toISOString()) {
-		const amounts = usageAmounts(text);
+		const amounts = usageAmounts(text), tokens = usageTokens(text) ?? noTokens();
 		if (amounts.costNanos === undefined && amounts.total === undefined) return;
-		this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, model, project_id, tokens, cost_nanos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-			ON CONFLICT(key) DO UPDATE SET tokens = excluded.tokens, cost_nanos = excluded.cost_nanos`)
-			.run(key, task.id, at, usageKind(key), autopilot ? 1 : 0, task.model, task.projectId ?? null, amounts.total ?? 0, amounts.costNanos ?? 0);
+		this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, harness, model, project_id, input, cached, cache_write, output, reasoning, tokens, cost_nanos) VALUES (?, ?, ?, ?, ?, 'phaseo', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(key) DO UPDATE SET input = excluded.input, cached = excluded.cached, cache_write = excluded.cache_write, output = excluded.output, reasoning = excluded.reasoning, tokens = excluded.tokens, cost_nanos = excluded.cost_nanos`)
+			.run(key, task.id, at, usageKind(key), autopilot ? 1 : 0, task.model, task.projectId ?? null, tokens.input, tokens.cached, tokens.cacheWrite, tokens.output, tokens.reasoning, amounts.total ?? tokenTotal(tokens), amounts.costNanos ?? null);
 	}
 	/**
-	 * Fills the ledger once from chats used in the last `days`, timing each report by its turn, so Today has a usual to
-	 * compare with from the first launch. Reports already recorded are left alone.
+	 * Keeps one response from a harness Phaseo doesn't bill (Claude Code, Codex); the Usage page prices it at API rates.
+	 * A response reported again as it grows keeps the larger count of each type.
 	 */
-	backfillUsageLedger(days = 8, now = new Date()) {
+	recordHarnessUsage(task: Pick<Task, "id" | "harness" | "model" | "projectId">, usage: HarnessUsage, autopilot: boolean, at = new Date().toISOString()) {
+		const total = tokenTotal(usage);
+		if (!total) return;
+		this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, harness, model, project_id, input, cached, cache_write, output, reasoning, tokens, cost_nanos) VALUES (?, ?, ?, 'turn', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+			ON CONFLICT(key) DO UPDATE SET input = max(input, excluded.input), cached = max(cached, excluded.cached), cache_write = max(cache_write, excluded.cache_write), output = max(output, excluded.output), reasoning = max(reasoning, excluded.reasoning),
+				tokens = max(input, excluded.input) + max(cached, excluded.cached) + max(cache_write, excluded.cache_write) + max(output, excluded.output)`)
+			.run(usage.key, task.id, at, autopilot ? 1 : 0, task.harness, usage.model || task.model, task.projectId ?? null, usage.input, usage.cached, usage.cacheWrite, usage.output, usage.reasoning, total);
+	}
+	/**
+	 * Fills the ledger once from chats used in the last `days`, timing each report by its turn, so the Usage page has
+	 * history from the first launch: Phaseo's reports, and Codex's running totals turn by turn. Claude Code's usage
+	 * wasn't kept before the ledger. Reports already recorded are left alone.
+	 */
+	backfillUsageLedger(days = 90, now = new Date()) {
 		if (this.statement("SELECT 1 FROM preferences WHERE id='usage-ledger-backfilled'").get()) return 0;
 		const cutoff = new Date(now.getTime() - days * 86_400_000).toISOString();
 		const ids = this.statement("SELECT id FROM tasks WHERE json_extract(data, '$.updatedAt') >= ?").all(cutoff).map(row => row.id as string);
 		let recorded = 0;
 		this.batch(() => {
-			const insert = this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, model, project_id, tokens, cost_nanos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(key) DO NOTHING`);
+			const insert = this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, harness, model, project_id, input, cached, cache_write, output, reasoning, tokens, cost_nanos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(key) DO NOTHING`);
 			for (const id of ids) {
-				const task = this.getTask(id), turns = task.messages.filter(message => message.role === "user");
-				for (const entry of this.entries.phaseoUsageEntries(this.getHead(id).key)) {
+				const task = this.getTask(id), turns = task.messages.filter(message => message.role === "user"), key = this.getHead(id).key;
+				for (const entry of this.entries.phaseoUsageEntries(key)) {
 					const turn = turns.find(message => entry.id.startsWith(`${message.id}:`)), at = usageIdTime(entry.id) ?? turn?.startedAt ?? turn?.createdAt;
-					const amounts = usageAmounts(entry.text);
+					const amounts = usageAmounts(entry.text), tokens = usageTokens(entry.text) ?? noTokens();
 					if (!at || at < cutoff || (amounts.costNanos === undefined && amounts.total === undefined)) continue;
 					const kind = usageKind(entry.id);
-					insert.run(entry.id, id, at, kind, kind === "autopilot" || turn?.autopilot ? 1 : 0, task.model, task.projectId ?? null, amounts.total ?? 0, amounts.costNanos ?? 0);
+					insert.run(entry.id, id, at, kind, kind === "autopilot" || turn?.autopilot ? 1 : 0, "phaseo", task.model, task.projectId ?? null, tokens.input, tokens.cached, tokens.cacheWrite, tokens.output, tokens.reasoning, amounts.total ?? tokenTotal(tokens), amounts.costNanos ?? null);
+					recorded++;
+				}
+				if (task.harness !== "codex") continue;
+				// Codex reports the thread's running total; each turn used the difference from the turn before.
+				let previous = noTokens();
+				const reports = this.entries.turnUsageReports(key);
+				for (const turn of turns) {
+					const text = reports.get(`${turn.id}:usage`), at = turn.startedAt ?? turn.createdAt;
+					let parsed: Record<string, unknown> | undefined;
+					try { parsed = text ? JSON.parse(text) as Record<string, unknown> : undefined; } catch { parsed = undefined; }
+					const totals = parsed?.total && typeof parsed.total === "object" ? reportTokens(parsed.total as Record<string, unknown>) : undefined;
+					if (!totals) continue;
+					const fields = Object.keys(totals) as (keyof UsageTokens)[];
+					// A total that went down means a new thread (a fork or a restart), which starts counting again.
+					const used = fields.some(field => totals[field] < previous[field]) ? totals : Object.fromEntries(fields.map(field => [field, totals[field] - previous[field]])) as UsageTokens;
+					previous = totals;
+					if (at < cutoff || !tokenTotal(used)) continue;
+					insert.run(`codex:backfill:${turn.id}`, id, at, "turn", turn.autopilot ? 1 : 0, "codex", task.model, task.projectId ?? null, used.input, used.cached, used.cacheWrite, used.output, used.reasoning, tokenTotal(used), null);
 					recorded++;
 				}
 			}
@@ -427,31 +463,81 @@ export class WorkspaceStore {
 		});
 		return recorded;
 	}
-	/** Drops ledger rows older than `days`; Today looks back a week. */
-	pruneUsageLedger(days = 90, now = new Date()) {
+	/** Drops ledger rows older than `days`; the Usage page looks back 90. */
+	pruneUsageLedger(days = 91, now = new Date()) {
 		this.statement("DELETE FROM usage_ledger WHERE at < ?").run(new Date(now.getTime() - days * 86_400_000).toISOString());
 	}
-	/** Today's spend, the last day and week, each local hour of the last eight days, and where today's went; all summed in SQL. */
-	todayReport(now = new Date()): TodayReport {
-		const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
-		const firstDay = new Date(startOfToday); firstDay.setDate(firstDay.getDate() - 7);
-		const today = startOfToday.toISOString();
-		const spend = (row: unknown) => { const value = row as { costNanos: number | null; tokens: number | null } | undefined; return { costNanos: value?.costNanos ?? 0, tokens: value?.tokens ?? 0 }; };
-		const total = (since: string) => spend(this.statement("SELECT SUM(cost_nanos) AS costNanos, SUM(tokens) AS tokens FROM usage_ledger WHERE at >= ?").get(since));
-		const autopilot = this.statement("SELECT SUM(cost_nanos) AS costNanos, SUM(tokens) AS tokens, COUNT(DISTINCT task_id) AS chats FROM usage_ledger WHERE at >= ? AND autopilot = 1").get(today) as { chats: number };
-		const hours = this.statement(`SELECT strftime('%Y-%m-%d', at, 'localtime') AS day, CAST(strftime('%H', at, 'localtime') AS INTEGER) AS hour, SUM(cost_nanos) AS costNanos
-			FROM usage_ledger WHERE at >= ? GROUP BY day, hour`).all(firstDay.toISOString()) as { day: string; hour: number; costNanos: number }[];
-		const days = Array.from({ length: 8 }, (_, index) => { const date = new Date(firstDay); date.setDate(date.getDate() + index); return { day: localDay(date), hours: Array(24).fill(0) as number[] }; });
-		for (const row of hours) { const day = days.find(value => value.day === row.day); if (day) day.hours[row.hour] += row.costNanos; }
-		const top = (column: string) => this.statement(`SELECT ${column} AS name, SUM(cost_nanos) AS costNanos, SUM(tokens) AS tokens FROM usage_ledger WHERE at >= ? GROUP BY ${column} ORDER BY costNanos DESC LIMIT 8`).all(today) as { name: string | null; costNanos: number; tokens: number }[];
+	/**
+	 * One period's usage for the Usage page. The database sums the ledger by harness and model for every view (totals,
+	 * buckets, chats, projects, the pace); `priceOf` then prices each sum Phaseo didn't charge, so no row is read on its own.
+	 */
+	usageReport(period: UsagePeriod, priceOf: (model: string) => TokenPrices | undefined, now = new Date()): UsageReport {
+		const days = usagePeriods.find(value => value.id === period)?.days ?? 1;
+		const start = new Date(now); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (days - 1));
+		const from = start.toISOString();
+		type Sum = UsageTokens & { model: string; uncharged: number; tokens: number; charged: number | null };
+		const sums = "model, cost_nanos IS NULL AS uncharged, SUM(input) AS input, SUM(cached) AS cached, SUM(cache_write) AS cacheWrite, SUM(output) AS output, SUM(reasoning) AS reasoning, SUM(tokens) AS tokens, SUM(cost_nanos) AS charged";
+		const grouped = <Extra extends object = object>(dimensions: string, since = from, where = "", groupBy = dimensions) =>
+			this.statement(`SELECT ${dimensions ? `${dimensions}, ` : ""}${sums} FROM usage_ledger WHERE at >= ? ${where} GROUP BY ${groupBy ? `${groupBy}, ` : ""}model, uncharged`).all(since) as (Sum & Extra)[];
+		const types = noTokens();
+		let cacheSavingsNanos = 0;
+		/** Adds one sum to a cost: Phaseo's charge, or its estimate at catalogue prices, or its tokens as unpriced. */
+		const add = (cost: UsageCost, sum: Sum, overall = false) => {
+			const prices = priceOf(sum.model);
+			cost.tokens += sum.tokens;
+			if (!sum.uncharged) cost.chargedNanos += sum.charged ?? 0;
+			else if (prices) cost.estimateNanos += estimateNanos(sum, prices);
+			else cost.unpricedTokens += sum.tokens;
+			cost.costNanos = cost.chargedNanos + cost.estimateNanos;
+			if (!overall) return cost;
+			for (const field of Object.keys(types) as (keyof UsageTokens)[]) types[field] += sum[field];
+			if (prices?.cacheRead !== undefined) cacheSavingsNanos += Math.max(0, Math.round(sum.cached * (prices.input - prices.cacheRead) / 1e6 * 1e9));
+			return cost;
+		};
+		const rollUp = <Key extends string>(rows: (Sum & Record<Key, string | null>)[], key: Key) => {
+			const costs = new Map<string | null, UsageCost>();
+			for (const row of rows) { if (!costs.has(row[key])) costs.set(row[key], noCost()); add(costs.get(row[key])!, row); }
+			return [...costs].map(([name, cost]) => ({ name, cost })).sort((a, b) => b.cost.costNanos - a.cost.costNanos || b.cost.tokens - a.cost.tokens);
+		};
+		const total = noCost();
+		const byHarness = grouped<{ harness: string }>("harness");
+		for (const row of byHarness) add(total, row, true);
+		const models = new Map<string, UsageCost & { harness: string; model: string }>();
+		for (const row of byHarness) { const key = `${row.harness}\0${row.model}`; if (!models.has(key)) models.set(key, { harness: row.harness, model: row.model, ...noCost() }); add(models.get(key)!, row); }
+		const chats = (where = "") => (this.statement(`SELECT COUNT(DISTINCT task_id) AS chats FROM usage_ledger WHERE at >= ? ${where}`).get(from) as { chats: number }).chats;
+		const harnessChats = new Map((this.statement("SELECT harness, COUNT(DISTINCT task_id) AS chats FROM usage_ledger WHERE at >= ? GROUP BY harness").all(from) as { harness: string; chats: number }[]).map(row => [row.harness, row.chats]));
+		const bucket = period === "today" ? "strftime('%H', at, 'localtime')" : "strftime('%Y-%m-%d', at, 'localtime')";
+		const buckets = new Map<string, Record<string, UsageCost>>();
+		for (const row of grouped<{ bucket: string; harness: string }>(`${bucket} AS bucket, harness`, from, "", "bucket, harness")) {
+			if (!buckets.has(row.bucket)) buckets.set(row.bucket, {});
+			const entry = buckets.get(row.bucket)!; add(entry[row.harness] ??= noCost(), row);
+		}
+		const starts = Array.from({ length: period === "today" ? 24 : days }, (_, index) => { if (period === "today") return String(index).padStart(2, "0"); const date = new Date(start); date.setDate(date.getDate() + index); return localDay(date); });
+		const autopilot = noCost();
+		for (const row of grouped("", from, "AND autopilot = 1")) add(autopilot, row);
 		const since = (this.statement("SELECT MIN(at) AS since FROM usage_ledger").get() as { since: string | null }).since;
+		const count = (sql: string) => (this.statement(`SELECT COUNT(*) AS count FROM tasks WHERE json_extract(data, '$.parentId') IS NULL AND ${sql} >= ?`).get(from) as { count: number }).count;
+		let pace: UsageReport["days"];
+		if (period === "today") {
+			// Each local hour of the last eight days, today last, for the pace against the usual.
+			const first = new Date(start); first.setDate(first.getDate() - 7);
+			pace = Array.from({ length: 8 }, (_, index) => { const date = new Date(first); date.setDate(date.getDate() + index); return { day: localDay(date), hours: Array(24).fill(0) as number[] }; });
+			for (const row of grouped<{ day: string; hour: string }>("strftime('%Y-%m-%d', at, 'localtime') AS day, strftime('%H', at, 'localtime') AS hour", first.toISOString(), "", "day, hour")) {
+				const day = pace.find(value => value.day === row.day);
+				if (day) day.hours[Number(row.hour)] += add(noCost(), row).costNanos;
+			}
+		}
 		return {
-			generatedAt: now.toISOString(), ...since ? { since } : {},
-			today: total(today), last24h: total(new Date(now.getTime() - 86_400_000).toISOString()), last7d: total(new Date(now.getTime() - 7 * 86_400_000).toISOString()),
-			autopilotToday: { ...spend(autopilot), chats: autopilot.chats ?? 0 }, days,
-			chats: top("task_id").map(({ name, ...value }) => ({ taskId: name ?? "", ...value })),
-			projects: top("project_id").map(({ name, ...value }) => ({ projectId: name, ...value })),
-			models: top("model").map(({ name, ...value }) => ({ model: name ?? "", ...value })),
+			generatedAt: now.toISOString(), period, from, ...since ? { since } : {},
+			total: { ...total, types, cacheSavingsNanos, chats: chats() },
+			harnesses: rollUp(byHarness, "harness").map(({ name, cost }) => ({ harness: name ?? "", chats: harnessChats.get(name ?? "") ?? 0, ...cost })),
+			buckets: starts.map(value => ({ start: value, harnesses: buckets.get(value) ?? {} })),
+			models: [...models.values()].sort((a, b) => b.costNanos - a.costNanos || b.tokens - a.tokens).slice(0, 12),
+			chats: rollUp(grouped<{ task_id: string }>("task_id"), "task_id").slice(0, 10).map(({ name, cost }) => ({ taskId: name ?? "", ...cost })),
+			projects: rollUp(grouped<{ project_id: string | null }>("project_id"), "project_id").slice(0, 8).map(({ name, cost }) => ({ projectId: name, ...cost })),
+			autopilot: { ...autopilot, chats: chats("AND autopilot = 1") },
+			activity: { chatsStarted: count("json_extract(data, '$.createdAt')"), chatsFinished: count("last_completed_at"), chatsSettled: count("json_extract(data, '$.settledAt')"), autopilotChats: chats("AND autopilot = 1") },
+			...pace ? { days: pace } : {},
 		};
 	}
 	/** A chat's Phaseo usage totals from its stored usage reports. */

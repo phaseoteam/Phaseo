@@ -25,7 +25,7 @@ const groups: { label: string; pages: Entry[] }[] = [
 	] },
 	{ label: "Accounts", pages: [
 		{ id: "accounts", label: "Accounts", icon: <UserRound />, keywords: "sign in login api key subscription codex claude cursor grok phaseo" },
-		{ id: "usage", label: "Usage & limits", icon: <Gauge />, keywords: "rate limits plan weekly 5-hour reset quota billing credits" },
+		{ id: "usage", label: "Usage sources", icon: <Gauge />, keywords: "usage limits hubs rate limits plan weekly 5-hour reset quota billing credits CLIProxyAPI" },
 	] },
 	{ label: "Integrations", pages: [
 		{ id: "agents", label: "Agents", icon: <Bot />, keywords: "codex claude code opencode pi cursor grok acp install update version" },

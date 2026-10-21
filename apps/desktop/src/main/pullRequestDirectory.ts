@@ -49,14 +49,8 @@ export function parseDirectoryPage(value: unknown, projectFor: (repository: stri
 
 type DirectoryProject = { id: string; directory: string; worktree?: { removedAt?: string } };
 
-/**
- * Every project's pull requests, newest activity first. A repository two projects share is read once and
- * filed under the first of them; a project that cannot be read is named in `errors` and the rest still load.
- */
-export async function listPullRequestDirectory(projects: readonly DirectoryProject[], value: unknown, read = runGh): Promise<PullRequestDirectoryResult> {
-	const readOnce = (root: string, args: string[]) => read(root, args).catch(reason => { if (/HTTP 50[234]/.test(String((reason as { stderr?: unknown }).stderr ?? ""))) return read(root, args); throw reason; });
-	const query: PullRequestDirectoryQuery = validatePullRequestDirectoryQuery(value);
-	const candidates = projects.filter(project => !project.worktree && (query.projectId === undefined || project.id === query.projectId));
+/** Each project's GitHub repository, read once per repository and in the order projects were added; projects without one are in `errors`. */
+async function projectRepositories(candidates: readonly DirectoryProject[]) {
 	const errors: PullRequestDirectoryResult["errors"] = [];
 	const owners = new Map<string, { projectId: string; directory: string; repository: string }>();
 	await Promise.all(candidates.map(async project => {
@@ -66,6 +60,38 @@ export async function listPullRequestDirectory(projects: readonly DirectoryProje
 	// Keep the order projects were added in, so the same repository is always filed under the same project.
 	const order = new Map(candidates.map((project, index) => [project.id, index]));
 	const repositories = [...owners.values()].sort((left, right) => (order.get(left.projectId) ?? 0) - (order.get(right.projectId) ?? 0));
+	return { owners, repositories, errors };
+}
+
+const countQuery = `query PhaseoPullRequestCounts($opened:String!,$merged:String!){opened:search(query:$opened,type:ISSUE,first:0){issueCount}merged:search(query:$merged,type:ISSUE,first:0){issueCount}}`;
+
+/**
+ * How many pull requests you opened and merged in the projects' repositories since a day (YYYY-MM-DD), for the Usage
+ * page. Nothing when no project has a GitHub repository or GitHub can't be asked.
+ */
+export async function pullRequestCounts(projects: readonly DirectoryProject[], since: string, read = runGh): Promise<{ opened: number; merged: number } | undefined> {
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(since)) return;
+	const { repositories } = await projectRepositories(projects.filter(project => !project.worktree));
+	if (!repositories.length) return;
+	const totals = { opened: 0, merged: 0 };
+	for (let index = 0; index < repositories.length; index += repositoriesPerSearch) {
+		const chunk = repositories.slice(index, index + repositoriesPerSearch), scope = chunk.map(owner => `repo:${owner.repository}`).join(" ");
+		const output = await read(chunk[0].directory, ["api", "graphql", "--hostname", "github.com", "-f", `query=${countQuery}`, "-f", `opened=is:pr author:@me created:>=${since} ${scope}`, "-f", `merged=is:pr is:merged author:@me merged:>=${since} ${scope}`]);
+		const data = item(item(JSON.parse(output)).data);
+		totals.opened += count(item(data.opened).issueCount); totals.merged += count(item(data.merged).issueCount);
+	}
+	return totals;
+}
+
+/**
+ * Every project's pull requests, newest activity first. A repository two projects share is read once and
+ * filed under the first of them; a project that cannot be read is named in `errors` and the rest still load.
+ */
+export async function listPullRequestDirectory(projects: readonly DirectoryProject[], value: unknown, read = runGh): Promise<PullRequestDirectoryResult> {
+	const readOnce = (root: string, args: string[]) => read(root, args).catch(reason => { if (/HTTP 50[234]/.test(String((reason as { stderr?: unknown }).stderr ?? ""))) return read(root, args); throw reason; });
+	const query: PullRequestDirectoryQuery = validatePullRequestDirectoryQuery(value);
+	const candidates = projects.filter(project => !project.worktree && (query.projectId === undefined || project.id === query.projectId));
+	const { owners, repositories, errors } = await projectRepositories(candidates);
 	const projectFor = (repository: string) => owners.get(repository.toLowerCase())?.projectId;
 	const chunks: (typeof repositories)[] = [];
 	for (let index = 0; index < repositories.length; index += repositoriesPerSearch) chunks.push(repositories.slice(index, index + repositoriesPerSearch));

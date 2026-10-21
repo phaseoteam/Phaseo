@@ -100,7 +100,7 @@ export function useTaskDraft(id: string) {
 }
 
 function ChatComposer({ task }: { task: Task }) {
-	const { api, command, overview, select, setError, openSettings } = useWorkspace();
+	const { api, command, overview, select, setError, openSettings, openUsage } = useWorkspace();
 	const draft = useTaskDraft(task.id);
 	const [busy, setBusy] = useState(false);
 	const [uploading, setUploading] = useState(false);
@@ -109,7 +109,7 @@ function ChatComposer({ task }: { task: Task }) {
 	useEffect(() => { setLimits(undefined); }, [task.id]);
 	const limitHarness = (["codex", "claude", "cursor", "grok"] as const).find(value => value === task.harness);
 	const showLimits = async () => {
-		if (!api || !limitHarness) { openSettings("usage"); return; }
+		if (!api || !limitHarness) { openUsage("limits"); return; }
 		setLimits("loading");
 		try { setLimits(await api.accountStatus(limitHarness, task.accountId)); } catch (reason) { setLimits({ error: errorText(reason) }); }
 	};

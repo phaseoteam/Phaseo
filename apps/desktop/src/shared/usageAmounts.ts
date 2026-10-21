@@ -1,3 +1,4 @@
+import type { UsageTokens } from "./usageLedger";
 import type { UsageTotals } from "./workspace";
 
 /** Token counts and cost read from one usage report; a field is absent when the report does not give it. */
@@ -22,6 +23,30 @@ export function usageAmounts(text: string): UsageAmounts {
 	const nanos = count(pricing?.total_nanos), dollars = count(value.cost);
 	const costNanos = nanos ?? (dollars === undefined ? undefined : Math.round(dollars * 1e9));
 	return { ...input !== undefined ? { input } : {}, ...output !== undefined ? { output } : {}, ...total !== undefined ? { total } : {}, ...costNanos !== undefined ? { costNanos } : {} };
+}
+
+/**
+ * A report's tokens by type, or nothing when it gives no token counts. OpenAI-style reports count cached input inside
+ * the input; Anthropic-style ones (`cache_read_input_tokens`) count it apart, and both come out the same way here.
+ */
+export function usageTokens(text: string): UsageTokens | undefined {
+	let reported: Record<string, unknown>;
+	try { const parsed = JSON.parse(text) as unknown; if (!parsed || typeof parsed !== "object") return; reported = parsed as Record<string, unknown>; }
+	catch { return; }
+	return reportTokens(reported.last && typeof reported.last === "object" ? reported.last as Record<string, unknown> : reported);
+}
+
+/** The same from a parsed report or a harness's token breakdown (Codex's `inputTokens`, `cachedInputTokens`, …). */
+export function reportTokens(value: Record<string, unknown>): UsageTokens | undefined {
+	const details = (key: string) => value[key] && typeof value[key] === "object" ? value[key] as Record<string, unknown> : {};
+	const input = first(value, ["input_tokens", "inputTokens", "prompt_tokens"]), output = first(value, ["output_tokens", "outputTokens", "completion_tokens"]);
+	if (input === undefined && output === undefined) return;
+	const separate = first(value, ["cache_read_input_tokens"]);
+	const inputDetails = { ...details("prompt_tokens_details"), ...details("input_tokens_details") }, outputDetails = { ...details("completion_tokens_details"), ...details("output_tokens_details") };
+	const cached = separate ?? first(inputDetails, ["cached_tokens"]) ?? first(value, ["cached_tokens", "cachedTokens", "cachedInputTokens"]) ?? 0;
+	const cacheWrite = first(value, ["cache_creation_input_tokens", "cacheWriteInputTokens", "cache_write_input_tokens"]) ?? first(inputDetails, ["cache_write_tokens", "cache_creation_tokens"]) ?? 0;
+	const reasoning = first(outputDetails, ["reasoning_tokens"]) ?? first(value, ["reasoning_tokens", "reasoningOutputTokens", "reasoning_output_tokens"]) ?? 0;
+	return { input: separate === undefined ? Math.max(0, (input ?? 0) - cached - cacheWrite) : input ?? 0, cached, cacheWrite, output: output ?? 0, reasoning };
 }
 
 /**

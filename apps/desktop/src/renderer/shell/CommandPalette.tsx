@@ -1,4 +1,4 @@
-import { Activity, CalendarClock, ChartLine, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
+import { Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -9,7 +9,7 @@ import { pullRequestSearchTerms } from "../../shared/pullRequestView";
 import { ModelStack, modelName } from "../chat/ModelPicker";
 
 export function CommandPalette() {
-	const { commandsOpen, setCommandsOpen, overview, compareGroups, openCompare, taskById, select, setMode, openSettings, openScheduled, openPullRequests, openInbox, openToday, selectedId, setRightPanel, setSidebarOpen, resolvedTheme, setTheme, api, setOverview, setError, setNewChatProjectId } = useWorkspace();
+	const { commandsOpen, setCommandsOpen, overview, compareGroups, openCompare, taskById, select, setMode, openSettings, openScheduled, openPullRequests, openInbox, openUsage, selectedId, setRightPanel, setSidebarOpen, resolvedTheme, setTheme, api, setOverview, setError, setNewChatProjectId } = useWorkspace();
 	const run = (action: () => void) => { setCommandsOpen(false); action(); };
 	const grouped = new Set(compareGroups.flatMap(group => group.taskIds));
 	const tasks = overview.tasks.filter(task => !task.delegation?.parentTaskId && !grouped.has(task.id)).slice(0, 200);
@@ -25,7 +25,8 @@ export function CommandPalette() {
 				<CommandItem onSelect={() => run(() => setMode("code"))}><Code2 />Switch to Code<CommandShortcut>{shortcut("mode.code")}</CommandShortcut></CommandItem>
 				<CommandItem onSelect={() => run(() => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) { setMode("code"); setNewChatProjectId(added.id); select(undefined); } }, reason => setError(errorText(reason))); })}><FolderPlus />Open project folder…</CommandItem>
 				<CommandItem value="Inbox needs you waiting attention autopilot log decisions" onSelect={() => run(openInbox)}><Inbox />Inbox</CommandItem>
-				<CommandItem value="Today spend cost usage pace forecast finished" onSelect={() => run(openToday)}><ChartLine />Today</CommandItem>
+				<CommandItem value="Usage cost tokens spend today pace forecast pull requests settled" onSelect={() => run(() => openUsage())}><ChartLine />Usage</CommandItem>
+				<CommandItem value="Usage limits subscriptions rings Claude Codex" onSelect={() => run(() => openUsage("limits"))}><Gauge />Usage limits</CommandItem>
 				<CommandItem onSelect={() => run(openScheduled)}><CalendarClock />Scheduled tasks</CommandItem>
 				<CommandItem value="Open pull requests prs pr github review merge branch" onSelect={() => run(openPullRequests)}><GitPullRequestArrow />Open pull requests</CommandItem>
 				{current?.projectId && <CommandItem value="Show linked pull requests prs linked stack" disabled={!linked.length} onSelect={() => run(() => setRightPanel("pulls"))}><Link2 />Show linked pull requests</CommandItem>}

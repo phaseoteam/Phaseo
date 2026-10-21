@@ -57,7 +57,7 @@ export function PlanIndicator({ onClear }: { onClear?: () => void }) {
 }
 
 export function NewChat() {
-	const { api, overview, command, setOverview, setError, mode, select, openCompare, saveCompareGroup, newChatProjectId, setNewChatProjectId, openSettings } = useWorkspace();
+	const { api, overview, command, setOverview, setError, mode, select, openCompare, saveCompareGroup, newChatProjectId, setNewChatProjectId, openSettings, openUsage } = useWorkspace();
 	const [draft, setDraft] = usePersistedState(newChatDraftKey, "");
 	// Images wait here until the chat exists; the draft holds a chip for each, keyed by a local id.
 	const [images, setImages] = useState<Record<string, File>>({});
@@ -101,7 +101,7 @@ export function NewChat() {
 			] },
 		] : [],
 		{ id: "accounts", label: "Accounts", description: "Manage accounts and usage", icon: <UserRound />, run: () => openSettings("accounts") },
-		{ id: "usage", label: "Usage", description: "Open usage and limits", icon: <Gauge />, run: () => openSettings("usage") },
+		{ id: "usage", label: "Usage", description: "Open usage and limits", icon: <Gauge />, run: () => openUsage() },
 		...settingActions,
 	];
 	const menu = useComposerMenu({ editor, harness: compare ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined, actions });

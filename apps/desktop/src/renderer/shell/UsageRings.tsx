@@ -100,7 +100,7 @@ const Heading = ({ children }: { children: string }) => <h3 className="flex item
  * every few minutes, and never for someone whose last check found no subscription.
  */
 export function UsageRings() {
-	const { api, overview, openSettings, selectedId } = useWorkspace();
+	const { api, overview, openUsage, selectedId } = useWorkspace();
 	const limits = useUsageLimits();
 	const locals = useMemo(() => usageLocals(overview.accounts), [overview.accounts]);
 	const [now, setNow] = useState(() => Date.now());
@@ -143,7 +143,7 @@ export function UsageRings() {
 			<div className="flex items-center gap-1 border-t border-border/60 px-1 pt-2 text-muted-foreground">
 				<span className="min-w-0 flex-1 truncate">{busy ? "Checking…" : limits.checkedAt ? `Checked ${relativeTime(new Date(limits.checkedAt).toISOString(), now)}` : ""}</span>
 				<button type="button" aria-label="Check limits again" title="Check again" disabled={busy || !api} onClick={() => { if (api) void checkAllUsage(api, locals); }} className="grid size-6 place-items-center rounded-md hover:bg-muted hover:text-foreground disabled:opacity-50"><RotateCw className={cn("size-3.5", busy && "animate-spin")} /></button>
-				<button type="button" onClick={() => openSettings("usage")} className="rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Usage & limits</button>
+				<button type="button" onClick={() => openUsage("limits")} className="rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Usage & limits</button>
 			</div>
 		</PopoverContent>
 	</Popover></div>;

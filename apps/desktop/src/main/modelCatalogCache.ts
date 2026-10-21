@@ -8,9 +8,9 @@ import { span } from "./diagnostics/tracer";
 /** A cached catalog younger than this is served without a background re-check. Re-checks send the saved ETags, so an unchanged catalog costs a bodiless 304 per page. */
 export const MODEL_CATALOG_FRESH_MS = 15 * 60 * 1000;
 export type ModelCatalogKey = { endpoint: string; accountId: string };
-/** Version 3 added model facts; older files are still served but count as stale and re-download in full, since their ETags would answer that nothing changed. */
-const CATALOG_VERSION = 3;
-type CatalogFile = { version: 1 | 2 | 3; endpoint: string; accountId: string; fetchedAt: string; models: ModelOption[]; validators?: CatalogPageValidator[] };
+/** Version 3 added model facts and 4 their cache prices; older files are still served but count as stale and re-download in full, since their ETags would answer that nothing changed. */
+export const CATALOG_VERSION = 4;
+type CatalogFile = { version: 1 | 2 | 3 | 4; endpoint: string; accountId: string; fetchedAt: string; models: ModelOption[]; validators?: CatalogPageValidator[] };
 /** Fetches the catalog; given the saved page validators it may answer that nothing changed. */
 export type CatalogFetch = (validators?: CatalogPageValidator[]) => Promise<ModelOption[] | ApiModelCatalog>;
 
@@ -23,7 +23,7 @@ export class ModelCatalogCache {
 	async read(key: ModelCatalogKey): Promise<CatalogFile | undefined> {
 		try {
 			const file = JSON.parse(await readFile(this.filename(key), "utf8")) as CatalogFile;
-			return typeof file?.version === "number" && [1, 2, CATALOG_VERSION].includes(file.version) && file.endpoint === key.endpoint && file.accountId === key.accountId && Number.isFinite(Date.parse(file.fetchedAt)) && Array.isArray(file.models) && file.models.every(model => typeof model?.id === "string" && typeof model.name === "string") ? file : undefined;
+			return typeof file?.version === "number" && [1, 2, 3, CATALOG_VERSION].includes(file.version) && file.endpoint === key.endpoint && file.accountId === key.accountId && Number.isFinite(Date.parse(file.fetchedAt)) && Array.isArray(file.models) && file.models.every(model => typeof model?.id === "string" && typeof model.name === "string") ? file : undefined;
 		} catch { return undefined; }
 	}
 	/** Returns the cached list at once, starting a background refresh when it is stale; only an empty cache waits for the network. */

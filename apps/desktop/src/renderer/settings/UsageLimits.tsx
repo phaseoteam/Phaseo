@@ -14,7 +14,7 @@ export const providerFill: Record<ProviderPool["provider"], string> = { codex: "
 export function AccountChip({ account, className }: { account: UsageAccount; className?: string }) {
 	const name = account.email ?? account.label, hue = accountHue(name);
 	return <span role="img" aria-label={`Account ${initials(name)}`} style={{ background: `oklch(0.62 0.11 ${hue} / 0.28)`, color: `oklch(0.78 0.12 ${hue})` }}
-		className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[9px] leading-none font-bold", className)}>{initials(name)}</span>;
+		className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] text-[9px] leading-none font-bold", className)}>{initials(name)}</span>;
 }
 
 function countdown(resetsAt: number | null) { return resetText(resetsAt).replace(/^Resets (in )?/, ""); }
@@ -49,7 +49,7 @@ function Segment({ column, provider, compact }: { column: PoolColumn; provider: 
 /** A pooled window: how much is left across every account, and each account's share as a segment. */
 function PoolCard({ pool, provider }: { pool: PoolWindow; provider: ProviderPool["provider"] }) {
 	const compact = pool.columns.length > 4;
-	return <div className="grid items-center gap-x-6 gap-y-3 rounded-xl border border-border bg-card/60 p-4 md:grid-cols-[9.5rem_minmax(0,1fr)]">
+	return <div className="grid items-center gap-x-6 gap-y-3 border-t border-border/60 py-4 first:border-t-0 first:pt-1 md:grid-cols-[9.5rem_minmax(0,1fr)]">
 		<div className="flex flex-col gap-0.5">
 			<span className="text-[13px] font-medium">{pool.label}</span>
 			<span className="flex items-baseline gap-1.5"><span className="text-3xl font-semibold tabular-nums">{pool.remaining}%</span><span className="text-sm text-muted-foreground">left</span></span>
@@ -69,6 +69,6 @@ export function ProviderPoolSection({ pool }: { pool: ProviderPool }) {
 			<span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><HarnessLogo harness={pool.provider} /></span>
 			{providerNames[pool.provider]}<span className="font-normal text-muted-foreground">· {accounts === 1 ? "1 account" : `${accounts} accounts`}</span>
 		</h2>
-		<div className="flex flex-col gap-2">{pool.windows.map(window => <PoolCard key={window.id} pool={window} provider={pool.provider} />)}</div>
+		<div className="flex flex-col pl-7">{pool.windows.map(window => <PoolCard key={window.id} pool={window} provider={pool.provider} />)}</div>
 	</section>;
 }

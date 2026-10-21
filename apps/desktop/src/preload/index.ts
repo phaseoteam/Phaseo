@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { PhaseoDesktopApi } from "../shared/desktop";
+import type { UsagePeriod } from "../shared/usageLedger";
 
 const taskOpenListeners = new Set<(taskId?: string) => void>();
 let pendingTaskOpen: { id?: string } | undefined;
@@ -26,7 +27,7 @@ const desktopApi: PhaseoDesktopApi = {
 		mission: command => ipcRenderer.invoke("workspace:mission", command),
 		onMissionsChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, missions: Parameters<typeof listener>[0]) => listener(missions); ipcRenderer.on("workspace:missions-changed", subscription); return () => ipcRenderer.removeListener("workspace:missions-changed", subscription); },
 		autopilotLog: () => ipcRenderer.invoke("workspace:autopilot-log"),
-		usageToday: () => ipcRenderer.invoke("workspace:usage-today"),
+		usageReport: (period: UsagePeriod) => ipcRenderer.invoke("workspace:usage-report", period),
 		onAutopilotLogChange: listener => { const subscription = () => listener(); ipcRenderer.on("workspace:autopilot-log-changed", subscription); return () => ipcRenderer.removeListener("workspace:autopilot-log-changed", subscription); },
 		preferences: () => ipcRenderer.invoke("workspace:preferences"),
 		savePreferences: preferences => ipcRenderer.invoke("workspace:save-preferences", preferences),

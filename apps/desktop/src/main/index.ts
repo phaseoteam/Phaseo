@@ -53,7 +53,7 @@ import { validateUsageHubRequest } from "../shared/usageHubs";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
 import { codexModels } from "./modelCatalog";
 import { apiModelCatalog, type CatalogPageValidator } from "./apiModelCatalog";
-import { ModelCatalogCache } from "./modelCatalogCache";
+import { CATALOG_VERSION, ModelCatalogCache } from "./modelCatalogCache";
 import { openCodeModels, piModels } from "./nativeModels";
 import { resolveOpenCodeCommand } from "./openCodeService";
 import { TerminalService } from "./terminalService";
@@ -62,7 +62,8 @@ import { closePhaseoMcpPool } from "./phaseoMcp";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
-import { listPullRequestDirectory } from "./pullRequestDirectory";
+import { listPullRequestDirectory, pullRequestCounts } from "./pullRequestDirectory";
+import { localDay, modelMatchKey, type TokenPrices, type UsagePeriod } from "../shared/usageLedger";
 import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
 import { PullRequestGuides } from "./pullRequestGuides";
 import { PullRequestWatcher } from "./pullRequestWatcher";
@@ -132,7 +133,12 @@ function terminalOwners() {
 }
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
-ipcMain.handle("workspace:usage-today", event => { if (!senderWindow(event)) throw new Error("Invalid usage request."); return workspaceRuntime.store.todayReport(); });
+ipcMain.handle("workspace:usage-report", async (event, period: unknown) => {
+	if (!senderWindow(event) || !["today", "7d", "30d", "90d"].includes(period as string)) throw new Error("Invalid usage request.");
+	const report = workspaceRuntime.store.usageReport(period as UsagePeriod, await usagePrices());
+	const pullRequests = await usagePullRequests(localDay(new Date(report.from)));
+	return pullRequests ? { ...report, activity: { ...report.activity, pullRequests } } : report;
+});
 ipcMain.handle("workspace:autopilot-log", event => { if (!senderWindow(event)) throw new Error("Invalid Autopilot log request."); return workspaceRuntime.store.autopilotLog(); });
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
 ipcMain.handle("workspace:save-global-instructions", (event, edit: unknown) => { if (!senderWindow(event) || shutdownStarted) throw new Error("Instruction editing is unavailable."); return globalInstructions.save(edit); });
@@ -185,6 +191,35 @@ ipcMain.handle("workspace:phaseo-sign-in", async (event, accountId: unknown) => 
 	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); releaseAccount(); }
 });
 ipcMain.handle("workspace:phaseo-cancel-sign-in", event => { if (!senderWindow(event)) throw new Error("Invalid sign-in request."); phaseoSignIns.get(event.sender.id)?.abort(); });
+/**
+ * Catalogue prices by model, for the Usage page's estimates of what Claude Code and Codex used. They come from the first
+ * Phaseo account's catalogue; a catalogue saved before it kept cache prices is fetched again, so cached input isn't
+ * priced as fresh input. Without a Phaseo account nothing is priced.
+ */
+async function usagePrices(): Promise<(model: string) => TokenPrices | undefined> {
+	const account = workspaceRuntime.store.getAccounts().find(value => value.harness === "phaseo" && value.configured && !value.archived && value.endpoint);
+	if (!account) return () => undefined;
+	const cached = await modelCatalogCache.read({ endpoint: account.endpoint!, accountId: account.id });
+	let models = cached?.version === CATALOG_VERSION ? cached.models : [];
+	if (!models.length) models = await discoverDesktopModels("phaseo", account.id, undefined, true).catch(() => []);
+	const prices = new Map<string, TokenPrices>();
+	for (const model of models) {
+		const facts = model.facts, key = modelMatchKey(model.id);
+		if (facts?.inputPrice === undefined || facts.outputPrice === undefined || prices.has(key)) continue;
+		prices.set(key, { input: facts.inputPrice, output: facts.outputPrice, ...facts.cacheReadPrice !== undefined ? { cacheRead: facts.cacheReadPrice } : {}, ...facts.cacheWritePrice !== undefined ? { cacheWrite: facts.cacheWritePrice } : {} });
+	}
+	return model => prices.get(modelMatchKey(model));
+}
+/** Pull requests you opened and merged since a day, asked of GitHub at most every five minutes per day. */
+const pullRequestCountCache = new Map<string, { at: number; counts: Promise<{ opened: number; merged: number } | undefined> }>();
+function usagePullRequests(since: string) {
+	const cached = pullRequestCountCache.get(since);
+	if (cached && Date.now() - cached.at < 5 * 60_000) return cached.counts;
+	const projects = workspaceRuntime.store.getProjects().filter(project => { try { workspaceRuntime.assertProjectAvailable(project.id); return true; } catch { return false; } });
+	const counts = pullRequestCounts(projects, since).catch(() => undefined);
+	pullRequestCountCache.set(since, { at: Date.now(), counts });
+	return counts;
+}
 function discoverDesktopModels(harness: Harness, accountId?: string, projectId?: string, force = false) {
 	return span("models.discover", { harness, force }, () => discoverModels(harness, accountId, projectId, force));
 }

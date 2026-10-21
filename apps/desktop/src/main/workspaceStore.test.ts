@@ -228,12 +228,13 @@ describe("IPC validation", () => {
 		} finally { store.close(); }
 	});
 
-	it("keeps a ledger of billed requests by time and sums today, the week and where today's went", () => {
+	it("keeps a ledger of every harness's responses and sums a period, pricing what Phaseo didn't charge", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {
 			const now = new Date(2026, 9, 21, 14, 30), at = (daysAgo: number, hour: number) => new Date(2026, 9, 21 - daysAgo, hour, 10).toISOString();
 			const chat = store.apply({ type: "create-task", harness: "codex", model: "anthropic/claude-opus-5.5", mode: "code" }), other = store.apply({ type: "create-task", harness: "codex", model: "openai/gpt-6.1", mode: "chat" });
-			const priced = (nanos: number) => JSON.stringify({ total_tokens: 100, pricing: { total_nanos: nanos } });
+			const claude = store.apply({ type: "create-task", harness: "claude", model: "default", mode: "code" });
+			const priced = (nanos: number) => JSON.stringify({ prompt_tokens: 100, completion_tokens: 20, prompt_tokens_details: { cached_tokens: 40 }, total_tokens: 120, pricing: { total_nanos: nanos } });
 			store.recordUsage(chat, "a:usage:0", priced(1_000_000), false, at(0, 9));
 			// A report rewritten as it streams keeps the time it was first seen and its latest amount.
 			store.recordUsage(chat, "a:usage:0", priced(2_000_000), false, at(0, 13));
@@ -242,41 +243,62 @@ describe("IPC validation", () => {
 			store.recordUsage(chat, "d:usage:0", priced(8_000_000), false, at(9, 9));
 			// Another harness's context report has no price or token count, so it isn't kept.
 			store.recordUsage(chat, "e:usage", JSON.stringify({ total: { input_tokens: 9999 } }), false, at(0, 11));
-			const report = store.todayReport(now);
-			expect(report.today).toEqual({ costNanos: 2_500_000, tokens: 200 });
-			expect([report.last24h.costNanos, report.last7d.costNanos]).toEqual([2_500_000, 6_500_000]);
-			expect(report.autopilotToday).toEqual({ costNanos: 500_000, tokens: 100, chats: 1 });
-			expect(report.days.map(day => day.day)).toEqual(Array.from({ length: 8 }, (_, index) => localDay(new Date(2026, 9, 14 + index))));
-			expect([report.days[7].hours[9], report.days[7].hours[10], report.days[6].hours[9]]).toEqual([2_000_000, 500_000, 4_000_000]);
-			expect(report.chats.map(value => [value.taskId, value.costNanos])).toEqual([[chat.id, 2_000_000], [other.id, 500_000]]);
-			expect(report.models.map(value => value.model)).toEqual(["anthropic/claude-opus-5.5", "openai/gpt-6.1"]);
+			// Claude Code: one response reported twice as it grows keeps the larger counts; it is priced, not charged.
+			store.recordHarnessUsage(claude, { key: "claude:msg_1", model: "claude-opus-5-5", input: 1000, cached: 0, cacheWrite: 0, output: 10, reasoning: 0 }, false, at(0, 11));
+			store.recordHarnessUsage(claude, { key: "claude:msg_1", model: "claude-opus-5-5", input: 0, cached: 0, cacheWrite: 0, output: 500, reasoning: 0 }, false, at(0, 11));
+			store.recordHarnessUsage(claude, { key: "claude:msg_2", model: "unknown-model", input: 300, cached: 0, cacheWrite: 0, output: 0, reasoning: 0 }, false, at(0, 12));
+			const prices = (model: string) => model === "claude-opus-5-5" ? { input: 5, output: 25, cacheRead: 0.5 } : model === "anthropic/claude-opus-5.5" ? { input: 5, output: 25, cacheRead: 0.5 } : undefined;
+			const report = store.usageReport("today", prices, now);
+			// $0.002 + $0.0005 charged; Claude's 1,000 in and 500 out at $5 and $25 a million is $0.0175.
+			expect(report.total).toMatchObject({ chargedNanos: 2_500_000, estimateNanos: 17_500_000, costNanos: 20_000_000, unpricedTokens: 300, tokens: 240 + 1500 + 300, chats: 3 });
+			expect(report.total.types).toEqual({ input: 2 * 60 + 1300, cached: 80, cacheWrite: 0, output: 40 + 500, reasoning: 0 });
+			// Only the Opus chat's 40 cached tokens are priced: 40 × ($5 − $0.50) a million.
+			expect(report.total.cacheSavingsNanos).toBe(180_000);
+			expect(report.harnesses.map(value => [value.harness, value.costNanos, value.chats])).toEqual([["claude", 17_500_000, 1], ["phaseo", 2_500_000, 2]]);
+			expect(report.autopilot).toMatchObject({ costNanos: 500_000, chats: 1 });
+			expect(report.buckets).toHaveLength(24);
+			expect([report.buckets[9].harnesses.phaseo?.costNanos, report.buckets[13].harnesses.phaseo, report.buckets[11].harnesses.claude?.estimateNanos]).toEqual([2_000_000, undefined, 17_500_000]);
+			expect(report.chats.map(value => [value.taskId, value.costNanos])).toEqual([[claude.id, 17_500_000], [chat.id, 2_000_000], [other.id, 500_000]]);
+			expect(report.models.map(value => value.model)).toEqual(["claude-opus-5-5", "anthropic/claude-opus-5.5", "openai/gpt-6.1", "unknown-model"]);
+			expect(report.activity).toMatchObject({ chatsStarted: 3, autopilotChats: 1 });
+			expect(report.days?.map(day => day.day)).toEqual(Array.from({ length: 8 }, (_, index) => localDay(new Date(2026, 9, 14 + index))));
+			expect([report.days![7].hours[9], report.days![7].hours[10], report.days![7].hours[11], report.days![6].hours[9]]).toEqual([2_000_000, 500_000, 17_500_000, 4_000_000]);
 			// The usual is the average of the seven days before today: only yesterday spent, $0.004 by 9:10.
 			const pace = todayPace(report, now);
 			expect(pace.basedOn).toBe(7);
 			expect(pace.usualByNow).toBeCloseTo(4_000_000 / 7);
-			expect(pace.forecast).toBeCloseTo(2_500_000);
-			expect(pace.cumulative.at(-1)).toBe(2_500_000);
+			expect(pace.cumulative.at(-1)).toBe(20_000_000);
+			const week = store.usageReport("7d", prices, now);
+			expect(week.buckets.map(value => value.start)).toEqual(Array.from({ length: 7 }, (_, index) => localDay(new Date(2026, 9, 15 + index))));
+			expect([week.total.chargedNanos, week.days]).toEqual([6_500_000, undefined]);
 			store.pruneUsageLedger(5, now);
-			expect(store.todayReport(now).since).toBe(at(1, 9));
+			expect(store.usageReport("today", prices, now).since).toBe(at(1, 9));
 		} finally { store.close(); }
 	});
 
-	it("fills the ledger once from recent chats, timing each report by its turn", () => {
+	it("fills the ledger once from recent chats: Phaseo's reports by their turn, Codex's running totals turn by turn", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {
-			const now = new Date(), turnStarted = new Date(now.getTime() - 3_600_000).toISOString();
+			const now = new Date(), started = (hoursAgo: number) => new Date(now.getTime() - hoursAgo * 3_600_000).toISOString();
 			const task = store.apply({ type: "create-task", harness: "codex", model: "anthropic/claude-opus-5.5", mode: "code" });
 			const saved = store.getTask(task.id);
-			saved.messages = [{ id: "turn", role: "user", text: "Hello", startedAt: turnStarted, createdAt: turnStarted, autopilot: true }];
+			saved.messages = [{ id: "turn", role: "user", text: "Hello", startedAt: started(1), createdAt: started(1), autopilot: true }];
 			saved.activities = [
 				{ id: "turn:usage:0", type: "usage", title: "Usage", text: JSON.stringify({ total_tokens: 120, pricing: { total_nanos: 1_500_000 } }) },
 				{ id: "turn:compaction:1600000000000:usage", type: "usage", title: "Compaction usage", text: JSON.stringify({ total_tokens: 60, pricing: { total_nanos: 100_000 } }) },
 			];
 			store.saveTask(saved);
-			expect(store.backfillUsageLedger(8, now)).toBe(1);
+			const codex = store.apply({ type: "create-task", harness: "codex", model: "gpt-6.1", mode: "code" }), thread = store.getTask(codex.id);
+			const total = (input: number, output: number) => JSON.stringify({ total: { inputTokens: input, cachedInputTokens: 0, outputTokens: output, reasoningOutputTokens: 0, totalTokens: input + output }, last: {} });
+			thread.messages = [{ id: "one", role: "user", text: "First", startedAt: started(3), createdAt: started(3) }, { id: "two", role: "user", text: "Second", startedAt: started(2), createdAt: started(2) }];
+			thread.activities = [{ id: "one:usage", type: "usage", title: "Context usage", text: total(1000, 100) }, { id: "two:usage", type: "usage", title: "Context usage", text: total(2500, 300) }];
+			store.saveTask(thread);
+			expect(store.backfillUsageLedger(8, now)).toBe(3);
 			expect(store.backfillUsageLedger(8, now)).toBe(0);
-			// The compaction's id says it ran in 2020, before the cutoff, so only the step is kept.
-			expect(store.todayReport(now)).toMatchObject({ since: turnStarted, last24h: { costNanos: 1_500_000, tokens: 120 } });
+			// The compaction's id says it ran in 2020, before the cutoff, so only the step is kept; Codex's second turn used 1,500 in and 200 out.
+			const report = store.usageReport("7d", () => ({ input: 1, output: 1 }), now);
+			expect(report.harnesses.find(value => value.harness === "phaseo")).toMatchObject({ chargedNanos: 1_500_000, tokens: 120 });
+			expect(report.harnesses.find(value => value.harness === "codex")).toMatchObject({ tokens: 1100 + 1700, estimateNanos: 2_800_000 });
 		} finally { store.close(); }
 	});
 

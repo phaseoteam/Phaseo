@@ -16,6 +16,7 @@ import { waitClaudeMcp } from "./claudeMcp";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { respondMcpElicitation } from "./mcpElicitation";
 import { orchestrationInstructions } from "../shared/orchestration";
+import { claudeUsage } from "./harnessUsage";
 
 /** AskUserQuestion's questions for the answer panel: header, options with descriptions and Markdown previews, and an own answer. */
 export function claudeQuestions(raw: unknown[]): AgentQuestion[] {
@@ -148,11 +149,15 @@ export class ClaudeAdapter implements AgentAdapter {
 				}
 				if (message.type === "stream_event" && !message.parent_tool_use_id) {
 					if (message.event.type === "message_start") messageId = message.event.message.id;
+					// The final output count arrives with the message's end; the rest came with its start.
+					if (message.event.type === "message_delta" && messageId) { const usage = claudeUsage(messageId, undefined, message.event.usage); if (usage) callbacks.onUsage?.(usage); }
 					if (message.event.type === "content_block_delta" && message.event.delta.type === "text_delta") {
 						nativeOutput ||= !!message.event.delta.text; streamed.add(messageId); if (manualCompact) compactOutput.push(message.event.delta.text); callbacks.onDelta(messageId, message.event.delta.text);
 					}
 					if (message.event.type === "content_block_delta" && message.event.delta.type === "thinking_delta") callbacks.onActivity?.({ id: `${messageId}:reasoning`, type: "reasoning", title: "Reasoning", text: message.event.delta.thinking, append: true });
 				}
+				// Every API response, the main agent's and its subagents', counts towards usage.
+				if (message.type === "assistant") { const usage = claudeUsage(message.message.id, message.message.model, message.message.usage); if (usage) callbacks.onUsage?.(usage); }
 				if (message.type === "assistant") for (const block of message.message.content) {
 					if (block.type === "tool_use") callbacks.onActivity?.({ id: block.id, type: "tool", title: block.name, text: JSON.stringify(block.input, null, 2), status: "running" });
 					if (block.type === "tool_use" && block.name === "TodoWrite" && !message.parent_tool_use_id) {

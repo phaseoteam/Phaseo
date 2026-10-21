@@ -1,6 +1,6 @@
 import type { Delegation, Launch } from "./orchestration";
 import type { AutopilotDecision } from "./inbox";
-import type { TodayReport } from "./usageLedger";
+import type { UsagePeriod, UsageReport } from "./usageLedger";
 import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
 import type { ImportableHub, UsageHub, UsageHubRequest, UsageHubSnapshot } from "./usageHubs";
 import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
@@ -119,7 +119,7 @@ export type ModelOptionDescriptor =
 	| { id: string; label: string; type: "boolean"; default?: boolean };
 export type ModelOptionValues = Record<string, string | boolean>;
 /** What Phaseo's catalog says about a model, for its info card. Prices are USD per million tokens from the cheapest routable offer. */
-export type ModelFacts = { contextTokens?: number; outputTokens?: number; input?: string[]; inputPrice?: number; outputPrice?: number; providers?: string[] };
+export type ModelFacts = { contextTokens?: number; outputTokens?: number; input?: string[]; inputPrice?: number; outputPrice?: number; /** USD per million cached input tokens read, and written. */ cacheReadPrice?: number; cacheWritePrice?: number; providers?: string[] };
 export type ModelOption = { id: string; name: string; description?: string; facts?: ModelFacts;/** An older model, listed only when searching. */ legacy?: boolean; options?: ModelOptionDescriptor[]; organisationId?: string; organisationName?: string; releaseDate?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string };
 export type ModelsChange = { harness: Harness; accountId?: string };
 export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
@@ -188,7 +188,7 @@ export type WorkspaceApi = {
 	autopilotLog: () => Promise<AutopilotDecision[]>;
 	onAutopilotLogChange: (listener: () => void) => () => void;
 	/** Spend through Phaseo today, over the last day and week, by hour, and where today's went (the Today page). */
-	usageToday: () => Promise<TodayReport>;
+	usageReport: (period: UsagePeriod) => Promise<UsageReport>;
 	preferences: () => Promise<{ preferences: WorkspacePreferences; notificationsSupported: boolean }>;
 	savePreferences: (preferences: WorkspacePreferences) => Promise<WorkspacePreferences>;
 	globalInstructions: () => Promise<InstructionDocument>;
