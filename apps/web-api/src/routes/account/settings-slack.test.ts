@@ -65,6 +65,7 @@ type Fixture = {
 	slackAccess?: Record<string, unknown> | ((request: Request) => Response);
 	slackUninstallOk?: boolean;
 	keyById?: Record<string, unknown>;
+	customAppInsertError?: { status: number; body: Record<string, unknown> };
 };
 
 function parse(text: string): any {
@@ -123,6 +124,9 @@ function database(fixture: Fixture = {}) {
 		if (path.endsWith("/slack_apps")) {
 			if (request.method === "GET") return rows(fixture.customApp ? [fixture.customApp] : []);
 			if (request.method === "DELETE") return new Response(null, { status: 204 });
+			if (request.method === "POST" && fixture.customAppInsertError) {
+				return Response.json(fixture.customAppInsertError.body, { status: fixture.customAppInsertError.status });
+			}
 			const body = parse(text);
 			return rows([{ id: APP_ROW_ID, created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-01T00:00:00Z", ...body }]);
 		}
@@ -374,6 +378,7 @@ describe("Slack OAuth callback", () => {
 		expect(key).toMatchObject({
 			workspace_id: WORKSPACE, name: "__slack_agent_managed_key__", status: "active", created_by: "user-a",
 			monthly_limit_cost_nanos: 40_000_000_000, daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0,
+			never_store_content: true,
 		});
 		expect(key.kid).toMatch(/^[A-Za-z0-9]{12}$/);
 		expect(key.hash).toMatch(/^[0-9a-f]{64}$/);
@@ -639,6 +644,18 @@ describe("A workspace's own Slack app", () => {
 		expect(insert.url.searchParams.get("select")).not.toContain("secrets");
 		expect(JSON.stringify(insert.body)).not.toContain("customclientsecret0001");
 		await expect(decryptSlackSecrets(env as never, insert.body.secrets_ciphertext)).resolves.toEqual({ client_secret: "customclientsecret0001", signing_secret: "customsigningsecret001" });
+	});
+
+	it("tells a second admin saving at the same moment to reload, and keeps apps to one per workspace", async () => {
+		for (const [constraint, error] of [["slack_apps_workspace_idx", "slack_app_conflict"], ["slack_apps_slack_app_id_idx", "slack_app_taken"]]) {
+			database({
+				role: "admin", customApp: null,
+				customAppInsertError: { status: 409, body: { code: "23505", message: `duplicate key value violates unique constraint "${constraint}"` } },
+			});
+			const response = await call("/slack/custom-app", { method: "PUT", body: JSON.stringify(app) });
+			expect(response.status, constraint).toBe(409);
+			expect(((await response.json()) as any).error, constraint).toBe(error);
+		}
 	});
 
 	it("validates the app details", async () => {

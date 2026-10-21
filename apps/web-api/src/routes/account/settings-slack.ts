@@ -415,6 +415,9 @@ async function createInstallation(env: Env, context: AccountWorkspaceContext, se
 			daily_limit_cost_nanos: 0,
 			weekly_limit_cost_nanos: 0,
 			monthly_limit_cost_nanos: usdToNanos(settings.token_monthly_limit_usd),
+			// Slack's terms forbid keeping Slack messages: the gateway keeps no I/O log,
+			// cache or telemetry content for this key, whatever the workspace settings.
+			never_store_content: true,
 		}).select("id").maybeSingle();
 		if (insertedKey.error || !insertedKey.data?.id) throw new Error("install_failed");
 		created.keyId = String(insertedKey.data.id);
@@ -717,6 +720,10 @@ accountSettingsSlackRouter.put("/slack/custom-app", bodyLimit({ maxSize: 8 * 102
 			workspace_id: context.workspaceId, slack_app_id: slackAppId, client_id: clientId, secrets_ciphertext: secretsCiphertext, created_by: context.user.id,
 		}).select(CUSTOM_APP_COLUMNS).maybeSingle();
 	if (saved.error) {
+		// A workspace has at most one app, so a concurrent first save loses here instead of adding a second.
+		if (saved.error.code === "23505" && String(saved.error.message ?? "").includes("slack_apps_workspace_idx")) {
+			return json(c, { error: "slack_app_conflict", message: "Another admin saved a Slack app for this workspace at the same time. Reload and try again." }, 409);
+		}
 		if (saved.error.code === "23505") return json(c, { error: "slack_app_taken", message: "This Slack app is already connected to another Phaseo workspace" }, 409);
 		if (saved.error.code === "23514") return badRequest(c, "The Slack app details are not valid");
 		return json(c, { error: "settings_write_failed" }, 503);
