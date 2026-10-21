@@ -44,6 +44,8 @@ export type WorkspaceIoLoggingSettings = {
     retentionDays: number;
     includeProviderPayloads: boolean;
     billingStatus: "active" | "grace" | "suspended";
+    /** Zero data retention workspaces never store request or response bodies. */
+    zeroDataRetention: boolean;
 };
 
 const DEFAULT_MAX_BYTES = 5 * 1024 * 1024;
@@ -112,13 +114,14 @@ export async function getWorkspaceIoLoggingSettings(workspaceId: string): Promis
         retentionDays: DEFAULT_RETENTION_DAYS,
         includeProviderPayloads: true,
         billingStatus: "active" as const,
+        zeroDataRetention: false,
     };
 
     try {
         const client = getSupabaseAdmin();
         const primary = await client
             .from("workspace_settings")
-            .select("io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,io_logging_billing_status")
+            .select("io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,io_logging_billing_status,privacy_zdr_only")
             .eq("workspace_id", workspaceId)
             .maybeSingle();
         let data: Record<string, any> | null = primary.data as Record<string, any> | null;
@@ -127,7 +130,7 @@ export async function getWorkspaceIoLoggingSettings(workspaceId: string): Promis
         if (error && isMissingColumnError(error, "io_logging_billing_status")) {
             const fallback = await client
                 .from("workspace_settings")
-                .select("io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads")
+                .select("io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,privacy_zdr_only")
                 .eq("workspace_id", workspaceId)
                 .maybeSingle();
             data = fallback.data as Record<string, any> | null;
@@ -151,6 +154,7 @@ export async function getWorkspaceIoLoggingSettings(workspaceId: string): Promis
                 : normalizeRetentionDays(row.io_logging_retention_days),
             includeProviderPayloads: row.io_logging_include_provider_payloads !== false,
             billingStatus,
+            zeroDataRetention: row.privacy_zdr_only === true,
         };
         settingsCache.set(workspaceId, { value, expiresAt: now + 60_000 });
         return value;
@@ -173,7 +177,7 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     // Settings are cached per isolate; the feature gate is an external HTTP
     // call, so only evaluate it for workspaces that have logging switched on.
     const settings = await getWorkspaceIoLoggingSettings(input.workspaceId);
-    const featureEnabled = settings.enabled
+    const featureEnabled = settings.enabled && !settings.zeroDataRetention
         ? await isGatewayIoLoggingFeatureEnabled({
             workspaceId: input.workspaceId,
             apiKeyId: input.keyId ?? null,
@@ -182,8 +186,19 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     return {
         ...settings,
         featureEnabled,
-        captureEnabled: featureEnabled && settings.enabled,
+        captureEnabled: featureEnabled && settings.enabled && !settings.zeroDataRetention,
     };
+}
+
+/**
+ * A guardrail on the calling key can require zero data retention even when the
+ * workspace does not. The effective setting is recorded in the routing
+ * diagnostics that every audit path copies into the log metadata.
+ */
+export function requestRequiresZeroDataRetention(metadata: unknown): boolean {
+    if (!metadata || typeof metadata !== "object") return false;
+    const diagnostics = (metadata as Record<string, any>).routing_diagnostics;
+    return diagnostics?.workspacePolicy?.privacyZdrOnly === true;
 }
 
 async function persistGatewayIoLogMetadata(
@@ -235,6 +250,12 @@ export async function persistGatewayIoLog(
     });
     if (!policy.captureEnabled) {
         return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
+    }
+    if (requestRequiresZeroDataRetention(input.metadata)) {
+        return finalizeGatewayIoLog(input, {
+            io_log_status: "not_enabled",
+            io_log_error: "Skipped: zero data retention is required for this request",
+        });
     }
 
     const bucket = bindings.GATEWAY_IO_LOGS_BUCKET;

@@ -2924,6 +2924,7 @@
 		"phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible": "無効にすると、プロンプトを公開する可能性がある無料エンドポイントは対象外になります。",
 		"Store Gateway I/O logs": "Gateway I/Oログを保存",
 		"phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView": "ログの詳細画面で確認できるよう、リクエストのプロンプトと応答をプライベートR2ストレージに保存します。",
+		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "「ZDR エンドポイントのみ」がオンの間はオフです。ゼロデータ保持のワークスペースでは、プロンプトや応答は保存されません。",
 		"90 days": "90日",
 		"180 days": "180日",
 		"365 days": "365日",

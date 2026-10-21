@@ -2924,6 +2924,7 @@
 		"phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible": "बंद होने पर, प्रॉम्प्ट प्रकाशित करने के लिए चिह्नित मुफ़्त एंडपॉइंट अयोग्य हो जाते हैं।",
 		"Store Gateway I/O logs": "Gateway I/O लॉग स्टोर करें",
 		"phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView": "लॉग विवरण दृश्य के लिए अनुरोध प्रॉम्प्ट और जवाब निजी R2 स्टोरेज में रखें।",
+		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "जब तक “केवल ZDR एंडपॉइंट” चालू है, यह बंद रहता है। शून्य डेटा प्रतिधारण वाले वर्कस्पेस कभी भी प्रॉम्प्ट या जवाब संग्रहीत नहीं करते।",
 		"90 days": "90 दिन",
 		"180 days": "180 दिन",
 		"365 days": "365 दिन",

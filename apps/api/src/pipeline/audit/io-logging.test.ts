@@ -166,4 +166,39 @@ describe("persistGatewayIoLog", () => {
 		expect(retentionUntil).toBeGreaterThanOrEqual(startedAt + 364 * 24 * 60 * 60 * 1000);
 		expect(retentionUntil).toBeLessThanOrEqual(startedAt + 366 * 24 * 60 * 60 * 1000);
 	});
+
+	it("never stores bodies for a zero data retention workspace", async () => {
+		state.settings.privacy_zdr_only = true;
+		const { persistGatewayIoLog, resolveGatewayIoLoggingPolicy } = await import("./io-logging");
+
+		const policy = await resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1" });
+		const result = await persistGatewayIoLog({
+			requestId: "req_zdr_workspace",
+			workspaceId: "workspace_1",
+			success: true,
+			requestPayload: { messages: [{ role: "user", content: "secret" }] },
+		});
+
+		expect(policy).toMatchObject({ zeroDataRetention: true, captureEnabled: false });
+		expect(result).toEqual({ io_log_status: "not_enabled" });
+		expect(state.bucket.put).not.toHaveBeenCalled();
+	});
+
+	it("never stores bodies when the key's guardrail requires zero data retention", async () => {
+		const { persistGatewayIoLog } = await import("./io-logging");
+
+		const result = await persistGatewayIoLog({
+			requestId: "req_zdr_guardrail",
+			workspaceId: "workspace_1",
+			success: true,
+			requestPayload: { messages: [{ role: "user", content: "secret" }] },
+			metadata: { routing_diagnostics: { workspacePolicy: { privacyZdrOnly: true } } },
+		});
+
+		expect(result).toEqual({
+			io_log_status: "not_enabled",
+			io_log_error: "Skipped: zero data retention is required for this request",
+		});
+		expect(state.bucket.put).not.toHaveBeenCalled();
+	});
 });
