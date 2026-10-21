@@ -9805,6 +9805,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: 当请求要求音频输出时，助手消息上的语音：音频 id、请求格式的 base64 音频、音频的过期时间（Unix 秒）及其转写文本。以 delta.audio 片段流式传输。
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
         tool_call_id:
           type: string
         reasoning_content:

@@ -1563,6 +1563,9 @@ public sealed class ChatImageOutputPart
 
 public sealed class ChatMessage
 {
+	[JsonPropertyName("audio")]
+	public Dictionary<string, object>? Audio { get; set; }
+
 	[JsonPropertyName("audios")]
 	public List<Dictionary<string, object>>? Audios { get; set; }
 

@@ -1294,6 +1294,7 @@ type ChatImageOutputPart struct {
 }
 
 type ChatMessage struct {
+	Audio *map[string]interface{} `json:"audio,omitempty"`
 	Audios *[]map[string]interface{} `json:"audios,omitempty"`
 	Content interface{} `json:"content,omitempty"`
 	Images *[]map[string]interface{} `json:"images,omitempty"`

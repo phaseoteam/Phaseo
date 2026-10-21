@@ -9805,6 +9805,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: 'Audio hablado en un mensaje del asistente cuando la solicitud pide salida de audio: el id del audio, el audio en base64 en el formato solicitado, cuándo caduca el audio (segundos Unix) y su transcripción. Se transmite en fragmentos delta.audio.'
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
         tool_call_id:
           type: string
         reasoning_content:

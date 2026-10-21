@@ -621,6 +621,7 @@ public final class Models {
 	}
 
 	public static class ChatMessage {
+		public Object audio;
 		public java.util.List<Object> audios;
 		public Object content;
 		public java.util.List<Object> images;

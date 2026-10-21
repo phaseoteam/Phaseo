@@ -1119,6 +1119,8 @@ class ChatImageOutputPart
 
 class ChatMessage
 {
+	/** @var array<string, mixed>|null */
+	public $audio;
 	/** @var array|null */
 	public $audios;
 	/** @var string|null|array */

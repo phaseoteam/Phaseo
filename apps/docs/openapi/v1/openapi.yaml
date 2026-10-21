@@ -10308,6 +10308,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: >-
+            Spoken audio on an assistant message when the request asks for audio
+            output: the audio id, base64 audio in the requested format, when the
+            audio expires (Unix seconds) and its transcript. Streamed as
+            delta.audio pieces.
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
         tool_call_id:
           type: string
         reasoning_content:

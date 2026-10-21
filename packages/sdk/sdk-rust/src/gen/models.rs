@@ -623,6 +623,7 @@ pub struct ChatImageOutputPart {
 }
 
 pub struct ChatMessage {
+	pub audio: Option<HashMap<String, String>>,
 	pub audios: Option<Vec<HashMap<String, String>>>,
 	pub content: Option<String>,
 	pub images: Option<Vec<HashMap<String, String>>>,

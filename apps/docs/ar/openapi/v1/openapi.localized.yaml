@@ -9805,6 +9805,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: 'الصوت المنطوق في رسالة المساعد عندما يطلب الطلب إخراجًا صوتيًا: معرّف الصوت، والصوت بترميز base64 بالتنسيق المطلوب، وموعد انتهاء صلاحية الصوت (بثوانٍ Unix) ونصه المكتوب. يُبث على شكل أجزاء delta.audio.'
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
         tool_call_id:
           type: string
         reasoning_content:

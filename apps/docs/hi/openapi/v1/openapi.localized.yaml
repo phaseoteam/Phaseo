@@ -9805,6 +9805,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: 'जब अनुरोध ऑडियो आउटपुट माँगता है, तब असिस्टेंट संदेश पर बोला गया ऑडियो: ऑडियो id, अनुरोधित फ़ॉर्मैट में base64 ऑडियो, ऑडियो की समाप्ति का समय (Unix सेकंड) और उसका ट्रांसक्रिप्ट। delta.audio हिस्सों में स्ट्रीम होता है।'
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
         tool_call_id:
           type: string
         reasoning_content:

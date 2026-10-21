@@ -9805,6 +9805,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: リクエストが音声出力を求めたときのアシスタントメッセージの音声です。音声 ID、要求された形式の base64 音声、音声の有効期限 (Unix 秒)、その文字起こしを含みます。delta.audio の断片としてストリーミングされます。
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
         tool_call_id:
           type: string
         reasoning_content:
