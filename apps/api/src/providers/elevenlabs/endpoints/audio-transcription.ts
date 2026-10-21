@@ -7,7 +7,7 @@ import { AudioTranscriptionSchema, type AudioTranscriptionRequest } from "@core/
 import { buildAdapterPayload } from "../../utils";
 import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import { estimateAudioDurationSeconds } from "../../openai/endpoints/audio-transcription-usage";
 
 const ELEVENLABS_TIMESTAMP_GRANULARITIES = new Set(["none", "word", "character"]);
@@ -154,7 +154,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 				usage: usageMeters,
 			};
 			if (args.pricingCard) {
-				const pricedUsage = computeBill(usageMeters, args.pricingCard, { model: modelId, pricing_plan: "standard" }, "standard");
+				const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard, { model: modelId, pricing_plan: "standard" }, "standard");
 				bill.cost_cents = Number(pricedUsage.pricing.total_nanos ?? 0) / 10_000_000;
 				bill.currency = pricedUsage.pricing.currency;
 				bill.usage = pricedUsage;

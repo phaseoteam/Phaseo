@@ -93,6 +93,8 @@ module Phaseo
     #   @return [Array<String>, nil]
     # @!attribute [rw] plugins
     #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] prompt
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] prompt_cache_key
     #   @return [String, nil]
     # @!attribute [rw] provider
@@ -125,7 +127,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    AnthropicMessagesRequest = Struct.new(:cache_control, :context_management, :debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :plugins, :prompt_cache_key, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, :user, keyword_init: true)
+    AnthropicMessagesRequest = Struct.new(:cache_control, :context_management, :debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :plugins, :prompt, :prompt_cache_key, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, :user, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] context_management
@@ -873,6 +875,8 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] presence_penalty
     #   @return [Float, nil]
+    # @!attribute [rw] prompt
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] prompt_cache_key
     #   @return [String, nil]
     # @!attribute [rw] prompt_cache_options
@@ -921,7 +925,7 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] user_id
     #   @return [String, nil]
-    ChatCompletionsRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :frequency_penalty, :image_config, :include_reasoning, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :plugins, :prediction, :presence_penalty, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :reasoning_effort, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
+    ChatCompletionsRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :frequency_penalty, :image_config, :include_reasoning, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :plugins, :prediction, :presence_penalty, :prompt, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :reasoning_effort, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
     # @!attribute [rw] choices
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] created
@@ -3678,7 +3682,9 @@ module Phaseo
     # @!attribute [rw] workspace_id
     #   @return [String]
     Preset = Struct.new(:active_version_id, :config, :created_at, :created_by, :description, :id, :name, :slug, :source_preset_id, :source_preset_version_id, :updated_at, :upstream_version_id, :versioning_method, :visibility, :workspace_id, keyword_init: true)
-    PresetConfig = Struct.new(:_unused, keyword_init: true)
+    # @!attribute [rw] prompt
+    #   @return [Hash{String => Object}, nil]
+    PresetConfig = Struct.new(:prompt, keyword_init: true)
     # @!attribute [rw] config
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] description
@@ -3705,6 +3711,37 @@ module Phaseo
     # @!attribute [rw] total_count
     #   @return [Integer]
     PresetListResponse = Struct.new(:data, :total_count, keyword_init: true)
+    # @!attribute [rw] messages
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] response_format
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] syntax
+    #   @return [String, nil]
+    # @!attribute [rw] tool_choice
+    #   @return [Object, nil]
+    # @!attribute [rw] tools
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] variables
+    #   @return [Hash{String => Object}, nil]
+    PresetPromptTemplate = Struct.new(:messages, :response_format, :syntax, :tool_choice, :tools, :variables, keyword_init: true)
+    # @!attribute [rw] content
+    #   @return [String, Array<Hash{String => Object}>]
+    # @!attribute [rw] role
+    #   @return [String]
+    PresetPromptTemplateMessage = Struct.new(:content, :role, keyword_init: true)
+    # @!attribute [rw] default
+    #   @return [Object, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] enum
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] max_length
+    #   @return [Integer, nil]
+    # @!attribute [rw] required
+    #   @return [Boolean, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    PresetPromptVariable = Struct.new(:default, :description, :enum, :max_length, :required, :type, keyword_init: true)
     # @!attribute [rw] handle
     #   @return [String, nil]
     # @!attribute [rw] workspace_id
@@ -3982,6 +4019,11 @@ module Phaseo
     # @!attribute [rw] ttl
     #   @return [String, nil]
     PromptCacheOptions = Struct.new(:mode, :ttl, keyword_init: true)
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] variables
+    #   @return [Hash{String => Object}, nil]
+    PromptTemplateReference = Struct.new(:id, :variables, keyword_init: true)
     # @!attribute [rw] api_provider_id
     #   @return [String, nil]
     # @!attribute [rw] api_provider_name
@@ -4451,6 +4493,8 @@ module Phaseo
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] previous_response_id
     #   @return [String, nil]
+    # @!attribute [rw] prompt
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] prompt_cache_key
     #   @return [String, nil]
     # @!attribute [rw] prompt_cache_options
@@ -4489,7 +4533,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ResponsesRequest = Struct.new(:background, :cache_control, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :plugins, :previous_response_id, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
+    ResponsesRequest = Struct.new(:background, :cache_control, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :models, :parallel_tool_calls, :plugins, :previous_response_id, :prompt, :prompt_cache_key, :prompt_cache_options, :prompt_cache_retention, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] cost_cents

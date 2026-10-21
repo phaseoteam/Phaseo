@@ -938,6 +938,12 @@ export type CreateAnthropicMessageParams = {
           mode?: "safe" | "strict";
         }
     )[];
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+    };
     prompt_cache_key?: string | null;
     provider?: {
       allow_fallbacks?: boolean | null;
@@ -2267,6 +2273,12 @@ export type CreateChatCompletionParams = {
       type: "content";
     };
     presence_penalty?: number;
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+    };
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
       mode?: "implicit" | "explicit";
@@ -5061,6 +5073,44 @@ export type CreatePresetParams = {
   headers?: Record<string, never>;
   body?: {
     config?: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     description?: string | null;
@@ -5082,6 +5132,44 @@ export async function createPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -5106,6 +5194,44 @@ export async function createPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -5836,6 +5962,12 @@ export type CreateResponseParams = {
         }
     )[];
     previous_response_id?: string;
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+    };
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
       mode?: "implicit" | "explicit";
@@ -8866,6 +8998,44 @@ export async function forkPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -8891,6 +9061,44 @@ export async function forkPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -10837,6 +11045,44 @@ export async function getPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -10862,6 +11108,44 @@ export async function getPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -16207,6 +16491,44 @@ export async function listPresets(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -16231,6 +16553,44 @@ export async function listPresets(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -16348,6 +16708,44 @@ export async function listPresetVersions(
 ): Promise<{
   data: {
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at: string;
@@ -16371,6 +16769,44 @@ export async function listPresetVersions(
   return client.request<{
     data: {
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at: string;
@@ -19475,6 +19911,44 @@ export async function publishPresetVersion(
 ): Promise<{
   data: {
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at: string;
@@ -19498,6 +19972,44 @@ export async function publishPresetVersion(
   return client.request<{
     data: {
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at: string;
@@ -22302,6 +22814,44 @@ export type UpdatePresetParams = {
   headers?: Record<string, never>;
   body?: {
     config?: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     description?: string | null;
@@ -22323,6 +22873,44 @@ export async function updatePreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -22348,6 +22936,44 @@ export async function updatePreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;

@@ -2924,6 +2924,7 @@
 		"phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible": "Wenn diese Option deaktiviert ist, sind kostenlose Endpunkte, die Prompts veröffentlichen, nicht verfügbar.",
 		"Store Gateway I/O logs": "Gateway-I/O-Protokolle speichern",
 		"phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView": "Prompts und Antworten von Anfragen für die Detailansicht „Protokolle“ in privatem R2-Speicher ablegen.",
+		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "Aus, solange keine Datenaufbewahrung verlangt wird. Prompts und Antworten werden nicht gespeichert.",
 		"90 days": "90 Tage",
 		"180 days": "180 Tage",
 		"365 days": "365 Tage",

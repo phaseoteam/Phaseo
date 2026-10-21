@@ -32,6 +32,17 @@ import {
 } from "../classification/data-contribution";
 import { currentDataContributionDiscountNanos } from "../pricing/data-contribution-discount";
 
+function promptTemplateMetadata(ctx: PipelineContext) {
+    const template = ctx.promptTemplate;
+    if (!template) return null;
+    return {
+        preset_id: template.presetId,
+        preset_slug: template.presetSlug,
+        variable_names: template.variableNames,
+        message_count: template.messageCount,
+    };
+}
+
 function getProviderAttempts(ctx: PipelineContext): Array<Record<string, unknown>> {
     return Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : [];
 }
@@ -303,6 +314,7 @@ export async function handleFailureAudit(
                 } : {}),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
+                prompt_template: promptTemplateMetadata(ctx),
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
                 routing_diagnostics: sanitizeForAxiom((ctx as any).routingDiagnostics ?? null),
                 provider_enablement_diagnostics: sanitizeForAxiom(
@@ -552,6 +564,7 @@ export async function handleSuccessAudit(
                 labels: ctx.meta.labels ?? [],
                 classifications: ctx.requestClassifications ?? null,
                 client_source: ctx.meta.clientSource ?? null,
+                prompt_template: promptTemplateMetadata(ctx),
                 finish_reason: finishReason ?? null,
                 plugin_executions: sanitizeForAxiom(ctx.pluginExecutions ?? null),
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
