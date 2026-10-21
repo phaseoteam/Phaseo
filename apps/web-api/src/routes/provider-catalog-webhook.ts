@@ -85,7 +85,7 @@ providerCatalogWebhookRouter.post("/provider-catalog/:providerSlug", async (c) =
 	if (!EVENT_ID.test(eventId)) return c.json({ error: "event_id_required" }, 400, PRIVATE_NO_STORE_HEADERS);
 	if (c.req.header("x-phaseo-event-id") && c.req.header("x-phaseo-event-id") !== eventId) return c.json({ error: "event_id_mismatch" }, 400, PRIVATE_NO_STORE_HEADERS);
 
-	const sync = syncProviderCatalog(c.env, providerSlug, "webhook", eventId).catch((error) => {
+	const sync = syncProviderCatalog(c.env, providerSlug, "webhook", eventId, c.executionCtx).catch((error) => {
 		console.error("provider_catalog_webhook_sync_failed", { errorType: error instanceof Error ? error.name : "UnknownError" });
 	});
 	if (c.executionCtx?.waitUntil) c.executionCtx.waitUntil(sync);

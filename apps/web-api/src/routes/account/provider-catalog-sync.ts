@@ -1,4 +1,6 @@
 import { getDataClient } from "@/data/supabase";
+import { PUBLIC_MODEL_CATALOGUE_CACHE_TAGS } from "@/cache/catalogue";
+import { purgeWorkerCacheTags } from "@/http/invalidation";
 import type { Env } from "@/env";
 import { notifyPendingProviderModels } from "@/lib/provider-model-notifications";
 import { applyCatalogOverrides, normalizedCatalogDocument, type CatalogOverrides } from "./provider-catalog-overrides";
@@ -141,7 +143,7 @@ async function notifyProviderOwners(client: any, providerSlug: string, runId: st
 	await client.from("provider_catalog_events").insert(links.data.map((row: any) => ({ provider_slug: providerSlug, run_id: runId, workspace_id: row.workspace_id, event_type: "catalog_needs_changes", title, message })));
 }
 
-export async function syncProviderCatalog(env: Env, providerSlug: string, trigger: ProviderCatalogSyncTrigger, externalEventId?: string): Promise<{ status: string; runId?: string; modelCount?: number }> {
+export async function syncProviderCatalog(env: Env, providerSlug: string, trigger: ProviderCatalogSyncTrigger, externalEventId?: string, executionCtx: object = {}): Promise<{ status: string; runId?: string; modelCount?: number }> {
 	const client = getDataClient(env);
 	const sourceResult = await client.from("provider_catalog_sources").select(SOURCE_SELECT).eq("provider_slug", providerSlug).maybeSingle();
 	if (sourceResult.error) throw sourceResult.error;
@@ -276,6 +278,11 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], warnings: preview.warnings ?? [], checked_at: now }, completed_at: now }).eq("id", runId);
 		await client.from("provider_catalog_sources").update({ last_success_at: now, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: rateLimitsError, ...(rateLimitsError ? { refresh_requested: true, next_poll_at: new Date(Date.now() + 5 * 60_000).toISOString() } : {}), updated_at: now }).eq("provider_slug", providerSlug);
 		await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
+		// Include legacy snapshots: dropping v1.2 policy is itself a withdrawal.
+		// Persistence already succeeded; a purge failure must not report a failed import.
+		try {
+			await purgeWorkerCacheTags(executionCtx, [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-model-pricing", "web-api-model-details", "web-api-compare"]);
+		} catch { console.error("provider_catalog_cache_purge_failed", { providerSlug }); }
 		await notifyPendingProviderModels(env).catch(() => { console.error("provider_model_notification_failed"); });
 		return { status: "applied", runId, modelCount: Number(applied.data ?? preview.modelCount) };
 	} catch (error) {
@@ -291,7 +298,7 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 	}
 }
 
-export async function runProviderCatalogPollingJob(env: Env, limit = 20): Promise<{ attempted: number; applied: number; failed: number }> {
+export async function runProviderCatalogPollingJob(env: Env, limit = 20, executionCtx: object = {}): Promise<{ attempted: number; applied: number; failed: number }> {
 	const client = getDataClient(env);
 	const now = new Date().toISOString();
 	const sources = await client.from("provider_catalog_sources").select("provider_slug").eq("status", "active").or(`next_poll_at.lte.${now},and(refresh_requested.eq.true,next_poll_at.is.null)`).order("next_poll_at", { ascending: true, nullsFirst: true }).limit(limit);
@@ -300,7 +307,7 @@ export async function runProviderCatalogPollingJob(env: Env, limit = 20): Promis
 	let failed = 0;
 	for (const source of sources.data ?? []) {
 		try {
-			const result = await syncProviderCatalog(env, String(source.provider_slug), "poll");
+			const result = await syncProviderCatalog(env, String(source.provider_slug), "poll", undefined, executionCtx);
 			if (result.status === "applied") applied += 1;
 		} catch {
 			failed += 1;

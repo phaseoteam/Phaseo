@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 export const catalogPolicyEvidenceUrlSchema = z.string().url().max(2000).refine((value) => {
-	const url = new URL(value);
-	return url.protocol === "https:" && !url.username && !url.password;
+	try {
+		const url = new URL(value);
+		return url.protocol === "https:" && !url.username && !url.password;
+	} catch { return false; }
 }, "Use an HTTPS evidence URL without credentials.");
 const evidenceUrl = catalogPolicyEvidenceUrlSchema;
 

@@ -60,7 +60,7 @@ describe("public compare routes", () => {
 		const response = await app.request("https://phaseo.app/api/_web/compare/selection?ids=openai%2Fgpt-test", {}, env);
 
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toContain("max-age=3600");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		await expect(response.json()).resolves.toMatchObject({
 			models: [{ id: "openai/gpt-test", name: "GPT Test", benchmark_results: [], prices: [] }],
 		});

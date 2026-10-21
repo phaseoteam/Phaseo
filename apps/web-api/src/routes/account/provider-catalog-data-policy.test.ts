@@ -4,6 +4,7 @@ import addFormats from "ajv-formats";
 import { normalizeProviderCatalog, providerCatalogV12JsonSchema } from "./provider-catalog";
 import { normalizedCatalogDocument } from "./provider-catalog-overrides";
 import internalProvider from "./__fixtures__/catalog-data-policy-provider.json";
+import { catalogPolicyEvidenceUrlSchema } from "./provider-catalog-data-policy";
 
 const declaration = () => ({ id: "text.generate", training_policy: "no_train", retention_mode: "none", retention_days: 0,
 	zero_data_retention: true, zdr_eligibility: "eligible", requirements: { contract_mode: "none", account_settings: [] },
@@ -14,6 +15,11 @@ const feed = () => ({ schema_version: "1.2", data: [{ id: "acme/model", capabili
 }] }] });
 
 describe("catalog v1.2 privacy declarations", () => {
+	it.each(["not-a-url", "", "http://example.com/privacy", "https://user:password@example.com/privacy"])("rejects invalid evidence without throwing: %s", (value) => {
+		expect(catalogPolicyEvidenceUrlSchema.safeParse(value).success).toBe(false);
+		const body = feed(); body.data[0].service_tiers[0].data_policy.capabilities[0].privacy_policy_url = value;
+		expect(normalizeProviderCatalog(body).valid).toBe(false);
+	});
 	it("validates the internal provider's native, retained, batch and agreement controls", () => {
 		const ajv = new Ajv({ strict: false }); addFormats(ajv);
 		expect(ajv.compile(providerCatalogV12JsonSchema)(internalProvider)).toBe(true);

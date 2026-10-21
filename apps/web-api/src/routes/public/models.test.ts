@@ -907,7 +907,7 @@ describe("public model routes", () => {
 		]);
 
 		expect(catalogue.status).toBe(200);
-		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
+		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(catalogue.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models,web-api-models-v2");
 		expect(benchmarks.status).toBe(200);
@@ -1354,6 +1354,7 @@ describe("public model routes", () => {
 		);
 
 		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		await expect(response.json()).resolves.toMatchObject({
 			providers: [{
 				provider: { routing_status: "active" },
@@ -1426,6 +1427,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-details");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		await expect(response.json()).resolves.toMatchObject({
 			model: {

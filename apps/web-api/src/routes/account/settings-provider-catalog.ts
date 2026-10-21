@@ -328,7 +328,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			if (updated.error) throw updated.error;
 			let syncWarning: string | null = null;
 			try {
-				await syncProviderCatalog(c.env, parsedSlug.data, "manual");
+				await syncProviderCatalog(c.env, parsedSlug.data, "manual", undefined, c.executionCtx);
 			} catch (error) {
 				syncWarning = "Catalog saved. Synchronization will retry in the background.";
 				console.error("provider_catalog_sync_after_save_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
@@ -337,7 +337,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			return catalog ? c.json({ ok: true, ...catalog, sync_warning: syncWarning }, 200, PRIVATE_NO_STORE_HEADERS) : errorResponse(c, "provider_catalog_not_found", 404);
 		}
 		if (body?.catalog?.refresh === true) {
-			await syncProviderCatalog(c.env, parsedSlug.data, "manual");
+			await syncProviderCatalog(c.env, parsedSlug.data, "manual", undefined, c.executionCtx);
 			const refreshed = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
 			return c.json({ ok: true, ...refreshed }, 200, PRIVATE_NO_STORE_HEADERS);
 		}
@@ -383,7 +383,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			if (saved.error?.message?.includes("version_conflict")) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
 			if (saved.error) throw saved.error;
 			let syncWarning: string | null = null;
-			try { await syncProviderCatalog(c.env, parsedSlug.data, "manual"); }
+			try { await syncProviderCatalog(c.env, parsedSlug.data, "manual", undefined, c.executionCtx); }
 			catch { syncWarning = "Catalog saved. Synchronization will retry in the background."; }
 			const catalog = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
 			return c.json({ ok: true, ...catalog, sync_warning: syncWarning }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -408,7 +408,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 		if (updated.error) throw updated.error;
 		let syncWarning: string | null = null;
 		try {
-			await syncProviderCatalog(c.env, parsedSlug.data, "manual");
+			await syncProviderCatalog(c.env, parsedSlug.data, "manual", undefined, c.executionCtx);
 		} catch (error) {
 			syncWarning = error instanceof Error ? error.message : "Catalog saved. Synchronization will retry in the background.";
 			console.error("provider_catalog_sync_after_save_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });

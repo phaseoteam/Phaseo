@@ -1,4 +1,5 @@
 import { fetchSubscriptionCatalogue } from "@/models/subscriptions";
+import { PUBLIC_DATA_POLICY_CACHE } from "@/cache/catalogue";
 import { Hono } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
@@ -16,6 +17,8 @@ const COMPARE_CACHE = {
 
 const COMPARE_SELECTION_CACHE = {
 	...COMPARE_CACHE,
+	...PUBLIC_DATA_POLICY_CACHE,
+	staleWhileRevalidateSeconds: 0,
 	cacheTags: [
 		"web-api-compare",
 		"web-api-model-details",
