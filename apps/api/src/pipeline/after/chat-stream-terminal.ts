@@ -65,11 +65,12 @@ export function withChatReasoningAliases(frame: any): any {
 	const choices = frame.choices.map((choice: any) => {
 		const delta = choice?.delta;
 		if (!delta || typeof delta !== "object") return choice;
-		if (nonEmptyString(delta.reasoning_content) && delta.reasoning == null) {
+		// An empty string counts as absent, so the other name's text fills it.
+		if (nonEmptyString(delta.reasoning_content) && !nonEmptyString(delta.reasoning)) {
 			changed = true;
 			return { ...choice, delta: { ...delta, reasoning: delta.reasoning_content } };
 		}
-		if (nonEmptyString(delta.reasoning) && delta.reasoning_content == null) {
+		if (nonEmptyString(delta.reasoning) && !nonEmptyString(delta.reasoning_content)) {
 			changed = true;
 			return { ...choice, delta: { ...delta, reasoning_content: delta.reasoning } };
 		}

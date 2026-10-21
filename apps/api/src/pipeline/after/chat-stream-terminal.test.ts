@@ -62,4 +62,12 @@ describe("createChatStreamTerminal", () => {
 		}));
 		expect(fromSnapshot[0].choices[0].delta).toMatchObject({ content: "Hi", reasoning_content: "why", reasoning: "why" });
 	});
+
+	it("fills an empty reasoning alias from the other name", () => {
+		const terminal = createChatStreamTerminal();
+		const [chunk] = terminal.expand({ object: "chat.completion.chunk", choices: [{ index: 0, delta: { reasoning_content: "think", reasoning: "" }, finish_reason: null }] });
+		expect(chunk.choices[0].delta).toEqual({ reasoning_content: "think", reasoning: "think" });
+		const [reverse] = terminal.expand({ object: "chat.completion.chunk", choices: [{ index: 0, delta: { reasoning_content: "", reasoning: "more" }, finish_reason: null }] });
+		expect(reverse.choices[0].delta).toEqual({ reasoning_content: "more", reasoning: "more" });
+	});
 });
