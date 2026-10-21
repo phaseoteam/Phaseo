@@ -2924,7 +2924,7 @@
 		"phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible": "Quando desativado, endpoints gratuitos marcados como capazes de publicar prompts deixam de ser elegíveis.",
 		"Store Gateway I/O logs": "Armazenar logs de E/S do Gateway",
 		"phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView": "Armazene prompts e respostas das solicitações no armazenamento R2 privado para a visualização detalhada de logs.",
-		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "Desativado enquanto “Somente endpoints ZDR” estiver ativado. Workspaces com retenção zero de dados nunca armazenam prompts nem respostas.",
+		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "Desativado enquanto a retenção zero de dados for exigida. Prompts e respostas não são armazenados.",
 		"90 days": "90 dias",
 		"180 days": "180 dias",
 		"365 days": "365 dias",

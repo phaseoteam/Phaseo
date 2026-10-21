@@ -251,7 +251,6 @@ function ToggleRow(props: {
 	description: string;
 	checked: boolean;
 	onCheckedChange: (checked: boolean) => void;
-	disabled?: boolean;
 }) {
 	return (
 		<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/10 px-3 py-2">
@@ -259,11 +258,7 @@ function ToggleRow(props: {
 				<p className="text-sm font-medium">{props.label}</p>
 				<p className="text-xs text-muted-foreground">{props.description}</p>
 			</div>
-			<Switch
-				checked={props.checked}
-				onCheckedChange={props.onCheckedChange}
-				disabled={props.disabled}
-			/>
+			<Switch checked={props.checked} onCheckedChange={props.onCheckedChange} />
 		</div>
 	);
 }
@@ -685,18 +680,13 @@ export default function PrivacySettingsClient(props: {
 						<>
 							<ToggleRow
 								label={s("Store Gateway I/O logs")}
-								description={
-									global.privacyZdrOnly
-										? s("phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn")
-										: s("phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView")
-								}
-								checked={global.ioLoggingEnabled && !global.privacyZdrOnly}
-								disabled={global.privacyZdrOnly}
+								description={s("phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView")}
+								checked={global.ioLoggingEnabled}
 								onCheckedChange={(checked) =>
 									setGlobal((prev) => ({ ...prev, privacyEnableInputOutputLogging: checked, ioLoggingEnabled: checked }))
 								}
 							/>
-							{global.ioLoggingEnabled && !global.privacyZdrOnly ? (
+							{global.ioLoggingEnabled ? (
 								<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2">
 									<label className="space-y-1 text-sm">
 										<span className="font-medium">{s("Retention")}</span>

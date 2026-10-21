@@ -292,7 +292,8 @@ export async function persistGatewayIoLog(
             io_log_status: "missing_bucket",
             io_log_storage_provider: "cloudflare_r2",
             io_log_bucket: bucketName,
-            io_log_error: "GATEWAY_IO_LOGS_BUCKET binding is not configured",
+            // Regional (EU and US) workers have no I/O log storage, so their requests are never stored.
+            io_log_error: "Not stored: request contents aren't kept for requests served by regional endpoints",
         });
     }
 
