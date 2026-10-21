@@ -467,6 +467,37 @@
 		},
 		"defaultTitle": "新しいチャット",
 		"branchTitle": "分岐：{title}",
+		"logImport": {
+			"title": "記録されたリクエストを続ける",
+			"description": "リクエストを独自のセッションを持つ新しいチャットとして開き、このブラウザに保存します。引き継ぐ内容を選んでください。",
+			"loading": "リクエストを読み込んでいます…",
+			"failed": "このリクエストを読み込めませんでした。リクエストが属するワークスペースにサインインしているか確認してください。",
+			"unavailable": { "not_stored": "このリクエストのプロンプトと応答は保存されていません。新しいリクエストを保存するには、プライバシー設定でゲートウェイ I/O ログをオンにしてください。", "too_large": "このリクエストは保存するには大きすぎたため、開けません。", "deleted": "このリクエストの保存済みプロンプトと応答は期限切れか、削除されています。", "unsupported": "チャットで開けるのは Chat Completions、Responses、Messages のリクエストだけです。" },
+			"summary": "{count, plural, other {# 件のメッセージ}} · {model}",
+			"modelUnavailable": "{model} はチャットで利用できないため、{fallback} を使用します。開いた後でモデルを切り替えられます。",
+			"carryOver": "引き継ぐ内容",
+			"options": {
+				"pinProvider": "プロバイダーを固定 ({provider})",
+				"keepParams": "パラメーター (温度、最大トークン数、推論)",
+				"keepSystemPrompt": "システムプロンプト",
+				"keepServerTools": "サーバーツール",
+				"keepFunctionTools": "{count, plural, other {# 個の関数ツール}}",
+				"keepFunctionToolsHint": "チャットでは実行できません。以前のツール呼び出しを有効に保つために宣言されます。",
+				"includeResponse": "記録された応答"
+			},
+			"workspaceMismatch": "チャットはアクティブなワークスペースから送信されますが、このリクエストのワークスペースとは異なります。",
+			"warnings": {
+				"earlier_history_missing": "このリクエストは以前の応答を ID で続けていたため、それより前のターンは含まれていません。",
+				"unsupported_content": "一部のコンテンツは表示できなかったため除外されました。",
+				"attachment_reference": "一部の添付ファイルは ID で参照されており、リクエストと一緒に保存されていません。",
+				"no_response": "記録された応答がないか失敗しているため、チャットはリクエストで終わります。",
+				"response_truncated": "記録された応答は途中で切れています。",
+				"extra_choices": "応答の候補のうち最初のものだけが含まれます。",
+				"unanswered_tool_calls": "一部のツール呼び出しには結果がありません。続けるとテキストとして送信されます。"
+			},
+			"cancel": "キャンセル",
+			"continue": "チャットで開く"
+		},
 		"errors": {
 			"signInToChat": "チャットを始めるにはサインインしてください。",
 			"selectModelToChat": "チャットを始めるにはモデルを選択してください。",

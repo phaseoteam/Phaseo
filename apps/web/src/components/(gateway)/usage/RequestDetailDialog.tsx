@@ -10,7 +10,9 @@ import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
+import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, MessageSquare, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { buildOpenRequestInChatHref, canOpenRequestInChat } from "@/components/(chat)/chatMessageMetadata";
 import {
 	Dialog,
 	DialogContent,
@@ -827,6 +829,7 @@ export default function RequestDetailDialog({
 	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
 	const traceEnabled = useTraceViewEnabled();
+	const tUi = useTranslations("Common.ui");
 
 	if (!request) return null;
 	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
@@ -1580,9 +1583,18 @@ export default function RequestDetailDialog({
 						{s("Fetching full generation log…")}
 					</div>
 				) : null}
-				{headerActions ? (
-					<div className="border-b bg-muted/20 px-5 py-2 sm:px-6">
+				{headerActions || canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
+					<div className="flex flex-wrap items-center gap-2 border-b bg-muted/20 px-5 py-2 sm:px-6">
 						{headerActions}
+						{canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
+							<Link
+								href={buildOpenRequestInChatHref(request.request_id, searchParams.get("workspaceId"))}
+								className={buttonVariants({ variant: "outline", size: "sm" })}
+							>
+								<MessageSquare />
+								{tUi("actions.openInChat")}
+							</Link>
+						) : null}
 					</div>
 				) : null}
 

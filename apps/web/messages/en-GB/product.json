@@ -467,6 +467,37 @@
 		},
 		"defaultTitle": "New chat",
 		"branchTitle": "Branch: {title}",
+		"logImport": {
+			"title": "Continue a logged request",
+			"description": "Opens the request as a new chat with its own session, saved in this browser. Choose what to carry over.",
+			"loading": "Loading the request…",
+			"failed": "This request couldn't be loaded. Check that you're signed in to the workspace it belongs to.",
+			"unavailable": { "not_stored": "This request's prompt and response weren't stored. Turn on Gateway I/O logs in Privacy settings to store new requests.", "too_large": "This request was too large to store, so it can't be opened.", "deleted": "This request's stored prompt and response have expired or been deleted.", "unsupported": "Only Chat Completions, Responses and Messages requests can be opened in Chat." },
+			"summary": "{count, plural, one {# message} other {# messages}} · {model}",
+			"modelUnavailable": "{model} isn't available in Chat, so the chat uses {fallback}. You can switch models after opening it.",
+			"carryOver": "Carry over",
+			"options": {
+				"pinProvider": "Pin the provider ({provider})",
+				"keepParams": "Parameters (temperature, max tokens, reasoning)",
+				"keepSystemPrompt": "System prompt",
+				"keepServerTools": "Server tools",
+				"keepFunctionTools": "{count, plural, one {# function tool} other {# function tools}}",
+				"keepFunctionToolsHint": "Chat can't run them. They're declared so the earlier tool calls stay valid.",
+				"includeResponse": "The logged response"
+			},
+			"workspaceMismatch": "Chat sends from your active workspace, which isn't the workspace this request came from.",
+			"warnings": {
+				"earlier_history_missing": "This request continued an earlier response by ID, so the turns before it aren't included.",
+				"unsupported_content": "Some content couldn't be shown and was left out.",
+				"attachment_reference": "Some attachments were referenced by ID and weren't stored with the request.",
+				"no_response": "The logged response is missing or failed, so the chat ends with the request.",
+				"response_truncated": "The logged response was cut short.",
+				"extra_choices": "Only the first of the response's choices is included.",
+				"unanswered_tool_calls": "Some tool calls have no result. They're sent as text when you continue."
+			},
+			"cancel": "Cancel",
+			"continue": "Open in Chat"
+		},
 		"errors": {
 			"signInToChat": "Sign in to start chatting.",
 			"selectModelToChat": "Select a model to start chatting.",
