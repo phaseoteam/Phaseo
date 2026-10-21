@@ -3195,6 +3195,175 @@ struct ServerToolUsage {
 	std::optional<int> web_search_requests;
 };
 
+struct SpendRule {
+	std::any action;
+	std::optional<int> base_amount_nanos;
+	std::optional<double> base_amount_usd;
+	std::optional<std::any> base_kind;
+	std::optional<std::any> base_ref;
+	std::optional<int> block_at_amount_nanos;
+	std::optional<double> block_at_amount_usd;
+	int block_at_percent;
+	bool block_free_models;
+	int cooldown_minutes;
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::vector<std::string> destination_ids;
+	bool enabled;
+	bool evaluated;
+	std::string id;
+	std::any metric;
+	std::string name;
+	std::any period;
+	std::optional<int> runway_days;
+	std::optional<std::string> scope_id;
+	std::any scope_type;
+	std::optional<int> spike_floor_nanos;
+	std::optional<double> spike_floor_usd;
+	std::optional<double> spike_multiplier;
+	std::optional<int> threshold_amount_nanos;
+	std::optional<double> threshold_amount_usd;
+	std::optional<std::vector<int>> threshold_percents;
+	std::optional<std::string> time_zone;
+	std::string updated_at;
+	std::optional<int> window_hours;
+	std::string workspace_id;
+};
+
+using SpendRuleAction = std::any;
+
+struct SpendRuleDeleteResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SpendRuleHistory {
+	std::vector<std::map<std::string, std::any>> events;
+	bool has_more;
+	std::vector<std::map<std::string, std::any>> periods;
+};
+
+struct SpendRuleHistoryResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SpendRuleInput {
+	std::any action;
+	std::optional<int> base_amount_nanos;
+	std::optional<double> base_amount_usd;
+	std::optional<std::any> base_kind;
+	std::optional<std::any> base_ref;
+	std::optional<int> block_at_amount_nanos;
+	std::optional<double> block_at_amount_usd;
+	std::optional<int> block_at_percent;
+	std::optional<bool> block_free_models;
+	std::optional<int> cooldown_minutes;
+	std::vector<std::string> destination_ids;
+	std::optional<bool> enabled;
+	std::any metric;
+	std::string name;
+	std::any period;
+	std::optional<int> runway_days;
+	std::optional<std::string> scope_id;
+	std::any scope_type;
+	std::optional<int> spike_floor_nanos;
+	std::optional<double> spike_floor_usd;
+	std::optional<double> spike_multiplier;
+	std::optional<int> threshold_amount_nanos;
+	std::optional<double> threshold_amount_usd;
+	std::optional<std::vector<int>> threshold_percents;
+	std::optional<std::string> time_zone;
+	std::optional<int> window_hours;
+};
+
+struct SpendRuleListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+	int max_rules;
+};
+
+using SpendRuleMetric = std::any;
+
+using SpendRulePeriod = std::any;
+
+struct SpendRulePreview {
+	std::optional<std::map<std::string, std::any>> alert;
+	std::optional<std::any> base_kind;
+	std::optional<int> base_nanos;
+	std::optional<std::any> base_ref;
+	std::optional<double> base_usd;
+	std::optional<int> block_at_nanos;
+	std::optional<double> block_at_usd;
+	std::string computed_at;
+	bool evaluated;
+	std::any metric;
+	std::optional<std::map<std::string, std::any>> next_threshold;
+	std::optional<double> percent;
+	std::optional<std::map<std::string, std::any>> period;
+	std::optional<int> reached_threshold_percent;
+	std::string rule_id;
+	std::optional<std::map<std::string, std::any>> state;
+	std::optional<int> threshold_amount_nanos;
+	std::optional<double> threshold_amount_usd;
+	std::optional<std::vector<int>> threshold_percents;
+	std::string time_zone;
+	std::optional<int> value_nanos;
+	std::optional<double> value_usd;
+};
+
+struct SpendRulePreviewResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SpendRuleResponse {
+	std::map<std::string, std::any> data;
+};
+
+using SpendRuleScope = std::any;
+
+struct SpendRuleTestResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct SpendRuleTestResult {
+	int delivered;
+	std::vector<std::map<std::string, std::any>> deliveries;
+	int failed;
+	std::string message;
+	std::string rule_id;
+	std::string rule_name;
+	std::any source;
+	bool test;
+	std::string title;
+};
+
+struct SpendRuleUpdateInput {
+	std::any action;
+	std::optional<int> base_amount_nanos;
+	std::optional<double> base_amount_usd;
+	std::optional<std::any> base_kind;
+	std::optional<std::any> base_ref;
+	std::optional<int> block_at_amount_nanos;
+	std::optional<double> block_at_amount_usd;
+	std::optional<int> block_at_percent;
+	std::optional<bool> block_free_models;
+	std::optional<int> cooldown_minutes;
+	std::vector<std::string> destination_ids;
+	std::optional<bool> enabled;
+	std::any metric;
+	std::string name;
+	std::any period;
+	std::optional<int> runway_days;
+	std::optional<std::string> scope_id;
+	std::any scope_type;
+	std::optional<int> spike_floor_nanos;
+	std::optional<double> spike_floor_usd;
+	std::optional<double> spike_multiplier;
+	std::optional<int> threshold_amount_nanos;
+	std::optional<double> threshold_amount_usd;
+	std::optional<std::vector<int>> threshold_percents;
+	std::optional<std::string> time_zone;
+	std::optional<int> window_hours;
+};
+
 struct SubagentToolDefinition {
 	std::map<std::string, std::any> parameters;
 	std::any type;

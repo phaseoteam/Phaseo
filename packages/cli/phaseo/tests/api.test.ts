@@ -131,7 +131,7 @@ test("parses explicit login scopes and removes duplicates", () => {
 		"openid keys:write activity:read",
 	);
 	assert.equal(parseScopeArgument(undefined), DEFAULT_LOGIN_SCOPES.join(" "));
-	assert.equal(DEFAULT_LOGIN_SCOPES.length, 46);
+	assert.equal(DEFAULT_LOGIN_SCOPES.length, 49);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("budgets:read"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("budgets:write"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("budgets:delete"), true);
@@ -141,6 +141,9 @@ test("parses explicit login scopes and removes duplicates", () => {
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("classifiers:read"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("classifiers:write"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("classifiers:delete"), true);
+	assert.equal(DEFAULT_LOGIN_SCOPES.includes("spend_rules:read"), true);
+	assert.equal(DEFAULT_LOGIN_SCOPES.includes("spend_rules:write"), true);
+	assert.equal(DEFAULT_LOGIN_SCOPES.includes("spend_rules:delete"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("provider_credentials:read"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("provider_credentials:write"), true);
 	assert.equal(DEFAULT_LOGIN_SCOPES.includes("provider_credentials:delete"), true);

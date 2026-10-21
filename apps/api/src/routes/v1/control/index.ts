@@ -37,6 +37,7 @@ import { appRoutes } from "./apps";
 import { providerCredentialsRoutes } from "./provider-credentials";
 import { budgetsRoutes } from "./budgets";
 import { rateLimitsRoutes } from "./rate-limits";
+import { spendRulesRoutes } from "./spend-rules";
 import { classifiersRoutes } from "./classifiers";
 import { privateModelsRoutes } from "./private-models";
 import {
@@ -82,6 +83,7 @@ platformRouter.route("/apps", appRoutes);
 platformRouter.route("/byok", providerCredentialsRoutes);
 platformRouter.route("/budgets", budgetsRoutes);
 platformRouter.route("/rate-limits", rateLimitsRoutes);
+platformRouter.route("/spend-rules", spendRulesRoutes);
 platformRouter.route("/classifiers", classifiersRoutes);
 platformRouter.route("/private-models", privateModelsRoutes);
 platformRouter.route("/me", meRoutes);

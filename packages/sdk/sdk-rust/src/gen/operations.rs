@@ -220,6 +220,11 @@ pub fn createSpeech<T: Transport>(client: &Client<T>, path: &HashMap<String, Str
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createSpendRule<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/spend-rules");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createTranscription<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/audio/transcriptions");
 	client.request("POST", &resolved_path, body)
@@ -352,6 +357,11 @@ pub fn deleteRateLimitAssignment<T: Transport>(client: &Client<T>, path: &HashMa
 
 pub fn deleteRateLimitPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/rate-limits/policies/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("DELETE", &resolved_path, body)
+}
+
+pub fn deleteSpendRule<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/spend-rules/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("DELETE", &resolved_path, body)
 }
 
@@ -562,6 +572,11 @@ pub fn getRateLimitAssignment<T: Transport>(client: &Client<T>, path: &HashMap<S
 
 pub fn getRateLimitPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/rate-limits/policies/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getSpendRule<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/spend-rules/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("GET", &resolved_path, body)
 }
 
@@ -815,6 +830,16 @@ pub fn listRateLimitPolicies<T: Transport>(client: &Client<T>, path: &HashMap<St
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn listSpendRuleHistory<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/spend-rules/{}/history", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listSpendRules<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/spend-rules");
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn listTeamModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/models/me");
 	client.request("GET", &resolved_path, body)
@@ -913,6 +938,11 @@ pub fn makeDecision<T: Transport>(client: &Client<T>, path: &HashMap<String, Str
 pub fn mergeWorkspaceApp<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/apps/{}/merge", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("POST", &resolved_path, body)
+}
+
+pub fn previewSpendRule<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/spend-rules/{}/preview", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("GET", &resolved_path, body)
 }
 
 pub fn publishPresetVersion<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
@@ -1035,6 +1065,11 @@ pub fn summarizeGatewayFeedback<T: Transport>(client: &Client<T>, path: &HashMap
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn testSpendRule<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/spend-rules/{}/test", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn testWebhookEndpoint<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/webhook-endpoints/{}/test", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("POST", &resolved_path, body)
@@ -1132,6 +1167,11 @@ pub fn updateRateLimitAssignment<T: Transport>(client: &Client<T>, path: &HashMa
 
 pub fn updateRateLimitPolicy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/rate-limits/policies/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("PATCH", &resolved_path, body)
+}
+
+pub fn updateSpendRule<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/spend-rules/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("PATCH", &resolved_path, body)
 }
 

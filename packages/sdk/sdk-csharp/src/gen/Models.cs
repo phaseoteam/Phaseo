@@ -7717,6 +7717,437 @@ public sealed class ServerToolUsage
 
 }
 
+public sealed class SpendRule
+{
+	[JsonPropertyName("action")]
+	public string Action { get; set; }
+
+	[JsonPropertyName("base_amount_nanos")]
+	public long? BaseAmountNanos { get; set; }
+
+	[JsonPropertyName("base_amount_usd")]
+	public double? BaseAmountUsd { get; set; }
+
+	[JsonPropertyName("base_kind")]
+	public string? BaseKind { get; set; }
+
+	[JsonPropertyName("base_ref")]
+	public string? BaseRef { get; set; }
+
+	[JsonPropertyName("block_at_amount_nanos")]
+	public long? BlockAtAmountNanos { get; set; }
+
+	[JsonPropertyName("block_at_amount_usd")]
+	public double? BlockAtAmountUsd { get; set; }
+
+	[JsonPropertyName("block_at_percent")]
+	public long BlockAtPercent { get; set; }
+
+	[JsonPropertyName("block_free_models")]
+	public bool BlockFreeModels { get; set; }
+
+	[JsonPropertyName("cooldown_minutes")]
+	public long CooldownMinutes { get; set; }
+
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("destination_ids")]
+	public List<string> DestinationIds { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool Enabled { get; set; }
+
+	[JsonPropertyName("evaluated")]
+	public bool Evaluated { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("metric")]
+	public string Metric { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("period")]
+	public string Period { get; set; }
+
+	[JsonPropertyName("runway_days")]
+	public long? RunwayDays { get; set; }
+
+	[JsonPropertyName("scope_id")]
+	public string? ScopeId { get; set; }
+
+	[JsonPropertyName("scope_type")]
+	public string ScopeType { get; set; }
+
+	[JsonPropertyName("spike_floor_nanos")]
+	public long? SpikeFloorNanos { get; set; }
+
+	[JsonPropertyName("spike_floor_usd")]
+	public double? SpikeFloorUsd { get; set; }
+
+	[JsonPropertyName("spike_multiplier")]
+	public double? SpikeMultiplier { get; set; }
+
+	[JsonPropertyName("threshold_amount_nanos")]
+	public long? ThresholdAmountNanos { get; set; }
+
+	[JsonPropertyName("threshold_amount_usd")]
+	public double? ThresholdAmountUsd { get; set; }
+
+	[JsonPropertyName("threshold_percents")]
+	public List<long>? ThresholdPercents { get; set; }
+
+	[JsonPropertyName("time_zone")]
+	public string? TimeZone { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+	[JsonPropertyName("window_hours")]
+	public long? WindowHours { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class SpendRuleAction { }
+
+public sealed class SpendRuleDeleteResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SpendRuleHistory
+{
+	[JsonPropertyName("events")]
+	public List<Dictionary<string, object>> Events { get; set; }
+
+	[JsonPropertyName("has_more")]
+	public bool HasMore { get; set; }
+
+	[JsonPropertyName("periods")]
+	public List<Dictionary<string, object>> Periods { get; set; }
+
+}
+
+public sealed class SpendRuleHistoryResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SpendRuleInput
+{
+	[JsonPropertyName("action")]
+	public string? Action { get; set; }
+
+	[JsonPropertyName("base_amount_nanos")]
+	public long? BaseAmountNanos { get; set; }
+
+	[JsonPropertyName("base_amount_usd")]
+	public double? BaseAmountUsd { get; set; }
+
+	[JsonPropertyName("base_kind")]
+	public string? BaseKind { get; set; }
+
+	[JsonPropertyName("base_ref")]
+	public string? BaseRef { get; set; }
+
+	[JsonPropertyName("block_at_amount_nanos")]
+	public long? BlockAtAmountNanos { get; set; }
+
+	[JsonPropertyName("block_at_amount_usd")]
+	public double? BlockAtAmountUsd { get; set; }
+
+	[JsonPropertyName("block_at_percent")]
+	public long? BlockAtPercent { get; set; }
+
+	[JsonPropertyName("block_free_models")]
+	public bool? BlockFreeModels { get; set; }
+
+	[JsonPropertyName("cooldown_minutes")]
+	public long? CooldownMinutes { get; set; }
+
+	[JsonPropertyName("destination_ids")]
+	public List<string>? DestinationIds { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("metric")]
+	public string Metric { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("period")]
+	public string Period { get; set; }
+
+	[JsonPropertyName("runway_days")]
+	public long? RunwayDays { get; set; }
+
+	[JsonPropertyName("scope_id")]
+	public string? ScopeId { get; set; }
+
+	[JsonPropertyName("scope_type")]
+	public string? ScopeType { get; set; }
+
+	[JsonPropertyName("spike_floor_nanos")]
+	public long? SpikeFloorNanos { get; set; }
+
+	[JsonPropertyName("spike_floor_usd")]
+	public double? SpikeFloorUsd { get; set; }
+
+	[JsonPropertyName("spike_multiplier")]
+	public double? SpikeMultiplier { get; set; }
+
+	[JsonPropertyName("threshold_amount_nanos")]
+	public long? ThresholdAmountNanos { get; set; }
+
+	[JsonPropertyName("threshold_amount_usd")]
+	public double? ThresholdAmountUsd { get; set; }
+
+	[JsonPropertyName("threshold_percents")]
+	public List<long>? ThresholdPercents { get; set; }
+
+	[JsonPropertyName("time_zone")]
+	public string? TimeZone { get; set; }
+
+	[JsonPropertyName("window_hours")]
+	public long? WindowHours { get; set; }
+
+}
+
+public sealed class SpendRuleListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+	[JsonPropertyName("max_rules")]
+	public long MaxRules { get; set; }
+
+}
+
+public sealed class SpendRuleMetric { }
+
+public sealed class SpendRulePeriod { }
+
+public sealed class SpendRulePreview
+{
+	[JsonPropertyName("alert")]
+	public Dictionary<string, object>? Alert { get; set; }
+
+	[JsonPropertyName("base_kind")]
+	public string? BaseKind { get; set; }
+
+	[JsonPropertyName("base_nanos")]
+	public long? BaseNanos { get; set; }
+
+	[JsonPropertyName("base_ref")]
+	public string? BaseRef { get; set; }
+
+	[JsonPropertyName("base_usd")]
+	public double? BaseUsd { get; set; }
+
+	[JsonPropertyName("block_at_nanos")]
+	public long? BlockAtNanos { get; set; }
+
+	[JsonPropertyName("block_at_usd")]
+	public double? BlockAtUsd { get; set; }
+
+	[JsonPropertyName("computed_at")]
+	public string ComputedAt { get; set; }
+
+	[JsonPropertyName("evaluated")]
+	public bool Evaluated { get; set; }
+
+	[JsonPropertyName("metric")]
+	public string Metric { get; set; }
+
+	[JsonPropertyName("next_threshold")]
+	public Dictionary<string, object>? NextThreshold { get; set; }
+
+	[JsonPropertyName("percent")]
+	public double? Percent { get; set; }
+
+	[JsonPropertyName("period")]
+	public Dictionary<string, object>? Period { get; set; }
+
+	[JsonPropertyName("reached_threshold_percent")]
+	public long? ReachedThresholdPercent { get; set; }
+
+	[JsonPropertyName("rule_id")]
+	public string RuleId { get; set; }
+
+	[JsonPropertyName("state")]
+	public Dictionary<string, object>? State { get; set; }
+
+	[JsonPropertyName("threshold_amount_nanos")]
+	public long? ThresholdAmountNanos { get; set; }
+
+	[JsonPropertyName("threshold_amount_usd")]
+	public double? ThresholdAmountUsd { get; set; }
+
+	[JsonPropertyName("threshold_percents")]
+	public List<long>? ThresholdPercents { get; set; }
+
+	[JsonPropertyName("time_zone")]
+	public string TimeZone { get; set; }
+
+	[JsonPropertyName("value_nanos")]
+	public long? ValueNanos { get; set; }
+
+	[JsonPropertyName("value_usd")]
+	public double? ValueUsd { get; set; }
+
+}
+
+public sealed class SpendRulePreviewResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SpendRuleResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SpendRuleScope { }
+
+public sealed class SpendRuleTestResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class SpendRuleTestResult
+{
+	[JsonPropertyName("delivered")]
+	public long Delivered { get; set; }
+
+	[JsonPropertyName("deliveries")]
+	public List<Dictionary<string, object>> Deliveries { get; set; }
+
+	[JsonPropertyName("failed")]
+	public long Failed { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("rule_id")]
+	public string RuleId { get; set; }
+
+	[JsonPropertyName("rule_name")]
+	public string RuleName { get; set; }
+
+	[JsonPropertyName("source")]
+	public string Source { get; set; }
+
+	[JsonPropertyName("test")]
+	public bool Test { get; set; }
+
+	[JsonPropertyName("title")]
+	public string Title { get; set; }
+
+}
+
+public sealed class SpendRuleUpdateInput
+{
+	[JsonPropertyName("action")]
+	public string? Action { get; set; }
+
+	[JsonPropertyName("base_amount_nanos")]
+	public long? BaseAmountNanos { get; set; }
+
+	[JsonPropertyName("base_amount_usd")]
+	public double? BaseAmountUsd { get; set; }
+
+	[JsonPropertyName("base_kind")]
+	public string? BaseKind { get; set; }
+
+	[JsonPropertyName("base_ref")]
+	public string? BaseRef { get; set; }
+
+	[JsonPropertyName("block_at_amount_nanos")]
+	public long? BlockAtAmountNanos { get; set; }
+
+	[JsonPropertyName("block_at_amount_usd")]
+	public double? BlockAtAmountUsd { get; set; }
+
+	[JsonPropertyName("block_at_percent")]
+	public long? BlockAtPercent { get; set; }
+
+	[JsonPropertyName("block_free_models")]
+	public bool? BlockFreeModels { get; set; }
+
+	[JsonPropertyName("cooldown_minutes")]
+	public long? CooldownMinutes { get; set; }
+
+	[JsonPropertyName("destination_ids")]
+	public List<string>? DestinationIds { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("metric")]
+	public string? Metric { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("period")]
+	public string? Period { get; set; }
+
+	[JsonPropertyName("runway_days")]
+	public long? RunwayDays { get; set; }
+
+	[JsonPropertyName("scope_id")]
+	public string? ScopeId { get; set; }
+
+	[JsonPropertyName("scope_type")]
+	public string? ScopeType { get; set; }
+
+	[JsonPropertyName("spike_floor_nanos")]
+	public long? SpikeFloorNanos { get; set; }
+
+	[JsonPropertyName("spike_floor_usd")]
+	public double? SpikeFloorUsd { get; set; }
+
+	[JsonPropertyName("spike_multiplier")]
+	public double? SpikeMultiplier { get; set; }
+
+	[JsonPropertyName("threshold_amount_nanos")]
+	public long? ThresholdAmountNanos { get; set; }
+
+	[JsonPropertyName("threshold_amount_usd")]
+	public double? ThresholdAmountUsd { get; set; }
+
+	[JsonPropertyName("threshold_percents")]
+	public List<long>? ThresholdPercents { get; set; }
+
+	[JsonPropertyName("time_zone")]
+	public string? TimeZone { get; set; }
+
+	[JsonPropertyName("window_hours")]
+	public long? WindowHours { get; set; }
+
+}
+
 public sealed class SubagentToolDefinition
 {
 	[JsonPropertyName("parameters")]
