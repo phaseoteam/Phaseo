@@ -324,7 +324,7 @@ describe("Realtime relay lifecycle", () => {
 		expect(object.settle).not.toHaveBeenCalled();
 	});
 
-	it("bills xAI server VAD sessions by connected wall-clock time and prefers provider cost", async () => {
+	it("bills xAI server VAD sessions by connected wall-clock time and passes provider cost as a floor", async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-10-21T10:00:00Z"));
 		const object = relay("spacex-ai", { realSettle: true });
@@ -338,13 +338,13 @@ describe("Realtime relay lifecycle", () => {
 		await object.settle("completed", "client_disconnected");
 		const call = mocks.settleRealtimeSession.mock.calls[0][0] as any;
 		expect(call.usage).toMatchObject({ session_audio_ms: 90_000, audio_ms: 90_000 });
-		expect(call.finalCostNanos).toBeUndefined();
+		expect(call.providerCostNanos).toBeUndefined();
 
 		const priced = relay("spacex-ai", { realSettle: true });
 		priced.usage = { provider_connected_at_ms: Date.now() - 1000 };
 		await priced.handleUpstreamMessage(JSON.stringify({ type: "response.done", response: { id: "x1", usage: { cost_in_usd_ticks: 80_000_000 } } }));
 		await priced.settle("completed", "client_disconnected");
-		expect((mocks.settleRealtimeSession.mock.calls[1][0] as any).finalCostNanos).toBe(8_000_000);
+		expect((mocks.settleRealtimeSession.mock.calls[1][0] as any).providerCostNanos).toBe(8_000_000);
 	});
 
 	it("does not overwrite live in-memory usage with an older storage checkpoint on alarm", async () => {
