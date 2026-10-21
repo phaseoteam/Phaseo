@@ -355,7 +355,7 @@ Se um provedor informar tokens em cache em uma rota que ainda não tem preço de
 
 Em uma rota do Claude cujo catálogo tem um único preço de gravação em cache, esse preço é a tarifa de 5 minutos. As gravações que o provedor informa como gravações de 1 hora são cobradas pelo dobro da tarifa de entrada, em uma linha `cached_write_text_tokens_1h` com a marcação `pricing_fallback: "input_rate"`.
 
-O último `message_delta` de uma resposta do Claude em streaming informa o total acumulado de gravações em cache, sem a divisão por TTL. As gravações além dessa divisão são cobradas como gravações de 5 minutos, ou como gravações de 1 hora quando a política de cache padrão da solicitação define `ttl: "1h"`.
+O último `message_delta` de uma resposta do Claude em streaming informa o total acumulado de gravações em cache, sem a divisão por TTL. As gravações além dessa divisão são cobradas como gravações de 5 minutos, porque as gravações das ferramentas do servidor podem usar 5 minutos mesmo quando a solicitação pede 1 hora.
 
 Alguns provedores não dão desconto em tokens em cache em alguns modelos. As páginas desses modelos mostram o mesmo preço para entrada e leituras do cache.
 

@@ -97,14 +97,42 @@ describe("write totals above the TTL split", () => {
         });
     });
 
-    it("bills them at the 1-hour rate when the request asked for 1-hour caching", () => {
+    it("still bills them at the 5-minute rate when the request asked for 1-hour caching", () => {
+        // Server-tool writes can use 5 minutes even when the request asks for 1 hour, so writes
+        // the split does not account for are never assumed to be 1-hour writes.
         const anthropic = card("anthropic", "anthropic/claude-sonnet-4.6", {
             input_text_tokens: "3", output_text_tokens: "15",
             cached_write_text_tokens_5m: "3.75", cached_write_text_tokens_1h: "6",
         });
         expect(nanosBy(computeBillSummary(streamedUsage, anthropic, { cache_ttl: "1h" }))).toEqual({
+            cached_write_text_tokens_5m: 7_500_000,
+            cached_write_text_tokens_1h: 6_000_000,
+        });
+    });
+});
+
+describe("a 1-hour request on a route that only caches for 5 minutes", () => {
+    // Bedrock Claude 3.7 Sonnet: the 1-hour TTL is removed before the request is sent
+    // (execute/cacheTtl.ts), so the provider writes 5-minute entries.
+    const bedrock = () => card("amazon-bedrock", "anthropic/claude-3.7-sonnet", {
+        input_text_tokens: "3", output_text_tokens: "15",
+        cached_write_text_tokens_5m: "3.75", cached_write_text_tokens_1h: "6",
+    });
+    const undivided = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 1_000 };
+
+    it("prices writes with no TTL split at the 5-minute rate", () => {
+        expect(nanosBy(computeBillSummary(undivided, bedrock(), { cache_ttl: "1h" }))).toEqual({
             cached_write_text_tokens_5m: 3_750_000,
-            cached_write_text_tokens_1h: 12_000_000,
+        });
+    });
+
+    it("keeps the 1-hour request TTL on routes that accept it", () => {
+        const anthropic = card("anthropic", "anthropic/claude-3.7-sonnet", {
+            input_text_tokens: "3", output_text_tokens: "15",
+            cached_write_text_tokens_5m: "3.75", cached_write_text_tokens_1h: "6",
+        });
+        expect(nanosBy(computeBillSummary(undivided, anthropic, { cache_ttl: "1h" }))).toEqual({
+            cached_write_text_tokens_1h: 6_000_000,
         });
     });
 });

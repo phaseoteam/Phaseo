@@ -355,7 +355,7 @@ Meldet ein Provider gecachte Token auf einer Route, für die der Katalog noch ke
 
 Auf einer Claude-Route, deren Katalog nur einen Preis für Cache-Schreibvorgänge hat, ist dieser Preis der 5-Minuten-Preis. Schreibvorgänge, die der Provider als 1-Stunden-Schreibvorgänge meldet, werden zum doppelten Eingabepreis abgerechnet, in einer Zeile `cached_write_text_tokens_1h` mit der Kennzeichnung `pricing_fallback: "input_rate"`.
 
-Das letzte `message_delta` einer gestreamten Claude-Antwort meldet die kumulierte Summe der Cache-Schreibvorgänge ohne Aufteilung nach TTL. Schreibvorgänge über diese Aufteilung hinaus werden als 5-Minuten-Schreibvorgänge abgerechnet, oder als 1-Stunden-Schreibvorgänge, wenn die Standard-Cache-Richtlinie der Anfrage `ttl: "1h"` setzt.
+Das letzte `message_delta` einer gestreamten Claude-Antwort meldet die kumulierte Summe der Cache-Schreibvorgänge ohne Aufteilung nach TTL. Schreibvorgänge über diese Aufteilung hinaus werden als 5-Minuten-Schreibvorgänge abgerechnet, weil Schreibvorgänge von Server-Tools auch dann 5 Minuten nutzen können, wenn die Anfrage 1 Stunde anfordert.
 
 Manche Provider gewähren bei einigen Modellen keinen Rabatt auf gecachte Token. Deren Modellseiten zeigen denselben Preis für Eingabe und Cache-Lesevorgänge.
 

@@ -355,7 +355,7 @@ Si un fournisseur signale des jetons mis en cache sur une route qui n’a pas en
 
 Sur une route Claude dont le catalogue n’a qu’un seul tarif d’écriture en cache, ce tarif est celui des écritures de 5 minutes. Les écritures que le fournisseur signale comme écritures d’une heure sont facturées au double du tarif d’entrée, sur une ligne `cached_write_text_tokens_1h` portant la mention `pricing_fallback: "input_rate"`.
 
-Le dernier `message_delta` d’une réponse Claude en streaming indique le total cumulé des écritures en cache, sans la répartition par TTL. Les écritures au-delà de cette répartition sont facturées comme des écritures de 5 minutes, ou comme des écritures d’une heure lorsque la politique de cache par défaut de la requête définit `ttl: "1h"`.
+Le dernier `message_delta` d’une réponse Claude en streaming indique le total cumulé des écritures en cache, sans la répartition par TTL. Les écritures au-delà de cette répartition sont facturées comme des écritures de 5 minutes, car les écritures des outils serveur peuvent utiliser 5 minutes même lorsque la requête demande une heure.
 
 Certains fournisseurs n’appliquent pas de réduction aux jetons mis en cache sur certains modèles. Les pages de ces modèles affichent le même tarif pour l’entrée et les lectures du cache.
 

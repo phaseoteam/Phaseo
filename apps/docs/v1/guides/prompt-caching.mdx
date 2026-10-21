@@ -353,7 +353,7 @@ If a provider reports cached tokens on a route that has no cache price in the ca
 
 On a Claude route whose catalogue has one cache-write price, that price is the 5-minute rate. Writes the provider reports as 1-hour writes are billed at 2× the input rate, on a `cached_write_text_tokens_1h` line marked `pricing_fallback: "input_rate"`.
 
-The final `message_delta` of a streamed Claude response reports the cumulative cache-write total without the TTL split. Writes beyond the split are billed as 5-minute writes, or as 1-hour writes when the request's default cache policy sets `ttl: "1h"`.
+The final `message_delta` of a streamed Claude response reports the cumulative cache-write total without the TTL split. Writes beyond the split are billed as 5-minute writes, because server-tool writes can use 5 minutes even when the request asks for 1 hour.
 
 Some providers do not discount cached tokens on some models. Their model pages show the same price for input and cache reads.
 

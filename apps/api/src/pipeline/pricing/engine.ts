@@ -9,6 +9,7 @@ import { matchesConditions, shallowMerge, evaluateConditions } from "./condition
 import type { PriceCard, PriceRule, PricingBreakdownLine, PricingDimensionKey, PricingResult, PricingTimestampBasis } from "./types";
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage, resolveRequestCountUsage } from "@core/usage-normalization";
 import { CACHED_WRITE_TOKEN_PATHS, resolveCacheTokenUsage } from "@core/cache-usage";
+import { cacheTtlUnsupported } from "@pipeline/execute/cacheTtl";
 
 const KNOWN_METERS = new Set<string>([
     "input_tokens",
@@ -302,13 +303,14 @@ function splitUsage(
         // A write total above its TTL split still counts: a Claude stream's final message_delta
         // carries the cumulative cache_creation_input_tokens without the cache_creation split
         // (https://platform.claude.com/docs/en/build-with-claude/streaming), so writes made after
-        // message_start are only in the total. They are billed at the undivided-write TTL.
+        // message_start are only in the total. They are billed at the 5-minute rate, not the
+        // request TTL: server-tool writes can use 5 minutes even when the request asks for 1 hour
+        // (https://platform.claude.com/docs/en/build-with-claude/prompt-caching).
         const unsplitWrites = (meters.cached_write_text_tokens ?? 0) -
             (meters.cached_write_text_tokens_5m ?? 0) -
             (meters.cached_write_text_tokens_1h ?? 0);
         if (unsplitWrites > 0) {
-            const meter = undividedWriteMeter();
-            meters[meter] = (meters[meter] ?? 0) + unsplitWrites;
+            meters.cached_write_text_tokens_5m = (meters.cached_write_text_tokens_5m ?? 0) + unsplitWrites;
         }
         delete meters.cached_write_text_tokens;
     }
@@ -853,6 +855,11 @@ export function computeBillSummary(
 ): PricingResult {
     // Cards from either loader may still name the fast tier `fast`; the engine prices it as `priority`.
     const card = normalizePriceCardPlans(cardInput);
+    // A 1-hour TTL is removed before the request reaches a route that only caches for 5 minutes
+    // (see execute/cacheTtl.ts), so its writes are priced as 5-minute writes.
+    if (requestOptions?.cache_ttl && cacheTtlUnsupported(String(card.provider ?? ""), [card.model])) {
+        requestOptions = { ...requestOptions, cache_ttl: "5m" };
+    }
     if (card.currency && card.currency.toUpperCase() !== "USD") {
         throw new Error("pricing_unsupported_currency");
     }
