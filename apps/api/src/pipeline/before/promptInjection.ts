@@ -1,3 +1,4 @@
+import { replaceRenderedValue, type TemplateVariableTarget } from "./promptTemplate";
 import type { Endpoint } from "@core/types";
 import { err } from "./http";
 import type {
@@ -603,6 +604,8 @@ export function applyPromptInjectionGuardrails(args: {
 	workspacePolicy: WorkspacePolicy | null;
 	requestId: string;
 	workspaceId: string;
+	/** Text values of prompt template variables, scanned as user content. */
+	templateVariables?: TemplateVariableTarget[];
 }):
 	| {
 			ok: true;
@@ -626,7 +629,8 @@ export function applyPromptInjectionGuardrails(args: {
 	}
 
 	const targets = collectPromptInjectionTargets(args.endpoint, args.body);
-	if (targets.length === 0) {
+	const variableTargets = args.templateVariables ?? [];
+	if (targets.length === 0 && variableTargets.length === 0) {
 		return {
 			ok: true,
 			body: args.body,
@@ -635,7 +639,7 @@ export function applyPromptInjectionGuardrails(args: {
 		};
 	}
 
-	const detections = targets.flatMap((target) => analyzePromptInjectionText(target.text));
+	const detections = [...targets, ...variableTargets].flatMap((target) => analyzePromptInjectionText(target.text));
 	if (detections.length === 0) {
 		return {
 			ok: true,
@@ -702,6 +706,15 @@ export function applyPromptInjectionGuardrails(args: {
 		redactionCount += targetMatches.length;
 		setPathValue(nextBody, target.path, redactedText);
 		setPathValue(nextRawBody, target.path, redactedText);
+	}
+	for (const target of variableTargets) {
+		const targetMatches = analyzePromptInjectionText(target.text);
+		if (targetMatches.length === 0) continue;
+		const redactedText = redactText(target.text, targetMatches);
+		if (redactedText === target.text) continue;
+		redactionCount += targetMatches.length;
+		replaceRenderedValue(nextBody, target.text, redactedText);
+		setPathValue(nextRawBody, target.rawPath, redactedText);
 	}
 
 	return {

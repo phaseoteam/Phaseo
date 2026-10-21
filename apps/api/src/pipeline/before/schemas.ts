@@ -447,8 +447,12 @@ const presetConfigSchema = z
             .nullable()
             .optional(),
         reasoning: z.record(z.string(), z.any()).nullable().optional(),
+        // Validated when rendered (core/prompt-templates), so one bad template
+        // fails its own requests with a clear error rather than the context load.
+        prompt: z.unknown().nullable().optional(),
     })
     .transform<PresetConfig>((config) => ({
+        ...(config.prompt != null ? { prompt: config.prompt } : {}),
         ...(() => {
             const provider = config.provider;
             const maxPrice = provider?.maxPrice ?? provider?.max_price ?? null;

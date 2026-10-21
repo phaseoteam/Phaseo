@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { invalidateWorkspaceGatewayContext } from "./gateway-invalidation";
+import { compilePromptTemplate, type PromptTemplateIssue } from "./prompt-templates";
 import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
@@ -553,12 +554,23 @@ accountSettingsPolicyRouter.put("/presets/publisher", async (c) => {
 	return c.json({ handle: String(result.data ?? handle) }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+/** Problems with a config's prompt template, or null when it has none or it is valid. */
+function promptTemplateIssues(config: unknown): PromptTemplateIssue[] | null {
+	if (!config || typeof config !== "object" || Array.isArray(config)) return null;
+	const template = (config as Record<string, unknown>).prompt;
+	if (template === undefined || template === null) return null;
+	const compiled = compilePromptTemplate(template);
+	return compiled.ok === false ? compiled.issues : null;
+}
+
 accountSettingsPolicyRouter.post("/presets", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({}));
 	const workspaceId = String(body.workspaceId ?? "").trim(); const name = String(body.name ?? "").trim(); const slug = normalizePresetSlug(body.slug ?? name);
 	if (!workspaceId || !validPresetName(name) || !slug) return c.json({ error: "invalid_preset" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const templateIssues = promptTemplateIssues(body.config);
+	if (templateIssues) return c.json({ error: "invalid_prompt_template", issues: templateIssues }, 400, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const duplicate = await context.client.from("presets").select("id").eq("workspace_id", workspaceId).eq("name", name).maybeSingle();
@@ -619,6 +631,10 @@ accountSettingsPolicyRouter.put("/presets/:presetId", async (c) => {
 	if (body.name != null) { const name = String(body.name).trim(); if (!validPresetName(name)) return c.json({ error: "invalid_preset" }, 400, PRIVATE_NO_STORE_HEADERS); update.draft_name = name; }
 	if (body.description !== undefined) update.draft_description = body.description ? String(body.description).trim().slice(0, 500) : null;
 	if (body.config !== undefined) update.draft_config = body.replaceConfig === true ? (body.config && typeof body.config === "object" ? body.config : {}) : { ...((existing.data.draft_config as Record<string, unknown>) ?? (existing.data.config as Record<string, unknown>) ?? {}), ...(body.config && typeof body.config === "object" ? body.config : {}) };
+	if (update.draft_config !== undefined) {
+		const templateIssues = promptTemplateIssues(update.draft_config);
+		if (templateIssues) return c.json({ error: "invalid_prompt_template", issues: templateIssues }, 400, PRIVATE_NO_STORE_HEADERS);
+	}
 	if (body.visibility !== undefined) update.draft_visibility = presetVisibility(body.visibility);
 	if (body.slug !== undefined) update.draft_slug = normalizePresetSlug(body.slug);
 	if (["sequential", "semver", "date"].includes(String(body.versioningMethod))) update.versioning_method = String(body.versioningMethod);
@@ -648,6 +664,8 @@ accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
 	if (preset.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!preset.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: preset.data.workspace_id }); if (!context || !canWritePreset(context, user.id, preset.data)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (!presetHasDraftChanges(preset.data)) return c.json({ error: "no_draft_changes" }, 409, PRIVATE_NO_STORE_HEADERS);
+	const templateIssues = promptTemplateIssues(preset.data.draft_config ?? preset.data.config);
+	if (templateIssues) return c.json({ error: "invalid_prompt_template", issues: templateIssues }, 400, PRIVATE_NO_STORE_HEADERS);
 	if (preset.data.draft_visibility === "public" && !await workspacePublisher(client, preset.data.workspace_id).catch(() => null)) return c.json({ error: "workspace_publisher_required" }, 409, PRIVATE_NO_STORE_HEADERS);
 	const published = await client.rpc("publish_preset_version", { target_preset_id: id, actor_user_id: user.id, notes: String(body.releaseNotes ?? "").slice(0, 1000), requested_label: body.versionLabel ? String(body.versionLabel).slice(0, 100) : null });
 	if (published.error) {

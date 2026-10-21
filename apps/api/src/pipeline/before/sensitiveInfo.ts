@@ -1,3 +1,4 @@
+import { replaceRenderedValue, type TemplateVariableTarget } from "./promptTemplate";
 import type { Endpoint } from "@core/types";
 import { buildGuardrailEnforcementPayload, mergeGuardrailEnforcements } from "./guardrailEnforcement";
 import { err } from "./http";
@@ -563,6 +564,8 @@ export function applySensitiveInfoGuardrails(args: {
 	workspacePolicy: WorkspacePolicy | null;
 	requestId: string;
 	workspaceId: string;
+	/** Text values of prompt template variables, scanned as user content. */
+	templateVariables?: TemplateVariableTarget[];
 	existingEnforcement?: GuardrailEnforcementPayload | null;
 }):
 	| {
@@ -587,7 +590,8 @@ export function applySensitiveInfoGuardrails(args: {
 	}
 
 	const targets = collectSensitiveInfoTargets(args.endpoint, args.body);
-	if (targets.length === 0) {
+	const variableTargets = args.templateVariables ?? [];
+	if (targets.length === 0 && variableTargets.length === 0) {
 		return {
 			ok: true,
 			body: args.body,
@@ -596,7 +600,7 @@ export function applySensitiveInfoGuardrails(args: {
 		};
 	}
 
-	const detections = targets.flatMap((target) =>
+	const detections = [...targets, ...variableTargets].flatMap((target) =>
 		analyzeSensitiveInfoText(target.text, rules),
 	);
 	if (detections.length === 0) {
@@ -667,6 +671,17 @@ export function applySensitiveInfoGuardrails(args: {
 		redactionCount += redacted.redactionCount;
 		setPathValue(nextBody, target.path, redacted.text);
 		setPathValue(nextRawBody, target.path, redacted.text);
+	}
+	for (const target of variableTargets) {
+		const targetMatches = analyzeSensitiveInfoText(target.text, rules).filter(
+			(match) => match.action === "redact",
+		);
+		if (targetMatches.length === 0) continue;
+		const redacted = redactText(target.text, targetMatches);
+		if (redacted.text === target.text) continue;
+		redactionCount += redacted.redactionCount;
+		replaceRenderedValue(nextBody, target.text, redacted.text);
+		setPathValue(nextRawBody, target.rawPath, redacted.text);
 	}
 
 	return {
