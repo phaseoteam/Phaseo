@@ -50,4 +50,24 @@ describe("createChatStreamTerminal", () => {
 		]);
 		expect(createChatStreamTerminal().expand(snapshot()).flatMap((chunk) => chunk.choices.map((choice: any) => choice.finish_reason)).filter(Boolean)).toEqual(["length"]);
 	});
+
+	it("sends reasoning text as both reasoning_content and reasoning", () => {
+		const terminal = createChatStreamTerminal();
+		const [chunk] = terminal.expand({ object: "chat.completion.chunk", choices: [{ index: 0, delta: { reasoning_content: "think" }, finish_reason: null }] });
+		expect(chunk.choices[0].delta).toEqual({ reasoning_content: "think", reasoning: "think" });
+		const [alias] = terminal.expand({ object: "chat.completion.chunk", choices: [{ index: 0, delta: { reasoning: "more" }, finish_reason: null }] });
+		expect(alias.choices[0].delta).toEqual({ reasoning: "more", reasoning_content: "more" });
+		const fromSnapshot = createChatStreamTerminal().expand(snapshot({
+			choices: [{ index: 0, message: { role: "assistant", content: "Hi", reasoning_content: "why" }, finish_reason: "stop" }],
+		}));
+		expect(fromSnapshot[0].choices[0].delta).toMatchObject({ content: "Hi", reasoning_content: "why", reasoning: "why" });
+	});
+
+	it("fills an empty reasoning alias from the other name", () => {
+		const terminal = createChatStreamTerminal();
+		const [chunk] = terminal.expand({ object: "chat.completion.chunk", choices: [{ index: 0, delta: { reasoning_content: "think", reasoning: "" }, finish_reason: null }] });
+		expect(chunk.choices[0].delta).toEqual({ reasoning_content: "think", reasoning: "think" });
+		const [reverse] = terminal.expand({ object: "chat.completion.chunk", choices: [{ index: 0, delta: { reasoning_content: "", reasoning: "more" }, finish_reason: null }] });
+		expect(reverse.choices[0].delta).toEqual({ reasoning_content: "more", reasoning: "more" });
+	});
 });

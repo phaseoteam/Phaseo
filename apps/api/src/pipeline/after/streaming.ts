@@ -17,6 +17,7 @@ import { SseParser } from "@core/sse-parser";
 import { stripGatewayStop } from "@core/finish-reason";
 import { createChatStreamTerminal } from "./chat-stream-terminal";
 import { createStreamReencoder, encodeStreamInterruption, type StreamReencoder } from "./stream-reencode";
+import { createResponsesStreamNormaliser } from "./responses-stream-normaliser";
 
 /** A bare Chat `{"error": {...}}` frame: how OpenAI-compatible providers fail mid-stream. */
 function isBareErrorFrame(frame: any): boolean {
@@ -225,6 +226,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         let sawTerminalSnapshot = false;
         let lastSeenUsage: any = null;
         const chatTerminal = ctx.protocol === "openai.chat.completions" ? createChatStreamTerminal() : null;
+        // Responses clients get one event name per event (SSE line and data.type),
+        // sequence numbers and the lifecycle events a source left out.
+        const responsesNormaliser = ctx.protocol === "openai.responses" ? createResponsesStreamNormaliser() : null;
         let reencoder: StreamReencoder | null = null;
         let sawStreamError = false;
         const targetProtocol: StreamProtocol | null =
@@ -247,6 +251,12 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             if (chatTerminal) {
                 for (const chunk of chatTerminal.expand(frameOut)) {
                     await writeJson(chunk, outbound.eventName ?? null);
+                }
+                return;
+            }
+            if (responsesNormaliser) {
+                for (const event of responsesNormaliser.normalise(outbound.eventName, frameOut)) {
+                    await writeJson(event.frame, event.eventName);
                 }
                 return;
             }
@@ -494,7 +504,12 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     requestId: ctx.requestId,
                     model: ctx.model,
                 });
-                await writeJson(failure.frame, failure.eventName ?? null);
+                const failureFrames = responsesNormaliser
+                    ? responsesNormaliser.normalise(failure.eventName, failure.frame)
+                    : [{ eventName: failure.eventName ?? null, frame: failure.frame }];
+                for (const event of failureFrames) {
+                    await writeJson(event.frame, event.eventName);
+                }
             }
             if (chatTerminal && completed && !downstreamClosed) {
                 try {

@@ -313,7 +313,12 @@ function extractOpenAIChatEvents(frame: any): UnifiedStreamEvent[] {
 					payload: choice,
 				});
 			}
-			if (typeof delta?.reasoning === "string" && delta.reasoning.length > 0) {
+			// `reasoning` is another name for the same text: read it only when a
+			// chunk does not also carry `reasoning_content`, or the text is doubled.
+			if (
+				typeof delta?.reasoning === "string" && delta.reasoning.length > 0 &&
+				!(typeof delta?.reasoning_content === "string" && delta.reasoning_content.length > 0)
+			) {
 				events.push({
 					type: "delta_text",
 					channel: "reasoning_text",

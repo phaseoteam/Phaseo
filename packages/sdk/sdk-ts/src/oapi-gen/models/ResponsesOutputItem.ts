@@ -11,6 +11,10 @@ export interface ResponsesOutputItem {
         type: "output_text";
       }
     | {
+        text: string;
+        type: "reasoning_text";
+      }
+    | {
         b64_json?: string;
         image_url?: {
           url?: string;

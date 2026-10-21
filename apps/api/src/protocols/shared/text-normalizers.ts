@@ -7,6 +7,7 @@ import type {
 	IRChatRequest,
 	IRGeoPreferences,
 	IRReasoning,
+	IRTool,
 } from "@core/ir";
 import { normalizeTextServiceTier } from "@core/serviceTiers";
 
@@ -177,22 +178,29 @@ export function normalizeOpenAIToolChoice(
 
 	if (typeof choice === "object") {
 		const value = choice as Record<string, any>;
+		if (value.type === "allowed_tools") return normalizeAllowedToolsChoice(value);
 		const typeName =
 			typeof value.type === "string" && value.type !== "function" && value.type !== "tool"
 				? value.type
 				: undefined;
+		// Responses names the tool at the top level; Chat nests it under `function`
+		// or, for a custom tool, under `custom`.
 		const functionName =
 			typeof value.name === "string"
 				? value.name
 				: typeof value.function?.name === "string"
 					? value.function.name
-					: undefined;
+					: value.type === "custom" && typeof value.custom?.name === "string"
+						? value.custom.name
+						: undefined;
 		if (
-			(value.type === "function" || value.type === "tool") &&
+			(value.type === "function" || value.type === "tool" || value.type === "custom") &&
 			functionName
 		) {
 			return { name: functionName };
 		}
+		// A hosted tool (web_search_preview, file_search, ...) is named by its type,
+		// the name its decoded tool definition carries.
 		if (typeName) {
 			return { name: typeName };
 		}
@@ -202,6 +210,90 @@ export function normalizeOpenAIToolChoice(
 	}
 
 	return undefined;
+}
+
+/**
+ * `allowed_tools` limits the model to a subset of `tools` with `mode` auto or
+ * required. OpenAI routes receive the original object (kept in the IR vendor
+ * options); everywhere else it becomes that mode, or a forced call when
+ * `required` allows exactly one tool, and only the allowed tools are sent (see
+ * resolveAllowedTools). Chat nests the fields under `allowed_tools`; Responses
+ * keeps them flat.
+ * https://platform.openai.com/docs/api-reference/responses/create#responses_create-tool_choice
+ */
+function normalizeAllowedToolsChoice(value: Record<string, any>): IRChatRequest["toolChoice"] {
+	const config = allowedToolsConfig(value);
+	const mode = config.mode === "required" ? "required" : "auto";
+	const tools: any[] = Array.isArray(config.tools) ? config.tools : [];
+	if (mode === "required" && tools.length === 1) {
+		const name = allowedToolEntryName(tools[0]);
+		if (name) return { name };
+	}
+	return mode;
+}
+
+function allowedToolsConfig(value: Record<string, any>): Record<string, any> {
+	return value.allowed_tools && typeof value.allowed_tools === "object" ? value.allowed_tools : value;
+}
+
+/** The name an `allowed_tools` entry gives: `name` (Responses), or nested under `function` or `custom` (Chat). */
+function allowedToolEntryName(entry: any): string | undefined {
+	if (!entry || typeof entry !== "object") return undefined;
+	if (typeof entry.name === "string" && entry.name) return entry.name;
+	if (typeof entry.function?.name === "string" && entry.function.name) return entry.function.name;
+	if (typeof entry.custom?.name === "string" && entry.custom.name) return entry.custom.name;
+	return undefined;
+}
+
+function allowedToolEntryMatches(entry: any, tool: IRTool): boolean {
+	const name = allowedToolEntryName(entry);
+	if (name) return tool.name === name;
+	// A hosted tool (web_search_preview, file_search, mcp, ...) is named by its
+	// type; an MCP entry also picks its server by label.
+	if (!entry || typeof entry !== "object" || typeof entry.type !== "string") return false;
+	if (tool.type !== entry.type && tool.name !== entry.type) return false;
+	if (typeof entry.server_label === "string") return tool.raw?.server_label === entry.server_label;
+	return true;
+}
+
+export type ResolvedAllowedTools = {
+	/** Names of the defined tools the choice allows. */
+	names: string[];
+	/** Entries that match no defined tool, by name or type. */
+	unmatched: string[];
+};
+
+/**
+ * The defined tools an `allowed_tools` tool choice lets the model call, or
+ * undefined when the choice does not list any (so nothing is restricted).
+ * Providers other than OpenAI have no `allowed_tools`, so they are sent only
+ * these tools.
+ */
+export function resolveAllowedTools(choice: unknown, tools: IRTool[] | undefined): ResolvedAllowedTools | undefined {
+	if (!choice || typeof choice !== "object" || Array.isArray(choice)) return undefined;
+	const value = choice as Record<string, any>;
+	if (value.type !== "allowed_tools") return undefined;
+	const entries = allowedToolsConfig(value).tools;
+	if (!Array.isArray(entries) || entries.length === 0) return undefined;
+	const names = new Set<string>();
+	const unmatched: string[] = [];
+	for (const entry of entries) {
+		const matches = (tools ?? []).filter((tool) => allowedToolEntryMatches(entry, tool));
+		if (matches.length === 0) {
+			unmatched.push(allowedToolEntryName(entry) ?? (typeof entry?.type === "string" ? entry.type : "unnamed tool"));
+		}
+		for (const tool of matches) names.add(tool.name);
+	}
+	return { names: Array.from(names), unmatched };
+}
+
+/**
+ * Providers sent the original `allowed_tools` object with every tool
+ * definition (see the OpenAI Chat and Responses transforms); every other route
+ * is sent only the allowed tools.
+ */
+export function forwardsOpenAIAllowedTools(providerId: string): boolean {
+	return providerId === "openai" || providerId === "openai-eu";
 }
 
 export function resolveTextServiceTier(input: {

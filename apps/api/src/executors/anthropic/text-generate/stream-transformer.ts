@@ -168,9 +168,8 @@ export function createAnthropicToResponsesStreamTransformer(
 			status: "completed",
 			summary: [],
 			content: redacted ? [] : [{
-				type: "output_text",
+				type: "reasoning_text",
 				text: block.text || "",
-				annotations: [],
 			}],
 			...(value
 				? {
@@ -195,6 +194,25 @@ export function createAnthropicToResponsesStreamTransformer(
 		payload: any,
 	) => {
 		controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`));
+	};
+
+	// A citation goes out as Claude sent it, document citations included: the
+	// Messages surface returns it unchanged, the Chat encoder keeps its URL, and
+	// Responses clients get the url_citation form at the client boundary
+	// (pipeline/after/responses-stream-normaliser.ts).
+	const emitCitation = (
+		controller: TransformStreamDefaultController<Uint8Array>,
+		block: { itemId: string; outputIndex: number },
+		citation: Record<string, any>,
+		annotationIndex: number,
+	) => {
+		emitEvent(controller, "response.output_text.annotation.added", {
+			item_id: block.itemId,
+			output_index: block.outputIndex,
+			content_index: 0,
+			annotation_index: annotationIndex,
+			annotation: { ...citation },
+		});
 	};
 
 	return new TransformStream<Uint8Array, Uint8Array>({
@@ -274,6 +292,12 @@ export function createAnthropicToResponsesStreamTransformer(
 							content_index: 0,
 							part: { type: "output_text", text: "", annotations: [] },
 						});
+						const startCitations = contentBlocks.get(index)?.citations ?? [];
+						startCitations.forEach((citation, citationIndex) => {
+							if (citation && typeof citation === "object") {
+								emitCitation(controller, { itemId, outputIndex }, citation, citationIndex);
+							}
+						});
 					}
 
 					// For tool_use blocks, emit output_item.added for function_call
@@ -323,16 +347,7 @@ export function createAnthropicToResponsesStreamTransformer(
 
 					} else if (delta.type === "citations_delta" && delta.citation && typeof delta.citation === "object") {
 						block.citations = [...(block.citations ?? []), delta.citation];
-						const [annotation] = toResponsesAnnotations([delta.citation]);
-						if (annotation) {
-							emitEvent(controller, "response.output_text.annotation.added", {
-								item_id: block.itemId,
-								output_index: block.outputIndex,
-								content_index: 0,
-								annotation_index: block.citations.length - 1,
-								annotation,
-							});
-						}
+						emitCitation(controller, block, delta.citation, block.citations.length - 1);
 
 					} else if (delta.type === "signature_delta") {
 						// Thinking signature (store for final snapshot)

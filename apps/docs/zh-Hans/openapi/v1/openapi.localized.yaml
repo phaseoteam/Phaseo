@@ -9805,6 +9805,10 @@ components:
           type: string
         reasoning_content:
           type: string
+          description: 模型的推理文本（在提供商返回时提供）。流式传输时以 delta.reasoning_content 发送。
+        reasoning:
+          type: string
+          description: 与 reasoning_content 相同的推理文本，使用部分客户端读取的字段名。流式传输时以 delta.reasoning 发送。在输入中可作为 reasoning_content 的别名。
         reasoning_details:
           type: array
           items:
@@ -10378,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: 工具选择策略。接受 Phaseo 服务器工具类型，并将其改写为上游函数或工具目标。
+      description: 工具选择策略。接受 Phaseo 服务器工具类型，并将其改写为上游函数或工具目标。allowed_tools 对象会连同所有工具原样发送给 OpenAI。其他提供商只会收到允许的工具及其模式（auto 或 required），当 required 只允许一个工具时，则收到对该工具的强制调用。如果 allowed_tools 列出了 tools 中未定义的工具，则只有 OpenAI 能处理该请求；否则返回 400 错误。
       oneOf:
         - type: string
           enum:
@@ -11085,6 +11089,19 @@ components:
             $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
         encrypted_content:
           type: string
+          description: 来自先前响应的推理状态，原样发回。除非 format 指定了其他提供商，否则原始值按 OpenAI 的值解析。
+        signature:
+          type: string
+          description: 推理项上的原始提供商签名，例如 Claude 的 thinking 签名或 Gemini 的思考签名。需要同时提供 format。
+        format:
+          type: string
+          description: 推理项上 signature 或 encrypted_content 的提供商格式。
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: Responses API 输出项。
@@ -11126,8 +11143,22 @@ components:
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: 推理输出项内容中的推理文本。
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:

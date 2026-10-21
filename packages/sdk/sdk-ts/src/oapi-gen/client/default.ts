@@ -2189,6 +2189,7 @@ export type CreateChatCompletionParams = {
         type: "image_url";
       }[];
       name?: string;
+      reasoning?: string;
       reasoning_content?: string;
       reasoning_details?: {
         data?: string;
@@ -2609,6 +2610,7 @@ export async function createChatCompletion(
         type: "image_url";
       }[];
       name?: string;
+      reasoning?: string;
       reasoning_content?: string;
       reasoning_details?: {
         data?: string;
@@ -2759,6 +2761,7 @@ export async function createChatCompletion(
           type: "image_url";
         }[];
         name?: string;
+        reasoning?: string;
         reasoning_content?: string;
         reasoning_details?: {
           data?: string;
@@ -5720,8 +5723,15 @@ export type CreateResponseParams = {
       | {
           content?: string | {}[] | {};
           encrypted_content?: string;
+          format?:
+            | "anthropic-claude-v1"
+            | "openai-responses-v1"
+            | "azure-openai-responses-v1"
+            | "xai-responses-v1"
+            | "google-gemini-v1";
           id?: string;
           role?: "user" | "assistant" | "system" | "developer";
+          signature?: string;
           summary?: {
             text: string;
             type: "summary_text";
@@ -6035,6 +6045,10 @@ export async function createResponse(
           type: "output_text";
         }
       | {
+          text: string;
+          type: "reasoning_text";
+        }
+      | {
           b64_json?: string;
           image_url?: {
             url?: string;
@@ -6070,6 +6084,10 @@ export async function createResponse(
           annotations?: {}[];
           text: string;
           type: "output_text";
+        }
+      | {
+          text: string;
+          type: "reasoning_text";
         }
       | {
           b64_json?: string;
@@ -6165,6 +6183,10 @@ export async function createResponse(
             type: "output_text";
           }
         | {
+            text: string;
+            type: "reasoning_text";
+          }
+        | {
             b64_json?: string;
             image_url?: {
               url?: string;
@@ -6200,6 +6222,10 @@ export async function createResponse(
             annotations?: {}[];
             text: string;
             type: "output_text";
+          }
+        | {
+            text: string;
+            type: "reasoning_text";
           }
         | {
             b64_json?: string;

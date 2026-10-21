@@ -9805,6 +9805,10 @@ components:
           type: string
         reasoning_content:
           type: string
+          description: El texto de razonamiento del modelo, cuando el proveedor lo devuelve. Se transmite en streaming como delta.reasoning_content.
+        reasoning:
+          type: string
+          description: El mismo texto de razonamiento que reasoning_content, con el nombre que leen algunos clientes. Se transmite en streaming como delta.reasoning. En la entrada se acepta como alias de reasoning_content.
         reasoning_details:
           type: array
           items:
@@ -10378,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: Estrategia de selección de herramientas. Se aceptan los tipos de herramientas de servidor de Phaseo y se transforman en destinos de funciones o herramientas del proveedor de origen.
+      description: Estrategia de selección de herramientas. Se aceptan los tipos de herramientas de servidor de Phaseo y se transforman en destinos de funciones o herramientas del proveedor de origen. Un objeto allowed_tools se envía tal cual a OpenAI, junto con todas las herramientas. Los demás proveedores reciben solo las herramientas permitidas y su modo (auto o required), o una llamada forzada cuando required permite exactamente una herramienta. Si allowed_tools incluye una herramienta que tools no define, solo OpenAI puede atender la solicitud; de lo contrario, se devuelve un error 400.
       oneOf:
         - type: string
           enum:
@@ -11085,6 +11089,19 @@ components:
             $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
         encrypted_content:
           type: string
+          description: Estado de razonamiento de una respuesta anterior, devuelto sin cambios. Un valor sin procesar se interpreta como de OpenAI, salvo que format indique otro proveedor.
+        signature:
+          type: string
+          description: En un elemento de razonamiento, una firma sin procesar del proveedor, como una firma de thinking de Claude o una firma de pensamiento de Gemini. Requiere format.
+        format:
+          type: string
+          description: En un elemento de razonamiento, el formato del proveedor de signature o encrypted_content.
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: Elemento de salida de Responses API.
@@ -11126,8 +11143,22 @@ components:
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: Texto de razonamiento en el contenido de un elemento de salida de razonamiento.
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:

@@ -8,7 +8,7 @@ import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
-import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, anthropicUnsupportedMediaResult, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
 import { ANTHROPIC_CACHE_USAGE_SEMANTICS, createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
@@ -75,6 +75,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let endpoint: string;
 
 	if (route.family === "anthropic") {
+		const unsupportedMedia = anthropicUnsupportedMediaResult(irRequest, args.requestId);
+		if (unsupportedMedia) return unsupportedMedia;
 		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens, route.modelForPath, { providerId: args.providerId || "google-vertex" });
 		delete payload.model;
 		payload.anthropic_version = "vertex-2023-10-16";

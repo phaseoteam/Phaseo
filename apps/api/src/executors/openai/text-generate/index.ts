@@ -23,6 +23,7 @@ import {
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
+import { canReplayReasoning } from "@core/reasoning-state";
 
 type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
@@ -782,6 +783,26 @@ function cherryPickIRParams(
 	return next;
 }
 
+/**
+ * True when an assistant turn in the history carries encrypted reasoning this
+ * route can continue from. Only the Responses API takes it back (Chat
+ * Completions has no field for it), so such a request must go there even when
+ * it does not set `reasoning` again.
+ * https://platform.openai.com/docs/guides/reasoning#encrypted-reasoning-items
+ */
+function historyCarriesReplayableReasoning(ir: IRChatRequest, providerId: string, model: string): boolean {
+	return (ir.messages ?? []).some((message) =>
+		message.role === "assistant" &&
+		Array.isArray(message.content) &&
+		message.content.some((part) =>
+			part.type === "reasoning_text" &&
+			Boolean(part.encryptedContent) &&
+			canReplayReasoning(
+				{ format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider },
+				{ providerId, model },
+			)));
+}
+
 async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const requestBuildStartMs = Date.now();
 	const keyInfo = resolveOpenAICompatKey({
@@ -806,7 +827,8 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		!(args.ir as IRChatRequest).reasoning &&
 		!requiresResponsesRoute &&
 		!hasAsyncTool &&
-		!hasHostedTool;
+		!hasHostedTool &&
+		!historyCarriesReplayableReasoning(args.ir as IRChatRequest, args.providerId, modelForRouting);
 	const irWithRequestMetadata = withOpenAIRequestMetadata(
 		args.ir as IRChatRequest,
 		args.providerId,

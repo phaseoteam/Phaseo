@@ -23,6 +23,7 @@ import {
 	normalizeThinkingConfig,
 	normalizeOpenAIToolChoice,
 	normalizeProviderGeoPreferences,
+	resolveAllowedTools,
 	normalizeResponseFormat,
 	resolveTextServiceTier,
 	normalizeProviderCacheOptions,
@@ -108,6 +109,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 	const tools: IRTool[] | undefined = req.tools?.map(decodeOpenAITool);
 
 	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice);
+	const allowedTools = resolveAllowedTools(req.tool_choice, tools);
 	const rawOpenAIToolChoice = req.tool_choice
 		&& typeof req.tool_choice === "object"
 		&& !Array.isArray(req.tool_choice)
@@ -271,6 +273,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		seed: req.seed,
 		tools,
 		toolChoice,
+		...(allowedTools ? { allowedToolNames: allowedTools.names } : {}),
 		webSearchOptions: reqAny.web_search_options ?? reqAny.webSearchOptions,
 		parallelToolCalls: req.parallel_tool_calls,
 		maxToolCalls: (req as any).max_tool_calls,

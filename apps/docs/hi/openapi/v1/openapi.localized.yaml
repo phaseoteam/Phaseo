@@ -9805,6 +9805,10 @@ components:
           type: string
         reasoning_content:
           type: string
+          description: मॉडल का रीज़निंग टेक्स्ट, जब प्रदाता उसे लौटाता है। स्ट्रीमिंग में delta.reasoning_content के रूप में भेजा जाता है।
+        reasoning:
+          type: string
+          description: reasoning_content वाला ही रीज़निंग टेक्स्ट, उस नाम से जिसे कुछ क्लाइंट पढ़ते हैं। स्ट्रीमिंग में delta.reasoning के रूप में भेजा जाता है। इनपुट में reasoning_content के alias के रूप में स्वीकार किया जाता है।
         reasoning_details:
           type: array
           items:
@@ -10378,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: टूल चयन रणनीति। Phaseo सर्वर-टूल प्रकार स्वीकार किए जाते हैं और upstream फ़ंक्शन/टूल लक्ष्यों में बदले जाते हैं।
+      description: टूल चयन रणनीति। Phaseo सर्वर-टूल प्रकार स्वीकार किए जाते हैं और upstream फ़ंक्शन/टूल लक्ष्यों में बदले जाते हैं। allowed_tools ऑब्जेक्ट सभी टूल के साथ OpenAI को बिना बदलाव भेजा जाता है। अन्य प्रदाताओं को केवल अनुमत टूल और उसका मोड (auto या required) भेजा जाता है, या जब required ठीक एक टूल की अनुमति देता है तो उस टूल की अनिवार्य कॉल। यदि allowed_tools में ऐसा टूल है जिसे tools परिभाषित नहीं करता, तो केवल OpenAI अनुरोध पूरा कर सकता है; अन्यथा 400 त्रुटि लौटाई जाती है।
       oneOf:
         - type: string
           enum:
@@ -11085,6 +11089,19 @@ components:
             $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
         encrypted_content:
           type: string
+          description: पिछली प्रतिक्रिया की रीज़निंग स्थिति, जिसे बिना बदलाव वापस भेजा जाता है। कच्चे मान को OpenAI का माना जाता है, जब तक format किसी दूसरे प्रदाता का नाम न दे।
+        signature:
+          type: string
+          description: रीज़निंग आइटम पर, प्रदाता का कच्चा सिग्नेचर, जैसे Claude का thinking सिग्नेचर या Gemini का थॉट सिग्नेचर। format आवश्यक है।
+        format:
+          type: string
+          description: रीज़निंग आइटम पर, signature या encrypted_content का प्रदाता फ़ॉर्मैट।
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: Responses API का आउटपुट आइटम।
@@ -11126,8 +11143,22 @@ components:
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: रीज़निंग आउटपुट आइटम की सामग्री में रीज़निंग टेक्स्ट।
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:

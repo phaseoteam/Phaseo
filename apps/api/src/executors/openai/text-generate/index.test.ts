@@ -155,6 +155,53 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls[0]?.bodyJson).not.toHaveProperty("store");
 	});
 
+	it("routes a Chat request through Responses when its history carries OpenAI encrypted reasoning", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_replay",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.4-nano",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({
+				model: "openai/gpt-5.4-nano",
+				messages: [
+					{ role: "user", content: [{ type: "text", text: "Weather in Paris?" }] },
+					{
+						role: "assistant",
+						content: [{
+							type: "reasoning_text",
+							text: "Checked the tool.",
+							summary: "Checked the tool.",
+							encryptedContent: "gAAAAABo-RAW",
+							reasoningFormat: "openai-responses-v1",
+							reasoningId: "rs_1",
+						}],
+						toolCalls: [{ id: "call_1", name: "get_weather", arguments: "{}" }],
+					},
+					{ role: "tool", toolResults: [{ toolCallId: "call_1", content: "Sunny" }] },
+				],
+				tools: [{ name: "get_weather", parameters: { type: "object", properties: {} } }],
+			}),
+			providerModelSlug: "gpt-5.4-nano",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
+		const input = mock.calls[0]?.bodyJson?.input as any[];
+		expect(input.find((item) => item?.type === "reasoning")).toMatchObject({ encrypted_content: "gAAAAABo-RAW" });
+	});
+
 	it.each([
 		["gpt-6.1-sol", undefined],
 		["gpt-6-astra", "ultrafast"],

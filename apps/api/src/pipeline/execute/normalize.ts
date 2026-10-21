@@ -5,6 +5,7 @@
 import type { IRChatRequest } from "@core/ir";
 import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type { Protocol } from "@protocols/detect";
+import { forwardsOpenAIAllowedTools } from "@protocols/shared/text-normalizers";
 import { getProviderProfile } from "@providers/providerProfiles";
 import {
 	DEFAULT_ANTHROPIC_MAX_TOKENS,
@@ -199,6 +200,24 @@ function normalizeMaxTokens(
     return undefined;
 }
 
+/**
+ * An `allowed_tools` choice limits the model to some of the defined tools.
+ * OpenAI is sent the original choice and every tool, which keeps the tool list
+ * (and its prompt cache) the same across turns; every other provider has no
+ * such choice, so it is sent only the allowed tools.
+ */
+function restrictToAllowedTools(ir: IRChatRequest, providerId: string): IRChatRequest {
+    if (!ir.allowedToolNames) return ir;
+    const { allowedToolNames, ...rest } = ir;
+    if (forwardsOpenAIAllowedTools(providerId) || !rest.tools) return rest;
+    const allowed = new Set(allowedToolNames);
+    const tools = rest.tools.filter((tool) => allowed.has(tool.name));
+    if (tools.length > 0) return { ...rest, tools };
+    // Nothing the model may call. (An entry that names no defined tool keeps
+    // these providers out of routing; see providerDocsValidation.)
+    return { ...rest, tools: undefined, toolChoice: undefined };
+}
+
 export function normalizeIRForProvider(
     ir: IRChatRequest,
     providerId: string,
@@ -219,7 +238,7 @@ export function normalizeIRForProvider(
     const items = dropVerbatimResponsesItems(supported.ir, providerId);
     const dropped = [...supported.dropped, ...items.dropped];
     if (dropped.length > 0) options?.onDroppedParams?.(dropped);
-    ir = items.ir;
+    ir = restrictToAllowedTools(items.ir, providerId);
     const modelForReasoning = options?.modelForReasoning ?? ir.model;
     const nextMaxTokens = normalizeMaxTokens(
         ir,

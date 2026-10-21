@@ -1293,6 +1293,7 @@ type ChatMessage struct {
 	Content interface{} `json:"content,omitempty"`
 	Images *[]map[string]interface{} `json:"images,omitempty"`
 	Name *string `json:"name,omitempty"`
+	Reasoning *string `json:"reasoning,omitempty"`
 	ReasoningContent *string `json:"reasoning_content,omitempty"`
 	ReasoningDetails *[]map[string]interface{} `json:"reasoning_details,omitempty"`
 	Role string `json:"role"`
@@ -4617,8 +4618,10 @@ type ResponseHealingPlugin struct {
 type ResponsesInputItem struct {
 	Content interface{} `json:"content,omitempty"`
 	EncryptedContent *string `json:"encrypted_content,omitempty"`
+	Format *string `json:"format,omitempty"`
 	Id *string `json:"id,omitempty"`
 	Role *string `json:"role,omitempty"`
+	Signature *string `json:"signature,omitempty"`
 	Summary *[]map[string]interface{} `json:"summary,omitempty"`
 	Type *string `json:"type,omitempty"`
 }
@@ -4659,6 +4662,11 @@ type ResponsesOutputTextPart struct {
 }
 
 type ResponsesReasoningSummaryPart struct {
+	Text string `json:"text"`
+	Type string `json:"type"`
+}
+
+type ResponsesReasoningTextPart struct {
 	Text string `json:"text"`
 	Type string `json:"type"`
 }

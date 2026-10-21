@@ -11,7 +11,7 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
-import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, anthropicUnsupportedMediaResult, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
 import {
 	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
@@ -77,6 +77,8 @@ async function executeBedrockMessages(
 	model: string,
 ): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
+	const unsupportedMedia = anthropicUnsupportedMediaResult(irRequest, args.requestId);
+	if (unsupportedMedia) return unsupportedMedia;
 	const requestPayload = {
 		...irToAnthropicMessages(irRequest, args.maxOutputTokens, model, { providerId: args.providerId || "amazon-bedrock" }),
 		model,

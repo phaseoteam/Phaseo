@@ -238,6 +238,7 @@ export type GatewayCompletionsChoice = {
         }>;
         // Per-message reasoning fields (MiniMax/Aion format)
         reasoning_content?: string; // Simple format: single string with all reasoning
+        reasoning?: string; // The same text under the name other Chat clients read
         reasoning_details?: GatewayReasoningDetail[]; // Structured format: array of reasoning blocks
     };
     finish_reason: "stop" | "length" | "tool_calls" | "content_filter" | "error" | null;

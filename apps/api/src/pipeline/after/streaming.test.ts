@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { passthroughWithPricing } from "./streaming";
+import { createAnthropicToResponsesStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 
 function makeSseResponse(frames: Array<{ event?: string; data: any }>): Response {
 	const text = frames
@@ -98,6 +99,40 @@ describe("passthroughWithPricing client stream grammar", () => {
 		expect(chunks[chunks.length - 1]).toMatchObject({ choices: [], usage: { prompt_tokens: 3 } });
 		expect(snapshots[0]?.object).toBe("chat.completion");
 		expect(usageCalls).toEqual([{ prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 }]);
+	});
+
+	it("sends Responses clients one name per event, sequence numbers and the lifecycle events a source left out", async () => {
+		// A Claude stream as the Anthropic transformer delivers it to the client boundary.
+		const claude = makeSseResponse([
+			{ event: "message_start", data: { type: "message_start", message: { id: "msg_1", usage: { input_tokens: 3, output_tokens: 1 } } } },
+			{ event: "content_block_start", data: { type: "content_block_start", index: 0, content_block: { type: "thinking", thinking: "" } } },
+			{ event: "content_block_delta", data: { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "Plan." } } },
+			{ event: "content_block_delta", data: { type: "content_block_delta", index: 0, delta: { type: "signature_delta", signature: "sig" } } },
+			{ event: "content_block_stop", data: { type: "content_block_stop", index: 0 } },
+			{ event: "content_block_start", data: { type: "content_block_start", index: 1, content_block: { type: "text", text: "" } } },
+			{ event: "content_block_delta", data: { type: "content_block_delta", index: 1, delta: { type: "text_delta", text: "Hi" } } },
+			{ event: "content_block_stop", data: { type: "content_block_stop", index: 1 } },
+			{ event: "message_delta", data: { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 4 } } },
+			{ event: "message_stop", data: { type: "message_stop" } },
+		]);
+		const upstream = new Response(claude.body!.pipeThrough(createAnthropicToResponsesStreamTransformer("req_claude", "claude-sonnet-5", { providerId: "anthropic" })));
+		const response = await passthroughWithPricing({ upstream, ctx: baseCtx(), provider: "anthropic", priceCard: null });
+		const events = (await drain(response)).split(/\n\n/).filter(Boolean).map((block) => ({
+			event: block.split("\n").find((line) => line.startsWith("event: "))?.slice(7),
+			data: JSON.parse(block.split("\n").find((line) => line.startsWith("data: "))!.slice(6)),
+		}));
+
+		for (const [index, { event, data }] of events.entries()) {
+			expect(data.type).toBe(event);
+			expect(data.sequence_number).toBe(index);
+		}
+		const names = events.map(({ event }) => event);
+		expect(names.slice(0, 2)).toEqual(["response.created", "response.in_progress"]);
+		const reasoningDone = names.indexOf("response.reasoning_text.done");
+		expect(reasoningDone).toBeGreaterThan(names.indexOf("response.reasoning_text.delta"));
+		expect(names[reasoningDone + 1]).toBe("response.content_part.done");
+		expect(events[reasoningDone].data).toMatchObject({ text: "Plan.", content_index: 0 });
+		expect(names.at(-1)).toBe("response.completed");
 	});
 
 	it("does not forward frames of another protocol that map to no client event", async () => {

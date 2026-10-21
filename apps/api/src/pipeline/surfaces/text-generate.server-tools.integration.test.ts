@@ -216,7 +216,7 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 				type: "reasoning",
 				id: "rs_req_datetime_pipeline_0_0",
 				summary: [],
-				content: [{ type: "output_text", text: "Partial reasoning.", annotations: [] }],
+				content: [{ type: "reasoning_text", text: "Partial reasoning." }],
 			}]);
 			expect(payload.status).toBe(finishReason === "length" ? "incomplete" : "completed");
 		}

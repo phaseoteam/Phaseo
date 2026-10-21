@@ -1120,6 +1120,8 @@ class ChatMessage
 	/** @var string|null */
 	public $name;
 	/** @var string|null */
+	public $reasoning;
+	/** @var string|null */
 	public $reasoning_content;
 	/** @var array|null */
 	public $reasoning_details;
@@ -5356,9 +5358,13 @@ class ResponsesInputItem
 	/** @var string|null */
 	public $encrypted_content;
 	/** @var string|null */
+	public $format;
+	/** @var string|null */
 	public $id;
 	/** @var string|null */
 	public $role;
+	/** @var string|null */
+	public $signature;
 	/** @var array|null */
 	public $summary;
 	/** @var string|null */
@@ -5426,6 +5432,14 @@ class ResponsesOutputTextPart
 }
 
 class ResponsesReasoningSummaryPart
+{
+	/** @var string */
+	public $text;
+	/** @var string */
+	public $type;
+}
+
+class ResponsesReasoningTextPart
 {
 	/** @var string */
 	public $text;

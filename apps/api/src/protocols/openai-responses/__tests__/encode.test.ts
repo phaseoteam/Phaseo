@@ -231,10 +231,10 @@ describe("encodeOpenAIResponsesResponse", () => {
 		expect(response.output[0].type).toBe("reasoning");
 		if (response.output[0].type === "reasoning") {
 			expect(response.output[0].content).toHaveLength(1);
+			// Reasoning text is a reasoning_text part, not output_text.
 			expect(response.output[0].content[0]).toEqual({
-				type: "output_text",
+				type: "reasoning_text",
 				text: "Let me think about this...",
-				annotations: [],
 			});
 		}
 

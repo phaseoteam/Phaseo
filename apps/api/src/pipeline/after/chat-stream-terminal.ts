@@ -5,7 +5,9 @@
 //      SDK consumers mis-handle it.
 // How: At the client boundary only, replace the snapshot with the chunks a Chat stream
 //      documents: any content the stream never delivered, one finish_reason per choice,
-//      and the usage-only chunk (empty choices), followed by [DONE] as before.
+//      and the usage-only chunk (empty choices), followed by [DONE] as before. Reasoning
+//      text goes out as both `reasoning_content` and `reasoning`, the two names Chat
+//      clients read it under.
 
 type ChoiceState = { sawDelta: boolean; sawFinish: boolean };
 
@@ -52,6 +54,31 @@ function messageToDelta(message: any): Record<string, unknown> | null {
 	return { role: "assistant", ...delta };
 }
 
+function nonEmptyString(value: unknown): value is string {
+	return typeof value === "string" && value.length > 0;
+}
+
+/** A chunk whose reasoning deltas carry both `reasoning_content` and `reasoning`. */
+export function withChatReasoningAliases(frame: any): any {
+	if (frame?.object !== "chat.completion.chunk" || !Array.isArray(frame.choices)) return frame;
+	let changed = false;
+	const choices = frame.choices.map((choice: any) => {
+		const delta = choice?.delta;
+		if (!delta || typeof delta !== "object") return choice;
+		// An empty string counts as absent, so the other name's text fills it.
+		if (nonEmptyString(delta.reasoning_content) && !nonEmptyString(delta.reasoning)) {
+			changed = true;
+			return { ...choice, delta: { ...delta, reasoning: delta.reasoning_content } };
+		}
+		if (nonEmptyString(delta.reasoning) && !nonEmptyString(delta.reasoning_content)) {
+			changed = true;
+			return { ...choice, delta: { ...delta, reasoning_content: delta.reasoning } };
+		}
+		return choice;
+	});
+	return changed ? { ...frame, choices } : frame;
+}
+
 export type ChatStreamTerminal = {
 	/**
 	 * The frames a client receives for one client-bound frame: the frame itself, or,
@@ -86,7 +113,7 @@ export function createChatStreamTerminal(): ChatStreamTerminal {
 	const expand = (frame: any): any[] => {
 		if (frame?.object !== "chat.completion") {
 			observe(frame);
-			return [frame];
+			return [withChatReasoningAliases(frame)];
 		}
 		const base: Record<string, unknown> = { object: "chat.completion.chunk" };
 		const extras: Record<string, unknown> = {};
@@ -121,7 +148,7 @@ export function createChatStreamTerminal(): ChatStreamTerminal {
 			else out.push({ ...base, choices: [], ...extras });
 		}
 		for (const chunk of out) observe(chunk);
-		return out;
+		return out.map(withChatReasoningAliases);
 	};
 
 	return { expand };

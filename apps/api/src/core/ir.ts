@@ -280,6 +280,9 @@ export type IRChatRequest = {
 	// Tool calling
 	tools?: IRTool[];
 	toolChoice?: IRToolChoice;
+	// Set from an `allowed_tools` tool choice: the names of the tools the model may
+	// call. Providers other than OpenAI are sent only these tools.
+	allowedToolNames?: string[];
 	webSearchOptions?: Record<string, any>;
 	parallelToolCalls?: boolean;
 	maxToolCalls?: number;

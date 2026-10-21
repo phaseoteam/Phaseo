@@ -621,6 +621,7 @@ struct ChatMessage {
 	std::any content;
 	std::vector<std::map<std::string, std::any>> images;
 	std::string name;
+	std::string reasoning;
 	std::string reasoning_content;
 	std::vector<std::map<std::string, std::any>> reasoning_details;
 	std::any role;
@@ -3045,8 +3046,10 @@ struct ResponseHealingPlugin {
 struct ResponsesInputItem {
 	std::any content;
 	std::string encrypted_content;
+	std::any format;
 	std::string id;
 	std::any role;
+	std::string signature;
 	std::vector<std::map<std::string, std::any>> summary;
 	std::string type;
 };
@@ -3087,6 +3090,11 @@ struct ResponsesOutputTextPart {
 };
 
 struct ResponsesReasoningSummaryPart {
+	std::string text;
+	std::any type;
+};
+
+struct ResponsesReasoningTextPart {
 	std::string text;
 	std::any type;
 };

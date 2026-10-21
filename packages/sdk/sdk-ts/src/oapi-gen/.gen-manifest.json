@@ -374,6 +374,7 @@
     "models/ResponsesOutputItem.ts",
     "models/ResponsesOutputTextPart.ts",
     "models/ResponsesReasoningSummaryPart.ts",
+    "models/ResponsesReasoningTextPart.ts",
     "models/ResponsesRequest.ts",
     "models/ResponsesResponse.ts",
     "models/SearchModelsToolDefinition.ts",

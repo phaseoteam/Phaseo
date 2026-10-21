@@ -79,9 +79,17 @@ export function createSyntheticResponsesStreamFromIR(
 							});
 						}
 					} else if (item.type === "reasoning") {
-						for (const part of Array.isArray(item.content) ? item.content : []) {
-							if (part?.type !== "output_text" || typeof part.text !== "string") continue;
-							emit(controller, "response.reasoning.delta", { item_id: item.id, delta: part.text });
+						// The documented reasoning delta event; its done events are added at
+						// the client boundary (pipeline/after/responses-stream-normaliser.ts),
+						// after which internal readers have already finished the item.
+						for (const [contentIndex, part] of (Array.isArray(item.content) ? item.content : []).entries()) {
+							if ((part?.type !== "reasoning_text" && part?.type !== "output_text") || typeof part.text !== "string") continue;
+							emit(controller, "response.reasoning_text.delta", {
+								item_id: item.id,
+								output_index: outputIndex,
+								content_index: contentIndex,
+								delta: part.text,
+							});
 						}
 					} else if (item.type === "function_call") {
 						emit(controller, "response.function_call_arguments.delta", {

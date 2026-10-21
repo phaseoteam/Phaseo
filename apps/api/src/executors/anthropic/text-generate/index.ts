@@ -175,7 +175,40 @@ function usesAnthropicFileReference(value: unknown): boolean {
 /**
  * Executes IR requests using Anthropic Messages API
  */
+/**
+ * Claude takes text, image and document content, but no audio or video
+ * (https://docs.claude.com/en/api/messages). Without this check those parts
+ * would reach it as meaningless text, so the request is rejected with a 400
+ * before anything is sent. Shared by the Claude routes on Bedrock and Vertex.
+ */
+export function anthropicUnsupportedMediaResult(ir: IRChatRequest, requestId: string): ExecutorResult | null {
+	const kinds = new Set<string>();
+	for (const message of ir.messages ?? []) {
+		const parts: IRContentPart[] = message.role === "tool"
+			? (message.toolResults ?? []).flatMap((result) => result.parts ?? [])
+			: Array.isArray(message.content) ? message.content : [];
+		for (const part of parts) {
+			if (part?.type === "audio" || part?.type === "video") kinds.add(part.type);
+		}
+	}
+	if (kinds.size === 0) return null;
+	const named = Array.from(kinds).sort().join(" or ");
+	return {
+		kind: "completed",
+		terminal: true,
+		localClientError: true,
+		upstream: Response.json({
+			error: "unsupported_content_type",
+			message: `Claude models do not accept ${named} input. Remove the ${named} content parts, or choose a model that accepts them.`,
+			request_id: requestId,
+		}, { status: 400 }),
+		bill: { cost_cents: 0, currency: "USD" },
+	};
+}
+
 export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
+		const unsupportedMedia = anthropicUnsupportedMediaResult(args.ir as IRChatRequest, args.requestId);
+		if (unsupportedMedia) return unsupportedMedia;
 		const awsPlatform = isAnthropicAwsProvider(args.providerId);
 		const bindings = getBindings() as any;
 		const azureArgs = { ...args, model: args.ir.model, forceGatewayKey: args.meta.forceGatewayKey } as any;

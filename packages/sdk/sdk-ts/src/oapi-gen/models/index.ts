@@ -368,6 +368,7 @@ export type { ResponsesOutputImagePart } from "./ResponsesOutputImagePart.js";
 export type { ResponsesOutputItem } from "./ResponsesOutputItem.js";
 export type { ResponsesOutputTextPart } from "./ResponsesOutputTextPart.js";
 export type { ResponsesReasoningSummaryPart } from "./ResponsesReasoningSummaryPart.js";
+export type { ResponsesReasoningTextPart } from "./ResponsesReasoningTextPart.js";
 export type { ResponsesRequest } from "./ResponsesRequest.js";
 export type { ResponsesResponse } from "./ResponsesResponse.js";
 export type { SearchModelsToolDefinition } from "./SearchModelsToolDefinition.js";

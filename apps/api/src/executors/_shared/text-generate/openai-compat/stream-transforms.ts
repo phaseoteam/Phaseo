@@ -1279,7 +1279,7 @@ function buildResponsesOutputFromState(
 					type: "reasoning",
 					id: entry.reasoningItemId ?? `reasoning_${requestId}_${choiceIndex}`,
 					status: "completed",
-					content: [{ type: "output_text", text: entry.reasoning, annotations: [] }],
+					content: [{ type: "reasoning_text", text: entry.reasoning }],
 				},
 			});
 		}

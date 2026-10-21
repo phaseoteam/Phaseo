@@ -126,8 +126,9 @@ function encodeChoice(
 						},
 					}),
 			})) as any,
-			// Per-message reasoning fields (MiniMax/Aion format)
-			...(reasoningContent ? { reasoning_content: reasoningContent } : {}),
+			// Per-message reasoning fields (MiniMax/Aion format). `reasoning` carries the
+			// same text for clients that read that name.
+			...(reasoningContent ? { reasoning_content: reasoningContent, reasoning: reasoningContent } : {}),
 			...(reasoningDetails.length > 0 ? { reasoning_details: reasoningDetails } : {}),
 		},
 		finish_reason: choice.finishReason,
