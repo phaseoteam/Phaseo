@@ -4,6 +4,7 @@ const state = vi.hoisted(() => ({
 	guardrailRows: [] as Array<Record<string, unknown> | null>,
 	deleteCalls: [] as Array<{ table: string; filters: Array<{ column: string; value: unknown }> }>,
 	policyVersionBumps: [] as string[],
+	keyGuardrailDeleteError: null as { message: string } | null,
 	audit: vi.fn(),
 }));
 
@@ -70,7 +71,8 @@ function buildSupabaseMock() {
 								filters.push({ column, value });
 								return query;
 							},
-							then: (resolve: (value: { error: null }) => unknown) => resolve({ error: null }),
+							then: (resolve: (value: { error: { message: string } | null }) => unknown) =>
+								resolve({ error: table === "key_guardrails" ? state.keyGuardrailDeleteError : null }),
 						};
 						return query;
 					},
@@ -119,6 +121,7 @@ describe("guardrail management security", () => {
 		state.guardrailRows.length = 0;
 		state.deleteCalls.length = 0;
 		state.policyVersionBumps.length = 0;
+		state.keyGuardrailDeleteError = null;
 		state.audit.mockReset().mockResolvedValue(true);
 		vi.resetModules();
 	});
@@ -133,6 +136,32 @@ describe("guardrail management security", () => {
 		expect(response.status).toBe(404);
 		expect(body).toMatchObject({ error: "not_found" });
 		expect(state.deleteCalls).toEqual([]);
+	});
+
+	it("returns 409 for the Slack agent's locked guardrail and deletes nothing else", async () => {
+		state.guardrailRows.push({ id: "gr_slack", workspace_id: "ws_attacker", name: "Slack agent" });
+		state.keyGuardrailDeleteError = { message: "slack_agent_guardrail_protected" };
+
+		const { guardrailsRoutes } = await import("./guardrails");
+		const response = await guardrailsRoutes.request("https://example.com/gr_slack", { method: "DELETE" });
+		const body = await response.json();
+
+		expect(response.status).toBe(409);
+		expect(body).toMatchObject({ error: "guardrail_protected" });
+		expect(body.message).toContain("Uninstall the Slack agent");
+		expect(state.deleteCalls.map((call) => call.table)).toEqual(["key_guardrails"]);
+		expect(state.policyVersionBumps).toEqual([]);
+		expect(state.audit).not.toHaveBeenCalled();
+	});
+
+	it("still reports other database failures as server errors", async () => {
+		state.guardrailRows.push({ id: "gr_owned", workspace_id: "ws_attacker", name: "Owned" });
+		state.keyGuardrailDeleteError = { message: "connection reset" };
+
+		const { guardrailsRoutes } = await import("./guardrails");
+		const response = await guardrailsRoutes.request("https://example.com/gr_owned", { method: "DELETE" });
+
+		expect(response.status).toBe(500);
 	});
 
 	it("cleans up dependent rows after the guardrail belongs to the caller workspace", async () => {

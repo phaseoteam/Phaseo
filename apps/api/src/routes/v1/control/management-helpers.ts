@@ -5,6 +5,14 @@ const SUCCESS_PAYMENT_STATUSES = ["Succeeded", "succeeded", "paid", "Paid"] as c
 const DEFAULT_KEY_LIMIT = 100;
 
 export const CHAT_MANAGED_KEY_NAME = "__chat_route_managed_key__";
+/** The Slack agent's key: created, rotated and removed only by the Slack install flow. */
+export const SLACK_AGENT_MANAGED_KEY_NAME = "__slack_agent_managed_key__";
+/**
+ * Keys Phaseo manages for its own features. The control API never lists, counts
+ * or changes them: rotating or deleting one would break the feature that holds it.
+ * Use with PostgREST as `.not("name", "in", MANAGED_KEY_NAMES_FILTER)`.
+ */
+export const MANAGED_KEY_NAMES_FILTER = `(${[CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME].map((name) => `"${name}"`).join(",")})`;
 export type WorkspaceKeyType = "api" | "management";
 
 type WorkspaceKeyState = {
@@ -93,7 +101,7 @@ export async function enforceWorkspaceKeyLimit(
 			.eq("status", "active")
 			.eq("soft_blocked", false)
 			.or(notExpiredFilter)
-			.neq("name", CHAT_MANAGED_KEY_NAME);
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER);
 		if (excludeKeyId) query = query.neq("id", excludeKeyId);
 		const result = await query;
 		count = result.count;

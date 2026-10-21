@@ -15,7 +15,7 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { loadOAuthClient } from "@/lib/oauth/service";
 import { internalServerError, requireCapability, type ManagementRouteAuth } from "./route-helpers";
-import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit, isUsableWorkspaceKey } from "./management-helpers";
+import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isUsableWorkspaceKey } from "./management-helpers";
 import { copyKeyRateLimitAssignment, publishRateLimitPlan } from "@core/rate-limit-policies";
 
 type KeyRow = {
@@ -516,7 +516,7 @@ async function handleListKeys(req: Request) {
 			.from("keys")
 			.select(KEY_COLUMNS)
 			.eq("workspace_id", workspaceScope.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.order("created_at", { ascending: false })
 			.range(offset, offset + limit - 1);
 		if (!includeDisabled) {
@@ -532,7 +532,7 @@ async function handleListKeys(req: Request) {
 			.from("keys")
 			.select("id", { count: "exact", head: true })
 			.eq("workspace_id", workspaceScope.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME);
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER);
 		if (!includeDisabled) {
 			countQuery = countQuery.eq("status", "active").eq("soft_blocked", false);
 		}
@@ -719,7 +719,7 @@ async function handleGetKey(req: Request) {
 			.from("keys")
 			.select(KEY_COLUMNS)
 			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (error) {
@@ -787,7 +787,7 @@ async function handleUpdateKey(req: Request) {
 			.from("keys")
 			.select(KEY_WITH_KID_COLUMNS)
 			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (fetchError) {
@@ -899,7 +899,7 @@ async function handleDeleteKey(req: Request) {
 			.from("keys")
 			.select("id, workspace_id, kid, name, status")
 			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (fetchError) {
@@ -969,7 +969,7 @@ async function handleRotateKey(req: Request) {
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data: existing, error: fetchError } = await supabase.from("keys")
 			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos,department_id")
-			.eq("workspace_id", auth.value.workspaceId).neq("name", CHAT_MANAGED_KEY_NAME).eq(lookupColumn, keyId).maybeSingle();
+			.eq("workspace_id", auth.value.workspaceId).not("name", "in", MANAGED_KEY_NAMES_FILTER).eq(lookupColumn, keyId).maybeSingle();
 		if (fetchError) throw new Error(fetchError.message || "Failed to fetch API key");
 		if (!existing || String(existing.status ?? "").toLowerCase() === "deleted") return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
 		await enforceWorkspaceKeyLimit(auth.value.workspaceId, "api", existing.id);
