@@ -7,7 +7,7 @@ import type { GatewayBindings } from "@/runtime/env.types";
 import {
 	REALTIME_GRACEFUL_STOP_THRESHOLD,
 	REALTIME_IDLE_TIMEOUT_SECONDS,
-	REALTIME_MAX_DURATION_SECONDS,
+	REALTIME_RELAY_MAX_DURATION_SECONDS,
 	buildGoogleBidiGenerateContentSetup,
 	claimRealtimeSessionForRelay,
 	decideRealtimeRelayBudget,
@@ -165,7 +165,7 @@ export function validateRealtimeAudioIngress(args: {
 	if (durationMs < RELAY_MIN_AUDIO_CHUNK_MS || durationMs > RELAY_MAX_AUDIO_CHUNK_MS) {
 		return { ok: false, reason: "realtime_audio_chunk_too_large" };
 	}
-	if (args.currentInputMs + durationMs > REALTIME_MAX_DURATION_SECONDS * 1000) {
+	if (args.currentInputMs + durationMs > REALTIME_RELAY_MAX_DURATION_SECONDS * 1000) {
 		return { ok: false, reason: "realtime_audio_duration_exceeded" };
 	}
 	if (args.currentInputMs + durationMs > Math.max(0, args.elapsedMs) + RELAY_AUDIO_LEAD_ALLOWANCE_MS) {
@@ -1391,7 +1391,7 @@ export class RealtimeRelayDurableObject {
 	private async scheduleExpiryAlarm() {
 		if (!this.session) return;
 		const expiresAt = this.session.expires_at ? Date.parse(this.session.expires_at) : 0;
-		const fallbackAt = Date.now() + REALTIME_MAX_DURATION_SECONDS * 1000;
+		const fallbackAt = Date.now() + REALTIME_RELAY_MAX_DURATION_SECONDS * 1000;
 		await this.state.storage.setAlarm(
 			Number.isFinite(expiresAt) && expiresAt > 0 ? Math.min(Math.max(Date.now(), expiresAt), fallbackAt) : fallbackAt,
 		);

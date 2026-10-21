@@ -163,9 +163,14 @@ describe("realtime voice billing simulation", () => {
 		expect(() => assertRealtimeSettlementAuthority({ internal: true })).not.toThrow();
 	});
 
+	it("allows OpenAI Realtime the provider's full 60 minutes", () => {
+		expect(realtimeMaxDurationSeconds("openai")).toBe(60 * 60);
+		expect(realtimeMaxDurationSeconds("openai", "openai/gpt-realtime-2")).toBe(60 * 60);
+		expect(realtimeMaxDurationSeconds("openai", "openai/gpt-live-1")).toBe(25 * 60);
+	});
+
 	it("caps Google sessions until upstream resumption is supported", () => {
 		expect(realtimeMaxDurationSeconds("google-ai-studio")).toBe(15 * 60);
-		expect(realtimeMaxDurationSeconds("openai")).toBe(25 * 60);
 		expect(realtimeMaxDurationSeconds("x-ai")).toBe(25 * 60);
 		expect(realtimeMaxDurationSeconds("spacex-ai")).toBe(25 * 60);
 	});
