@@ -1225,6 +1225,8 @@
 				"audio_seconds": "ऑडियो सेकंड",
 				"cached_write_text_tokens_5m": "कैश में लिखे टेक्स्ट टोकन (5 मिनट TTL)",
 				"cached_write_text_tokens_1h": "कैश में लिखे टेक्स्ट टोकन (1 घंटे TTL)",
+				"cached_write_text_tokens_30m": "कैश में लिखे टेक्स्ट टोकन (30 मिनट TTL)",
+				"cached_write_text_tokens_12h": "कैश में लिखे टेक्स्ट टोकन (12 घंटे TTL)",
 				"output_video_seconds": "आउटपुट वीडियो सेकंड",
 				"output_video_frames": "आउटपुट वीडियो फ़्रेम",
 				"bfl_credits": "BFL क्रेडिट",

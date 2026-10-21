@@ -72,6 +72,7 @@ pub struct AnthropicMessagesRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub plugins: Option<Vec<String>>,
+	pub prompt: Option<HashMap<String, String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -579,6 +580,7 @@ pub struct ChatCompletionsRequest {
 	pub plugins: Option<Vec<String>>,
 	pub prediction: Option<HashMap<String, String>>,
 	pub presence_penalty: Option<f64>,
+	pub prompt: Option<HashMap<String, String>>,
 	pub prompt_cache_key: Option<Option<String>>,
 	pub prompt_cache_options: Option<HashMap<String, String>>,
 	pub prompt_cache_retention: Option<String>,
@@ -2571,6 +2573,7 @@ pub struct Preset {
 }
 
 pub struct PresetConfig {
+	pub prompt: Option<HashMap<String, String>>,
 }
 
 pub struct PresetCreateRequest {
@@ -2594,6 +2597,29 @@ pub struct PresetForkRequest {
 pub struct PresetListResponse {
 	pub data: Vec<HashMap<String, String>>,
 	pub total_count: i64,
+}
+
+pub struct PresetPromptTemplate {
+	pub messages: Vec<HashMap<String, String>>,
+	pub response_format: Option<HashMap<String, String>>,
+	pub syntax: Option<String>,
+	pub tool_choice: Option<String>,
+	pub tools: Option<Vec<HashMap<String, String>>>,
+	pub variables: Option<HashMap<String, String>>,
+}
+
+pub struct PresetPromptTemplateMessage {
+	pub content: String,
+	pub role: String,
+}
+
+pub struct PresetPromptVariable {
+	pub default: Option<String>,
+	pub description: Option<String>,
+	pub r#enum: Option<Vec<String>>,
+	pub max_length: Option<i64>,
+	pub required: Option<bool>,
+	pub r#type: String,
 }
 
 pub struct PresetPublisher {
@@ -2798,6 +2824,11 @@ pub struct PromptCacheBreakpoint {
 pub struct PromptCacheOptions {
 	pub mode: Option<String>,
 	pub ttl: Option<String>,
+}
+
+pub struct PromptTemplateReference {
+	pub id: String,
+	pub variables: Option<HashMap<String, String>>,
 }
 
 pub struct Provider {
@@ -3134,6 +3165,7 @@ pub struct ResponsesRequest {
 	pub parallel_tool_calls: Option<bool>,
 	pub plugins: Option<Vec<String>>,
 	pub previous_response_id: Option<String>,
+	pub prompt: Option<HashMap<String, String>>,
 	pub prompt_cache_key: Option<Option<String>>,
 	pub prompt_cache_options: Option<HashMap<String, String>>,
 	pub prompt_cache_retention: Option<String>,

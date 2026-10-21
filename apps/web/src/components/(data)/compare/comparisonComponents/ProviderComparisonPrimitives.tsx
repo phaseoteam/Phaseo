@@ -38,6 +38,17 @@ function getModalityIcon(value: string) {
 	return Type;
 }
 
+const MIN_COLUMN_WIDTH = 240;
+const COLUMN_GAP = 12;
+
+/** One column per model. Four columns must fit the 1,120px content width without scrolling. */
+function columnGridStyle(count: number): React.CSSProperties {
+	return {
+		gridTemplateColumns: `repeat(${count}, minmax(${MIN_COLUMN_WIDTH}px, 1fr))`,
+		minWidth: `${Math.max(720, count * (MIN_COLUMN_WIDTH + COLUMN_GAP))}px`,
+	};
+}
+
 export function ColumnGrid({
 	selectedModels,
 	children,
@@ -47,13 +58,7 @@ export function ColumnGrid({
 }) {
 	return (
 		<div className="overflow-x-auto">
-			<div
-				className="grid gap-3"
-				style={{
-					gridTemplateColumns: `repeat(${selectedModels.length}, minmax(270px, 1fr))`,
-					minWidth: `${Math.max(720, selectedModels.length * 286)}px`,
-				}}
-			>
+			<div className="grid gap-3" style={columnGridStyle(selectedModels.length)}>
 				{children}
 			</div>
 		</div>
@@ -155,13 +160,7 @@ export function CompareSection({
 	return (
 		<section>
 			<div className="overflow-x-auto">
-				<div
-					className="grid gap-x-3 gap-y-3"
-					style={{
-						gridTemplateColumns: `repeat(${selectedModels.length}, minmax(270px, 1fr))`,
-						minWidth: `${Math.max(720, selectedModels.length * 286)}px`,
-					}}
-				>
+				<div className="grid gap-x-3 gap-y-3" style={columnGridStyle(selectedModels.length)}>
 					<h2 className="col-span-full border-b border-border/70 pb-3 pl-4 text-xl font-semibold">
 						{title}
 					</h2>
