@@ -13,8 +13,10 @@ declare
 begin
   -- One entry per destination from one consumer batch: events delivered and
   -- finally failed, failed requests since the batch's last success, and the
-  -- last success and failure. A batch with a success resets the failure streak
-  -- to its own count; otherwise its failures extend the stored streak.
+  -- last success and failure. Batches can commit out of order, so the streak
+  -- follows request times: a success newer than every stored failure resets it
+  -- to the batch's later failures, failures older than the stored success are
+  -- ignored, and other failures extend it. The last error is the newest one.
   -- Destinations deleted since delivery are skipped.
   with results as (
     select distinct on (result.destination_id)
@@ -50,10 +52,17 @@ begin
     on conflict (destination_id) do update set
       last_success_at = greatest(health.last_success_at, excluded.last_success_at),
       last_failure_at = greatest(health.last_failure_at, excluded.last_failure_at),
-      last_http_status = case when excluded.last_failure_at is not null then excluded.last_http_status else health.last_http_status end,
-      last_error = case when excluded.last_failure_at is not null then excluded.last_error else health.last_error end,
+      last_http_status = case
+        when excluded.last_failure_at >= coalesce(health.last_failure_at, '-infinity') then excluded.last_http_status
+        else health.last_http_status
+      end,
+      last_error = case
+        when excluded.last_failure_at >= coalesce(health.last_failure_at, '-infinity') then excluded.last_error
+        else health.last_error
+      end,
       consecutive_failures = case
-        when excluded.last_success_at is not null then excluded.consecutive_failures
+        when excluded.last_success_at > coalesce(health.last_failure_at, '-infinity') then excluded.consecutive_failures
+        when excluded.last_failure_at is null or excluded.last_failure_at < coalesce(health.last_success_at, '-infinity') then health.consecutive_failures
         else health.consecutive_failures + excluded.consecutive_failures
       end,
       updated_at = now()

@@ -17,8 +17,8 @@ CREATE OR REPLACE FUNCTION public.broadcast_destination_health_summary (
   SET search_path TO ''
   SET statement_timeout TO '5s'
   AS $function$
-  -- The 24-hour window covers the current UTC hour and the 24 before it, so it
-  -- spans up to 25 hours rather than dropping the hour in progress.
+  -- Counts are hourly, so the last 24 hours are the current UTC hour and the 23
+  -- before it: between 23 and 24 hours of traffic, never more than 24.
   select
     destination.id,
     health.last_success_at,
@@ -34,7 +34,7 @@ CREATE OR REPLACE FUNCTION public.broadcast_destination_health_summary (
     select hourly.destination_id, sum(hourly.delivered) as delivered, sum(hourly.failed) as failed
     from public.broadcast_destination_delivery_hourly hourly
     where hourly.workspace_id = p_workspace_id
-      and hourly.hour >= date_trunc('hour', now(), 'UTC') - interval '24 hours'
+      and hourly.hour > date_trunc('hour', now(), 'UTC') - interval '24 hours'
     group by hourly.destination_id
   ) counts on counts.destination_id = destination.id
   where destination.workspace_id = p_workspace_id;

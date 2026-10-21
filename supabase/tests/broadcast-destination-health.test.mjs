@@ -49,16 +49,40 @@ try {
     await record([{ destination_id: id, delivered: 1, failed: 0, failures: 0, last_success_at: '2026-10-21T10:12:00Z' }]);
     assert.equal((await health(id)).last_success_at.toISOString(), '2026-10-21T10:15:00.000Z');
 
+    // Batches can commit out of order. A failure older than the stored success
+    // does not mark the destination failing, and a success older than the stored
+    // failure does not clear it.
+    await record([{ destination_id: id, delivered: 0, failed: 0, failures: 2, last_failure_at: '2026-10-21T10:13:00Z', last_http_status: 500, last_error: 'stale failure' }]);
+    row = await health(id);
+    assert.equal(row.consecutive_failures, 0);
+    assert.equal(row.last_failure_at.toISOString(), '2026-10-21T10:13:00.000Z');
+    assert.equal(row.last_error, 'stale failure', 'the newest failure is still the one shown');
+    await record([{ destination_id: id, delivered: 0, failed: 0, failures: 1, last_failure_at: '2026-10-21T10:20:00Z', last_http_status: 503, last_error: 'Webhook endpoint returned 503' }]);
+    await record([{ destination_id: id, delivered: 0, failed: 0, failures: 0, last_success_at: '2026-10-21T10:18:00Z' }]);
+    row = await health(id);
+    assert.equal(row.consecutive_failures, 1);
+    assert.equal(row.last_success_at.toISOString(), '2026-10-21T10:18:00.000Z');
+    // An older failure arriving after a newer one leaves the latest error in place.
+    await record([{ destination_id: id, delivered: 0, failed: 0, failures: 1, last_failure_at: '2026-10-21T10:19:00Z', last_http_status: 400, last_error: 'older' }]);
+    row = await health(id);
+    assert.equal(row.consecutive_failures, 2);
+    assert.equal(row.last_error, 'Webhook endpoint returned 503');
+    assert.equal(row.last_http_status, 503);
+    await record([{ destination_id: id, delivered: 0, failed: 0, failures: 0, last_success_at: '2026-10-21T10:25:00Z' }]);
+    assert.equal((await health(id)).consecutive_failures, 0);
+
     // Event counts add up within the hour.
     assert.deepEqual(await counts(id), { delivered: 11, failed: 3 });
 
     // The summary lists every destination in the workspace with its last day.
     const quiet = (await db.query(`insert into public.workspace_broadcast_destinations(workspace_id,destination_id,name) values($1,'otel_collector','q') returning id`, [workspace])).rows[0].id;
     await db.query(`insert into public.broadcast_destination_delivery_hourly(destination_id,hour,workspace_id,delivered,failed) values($1, date_trunc('hour', now()) - interval '2 days', $2, 50, 50)`, [id, workspace]);
+    // The bucket that started 24 hours ago is outside the window; the one after it is inside.
+    await db.query(`insert into public.broadcast_destination_delivery_hourly(destination_id,hour,workspace_id,delivered,failed) values($1, date_trunc('hour', now(), 'UTC') - interval '24 hours', $2, 1000, 0), ($1, date_trunc('hour', now(), 'UTC') - interval '23 hours', $2, 7, 0)`, [id, workspace]);
     const summary = (await db.query('select * from public.broadcast_destination_health_summary($1) order by delivered_24h desc', [workspace])).rows;
     assert.equal(summary.length, 2);
     assert.equal(summary[0].destination_id, id);
-    assert.equal(Number(summary[0].delivered_24h), 11);
+    assert.equal(Number(summary[0].delivered_24h), 18);
     assert.equal(Number(summary[0].failed_24h), 3);
     assert.equal(summary[0].consecutive_failures, 0);
     assert.deepEqual({ ...summary[1], delivered_24h: Number(summary[1].delivered_24h), failed_24h: Number(summary[1].failed_24h) }, {
@@ -74,8 +98,8 @@ try {
     // Pruning keeps eight days of hourly counts.
     await db.query(`insert into public.broadcast_destination_delivery_hourly(destination_id,hour,workspace_id,delivered) values($1, date_trunc('hour', now()) - interval '9 days', $2, 1)`, [id, workspace]);
     assert.equal((await db.query('select public.prune_broadcast_destination_delivery_hourly() as deleted')).rows[0].deleted, 1);
-    assert.equal((await db.query('select count(*)::int as n from public.broadcast_destination_delivery_hourly')).rows[0].n, 2);
-    assert.deepEqual(await counts(id), { delivered: 61, failed: 53 });
+    assert.equal((await db.query('select count(*)::int as n from public.broadcast_destination_delivery_hourly')).rows[0].n, 4);
+    assert.deepEqual(await counts(id), { delivered: 1068, failed: 53 });
 
     // Clients cannot read or write health directly.
     await db.exec('set role authenticated');
