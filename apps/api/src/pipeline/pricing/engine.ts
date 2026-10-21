@@ -270,14 +270,9 @@ function splitUsage(
         rule.meter === "cached_write_text_tokens_5m" ||
         rule.meter === "cached_write_text_tokens_1h"
     );
-    if (
-        hasSplitCachedWriteRules &&
-        typeof cachedWriteTokens === "number" &&
-        typeof cachedWrite5mTokens !== "number" &&
-        typeof cachedWrite1hTokens !== "number"
-    ) {
-        // A provider that reports one write count without a TTL split wrote with the TTL the
-        // request asked for (cache_control.ttl, prompt_cache_retention); 5 minutes otherwise.
+    // Writes with no TTL detail were made with the TTL the request asked for
+    // (cache_control.ttl, prompt_cache_retention); 5 minutes otherwise.
+    const undividedWriteMeter = (): "cached_write_text_tokens_5m" | "cached_write_text_tokens_1h" => {
         const ttlHint = String(
             usageRaw?.cache_ttl ??
             usageRaw?.cache_ttl_seconds ??
@@ -285,11 +280,17 @@ function splitUsage(
             requestOptions?.cache_ttl ??
             "5m",
         ).trim().toLowerCase();
-        if (ttlHint === "1h" || ttlHint === "60m" || ttlHint === "3600") {
-            meters.cached_write_text_tokens_1h = cachedWriteTokens;
-        } else {
-            meters.cached_write_text_tokens_5m = cachedWriteTokens;
-        }
+        return ttlHint === "1h" || ttlHint === "60m" || ttlHint === "3600"
+            ? "cached_write_text_tokens_1h"
+            : "cached_write_text_tokens_5m";
+    };
+    if (
+        hasSplitCachedWriteRules &&
+        typeof cachedWriteTokens === "number" &&
+        typeof cachedWrite5mTokens !== "number" &&
+        typeof cachedWrite1hTokens !== "number"
+    ) {
+        meters[undividedWriteMeter()] = cachedWriteTokens;
     }
     if (
         hasSplitCachedWriteRules &&
@@ -298,6 +299,17 @@ function splitUsage(
             (meters.cached_write_text_tokens_1h ?? 0) > 0
         )
     ) {
+        // A write total above its TTL split still counts: a Claude stream's final message_delta
+        // carries the cumulative cache_creation_input_tokens without the cache_creation split
+        // (https://platform.claude.com/docs/en/build-with-claude/streaming), so writes made after
+        // message_start are only in the total. They are billed at the undivided-write TTL.
+        const unsplitWrites = (meters.cached_write_text_tokens ?? 0) -
+            (meters.cached_write_text_tokens_5m ?? 0) -
+            (meters.cached_write_text_tokens_1h ?? 0);
+        if (unsplitWrites > 0) {
+            const meter = undividedWriteMeter();
+            meters[meter] = (meters[meter] ?? 0) + unsplitWrites;
+        }
         delete meters.cached_write_text_tokens;
     }
     if (typeof reasoningTokens === "number" && meters.output_reasoning_tokens == null) {
@@ -697,6 +709,7 @@ function buildPricingJobs(
     dims: PricingDimensionKey[],
     meters: Record<string, number>,
     matchContext: Record<string, any>,
+    oneHourAtOwnRate = false,
 ): PricingJob[] {
     const jobs: PricingJob[] = [];
     const requestTtl = typeof matchContext.cache_ttl === "string" && matchContext.cache_ttl.trim()
@@ -727,9 +740,34 @@ function buildPricingJobs(
             jobs.push({ dim, qty, context: requestTtl ? matchContext : withTtl("5m") });
             continue;
         }
+        if (dim === "cached_write_text_tokens" && oneHourAtOwnRate) {
+            // The 1-hour writes are priced on their own meter (see oneHourWritesNeedOwnRate).
+            const rest = qty - Math.max(0, meters.cached_write_text_tokens_1h ?? 0);
+            if (rest > 0) jobs.push({ dim, qty: rest, context: matchContext });
+            continue;
+        }
         jobs.push({ dim, qty, context: matchContext });
     }
     return jobs;
+}
+
+/**
+ * Whether 1-hour writes must leave a card's single write row. A card whose only write row is
+ * one `cached_write_text_tokens` rate, not keyed on `cache_ttl`, holds the provider's 5-minute
+ * price where the provider documents a higher 1-hour price (Claude: 1.25x and 2x input,
+ * https://platform.claude.com/docs/en/build-with-claude/prompt-caching#pricing). Writes the
+ * usage reports as 1-hour are then billed at the documented 1-hour rate through the cache
+ * fallback, not at the 5-minute row.
+ */
+function oneHourWritesNeedOwnRate(card: PriceCard, meters: Record<string, number>): boolean {
+    const write1h = meters.cached_write_text_tokens_1h ?? 0;
+    const aggregate = meters.cached_write_text_tokens ?? 0;
+    if (!(write1h > 0) || !(aggregate > 0)) return false;
+    if ((meters.cached_write_text_tokens_5m ?? 0) + write1h > aggregate) return false;
+    if (card.rules.some((rule) => rule.meter === "cached_write_text_tokens_1h" || rule.meter === "cached_write_text_tokens_5m")) return false;
+    if (rulesReferenceCacheTtl(card, "cached_write_text_tokens")) return false;
+    return cacheWriteFallbackMultiplier(card, "cached_write_text_tokens_1h") !==
+        cacheWriteFallbackMultiplier(card, "cached_write_text_tokens");
 }
 
 /**
@@ -885,7 +923,8 @@ export function computeBillSummary(
             .filter((r) => matchesConditions(r.match, context))
 			.sort((a, b) => effectiveRulePriority(b) - effectiveRulePriority(a));
 
-    for (const job of buildPricingJobs(card, dims, meters, matchContext)) {
+    const oneHourAtOwnRate = oneHourWritesNeedOwnRate(card, meters);
+    for (const job of buildPricingJobs(card, dims, meters, matchContext, oneHourAtOwnRate)) {
         const { dim, qty, context: jobContext } = job;
         const ruleMeter = job.ruleMeter ?? dim;
 
@@ -1056,8 +1095,10 @@ export function computeBillSummary(
     // reservations or retain holds when there is no matching price at all.
 	const hasPricedAggregateCacheWrite = lines.some((line) => line.dimension === "cached_write_text_tokens");
 	const hasPricedImplicitCacheRead = lines.some((line) => line.dimension === "implicit_cached_input_text_tokens");
+	// 1-hour writes taken out of the aggregate row are priced on their own meter.
+	const ownRateMeter = (meter: string) => oneHourAtOwnRate && meter === "cached_write_text_tokens_1h";
 	let effectiveMissingCacheMeters = missingRequiredCacheMeters.filter((meter) =>
-		!(hasPricedAggregateCacheWrite && cacheMeterCanUseAggregate(meter, meters)) &&
+		!(hasPricedAggregateCacheWrite && cacheMeterCanUseAggregate(meter, meters) && !ownRateMeter(meter)) &&
 		!(meter === "cached_read_text_tokens" && hasPricedImplicitCacheRead)
 	);
 	// With no write rule at all, price the TTL split rather than the aggregate so 1-hour
@@ -1075,7 +1116,7 @@ export function computeBillSummary(
 		const qty = meters[meter];
 		// A priced aggregate write smaller than its own TTL split is inconsistent usage;
 		// pricing the split on top would bill the same writes twice.
-		const fallback = hasPricedAggregateCacheWrite &&
+		const fallback = hasPricedAggregateCacheWrite && !ownRateMeter(meter) &&
 			(meter === "cached_write_text_tokens_5m" || meter === "cached_write_text_tokens_1h")
 			? null
 			: cacheMeterFallbackRule(card, meter as PricingDimensionKey, pricingPlan, matchContext, basePlan);
