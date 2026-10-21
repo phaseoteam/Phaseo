@@ -8,9 +8,10 @@ Wenn Gateway-I/O-Protokolle aktiviert sind, speichert Phaseo Prompt und Antwort 
 
 ## Bevor du beginnst
 
-- Aktiviere **Gateway-I/O-Protokolle speichern** unter **Einstellungen → Datenschutz**. Nur Anfragen, die gestellt wurden, während die Option aktiv war, lassen sich öffnen.
-- Workspaces mit aktiviertem **Nur ZDR-Endpunkte aktivieren** speichern nie Prompts oder Antworten, ebenso wenig Anfragen mit einem API-Schlüssel, dessen Guardrail Zero Data Retention verlangt. Ihre Anfragen lassen sich nicht öffnen.
-- Du musst Mitglied des Workspace sein, zu dem die Anfrage gehört. Jedes Mitglied, das eine Anfrage in den Protokollen sehen kann, kann sie öffnen.
+- Aktiviere **Anfrage- und Antwortdaten speichern** unter **Einstellungen → Datenschutz**. Nur Anfragen, die gestellt wurden, während die Option aktiv war, lassen sich öffnen.
+- Ist **Keine Datenaufbewahrung verlangen** aktiviert, speichert der Workspace nie Prompts oder Antworten. Dasselbe gilt für Anfragen mit einem API-Schlüssel, dessen Guardrail Zero Data Retention verlangt. Diese Anfragen lassen sich nicht öffnen.
+- Anfragen an die [regionalen Endpunkte](./regional-routing.mdx) (`eu.api.phaseo.app` und `us.api.phaseo.app`) werden nicht gespeichert und lassen sich daher nicht öffnen.
+- Du musst Mitglied des Workspace sein, zu dem die Anfrage gehört. Ist **Wer Inhalte sehen darf** auf **Inhaber und Admins** gesetzt, können nur Inhaber und Admins seine Anfragen öffnen.
 
 ## Eine Anfrage öffnen
 
@@ -56,4 +57,4 @@ Der Chat listet alles auf, was er nicht übernehmen konnte, bevor du fortfährst
 - Tool-Aufrufe, die nie ein Ergebnis erhalten haben. Diese werden als Text gesendet.
 - Inhaltstypen, die der Chat nicht anzeigen kann, etwa providerspezifische Blöcke.
 
-Anfragen, die zu groß zum Speichern sind, sowie Anfragen, deren gespeicherter Inhalt abgelaufen ist oder gelöscht wurde, lassen sich nicht öffnen. Bild-, Audio-, Video- und Embedding-Anfragen lassen sich noch nicht im Chat öffnen.
+Anfragen, die zu groß zum Speichern sind, sowie Anfragen, deren gespeicherter Inhalt abgelaufen ist oder gelöscht wurde, lassen sich nicht öffnen. Im Chat lassen sich nur Textanfragen öffnen, keine Bild-, Audio-, Video- oder Embedding-Anfragen.

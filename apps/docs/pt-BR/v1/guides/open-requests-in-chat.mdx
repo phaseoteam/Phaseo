@@ -8,9 +8,10 @@ Quando os logs de E/S do Gateway estão ativados, o Phaseo armazena o prompt e a
 
 ## Antes de começar
 
-- Ative **Armazenar logs de E/S do Gateway** em **Configurações → Privacidade**. Só é possível abrir solicitações feitas enquanto a opção estava ativada.
-- Workspaces com **Ativar apenas endpoints com ZDR** ativado nunca armazenam prompts nem respostas, assim como solicitações feitas com uma chave de API cujo guardrail exige retenção zero de dados. As solicitações deles não podem ser abertas.
-- Você precisa ser membro do workspace ao qual a solicitação pertence. Qualquer membro que possa ver uma solicitação em Logs pode abri-la.
+- Ative **Armazenar os dados das solicitações e respostas** em **Configurações → Privacidade**. Só é possível abrir solicitações feitas enquanto a opção estava ativada.
+- Com **Exigir retenção zero de dados** ativado, o workspace nunca armazena prompts nem respostas. O mesmo vale para solicitações feitas com uma chave de API cujo guardrail exige retenção zero de dados. Essas solicitações não podem ser abertas.
+- Solicitações enviadas aos [endpoints regionais](./regional-routing.mdx) (`eu.api.phaseo.app` e `us.api.phaseo.app`) não são armazenadas, então não podem ser abertas.
+- Você precisa ser membro do workspace ao qual a solicitação pertence. Se **Quem pode ver o conteúdo** estiver em **Proprietários e administradores**, só eles podem abrir as solicitações.
 
 ## Abrir uma solicitação
 
@@ -56,4 +57,4 @@ O Chat lista tudo o que não conseguiu levar junto antes de você continuar:
 - Chamadas de ferramenta que nunca receberam um resultado. Elas são enviadas como texto.
 - Tipos de conteúdo que o Chat não consegue exibir, como blocos específicos de provedores.
 
-Solicitações grandes demais para serem armazenadas e solicitações cujo conteúdo armazenado expirou ou foi excluído não podem ser abertas. Solicitações de imagem, áudio, vídeo e embeddings ainda não podem ser abertas no Chat.
+Solicitações grandes demais para serem armazenadas e solicitações cujo conteúdo armazenado expirou ou foi excluído não podem ser abertas. Só solicitações de texto podem ser abertas no Chat, não as de imagem, áudio, vídeo ou embeddings.

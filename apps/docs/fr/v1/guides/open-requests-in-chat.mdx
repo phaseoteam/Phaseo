@@ -8,9 +8,10 @@ Lorsque les journaux d’E/S du Gateway sont activés, Phaseo stocke le prompt e
 
 ## Avant de commencer
 
-- Activez **Stocker les journaux d’E/S du Gateway** dans **Paramètres → Confidentialité**. Seules les requêtes effectuées pendant que cette option est activée peuvent être ouvertes.
-- Les espaces de travail où **Activer uniquement les points de terminaison compatibles ZDR** est activé ne stockent jamais les prompts ni les réponses, pas plus que les requêtes effectuées avec une clé API dont le garde-fou exige une conservation nulle des données. Leurs requêtes ne peuvent pas être ouvertes.
-- Vous devez être membre de l’espace de travail auquel appartient la requête. Tout membre qui peut consulter une requête dans les Journaux peut l’ouvrir.
+- Activez **Stocker les charges utiles de requête et de réponse** dans **Paramètres → Confidentialité**. Seules les requêtes effectuées pendant que cette option est activée peuvent être ouvertes.
+- Lorsque **Exiger une rétention de données nulle** est activé, l’espace de travail ne stocke jamais les prompts ni les réponses. Il en va de même pour les requêtes effectuées avec une clé API dont le garde-fou exige une rétention de données nulle. Ces requêtes ne peuvent pas être ouvertes.
+- Les requêtes envoyées aux [points de terminaison régionaux](./regional-routing.mdx) (`eu.api.phaseo.app` et `us.api.phaseo.app`) ne sont pas stockées et ne peuvent donc pas être ouvertes.
+- Vous devez être membre de l’espace de travail auquel appartient la requête. Si **Qui peut voir le contenu** est réglé sur **Propriétaires et administrateurs**, seuls eux peuvent ouvrir ses requêtes.
 
 ## Ouvrir une requête
 
@@ -56,4 +57,4 @@ Chat liste tout ce qu’il n’a pas pu reprendre avant que vous ne poursuiviez 
 - Les appels d’outils qui n’ont jamais reçu de résultat. Ils sont envoyés sous forme de texte.
 - Les types de contenu que Chat ne peut pas afficher, comme les blocs propres à un fournisseur.
 
-Les requêtes trop volumineuses pour être stockées, ainsi que celles dont le contenu stocké a expiré ou a été supprimé, ne peuvent pas être ouvertes. Les requêtes d’image, d’audio, de vidéo et d’embeddings ne peuvent pas encore être ouvertes dans Chat.
+Les requêtes trop volumineuses pour être stockées, ainsi que celles dont le contenu stocké a expiré ou a été supprimé, ne peuvent pas être ouvertes. Seules les requêtes textuelles peuvent être ouvertes dans Chat, pas les requêtes d’image, d’audio, de vidéo ni d’embeddings.

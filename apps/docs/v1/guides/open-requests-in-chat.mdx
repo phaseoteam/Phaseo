@@ -9,9 +9,10 @@ When Gateway I/O logs are on, Phaseo stores the prompt and response of each requ
 
 ## Before you start
 
-- Turn on **Store Gateway I/O logs** in **Settings → Privacy**. Only requests made while it is on can be opened.
-- Workspaces with **ZDR endpoints only** on never store prompts or responses, and neither do requests made with an API key whose guardrail requires zero data retention. Their requests can't be opened.
-- You need to be a member of the workspace the request belongs to. Any member who can view a request in Logs can open it.
+- Turn on **Store request and response payloads** in **Settings → Privacy**. Only requests made while it is on can be opened.
+- When **Require zero data retention** is on, the workspace never stores prompts or responses. Neither do requests made with an API key whose guardrail requires zero data retention. Their requests can't be opened.
+- Requests sent to the [regional endpoints](./regional-routing.mdx) (`eu.api.phaseo.app` and `us.api.phaseo.app`) aren't stored, so they can't be opened.
+- You need to be a member of the workspace the request belongs to. If **Who can view contents** is set to **Owners and admins**, only owners and admins can open its requests.
 
 ## Open a request
 
@@ -57,4 +58,4 @@ Chat lists anything it couldn't carry over before you continue:
 - Tool calls that never received a result. These are sent as text.
 - Content types Chat can't show, such as provider-specific blocks.
 
-Requests too large to store, and requests whose stored content has expired or been deleted, can't be opened. Image, audio, video and embeddings requests can't be opened in Chat yet.
+Requests too large to store, and requests whose stored content has expired or been deleted, can't be opened. Only text requests can be opened in Chat. Image, audio, video and embeddings requests can't.

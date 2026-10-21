@@ -8,9 +8,10 @@ Cuando los registros de I/O del Gateway están activados, Phaseo guarda el promp
 
 ## Antes de empezar
 
-- Activa **Guardar registros de I/O del Gateway** en **Configuración → Privacidad**. Solo se pueden abrir las solicitudes realizadas mientras está activado.
-- Los espacios de trabajo con **Permitir solo endpoints con ZDR** activado nunca guardan prompts ni respuestas, y tampoco las solicitudes realizadas con una clave API cuya guardrail exige retención cero de datos. Sus solicitudes no se pueden abrir.
-- Debes ser miembro del espacio de trabajo al que pertenece la solicitud. Cualquier miembro que pueda ver una solicitud en Registros puede abrirla.
+- Activa **Almacenar cargas útiles de solicitud y respuesta** en **Configuración → Privacidad**. Solo se pueden abrir las solicitudes realizadas mientras está activado.
+- Si **Requerir retención cero de datos** está activado, el espacio de trabajo nunca guarda prompts ni respuestas. Tampoco se guardan las solicitudes realizadas con una clave API cuya guardrail exige retención cero de datos. Esas solicitudes no se pueden abrir.
+- Las solicitudes enviadas a los [endpoints regionales](./regional-routing.mdx) (`eu.api.phaseo.app` y `us.api.phaseo.app`) no se guardan, así que no se pueden abrir.
+- Debes ser miembro del espacio de trabajo al que pertenece la solicitud. Si **Quién puede ver el contenido** está en **Propietarios y administradores**, solo ellos pueden abrir sus solicitudes.
 
 ## Abrir una solicitud
 
@@ -56,4 +57,4 @@ Chat enumera todo lo que no pudo conservar antes de que continúes:
 - Llamadas a herramientas que nunca recibieron un resultado. Se envían como texto.
 - Tipos de contenido que Chat no puede mostrar, como bloques específicos de un proveedor.
 
-No se pueden abrir las solicitudes demasiado grandes para guardarse ni aquellas cuyo contenido guardado ha caducado o se ha eliminado. Las solicitudes de imagen, audio, video y embeddings todavía no se pueden abrir en Chat.
+No se pueden abrir las solicitudes demasiado grandes para guardarse ni aquellas cuyo contenido guardado ha caducado o se ha eliminado. En Chat solo se pueden abrir solicitudes de texto, no de imagen, audio, video ni embeddings.
