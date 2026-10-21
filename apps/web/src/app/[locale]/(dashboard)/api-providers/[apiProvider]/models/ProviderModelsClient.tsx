@@ -223,22 +223,24 @@ export default function ProviderModelsClient({
 		const next = filteredModels[index];
 		if (!next) return;
 		setDetailsModel(next);
+		const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		document
 			.querySelector(`[data-provider-model-card="${CSS.escape(next.model_id)}"]`)
-			?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+			?.scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
 	}, [filteredModels]);
 
-	// Arrow keys step through the list while the inspector is open, unless typing.
+	// Left and right arrows step through the list while the inspector is open.
+	// Up and down stay with the browser so the page and the sheet still scroll.
 	useEffect(() => {
 		if (detailsIndex < 0) return;
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
 			const target = event.target as HTMLElement | null;
-			if (target?.closest("input, textarea, select, [contenteditable='true'], [role='listbox']")) return;
-			if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+			if (target?.closest("input, textarea, select, [contenteditable='true'], [role='listbox'], [role='slider'], [role='tablist']")) return;
+			if (event.key === "ArrowLeft") {
 				event.preventDefault();
 				showModelAt(detailsIndex - 1);
-			} else if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+			} else if (event.key === "ArrowRight") {
 				event.preventDefault();
 				showModelAt(detailsIndex + 1);
 			}

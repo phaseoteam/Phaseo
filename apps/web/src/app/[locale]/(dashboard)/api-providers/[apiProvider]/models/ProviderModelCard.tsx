@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { useState, type MouseEvent, type ReactNode } from "react";
 import { ArrowUpRight, Ban, ChevronLeft, ChevronRight, CircleCheck, Clock3, Info, PanelRight } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -261,29 +261,18 @@ export function ProviderModelCard({
 	const paramCount = uniqueSorted(listify(model.supported_params)).length;
 	const date = primaryDate(model);
 
-	// The whole card opens the details sheet, except for its own links and buttons.
+	// A pointer shortcut: clicking the card opens the details sheet, except on its
+	// own links and buttons. Keyboard and screen-reader users use the Details button.
 	const openFromCard = (event: MouseEvent<HTMLDivElement>) => {
 		if ((event.target as HTMLElement).closest("a,button")) return;
 		onOpenDetails(model);
 	};
-	const openFromKeyboard = (event: KeyboardEvent<HTMLDivElement>) => {
-		if (event.target !== event.currentTarget) return;
-		if (event.key === "Enter" || event.key === " ") {
-			event.preventDefault();
-			onOpenDetails(model);
-		}
-	};
 
 	return (
 		<div
-			role="button"
-			tabIndex={0}
-			aria-pressed={selected}
 			data-selected={selected ? "true" : undefined}
-			aria-label={`${t("viewDetails")}: ${name}`}
 			onClick={openFromCard}
-			onKeyDown={openFromKeyboard}
-			className="group h-full cursor-pointer py-4 outline-none transition-colors hover:bg-muted/20 focus-visible:bg-muted/30 data-[selected=true]:bg-muted/40 md:py-5"
+			className="group h-full cursor-pointer py-4 transition-colors hover:bg-muted/20 data-[selected=true]:bg-muted/40 md:py-5"
 		>
 			<div className="flex h-full flex-col gap-4 px-4 md:px-5">
 				<div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
@@ -351,6 +340,8 @@ export function ProviderModelCard({
 						variant="ghost"
 						size="sm"
 						className="h-8 shrink-0 gap-1.5 px-2 text-muted-foreground"
+						aria-pressed={selected}
+						aria-label={`${t("viewDetails")}: ${name}`}
 						onClick={() => onOpenDetails(model)}
 					>
 						<PanelRight className="size-3.5" />

@@ -18,6 +18,7 @@ vi.mock("@/models/page-catalogue", async (importOriginal) => ({
 }));
 
 import app from "@/index";
+import { fetchModelsPageCatalogue } from "@/models/page-catalogue";
 
 const env = {
 	ENV: "development" as const,
@@ -91,21 +92,22 @@ describe("public organisation routes", () => {
 		});
 	});
 
-	it("returns only the newest models when a limit is given", async () => {
+	it("returns the newest models first, and only the newest when a limit is given", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("/v2_labs?")) return new Response(JSON.stringify([{ lab_slug: "openai", name: "OpenAI", metadata: {} }]), { status: 200 });
-			if (url.includes("/v2_models?")) {
-				// Database order: released_at descending, undated rows first.
-				return new Response(JSON.stringify([
-					{ model_slug: "openai/announced-only", name: "Announced", lab_slug: "openai", released_at: null, announced_at: "2026-09-01" },
-					{ model_slug: "openai/undated", name: "Undated", lab_slug: "openai", released_at: null, announced_at: null },
-					{ model_slug: "openai/newest", name: "Newest", lab_slug: "openai", released_at: "2026-10-01" },
-					{ model_slug: "openai/older", name: "Older", lab_slug: "openai", released_at: "2026-03-01" },
-				]), { status: 200 });
-			}
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
+		// Catalogue order is not by date, and one model has no date at all.
+		vi.mocked(fetchModelsPageCatalogue).mockImplementation(async () => ({
+			pricingComplete: true,
+			models: [
+				{ model_id: "openai/announced-only", primary_timestamp: Date.parse("2026-09-01") },
+				{ model_id: "openai/undated", primary_timestamp: null },
+				{ model_id: "openai/newest", primary_timestamp: Date.parse("2026-10-01") },
+				{ model_id: "openai/older", primary_timestamp: Date.parse("2026-03-01") },
+			],
+		}) as unknown as Awaited<ReturnType<typeof fetchModelsPageCatalogue>>);
 
 		const ids = async (query: string) => {
 			const response = await app.request(`https://phaseo.app/api/_web/organisations/openai/models${query}`, {}, env);
@@ -114,7 +116,7 @@ describe("public organisation routes", () => {
 		};
 		expect(await ids("?limit=2")).toEqual(["openai/newest", "openai/announced-only"]);
 		expect(await ids("?limit=10")).toEqual(["openai/newest", "openai/announced-only", "openai/older", "openai/undated"]);
-		expect(await ids("")).toEqual(["openai/announced-only", "openai/undated", "openai/newest", "openai/older"]);
+		expect(await ids("")).toEqual(["openai/newest", "openai/announced-only", "openai/older", "openai/undated"]);
 	});
 
 	it("does not attach public cache headers to missing organisations", async () => {

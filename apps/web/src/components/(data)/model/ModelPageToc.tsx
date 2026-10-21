@@ -322,7 +322,9 @@ export default function ModelPageToc({
 	const availableIds = useAvailableSectionIds(labelledItems);
 	const filteredItems = useMemo(
 		() =>
-			availableIds?.size
+			// Show everything until the first scan; after that, an empty set means
+			// no targets are on the page yet (for example still suspended).
+			availableIds
 				? labelledItems.filter((item) => availableIds.has(item.id))
 				: labelledItems,
 		[availableIds, labelledItems],

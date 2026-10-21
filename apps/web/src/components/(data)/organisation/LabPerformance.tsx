@@ -99,7 +99,7 @@ export default async function LabPerformance({
 									// only compare bars within the same unit as the leader.
 									const comparable = panel.id !== "usage" || model.weekly_usage_unit === panel.leaderUnit;
 									const max = panel.max;
-									const width = comparable && max > 0 ? Math.max(4, (value / max) * 100) : 0;
+									const width = comparable && max > 0 && value > 0 ? Math.max(4, (value / max) * 100) : 0;
 									return (
 										<Link
 											key={model.model_id}
