@@ -427,12 +427,20 @@ export function pcm16Base64DurationMs(base64: string, sampleRate: number): numbe
 export function resolveRealtimeFinalCostNanos(args: {
 	auth: Pick<RealtimeAuthContext, "internal">;
 	finalCostNanos?: number | null;
+	providerCostNanos?: number | null;
 	pricedCostNanos: number;
 }): number {
 	if (args.auth.internal === true && args.finalCostNanos != null) {
 		return Math.max(0, Math.round(args.finalCostNanos));
 	}
-	return Math.max(0, Math.round(args.pricedCostNanos));
+	const priced = Math.max(0, Math.round(args.pricedCostNanos));
+	// A provider-reported cost may cover only part of what the provider bills
+	// (for example per-response tokens on a duration-billed session), so it can
+	// raise the charge but never lower it.
+	if (args.auth.internal === true && args.providerCostNanos != null) {
+		return Math.max(priced, Math.round(args.providerCostNanos));
+	}
+	return priced;
 }
 
 export function assertRealtimeSettlementAuthority(auth: Pick<RealtimeAuthContext, "internal">) {
@@ -1259,6 +1267,8 @@ export async function settleRealtimeSession(args: {
 	status?: RealtimeTerminalStatus;
 	usage?: Record<string, unknown>;
 	finalCostNanos?: number | null;
+	/** Internal relay only: cost the provider reported; never charges less than the priced usage. */
+	providerCostNanos?: number | null;
 	disconnectReason?: string | null;
 	errorCode?: string | null;
 	errorMessage?: string | null;
@@ -1310,6 +1320,7 @@ export async function settleRealtimeSession(args: {
 	const costNanos = live ? pricedTotalNanos(pricedUsage) : resolveRealtimeFinalCostNanos({
 		auth: args.auth,
 		finalCostNanos: args.finalCostNanos,
+		providerCostNanos: args.providerCostNanos,
 		pricedCostNanos: pricedTotalNanos(pricedUsage),
 	});
 	const lines = pricingLines(pricedUsage);

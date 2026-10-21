@@ -136,6 +136,24 @@ describe("realtime voice billing simulation", () => {
 		})).toBe(0);
 	});
 
+	it("lets a provider-reported cost raise but never lower the priced cost", () => {
+		expect(resolveRealtimeFinalCostNanos({
+			auth: { internal: true },
+			providerCostNanos: 10_000_000,
+			pricedCostNanos: 80_000_000,
+		})).toBe(80_000_000);
+		expect(resolveRealtimeFinalCostNanos({
+			auth: { internal: true },
+			providerCostNanos: 95_000_000,
+			pricedCostNanos: 80_000_000,
+		})).toBe(95_000_000);
+		expect(resolveRealtimeFinalCostNanos({
+			auth: { internal: false },
+			providerCostNanos: 1,
+			pricedCostNanos: 80_000_000,
+		})).toBe(80_000_000);
+	});
+
 	it("only allows internal workers to settle realtime sessions", () => {
 		expect(() => assertRealtimeSettlementAuthority({ internal: false }))
 			.toThrow("realtime_settlement_internal_only");
