@@ -227,6 +227,22 @@ function buildPayload(request: AgentModelRequest<any>, options: GatewayAgentClie
 	};
 }
 
+/**
+ * A failure after the stream started. That is the gateway's `error` frame (`{ error: { message } }`,
+ * named only on its `event:` line, so untyped here unless the client adds the type), a Responses
+ * `error` event, or `response.failed`. The HTTP status was already 200, so it becomes a 502.
+ */
+function streamFailure(chunk: Record<string, unknown>, eventType: string): AgentGatewayError | null {
+	const failed = eventType === "response.failed";
+	if (!failed && eventType !== "error" && !(eventType === "" && chunk.error !== undefined)) return null;
+	const raw = failed ? (chunk.response as Record<string, unknown> | undefined)?.error : chunk.error ?? chunk;
+	const error = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+	const text = (value: unknown) => typeof value === "string" && value.trim() ? value : undefined;
+	const message = text(error.message) ?? text(chunk.message) ?? "The gateway stream failed";
+	const code = text(error.code) ?? text(chunk.code) ?? "stream_error";
+	return new AgentGatewayError({ status: 502, statusText: "Bad Gateway", body: { error: code, reason: code, message }, message });
+}
+
 async function* streamEvents(client: Phaseo, request: AgentModelRequest<any>, options: GatewayAgentClientOptions): AsyncGenerator<AgentModelStreamEvent> {
 	const payload = buildPayload(request, options, true);
 	const response: ResponsesResponse | AsyncGenerator<any> = request.signal
@@ -239,6 +255,8 @@ async function* streamEvents(client: Phaseo, request: AgentModelRequest<any>, op
 	let text = "";
 	for await (const chunk of response as AsyncGenerator<Record<string, unknown>>) {
 		const eventType = String(chunk.type ?? "");
+		const failure = streamFailure(chunk, eventType);
+		if (failure) throw failure;
 		// Only text and reasoning deltas are answer text. Tool-call argument deltas are not, and
 		// `.done` events repeat what their deltas already sent. Untyped chunks keep the old fallback.
 		const delta = typeof chunk.delta === "string" ? chunk.delta : !eventType && typeof chunk.text === "string" ? chunk.text : "";
@@ -298,6 +316,7 @@ export function createGatewayAgentClient(
 			try {
 				yield* streamEvents(client, request, options);
 			} catch (error) {
+				if (error instanceof AgentGatewayError) throw error;
 				throw AgentGatewayError.fromUnknown(error) ?? error;
 			}
 		},

@@ -609,6 +609,45 @@ describe("createGatewayAgentClient", () => {
 		expect(events.at(-1)).toMatchObject({ type: "response.completed" });
 	});
 
+	it("fails a stream that reports an error after it started, instead of completing with partial text", async () => {
+		const failures: Array<[Record<string, unknown>, string, string]> = [
+			// The gateway's own frame: named only on its event line, so untyped here.
+			[{ error: { message: "Provider stream ended early" } }, "stream_error", "Provider stream ended early"],
+			[{ type: "error", code: "rate_limit_exceeded", message: "Slow down" }, "rate_limit_exceeded", "Slow down"],
+			[{ type: "response.failed", response: { id: "resp_failed", error: { code: "server_error", message: "Upstream failed" } } }, "server_error", "Upstream failed"],
+		];
+		for (const [frame, code, message] of failures) {
+			async function* frames() {
+				yield { type: "response.output_text.delta", delta: "Partial " };
+				yield frame;
+				yield { type: "response.output_text.delta", delta: "never sent" };
+			}
+			const client = createGatewayAgentClient({ client: { responses: { create: vi.fn(async () => frames()) } } as any });
+			const deltas: string[] = [];
+			let caught: unknown;
+			try {
+				for await (const event of client.stream!({ agentId: "failing", messages: [{ role: "user", content: "Hi" }], tools: [], context: undefined })) {
+					if (event.type === "response.output_text.delta") deltas.push(event.delta);
+				}
+			} catch (error) {
+				caught = error;
+			}
+			expect(caught, code).toBeInstanceOf(AgentGatewayError);
+			expect(caught, code).toMatchObject({ status: 502, reason: code, message });
+			expect(deltas, code).toEqual(["Partial "]);
+		}
+	});
+
+	it("fails the agent run when its stream reports an error", async () => {
+		async function* frames() {
+			yield { type: "response.output_text.delta", delta: "Partial " };
+			yield { error: { message: "Provider stream ended early" } };
+		}
+		const client = createGatewayAgentClient({ client: { responses: { create: vi.fn(async () => frames()) } } as any });
+		const stream = createAgent({ id: "failing-run", retry: { maxRetries: 0 } } as any).stream({ input: "Hi", client });
+		await expect(Promise.resolve(stream)).rejects.toMatchObject({ status: 502, message: "Provider stream ended early" });
+	});
+
 	it("keeps text from untyped chunks", async () => {
 		async function* frames() {
 			yield { delta: "Hello" };

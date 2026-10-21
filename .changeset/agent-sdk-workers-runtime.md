@@ -14,3 +14,5 @@ Gateway HTTP failures of a streamed turn are now `AgentGatewayError`s with their
 A failed `agent.stream()` no longer leaves an unhandled promise rejection when the caller reads only a stream and never awaits the result. A resume that is missing a decision now fails before it runs any of the approved tools.
 
 `@phaseo/sdk` has a new `modelLifecycleChecks` option (default `true`). Set it to `false` to skip the `GET /models` lookup before a model's first request. Concurrent first requests for a model now share one lookup. The Agent SDK's gateway client turns the lookup off unless `clientOptions.modelLifecycleChecks` is `true`, so each new client no longer sends an extra `GET /models`. Retired models are still refused, by the gateway, with an `AgentGatewayError`.
+
+A stream that reports an error after it started (the gateway's `error` frame, a Responses `error` event or `response.failed`) now fails the run with a 502 `AgentGatewayError`, instead of completing with partial text.
