@@ -32,8 +32,8 @@ const storage = jest.requireMock<{ kv: { setItem: jest.Mock } }>("@/lib/storage"
 const motorModule = jest.requireMock<{ module: { capabilities: jest.Mock; pulse: jest.Mock } }>("expo").module;
 // Loaded after the mocks.
 const {
-  ANDROID_HAPTICS, ANDROID_PULSES, IOS_HAPTICS, MIN_GAP_MS, STREAM_TICK_MS, androidHaptic, androidRoute, haptic, hapticsStore, motorCapabilities, play,
-  setHapticsEnabled, shouldPlay, streamTick,
+  ANDROID_HAPTICS, ANDROID_PULSES, IOS_HAPTICS, MIN_GAP_MS, PULSE_MIN_GAP_MS, PULSE_STREAM_TICK_MS, STREAM_TICK_MS, androidHaptic, androidRoute, gapsFor,
+  haptic, hapticsStore, motorCapabilities, play, setHapticsEnabled, shouldPlay, streamTick,
 } = jest.requireActual<typeof import("./haptics")>("./haptics");
 type Motor = NonNullable<ReturnType<typeof motorCapabilities>>;
 /** A Pixel-like motor with every effect, and the Galaxy A53's, which reports none. */
@@ -99,16 +99,17 @@ describe("touch pulses", () => {
       expect(timings).toHaveLength(amplitudes.length);
       expect(timings[0]).toBe(0);
       expect(timings.length % 2).toBe(0);
-      // On segments are long enough for a slow motor to be felt, and the whole thing is over in a fifth of a second.
+      // On segments are at least the system's own touch pulse on those phones (shorter ones aren't felt), and the
+      // whole thing is over in a fifth of a second.
       for (let index = 1; index < timings.length; index += 2) {
-        expect(timings[index]).toBeGreaterThanOrEqual(20);
+        expect(timings[index]).toBeGreaterThanOrEqual(45);
         expect(amplitudes[index]).toBeGreaterThan(0);
         expect(amplitudes[index]).toBeLessThanOrEqual(255);
       }
       for (let index = 0; index < timings.length; index += 2) expect(amplitudes[index]).toBe(0);
       expect(timings.reduce((sum, ms) => sum + ms, 0)).toBeLessThanOrEqual(200);
     }
-    // The system's long press on those phones is one 45 ms pulse; a tick is the lightest.
+    // The system's long press (and every other touch haptic) on those phones is one 45 ms pulse; a tick is the lightest.
     expect(ANDROID_PULSES.longPress.timings).toEqual([0, 45]);
     expect(Math.min(...KINDS.map((kind) => ANDROID_PULSES[kind].timings[1]!))).toBe(ANDROID_PULSES.tick.timings[1]);
   });
@@ -137,7 +138,7 @@ describe("play", () => {
 
   it("plays touch pulses on a motor without effects, like the Galaxy A53's", () => {
     play("toggleOn", "android", 36, BARE);
-    expect(motorModule.pulse).toHaveBeenCalledWith([0, 32], [0, 200]);
+    expect(motorModule.pulse).toHaveBeenCalledWith([0, 50], [0, 200]);
     play("success", "android", 36, BARE);
     expect(motorModule.pulse).toHaveBeenLastCalledWith([...ANDROID_PULSES.success.timings], [...ANDROID_PULSES.success.amplitudes]);
     expect(native.performAndroidHapticsAsync).not.toHaveBeenCalled();
@@ -245,6 +246,19 @@ describe("streamTick", () => {
     setHapticsEnabled(false);
     streamTick();
     expect(playedCount()).toBe(0);
+  });
+
+  it("spaces touch pulses further apart, so 45 ms taps don't run into a buzz", () => {
+    const pulses = { haptic: PULSE_MIN_GAP_MS, stream: PULSE_STREAM_TICK_MS };
+    const effects = { haptic: MIN_GAP_MS, stream: STREAM_TICK_MS };
+    expect(gapsFor("android", BARE)).toEqual(pulses);
+    expect(gapsFor("android", FULL)).toEqual(effects);
+    expect(gapsFor("android", null)).toEqual(effects);
+    expect(gapsFor("ios", null)).toEqual(effects);
+    // Every one-pulse kind ends before the next can start, and an answer's ticks buzz about a tenth of the time.
+    for (const kind of KINDS) if (ANDROID_PULSES[kind].timings.length === 2) expect(ANDROID_PULSES[kind].timings[1]).toBeLessThan(PULSE_MIN_GAP_MS);
+    expect(ANDROID_PULSES.tick.timings[1]! / PULSE_STREAM_TICK_MS).toBeLessThanOrEqual(0.12);
+    expect(shouldPlay(100, 100 + MIN_GAP_MS, PULSE_MIN_GAP_MS)).toBe(false);
   });
 });
 

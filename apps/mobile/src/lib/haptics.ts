@@ -20,8 +20,8 @@ import { createStore } from "@/lib/store";
  * Haptics mark moments, not every tap: a choice made, a switch flipped, a long press caught, a message sent, its answer
  * streaming in (`streamTick`), an outcome (done, copied, saved, failed), and a few physical ones in the version art.
  * Plain buttons and navigation stay quiet, as they do in the system's own apps and popular chat apps. Two haptics never
- * play within MIN_GAP_MS of each other, so a burst of events (a scrub across a chart, logos colliding, a toast after a
- * copy) can't turn into a buzz.
+ * play within MIN_GAP_MS of each other (PULSE_MIN_GAP_MS with touch pulses), so a burst of events (a scrub across a
+ * chart, logos colliding, a toast after a copy) can't turn into a buzz.
  */
 
 export type HapticKind =
@@ -72,23 +72,24 @@ export const ANDROID_HAPTICS: Record<HapticKind, readonly (readonly [Haptics.And
 
 /**
  * Each kind as touch pulses, for phones whose motor can't play the system's effects: on and off times (ms, starting
- * with the wait before the first pulse) and each segment's strength (0 to 255, used where the motor can vary it). The
- * system's own long press on those phones is one 45 ms pulse; taps are shorter, but at least 20 ms: a slow motor
- * barely spins up in less, so shorter taps were hard to feel.
+ * with the wait before the first pulse) and each segment's strength (0 to 255, used where the motor can vary it). On
+ * those phones the system plays every touch haptic as one 45 ms pulse, for its keyboard, launcher and every other app,
+ * and shorter pulses aren't felt (20 to 26 ms went unnoticed on a Galaxy A53). So no pulse is shorter: kinds differ by
+ * being longer or doubled.
  */
 export const ANDROID_PULSES: Record<HapticKind, { timings: readonly number[]; amplitudes: readonly number[] }> = {
-  selection: { timings: [0, 26], amplitudes: [0, 140] },
-  tick: { timings: [0, 20], amplitudes: [0, 110] },
-  toggleOn: { timings: [0, 32], amplitudes: [0, 200] },
-  toggleOff: { timings: [0, 26], amplitudes: [0, 150] },
+  selection: { timings: [0, 45], amplitudes: [0, 140] },
+  tick: { timings: [0, 45], amplitudes: [0, 110] },
+  toggleOn: { timings: [0, 50], amplitudes: [0, 200] },
+  toggleOff: { timings: [0, 45], amplitudes: [0, 150] },
   longPress: { timings: [0, 45], amplitudes: [0, 210] },
-  press: { timings: [0, 30], amplitudes: [0, 180] },
-  success: { timings: [0, 24, 90, 36], amplitudes: [0, 170, 0, 240] },
-  error: { timings: [0, 45, 70, 45], amplitudes: [0, 240, 0, 240] },
-  lift: { timings: [0, 40], amplitudes: [0, 200] },
-  drop: { timings: [0, 26], amplitudes: [0, 150] },
-  bump: { timings: [0, 22], amplitudes: [0, 150] },
-  thud: { timings: [0, 50], amplitudes: [0, 255] },
+  press: { timings: [0, 45], amplitudes: [0, 180] },
+  success: { timings: [0, 45, 80, 45], amplitudes: [0, 170, 0, 240] },
+  error: { timings: [0, 60, 60, 60], amplitudes: [0, 240, 0, 240] },
+  lift: { timings: [0, 55], amplitudes: [0, 200] },
+  drop: { timings: [0, 45], amplitudes: [0, 150] },
+  bump: { timings: [0, 45], amplitudes: [0, 150] },
+  thud: { timings: [0, 65], amplitudes: [0, 255] },
 };
 
 type IosHaptic =
@@ -156,10 +157,25 @@ export function motorCapabilities(): MotorCapabilities | null {
 
 /** No two haptics closer than this (ms): faster than any one gesture needs, slow enough that bursts stay ticks. */
 export const MIN_GAP_MS = 35;
+/** Streaming ticks come at most this often (ms): a light patter while text arrives, not a buzz. */
+export const STREAM_TICK_MS = 120;
+/**
+ * The same two for touch pulses, which last 45 ms or more: any closer, and a scrub's or an answer's taps run into one
+ * buzz.
+ */
+export const PULSE_MIN_GAP_MS = 80;
+export const PULSE_STREAM_TICK_MS = 400;
 
-/** Whether a haptic at `now` plays, given when the last one did (null if none has). */
-export function shouldPlay(last: number | null, now: number) {
-  return last == null || now - last >= MIN_GAP_MS;
+/** The gaps (ms) between haptics and between streaming ticks, on a platform (`os`) and motor. */
+export function gapsFor(os: string, motor: MotorCapabilities | null) {
+  return os === "android" && androidRoute(motor) === "pulse"
+    ? { haptic: PULSE_MIN_GAP_MS, stream: PULSE_STREAM_TICK_MS }
+    : { haptic: MIN_GAP_MS, stream: STREAM_TICK_MS };
+}
+
+/** Whether a haptic at `now` plays, given when the last one did (null if none has) and the gap. */
+export function shouldPlay(last: number | null, now: number, gap = MIN_GAP_MS) {
+  return last == null || now - last >= gap;
 }
 
 const STORAGE_KEY = "phaseo.haptics";
@@ -205,8 +221,8 @@ export function play(kind: HapticKind, os: string, version: number, motor: Motor
   void played.catch(() => undefined);
 }
 
-const playHere = (kind: HapticKind) =>
-  play(kind, Platform.OS, Number(Platform.Version) || 0, Platform.OS === "android" ? motorCapabilities() : null);
+const motorHere = () => (Platform.OS === "android" ? motorCapabilities() : null);
+const playHere = (kind: HapticKind) => play(kind, Platform.OS, Number(Platform.Version) || 0, motorHere());
 
 let lastPlayed: number | null = null;
 
@@ -214,13 +230,11 @@ let lastPlayed: number | null = null;
 export function haptic(kind: HapticKind) {
   if (!hapticsStore.get().enabled) return;
   const now = Date.now();
-  if (!shouldPlay(lastPlayed, now)) return;
+  if (!shouldPlay(lastPlayed, now, gapsFor(Platform.OS, motorHere()).haptic)) return;
   lastPlayed = now;
   playHere(kind);
 }
 
-/** Streaming ticks come at most this often (ms): a light patter while text arrives, not a buzz. */
-export const STREAM_TICK_MS = 120;
 let lastStreamed: number | null = null;
 
 /**
@@ -231,8 +245,9 @@ let lastStreamed: number | null = null;
 export function streamTick() {
   if (!hapticsStore.get().enabled) return;
   const now = Date.now();
-  if (lastStreamed != null && now - lastStreamed < STREAM_TICK_MS) return;
-  if (!shouldPlay(lastPlayed, now)) return;
+  const gaps = gapsFor(Platform.OS, motorHere());
+  if (lastStreamed != null && now - lastStreamed < gaps.stream) return;
+  if (!shouldPlay(lastPlayed, now, gaps.haptic)) return;
   lastStreamed = now;
   playHere("tick");
 }
