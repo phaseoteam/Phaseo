@@ -160,6 +160,9 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("models")]
 	public List<string>? Models { get; set; }
 
+	[JsonPropertyName("plugins")]
+	public List<object>? Plugins { get; set; }
+
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
@@ -1414,6 +1417,9 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("parallel_tool_calls")]
 	public bool? ParallelToolCalls { get; set; }
+
+	[JsonPropertyName("plugins")]
+	public List<object>? Plugins { get; set; }
 
 	[JsonPropertyName("prediction")]
 	public Dictionary<string, object>? Prediction { get; set; }
@@ -3584,6 +3590,8 @@ public sealed class GatewayObservabilityEventResponse
 	public Dictionary<string, object> Data { get; set; }
 
 }
+
+public sealed class GatewayPlugin { }
 
 public sealed class GatewayPricing
 {
@@ -6002,6 +6010,22 @@ public sealed class OpenAIReasoningConfig
 
 }
 
+public sealed class OpenAIWebSearchToolDefinition
+{
+	[JsonPropertyName("filters")]
+	public Dictionary<string, object>? Filters { get; set; }
+
+	[JsonPropertyName("search_context_size")]
+	public string? SearchContextSize { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("user_location")]
+	public Dictionary<string, object>? UserLocation { get; set; }
+
+}
+
 public sealed class OrganisationId { }
 
 public sealed class OrganisationIdList { }
@@ -7281,6 +7305,19 @@ public sealed class RerankResult
 
 }
 
+public sealed class ResponseHealingPlugin
+{
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
+}
+
 public sealed class ResponsesInputItem
 {
 	[JsonPropertyName("content")]
@@ -7440,6 +7477,9 @@ public sealed class ResponsesRequest
 
 	[JsonPropertyName("parallel_tool_calls")]
 	public bool? ParallelToolCalls { get; set; }
+
+	[JsonPropertyName("plugins")]
+	public List<object>? Plugins { get; set; }
 
 	[JsonPropertyName("previous_response_id")]
 	public string? PreviousResponseId { get; set; }
@@ -8196,6 +8236,31 @@ public sealed class VideoOutputConfig
 
 }
 
+public sealed class WebFetchPlugin
+{
+	[JsonPropertyName("allowed_domains")]
+	public List<string>? AllowedDomains { get; set; }
+
+	[JsonPropertyName("blocked_domains")]
+	public List<string>? BlockedDomains { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("engine")]
+	public string? Engine { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("max_content_tokens")]
+	public long? MaxContentTokens { get; set; }
+
+	[JsonPropertyName("max_uses")]
+	public long? MaxUses { get; set; }
+
+}
+
 public sealed class WebhookEndpoint
 {
 	[JsonPropertyName("createdAt")]
@@ -8356,6 +8421,34 @@ public sealed class WebhookEndpointUpdateRequest
 
 	[JsonPropertyName("url")]
 	public string? Url { get; set; }
+
+}
+
+public sealed class WebSearchPlugin
+{
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("engine")]
+	public string? Engine { get; set; }
+
+	[JsonPropertyName("exclude_domains")]
+	public List<string>? ExcludeDomains { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("include_domains")]
+	public List<string>? IncludeDomains { get; set; }
+
+	[JsonPropertyName("max_results")]
+	public long? MaxResults { get; set; }
+
+	[JsonPropertyName("max_uses")]
+	public long? MaxUses { get; set; }
+
+	[JsonPropertyName("search_context_size")]
+	public string? SearchContextSize { get; set; }
 
 }
 

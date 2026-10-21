@@ -33,6 +33,8 @@ import {
 } from "./testingMode";
 import { normalizeGatewayPlugins, resolveGatewayPlugins } from "@/plugins/normalize";
 import { findUnknownGatewayPluginIds } from "@/plugins/registry";
+import { applyServerToolPlugins } from "@/plugins/server-tool-plugins";
+import { resolveHostedTools } from "./hostedTools";
 import { validateSynchronousTextServiceTierRequest } from "./serviceTierValidation";
 import { withoutNullTextParams } from "./textParamPolicy";
 import { normalizeLegacySpeedModel } from "./legacySpeedModels";
@@ -988,6 +990,32 @@ export async function beforeRequest(
             }),
         };
     }
+    // The web and web-fetch plugins become server tools here, so routing and
+    // execution treat them as the client's own phaseo:web_search / phaseo:web_fetch.
+    const serverToolPlugins = applyServerToolPlugins({
+        endpoint,
+        body: mergedBody,
+        plugins: resolvedPlugins,
+    });
+    if (serverToolPlugins.ok === false) {
+        return {
+            ok: false,
+            response: err("validation_error", {
+                details: [{
+                    message: `Invalid ${serverToolPlugins.pluginId} plugin option: ${serverToolPlugins.message}`,
+                    path: ["plugins", serverToolPlugins.field],
+                    keyword: "invalid_gateway_plugin_config",
+                    params: {
+                        pluginId: serverToolPlugins.pluginId,
+                        field: serverToolPlugins.field,
+                    },
+                }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
+    mergedBody = serverToolPlugins.body;
     mergedBody = applyWorkspacePrivacyRoutingDefaults(
         mergedBody,
         context.teamSettings,
@@ -1282,7 +1310,11 @@ export async function beforeRequest(
             workspaceId,
             providers: presetFilteredProviders,
             model: resolvedModel || model,
-			requiredParams: requiredExecutionParams(endpoint),
+			requiredParams: [
+				...requiredExecutionParams(endpoint),
+				// Plugin server tools are model function tools: prefer providers that take tools.
+				...(serverToolPlugins.addedTools.length > 0 ? ["tools"] : []),
+			],
         })
     );
     if (!capabilityValidation.ok) return capabilityValidation as { ok: false; response: Response };
@@ -1420,6 +1452,39 @@ export async function beforeRequest(
 		};
 	}
 	enabledProviders = quantizationCandidates.providers;
+	if (enabledProviders.length > 0) {
+		const hostedTools = resolveHostedTools({
+			endpoint,
+			body: mergedBody,
+			providers: enabledProviders,
+			model: resolvedModel || model,
+		});
+		if (hostedTools.ok === false) {
+			const names = hostedTools.unsupportedTools.map((tool) => tool.type);
+			return {
+				ok: false,
+				response: err("validation_error", {
+					reason: "unsupported_hosted_tool",
+					description: `Model "${resolvedModel || model}" has no provider that can run the hosted tool${names.length > 1 ? "s" : ""} ${names.join(", ")}. Remove ${names.length > 1 ? "them" : "it"}, or choose a model served on OpenAI's Responses API.`,
+					error_type: "user",
+					error_origin: "user",
+					details: hostedTools.unsupportedTools.map((tool) => ({
+						message: `Hosted tool "${tool.type}" cannot run on the providers serving this model.`,
+						path: ["tools", tool.index],
+						keyword: "unsupported_hosted_tool",
+						params: { tool: tool.type, model: resolvedModel || model },
+					})),
+					request_id: requestId,
+					workspace_id: workspaceId,
+				}),
+			};
+		}
+		for (const providerId of hostedTools.droppedProviderIds) {
+			providerEnablementDropped.push({ providerId, reason: "hosted_tool_unsupported" });
+		}
+		enabledProviders = hostedTools.providers;
+		mergedBody = hostedTools.body;
+	}
     const providerEnablementDiagnostics: ProviderEnablementDiagnostics = {
         capability: normalizedCapability,
         providersBefore: filteredProviders.map((provider) => provider.providerId),

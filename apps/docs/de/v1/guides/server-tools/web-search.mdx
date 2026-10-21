@@ -82,7 +82,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `firecrawl` | Verwendet Firecrawl Search, wenn es konfiguriert ist. |
 | `perplexity` | Verwendet bei entsprechender Konfiguration die offizielle Perplexity Search API. Unterstützt sortierte Ergebnisse, `search_context_size`, regionale Suche anhand von `user_location.country` sowie erlaubte oder ausgeschlossene Domains. |
 | `tinyfish` | Nutzt TinyFish Search, wenn `TINYFISH_API_KEY` konfiguriert ist. Unterstützt lokalisierte, paginierte und sortierte Ergebnisse und übersetzt `allowed_domains` / `excluded_domains` in Suchoperatoren. TinyFish Search liefert keinen vollständigen Seitentext; nutze bei Bedarf `phaseo:web_fetch`. |
-| `native` | Wandelt die Deklaration vor dem Aufruf des vorgelagerten Modells in ein natives Websuch-Tool des Providers um, sofern die Anfrageoberfläche dies unterstützt. |
+| `native` | Wandelt die Deklaration vor dem Aufruf des vorgelagerten Modells in ein natives Websuch-Tool des Providers um, sofern die Anfrageoberfläche dies unterstützt. Bei Chat Completions und Responses geht die Anfrage nur an Provider, die die Websuche selbst ausführen; bedient keiner von ihnen das Modell, führt Phaseo stattdessen seine Standardsuchmaschine aus und rechnet diese Suchen als verwaltete Suchen ab. |
 
 Verwende `engine: "native"` nur in der Tool-Deklaration. Versucht ein Modell, `engine: "native"` in einem bereits ausgegebenen Gateway-Suchaufruf zu übergeben, gibt Phaseo einen Tool-Fehler zurück, da native Tools vor dem Senden der vorgelagerten Anfrage ausgewählt werden müssen.
 

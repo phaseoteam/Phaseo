@@ -217,6 +217,14 @@ export function irToOpenAIResponses(
 
 	// Convert IR messages to Responses API input items
 	for (const msg of ir.messages) {
+		// Input items the IR keeps verbatim go back as they came, in place. The
+		// execute stage has already removed them for providers other than OpenAI.
+		if (msg.role !== "tool" && msg.content.some((part) => part.type === "responses_item")) {
+			for (const part of msg.content) {
+				if (part.type === "responses_item") inputItems.push({ ...part.item });
+			}
+			continue;
+		}
 		if (msg.role === "system") {
 			inputItems.push({
 				type: "message",

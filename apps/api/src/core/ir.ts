@@ -75,6 +75,16 @@ export type IRContentPart =
 	| {
 		type: "provider_block";
 		block: Record<string, any>;
+	}
+	| {
+		// An OpenAI Responses input item the IR has no shape for (shell_call,
+		// computer_call_output, mcp_*, compaction, item_reference, hosted
+		// *_call items, ...), kept verbatim. The decoder gives each one its own
+		// message so its position in the conversation survives. Only OpenAI's
+		// Responses executor sends it; the execute stage removes it for every
+		// other provider and reports the removal (pipeline/execute/responsesItems.ts).
+		type: "responses_item";
+		item: Record<string, any>;
 	};
 
 // ============================================================================

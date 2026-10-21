@@ -117,6 +117,8 @@ class AnthropicMessagesRequest
 	public $model;
 	/** @var array|null */
 	public $models;
+	/** @var array|null */
+	public $plugins;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -1015,6 +1017,8 @@ class ChatCompletionsRequest
 	public $models;
 	/** @var bool|null */
 	public $parallel_tool_calls;
+	/** @var array|null */
+	public $plugins;
 	/** @var array<string, mixed>|null */
 	public $prediction;
 	/** @var float|null */
@@ -2620,6 +2624,8 @@ class GatewayObservabilityEventResponse
 	/** @var array<string, mixed> */
 	public $data;
 }
+
+class GatewayPlugin { }
 
 class GatewayPricing
 {
@@ -4371,6 +4377,18 @@ class OpenAIReasoningConfig
 	public $summary;
 }
 
+class OpenAIWebSearchToolDefinition
+{
+	/** @var array<string, mixed>|null */
+	public $filters;
+	/** @var string|null */
+	public $search_context_size;
+	/** @var string */
+	public $type;
+	/** @var array<string, mixed>|null */
+	public $user_location;
+}
+
 class OrganisationId { }
 
 class OrganisationIdList { }
@@ -5315,6 +5333,16 @@ class RerankResult
 	public $relevance_score;
 }
 
+class ResponseHealingPlugin
+{
+	/** @var bool|null */
+	public $enabled;
+	/** @var string */
+	public $id;
+	/** @var string|null */
+	public $mode;
+}
+
 class ResponsesInputItem
 {
 	/** @var string|array|array<string, mixed>|null */
@@ -5431,6 +5459,8 @@ class ResponsesRequest
 	public $models;
 	/** @var bool|null */
 	public $parallel_tool_calls;
+	/** @var array|null */
+	public $plugins;
 	/** @var string|null */
 	public $previous_response_id;
 	/** @var string|null */
@@ -5975,6 +6005,24 @@ class VideoOutputConfig
 	public $access;
 }
 
+class WebFetchPlugin
+{
+	/** @var array|null */
+	public $allowed_domains;
+	/** @var array|null */
+	public $blocked_domains;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $engine;
+	/** @var string */
+	public $id;
+	/** @var int|null */
+	public $max_content_tokens;
+	/** @var int|null */
+	public $max_uses;
+}
+
 class WebhookEndpoint
 {
 	/** @var string|null */
@@ -6093,6 +6141,26 @@ class WebhookEndpointUpdateRequest
 	public $status;
 	/** @var string|null */
 	public $url;
+}
+
+class WebSearchPlugin
+{
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $engine;
+	/** @var array|null */
+	public $exclude_domains;
+	/** @var string */
+	public $id;
+	/** @var array|null */
+	public $include_domains;
+	/** @var int|null */
+	public $max_results;
+	/** @var int|null */
+	public $max_uses;
+	/** @var string|null */
+	public $search_context_size;
 }
 
 class Workspace

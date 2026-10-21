@@ -473,7 +473,8 @@ export type ProviderEnablementDiagnostics = {
             | "capability_disabled"
             | "adapter_missing"
             | "pricing_missing"
-            | "service_tier_unsupported";
+            | "service_tier_unsupported"
+            | "hosted_tool_unsupported";
     }>;
 };
 

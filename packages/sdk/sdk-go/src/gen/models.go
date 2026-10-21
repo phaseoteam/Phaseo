@@ -64,6 +64,7 @@ type AnthropicMessagesRequest struct {
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
+	Plugins *[]interface{} `json:"plugins,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -1238,6 +1239,7 @@ type ChatCompletionsRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
+	Plugins *[]interface{} `json:"plugins,omitempty"`
 	Prediction *map[string]interface{} `json:"prediction,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
@@ -2188,6 +2190,8 @@ type GatewayObservabilityEventListResponse struct {
 type GatewayObservabilityEventResponse struct {
 	Data map[string]interface{} `json:"data"`
 }
+
+type GatewayPlugin = interface{}
 
 type GatewayPricing struct {
 	Meters map[string]interface{} `json:"meters"`
@@ -3896,6 +3900,13 @@ type OpenAIReasoningConfig struct {
 	Summary *string `json:"summary,omitempty"`
 }
 
+type OpenAIWebSearchToolDefinition struct {
+	Filters *map[string]interface{} `json:"filters,omitempty"`
+	SearchContextSize *string `json:"search_context_size,omitempty"`
+	Type string `json:"type"`
+	UserLocation *map[string]interface{} `json:"user_location,omitempty"`
+}
+
 type OrganisationId string
 
 const (
@@ -4594,6 +4605,12 @@ type RerankResult struct {
 	RelevanceScore *float64 `json:"relevance_score,omitempty"`
 }
 
+type ResponseHealingPlugin struct {
+	Enabled *bool `json:"enabled,omitempty"`
+	Id string `json:"id"`
+	Mode *string `json:"mode,omitempty"`
+}
+
 type ResponsesInputItem struct {
 	Content interface{} `json:"content,omitempty"`
 	EncryptedContent *string `json:"encrypted_content,omitempty"`
@@ -4659,6 +4676,7 @@ type ResponsesRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
+	Plugins *[]interface{} `json:"plugins,omitempty"`
 	PreviousResponseId *string `json:"previous_response_id,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	PromptCacheOptions *map[string]interface{} `json:"prompt_cache_options,omitempty"`
@@ -4964,6 +4982,16 @@ type VideoOutputConfig struct {
 	Access *string `json:"access,omitempty"`
 }
 
+type WebFetchPlugin struct {
+	AllowedDomains *[]string `json:"allowed_domains,omitempty"`
+	BlockedDomains *[]string `json:"blocked_domains,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+	Engine *string `json:"engine,omitempty"`
+	Id string `json:"id"`
+	MaxContentTokens *int `json:"max_content_tokens,omitempty"`
+	MaxUses *int `json:"max_uses,omitempty"`
+}
+
 type WebhookEndpoint struct {
 	CreatedAt *string `json:"createdAt,omitempty"`
 	CreatedBy *string `json:"createdBy,omitempty"`
@@ -5056,6 +5084,17 @@ type WebhookEndpointUpdateRequest struct {
 	Name *string `json:"name,omitempty"`
 	Status *string `json:"status,omitempty"`
 	Url *string `json:"url,omitempty"`
+}
+
+type WebSearchPlugin struct {
+	Enabled *bool `json:"enabled,omitempty"`
+	Engine *string `json:"engine,omitempty"`
+	ExcludeDomains *[]string `json:"exclude_domains,omitempty"`
+	Id string `json:"id"`
+	IncludeDomains *[]string `json:"include_domains,omitempty"`
+	MaxResults *int `json:"max_results,omitempty"`
+	MaxUses *int `json:"max_uses,omitempty"`
+	SearchContextSize *string `json:"search_context_size,omitempty"`
 }
 
 type Workspace struct {

@@ -353,6 +353,35 @@ describe("openai text executor HTTP mode", () => {
 		]);
 	});
 
+	it("routes Chat Completions hosted web search through OpenAI Responses", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_hosted_tool_1",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5-nano",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		const result = await executor({
+			...buildArgs({
+				tools: [{ name: "web_search", type: "web_search", parameters: {}, raw: { type: "web_search", search_context_size: "low" } }],
+			}),
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
+		expect(mock.calls[0]?.bodyJson?.tools).toEqual([{ type: "web_search", search_context_size: "low" }]);
+	});
+
 	it("streams over HTTP responses endpoint when tools are present", async () => {
 		const streamBody = [
 			"event: response.created",

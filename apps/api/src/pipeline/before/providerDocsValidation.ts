@@ -7,6 +7,7 @@ import type { ProviderCandidate } from "./types";
 import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
 import { claudeRequestIssues } from "@core/claudeRequestValidation";
 import { decodeProtocol } from "@protocols/index";
+import { dropVerbatimResponsesItems } from "@pipeline/execute/responsesItems";
 import { err } from "./http";
 
 type ValidationResult =
@@ -26,7 +27,8 @@ export function validateProviderDocsCompliance(args: {
 		const protocol = args.endpoint === "messages" ? "anthropic.messages" : args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions";
 		const ir = decodeProtocol(protocol, args.body);
 		const failures = args.providers.map(provider => ({
-			provider, issues: claudeRequestIssues(ir, args.model, provider.providerId),
+			// Checked as the provider will receive it, without input items only OpenAI takes.
+			provider, issues: claudeRequestIssues(dropVerbatimResponsesItems(ir, provider.providerId).ir, args.model, provider.providerId),
 		}));
 		const compatible = failures.filter(row => row.issues.length === 0);
 		if (compatible.length) return { ok: true, providers: compatible.map(row => row.provider), body: args.body };

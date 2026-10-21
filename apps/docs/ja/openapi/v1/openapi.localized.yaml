@@ -9643,6 +9643,11 @@ components:
           default: true
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
+        plugins:
+          type: array
+          description: このリクエストで使うゲートウェイプラグイン。`web` は任意のモデルに Web 検索を、`web-fetch` はページの取得を追加します。`response-healing` はストリーミングしない構造化レスポンスの不正な JSON を修復します。ワークスペースとプリセットの既定値はこのリストとマージされます。不明なプラグイン ID には 400 `unknown_gateway_plugin` が返ります。
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         logprobs:
           type: boolean
           default: false
@@ -10170,6 +10175,147 @@ components:
           minimum: 1
           maximum: 100000
       additionalProperties: false
+    GatewayPlugin:
+      oneOf:
+        - $ref: '#/components/schemas/WebSearchPlugin'
+        - $ref: '#/components/schemas/WebFetchPlugin'
+        - $ref: '#/components/schemas/ResponseHealingPlugin'
+      discriminator:
+        propertyName: id
+        mapping:
+          web: '#/components/schemas/WebSearchPlugin'
+          web-fetch: '#/components/schemas/WebFetchPlugin'
+          response-healing: '#/components/schemas/ResponseHealingPlugin'
+    WebSearchPlugin:
+      type: object
+      description: リクエストにサーバーツール `phaseo:web_search` を追加し、任意のモデルが Web を検索できるようにします。リクエストの実行、検索の計数と課金は `phaseo:web_search` ツールを使った場合とまったく同じです。リクエストにすでに Web 検索ツールがある場合、プラグインは何も追加しません。その他のオプションは無視されます。
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - exa
+            - firecrawl
+            - parallel
+            - perplexity
+            - tinyfish
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 25
+        max_uses:
+          type: integer
+          minimum: 1
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        include_domains:
+          type: array
+          items:
+            type: string
+        exclude_domains:
+          type: array
+          items:
+            type: string
+    WebFetchPlugin:
+      type: object
+      description: リクエストにサーバーツール `phaseo:web_fetch` を追加し、任意のモデルが Web ページを読めるようにします。リクエストの実行、取得の計数と課金は `phaseo:web_fetch` ツールを使った場合とまったく同じです。リクエストにすでに Web 取得ツールがある場合、プラグインは何も追加しません。
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web-fetch
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - direct
+            - exa
+            - firecrawl
+            - parallel
+        max_uses:
+          type: integer
+          minimum: 1
+        max_content_tokens:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        allowed_domains:
+          type: array
+          items:
+            type: string
+        blocked_domains:
+          type: array
+          items:
+            type: string
+    ResponseHealingPlugin:
+      type: object
+      description: '`json_object` または `json_schema` の出力を指定した、ストリーミングしないレスポンスの不正な JSON を修復します。ストリームではスキップされます。'
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - response-healing
+        enabled:
+          type: boolean
+          default: true
+        mode:
+          type: string
+          enum:
+            - safe
+            - strict
+          default: safe
+    OpenAIWebSearchToolDefinition:
+      type: object
+      description: OpenAI がホストする Web 検索ツール。OpenAI、Azure OpenAI（Responses）、xAI はネイティブに実行します。プロバイダーが実行できないモデルでは、ゲートウェイが `phaseo:web_search` として実行します。`search_context_size`、`filters.allowed_domains`、`max_results`、`engine` は引き継がれ、検索は `phaseo:web_search` の検索として課金されます。その他の OpenAI ホストツール（`file_search`、`code_interpreter`、`computer_use_preview`、`mcp`、`image_generation`、`shell`、`local_shell`、`apply_patch`）は、プロバイダーが実行できないモデルでは 400 `unsupported_hosted_tool` で失敗します。
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - web_search
+            - web_search_2025_08_26
+            - web_search_preview
+            - web_search_preview_2025_03_11
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        filters:
+          type: object
+          properties:
+            allowed_domains:
+              type: array
+              items:
+                type: string
+        user_location:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
@@ -10179,6 +10325,7 @@ components:
         - $ref: '#/components/schemas/SubagentToolDefinition'
         - $ref: '#/components/schemas/FusionToolDefinition'
         - $ref: '#/components/schemas/SearchModelsToolDefinition'
+        - $ref: '#/components/schemas/OpenAIWebSearchToolDefinition'
     SubagentToolDefinition:
       type: object
       required:
@@ -10521,6 +10668,11 @@ components:
           oneOf:
             - type: object
             - type: string
+        plugins:
+          type: array
+          description: このリクエストで使うゲートウェイプラグイン。`web` は任意のモデルに Web 検索を、`web-fetch` はページの取得を追加します。`response-healing` はストリーミングしない構造化レスポンスの不正な JSON を修復します。ワークスペースとプリセットの既定値はこのリストとマージされます。不明なプラグイン ID には 400 `unknown_gateway_plugin` が返ります。
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         stream:
           type: boolean
         metadata:
@@ -10758,6 +10910,11 @@ components:
           maximum: 2
         text:
           type: object
+        plugins:
+          type: array
+          description: このリクエストで使うゲートウェイプラグイン。`web` は任意のモデルに Web 検索を、`web-fetch` はページの取得を追加します。`response-healing` はストリーミングしない構造化レスポンスの不正な JSON を修復します。ワークスペースとプリセットの既定値はこのリストとマージされます。不明なプラグイン ID には 400 `unknown_gateway_plugin` が返ります。
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
         tools:

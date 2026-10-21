@@ -797,6 +797,47 @@ describe("validateCapabilities", () => {
 		}
 	});
 
+	it("does not let require_parameters exclude providers for a hosted web search tool", () => {
+		const run = (extra: Record<string, unknown>) => {
+			const body = {
+				model: "openai/gpt-5",
+				messages: [{ role: "user", content: "news?" }],
+				tools: [{ type: "web_search" }],
+				routing: { require_parameters: true },
+				...extra,
+			};
+			return validateCapabilities({
+				endpoint: "chat.completions",
+				rawBody: body,
+				body,
+				requestId: "req_hosted_search",
+				workspaceId: "team_test",
+				providers: [
+					provider("openai", { web_search_options: {}, tools: {} }, 4096),
+					// The Reflection profile marks web_search_options unsupported.
+					provider("reflection", { tools: {} }, 4096),
+				],
+				model: "openai/gpt-5",
+			});
+		};
+
+		const hosted = run({});
+		expect(hosted.ok).toBe(true);
+		if (hosted.ok) {
+			// Native search is still preferred, but no longer required.
+			expect(hosted.requestedParams).toContain("web_search_options");
+			const stages = hosted.paramRoutingDiagnostics.filteringStages;
+			expect(stages.find((stage) => stage.stage === "param_support")?.droppedProviders).toEqual([]);
+			expect(stages.find((stage) => stage.stage === "param_preference")?.droppedProviders).toEqual(["reflection"]);
+		}
+
+		const explicit = run({ web_search_options: { search_context_size: "low" } });
+		expect(explicit.ok).toBe(true);
+		if (explicit.ok) {
+			expect(explicit.paramRoutingDiagnostics.filteringStages.find((stage) => stage.stage === "param_support")?.droppedProviders).toEqual(["reflection"]);
+		}
+	});
+
 	it("accepts the first-class routing object as a gateway field", () => {
 		const result = validateCapabilities({
 			endpoint: "responses",

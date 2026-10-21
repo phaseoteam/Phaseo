@@ -9643,6 +9643,11 @@ components:
           default: true
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
+        plugins:
+          type: array
+          description: Gateway-Plugins für diese Anfrage. `web` ergänzt jedes Modell um Websuche und `web-fetch` um das Abrufen von Seiten; `response-healing` repariert fehlerhaftes JSON in nicht gestreamten strukturierten Antworten. Standardwerte aus Workspace und Preset werden mit dieser Liste zusammengeführt. Eine unbekannte Plugin-ID liefert 400 `unknown_gateway_plugin`.
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         logprobs:
           type: boolean
           default: false
@@ -10170,6 +10175,147 @@ components:
           minimum: 1
           maximum: 100000
       additionalProperties: false
+    GatewayPlugin:
+      oneOf:
+        - $ref: '#/components/schemas/WebSearchPlugin'
+        - $ref: '#/components/schemas/WebFetchPlugin'
+        - $ref: '#/components/schemas/ResponseHealingPlugin'
+      discriminator:
+        propertyName: id
+        mapping:
+          web: '#/components/schemas/WebSearchPlugin'
+          web-fetch: '#/components/schemas/WebFetchPlugin'
+          response-healing: '#/components/schemas/ResponseHealingPlugin'
+    WebSearchPlugin:
+      type: object
+      description: Fügt der Anfrage das Server-Tool `phaseo:web_search` hinzu, sodass jedes Modell im Web suchen kann. Die Anfrage läuft, und Suchen werden gezählt und abgerechnet, genau wie mit einem `phaseo:web_search`-Tool. Enthält die Anfrage bereits ein Websuche-Tool, fügt das Plugin nichts hinzu. Andere Optionen werden ignoriert.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - exa
+            - firecrawl
+            - parallel
+            - perplexity
+            - tinyfish
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 25
+        max_uses:
+          type: integer
+          minimum: 1
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        include_domains:
+          type: array
+          items:
+            type: string
+        exclude_domains:
+          type: array
+          items:
+            type: string
+    WebFetchPlugin:
+      type: object
+      description: Fügt der Anfrage das Server-Tool `phaseo:web_fetch` hinzu, sodass jedes Modell Webseiten lesen kann. Die Anfrage läuft, und Abrufe werden gezählt und abgerechnet, genau wie mit einem `phaseo:web_fetch`-Tool. Enthält die Anfrage bereits ein Web-Abruf-Tool, fügt das Plugin nichts hinzu.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web-fetch
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - direct
+            - exa
+            - firecrawl
+            - parallel
+        max_uses:
+          type: integer
+          minimum: 1
+        max_content_tokens:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        allowed_domains:
+          type: array
+          items:
+            type: string
+        blocked_domains:
+          type: array
+          items:
+            type: string
+    ResponseHealingPlugin:
+      type: object
+      description: Repariert fehlerhaftes JSON in nicht gestreamten Antworten, die eine Ausgabe als `json_object` oder `json_schema` angefordert haben. Bei Streams wird es übersprungen.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - response-healing
+        enabled:
+          type: boolean
+          default: true
+        mode:
+          type: string
+          enum:
+            - safe
+            - strict
+          default: safe
+    OpenAIWebSearchToolDefinition:
+      type: object
+      description: 'Das gehostete Websuche-Tool von OpenAI. OpenAI, Azure OpenAI (Responses) und xAI führen es nativ aus. Auf Modellen, deren Anbieter es nicht ausführen können, führt das Gateway es als `phaseo:web_search` aus: `search_context_size`, `filters.allowed_domains`, `max_results` und `engine` werden übernommen, und Suchen werden als `phaseo:web_search`-Suchen abgerechnet. Andere gehostete OpenAI-Tools (`file_search`, `code_interpreter`, `computer_use_preview`, `mcp`, `image_generation`, `shell`, `local_shell`, `apply_patch`) schlagen auf Modellen, deren Anbieter sie nicht ausführen können, mit 400 `unsupported_hosted_tool` fehl.'
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - web_search
+            - web_search_2025_08_26
+            - web_search_preview
+            - web_search_preview_2025_03_11
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        filters:
+          type: object
+          properties:
+            allowed_domains:
+              type: array
+              items:
+                type: string
+        user_location:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
@@ -10179,6 +10325,7 @@ components:
         - $ref: '#/components/schemas/SubagentToolDefinition'
         - $ref: '#/components/schemas/FusionToolDefinition'
         - $ref: '#/components/schemas/SearchModelsToolDefinition'
+        - $ref: '#/components/schemas/OpenAIWebSearchToolDefinition'
     SubagentToolDefinition:
       type: object
       required:
@@ -10521,6 +10668,11 @@ components:
           oneOf:
             - type: object
             - type: string
+        plugins:
+          type: array
+          description: Gateway-Plugins für diese Anfrage. `web` ergänzt jedes Modell um Websuche und `web-fetch` um das Abrufen von Seiten; `response-healing` repariert fehlerhaftes JSON in nicht gestreamten strukturierten Antworten. Standardwerte aus Workspace und Preset werden mit dieser Liste zusammengeführt. Eine unbekannte Plugin-ID liefert 400 `unknown_gateway_plugin`.
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         stream:
           type: boolean
         metadata:
@@ -10758,6 +10910,11 @@ components:
           maximum: 2
         text:
           type: object
+        plugins:
+          type: array
+          description: Gateway-Plugins für diese Anfrage. `web` ergänzt jedes Modell um Websuche und `web-fetch` um das Abrufen von Seiten; `response-healing` repariert fehlerhaftes JSON in nicht gestreamten strukturierten Antworten. Standardwerte aus Workspace und Preset werden mit dieser Liste zusammengeführt. Eine unbekannte Plugin-ID liefert 400 `unknown_gateway_plugin`.
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
         tools:

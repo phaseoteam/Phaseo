@@ -70,6 +70,7 @@ struct AnthropicMessagesRequest {
 	std::map<std::string, std::any> metadata;
 	std::string model;
 	std::vector<std::string> models;
+	std::vector<std::any> plugins;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -566,6 +567,7 @@ struct ChatCompletionsRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::optional<bool> parallel_tool_calls;
+	std::vector<std::any> plugins;
 	std::map<std::string, std::any> prediction;
 	std::optional<double> presence_penalty;
 	std::optional<std::string> prompt_cache_key;
@@ -1493,6 +1495,8 @@ struct GatewayObservabilityEventListResponse {
 struct GatewayObservabilityEventResponse {
 	std::map<std::string, std::any> data;
 };
+
+using GatewayPlugin = std::any;
 
 struct GatewayPricing {
 	std::map<std::string, std::any> meters;
@@ -2477,6 +2481,13 @@ struct OpenAIReasoningConfig {
 	std::any summary;
 };
 
+struct OpenAIWebSearchToolDefinition {
+	std::map<std::string, std::any> filters;
+	std::any search_context_size;
+	std::any type;
+	std::map<std::string, std::any> user_location;
+};
+
 using OrganisationId = std::any;
 
 using OrganisationIdList = std::any;
@@ -3022,6 +3033,12 @@ struct RerankResult {
 	std::optional<double> relevance_score;
 };
 
+struct ResponseHealingPlugin {
+	std::optional<bool> enabled;
+	std::any id;
+	std::any mode;
+};
+
 struct ResponsesInputItem {
 	std::any content;
 	std::string encrypted_content;
@@ -3087,6 +3104,7 @@ struct ResponsesRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::optional<bool> parallel_tool_calls;
+	std::vector<std::any> plugins;
 	std::string previous_response_id;
 	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> prompt_cache_options;
@@ -3392,6 +3410,16 @@ struct VideoOutputConfig {
 	std::any access;
 };
 
+struct WebFetchPlugin {
+	std::vector<std::string> allowed_domains;
+	std::vector<std::string> blocked_domains;
+	std::optional<bool> enabled;
+	std::any engine;
+	std::any id;
+	std::optional<int> max_content_tokens;
+	std::optional<int> max_uses;
+};
+
 struct WebhookEndpoint {
 	std::optional<std::string> createdAt;
 	std::optional<std::string> createdBy;
@@ -3459,6 +3487,17 @@ struct WebhookEndpointUpdateRequest {
 	std::string name;
 	std::any status;
 	std::string url;
+};
+
+struct WebSearchPlugin {
+	std::optional<bool> enabled;
+	std::any engine;
+	std::vector<std::string> exclude_domains;
+	std::any id;
+	std::vector<std::string> include_domains;
+	std::optional<int> max_results;
+	std::optional<int> max_uses;
+	std::any search_context_size;
 };
 
 struct Workspace {

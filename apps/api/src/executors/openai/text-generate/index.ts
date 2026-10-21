@@ -3,6 +3,7 @@
 // How: Transforms IR to OpenAI-compatible APIs and normalizes usage.
 
 import type { IRChatRequest, IRReasoning } from "@core/ir";
+import { isOpenAIHostedToolType } from "@core/nativeTools";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
@@ -796,12 +797,16 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		OPENAI_RESPONSES_ONLY_MODELS.test(normalizedModel) ||
 		(normalizedModel === "gpt-6-astra" && (args.ir as IRChatRequest).serviceTier === "ultrafast");
 	const hasAsyncTool = (args.ir as IRChatRequest).tools?.some((tool) => tool.async === true) ?? false;
+	// Chat Completions defines only function and custom tools; hosted tools such
+	// as web_search run on /v1/responses.
+	const hasHostedTool = (args.ir as IRChatRequest).tools?.some((tool) => isOpenAIHostedToolType(tool.type)) ?? false;
 	const useNativeChatRoute =
 		isOpenAIProviderOffer(args.providerId) &&
 		args.protocol === "openai.chat.completions" &&
 		!(args.ir as IRChatRequest).reasoning &&
 		!requiresResponsesRoute &&
-		!hasAsyncTool;
+		!hasAsyncTool &&
+		!hasHostedTool;
 	const irWithRequestMetadata = withOpenAIRequestMetadata(
 		args.ir as IRChatRequest,
 		args.providerId,

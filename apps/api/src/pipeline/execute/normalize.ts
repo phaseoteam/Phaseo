@@ -16,6 +16,7 @@ import {
 	type ReasoningEffort,
 } from "./textNormalizePolicy";
 import { dropUnsupportedParams, type DroppedParam } from "./unsupportedParams";
+import { dropVerbatimResponsesItems } from "./responsesItems";
 type ParamRange = {
     min?: number;
     max?: number;
@@ -214,8 +215,11 @@ export function normalizeIRForProvider(
     // Parameters the provider does not support are dropped (and reported), not
     // forwarded: see ./unsupportedParams.ts.
     const supported = dropUnsupportedParams(ir, providerId, capabilityParams);
-    if (supported.dropped.length > 0) options?.onDroppedParams?.(supported.dropped);
-    ir = supported.ir;
+    // Responses input items only OpenAI's API defines are removed the same way.
+    const items = dropVerbatimResponsesItems(supported.ir, providerId);
+    const dropped = [...supported.dropped, ...items.dropped];
+    if (dropped.length > 0) options?.onDroppedParams?.(dropped);
+    ir = items.ir;
     const modelForReasoning = options?.modelForReasoning ?? ir.model;
     const nextMaxTokens = normalizeMaxTokens(
         ir,
