@@ -19,7 +19,10 @@ try {
     create table auth.users (id uuid primary key);
     create table public.workspaces (id uuid primary key);
     create table public.keys (id uuid primary key, workspace_id uuid not null);
-    create table public.workspace_guardrails (id uuid primary key, workspace_id uuid not null);
+    create table public.workspace_guardrails (id uuid primary key, workspace_id uuid not null, enabled boolean not null default true,
+      privacy_enable_paid_may_train boolean not null default true, privacy_enable_free_may_train boolean not null default true,
+      privacy_enable_free_may_publish_prompts boolean not null default true, privacy_enable_input_output_logging boolean not null default true);
+    create table public.key_guardrails (key_id uuid not null, guardrail_id uuid not null, primary key (key_id, guardrail_id));
     create table public.wallets (workspace_id uuid primary key, balance_nanos bigint not null default 0,
       reserved_nanos bigint not null default 0, updated_at timestamptz not null default now());
     create table public.credit_ledger (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
