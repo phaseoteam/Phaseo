@@ -2976,7 +2976,18 @@
 			"rerank": "Rerank",
 			"embeddings": "Embeddings"
 		},
-		"scheduledRelease": "Not routable yet. Scheduled for a future release."
+		"scheduledRelease": "Not routable yet. Scheduled for a future release.",
+		"viewDetails": "View pricing and parameters",
+		"details": "Details",
+		"endpoints": "Endpoints",
+		"parametersCount": "{count, plural, one {# parameter} other {# parameters}}",
+		"openModelPage": "Open model page",
+		"released": "Released",
+		"noPricing": "Pricing not listed",
+		"previousModel": "Previous model",
+		"nextModel": "Next model",
+		"modelIndex": "{current} of {total} models",
+		"compareProviders": "Compare providers"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "AI country view: {country}",

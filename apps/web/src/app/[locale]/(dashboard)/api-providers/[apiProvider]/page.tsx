@@ -181,9 +181,9 @@ export default async function Page({
 						</>
 					)}
 
-					<section id="models" className="scroll-mt-36 space-y-4 border-t border-border pt-10">
+					<section id="models" className="scroll-mt-36 space-y-4 border-t border-border/60 pt-8">
 						<div className="space-y-1">
-							<h2 className="text-xl font-semibold">{t("models")}</h2>
+							<h2 className="text-xl font-semibold tracking-tight">{t("models")}</h2>
 							<p className="text-sm text-muted-foreground">
 								{t("browseModels", { name: header.api_provider_name })}
 							</p>
@@ -191,7 +191,6 @@ export default async function Page({
 						<Suspense fallback={<div className="rounded-xl border p-8 text-sm text-muted-foreground">{t("loadingModels")}</div>}>
 							<ProviderModelsWithPreview
 								apiProvider={apiProvider}
-								providerLabel={header.api_provider_name}
 								models={models}
 								initialProviderPreviews={initialProviderPreviews}
 								accountQueryScope={accountQueryScope}
@@ -206,13 +205,11 @@ export default async function Page({
 
 async function ProviderModelsWithPreview({
 	apiProvider,
-	providerLabel,
 	models,
 	initialProviderPreviews,
 	accountQueryScope,
 }: {
 	apiProvider: string;
-	providerLabel: string;
 	models: Awaited<ReturnType<typeof fetchFrontendAPIProviderModels>>;
 	initialProviderPreviews: Awaited<ReturnType<typeof fetchServerProviderCatalogPreviews>>;
 	accountQueryScope: AccountQueryScope;
@@ -221,7 +218,6 @@ async function ProviderModelsWithPreview({
 	return (
 		<ProviderModelsClient
 			apiProvider={apiProvider}
-			providerLabel={providerLabel}
 			models={models}
 			initialProviderPreviews={initialProviderPreviews}
 			accountQueryScope={accountQueryScope}

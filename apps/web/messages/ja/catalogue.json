@@ -2976,7 +2976,18 @@
 			"rerank": "再ランキング",
 			"embeddings": "埋め込み"
 		},
-		"scheduledRelease": "まだルーティングできません。今後のリリースが予定されています。"
+		"scheduledRelease": "まだルーティングできません。今後のリリースが予定されています。",
+		"viewDetails": "料金とパラメーターを表示",
+		"details": "詳細",
+		"endpoints": "エンドポイント",
+		"parametersCount": "{count, plural, other {# 個のパラメーター}}",
+		"openModelPage": "モデルページを開く",
+		"released": "リリース",
+		"noPricing": "料金は未掲載",
+		"previousModel": "前のモデル",
+		"nextModel": "次のモデル",
+		"modelIndex": "{total} 件中 {current} 件目のモデル",
+		"compareProviders": "プロバイダーを比較"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "{country}のAI概要",

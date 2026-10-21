@@ -2976,7 +2976,18 @@
 			"rerank": "पुनः क्रम निर्धारण",
 			"embeddings": "वेक्टर एम्बेडिंग"
 		},
-		"scheduledRelease": "अभी रूट नहीं किया जा सकता। भविष्य में रिलीज़ निर्धारित है।"
+		"scheduledRelease": "अभी रूट नहीं किया जा सकता। भविष्य में रिलीज़ निर्धारित है।",
+		"viewDetails": "मूल्य और पैरामीटर देखें",
+		"details": "विवरण",
+		"endpoints": "एंडपॉइंट",
+		"parametersCount": "{count, plural, one {# पैरामीटर} other {# पैरामीटर}}",
+		"openModelPage": "मॉडल पेज खोलें",
+		"released": "रिलीज़",
+		"noPricing": "मूल्य सूचीबद्ध नहीं",
+		"previousModel": "पिछला मॉडल",
+		"nextModel": "अगला मॉडल",
+		"modelIndex": "{total} में से {current} मॉडल",
+		"compareProviders": "प्रदाताओं की तुलना करें"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "{country}: AI देश अवलोकन",

@@ -2976,7 +2976,18 @@
 			"rerank": "重排序",
 			"embeddings": "嵌入"
 		},
-		"scheduledRelease": "尚无法路由。计划于未来发布。"
+		"scheduledRelease": "尚无法路由。计划于未来发布。",
+		"viewDetails": "查看价格和参数",
+		"details": "详情",
+		"endpoints": "端点",
+		"parametersCount": "{count, plural, other {# 个参数}}",
+		"openModelPage": "打开模型页面",
+		"released": "发布",
+		"noPricing": "未列出价格",
+		"previousModel": "上一个模型",
+		"nextModel": "下一个模型",
+		"modelIndex": "第 {current} 个，共 {total} 个模型",
+		"compareProviders": "比较提供商"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "{country} AI 概览",

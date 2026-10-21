@@ -1,4 +1,5 @@
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
+import { MODEL_CARD_GRID_CLASS_NAME } from "@/components/(data)/models/Models/modelCardGrid";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -73,7 +74,7 @@ export default function ModelsDisplay({
 
 	if (!showStatusHeadings) {
 		return (
-			<div className="grid grid-cols-1 divide-y divide-border/70 overflow-hidden rounded-lg border border-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:[&>*:nth-child(n+3)]:border-t sm:[&>*:nth-child(odd)]:border-l-0 2xl:grid-cols-3 2xl:[&>*:nth-child(n+3)]:border-t-0 2xl:[&>*:nth-child(n+4)]:border-t 2xl:[&>*:nth-child(odd)]:border-l 2xl:[&>*:nth-child(3n+1)]:border-l-0">
+			<div className={MODEL_CARD_GRID_CLASS_NAME}>
 				{sortModels(models as DisplayModel[]).map((model) => (
 					<div key={model.model_id}>
 						<ModelCard model={model} />
@@ -232,7 +233,7 @@ export default function ModelsDisplay({
 						{t("statusModels", { status: getStatusLabel(title) })}
 					</span>
 				</div>
-				<div className="grid grid-cols-1 divide-y divide-border/70 overflow-hidden rounded-lg border border-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:[&>*:nth-child(n+3)]:border-t sm:[&>*:nth-child(odd)]:border-l-0 2xl:grid-cols-3 2xl:[&>*:nth-child(n+3)]:border-t-0 2xl:[&>*:nth-child(n+4)]:border-t 2xl:[&>*:nth-child(odd)]:border-l 2xl:[&>*:nth-child(3n+1)]:border-l-0">
+				<div className={MODEL_CARD_GRID_CLASS_NAME}>
 					{sortModels(group).map((model) => (
 						<div key={model.model_id}>
 							<ModelCard model={model} />
