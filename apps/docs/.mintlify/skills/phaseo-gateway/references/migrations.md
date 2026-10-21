@@ -12,13 +12,13 @@ const client = new OpenAI({
 ```
 
 ## Anthropic SDK -> Phaseo
-Keep SDK, swap config:
+Keep SDK, swap config. Use the root host: the SDK appends `/v1/messages` itself.
 ```ts
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
   apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  baseURL: "https://api.phaseo.app",
 });
 ```
 
