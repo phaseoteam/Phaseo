@@ -828,7 +828,6 @@ export default function RequestDetailDialog({
 		t(settingsStringKey(key) as never, values as never);
 	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
-	const tUi = useTranslations("Common.ui");
 
 	if (!request) return null;
 	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
