@@ -2,7 +2,8 @@
 // Why: Several providers take images, audio or documents only as inline bytes,
 //      so the gateway fetches public URLs for them (SSRF-safe, size-capped).
 // How: fetchPublicMedia, retried once with browser-like headers when the first
-//      answer isn't binary, then the MIME type from the response or the URL.
+//      answer isn't binary (or, for a document, text other than a web page),
+//      then the MIME type from the response or the URL.
 
 import type { ExecutorResult, ExecutorUpstreamTiming } from "@executors/types";
 import { fetchPublicMedia, type PublicMediaResponse } from "@core/public-media-fetch";
@@ -92,7 +93,7 @@ async function fetchRemoteMediaWithRetry(
 		return null;
 	});
 	const firstMime = normalizeContentType(first?.contentType, fallbackMimeType);
-	if (first && looksBinaryMimeType(firstMime)) {
+	if (first && (looksBinaryMimeType(firstMime) || isDocumentTextAnswer(fallbackMimeType, firstMime))) {
 		return first;
 	}
 
@@ -116,6 +117,17 @@ async function fetchRemoteMediaWithRetry(
 		if (error instanceof Error && error.message === "remote_media_too_large") throw error;
 		return null;
 	});
+}
+
+/**
+ * A document URL (anything but image, audio or video) that answers with
+ * text: a plain-text, Markdown, CSV or similar document, kept as it is. A
+ * web page is still retried, as for media, since it is often a bot check.
+ */
+function isDocumentTextAnswer(requestedMimeType: string, answeredMimeType: string): boolean {
+	const requested = requestedMimeType.toLowerCase();
+	if (requested.startsWith("image/") || requested.startsWith("audio/") || requested.startsWith("video/")) return false;
+	return answeredMimeType.startsWith("text/") && answeredMimeType !== "text/html";
 }
 
 export type RemoteMediaResult =
