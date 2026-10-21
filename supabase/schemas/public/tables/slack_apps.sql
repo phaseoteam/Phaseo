@@ -20,7 +20,7 @@ ALTER TABLE "public"."slack_apps"
 
 CREATE UNIQUE INDEX slack_apps_slack_app_id_idx ON public.slack_apps USING btree (slack_app_id);
 
-CREATE INDEX slack_apps_workspace_idx ON public.slack_apps USING btree (workspace_id);
+CREATE UNIQUE INDEX slack_apps_workspace_idx ON public.slack_apps USING btree (workspace_id);
 
 CREATE TRIGGER slack_apps_set_updated_at
   BEFORE UPDATE ON public.slack_apps
@@ -34,7 +34,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."slack_apps"
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."slack_apps" IS 'A company''s own Slack app for the Phaseo Slack agent, created from Phaseo''s manifest, used instead of the hosted app. Only the settings API and the Slack Worker read it.';
+COMMENT ON TABLE "public"."slack_apps" IS 'A company''s own Slack app for the Phaseo Slack agent, created from Phaseo''s manifest, used instead of the hosted app. At most one per workspace. Only the settings API and the Slack Worker read it.';
 
 COMMENT ON COLUMN "public"."slack_apps"."secrets_ciphertext" IS 'AES-GCM encrypted JSON {client_secret, signing_secret}, keyed by SLACK_SECRETS_ENCRYPTION_KEY. Never returned to clients.';
 

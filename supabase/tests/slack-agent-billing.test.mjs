@@ -260,8 +260,14 @@ try {
   const [app] = await rows(`insert into public.slack_apps (workspace_id, slack_app_id, client_id, secrets_ciphertext) values ($1, 'A0APP0001', '123.456', 'v1.cipher') returning id`, [ws(2)]);
   await rows('update public.slack_installations set slack_app_id = $2 where id = $1', [second.id, app.id]);
   await assert.rejects(rows('delete from public.slack_apps where id = $1', [app.id]), /slack_installations_slack_app_id_fkey/);
+  // One company app per workspace, so two admins saving at once can't both insert one.
+  await assert.rejects(
+    rows(`insert into public.slack_apps (workspace_id, slack_app_id, client_id, secrets_ciphertext) values ($1, 'A0APP0002', '123.789', 'v1.cipher')`, [ws(2)]),
+    /slack_apps_workspace_idx/,
+  );
   await rows('update public.slack_installations set slack_app_id = null where id = $1', [second.id]);
   await rows('delete from public.slack_apps where id = $1', [app.id]);
+  await rows(`insert into public.slack_apps (workspace_id, slack_app_id, client_id, secrets_ciphertext) values ($1, 'A0APP0002', '123.789', 'v1.cipher')`, [ws(2)]);
 
   // Account links follow the installation.
   await rows(`insert into public.slack_user_links (installation_id, slack_user_id, user_id) values ($1, 'U0PERSON1', $2)`, [first.id, user(1)]);
