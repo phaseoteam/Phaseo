@@ -21,6 +21,7 @@ import {
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
+import { inlineAudioUrlsForProvider } from "./inline-audio";
 import {
 	openAICompatHeaders,
 	openAICompatUrl,
@@ -133,10 +134,15 @@ export async function executeOpenAIWire(
 	const endpointForRoute = (targetRoute: "responses" | "chat") =>
 		targetRoute === "responses" ? "/responses" : "/chat/completions";
 
+	// Audio given by URL is downloaded and sent as base64 input_audio.
+	const inlinedAudio = await inlineAudioUrlsForProvider(args.ir, args);
+	if (inlinedAudio.ok === false) return inlinedAudio.result;
+	const encodeIr = inlinedAudio.ir;
+
 	const buildPayloadForRoute = (targetRoute: "responses" | "chat"): Record<string, any> => {
 		const requestPayload = targetRoute === "responses"
-			? irToOpenAIResponses(args.ir, modelForRouting, args.providerId, args.capabilityParams)
-			: irToOpenAIChat(args.ir, modelForRouting, args.providerId, args.capabilityParams);
+			? irToOpenAIResponses(encodeIr, modelForRouting, args.providerId, args.capabilityParams)
+			: irToOpenAIChat(encodeIr, modelForRouting, args.providerId, args.capabilityParams);
 
 		const upstreamStream = policy.useClientStreamingMode ? args.ir.stream : true;
 		const payload: Record<string, any> = {
