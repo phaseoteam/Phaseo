@@ -13,6 +13,11 @@ export const SLACK_AGENT_MANAGED_KEY_NAME = "__slack_agent_managed_key__";
  * Use with PostgREST as `.not("name", "in", MANAGED_KEY_NAMES_FILTER)`.
  */
 export const MANAGED_KEY_NAMES_FILTER = `(${[CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME].map((name) => `"${name}"`).join(",")})`;
+
+/** Managed names are reserved: a key given one would vanish from every route and skip the key limit. */
+export function isManagedKeyName(name: string): boolean {
+	return name === CHAT_MANAGED_KEY_NAME || name === SLACK_AGENT_MANAGED_KEY_NAME;
+}
 export type WorkspaceKeyType = "api" | "management";
 
 type WorkspaceKeyState = {

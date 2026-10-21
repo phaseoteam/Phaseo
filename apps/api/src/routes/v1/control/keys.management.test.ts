@@ -674,6 +674,29 @@ describe("management key routes", () => {
 		expect(state.deletedKeyIds).toEqual([]);
 	});
 
+	it("refuses to create or rename a key with a name Phaseo reserves for its managed keys", async () => {
+		const { keysRoutes } = await import("./keys");
+		for (const name of ["__slack_agent_managed_key__", " __chat_route_managed_key__ "]) {
+			const created = await keysRoutes.request("https://example.com/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ name }),
+			});
+			expect(created.status, name).toBe(400);
+			expect(await created.json()).toMatchObject({ message: "This key name is reserved for keys Phaseo manages" });
+		}
+
+		state.keyRows.push({ id: "key_1", workspace_id: "ws_1", kid: "kid_1", hash: "hash_1", name: "Primary Key", status: "active" });
+		const renamed = await keysRoutes.request("https://example.com/hash_1", {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ name: "__slack_agent_managed_key__" }),
+		});
+		expect(renamed.status).toBe(400);
+		expect(state.insertPayloads).toEqual([]);
+		expect(state.updatePayloads).toEqual([]);
+	});
+
 	it("deletes a key by hash and removes its dependent records", async () => {
 		state.keyRows.push({
 			id: "key_1",

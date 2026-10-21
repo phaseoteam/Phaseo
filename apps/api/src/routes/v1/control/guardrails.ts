@@ -473,7 +473,8 @@ async function handleSetGuardrailKeys(req: Request) {
 				return json({ error: "bad_request", message: "One or more keys do not belong to this workspace" }, 400, { "Cache-Control": "no-store" });
 			}
 		}
-		await getSupabaseAdmin().from("key_guardrails").delete().eq("guardrail_id", id);
+		const { error: clearError } = await getSupabaseAdmin().from("key_guardrails").delete().eq("guardrail_id", id);
+		if (clearError) throw new Error(clearError.message || "Failed to clear guardrail key assignments");
 		if (keyIds.length) {
 			const { error } = await getSupabaseAdmin()
 				.from("key_guardrails")

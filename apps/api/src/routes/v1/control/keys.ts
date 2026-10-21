@@ -15,7 +15,9 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { loadOAuthClient } from "@/lib/oauth/service";
 import { internalServerError, requireCapability, type ManagementRouteAuth } from "./route-helpers";
-import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isUsableWorkspaceKey } from "./management-helpers";
+import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isManagedKeyName, isUsableWorkspaceKey } from "./management-helpers";
+
+const RESERVED_KEY_NAME = { error: "bad_request", message: "This key name is reserved for keys Phaseo manages" } as const;
 import { copyKeyRateLimitAssignment, publishRateLimitPlan } from "@core/rate-limit-policies";
 
 type KeyRow = {
@@ -595,6 +597,7 @@ async function handleCreateKey(req: Request) {
 	if (!name) {
 		return json({ error: "bad_request", message: "name is required" }, 400, { "Cache-Control": "no-store" });
 	}
+	if (isManagedKeyName(name)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 	const scopesError = rejectApiKeyScopes(body);
 	if (scopesError) return scopesError;
 	const limit = parseLimitNumber(body.limit);
@@ -803,6 +806,7 @@ async function handleUpdateKey(req: Request) {
 			if (!nextName) {
 				return json({ error: "bad_request", message: "name cannot be empty" }, 400, { "Cache-Control": "no-store" });
 			}
+			if (isManagedKeyName(nextName)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 			updatePayload.name = nextName;
 		}
 		if (typeof body.disabled === "boolean") {
@@ -977,6 +981,7 @@ async function handleRotateKey(req: Request) {
 		if (!pepper) return json({ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE is not configured" }, 503, { "Cache-Control": "no-store" });
 		const generated = generateGatewayKey();
 		const name = typeof body.name === "string" && body.name.trim() ? body.name.trim() : `${existing.name} (rotated)`;
+		if (isManagedKeyName(name)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 		const creatorUserId = auth.value.userId ?? await resolveWorkspaceOwnerUserId(auth.value.workspaceId);
 		const { data: replacement, error: insertError } = await supabase.from("keys").insert({
 			workspace_id: auth.value.workspaceId, name, kid: generated.kid,

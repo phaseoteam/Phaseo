@@ -1,3 +1,4 @@
+import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
@@ -150,6 +151,30 @@ describe("guardrail management security", () => {
 		expect(body).toMatchObject({ error: "guardrail_protected" });
 		expect(body.message).toContain("Uninstall the Slack agent");
 		expect(state.deleteCalls.map((call) => call.table)).toEqual(["key_guardrails"]);
+		expect(state.policyVersionBumps).toEqual([]);
+		expect(state.audit).not.toHaveBeenCalled();
+	});
+
+	it("returns 409 when replacing the locked guardrail's keys, without reporting a replacement", async () => {
+		state.guardrailRows.push({ id: "gr_slack", workspace_id: "ws_attacker", name: "Slack agent" });
+		state.keyGuardrailDeleteError = { message: "slack_agent_guardrail_protected" };
+		const { guardManagementAuth } = await import("@/pipeline/before/guards");
+		vi.mocked(guardManagementAuth).mockResolvedValueOnce({
+			ok: true,
+			value: { workspaceId: "ws_attacker", apiKeyId: "mgmt_1", authMethod: "api_key", scopes: ["guardrails:write"] },
+		} as any);
+
+		const { guardrailsRoutes } = await import("./guardrails");
+		// Mounted as in production: the handler reads the id after the "guardrails" segment.
+		const app = new Hono().route("/v1/guardrails", guardrailsRoutes);
+		const response = await app.request("https://example.com/v1/guardrails/gr_slack/keys", {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ key_ids: [] }),
+		});
+
+		expect(response.status).toBe(409);
+		expect(await response.json()).toMatchObject({ error: "guardrail_protected" });
 		expect(state.policyVersionBumps).toEqual([]);
 		expect(state.audit).not.toHaveBeenCalled();
 	});
