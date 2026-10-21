@@ -1,6 +1,8 @@
 package app.phaseo.haptics
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Resources
 import android.media.AudioAttributes
 import android.os.Build
 import android.os.VibrationAttributes
@@ -49,7 +51,8 @@ class PhaseoHapticsModule : Module() {
    * `vibrator`: there's a motor. `amplitude`: it can vary its strength. `effects`: it plays the predefined click,
    * tick, heavy click and double click that the system's haptic feedback is made of (null when Android
    * can't tell: before Android 11, or a motor that doesn't say). `primitives`: it plays the click and tick primitives
-   * Android 14's newer feedback is composed from (null when it can't tell).
+   * Android 14's newer feedback is composed from (null when it can't tell). `tapPulseMs`: how long the system's own tap
+   * pattern runs the motor (null if the phone doesn't list one).
    */
   private fun capabilities(): Map<String, Any?> {
     val vibrator = vibrator
@@ -58,7 +61,30 @@ class PhaseoHapticsModule : Module() {
       "amplitude" to (vibrator != null && hasAmplitudeControl(vibrator)),
       "effects" to vibrator?.let { effectsSupported(it) },
       "primitives" to vibrator?.let { primitivesSupported(it) },
+      "tapPulseMs" to systemPatternOnMs("config_virtualKeyVibePattern"),
     )
+  }
+
+  /**
+   * How long one of the system's own vibration patterns runs the motor (ms): a framework int-array of off and on times,
+   * or a single on time. Android falls back to these on motors without effects, but makers can play their own instead:
+   * a Galaxy A53 lists a 20 ms tap and plays 45 ms. Null if the phone doesn't have the pattern.
+   */
+  @SuppressLint("DiscouragedApi")
+  private fun systemPatternOnMs(name: String): Int? {
+    return try {
+      val resources = Resources.getSystem()
+      val id = resources.getIdentifier(name, "array", "android")
+      if (id == 0) return null
+      val pattern = resources.getIntArray(id)
+      when {
+        pattern.isEmpty() -> null
+        pattern.size == 1 -> pattern[0]
+        else -> pattern.filterIndexed { index, _ -> index % 2 == 1 }.sum()
+      }
+    } catch (_: Exception) {
+      null
+    }
   }
 
   private fun hasAmplitudeControl(vibrator: Vibrator): Boolean {

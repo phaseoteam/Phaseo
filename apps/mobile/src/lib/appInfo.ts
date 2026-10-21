@@ -2,6 +2,7 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 import { APP_VERSION } from "./config";
+import { hapticsHere } from "./haptics";
 
 const extra = Constants.expoConfig?.extra as Record<string, unknown> | undefined;
 const text = (value: unknown) => (typeof value === "string" && value ? value : null);
@@ -42,5 +43,5 @@ export function osName() {
 
 /** Plain lines about the app and the phone, for feedback and diagnostics. No account details. */
 export function appSummaryLines() {
-  return [`Phaseo for Android ${FULL_VERSION_LABEL}`, `Device: ${deviceName()}, ${osName()}`];
+  return [`Phaseo for Android ${FULL_VERSION_LABEL}`, `Device: ${deviceName()}, ${osName()}`, `Haptics: ${hapticsHere()}`];
 }

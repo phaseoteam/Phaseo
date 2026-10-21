@@ -32,8 +32,9 @@ const storage = jest.requireMock<{ kv: { setItem: jest.Mock } }>("@/lib/storage"
 const motorModule = jest.requireMock<{ module: { capabilities: jest.Mock; pulse: jest.Mock } }>("expo").module;
 // Loaded after the mocks.
 const {
-  ANDROID_HAPTICS, ANDROID_PULSES, IOS_HAPTICS, MIN_GAP_MS, PULSE_MIN_GAP_MS, PULSE_STREAM_TICK_MS, STREAM_TICK_MS, androidHaptic, androidRoute, gapsFor,
-  haptic, hapticsStore, motorCapabilities, play, setHapticsEnabled, shouldPlay, streamTick,
+  ANDROID_HAPTICS, ANDROID_PULSES, IOS_HAPTICS, MIN_GAP_MS, PULSE_FLOOR_MAX_MS, PULSE_FLOOR_MS, PULSE_MIN_GAP_MS, PULSE_STREAM_TICK_MS, STREAM_TICK_MS,
+  androidHaptic, androidRoute, gapsFor, haptic, hapticsStore, hapticsSummary, motorCapabilities, play, pulseFloor, pulseFor, setHapticsEnabled,
+  shouldPlay, streamTick,
 } = jest.requireActual<typeof import("./haptics")>("./haptics");
 type Motor = NonNullable<ReturnType<typeof motorCapabilities>>;
 /** A Pixel-like motor with every effect, and the Galaxy A53's, which reports none. */
@@ -112,6 +113,22 @@ describe("touch pulses", () => {
     // The system's long press (and every other touch haptic) on those phones is one 45 ms pulse; a tick is the lightest.
     expect(ANDROID_PULSES.longPress.timings).toEqual([0, 45]);
     expect(Math.min(...KINDS.map((kind) => ANDROID_PULSES[kind].timings[1]!))).toBe(ANDROID_PULSES.tick.timings[1]);
+    expect(ANDROID_PULSES.tick.timings[1]).toBe(PULSE_FLOOR_MS);
+  });
+
+  it("are never shorter than 45 ms, and as long as the phone's own tap where it lists a longer one", () => {
+    // The Galaxy A53 lists a 20 ms tap but plays 45 ms, and 20 ms wasn't felt: the table as it is.
+    expect(pulseFloor({ ...BARE, tapPulseMs: 20 })).toBe(PULSE_FLOOR_MS);
+    expect(pulseFor("success", { ...BARE, tapPulseMs: 20 })).toEqual({ timings: [...ANDROID_PULSES.success.timings], amplitudes: [...ANDROID_PULSES.success.amplitudes] });
+    expect(pulseFloor(BARE)).toBe(PULSE_FLOOR_MS);
+    expect(pulseFloor(null)).toBe(PULSE_FLOOR_MS);
+    // A phone whose tap is 60 ms: every on segment at least that, waits unchanged, longer kinds kept.
+    expect(pulseFor("selection", { ...BARE, tapPulseMs: 60 }).timings).toEqual([0, 60]);
+    expect(pulseFor("success", { ...BARE, tapPulseMs: 60 }).timings).toEqual([0, 60, 80, 60]);
+    expect(pulseFor("thud", { ...BARE, tapPulseMs: 60 }).timings).toEqual([0, 65]);
+    // Past the cap a tap is a buzz, and still ends before the next haptic can start.
+    expect(pulseFloor({ ...BARE, tapPulseMs: 300 })).toBe(PULSE_FLOOR_MAX_MS);
+    expect(PULSE_FLOOR_MAX_MS).toBeLessThan(PULSE_MIN_GAP_MS);
   });
 });
 
@@ -139,12 +156,14 @@ describe("play", () => {
   it("plays touch pulses on a motor without effects, like the Galaxy A53's", () => {
     play("toggleOn", "android", 36, BARE);
     expect(motorModule.pulse).toHaveBeenCalledWith([0, 50], [0, 200]);
+    play("selection", "android", 36, { ...BARE, tapPulseMs: 60 });
+    expect(motorModule.pulse).toHaveBeenLastCalledWith([0, 60], [0, 140]);
     play("success", "android", 36, BARE);
     expect(motorModule.pulse).toHaveBeenLastCalledWith([...ANDROID_PULSES.success.timings], [...ANDROID_PULSES.success.amplitudes]);
     expect(native.performAndroidHapticsAsync).not.toHaveBeenCalled();
     // No motor: nothing.
     play("thud", "android", 36, { ...BARE, vibrator: false });
-    expect(motorModule.pulse).toHaveBeenCalledTimes(2);
+    expect(motorModule.pulse).toHaveBeenCalledTimes(3);
   });
 
   it("asks the motor once", () => {
@@ -259,6 +278,21 @@ describe("streamTick", () => {
     for (const kind of KINDS) if (ANDROID_PULSES[kind].timings.length === 2) expect(ANDROID_PULSES[kind].timings[1]).toBeLessThan(PULSE_MIN_GAP_MS);
     expect(ANDROID_PULSES.tick.timings[1]! / PULSE_STREAM_TICK_MS).toBeLessThanOrEqual(0.12);
     expect(shouldPlay(100, 100 + MIN_GAP_MS, PULSE_MIN_GAP_MS)).toBe(false);
+  });
+});
+
+describe("hapticsSummary", () => {
+  it("says how haptics play here, for bug reports", () => {
+    expect(hapticsSummary("android", { ...BARE, tapPulseMs: 20 }, true)).toBe("Touch pulses from 45 ms (no system effects, system tap listed as 20 ms)");
+    expect(hapticsSummary("android", { ...BARE, amplitude: true, tapPulseMs: 60 }, true)).toBe("Touch pulses from 60 ms (no system effects, system tap listed as 60 ms, amplitude control)");
+    expect(hapticsSummary("android", FULL, true)).toBe("System effects (effects and primitives)");
+    expect(hapticsSummary("android", { ...FULL, primitives: false }, true)).toBe("System effects (effects, no primitives)");
+    expect(hapticsSummary("android", { ...FULL, effects: null, primitives: null }, true)).toBe("System effects (the motor didn't say what it has)");
+    expect(hapticsSummary("android", null, true)).toBe("System effects (the motor wasn't asked)");
+    expect(hapticsSummary("android", { ...BARE, vibrator: false }, true)).toBe("None (no vibration motor)");
+    expect(hapticsSummary("ios", null, true)).toBe("iOS feedback generators");
+    expect(hapticsSummary("ios", null, false)).toBe("iOS feedback generators, turned off in the app");
+    expect(hapticsSummary("web", null, true)).toBe("None");
   });
 });
 

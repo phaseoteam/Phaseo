@@ -75,7 +75,7 @@ export const ANDROID_HAPTICS: Record<HapticKind, readonly (readonly [Haptics.And
  * with the wait before the first pulse) and each segment's strength (0 to 255, used where the motor can vary it). On
  * those phones the system plays every touch haptic as one 45 ms pulse, for its keyboard, launcher and every other app,
  * and shorter pulses aren't felt (20 to 26 ms went unnoticed on a Galaxy A53). So no pulse is shorter: kinds differ by
- * being longer or doubled.
+ * being longer or doubled. A phone whose own tap is longer gets that as the shortest instead (`pulseFor`).
  */
 export const ANDROID_PULSES: Record<HapticKind, { timings: readonly number[]; amplitudes: readonly number[] }> = {
   selection: { timings: [0, 45], amplitudes: [0, 140] },
@@ -125,8 +125,16 @@ export function androidHaptic(kind: HapticKind, sdk: number, primitives: boolean
 /**
  * What the phone's motor reports (modules/phaseo-haptics): `effects` and `primitives` are null when Android can't
  * tell (before Android 11, or a motor that doesn't say), and then the system's effects are tried as usual.
+ * `tapPulseMs` is how long the system's own tap pattern runs the motor, where the phone lists one (builds before it
+ * leave it out).
  */
-export type MotorCapabilities = { vibrator: boolean; amplitude: boolean; effects: boolean | null; primitives: boolean | null };
+export type MotorCapabilities = {
+  vibrator: boolean;
+  amplitude: boolean;
+  effects: boolean | null;
+  primitives: boolean | null;
+  tapPulseMs?: number | null;
+};
 
 /**
  * How Android plays haptics on a phone: the system's effects, touch pulses when the motor says it can't play them,
@@ -136,6 +144,26 @@ export function androidRoute(motor: MotorCapabilities | null): "system" | "pulse
   if (!motor) return "system";
   if (!motor.vibrator) return "none";
   return motor.effects === false ? "pulse" : "system";
+}
+
+/** The shortest touch pulse (ms), and the most a phone's own tap can raise it to: past that it's a buzz, not a tap. */
+export const PULSE_FLOOR_MS = 45;
+export const PULSE_FLOOR_MAX_MS = 70;
+
+/**
+ * The shortest pulse on a phone: 45 ms, or the phone's own tap where it lists a longer one. Never shorter, even where
+ * it lists a shorter one: makers can play their own taps instead (a Galaxy A53 lists 20 ms, plays 45 ms, and 20 ms
+ * pulses weren't felt there).
+ */
+export function pulseFloor(motor: MotorCapabilities | null) {
+  return Math.min(PULSE_FLOOR_MAX_MS, Math.max(PULSE_FLOOR_MS, motor?.tapPulseMs ?? 0));
+}
+
+/** A kind's touch pulses on a phone: ANDROID_PULSES, with every on segment at least the phone's floor. */
+export function pulseFor(kind: HapticKind, motor: MotorCapabilities | null) {
+  const floor = pulseFloor(motor);
+  const { timings, amplitudes } = ANDROID_PULSES[kind];
+  return { timings: timings.map((ms, index) => (index % 2 === 1 ? Math.max(ms, floor) : ms)), amplitudes: [...amplitudes] };
 }
 
 type PhaseoHapticsModule = { capabilities(): MotorCapabilities; pulse(timings: number[], amplitudes: number[]): Promise<void> };
@@ -206,8 +234,8 @@ export function play(kind: HapticKind, os: string, version: number, motor: Motor
   if (os === "android") {
     const route = androidRoute(motor);
     if (route === "pulse" && native) {
-      const pulse = ANDROID_PULSES[kind];
-      void native.pulse([...pulse.timings], [...pulse.amplitudes]).catch(() => undefined);
+      const pulse = pulseFor(kind, motor);
+      void native.pulse(pulse.timings, pulse.amplitudes).catch(() => undefined);
     } else if (route !== "none") {
       void Haptics.performAndroidHapticsAsync(androidHaptic(kind, version, motor?.primitives !== false)).catch(() => undefined);
     }
@@ -250,4 +278,27 @@ export function streamTick() {
   if (!shouldPlay(lastPlayed, now, gaps.haptic)) return;
   lastStreamed = now;
   playHere("tick");
+}
+
+/**
+ * How haptics play on a platform (`os`) and motor, as one line for bug reports (Diagnostics and feedback): the route,
+ * and for touch pulses the shortest one and the tap the phone lists.
+ */
+export function hapticsSummary(os: string, motor: MotorCapabilities | null, enabled: boolean) {
+  const off = enabled ? "" : ", turned off in the app";
+  if (os === "ios") return `iOS feedback generators${off}`;
+  if (os !== "android") return "None";
+  const route = androidRoute(motor);
+  if (route === "none") return "None (no vibration motor)";
+  if (route === "system") {
+    const detail = !motor ? "the motor wasn't asked" : motor.effects === null ? "the motor didn't say what it has" : motor.primitives ? "effects and primitives" : "effects, no primitives";
+    return `System effects (${detail})${off}`;
+  }
+  const listed = motor?.tapPulseMs ? `, system tap listed as ${motor.tapPulseMs} ms` : "";
+  return `Touch pulses from ${pulseFloor(motor)} ms (no system effects${listed}${motor?.amplitude ? ", amplitude control" : ""})${off}`;
+}
+
+/** The same for this phone, now. */
+export function hapticsHere() {
+  return hapticsSummary(Platform.OS, motorHere(), hapticsStore.get().enabled);
 }

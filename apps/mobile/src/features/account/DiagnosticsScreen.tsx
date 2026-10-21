@@ -12,6 +12,7 @@ import { useLayout } from "@/hooks/useLayout";
 import { BUILD_COMMIT, BUILD_NUMBER, BUILT_AT, deviceName, osName } from "@/lib/appInfo";
 import { APP_VERSION } from "@/lib/config";
 import { slowLog } from "@/lib/diagnostics";
+import { hapticsHere } from "@/lib/haptics";
 import { formatBytes, formatNumber } from "@/lib/format";
 import { diagnosticsText, slowOperationLine, type DiagnosticsSection } from "./diagnosticsReport";
 
@@ -60,6 +61,7 @@ export function DiagnosticsScreen() {
       ["System", osName()],
       ["Screen", `${Math.round(window.width)} × ${Math.round(window.height)} dp at ${PixelRatio.get()}×`],
       ...(Device.totalMemory ? [["Memory", formatBytes(Device.totalMemory)] as [string, string]] : []),
+      ["Haptics", hapticsHere()],
     ] },
     database && "report" in database ? { title: "Chat database", rows: [
       ["Schema version", database.pages.schemaVersion === SCHEMA_VERSION ? `${database.pages.schemaVersion} (current)` : `${database.pages.schemaVersion} (the app expects ${SCHEMA_VERSION})`],
