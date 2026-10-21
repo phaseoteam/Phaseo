@@ -64,6 +64,7 @@ export type AnthropicMessagesRequest = {
 	};
 	context_management?: Record<string, any>;
 	user?: string;
+	prompt_cache_key?: string | null;
 	image_config?: {
 		aspect_ratio?: string;
 		image_size?: "0.5K" | "1K" | "2K" | "4K";
