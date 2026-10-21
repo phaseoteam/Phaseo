@@ -1092,12 +1092,17 @@ export default function DecisionMatrix({
 								{providerThroughput ?? "-"}
 							</MetricRow>
 							<MetricRow label={t("visualisePerformance")}>
-								<Link
-									href={`/models/${model.id}#performance`}
-									className="underline underline-offset-2"
-								>
-									{t("viewCharts")}
-								</Link>
+								{/* The model page only renders its performance section when it has metrics. */}
+								{usage?.latencyP50Ms30m != null || usage?.throughputP50TokPerSec30m != null ? (
+									<Link
+										href={`/models/${model.id}#performance`}
+										className="underline underline-offset-2"
+									>
+										{t("viewCharts")}
+									</Link>
+								) : (
+									"-"
+								)}
 							</MetricRow>
 						</div>
 					);

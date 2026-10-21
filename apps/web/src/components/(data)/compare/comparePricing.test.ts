@@ -68,16 +68,32 @@ describe("preferStandardPlan", () => {
 });
 
 describe("getRoutableProviderIds", () => {
+	const route = { is_active_gateway: true, capability_status: "active", endpoint: "text.generate" };
+
 	it("keeps providers with an active gateway route", () => {
 		const model = {
 			compare_provider_pricing: [
-				{ provider: { api_provider_id: "openai" }, provider_models: [{ is_active_gateway: true }, { is_active_gateway: false }] },
-				{ provider: { api_provider_id: "listing-only" }, provider_models: [{ is_active_gateway: false }] },
+				{ provider: { api_provider_id: "openai" }, provider_models: [route, { ...route, is_active_gateway: false }] },
+				{ provider: { api_provider_id: "listing-only" }, provider_models: [{ ...route, is_active_gateway: false }] },
 				{ provider: { api_provider_id: "no-models" } },
 			],
 		};
 		expect([...getRoutableProviderIds(model)]).toEqual(["openai"]);
 		expect(getRoutableProviderIds({}).size).toBe(0);
+	});
+
+	it("skips disabled, unmapped, future and expired routes", () => {
+		const now = Date.parse("2026-10-21T12:00:00Z");
+		const model = {
+			compare_provider_pricing: [
+				{ provider: { api_provider_id: "disabled" }, provider_models: [{ ...route, capability_status: "disabled" }] },
+				{ provider: { api_provider_id: "unmapped" }, provider_models: [{ ...route, endpoint: "unmapped" }] },
+				{ provider: { api_provider_id: "future" }, provider_models: [{ ...route, effective_from: "2026-11-01T00:00:00Z" }] },
+				{ provider: { api_provider_id: "expired" }, provider_models: [{ ...route, effective_to: "2026-10-01T00:00:00Z" }] },
+				{ provider: { api_provider_id: "current" }, provider_models: [{ ...route, effective_from: "2026-10-01T00:00:00Z", effective_to: "2026-12-01T00:00:00Z" }] },
+			],
+		};
+		expect([...getRoutableProviderIds(model, now)]).toEqual(["current"]);
 	});
 });
 

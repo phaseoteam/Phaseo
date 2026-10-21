@@ -62,21 +62,47 @@ export function pickHeadlinePrice<T extends PricedRow>(
 	return best ? { price: best.price, valuePerMillion: best.valuePerMillion } : null;
 }
 
+export type GatewayRouteFields = {
+	is_active_gateway?: boolean | null;
+	capability_status?: string | null;
+	endpoint?: string | null;
+	effective_from?: string | null;
+	effective_to?: string | null;
+};
+
 type RoutableSource = {
 	compare_provider_pricing?: Array<{
 		provider: { api_provider_id: string };
-		provider_models?: Array<{ is_active_gateway?: boolean | null }> | null;
+		provider_models?: GatewayRouteFields[] | null;
 	}> | null;
 };
 
+function parseTime(value: string | null | undefined): number | null {
+	if (!value) return null;
+	const time = new Date(value).getTime();
+	return Number.isFinite(time) ? time : null;
+}
+
+/** The same checks the model page uses: enabled, mapped and inside its effective window. */
+export function isCurrentGatewayRoute(providerModel: GatewayRouteFields, now = Date.now()): boolean {
+	if (!providerModel.is_active_gateway) return false;
+	if (providerModel.capability_status === "disabled") return false;
+	if (!providerModel.endpoint || providerModel.endpoint === "unmapped") return false;
+	const from = parseTime(providerModel.effective_from);
+	const to = parseTime(providerModel.effective_to);
+	if (from != null && now < from) return false;
+	if (to != null && now >= to) return false;
+	return true;
+}
+
 /**
- * Providers Phaseo routes the model through. The rest are price listings from
- * elsewhere, some carrying discounted rows Phaseo can't serve.
+ * Providers Phaseo routes the model through today. The rest are price listings
+ * from elsewhere, some carrying discounted rows Phaseo can't serve.
  */
-export function getRoutableProviderIds(model: object): Set<string> {
+export function getRoutableProviderIds(model: object, now = Date.now()): Set<string> {
 	return new Set(
 		((model as RoutableSource).compare_provider_pricing ?? [])
-			.filter((group) => group.provider_models?.some((providerModel) => providerModel.is_active_gateway))
+			.filter((group) => group.provider_models?.some((providerModel) => isCurrentGatewayRoute(providerModel, now)))
 			.map((group) => group.provider.api_provider_id)
 	);
 }
