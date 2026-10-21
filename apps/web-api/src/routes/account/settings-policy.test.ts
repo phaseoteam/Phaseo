@@ -299,6 +299,28 @@ describe("account policy settings routes", () => {
 		expect(requestedUrls.some((url) => url.includes("/preset_versions") && url.includes("visibility=eq.public"))).toBe(true);
 	});
 
+	it("rejects a preset whose prompt template does not parse, before touching the database", async () => {
+		const requestedUrls: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			requestedUrls.push(url);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/account/settings/presets", {
+			method: "POST",
+			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", name: "@triage", config: { prompt: { messages: [{ role: "user", content: "Hi {{name" }] } } }),
+		}, env, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
+
+		expect(response.status).toBe(400);
+		const body = await response.json() as Record<string, any>;
+		expect(body.error).toBe("invalid_prompt_template");
+		expect(body.issues[0]).toMatchObject({ keyword: "template_syntax", path: ["prompt", "messages", 0, "content"] });
+		expect(requestedUrls.some((url) => url.includes("/presets"))).toBe(false);
+	});
+
 	it("returns private routing, preset, and guardrail payloads", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);

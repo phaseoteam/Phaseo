@@ -68,6 +68,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public java.util.List<Object> plugins;
+		public Object prompt;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -577,6 +578,7 @@ public final class Models {
 		public java.util.List<Object> plugins;
 		public Object prediction;
 		public Double presence_penalty;
+		public Object prompt;
 		public String prompt_cache_key;
 		public Object prompt_cache_options;
 		public Object prompt_cache_retention;
@@ -2592,6 +2594,7 @@ public final class Models {
 	}
 
 	public static class PresetConfig {
+		public Object prompt;
 	}
 
 	public static class PresetCreateRequest {
@@ -2615,6 +2618,29 @@ public final class Models {
 	public static class PresetListResponse {
 		public java.util.List<Object> data;
 		public Integer total_count;
+	}
+
+	public static class PresetPromptTemplate {
+		public java.util.List<Object> messages;
+		public Object response_format;
+		public Object syntax;
+		public Object tool_choice;
+		public java.util.List<Object> tools;
+		public Object variables;
+	}
+
+	public static class PresetPromptTemplateMessage {
+		public Object content;
+		public Object role;
+	}
+
+	public static class PresetPromptVariable {
+		public Object default_;
+		public String description;
+		public java.util.List<String> enum_;
+		public Integer max_length;
+		public Boolean required;
+		public Object type;
 	}
 
 	public static class PresetPublisher {
@@ -2821,6 +2847,11 @@ public final class Models {
 	public static class PromptCacheOptions {
 		public Object mode;
 		public String ttl;
+	}
+
+	public static class PromptTemplateReference {
+		public String id;
+		public Object variables;
 	}
 
 	public static class Provider {
@@ -3161,6 +3192,7 @@ public final class Models {
 		public Boolean parallel_tool_calls;
 		public java.util.List<Object> plugins;
 		public String previous_response_id;
+		public Object prompt;
 		public String prompt_cache_key;
 		public Object prompt_cache_options;
 		public Object prompt_cache_retention;

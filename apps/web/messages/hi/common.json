@@ -1257,6 +1257,7 @@
 			"enableConnection": "कनेक्शन चालू करें",
 			"deleteDestination": "गंतव्य हटाएँ",
 			"openRequestDetails": "अनुरोध विवरण खोलें",
+			"openInChat": "चैट में खोलें",
 			"copyRequestId": "अनुरोध ID कॉपी करें",
 			"copySessionId": "सत्र ID कॉपी करें",
 			"copyNativeResponseId": "नेटिव प्रतिक्रिया ID कॉपी करें",

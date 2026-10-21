@@ -1257,6 +1257,7 @@
 			"enableConnection": "接続を有効化",
 			"deleteDestination": "送信先を削除",
 			"openRequestDetails": "リクエストの詳細を開く",
+			"openInChat": "チャットで開く",
 			"copyRequestId": "リクエストIDをコピー",
 			"copySessionId": "セッションIDをコピー",
 			"copyNativeResponseId": "ネイティブ応答IDをコピー",

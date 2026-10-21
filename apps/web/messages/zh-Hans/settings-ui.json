@@ -2924,6 +2924,7 @@
 		"phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible": "禁用后，被标记为可能公开提示词的免费端点将不再符合条件。",
 		"Store Gateway I/O logs": "存储 Gateway I/O 日志",
 		"phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView": "将请求提示词和补全内容存储在私有 R2 存储中，以供日志详情页查看。",
+		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "要求零数据保留时此项关闭。提示和回复不会被存储。",
 		"90 days": "90 天",
 		"180 days": "180 天",
 		"365 days": "365 天",

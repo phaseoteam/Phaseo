@@ -1225,6 +1225,8 @@
 				"audio_seconds": "音声の秒数",
 				"cached_write_text_tokens_5m": "テキストキャッシュ書き込みトークン数（TTL 5分）",
 				"cached_write_text_tokens_1h": "テキストキャッシュ書き込みトークン数（TTL 1時間）",
+				"cached_write_text_tokens_30m": "テキストキャッシュ書き込みトークン数（TTL 30分）",
+				"cached_write_text_tokens_12h": "テキストキャッシュ書き込みトークン数（TTL 12時間）",
 				"output_video_seconds": "出力動画の秒数",
 				"output_video_frames": "出力動画フレーム数",
 				"bfl_credits": "BFL クレジット",

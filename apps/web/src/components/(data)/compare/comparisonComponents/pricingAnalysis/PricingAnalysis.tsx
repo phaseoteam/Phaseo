@@ -24,6 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { getRoutableProviderIds, pickHeadlinePrice, preferStandardPlan } from "../../comparePricing";
 
 interface PricingAnalysisProps {
 	selectedModels: ExtendedModel[];
@@ -125,21 +126,6 @@ function formatUsd(
 	});
 }
 
-function meterMatchesInput(meter: string): boolean {
-	const normalized = meter.trim().toLowerCase();
-	return (
-		normalized.includes("input") &&
-		normalized.includes("token") &&
-		!normalized.includes("cached") &&
-		!normalized.includes("output")
-	);
-}
-
-function meterMatchesOutput(meter: string): boolean {
-	const normalized = meter.trim().toLowerCase();
-	return normalized.includes("output") && normalized.includes("token");
-}
-
 function getProviderIdFromPrice(price: Price): string | null {
 	return (
 		price.api_provider_id ??
@@ -168,32 +154,17 @@ function selectBestPricePoint(
 	prices: Price[],
 	kind: "input" | "output"
 ): PricePoint {
-	let best: PricePoint = { valuePerMillion: null, provider: null };
-
-	for (const price of prices) {
-		if (!price) continue;
-		if (price.meter === "summary") continue;
-
-		const meter = (price.meter ?? "").trim().toLowerCase();
-		if (meter) {
-			const matches = kind === "input" ? meterMatchesInput(meter) : meterMatchesOutput(meter);
-			if (!matches) continue;
-		}
-
-		const rawValue =
-			kind === "input" ? price.input_token_price : price.output_token_price;
-		const valuePerMillion = normalizePricePerMillion(rawValue, price.unit_size ?? null);
-		if (valuePerMillion == null) continue;
-
-		if (best.valuePerMillion == null || valuePerMillion < best.valuePerMillion) {
-			best = {
-				valuePerMillion,
-				provider: resolveProvider(price),
-			};
-		}
-	}
-
-	return best;
+	const candidates = preferStandardPlan(
+		prices.filter((price) => price && price.meter !== "summary")
+	);
+	const best = pickHeadlinePrice(candidates, kind, (price) =>
+		normalizePricePerMillion(
+			kind === "input" ? price.input_token_price : price.output_token_price,
+			price.unit_size ?? null
+		)
+	);
+	if (!best) return { valuePerMillion: null, provider: null };
+	return { valuePerMillion: best.valuePerMillion, provider: resolveProvider(best.price) };
 }
 
 function calculateBlendedTotal(
@@ -232,7 +203,21 @@ function getEffectivePricesForProvider(
 	const prices = model.prices ?? [];
 	if (!prices.length) return [];
 	if (!selectedProviderId || selectedProviderId === BEST_PROVIDER_OPTION) {
-		return prices;
+		// "Best" means the best price on a route Phaseo serves, when there is one.
+		const routable = getRoutableProviderIds(model);
+		const routablePrices = prices.filter((price) => {
+			const providerId = getProviderIdFromPrice(price);
+			return providerId != null && routable.has(providerId);
+		});
+		// The model's own lab goes first so it wins ties on price.
+		const lab = model.provider?.provider_id;
+		const isLab = (price: Price) => {
+			const providerId = getProviderIdFromPrice(price);
+			return Boolean(lab && providerId && (providerId === lab || providerId.startsWith(`${lab}-`)));
+		};
+		return [...(routablePrices.length ? routablePrices : prices)].sort(
+			(a, b) => Number(isLab(b)) - Number(isLab(a))
+		);
 	}
 	return prices.filter((price) => getProviderIdFromPrice(price) === selectedProviderId);
 }
@@ -539,7 +524,7 @@ function buildMeterComparisonRows(
 	for (const model of models) {
 		const selectedProviderId =
 			providerSelectionByModel[model.id] ?? BEST_PROVIDER_OPTION;
-		const effectivePrices = getEffectivePricesForProvider(model, selectedProviderId);
+		const effectivePrices = preferStandardPlan(getEffectivePricesForProvider(model, selectedProviderId));
 		for (const price of effectivePrices) {
 			if (!price.meter || price.meter === "summary") continue;
 			const meterKey = price.meter;

@@ -1257,6 +1257,7 @@
 			"enableConnection": "تفعيل الاتصال",
 			"deleteDestination": "حذف الوجهة",
 			"openRequestDetails": "فتح تفاصيل الطلب",
+			"openInChat": "فتح في الدردشة",
 			"copyRequestId": "نسخ معرّف الطلب",
 			"copySessionId": "نسخ معرّف الجلسة",
 			"copyNativeResponseId": "نسخ معرّف الاستجابة الأصلية",

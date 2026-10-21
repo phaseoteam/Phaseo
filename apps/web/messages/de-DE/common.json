@@ -1257,6 +1257,7 @@
 			"enableConnection": "Verbindung aktivieren",
 			"deleteDestination": "Ziel löschen",
 			"openRequestDetails": "Anfragedetails öffnen",
+			"openInChat": "Im Chat öffnen",
 			"copyRequestId": "Anfrage-ID kopieren",
 			"copySessionId": "Sitzungs-ID kopieren",
 			"copyNativeResponseId": "Native Antwort-ID kopieren",

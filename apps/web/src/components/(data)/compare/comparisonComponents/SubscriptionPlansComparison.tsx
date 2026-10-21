@@ -193,7 +193,7 @@ export default function SubscriptionPlansComparison({
 				{modelPlans.map(({ model, plans }) => (
 					<div
 						key={model.id}
-						className="rounded-xl border border-border/60 p-4 space-y-4"
+						className="min-w-0 rounded-xl border border-border/60 p-4 space-y-4"
 					>
 						<div className="flex flex-col sm:flex-row sm:items-center gap-2">
 							<div>
@@ -215,7 +215,7 @@ export default function SubscriptionPlansComparison({
 								{t("noSubscriptionPlans")}
 							</p>
 						) : (
-							<div className="grid gap-3">
+							<div className="grid grid-cols-[minmax(0,1fr)] gap-3">
 								{[...plans]
 									.sort((a, b) => {
 										const diff = planSortKey(a.prices) - planSortKey(b.prices);
@@ -231,7 +231,7 @@ export default function SubscriptionPlansComparison({
 										return (
 									<div
 										key={`${model.id}-${plan.plan_uuid}`}
-										className={`relative rounded-lg border border-border/40 p-3 flex flex-col gap-2 bg-background/60 ${notes ? "pr-10" : ""}`}
+										className={`relative min-w-0 rounded-lg border border-border/40 p-3 flex flex-col gap-2 bg-background/60 ${notes ? "pr-10" : ""}`}
 									>
 										{notes ? (
 											<Popover>

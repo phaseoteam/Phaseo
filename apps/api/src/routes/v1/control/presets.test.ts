@@ -114,6 +114,31 @@ describe("preset lifecycle management", () => {
 		expect(state.audits[0]).toMatchObject({ action: "preset.upstream.applied" });
 	});
 
+	it("rejects an invalid prompt template on create and lists every problem", async () => {
+		const { presetsRoutes } = await import("./presets");
+		const response = await presetsRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "@triage", config: { prompt: { messages: [{ role: "user", content: "{{#open}}" }], variables: { level: { type: "enum" } } } } }),
+		});
+		const body = await response.json() as Record<string, any>;
+		expect(response.status).toBe(400);
+		expect(body.error).toBe("invalid_prompt_template");
+		expect(body.issues.map((issue: any) => issue.keyword)).toEqual(["template_variable_spec", "template_syntax"]);
+		expect(state.inserted).toBeNull();
+	});
+
+	it("rejects an invalid prompt template merged into a draft update", async () => {
+		const { presetsRoutes } = await import("./presets");
+		const response = await presetsRoutes.request("https://example.com/local_1", {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ config: { prompt: { messages: [{ role: "narrator", content: "x" }] } } }),
+		});
+		expect(response.status).toBe(400);
+		expect((await response.json() as Record<string, any>).issues[0].path).toEqual(["prompt", "messages", 0, "role"]);
+	});
+
 	it("updates the workspace publisher handle through its guarded RPC", async () => {
 		const { presetsRoutes } = await import("./presets");
 		const response = await presetsRoutes.request("https://example.com/publisher", {

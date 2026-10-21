@@ -7,6 +7,7 @@ import { refreshRealtimeBillingReviews, syncRealtimeBillingReviewSummaries } fro
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { computeBill } from "@pipeline/pricing/engine";
+import type { PriceCard } from "@pipeline/pricing/types";
 import { ulid } from "@pipeline/before/genId";
 import { fetchGatewayContext } from "@pipeline/before/context";
 import { buildProviderCandidatesWithDiagnostics } from "@pipeline/before/utils";
@@ -604,6 +605,8 @@ export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>): Recor
 	const googleInputAudio = modalityTokens(googlePromptDetails, "audio");
 	const googleOutputText = modalityTokens(googleResponseDetails, "text");
 	const googleOutputAudio = modalityTokens(googleResponseDetails, "audio");
+	const googleInputImage = modalityTokens(googlePromptDetails, "image");
+	const googleInputVideo = modalityTokens(googlePromptDetails, "video");
 
 	const inputText =
 		toFiniteNumber(source.input_text_tokens) ??
@@ -636,6 +639,20 @@ export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>): Recor
 		toFiniteNumber(source.cached_read_audio_tokens) ??
 		getNumberAtPath(source, "input_token_details.cached_tokens_details.audio_tokens") ??
 		getNumberAtPath(source, "input_tokens_details.cached_tokens_details.audio_tokens");
+	// OpenAI reports image input (and its cached part) inside input_token_details; Gemini Live
+	// reports IMAGE and VIDEO prompt modalities. Both are priced on their own meters.
+	const inputImage =
+		toFiniteNumber(source.input_image_tokens) ??
+		getNumberAtPath(source, "input_token_details.image_tokens") ??
+		getNumberAtPath(source, "input_tokens_details.image_tokens") ??
+		(googleInputImage > 0 ? googleInputImage : null);
+	const cachedImage =
+		toFiniteNumber(source.cached_read_image_tokens) ??
+		getNumberAtPath(source, "input_token_details.cached_tokens_details.image_tokens") ??
+		getNumberAtPath(source, "input_tokens_details.cached_tokens_details.image_tokens");
+	const inputVideo =
+		toFiniteNumber(source.input_video_tokens) ??
+		(googleInputVideo > 0 ? googleInputVideo : null);
 	const inputAudioSeconds = secondsFromDuration(source, "input");
 	const outputAudioSeconds = secondsFromDuration(source, "output");
 	const explicitAudioSeconds = secondsFromDuration(source, "total");
@@ -663,6 +680,11 @@ export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>): Recor
 			: {}),
 		...(cachedText != null ? { cached_read_text_tokens: cachedText } : {}),
 		...(cachedAudio != null ? { cached_read_audio_tokens: cachedAudio } : {}),
+		...(inputImage != null
+			? { input_image_tokens: Math.max(0, inputImage - (source.input_image_tokens != null ? 0 : cachedImage ?? 0)) }
+			: {}),
+		...(cachedImage != null ? { cached_read_image_tokens: cachedImage } : {}),
+		...(inputVideo != null ? { input_video_tokens: inputVideo } : {}),
 		...(inputAudioSeconds != null ? {
 			input_audio_seconds: inputAudioSeconds,
 			input_audio_minutes: inputAudioSeconds / 60,
@@ -714,9 +736,31 @@ export function assertRealtimeBillingMetersPresent(args: {
 		(toFiniteNumber(args.usage.output_text_tokens) ?? 0) +
 		(toFiniteNumber(args.usage.output_audio_tokens) ?? 0) +
 		(toFiniteNumber(args.usage.cached_read_text_tokens) ?? 0) +
-		(toFiniteNumber(args.usage.cached_read_audio_tokens) ?? 0);
+		(toFiniteNumber(args.usage.cached_read_audio_tokens) ?? 0) +
+		(toFiniteNumber(args.usage.input_image_tokens) ?? 0) +
+		(toFiniteNumber(args.usage.input_video_tokens) ?? 0) +
+		(toFiniteNumber(args.usage.cached_read_image_tokens) ?? 0);
 	if (tokenMeters > 0) return;
 	throw new Error(`${args.provider}_realtime_usage_missing_token_meters`);
+}
+
+/**
+ * Price a realtime session. Image and video input on a card without its own row for them is
+ * billed on the matching text meter rather than dropped (or failing on an unpriced cache meter).
+ */
+export function priceRealtimeUsage(usage: Record<string, unknown>, card: PriceCard): Record<string, any> {
+	const hasRule = (meter: string) => card.rules.some((rule) => rule.meter === meter);
+	const folded: Record<string, unknown> = { ...usage };
+	const fold = (meter: string, into: string) => {
+		if (hasRule(meter)) return;
+		const quantity = toFiniteNumber(folded[meter]) ?? 0;
+		if (quantity > 0) folded[into] = (toFiniteNumber(folded[into]) ?? 0) + quantity;
+		delete folded[meter];
+	};
+	fold("input_image_tokens", "input_text_tokens");
+	fold("input_video_tokens", "input_text_tokens");
+	fold("cached_read_image_tokens", hasRule("cached_read_text_tokens") ? "cached_read_text_tokens" : "input_text_tokens");
+	return computeBill(folded, card, { endpoint: "audio.realtime" });
 }
 
 async function requireRealtimePriceCard(provider: RealtimeProvider, modelId: string) {
@@ -1081,7 +1125,7 @@ export async function updateRealtimeSessionUsage(args: {
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? session.usage ?? {});
 	const pricedUsage = isLiveModel(session.model_id)
 		? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
-		: computeBill(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id), { endpoint: "audio.realtime" });
+		: priceRealtimeUsage(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id));
 	const pricedNanos = pricedTotalNanos(pricedUsage);
 	const estimatedCostNanos = Math.max(
 		Math.max(0, Number(session.estimated_cost_nanos ?? 0) || 0),
@@ -1194,7 +1238,7 @@ export async function settleRealtimeSession(args: {
 	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? {});
 	const live = isLiveModel(session.model_id);
 	const pricedUsage = live ? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
-		: computeBill(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id), { endpoint: "audio.realtime" });
+		: priceRealtimeUsage(normalizedUsage, await requireRealtimePriceCard(provider, session.model_id));
 	const costNanos = live ? pricedTotalNanos(pricedUsage) : resolveRealtimeFinalCostNanos({
 		auth: args.auth,
 		finalCostNanos: args.finalCostNanos,

@@ -467,6 +467,37 @@
 		},
 		"defaultTitle": "Nouvelle discussion",
 		"branchTitle": "Branche : {title}",
+		"logImport": {
+			"title": "Poursuivre une requête journalisée",
+			"description": "Ouvre la requête dans une nouvelle conversation avec sa propre session, enregistrée dans ce navigateur. Choisissez ce qui est repris.",
+			"loading": "Chargement de la requête…",
+			"failed": "Impossible de charger cette requête. Vérifiez que vous êtes connecté à l'espace de travail auquel elle appartient.",
+			"unavailable": { "not_stored": "Le prompt et la réponse de cette requête n'ont pas été stockés. Activez les journaux d'E/S du gateway dans les paramètres de confidentialité pour stocker les nouvelles requêtes.", "too_large": "Cette requête était trop volumineuse pour être stockée et ne peut donc pas être ouverte.", "deleted": "Le prompt et la réponse stockés de cette requête ont expiré ou ont été supprimés.", "unsupported": "Seules les requêtes Chat Completions, Responses et Messages peuvent être ouvertes dans Chat." },
+			"summary": "{count, plural, one {# message} other {# messages}} · {model}",
+			"modelUnavailable": "{model} n'est pas disponible dans Chat ; la conversation utilise donc {fallback}. Vous pourrez changer de modèle après l'ouverture.",
+			"carryOver": "Reprendre",
+			"options": {
+				"pinProvider": "Épingler le fournisseur ({provider})",
+				"keepParams": "Paramètres (température, tokens max, raisonnement)",
+				"keepSystemPrompt": "Prompt système",
+				"keepServerTools": "Outils serveur",
+				"keepFunctionTools": "{count, plural, one {# outil de fonction} other {# outils de fonction}}",
+				"keepFunctionToolsHint": "Chat ne peut pas les exécuter. Déclarés, les appels d'outils précédents sont envoyés comme appels ; sinon, comme texte.",
+				"includeResponse": "La réponse journalisée"
+			},
+			"workspaceMismatch": "Chat envoie depuis votre espace de travail actif, qui n'est pas celui de cette requête.",
+			"warnings": {
+				"earlier_history_missing": "Cette requête poursuivait une réponse antérieure par ID ; les tours précédents ne sont donc pas inclus.",
+				"unsupported_content": "Une partie du contenu n'a pas pu être affichée et a été omise.",
+				"attachment_reference": "Certaines pièces jointes étaient référencées par ID et n'ont pas été stockées avec la requête.",
+				"no_response": "La réponse journalisée est absente ou en échec ; la conversation se termine donc par la requête.",
+				"response_truncated": "La réponse journalisée a été tronquée.",
+				"extra_choices": "Seul le premier des choix de la réponse est inclus.",
+				"unanswered_tool_calls": "Certains appels d'outils n'ont pas de résultat. Ils sont envoyés sous forme de texte lorsque vous continuez."
+			},
+			"cancel": "Annuler",
+			"continue": "Ouvrir dans Chat"
+		},
 		"errors": {
 			"signInToChat": "Connectez-vous pour commencer à discuter.",
 			"selectModelToChat": "Sélectionnez un modèle pour commencer à discuter.",

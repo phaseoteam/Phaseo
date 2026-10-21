@@ -2924,6 +2924,7 @@
 		"phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible": "When disabled, free endpoints flagged as publishing prompts become ineligible.",
 		"Store Gateway I/O logs": "Store Gateway I/O logs",
 		"phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView": "Store request prompts and completions in private R2 storage for the Logs detail view.",
+		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "Off while zero data retention is required. Prompts and completions aren't stored.",
 		"90 days": "90 days",
 		"180 days": "180 days",
 		"365 days": "365 days",
