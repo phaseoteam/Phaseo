@@ -674,6 +674,8 @@ async function handleCreateKey(req: Request) {
 			throw new Error(error.message || "Failed to create API key");
 		}
 		if (!data) throw new Error("Failed to create API key");
+		// A key linked to a department counts toward that department's rate limit.
+		if (departmentId.value) await publishRateLimitPlan(workspaceScope.workspaceId);
 		await auditApiKey(auth.value, "api_key.created", data as KeyRow);
 
 		// The secret is shown once. Return it at the top level, where key-creation clients
@@ -843,6 +845,9 @@ async function handleUpdateKey(req: Request) {
 			throw new Error(updateError.message || "Failed to update API key");
 		}
 		await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
+		if (departmentId.value !== undefined && departmentId.value !== (existing.department_id ?? null)) {
+			await publishRateLimitPlan(auth.value.workspaceId);
+		}
 
 		const { data: updated, error: refetchError } = await supabase
 			.from("keys")
@@ -1014,7 +1019,8 @@ async function handleRotateKey(req: Request) {
 				throw invalidationError;
 			}
 		}
-		if (rateLimitCopied) await publishRateLimitPlan(auth.value.workspaceId);
+		// The replacement also keeps the old key's department link.
+		if (rateLimitCopied || existing.department_id) await publishRateLimitPlan(auth.value.workspaceId);
 		await auditApiKey(auth.value, "api_key.rotated", existing as KeyRow, { replacement_key_id: replacement.id, replacement_key_name: name, previous_key_expires_at: previousExpiry.value ?? null });
 		return json({ data: { ...formatApiKey(replacement as KeyRow), key: generated.plaintext }, previous_key_expires_at: previousExpiry.value ?? null }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) { return internalServerError("keys.rotate", error); }

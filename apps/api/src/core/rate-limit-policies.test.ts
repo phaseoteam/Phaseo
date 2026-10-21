@@ -27,6 +27,12 @@ function query(table: string) {
 	const builder: any = {
 		select: () => builder,
 		eq: (column: string, value: unknown) => { filters.push((row) => row[column] === value); return builder; },
+		in: (column: string, values: unknown[]) => { filters.push((row) => values.includes(row[column])); return builder; },
+		not: (column: string, operator: string, value: unknown) => {
+			if (operator !== "is" || value !== null) throw new Error(`unsupported not filter ${operator}`);
+			filters.push((row) => row[column] != null);
+			return builder;
+		},
 		order: () => builder,
 		range: (from: number, to: number) => { range = [from, to]; return builder; },
 		maybeSingle: async () => { const result = run(); return { data: result.data?.[0] ?? null, error: result.error }; },
@@ -140,14 +146,13 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("rate limit plan publication", () => {
-	it("builds a compact plan from the workspace's policies and assignments, omitting departments", async () => {
+	it("builds a compact plan from the workspace's policies and assignments", async () => {
 		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2), policy(TOKENS, "Tokens", null, WS, "50000"), policy("other", "Other", 9, "elsewhere")];
 		mocks.tables.workspace_rate_limit_policy_assignments = [
 			assignment(STRICT, "key", { key_id: "key-1" }),
 			assignment(STRICT, "member", { user_id: "user-1" }),
 			assignment(TOKENS, "guardrail", { guardrail_id: "guard-1" }),
 			assignment(STRICT, "end_user_default"),
-			assignment(STRICT, "department", { department_id: "dept-1" }),
 			assignment("other", "key", { key_id: "key-9" }, "elsewhere"),
 		];
 		expect(await buildRateLimitPlan(WS)).toEqual({
@@ -158,6 +163,49 @@ describe("rate limit plan publication", () => {
 			guardrails: { "guard-1": TOKENS },
 			endUserDefault: STRICT,
 		});
+	});
+
+	it("adds the department links a department policy needs", async () => {
+		mocks.tables = {
+			workspace_rate_limit_policies: [policy(STRICT, "Strict", 2), policy(LOOSE, "Loose", 100)],
+			workspace_rate_limit_policy_assignments: [
+				assignment(STRICT, "department", { department_id: "dept-sales" }),
+				assignment(LOOSE, "department", { department_id: "dept-legal" }),
+			],
+			keys: [
+				{ id: "key-linked", workspace_id: WS, department_id: "dept-sales" },
+				// Linked to a department without a policy: still kept, so it does not fall back to its creator's.
+				{ id: "key-unlimited-dept", workspace_id: WS, department_id: "dept-ops" },
+				{ id: "key-unlinked", workspace_id: WS, department_id: null },
+				{ id: "key-elsewhere", workspace_id: "elsewhere", department_id: "dept-x" },
+			],
+			workspace_department_grants: [
+				{ workspace_id: WS, user_id: "user-both", department_id: "dept-sales" },
+				{ workspace_id: WS, user_id: "user-both", department_id: "dept-legal" },
+				{ workspace_id: WS, user_id: "user-both", department_id: "dept-ops" },
+				{ workspace_id: WS, user_id: "user-ops", department_id: "dept-ops" },
+				{ workspace_id: WS, user_id: "user-overridden", department_id: "dept-sales" },
+				{ workspace_id: WS, user_id: "user-none", department_id: "dept-legal" },
+			],
+			workspace_member_overrides: [
+				{ workspace_id: WS, user_id: "user-overridden", department_override_enabled: true, department_id: "dept-legal" },
+				{ workspace_id: WS, user_id: "user-none", department_override_enabled: true, department_id: null },
+				{ workspace_id: WS, user_id: "user-both", department_override_enabled: false, department_id: "dept-ops" },
+			],
+		};
+		const built = await buildRateLimitPlan(WS);
+		expect(built).toMatchObject({
+			departments: { "dept-sales": STRICT, "dept-legal": LOOSE },
+			keyDepartments: { "key-linked": "dept-sales", "key-unlimited-dept": "dept-ops" },
+			// Every department with a policy; an enabled override replaces the directory's departments.
+			memberDepartments: { "user-both": ["dept-legal", "dept-sales"], "user-overridden": ["dept-legal"] },
+		});
+		expect(Object.keys(built.policies).sort()).toEqual([LOOSE, STRICT]);
+		// Without a department policy the plan carries no department links.
+		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "key", { key_id: "key-1" })];
+		const withoutDepartments = await buildRateLimitPlan(WS);
+		expect(withoutDepartments).not.toHaveProperty("departments");
+		expect(withoutDepartments).not.toHaveProperty("keyDepartments");
 	});
 
 	it("writes the plan to KV, and deletes the key once the workspace has no assignments", async () => {
@@ -220,6 +268,29 @@ describe("applicable rate limits", () => {
 		// TOKENS has no request limit and was published before plans carried tpm.
 		expect(applicableRateLimits(plan, { keyId: "key-tokens", userId: "user-2", endUserId: null })).toEqual([]);
 		expect(applicableRateLimits(null, { keyId: "key-1" })).toEqual([]);
+	});
+
+	it("shares one department allowance among everything that counts toward the department", () => {
+		const departmentPlan: RateLimitPlan = {
+			...plan,
+			departments: { "dept-sales": STRICT, "dept-legal": LOOSE },
+			keyDepartments: { "key-linked": "dept-sales", "key-ops": "dept-ops" },
+			memberDepartments: { "user-both": ["dept-legal", "dept-sales"] },
+		};
+		const scopes = (subject: Parameters<typeof applicableRateLimits>[1]) =>
+			applicableRateLimits(departmentPlan, subject).filter((limit) => limit.targetType === "department").map((limit) => limit.scopeKey);
+		// A linked key counts toward its own department only, whoever created it.
+		expect(scopes({ keyId: "key-linked", userId: "user-both" })).toEqual(["department:dept-sales"]);
+		expect(scopes({ keyId: "key-ops", userId: "user-both" })).toEqual([]);
+		// Other keys count toward every department of their creator; OAuth requests toward their user's.
+		expect(scopes({ keyId: "key-2", userId: "user-both" })).toEqual(["department:dept-legal", "department:dept-sales"]);
+		expect(scopes({ keyId: "key-linked", userId: "user-both", authMethodIsOAuth: true })).toEqual(["department:dept-legal", "department:dept-sales"]);
+		expect(scopes({ keyId: "key-2", userId: "user-9" })).toEqual([]);
+		expect(applicableRateLimits(departmentPlan, { keyId: "key-linked" })).toContainEqual(
+			{ policyId: STRICT, name: "Strict", targetType: "department", rpm: 2, tpm: null, scopeKey: "department:dept-sales" },
+		);
+		// Plans published before department limits carry none of the department fields.
+		expect(applicableRateLimits(plan, { keyId: "key-linked", userId: "user-both" }).some((limit) => limit.targetType === "department")).toBe(false);
 	});
 
 	it("gives each key or OAuth user its own guardrail allowance", () => {
@@ -309,6 +380,31 @@ describe("rate limit policy enforcement", () => {
 		expect(await guardRateLimitPolicies(ctx({ keyId: "key-2", activeGuardrailIds: ["guard-1"] }))).toBeNull();
 		// The first request's later attempts are already admitted.
 		expect(await guardRateLimitPolicies(first)).toBeNull();
+	});
+
+	it("counts a department as one allowance and rejects every request that counts toward it", async () => {
+		publishPlan({
+			v: 1, policies: { [STRICT]: { rpm: 2, tpm: null, name: "Sales cap" } }, keys: {}, members: {}, guardrails: {}, endUserDefault: null,
+			departments: { "dept-sales": STRICT }, keyDepartments: { "key-linked": "dept-sales" }, memberDepartments: { "user-sales": ["dept-sales"] },
+		});
+		const department = `rate-limit-policy:v1:${WS}:${STRICT}:department:dept-sales`;
+		mocks.admit.mockImplementation(async () => ({ allowed: true, limit: 2, remaining: 0, retryAfterSeconds: 20 }));
+		expect(await guardRateLimitPolicies(ctx({ keyId: "key-linked", quotaUserId: "user-other" }))).toBeNull();
+		await settle();
+		expect(mocks.admit.mock.calls.map(([scope]) => scope)).toEqual([department]);
+
+		// A different key, created by a department member, shares the exhausted allowance.
+		const rejected = await guardRateLimitPolicies(ctx({ keyId: "key-2", quotaUserId: "user-sales" }));
+		expect(rejected?.status).toBe(429);
+		expect(await rejected?.json()).toMatchObject({
+			reason: "policy_requests_per_minute",
+			policy_id: STRICT,
+			limit_scope: "department",
+			description: "This request's department reached the \"Sales cap\" rate limit policy's 2 requests per minute. Retry after 20 seconds.",
+		});
+		// So do the member's OAuth requests; requests outside the department do not.
+		expect((await guardRateLimitPolicies(ctx({ keyId: "client", quotaUserId: "user-sales", authMethod: "oauth" })))?.status).toBe(429);
+		expect(await guardRateLimitPolicies(ctx({ keyId: "key-3", quotaUserId: "user-other" }))).toBeNull();
 	});
 
 	it("reports approximate headers for the most restrictive applicable policy", async () => {
