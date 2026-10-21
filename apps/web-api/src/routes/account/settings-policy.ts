@@ -5,6 +5,7 @@ import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
 
@@ -30,7 +31,7 @@ async function loadGuardrailReference(context: AccountWorkspaceContext) {
 		context.client.from("workspaces").select("id,name").eq("id", context.workspaceId).maybeSingle(),
 		context.client.from("keys").select("id,name,prefix,status,created_at")
 			.eq("workspace_id", context.workspaceId).neq("status", "deleted")
-			.neq("name", "__chat_route_managed_key__").order("created_at", { ascending: false }),
+			.neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }),
 		context.client.from("workspace_members").select("user_id,role,users(display_name)")
 			.eq("workspace_id", context.workspaceId),
 		context.client.from("v2_providers")
