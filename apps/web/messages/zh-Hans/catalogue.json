@@ -1225,6 +1225,8 @@
 				"audio_seconds": "音频秒数",
 				"cached_write_text_tokens_5m": "文本缓存写入 token 数（5 分钟 TTL）",
 				"cached_write_text_tokens_1h": "文本缓存写入 token 数（1 小时 TTL）",
+				"cached_write_text_tokens_30m": "文本缓存写入 token 数（30 分钟 TTL）",
+				"cached_write_text_tokens_12h": "文本缓存写入 token 数（12 小时 TTL）",
 				"output_video_seconds": "输出视频秒数",
 				"output_video_frames": "输出视频帧数",
 				"bfl_credits": "BFL 积分",
