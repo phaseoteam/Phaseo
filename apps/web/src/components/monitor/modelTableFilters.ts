@@ -1,6 +1,6 @@
 import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { canonicalOutputGroup } from "@/lib/models/modelGroupModalities";
-import { matchesLicenseSelection } from "@/lib/models/licenseFilter";
+import { matchesLicenseSelection, matchesModelWeights, modelWeights } from "@/lib/models/licenseFilter";
 import { modelRowKey, type ModelData } from "./modelTableGrouping";
 
 export type ModelTableFilters = {
@@ -15,8 +15,10 @@ export type ModelTableFilters = {
 	regions: string[];
 	creators: string[];
 	licenses: string[];
-	// Open / Closed groups; filtered together with `licenses`.
+	// Permissive / Restricted / Proprietary groups; filtered together with `licenses`.
 	licenseTypes: string[];
+	// Open / closed weights, derived from the licence.
+	weights: string[];
 	contextMin: number;
 	endpoints: string[];
 	statuses: string[];
@@ -37,6 +39,7 @@ export const NO_MODEL_TABLE_FILTERS: ModelTableFilters = {
 	creators: [],
 	licenses: [],
 	licenseTypes: [],
+	weights: [],
 	contextMin: 0,
 	endpoints: [],
 	statuses: [],
@@ -134,6 +137,7 @@ export function matchesModelTableRow(
 	) {
 		return false;
 	}
+	if (active("weights") && !matchesModelWeights(row.license, filters.weights)) return false;
 	if (active("contextMin") && filters.contextMin > 0 && row.context < filters.contextMin) return false;
 	if (active("endpoints") && filters.endpoints.length > 0 && !filters.endpoints.includes(row.endpoint)) {
 		return false;
@@ -173,6 +177,10 @@ export function modelTableFilterValues(row: ModelData, dimension: ModelTableFilt
 			return row.organisationId ? [row.organisationId] : [];
 		case "licenses":
 			return row.license ? [row.license] : [];
+		case "weights": {
+			const weights = modelWeights(row.license);
+			return weights ? [weights] : [];
+		}
 		case "contextMin":
 			return [];
 		case "endpoints":

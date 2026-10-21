@@ -11,18 +11,31 @@ import {
 	toggleLicenseGroup,
 	type LicenseGroup,
 	type LicenseSelection,
+	type ModelWeights,
 } from "@/lib/models/licenseFilter";
 import type { OptionCount } from "./modelsDisplay.types";
 
-const GROUP_LABEL_KEYS: Record<LicenseGroup, "licenseOpen" | "licenseClosed"> = {
-	open: "licenseOpen",
-	closed: "licenseClosed",
-};
+const GROUP_LABEL_KEYS = {
+	permissive: "licensePermissive",
+	restricted: "licenseRestricted",
+	proprietary: "licenseProprietary",
+} as const satisfies Record<LicenseGroup, string>;
 
 export function useLicenseGroupLabel() {
 	const tFilters = useTranslations("Catalogue.models.filtersUi");
 	return (group: string) =>
-		group === "open" || group === "closed" ? tFilters(GROUP_LABEL_KEYS[group]) : group;
+		group in GROUP_LABEL_KEYS ? tFilters(GROUP_LABEL_KEYS[group as LicenseGroup]) : group;
+}
+
+const WEIGHTS_LABEL_KEYS = {
+	open: "weightsOpen",
+	closed: "weightsClosed",
+} as const satisfies Record<ModelWeights, string>;
+
+export function useWeightsLabel() {
+	const tFilters = useTranslations("Catalogue.models.filtersUi");
+	return (value: string) =>
+		value in WEIGHTS_LABEL_KEYS ? tFilters(WEIGHTS_LABEL_KEYS[value as ModelWeights]) : value;
 }
 
 function FilterRow({
@@ -68,7 +81,7 @@ function FilterRow({
 	);
 }
 
-// Open / Closed rows, each expanding to the licences in that group.
+// Permissive / Restricted / Proprietary rows, each expanding to the licences in that group.
 export function LicenseFilterList({
 	options,
 	selection,

@@ -62,10 +62,18 @@ describe("licence filter", () => {
 			.toEqual(["mistral/mistral-large-4.0", "mistral/mistral-large-4.0"]);
 	});
 
-	it("keeps routes in a selected Open / Closed group", () => {
-		const active = filters({ licenseTypes: ["open"] });
+	it("keeps routes in a selected licence group", () => {
+		const active = filters({ licenseTypes: ["permissive"] });
 		expect(licensed.filter((row) => matchesModelTableRow(row, active)).map((row) => row.provider.id))
 			.toEqual(["mistral", "mistral-eu"]);
+	});
+
+	it("filters and counts open and closed weights", () => {
+		const closed = filters({ weights: ["closed"] });
+		expect(licensed.filter((row) => matchesModelTableRow(row, closed)).map((row) => row.modelId))
+			.toEqual(["openai/gpt-6.1-sol"]);
+		const counts = countModelsByFilterValue(licensed, closed, "weights");
+		expect(Object.fromEntries(counts)).toEqual({ open: 1, closed: 1 });
 	});
 
 	it("counts models, not routes, per licence and leaves out models without one", () => {

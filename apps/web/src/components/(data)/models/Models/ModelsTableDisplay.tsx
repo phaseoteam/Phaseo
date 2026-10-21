@@ -35,6 +35,7 @@ import {
 	XCircle,
 	LockKeyhole,
 	ScrollText,
+	PackageOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -81,8 +82,14 @@ import { formatExecutionRegionLabel } from "@/lib/providers/executionRegions";
 import { MODEL_TABLE_COLUMNS } from "@/components/monitor/MonitorDataTable";
 import { Logo } from "@/components/Logo";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
-import { LicenseFilterList, useLicenseGroupLabel } from "./LicenseFilterList";
-import { parseLicenseGroups, type LicenseSelection } from "@/lib/models/licenseFilter";
+import { LicenseFilterList, useLicenseGroupLabel, useWeightsLabel } from "./LicenseFilterList";
+import {
+	MODEL_WEIGHTS,
+	mergeWeights,
+	readLicenseTypeParam,
+	parseModelWeights,
+	type LicenseSelection,
+} from "@/lib/models/licenseFilter";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
 import { Slider } from "@/components/ui/slider";
 import TableSettings from "@/components/(gateway)/usage/TableSettings";
@@ -539,6 +546,7 @@ function countModelTableFacets(rows: ModelData[], filters: ModelTableFilters) {
 		regionMap: count("regions"),
 		creatorMap: count("creators"),
 		licenseMap: count("licenses"),
+		weightsMap: count("weights"),
 		endpointMap: count("endpoints"),
 		statusMap: count("statuses"),
 		tierMap: count("tiers"),
@@ -556,6 +564,7 @@ export default function ModelsTableDisplay({
 	const tCountry = useTranslations("Catalogue.countryDetail");
 	const tFilters = useTranslations("Catalogue.models.filtersUi");
 	const licenseGroupLabel = useLicenseGroupLabel();
+	const weightsLabel = useWeightsLabel();
 	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
 	const translateModality = (value: string) => {
@@ -812,13 +821,38 @@ export default function ModelsTableDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
-	const [selectedLicenseTypes, setSelectedLicenseTypes] = useQueryState("licenseType", {
+	const [licenseTypeParam, setLicenseTypeParam] = useQueryState("licenseType", {
 		defaultValue: [] as string[],
-		parse: (value) => parseLicenseGroups(parseCsvParam(value)),
+		parse: parseCsvParam,
 		serialize: serializeCsvParam,
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [weightsParam, setWeightsParam] = useQueryState("weights", {
+		defaultValue: [] as string[],
+		parse: (value) => parseModelWeights(parseCsvParam(value)),
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	// Old links use licenseType=open|closed for weights; read them as weights
+	// and move them to `weights` the next time either filter changes.
+	const { groups: selectedLicenseTypes, legacyWeights } = useMemo(
+		() => readLicenseTypeParam(licenseTypeParam),
+		[licenseTypeParam],
+	);
+	const selectedWeights = useMemo(
+		() => mergeWeights(weightsParam, legacyWeights),
+		[weightsParam, legacyWeights],
+	);
+	const setSelectedLicenseTypes = (groups: string[]) => {
+		void setLicenseTypeParam(groups);
+		if (legacyWeights.length > 0) void setWeightsParam(selectedWeights);
+	};
+	const setSelectedWeights = (weights: string[]) => {
+		void setWeightsParam(weights);
+		if (legacyWeights.length > 0) void setLicenseTypeParam(selectedLicenseTypes);
+	};
 	const licenseSelection = useMemo(
 		() => ({ groups: selectedLicenseTypes, licenses: selectedLicenses }),
 		[selectedLicenseTypes, selectedLicenses],
@@ -897,6 +931,7 @@ export default function ModelsTableDisplay({
 		creators: selectedCreators,
 		licenses: selectedLicenses,
 		licenseTypes: selectedLicenseTypes,
+		weights: selectedWeights,
 		contextMin: selectedContextMin,
 		endpoints: selectedEndpoints,
 		statuses: effectiveSelectedStatuses,
@@ -912,6 +947,7 @@ export default function ModelsTableDisplay({
 		selectedCreators,
 		selectedLicenses,
 		selectedLicenseTypes,
+		selectedWeights,
 		selectedContextMin,
 		selectedEndpoints,
 		effectiveSelectedStatuses,
@@ -994,6 +1030,10 @@ export default function ModelsTableDisplay({
 			),
 		[available.licenseMap, counts.licenseMap],
 	);
+	const weightsOptions = useMemo(
+		() => getOptionCounts([...MODEL_WEIGHTS], available.weightsMap, counts.weightsMap),
+		[available.weightsMap, counts.weightsMap],
+	);
 	const endpointOptions = useMemo(
 		() => getOptionCounts(allEndpoints, available.endpointMap, counts.endpointMap),
 		[allEndpoints, available.endpointMap, counts.endpointMap],
@@ -1062,6 +1102,7 @@ export default function ModelsTableDisplay({
 		selectedCreators.length +
 		selectedLicenseTypes.length +
 		selectedLicenses.length +
+		selectedWeights.length +
 		(selectedContextMin > 0 ? 1 : 0) +
 		(yearSelected > 0 ? 1 : 0);
 
@@ -1079,6 +1120,7 @@ export default function ModelsTableDisplay({
 		setSelectedCreators([]);
 		setSelectedLicenses([]);
 		setSelectedLicenseTypes([]);
+		setSelectedWeights([]);
 		setSelectedContextMin(0);
 		setYearSelected(0);
 	};
@@ -1104,6 +1146,7 @@ export default function ModelsTableDisplay({
 		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value: providerLabels.get(value) ?? value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
 		...selectedRegions.map((value) => ({ key: `region-${value}`, label: tFilters("filterRegion", { value: translateRegion(value) }), onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
 		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: tFilters("filterCreator", { value: creatorLabels.get(value) ?? value }), onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
+		...selectedWeights.map((value) => ({ key: `weights-${value}`, label: tFilters("filterWeights", { value: weightsLabel(value) }), onRemove: () => setSelectedWeights(without(selectedWeights, value)) })),
 		...selectedLicenseTypes.map((value) => ({ key: `license-type-${value}`, label: tFilters("filterLicense", { value: licenseGroupLabel(value) }), onRemove: () => setSelectedLicenseTypes(without(selectedLicenseTypes, value)) })),
 		...selectedLicenses.map((value) => ({ key: `license-${value}`, label: tFilters("filterLicense", { value }), onRemove: () => setSelectedLicenses(without(selectedLicenses, value)) })),
 		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: translateFeature(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
@@ -1531,6 +1574,25 @@ export default function ModelsTableDisplay({
 							<FilterLogo value={value} />
 						)}
 						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="weights" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<PackageOpen className="h-4 w-4 text-muted-foreground" />
+						{tFilters("weights")}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={weightsOptions}
+						selected={selectedWeights}
+						onToggle={(value) =>
+							setSelectedWeights(toggleInList(selectedWeights, value))
+						}
+						labelForValue={weightsLabel}
 					/>
 				</AccordionContent>
 			</AccordionItem>
