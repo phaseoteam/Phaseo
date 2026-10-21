@@ -916,6 +916,8 @@ export class RealtimeRelayDurableObject {
 		const hasUsage =
 			toNumber(turnUsage.input_text_tokens) +
 			toNumber(turnUsage.input_audio_tokens) +
+			toNumber(turnUsage.input_image_tokens) +
+			toNumber(turnUsage.input_video_tokens) +
 			toNumber(turnUsage.output_text_tokens) +
 			toNumber(turnUsage.output_audio_tokens) > 0;
 		if (!hasUsage) return;

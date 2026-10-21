@@ -108,7 +108,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		};
 	}
 	const keyInfo = await resolveOpenAICompatKey(args);
-	const res = await fetch(openAICompatUrl(args.providerId, "/images/generations"), {
+	// The timing tracker counts a 2xx so a later pricing failure is not retried on another provider.
+	const fetcher = args.upstreamTiming?.fetch ?? fetch;
+	const res = await fetcher(openAICompatUrl(args.providerId, "/images/generations"), {
 		method: "POST",
 		headers: openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta)),
 		body: JSON.stringify(request),
