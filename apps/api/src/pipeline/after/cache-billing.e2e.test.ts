@@ -399,6 +399,63 @@ describe("Claude Opus 5.5 native Messages streams", () => {
 	}));
 });
 
+// Claude on Azure: the catalogue holds one TTL-agnostic write row ($3.75, the 5-minute
+// price). 1-hour writes are billed at the documented 2x input
+// (https://platform.claude.com/docs/en/build-with-claude/prompt-caching#pricing).
+describe("Claude on Azure with one write row", () => {
+	const azurePrices: TokenPrices = { input: "3", output: "15", cachedRead: "0.3", cachedWrite: "3.75" };
+	const card = textCard("azure", "anthropic/claude-sonnet-4-6", azurePrices);
+	const expected = expectedNanos([[2_100, 3], [48_000, 0.3], [2_000, 3.75], [1_000, 6], [850, 15]]);
+	const withAzureRuntime = async (run: () => Promise<void>) => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ AZURE_OPENAI_BASE_URL: "https://example-resource.services.ai.azure.com", AZURE_OPENAI_API_KEY: "test-key" } as any);
+		try { await run(); } finally { teardownTestRuntime(); setupTestRuntime(); }
+	};
+
+	for (const endpoint of ["chat.completions", "responses", "messages"] as const) {
+		it(`bills 1-hour writes at the 1-hour rate on ${endpoint} (buffered)`, async () => withAzureRuntime(async () => {
+			stubFetch(() => new Response(claudeSse(), { headers: { "content-type": "text/event-stream" } }));
+			const executor = await asCompleted(await executeAnthropic(executorArgs(endpoint, "azure", "claude-sonnet-4-6", false)));
+			const { nanos, usage } = await runNonStream({ endpoint, provider: "azure", model: "anthropic/claude-sonnet-4-6", card, executor });
+			report(`azure ${endpoint} buffered`, nanos, expected);
+			expect(nanos).toBe(expected);
+			expectOpenAIClientUsage(endpoint, usage, claudeTokens);
+		}));
+
+		it(`bills 1-hour writes at the 1-hour rate on ${endpoint} (streamed)`, async () => withAzureRuntime(async () => {
+			stubFetch(() => new Response(claudeSse(), { headers: { "content-type": "text/event-stream" } }));
+			const executor: any = await executeAnthropic(executorArgs(endpoint, "azure", "claude-sonnet-4-6", true));
+			const { nanos } = await runStream({ endpoint, provider: "azure", model: "anthropic/claude-sonnet-4-6", card, executor });
+			report(`azure ${endpoint} streamed`, nanos, expected);
+			expect(nanos).toBe(expected);
+		}));
+	}
+});
+
+// A Claude stream's final message_delta carries cumulative usage with the write total but no
+// cache_creation split (https://platform.claude.com/docs/en/build-with-claude/streaming).
+// Writes beyond message_start's split are billed, at the 5-minute rate.
+describe("Claude stream whose final write total exceeds the message_start split", () => {
+	const card = textCard("anthropic", "anthropic/claude-sonnet-4-6", sonnetPrices);
+	const tokens: Tokens = { uncached: 2_100, read: 48_000, write5m: 3_000, write1h: 1_000, output: 850 };
+	const expected = expectedCost(tokens, sonnetPrices);
+	const sseWithCumulativeDelta = () => claudeSse().replace(
+		JSON.stringify({ output_tokens: 850 }),
+		JSON.stringify({ input_tokens: 2_100, cache_creation_input_tokens: 4_000, cache_read_input_tokens: 48_000, output_tokens: 850 }),
+	);
+
+	for (const endpoint of ["chat.completions", "responses", "messages"] as const) {
+		it(`bills every write on ${endpoint} (streamed)`, async () => {
+			stubFetch(() => new Response(sseWithCumulativeDelta(), { headers: { "content-type": "text/event-stream" } }));
+			const executor: any = await executeAnthropic(executorArgs(endpoint, "anthropic", "claude-sonnet-4-6", true));
+			const { nanos, usage } = await runStream({ endpoint, provider: "anthropic", model: "anthropic/claude-sonnet-4-6", card, executor });
+			report(`anthropic cumulative delta ${endpoint} streamed`, nanos, expected);
+			expect(nanos).toBe(expected);
+			if (endpoint !== "messages") expectOpenAIClientUsage(endpoint, usage, tokens);
+		});
+	}
+});
+
 // ---------------------------------------------------------------------------------------
 // OpenAI-compatible families. Each uses the provider's documented usage shape.
 // ---------------------------------------------------------------------------------------

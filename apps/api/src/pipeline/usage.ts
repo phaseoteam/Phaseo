@@ -346,7 +346,9 @@ export function shapeUsageForClient(
         shaped.cached_write_text_tokens == null &&
         (cachedWrite5m !== undefined || cachedWrite1h !== undefined)
     ) {
-        shaped.cached_write_text_tokens = (cachedWrite5m ?? 0) + (cachedWrite1h ?? 0);
+        // The reported write total, which can exceed the TTL split (a Claude stream's
+        // cumulative message_delta), wins over the split's sum.
+        shaped.cached_write_text_tokens = cachedWrite ?? (cachedWrite5m ?? 0) + (cachedWrite1h ?? 0);
     }
 
     shaped.input_tokens = tokensIn;

@@ -265,7 +265,11 @@ export function reportedCacheTokens(usage: any): ReportedCacheTokens {
 		const write5m = sum((dimension) => dimension === "cached_write_text_tokens_5m");
 		const write1h = sum((dimension) => dimension === "cached_write_text_tokens_1h");
 		const aggregateWrite = sum((dimension) => dimension.startsWith("cached_write_") && !/_(5m|1h)$/.test(dimension));
-		const write = aggregateWrite ?? (write5m !== undefined || write1h !== undefined ? (write5m ?? 0) + (write1h ?? 0) : undefined);
+		// The pricing engine bills each write on one line: an aggregate line can sit beside a
+		// 1-hour line when the 1-hour writes were priced at their own rate.
+		const write = aggregateWrite !== undefined || write5m !== undefined || write1h !== undefined
+			? (aggregateWrite ?? 0) + (write5m ?? 0) + (write1h ?? 0)
+			: undefined;
 		if (read !== undefined || write !== undefined) {
 			return { readTokens: read, writeTokens: write, write5mTokens: write5m, write1hTokens: write1h };
 		}

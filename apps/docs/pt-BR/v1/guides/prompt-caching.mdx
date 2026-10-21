@@ -129,6 +129,8 @@ Cada provedor recebe a marcação no próprio formato:
 
 Marcações em definições de ferramentas chegam apenas às rotas do Claude, ao Alibaba Model Studio e à Venice; a OpenAI não aceita pontos de interrupção em ferramentas. Remover uma marcação não altera o restante do prompt, então o prefixo em cache corresponde ao de uma solicitação sem marcações.
 
+A Amazon Bedrock e o Google Vertex AI armazenam em cache o Claude 3.7 Sonnet, o 3.5 Sonnet e o 3 Opus por apenas 5 minutos, e a Bedrock pode rejeitar um `ttl` nesses modelos. Nessas rotas, o Phaseo envia seus pontos de interrupção sem `ttl`, então eles ficam em cache por 5 minutos, e informa um `1h` removido como `cache_control.ttl` no cabeçalho `X-Phaseo-Dropped-Params` e em `meta.routing.dropped_params`.
+
 <span id="openai-retention-and-options"></span>
 ### Retenção e opções da OpenAI
 
@@ -350,6 +352,10 @@ Se um provedor informar tokens em cache em uma rota que ainda não tem preço de
 - As leituras do cache são cobradas pela tarifa de entrada da rota.
 - As gravações são cobradas pela tarifa de entrada multiplicada pelo fator de gravação documentado pelo provedor: 1,25× para gravações do Claude de 5 minutos e 2× para as de 1 hora; 1,25× para OpenAI, Azure OpenAI e Alibaba; 1× para gravações do Kimi K3 de 5 minutos e 2× para as de 1 hora; 1× para os demais provedores.
 - A linha de preço recebe a marcação `pricing_fallback: "input_rate"`.
+
+Em uma rota do Claude cujo catálogo tem um único preço de gravação em cache, esse preço é a tarifa de 5 minutos. As gravações que o provedor informa como gravações de 1 hora são cobradas pelo dobro da tarifa de entrada, em uma linha `cached_write_text_tokens_1h` com a marcação `pricing_fallback: "input_rate"`.
+
+O último `message_delta` de uma resposta do Claude em streaming informa o total acumulado de gravações em cache, sem a divisão por TTL. As gravações além dessa divisão são cobradas como gravações de 5 minutos, porque as gravações das ferramentas do servidor podem usar 5 minutos mesmo quando a solicitação pede 1 hora.
 
 Alguns provedores não dão desconto em tokens em cache em alguns modelos. As páginas desses modelos mostram o mesmo preço para entrada e leituras do cache.
 

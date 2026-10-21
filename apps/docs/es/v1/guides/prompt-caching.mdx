@@ -129,6 +129,8 @@ Cada proveedor recibe la marca en su propio formato:
 
 Las marcas en definiciones de herramientas solo llegan a las rutas de Claude, Alibaba Model Studio y Venice; OpenAI no acepta puntos de corte en herramientas. Eliminar una marca no cambia el resto del prompt, así que el prefijo en caché coincide con el de una solicitud sin marcas.
 
+Amazon Bedrock y Google Vertex AI almacenan en caché Claude 3.7 Sonnet, 3.5 Sonnet y 3 Opus solo durante 5 minutos, y Bedrock puede rechazar un `ttl` en esos modelos. En esas rutas, Phaseo envía tus puntos de corte sin `ttl`, así que se almacenan en caché durante 5 minutos, e informa de un `1h` eliminado como `cache_control.ttl` en el encabezado `X-Phaseo-Dropped-Params` y en `meta.routing.dropped_params`.
+
 <span id="openai-retention-and-options"></span>
 ### Retención y opciones de OpenAI
 
@@ -350,6 +352,10 @@ Si un proveedor informa de tokens en caché en una ruta que aún no tiene precio
 - Las lecturas del caché se facturan a la tarifa de entrada de la ruta.
 - Las escrituras se facturan a la tarifa de entrada multiplicada por el factor de escritura documentado por el proveedor: 1,25× para escrituras de Claude de 5 minutos y 2× para las de 1 hora; 1,25× para OpenAI, Azure OpenAI y Alibaba; 1× para escrituras de Kimi K3 de 5 minutos y 2× para las de 1 hora; 1× para los demás proveedores.
 - La línea de precio lleva la marca `pricing_fallback: "input_rate"`.
+
+En una ruta de Claude cuyo catálogo tiene un único precio de escritura en caché, ese precio es la tarifa de 5 minutos. Las escrituras que el proveedor informa como escrituras de 1 hora se facturan al doble de la tarifa de entrada, en una línea `cached_write_text_tokens_1h` con la marca `pricing_fallback: "input_rate"`.
+
+El último `message_delta` de una respuesta de Claude en streaming informa del total acumulado de escrituras en caché sin el desglose por TTL. Las escrituras que superan el desglose se facturan como escrituras de 5 minutos, porque las escrituras de las herramientas del servidor pueden usar 5 minutos aunque la solicitud pida 1 hora.
 
 Algunos proveedores no aplican descuento a los tokens en caché en algunos modelos. Las páginas de esos modelos muestran el mismo precio para la entrada y las lecturas del caché.
 

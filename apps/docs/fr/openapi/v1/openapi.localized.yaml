@@ -8942,7 +8942,7 @@ components:
             - full
     CacheControl:
       type: object
-      description: Contrôle du cache de prompts. Utilisez type ephemeral avec un ttl facultatif de 5m ou 1h. scope ne s’applique qu’à une politique de cache Claude de premier niveau.
+      description: Contrôle du cache de prompts. Utilisez type ephemeral avec un ttl facultatif de 5m ou 1h. scope ne s’applique qu’à une politique de cache Claude de premier niveau. Amazon Bedrock et Google Vertex AI ne mettent en cache Claude 3.7 Sonnet, 3.5 Sonnet et 3 Opus que pendant 5 minutes ; le ttl y est retiré, et un 1h retiré est signalé dans X-Phaseo-Dropped-Params sous la forme cache_control.ttl.
       properties:
         type:
           type: string

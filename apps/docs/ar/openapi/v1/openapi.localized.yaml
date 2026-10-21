@@ -8942,7 +8942,7 @@ components:
             - full
     CacheControl:
       type: object
-      description: التحكم في ذاكرة المطالبات المؤقتة. استخدم type ephemeral مع ttl اختياري قيمته 5m أو 1h. ولا ينطبق scope إلا على سياسة تخزين مؤقت لـ Claude على المستوى الأعلى.
+      description: التحكم في ذاكرة المطالبات المؤقتة. استخدم type ephemeral مع ttl اختياري قيمته 5m أو 1h. ولا ينطبق scope إلا على سياسة تخزين مؤقت لـ Claude على المستوى الأعلى. تخزّن Amazon Bedrock وGoogle Vertex AI نماذج Claude 3.7 Sonnet و3.5 Sonnet و3 Opus مؤقتًا لمدة 5 دقائق فقط؛ وهناك يُحذف ttl، ويُبلَغ عن قيمة 1h المحذوفة في X-Phaseo-Dropped-Params باسم cache_control.ttl.
       properties:
         type:
           type: string
