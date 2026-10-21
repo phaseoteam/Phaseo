@@ -80,6 +80,7 @@ describe("Mistral audio speech endpoint", () => {
 			expect(result.upstream.status).toBe(200);
 			expect(result.upstream.headers.get("content-type")).toBe("audio/wav");
 			expect(await result.upstream.text()).toBe("RIFFfake-audio");
+			expect(result.normalized).toEqual({ audio_base64: btoa("RIFFfake-audio"), mime_type: "audio/wav" });
 			expect((result.bill.usage as any).pricing.total_nanos).toBe(16_000_000);
 		}
 	});

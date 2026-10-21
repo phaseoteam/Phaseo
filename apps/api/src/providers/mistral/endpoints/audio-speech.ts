@@ -120,7 +120,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		};
 	}
 
-	const json = await res.clone().json().catch(() => undefined) as { audio_data?: unknown } | undefined;
+	const json = await res.json().catch(() => undefined) as { audio_data?: unknown } | undefined;
 	if (typeof json?.audio_data !== "string" || json.audio_data.length === 0) {
 		return {
 			kind: "completed",
@@ -144,6 +144,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		};
 	}
 
+	// Handing the bridge the provider's base64 spares it from re-reading and re-encoding the whole clip.
 	return {
 		kind: "completed",
 		upstream: new Response(audio, {
@@ -153,6 +154,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 				"Content-Length": String(audio.byteLength),
 			},
 		}),
+		normalized: { audio_base64: json.audio_data, mime_type: MIME_TYPES[format] },
 		bill: pricedBill(body.input.length, args, upstreamId),
 		keySource: keyInfo.source,
 		byokKeyId: keyInfo.byokId,
