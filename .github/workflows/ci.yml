@@ -181,6 +181,9 @@ jobs:
             - name: Validate shared request classifier rules
               run: pnpm run validate:request-classifiers
 
+            - name: Validate shared workspace budget rules
+              run: pnpm run validate:workspace-budgets
+
             - name: Validate unique Supabase migration versions
               shell: bash
               run: |

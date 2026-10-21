@@ -31,6 +31,8 @@ Un quota du gateway épuisé entraîne une réponse `429` avec `Retry-After` en 
 
 Lorsque les limites quotidiennes, hebdomadaires ou mensuelles de requêtes et de dépenses d’une clé API, ou les [budgets](./endpoint/budgets-list.mdx) de l’espace de travail, sont atteintes, la réponse est `429` avec le code d’erreur `key_limit_exceeded`. Les champs `reason`, `limit_window` et `reset_at` du corps identifient la limite et le moment où sa période se réinitialise. `Retry-After` indique le nombre de secondes avant cette réinitialisation. Il est omis lorsque la limite ne se réinitialise pas d’elle-même, comme un budget à vie ou une clé temporairement bloquée ; au lieu de réessayer, augmentez alors le budget de l’espace de travail ou, pour une limite de clé, augmentez la limite de la clé ou utilisez une autre clé.
 
+Les propriétaires et administrateurs de l’espace de travail peuvent aussi définir, modifier et supprimer des budgets dans le tableau de bord, sous [Paramètres → Budgets](https://phaseo.app/settings/budgets). La page indique pour chaque budget les dépenses à ce jour, la part utilisée, une projection pour la période et l’heure de réinitialisation. Les budgets quotidiens, hebdomadaires et mensuels sont réinitialisés sur des limites UTC : à minuit, le lundi à 00:00 et le 1er du mois.
+
 ## Politiques de limite de débit
 
 Les administrateurs de l’espace de travail peuvent créer des politiques de limite de débit nommées via l’API de gestion `/v1/rate-limits` et les attribuer à des clés API, à des membres de l’espace de travail, à des garde-fous, ou comme valeur par défaut pour chaque utilisateur final. Le gateway applique les valeurs `requests_per_minute` et `tokens_per_minute` d’une politique, chacune mesurée sur une minute glissante :

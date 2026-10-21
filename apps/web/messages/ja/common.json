@@ -340,7 +340,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "料金の計算方法",
 				"nav-how-phaseo-tracks-provider-availability": "プロバイダーの利用可能状況の追跡方法",
 				"nav-chat-decisions": "判断",
-				"nav-settings-account-providers": "プロバイダーの初期設定"
+				"nav-settings-account-providers": "プロバイダーの初期設定",
+				"nav-settings-budgets": "予算"
 			}
 		},
 		"searchDataUnavailable": "検索データを読み込めませんでした。",

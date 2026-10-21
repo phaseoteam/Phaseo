@@ -2,6 +2,7 @@ import type { StatsigProfile } from "@/lib/statsig/shared";
 import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
 import type { DisplayPreferences } from "@/lib/displayPreferences";
+import type { BudgetInterval as WorkspaceBudgetInterval } from "@/components/(gateway)/settings/budgets/workspaceBudgets";
 import type { ClassifierDimension, ClassifierScope, InputScope, SampleBy } from "@/components/(gateway)/settings/classifiers/requestClassifiers";
 
 export type SettingsLayoutInitialData = {
@@ -602,6 +603,32 @@ export type SettingsClassifiersInitialData = {
 	classifiers: SettingsClassifier[];
 	keys: Array<{ id: string; name: string; prefix: string; status: string }>;
 	apps: Array<{ id: string; title: string }>;
+};
+
+/** A workspace budget with usage from the gateway's enforcement function (web-api settings-budgets). */
+export type SettingsWorkspaceBudget = {
+	id: string;
+	interval: WorkspaceBudgetInterval;
+	limit_usd: number;
+	limit_nanos: number;
+	usage_usd: number;
+	usage_nanos: number;
+	remaining_nanos: number;
+	percent_used: number;
+	exceeded: boolean;
+	window_start: string | null;
+	/** Null for lifetime budgets, which never reset. */
+	reset_at: string | null;
+	created_by: string | null;
+	created_at: string;
+	updated_at: string;
+};
+export type SettingsBudgetsInitialData = {
+	workspaceId: string | null;
+	canManageBudgets: boolean;
+	/** Database time the usage was read, so projections match between render and hydration. */
+	observedAt: string;
+	budgets: SettingsWorkspaceBudget[];
 };
 
 export type SettingsUsageAlertsInitialData = { signedIn: boolean; warnings: DeprecationWarning[]; workspaceId: string | null };

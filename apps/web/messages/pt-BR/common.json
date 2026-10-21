@@ -340,7 +340,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "Como os preços são calculados",
 				"nav-how-phaseo-tracks-provider-availability": "Como a disponibilidade dos provedores é acompanhada",
 				"nav-chat-decisions": "Decisões",
-				"nav-settings-account-providers": "Integração de novos provedores"
+				"nav-settings-account-providers": "Integração de novos provedores",
+				"nav-settings-budgets": "Orçamentos"
 			}
 		},
 		"searchDataUnavailable": "Não foi possível carregar os dados de pesquisa.",

@@ -31,6 +31,8 @@ Bei ausgeschöpftem Gateway-Kontingent wird `429` mit `Retry-After` in Sekunden 
 
 Sind die täglichen, wöchentlichen oder monatlichen Anfrage- und Ausgabenlimits eines API-Schlüssels oder die [Budgets](./endpoint/budgets-list.mdx) des Arbeitsbereichs erreicht, wird `429` mit dem Fehlercode `key_limit_exceeded` zurückgegeben. Die Felder `reason`, `limit_window` und `reset_at` im Antworttext nennen das Limit und den Zeitpunkt, zu dem sein Zeitraum zurückgesetzt wird. `Retry-After` gibt die Sekunden bis zu diesem Zurücksetzen an. Der Header fehlt, wenn sich das Limit nicht von selbst zurücksetzt, etwa bei einem Gesamtbudget oder einem vorübergehend gesperrten Schlüssel; erhöhe dann statt eines erneuten Versuchs das Arbeitsbereichsbudget oder, bei einem Schlüssellimit, das Limit des Schlüssels, oder verwende einen anderen Schlüssel.
 
+Eigentümer und Administratoren des Arbeitsbereichs können Budgets auch im Dashboard unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets) festlegen, ändern und löschen. Die Seite zeigt für jedes Budget die bisherigen Ausgaben, den genutzten Anteil, eine Hochrechnung für den Zeitraum und den Zeitpunkt des Zurücksetzens. Tages-, Wochen- und Monatsbudgets werden an UTC-Grenzen zurückgesetzt: um Mitternacht, montags um 00:00 und am 1. des Monats.
+
 ## Ratenlimit-Richtlinien
 
 Workspace-Admins können über die Management-API `/v1/rate-limits` benannte Ratenlimit-Richtlinien erstellen und sie API-Schlüsseln, Workspace-Mitgliedern, Sicherheitsleitplanken oder als Standard für jeden Endnutzer zuweisen. Das Gateway setzt die Werte `requests_per_minute` und `tokens_per_minute` einer Richtlinie durch, jeweils gemessen über eine gleitende Minute:

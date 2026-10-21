@@ -31,6 +31,8 @@ Cuando se agota una cuota del gateway, se devuelve `429` con `Retry-After` en se
 
 Al alcanzar los límites diarios, semanales o mensuales de solicitudes y gasto de una clave API, o los [presupuestos](./endpoint/budgets-list.mdx) del espacio de trabajo, se devuelve `429` con el código de error `key_limit_exceeded`. Los campos `reason`, `limit_window` y `reset_at` del cuerpo identifican el límite y cuándo se restablece su periodo. `Retry-After` indica los segundos que faltan para ese restablecimiento. Se omite cuando el límite no se restablece por sí solo, como un presupuesto vitalicio o una clave bloqueada temporalmente; en ese caso, en lugar de reintentar, aumente el presupuesto del espacio de trabajo o, si es un límite de clave, aumente el límite de la clave o use otra clave.
 
+Los propietarios y administradores del espacio de trabajo también pueden crear, cambiar y eliminar presupuestos en el panel, en [Configuración → Presupuestos](https://phaseo.app/settings/budgets). La página muestra el gasto acumulado de cada presupuesto, el porcentaje usado, una proyección para el periodo y cuándo se restablece. Los presupuestos diarios, semanales y mensuales se restablecen en límites UTC: a medianoche, el lunes a las 00:00 y el día 1 de cada mes.
+
 ## Políticas de límite de frecuencia
 
 Los administradores del espacio de trabajo pueden crear políticas de límite de frecuencia con nombre mediante la API de administración `/v1/rate-limits` y asignarlas a claves API, miembros del espacio de trabajo, barreras de seguridad o como valor predeterminado para cada usuario final. El gateway aplica el `requests_per_minute` y el `tokens_per_minute` de una política, cada uno medido en un minuto móvil:
