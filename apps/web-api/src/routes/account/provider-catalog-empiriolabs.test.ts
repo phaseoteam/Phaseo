@@ -9,6 +9,20 @@ function model(id: string, upstream: string, price: number) {
 }
 
 describe("EmpirioLabs legacy serving offers", () => {
+	it("preserves distinct v1.2 standard and speed policies and declarations through grouping", () => {
+		const data = [model("minimax/minimax-m2.7", "base", 123), model("minimax/minimax-m2.7-highspeed", "speed", 456)].map(({ pricing, provider_model_slug, ...base }, index) => ({
+			...base, declarations: { tokenizer: `tokenizer-${index}` }, service_tiers: [{ service_tier: "standard", provider_model_slug, pricing,
+				declarations: { deployment_region: index ? "EU" : "US" }, data_policy: { capabilities: [{ id: "text.generate", training_policy: "no_train", retention_mode: "none", retention_days: 0,
+					zero_data_retention: !index, zdr_eligibility: index ? "ineligible" : "eligible", requirements: { contract_mode: "none", account_settings: [] }, privacy_policy_url: "https://provider.example/privacy", terms_of_service_url: "https://provider.example/terms" }] } }],
+		}));
+		const parsed = normalizeProviderCatalog({ schema_version: "1.2", data });
+		expect(parsed.issues).toEqual([]);
+		const grouped = normalizeEmpirioLabsCatalog(parsed.allModels);
+		const roundtrip = normalizeProviderCatalog(normalizedCatalogDocument(grouped));
+		expect(roundtrip.issues).toEqual([]);
+		expect(roundtrip.allModels[0].serviceTiers?.map(tier => [tier.dataPolicy?.capabilities[0].zero_data_retention, tier.declarations?.tokenizer, tier.declarations?.deployment_region]))
+			.toEqual([[true, "tokenizer-0", "US"], [false, "tokenizer-1", "EU"]]);
+	});
 	const edit = (value: unknown) => ({ value, actor_id: "operator", actor_kind: "phaseo" as const, edited_at: "2026-10-10T00:00:00Z" });
 	const feed = () => normalizeProviderCatalog({ data: [model("minimax/minimax-m2.7", "base", 123), model("minimax/minimax-m2.7-highspeed", "speed", 456)] }).allModels;
 	it("preserves legacy speed-ID availability and price overrides across upstream refreshes", () => {

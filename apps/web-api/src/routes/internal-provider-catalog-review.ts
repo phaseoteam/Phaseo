@@ -128,7 +128,8 @@ internalProviderCatalogReviewRouter.put("/provider-catalog/providers/:providerSl
 		approved_at: new Date().toISOString(), updated_at: new Date().toISOString(),
 	}, { onConflict: "provider_slug" });
 	if (result.error) return c.json({ error: "policy_approval_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const cache = await purgeWorkerCacheTags(c.executionCtx, [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-model-pricing", "web-api-model-details"]);
+	const tags = [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-model-pricing", "web-api-model-details", "web-api-compare"];
+	const cache = await purgeWorkerCacheTags(c.executionCtx, tags).catch(() => ({ success: false, unavailable: false, tags }));
 	return c.json({ success: true, enabled: parsed.data.enabled, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
@@ -256,7 +257,7 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/providers/:provider
 		return c.json({ error: "provider_review_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	if (parsed.data.decision === "approved") {
-		c.executionCtx.waitUntil(syncProviderCatalog(c.env, providerSlug, "manual").catch((error) => {
+		c.executionCtx.waitUntil(syncProviderCatalog(c.env, providerSlug, "manual", undefined, c.executionCtx).catch((error) => {
 			console.error("provider_claim_catalog_initial_sync_failed", { providerSlug, errorType: error instanceof Error ? error.name : "UnknownError" });
 		}));
 	}
@@ -295,7 +296,7 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/model-requests/:req
 	if (parsed.data.decision !== "approved" && !parsed.data.reason?.trim()) return c.json({ error: "review_reason_required" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await getDataClient(c.env).rpc("review_provider_catalog_model_request", { p_request_id: requestId.data, p_decision: parsed.data.decision, p_reason: parsed.data.reason ?? null, p_reviewed_by: user.id, p_expected_updated_at:expected.data });
 	if (result.error) return c.json({ error: "model_review_conflict" }, 409, PRIVATE_NO_STORE_HEADERS);
-	if (parsed.data.decision === "approved") c.executionCtx.waitUntil(syncProviderCatalog(c.env, String(result.data), "manual").catch(() => { console.error("provider_model_approval_sync_failed"); }));
+	if (parsed.data.decision === "approved") c.executionCtx.waitUntil(syncProviderCatalog(c.env, String(result.data), "manual", undefined, c.executionCtx).catch(() => { console.error("provider_model_approval_sync_failed"); }));
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

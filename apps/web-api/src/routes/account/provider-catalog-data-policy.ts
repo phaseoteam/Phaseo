@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { canonicalCatalogCapability } from "./provider-catalog-capabilities";
 
 export const catalogPolicyEvidenceUrlSchema = z.string().url().max(2000).refine((value) => {
 	try {
@@ -40,7 +41,9 @@ export function parseCatalogDataPolicy(value: unknown, capabilityIds: string[], 
 	const seen = new Set<string>();
 	for (const [index, policy] of (parsed.data?.capabilities ?? []).entries()) {
 		const fail = (message: string) => issues.push({ path: `capabilities.${index}`, message });
-		if (!capabilityIds.map((id) => ["responses", "chat.completions", "messages"].includes(id) ? "text.generate" : id).includes(policy.id) || seen.has(policy.id)) fail("Use a unique capability declared by this model.");
+		const canonical = canonicalCatalogCapability(policy.id);
+		if (canonical) policy.id = canonical;
+		if (!canonical || !capabilityIds.map(canonicalCatalogCapability).includes(canonical) || seen.has(policy.id)) fail("Use a unique canonical capability declared by this model.");
 		seen.add(policy.id);
 		if ((policy.retention_mode === "none" && policy.retention_days !== 0)
 			|| (["fixed", "transient"].includes(policy.retention_mode) && !(policy.retention_days != null && policy.retention_days > 0))

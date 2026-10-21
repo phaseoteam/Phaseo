@@ -1,5 +1,6 @@
 import {
 	getPlanZdrEligibility,
+	getProviderPromptTrainingPolicy,
 	getPriceColumnForSort,
 	getProviderServiceTierDisplayName,
 	isTerminalRuntimeStatsRetry,
@@ -100,6 +101,27 @@ describe("route retention in pricing table scopes", () => {
 		pricing_rules: [],
 	});
 	const native = { tier: "private", confidence: "confirmed", zdrEligibility: "eligible", zeroDataRetention: true };
+	it("rejects an expired tier guarantee even with a positive model and provider default", () => {
+		const provider = offer([native]); provider.provider.zero_data_retention = true;
+		provider.provider.service_tier_data_policies = { standard: { ...native, catalogManaged: true, validUntil: "2000-01-01T00:00:00Z" } };
+		expect(getPlanZdrEligibility(provider, "standard")).toBe(false);
+	});
+	it("uses current scoped training facts before provider defaults and manual fallbacks", () => {
+		const provider = offer([{ trainingPolicy: "may_train" }]);
+		provider.provider.prompt_training_policy = "no_train";
+		expect(getProviderPromptTrainingPolicy(provider, "standard")).toBe("may_train");
+		provider.provider_models[0].data_policy = { trainingPolicy: "no_train", catalogManaged: true, validUntil: "2000-01-01T00:00:00Z" };
+		expect(getProviderPromptTrainingPolicy(provider, "standard")).toBe("unknown");
+		provider.provider_models[0].data_policy = { trainingPolicy: "no_train" };
+		expect(getProviderPromptTrainingPolicy(provider, "standard")).toBe("no_train");
+		provider.provider.service_tier_data_policies = { standard: { trainingPolicy: "may_train" } };
+		expect(getProviderPromptTrainingPolicy(provider, "standard")).toBe("may_train");
+	});
+	it("does not hide a retained or undeclared member of a mixed training scope", () => {
+		const provider = offer([{ trainingPolicy: "no_train" }, {}]);
+		provider.provider.prompt_training_policy = "may_train";
+		expect(getProviderPromptTrainingPolicy(provider, "standard")).toBe("may_train");
+	});
 	it("uses verified route guarantees for table filters and retention hover", () => {
 		expect(getPlanZdrEligibility(offer([native]), "standard")).toBe(true);
 		expect(getPlanZdrEligibility(offer([{}]), "standard")).toBe(false);

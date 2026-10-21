@@ -14,8 +14,9 @@ const CONTACT_ID = "22222222-2222-4222-8222-222222222222";
 describe("provider application review API", () => {
 	afterEach(() => vi.unstubAllGlobals());
 
-	it.each(["user", "admin"])("restricts privacy approval to Phaseo admins (%s)", async (role) => {
+	it.each([["user", false], ["admin", false], ["admin", true]] as const)("restricts privacy approval to Phaseo admins (%s), purge throws=%s", async (role, purgeThrows) => {
 		let saved: any = null;
+		const purge = vi.fn(async () => { if (purgeThrows) throw new Error("purge unavailable"); return { success: true }; });
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return Response.json({ id: ADMIN_ID });
@@ -27,10 +28,14 @@ describe("provider application review API", () => {
 		const response = await app.request("https://phaseo.app/api/internal/provider-catalog/providers/sample/data-policy-approval", {
 			method: "PUT", headers: { authorization: "Bearer test", "content-type": "application/json" },
 			body: JSON.stringify({ enabled: true, privacy_policy_url: "https://provider.example/privacy" }),
-		}, env, { waitUntil() {}, passThroughOnException() {} } as never);
+		}, env, { waitUntil() {}, passThroughOnException() {}, cache: { purge } } as never);
 		expect(response.status).toBe(role === "admin" ? 200 : 401);
 		if (role === "admin") expect(saved).toMatchObject({ provider_slug: "sample", approved_by: ADMIN_ID, catalog_url: "https://provider.example/catalog", enabled: true });
 		else expect(saved).toBeNull();
+		if (role === "admin") {
+			expect(purge).toHaveBeenCalledWith({ tags: expect.arrayContaining(["web-api-compare", "web-api-model-pricing", "web-api-model-details"]) });
+			expect(await response.json()).toMatchObject({ success: true, enabled: true, cache: { success: !purgeThrows } });
+		} else expect(purge).not.toHaveBeenCalled();
 	});
 
 	it("preserves submitted service tiers when approving a model revision", async () => {

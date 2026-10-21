@@ -1,6 +1,6 @@
 # Provider catalog v1.2 implementation verification
 
-Status: Draft PR #3107. Generated migration committed; schema equivalence and full replay are pending CI.
+Status: PR #3107. Initial migration generation, schema equivalence and full replay passed in CI. Review follow-up changes require a new generated migration and replay.
 
 ## Implemented
 
@@ -28,7 +28,7 @@ Vitest exercises real Hono request/response handling with mocked persistence. Fo
 - Declarative replay-history tooling: **4 Node tests passed**. This tests replay tooling invariants, not the new SQL.
 - `git diff --check`: passed.
 
-## Remaining database gate
+## Historical local database limitation (resolved in CI)
 
 `pnpm db:schema:sync -- -f provider_catalog_v12_data_policy` failed with:
 
@@ -36,7 +36,7 @@ Vitest exercises real Hono request/response handling with mocked persistence. Fo
 docker: command not found (podman also not found) â€” install Docker Desktop or Podman and ensure it is on PATH
 ```
 
-No forward migration was generated. Do not deploy these application changes against the old schema. Repository instructions require generating the migration from the desired definitions, rather than hand-writing a substitute.
+This initial local attempt generated no migration. The CI generation run later produced the committed migration, and equivalence/replay checks passed. Do not repeat initial generation for that completed change. Review follow-up SQL changes still require their own generated forward migration and fresh checks; do not deploy application changes against an older schema.
 
 Once a local runtime is available, run:
 

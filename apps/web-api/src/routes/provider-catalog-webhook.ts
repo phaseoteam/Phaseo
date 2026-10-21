@@ -26,10 +26,17 @@ providerCatalogWebhookRouter.get("/provider-catalog/openapi", (c) => c.json({
 	openapi: "3.1.0",
 	info: {
 		title: "Phaseo provider catalog webhook",
-		version: "1.1.0",
+		version: "1.2.0",
 		description: "Signal that your catalog changed; Phaseo then fetches the catalog document from your configured URL. The document's optional rate_limits section declares the request and token limits your platform imposes on Phaseo. Declared limits apply without review once your provider application is approved, and reaching one only ranks your offers lower in routing.",
 	},
 	paths: {
+		"/api/internal/provider-catalog/schema": {
+			get: {
+				summary: "Download a versioned provider catalog JSON schema",
+				parameters: [{ name: "version", in: "query", schema: { type: "string", enum: ["1.0", "1.1", "1.2"], default: "1.0" }, description: "V1.2 adds capability-scoped data_policy to service tiers and optional declarations." }],
+				responses: { "200": { description: "JSON Schema for the requested catalog version", content: { "application/json": { schema: { type: "object" } } } }, "400": { description: "Unsupported catalog version" } },
+			},
+		},
 		"/api/internal/provider-catalog/{providerSlug}": {
 			post: {
 				summary: "Notify Phaseo that a provider catalog changed",
@@ -42,6 +49,8 @@ providerCatalogWebhookRouter.get("/provider-catalog/openapi", (c) => c.json({
 	components: {
 		schemas: {
 			ProviderCatalog: { $ref: "/api/internal/provider-catalog/schema" },
+			ProviderCatalogV11: { $ref: "/api/internal/provider-catalog/schema?version=1.1" },
+			ProviderCatalogV12: { $ref: "/api/internal/provider-catalog/schema?version=1.2" },
 			ProviderCatalogRateLimits: { ...providerCatalogJsonSchema.properties.rate_limits, items: { $ref: "#/components/schemas/ProviderCatalogRateLimit" } },
 			ProviderCatalogRateLimit: providerCatalogJsonSchema.$defs.rateLimit,
 		},

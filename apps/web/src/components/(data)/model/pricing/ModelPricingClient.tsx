@@ -410,13 +410,16 @@ function getProviderDefaultPlan(provider: ProviderPricing): string {
     return getPreferredPlan(getProviderAvailablePlans(provider));
 }
 
-function getProviderPromptTrainingPolicy(provider: ProviderPricing): string {
-    const override = provider.provider_models.find(
-        (model) => typeof model.prompt_training_policy_override === "string" && model.prompt_training_policy_override.trim()
-    )?.prompt_training_policy_override;
-    return normalizeProviderPromptTrainingPolicy(
-        override ?? provider.provider.prompt_training_policy ?? null
-    );
+export function getProviderPromptTrainingPolicy(provider: ProviderPricing, plan = getProviderDefaultPlan(provider)): string {
+    const scope = getProviderModelScopeForPlan(provider, plan);
+    const fallback = normalizeProviderPromptTrainingPolicy(provider.provider.prompt_training_policy);
+    const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]);
+    const policies = scope.map((model) => currentCatalogDataPolicy(model.data_policy)?.trainingPolicy
+        ?? normalizeProviderPromptTrainingPolicy(model.prompt_training_policy_override ?? fallback));
+    if (tierPolicy?.trainingPolicy != null) policies.push(tierPolicy.trainingPolicy);
+    if (policies.includes("may_train")) return "may_train";
+    if (policies.length) return policies.every((policy) => policy === "no_train") ? "no_train" : "unknown";
+    return fallback;
 }
 
 function resolveProviderGatewayStatus(provider: ProviderPricing): CanonicalGatewayStatus {
@@ -488,7 +491,7 @@ function getIgnoredPrivacyReasons(
         }
     }
 
-    const trainingPolicy = getProviderPromptTrainingPolicy(provider);
+    const trainingPolicy = getProviderPromptTrainingPolicy(provider, plan);
     if (trainingPolicy === "may_train") {
         const defaultPlan = getProviderDefaultPlan(provider);
         if (defaultPlan === "free" && !settings.privacyEnableFreeMayTrain) {
@@ -512,7 +515,7 @@ function matchesPrivacyFilter(
         return getPlanZdrEligibility(provider, plan) === true;
     }
     if (filter === "no_training") {
-        return getProviderPromptTrainingPolicy(provider) !== "may_train";
+        return getProviderPromptTrainingPolicy(provider, plan) === "no_train";
     }
     if (!workspacePrivacySettings?.isAuthenticated) return true;
         return getIgnoredPrivacyReasons(provider, workspacePrivacySettings, plan)
@@ -525,7 +528,7 @@ export function getPlanZdrEligibility(
 	plan: string,
 ): boolean | null {
 	const providerZdr = provider.provider.zero_data_retention;
-	const tierPolicy = provider.provider.service_tier_data_policies?.[plan];
+	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]);
 	const policies = getProviderModelScopeForPlan(provider, plan).map((model) => currentCatalogDataPolicy(model.data_policy));
 	return resolveScopedZdr(providerZdr, policies, tierPolicy);
 }
@@ -630,7 +633,7 @@ function ProviderServiceTierInfoIcons({
 					: statusKey.startsWith("deranked_")
 						? "statusDescriptions.rateLimited"
 						: "statusDescriptions.inactive";
-	const tierPolicy = provider.provider.service_tier_data_policies?.[plan] ?? null;
+	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]) ?? null;
 	const capabilityPolicies = providerModels
 		.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy))
 		.filter((policy): policy is NonNullable<typeof policy> => Boolean(policy));

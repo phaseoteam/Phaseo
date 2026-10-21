@@ -15,6 +15,20 @@ const feed = () => ({ schema_version: "1.2", data: [{ id: "acme/model", capabili
 }] }] });
 
 describe("catalog v1.2 privacy declarations", () => {
+	it.each([["embeddings", "text.embed"], ["audio.transcribe", "audio.transcription"], ["chat.generate", "text.generate"]])("preserves canonical policies for %s", (alias, canonical) => {
+		for (const id of [alias, canonical]) {
+			const body = feed(); body.data[0].capabilities = [alias];
+			Object.assign(body.data[0].service_tiers[0].data_policy.capabilities[0], { id, zero_data_retention: false, zdr_eligibility: "ineligible" });
+			const parsed = normalizeProviderCatalog(body);
+			expect(parsed.issues).toEqual([]);
+			expect(parsed.allModels[0].serviceTiers![0].dataPolicy?.capabilities[0].id).toBe(canonical);
+		}
+	});
+	it("rejects duplicate policies expressed through different aliases", () => {
+		const body = feed();
+		body.data[0].service_tiers[0].data_policy.capabilities.push({ ...declaration(), id: "responses" });
+		expect(normalizeProviderCatalog(body).valid).toBe(false);
+	});
 	it.each(["not-a-url", "", "http://example.com/privacy", "https://user:password@example.com/privacy"])("rejects invalid evidence without throwing: %s", (value) => {
 		expect(catalogPolicyEvidenceUrlSchema.safeParse(value).success).toBe(false);
 		const body = feed(); body.data[0].service_tiers[0].data_policy.capabilities[0].privacy_policy_url = value;

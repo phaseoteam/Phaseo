@@ -9,6 +9,12 @@ const env={WEBHOOK_SECRET_ENCRYPTION_KEY:"disposable-test-key"};
 const secret="whsec_disposable_test_only";
 const app=new Hono().route("/api/internal",providerCatalogWebhookRouter);
 describe("signed provider catalog webhook",()=>{
+ it("documents every supported schema version and the v1.2 contract",async()=>{
+  const response=await app.request("https://phaseo.app/api/internal/provider-catalog/openapi");
+  const document=await response.json() as any;
+  expect(document.paths["/api/internal/provider-catalog/schema"].get.parameters[0].schema).toMatchObject({enum:["1.0","1.1","1.2"],default:"1.0"});
+  expect(document.components.schemas.ProviderCatalogV12.$ref).toBe("/api/internal/provider-catalog/schema?version=1.2");
+ });
  beforeEach(async()=>{
   const encrypted=await encryptProviderCatalogWebhookSecret(env as never,secret);
   vi.mocked(getDataClient).mockReturnValue({from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{provider_slug:"sample",status:"active",...encrypted},error:null})})})})} as never);

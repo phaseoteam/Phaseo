@@ -44,6 +44,18 @@ begin
     raise exception 'provider_catalog_candidate_superseded';
   end if;
   -- Only this provider's feed-managed offers can be retired by its snapshot.
+  -- Withdraw previous feed claims before selective promotion. Models needing
+  -- changes and unapproved providers must not renew an older positive claim
+  -- merely because this source was fetched successfully. Promotion restores
+  -- declarations only for offers accepted from this snapshot, atomically.
+  update public.v2_route_capabilities cap
+  set metadata = jsonb_set(cap.metadata, '{catalog_data_policy,declaration}', 'null'::jsonb), updated_at = now()
+  from public.v2_model_provider_routes route
+  where route.provider_model_id = cap.provider_model_id
+    and route.provider_slug = p_provider_slug
+    and cap.metadata ? 'catalog_data_policy';
+
+  -- Only this provider's feed-managed offers can be retired by its snapshot.
   -- Keep their history and canonical models intact.
   update public.v2_model_provider_routes route
   set status = 'retired', routing_enabled = false,
