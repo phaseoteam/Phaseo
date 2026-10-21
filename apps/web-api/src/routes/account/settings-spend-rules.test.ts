@@ -30,6 +30,8 @@ type Fixture = {
 	rules?: Array<Record<string, unknown>>;
 	rpc?: (name: string, body: any) => Response;
 	gateway?: (request: Request) => Response;
+	/** Rows for other tables, by the last path segment (e.g. keys, workspace_departments). */
+	tables?: Record<string, unknown[]>;
 };
 
 function database(fixture: Fixture = {}) {
@@ -42,6 +44,9 @@ function database(fixture: Fixture = {}) {
 		requests.push({ url, method: request.method, body, headers: request.headers });
 		if (url.hostname === "api.test") return fixture.gateway ? fixture.gateway(request) : new Response("{}", { status: 500 });
 		if (url.pathname.endsWith("/auth/v1/user")) return Response.json({ id: "user-a", email: "fixture@example.com", app_metadata: {} });
+		const table = url.pathname.split("/").at(-1)!;
+		const listingMembers = table === "workspace_members" && (url.searchParams.get("select") ?? "").includes("users(");
+		if (fixture.tables && Object.hasOwn(fixture.tables, table) && (table !== "workspace_members" || listingMembers)) return Response.json(fixture.tables[table]);
 		if (url.pathname.endsWith("/workspace_members")) return Response.json(fixture.role ? [{ role: fixture.role }] : []);
 		if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "owner", slug: "workspace-a", name: "Workspace A" }]);
 		if (url.pathname.endsWith("/workspace_settings")) return Response.json([{ billing_time_zone: "Europe/London" }]);
@@ -113,6 +118,41 @@ describe("spend rule settings: reads", () => {
 		expect((await call(`/spend-rules/${RULE}/preview?workspaceId=${WORKSPACE}`)).status).toBe(404);
 		expect((await call(`/spend-rules/${RULE}/history?workspaceId=${WORKSPACE}`)).status).toBe(404);
 		expect((await call(`/spend-rules/not-a-uuid?workspaceId=${WORKSPACE}`)).status).toBe(400);
+	});
+});
+
+describe("spend rule settings: editor options", () => {
+	it("lists keys with their cost limits, members, departments, providers and budgets", async () => {
+		const requests = database({
+			role: "member",
+			tables: {
+				keys: [{ id: "k1", name: "prod", prefix: "sk-1", status: "active", daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: null, monthly_limit_cost_nanos: 250_000_000_000 }],
+				workspace_members: [{ user_id: "u1", role: "admin", users: { display_name: "Ada" } }, { user_id: "u2", role: "member", users: null }],
+				workspace_departments: [{ id: "d1", name: "Research" }],
+				v2_providers: [{ provider_slug: "openai", name: "OpenAI" }],
+				workspace_budgets: [{ interval: "monthly", limit_nanos: 100_000_000_000 }],
+			},
+		});
+		const response = await call(`/spend-rules/options?workspaceId=${WORKSPACE}`);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cache-control")).toContain("no-store");
+		expect(await response.json()).toEqual({
+			workspaceId: WORKSPACE,
+			keys: [{ id: "k1", name: "prod", prefix: "sk-1", status: "active", limitsUsd: { daily: null, weekly: null, monthly: 250 } }],
+			members: [{ id: "u1", name: "Ada", role: "admin" }, { id: "u2", name: null, role: "member" }],
+			departments: [{ id: "d1", name: "Research" }],
+			providers: [{ id: "openai", name: "OpenAI" }],
+			budgetsUsd: { monthly: 100 },
+		});
+		const keysRead = requests.find((entry) => entry.url.pathname.endsWith("/keys"))!;
+		expect(keysRead.url.searchParams.get("workspace_id")).toBe(`eq.${WORKSPACE}`);
+		expect(keysRead.url.searchParams.get("status")).toBe("neq.deleted");
+	});
+
+	it("rejects a workspace the user does not belong to", async () => {
+		const requests = database({ role: null });
+		expect((await call(`/spend-rules/options?workspaceId=${WORKSPACE}`)).status).toBe(403);
+		expect(requests.some((entry) => entry.url.pathname.endsWith("/keys"))).toBe(false);
 	});
 });
 
