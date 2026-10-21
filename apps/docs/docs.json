@@ -91,6 +91,7 @@
                 "expanded": false,
                 "pages": [
                   "v1/guides/presets",
+                  "v1/guides/prompt-templates",
                   "v1/guides/preset-feedback",
                   "v1/guides/service-tiers",
                   "v1/guides/prompt-caching",
@@ -1748,6 +1749,7 @@
                 "expanded": false,
                 "pages": [
                   "es/v1/guides/presets",
+                  "es/v1/guides/prompt-templates",
                   "es/v1/guides/preset-feedback",
                   "es/v1/guides/service-tiers",
                   "es/v1/guides/prompt-caching",
@@ -3439,6 +3441,7 @@
                 "expanded": false,
                 "pages": [
                   "fr/v1/guides/presets",
+                  "fr/v1/guides/prompt-templates",
                   "fr/v1/guides/preset-feedback",
                   "fr/v1/guides/service-tiers",
                   "fr/v1/guides/prompt-caching",
@@ -5130,6 +5133,7 @@
                 "expanded": false,
                 "pages": [
                   "de/v1/guides/presets",
+                  "de/v1/guides/prompt-templates",
                   "de/v1/guides/preset-feedback",
                   "de/v1/guides/service-tiers",
                   "de/v1/guides/prompt-caching",
@@ -6821,6 +6825,7 @@
                 "expanded": false,
                 "pages": [
                   "pt-BR/v1/guides/presets",
+                  "pt-BR/v1/guides/prompt-templates",
                   "pt-BR/v1/guides/preset-feedback",
                   "pt-BR/v1/guides/service-tiers",
                   "pt-BR/v1/guides/prompt-caching",
@@ -8512,6 +8517,7 @@
                 "expanded": false,
                 "pages": [
                   "ja/v1/guides/presets",
+                  "ja/v1/guides/prompt-templates",
                   "ja/v1/guides/preset-feedback",
                   "ja/v1/guides/service-tiers",
                   "ja/v1/guides/prompt-caching",
@@ -10203,6 +10209,7 @@
                 "expanded": false,
                 "pages": [
                   "zh-Hans/v1/guides/presets",
+                  "zh-Hans/v1/guides/prompt-templates",
                   "zh-Hans/v1/guides/preset-feedback",
                   "zh-Hans/v1/guides/service-tiers",
                   "zh-Hans/v1/guides/prompt-caching",
@@ -11894,6 +11901,7 @@
                 "expanded": false,
                 "pages": [
                   "hi/v1/guides/presets",
+                  "hi/v1/guides/prompt-templates",
                   "hi/v1/guides/preset-feedback",
                   "hi/v1/guides/service-tiers",
                   "hi/v1/guides/prompt-caching",
@@ -13585,6 +13593,7 @@
                 "expanded": false,
                 "pages": [
                   "ar/v1/guides/presets",
+                  "ar/v1/guides/prompt-templates",
                   "ar/v1/guides/preset-feedback",
                   "ar/v1/guides/service-tiers",
                   "ar/v1/guides/prompt-caching",

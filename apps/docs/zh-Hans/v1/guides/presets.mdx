@@ -67,6 +67,7 @@ response = client.generate_response({
 ## 预设可以包含什么
 
 - 添加到每个请求开头的系统提示。
+- [提示词模板](./prompt-templates.mdx)：包含 `{{variables}}` 的消息，由每个请求填入值。
 - 允许使用的模型或模型系列。
 - 用于路由偏好的提供商允许列表或忽略列表。
 - 默认参数，例如 temperature、top_p、max_tokens 等。
@@ -74,7 +75,7 @@ response = client.generate_response({
 
 预设名称以 `@` 开头，便于识别。
 
-只能通过请求中的 `model` 字段调用预设。Phaseo 不提供单独的 `preset` 请求字段。
+通过请求中的 `model` 字段调用预设；如果预设带有[提示词模板](./prompt-templates.mdx)，也可以通过 `prompt.id` 调用。Phaseo 不提供单独的 `preset` 请求字段。
 
 - 私有预设和工作区预设使用 `@{slug}`，并在 API 密钥所属的工作区中解析。
 - 公共预设使用 `@{username}/{slug}`，可在任意工作区中解析。例如 `@octavia/release-summary`。
@@ -113,6 +114,7 @@ Phaseo 会保留每个分支的直接来源和完整祖先链。因此，即使�
 控制台中的预设流程有意限制为稳定且明确的一组请求配置：
 
 - 系统提示注入
+- 带类型变量的提示词模板
 - 模型允许列表
 - 提供商允许或忽略列表形式的路由限制
 - 解码和生成默认值
@@ -133,6 +135,7 @@ Phaseo 会保留每个分支的直接来源和完整祖先链。因此，即使�
 
 ## 相关指南
 
+- [提示词模板](./prompt-templates.mdx)
 - [收集预设反馈](./preset-feedback.mdx)
 - [路由与回退](./routing-and-fallbacks.mdx)
 - [推理参数](./inference-parameters.mdx)
