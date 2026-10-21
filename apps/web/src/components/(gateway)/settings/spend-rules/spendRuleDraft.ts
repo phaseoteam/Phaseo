@@ -441,7 +441,15 @@ export type PreviewSummary =
 	| { kind: "ofBase"; valueUsd: number; baseUsd: number; percent: number }
 	| { kind: "value"; valueUsd: number }
 	/** Balance rules: the available balance, the burn per day over the window and the runway (null without spend). */
-	| { kind: "balance"; availableUsd: number; burnPerDayUsd: number; runwayDays: number | null; windowHours: number };
+	| { kind: "balance"; availableUsd: number; burnPerDayUsd: number; runwayDays: number | null; windowHours: number }
+	/**
+	 * Forecast rules: spend so far, the projection to the period end (`by`), and when the pace
+	 * reaches the limit (the amount, else the base) if it does this period. Times are shown in
+	 * the rule's zone.
+	 */
+	| { kind: "forecast"; valueUsd: number; projectedUsd: number; by: string; reachesAt: string | null; limitUsd: number | null; timeZone: string }
+	/** Forecast rules early in the period: spend so far and when the projection starts. */
+	| { kind: "forecastPending"; valueUsd: number; from: string | null; timeZone: string };
 
 /** "Currently $42.10 of $100 (42%)": the value against the base, or a spend rule's amount. */
 export function previewSummary(preview: SpendRulePreview | null | undefined, rule: Pick<SpendRule, "metric" | "threshold_amount_usd"> | null): PreviewSummary | null {
@@ -452,6 +460,11 @@ export function previewSummary(preview: SpendRulePreview | null | undefined, rul
 	}
 	if (preview.value_usd === null) return null;
 	const valueUsd = preview.value_usd;
+	if (preview.forecast) {
+		const forecast = preview.forecast;
+		if (!forecast.ready || forecast.projected_usd === null) return { kind: "forecastPending", valueUsd, from: forecast.from, timeZone: preview.time_zone };
+		return { kind: "forecast", valueUsd, projectedUsd: forecast.projected_usd, by: forecast.by, reachesAt: forecast.reaches_at, limitUsd: forecast.limit_usd, timeZone: preview.time_zone };
+	}
 	if (preview.base_usd !== null && preview.base_usd > 0) {
 		return { kind: "ofBase", valueUsd, baseUsd: preview.base_usd, percent: preview.percent ?? (valueUsd / preview.base_usd) * 100 };
 	}

@@ -131,4 +131,16 @@ describe("spend rule test sends", () => {
 		expect(result.title).toBe("[TEST] Monthly: test alert");
 		expect(result.message).toBe('This is a test of spend rule "Monthly". spike rules are evaluated from a later release, so this rule does not send alerts yet.');
 	});
+
+	it("says when a forecast starts if it is too early to project", async () => {
+		state.rule.metric = "forecast";
+		state.preview = {
+			...PREVIEW, metric: "forecast", alert: null, reached_threshold_percent: null,
+			forecast: { ready: false, from: "2026-10-04T04:00:00+00:00", projected_nanos: null, projected_percent: null, by: "2026-11-01T04:00:00+00:00", limit_nanos: 500e9, reaches_at: null },
+		};
+		const result = await send();
+		expect(result.message).toMatch(/^This is a test of spend rule "Monthly"\. Too little of the month has passed to project its spend; the forecast starts 2026-10-04T04:00:00\+00:00 \(America\/New_York periods\)\./);
+		const payload = state.deliver.mock.calls[0][0].event.payload;
+		expect(payload.forecast).toMatchObject({ projected_nanos: null, limit_nanos: 500e9, from: "2026-10-04T04:00:00+00:00" });
+	});
 });

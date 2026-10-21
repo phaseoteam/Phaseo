@@ -4932,10 +4932,12 @@ type SpendRulePreview struct {
 	BlockAtUsd *float64 `json:"block_at_usd"`
 	ComputedAt string `json:"computed_at"`
 	Evaluated bool `json:"evaluated"`
+	Forecast *map[string]interface{} `json:"forecast"`
 	Metric string `json:"metric"`
 	NextThreshold *map[string]interface{} `json:"next_threshold"`
 	Percent *float64 `json:"percent"`
 	Period *map[string]interface{} `json:"period"`
+	PreviousPeriod *map[string]interface{} `json:"previous_period"`
 	ReachedThresholdPercent *int `json:"reached_threshold_percent"`
 	RuleId string `json:"rule_id"`
 	State *map[string]interface{} `json:"state"`

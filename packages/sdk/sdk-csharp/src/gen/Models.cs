@@ -8051,6 +8051,9 @@ public sealed class SpendRulePreview
 	[JsonPropertyName("evaluated")]
 	public bool Evaluated { get; set; }
 
+	[JsonPropertyName("forecast")]
+	public Dictionary<string, object>? Forecast { get; set; }
+
 	[JsonPropertyName("metric")]
 	public string Metric { get; set; }
 
@@ -8062,6 +8065,9 @@ public sealed class SpendRulePreview
 
 	[JsonPropertyName("period")]
 	public Dictionary<string, object>? Period { get; set; }
+
+	[JsonPropertyName("previous_period")]
+	public Dictionary<string, object>? PreviousPeriod { get; set; }
 
 	[JsonPropertyName("reached_threshold_percent")]
 	public long? ReachedThresholdPercent { get; set; }
