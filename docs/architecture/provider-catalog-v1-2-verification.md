@@ -49,3 +49,22 @@ pnpm db:schema:smoke
 Review the generated migration, ensure the approval/audit objects, helper/view, triggers and altered promotion/pricing/gateway functions are included, and execute `provider_catalog_data_policy.sql` plus existing retention contracts. Check SQL permissions, source replacement, false/null/downgrade withdrawal, batch/stateful denial and admin-pin preservation before opening a release PR.
 
 Production approval, provider coordination and manual-pin transfer remain separate rollout steps. A dedicated admin console, conditional-account activation and non-text ZDR grants remain outside this initial implementation.
+
+## Internal provider verification (2026-10-21)
+
+The branch was rebased onto current main before publication. A reusable synthetic
+feed now covers native standard, native batch, retained/resold and agreement-only
+offers. See `apps/web-api/docs/provider-catalog-testing.md`.
+
+- Focused web API command listed above: **111 passed across 11 files** after rebase.
+- `node supabase/tests/catalog-data-policy.test.mjs`: **passed**, executing the real
+  SQL resolver against isolated PGlite fixture tables. Approval, negative controls,
+  revocation, expiry, source replacement, null/false withdrawal and manual pins pass.
+- `node supabase/tests/gateway-admission-history.test.mjs`: **passed**.
+- `node supabase/tests/gateway-spend-limit-seed.test.mjs`: **passed**.
+
+The first CI generation run (39604949833) failed because the legacy request-context
+fixture did not load the new resolver dependency. The fixture now loads the real
+resolver and the two affected tests pass locally. Generation was retried using the
+existing credential-free disposable database workflow. Full migration equivalence,
+promotion/audit replay and browser/live gateway proof remain separate release gates.
