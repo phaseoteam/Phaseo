@@ -512,6 +512,9 @@ export type { WorkspaceScimUpdateRequest } from "./WorkspaceScimUpdateRequest.js
 export type { WorkspaceSettings } from "./WorkspaceSettings.js";
 export type { WorkspaceSettingsResponse } from "./WorkspaceSettingsResponse.js";
 export type { WorkspaceSettingsUpdateRequest } from "./WorkspaceSettingsUpdateRequest.js";
+export type { WorkspaceSpendAttribution } from "./WorkspaceSpendAttribution.js";
+export type { WorkspaceSpendSettings } from "./WorkspaceSpendSettings.js";
+export type { WorkspaceSpendSettingsUpdate } from "./WorkspaceSpendSettingsUpdate.js";
 export type { WorkspaceSsoResponse } from "./WorkspaceSsoResponse.js";
 export type { WorkspaceSsoSettings } from "./WorkspaceSsoSettings.js";
 export type { WorkspaceSsoUpdateRequest } from "./WorkspaceSsoUpdateRequest.js";

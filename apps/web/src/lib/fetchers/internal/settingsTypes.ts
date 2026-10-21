@@ -314,6 +314,8 @@ export type SettingsCreditsInitialData = {
 	paymentMethodExpiringEmailEnabled: boolean;
 	modelDeprecationAlertsEnabled: boolean;
 	modelDeprecationAlertsIncludeAdmins: boolean;
+	/** Whether spend rules count a person toward all their departments or only the primary one. */
+	departmentSpendAttribution?: "all" | "primary";
 	notificationDestinations: NotificationDestination[];
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 	obfuscateInfo: boolean;

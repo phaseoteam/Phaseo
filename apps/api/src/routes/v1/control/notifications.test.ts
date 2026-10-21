@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasVerifiedTotpFactor, usdToNanos } from "./notifications";
+import { hasVerifiedTotpFactor, parseDepartmentSpendAttribution, usdToNanos } from "./notifications";
 import { notificationTargetPreview, validateNotificationTarget } from "./notification-target";
 
 describe("notification management validation", () => {
@@ -26,5 +26,12 @@ describe("notification management validation", () => {
 		expect(hasVerifiedTotpFactor([{ factor_type: "totp", status: "unverified" }])).toBe(false);
 		expect(hasVerifiedTotpFactor([{ factor_type: "webauthn", status: "verified" }])).toBe(false);
 		expect(hasVerifiedTotpFactor(null)).toBe(false);
+	});
+
+	it("accepts only all or primary department spend attribution", () => {
+		expect(parseDepartmentSpendAttribution("all")).toBe("all");
+		expect(parseDepartmentSpendAttribution("primary")).toBe("primary");
+		expect(parseDepartmentSpendAttribution("Primary")).toBeNull();
+		expect(parseDepartmentSpendAttribution(undefined)).toBeNull();
 	});
 });

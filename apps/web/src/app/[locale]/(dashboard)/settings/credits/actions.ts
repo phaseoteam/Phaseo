@@ -152,6 +152,22 @@ export async function setBillingNotificationPreference(args: {
 	return { ok: true };
 }
 
+/** How spend rules attribute a person's spend to departments: all of them, or the primary one only. */
+export async function setDepartmentSpendAttribution(value: "all" | "primary") {
+	if (value !== "all" && value !== "primary") throw new Error("Invalid department spend attribution");
+	const context = await getServerAccountContext();
+	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
+	if (!context.accessToken) throw new Error("Unauthorized");
+
+	await fetchAccountWebApi("/api/account/credits/notification-preferences", context.accessToken, {
+		method: "PUT",
+		body: JSON.stringify({ workspaceId, departmentSpendAttribution: value }),
+	});
+
+	revalidatePath("/settings/notifications");
+	return { ok: true };
+}
+
 export async function createNotificationDestination(destination: { name: string; type: import("@/lib/fetchers/internal/settingsTypes").NotificationDestination["type"]; target: string }) {
 	const context = await getServerAccountContext();
 	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();

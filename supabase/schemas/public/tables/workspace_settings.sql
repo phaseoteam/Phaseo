@@ -62,6 +62,7 @@ CREATE TABLE "public"."workspace_settings" (
   "model_successor_redirect_enabled"             boolean                  NOT NULL DEFAULT false,
   "model_successor_price_policy"                 text                     NOT NULL DEFAULT 'never'::text,
   "model_successor_max_price_increase_percent"   integer                  NOT NULL DEFAULT 0,
+  "department_spend_attribution"                 text                     NOT NULL DEFAULT 'all'::text,
   CONSTRAINT "workspace_settings_alpha_requires_beta_channel_check" CHECK (((alpha_channel_enabled = false) OR (beta_channel_enabled = true))),
   CONSTRAINT "workspace_settings_auto_routing_custom_prices_valid" CHECK (((auto_routing_spend_profile <> 'custom'::text) OR ((auto_routing_max_input_price_per_million IS
     NOT NULL) AND (auto_routing_max_input_price_per_million >= (0)::numeric) AND (auto_routing_max_output_price_per_million IS
@@ -77,6 +78,7 @@ CREATE TABLE "public"."workspace_settings" (
   CONSTRAINT "workspace_settings_data_contribution_consented_by_fkey" FOREIGN KEY (data_contribution_consented_by) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "workspace_settings_data_contribution_discount_check" CHECK (((data_contribution_discount_bps >= 0) AND (data_contribution_discount_bps <= 10000))),
   CONSTRAINT "workspace_settings_data_contribution_sample_rate_check" CHECK (((data_contribution_sample_rate_bps >= 0) AND (data_contribution_sample_rate_bps <= 10000))),
+  CONSTRAINT "workspace_settings_department_spend_attribution_check" CHECK ((department_spend_attribution = ANY (ARRAY['all'::text, 'primary'::text]))),
   CONSTRAINT "workspace_settings_io_logging_billing_status_check" CHECK ((io_logging_billing_status = ANY (ARRAY['active'::text, 'grace'::text, 'suspended'::text]))),
   CONSTRAINT "workspace_settings_io_logging_price_per_million_units_check" CHECK ((io_logging_price_per_million_units_nanos >= 0)),
   CONSTRAINT "workspace_settings_io_logging_retention_days_check" CHECK (((io_logging_retention_days >= 90) AND (io_logging_retention_days <= 365))),
@@ -134,6 +136,8 @@ COMMENT ON COLUMN "public"."workspace_settings"."auto_routing_revision" IS 'Immu
 COMMENT ON COLUMN "public"."workspace_settings"."auto_routing_spend_profile" IS 'Hard price-ceiling profile applied before phaseo/auto scores candidates.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."auto_top_up_failure_email_enabled" IS 'Email the workspace owner when an automatic credit top-up cannot be completed.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."department_spend_attribution" IS 'How spend rules count a person''s spend toward departments when their key has no department: all (every department they belong to) or primary (only their primary one). A key''s own department always wins. See private.spend_scope_departments.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."data_contribution_classifier_sample_rate_bps" IS 'Independent upstream classifier submission rate in basis points. Platform controlled; initially 1000 (10%).';
 

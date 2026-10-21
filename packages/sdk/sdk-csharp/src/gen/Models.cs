@@ -9608,6 +9608,9 @@ public sealed class WorkspaceNotificationSettings
 	[JsonPropertyName("low_balance_email")]
 	public Dictionary<string, object> LowBalanceEmail { get; set; }
 
+	[JsonPropertyName("spend")]
+	public Dictionary<string, object> Spend { get; set; }
+
 }
 
 public sealed class WorkspaceNotificationSettingsResponse
@@ -9627,6 +9630,9 @@ public sealed class WorkspaceNotificationSettingsUpdateRequest
 
 	[JsonPropertyName("low_balance_email")]
 	public Dictionary<string, object>? LowBalanceEmail { get; set; }
+
+	[JsonPropertyName("spend")]
+	public Dictionary<string, object>? Spend { get; set; }
 
 }
 
@@ -9911,6 +9917,22 @@ public sealed class WorkspaceSettingsUpdateRequest
 
 	[JsonPropertyName("routing_mode")]
 	public string? RoutingMode { get; set; }
+
+}
+
+public sealed class WorkspaceSpendAttribution { }
+
+public sealed class WorkspaceSpendSettings
+{
+	[JsonPropertyName("department_attribution")]
+	public string DepartmentAttribution { get; set; }
+
+}
+
+public sealed class WorkspaceSpendSettingsUpdate
+{
+	[JsonPropertyName("department_attribution")]
+	public string? DepartmentAttribution { get; set; }
 
 }
 

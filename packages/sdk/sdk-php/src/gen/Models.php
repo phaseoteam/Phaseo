@@ -7037,6 +7037,8 @@ class WorkspaceNotificationSettings
 	public $email_preferences;
 	/** @var array<string, mixed> */
 	public $low_balance_email;
+	/** @var array<string, mixed> */
+	public $spend;
 }
 
 class WorkspaceNotificationSettingsResponse
@@ -7053,6 +7055,8 @@ class WorkspaceNotificationSettingsUpdateRequest
 	public $email_preferences;
 	/** @var array<string, mixed>|null */
 	public $low_balance_email;
+	/** @var array<string, mixed>|null */
+	public $spend;
 }
 
 class WorkspaceNotificationTestResponse
@@ -7263,6 +7267,20 @@ class WorkspaceSettingsUpdateRequest
 	public $response_healing_mode;
 	/** @var string|null */
 	public $routing_mode;
+}
+
+class WorkspaceSpendAttribution { }
+
+class WorkspaceSpendSettings
+{
+	/** @var string */
+	public $department_attribution;
+}
+
+class WorkspaceSpendSettingsUpdate
+{
+	/** @var string|null */
+	public $department_attribution;
 }
 
 class WorkspaceSsoResponse

@@ -62,6 +62,7 @@ async function readNotifications() {
 		notificationRoutes: data.notificationRoutes,
 		modelDeprecationAlertsEnabled: data.modelDeprecationAlertsEnabled,
 		modelDeprecationAlertsIncludeAdmins: data.modelDeprecationAlertsIncludeAdmins,
+		departmentSpendAttribution: data.departmentSpendAttribution ?? "all",
 	};
 }
 

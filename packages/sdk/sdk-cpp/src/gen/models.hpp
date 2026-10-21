@@ -4017,6 +4017,7 @@ struct WorkspaceNotificationSettings {
 	std::map<std::string, std::any> auto_top_up;
 	std::map<std::string, std::any> email_preferences;
 	std::map<std::string, std::any> low_balance_email;
+	std::map<std::string, std::any> spend;
 };
 
 struct WorkspaceNotificationSettingsResponse {
@@ -4027,6 +4028,7 @@ struct WorkspaceNotificationSettingsUpdateRequest {
 	std::map<std::string, std::any> auto_top_up;
 	std::map<std::string, std::any> email_preferences;
 	std::map<std::string, std::any> low_balance_email;
+	std::map<std::string, std::any> spend;
 };
 
 struct WorkspaceNotificationTestResponse {
@@ -4149,6 +4151,16 @@ struct WorkspaceSettingsUpdateRequest {
 	std::optional<bool> response_healing_locked;
 	std::any response_healing_mode;
 	std::any routing_mode;
+};
+
+using WorkspaceSpendAttribution = std::any;
+
+struct WorkspaceSpendSettings {
+	std::any department_attribution;
+};
+
+struct WorkspaceSpendSettingsUpdate {
+	std::any department_attribution;
 };
 
 struct WorkspaceSsoResponse {

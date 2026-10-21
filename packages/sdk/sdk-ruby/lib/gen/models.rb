@@ -5634,7 +5634,9 @@ module Phaseo
     #   @return [Hash{String => Object}]
     # @!attribute [rw] low_balance_email
     #   @return [Hash{String => Object}]
-    WorkspaceNotificationSettings = Struct.new(:auto_top_up, :email_preferences, :low_balance_email, keyword_init: true)
+    # @!attribute [rw] spend
+    #   @return [Hash{String => Object}]
+    WorkspaceNotificationSettings = Struct.new(:auto_top_up, :email_preferences, :low_balance_email, :spend, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceNotificationSettingsResponse = Struct.new(:data, keyword_init: true)
@@ -5644,7 +5646,9 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] low_balance_email
     #   @return [Hash{String => Object}, nil]
-    WorkspaceNotificationSettingsUpdateRequest = Struct.new(:auto_top_up, :email_preferences, :low_balance_email, keyword_init: true)
+    # @!attribute [rw] spend
+    #   @return [Hash{String => Object}, nil]
+    WorkspaceNotificationSettingsUpdateRequest = Struct.new(:auto_top_up, :email_preferences, :low_balance_email, :spend, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceNotificationTestResponse = Struct.new(:data, keyword_init: true)
@@ -5810,6 +5814,13 @@ module Phaseo
     # @!attribute [rw] routing_mode
     #   @return [String, nil]
     WorkspaceSettingsUpdateRequest = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :model_successor_max_price_increase_percent, :model_successor_price_policy, :model_successor_redirect_enabled, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, keyword_init: true)
+    WorkspaceSpendAttribution = Object
+    # @!attribute [rw] department_attribution
+    #   @return [String]
+    WorkspaceSpendSettings = Struct.new(:department_attribution, keyword_init: true)
+    # @!attribute [rw] department_attribution
+    #   @return [String, nil]
+    WorkspaceSpendSettingsUpdate = Struct.new(:department_attribution, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceSsoResponse = Struct.new(:data, keyword_init: true)

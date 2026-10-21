@@ -178,14 +178,15 @@ try {
       create table public.v2_request_facts (
         request_event_id uuid primary key, workspace_id uuid, occurred_at timestamptz, app_id uuid, key_id uuid,
         endpoint text, requested_model_input text, requested_model_slug text, routed_model_slug text,
-        provider_model_id text, success boolean, error_code text, byok boolean, safe_metadata jsonb, cost_nanos bigint
+        provider_model_id text, success boolean, error_code text, byok boolean, safe_metadata jsonb, cost_nanos bigint,
+    auth_method text, gateway_request_id uuid, gateway_request_created_at timestamptz
       );
       create table public.v2_request_usage (request_event_id uuid, meter_key text, quantity numeric(30,12), sequence integer default 0);
-      create table public.keys (id uuid primary key, workspace_id uuid, created_by uuid);
+      create table public.keys (id uuid primary key, workspace_id uuid, created_by uuid, oauth_user_id uuid, key_kind text not null default 'standard', department_id uuid);
       -- Read by the later migrations' indexes.
       create table public.email_outbox (id uuid primary key default gen_random_uuid(), created_at timestamptz not null default now(), kind text not null, workspace_id uuid, payload jsonb not null default '{}');
       create table public.workspace_audit_events (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, target_type text not null, created_at timestamptz not null default now());
-      create table public.gateway_requests (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, key_id uuid, endpoint text not null, success boolean, cost_nanos bigint, created_at timestamptz not null default now());
+      create table public.gateway_requests (id uuid primary key default gen_random_uuid(), workspace_id uuid not null, key_id uuid, endpoint text not null, success boolean, cost_nanos bigint, created_at timestamptz not null default now(), oauth_user_id uuid);
       create table public.v2_analytics_outbox (request_event_id uuid primary key, workspace_id uuid, occurred_at timestamptz, status text);
       grant select on public.v2_request_facts, public.v2_request_usage, public.v2_model_provider_routes, public.keys, public.v2_analytics_outbox to service_role;
     `);
