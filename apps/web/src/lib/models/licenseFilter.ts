@@ -7,15 +7,27 @@ export type LicenseGroup = "permissive" | "restricted" | "proprietary";
 
 export const LICENSE_GROUPS: readonly LicenseGroup[] = ["permissive", "restricted", "proprietary"];
 
+// Licences are free text ("Apache-2.0", "Apache License, Version 2.0"), so
+// compare a canonical form: lower case, without "license"/"agreement"/"version",
+// punctuation turned into spaces.
+function canonicalLicense(license: string): string {
+	return license
+		.toLowerCase()
+		.replace(/\b(licen[cs]e|agreement|version)\b/g, " ")
+		.replace(/[-_,()]/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
 // Use, modify and ship commercially with attribution only.
 const PERMISSIVE_LICENSES = new Set([
 	"apache 2.0",
 	"mit",
-	"bsd-2-clause",
-	"bsd-3-clause",
+	"bsd 2 clause",
+	"bsd 3 clause",
 	"cc0 1.0",
 	"cc by 4.0",
-	"openmdw-1.1",
+	"openmdw 1.1",
 ]);
 
 // No downloadable weights.
@@ -32,7 +44,7 @@ export type LicenseSelection = {
 };
 
 export function licenseGroup(license: string | null | undefined): LicenseGroup | null {
-	const value = String(license ?? "").trim().toLowerCase();
+	const value = canonicalLicense(String(license ?? ""));
 	if (!value) return null;
 	if (PROPRIETARY_LICENSES.has(value)) return "proprietary";
 	return PERMISSIVE_LICENSES.has(value) ? "permissive" : "restricted";
@@ -124,6 +136,19 @@ export function modelWeights(license: string | null | undefined): ModelWeights |
 
 export function parseModelWeights(values: string[]): ModelWeights[] {
 	return MODEL_WEIGHTS.filter((value) => values.includes(value));
+}
+
+// Before the Weights filter, `licenseType=open|closed` meant open or closed
+// weights. Old links still carry those values, so read them as weights.
+export function readLicenseTypeParam(values: string[]): {
+	groups: LicenseGroup[];
+	legacyWeights: ModelWeights[];
+} {
+	return { groups: parseLicenseGroups(values), legacyWeights: parseModelWeights(values) };
+}
+
+export function mergeWeights(a: readonly string[], b: readonly string[]): ModelWeights[] {
+	return parseModelWeights([...a, ...b]);
 }
 
 export function matchesModelWeights(

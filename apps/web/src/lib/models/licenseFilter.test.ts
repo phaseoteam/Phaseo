@@ -2,7 +2,9 @@ import {
 	licenseGroup,
 	matchesLicenseSelection,
 	matchesModelWeights,
+	mergeWeights,
 	modelWeights,
+	readLicenseTypeParam,
 	parseLicenseGroups,
 	parseModelWeights,
 	toggleLicense,
@@ -23,6 +25,19 @@ describe("licenseGroup", () => {
 		expect(licenseGroup("Open weights")).toBe("restricted");
 		expect(licenseGroup("")).toBeNull();
 		expect(licenseGroup(undefined)).toBeNull();
+	});
+
+	it("groups spelling variants of the same licence together", () => {
+		expect(licenseGroup("Apache-2.0")).toBe("permissive");
+		expect(licenseGroup("apache-2.0")).toBe("permissive");
+		expect(licenseGroup("Apache License 2.0")).toBe("permissive");
+		expect(licenseGroup("Apache License, Version 2.0")).toBe("permissive");
+		expect(licenseGroup("MIT License")).toBe("permissive");
+		expect(licenseGroup("OpenMDW License Agreement 1.1")).toBe("permissive");
+		expect(licenseGroup("OpenMDW-1.1")).toBe("permissive");
+		expect(licenseGroup("BSD-3-Clause")).toBe("permissive");
+		expect(licenseGroup("cc-by-4.0")).toBe("permissive");
+		expect(licenseGroup("cc-by-nc-4.0")).toBe("restricted");
 	});
 
 	it("ignores unknown group names from the URL", () => {
@@ -88,6 +103,14 @@ describe("weights", () => {
 		expect(modelWeights("CC BY-NC 4.0")).toBe("open");
 		expect(modelWeights(null)).toBeNull();
 		expect(parseModelWeights(["closed", "x", "open"])).toEqual(["open", "closed"]);
+	});
+
+	it("reads old licenseType=open|closed links as weights", () => {
+		expect(readLicenseTypeParam(["open", "permissive"])).toEqual({
+			groups: ["permissive"],
+			legacyWeights: ["open"],
+		});
+		expect(mergeWeights(["closed"], ["open", "closed"])).toEqual(["open", "closed"]);
 	});
 
 	it("matches everything when nothing is selected and skips unknown licences otherwise", () => {

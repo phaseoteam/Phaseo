@@ -72,7 +72,7 @@ import {
 import { formatExecutionRegionLabel } from "@/lib/providers/executionRegions";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
-import { parseLicenseGroups, parseModelWeights } from "@/lib/models/licenseFilter";
+import { mergeWeights, parseModelWeights, readLicenseTypeParam } from "@/lib/models/licenseFilter";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
 import {
@@ -477,17 +477,26 @@ export function MonitorDataTable({
 		serialize: (value) => value.join(","),
 	});
 
-	const [selectedLicenseTypes] = useQueryState("licenseType", {
+	const [licenseTypeParam] = useQueryState("licenseType", {
 		defaultValue: [],
-		parse: (value) => parseLicenseGroups(value ? value.split(",") : []),
+		parse: (value) => (value ? value.split(",") : []),
 		serialize: (value) => value.join(","),
 	});
 
-	const [selectedWeights] = useQueryState("weights", {
+	const [weightsParam] = useQueryState("weights", {
 		defaultValue: [],
 		parse: (value) => parseModelWeights(value ? value.split(",") : []),
 		serialize: (value) => value.join(","),
 	});
+	// Old links use licenseType=open|closed for weights.
+	const { groups: selectedLicenseTypes, legacyWeights } = useMemo(
+		() => readLicenseTypeParam(licenseTypeParam),
+		[licenseTypeParam],
+	);
+	const selectedWeights = useMemo(
+		() => mergeWeights(weightsParam, legacyWeights),
+		[weightsParam, legacyWeights],
+	);
 
 	const [selectedContextMin] = useQueryState("contextMin", {
 		defaultValue: 0,

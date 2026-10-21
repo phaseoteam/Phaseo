@@ -85,7 +85,8 @@ import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters
 import { LicenseFilterList, useLicenseGroupLabel, useWeightsLabel } from "./LicenseFilterList";
 import {
 	MODEL_WEIGHTS,
-	parseLicenseGroups,
+	mergeWeights,
+	readLicenseTypeParam,
 	parseModelWeights,
 	type LicenseSelection,
 } from "@/lib/models/licenseFilter";
@@ -820,20 +821,38 @@ export default function ModelsTableDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
-	const [selectedLicenseTypes, setSelectedLicenseTypes] = useQueryState("licenseType", {
+	const [licenseTypeParam, setLicenseTypeParam] = useQueryState("licenseType", {
 		defaultValue: [] as string[],
-		parse: (value) => parseLicenseGroups(parseCsvParam(value)),
+		parse: parseCsvParam,
 		serialize: serializeCsvParam,
 		shallow: true,
 		clearOnDefault: true,
 	});
-	const [selectedWeights, setSelectedWeights] = useQueryState("weights", {
+	const [weightsParam, setWeightsParam] = useQueryState("weights", {
 		defaultValue: [] as string[],
 		parse: (value) => parseModelWeights(parseCsvParam(value)),
 		serialize: serializeCsvParam,
 		shallow: true,
 		clearOnDefault: true,
 	});
+	// Old links use licenseType=open|closed for weights; read them as weights
+	// and move them to `weights` the next time either filter changes.
+	const { groups: selectedLicenseTypes, legacyWeights } = useMemo(
+		() => readLicenseTypeParam(licenseTypeParam),
+		[licenseTypeParam],
+	);
+	const selectedWeights = useMemo(
+		() => mergeWeights(weightsParam, legacyWeights),
+		[weightsParam, legacyWeights],
+	);
+	const setSelectedLicenseTypes = (groups: string[]) => {
+		void setLicenseTypeParam(groups);
+		if (legacyWeights.length > 0) void setWeightsParam(selectedWeights);
+	};
+	const setSelectedWeights = (weights: string[]) => {
+		void setWeightsParam(weights);
+		if (legacyWeights.length > 0) void setLicenseTypeParam(selectedLicenseTypes);
+	};
 	const licenseSelection = useMemo(
 		() => ({ groups: selectedLicenseTypes, licenses: selectedLicenses }),
 		[selectedLicenseTypes, selectedLicenses],
