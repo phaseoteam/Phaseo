@@ -507,6 +507,13 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 				placeholder: "{\"Authorization\":\"Bearer ...\"}",
 				required: false,
 			},
+			{
+				key: "signing_secret",
+				label: "Signing Secret (Optional)",
+				placeholder: "16+ characters, used to sign x-phaseo-signature",
+				required: false,
+				type: "password",
+			},
 		],
 	},
 	{

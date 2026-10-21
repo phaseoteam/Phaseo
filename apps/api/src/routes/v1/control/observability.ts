@@ -18,6 +18,7 @@ import {
 	BROADCAST_RULE_CONDITIONS,
 	BROADCAST_RULE_FIELDS,
 	broadcastDestinationEndpoint,
+	broadcastWebhookSigningSecretError,
 	isBroadcastDestinationLimitError,
 	OTLP_PROTOCOLS,
 	otlpProtocol,
@@ -70,6 +71,8 @@ function validateEndpoint(type: string, values: Record<string, string>) {
 	if (type !== "webhook") return;
 	const method = String(values.method ?? "POST").toUpperCase();
 	if (method !== "POST" && method !== "PUT") throw new Error("Webhook method must be POST or PUT");
+	const secretError = broadcastWebhookSigningSecretError(values.signing_secret);
+	if (secretError) throw new Error(secretError);
 	if (values.headers_json?.trim()) {
 		let headers: unknown;
 		try { headers = JSON.parse(values.headers_json); } catch { throw new Error("Webhook headers must be valid JSON"); }

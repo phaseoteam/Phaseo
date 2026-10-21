@@ -64,6 +64,12 @@ vi.mock("@/runtime/env", async (importOriginal) => {
 	};
 });
 
+async function expectedSignature(secret: string, timestamp: string, body: string) {
+	const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+	const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`));
+	return Array.from(new Uint8Array(signature)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 describe("deliverGatewayWebhookPayload", () => {
 	it("delivers OTLP JSON with configured headers and method", async () => {
 		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
@@ -79,6 +85,34 @@ describe("deliverGatewayWebhookPayload", () => {
 		expect(url.toString()).toBe("https://hooks.example.com/traces");
 		expect(init).toMatchObject({ method: "PUT", body: JSON.stringify(payload), redirect: "manual" });
 		expect(new Headers(init.headers).get("authorization")).toBe("Bearer secret");
+	});
+
+	it("signs the body when the webhook has a signing secret", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal("fetch", fetchMock);
+		const payload = { resourceSpans: [{ scopeSpans: [] }] };
+		const secret = "whsec_test_0123456789";
+		await deliverGatewayWebhookPayload(payload, {
+			url: "https://hooks.example.com/traces",
+			// A user header cannot replace the signature.
+			headers_json: JSON.stringify({ "x-phaseo-signature": "forged" }),
+			signing_secret: secret,
+		});
+		const [, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+		const sent = new Headers(init.headers);
+		const timestamp = sent.get("x-phaseo-timestamp")!;
+		expect(Math.abs(Number(timestamp) - Date.now() / 1000)).toBeLessThan(5);
+		expect(sent.get("x-phaseo-signature")).toBe(await expectedSignature(secret, timestamp, init.body as string));
+		expect(init.body).toBe(JSON.stringify(payload));
+	});
+
+	it("sends no signature headers without a signing secret", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		vi.stubGlobal("fetch", fetchMock);
+		await deliverGatewayWebhookPayload({ resourceSpans: [] }, { url: "https://hooks.example.com/traces" });
+		const [, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+		expect(new Headers(init.headers).has("x-phaseo-signature")).toBe(false);
+		expect(new Headers(init.headers).has("x-phaseo-timestamp")).toBe(false);
 	});
 
 	it("retries transient webhook failures", async () => {

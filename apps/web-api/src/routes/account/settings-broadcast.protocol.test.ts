@@ -22,6 +22,12 @@ vi.mock("./broadcast-config-crypto", () => ({
 	decryptBroadcastConfig: async () => ({ endpoint: "https://collector.example.com", otlp_protocol: "http/protobuf" }),
 }));
 
+async function expectedSignature(secret: string, timestamp: string, body: string) {
+	const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+	const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`));
+	return Array.from(new Uint8Array(signature)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 afterEach(() => {
 	vi.unstubAllGlobals();
 });
@@ -71,6 +77,33 @@ describe("broadcast OTLP protocol", () => {
 		}, {});
 		expect(response.status).toBe(400);
 		expect(await response.json()).toEqual({ error: "OTLP collector returned 401: unauthorized" });
+	});
+
+	it("signs the webhook test request when a signing secret is set", async () => {
+		const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+		vi.stubGlobal("fetch", fetchMock);
+		const { accountSettingsBroadcastRouter } = await import("./settings-broadcast");
+		const response = await accountSettingsBroadcastRouter.request("https://example.com/broadcast/test-config", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace_1", destinationId: "webhook", config: { url: "https://hooks.example.com/traces", signing_secret: "whsec_test_0123456789" } }),
+		}, {});
+		expect(await response.json()).toMatchObject({ ok: true, status: "Connection verified" });
+		const [, init] = fetchMock.mock.calls[0] as unknown as [URL, RequestInit];
+		const sent = new Headers(init.headers);
+		expect(sent.get("x-test-connection")).toBe("true");
+		expect(sent.get("x-phaseo-signature")).toBe(await expectedSignature("whsec_test_0123456789", sent.get("x-phaseo-timestamp")!, init.body as string));
+	});
+
+	it("rejects a short webhook signing secret", async () => {
+		const { accountSettingsBroadcastRouter } = await import("./settings-broadcast");
+		const response = await accountSettingsBroadcastRouter.request("https://example.com/broadcast/test-config", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace_1", destinationId: "webhook", config: { url: "https://hooks.example.com/traces", signing_secret: "short" } }),
+		}, {});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({ error: "Signing secret must be 16 to 256 characters" });
 	});
 
 	it("rejects an unsupported protocol when testing a configuration", async () => {

@@ -481,3 +481,36 @@ export function otlpTracesEndpoint(config: Record<string, unknown>): string {
 	}
 	return "";
 }
+
+// Webhook destinations with a signing_secret are signed like workspace webhooks:
+// x-phaseo-signature is the hex HMAC-SHA256 of `${timestamp}.${body}`, with the
+// Unix seconds in x-phaseo-timestamp.
+export const BROADCAST_WEBHOOK_SIGNING_SECRET_MIN_LENGTH = 16;
+export const BROADCAST_WEBHOOK_SIGNING_SECRET_MAX_LENGTH = 256;
+
+export function broadcastWebhookSigningSecretError(value: unknown): string | null {
+	if (value === undefined || value === null || value === "") return null;
+	if (typeof value !== "string") return "Signing secret must be text";
+	if (value.length < BROADCAST_WEBHOOK_SIGNING_SECRET_MIN_LENGTH || value.length > BROADCAST_WEBHOOK_SIGNING_SECRET_MAX_LENGTH) {
+		return `Signing secret must be ${BROADCAST_WEBHOOK_SIGNING_SECRET_MIN_LENGTH} to ${BROADCAST_WEBHOOK_SIGNING_SECRET_MAX_LENGTH} characters`;
+	}
+	if (/[\x00-\x20\x7f]/.test(value)) return "Signing secret cannot contain spaces or control characters";
+	return null;
+}
+
+export async function broadcastWebhookSignatureHeaders(
+	config: Record<string, unknown>,
+	body: string,
+	nowMs = Date.now(),
+): Promise<Record<string, string>> {
+	const secret = config.signing_secret;
+	if (typeof secret !== "string" || !secret) return {};
+	const timestamp = String(Math.floor(nowMs / 1000));
+	const encoder = new TextEncoder();
+	const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+	const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(`${timestamp}.${body}`));
+	return {
+		"x-phaseo-timestamp": timestamp,
+		"x-phaseo-signature": Array.from(new Uint8Array(signature)).map((byte) => byte.toString(16).padStart(2, "0")).join(""),
+	};
+}
