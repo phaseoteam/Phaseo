@@ -84,7 +84,7 @@ describe("Mistral audio speech endpoint", () => {
 		}
 	});
 
-	it("defaults to mp3 and omits voice_id when no voice is given", async () => {
+	it("defaults to mp3 when no format is given", async () => {
 		let sent: Record<string, unknown> | undefined;
 		const mock = installFetchMock([{
 			match: (_url, init) => {
@@ -94,11 +94,10 @@ describe("Mistral audio speech endpoint", () => {
 			response: jsonResponse({ audio_data: btoa("ID3") }),
 		}]);
 
-		const result = await exec(args({ model: "mistral/voxtral-tts-3", input: "Hello" }));
+		const result = await exec(args({ model: "mistral/voxtral-tts-3", input: "Hello", voice: "preset-voice" }));
 		mock.restore();
 
 		expect(sent?.response_format).toBe("mp3");
-		expect(sent).not.toHaveProperty("voice_id");
 		if (result.kind === "completed") {
 			expect(result.upstream.headers.get("content-type")).toBe("audio/mpeg");
 		}
@@ -119,11 +118,12 @@ describe("Mistral audio speech endpoint", () => {
 	});
 
 	it.each([
-		["speed", { speed: 1.2 }, "speed"],
-		["instructions", { instructions: "whisper" }, "instructions"],
-		["sse streaming", { stream_format: "sse" }, "stream_format"],
-		["aac output", { response_format: "aac" }, "response_format"],
-		["ogg output", { format: "ogg" }, "response_format"],
+		["a missing voice", {}, "voice"],
+		["speed", { voice: "preset-voice", speed: 1.2 }, "speed"],
+		["instructions", { voice: "preset-voice", instructions: "whisper" }, "instructions"],
+		["sse streaming", { voice: "preset-voice", stream_format: "sse" }, "stream_format"],
+		["aac output", { voice: "preset-voice", response_format: "aac" }, "response_format"],
+		["ogg output", { voice: "preset-voice", format: "ogg" }, "response_format"],
 	])("rejects %s without calling Mistral or billing", async (_name, extra, param) => {
 		const mock = installFetchMock([]);
 		const result = await exec(args({ model: "mistral/voxtral-tts-3", input: "Hello", ...extra }));
@@ -152,7 +152,7 @@ describe("Mistral audio speech endpoint", () => {
 			match: (url) => url.endsWith("/v1/audio/speech"),
 			response: jsonResponse({}),
 		}]);
-		const result = await exec(args({ model: "mistral/voxtral-tts-3", input: "Hello" }));
+		const result = await exec(args({ model: "mistral/voxtral-tts-3", input: "Hello", voice: "preset-voice" }));
 		mock.restore();
 		const { status, cost } = await errorOf(result);
 		expect(status).toBe(502);

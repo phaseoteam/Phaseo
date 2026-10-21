@@ -87,14 +87,19 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		return rejected(errorResponse(400, `${format} is not supported by Mistral text-to-speech; use one of ${Object.keys(MIME_TYPES).join(", ")}.`, "response_format"));
 	}
 
-	const payload: Record<string, unknown> = {
+	// Mistral has no default voice; it answers 400 without one.
+	const voiceId = resolveVoiceId(body.voice);
+	if (!voiceId) {
+		return rejected(errorResponse(400, "voice is required for Mistral text-to-speech; pass a preset voice id or slug.", "voice"));
+	}
+
+	const payload = {
 		model: args.providerModelSlug || body.model,
 		input: body.input,
+		voice_id: voiceId,
 		response_format: format,
 		stream: false,
 	};
-	const voiceId = resolveVoiceId(body.voice);
-	if (voiceId) payload.voice_id = voiceId;
 
 	const headers = openAICompatHeaders(args.providerId, keyInfo.key, upstreamTestHeaders(args.meta));
 	const res = await (args.upstreamTiming?.fetch ?? fetch)(openAICompatUrl(args.providerId, "/audio/speech"), {
