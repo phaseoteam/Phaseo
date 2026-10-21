@@ -576,6 +576,52 @@ describe("createGatewayAgentClient", () => {
 			expect.objectContaining({ type: "tool_call", id: "item_1", toolCallId: "call_1", name: "lookup", input: { slug: "start" }, rawProviderItem: rawCall }),
 		]);
 	});
+
+	it("streams only text and reasoning deltas as text, and items once they are done", async () => {
+		const call = { id: "fc_1", type: "function_call", call_id: "call_1", name: "lookup", arguments: '{"slug":"start"}', status: "completed" };
+		// The frames the gateway sends for a turn with a tool call, reasoning and text.
+		async function* frames() {
+			yield { type: "response.created", response: { id: "resp_stream" } };
+			yield { type: "response.output_item.added", output_index: 0, item: { ...call, arguments: "", status: "in_progress" } };
+			yield { type: "response.function_call_arguments.delta", output_index: 0, delta: '{"slug":' };
+			yield { type: "response.function_call_arguments.delta", output_index: 0, delta: '"start"}' };
+			yield { type: "response.function_call_arguments.done", output_index: 0, arguments: call.arguments };
+			yield { type: "response.output_item.done", output_index: 0, item: call };
+			yield { type: "response.reasoning_summary_text.delta", output_index: 1, delta: "Checking" };
+			yield { type: "response.reasoning_summary_text.done", output_index: 1, text: "Checking" };
+			yield { type: "response.output_text.delta", output_index: 2, delta: "Hello " };
+			yield { type: "response.output_text.delta", output_index: 2, delta: "there" };
+			yield { type: "response.output_text.done", output_index: 2, text: "Hello there" };
+			yield { type: "response.content_part.done", output_index: 2, part: { type: "output_text", text: "Hello there" } };
+			yield { type: "response.completed", response: { id: "resp_stream", output: [call, { type: "message", content: [{ type: "output_text", text: "Hello there" }] }] } };
+		}
+		const client = createGatewayAgentClient({ client: { responses: { create: vi.fn(async () => frames()) } } as any });
+
+		const events: any[] = [];
+		for await (const event of client.stream!({ agentId: "stream", messages: [{ role: "user", content: "Hi" }], tools: [], context: undefined })) events.push(event);
+
+		expect(events.filter((event) => event.type === "response.output_text.delta").map((event) => event.delta).join("")).toBe("Hello there");
+		expect(events.filter((event) => event.type === "response.reasoning.delta").map((event) => event.delta)).toEqual(["Checking"]);
+		expect(events.filter((event) => event.type === "response.item").map((event) => event.item)).toEqual([
+			expect.objectContaining({ type: "tool_call", toolCallId: "call_1", name: "lookup", input: { slug: "start" } }),
+		]);
+		expect(events.at(-1)).toMatchObject({ type: "response.completed" });
+	});
+
+	it("keeps text from untyped chunks", async () => {
+		async function* frames() {
+			yield { delta: "Hello" };
+			yield { text: " there" };
+		}
+		const client = createGatewayAgentClient({ client: { responses: { create: vi.fn(async () => frames()) } } as any });
+
+		const deltas: string[] = [];
+		for await (const event of client.stream!({ agentId: "untyped", messages: [{ role: "user", content: "Hi" }], tools: [], context: undefined })) {
+			if (event.type === "response.output_text.delta") deltas.push(event.delta);
+		}
+
+		expect(deltas.join("")).toBe("Hello there");
+	});
 });
 
 describe("live GPT 5.6 Luna gateway smoke", () => {

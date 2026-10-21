@@ -271,10 +271,13 @@ export function createGatewayAgentClient(
 			let text = "";
 			for await (const chunk of response as AsyncGenerator<Record<string, unknown>>) {
 				const eventType = String(chunk.type ?? "");
-				const delta = typeof chunk.delta === "string" ? chunk.delta : typeof chunk.text === "string" ? chunk.text : "";
-				if (eventType.includes("reasoning") && delta) yield { type: "response.reasoning.delta" as const, delta, raw: chunk };
-				else if ((eventType.includes("output_text.delta") || delta) && delta) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
-				if (chunk.item) {
+				// Only text and reasoning deltas are answer text. Tool-call argument deltas are not, and
+				// `.done` events repeat what their deltas already sent. Untyped chunks keep the old fallback.
+				const delta = typeof chunk.delta === "string" ? chunk.delta : !eventType && typeof chunk.text === "string" ? chunk.text : "";
+				if (delta && eventType.includes("reasoning") && eventType.endsWith(".delta")) yield { type: "response.reasoning.delta" as const, delta, raw: chunk };
+				else if (delta && (!eventType || eventType.endsWith("output_text.delta"))) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
+				// An added item is still empty (a call has no arguments yet); its done event carries it whole.
+				if (chunk.item && eventType !== "response.output_item.added") {
 					for (const item of normalizeAgentItems(chunk.item)) {
 						yield { type: "response.item" as const, item, raw: chunk };
 					}
