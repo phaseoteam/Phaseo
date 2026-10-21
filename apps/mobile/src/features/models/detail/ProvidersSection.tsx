@@ -1,19 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
-import { BarChart3, Check, ChevronDown, ChevronRight, CircleAlert, Filter, Info, MapPin } from "lucide-react-native";
+import { BarChart3, Check, ChevronRight, CircleAlert, Filter, Info, MapPin } from "lucide-react-native";
 import { Fragment, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Button, Icon, OptionSheet, Sheet, Text, useMenu, type ViewRef } from "@/components/ui";
-import { getModelProviderHealth, type ProviderPricing } from "@/lib/api/models";
+import type { ProviderPricing } from "@/lib/api/models";
 import { cn } from "@/lib/cn";
-import { formatMs, formatPrice, formatTokens } from "@/lib/format";
-import { basePricePerMillion, priceLines, tablePrices } from "../pricing";
+import { formatMs, formatPrice } from "@/lib/format";
+import { basePricePerMillion, tablePrices } from "../pricing";
 import { EmptyBox, PolicyIcon, ServiceTierBadge, StatusIcon, STATUS_META } from "./parts";
 import { formatPercentile, PERCENTILES } from "./performance";
+import { formatThroughput, formatUptime, ProviderSheet, useProviderStats, type ProviderSheetTarget } from "./ProviderSheet";
 import {
-  DATA_POLICY_LABELS, dataPolicyTier, DEFAULT_STATUS_FILTERS, defaultPlan, executionRegions, isRouteVariant, listingCategory, providerDisplayName, providerLogoId,
-  providerPlans, providerStatus, RESIDENCY_LABELS, routeLimits, runtimeStatsFromHealth, sortProviders, statsKey, type ListingCategory, type RuntimeStats,
+  dataPolicyTier, DEFAULT_STATUS_FILTERS, defaultPlan, executionRegions, isRouteVariant, listingCategory, providerDisplayName, providerLogoId, providerPlans,
+  providerStatus, sortProviders, statsKey, type ListingCategory, type RuntimeStats,
 } from "./providers";
 
 type Privacy = "all" | "zdr" | "no_training";
@@ -25,10 +24,10 @@ const CATEGORY_LABELS: Record<ListingCategory, string> = {
   external: "External providers",
 };
 
-const formatThroughput = (value: number | null | undefined) => (value == null || !Number.isFinite(value) ? "—" : `${value >= 100 ? Math.round(value) : Number(value.toFixed(1))} tok/s`);
-const formatUptime = (value: number | null | undefined) => (value == null || !Number.isFinite(value) ? "—" : `${value.toFixed(1)}%`);
-
-/** The website's provider table, as rows: API providers with list prices, status, privacy, regions and 3-day routing health. */
+/**
+ * The website's provider table, as rows: API providers with list prices, status, privacy, regions and 3-day routing
+ * health. A row opens that provider's sheet (every price, performance, routing, data policy, limits).
+ */
 export function ProvidersSection({ modelId, providers, creatorId, modelStatus, organisationName }: { modelId: string; providers: ProviderPricing[]; creatorId?: string | null; modelStatus?: string | null; organisationName?: string | null }) {
   const [percentile, setPercentile] = useState(50);
   const percentileMenu = useMenu();
@@ -36,19 +35,11 @@ export function ProvidersSection({ modelId, providers, creatorId, modelStatus, o
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [statusFilters, setStatusFilters] = useState<ListingCategory[]>(DEFAULT_STATUS_FILTERS);
   const [privacy, setPrivacy] = useState<Privacy>("all");
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [sheet, setSheet] = useState<ProviderSheetTarget | null>(null);
   const [now] = useState(() => Date.now());
 
   const listed = useMemo(() => providers.filter((provider) => provider.provider_models.length > 0), [providers]);
-  const providerIds = useMemo(() => listed.map((provider) => provider.provider.api_provider_id ?? "").filter(Boolean), [listed]);
-  const health = useQuery({
-    queryKey: ["model-page", modelId, "provider-health", percentile, providerIds.join(",")],
-    queryFn: () => getModelProviderHealth(modelId, providerIds, percentile),
-    enabled: providerIds.length > 0,
-    staleTime: 5 * 60_000,
-    placeholderData: (previous) => previous,
-  });
-  const stats = useMemo(() => runtimeStatsFromHealth(health.data ?? []), [health.data]);
+  const { stats, health } = useProviderStats(modelId, providers, percentile);
 
   const rows = useMemo(() => {
     const visible = listed.filter((provider) => {
@@ -73,12 +64,7 @@ export function ProvidersSection({ modelId, providers, creatorId, modelStatus, o
   }, [listed, statusFilters, privacy, stats, creatorId, now]);
 
   const activeFilters = DEFAULT_STATUS_FILTERS.filter((filter) => !statusFilters.includes(filter)).length + (statusFilters.includes("external") ? 1 : 0) + (privacy === "all" ? 0 : 1);
-  const toggle = (id: string) => setExpanded((current) => {
-    const next = new Set(current);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    return next;
-  });
+  const sheetProviders = useMemo(() => rows.map((row) => row.provider), [rows]);
 
   if (!listed.length) {
     return (
@@ -106,7 +92,7 @@ export function ProvidersSection({ modelId, providers, creatorId, modelStatus, o
             return (
               <Fragment key={id}>
                 {rank > 0 && rows[index - 1]?.rank !== rank ? <Separator kind={rank === 2 ? "external" : "additional"} /> : null}
-                <ProviderRow provider={provider} stats={stats} open={expanded.has(id)} onToggle={() => toggle(id)} last={index === rows.length - 1} />
+                <ProviderRow provider={provider} stats={stats} onOpen={() => setSheet({ index, plan: defaultPlan(provider) })} last={index === rows.length - 1} />
               </Fragment>
             );
           })}
@@ -124,6 +110,7 @@ export function ProvidersSection({ modelId, providers, creatorId, modelStatus, o
         onClose={percentileMenu.close}
       />
       <FiltersSheet open={filtersOpen} statusFilters={statusFilters} privacy={privacy} onStatus={setStatusFilters} onPrivacy={setPrivacy} onClose={() => setFiltersOpen(false)} />
+      <ProviderSheet providers={sheetProviders} target={sheet} stats={stats} percentile={percentile} onChange={setSheet} onClose={() => setSheet(null)} />
     </View>
   );
 }
@@ -153,8 +140,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ProviderRow({ provider, stats, open, onToggle, last }: { provider: ProviderPricing; stats: Map<string, RuntimeStats>; open: boolean; onToggle: () => void; last: boolean }) {
-  const router = useRouter();
+function ProviderRow({ provider, stats, onOpen, last }: { provider: ProviderPricing; stats: Map<string, RuntimeStats>; onOpen: () => void; last: boolean }) {
   const plan = defaultPlan(provider);
   const status = providerStatus(provider, plan);
   const name = providerDisplayName(provider.provider);
@@ -164,81 +150,26 @@ function ProviderRow({ provider, stats, open, onToggle, last }: { provider: Prov
   const tiers = providerPlans(provider).filter((tier) => tier !== plan);
   const policy = dataPolicyTier(provider.provider);
   return (
-    <View className={cn(!last && "border-b border-border")}>
-      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${name}, ${STATUS_META[status].label}`} onPress={onToggle} className="px-3 py-3 active:bg-accent">
-        <View className="flex-row items-center gap-2">
-          <Icon icon={open ? ChevronDown : ChevronRight} tone="muted" size={16} />
-          <Logo id={providerLogoId(provider.provider)} label={name} size={28} />
-          <Text variant="label" numberOfLines={1} className="shrink">{name}</Text>
-          <StatusIcon status={status} />
-          <PolicyIcon tier={policy} />
-          {regions.length || provider.provider.residency_mode ? <Icon icon={MapPin} tone="muted" size={16} /> : null}
-        </View>
-        <View className="mt-2 flex-row flex-wrap gap-y-2 pl-6">
-          <Metric label="Input $/1M" value={formatPrice(prices.input)} />
-          <Metric label="Output $/1M" value={formatPrice(prices.output)} />
-          <Metric label="Cache read $/1M" value={formatPrice(prices.cacheRead)} />
-          <Metric label="Latency" value={formatMs(runtime?.latencyMs)} />
-          <Metric label="Throughput" value={formatThroughput(runtime?.throughput)} />
-          <Metric label="Uptime" value={formatUptime(runtime?.uptimePct)} />
-        </View>
-      </Pressable>
-      {open ? (
-        <View className="gap-3 border-t border-border bg-muted/30 px-3 pb-3 pt-3">
-          {tiers.map((tier) => {
-            const tierPrices = tablePrices(provider, tier);
-            const tierRuntime = stats.get(statsKey(provider.provider.api_provider_id ?? "", tier));
-            return (
-              <View key={tier} className="gap-2">
-                <View className="flex-row items-center gap-2">
-                  <Logo id={providerLogoId(provider.provider)} label={name} size={22} />
-                  <Text variant="label" numberOfLines={1} className="shrink">{name}</Text>
-                  <ServiceTierBadge plan={tier} />
-                  <StatusIcon status={providerStatus(provider, tier)} />
-                </View>
-                <View className="flex-row flex-wrap gap-y-2">
-                  <Metric label="Input $/1M" value={formatPrice(tierPrices.input)} />
-                  <Metric label="Output $/1M" value={formatPrice(tierPrices.output)} />
-                  <Metric label="Cache read $/1M" value={formatPrice(tierPrices.cacheRead)} />
-                  <Metric label="Latency" value={formatMs(tierRuntime?.latencyMs)} />
-                  <Metric label="Throughput" value={formatThroughput(tierRuntime?.throughput)} />
-                  <Metric label="Uptime" value={formatUptime(tierRuntime?.uptimePct)} />
-                </View>
-              </View>
-            );
-          })}
-          <ProviderDetails provider={provider} plan={plan} status={status} regions={regions} />
-          {provider.provider.api_provider_id ? <Button label={`View ${name}`} variant="outline" size="sm" onPress={() => router.push(`/providers/${provider.provider.api_provider_id}`)} /> : null}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-function ProviderDetails({ provider, plan, status, regions }: { provider: ProviderPricing; plan: string; status: ReturnType<typeof providerStatus>; regions: string[] }) {
-  const limits = routeLimits(provider, plan);
-  const policy = dataPolicyTier(provider.provider);
-  const residency = provider.provider.residency_mode ? RESIDENCY_LABELS[provider.provider.residency_mode] : null;
-  const dataRegions = (provider.provider.default_data_regions ?? []).map((region) => region.toUpperCase() === "GLOBAL" ? "Global" : region.toUpperCase());
-  const lines = priceLines(provider, plan).filter((line) => !["input_text_tokens", "output_text_tokens", "cached_read_text_tokens"].includes(line.meter));
-  const rows: [string, string][] = [
-    ["Status", `${STATUS_META[status].label}. ${STATUS_META[status].description}`],
-    ["Data policy", DATA_POLICY_LABELS[policy]],
-    ...(regions.length ? [["Processing location", `${regions.join(", ")}${residency ? ` · ${residency}` : ""}`] as [string, string]] : []),
-    ...(dataRegions.length ? [["Data centre location", dataRegions.join(", ")] as [string, string]] : []),
-    ...(limits.context ? [["Context", `${formatTokens(limits.context)} tokens`] as [string, string]] : []),
-    ...(limits.maxOutput ? [["Max output", `${formatTokens(limits.maxOutput)} tokens`] as [string, string]] : []),
-    ...lines.map((line): [string, string] => [line.label, `${line.value}${line.unit !== "1M tokens" ? ` / ${line.unit}` : ""}${line.longContext ? ` (${line.longContext.value} over ${line.longContext.above})` : ""}`]),
-  ];
-  return (
-    <View className="overflow-hidden rounded-md border border-border bg-background">
-      {rows.map(([label, value], index) => (
-        <View key={label} className={cn("flex-row gap-3 px-3 py-2", index < rows.length - 1 && "border-b border-border")}>
-          <Text variant="caption" className="w-[38%]">{label}</Text>
-          <Text variant="small" className="flex-1">{value}</Text>
-        </View>
-      ))}
-    </View>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${name}, ${STATUS_META[status].label}`} accessibilityHint="Opens every price and detail for this provider" onPress={onOpen} className={cn("px-3 py-3 active:bg-accent", !last && "border-b border-border")}>
+      <View className="flex-row items-center gap-2">
+        <Logo id={providerLogoId(provider.provider)} label={name} size={28} />
+        <Text variant="label" numberOfLines={1} className="shrink">{name}</Text>
+        <StatusIcon status={status} />
+        <PolicyIcon tier={policy} />
+        {regions.length || provider.provider.residency_mode ? <Icon icon={MapPin} tone="muted" size={16} /> : null}
+        {tiers.map((tier) => <ServiceTierBadge key={tier} plan={tier} />)}
+        <View className="flex-1" />
+        <Icon icon={ChevronRight} tone="muted" size={16} />
+      </View>
+      <View className="mt-2 flex-row flex-wrap gap-y-2">
+        <Metric label="Input $/1M" value={formatPrice(prices.input)} />
+        <Metric label="Output $/1M" value={formatPrice(prices.output)} />
+        <Metric label="Cache read $/1M" value={formatPrice(prices.cacheRead)} />
+        <Metric label="Latency" value={formatMs(runtime?.latencyMs)} />
+        <Metric label="Throughput" value={formatThroughput(runtime?.throughput)} />
+        <Metric label="Uptime" value={formatUptime(runtime?.uptimePct)} />
+      </View>
+    </Pressable>
   );
 }
 

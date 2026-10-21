@@ -1,6 +1,7 @@
 import type { EffectivePricingRow, PricingHistoryRule, ProviderPricing } from "@/lib/api/models";
 import {
-  buildPriceHistory, effectivePriceBetween, effectivePriceSummary, effectiveRows, historyTimestamps, isSeriesVisibleByDefault, meterOptions, observedUsageByProviderPlan, summaryCutoffMs, weightedEffectivePrice,
+  buildPriceHistory, effectivePriceBetween, effectivePriceSummary, effectiveRows, historyTimestamps, isSeriesVisibleByDefault, meterOptions, observedUsageByProviderPlan, RANGE_OPTIONS, summaryCutoffMs,
+  weightedEffectivePrice,
 } from "./pricingInsights";
 
 const DAY = 86_400_000;
@@ -106,5 +107,15 @@ describe("price history", () => {
 
   test("meters list input and output first and leave out USD-denominated rules", () => {
     expect(meterOptions(rules, table)).toEqual(["input_text_tokens", "native_web_search_requests"]);
+  });
+});
+
+describe("price history ranges", () => {
+  test("are short enough for five to fit a phone, with full names for screen readers", () => {
+    expect(RANGE_OPTIONS.map((option) => option.label)).toEqual(["1W", "1M", "3M", "1Y", "All"]);
+    for (const option of RANGE_OPTIONS) {
+      expect(option.label.length).toBeLessThanOrEqual(3);
+      expect(option.accessibilityLabel.length).toBeGreaterThan(option.label.length);
+    }
   });
 });

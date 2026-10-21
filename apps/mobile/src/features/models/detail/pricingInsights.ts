@@ -162,12 +162,13 @@ export function defaultRowPlan(row: Pick<EffectiveRow, "plans">) {
 export type PricingRange = "7d" | "30d" | "90d" | "1y" | "all";
 export type PricingView = "effective" | "listed";
 
-export const RANGE_OPTIONS: { value: PricingRange; label: string }[] = [
-  { value: "7d", label: "1 week" },
-  { value: "30d", label: "1 month" },
-  { value: "90d", label: "3 months" },
-  { value: "1y", label: "1 year" },
-  { value: "all", label: "All" },
+/** Short, as stock charts label them, so all five fit a phone's width; screen readers get the full names. */
+export const RANGE_OPTIONS: { value: PricingRange; label: string; accessibilityLabel: string }[] = [
+  { value: "7d", label: "1W", accessibilityLabel: "1 week" },
+  { value: "30d", label: "1M", accessibilityLabel: "1 month" },
+  { value: "90d", label: "3M", accessibilityLabel: "3 months" },
+  { value: "1y", label: "1Y", accessibilityLabel: "1 year" },
+  { value: "all", label: "All", accessibilityLabel: "All time" },
 ];
 
 const RANGE_DAYS: Record<Exclude<PricingRange, "all">, number> = { "7d": 7, "30d": 30, "90d": 90, "1y": 365 };
