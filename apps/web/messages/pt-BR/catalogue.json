@@ -2076,13 +2076,13 @@
 			"since2025": "Desde 2025",
 			"since2026": "Desde 2026",
 			"allTime": "Todo o período",
-			"scoredModels": "{count} modelos avaliados",
+			"scoredModels": "{count, plural, one {# modelo avaliado} other {# modelos avaliados}}",
 			"frontier": "Fronteira da seleção",
-			"confidence": "Intervalo de confiança de 95%",
+			"confidence": "Intervalo de confiança de 90%",
 			"domainNote": "Estimativas por domínio · sem intervalos de confiança",
 			"noChartData": "Nenhum modelo avaliado com os dados necessários. Ajuste os filtros.",
 			"close": "Fechar detalhes",
-			"benchmarkCount": "{count} testes do domínio",
+			"benchmarkCount": "{count, plural, one {# teste do domínio} other {# testes do domínio}}",
 			"comparedWith": "Comparado com {model}",
 			"points": "pontos ECI",
 			"unpin": "Desafixar modelo",
@@ -2098,7 +2098,7 @@
 			"methodologyLink": "Metodologia da Epoch",
 			"fallback": "A publicação mais recente da Epoch está indisponível. Exibindo pontuações importadas; os dados de domínio e acessibilidade são limitados.",
 			"inspectHint": "Passe o cursor ou foque um ponto para inspecioná-lo. Fixe um modelo e inspecione outro para comparar.",
-			"methodologyNote": "As pontuações gerais e intervalos de confiança de 95% vêm da Epoch. As estimativas de matemática e programação usam suas observações, dificuldades e inclinações publicadas pelo método logístico de mínimos quadrados, com pelo menos dois testes por domínio. A Epoch usa a melhor observação por modelo e teste; não são configurações individuais de raciocínio. Intervalos por domínio não são calculados aqui. Pontos ECI não são porcentagens. Os índices compartilham a escala geral e não permitem comparar taxas de progresso de longo prazo entre domínios. A fronteira mostra recordes da seleção filtrada. Dados ausentes permanecem indisponíveis."
+			"methodologyNote": "As pontuações gerais e intervalos de confiança de 90% vêm da Epoch. As estimativas de matemática e programação usam suas observações, dificuldades e inclinações publicadas pelo método logístico de mínimos quadrados, com pelo menos dois testes por domínio. A Epoch usa a melhor observação por modelo e teste; não são configurações individuais de raciocínio. Intervalos por domínio não são calculados aqui. Pontos ECI não são porcentagens. Os índices compartilham a escala geral e não permitem comparar taxas de progresso de longo prazo entre domínios. A fronteira mostra recordes da seleção filtrada. Dados ausentes permanecem indisponíveis."
 		}
 	},
 	"rankings": {

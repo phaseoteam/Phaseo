@@ -2,7 +2,6 @@ import "server-only";
 import { cacheLife } from "next/cache";
 import { buildEpochDashboard, epochNumber, type EpochDashboardData } from "./epochDashboard";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
-import { parseEpochConfidenceInterval } from "./epoch";
 
 async function sourceFile(file: string) {
 	const response = await fetch(`https://epoch.ai/data/${file}`, { signal: AbortSignal.timeout(12_000) });
@@ -36,6 +35,6 @@ export async function fetchEpochDashboard(benchmark: BenchmarkPage): Promise<Epo
 		// eslint-disable-next-line no-console -- Keep upstream publication failures visible while serving catalogue fallback.
 		console.warn("[benchmarks] Epoch publication unavailable; displaying imported results", error instanceof Error ? error.message : "Unknown error");
 		return { source: "catalogue", sourceDate: benchmark.results.map((r) => r.updated_at).filter((v): v is string => Boolean(v)).sort().at(-1) ?? null, domainsAvailable: false,
-			rows: benchmark.results.flatMap((r) => { const score = epochNumber(r.score); return score === null ? [] : [{ id: r.id, name: r.model?.name ?? r.model_id, organisation: r.model?.organisation?.display_name ?? r.model?.organisation?.name ?? "", access: "unknown" as const, date: r.model?.release_date ?? r.model?.announcement_date ?? null, modelId: r.model_id, scores: { overall: score, coding: null, maths: null }, interval: parseEpochConfidenceInterval(typeof r.other_info === "string" ? r.other_info : null), counts: { coding: 0, maths: 0 } }]; }) };
+			rows: benchmark.results.flatMap((r) => { const score = epochNumber(r.score); return score === null ? [] : [{ id: r.id, name: r.model?.name ?? r.model_id, organisation: r.model?.organisation?.display_name ?? r.model?.organisation?.name ?? "", access: "unknown" as const, date: r.model?.release_date ?? r.model?.announcement_date ?? null, modelId: r.model_id, scores: { overall: score, coding: null, maths: null }, interval: null, counts: { coding: 0, maths: 0 } }]; }) };
 	}
 }

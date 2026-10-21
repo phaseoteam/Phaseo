@@ -20,5 +20,5 @@ it("rejects malformed domain metadata without replacing the general publication 
 it("serves imported zero scores with an explicit fallback when Epoch cannot be reached", async () => {
 	jest.spyOn(console, "warn").mockImplementation(() => {});
 	global.fetch = jest.fn(async () => { throw new Error("offline"); });
-	expect(await fetchEpochDashboard(benchmark)).toMatchObject({ source: "catalogue", domainsAvailable: false, rows: [{ modelId: "lab/imported", scores: { overall: 0, coding: null, maths: null }, access: "unknown" }] });
+	expect(await fetchEpochDashboard(benchmark)).toMatchObject({ source: "catalogue", domainsAvailable: false, rows: [{ modelId: "lab/imported", scores: { overall: 0, coding: null, maths: null }, access: "unknown", interval: null }] });
 });

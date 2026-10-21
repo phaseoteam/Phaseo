@@ -2076,13 +2076,13 @@
 			"since2025": "Depuis 2025",
 			"since2026": "Depuis 2026",
 			"allTime": "Toute la période",
-			"scoredModels": "{count} modèles évalués",
+			"scoredModels": "{count, plural, one {# modèle évalué} other {# modèles évalués}}",
 			"frontier": "Frontière de la sélection",
-			"confidence": "Intervalle de confiance à 95 %",
+			"confidence": "Intervalle de confiance à 90 %",
 			"domainNote": "Estimations par domaine · sans intervalles de confiance",
 			"noChartData": "Aucun modèle évalué ne possède les données nécessaires. Modifiez les filtres.",
 			"close": "Fermer les détails",
-			"benchmarkCount": "{count} tests du domaine",
+			"benchmarkCount": "{count, plural, one {# test du domaine} other {# tests du domaine}}",
 			"comparedWith": "Comparé à {model}",
 			"points": "points ECI",
 			"unpin": "Détacher le modèle",
@@ -2098,7 +2098,7 @@
 			"methodologyLink": "Méthodologie Epoch",
 			"fallback": "La dernière publication Epoch est indisponible. Les scores importés sont affichés ; les données de domaine et d’accessibilité sont limitées.",
 			"inspectHint": "Survolez un point ou sélectionnez-le au clavier. Épinglez un modèle, puis inspectez-en un autre pour comparer.",
-			"methodologyNote": "Les scores généraux et intervalles de confiance à 95 % proviennent d’Epoch. Les estimations en mathématiques et programmation sont calculées à partir de ses observations, difficultés et pentes publiées, selon sa méthode logistique des moindres carrés, avec au moins deux tests par domaine. Epoch retient la meilleure observation par modèle et test ; il ne s’agit pas de configurations de raisonnement individuelles. Les intervalles par domaine ne sont pas calculés ici. Les points ECI ne sont pas des pourcentages. Les indices partagent l’échelle générale et ne permettent pas de comparer les rythmes de progrès à long terme entre domaines. La frontière indique les records de la sélection filtrée. Les scores manquants restent indisponibles."
+			"methodologyNote": "Les scores généraux et intervalles de confiance à 90 % proviennent d’Epoch. Les estimations en mathématiques et programmation sont calculées à partir de ses observations, difficultés et pentes publiées, selon sa méthode logistique des moindres carrés, avec au moins deux tests par domaine. Epoch retient la meilleure observation par modèle et test ; il ne s’agit pas de configurations de raisonnement individuelles. Les intervalles par domaine ne sont pas calculés ici. Les points ECI ne sont pas des pourcentages. Les indices partagent l’échelle générale et ne permettent pas de comparer les rythmes de progrès à long terme entre domaines. La frontière indique les records de la sélection filtrée. Les scores manquants restent indisponibles."
 		}
 	},
 	"rankings": {

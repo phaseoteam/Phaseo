@@ -2076,13 +2076,13 @@
 			"since2025": "Seit 2025",
 			"since2026": "Seit 2026",
 			"allTime": "Gesamter Zeitraum",
-			"scoredModels": "{count} bewertete Modelle",
+			"scoredModels": "{count, plural, one {# bewertetes Modell} other {# bewertete Modelle}}",
 			"frontier": "Spitzenwerte der Auswahl",
-			"confidence": "95%-Konfidenzintervall",
+			"confidence": "90%-Konfidenzintervall",
 			"domainNote": "Domänenschätzwerte · ohne Konfidenzintervalle",
 			"noChartData": "Keine bewerteten Modelle mit den benötigten Daten. Filter anpassen.",
 			"close": "Details schließen",
-			"benchmarkCount": "{count} Domänenbenchmarks",
+			"benchmarkCount": "{count, plural, one {# Domänenbenchmark} other {# Domänenbenchmarks}}",
 			"comparedWith": "Verglichen mit {model}",
 			"points": "ECI-Punkte",
 			"unpin": "Modell lösen",
@@ -2098,7 +2098,7 @@
 			"methodologyLink": "Epoch-Methodik",
 			"fallback": "Die aktuelle Epoch-Veröffentlichung ist nicht verfügbar. Importierte Katalogwerte werden angezeigt; Domänen- und Zugänglichkeitsdaten sind eingeschränkt.",
 			"inspectHint": "Mit Maus oder Tastatur einen Punkt untersuchen. Ein Modell anheften und ein weiteres zum Vergleich auswählen.",
-			"methodologyNote": "Allgemeine Werte und 95%-Konfidenzintervalle stammen von Epoch. Mathematik- und Coding-Schätzwerte werden aus veröffentlichten Beobachtungen, Schwierigkeiten und Steigungen mit Epochs logistischer Kleinste-Quadrate-Methode berechnet, mit mindestens zwei Benchmarks pro Domäne. Epoch verwendet die beste Beobachtung je Modell und Benchmark; dies sind keine einzelnen Reasoning-Konfigurationen. Domänen-Konfidenzintervalle werden hier nicht berechnet. ECI-Punkte sind keine Prozentwerte. Domänenindizes teilen die allgemeine Skala und eignen sich nicht zum Vergleich langfristiger Fortschrittsraten zwischen Domänen. Die Grenzlinie zeigt Rekordwerte innerhalb der gefilterten Auswahl. Fehlende Werte bleiben nicht verfügbar."
+			"methodologyNote": "Allgemeine Werte und 90%-Konfidenzintervalle stammen von Epoch. Mathematik- und Coding-Schätzwerte werden aus veröffentlichten Beobachtungen, Schwierigkeiten und Steigungen mit Epochs logistischer Kleinste-Quadrate-Methode berechnet, mit mindestens zwei Benchmarks pro Domäne. Epoch verwendet die beste Beobachtung je Modell und Benchmark; dies sind keine einzelnen Reasoning-Konfigurationen. Domänen-Konfidenzintervalle werden hier nicht berechnet. ECI-Punkte sind keine Prozentwerte. Domänenindizes teilen die allgemeine Skala und eignen sich nicht zum Vergleich langfristiger Fortschrittsraten zwischen Domänen. Die Grenzlinie zeigt Rekordwerte innerhalb der gefilterten Auswahl. Fehlende Werte bleiben nicht verfügbar."
 		}
 	},
 	"rankings": {

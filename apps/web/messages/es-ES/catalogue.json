@@ -2076,13 +2076,13 @@
 			"since2025": "Desde 2025",
 			"since2026": "Desde 2026",
 			"allTime": "Todo el periodo",
-			"scoredModels": "{count} modelos evaluados",
+			"scoredModels": "{count, plural, one {# modelo evaluado} other {# modelos evaluados}}",
 			"frontier": "Frontera de la selección",
-			"confidence": "Intervalo de confianza del 95 %",
+			"confidence": "Intervalo de confianza del 90 %",
 			"domainNote": "Estimaciones por dominio · sin intervalos de confianza",
 			"noChartData": "No hay modelos evaluados con los datos necesarios. Ajusta los filtros.",
 			"close": "Cerrar detalles",
-			"benchmarkCount": "{count} pruebas del dominio",
+			"benchmarkCount": "{count, plural, one {# prueba del dominio} other {# pruebas del dominio}}",
 			"comparedWith": "Comparado con {model}",
 			"points": "puntos ECI",
 			"unpin": "Desfijar modelo",
@@ -2098,7 +2098,7 @@
 			"methodologyLink": "Metodología de Epoch",
 			"fallback": "La última publicación de Epoch no está disponible. Se muestran puntuaciones importadas; los datos de dominio y accesibilidad son limitados.",
 			"inspectHint": "Pasa el cursor o enfoca un punto para ver detalles. Fija un modelo y explora otro para compararlos.",
-			"methodologyNote": "Las puntuaciones generales y los intervalos de confianza del 95 % proceden de Epoch. Las estimaciones de matemáticas y programación se calculan con sus observaciones, dificultades y pendientes publicadas mediante su método logístico de mínimos cuadrados, con al menos dos pruebas por dominio. Epoch utiliza la mejor observación por modelo y prueba; no son configuraciones de razonamiento individuales. Aquí no se calculan intervalos por dominio. Los puntos ECI no son porcentajes. Los índices de dominio comparten la escala general y no permiten comparar tasas de progreso a largo plazo entre dominios. La frontera muestra récords dentro de la selección filtrada. Los valores ausentes siguen sin estar disponibles."
+			"methodologyNote": "Las puntuaciones generales y los intervalos de confianza del 90 % proceden de Epoch. Las estimaciones de matemáticas y programación se calculan con sus observaciones, dificultades y pendientes publicadas mediante su método logístico de mínimos cuadrados, con al menos dos pruebas por dominio. Epoch utiliza la mejor observación por modelo y prueba; no son configuraciones de razonamiento individuales. Aquí no se calculan intervalos por dominio. Los puntos ECI no son porcentajes. Los índices de dominio comparten la escala general y no permiten comparar tasas de progreso a largo plazo entre dominios. La frontera muestra récords dentro de la selección filtrada. Los valores ausentes siguen sin estar disponibles."
 		}
 	},
 	"rankings": {
