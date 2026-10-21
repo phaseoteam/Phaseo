@@ -120,6 +120,31 @@ describe("processBroadcastQueueBatch", () => {
 		expect(second.ack).toHaveBeenCalled();
 	});
 
+	it("splits OTLP requests by UTF-8 bytes, not characters", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+		// Span attributes are capped at 64,000 characters, about 192 KB of this
+		// three-byte character. Thirty events fit in 3 MiB by length, not by bytes.
+		const wide = (eventId: string) => {
+			const queued = message({ eventId, destinationIds: ["collector"] });
+			const base = telemetry(eventId);
+			queued.body.telemetry = { ...base, args: { ...base.args, requestPayload: { messages: [{ role: "user", content: "漢".repeat(70_000) }] } } } as BroadcastTelemetry;
+			return queued;
+		};
+
+		const events = Array.from({ length: 30 }, (_, index) => wide(`req_${index}`));
+		const characters = events.reduce((sum, event) => sum + JSON.stringify(event.body.telemetry).length, 0);
+		expect(characters).toBeLessThan(3 * 1024 * 1024);
+
+		const summary = await processBroadcastQueueBatch(batch(...events));
+
+		expect(summary.delivered).toBe(30);
+		expect(summary.requests).toBeGreaterThan(1);
+		for (const [, init] of fetchMock.mock.calls as Array<[URL, RequestInit]>) {
+			expect(new TextEncoder().encode(String(init.body)).byteLength).toBeLessThan(3 * 1024 * 1024);
+		}
+	});
+
 	it("sends webhooks one event per request", async () => {
 		const fetchMock = vi.fn().mockImplementation(async () => new Response(null, { status: 204 }));
 		vi.stubGlobal("fetch", fetchMock);

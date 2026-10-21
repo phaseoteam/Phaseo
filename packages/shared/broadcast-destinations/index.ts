@@ -175,7 +175,7 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 	new_relic: {
 		endpoint: "https://{region}/v1/traces",
 		defaults: { region: "US" },
-		choices: { region: { US: "otlp.nr-data.net", EU: "otlp.eu01.nr-data.net" } },
+		choices: { region: { US: "otlp.nr-data.net", EU: "otlp.eu01.nr-data.net", JP: "otlp.jp.nr-data.net" } },
 		headers: { "api-key": "{license_key}" },
 		protocol: "http/protobuf",
 		compression: "gzip",

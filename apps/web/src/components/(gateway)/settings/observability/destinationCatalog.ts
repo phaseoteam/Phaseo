@@ -155,7 +155,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		logoId: "observability-newrelic",
 		fields: [
 			{ key: "license_key", label: "License Key", placeholder: "...NRAL", type: "password" },
-			{ key: "region", label: "Region (Optional)", placeholder: "US or EU", required: false },
+			{ key: "region", label: "Region (Optional)", placeholder: "US, EU or JP", required: false },
 		],
 	},
 	{

@@ -186,7 +186,8 @@ describe("Broadcast destination registry", () => {
 				maxAttributeLength: 4095,
 			});
 			expect(resolveOtlpTarget("new_relic", { license_key: "abcNRAL", region: "eu" }).endpoint).toBe("https://otlp.eu01.nr-data.net/v1/traces");
-			expect(() => resolveOtlpTarget("new_relic", { license_key: "abcNRAL", region: "attacker.example.com" })).toThrow("region must be one of: US, EU");
+			expect(resolveOtlpTarget("new_relic", { license_key: "abcNRAL", region: "JP" }).endpoint).toBe("https://otlp.jp.nr-data.net/v1/traces");
+			expect(() => resolveOtlpTarget("new_relic", { license_key: "abcNRAL", region: "attacker.example.com" })).toThrow("region must be one of: US, EU, JP");
 		});
 
 		it("sends PostHog traces to the LLM analytics intake with the project token", () => {
