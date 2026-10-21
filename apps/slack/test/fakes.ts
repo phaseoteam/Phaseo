@@ -3,7 +3,7 @@ import type { Deps } from "../src/events";
 import type { Installation } from "../src/installations";
 import { encryptSlackSecrets } from "../src/lib/slack-secrets";
 import type { SlackClient, SlackResult, SlackUser } from "../src/slack-api";
-import type { Db } from "../src/supabase";
+import { DbError, type Db } from "../src/supabase";
 import { ThreadCoordinator } from "../src/coordinator";
 import { WorkspaceMeter } from "../src/meter";
 
@@ -223,8 +223,20 @@ export class FakeDb implements Db {
 		return rows.map((row) => Object.fromEntries(columns.split(",").map((column) => [column, row[column]]))) as T[];
 	}
 
+	/** RPCs that fail as if Postgres were unavailable. */
+	failingRpcs = new Set<string>();
+
 	async rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 		this.rpcs.push({ fn, args });
+		if (this.failingRpcs.has(fn)) throw new DbError(503, null);
+		if (fn === "uninstall_slack_agent_from_slack") {
+			// The database function in short: once, and never for an event older than the install.
+			const row = this.tables.slack_installations.find((installation) => installation.id === args.p_installation_id);
+			if (!row || row.status === "uninstalled" || (row.installed_at && String(args.p_event_time) < String(row.installed_at))) return false as T;
+			Object.assign(row, { status: "uninstalled", uninstalled_at: args.p_event_time });
+			this.tables.workspace_audit_events.push({ action: "slack_agent.uninstalled_in_slack", target_id: row.id, metadata: { event: args.p_event } });
+			return true as T;
+		}
 		return null as T;
 	}
 }

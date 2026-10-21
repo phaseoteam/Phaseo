@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { verifySlackToken as webApiVerifySlackToken } from "../../web-api/src/lib/slack-secrets";
-import { clearUserFactsCache } from "../src/access";
-import { processEvent, type SlackEnvelope } from "../src/events";
+import { clearUserFactsCache, refusalText } from "../src/access";
+import { meterSettings, processEvent, type SlackEnvelope } from "../src/events";
 import { hostedApp, installationSecrets, type Installation } from "../src/installations";
 import type { TurnRunner } from "../src/turns";
 import {
@@ -89,7 +89,7 @@ describe("events: who gets an answer", () => {
 		const replies = world.slack.ephemerals();
 		expect(replies.map((call) => call.args.text)).toEqual([
 			"The Phaseo agent is paused in this Slack workspace. An admin can turn it back on in Phaseo settings.",
-			"The Phaseo agent is paused until this workspace's Phaseo bill is paid. Your admins have been notified.",
+			"The Phaseo agent is paused until this workspace's Phaseo bill is paid. An admin can add credits in Phaseo billing.",
 		]);
 		expect(replies[0]).toMatchObject({ token: BOT_TOKEN, args: { channel: "C0CHANNEL1", user: "U0PERSON01" } });
 		// A top-level mention has no thread yet, so the reply isn't put in one.
@@ -140,9 +140,20 @@ describe("events: who gets an answer", () => {
 		for (const user of ["U0PERSON01", "U0PERSON02", "U0PERSON03"]) await expect(run(directMessage({ user }))).resolves.toBe("started");
 		await expect(run(directMessage({ user: "U0PERSON04" }))).resolves.toBe("refused_plan_full");
 		expect(world.slack.ephemerals().at(-1)?.args.text).toBe(
-			"The Phaseo agent has answered as many people this month as this workspace's plan covers (3 people, $0.99 a month). Your admins have been notified and can move to a bigger plan.",
+			"The Phaseo agent has answered as many people this month as this workspace's plan covers (3 people, $0.99 a month). An admin can move to a bigger plan in Phaseo settings.",
 		);
 		expect(world.db.tables.workspace_audit_events).toHaveLength(1);
+	});
+
+	it("never says an admin has been told: refusals only reach the audit log", () => {
+		const reasons = ["paused", "payment_due", "external_user", "guest", "plan_full", "max_people", "monthly_cap", "hourly_limit", "user_unverified", "busy"] as const;
+		for (const reason of reasons) {
+			const text = refusalText(reason, { tier: { people: 3, priceNanos: 990_000_000 }, limit: 60 });
+			expect(text).toBeTruthy();
+			expect(text).not.toMatch(/notif|been told|been asked/i);
+		}
+		expect(refusalText("max_people")).toBe("This workspace has reached its Slack agent limit for the month. An admin can change the limits in Phaseo settings.");
+		expect(refusalText("uninstalled")).toBeNull();
 	});
 
 	it("gives a busy reply and the meter place back when a thread's queue is full", async () => {
@@ -205,6 +216,62 @@ describe("events: installations", () => {
 		const stored = await installationSecrets(world.env, String(world.db.tables.slack_installations[0].secrets_ciphertext));
 		expect(stored).toMatchObject({ bot_token: refreshed, bot_refresh_token: "xoxe-1-test-next-refresh", gateway_key: "phaseo_v1_sk_testkid00000_testsecret" });
 		expect(Date.parse(stored.bot_token_expires_at!)).toBeGreaterThan(Date.now() + 43_000_000);
+	});
+});
+
+describe("events: removed in Slack", () => {
+	const meter = () => world.meters.get(world.meters.idFromName(INSTALLATION_ID));
+
+	it("uninstalls when the app is removed in Slack, once however often Slack retries, and answers nobody after", async () => {
+		world.db.tables.slack_installations[0].installed_at = new Date(NOW - 86_400_000).toISOString();
+		await expect(run(directMessage())).resolves.toBe("started");
+		// A turn admitted just before the removal holds a place in the meter.
+		meter().admit({ settings: meterSettings(await installationRow()), slackUserId: "U0PERSON02", facts: { isBot: false, isExternal: false, isGuest: false }, eventId: "Ev0INFLIGHT1", now: NOW });
+
+		const removal = { event_id: "Ev0REMOVED01", event_time: NOW / 1000 + 60, authorizations: [] };
+		await expect(run({ type: "app_uninstalled" }, removal)).resolves.toBe("uninstalled");
+		expect(world.db.rpcs.filter((call) => call.fn === "uninstall_slack_agent_from_slack")).toEqual([{
+			fn: "uninstall_slack_agent_from_slack",
+			args: { p_installation_id: INSTALLATION_ID, p_event: "app_uninstalled", p_event_time: new Date(NOW + 60_000).toISOString() },
+		}]);
+		expect(world.db.tables.slack_installations[0]).toMatchObject({ status: "uninstalled" });
+		expect(world.db.tables.workspace_audit_events).toEqual([expect.objectContaining({ action: "slack_agent.uninstalled_in_slack", target_id: INSTALLATION_ID })]);
+
+		// Slack's retry, and the tokens_revoked that comes with it, change nothing more.
+		await expect(run({ type: "app_uninstalled" }, removal)).resolves.toBe("no_installation");
+		await expect(run({ type: "tokens_revoked", tokens: { oauth: [], bot: [BOT_USER_ID] } }, { event_id: "Ev0REVOKED01", authorizations: [] })).resolves.toBe("no_installation");
+		expect(world.db.tables.workspace_audit_events).toHaveLength(1);
+
+		// The meter is closed: answers in progress are dropped and nobody else is admitted.
+		expect(meter().usage(NOW)).toMatchObject({ pending: 0 });
+		const late = meter().admit({ settings: meterSettings(await installationRow()), slackUserId: "U0PERSON01", facts: { isBot: false, isExternal: false, isGuest: false }, eventId: "Ev0LATE00001", now: NOW + 120_000 });
+		expect(late).toMatchObject({ allowed: false, reason: "uninstalled", auditForAdmins: false });
+		await expect(run(directMessage({ ts: "1792600000.000900" }))).resolves.toBe("no_installation");
+		expect(world.slack.ephemerals()).toHaveLength(0);
+	});
+
+	it("uninstalls on tokens_revoked only when this installation's bot token was revoked", async () => {
+		await expect(run({ type: "tokens_revoked", tokens: { oauth: ["U0PERSON01"], bot: [] } }, { event_id: "Ev0REVOKED01" })).resolves.toBe("ignored");
+		await expect(run({ type: "tokens_revoked", tokens: { oauth: [], bot: ["U0OTHERBOT"] } }, { event_id: "Ev0REVOKED02" })).resolves.toBe("ignored");
+		expect(world.db.tables.slack_installations[0]).toMatchObject({ status: "active" });
+		await expect(run({ type: "tokens_revoked", tokens: { oauth: [], bot: [BOT_USER_ID] } }, { event_id: "Ev0REVOKED03" })).resolves.toBe("uninstalled");
+		expect(world.db.tables.slack_installations[0]).toMatchObject({ status: "uninstalled" });
+	});
+
+	it("ignores a removal sent before the current install (a late retry after a reinstall)", async () => {
+		world.db.tables.slack_installations[0].installed_at = new Date(NOW).toISOString();
+		await expect(run({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED01", event_time: NOW / 1000 - 300 })).resolves.toBe("ignored");
+		expect(world.db.tables.slack_installations[0]).toMatchObject({ status: "active" });
+		expect(meter().usage(NOW).period).toBe("2026-10-01");
+		await expect(run(directMessage())).resolves.toBe("started");
+	});
+
+	it("reports an error when the database can't take the uninstall, so Slack sends it again", async () => {
+		world.db.failingRpcs.add("uninstall_slack_agent_from_slack");
+		await expect(run({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED01" })).resolves.toBe("error");
+		expect(world.db.tables.slack_installations[0]).toMatchObject({ status: "active" });
+		world.db.failingRpcs.clear();
+		await expect(run({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED01" })).resolves.toBe("uninstalled");
 	});
 });
 

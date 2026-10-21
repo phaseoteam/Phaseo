@@ -106,6 +106,19 @@ describe("routes", () => {
 		expect(meter.usage(NOW)).toMatchObject({ people: 1, pending: 0 });
 	});
 
+	it("handles the app being removed in Slack before answering, and asks Slack to retry when the database is down", async () => {
+		const body = JSON.stringify(eventEnvelope({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED01" }));
+		world.db.failingRpcs.add("uninstall_slack_agent_from_slack");
+		const failed = await signed("/events", body);
+		expect(failed.status).toBe(500);
+		expect(world.db.tables.slack_installations[0]).toMatchObject({ status: "active" });
+		world.db.failingRpcs.clear();
+		const retried = await signed("/events", body, { headers: { "X-Slack-Retry-Num": "1", "X-Slack-Retry-Reason": "http_error" } });
+		expect(retried.status).toBe(200);
+		expect(world.db.tables.slack_installations[0]).toMatchObject({ status: "uninstalled" });
+		expect(waits).toHaveLength(0);
+	});
+
 	it("refuses an event for another app", async () => {
 		const response = await signed("/events", JSON.stringify(eventEnvelope(mention(), { api_app_id: "A0SOMEONE1" })));
 		expect(response.status).toBe(403);

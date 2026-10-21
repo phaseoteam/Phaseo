@@ -1,7 +1,7 @@
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type { Env } from "./env";
-import { processEvent, type Deps, type SlackEnvelope } from "./events";
+import { isRemovalEvent, processEvent, type Deps, type SlackEnvelope } from "./events";
 import { companyApp, hostedApp, SLACK_APP_ID_PATTERN, type SlackAppContext } from "./installations";
 import { handleInteraction, type InteractionPayload } from "./interactions";
 import { verifySlackSignature } from "./signature";
@@ -21,7 +21,9 @@ export { WorkspaceMeter } from "./meter";
 // Every Slack request is verified (v0 signature over the raw body, five-minute
 // window) and acknowledged at once; the work runs after the response in
 // waitUntil, since Slack wants an answer within three seconds. Retries
-// (X-Slack-Retry-Num) are acknowledged too and deduped by event id.
+// (X-Slack-Retry-Num) are acknowledged too and deduped by event id. The app being
+// removed in Slack is the exception: it is handled before the answer, so Slack
+// retries it if the database is unavailable.
 
 const MAX_BODY_BYTES = 512 * 1024;
 
@@ -87,6 +89,12 @@ export function createApp(makeDeps: (env: Env) => Deps = defaultDeps) {
 		}
 		const retry = c.req.header("x-slack-retry-num");
 		if (retry) console.log("[slack-agent] slack retry", { eventId: envelope.event_id, retry, reason: c.req.header("x-slack-retry-reason") ?? null });
+		// An uninstall must not be lost: it is handled before answering (a few quick database
+		// calls), and a failure asks Slack to send it again. Handling it twice is safe.
+		if (isRemovalEvent(envelope)) {
+			const outcome = await processEvent(deps, request.app, envelope);
+			return outcome === "error" ? c.json({ error: "unavailable" }, 500) : c.body(null, 200);
+		}
 		c.executionCtx.waitUntil(processEvent(deps, request.app, envelope));
 		return c.body(null, 200);
 	};

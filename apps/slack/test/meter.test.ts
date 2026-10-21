@@ -59,27 +59,27 @@ describe("WorkspaceMeter: who counts", () => {
 	});
 
 	it("never counts bots and never tells admins about them", () => {
-		expect(admit("U0BOTUSER1", { facts: { isBot: true } }).result).toMatchObject({ allowed: false, reason: "bot", notifyAdmins: false });
+		expect(admit("U0BOTUSER1", { facts: { isBot: true } }).result).toMatchObject({ allowed: false, reason: "bot", auditForAdmins: false });
 		expect(meter.usage(OCT_21)).toMatchObject({ people: 0, pending: 0 });
 	});
 
 	it("refuses people from other organisations unless allowed, and then counts them", () => {
-		expect(admit("U0OUTSIDE1", { facts: { isExternal: true } }).result).toMatchObject({ allowed: false, reason: "external_user", notifyAdmins: true });
+		expect(admit("U0OUTSIDE1", { facts: { isExternal: true } }).result).toMatchObject({ allowed: false, reason: "external_user", auditForAdmins: true });
 		// Admins hear once a month per person.
-		expect(admit("U0OUTSIDE1", { facts: { isExternal: true } }).result).toMatchObject({ allowed: false, reason: "external_user", notifyAdmins: false });
-		expect(admit("U0OUTSIDE2", { facts: { isExternal: true } }).result).toMatchObject({ notifyAdmins: true });
+		expect(admit("U0OUTSIDE1", { facts: { isExternal: true } }).result).toMatchObject({ allowed: false, reason: "external_user", auditForAdmins: false });
+		expect(admit("U0OUTSIDE2", { facts: { isExternal: true } }).result).toMatchObject({ auditForAdmins: true });
 		expect(meter.usage(OCT_21).people).toBe(0);
 		expect(admit("U0OUTSIDE1", { facts: { isExternal: true }, settings: { allow_external_users: true } }).result).toMatchObject({ allowed: true, newPerson: true, people: 1 });
 	});
 
 	it("allows guests unless an admin turns them off", () => {
 		expect(admit("U0GUEST001", { facts: { isGuest: true } }).result).toMatchObject({ allowed: true });
-		expect(admit("U0GUEST002", { facts: { isGuest: true }, settings: { allow_guests: false } }).result).toMatchObject({ allowed: false, reason: "guest", notifyAdmins: true });
+		expect(admit("U0GUEST002", { facts: { isGuest: true }, settings: { allow_guests: false } }).result).toMatchObject({ allowed: false, reason: "guest", auditForAdmins: true });
 	});
 
 	it("refuses while the installation is paused or a payment is due", () => {
-		expect(admit("U0PERSON01", { settings: { status: "paused" } }).result).toMatchObject({ allowed: false, reason: "paused", notifyAdmins: false });
-		expect(admit("U0PERSON01", { settings: { status: "payment_due" } }).result).toMatchObject({ allowed: false, reason: "payment_due", notifyAdmins: false });
+		expect(admit("U0PERSON01", { settings: { status: "paused" } }).result).toMatchObject({ allowed: false, reason: "paused", auditForAdmins: false });
+		expect(admit("U0PERSON01", { settings: { status: "payment_due" } }).result).toMatchObject({ allowed: false, reason: "payment_due", auditForAdmins: false });
 		expect(meter.usage(OCT_21).people).toBe(0);
 	});
 
@@ -93,8 +93,8 @@ describe("WorkspaceMeter: who counts", () => {
 describe("WorkspaceMeter: limits", () => {
 	it("refuses a new person beyond the plan by default, telling admins once a month", () => {
 		for (const user of ["U0PERSON01", "U0PERSON02", "U0PERSON03"]) expect(admit(user).result.allowed).toBe(true);
-		expect(admit("U0PERSON04").result).toEqual({ allowed: false, reason: "plan_full", people: 3, tier: { people: 3, priceNanos: 990_000_000 }, notifyAdmins: true });
-		expect(admit("U0PERSON05").result).toMatchObject({ allowed: false, reason: "plan_full", notifyAdmins: false });
+		expect(admit("U0PERSON04").result).toEqual({ allowed: false, reason: "plan_full", people: 3, tier: { people: 3, priceNanos: 990_000_000 }, auditForAdmins: true });
+		expect(admit("U0PERSON05").result).toMatchObject({ allowed: false, reason: "plan_full", auditForAdmins: false });
 		// People already counted this month keep getting answers.
 		expect(admit("U0PERSON01").result).toMatchObject({ allowed: true, newPerson: false });
 	});
@@ -107,14 +107,14 @@ describe("WorkspaceMeter: limits", () => {
 	it("never goes past max_people, even when moving up", () => {
 		const limits = { over_plan: "move_up" as const, max_people: 4, plan_people: 3 };
 		for (const user of ["U0PERSON01", "U0PERSON02", "U0PERSON03", "U0PERSON04"]) expect(admit(user, { settings: limits }).result.allowed).toBe(true);
-		expect(admit("U0PERSON05", { settings: limits }).result).toMatchObject({ allowed: false, reason: "max_people", people: 4, notifyAdmins: true });
+		expect(admit("U0PERSON05", { settings: limits }).result).toMatchObject({ allowed: false, reason: "max_people", people: 4, auditForAdmins: true });
 	});
 
 	it("refuses a new person when moving up would take the month over the spending cap", () => {
 		const capped = { over_plan: "move_up" as const, monthly_cap_nanos: 990_000_000 };
 		for (const user of ["U0PERSON01", "U0PERSON02", "U0PERSON03"]) expect(admit(user, { settings: capped }).result.allowed).toBe(true);
 		// A fourth person moves the plan to $2.99.
-		expect(admit("U0PERSON04", { settings: capped }).result).toMatchObject({ allowed: false, reason: "monthly_cap", notifyAdmins: true });
+		expect(admit("U0PERSON04", { settings: capped }).result).toMatchObject({ allowed: false, reason: "monthly_cap", auditForAdmins: true });
 	});
 
 	it("refuses an answer beyond the included ones when it would pass the cap, counting answers in progress", async () => {
@@ -137,7 +137,7 @@ describe("WorkspaceMeter: limits", () => {
 		const limited = { answers_per_person_hour: 2 };
 		expect(admit("U0PERSON01", { settings: limited }).result.allowed).toBe(true);
 		expect(admit("U0PERSON01", { settings: limited, now: OCT_21 + 60_000 }).result.allowed).toBe(true);
-		expect(admit("U0PERSON01", { settings: limited, now: OCT_21 + 120_000 }).result).toMatchObject({ allowed: false, reason: "hourly_limit", notifyAdmins: true });
+		expect(admit("U0PERSON01", { settings: limited, now: OCT_21 + 120_000 }).result).toMatchObject({ allowed: false, reason: "hourly_limit", auditForAdmins: true });
 		// Someone else has their own allowance; the next hour starts again.
 		expect(admit("U0PERSON02", { settings: limited, now: OCT_21 + 120_000 }).result.allowed).toBe(true);
 		expect(admit("U0PERSON01", { settings: limited, now: OCT_21 + 60 * 60_000 }).result.allowed).toBe(true);
@@ -256,10 +256,69 @@ describe("WorkspaceMeter: months", () => {
 		expect(storage.alarm).toBe(Date.UTC(2026, 11, 1) + 60_000);
 	});
 
-	it("counts an answer admitted just before midnight in the new month", async () => {
+	it("counts an answer admitted just before midnight in October, so it never slips past November's limits", async () => {
 		const lastMinuteOfOctober = Date.UTC(2026, 9, 31, 23, 59, 30);
-		const { eventId } = admit("U0PERSON01", { now: lastMinuteOfOctober });
-		await meter.recordAnswer({ eventId, slackUserId: "U0PERSON01", now: Date.UTC(2026, 10, 1, 0, 0, 10) });
-		expect(meter.usage(Date.UTC(2026, 10, 1, 0, 1))).toMatchObject({ period: "2026-11-01", people: 1, answers: 1 });
+		const november = Date.UTC(2026, 10, 1, 0, 0, 10);
+		const limits = { plan_people: 1, max_people: 1 };
+		const late = admit("U0PERSON01", { settings: limits, now: lastMinuteOfOctober });
+		expect(late.result.allowed).toBe(true);
+		// November's one place goes to someone else while October's answer is still being written.
+		expect(admit("U0PERSON02", { settings: limits, now: november }).result).toMatchObject({ allowed: true, newPerson: true, people: 1 });
+		await expect(meter.recordAnswer({ eventId: late.eventId, slackUserId: "U0PERSON01", now: november + 5_000 })).resolves.toEqual({ counted: true });
+		expect(meter.usage(november + 6_000)).toMatchObject({ period: "2026-11-01", people: 1, answers: 0 });
+		expect(meter.usage(lastMinuteOfOctober)).toMatchObject({ period: "2026-10-01", people: 1, answers: 1 });
+		// U0PERSON01 still has no November place, so a new November turn is refused.
+		expect(admit("U0PERSON01", { settings: limits, now: november + 7_000 }).result).toMatchObject({ allowed: false, reason: "max_people" });
+	});
+
+	it("keeps last month open while one of its answers is in progress, then closes it", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		const storage = storageOf(meter);
+		const october = Date.UTC(2026, 9, 31, 23, 59, 0);
+		const november = Date.UTC(2026, 10, 1, 0, 0, 30);
+		await answer("U0PERSON01", { now: october });
+		const late = admit("U0PERSON02", { now: october + 30_000 });
+
+		vi.setSystemTime(november);
+		await meter.alarm();
+		expect(world.db.flushes.map((flush) => [flush.period, flush.people.map((person) => person.slack_user_id)])).toEqual([["2026-10-01", ["U0PERSON01"]]]);
+		// October can't close yet: U0PERSON02's answer is still being written.
+		expect(storage.db.prepare("SELECT period FROM months").all().map((row) => row.period)).toEqual(["2026-10-01"]);
+		expect(storage.alarm).toBe(november + 60_000);
+
+		await meter.recordAnswer({ eventId: late.eventId, slackUserId: "U0PERSON02", now: november + 10_000 });
+		vi.setSystemTime(november + 60_000);
+		await meter.alarm();
+		expect(world.db.flushes.at(-1)).toMatchObject({ period: "2026-10-01", people: [{ slack_user_id: "U0PERSON02", answers: 1 }] });
+		expect(storage.db.prepare("SELECT period FROM months").all()).toEqual([]);
+	});
+
+	it("never adds a person to a month whose limits they didn't pass", async () => {
+		const october = Date.UTC(2026, 9, 31, 23, 40, 0);
+		const late = admit("U0PERSON01", { now: october });
+		// The turn timed out and gave its place back; October then closed with nothing to send.
+		meter.release({ eventId: late.eventId });
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(Date.UTC(2026, 10, 1, 0, 1, 0));
+		await meter.alarm();
+		await expect(meter.recordAnswer({ eventId: late.eventId, slackUserId: "U0PERSON01", now: Date.UTC(2026, 10, 1, 0, 2, 0) })).resolves.toEqual({ counted: false });
+		expect(meter.usage(Date.UTC(2026, 10, 1, 0, 3, 0))).toMatchObject({ period: "2026-11-01", people: 0, answers: 0 });
+		// A released place in the same month still counts where the person holds it.
+		const again = admit("U0PERSON01", { now: Date.UTC(2026, 10, 2) });
+		meter.release({ eventId: again.eventId });
+		await expect(meter.recordAnswer({ eventId: again.eventId, slackUserId: "U0PERSON01", now: Date.UTC(2026, 10, 2, 0, 25) })).resolves.toEqual({ counted: true });
+		expect(meter.usage(Date.UTC(2026, 10, 2, 1))).toMatchObject({ people: 1, answers: 1 });
+	});
+});
+
+describe("WorkspaceMeter: uninstalled in Slack", () => {
+	it("admits nobody, drops answers in progress, and still sends what was answered", async () => {
+		await answer("U0PERSON01");
+		admit("U0PERSON02");
+		meter.uninstalled(OCT_21 + 1_000);
+		expect(meter.usage(OCT_21 + 2_000)).toMatchObject({ people: 2, answers: 1, pending: 0 });
+		expect(admit("U0PERSON01", { now: OCT_21 + 3_000 }).result).toMatchObject({ allowed: false, reason: "uninstalled", auditForAdmins: false });
+		await meter.flush(OCT_21 + 60_000);
+		expect(world.db.flushes).toEqual([{ installationId: INSTALLATION_ID, period: "2026-10-01", people: [expect.objectContaining({ slack_user_id: "U0PERSON01", answers: 1 })] }]);
 	});
 });

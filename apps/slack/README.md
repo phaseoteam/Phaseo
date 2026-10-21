@@ -19,6 +19,19 @@ a five-minute window, and acknowledged at once. The work runs after the response
 because Slack wants an answer within three seconds. Retries are acknowledged and
 deduped by event id.
 
+**Removed in Slack.** When an admin removes the app inside Slack (`app_uninstalled`),
+or its bot token is revoked (`tokens_revoked` listing the bot user), the Worker
+calls `uninstall_slack_agent_from_slack`. In one transaction it deletes the
+installation's gateway key, marks the installation uninstalled, removes its
+guardrail and records `slack_agent.uninstalled_in_slack` in the audit log, in
+the same order as Uninstall in Phaseo settings. The Worker handles this event
+before answering Slack, so a database failure returns 500 and Slack retries it.
+Repeats are safe, and an event older than the current install is ignored. The
+app's manifest must subscribe to both events.
+
+Refusals are recorded in the workspace audit log (`slack_agent.answer_refused`).
+Nothing pushes or emails them yet, so replies never say an admin has been told.
+
 ## Durable Objects
 
 - `ThreadCoordinator` (`THREADS`), one per `installation:channel:thread_ts`.
@@ -29,7 +42,7 @@ deduped by event id.
   - Deletes everything 7 days after the last activity.
 - `WorkspaceMeter` (`METERS`), one per installation.
   - Admits or refuses each answer: bots, Slack Connect users, guests, status, the plan's people, max people, the monthly spending cap and answers per person per hour.
-  - Counts this UTC month's people and answers.
+  - Counts this UTC month's people and answers. An answer counts in the month it was admitted in, even when it finishes after midnight.
   - Flushes running totals to `record_slack_agent_people` at most about once a minute.
   - Serialises bot token refreshes when Slack rotates tokens.
 

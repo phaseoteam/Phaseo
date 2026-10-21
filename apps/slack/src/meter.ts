@@ -13,14 +13,18 @@ import { createDb, type Db } from "./supabase";
 //   (bots, Slack Connect users, guests, status, plan people, max people, the
 //   monthly spending cap, answers per person per hour) and, when it allows, holds
 //   a place: the person joins this month's set and the answer is pending.
-// - recordAnswer() counts an answer once it has been given; release() drops a
-//   pending answer that was never given (a failed or cancelled turn).
+// - recordAnswer() counts an answer once it has been given, in the month it was
+//   admitted in (an answer started before midnight UTC passed that month's
+//   limits, not the next one's); release() drops a pending answer that was never
+//   given (a failed or cancelled turn).
 // - Answers and first-answer times are sent to Postgres (record_slack_agent_people)
 //   as running totals, at most about once a minute from an alarm, so a repeated
 //   flush can only confirm a count. Only people with an answer are sent: someone
 //   whose only turn failed is never billed.
 // - Every query is scoped to the UTC month, so a new month starts empty; the
-//   alarm flushes what is left of the old month and then deletes it.
+//   alarm flushes what is left of the old month and deletes it once its answers
+//   in progress are counted or dropped.
+// - uninstalled() closes the meter for good when the app is removed in Slack.
 // It keeps Slack user ids and counts only, never message text.
 
 const FLUSH_INTERVAL_MS = 60_000;
@@ -47,7 +51,7 @@ export type UserFacts = {
 };
 
 export type RefuseReason =
-	| "bot" | "paused" | "payment_due" | "external_user" | "guest"
+	| "bot" | "uninstalled" | "paused" | "payment_due" | "external_user" | "guest"
 	| "max_people" | "plan_full" | "hourly_limit" | "monthly_cap";
 
 /** A plan: the most people it covers and its monthly price. */
@@ -55,7 +59,8 @@ export type Tier = { people: number; priceNanos: number };
 
 export type AdmitResult =
 	| { allowed: true; newPerson: boolean; people: number; tier: Tier }
-	| { allowed: false; reason: RefuseReason; people: number; tier: Tier; notifyAdmins: boolean };
+	/** auditForAdmins: record this refusal in the workspace audit log (once a month per kind). */
+	| { allowed: false; reason: RefuseReason; people: number; tier: Tier; auditForAdmins: boolean };
 
 export type AdmitInput = {
 	settings: MeterSettings;
@@ -86,7 +91,7 @@ export function tierFor(people: number): Tier {
 	return tier ? { people: tier.people, priceNanos: tier.priceNanos } : { people: count, priceNanos: slackAgentPlanNanos(count) };
 }
 
-/** Who is told about a refusal, at most once a month per key. Null: nobody (it is expected, or the admin caused it). */
+/** Which refusals go in the workspace audit log, at most once a month per key. Null: none (it is expected, or the admin caused it). */
 function noticeKey(reason: RefuseReason, slackUserId: string): string | null {
 	switch (reason) {
 		case "plan_full":
@@ -180,12 +185,12 @@ export class WorkspaceMeter extends DurableObject<Env> {
 		const person = this.person(period, slackUserId);
 		const refuse = (reason: RefuseReason, people = month.people): AdmitResult => {
 			const key = noticeKey(reason, slackUserId);
-			let notifyAdmins = false;
+			let auditForAdmins = false;
 			if (key && !this.sql.exec("SELECT 1 FROM notices WHERE period = ? AND key = ?", period, key).toArray().length) {
 				this.sql.exec("INSERT INTO notices (period, key) VALUES (?, ?)", period, key);
-				notifyAdmins = true;
+				auditForAdmins = true;
 			}
-			return { allowed: false, reason, people, tier: tierFor(Math.max(people, settings.plan_people)), notifyAdmins };
+			return { allowed: false, reason, people, tier: tierFor(Math.max(people, settings.plan_people)), auditForAdmins };
 		};
 
 		// A retried event that was already admitted keeps its place.
@@ -194,6 +199,8 @@ export class WorkspaceMeter extends DurableObject<Env> {
 		}
 
 		if (facts.isBot) return refuse("bot");
+		// Removed in Slack: an event that read the installation just before that gets nothing.
+		if (this.meta("uninstalled_at") || settings.status === "uninstalled") return refuse("uninstalled");
 		if (settings.status === "paused") return refuse("paused");
 		if (settings.status !== "active") return refuse("payment_due");
 		if (facts.isExternal && !settings.allow_external_users) return refuse("external_user");
@@ -234,14 +241,20 @@ export class WorkspaceMeter extends DurableObject<Env> {
 		const counted = this.ctx.storage.transactionSync(() => {
 			if (this.sql.exec("SELECT 1 FROM answered WHERE event_id = ?", input.eventId).toArray().length) return false;
 			this.sql.exec("INSERT INTO answered (event_id, at) VALUES (?, ?)", input.eventId, now);
+			// The answer counts in the month it was admitted in, whose limits it passed, even when it
+			// finishes after midnight. A place that was released or expired meanwhile falls back to the
+			// latest month the person holds one; a person with no place is never added unchecked.
+			const admitted = this.sql.exec<{ period: string }>("SELECT period FROM pending WHERE event_id = ?", input.eventId).toArray()[0];
+			const period = admitted?.period ?? this.sql.exec<{ period: string }>(
+				"SELECT period FROM people WHERE slack_user_id = ? AND period <= ? ORDER BY period DESC LIMIT 1",
+				input.slackUserId, periodStart(now),
+			).toArray()[0]?.period;
 			this.sql.exec("DELETE FROM pending WHERE event_id = ?", input.eventId);
-			const period = periodStart(now);
-			this.month(period);
-			// Admitted last month and answered just after midnight: the answer counts in the new month.
-			if (!this.person(period, input.slackUserId)) {
-				this.sql.exec("INSERT INTO people (period, slack_user_id, admitted_at) VALUES (?, ?, ?)", period, input.slackUserId, now);
-				this.sql.exec("UPDATE months SET people = people + 1 WHERE period = ?", period);
+			if (!period || !this.person(period, input.slackUserId)) {
+				console.warn("[slack-agent] answer not counted: the person holds no place", { installationId: this.meta("installation_id") });
+				return false;
 			}
+			this.month(period);
 			this.sql.exec(
 				"UPDATE people SET answers = answers + 1, first_answer_at = coalesce(first_answer_at, ?) WHERE period = ? AND slack_user_id = ?",
 				now, period, input.slackUserId,
@@ -256,6 +269,18 @@ export class WorkspaceMeter extends DurableObject<Env> {
 	/** Drops a pending answer that was never given. */
 	release(input: { eventId: string }): void {
 		this.sql.exec("DELETE FROM pending WHERE event_id = ?", input.eventId);
+	}
+
+	/**
+	 * The app was removed in Slack: nothing more is admitted and answers in progress
+	 * are dropped. Answers already given are still sent, since this month is billed.
+	 * A reinstall is a new installation with its own meter.
+	 */
+	uninstalled(now = Date.now()): void {
+		this.ctx.storage.transactionSync(() => {
+			if (!this.meta("uninstalled_at")) this.setMeta("uninstalled_at", String(now));
+			this.sql.exec("DELETE FROM pending");
+		});
 	}
 
 	/** This month's counts as the meter sees them (people includes anyone holding a place). */
@@ -318,21 +343,22 @@ export class WorkspaceMeter extends DurableObject<Env> {
 		return this.sql.exec("SELECT 1 FROM people WHERE answers > flushed_answers LIMIT 1").toArray().length > 0;
 	}
 
-	/** Removes finished months (flushed in full), expired pending answers and old answered ids. */
+	/** Removes finished months (flushed in full, no answer still in progress), expired pending answers and old answered ids. */
 	private cleanUp(now: number): void {
+		this.sql.exec("DELETE FROM pending WHERE at <= ?", now - PENDING_TTL_MS);
+		this.sql.exec("DELETE FROM answered WHERE at <= ?", now - ANSWERED_TTL_MS);
 		const period = periodStart(now);
 		const done = this.sql.exec<{ period: string }>(
-			"SELECT period FROM months WHERE period < ? AND NOT EXISTS (SELECT 1 FROM people WHERE people.period = months.period AND answers > flushed_answers)",
+			`SELECT period FROM months WHERE period < ?
+				AND NOT EXISTS (SELECT 1 FROM people WHERE people.period = months.period AND answers > flushed_answers)
+				AND NOT EXISTS (SELECT 1 FROM pending WHERE pending.period = months.period)`,
 			period,
 		).toArray();
 		for (const row of done) {
 			this.sql.exec("DELETE FROM people WHERE period = ?", row.period);
 			this.sql.exec("DELETE FROM notices WHERE period = ?", row.period);
-			this.sql.exec("DELETE FROM pending WHERE period = ?", row.period);
 			this.sql.exec("DELETE FROM months WHERE period = ?", row.period);
 		}
-		this.sql.exec("DELETE FROM pending WHERE at <= ?", now - PENDING_TTL_MS);
-		this.sql.exec("DELETE FROM answered WHERE at <= ?", now - ANSWERED_TTL_MS);
 	}
 
 	async alarm(): Promise<void> {
@@ -347,6 +373,9 @@ export class WorkspaceMeter extends DurableObject<Env> {
 		}
 		this.cleanUp(now);
 		if (unflushed) {
+			await this.ctx.storage.setAlarm(now + FLUSH_INTERVAL_MS);
+		} else if (this.sql.exec("SELECT 1 FROM months WHERE period < ? LIMIT 1", periodStart(now)).toArray().length) {
+			// Last month still has answers in progress: close it once they are counted or dropped.
 			await this.ctx.storage.setAlarm(now + FLUSH_INTERVAL_MS);
 		} else if (this.sql.exec("SELECT 1 FROM months LIMIT 1").toArray().length) {
 			// Wake once at the start of next month to close this one.

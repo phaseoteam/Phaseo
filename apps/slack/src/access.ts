@@ -50,6 +50,11 @@ export function clearUserFactsCache(): void {
 	factsCache.clear();
 }
 
+/** Drops what this isolate cached about an installation's people (it was removed in Slack). */
+export function forgetInstallationFacts(installationId: string): void {
+	for (const key of factsCache.keys()) if (key.startsWith(`${installationId}:`)) factsCache.delete(key);
+}
+
 export async function isLinked(db: Db, installationId: string, slackUserId: string): Promise<boolean> {
 	const rows = await db.select<{ user_id: string }>("slack_user_links", {
 		select: "user_id",
@@ -99,25 +104,30 @@ function usd(nanos: number): string {
 
 export type ReplyReason = RefuseReason | "user_unverified" | "busy";
 
-/** What someone sees when they can't get an answer. Null: say nothing (bots). */
+/**
+ * What someone sees when they can't get an answer. Null: say nothing (bots, and
+ * an app that was removed and can't post). Refusals are only recorded in the
+ * workspace audit log, so the text never says an admin has been told.
+ */
 export function refusalText(reason: ReplyReason, details: { tier?: Tier; limit?: number } = {}): string | null {
 	switch (reason) {
 		case "bot":
+		case "uninstalled":
 			return null;
 		case "paused":
 			return "The Phaseo agent is paused in this Slack workspace. An admin can turn it back on in Phaseo settings.";
 		case "payment_due":
-			return "The Phaseo agent is paused until this workspace's Phaseo bill is paid. Your admins have been notified.";
+			return "The Phaseo agent is paused until this workspace's Phaseo bill is paid. An admin can add credits in Phaseo billing.";
 		case "external_user":
-			return "The Phaseo agent only answers people in this organization. Your admins have been notified that you asked.";
+			return "The Phaseo agent only answers people in this organization. An admin can change this in Phaseo settings.";
 		case "guest":
-			return "The Phaseo agent isn't available to guests in this workspace. Your admins have been notified that you asked.";
+			return "The Phaseo agent isn't available to guests in this workspace. An admin can change this in Phaseo settings.";
 		case "plan_full":
-			return `The Phaseo agent has answered as many people this month as this workspace's plan covers${details.tier ? ` (${details.tier.people.toLocaleString("en-US")} people, ${usd(details.tier.priceNanos)} a month)` : ""}. Your admins have been notified and can move to a bigger plan.`;
+			return `The Phaseo agent has answered as many people this month as this workspace's plan covers${details.tier ? ` (${details.tier.people.toLocaleString("en-US")} people, ${usd(details.tier.priceNanos)} a month)` : ""}. An admin can move to a bigger plan in Phaseo settings.`;
 		case "max_people":
-			return "The Phaseo agent has answered the most people this workspace allows in a month. Your admins have been notified.";
+			return "This workspace has reached its Slack agent limit for the month. An admin can change the limits in Phaseo settings.";
 		case "monthly_cap":
-			return "The Phaseo agent has reached this workspace's monthly spending cap, so answers are paused until next month. Your admins have been notified and can raise the cap.";
+			return "The Phaseo agent has reached this workspace's monthly spending cap, so answers are paused until next month. An admin can raise the cap in Phaseo settings.";
 		case "hourly_limit":
 			return `You've reached the limit of ${details.limit != null ? `${details.limit.toLocaleString("en-US")} ` : ""}answers an hour. Please try again a little later.`;
 		case "user_unverified":
