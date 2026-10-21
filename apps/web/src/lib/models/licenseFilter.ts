@@ -1,14 +1,30 @@
-// The License filter has two levels: Open / Closed, and the specific licences
-// under each. Picking a group matches every licence in it, including ones that
-// appear later; picking a licence matches just that licence.
+// The License filter has two levels: Permissive / Restricted / Proprietary,
+// and the specific licences under each. Picking a group matches every licence
+// in it, including ones that appear later; picking a licence matches just that
+// licence. The Weights filter (Open / Closed) is derived from the same licence.
 
-export type LicenseGroup = "open" | "closed";
+export type LicenseGroup = "permissive" | "restricted" | "proprietary";
 
-export const LICENSE_GROUPS: readonly LicenseGroup[] = ["open", "closed"];
+export const LICENSE_GROUPS: readonly LicenseGroup[] = ["permissive", "restricted", "proprietary"];
 
-// Licences that don't let you download the weights. Everything else in the
-// catalogue (Apache, MIT, community and research licences) ships weights.
-const CLOSED_LICENSES = new Set(["proprietary", "riva license"]);
+// Use, modify and ship commercially with attribution only.
+const PERMISSIVE_LICENSES = new Set([
+	"apache 2.0",
+	"mit",
+	"bsd-2-clause",
+	"bsd-3-clause",
+	"cc0 1.0",
+	"cc by 4.0",
+	"openmdw-1.1",
+]);
+
+// No downloadable weights.
+const PROPRIETARY_LICENSES = new Set(["proprietary"]);
+
+// Everything else ships weights under conditions: community licences with use
+// policies or user caps (Llama, Gemma, Qwen, DeepSeek, NVIDIA Open Model,
+// OpenRAIL), non-commercial and research licences, and rows only known to be
+// "Open weights".
 
 export type LicenseSelection = {
 	groups: string[];
@@ -16,9 +32,10 @@ export type LicenseSelection = {
 };
 
 export function licenseGroup(license: string | null | undefined): LicenseGroup | null {
-	const value = String(license ?? "").trim();
+	const value = String(license ?? "").trim().toLowerCase();
 	if (!value) return null;
-	return CLOSED_LICENSES.has(value.toLowerCase()) ? "closed" : "open";
+	if (PROPRIETARY_LICENSES.has(value)) return "proprietary";
+	return PERMISSIVE_LICENSES.has(value) ? "permissive" : "restricted";
 }
 
 export function parseLicenseGroups(values: string[]): LicenseGroup[] {
@@ -92,4 +109,28 @@ export function toggleLicense(
 		};
 	}
 	return { groups: selection.groups, licenses };
+}
+
+export type ModelWeights = "open" | "closed";
+
+export const MODEL_WEIGHTS: readonly ModelWeights[] = ["open", "closed"];
+
+// Models without a licence are unknown, so they match neither option.
+export function modelWeights(license: string | null | undefined): ModelWeights | null {
+	const group = licenseGroup(license);
+	if (!group) return null;
+	return group === "proprietary" ? "closed" : "open";
+}
+
+export function parseModelWeights(values: string[]): ModelWeights[] {
+	return MODEL_WEIGHTS.filter((value) => values.includes(value));
+}
+
+export function matchesModelWeights(
+	license: string | null | undefined,
+	selected: string[],
+): boolean {
+	if (selected.length === 0) return true;
+	const weights = modelWeights(license);
+	return weights !== null && selected.includes(weights);
 }

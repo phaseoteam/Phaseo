@@ -58,6 +58,7 @@ import {
 	LockKeyhole,
 	Scale,
 	ScrollText,
+	PackageOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -113,12 +114,27 @@ import type {
 	OptionCount,
 } from "./modelsDisplay.types";
 import { compareModelsByNewest } from "./modelOrdering";
-import { LicenseFilterList, useLicenseGroupLabel } from "./LicenseFilterList";
+import { LicenseFilterList, useLicenseGroupLabel, useWeightsLabel } from "./LicenseFilterList";
 import {
+	MODEL_WEIGHTS,
 	matchesLicenseSelection,
+	matchesModelWeights,
+	modelWeights,
 	parseLicenseGroups,
+	parseModelWeights,
 	type LicenseSelection,
 } from "@/lib/models/licenseFilter";
+
+// Weights are derived from the licence, so their counts start from the
+// licence facet until per-model counts are ready.
+function weightsOptionsFromLicenses(licenseOptions: OptionCount[]): OptionCount[] {
+	return MODEL_WEIGHTS.map((value) => ({
+		value,
+		count: licenseOptions
+			.filter((option) => modelWeights(option.value) === value)
+			.reduce((sum, option) => sum + option.count, 0),
+	}));
+}
 
 interface ModelsDisplayProps {
 	modelsPageData: ModelsPageData;
@@ -161,6 +177,7 @@ type FilterDimension =
 	| "regions"
 	| "creators"
 	| "licenses"
+	| "weights"
 	| "years";
 
 const SORT_OPTION_KEYS: Record<ModelsSortOption, string> = {
@@ -936,6 +953,7 @@ function ModelsDisplayContent({
 	const t = useTranslations("Catalogue.models");
 	const tFilters = useTranslations("Catalogue.models.filtersUi");
 	const licenseGroupLabel = useLicenseGroupLabel();
+	const weightsLabel = useWeightsLabel();
 	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
 	const translateModality = (value: string) => {
@@ -1159,6 +1177,13 @@ function ModelsDisplayContent({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [selectedWeights, setSelectedWeights] = useQueryState("weights", {
+		defaultValue: [] as string[],
+		parse: (value) => parseModelWeights(parseCsvParam(value)),
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
 	const licenseSelection = useMemo(
 		() => ({ groups: selectedLicenseTypes, licenses: selectedLicenses }),
 		[selectedLicenseTypes, selectedLicenses],
@@ -1246,6 +1271,7 @@ function ModelsDisplayContent({
 		selectedCreators.length +
 		selectedLicenseTypes.length +
 		selectedLicenses.length +
+		selectedWeights.length +
 		selectedYears.length;
 
 	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
@@ -1435,6 +1461,12 @@ function ModelsDisplayContent({
 				return false;
 			}
 			if (
+				exclude !== "weights" &&
+				!matchesModelWeights(prepared.license, selectedWeights)
+			) {
+				return false;
+			}
+			if (
 				exclude !== "years" &&
 				selectedYears.length > 0 &&
 				!selectedYears.includes(prepared.modelYear)
@@ -1449,6 +1481,7 @@ function ModelsDisplayContent({
 			selectedContextMin,
 			selectedCreators,
 			licenseSelection,
+			selectedWeights,
 			effectiveSelectedStatuses,
 			selectedEndpoints,
 			selectedFeatures,
@@ -1526,6 +1559,7 @@ function ModelsDisplayContent({
 				regionOptions: baseRegionOptions,
 				creatorOptions: baseCreatorOptions,
 				licenseOptions: baseLicenseOptions,
+				weightsOptions: weightsOptionsFromLicenses(baseLicenseOptions),
 				yearOptions: baseYearOptions,
 			};
 		}
@@ -1619,6 +1653,14 @@ function ModelsDisplayContent({
 				),
 				selectedLicenses,
 			),
+			weightsOptions: mergeOptionCounts(
+				weightsOptionsFromLicenses(baseLicenseOptions),
+				countPreparedValues(withAllExcept("weights"), (prepared) => {
+					const weights = modelWeights(prepared.license);
+					return weights ? [weights] : [];
+				}),
+				selectedWeights,
+			),
 			yearOptions: mergeOptionCounts(
 				baseYearOptions,
 				countPreparedValues(withAllExcept("years"), (prepared) =>
@@ -1653,6 +1695,7 @@ function ModelsDisplayContent({
 		selectedRegions,
 		selectedSupportedParameters,
 		selectedTiers,
+		selectedWeights,
 		selectedYears,
 	]);
 
@@ -1671,6 +1714,7 @@ function ModelsDisplayContent({
 		setSelectedCreators([]);
 		setSelectedLicenses([]);
 		setSelectedLicenseTypes([]);
+		setSelectedWeights([]);
 		setSelectedYears([]);
 	};
 
@@ -1780,6 +1824,7 @@ function ModelsDisplayContent({
 	}, [dynamicSidebarCounts.regionOptions]);
 	const creatorOptions = dynamicSidebarCounts.creatorOptions;
 	const licenseOptions = dynamicSidebarCounts.licenseOptions;
+	const weightsOptions = dynamicSidebarCounts.weightsOptions;
 	const yearOptions = dynamicSidebarCounts.yearOptions;
 
 	const handleFilterSectionChange = (sections: string[]) => {
@@ -1810,6 +1855,7 @@ function ModelsDisplayContent({
 		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
 		...selectedRegions.map((value) => ({ key: `region-${value}`, label: tFilters("filterRegion", { value: translateRegion(value) }), onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
 		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: tFilters("filterCreator", { value }), onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
+		...selectedWeights.map((value) => ({ key: `weights-${value}`, label: tFilters("filterWeights", { value: weightsLabel(value) }), onRemove: () => setSelectedWeights(without(selectedWeights, value)) })),
 		...selectedLicenseTypes.map((value) => ({ key: `license-type-${value}`, label: tFilters("filterLicense", { value: licenseGroupLabel(value) }), onRemove: () => setSelectedLicenseTypes(without(selectedLicenseTypes, value)) })),
 		...selectedLicenses.map((value) => ({ key: `license-${value}`, label: tFilters("filterLicense", { value }), onRemove: () => setSelectedLicenses(without(selectedLicenses, value)) })),
 		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: translateFeature(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
@@ -2161,6 +2207,25 @@ function ModelsDisplayContent({
 							<FilterLogo value={value} />
 						)}
 						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="weights" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<PackageOpen className="h-4 w-4 text-muted-foreground" />
+						{tFilters("weights")}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={weightsOptions}
+						selected={selectedWeights}
+						onToggle={(value) =>
+							setSelectedWeights(toggleInList(selectedWeights, value))
+						}
+						labelForValue={weightsLabel}
 					/>
 				</AccordionContent>
 			</AccordionItem>

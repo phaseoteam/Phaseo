@@ -72,7 +72,7 @@ import {
 import { formatExecutionRegionLabel } from "@/lib/providers/executionRegions";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
-import { parseLicenseGroups } from "@/lib/models/licenseFilter";
+import { parseLicenseGroups, parseModelWeights } from "@/lib/models/licenseFilter";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
 import {
@@ -483,6 +483,12 @@ export function MonitorDataTable({
 		serialize: (value) => value.join(","),
 	});
 
+	const [selectedWeights] = useQueryState("weights", {
+		defaultValue: [],
+		parse: (value) => parseModelWeights(value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
+
 	const [selectedContextMin] = useQueryState("contextMin", {
 		defaultValue: 0,
 		parse: (value) => {
@@ -599,6 +605,7 @@ export function MonitorDataTable({
 		creators: selectedCreators,
 		licenses: selectedLicenses,
 		licenseTypes: selectedLicenseTypes,
+		weights: selectedWeights,
 		contextMin: selectedContextMin,
 		endpoints: selectedEndpoints,
 		statuses: selectedStatuses,
@@ -615,6 +622,7 @@ export function MonitorDataTable({
 		selectedCreators,
 		selectedLicenses,
 		selectedLicenseTypes,
+		selectedWeights,
 		selectedContextMin,
 		selectedEndpoints,
 		selectedStatuses,
