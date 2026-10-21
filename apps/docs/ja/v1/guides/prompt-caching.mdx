@@ -104,7 +104,7 @@ Anthropicが受け付けるキャッシュブレークポイントは1リクエ�
 コンテンツブロックにキャッシュマークを付けると、そのブロックまでのすべてをキャッシュします。Phaseoは2つの書き方を受け付けます。
 
 - `cache_control`: `{"type": "ephemeral"}`。任意で`ttl`に`5m`または`1h`を指定できます。
-- `prompt_cache_breakpoint`: OpenAIの`{"mode": "explicit"}`。任意で`30m`または`12h`の`ttl`を指定できます。両方を持つブロックでは`prompt_cache_breakpoint`が優先されます。
+- `prompt_cache_breakpoint`: OpenAIの`{"mode": "explicit"}`。任意で`30m`または`12h`の`ttl`を指定できます（[OpenAIの12時間キャッシュ](#12-hour-cache-on-openai)を参照）。両方を持つブロックでは`prompt_cache_breakpoint`が優先されます。
 
 ```json
 {
@@ -165,6 +165,8 @@ GPT-5.6以降でOpenAIが受け付ける`ttl`は`30m`（デフォルト）と`12
   }
 }
 ```
+
+<span id="12-hour-cache-on-openai"></span>
 
 ### OpenAIの12時間キャッシュ
 

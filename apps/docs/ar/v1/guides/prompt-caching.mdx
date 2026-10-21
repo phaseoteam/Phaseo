@@ -104,7 +104,7 @@ icon: "database-zap"
 ضع علامة تخزين مؤقت على كتلة محتوى لتخزين كل ما يسبقها مؤقتًا، بما فيها الكتلة نفسها. تقبل Phaseo صيغتين:
 
 - `cache_control`: `{"type": "ephemeral"}`، مع `ttl` اختياري قيمته `5m` أو `1h`.
-- `prompt_cache_breakpoint`: صيغة OpenAI `{"mode": "explicit"}`، مع `ttl` اختياري قيمته `30m` أو `12h`. عندما تحمل الكتلة الصيغتين، تُعتمد `prompt_cache_breakpoint`.
+- `prompt_cache_breakpoint`: صيغة OpenAI `{"mode": "explicit"}`، مع `ttl` اختياري قيمته `30m` أو `12h` (راجع [ذاكرة التخزين المؤقت لمدة 12 ساعة في OpenAI](#12-hour-cache-on-openai)). عندما تحمل الكتلة الصيغتين، تُعتمد `prompt_cache_breakpoint`.
 
 ```json
 {
@@ -165,6 +165,8 @@ icon: "database-zap"
   }
 }
 ```
+
+<span id="12-hour-cache-on-openai"></span>
 
 ### التخزين المؤقت لمدة 12 ساعة في OpenAI
 
