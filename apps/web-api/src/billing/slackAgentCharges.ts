@@ -41,7 +41,8 @@ export function slackAgentChargeableBefore(now: Date): string {
  * Takes each finished month's Slack agent charge from credits: the plan for the
  * people who used the agent plus extra answers, capped at the installation's
  * spending cap. Months a workspace can't pay yet stay pending and are retried on
- * the next run; the database keeps every charge idempotent.
+ * the next run at the amount fixed by the first attempt; the database keeps
+ * every charge idempotent.
  */
 export async function chargeSlackAgentMonths(client: SlackAgentChargeClient, now = new Date()): Promise<SlackAgentChargeSummary> {
 	const before = slackAgentChargeableBefore(now);

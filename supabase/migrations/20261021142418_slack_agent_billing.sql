@@ -399,16 +399,16 @@ begin
     raise exception 'installation_not_found' using errcode = 'P0002';
   end if;
 
-  -- The spending cap set in Settings is a promise, so the charge never exceeds it.
-  v_amount := least(p_amount_nanos, v_installation.monthly_cap_nanos);
-
-  -- Locks the month's row; a concurrent run waits here and then sees it charged.
+  -- The first attempt fixes the month's people, answers and amount, capped at the
+  -- spending cap set in Settings. Retries while credits are short charge exactly
+  -- that, even if prices, the cap or late usage change afterwards. The row lock
+  -- also makes a concurrent run wait here and then see the month charged.
   insert into public.slack_agent_charges as charge
     (installation_id, workspace_id, period_start, people, answers, amount_nanos, attempted_at)
-  values (p_installation_id, v_installation.workspace_id, p_period_start, p_people, p_answers, v_amount, now())
+  values (p_installation_id, v_installation.workspace_id, p_period_start, p_people, p_answers,
+    least(p_amount_nanos, v_installation.monthly_cap_nanos), now())
   on conflict (installation_id, period_start) do update
-  set people = excluded.people, answers = excluded.answers, amount_nanos = excluded.amount_nanos,
-    attempted_at = excluded.attempted_at
+  set attempted_at = excluded.attempted_at
   where charge.status = 'pending'
   returning * into v_charge;
 
@@ -419,6 +419,7 @@ begin
     return;
   end if;
 
+  v_amount := v_charge.amount_nanos;
   v_ref := p_installation_id::text || ':' || to_char(p_period_start, 'YYYY-MM');
 
   if v_amount > 0 then
@@ -472,7 +473,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."charge_slack_agent_month"(uuid, date, integer, bigint, bigint) IS 'Takes one installation''s charge for a finished UTC month from credits, capped at its monthly spending cap, as a single credit_ledger charge (ref_type slack_agent_month, idempotent per installation and month). If the available balance is too low the month stays pending, the installation is marked payment_due, and the next call retries.';
+COMMENT ON FUNCTION "public"."charge_slack_agent_month"(uuid, date, integer, bigint, bigint) IS 'Takes one installation''s charge for a finished UTC month from credits, capped at its monthly spending cap and fixed at the first attempt, as a single credit_ledger charge (ref_type slack_agent_month, idempotent per installation and month). If the available balance is too low the month stays pending, the installation is marked payment_due, and the next call retries.';
 
 GRANT EXECUTE ON FUNCTION "public"."charge_slack_agent_month"(uuid, date, integer, bigint, bigint) TO "service_role";
 
@@ -481,3 +482,71 @@ REVOKE ALL ON FUNCTION "public"."charge_slack_agent_month"(uuid, date, integer, 
 GRANT EXECUTE ON FUNCTION "public"."charge_slack_agent_month"(uuid, date, integer, bigint, bigint) TO "postgres";
 
 REVOKE ALL ON FUNCTION "public"."charge_slack_agent_month"(uuid, date, integer, bigint, bigint) FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE FUNCTION public.protect_slack_agent_guardrail()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+begin
+  -- Deletes cascading from a deleted key or workspace are allowed: they leave the
+  -- installation without a working key, so nothing can run unguarded.
+  if tg_op = 'DELETE' and pg_catalog.pg_trigger_depth() > 1 then
+    return old;
+  end if;
+
+  if tg_table_name = 'workspace_guardrails' then
+    -- Renaming or other edits are fine while every privacy switch stays off.
+    if tg_op = 'UPDATE' and new.enabled
+      and not new.privacy_enable_paid_may_train and not new.privacy_enable_free_may_train
+      and not new.privacy_enable_free_may_publish_prompts and not new.privacy_enable_input_output_logging then
+      return new;
+    end if;
+    if exists (
+      select 1 from public.slack_installations installation
+      where installation.guardrail_id = old.id and installation.status <> 'uninstalled'
+    ) then
+      raise exception 'slack_agent_guardrail_protected'
+        using errcode = '23514',
+          detail = 'This guardrail keeps Slack data out of training and logs. Uninstall the Slack agent to change or remove it.';
+    end if;
+  else
+    if tg_op = 'UPDATE' and new.key_id = old.key_id and new.guardrail_id = old.guardrail_id then
+      return new;
+    end if;
+    if exists (
+      select 1 from public.slack_installations installation
+      where installation.key_id = old.key_id and installation.guardrail_id = old.guardrail_id
+        and installation.status <> 'uninstalled'
+    ) then
+      raise exception 'slack_agent_guardrail_protected'
+        using errcode = '23514',
+          detail = 'This guardrail keeps Slack data out of training and logs. Uninstall the Slack agent to change or remove it.';
+    end if;
+  end if;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
+end;
+$function$;
+
+COMMENT ON FUNCTION "public"."protect_slack_agent_guardrail"() IS 'Keeps a live Slack agent installation''s privacy guardrail in force: it cannot be deleted, disabled, have a privacy switch turned back on, or be detached from the installation''s key until the agent is uninstalled.';
+
+REVOKE ALL ON FUNCTION "public"."protect_slack_agent_guardrail"() FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."protect_slack_agent_guardrail"() TO "postgres";
+
+REVOKE ALL ON FUNCTION "public"."protect_slack_agent_guardrail"() FROM PUBLIC, "anon", "authenticated";
+
+CREATE TRIGGER protect_slack_agent_guardrail
+  BEFORE DELETE OR UPDATE ON public.workspace_guardrails
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_slack_agent_guardrail();
+
+CREATE TRIGGER protect_slack_agent_guardrail
+  BEFORE DELETE OR UPDATE ON public.key_guardrails
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_slack_agent_guardrail();

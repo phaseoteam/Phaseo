@@ -10,7 +10,7 @@ const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const migration = await readFile(new URL('../migrations/20261021142418_slack_agent_billing.sql', import.meta.url), 'utf8');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const TABLES = ['slack_apps', 'slack_installations', 'slack_user_links', 'slack_agent_monthly_people', 'slack_agent_charges'];
-const FUNCTIONS = ['record_slack_agent_people', 'list_slack_agent_due_charges', 'charge_slack_agent_month'];
+const FUNCTIONS = ['record_slack_agent_people', 'list_slack_agent_due_charges', 'charge_slack_agent_month', 'protect_slack_agent_guardrail'];
 const DOLLAR = 1_000_000_000n;
 
 try {
@@ -21,7 +21,17 @@ try {
     create table auth.users (id uuid primary key);
     create table public.workspaces (id uuid primary key);
     create table public.keys (id uuid primary key, workspace_id uuid not null);
-    create table public.workspace_guardrails (id uuid primary key, workspace_id uuid not null);
+    create table public.workspace_guardrails (
+      id uuid primary key, workspace_id uuid not null, name text not null default 'Guardrail', enabled boolean not null default true,
+      privacy_enable_paid_may_train boolean not null default true, privacy_enable_free_may_train boolean not null default true,
+      privacy_enable_free_may_publish_prompts boolean not null default true, privacy_enable_input_output_logging boolean not null default true
+    );
+    create table public.key_guardrails (
+      key_id uuid not null references public.keys(id) on delete cascade,
+      guardrail_id uuid not null references public.workspace_guardrails(id) on delete cascade,
+      primary key (key_id, guardrail_id)
+    );
+    grant select, insert, update, delete on public.keys, public.workspace_guardrails, public.key_guardrails to service_role;
     create table public.wallets (
       workspace_id uuid primary key, balance_nanos bigint not null default 0,
       reserved_nanos bigint not null default 0, updated_at timestamptz not null default now()
@@ -34,7 +44,7 @@ try {
       status text, source_ref_type text, source_ref_id text
     );
     create unique index credit_ledger_ref_type_ref_id_key on public.credit_ledger (ref_type, ref_id);
-    grant select, update on public.wallets to service_role;
+    grant select, insert, update on public.wallets to service_role;
     grant select on public.credit_ledger to service_role;
     create function public.set_updated_at_if_changed() returns trigger language plpgsql as $$
     begin
@@ -54,6 +64,10 @@ try {
   }
   for (const fn of FUNCTIONS) {
     assert.ok(migration.includes(await schema(`public/functions/${fn}.sql`)), `${fn} migration matches the declarative definition`);
+  }
+  for (const table of ['workspace_guardrails', 'key_guardrails']) {
+    const trigger = (await schema(`public/tables/${table}.sql`)).match(/CREATE TRIGGER protect_slack_agent_guardrail\n[\s\S]*?;/)?.[0];
+    assert.ok(trigger && migration.includes(trigger), `${table} guardrail trigger matches the declarative definition`);
   }
 
   // Clients never read Slack credentials, links, usage or charges directly.
@@ -195,11 +209,51 @@ try {
   assert.equal((await charge(noWallet.id, '2026-09-01', 1, 1, 990_000_000)).status, 'wallet_not_found');
   assert.equal(await status(noWallet.id), 'payment_due');
 
+  // The first attempt fixes the month: a retry after a price change charges the original amount.
+  await rows(`insert into public.wallets (workspace_id, balance_nanos) values ($1, 10000000000)`, [ws(3)]);
+  const retried = await charge(noWallet.id, '2026-09-01', 7, 9_999, 4_990_000_000);
+  assert.deepEqual([retried.status, retried.amount_nanos], ['charged', 990_000_000]);
+  const [frozen] = await rows('select people, answers, amount_nanos from public.slack_agent_charges where installation_id = $1', [noWallet.id]);
+  assert.deepEqual([frozen.people, Number(frozen.answers), Number(frozen.amount_nanos)], [1, 1, 990_000_000]);
+  assert.equal(await balance(ws(3)), 9_010_000_000);
+  assert.equal(await status(noWallet.id), 'active');
+
   // Only finished months can be charged, and inputs are checked.
   await assert.rejects(charge(first.id, (await rows(`select date_trunc('month', now() at time zone 'utc')::date::text as d`))[0].d, 1, 1, 1), /period_not_finished/);
   await assert.rejects(charge(first.id, '2026-09-02', 1, 1, 1), /invalid_period_start/);
   await assert.rejects(charge(first.id, '2026-07-01', 1, 1, -1), /invalid_quantity/);
   await assert.rejects(charge(id('9', 9), '2026-07-01', 1, 1, 1), /installation_not_found/);
+
+  // A live installation's privacy guardrail stays in force: it can't be deleted, disabled,
+  // loosened or detached from the agent's key until the agent is uninstalled.
+  const [key] = await rows(`insert into public.keys (id, workspace_id) values (gen_random_uuid(), $1) returning id`, [ws(1)]);
+  const [guardrail] = await rows(`
+    insert into public.workspace_guardrails (id, workspace_id, name, privacy_enable_paid_may_train, privacy_enable_free_may_train,
+      privacy_enable_free_may_publish_prompts, privacy_enable_input_output_logging)
+    values (gen_random_uuid(), $1, 'Slack agent', false, false, false, false) returning id`, [ws(1)]);
+  await rows('insert into public.key_guardrails (key_id, guardrail_id) values ($1, $2)', [key.id, guardrail.id]);
+  await rows('update public.slack_installations set key_id = $2, guardrail_id = $3 where id = $1', [first.id, key.id, guardrail.id]);
+  await rows(`update public.workspace_guardrails set name = 'Slack agent (renamed)' where id = $1`, [guardrail.id]);
+  for (const change of ['enabled = false', 'privacy_enable_paid_may_train = true', 'privacy_enable_free_may_train = true', 'privacy_enable_free_may_publish_prompts = true', 'privacy_enable_input_output_logging = true']) {
+    await assert.rejects(rows(`update public.workspace_guardrails set ${change} where id = $1`, [guardrail.id]), /slack_agent_guardrail_protected/, change);
+  }
+  await assert.rejects(rows('delete from public.workspace_guardrails where id = $1', [guardrail.id]), /slack_agent_guardrail_protected/);
+  await assert.rejects(rows('delete from public.key_guardrails where key_id = $1', [key.id]), /slack_agent_guardrail_protected/);
+  // Other guardrails on the same key are not locked.
+  const [other] = await rows(`insert into public.workspace_guardrails (id, workspace_id) values (gen_random_uuid(), $1) returning id`, [ws(1)]);
+  await rows('insert into public.key_guardrails (key_id, guardrail_id) values ($1, $2)', [key.id, other.id]);
+  await rows('delete from public.key_guardrails where key_id = $1 and guardrail_id = $2', [key.id, other.id]);
+  await rows('update public.workspace_guardrails set privacy_enable_input_output_logging = true where id = $1', [other.id]);
+  // Deleting the key itself cascades (fail-closed: the agent has no working key), and uninstalling unlocks the guardrail.
+  const [spareKey] = await rows(`insert into public.keys (id, workspace_id) values (gen_random_uuid(), $1) returning id`, [ws(1)]);
+  await rows('insert into public.key_guardrails (key_id, guardrail_id) values ($1, $2)', [spareKey.id, guardrail.id]);
+  await rows('update public.slack_installations set key_id = $2 where id = $1', [first.id, spareKey.id]);
+  await rows('delete from public.keys where id = $1', [spareKey.id]);
+  assert.equal((await rows('select key_id from public.slack_installations where id = $1', [first.id]))[0].key_id, null);
+  await rows(`update public.slack_installations set status = 'uninstalled', uninstalled_at = now() where id = $1`, [first.id]);
+  await rows('delete from public.key_guardrails where key_id = $1', [key.id]);
+  await rows('delete from public.workspace_guardrails where id = $1', [guardrail.id]);
+  assert.equal((await rows('select guardrail_id from public.slack_installations where id = $1', [first.id]))[0].guardrail_id, null);
 
   // Account links follow the installation.
   await rows(`insert into public.slack_user_links (installation_id, slack_user_id, user_id) values ($1, 'U0PERSON1', $2)`, [first.id, user(1)]);
