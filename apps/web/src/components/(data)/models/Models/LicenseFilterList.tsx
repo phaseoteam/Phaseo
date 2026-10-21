@@ -115,7 +115,13 @@ export function LicenseFilterList({
 				const partial =
 					!groupChecked &&
 					groupOptions.some((option) => selection.licenses.includes(option.value));
-				const isExpanded = expanded.includes(group);
+				// Licences with no models under the other filters are hidden unless
+				// selected. A group left with one licence (Proprietary) has nothing to expand.
+				const listedOptions = groupOptions.filter(
+					(option) => option.count > 0 || selection.licenses.includes(option.value),
+				);
+				const expandable = listedOptions.length > 1;
+				const isExpanded = expandable && expanded.includes(group);
 				const label = groupLabel(group);
 				return (
 					<div key={group} className="space-y-1">
@@ -127,29 +133,37 @@ export function LicenseFilterList({
 								partial={partial}
 								onToggle={() => onChange(toggleLicenseGroup(selection, group))}
 							/>
-							<button
-								type="button"
-								onClick={() =>
-									setExpanded((current) =>
-										current.includes(group)
-											? current.filter((value) => value !== group)
-											: [...current, group],
-									)
-								}
-								className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-								aria-expanded={isExpanded}
-								aria-label={tFilters(isExpanded ? "hideLicenses" : "showLicenses", {
-									group: label,
-								})}
-							>
-								<ChevronDown
-									className={cn("h-3.5 w-3.5 transition-transform", isExpanded && "rotate-180")}
-								/>
-							</button>
+							{expandable ? (
+								<button
+									type="button"
+									onClick={() =>
+										setExpanded((current) =>
+											current.includes(group)
+												? current.filter((value) => value !== group)
+												: [...current, group],
+										)
+									}
+									className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+									aria-expanded={isExpanded}
+									aria-label={tFilters(isExpanded ? "hideLicenses" : "showLicenses", {
+										group: label,
+									})}
+								>
+									<ChevronDown
+										className={cn(
+											"h-3.5 w-3.5 transition-transform",
+											isExpanded && "rotate-180",
+										)}
+									/>
+								</button>
+							) : (
+								// Keeps the counts lined up with the expandable rows.
+								<span aria-hidden className="h-7 w-7 shrink-0" />
+							)}
 						</div>
 						{isExpanded ? (
 							<div className="ml-2 space-y-1 border-l border-border/60 pr-8">
-								{groupOptions.map((option) => (
+								{listedOptions.map((option) => (
 									<div key={option.value} className="flex">
 										<FilterRow
 											label={option.value}
