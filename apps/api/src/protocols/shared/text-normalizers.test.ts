@@ -6,6 +6,7 @@ import {
 	normalizeProviderGeoPreferences,
 	normalizeThinkingConfig,
 	normalizeResponseFormat,
+	resolveAllowedTools,
 	resolveTextServiceTier,
 } from "./text-normalizers";
 
@@ -224,5 +225,44 @@ describe("normalizeProviderGeoPreferences", () => {
 
 	it("returns undefined when no geo controls are present", () => {
 		expect(normalizeProviderGeoPreferences({ provider: {} })).toBeUndefined();
+	});
+});
+
+describe("resolveAllowedTools", () => {
+	const tools: any[] = [
+		{ name: "get_weather", parameters: {} },
+		{ name: "grammar", type: "custom", parameters: {} },
+		{ name: "web_search_preview", type: "web_search_preview", parameters: {} },
+		{ name: "mcp", type: "mcp", parameters: {}, raw: { type: "mcp", server_label: "docs" } },
+		{ name: "mcp", type: "mcp", parameters: {}, raw: { type: "mcp", server_label: "billing" } },
+	];
+
+	it("names the defined tools each Chat or Responses entry allows", () => {
+		expect(resolveAllowedTools({
+			type: "allowed_tools",
+			allowed_tools: { mode: "auto", tools: [
+				{ type: "function", function: { name: "get_weather" } },
+				{ type: "custom", custom: { name: "grammar" } },
+			] },
+		}, tools)).toEqual({ names: ["get_weather", "grammar"], unmatched: [] });
+		expect(resolveAllowedTools({
+			type: "allowed_tools",
+			mode: "required",
+			tools: [{ type: "function", name: "get_weather" }, { type: "web_search_preview" }, { type: "mcp", server_label: "docs" }],
+		}, tools)).toEqual({ names: ["get_weather", "web_search_preview", "mcp"], unmatched: [] });
+	});
+
+	it("reports entries that name no defined tool", () => {
+		expect(resolveAllowedTools({
+			type: "allowed_tools",
+			mode: "auto",
+			tools: [{ type: "function", name: "get_weather" }, { type: "function", name: "missing" }, { type: "file_search" }],
+		}, tools)).toEqual({ names: ["get_weather"], unmatched: ["missing", "file_search"] });
+	});
+
+	it("restricts nothing for other choices or an empty list", () => {
+		expect(resolveAllowedTools("auto", tools)).toBeUndefined();
+		expect(resolveAllowedTools({ type: "function", name: "get_weather" }, tools)).toBeUndefined();
+		expect(resolveAllowedTools({ type: "allowed_tools", mode: "auto", tools: [] }, tools)).toBeUndefined();
 	});
 });

@@ -11,5 +11,6 @@ Improve reasoning, streaming and citation handling across the text endpoints:
 - Gemini Chat streams number `reasoning_details` entries across the whole stream instead of restarting at 0 in each chunk.
 - OpenAI Chat requests whose history carries OpenAI encrypted reasoning are served through the Responses API, so the reasoning continues even when the request does not set `reasoning` again.
 - Claude citations reach `/v1/messages` clients unchanged, as text block `citations` and `citations_delta` events.
-- `tool_choice: {type: "allowed_tools"}` maps to its mode (or the one allowed tool) on providers other than OpenAI, instead of forcing a tool named `allowed_tools`.
+- `tool_choice: {type: "allowed_tools"}` maps to its mode (or the one allowed tool) on providers other than OpenAI, instead of forcing a tool named `allowed_tools`, and those providers are sent only the allowed tools, so the model cannot call one the request excluded. OpenAI still receives the original choice and every tool. If `allowed_tools` lists a tool that `tools` does not define, only OpenAI serves the request; with no OpenAI route it returns a 400 `validation_error`.
+- A Chat custom tool choice, `{type: "custom", custom: {name}}`, forces that custom tool instead of a tool named `custom`.
 - Audio and video content sent to a Claude model returns a 400 `unsupported_content_type` error instead of reaching the model as placeholder text.
