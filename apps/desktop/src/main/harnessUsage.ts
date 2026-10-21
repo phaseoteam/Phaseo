@@ -16,18 +16,11 @@ export function claudeUsage(id: string, model: string | undefined, usage: unknow
 
 /**
  * One Codex response's tokens. Codex reports its thread's running total after each response with what that response
- * used (`last`); the running total names the response, live (app-server, camelCase) and in its session files
- * (snake_case) alike, so the two never count a response twice.
+ * used (`last`); the running total names the response within its thread, so a line written twice counts once.
  */
 export function codexResponseUsage(threadId: string, total: unknown, last: unknown): HarnessUsage | undefined {
 	const running = record(total), used = record(last) && reportTokens(record(last)!);
 	const count = Number(running?.totalTokens ?? running?.total_tokens);
 	if (!used || !Number.isSafeInteger(count) || !tokenTotal(used)) return;
 	return { key: `codex:${threadId}:${count}`, ...used };
-}
-
-/** Codex's live report: `{ total, last }` for the thread. */
-export function codexUsage(threadId: string | undefined, report: unknown): HarnessUsage | undefined {
-	const value = record(report);
-	return threadId ? codexResponseUsage(threadId, value?.total, value?.last) : undefined;
 }

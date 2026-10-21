@@ -9,7 +9,7 @@ import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
 import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, UsageTotals, Workspace, WorkspaceCommand } from "../shared/workspace";
 import { usageAmounts, usageTokens, usageTotalsOf } from "../shared/usageAmounts";
-import type { TranscriptFile, TranscriptFolder, TranscriptUsage } from "./usageTranscripts";
+import type { ThreadRoots, TranscriptFile, TranscriptFolder, TranscriptUsage } from "./usageTranscripts";
 import { estimateNanos, localDay, noCost, noTokens, tokenTotal, usageIdTime, usageKind, usagePeriods, type HarnessUsage, type TokenPrices, type UsageCost, type UsagePeriod, type UsageReport, type UsageTokens } from "../shared/usageLedger";
 import type { AutopilotDecision } from "../shared/inbox";
 import { publicMcpConnection, type McpConnection } from "../shared/mcp";
@@ -97,7 +97,7 @@ export class WorkspaceStore {
 		// and a power cut can lose only the last commits, never corrupt the file. The WAL file shrinks back after checkpoints.
 		// The ledger first kept Phaseo spend alone; one without harnesses, token types and folders is rebuilt from the chats and transcripts.
 		const ledger = this.db.prepare("SELECT name FROM pragma_table_info('usage_ledger')").all() as { name: string }[];
-		if (ledger.length && !ledger.some(column => column.name === "label")) this.db.exec("DROP TABLE usage_ledger; DELETE FROM preferences WHERE id = 'usage-ledger-backfilled'; DROP TABLE IF EXISTS usage_files;");
+		if (ledger.length && !ledger.some(column => column.name === "label")) this.db.exec("DROP TABLE usage_ledger; DELETE FROM preferences WHERE id = 'usage-ledger-backfilled'; DROP TABLE IF EXISTS usage_files; DROP TABLE IF EXISTS usage_threads;");
 		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL; PRAGMA journal_size_limit=4194304;
 			CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			-- key is what entry rows refer to. data is the chat without its messages and activities (see TaskEntries) or
@@ -141,6 +141,8 @@ export class WorkspaceStore {
 				input INTEGER NOT NULL, cached INTEGER NOT NULL, cache_write INTEGER NOT NULL, output INTEGER NOT NULL, reasoning INTEGER NOT NULL, tokens INTEGER NOT NULL, cost_nanos INTEGER, label TEXT);
 			-- How far each Claude Code and Codex transcript has been read into the ledger, so only new lines are read again.
 			CREATE TABLE IF NOT EXISTS usage_files (path TEXT PRIMARY KEY, data TEXT NOT NULL);
+			-- Each Codex session's root: forks copy their parent's usage lines, which count once under the root.
+			CREATE TABLE IF NOT EXISTS usage_threads (id TEXT PRIMARY KEY, root TEXT NOT NULL);
 			CREATE INDEX IF NOT EXISTS usage_ledger_at ON usage_ledger (at);
 			${taskEntriesSchema}
 			PRAGMA user_version=${schemaVersion};`);
@@ -459,6 +461,11 @@ export class WorkspaceStore {
 		return row ? JSON.parse(row.data) as TranscriptFolder[] : [];
 	}
 	saveAddedTranscriptFolders(folders: readonly TranscriptFolder[]) { this.statement("INSERT OR REPLACE INTO preferences (id, data) VALUES ('usage-transcript-folders', ?)").run(JSON.stringify(folders.map(({ harness, directory }) => ({ harness, directory })))); }
+	/** Codex sessions' roots, for keying a fork's copied usage lines as the originals. */
+	readonly threadRoots: ThreadRoots = {
+		rootOf: id => (this.statement("SELECT root FROM usage_threads WHERE id = ?").get(id) as { root: string } | undefined)?.root,
+		remember: (id, root) => { this.statement("INSERT OR REPLACE INTO usage_threads (id, root) VALUES (?, ?)").run(id, root); },
+	};
 	/** How far a transcript has been read, or nothing for one not read yet. */
 	transcriptFile(file: string): TranscriptFile | undefined {
 		const row = this.statement("SELECT data FROM usage_files WHERE path = ?").get(file) as { data: string } | undefined;

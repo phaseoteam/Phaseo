@@ -313,7 +313,7 @@ describe("IPC validation", () => {
 				{ key: "codex:t:1060", model: "gpt-6.1-sol", ...tokens, at, harness: "codex", sessionId: "t", cwd: "D:\\scratch" },
 				{ key: "claude:old", model: "claude-opus-5-5", ...tokens, at: "2020-01-01T00:00:00.000Z", harness: "claude", sessionId: "cli" },
 			], store.sessionOwners(), store.getProjects(), cutoff);
-			const report = store.usageReport("today", () => undefined, now);
+			const report = store.usageReport("7d", () => undefined, now);
 			expect(report.total.tokens).toBe(4 * 1060);
 			expect(report.chats.map(value => [value.taskId, value.tokens, value.label])).toEqual([[chat.id, 2120, undefined], ["session:claude:cli", 1060, "apps"], ["session:codex:t", 1060, "scratch"]]);
 			// The chat has no project; the CLI session ran inside the project's folder; the Codex one outside any.

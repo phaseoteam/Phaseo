@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { zstdCompressSync } from "node:zlib";
 import path from "node:path";
-import { claudeUsage, codexUsage } from "./harnessUsage";
+import { claudeUsage, codexResponseUsage } from "./harnessUsage";
 import { readTranscript, transcriptFolders, transcriptLine } from "./usageTranscripts";
 import { usageTokens } from "../shared/usageAmounts";
 import { estimateNanos, modelMatchKey } from "../shared/usageLedger";
@@ -17,15 +18,29 @@ describe("harness usage", () => {
 		expect(claudeUsage("msg_3", undefined, null)).toBeUndefined();
 	});
 
-	it("keys each Codex response by its thread's running total, live and in its session files alike", () => {
-		const live = { total: { inputTokens: 90_000, cachedInputTokens: 30_000, outputTokens: 500, reasoningOutputTokens: 0, totalTokens: 90_500 }, last: { inputTokens: 40_000, cachedInputTokens: 30_000, outputTokens: 200, reasoningOutputTokens: 50, totalTokens: 40_200 } };
-		expect(codexUsage("thread", live)).toEqual({ key: "codex:thread:90500", input: 10_000, cached: 30_000, cacheWrite: 0, output: 200, reasoning: 50 });
-		expect(codexUsage(undefined, live)).toBeUndefined();
+	it("keys each Codex response by its thread and running total", () => {
+		expect(codexResponseUsage("thread", { total_tokens: 90_500 }, { input_tokens: 0, output_tokens: 0 })).toBeUndefined();
 		const state = {};
 		expect(transcriptLine("codex", JSON.stringify({ timestamp: "2026-10-21T19:20:46Z", type: "session_meta", payload: { id: "thread", cwd: "E:\\phaseo" } }), state)).toBeUndefined();
 		transcriptLine("codex", JSON.stringify({ timestamp: "2026-10-21T19:21:46Z", type: "turn_context", payload: { model: "gpt-6.1-sol", cwd: "E:\\phaseo" } }), state);
 		const line = JSON.stringify({ timestamp: "2026-10-21T19:21:55Z", type: "event_msg", payload: { type: "token_count", info: { total_token_usage: { input_tokens: 90_000, cached_input_tokens: 30_000, output_tokens: 500, total_tokens: 90_500 }, last_token_usage: { input_tokens: 40_000, cached_input_tokens: 30_000, output_tokens: 200, reasoning_output_tokens: 50, total_tokens: 40_200 } } } });
 		expect(transcriptLine("codex", line, state)).toEqual({ key: "codex:thread:90500", model: "gpt-6.1-sol", input: 10_000, cached: 30_000, cacheWrite: 0, output: 200, reasoning: 50, at: "2026-10-21T19:21:55Z", harness: "codex", sessionId: "thread", cwd: "E:\\phaseo" });
+	});
+
+	it("keys a Codex fork's responses by the session its chain started from, so lines it copied count once", () => {
+		const known = new Map<string, string>(), roots = { rootOf: (id: string) => known.get(id), remember: (id: string, root: string) => { known.set(id, root); } };
+		const meta = (id: string, parent?: string) => JSON.stringify({ timestamp: "2026-10-02T08:18:20Z", type: "session_meta", payload: { id, ...parent ? { forked_from_id: parent } : {} } });
+		const count = (total: number) => JSON.stringify({ timestamp: "2026-10-02T08:20:30Z", type: "event_msg", payload: { type: "token_count", info: { total_token_usage: { total_tokens: total }, last_token_usage: { input_tokens: 90, output_tokens: 10 } } } });
+		const parent = {}, fork = {}, grandchild = {};
+		transcriptLine("codex", meta("parent"), parent, roots);
+		expect(transcriptLine("codex", count(100), parent, roots)?.key).toBe("codex:parent:100");
+		// The fork's file starts with its own meta, then its parent's copied meta and usage lines.
+		transcriptLine("codex", meta("fork", "parent"), fork, roots);
+		transcriptLine("codex", meta("parent"), fork, roots);
+		expect(transcriptLine("codex", count(100), fork, roots)).toMatchObject({ key: "codex:parent:100", sessionId: "fork" });
+		expect(transcriptLine("codex", count(200), fork, roots)?.key).toBe("codex:parent:200");
+		transcriptLine("codex", meta("grandchild", "fork"), grandchild, roots);
+		expect(transcriptLine("codex", count(100), grandchild, roots)?.key).toBe("codex:parent:100");
 	});
 
 	it("reads Claude Code transcript lines by response, skipping its synthetic messages", () => {
@@ -49,6 +64,19 @@ describe("harness usage", () => {
 			writeFileSync(file, `${line("c")}\n`);
 			await readTranscript(file, "claude", state, statSync(file).size, 3, collect);
 			expect(read).toEqual(["claude:a", "claude:b", "claude:c"]);
+		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+
+	it("reads Codex's compressed sessions whole", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-transcripts-")), file = path.join(directory, "rollout.jsonl.zst");
+		try {
+			const lines = [{ timestamp: "2026-10-01T10:00:00Z", type: "session_meta", payload: { id: "old" } }, { timestamp: "2026-10-01T10:00:01Z", type: "turn_context", payload: { model: "gpt-6-sol" } },
+				...[100, 250].map(total => ({ timestamp: "2026-10-01T10:00:02Z", type: "event_msg", payload: { type: "token_count", info: { total_token_usage: { total_tokens: total }, last_token_usage: { input_tokens: 80, output_tokens: 20 } } } }))];
+			writeFileSync(file, zstdCompressSync(Buffer.from(lines.map(line => JSON.stringify(line)).join("\n"))));
+			const read: string[] = [];
+			const state = await readTranscript(file, "codex", undefined, statSync(file).size, 1, rows => read.push(...rows.map(row => `${row.key} ${row.model}`)));
+			expect(read).toEqual(["codex:old:100 gpt-6-sol", "codex:old:250 gpt-6-sol"]);
+			expect(state.offset).toBe(statSync(file).size);
 		} finally { rmSync(directory, { recursive: true, force: true }); }
 	});
 

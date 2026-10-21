@@ -5,7 +5,6 @@ import type { Account, AgentQuestion, QueuedMessage, Task } from "../shared/work
 import { JsonRpc, JsonRpcResponseError } from "./jsonRpc";
 import { spawnNative } from "./nativeProcess";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
-import { codexUsage } from "./harnessUsage";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 import { AgentInputRejectedError } from "./agentAdapter";
@@ -159,11 +158,7 @@ export class CodexAdapter implements AgentAdapter {
 					if (method === "item/agentMessage/delta" && typeof event.delta === "string") callbacks.onDelta(event.itemId ?? "assistant", event.delta);
 					if ((method === "item/reasoning/summaryTextDelta" || method === "item/reasoning/textDelta") && typeof event.delta === "string") callbacks.onActivity?.({ id: event.itemId ?? "reasoning", type: "reasoning", title: "Reasoning", text: event.delta, append: true });
 					if (method === "turn/plan/updated" && (!event.turnId || !this.turnId || event.turnId === this.turnId)) callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: `${event.explanation ?? ""}\n${JSON.stringify(event.plan, null, 2)}`, steps: parsePlanSteps(event.plan, "codex"), explanation: typeof event.explanation === "string" ? event.explanation : undefined });
-					if (method === "thread/tokenUsage/updated") {
-						callbacks.onActivity?.({ id: "usage", type: "usage", title: "Context usage", text: JSON.stringify(event.tokenUsage, null, 2) });
-						const usage = codexUsage(event.threadId ?? this.threadId, event.tokenUsage);
-						if (usage) callbacks.onUsage?.(usage);
-					}
+					if (method === "thread/tokenUsage/updated") callbacks.onActivity?.({ id: "usage", type: "usage", title: "Context usage", text: JSON.stringify(event.tokenUsage, null, 2) });
 					if ((method === "item/started" || method === "item/completed") && event.item && event.item.type !== "agentMessage" && event.item.type !== "userMessage") {
 						const item = event.item;
 						const type = item.type === "reasoning" ? "reasoning" : item.type === "plan" ? "plan" : "tool";
