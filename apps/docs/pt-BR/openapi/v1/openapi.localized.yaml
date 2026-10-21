@@ -10582,6 +10582,23 @@ components:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: 'Quanto a solicitação custa para você, em dólares americanos: o valor cobrado dos seus créditos, o mesmo número de `cost_nanos`, após qualquer desconto por contribuição de dados ou isenção por saída vazia. Retornado nas respostas de Chat Completions, Responses, Messages e embeddings assim que a solicitação é precificada. Em um stream, aparece no último evento de uso (em Messages, o último `message_delta`) e cobre o stream inteiro. Um stream o omite quando a cobrança ainda não é conhecida no envio desse evento: em um stream BYOK, cuja taxa de serviço é calculada quando o stream termina (`cost_details.upstream_inference_cost` informa o preço do modelo no lugar), e em um stream que já falhou, que não é cobrado.'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: Detalhamento do custo da solicitação.
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: Em uma solicitação BYOK, o que o provedor cobra da sua própria chave pela inferência, em dólares americanos, pelos preços listados do modelo. Null quando a solicitação usa créditos do Phaseo, caso em que `cost` é a cobrança total.
+          example: null
     InputTokensDetails:
       type: object
       description: Detalhamento dos tokens de entrada.
@@ -10842,6 +10859,13 @@ components:
               description: Tokens de entrada gravados com duração de cache de 1 hora.
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: 'Quanto a solicitação custa para você, em dólares americanos: o valor cobrado dos seus créditos, o mesmo número de `cost_nanos`, após qualquer desconto por contribuição de dados ou isenção por saída vazia. Retornado nas respostas de Chat Completions, Responses, Messages e embeddings assim que a solicitação é precificada. Em um stream, aparece no último evento de uso (em Messages, o último `message_delta`) e cobre o stream inteiro. Um stream o omite quando a cobrança ainda não é conhecida no envio desse evento: em um stream BYOK, cuja taxa de serviço é calculada quando o stream termina (`cost_details.upstream_inference_cost` informa o preço do modelo no lugar), e em um stream que já falhou, que não é cobrado.'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
       description: Um campo opcional de nível superior enviado como `null` é tratado como não definido, como se tivesse sido omitido.
@@ -16001,8 +16025,13 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: Chave de API em texto simples, o mesmo valor de `data.key`. Retornada apenas uma vez, no momento da criação.
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false

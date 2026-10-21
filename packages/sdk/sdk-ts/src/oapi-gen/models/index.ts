@@ -389,6 +389,7 @@ export type { ToolCall } from "./ToolCall.js";
 export type { ToolCallContentPart } from "./ToolCallContentPart.js";
 export type { UpdatedResponse } from "./UpdatedResponse.js";
 export type { Usage } from "./Usage.js";
+export type { UsageCostDetails } from "./UsageCostDetails.js";
 export type { VideoBillingSummary } from "./VideoBillingSummary.js";
 export type { VideoContentPart } from "./VideoContentPart.js";
 export type { VideoDeleteResponse } from "./VideoDeleteResponse.js";

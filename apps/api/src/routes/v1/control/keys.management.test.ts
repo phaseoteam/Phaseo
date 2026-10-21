@@ -336,6 +336,33 @@ describe("management key routes", () => {
 		});
 	});
 
+	it("returns the new secret at the top level as well as in data.key, and keeps it out of the audit event", async () => {
+		state.workspaceRows.push({ owner_user_id: "user_1" });
+		state.keyRows.push({
+			id: "key_new", hash: "hash_new", workspace_id: "ws_1", name: "Top Level Key", prefix: "phaseo_v1_sk_kid_123",
+			status: "active", scopes: "[]", created_by: "user_1", created_at: "2026-04-28T12:00:00Z",
+			updated_at: "2026-04-28T12:00:00Z", last_used_at: null, soft_blocked: false, expires_at: null,
+			daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0,
+		});
+		const { recordWorkspaceAuditEvent } = await import("@/lib/audit/workspaceAudit");
+		const audit = vi.mocked(recordWorkspaceAuditEvent);
+		audit.mockClear();
+
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Top Level Key" }),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(201);
+		expect(body.key).toBe("phaseo_v1_sk_kid_123_secret_123");
+		expect(body.data.key).toBe(body.key);
+		expect(audit).toHaveBeenCalledTimes(1);
+		expect(JSON.stringify(audit.mock.calls)).not.toContain("secret_123");
+	});
+
 	it("blocks OAuth workspace members from creating API keys", async () => {
 		state.guardManagementAuthResult = {
 			ok: true,

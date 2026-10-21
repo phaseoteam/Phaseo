@@ -105,6 +105,8 @@ type AnthropicUsage struct {
 	CacheCreation *map[string]interface{} `json:"cache_creation,omitempty"`
 	CacheCreationInputTokens *int `json:"cache_creation_input_tokens,omitempty"`
 	CacheReadInputTokens *int `json:"cache_read_input_tokens,omitempty"`
+	Cost *float64 `json:"cost,omitempty"`
+	CostDetails *map[string]interface{} `json:"cost_details,omitempty"`
 	InputTokens *int `json:"input_tokens,omitempty"`
 	OutputTokens *int `json:"output_tokens,omitempty"`
 }
@@ -254,6 +256,7 @@ type ApiKeyWithValue struct {
 
 type ApiKeyWithValueResponse struct {
 	Data map[string]interface{} `json:"data"`
+	Key string `json:"key"`
 }
 
 type AsyncJobWebSocketClientEvent struct {
@@ -4828,6 +4831,8 @@ type UpdatedResponse struct {
 
 type Usage struct {
 	CompletionTokens *int `json:"completion_tokens,omitempty"`
+	Cost *float64 `json:"cost,omitempty"`
+	CostDetails *map[string]interface{} `json:"cost_details,omitempty"`
 	InputTokens *int `json:"input_tokens,omitempty"`
 	InputTokensDetails *map[string]interface{} `json:"input_tokens_details,omitempty"`
 	OutputTokens *int `json:"output_tokens,omitempty"`
@@ -4835,6 +4840,10 @@ type Usage struct {
 	PromptTokensDetails *map[string]interface{} `json:"prompt_tokens_details,omitempty"`
 	ServerToolUse *map[string]interface{} `json:"server_tool_use,omitempty"`
 	TotalTokens *int `json:"total_tokens,omitempty"`
+}
+
+type UsageCostDetails struct {
+	UpstreamInferenceCost *float64 `json:"upstream_inference_cost,omitempty"`
 }
 
 type VideoBillingSummary struct {

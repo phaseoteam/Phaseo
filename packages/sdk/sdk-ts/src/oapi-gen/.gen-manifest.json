@@ -395,6 +395,7 @@
     "models/ToolCallContentPart.ts",
     "models/UpdatedResponse.ts",
     "models/Usage.ts",
+    "models/UsageCostDetails.ts",
     "models/VideoBillingSummary.ts",
     "models/VideoContentPart.ts",
     "models/VideoDeleteResponse.ts",

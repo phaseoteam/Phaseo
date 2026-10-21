@@ -318,6 +318,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 									};
 								},
 								usageFinalizerAuthoritative: true,
+								usageSnapshot: () => anthropicUsageForPricing(accounting.snapshot().usage) ?? null,
                                 bill,
                                 upstream: res,
                                 keySource: keyInfo.source,

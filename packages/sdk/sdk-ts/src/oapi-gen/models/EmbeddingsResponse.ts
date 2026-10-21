@@ -8,6 +8,10 @@ export interface EmbeddingsResponse {
   object?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
     input_tokens?: number;
     input_tokens_details?: {
       cache_write_tokens?: number;

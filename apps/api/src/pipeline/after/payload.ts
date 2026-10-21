@@ -455,6 +455,41 @@ export function extractFinishReason(payload: any): string | null {
     return null;
 }
 
+/** Endpoints whose client usage reports `cost` and `cost_details`. */
+const USAGE_COST_ENDPOINTS = new Set<string>(["chat.completions", "responses", "messages", "embeddings"]);
+
+const NANOS_PER_USD = 1_000_000_000;
+
+function finiteNanos(value: unknown): number | undefined {
+    const numeric = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
+    return Number.isFinite(numeric) ? numeric : undefined;
+}
+
+/**
+ * `usage.cost` (USD) and `usage.cost_details`, read from the pricing result already attached
+ * to the usage; nothing is priced again here. On a buffered response that pricing is the
+ * settled charge, after any BYOK fee, data-sharing discount or zero-output waiver.
+ * `upstream_inference_cost` is what the provider bills the customer's own key on a BYOK
+ * request (our price card's figure for the request); otherwise it is null, because the
+ * customer pays only `cost`.
+ */
+export function usageCostFields(pricing: unknown): {
+    cost: number;
+    cost_details: { upstream_inference_cost: number | null };
+} | undefined {
+    if (!pricing || typeof pricing !== "object") return undefined;
+    const record = pricing as AnyRecord;
+    const totalNanos = finiteNanos(record.total_nanos ?? record.totalNanos);
+    if (totalNanos === undefined) return undefined;
+    const upstreamNanos = finiteNanos(record.byok_reference_total_nanos);
+    return {
+        cost: totalNanos / NANOS_PER_USD,
+        cost_details: {
+            upstream_inference_cost: upstreamNanos === undefined ? null : upstreamNanos / NANOS_PER_USD,
+        },
+    };
+}
+
 export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineContext["endpoint"]; body?: any }) {
     if (!usage || typeof usage !== "object") return usage;
     const shaped = shapeUsageForClient(usage, { endpoint: ctx?.endpoint, body: ctx?.body });
@@ -486,6 +521,9 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
             lines: p.lines ?? [],
         };
     })();
+    const costFields = USAGE_COST_ENDPOINTS.has(String(ctx?.endpoint ?? ""))
+        ? usageCostFields(shaped.pricing ?? shaped.pricing_breakdown)
+        : undefined;
 
     if (ctx?.endpoint === "chat.completions") {
         const out: any = {
@@ -498,6 +536,7 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
         if (serverToolUse) out.server_tool_use = serverToolUse;
         if (typeof serviceTier === "string") out.service_tier = serviceTier;
         if (pricing) out.pricing = pricing;
+        if (costFields) Object.assign(out, costFields);
         return out;
     }
 
@@ -518,6 +557,7 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
     if (serverToolUse) out.server_tool_use = serverToolUse;
     if (typeof serviceTier === "string") out.service_tier = serviceTier;
     if (pricing) out.pricing_breakdown = pricing;
+    if (costFields) Object.assign(out, costFields);
     return out;
 }
 

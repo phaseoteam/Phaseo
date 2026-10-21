@@ -10582,6 +10582,23 @@ components:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: 此请求让你花费的金额（美元）：从你的额度中扣除的金额，与 `cost_nanos` 数值相同，已计入可能适用的数据贡献折扣或零输出免收。请求完成定价后，会在 Chat Completions、Responses、Messages 和嵌入响应中返回。在流式响应中，它位于最后一个用量帧（Messages 中为最后一个 `message_delta`），涵盖整个流。如果发送该帧时费用尚未确定，流会省略此字段：一是 BYOK 流，其服务费在流结束时才计算（此时由 `cost_details.upstream_inference_cost` 给出模型价格）；二是已经失败的流，这类流不收费。
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: 请求费用的明细。
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: 在 BYOK 请求中，提供商按模型的公布价格向你自己的密钥收取的推理费用（美元）。请求使用 Phaseo 额度时为 null，此时 `cost` 即为全部费用。
+          example: null
     InputTokensDetails:
       type: object
       description: 输入 token 的明细。
@@ -10842,6 +10859,13 @@ components:
               description: 以 1 小时缓存有效期写入的输入 token。
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: 此请求让你花费的金额（美元）：从你的额度中扣除的金额，与 `cost_nanos` 数值相同，已计入可能适用的数据贡献折扣或零输出免收。请求完成定价后，会在 Chat Completions、Responses、Messages 和嵌入响应中返回。在流式响应中，它位于最后一个用量帧（Messages 中为最后一个 `message_delta`），涵盖整个流。如果发送该帧时费用尚未确定，流会省略此字段：一是 BYOK 流，其服务费在流结束时才计算（此时由 `cost_details.upstream_inference_cost` 给出模型价格）；二是已经失败的流，这类流不收费。
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
       description: 以 `null` 发送的可选顶层字段会被视为未设置，与省略该字段相同。
@@ -16001,8 +16025,13 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: API 密钥的明文，与 `data.key` 的值相同。仅在创建时返回一次。
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false
