@@ -3223,6 +3223,179 @@ public final class Models {
 		public Integer web_search_requests;
 	}
 
+	public static class SpendRule {
+		public Object action;
+		public Integer base_amount_nanos;
+		public Double base_amount_usd;
+		public Object base_kind;
+		public Object base_ref;
+		public Integer block_at_amount_nanos;
+		public Double block_at_amount_usd;
+		public Integer block_at_percent;
+		public Boolean block_free_models;
+		public Integer cooldown_minutes;
+		public String created_at;
+		public String created_by;
+		public java.util.List<String> destination_ids;
+		public Boolean enabled;
+		public Boolean evaluated;
+		public String id;
+		public Object metric;
+		public String name;
+		public Object period;
+		public Integer runway_days;
+		public String scope_id;
+		public Object scope_type;
+		public Integer spike_floor_nanos;
+		public Double spike_floor_usd;
+		public Double spike_multiplier;
+		public Integer threshold_amount_nanos;
+		public Double threshold_amount_usd;
+		public java.util.List<Integer> threshold_percents;
+		public String time_zone;
+		public String updated_at;
+		public Integer window_hours;
+		public String workspace_id;
+	}
+
+	public static class SpendRuleAction {
+	}
+
+	public static class SpendRuleDeleteResponse {
+		public Object data;
+	}
+
+	public static class SpendRuleHistory {
+		public java.util.List<Object> events;
+		public Boolean has_more;
+		public java.util.List<Object> periods;
+	}
+
+	public static class SpendRuleHistoryResponse {
+		public Object data;
+	}
+
+	public static class SpendRuleInput {
+		public Object action;
+		public Integer base_amount_nanos;
+		public Double base_amount_usd;
+		public Object base_kind;
+		public Object base_ref;
+		public Integer block_at_amount_nanos;
+		public Double block_at_amount_usd;
+		public Integer block_at_percent;
+		public Boolean block_free_models;
+		public Integer cooldown_minutes;
+		public java.util.List<String> destination_ids;
+		public Boolean enabled;
+		public Object metric;
+		public String name;
+		public Object period;
+		public Integer runway_days;
+		public String scope_id;
+		public Object scope_type;
+		public Integer spike_floor_nanos;
+		public Double spike_floor_usd;
+		public Double spike_multiplier;
+		public Integer threshold_amount_nanos;
+		public Double threshold_amount_usd;
+		public java.util.List<Integer> threshold_percents;
+		public String time_zone;
+		public Integer window_hours;
+	}
+
+	public static class SpendRuleListResponse {
+		public java.util.List<Object> data;
+		public Integer max_rules;
+	}
+
+	public static class SpendRuleMetric {
+	}
+
+	public static class SpendRulePeriod {
+	}
+
+	public static class SpendRulePreview {
+		public Object alert;
+		public Object base_kind;
+		public Integer base_nanos;
+		public Object base_ref;
+		public Double base_usd;
+		public Integer block_at_nanos;
+		public Double block_at_usd;
+		public String computed_at;
+		public Boolean evaluated;
+		public Object metric;
+		public Object next_threshold;
+		public Double percent;
+		public Object period;
+		public Integer reached_threshold_percent;
+		public String rule_id;
+		public Object state;
+		public Integer threshold_amount_nanos;
+		public Double threshold_amount_usd;
+		public java.util.List<Integer> threshold_percents;
+		public String time_zone;
+		public Integer value_nanos;
+		public Double value_usd;
+	}
+
+	public static class SpendRulePreviewResponse {
+		public Object data;
+	}
+
+	public static class SpendRuleResponse {
+		public Object data;
+	}
+
+	public static class SpendRuleScope {
+	}
+
+	public static class SpendRuleTestResponse {
+		public Object data;
+	}
+
+	public static class SpendRuleTestResult {
+		public Integer delivered;
+		public java.util.List<Object> deliveries;
+		public Integer failed;
+		public String message;
+		public String rule_id;
+		public String rule_name;
+		public Object source;
+		public Boolean test;
+		public String title;
+	}
+
+	public static class SpendRuleUpdateInput {
+		public Object action;
+		public Integer base_amount_nanos;
+		public Double base_amount_usd;
+		public Object base_kind;
+		public Object base_ref;
+		public Integer block_at_amount_nanos;
+		public Double block_at_amount_usd;
+		public Integer block_at_percent;
+		public Boolean block_free_models;
+		public Integer cooldown_minutes;
+		public java.util.List<String> destination_ids;
+		public Boolean enabled;
+		public Object metric;
+		public String name;
+		public Object period;
+		public Integer runway_days;
+		public String scope_id;
+		public Object scope_type;
+		public Integer spike_floor_nanos;
+		public Double spike_floor_usd;
+		public Double spike_multiplier;
+		public Integer threshold_amount_nanos;
+		public Double threshold_amount_usd;
+		public java.util.List<Integer> threshold_percents;
+		public String time_zone;
+		public Integer window_hours;
+	}
+
 	public static class SubagentToolDefinition {
 		public Object parameters;
 		public Object type;

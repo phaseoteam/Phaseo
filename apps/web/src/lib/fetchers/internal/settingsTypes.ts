@@ -3,6 +3,7 @@ import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardr
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
 import type { DisplayPreferences } from "@/lib/displayPreferences";
 import type { ClassifierDimension, ClassifierScope, InputScope, SampleBy } from "@/components/(gateway)/settings/classifiers/requestClassifiers";
+import type { SpendRule } from "@/components/(gateway)/settings/spend-rules/spendRules";
 
 export type SettingsLayoutInitialData = {
 	isEnterpriseInvoiceMode: boolean;
@@ -606,6 +607,17 @@ export type SettingsClassifiersInitialData = {
 	classifiers: SettingsClassifier[];
 	keys: Array<{ id: string; name: string; prefix: string; status: string }>;
 	apps: Array<{ id: string; title: string }>;
+};
+
+/** GET /api/account/settings/spend-rules: rules in the control API shape (snake_case, nanos and *_usd). */
+export type SettingsSpendRulesInitialData = {
+	workspaceId: string;
+	canManageSpendRules: boolean;
+	maxRules: number;
+	testSendsPerMinute: number;
+	/** The zone a rule with time_zone null uses. */
+	billingTimeZone: string;
+	rules: SpendRule[];
 };
 
 export type SettingsUsageAlertsInitialData = { signedIn: boolean; warnings: DeprecationWarning[]; workspaceId: string | null };

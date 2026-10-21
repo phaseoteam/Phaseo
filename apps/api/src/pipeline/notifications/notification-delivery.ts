@@ -144,10 +144,23 @@ export async function deliverNotificationTest(input: {
 	destinationId?: string;
 	workspaceId: string;
 	kind?: NotificationTestKind;
+	/**
+	 * A ready-made event to send instead of a sample (a spend rule test send). Only for saved
+	 * destinations; it is delivered exactly as the routed job would deliver that event kind.
+	 */
+	event?: { kind: string; subject: string; payload: Record<string, unknown> };
 }): Promise<number> {
 	const kind = input.kind ?? "notification_test";
 	const isModelDeprecationSample = kind === "model_deprecation";
-	const event: EventRow = {
+	if (input.event && !input.destinationId) throw new Error("notification_test_target_missing");
+	const event: EventRow = input.event ? {
+		id: crypto.randomUUID(),
+		kind: input.event.kind,
+		subject: input.event.subject,
+		workspace_id: input.workspaceId,
+		payload: input.event.payload,
+		created_at: new Date().toISOString(),
+	} : {
 		id: crypto.randomUUID(),
 		kind,
 		subject: isModelDeprecationSample ? "Model deprecation: GPT 5.6 Sol" : "Phaseo test notification",

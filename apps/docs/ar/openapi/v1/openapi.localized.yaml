@@ -4754,6 +4754,234 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendRules
+      summary: سرد قواعد الإنفاق
+      description: يسرد قواعد الإنفاق في مساحة العمل. تُرسل القاعدة تنبيهًا عند بلوغ حدود بالدولار أو بالنسبة المئوية لنطاق وفترة تقويمية أو متحركة. يمكن لأي عضو في مساحة العمل قراءتها.
+      responses:
+        '200':
+          description: قواعد الإنفاق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleListResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createSpendRule
+      summary: إنشاء قاعدة إنفاق
+      description: ينشئ قاعدة إنفاق ويحدد وجهات إشعاراتها. تُقبل كل المقاييس؛ القواعد التي تُعاد مع evaluated بقيمة false تُحفظ وتبدأ بالعمل في إصدار لاحق. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق؛ استخدم حدود المفاتيح وميزانيات مساحة العمل لحدود دقيقة. يمكن أن تحتوي مساحة العمل على 50 قاعدة إنفاق.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendRuleInput'
+      responses:
+        '201':
+          description: تم إنشاء قاعدة الإنفاق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: معرّف قاعدة الإنفاق.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getSpendRule
+      summary: جلب قاعدة إنفاق
+      description: يعيد قاعدة إنفاق واحدة.
+      responses:
+        '200':
+          description: قاعدة الإنفاق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateSpendRule
+      summary: تحديث قاعدة إنفاق
+      description: يغيّر قاعدة إنفاق. تُدمج الحقول المرسلة مع القاعدة المحفوظة ويُعاد التحقق من القاعدة كاملة. يستبدل destination_ids وجهات القاعدة؛ احذفه للإبقاء عليها.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendRuleUpdateInput'
+      responses:
+        '200':
+          description: تم تحديث قاعدة الإنفاق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteSpendRule
+      summary: حذف قاعدة إنفاق
+      description: يحذف قاعدة إنفاق. لا تعود تُقيَّم ولا تُحتسب ضمن حد الخمسين قاعدة.
+      responses:
+        '200':
+          description: تم حذف قاعدة الإنفاق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleDeleteResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/test:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: معرّف قاعدة الإنفاق.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: testSpendRule
+      summary: إرسال تنبيه إنفاق تجريبي
+      description: يُنشئ تنبيه القاعدة من قيمتها الحالية مع وسم TEST ويرسله فورًا إلى وجهات القاعدة، أو إلى مسار Spend Alerts إذا لم تكن لها وجهات. لا يُسجَّل أي شيء. يمكن لمساحة العمل إرسال 5 اختبارات في الدقيقة.
+      responses:
+        '200':
+          description: تم إرسال التنبيه التجريبي
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleTestResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/preview:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: معرّف قاعدة الإنفاق.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: previewSpendRule
+      summary: معاينة قاعدة إنفاق
+      description: يعيد الفترة الحالية للقاعدة والإنفاق حتى الآن والأساس والنسبة المئوية والحد التالي، محسوبةً كما في التقييم، دون إرسال أو تسجيل أي شيء.
+      responses:
+        '200':
+          description: معاينة قاعدة الإنفاق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRulePreviewResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-rules/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: معرّف قاعدة الإنفاق.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendRuleHistory
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: عدد الأحداث التي يتم تخطيها للتقسيم إلى صفحات.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 100000
+        - name: limit
+          in: query
+          required: false
+          description: الحد الأقصى لعدد الأحداث المُعادة.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: سرد سجل قاعدة إنفاق
+      description: يسرد التنبيهات وأحداث الحظر التي أدرجتها القاعدة في قائمة الانتظار، الأحدث أولًا، مع أعداد التسليم، وأحدث سجلات فتراتها.
+      responses:
+        '200':
+          description: سجل قاعدة الإنفاق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendRuleHistoryResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -21031,6 +21259,756 @@ components:
               type: boolean
           additionalProperties: false
       additionalProperties: false
+    SpendRuleMetric:
+      type: string
+      description: 'spend: بلغ الإنفاق threshold_amount. budget_percent: بلغ الإنفاق threshold_percents من الأساس. forecast: يبلغ الإنفاق المتوقع حتى نهاية الفترة الحد. spike: الإنفاق خلال آخر window_hours لا يقل عن spike_multiplier ضعف المستوى المعتاد ولا يقل عن spike_floor. balance: ينخفض رصيد مساحة العمل أو مدة كفايته عن الحد.'
+      enum:
+        - spend
+        - budget_percent
+        - forecast
+        - spike
+        - balance
+    SpendRuleScope:
+      type: string
+      enum:
+        - workspace
+        - key
+        - member
+        - department
+        - model
+        - provider
+    SpendRulePeriod:
+      type: string
+      description: day أو week (بدءًا من الاثنين) أو month في المنطقة الزمنية للقاعدة، أو rolling على آخر window_hours.
+      enum:
+        - day
+        - week
+        - month
+        - rolling
+    SpendRuleAction:
+      type: string
+      description: notify، أو التنبيه ثم الحظر عندما يبلغ الإنفاق block_at_percent من الأساس أو block_at_amount. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق.
+      enum:
+        - notify
+        - block
+    SpendRule:
+      type: object
+      description: 'قاعدة إنفاق: حدود بالدولار أو بالنسبة المئوية لنطاق وفترة تُرسل تنبيهًا، أو تنبه ثم تحظر. تُعاد المبالغ بالنانودولار وبالدولار الأمريكي.'
+      required:
+        - id
+        - workspace_id
+        - name
+        - enabled
+        - metric
+        - evaluated
+        - scope_type
+        - scope_id
+        - period
+        - window_hours
+        - time_zone
+        - base_kind
+        - base_ref
+        - base_amount_nanos
+        - base_amount_usd
+        - threshold_percents
+        - threshold_amount_nanos
+        - threshold_amount_usd
+        - runway_days
+        - spike_multiplier
+        - spike_floor_nanos
+        - spike_floor_usd
+        - action
+        - block_at_percent
+        - block_at_amount_nanos
+        - block_at_amount_usd
+        - block_free_models
+        - cooldown_minutes
+        - destination_ids
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        evaluated:
+          type: boolean
+          description: تكون false للقواعد التي لا يدعمها التقييم بعد (مقاييس forecast وspike وbalance، والفترات rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق.
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: null لنطاق مساحة العمل؛ وإلا فمعرّف مفتاح أو معرّف مستخدم لعضو أو معرّف قسم أو معرّف نموذج أو معرّف مزوّد.
+        period:
+          $ref: '#/components/schemas/SpendRulePeriod'
+        window_hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          nullable: true
+          description: 'ساعات النافذة المتحركة: نافذة الارتفاع لقواعد spike وفترة احتساب معدل الاستهلاك لقواعد balance. null للفترات التقويمية.'
+        time_zone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: المنطقة الزمنية وفق IANA للفترات التقويمية. القيمة null تستخدم المنطقة الزمنية للفوترة في مساحة العمل.
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+          description: 'ما تمثل threshold_percents نسبًا منه: amount (base_amount) أو workspace_budget أو key_limit (الفاصل base_ref الذي يجب أن يطابق الفترة) أو previous_period.'
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        base_amount_usd:
+          type: number
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          minItems: 1
+          maxItems: 5
+          nullable: true
+          description: حتى خمس نسب مئوية صحيحة من الأساس، مرتبة. يعمل كل منها مرة واحدة على الأكثر في الفترة؛ وعند تجاوز عدة حدود معًا يُرسل تنبيه واحد يذكر أعلاها.
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        runway_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+        spike_multiplier:
+          type: number
+          nullable: true
+        spike_floor_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        spike_floor_usd:
+          type: number
+          nullable: true
+        action:
+          $ref: '#/components/schemas/SpendRuleAction'
+        block_at_percent:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        block_at_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_at_amount_usd:
+          type: number
+          nullable: true
+        block_free_models:
+          type: boolean
+          description: ما إذا كان الحظر يوقف أيضًا الطلبات إلى النماذج المجانية.
+        cooldown_minutes:
+          type: integer
+          minimum: 5
+          maximum: 43200
+          description: الحد الأدنى من الدقائق بين التنبيهات لقواعد rolling وspike وbalance.
+        destination_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+          description: وجهات الإشعار لتنبيهات هذه القاعدة. القيمة الفارغة تعني مسار Spend Alerts في مساحة العمل.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    SpendRuleUpdateInput:
+      type: object
+      description: حقول قاعدة الإنفاق المراد تغييرها؛ حقل واحد على الأقل. أدخل المبالغ بصيغة *_usd أو *_nanos (نانودولار دقيق)، لا كليهما. اضبط الحقل على null لمسحه.
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: null لنطاق مساحة العمل؛ وإلا فمعرّف مفتاح أو معرّف مستخدم لعضو أو معرّف قسم أو معرّف نموذج أو معرّف مزوّد.
+        period:
+          $ref: '#/components/schemas/SpendRulePeriod'
+        window_hours:
+          type: integer
+          minimum: 1
+          maximum: 720
+          nullable: true
+          description: 'ساعات النافذة المتحركة: نافذة الارتفاع لقواعد spike وفترة احتساب معدل الاستهلاك لقواعد balance. null للفترات التقويمية.'
+        time_zone:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: المنطقة الزمنية وفق IANA للفترات التقويمية. القيمة null تستخدم المنطقة الزمنية للفوترة في مساحة العمل.
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+          description: 'ما تمثل threshold_percents نسبًا منه: amount (base_amount) أو workspace_budget أو key_limit (الفاصل base_ref الذي يجب أن يطابق الفترة) أو previous_period.'
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_amount_usd:
+          type: number
+          nullable: true
+        base_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 1000
+          minItems: 1
+          maxItems: 5
+          nullable: true
+          description: حتى خمس نسب مئوية صحيحة من الأساس، مرتبة. يعمل كل منها مرة واحدة على الأكثر في الفترة؛ وعند تجاوز عدة حدود معًا يُرسل تنبيه واحد يذكر أعلاها.
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        runway_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+        spike_multiplier:
+          type: number
+          nullable: true
+        spike_floor_usd:
+          type: number
+          nullable: true
+        spike_floor_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        action:
+          $ref: '#/components/schemas/SpendRuleAction'
+        block_at_percent:
+          type: integer
+          minimum: 100
+          maximum: 1000
+        block_at_amount_usd:
+          type: number
+          nullable: true
+        block_at_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_free_models:
+          type: boolean
+          description: ما إذا كان الحظر يوقف أيضًا الطلبات إلى النماذج المجانية.
+        cooldown_minutes:
+          type: integer
+          minimum: 5
+          maximum: 43200
+          description: الحد الأدنى من الدقائق بين التنبيهات لقواعد rolling وspike وbalance.
+        destination_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+          description: وجهات الإشعار لتنبيهات هذه القاعدة. القيمة الفارغة تعني مسار Spend Alerts في مساحة العمل.
+      additionalProperties: false
+    SpendRuleInput:
+      description: قاعدة إنفاق مراد إنشاؤها. الحقول name وmetric وperiod مطلوبة. تستخدم قواعد spike افتراضيًا مضاعفًا قدره 3x وحدًا أدنى قدره 5 دولارات.
+      allOf:
+        - $ref: '#/components/schemas/SpendRuleUpdateInput'
+        - type: object
+          required:
+            - name
+            - metric
+            - period
+    SpendRuleResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRule'
+    SpendRuleListResponse:
+      type: object
+      required:
+        - data
+        - max_rules
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendRule'
+        max_rules:
+          type: integer
+          example: 50
+    SpendRuleDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+    SpendRulePreview:
+      type: object
+      description: الوضع الحالي لقاعدة الإنفاق. القواعد التي ليس لها فترة تقويمية تكون فيها period وvalue وalert بقيمة null.
+      required:
+        - rule_id
+        - metric
+        - evaluated
+        - computed_at
+        - time_zone
+        - period
+        - value_nanos
+        - value_usd
+        - base_kind
+        - base_ref
+        - base_nanos
+        - base_usd
+        - percent
+        - threshold_percents
+        - threshold_amount_nanos
+        - threshold_amount_usd
+        - reached_threshold_percent
+        - next_threshold
+        - block_at_nanos
+        - block_at_usd
+        - state
+        - alert
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        metric:
+          $ref: '#/components/schemas/SpendRuleMetric'
+        evaluated:
+          type: boolean
+          description: تكون false للقواعد التي لا يدعمها التقييم بعد (مقاييس forecast وspike وbalance، والفترات rolling، وأسس previous_period). تُحفظ وتبدأ بالعمل في إصدار لاحق.
+        computed_at:
+          type: string
+          format: date-time
+        time_zone:
+          type: string
+        period:
+          type: object
+          nullable: true
+          required:
+            - kind
+            - start
+            - end
+          properties:
+            kind:
+              $ref: '#/components/schemas/SpendRulePeriod'
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        value_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        value_usd:
+          type: number
+          nullable: true
+        base_kind:
+          type: string
+          enum:
+            - amount
+            - workspace_budget
+            - key_limit
+            - previous_period
+          nullable: true
+        base_ref:
+          type: string
+          enum:
+            - daily
+            - weekly
+            - monthly
+          nullable: true
+        base_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        base_usd:
+          type: number
+          nullable: true
+        percent:
+          type: number
+          nullable: true
+        threshold_percents:
+          type: array
+          items:
+            type: integer
+          nullable: true
+        threshold_amount_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        threshold_amount_usd:
+          type: number
+          nullable: true
+        reached_threshold_percent:
+          type: integer
+          nullable: true
+        next_threshold:
+          type: object
+          nullable: true
+          description: 'الحد التالي الذي لم تبلغه القيمة بعد: نسبة مئوية من الأساس (null لحدود المبالغ) ومبلغه.'
+          required:
+            - percent
+            - amount_nanos
+            - amount_usd
+          properties:
+            percent:
+              type: integer
+              nullable: true
+            amount_nanos:
+              type: integer
+              format: int64
+            amount_usd:
+              type: number
+        block_at_nanos:
+          type: integer
+          format: int64
+          nullable: true
+        block_at_usd:
+          type: number
+          nullable: true
+        state:
+          type: object
+          nullable: true
+          required:
+            - highest_percent_fired
+            - amount_fired_at
+            - last_fired_at
+            - fire_count
+          properties:
+            highest_percent_fired:
+              type: integer
+              nullable: true
+            amount_fired_at:
+              type: string
+              format: date-time
+              nullable: true
+            last_fired_at:
+              type: string
+              format: date-time
+              nullable: true
+            fire_count:
+              type: integer
+        alert:
+          type: object
+          nullable: true
+          description: النص الذي سيحمله التنبيه الآن، مع ذكر أعلى حد تم بلوغه، أو الحد الأول.
+          required:
+            - scope_label
+            - title
+            - message
+          properties:
+            scope_label:
+              type: string
+            title:
+              type: string
+            message:
+              type: string
+    SpendRulePreviewResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRulePreview'
+    SpendRuleTestResult:
+      type: object
+      description: التنبيه التجريبي وما حدث في كل وجهة.
+      required:
+        - rule_id
+        - rule_name
+        - test
+        - title
+        - message
+        - source
+        - delivered
+        - failed
+        - deliveries
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        rule_name:
+          type: string
+        test:
+          type: boolean
+        title:
+          type: string
+        message:
+          type: string
+        source:
+          type: string
+          enum:
+            - rule
+            - routes
+          description: 'rule: وجهات القاعدة نفسها. routes: مسار Spend Alerts في مساحة العمل.'
+        delivered:
+          type: integer
+        failed:
+          type: integer
+        deliveries:
+          type: array
+          items:
+            type: object
+            required:
+              - destination_id
+              - name
+              - type
+              - delivered
+              - status
+              - error
+            properties:
+              destination_id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              type:
+                type: string
+              delivered:
+                type: boolean
+              status:
+                type: integer
+                nullable: true
+              error:
+                type: string
+                nullable: true
+    SpendRuleTestResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRuleTestResult'
+    SpendRuleHistory:
+      type: object
+      description: الأحداث الأحدث أولًا، مع has_more للصفحة التالية، وأحدث 12 سجلًا لفترات القاعدة.
+      required:
+        - events
+        - has_more
+        - periods
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - kind
+              - created_at
+              - deliveries
+            properties:
+              id:
+                type: string
+                format: uuid
+              kind:
+                type: string
+                enum:
+                  - spend_alert
+                  - spend_blocked
+              created_at:
+                type: string
+                format: date-time
+              title:
+                type: string
+                nullable: true
+              message:
+                type: string
+                nullable: true
+              state:
+                type: string
+                nullable: true
+              threshold_percent:
+                type: integer
+                nullable: true
+              thresholds_crossed:
+                type: array
+                items:
+                  type: integer
+                nullable: true
+              threshold_amount_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              threshold_amount_usd:
+                type: number
+                nullable: true
+              value_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              value_usd:
+                type: number
+                nullable: true
+              base_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              base_usd:
+                type: number
+                nullable: true
+              percent:
+                type: number
+                nullable: true
+              period:
+                type: object
+                nullable: true
+                additionalProperties: true
+              deliveries:
+                type: object
+                description: محاولات التسليم حسب الحالة.
+                required:
+                  - sent
+                  - failed
+                  - pending
+                properties:
+                  sent:
+                    type: integer
+                  failed:
+                    type: integer
+                  pending:
+                    type: integer
+        has_more:
+          type: boolean
+        periods:
+          type: array
+          items:
+            type: object
+            required:
+              - period_start
+              - period_end
+              - highest_percent_fired
+              - amount_fired_at
+              - last_fired_at
+              - fire_count
+              - last_value_nanos
+              - last_value_usd
+              - last_base_nanos
+              - last_base_usd
+            properties:
+              period_start:
+                type: string
+                format: date-time
+                nullable: true
+              period_end:
+                type: string
+                format: date-time
+                nullable: true
+              highest_percent_fired:
+                type: integer
+                nullable: true
+              amount_fired_at:
+                type: string
+                format: date-time
+                nullable: true
+              last_fired_at:
+                type: string
+                format: date-time
+                nullable: true
+              fire_count:
+                type: integer
+              last_value_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              last_value_usd:
+                type: number
+                nullable: true
+              last_base_nanos:
+                type: integer
+                format: int64
+                nullable: true
+              last_base_usd:
+                type: number
+                nullable: true
+    SpendRuleHistoryResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendRuleHistory'
     WorkspaceApp:
       type: object
       required:

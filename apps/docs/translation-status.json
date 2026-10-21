@@ -2,7 +2,7 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "4bc9755cd2541ba19216db5c42e1a97af124539a2abfa9e7c56cef33dcafa892",
+      "@openapi": "e68d0cb2e10e654bd3c2157417eb179bf5a1e97454d76970765e23c51c7f2cea",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -269,7 +269,7 @@
       "developers/error-handling.mdx": "9b45ded160b28ffd7db1128519c198f309ca4b85724c415757bbb95b8480a85f",
       "developers/integrating-with-the-gateway.mdx": "5551bcd263fb423512fcd01f03f73be45a6958d79359a6badbfe9727bb86ea07",
       "developers/introduction.mdx": "7fe966dbf0bd80b2172675804c2a56cc3828c011db1695b3693b4ff5d71c7e6a",
-      "developers/management-api-keys.mdx": "7d623611c49b0d9d512c0a3a69842e79e06ded9d78af0dc5efede75fecbc7e7b",
+      "developers/management-api-keys.mdx": "f651e54c4c8aa78ffa00761ece3b4a1b624e8c77574cf302aaff86182793d815",
       "developers/rate-limits.mdx": "a668efd19f293dc851dc0860d4a904bbda35e870758dc8029cf3414dfaf7487e",
       "developers/reliability-and-status.mdx": "86cbaa5def83f486649a68c381fa8af751ab1f91e58d9af0dd5f5c5c3ff73a3d",
       "exploring/api-providers.mdx": "a3648ea5474fd22ae438a5212c0512f5963c8f935405a30afca6ea8fdee14a66",
@@ -632,7 +632,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "de": {
-      "@openapi": "4bc9755cd2541ba19216db5c42e1a97af124539a2abfa9e7c56cef33dcafa892",
+      "@openapi": "e68d0cb2e10e654bd3c2157417eb179bf5a1e97454d76970765e23c51c7f2cea",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -899,7 +899,7 @@
       "developers/error-handling.mdx": "9b45ded160b28ffd7db1128519c198f309ca4b85724c415757bbb95b8480a85f",
       "developers/integrating-with-the-gateway.mdx": "5551bcd263fb423512fcd01f03f73be45a6958d79359a6badbfe9727bb86ea07",
       "developers/introduction.mdx": "7fe966dbf0bd80b2172675804c2a56cc3828c011db1695b3693b4ff5d71c7e6a",
-      "developers/management-api-keys.mdx": "7d623611c49b0d9d512c0a3a69842e79e06ded9d78af0dc5efede75fecbc7e7b",
+      "developers/management-api-keys.mdx": "f651e54c4c8aa78ffa00761ece3b4a1b624e8c77574cf302aaff86182793d815",
       "developers/rate-limits.mdx": "a668efd19f293dc851dc0860d4a904bbda35e870758dc8029cf3414dfaf7487e",
       "developers/reliability-and-status.mdx": "86cbaa5def83f486649a68c381fa8af751ab1f91e58d9af0dd5f5c5c3ff73a3d",
       "exploring/api-providers.mdx": "a3648ea5474fd22ae438a5212c0512f5963c8f935405a30afca6ea8fdee14a66",
@@ -1262,7 +1262,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "es": {
-      "@openapi": "4bc9755cd2541ba19216db5c42e1a97af124539a2abfa9e7c56cef33dcafa892",
+      "@openapi": "e68d0cb2e10e654bd3c2157417eb179bf5a1e97454d76970765e23c51c7f2cea",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -1529,7 +1529,7 @@
       "developers/error-handling.mdx": "9b45ded160b28ffd7db1128519c198f309ca4b85724c415757bbb95b8480a85f",
       "developers/integrating-with-the-gateway.mdx": "5551bcd263fb423512fcd01f03f73be45a6958d79359a6badbfe9727bb86ea07",
       "developers/introduction.mdx": "7fe966dbf0bd80b2172675804c2a56cc3828c011db1695b3693b4ff5d71c7e6a",
-      "developers/management-api-keys.mdx": "7d623611c49b0d9d512c0a3a69842e79e06ded9d78af0dc5efede75fecbc7e7b",
+      "developers/management-api-keys.mdx": "f651e54c4c8aa78ffa00761ece3b4a1b624e8c77574cf302aaff86182793d815",
       "developers/rate-limits.mdx": "a668efd19f293dc851dc0860d4a904bbda35e870758dc8029cf3414dfaf7487e",
       "developers/reliability-and-status.mdx": "86cbaa5def83f486649a68c381fa8af751ab1f91e58d9af0dd5f5c5c3ff73a3d",
       "exploring/api-providers.mdx": "a3648ea5474fd22ae438a5212c0512f5963c8f935405a30afca6ea8fdee14a66",
@@ -1892,7 +1892,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "fr": {
-      "@openapi": "4bc9755cd2541ba19216db5c42e1a97af124539a2abfa9e7c56cef33dcafa892",
+      "@openapi": "e68d0cb2e10e654bd3c2157417eb179bf5a1e97454d76970765e23c51c7f2cea",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2159,7 +2159,7 @@
       "developers/error-handling.mdx": "9b45ded160b28ffd7db1128519c198f309ca4b85724c415757bbb95b8480a85f",
       "developers/integrating-with-the-gateway.mdx": "5551bcd263fb423512fcd01f03f73be45a6958d79359a6badbfe9727bb86ea07",
       "developers/introduction.mdx": "7fe966dbf0bd80b2172675804c2a56cc3828c011db1695b3693b4ff5d71c7e6a",
-      "developers/management-api-keys.mdx": "7d623611c49b0d9d512c0a3a69842e79e06ded9d78af0dc5efede75fecbc7e7b",
+      "developers/management-api-keys.mdx": "f651e54c4c8aa78ffa00761ece3b4a1b624e8c77574cf302aaff86182793d815",
       "developers/rate-limits.mdx": "a668efd19f293dc851dc0860d4a904bbda35e870758dc8029cf3414dfaf7487e",
       "developers/reliability-and-status.mdx": "86cbaa5def83f486649a68c381fa8af751ab1f91e58d9af0dd5f5c5c3ff73a3d",
       "exploring/api-providers.mdx": "a3648ea5474fd22ae438a5212c0512f5963c8f935405a30afca6ea8fdee14a66",
@@ -2522,7 +2522,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "hi": {
-      "@openapi": "4bc9755cd2541ba19216db5c42e1a97af124539a2abfa9e7c56cef33dcafa892",
+      "@openapi": "e68d0cb2e10e654bd3c2157417eb179bf5a1e97454d76970765e23c51c7f2cea",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2789,7 +2789,7 @@
       "developers/error-handling.mdx": "9b45ded160b28ffd7db1128519c198f309ca4b85724c415757bbb95b8480a85f",
       "developers/integrating-with-the-gateway.mdx": "5551bcd263fb423512fcd01f03f73be45a6958d79359a6badbfe9727bb86ea07",
       "developers/introduction.mdx": "7fe966dbf0bd80b2172675804c2a56cc3828c011db1695b3693b4ff5d71c7e6a",
-      "developers/management-api-keys.mdx": "7d623611c49b0d9d512c0a3a69842e79e06ded9d78af0dc5efede75fecbc7e7b",
+      "developers/management-api-keys.mdx": "f651e54c4c8aa78ffa00761ece3b4a1b624e8c77574cf302aaff86182793d815",
       "developers/rate-limits.mdx": "a668efd19f293dc851dc0860d4a904bbda35e870758dc8029cf3414dfaf7487e",
       "developers/reliability-and-status.mdx": "86cbaa5def83f486649a68c381fa8af751ab1f91e58d9af0dd5f5c5c3ff73a3d",
       "exploring/api-providers.mdx": "a3648ea5474fd22ae438a5212c0512f5963c8f935405a30afca6ea8fdee14a66",
@@ -3152,7 +3152,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "ja": {
-      "@openapi": "4bc9755cd2541ba19216db5c42e1a97af124539a2abfa9e7c56cef33dcafa892",
+      "@openapi": "e68d0cb2e10e654bd3c2157417eb179bf5a1e97454d76970765e23c51c7f2cea",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3419,7 +3419,7 @@
       "developers/error-handling.mdx": "9b45ded160b28ffd7db1128519c198f309ca4b85724c415757bbb95b8480a85f",
       "developers/integrating-with-the-gateway.mdx": "5551bcd263fb423512fcd01f03f73be45a6958d79359a6badbfe9727bb86ea07",
       "developers/introduction.mdx": "7fe966dbf0bd80b2172675804c2a56cc3828c011db1695b3693b4ff5d71c7e6a",
-      "developers/management-api-keys.mdx": "7d623611c49b0d9d512c0a3a69842e79e06ded9d78af0dc5efede75fecbc7e7b",
+      "developers/management-api-keys.mdx": "f651e54c4c8aa78ffa00761ece3b4a1b624e8c77574cf302aaff86182793d815",
       "developers/rate-limits.mdx": "a668efd19f293dc851dc0860d4a904bbda35e870758dc8029cf3414dfaf7487e",
       "developers/reliability-and-status.mdx": "86cbaa5def83f486649a68c381fa8af751ab1f91e58d9af0dd5f5c5c3ff73a3d",
       "exploring/api-providers.mdx": "a3648ea5474fd22ae438a5212c0512f5963c8f935405a30afca6ea8fdee14a66",
@@ -3782,7 +3782,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "pt-BR": {
-      "@openapi": "4bc9755cd2541ba19216db5c42e1a97af124539a2abfa9e7c56cef33dcafa892",
+      "@openapi": "e68d0cb2e10e654bd3c2157417eb179bf5a1e97454d76970765e23c51c7f2cea",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4049,7 +4049,7 @@
       "developers/error-handling.mdx": "9b45ded160b28ffd7db1128519c198f309ca4b85724c415757bbb95b8480a85f",
       "developers/integrating-with-the-gateway.mdx": "5551bcd263fb423512fcd01f03f73be45a6958d79359a6badbfe9727bb86ea07",
       "developers/introduction.mdx": "7fe966dbf0bd80b2172675804c2a56cc3828c011db1695b3693b4ff5d71c7e6a",
-      "developers/management-api-keys.mdx": "7d623611c49b0d9d512c0a3a69842e79e06ded9d78af0dc5efede75fecbc7e7b",
+      "developers/management-api-keys.mdx": "f651e54c4c8aa78ffa00761ece3b4a1b624e8c77574cf302aaff86182793d815",
       "developers/rate-limits.mdx": "a668efd19f293dc851dc0860d4a904bbda35e870758dc8029cf3414dfaf7487e",
       "developers/reliability-and-status.mdx": "86cbaa5def83f486649a68c381fa8af751ab1f91e58d9af0dd5f5c5c3ff73a3d",
       "exploring/api-providers.mdx": "a3648ea5474fd22ae438a5212c0512f5963c8f935405a30afca6ea8fdee14a66",
@@ -4412,7 +4412,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "zh-Hans": {
-      "@openapi": "4bc9755cd2541ba19216db5c42e1a97af124539a2abfa9e7c56cef33dcafa892",
+      "@openapi": "e68d0cb2e10e654bd3c2157417eb179bf5a1e97454d76970765e23c51c7f2cea",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4679,7 +4679,7 @@
       "developers/error-handling.mdx": "9b45ded160b28ffd7db1128519c198f309ca4b85724c415757bbb95b8480a85f",
       "developers/integrating-with-the-gateway.mdx": "5551bcd263fb423512fcd01f03f73be45a6958d79359a6badbfe9727bb86ea07",
       "developers/introduction.mdx": "7fe966dbf0bd80b2172675804c2a56cc3828c011db1695b3693b4ff5d71c7e6a",
-      "developers/management-api-keys.mdx": "7d623611c49b0d9d512c0a3a69842e79e06ded9d78af0dc5efede75fecbc7e7b",
+      "developers/management-api-keys.mdx": "f651e54c4c8aa78ffa00761ece3b4a1b624e8c77574cf302aaff86182793d815",
       "developers/rate-limits.mdx": "a668efd19f293dc851dc0860d4a904bbda35e870758dc8029cf3414dfaf7487e",
       "developers/reliability-and-status.mdx": "86cbaa5def83f486649a68c381fa8af751ab1f91e58d9af0dd5f5c5c3ff73a3d",
       "exploring/api-providers.mdx": "a3648ea5474fd22ae438a5212c0512f5963c8f935405a30afca6ea8fdee14a66",

@@ -220,6 +220,11 @@ inline Response CreateSpeech(Client& client, const std::map<std::string, std::st
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateTranscription(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/audio/transcriptions";
 	return client.request("POST", resolved_path, body);
@@ -352,6 +357,11 @@ inline Response DeleteRateLimitAssignment(Client& client, const std::map<std::st
 
 inline Response DeleteRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/rate-limits/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
+inline Response DeleteSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
@@ -562,6 +572,11 @@ inline Response GetRateLimitAssignment(Client& client, const std::map<std::strin
 
 inline Response GetRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/rate-limits/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
@@ -815,6 +830,16 @@ inline Response ListRateLimitPolicies(Client& client, const std::map<std::string
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response ListSpendRuleHistory(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/history";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListSpendRules(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response ListTeamModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/models/me";
 	return client.request("GET", resolved_path, body);
@@ -913,6 +938,11 @@ inline Response MakeDecision(Client& client, const std::map<std::string, std::st
 inline Response MergeWorkspaceApp(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/apps/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/merge";
 	return client.request("POST", resolved_path, body);
+}
+
+inline Response PreviewSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/preview";
+	return client.request("GET", resolved_path, body);
 }
 
 inline Response PublishPresetVersion(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
@@ -1035,6 +1065,11 @@ inline Response SummarizeGatewayFeedback(Client& client, const std::map<std::str
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response TestSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/test";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response TestWebhookEndpoint(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/webhook-endpoints/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/test";
 	return client.request("POST", resolved_path, body);
@@ -1132,6 +1167,11 @@ inline Response UpdateRateLimitAssignment(Client& client, const std::map<std::st
 
 inline Response UpdateRateLimitPolicy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/rate-limits/policies/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateSpendRule(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/spend-rules/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 

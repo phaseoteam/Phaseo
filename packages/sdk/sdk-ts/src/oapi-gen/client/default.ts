@@ -6453,6 +6453,134 @@ export async function createSpeech(
   });
 }
 
+export type CreateSpendRuleParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    action?: "notify" | "block";
+    base_amount_nanos?: number | null;
+    base_amount_usd?: number | null;
+    base_kind?:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref?: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos?: number | null;
+    block_at_amount_usd?: number | null;
+    block_at_percent?: number;
+    block_free_models?: boolean;
+    cooldown_minutes?: number;
+    destination_ids?: string[];
+    enabled?: boolean;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name: string;
+    period: "day" | "week" | "month" | "rolling";
+    runway_days?: number | null;
+    scope_id?: string | null;
+    scope_type?:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos?: number | null;
+    spike_floor_usd?: number | null;
+    spike_multiplier?: number | null;
+    threshold_amount_nanos?: number | null;
+    threshold_amount_usd?: number | null;
+    threshold_percents?: number[] | null;
+    time_zone?: string | null;
+    window_hours?: number | null;
+  };
+};
+
+/**
+ * Creates a spend rule and sets its notification destinations. Every metric is accepted; rules returned with evaluated false are saved and fire from a later release. Blocking is best effort and acts minutes after the threshold; use key limits and workspace budgets for exact caps. A workspace can have 50 spend rules.
+ */
+export async function createSpendRule(
+  client: Client,
+  args: CreateSpendRuleParams = {},
+): Promise<{
+  data: {
+    action: "notify" | "block";
+    base_amount_nanos: number | null;
+    base_amount_usd: number | null;
+    base_kind:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos: number | null;
+    block_at_amount_usd: number | null;
+    block_at_percent: number;
+    block_free_models: boolean;
+    cooldown_minutes: number;
+    created_at: string;
+    created_by: string | null;
+    destination_ids: string[];
+    enabled: boolean;
+    evaluated: boolean;
+    id: string;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name: string;
+    period: "day" | "week" | "month" | "rolling";
+    runway_days: number | null;
+    scope_id: string | null;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos: number | null;
+    spike_floor_usd: number | null;
+    spike_multiplier: number | null;
+    threshold_amount_nanos: number | null;
+    threshold_amount_usd: number | null;
+    threshold_percents: number[] | null;
+    time_zone: string | null;
+    updated_at: string;
+    window_hours: number | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/spend-rules";
+  return client.request<{
+    data: {
+      action: "notify" | "block";
+      base_amount_nanos: number | null;
+      base_amount_usd: number | null;
+      base_kind:
+        "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+      base_ref: "daily" | "weekly" | "monthly" | null;
+      block_at_amount_nanos: number | null;
+      block_at_amount_usd: number | null;
+      block_at_percent: number;
+      block_free_models: boolean;
+      cooldown_minutes: number;
+      created_at: string;
+      created_by: string | null;
+      destination_ids: string[];
+      enabled: boolean;
+      evaluated: boolean;
+      id: string;
+      metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+      name: string;
+      period: "day" | "week" | "month" | "rolling";
+      runway_days: number | null;
+      scope_id: string | null;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spike_floor_nanos: number | null;
+      spike_floor_usd: number | null;
+      spike_multiplier: number | null;
+      threshold_amount_nanos: number | null;
+      threshold_amount_usd: number | null;
+      threshold_percents: number[] | null;
+      time_zone: string | null;
+      updated_at: string;
+      window_hours: number | null;
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateTranscriptionParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -8321,6 +8449,45 @@ export async function deleteRateLimitPolicy(
   if ([".", ".."].includes(String(path?.["id"])))
     throw new Error("Dot segments are not valid path parameters");
   const resolvedPath = `/rate-limits/policies/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteSpendRuleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Deletes a spend rule. It is no longer evaluated and no longer counts toward the limit of 50 rules.
+ */
+export async function deleteSpendRule(
+  client: Client,
+  args: DeleteSpendRuleParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}`;
   return client.request<{
     data: {
       deleted: boolean;
@@ -11318,6 +11485,109 @@ export async function getRateLimitPolicy(
       requests_per_minute: number | null;
       tokens_per_minute: number | null;
       updated_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetSpendRuleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one spend rule.
+ */
+export async function getSpendRule(
+  client: Client,
+  args: GetSpendRuleParams,
+): Promise<{
+  data: {
+    action: "notify" | "block";
+    base_amount_nanos: number | null;
+    base_amount_usd: number | null;
+    base_kind:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos: number | null;
+    block_at_amount_usd: number | null;
+    block_at_percent: number;
+    block_free_models: boolean;
+    cooldown_minutes: number;
+    created_at: string;
+    created_by: string | null;
+    destination_ids: string[];
+    enabled: boolean;
+    evaluated: boolean;
+    id: string;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name: string;
+    period: "day" | "week" | "month" | "rolling";
+    runway_days: number | null;
+    scope_id: string | null;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos: number | null;
+    spike_floor_usd: number | null;
+    spike_multiplier: number | null;
+    threshold_amount_nanos: number | null;
+    threshold_amount_usd: number | null;
+    threshold_percents: number[] | null;
+    time_zone: string | null;
+    updated_at: string;
+    window_hours: number | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      action: "notify" | "block";
+      base_amount_nanos: number | null;
+      base_amount_usd: number | null;
+      base_kind:
+        "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+      base_ref: "daily" | "weekly" | "monthly" | null;
+      block_at_amount_nanos: number | null;
+      block_at_amount_usd: number | null;
+      block_at_percent: number;
+      block_free_models: boolean;
+      cooldown_minutes: number;
+      created_at: string;
+      created_by: string | null;
+      destination_ids: string[];
+      enabled: boolean;
+      evaluated: boolean;
+      id: string;
+      metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+      name: string;
+      period: "day" | "week" | "month" | "rolling";
+      runway_days: number | null;
+      scope_id: string | null;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spike_floor_nanos: number | null;
+      spike_floor_usd: number | null;
+      spike_multiplier: number | null;
+      threshold_amount_nanos: number | null;
+      threshold_amount_usd: number | null;
+      threshold_percents: number[] | null;
+      time_zone: string | null;
+      updated_at: string;
+      window_hours: number | null;
       workspace_id: string;
     };
   }>({
@@ -16760,6 +17030,221 @@ export async function listRateLimitPolicies(
   });
 }
 
+export type ListSpendRuleHistoryParams = {
+  path: {
+    id: string;
+  };
+  query?: {
+    limit?: number;
+    offset?: number;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the alerts and block events the rule has queued, newest first, with delivery counts, and its most recent period records.
+ */
+export async function listSpendRuleHistory(
+  client: Client,
+  args: ListSpendRuleHistoryParams,
+): Promise<{
+  data: {
+    events: {
+      base_nanos?: number | null;
+      base_usd?: number | null;
+      created_at: string;
+      deliveries: {
+        failed: number;
+        pending: number;
+        sent: number;
+      };
+      id: string;
+      kind: "spend_alert" | "spend_blocked";
+      message?: string | null;
+      percent?: number | null;
+      period?: {
+        [key: string]: unknown;
+      } | null;
+      state?: string | null;
+      threshold_amount_nanos?: number | null;
+      threshold_amount_usd?: number | null;
+      threshold_percent?: number | null;
+      thresholds_crossed?: number[] | null;
+      title?: string | null;
+      value_nanos?: number | null;
+      value_usd?: number | null;
+    }[];
+    has_more: boolean;
+    periods: {
+      amount_fired_at: string | null;
+      fire_count: number;
+      highest_percent_fired: number | null;
+      last_base_nanos: number | null;
+      last_base_usd: number | null;
+      last_fired_at: string | null;
+      last_value_nanos: number | null;
+      last_value_usd: number | null;
+      period_end: string | null;
+      period_start: string | null;
+    }[];
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}/history`;
+  return client.request<{
+    data: {
+      events: {
+        base_nanos?: number | null;
+        base_usd?: number | null;
+        created_at: string;
+        deliveries: {
+          failed: number;
+          pending: number;
+          sent: number;
+        };
+        id: string;
+        kind: "spend_alert" | "spend_blocked";
+        message?: string | null;
+        percent?: number | null;
+        period?: {
+          [key: string]: unknown;
+        } | null;
+        state?: string | null;
+        threshold_amount_nanos?: number | null;
+        threshold_amount_usd?: number | null;
+        threshold_percent?: number | null;
+        thresholds_crossed?: number[] | null;
+        title?: string | null;
+        value_nanos?: number | null;
+        value_usd?: number | null;
+      }[];
+      has_more: boolean;
+      periods: {
+        amount_fired_at: string | null;
+        fire_count: number;
+        highest_percent_fired: number | null;
+        last_base_nanos: number | null;
+        last_base_usd: number | null;
+        last_fired_at: string | null;
+        last_value_nanos: number | null;
+        last_value_usd: number | null;
+        period_end: string | null;
+        period_start: string | null;
+      }[];
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListSpendRulesParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's spend rules. A rule notifies at thresholds in dollars or percent over a scope and a calendar or rolling period. Every workspace member can read them.
+ */
+export async function listSpendRules(
+  client: Client,
+  args: ListSpendRulesParams = {},
+): Promise<{
+  data: {
+    action: "notify" | "block";
+    base_amount_nanos: number | null;
+    base_amount_usd: number | null;
+    base_kind:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos: number | null;
+    block_at_amount_usd: number | null;
+    block_at_percent: number;
+    block_free_models: boolean;
+    cooldown_minutes: number;
+    created_at: string;
+    created_by: string | null;
+    destination_ids: string[];
+    enabled: boolean;
+    evaluated: boolean;
+    id: string;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name: string;
+    period: "day" | "week" | "month" | "rolling";
+    runway_days: number | null;
+    scope_id: string | null;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos: number | null;
+    spike_floor_usd: number | null;
+    spike_multiplier: number | null;
+    threshold_amount_nanos: number | null;
+    threshold_amount_usd: number | null;
+    threshold_percents: number[] | null;
+    time_zone: string | null;
+    updated_at: string;
+    window_hours: number | null;
+    workspace_id: string;
+  }[];
+  max_rules: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/spend-rules";
+  return client.request<{
+    data: {
+      action: "notify" | "block";
+      base_amount_nanos: number | null;
+      base_amount_usd: number | null;
+      base_kind:
+        "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+      base_ref: "daily" | "weekly" | "monthly" | null;
+      block_at_amount_nanos: number | null;
+      block_at_amount_usd: number | null;
+      block_at_percent: number;
+      block_free_models: boolean;
+      cooldown_minutes: number;
+      created_at: string;
+      created_by: string | null;
+      destination_ids: string[];
+      enabled: boolean;
+      evaluated: boolean;
+      id: string;
+      metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+      name: string;
+      period: "day" | "week" | "month" | "rolling";
+      runway_days: number | null;
+      scope_id: string | null;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spike_floor_nanos: number | null;
+      spike_floor_usd: number | null;
+      spike_multiplier: number | null;
+      threshold_amount_nanos: number | null;
+      threshold_amount_usd: number | null;
+      threshold_percents: number[] | null;
+      time_zone: string | null;
+      updated_at: string;
+      window_hours: number | null;
+      workspace_id: string;
+    }[];
+    max_rules: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListTeamModelsParams = {
   path?: Record<string, never>;
   query?: {
@@ -19467,6 +19952,121 @@ export async function mergeWorkspaceApp(
   });
 }
 
+export type PreviewSpendRuleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns the rule's current period, spend so far, base, percent and next threshold, computed as the evaluator computes them, without sending or recording anything.
+ */
+export async function previewSpendRule(
+  client: Client,
+  args: PreviewSpendRuleParams,
+): Promise<{
+  data: {
+    alert: {
+      message: string;
+      scope_label: string;
+      title: string;
+    } | null;
+    base_kind:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_nanos: number | null;
+    base_ref: "daily" | "weekly" | "monthly" | null;
+    base_usd: number | null;
+    block_at_nanos: number | null;
+    block_at_usd: number | null;
+    computed_at: string;
+    evaluated: boolean;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    next_threshold: {
+      amount_nanos: number;
+      amount_usd: number;
+      percent: number | null;
+    } | null;
+    percent: number | null;
+    period: {
+      end: string;
+      kind: "day" | "week" | "month" | "rolling";
+      start: string;
+    } | null;
+    reached_threshold_percent: number | null;
+    rule_id: string;
+    state: {
+      amount_fired_at: string | null;
+      fire_count: number;
+      highest_percent_fired: number | null;
+      last_fired_at: string | null;
+    } | null;
+    threshold_amount_nanos: number | null;
+    threshold_amount_usd: number | null;
+    threshold_percents: number[] | null;
+    time_zone: string;
+    value_nanos: number | null;
+    value_usd: number | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}/preview`;
+  return client.request<{
+    data: {
+      alert: {
+        message: string;
+        scope_label: string;
+        title: string;
+      } | null;
+      base_kind:
+        "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+      base_nanos: number | null;
+      base_ref: "daily" | "weekly" | "monthly" | null;
+      base_usd: number | null;
+      block_at_nanos: number | null;
+      block_at_usd: number | null;
+      computed_at: string;
+      evaluated: boolean;
+      metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+      next_threshold: {
+        amount_nanos: number;
+        amount_usd: number;
+        percent: number | null;
+      } | null;
+      percent: number | null;
+      period: {
+        end: string;
+        kind: "day" | "week" | "month" | "rolling";
+        start: string;
+      } | null;
+      reached_threshold_percent: number | null;
+      rule_id: string;
+      state: {
+        amount_fired_at: string | null;
+        fire_count: number;
+        highest_percent_fired: number | null;
+        last_fired_at: string | null;
+      } | null;
+      threshold_amount_nanos: number | null;
+      threshold_amount_usd: number | null;
+      threshold_percents: number[] | null;
+      time_zone: string;
+      value_nanos: number | null;
+      value_usd: number | null;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type PublishPresetVersionParams = {
   path: {
     id: string;
@@ -20986,6 +21586,73 @@ export async function summarizeGatewayFeedback(
     group_by: "preset_id" | "test_run_id" | "metadata";
   }>({
     method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type TestSpendRuleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Renders the rule's alert from its current value, marked TEST, and sends it now to the rule's destinations, or to the Spend Alerts route when the rule has none. Nothing is recorded. A workspace can send 5 tests a minute.
+ */
+export async function testSpendRule(
+  client: Client,
+  args: TestSpendRuleParams,
+): Promise<{
+  data: {
+    delivered: number;
+    deliveries: {
+      delivered: boolean;
+      destination_id: string;
+      error: string | null;
+      name: string;
+      status: number | null;
+      type: string;
+    }[];
+    failed: number;
+    message: string;
+    rule_id: string;
+    rule_name: string;
+    source: "rule" | "routes";
+    test: boolean;
+    title: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}/test`;
+  return client.request<{
+    data: {
+      delivered: number;
+      deliveries: {
+        delivered: boolean;
+        destination_id: string;
+        error: string | null;
+        name: string;
+        status: number | null;
+        type: string;
+      }[];
+      failed: number;
+      message: string;
+      rule_id: string;
+      rule_name: string;
+      source: "rule" | "routes";
+      test: boolean;
+      title: string;
+    };
+  }>({
+    method: "POST",
     path: resolvedPath,
     query,
     headers,
@@ -22793,6 +23460,138 @@ export async function updateRateLimitPolicy(
       requests_per_minute: number | null;
       tokens_per_minute: number | null;
       updated_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateSpendRuleParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    action?: "notify" | "block";
+    base_amount_nanos?: number | null;
+    base_amount_usd?: number | null;
+    base_kind?:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref?: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos?: number | null;
+    block_at_amount_usd?: number | null;
+    block_at_percent?: number;
+    block_free_models?: boolean;
+    cooldown_minutes?: number;
+    destination_ids?: string[];
+    enabled?: boolean;
+    metric?: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name?: string;
+    period?: "day" | "week" | "month" | "rolling";
+    runway_days?: number | null;
+    scope_id?: string | null;
+    scope_type?:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos?: number | null;
+    spike_floor_usd?: number | null;
+    spike_multiplier?: number | null;
+    threshold_amount_nanos?: number | null;
+    threshold_amount_usd?: number | null;
+    threshold_percents?: number[] | null;
+    time_zone?: string | null;
+    window_hours?: number | null;
+  };
+};
+
+/**
+ * Changes a spend rule. The fields sent are merged over the stored rule and the whole rule is checked again. destination_ids replaces the rule's destinations; leave it out to keep them.
+ */
+export async function updateSpendRule(
+  client: Client,
+  args: UpdateSpendRuleParams,
+): Promise<{
+  data: {
+    action: "notify" | "block";
+    base_amount_nanos: number | null;
+    base_amount_usd: number | null;
+    base_kind:
+      "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+    base_ref: "daily" | "weekly" | "monthly" | null;
+    block_at_amount_nanos: number | null;
+    block_at_amount_usd: number | null;
+    block_at_percent: number;
+    block_free_models: boolean;
+    cooldown_minutes: number;
+    created_at: string;
+    created_by: string | null;
+    destination_ids: string[];
+    enabled: boolean;
+    evaluated: boolean;
+    id: string;
+    metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+    name: string;
+    period: "day" | "week" | "month" | "rolling";
+    runway_days: number | null;
+    scope_id: string | null;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spike_floor_nanos: number | null;
+    spike_floor_usd: number | null;
+    spike_multiplier: number | null;
+    threshold_amount_nanos: number | null;
+    threshold_amount_usd: number | null;
+    threshold_percents: number[] | null;
+    time_zone: string | null;
+    updated_at: string;
+    window_hours: number | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-rules/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      action: "notify" | "block";
+      base_amount_nanos: number | null;
+      base_amount_usd: number | null;
+      base_kind:
+        "amount" | "workspace_budget" | "key_limit" | "previous_period" | null;
+      base_ref: "daily" | "weekly" | "monthly" | null;
+      block_at_amount_nanos: number | null;
+      block_at_amount_usd: number | null;
+      block_at_percent: number;
+      block_free_models: boolean;
+      cooldown_minutes: number;
+      created_at: string;
+      created_by: string | null;
+      destination_ids: string[];
+      enabled: boolean;
+      evaluated: boolean;
+      id: string;
+      metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
+      name: string;
+      period: "day" | "week" | "month" | "rolling";
+      runway_days: number | null;
+      scope_id: string | null;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spike_floor_nanos: number | null;
+      spike_floor_usd: number | null;
+      spike_multiplier: number | null;
+      threshold_amount_nanos: number | null;
+      threshold_amount_usd: number | null;
+      threshold_percents: number[] | null;
+      time_zone: string | null;
+      updated_at: string;
+      window_hours: number | null;
       workspace_id: string;
     };
   }>({
