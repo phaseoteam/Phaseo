@@ -317,6 +317,177 @@ function buildUnifiedEventsFromPayload(protocol: StreamProtocol, payload: any): 
 	}
 }
 
+export type ResponsesOutputFrame = { eventName: string; frame: Record<string, any> };
+
+function responsesFrame(eventName: string, frame: Record<string, any>): ResponsesOutputFrame {
+	return { eventName, frame: { type: eventName, ...frame } };
+}
+
+function isMediaPart(part: any): boolean {
+	const type = String(part?.type ?? "").toLowerCase();
+	return type === "output_image" || type === "image" || type === "image_url" ||
+		type === "output_audio" || type === "audio" || type === "audio_url";
+}
+
+/** A server tool call the gateway already ran, as the function_call item it streams. */
+export function serverToolTraceOutputItem(item: ServerToolTraceItem): Record<string, any> {
+	return {
+		type: "function_call",
+		id: item.id,
+		call_id: item.id,
+		name: item.name,
+		arguments: item.arguments ?? "",
+		status: item.isError ? "failed" : "completed",
+		...(item.output !== undefined ? { output: item.output } : {}),
+		...(item.isError ? { error: { message: "Server tool returned an error." } } : {}),
+	};
+}
+
+/**
+ * The stream events for finished Responses output items, in the order an upstream
+ * Responses stream sends them: the item added (empty), each content part added, its
+ * deltas and done events, then the item done. Items without an id get one, and the
+ * returned items carry it, so a final response can list exactly what streamed.
+ * Media parts keep the gateway's own form, an added message holding only that part,
+ * so stream readers see each one once and in order.
+ * https://platform.openai.com/docs/api-reference/responses-streaming
+ */
+export function responsesOutputItemFrames(
+	output: readonly any[],
+	opts: { firstOutputIndex: number; idPrefix: string },
+): { frames: ResponsesOutputFrame[]; items: Record<string, any>[] } {
+	const frames: ResponsesOutputFrame[] = [];
+	const items: Record<string, any>[] = [];
+	output.forEach((raw, offset) => {
+		const outputIndex = opts.firstOutputIndex + offset;
+		const item: Record<string, any> = raw && typeof raw === "object" ? { ...raw } : { type: "message", content: [] };
+		if (typeof item.id !== "string" || !item.id) item.id = `${opts.idPrefix}_${outputIndex}`;
+		const type = String(item.type ?? "");
+		if (!item.status && (type === "message" || type === "function_call" || type === "custom_tool_call")) item.status = "completed";
+		items.push(item);
+		const at = { item_id: item.id, output_index: outputIndex };
+		const added = (shell: Record<string, any>) =>
+			frames.push(responsesFrame("response.output_item.added", { output_index: outputIndex, item: shell }));
+		let done: Record<string, any> = item;
+
+		if (type === "message") {
+			const content: any[] = Array.isArray(item.content) ? item.content : [];
+			let announced = false;
+			content.forEach((part, contentIndex) => {
+				if (isMediaPart(part)) {
+					frames.push(responsesFrame("response.output_item.added", {
+						output_index: outputIndex,
+						item: { type: "message", role: item.role ?? "assistant", status: "in_progress", content: [part] },
+					}));
+					return;
+				}
+				const refusal = part?.type === "refusal" && typeof part.refusal === "string";
+				const text = part?.type === "output_text" && typeof part.text === "string";
+				if (!refusal && !text) return;
+				if (!announced) {
+					announced = true;
+					added({ id: item.id, type: "message", role: item.role ?? "assistant", status: "in_progress", content: [] });
+				}
+				const located = { ...at, content_index: contentIndex };
+				frames.push(responsesFrame("response.content_part.added", {
+					...located,
+					part: refusal ? { type: "refusal", refusal: "" } : { type: "output_text", text: "", annotations: [] },
+				}));
+				if (refusal) {
+					frames.push(responsesFrame("response.refusal.delta", { ...located, delta: part.refusal }));
+					frames.push(responsesFrame("response.refusal.done", { ...located, refusal: part.refusal }));
+				} else {
+					frames.push(responsesFrame("response.output_text.delta", { ...located, delta: part.text }));
+					(Array.isArray(part.annotations) ? part.annotations : []).forEach((annotation: any, annotationIndex: number) => {
+						frames.push(responsesFrame("response.output_text.annotation.added", { ...located, annotation_index: annotationIndex, annotation }));
+					});
+					frames.push(responsesFrame("response.output_text.done", { ...located, text: part.text }));
+				}
+				frames.push(responsesFrame("response.content_part.done", { ...located, part }));
+			});
+			// A message of media only was sent as its media parts.
+			if (!announced) return;
+			// Its media parts were their own added messages; listing them again would repeat them.
+			done = { ...item, status: "completed", content: content.filter((part) => !isMediaPart(part)) };
+		} else if (type === "reasoning") {
+			added({ id: item.id, type: "reasoning", summary: [], content: [] });
+			(Array.isArray(item.summary) ? item.summary : []).forEach((part: any, summaryIndex: number) => {
+				if (typeof part?.text !== "string") return;
+				const located = { ...at, summary_index: summaryIndex };
+				frames.push(responsesFrame("response.reasoning_summary_part.added", { ...located, part: { type: "summary_text", text: "" } }));
+				frames.push(responsesFrame("response.reasoning_summary_text.delta", { ...located, delta: part.text }));
+				frames.push(responsesFrame("response.reasoning_summary_text.done", { ...located, text: part.text }));
+				frames.push(responsesFrame("response.reasoning_summary_part.done", { ...located, part: { type: "summary_text", text: part.text } }));
+			});
+			(Array.isArray(item.content) ? item.content : []).forEach((part: any, contentIndex: number) => {
+				if ((part?.type !== "reasoning_text" && part?.type !== "output_text") || typeof part.text !== "string") return;
+				const located = { ...at, content_index: contentIndex };
+				frames.push(responsesFrame("response.content_part.added", { ...located, part: { type: "reasoning_text", text: "" } }));
+				frames.push(responsesFrame("response.reasoning_text.delta", { ...located, delta: part.text }));
+				frames.push(responsesFrame("response.reasoning_text.done", { ...located, text: part.text }));
+				frames.push(responsesFrame("response.content_part.done", { ...located, part: { type: "reasoning_text", text: part.text } }));
+			});
+		} else if (type === "function_call") {
+			const argumentsText = typeof item.arguments === "string" ? item.arguments : "";
+			added({ id: item.id, type: "function_call", call_id: item.call_id, name: item.name, arguments: "", status: "in_progress" });
+			if (argumentsText) frames.push(responsesFrame("response.function_call_arguments.delta", { ...at, delta: argumentsText }));
+			frames.push(responsesFrame("response.function_call_arguments.done", { ...at, name: item.name, arguments: argumentsText }));
+			done = { ...item, status: item.status ?? "completed" };
+		} else if (type === "custom_tool_call") {
+			const input = typeof item.input === "string" ? item.input : "";
+			added({ id: item.id, type: "custom_tool_call", call_id: item.call_id, name: item.name, input: "", status: "in_progress" });
+			if (input) frames.push(responsesFrame("response.custom_tool_call_input.delta", { ...at, delta: input }));
+			frames.push(responsesFrame("response.custom_tool_call_input.done", { ...at, input }));
+			done = { ...item, status: item.status ?? "completed" };
+		} else {
+			added({ ...item, ...(item.status ? { status: "in_progress" } : {}) });
+		}
+		frames.push(responsesFrame("response.output_item.done", { output_index: outputIndex, item: done }));
+	});
+	return { frames, items };
+}
+
+/**
+ * A finished Responses body as the stream an upstream sends: response.created, the
+ * server tools the gateway already ran (each with its result), the body's own output
+ * items, then the terminal event carrying the whole body. Every data object names its
+ * event in `type`, as clients that dispatch on `data.type` need.
+ */
+function buildSyntheticResponsesFrames(args: {
+	payload: any;
+	requestId: string;
+	model?: string | null;
+	serverToolTrace?: readonly ServerToolTraceItem[];
+}): ResponsesOutputFrame[] {
+	const payload = args.payload && typeof args.payload === "object" ? args.payload : {};
+	const id = typeof payload.id === "string" && payload.id ? payload.id : args.requestId;
+	const model = payload.model ?? args.model ?? undefined;
+	const frames: ResponsesOutputFrame[] = [responsesFrame("response.created", {
+		response: {
+			id,
+			object: "response",
+			...(typeof payload.created_at === "number" ? { created_at: payload.created_at } : {}),
+			model,
+			status: "in_progress",
+			output: [],
+		},
+	})];
+	const trace = (args.serverToolTrace ?? [])
+		.filter((item) => item.id && item.name && item.name !== "tool_call")
+		.map(serverToolTraceOutputItem);
+	const traced = responsesOutputItemFrames(trace, { firstOutputIndex: 0, idPrefix: `fc_${id}` });
+	const output = Array.isArray(payload.output) ? payload.output : [];
+	const final = responsesOutputItemFrames(output, { firstOutputIndex: traced.items.length, idPrefix: `item_${id}` });
+	frames.push(...traced.frames, ...final.frames);
+	// The terminal event carries the body as a buffered request returns it: the final
+	// turn's output (the server tools streamed above are not part of it).
+	const status = String(payload.status ?? "completed");
+	frames.push(responsesFrame(status === "incomplete" ? "response.incomplete" : "response.completed", {
+		response: { ...payload, id, model, output: final.items },
+	}));
+	return frames;
+}
+
 export function buildSyntheticServerToolStream(args: {
 	protocol: Protocol;
 	payload: any;
@@ -327,6 +498,19 @@ export function buildSyntheticServerToolStream(args: {
 }): ReadableStream<Uint8Array> | null {
 	const streamProtocol = toStreamProtocol(args.protocol);
 	if (!streamProtocol) return null;
+	if (streamProtocol === "openai.responses") {
+		const frames = buildSyntheticResponsesFrames(args);
+		const encoder = new TextEncoder();
+		return new ReadableStream<Uint8Array>({
+			start(controller) {
+				for (const { eventName, frame } of frames) {
+					controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(frame)}\n\n`));
+				}
+				controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+				controller.close();
+			},
+		});
+	}
 	const payloadEvents = buildUnifiedEventsFromPayload(streamProtocol, args.payload);
 	const traceEvents = buildServerToolTraceEvents(args.serverToolTrace);
 	const events =

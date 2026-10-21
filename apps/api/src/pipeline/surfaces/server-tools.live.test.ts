@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { createManagedToolLiveResponse } from "./server-tools.live";
+import { buildSyntheticServerToolStream } from "./server-tools.stream";
+
+function framesOf(body: string) {
+	return body.split("\n\n").filter(Boolean).map((block) => {
+		const event = block.split("\n").find((line) => line.startsWith("event: "))?.slice(7) ?? null;
+		const data = block.split("\n").find((line) => line.startsWith("data: "))!.slice(6);
+		return { event, data: data === "[DONE]" ? data : JSON.parse(data) };
+	});
+}
 
 describe("managed tool live stream", () => {
 	it("keeps one Responses lifecycle and includes earlier output in the final snapshot", async () => {
@@ -45,6 +54,73 @@ describe("managed tool live stream", () => {
 		const completed = body.split("\n\n").find((frame) => frame.includes("event: response.completed"))!;
 		const payload = JSON.parse(completed.split("data: ")[1]);
 		expect(payload.response.output.map((item: { type: string }) => item.type)).toEqual(["message", "message"]);
+	});
+
+	it("sends a buffered last turn's function call as a whole item and lists it in the final output", async () => {
+		const response = await createManagedToolLiveResponse({
+			protocol: "openai.responses",
+			requestId: "req_buffered_call",
+			model: "test-model",
+			async run(sink) {
+				sink.beginRound()({ type: "delta_tool", toolCallId: "call_dt", toolName: "gateway_datetime", arguments: "{}", choiceIndex: 0 });
+				sink.toolResult({ id: "call_dt", name: "gateway_datetime", arguments: "{}", output: "10:35" });
+				sink.markFinalTurnBuffered();
+				return new Response(buildSyntheticServerToolStream({
+					protocol: "openai.responses",
+					requestId: "req_buffered_call",
+					serverToolTrace: [{ id: "call_dt", name: "gateway_datetime", arguments: "{}", output: "10:35" }],
+					payload: {
+						id: "req_buffered_call",
+						object: "response",
+						status: "completed",
+						output: [{ type: "function_call", call_id: "call_weather", name: "get_weather", arguments: "{\"city\":\"London\"}" }],
+					},
+				}), { headers: { "content-type": "text/event-stream" } });
+			},
+		});
+		const events = framesOf(await response.text()).filter((frame) => frame.data !== "[DONE]");
+		for (const frame of events) expect(frame.data.type).toBe(frame.event);
+		const weather = events.filter((frame) => frame.data.item?.name === "get_weather" || frame.data.name === "get_weather").map((frame) => frame.event);
+		expect(weather).toEqual(["response.output_item.added", "response.function_call_arguments.done", "response.output_item.done"]);
+		// The server tool's call streamed live once, with its result; the final body does not repeat it.
+		expect(events.filter((frame) => frame.event === "response.output_item.done" && frame.data.item?.call_id === "call_dt")).toHaveLength(1);
+		const completed = events.at(-1)!;
+		expect(completed.event).toBe("response.completed");
+		expect(completed.data.response.output.map((item: any) => [item.call_id, item.output ?? null])).toEqual([
+			["call_dt", "10:35"],
+			["call_weather", null],
+		]);
+	});
+
+	it("sends a buffered last turn's Chat tool call and hides the call the gateway ran", async () => {
+		const response = await createManagedToolLiveResponse({
+			protocol: "openai.chat.completions",
+			requestId: "req_chat_buffered_call",
+			model: "test-model",
+			async run(sink) {
+				sink.beginRound()({ type: "delta_tool", toolCallId: "call_dt", toolName: "gateway_datetime", argumentsDelta: "{}", choiceIndex: 0, toolIndex: 0 });
+				sink.toolResult({ id: "call_dt", name: "gateway_datetime", arguments: "{}", output: "10:35" });
+				sink.markFinalTurnBuffered();
+				return new Response(buildSyntheticServerToolStream({
+					protocol: "openai.chat.completions",
+					requestId: "req_chat_buffered_call",
+					serverToolTrace: [{ id: "call_dt", name: "gateway_datetime", arguments: "{}", output: "10:35" }],
+					payload: {
+						id: "req_chat_buffered_call",
+						object: "chat.completion",
+						choices: [{
+							index: 0,
+							message: { role: "assistant", content: null, tool_calls: [{ id: "call_weather", type: "function", function: { name: "get_weather", arguments: "{\"city\":\"London\"}" } }] },
+							finish_reason: "tool_calls",
+						}],
+					},
+				}), { headers: { "content-type": "text/event-stream" } });
+			},
+		});
+		const chunks = framesOf(await response.text()).filter((frame) => frame.data !== "[DONE]").map((frame) => frame.data);
+		const calls = chunks.flatMap((chunk) => chunk.choices?.flatMap((choice: any) => choice.delta?.tool_calls ?? []) ?? []);
+		expect(calls).toEqual([{ index: 0, id: "call_weather", type: "function", function: { name: "get_weather", arguments: "{\"city\":\"London\"}" } }]);
+		expect(chunks.at(-1)!.choices[0].finish_reason).toBe("tool_calls");
 	});
 
 	it("emits buffered Chat Completions text before the final chunk", async () => {
