@@ -105,7 +105,7 @@ CREATE TABLE "public"."slack_installations" (
 ALTER TABLE "public"."slack_installations"
   ENABLE ROW LEVEL SECURITY;
 
-CREATE UNIQUE INDEX slack_installations_live_team_idx ON public.slack_installations USING btree (COALESCE(slack_app_id, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(enterprise_id, ''::text), COALESCE(team_id, ''::text))
+CREATE UNIQUE INDEX slack_installations_live_team_idx ON public.slack_installations USING btree (COALESCE(enterprise_id, ''::text), COALESCE(team_id, ''::text))
   WHERE (status <> 'uninstalled'::text);
 
 CREATE UNIQUE INDEX slack_installations_live_workspace_idx ON public.slack_installations USING btree (workspace_id)
@@ -125,7 +125,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."slack_installations"
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."slack_installations" IS 'The Phaseo Slack agent installed in a Slack workspace (or Enterprise Grid org). One live installation per Phaseo workspace and per Slack team and app; uninstalled rows are kept for billing history. A null slack_app_id means the hosted Phaseo app.';
+COMMENT ON TABLE "public"."slack_installations" IS 'The Phaseo Slack agent installed in a Slack workspace (or Enterprise Grid org). One live installation per Phaseo workspace and per Slack team, whichever app it uses; uninstalled rows are kept for billing history. A null slack_app_id means the hosted Phaseo app.';
 
 COMMENT ON COLUMN "public"."slack_installations"."secrets_ciphertext" IS 'AES-GCM encrypted JSON {bot_token, gateway_key}, keyed by SLACK_SECRETS_ENCRYPTION_KEY. Never returned to clients.';
 

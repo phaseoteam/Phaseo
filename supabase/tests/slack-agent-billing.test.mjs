@@ -105,6 +105,10 @@ try {
   // One live installation per workspace and per Slack team; uninstalled rows stay for billing history.
   await assert.rejects(install(ws(1), 'T0TEAM0002'), /slack_installations_live_workspace_idx/);
   await assert.rejects(install(ws(2), 'T0TEAM0001'), /slack_installations_live_team_idx/);
+  // Whichever app it uses: a team live on the hosted app can't also go live through a company's own app.
+  const [ownApp] = await rows(`insert into public.slack_apps (workspace_id, slack_app_id, client_id, secrets_ciphertext) values ($1, 'A0APPTEAM1', '123.111', 'v1.cipher') returning id`, [ws(2)]);
+  await assert.rejects(install(ws(2), 'T0TEAM0001', { slack_app_id: ownApp.id }), /slack_installations_live_team_idx/);
+  await rows('delete from public.slack_apps where id = $1', [ownApp.id]);
   await assert.rejects(install(ws(2), 'not-a-team'), /slack_installations_team_id_check/);
   await assert.rejects(install(ws(2), 'T0TEAM0003', { over_plan: 'bill_everyone' }), /over_plan_check/);
   await assert.rejects(install(ws(2), 'T0TEAM0003', { monthly_cap_nanos: '0' }), /monthly_cap_check/);
