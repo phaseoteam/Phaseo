@@ -21,7 +21,9 @@ CREATE OR REPLACE FUNCTION public.sweep_spend_rules (
 --   3. periodic: one twelfth of the workspaces with enabled rules, by a hash of the workspace id
 --                and the 5-minute slot of p_now, so each is evaluated about once an hour when
 --                called every 5 minutes. This catches changes no usage marks: a budget or key
---                limit lowered, a rule edited, rollup hours rebuilt late.
+--                limit lowered, a rule edited, rollup hours rebuilt late. Spike rules do not
+--                count here: a spike needs new usage, which marks the workspace dirty (a
+--                workspace with other rules still evaluates its spike rules in this pass).
 --   4. balance:  workspaces with balance rules, in one of three slices by the same hash (each
 --                every 15 minutes): a balance falls or recovers without new usage (reservations,
 --                refunds, top-ups, credits), so balance rules cannot wait for the dirty mark.
@@ -105,6 +107,8 @@ begin
     where rule.enabled
       and rule.deleted_at is null
       and private.spend_rule_evaluable(rule.metric, rule.period, rule.base_kind)
+      -- Spike rules need new usage to spike, so the dirty pass covers them.
+      and rule.metric <> 'spike'
       and (pg_catalog.hashtextextended(rule.workspace_id::text, 0) % v_slots + v_slots) % v_slots = v_slot
       and rule.workspace_id <> all (v_dirty)
       and rule.workspace_id <> all (v_rollover)
@@ -174,7 +178,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) IS 'Evaluates spend rules for dirty workspaces (claimed with SKIP LOCKED), workspaces whose rule periods rolled over or whose blocks reached their reset, an hourly slice of all workspaces with enabled rules, and a 15-minute slice of workspaces with balance rules. Queues alerts, lifts blocks and, with p_blocks, starts them. Called every 5 minutes by the API scheduled job when SPEND_RULES_ENABLED is true (p_blocks = SPEND_RULE_BLOCKS_ENABLED).';
+COMMENT ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) IS 'Evaluates spend rules for dirty workspaces (claimed with SKIP LOCKED), workspaces whose rule periods rolled over or whose blocks reached their reset, an hourly slice of the workspaces with enabled rules other than spike rules (which need new usage, so the dirty pass covers them), and a 15-minute slice of workspaces with balance rules. Queues alerts, lifts blocks and, with p_blocks, starts them. Called every 5 minutes by the API scheduled job when SPEND_RULES_ENABLED is true (p_blocks = SPEND_RULE_BLOCKS_ENABLED).';
 
 GRANT EXECUTE ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) TO "service_role";
 

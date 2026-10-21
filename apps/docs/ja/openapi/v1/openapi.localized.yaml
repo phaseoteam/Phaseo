@@ -21338,7 +21338,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: 'spend: 支出が threshold_amount に達した。budget_percent: 支出が基準額の threshold_percents に達した。forecast: 期間末までの予測支出がしきい値に達する。spike: 直近 window_hours の支出が通常の水準の spike_multiplier 倍以上かつ spike_floor 以上。balance: ワークスペースの残高または残り日数がしきい値を下回る。'
+      description: spend：支出が threshold_amount に達した。budget_percent：支出が基準額の threshold_percents に達した。forecast：期間終了時の予測支出がしきい値に達する。spike：直近 window_hours の支出が、直前 7 日間の同じウィンドウの中央値の spike_multiplier 倍以上で、かつ spike_floor 以上。balance：ワークスペースの残高または残り日数がしきい値を下回った。
       enum:
         - spend
         - budget_percent
@@ -21421,7 +21421,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: 評価がまだ対応していないルール（spike ルール）では false です。保存され、今後のリリースから発火します。
+          description: 評価がルールの指標・期間・基準に対応しているかどうか。API が受け付けるルールはすべて評価されます。
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -21436,7 +21436,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: ローリングウィンドウの時間数。spike ルールでは急増の判定期間、balance ルールでは消費ペースを測る期間です。暦期間では null。
+          description: rolling ウィンドウの時間数：spike ルールではスパイクのウィンドウ（直前 7 日間に 3 つのウィンドウが収まるよう最大 56）、balance ルールでは消費ペースの算出期間。カレンダー期間では null です。
         time_zone:
           type: string
           maxLength: 64
@@ -21563,7 +21563,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: ローリングウィンドウの時間数。spike ルールでは急増の判定期間、balance ルールでは消費ペースを測る期間です。暦期間では null。
+          description: rolling ウィンドウの時間数：spike ルールではスパイクのウィンドウ（直前 7 日間に 3 つのウィンドウが収まるよう最大 56）、balance ルールでは消費ペースの算出期間。カレンダー期間では null です。
         time_zone:
           type: string
           maxLength: 64
@@ -21700,7 +21700,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: 支出ルールの現在の状況です。rolling ルールでは期間ウィンドウが period になります。forecast ルールには forecast オブジェクトが含まれ、しきい値は予測値に対して判定されます。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。spike ルールでは period、value、alert は null です。
+      description: 支出ルールの現在の状況です。rolling ルールでは期間ウィンドウが period になります。forecast ルールには forecast オブジェクトが含まれ、しきい値は予測値に対して判定されます。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。spike ルールでは period がウィンドウ、値がその間の支出、基準が直前 7 日間の同じウィンドウの中央値、next_threshold が発火する金額となり、spike オブジェクトが含まれます。
       required:
         - rule_id
         - metric
@@ -21725,6 +21725,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -21735,7 +21736,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: 評価がまだ対応していないルール（spike ルール）では false です。保存され、今後のリリースから発火します。
+          description: 評価がルールの指標・期間・基準に対応しているかどうか。API が受け付けるルールはすべて評価されます。
         computed_at:
           type: string
           format: date-time
@@ -21968,6 +21969,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: 自動チャージが有効で正常に機能しているため、残高の低下はアラートなしで記録されます。
+        spike:
+          type: object
+          nullable: true
+          description: spike ルールのみ：評価から見た、直近 window_hours の支出と直前 7 日間の同じウィンドウの中央値の比較。その他のルールでは null です。
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 直前 7 日間の同じウィンドウの中央値。24 時間未満のウィンドウでは直前 7 日それぞれの同じ時間帯、それ以外では 7 日間に収まる重ならない直前のウィンドウを使います。
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: ウィンドウ内の支出を基準で割った値。基準が 0 のときは null で、その場合は下限額のみが適用されます。
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 発火するためにウィンドウ内の支出が達する必要のある金額：基準の spike_multiplier 倍と下限額のうち大きい方。
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: 基準に含まれるウィンドウの数。ルールには 3 つ以上が必要です。
+            active_windows:
+              type: integer
+              description: ワークスペースに何らかの支出があった基準ウィンドウの数。
+            history_ready:
+              type: boolean
+              description: ワークスペースが 3 つ以上の基準ウィンドウで支出するまでは false です。それまでルールは発火しません。
+            spiking:
+              type: boolean
+              description: クールダウンを考慮しない場合に、ルールが今発火するかどうか。
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: 最後のアラート後のクールダウンが終わる時刻（まだ終わっていない場合）。
         alert:
           type: object
           nullable: true

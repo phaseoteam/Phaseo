@@ -6223,8 +6223,8 @@
 			"body": "Adicione um alerta para saber dos gastos antes que virem surpresa, por exemplo em 50%, 80% e 100% de um valor mensal."
 		},
 		"badges": {
-			"notEvaluated": "Ainda não avaliado",
-			"notEvaluatedHelp": "Este tipo de alerta é salvo, mas ainda não é verificado. Ele começa a ser enviado em uma versão futura.",
+			"notEvaluated": "Não avaliado",
+			"notEvaluatedHelp": "Essas configurações não são verificadas, então este alerta não é enviado. Edite o período ou a base.",
 			"blocks": "Notifica e depois bloqueia",
 			"disabled": "Desativado",
 			"blockingNow": "Bloqueando agora",
@@ -6304,12 +6304,15 @@
 			"delete": "Excluir",
 			"runway": "restam cerca de {days} dias",
 			"projectedBy": "previsto até {date}",
-			"forecastFrom": "previsão a partir de {date}"
+			"forecastFrom": "previsão a partir de {date}",
+			"spikeUsual": "{multiple}× o habitual ({baseline})",
+			"spikeNoBaseline": "ainda sem gasto habitual",
+			"spikeLearning": "aprendendo o habitual"
 		},
 		"preview": {
 			"ofBase": "Atualmente {value} de {base} ({percent})",
 			"value": "Atualmente {value} neste período",
-			"notEvaluated": "Ainda sem prévia: este tipo de alerta ainda não é avaliado.",
+			"notEvaluated": "Sem prévia: essas configurações não são avaliadas.",
 			"disabled": "Ative o alerta para ver o valor atual.",
 			"unavailable": "O valor atual não está disponível agora.",
 			"afterSave": "O valor atual aparece depois que você salvar.",
@@ -6318,7 +6321,10 @@
 			"balanceNoSpend": "Saldo {balance}, sem gastos nas últimas {hours} horas",
 			"forecast": "Gasto de {value} até agora, previsão de {projected} até {date}",
 			"forecastReaches": "Gasto de {value} até agora, previsão de {projected} até {date}. Nesse ritmo, chega a {limit} em {reachDate}.",
-			"forecastPending": "Gasto de {value} até agora. A previsão começa em {date}, quando uma parte suficiente do período tiver passado."
+			"forecastPending": "Gasto de {value} até agora. A previsão começa em {date}, quando uma parte suficiente do período tiver passado.",
+			"spike": "Gasto de {current} nas últimas {hours} h, {multiple}× o habitual ({baseline}) para esta janela. Alerta a partir de {firesAt}.",
+			"spikeNoBaseline": "Gasto de {current} nas últimas {hours} h, sem gasto nesta janela nos últimos 7 dias. Alerta a partir de {firesAt}.",
+			"spikePending": "Gasto de {current} nas últimas {hours} h. Os alertas de pico começam quando o workspace tiver gasto em {needed} das mesmas janelas dos últimos 7 dias ({active} até agora)."
 		},
 		"editor": {
 			"createTitle": "Adicionar alerta de gastos",
@@ -6329,7 +6335,7 @@
 			"name": "Nome",
 			"namePlaceholder": "Gastos mensais",
 			"type": "Tipo de alerta",
-			"notEvaluatedNote": "Este tipo de alerta é salvo agora e começa a ser enviado em uma versão futura.",
+			"notEvaluatedNote": "Essas configurações não são verificadas, então este alerta não seria enviado. Altere o período ou a base.",
 			"sectionScope": "O que acompanhar",
 			"scopeType": "Escopo",
 			"balanceWorkspaceOnly": "Alertas de saldo baixo sempre cobrem todo o espaço de trabalho.",
@@ -6413,7 +6419,8 @@
 			"create": "Adicionar alerta",
 			"saving": "Salvando…",
 			"blockingOff": "O bloqueio ainda não está ativado. Até lá, este alerta só notifica.",
-			"balanceEmailNote": "Isso é separado do email de saldo baixo acima. Um alerta de saldo também pode acompanhar os dias de crédito restantes e usa os próprios destinos e intervalo de espera. Nenhum dos dois avisa enquanto a recarga automática estiver repondo o saldo."
+			"balanceEmailNote": "Isso é separado do email de saldo baixo acima. Um alerta de saldo também pode acompanhar os dias de crédito restantes e usa os próprios destinos e intervalo de espera. Nenhum dos dois avisa enquanto a recarga automática estiver repondo o saldo.",
+			"spikeWindowHelp": "De 1 a 56 horas. Comparado com as mesmas horas de cada um dos últimos 7 dias ou, a partir de 24 horas, com as janelas anteriores."
 		},
 		"issues": {
 			"nameRequired": "Digite um nome de até 100 caracteres.",
@@ -6432,7 +6439,8 @@
 			"blockPercentRange": "Digite uma porcentagem inteira de 100 a 1000.",
 			"blockPercentBelowThreshold": "Bloqueie na maior porcentagem de alerta ou acima dela.",
 			"blockAmountBelowThreshold": "Bloqueie no valor do alerta ou acima dele.",
-			"thresholdChip": "Use porcentagens inteiras de 1 a 1000, até {max}."
+			"thresholdChip": "Use porcentagens inteiras de 1 a 1000, até {max}.",
+			"spikeWindowRange": "Digite um número inteiro de horas entre 1 e 56: o habitual precisa de 3 janelas nos últimos 7 dias."
 		},
 		"errors": {
 			"limit": "Um espaço de trabalho pode ter até {max} alertas de gastos.",

@@ -5882,6 +5882,8 @@ class SpendRulePreview
 	/** @var string */
 	public $rule_id;
 	/** @var array<string, mixed>|null */
+	public $spike;
+	/** @var array<string, mixed>|null */
 	public $state;
 	/** @var int|null */
 	public $threshold_amount_nanos;

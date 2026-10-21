@@ -16,8 +16,11 @@ import { publishSpendBlockEntries } from "@core/spend-blocks";
 
 export const SPEND_RULES_SWEEP_LIMIT = 100;
 
-/** threshold: the percent or amount crossed; for balance rules the balance amount (trigger "balance") or runway days (trigger "runway"). */
-export type SpendRuleSweepEvent = { workspaceId: string; ruleId: string; eventId: string; dedupeKey: string; threshold: number | null; trigger?: "balance" | "runway" };
+/**
+ * threshold: the percent or amount crossed; for balance rules the balance amount (trigger "balance") or runway days
+ * (trigger "runway"); for spike rules the multiplier (trigger "spike").
+ */
+export type SpendRuleSweepEvent = { workspaceId: string; ruleId: string; eventId: string; dedupeKey: string; threshold: number | null; trigger?: "balance" | "runway" | "spike" };
 
 export type SpendRuleSweepBlockChange = {
 	workspaceId: string;
@@ -68,7 +71,7 @@ export function parseSpendRuleSweepSummary(data: unknown): SpendRuleSweepSummary
 			eventId: String(event.event_id ?? ""),
 			dedupeKey: String(event.dedupe_key ?? ""),
 			threshold: event.threshold == null || !Number.isFinite(Number(event.threshold)) ? null : Number(event.threshold),
-			...(event.trigger === "balance" || event.trigger === "runway" ? { trigger: event.trigger } : {}),
+			...(event.trigger === "balance" || event.trigger === "runway" || event.trigger === "spike" ? { trigger: event.trigger } : {}),
 		})),
 		blocks: blocks.map((block) => ({
 			workspaceId: String(block.workspace_id ?? ""),

@@ -21338,7 +21338,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: 'spend: o gasto atingiu threshold_amount. budget_percent: o gasto atingiu threshold_percents da base. forecast: o gasto projetado para o fim do período atinge o limite. spike: o gasto nas últimas window_hours é pelo menos spike_multiplier vezes o nível habitual e pelo menos spike_floor. balance: o saldo ou a autonomia do workspace fica abaixo do limite.'
+      description: 'spend: o gasto atingiu threshold_amount. budget_percent: o gasto atingiu threshold_percents da base. forecast: o gasto projetado para o fim do período atinge o limite. spike: o gasto nas últimas window_hours é pelo menos spike_multiplier vezes a mediana da mesma janela nos 7 dias anteriores, e pelo menos spike_floor. balance: o saldo ou a autonomia do workspace fica abaixo do limite.'
       enum:
         - spend
         - budget_percent
@@ -21421,7 +21421,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: É false para regras que a avaliação ainda não suporta (regras spike). Elas são salvas e passarão a disparar em uma versão futura.
+          description: Indica se a avaliação suporta a métrica, o período e a base da regra. Todas as regras aceitas pela API são avaliadas.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -21436,7 +21436,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'Horas de uma janela móvel: a janela do pico nas regras spike e o período de consumo analisado nas regras balance. Null para períodos de calendário.'
+          description: 'Horas de uma janela rolling: a janela de pico para regras spike (no máximo 56, para que caibam 3 janelas nos 7 dias anteriores) e o período de consumo para regras balance. Nulo para períodos de calendário.'
         time_zone:
           type: string
           maxLength: 64
@@ -21563,7 +21563,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'Horas de uma janela móvel: a janela do pico nas regras spike e o período de consumo analisado nas regras balance. Null para períodos de calendário.'
+          description: 'Horas de uma janela rolling: a janela de pico para regras spike (no máximo 56, para que caibam 3 janelas nos 7 dias anteriores) e o período de consumo para regras balance. Nulo para períodos de calendário.'
         time_zone:
           type: string
           maxLength: 64
@@ -21700,7 +21700,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: A situação atual de uma regra de gastos. Regras rolling têm sua janela como period. Regras forecast têm um objeto forecast, e seus limites são medidos em relação à projeção. Regras balance têm a janela de consumo como period, o saldo disponível como valor e um objeto balance. Regras spike têm period, value e alert nulos.
+      description: A situação atual de uma regra de gastos. Regras rolling têm sua janela como period. Regras forecast têm um objeto forecast, e seus limites são medidos em relação à projeção. Regras balance têm a janela de consumo como period, o saldo disponível como valor e um objeto balance. Regras spike têm sua janela como period, o gasto nela como valor, a mediana da mesma janela nos 7 dias anteriores como base, o ponto em que disparam como next_threshold e um objeto spike.
       required:
         - rule_id
         - metric
@@ -21725,6 +21725,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -21735,7 +21736,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: É false para regras que a avaliação ainda não suporta (regras spike). Elas são salvas e passarão a disparar em uma versão futura.
+          description: Indica se a avaliação suporta a métrica, o período e a base da regra. Todas as regras aceitas pela API são avaliadas.
         computed_at:
           type: string
           format: date-time
@@ -21968,6 +21969,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: A recarga automática está ativada e funcionando, então uma queda é registrada sem alerta.
+        spike:
+          type: object
+          nullable: true
+          description: 'Somente regras spike: o gasto nas últimas window_hours comparado à mediana da mesma janela nos 7 dias anteriores, como a avaliação o vê. Nulo para as demais regras.'
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 'A mediana da mesma janela nos 7 dias anteriores: as mesmas horas de cada um dos 7 dias anteriores para janelas de menos de 24 horas ou, caso contrário, as janelas anteriores sem sobreposição que cabem em 7 dias.'
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: O gasto da janela dividido pela base. Nulo quando a base é 0, caso em que só o piso se aplica.
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 'O que o gasto da janela precisa atingir para disparar: o maior entre spike_multiplier vezes a base e o piso.'
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: Quantas janelas a base tem. Uma regra precisa de pelo menos 3.
+            active_windows:
+              type: integer
+              description: Janelas da base em que o workspace teve algum gasto.
+            history_ready:
+              type: boolean
+              description: É false até que o workspace tenha gasto em pelo menos 3 janelas da base. A regra não dispara antes disso.
+            spiking:
+              type: boolean
+              description: Se a regra dispararia agora, antes do intervalo de espera.
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: Quando termina o intervalo de espera após o último alerta, se ainda não terminou.
         alert:
           type: object
           nullable: true

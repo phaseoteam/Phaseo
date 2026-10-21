@@ -124,12 +124,33 @@ describe("spend rule test sends", () => {
 		expect(state.deliver).not.toHaveBeenCalled();
 	});
 
-	it("explains rules the evaluator does not handle yet", async () => {
-		state.rule.metric = "spike";
-		state.preview = { ...PREVIEW, metric: "spike", evaluated: false, period: null, value_nanos: null, alert: null };
+	it("explains rules the evaluator does not handle", async () => {
+		state.preview = { ...PREVIEW, evaluated: false, period: null, value_nanos: null, alert: null };
 		const result = await send();
 		expect(result.title).toBe("[TEST] Monthly: test alert");
-		expect(result.message).toBe('This is a test of spend rule "Monthly". spike rules are evaluated from a later release, so this rule does not send alerts yet.');
+		expect(result.message).toBe('This is a test of spend rule "Monthly". budget_percent rules with these settings are not evaluated, so this rule does not send alerts.');
+	});
+
+	it("sends a spike rule's alert with its baseline, and explains a window too long to compare", async () => {
+		state.rule.metric = "spike";
+		const spike = {
+			window_hours: 3, current_nanos: 42.1e9, baseline_nanos: 10e9, multiple: 4.21, multiplier: 3, floor_nanos: 5e9, fires_at_nanos: 30e9,
+			baseline_windows: 7, active_windows: 7, history_ready: true, spiking: true, cooldown_until: null,
+		};
+		state.preview = {
+			...PREVIEW, metric: "spike", base_kind: null, base_nanos: 10e9, value_nanos: 42.1e9, percent: 421, threshold_percents: null,
+			reached_threshold_percent: null, next_threshold: null, spike,
+			alert: { scope_label: "Acme", title: "Spike: spend 4.2× usual in the last 3 hours", message: "Spend in the last 3 hours is $42.10, 4.2× your usual $10.00 for this time of day." },
+		};
+		let result = await send();
+		expect(result.title).toBe("[TEST] Spike: spend 4.2× usual in the last 3 hours");
+		const event = state.deliver.mock.calls[0][0].event;
+		expect(event.payload.spike).toEqual({
+			current_nanos: 42.1e9, baseline_nanos: 10e9, multiple: 4.21, multiplier: 3, fires_at_nanos: 30e9, baseline_windows: 7, active_windows: 7, floor_only: false,
+		});
+		state.preview = { ...state.preview, alert: null, spike: { ...spike, window_hours: 72, baseline_windows: 2, history_ready: false, spiking: false } };
+		result = await send();
+		expect(result.message).toBe('This is a test of spend rule "Monthly". A spike rule compares its window with the median of 3 or more windows in the previous 7 days, and a 72-hour window leaves only 2, so it cannot fire. ' + "This is a test: nothing was recorded and the rule's thresholds are unchanged.");
 	});
 
 	it("says when a forecast starts if it is too early to project", async () => {

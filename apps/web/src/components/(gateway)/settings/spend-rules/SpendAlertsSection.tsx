@@ -27,7 +27,7 @@ import { SpendRuleEditorSheet, useSpendActionError, type SpendRuleEditorTarget }
 import { SpendBlocksList } from "./SpendBlocksList";
 import { SpendRuleHistorySheet } from "./SpendRuleHistorySheet";
 import { SpendWorkspaceSettings, type DepartmentSpendAttribution } from "./SpendWorkspaceSettings";
-import { useBalanceSummary, useForecastSummary, useScopeLabel, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
+import { useBalanceSummary, useForecastSummary, useScopeLabel, useSpendPercent, useSpendUsd, useSpikeSummary } from "./spendAlertsUi";
 import { SPEND_ALERT_ANCHOR, prefillFromSearchParams, previewSummary } from "./spendRuleDraft";
 import type { SpendBlock, SpendRule } from "./spendRules";
 
@@ -177,6 +177,7 @@ function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: 
 	const percentText = useSpendPercent();
 	const balanceSummary = useBalanceSummary();
 	const forecastSummary = useForecastSummary();
+	const spikeSummary = useSpikeSummary();
 	const scopeLabel = useScopeLabel(data.options);
 	const summarize = useRuleSummary();
 	const actionError = useSpendActionError();
@@ -247,6 +248,11 @@ function SpendRuleRow({ rule, data, activeBlock, onEdit, onHistory, onDelete }: 
 						<p className="text-sm font-medium" title={forecastSummary.text(summary)}>
 							{usd(summary.kind === "forecast" ? summary.projectedUsd : summary.valueUsd)}
 							{forecastSummary.short(summary) ? <span className="ml-1.5 text-xs font-normal text-muted-foreground">{forecastSummary.short(summary)}</span> : null}
+						</p>
+					) : summary?.kind === "spike" || summary?.kind === "spikePending" ? (
+						<p className="text-sm font-medium" title={spikeSummary.text(summary)}>
+							{usd(summary.currentUsd)}
+							<span className="ml-1.5 text-xs font-normal text-muted-foreground">{spikeSummary.short(summary)}</span>
 						</p>
 					) : null}
 					{rule.evaluated && rule.enabled ? (

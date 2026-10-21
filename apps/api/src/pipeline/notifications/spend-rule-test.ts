@@ -11,6 +11,7 @@ import { getSupabaseAdmin } from "@/runtime/env";
 import { deliverNotificationTest } from "@/pipeline/notifications/notification-delivery";
 import {
 	SPEND_RULE_TEST_SENDS_PER_MINUTE,
+	SPIKE_MIN_BASELINE_WINDOWS,
 	embeddedDestinationIds,
 	formatSpendRulePreview,
 	type SpendRuleTestDelivery,
@@ -96,8 +97,10 @@ export async function sendSpendRuleTest(input: { workspaceId: string; ruleId: st
 	const message = preview.alert
 		? `${preview.alert.message} ${TEST_NOTE}`
 		: !preview.evaluated
-			? `This is a test of spend rule "${rule.name}". ${rule.metric} rules are evaluated from a later release, so this rule does not send alerts yet.`
-			: preview.forecast && !preview.forecast.ready
+			? `This is a test of spend rule "${rule.name}". ${rule.metric} rules with these settings are not evaluated, so this rule does not send alerts.`
+			: preview.spike
+				? `This is a test of spend rule "${rule.name}". A spike rule compares its window with the median of ${SPIKE_MIN_BASELINE_WINDOWS} or more windows in the previous 7 days, and a ${preview.spike.window_hours}-hour window leaves only ${preview.spike.baseline_windows}, so it cannot fire. ${TEST_NOTE}`
+				: preview.forecast && !preview.forecast.ready
 				? `This is a test of spend rule "${rule.name}". Too little of the ${preview.period?.kind ?? "period"} has passed to project its spend; the forecast starts ${preview.forecast.from ?? "later this period"} (${preview.time_zone} periods). ${TEST_NOTE}`
 				: `This is a test of spend rule "${rule.name}". Its base is not set (a missing budget or key limit, or no spend in the previous period), so it cannot fire until it is. ${TEST_NOTE}`;
 	const payload = {
@@ -126,6 +129,18 @@ export async function sendSpendRuleTest(input: { workspaceId: string; ruleId: st
 			},
 		} : {}),
 		...(preview.previous_period ? { previous_period: preview.previous_period } : {}),
+		...(preview.spike ? {
+			spike: {
+				current_nanos: preview.spike.current_nanos,
+				baseline_nanos: preview.spike.baseline_nanos,
+				multiple: preview.spike.multiple,
+				multiplier: preview.spike.multiplier,
+				fires_at_nanos: preview.spike.fires_at_nanos,
+				baseline_windows: preview.spike.baseline_windows,
+				active_windows: preview.spike.active_windows,
+				floor_only: !(preview.spike.baseline_nanos > 0),
+			},
+		} : {}),
 		evaluated_at: preview.computed_at,
 		url: "https://phaseo.app/settings/notifications",
 	};

@@ -3335,6 +3335,7 @@ struct SpendRulePreview {
 	std::optional<std::map<std::string, std::any>> previous_period;
 	std::optional<int> reached_threshold_percent;
 	std::string rule_id;
+	std::optional<std::map<std::string, std::any>> spike;
 	std::optional<std::map<std::string, std::any>> state;
 	std::optional<int> threshold_amount_nanos;
 	std::optional<double> threshold_amount_usd;
