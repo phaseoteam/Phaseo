@@ -2635,9 +2635,9 @@ public final class Models {
 	}
 
 	public static class PresetPromptVariable {
-		public Object default;
+		public Object default_;
 		public String description;
-		public java.util.List<String> enum;
+		public java.util.List<String> enum_;
 		public Integer max_length;
 		public Boolean required;
 		public Object type;
