@@ -4767,6 +4767,48 @@ type ServerToolUsage struct {
 	WebSearchRequests *int `json:"web_search_requests,omitempty"`
 }
 
+type SpendBlock struct {
+	Active bool `json:"active"`
+	BlockFreeModels bool `json:"block_free_models"`
+	Id string `json:"id"`
+	LiftReason *interface{} `json:"lift_reason"`
+	LiftedAt *string `json:"lifted_at"`
+	LiftedBy *string `json:"lifted_by"`
+	LimitNanos int `json:"limit_nanos"`
+	LimitUsd float64 `json:"limit_usd"`
+	PeriodStart string `json:"period_start"`
+	ResetsAt *string `json:"resets_at"`
+	RuleId *string `json:"rule_id"`
+	RuleName *string `json:"rule_name"`
+	ScopeId *string `json:"scope_id"`
+	ScopeLabel string `json:"scope_label"`
+	ScopeType string `json:"scope_type"`
+	SpendNanos int `json:"spend_nanos"`
+	SpendUsd float64 `json:"spend_usd"`
+	StartedAt string `json:"started_at"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type SpendBlockLiftReason string
+
+const (
+	SpendBlockLiftReasonManual SpendBlockLiftReason = "manual"
+	SpendBlockLiftReasonPeriodReset SpendBlockLiftReason = "period_reset"
+	SpendBlockLiftReasonBelowLimit SpendBlockLiftReason = "below_limit"
+	SpendBlockLiftReasonRuleChanged SpendBlockLiftReason = "rule_changed"
+	SpendBlockLiftReasonRuleDisabled SpendBlockLiftReason = "rule_disabled"
+	SpendBlockLiftReasonRuleDeleted SpendBlockLiftReason = "rule_deleted"
+)
+
+
+type SpendBlockListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type SpendBlockResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
 type SpendRule struct {
 	Action string `json:"action"`
 	BaseAmountNanos *int `json:"base_amount_nanos"`

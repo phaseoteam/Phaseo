@@ -7717,6 +7717,83 @@ public sealed class ServerToolUsage
 
 }
 
+public sealed class SpendBlock
+{
+	[JsonPropertyName("active")]
+	public bool Active { get; set; }
+
+	[JsonPropertyName("block_free_models")]
+	public bool BlockFreeModels { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("lift_reason")]
+	public object? LiftReason { get; set; }
+
+	[JsonPropertyName("lifted_at")]
+	public string? LiftedAt { get; set; }
+
+	[JsonPropertyName("lifted_by")]
+	public string? LiftedBy { get; set; }
+
+	[JsonPropertyName("limit_nanos")]
+	public long LimitNanos { get; set; }
+
+	[JsonPropertyName("limit_usd")]
+	public double LimitUsd { get; set; }
+
+	[JsonPropertyName("period_start")]
+	public string PeriodStart { get; set; }
+
+	[JsonPropertyName("resets_at")]
+	public string? ResetsAt { get; set; }
+
+	[JsonPropertyName("rule_id")]
+	public string? RuleId { get; set; }
+
+	[JsonPropertyName("rule_name")]
+	public string? RuleName { get; set; }
+
+	[JsonPropertyName("scope_id")]
+	public string? ScopeId { get; set; }
+
+	[JsonPropertyName("scope_label")]
+	public string ScopeLabel { get; set; }
+
+	[JsonPropertyName("scope_type")]
+	public string ScopeType { get; set; }
+
+	[JsonPropertyName("spend_nanos")]
+	public long SpendNanos { get; set; }
+
+	[JsonPropertyName("spend_usd")]
+	public double SpendUsd { get; set; }
+
+	[JsonPropertyName("started_at")]
+	public string StartedAt { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class SpendBlockLiftReason { }
+
+public sealed class SpendBlockListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class SpendBlockResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
 public sealed class SpendRule
 {
 	[JsonPropertyName("action")]

@@ -11,6 +11,7 @@ import {
 	emptyDraft,
 	isValidTimeZone,
 	keyLimitAlertPrefill,
+	needsWorkspaceBlockConfirm,
 	parseUsd,
 	periodsFor,
 	prefillFromSearchParams,
@@ -22,6 +23,7 @@ import {
 	withBaseKind,
 	withMetric,
 	withScope,
+	workspaceBlockConfirmMatches,
 	type SpendRuleDraft,
 } from "./spendRuleDraft";
 import { parseSpendRuleInput, type SpendRule, type SpendRulePreview } from "./spendRules";
@@ -296,5 +298,27 @@ describe("time zones", () => {
 		const zones = timeZoneOptions();
 		expect(zones[0]).toBe("UTC");
 		expect(zones.filter((zone) => zone === "UTC")).toHaveLength(1);
+	});
+});
+
+describe("workspace block confirmation", () => {
+	const blockDraft = { ...emptyDraft({}), name: "Hard cap", metric: "spend" as const, action: "block" as const, scopeType: "workspace" as const, enabled: true };
+	it("asks when a new or newly workspace-wide block rule is saved enabled", () => {
+		expect(needsWorkspaceBlockConfirm(blockDraft, null)).toBe(true);
+		expect(needsWorkspaceBlockConfirm(blockDraft, rule({ action: "notify" }))).toBe(true);
+		expect(needsWorkspaceBlockConfirm(blockDraft, rule({ action: "block", enabled: false }))).toBe(true);
+		expect(needsWorkspaceBlockConfirm(blockDraft, rule({ action: "block", scope_type: "key", scope_id: KEY }))).toBe(true);
+	});
+	it("does not ask again for an unchanged workspace block rule, other scopes, notify rules or disabled rules", () => {
+		expect(needsWorkspaceBlockConfirm(blockDraft, rule({ action: "block" }))).toBe(false);
+		expect(needsWorkspaceBlockConfirm({ ...blockDraft, scopeType: "key" }, null)).toBe(false);
+		expect(needsWorkspaceBlockConfirm({ ...blockDraft, action: "notify" }, null)).toBe(false);
+		expect(needsWorkspaceBlockConfirm({ ...blockDraft, enabled: false }, null)).toBe(false);
+		expect(needsWorkspaceBlockConfirm({ ...blockDraft, metric: "forecast" }, null)).toBe(false);
+	});
+	it("matches the rule name, ignoring case and surrounding spaces", () => {
+		expect(workspaceBlockConfirmMatches("  hard CAP ", "Hard cap")).toBe(true);
+		expect(workspaceBlockConfirmMatches("Hard ca", "Hard cap")).toBe(false);
+		expect(workspaceBlockConfirmMatches("", "  ")).toBe(false);
 	});
 });

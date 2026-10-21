@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -4982,6 +4988,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: إرجاع الحظر المرفوع أيضًا، الأحدث أولًا.
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: الحد الأقصى لعدد حالات الحظر المُرجعة.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: عرض حالات حظر الإنفاق
+      description: 'يعرض حالات حظر الإنفاق في مساحة العمل، الأحدث أولًا: وهي حالات الحظر التي بدأتها قواعد الإنفاق ذات الإجراء block عندما بلغ الإنفاق نقطة الحظر. الحظر النشط فقط ما لم تكن قيمة include_lifted هي true. للمالكين والمسؤولين فقط.'
+      responses:
+        '200':
+          description: حالات حظر الإنفاق
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: معرّف حظر الإنفاق.
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: رفع حظر الإنفاق
+      description: يرفع حظر إنفاق نشطًا حتى تُقبل الطلبات ضمن نطاقه مجددًا خلال دقيقة تقريبًا. لا تحظر القاعدة مرة أخرى حتى يُعاد ضبط فترتها، لكنها تواصل إرسال التنبيهات. للمالكين والمسؤولين فقط؛ يُسجَّل الرفع في سجل التدقيق ويضيف حدث spend_blocked بالحالة lifted إلى قائمة الانتظار. يُرجع 404 لحظر غير معروف و409 spend_block_not_active إذا كان قد رُفع بالفعل.
+      responses:
+        '200':
+          description: حظر الإنفاق المرفوع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -8947,6 +9020,10 @@ components:
         type: string
     DroppedParams:
       description: معلمات أرسلها العميل ولا يدعمها المزوّد الذي يخدم الطلب، فحذفتها البوابة بدلًا من إرسالها إلى المزوّد أو رفض الطلب، مثل `top_k, min_p`. تُرسل فقط في الاستجابات الناجحة، وفقط عند حذف معلمة واحدة على الأقل من جسم الطلب. لا تُدرج المعلمات التي مصدرها إعداد مسبق أو قيمة افتراضية.
+      schema:
+        type: string
+    SpendWarning:
+      description: يُرسَل عندما تشمل قاعدةُ إنفاقٍ تحظر الطلبَ ويكون الإنفاق قد تجاوز آخر حد تنبيه لها دون أن يبلغ نقطة الحظر بعد. يذكر حتى ثلاث قواعد بصيغة rule_id وscope وresets_at، مثل `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. عندما يبلغ الإنفاق نقطة الحظر، تتلقى الطلبات ضمن النطاق الخطأ 429 بالرمز spend_rule_blocked.
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -22009,6 +22086,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: 'سبب رفع حظر الإنفاق: manual (مالك أو مسؤول)، أو period_reset، أو below_limit (عاد الإنفاق دون نقطة الحظر، مثلًا بعد رفع ميزانية)، أو rule_changed، أو rule_disabled، أو rule_deleted.'
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: حظر بدأته قاعدة إنفاق عندما بلغ الإنفاق نقطة الحظر. ما دام نشطًا، تتلقى الطلبات ضمن نطاقه الخطأ 429 بالرمز spend_rule_blocked مع ضبط Retry-After على resets_at. تُستثنى النماذج المجانية ما لم تكن قيمة block_free_models هي true.
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: القاعدة التي بدأت الحظر؛ وتكون null بعد حذف القاعدة نهائيًا.
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: الاسم المعروض للنطاق (اسم المفتاح أو القسم أو النموذج، أو بريد العضو، أو المعرّف).
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: موعد رفع الحظر تلقائيًا (نهاية فترة القاعدة).
+        spend_nanos:
+          type: integer
+          description: الإنفاق ضمن نطاق القاعدة عند بدء الحظر، بالنانو دولار.
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: نقطة الحظر، بالنانو دولار.
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: المالك أو المسؤول الذي رفع الحظر، في حالات الرفع اليدوي.
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: لم يُرفع، ولم يحن موعد إعادة ضبطه بعد.
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

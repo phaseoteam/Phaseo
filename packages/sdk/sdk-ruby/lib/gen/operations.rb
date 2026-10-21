@@ -828,6 +828,13 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.liftSpendBlock(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        resolved_path = "/spend-blocks/#{URI.encode_uri_component(path["id"].to_s)}/lift"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.listApiKeys(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/keys"
@@ -1054,6 +1061,12 @@ module Phaseo
       def self.listRateLimitPolicies(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/rate-limits/policies"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listSpendBlocks(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/spend-blocks"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 

@@ -22,7 +22,8 @@ import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-
 import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
 import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
 import { runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
-import { hasSpendRuleSweepActivity, runSpendRulesSweep } from "@/pipeline/notifications/spend-rules";
+import { hasSpendRuleSweepActivity, publishSweepSpendBlockEntries, runSpendRulesSweep } from "@/pipeline/notifications/spend-rules";
+import { reconcileSpendBlockEntries } from "@core/spend-blocks";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
@@ -533,15 +534,38 @@ async function handleRateLimitThrottleRollupScheduledEvent(env: GatewayBindings)
 
 // Spend rule alerts: evaluates rules after the outbox has rebuilt the usage rollups and queues
 // spend_alert events for the notification delivery and mobile push jobs later in the tick.
+// With SPEND_RULE_BLOCKS_ENABLED, block rules also start blocks, and the gateway's KV entries
+// are republished for the workspaces the sweep evaluated or changed.
 async function handleSpendRulesScheduledEvent(env: GatewayBindings): Promise<void> {
 	if (env.SPEND_RULES_ENABLED !== "true") return;
+	const blocks = env.SPEND_RULE_BLOCKS_ENABLED === "true";
 	configureRuntime(env);
 	try {
-		const summary = await runSpendRulesSweep();
+		const summary = await runSpendRulesSweep({ blocks });
+		const published = blocks ? await publishSweepSpendBlockEntries(summary) : { published: 0, failed: 0 };
 		if (hasSpendRuleSweepActivity(summary)) {
-			const { events, ...counts } = summary;
-			console.log("spend_rules_swept", { ...counts, events: events.length });
+			const { events, blocks: changes, publish, ...counts } = summary;
+			console.log("spend_rules_swept", {
+				...counts,
+				events: events.length,
+				blocks_started: changes.filter((change) => change.state === "started").length,
+				blocks_lifted: changes.filter((change) => change.state === "lifted").length,
+				entries_published: published.published,
+				entries_failed: published.failed,
+			});
 		}
+	} finally {
+		clearRuntime();
+	}
+}
+
+// Backfills and repairs the KV entries the gateway enforces spend blocks from.
+async function handleSpendBlockReconcileScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.SPEND_RULES_ENABLED !== "true" || env.SPEND_RULE_BLOCKS_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await reconcileSpendBlockEntries();
+		if (summary.workspaces > 0) console.log("spend_block_entries_reconciled", summary);
 	} finally {
 		clearRuntime();
 	}
@@ -804,6 +828,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 				await handleSpendLimitSweepScheduledEvent(env);
 			} catch (error) {
 				console.error("spend_limit_sweep_scheduled_failed", serializeError(error));
+			}
+			try {
+				await handleSpendBlockReconcileScheduledEvent(env);
+			} catch (error) {
+				console.error("spend_block_reconcile_scheduled_failed", serializeError(error));
 			}
 		}
 		try {

@@ -20,6 +20,8 @@ const runMobilePushJobMock = vi.fn();
 const runMobilePushDigestJobMock = vi.fn();
 const runSpendLimitWarningSweepMock = vi.fn();
 const runSpendRulesSweepMock = vi.fn();
+const publishSweepSpendBlockEntriesMock = vi.fn();
+const reconcileSpendBlockEntriesMock = vi.fn();
 const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
@@ -101,7 +103,12 @@ vi.mock("@/pipeline/notifications/spend-limit-alerts", () => ({
 
 vi.mock("@/pipeline/notifications/spend-rules", () => ({
 	runSpendRulesSweep: (...args: unknown[]) => runSpendRulesSweepMock(...args),
-	hasSpendRuleSweepActivity: (summary: Record<string, unknown>) => Object.entries(summary).some(([key, value]) => key !== "events" && (value === true || Number(value) > 0)),
+	hasSpendRuleSweepActivity: (summary: Record<string, unknown>) => Object.entries(summary).some(([key, value]) => key !== "events" && key !== "publish" && (value === true || Number(value) > 0 || (Array.isArray(value) && value.length > 0))),
+	publishSweepSpendBlockEntries: (...args: unknown[]) => publishSweepSpendBlockEntriesMock(...args),
+}));
+
+vi.mock("@core/spend-blocks", () => ({
+	reconcileSpendBlockEntries: (...args: unknown[]) => reconcileSpendBlockEntriesMock(...args),
 }));
 
 vi.mock("@/pipeline/notifications/notification-delivery", () => ({
@@ -170,7 +177,9 @@ describe("handleScheduledEvent", () => {
 		runMobilePushDigestJobMock.mockReset().mockResolvedValue({ built: 0, sent: 0 });
 		runSpendLimitWarningSweepMock.mockReset().mockResolvedValue({ budgets: 0, limitedKeys: 0, warned: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
-		runSpendRulesSweepMock.mockReset().mockResolvedValue({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [] });
+		runSpendRulesSweepMock.mockReset().mockResolvedValue({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: [], publish: [] });
+		publishSweepSpendBlockEntriesMock.mockReset().mockResolvedValue({ published: 0, failed: 0 });
+		reconcileSpendBlockEntriesMock.mockReset().mockResolvedValue({ workspaces: 0, published: 0, failed: 0, truncated: false });
 		enqueueModelDeprecationNotificationsMock.mockReset().mockResolvedValue({ workspaces: 0, enqueued: 0 });
 		runAccountDeletionPurgeJobMock.mockReset().mockResolvedValue({
 			claimed: 0,
@@ -462,6 +471,35 @@ describe("handleScheduledEvent", () => {
 		}
 	});
 
+	it("starts blocks and republishes gateway entries only with SPEND_RULE_BLOCKS_ENABLED, reconciling every quarter hour", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			const env = { SPEND_RULES_ENABLED: "true", SPEND_RULE_BLOCKS_ENABLED: "true" } as any;
+			const changes = [
+				{ workspaceId: "ws_1", blockId: "b1", ruleId: "r1", state: "started", reason: null, eventId: "e1" },
+				{ workspaceId: "ws_2", blockId: "b2", ruleId: "r2", state: "lifted", reason: "period_reset", eventId: "e2" },
+			];
+			runSpendRulesSweepMock.mockResolvedValueOnce({ dirty: 1, rollover: 1, periodic: 0, evaluated: 2, rules: 2, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: changes, publish: ["ws_1"] });
+			publishSweepSpendBlockEntriesMock.mockResolvedValueOnce({ published: 2, failed: 0 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), env);
+			expect(runSpendRulesSweepMock).toHaveBeenCalledWith({ blocks: true });
+			expect(publishSweepSpendBlockEntriesMock).toHaveBeenCalledTimes(1);
+			expect(log).toHaveBeenCalledWith("spend_rules_swept", expect.objectContaining({ blocks_started: 1, blocks_lifted: 1, entries_published: 2, entries_failed: 0 }));
+			expect(reconcileSpendBlockEntriesMock).not.toHaveBeenCalled();
+
+			reconcileSpendBlockEntriesMock.mockResolvedValueOnce({ workspaces: 3, published: 3, failed: 0, truncated: false });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), env);
+			expect(reconcileSpendBlockEntriesMock).toHaveBeenCalledTimes(1);
+			expect(log).toHaveBeenCalledWith("spend_block_entries_reconciled", { workspaces: 3, published: 3, failed: 0, truncated: false });
+
+			reconcileSpendBlockEntriesMock.mockClear();
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:30:00.000Z"), { SPEND_RULES_ENABLED: "true", SPEND_RULE_BLOCKS_ENABLED: "false" } as any);
+			expect(reconcileSpendBlockEntriesMock).not.toHaveBeenCalled();
+		} finally {
+			log.mockRestore();
+		}
+	});
+
 	it("sweeps spend rules every five minutes only when enabled, before deliveries, logging only real work", async () => {
 		const log = vi.spyOn(console, "log").mockImplementation(() => {});
 		try {
@@ -478,9 +516,15 @@ describe("handleScheduledEvent", () => {
 			expect(runSpendRulesSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runNotificationDeliveryJobMock.mock.invocationCallOrder[0]);
 			expect(log).not.toHaveBeenCalledWith("spend_rules_swept", expect.anything());
 
-			runSpendRulesSweepMock.mockResolvedValueOnce({ dirty: 2, rollover: 0, periodic: 1, evaluated: 3, rules: 7, fired: 1, stateRows: 1, skippedLocked: false, events: [{ workspaceId: "ws_1" }] });
+			runSpendRulesSweepMock.mockResolvedValueOnce({ dirty: 2, rollover: 0, periodic: 1, evaluated: 3, rules: 7, fired: 1, stateRows: 1, skippedLocked: false, events: [{ workspaceId: "ws_1" }], blocks: [], publish: [] });
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
-			expect(log).toHaveBeenCalledWith("spend_rules_swept", { dirty: 2, rollover: 0, periodic: 1, evaluated: 3, rules: 7, fired: 1, stateRows: 1, skippedLocked: false, events: 1 });
+			expect(log).toHaveBeenCalledWith("spend_rules_swept", {
+				dirty: 2, rollover: 0, periodic: 1, evaluated: 3, rules: 7, fired: 1, stateRows: 1, skippedLocked: false, events: 1,
+				blocks_started: 0, blocks_lifted: 0, entries_published: 0, entries_failed: 0,
+			});
+			// Blocks stay off (and nothing is published) unless SPEND_RULE_BLOCKS_ENABLED is on.
+			expect(runSpendRulesSweepMock).toHaveBeenLastCalledWith({ blocks: false });
+			expect(publishSweepSpendBlockEntriesMock).not.toHaveBeenCalled();
 
 			// A failed sweep does not stop the deliveries.
 			runNotificationDeliveryJobMock.mockClear();

@@ -752,6 +752,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -804,6 +806,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -927,6 +931,8 @@ paths:
               $ref: '#/components/headers/ModelSubstitution'
             X-Phaseo-Dropped-Params:
               $ref: '#/components/headers/DroppedParams'
+            X-Phaseo-Spend-Warning:
+              $ref: '#/components/headers/SpendWarning'
           content:
             application/json:
               schema:
@@ -4982,6 +4988,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listSpendBlocks
+      parameters:
+        - name: include_lifted
+          in: query
+          required: false
+          description: 解除済みのブロックも新しい順に返します。
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: 返すブロックの最大数。
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      summary: 支出ブロックを一覧表示
+      description: ワークスペースの支出ブロックを新しい順に一覧表示します。アクションが block の支出ルールが、支出がブロック点に達したときに開始したブロックです。include_lifted が true でない限り、有効なブロックのみを返します。オーナーと管理者のみ。
+      responses:
+        '200':
+          description: 支出ブロック
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockListResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /spend-blocks/{id}/lift:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: 支出ブロックの ID。
+        schema:
+          type: string
+          format: uuid
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: liftSpendBlock
+      summary: 支出ブロックを解除
+      description: 有効な支出ブロックを解除し、対象のリクエストが約 1 分以内に再び受け付けられるようにします。ルールは期間がリセットされるまで再びブロックしませんが、アラートは引き続き送信します。オーナーと管理者のみ。解除は監査ログに記録され、状態 lifted の spend_blocked イベントがキューに追加されます。存在しないブロックには 404、すでに解除済みの場合は 409 spend_block_not_active を返します。
+      responses:
+        '200':
+          description: 解除された支出ブロック
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpendBlockResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /classifiers:
     get:
       x-beta: true
@@ -8947,6 +9020,10 @@ components:
         type: string
     DroppedParams:
       description: 'クライアントが送信したリクエストパラメーターのうち、処理するプロバイダーがサポートしていないため、ゲートウェイがプロバイダーに送信したりリクエストを拒否したりせずに削除したもの。例: `top_k, min_p`。成功したレスポンスで、リクエスト本文のパラメーターが 1 つ以上削除された場合にのみ送信されます。プリセットや既定値から設定されたパラメーターは含まれません。'
+      schema:
+        type: string
+    SpendWarning:
+      description: 'ブロックする支出ルールがリクエストを対象としており、支出が最後のアラートしきい値を超えたもののまだブロック点に達していない間に送信されます。最大 3 件のルールを rule_id、scope、resets_at の形式で示します（例: `rule_id=...; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`）。支出がブロック点に達すると、対象のリクエストにはコード spend_rule_blocked の 429 が返されます。'
       schema:
         type: string
     UpstreamRateLimitValue:
@@ -22009,6 +22086,117 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SpendRuleHistory'
+    SpendBlockLiftReason:
+      type: string
+      description: '支出ブロックが解除された理由: manual（オーナーまたは管理者）、period_reset、below_limit（予算の引き上げなどにより支出が再びブロック点を下回った）、rule_changed、rule_disabled、rule_deleted。'
+      enum:
+        - manual
+        - period_reset
+        - below_limit
+        - rule_changed
+        - rule_disabled
+        - rule_deleted
+    SpendBlock:
+      type: object
+      description: 支出がブロック点に達したときに支出ルールが開始したブロック。有効な間、対象のリクエストにはコード spend_rule_blocked の 429 が返され、Retry-After は resets_at に設定されます。block_free_models が true でない限り、無料モデルは対象外です。
+      required:
+        - id
+        - workspace_id
+        - rule_id
+        - rule_name
+        - scope_type
+        - scope_id
+        - scope_label
+        - block_free_models
+        - period_start
+        - resets_at
+        - spend_nanos
+        - spend_usd
+        - limit_nanos
+        - limit_usd
+        - started_at
+        - lifted_at
+        - lifted_by
+        - lift_reason
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ブロックを開始したルール。ルールが完全に削除されると null になります。
+        rule_name:
+          type: string
+          nullable: true
+        scope_type:
+          $ref: '#/components/schemas/SpendRuleScope'
+        scope_id:
+          type: string
+          nullable: true
+        scope_label:
+          type: string
+          description: 対象範囲の表示名（キー、部署、モデルの名前、メンバーのメールアドレス、または ID）。
+        block_free_models:
+          type: boolean
+        period_start:
+          type: string
+          format: date-time
+        resets_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: ブロックが自動的に解除される日時（ルールの期間の終わり）。
+        spend_nanos:
+          type: integer
+          description: ブロック開始時点のルール対象範囲の支出（ナノドル）。
+        spend_usd:
+          type: number
+        limit_nanos:
+          type: integer
+          description: ブロック点（ナノドル）。
+        limit_usd:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+          nullable: true
+        lifted_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: 手動解除の場合に、ブロックを解除したオーナーまたは管理者。
+        lift_reason:
+          allOf:
+            - $ref: '#/components/schemas/SpendBlockLiftReason'
+          nullable: true
+        active:
+          type: boolean
+          description: 解除されておらず、リセット時刻も過ぎていない。
+    SpendBlockResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/SpendBlock'
+    SpendBlockListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpendBlock'
     WorkspaceApp:
       type: object
       required:

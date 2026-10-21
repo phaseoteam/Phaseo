@@ -20,6 +20,7 @@ const LIMIT_TRIGGER = "supabase/schemas/public/functions/enforce_workspace_spend
 const EVALUABLE = "supabase/schemas/private/functions/spend_rule_evaluable.sql";
 const SAVE = "supabase/schemas/public/functions/save_workspace_spend_rule.sql";
 const TEST_SENDS = "supabase/schemas/public/functions/consume_spend_rule_test_send.sql";
+const BLOCKS_TABLE = "supabase/schemas/public/tables/workspace_spend_blocks.sql";
 
 const check = process.argv.includes("--check");
 const read = (file) => readFile(path.join(root, file), "utf8");
@@ -58,6 +59,13 @@ for (const [name, constraint, column] of [
 	["SPEND_RULE_ACTIONS", "workspace_spend_rules_action_check", "action"],
 ]) {
 	if (!same(values(name), checkValues(constraint, column))) problems.push(`${name} does not match ${constraint} in ${TABLE}`);
+}
+
+const blocksTable = await read(BLOCKS_TABLE);
+const liftReasons = blocksTable.split("\n").find((text) => text.includes('"workspace_spend_blocks_lift_reason_check"'))
+	?.match(/lift_reason = ANY \(ARRAY\[([^\]]*)\]/)?.[1];
+if (!same(values("SPEND_BLOCK_LIFT_REASONS"), liftReasons ? [...liftReasons.matchAll(/'([^']+)'::text/g)].map((match) => match[1]) : null)) {
+	problems.push(`SPEND_BLOCK_LIFT_REASONS does not match workspace_spend_blocks_lift_reason_check in ${BLOCKS_TABLE}`);
 }
 
 const limit = (await read(LIMIT_TRIGGER)).match(/v_limit constant integer := (\d+);/)?.[1];

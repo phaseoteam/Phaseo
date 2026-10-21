@@ -6226,7 +6226,9 @@
 			"notEvaluated": "Pas encore évaluée",
 			"notEvaluatedHelp": "Ce type d'alerte est enregistré mais pas encore vérifié. Il commencera à envoyer dans une version ultérieure.",
 			"blocks": "Notifie, puis bloque",
-			"disabled": "Désactivée"
+			"disabled": "Désactivée",
+			"blockingNow": "Bloque en ce moment",
+			"blockingNowHelp": "Cette règle refuse les requêtes de son périmètre. Vous pouvez lever le blocage dans Blocages actifs."
 		},
 		"metric": {
 			"spend": "Montant de dépenses",
@@ -6385,7 +6387,6 @@
 			"blockFreeModels": "Bloquer aussi les modèles gratuits",
 			"blockFreeModelsHelp": "Désactivé par défaut, pour que les modèles gratuits continuent de fonctionner pendant un blocage.",
 			"bestEffort": "Le blocage est appliqué au mieux : il commence quelques minutes après le dépassement de la marge, donc certaines requêtes peuvent passer au-delà. Pour un plafond exact, utilisez les <keys>limites de clé</keys> ou les <budgets>budgets de l'espace de travail</budgets>.",
-			"blockingLater": "Le blocage sera activé dans une version ultérieure. D'ici là, cette alerte se contente de notifier.",
 			"sectionDestinations": "Où envoyer",
 			"destinations": "Destinations",
 			"destinationsRoutes": "Routes des alertes de dépenses",
@@ -6402,7 +6403,8 @@
 			"close": "Fermer",
 			"save": "Enregistrer",
 			"create": "Ajouter l'alerte",
-			"saving": "Enregistrement…"
+			"saving": "Enregistrement…",
+			"blockingOff": "Le blocage n'est pas encore activé. D'ici là, cette alerte se contente de notifier."
 		},
 		"issues": {
 			"nameRequired": "Saisissez un nom de 100 caractères maximum.",
@@ -6439,7 +6441,8 @@
 			"enabled": "Alerte activée",
 			"disabled": "Alerte désactivée",
 			"testSent": "{count, plural, =0 {Test envoyé} one {Test envoyé à # destination} other {Test envoyé à # destinations}}",
-			"testPartial": "Test envoyé à {delivered}, échec pour {failed}"
+			"testPartial": "Test envoyé à {delivered}, échec pour {failed}",
+			"lifted": "Blocage levé"
 		},
 		"delete": {
 			"title": "Supprimer {name} ?",
@@ -6493,6 +6496,30 @@
 			"keyLimitName": "{key} : {percent} % de la limite {interval, select, daily {quotidienne} weekly {hebdomadaire} other {mensuelle}}",
 			"budget": "Alerter à 50/80/100 %",
 			"budgetName": "Alerte du budget {interval, select, daily {quotidien} weekly {hebdomadaire} other {mensuel}}"
+		},
+		"blocks": {
+			"title": "Blocages actifs",
+			"description": "Ces règles de dépenses refusent des requêtes en ce moment. Les requêtes concernées reçoivent une erreur 429 jusqu'à la réinitialisation du blocage ou sa levée.",
+			"badge": "Bloque",
+			"deletedRule": "Règle supprimée",
+			"freeModelsAllowed": "Modèles gratuits autorisés",
+			"spent": "{spend} dépensés, limite {limit}",
+			"resets": "Réinitialisé le {date}",
+			"noReset": "Levé quand les dépenses repassent sous la limite",
+			"since": "Depuis le {date}",
+			"lift": "Lever",
+			"bestEffort": "Les blocages commencent quelques minutes après le dépassement de la limite. Une levée s'applique à toutes les requêtes en une minute environ.",
+			"alreadyLifted": "Ce blocage a déjà été levé.",
+			"liftTitle": "Lever le blocage de {name} ?",
+			"liftBody": "Les requêtes concernées fonctionnent de nouveau en une minute environ. La règle ne bloquera plus avant la réinitialisation de sa période, mais elle continue d'envoyer des alertes.",
+			"lifting": "Levée en cours…",
+			"liftConfirm": "Lever le blocage"
+		},
+		"confirmBlock": {
+			"title": "Bloquer tout l'espace de travail ?",
+			"body": "Dès que les dépenses atteignent la limite de blocage, {name} refuse les requêtes de toutes les clés et de tous les membres de cet espace de travail jusqu'à la réinitialisation de la période ou la levée du blocage par un propriétaire ou un administrateur.",
+			"label": "Saisissez {name} pour confirmer",
+			"confirm": "Enregistrer et autoriser le blocage"
 		}
 	}
 }

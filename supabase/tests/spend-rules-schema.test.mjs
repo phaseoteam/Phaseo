@@ -24,7 +24,9 @@ const schemaFiles = [
   '../schemas/public/tables/workspace_spend_blocks.sql',
   '../schemas/public/tables/workspace_spend_rule_dirty.sql',
 ];
-for (const file of schemaFiles) assert(normalize(migration).includes(normalize(await read(file))), `${file} is in the migration`);
+// The spend rule blocks migration adds the rules table's lift triggers (its own test checks them).
+const withoutLaterTriggers = (sql) => sql.replace(/\r\n/g, '\n').replace(/CREATE TRIGGER workspace_spend_rules_lift_blocks[^;]*;\n\n/g, '');
+for (const file of schemaFiles) assert(normalize(migration).includes(normalize(withoutLaterTriggers(await read(file)))), `${file} is in the migration`);
 
 const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ws = id(1);
