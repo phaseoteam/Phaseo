@@ -71,10 +71,17 @@ function getStreamTerminalPayload(frame: any): any | null {
 }
 
 const INPUT_MODALITY_TOKEN_METERS = ["input_image_tokens", "input_audio_tokens", "input_video_tokens"] as const;
+// Raw OpenAI Chat usage names its audio token counts inside the details objects
+// (https://platform.openai.com/docs/api-reference/chat/object).
+const OPENAI_CHAT_AUDIO_TOKEN_PATHS = [
+    ["input_audio_tokens", "prompt_tokens_details"],
+    ["output_audio_tokens", "completion_tokens_details"],
+] as const;
 
 /**
  * Client shaping keeps modality counts only inside input_tokens_details, where they can also
- * be counts of media parts. Carry the executor's token meters to pricing as meters.
+ * be counts of media parts. Carry the executor's token meters to pricing as meters, and the
+ * audio token counts of raw OpenAI Chat usage (a passed-through stream has no executor meters).
  */
 function withInputModalityTokenMeters(shaped: any, raw: any): any {
     if (!shaped || typeof shaped !== "object" || !raw || typeof raw !== "object") return shaped;
@@ -82,6 +89,12 @@ function withInputModalityTokenMeters(shaped: any, raw: any): any {
     for (const key of INPUT_MODALITY_TOKEN_METERS) {
         const value = raw[key];
         if (typeof value === "number" && Number.isFinite(value) && value > 0 && shaped[key] == null) meters[key] = value;
+    }
+    for (const [meter, detailsKey] of OPENAI_CHAT_AUDIO_TOKEN_PATHS) {
+        const value = raw[meter] ?? raw[detailsKey]?.audio_tokens;
+        if (typeof value === "number" && Number.isFinite(value) && value > 0 && shaped[meter] == null && meters[meter] == null) {
+            meters[meter] = value;
+        }
     }
     return Object.keys(meters).length ? { ...shaped, ...meters } : shaped;
 }
@@ -401,7 +414,7 @@ export async function handleStreamResponse(
                     next.usage = normalizeAnthropicUsage(next.usage);
                     if (costFields) Object.assign(next.usage, costFields);
                 } else if (card) {
-                    const { pricedUsage, costKnown } = priceStreamFrameUsage(shapeStreamUsageForClient(next.usage));
+                    const { pricedUsage, costKnown } = priceStreamFrameUsage(withInputModalityTokenMeters(shapeStreamUsageForClient(next.usage), next.usage));
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream frame priced usage", {
                             requestId: ctx.requestId,
@@ -431,7 +444,7 @@ export async function handleStreamResponse(
                 if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
                     next.response.usage = normalizeAnthropicUsage(next.response.usage);
                 } else if (card) {
-                    const { pricedUsage, costKnown } = priceStreamFrameUsage(shapeStreamUsageForClient(next.response.usage));
+                    const { pricedUsage, costKnown } = priceStreamFrameUsage(withInputModalityTokenMeters(shapeStreamUsageForClient(next.response.usage), next.response.usage));
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream response priced usage", {
                             requestId: ctx.requestId,
@@ -624,7 +637,7 @@ export async function handleStreamResponse(
             }
             // console.log("[DEBUG After Stream] Final usage from stream:", usageRaw);
             const shapedUsage = attachToolUsageMetrics(
-                shapeStreamUsageForClient(usageForShaping),
+                withInputModalityTokenMeters(shapeStreamUsageForClient(usageForShaping), usageForShaping),
                 buildToolUsage()
             );
             // Preserve metering even if pricing fails before a bill can be assigned.

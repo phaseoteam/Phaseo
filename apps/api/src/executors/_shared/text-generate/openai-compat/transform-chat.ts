@@ -552,6 +552,28 @@ function applySealedReasoningDetails(
 	}
 }
 
+/**
+ * OpenAI Chat audio output: `choices[].message.audio` is `{ id, data, expires_at, transcript }`
+ * with base64 audio in the requested `audio.format`
+ * (https://platform.openai.com/docs/api-reference/chat/object).
+ */
+export function toChatMessageAudioPart(audio: unknown): IRContentPart | null {
+	if (!audio || typeof audio !== "object" || Array.isArray(audio)) return null;
+	const value = audio as Record<string, unknown>;
+	const data = typeof value.data === "string" ? value.data : "";
+	const transcript = typeof value.transcript === "string" ? value.transcript : undefined;
+	const audioId = typeof value.id === "string" && value.id ? value.id : undefined;
+	if (!data && !transcript && !audioId) return null;
+	return {
+		type: "audio",
+		source: "data",
+		data,
+		...(audioId ? { audioId } : {}),
+		...(typeof value.expires_at === "number" ? { expiresAt: value.expires_at } : {}),
+		...(transcript !== undefined ? { transcript } : {}),
+	};
+}
+
 export function openAIChatToIR(
 	json: any,
 	requestId: string,
@@ -753,6 +775,8 @@ export function openAIChatToIR(
 		contentParts.push(...extractInlineImages(choice.message?.images));
 		contentParts.push(...extractInlineAudios(choice.message?.content));
 		contentParts.push(...extractInlineAudios(choice.message?.audios));
+		const messageAudio = toChatMessageAudioPart(choice.message?.audio);
+		if (messageAudio) contentParts.push(messageAudio);
 
 		choices.push({
 			index: choice.index || 0,
