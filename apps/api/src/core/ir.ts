@@ -58,6 +58,11 @@ export type IRContentPart =
 		data: string; // URL or base64
 		format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
 		cacheControl?: IRCacheControl;
+		// OpenAI Chat audio output (`message.audio`): the id a later turn can reference,
+		// when it expires, and the spoken words.
+		audioId?: string;
+		expiresAt?: number;
+		transcript?: string;
 	}
 	| {
 		type: "video";
@@ -176,6 +181,8 @@ export type IRMessage =
 		toolCalls?: IRToolCall[]; // Optional tool calls
 		name?: string;
 		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
+		// OpenAI Chat: an earlier audio response, sent back by id (`audio: { id }`).
+		audio?: { id: string };
 	}
 	| {
 		role: "tool";
