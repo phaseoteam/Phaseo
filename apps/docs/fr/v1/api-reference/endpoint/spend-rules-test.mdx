@@ -1,0 +1,9 @@
+---
+title: "Envoyer une alerte de dépenses de test"
+sidebarTitle: "Envoyer un test"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /spend-rules/{id}/test"
+description: "Envoie l'alerte qu'une règle de dépenses enverrait maintenant, marquée TEST."
+---
+
+Nécessite `spend_rules:write`. Le test est envoyé aux destinations de la règle, ou à la route **Alertes de dépenses** si la règle n'en a pas. Rien n'est enregistré. Un espace de travail peut envoyer cinq tests par minute ; au-delà, la réponse est `429` avec `Retry-After`.

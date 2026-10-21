@@ -1,0 +1,9 @@
+---
+title: "Ausgabensperren auflisten"
+sidebarTitle: "Sperren auflisten"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /spend-blocks"
+description: "Listet die Sperren von Ausgabenregeln auf, die Anfragen ablehnen."
+---
+
+Erfordert `spend_rules:read`. OAuth-Aufrufer müssen Inhaber oder Administratoren des Arbeitsbereichs sein. Füge `include_lifted=true` hinzu, um aufgehobene Sperren einzuschließen. Sperren erfolgen nach bestem Bemühen; siehe [Anfragen sperren](../../guides/spend-alerts.mdx#block-requests).

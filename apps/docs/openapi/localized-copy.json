@@ -8164,16 +8164,6 @@
 			"zh-Hans": "此密钥所属的部门，用于部门速率限制和预算。Null 表示该密钥仅计入整个工作区的限制。",
 			"ar": "القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها."
 		},
-		"Deprecated. Guardrails do not enforce request or spend limits; use API key limits or workspace budgets instead.": {
-			"es": "Obsoleto. Las barreras de seguridad no aplican límites de solicitudes ni de gasto; usa en su lugar los límites de las claves API o los presupuestos del espacio de trabajo.",
-			"fr": "Obsolète. Les garde-fous n’appliquent pas de limites de requêtes ni de dépenses ; utilisez plutôt les limites des clés API ou les budgets de l’espace de travail.",
-			"de": "Veraltet. Sicherheitsleitplanken setzen keine Anfrage- oder Ausgabenlimits durch; verwende stattdessen API-Schlüssellimits oder Workspace-Budgets.",
-			"pt-BR": "Obsoleto. As proteções não aplicam limites de solicitações nem de gastos; use os limites das chaves de API ou os orçamentos do espaço de trabalho.",
-			"hi": "अप्रचलित। गार्डरेल अनुरोध या खर्च की सीमाएँ लागू नहीं करते; इसके बजाय API कुंजी सीमाओं या वर्कस्पेस बजट का उपयोग करें।",
-			"ja": "非推奨です。ガードレールはリクエスト数や支出の上限を適用しません。代わりに API キーの上限またはワークスペース予算を使用してください。",
-			"zh-Hans": "已弃用。防护规则不会强制执行请求或支出限制；请改用 API 密钥限制或工作区预算。",
-			"ar": "مهمل. لا تفرض حواجز الحماية حدودًا على الطلبات أو الإنفاق؛ استخدم بدلًا من ذلك حدود مفاتيح API أو ميزانيات مساحة العمل."
-		},
 		"ETag from an earlier JSON or OpenAI-format response for the same URL. If it still matches, the response is 304 Not Modified with no body. Accepts a comma-separated list, weak (W/) validators, and *.": {
 			"es": "ETag de una respuesta anterior en formato JSON u OpenAI para la misma URL. Si todavía coincide, la respuesta es 304 Not Modified sin cuerpo. Acepta una lista separada por comas, validadores débiles (W/) y *.",
 			"fr": "ETag d’une réponse précédente au format JSON ou OpenAI pour la même URL. S’il correspond toujours, la réponse est 304 Not Modified, sans corps. Accepte une liste séparée par des virgules, des validateurs faibles (W/) et *.",
@@ -9004,15 +8994,15 @@
 			"zh-Hans": "创建支出规则",
 			"ar": "إنشاء قاعدة إنفاق"
 		},
-		"Creates a spend rule and sets its notification destinations. Every metric is accepted; rules returned with evaluated false are saved and fire from a later release. Blocking is best effort and acts minutes after the threshold; use key limits and workspace budgets for exact caps. A workspace can have 50 spend rules.": {
-			"es": "Crea una regla de gasto y define sus destinos de notificación. Se acepta cualquier métrica; las reglas que se devuelven con evaluated en false se guardan y empezarán a activarse en una versión posterior. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.",
-			"fr": "Crée une règle de dépenses et définit ses destinations de notification. Toutes les métriques sont acceptées ; les règles renvoyées avec evaluated à false sont enregistrées et se déclencheront à partir d’une version ultérieure. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil ; utilisez les limites de clé et les budgets d’espace de travail pour des plafonds exacts. Un espace de travail peut avoir 50 règles de dépenses.",
-			"de": "Erstellt eine Ausgabenregel und legt ihre Benachrichtigungsziele fest. Jede Metrik wird akzeptiert; Regeln, die mit evaluated false zurückgegeben werden, werden gespeichert und lösen erst ab einer späteren Version aus. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert; für exakte Obergrenzen Schlüssellimits und Workspace-Budgets verwenden. Ein Workspace kann 50 Ausgabenregeln haben.",
-			"pt-BR": "Cria uma regra de gastos e define seus destinos de notificação. Qualquer métrica é aceita; regras retornadas com evaluated false são salvas e passarão a disparar em uma versão futura. O bloqueio é feito com o melhor esforço e age minutos após o limite; use limites de chave e orçamentos do workspace para tetos exatos. Um workspace pode ter 50 regras de gastos.",
-			"hi": "एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक स्वीकार की जाती है; evaluated false के साथ लौटाए गए नियम सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।",
-			"ja": "支出ルールを作成し、通知先を設定します。どの指標も受け付けます。evaluated が false で返されるルールは保存され、今後のリリースから発火します。ブロックはベストエフォートで、しきい値の数分後に作動します。正確な上限にはキーの上限とワークスペース予算を使ってください。ワークスペースあたり 50 件まで作成できます。",
-			"zh-Hans": "创建支出规则并设置其通知目标。接受所有指标；返回 evaluated 为 false 的规则会被保存，并将在后续版本中开始触发。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。",
-			"ar": "ينشئ قاعدة إنفاق ويحدد وجهات إشعاراتها. تُقبل كل المقاييس؛ القواعد التي تُعاد مع evaluated بقيمة false تُحفظ وتبدأ بالعمل في إصدار لاحق. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق؛ استخدم حدود المفاتيح وميزانيات مساحة العمل لحدود دقيقة. يمكن أن تحتوي مساحة العمل على 50 قاعدة إنفاق."
+		"Creates a spend rule and sets its notification destinations. Every metric is evaluated. Blocking is best effort and acts minutes after the threshold; use key limits and workspace budgets for exact caps. A workspace can have 50 spend rules.": {
+			"es": "Crea una regla de gasto y define sus destinos de notificación. Se evalúan todas las métricas. El bloqueo se aplica en la medida de lo posible y actúa minutos después del umbral; usa los límites de clave y los presupuestos del espacio de trabajo para topes exactos. Un espacio de trabajo puede tener 50 reglas de gasto.",
+			"fr": "Crée une règle de dépenses et définit ses destinations de notification. Toutes les métriques sont évaluées. Le blocage est appliqué au mieux et intervient quelques minutes après le seuil ; utilisez les limites de clé et les budgets d’espace de travail pour des plafonds exacts. Un espace de travail peut avoir 50 règles de dépenses.",
+			"de": "Erstellt eine Ausgabenregel und legt ihre Benachrichtigungsziele fest. Jede Metrik wird ausgewertet. Das Sperren erfolgt nach bestem Bemühen und greift Minuten nach dem Schwellenwert; für exakte Obergrenzen Schlüssellimits und Workspace-Budgets verwenden. Ein Workspace kann 50 Ausgabenregeln haben.",
+			"pt-BR": "Cria uma regra de gastos e define seus destinos de notificação. Todas as métricas são avaliadas. O bloqueio é feito com o melhor esforço e age minutos após o limite; use limites de chave e orçamentos do workspace para tetos exatos. Um workspace pode ter 50 regras de gastos.",
+			"hi": "एक खर्च नियम बनाता है और उसके सूचना गंतव्य सेट करता है। हर मीट्रिक का मूल्यांकन किया जाता है। ब्लॉक करना सर्वोत्तम प्रयास पर आधारित है और सीमा के कुछ मिनट बाद लागू होता है; सटीक सीमाओं के लिए कुंजी सीमाएँ और वर्कस्पेस बजट इस्तेमाल करें। एक वर्कस्पेस में 50 खर्च नियम हो सकते हैं।",
+			"ja": "支出ルールを作成し、通知先を設定します。すべての指標が評価されます。ブロックはベストエフォートで、しきい値の数分後に作動します。正確な上限にはキーの上限とワークスペース予算を使ってください。ワークスペースあたり 50 件まで作成できます。",
+			"zh-Hans": "创建支出规则并设置其通知目标。所有指标都会被评估。拦截为尽力而为，会在达到阈值几分钟后生效；如需精确上限，请使用密钥限额和工作区预算。每个工作区最多可有 50 条支出规则。",
+			"ar": "ينشئ قاعدة إنفاق ويحدد وجهات إشعاراتها. تُقيَّم كل المقاييس. الحظر يتم بأفضل جهد ويعمل بعد بلوغ الحد ببضع دقائق؛ استخدم حدود المفاتيح وميزانيات مساحة العمل لحدود دقيقة. يمكن أن تحتوي مساحة العمل على 50 قاعدة إنفاق."
 		},
 		"Spend rule created": {
 			"es": "Regla de gasto creada",

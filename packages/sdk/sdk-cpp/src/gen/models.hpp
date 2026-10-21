@@ -1618,14 +1618,10 @@ struct GenerationResponse {
 struct Guardrail {
 	std::optional<std::vector<std::string>> allowed_api_model_ids;
 	std::optional<std::string> created_at;
-	std::optional<int> daily_limit_cost_nanos;
-	std::optional<int> daily_limit_requests;
 	std::optional<std::string> description;
 	std::optional<bool> enabled;
 	std::string id;
 	std::optional<std::any> model_restriction_mode;
-	std::optional<int> monthly_limit_cost_nanos;
-	std::optional<int> monthly_limit_requests;
 	std::string name;
 	std::optional<bool> privacy_enable_free_may_publish_prompts;
 	std::optional<bool> privacy_enable_free_may_train;
@@ -1641,23 +1637,11 @@ struct Guardrail {
 	std::optional<bool> sensitive_info_enabled;
 	std::optional<std::vector<std::map<std::string, std::any>>> sensitive_info_rules;
 	std::optional<std::string> updated_at;
-	std::optional<int> weekly_limit_cost_nanos;
-	std::optional<int> weekly_limit_requests;
 	std::string workspace_id;
-};
-
-struct GuardrailBudgetInput {
-	std::optional<int> dailyCostNanos;
-	std::optional<int> dailyRequests;
-	std::optional<int> monthlyCostNanos;
-	std::optional<int> monthlyRequests;
-	std::optional<int> weeklyCostNanos;
-	std::optional<int> weeklyRequests;
 };
 
 struct GuardrailCreateRequest {
 	std::vector<std::string> allowedApiModelIds;
-	std::map<std::string, std::any> budgets;
 	std::optional<std::string> description;
 	std::optional<bool> enabled;
 	std::any modelRestrictionMode;
@@ -1739,7 +1723,6 @@ struct GuardrailMemberListResponse {
 
 struct GuardrailPolicyInput {
 	std::vector<std::string> allowedApiModelIds;
-	std::map<std::string, std::any> budgets;
 	std::optional<std::string> description;
 	std::optional<bool> enabled;
 	std::any modelRestrictionMode;
@@ -1769,7 +1752,6 @@ struct GuardrailResponse {
 
 struct GuardrailUpdateRequest {
 	std::vector<std::string> allowedApiModelIds;
-	std::map<std::string, std::any> budgets;
 	std::optional<std::string> description;
 	std::optional<bool> enabled;
 	std::any modelRestrictionMode;

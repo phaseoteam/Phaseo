@@ -1,0 +1,9 @@
+---
+title: "支出ルールを作成"
+sidebarTitle: "ルールを作成"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /spend-rules"
+description: "支出アラートを作成します。上限を超えたリクエストをブロックするアラートも作成できます。"
+---
+
+`spend_rules:write` が必要です。OAuth の呼び出し元はワークスペースのオーナーまたは管理者である必要があります。各金額は USD（`*_usd`）またはナノドル（`*_nanos`）のどちらか一方で送信してください。ワークスペースあたり 50 件まで作成できます。指標、ベース、スコープ、期間は[支出アラートのガイド](../../guides/spend-alerts.mdx)を参照してください。

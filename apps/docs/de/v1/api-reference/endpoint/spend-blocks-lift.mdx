@@ -1,0 +1,9 @@
+---
+title: "Ausgabensperre aufheben"
+sidebarTitle: "Sperre aufheben"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /spend-blocks/{id}/lift"
+description: "Lässt Anfragen im Geltungsbereich einer Ausgabensperre wieder durch."
+---
+
+Erfordert `spend_rules:write`. OAuth-Aufrufer müssen Inhaber oder Administratoren des Arbeitsbereichs sein. Die Sperre beginnt im selben Zeitraum nicht erneut (bei rollierenden Regeln für ein Zeitfenster), und eine **Ausgabensperren**-Benachrichtigung wird gesendet. Anfragen sehen die Änderung nach etwa einer Minute.

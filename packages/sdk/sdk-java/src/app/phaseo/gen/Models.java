@@ -1631,14 +1631,10 @@ public final class Models {
 	public static class Guardrail {
 		public java.util.List<String> allowed_api_model_ids;
 		public String created_at;
-		public Integer daily_limit_cost_nanos;
-		public Integer daily_limit_requests;
 		public String description;
 		public Boolean enabled;
 		public String id;
 		public Object model_restriction_mode;
-		public Integer monthly_limit_cost_nanos;
-		public Integer monthly_limit_requests;
 		public String name;
 		public Boolean privacy_enable_free_may_publish_prompts;
 		public Boolean privacy_enable_free_may_train;
@@ -1654,23 +1650,11 @@ public final class Models {
 		public Boolean sensitive_info_enabled;
 		public java.util.List<Object> sensitive_info_rules;
 		public String updated_at;
-		public Integer weekly_limit_cost_nanos;
-		public Integer weekly_limit_requests;
 		public String workspace_id;
-	}
-
-	public static class GuardrailBudgetInput {
-		public Integer dailyCostNanos;
-		public Integer dailyRequests;
-		public Integer monthlyCostNanos;
-		public Integer monthlyRequests;
-		public Integer weeklyCostNanos;
-		public Integer weeklyRequests;
 	}
 
 	public static class GuardrailCreateRequest {
 		public java.util.List<String> allowedApiModelIds;
-		public Object budgets;
 		public String description;
 		public Boolean enabled;
 		public Object modelRestrictionMode;
@@ -1752,7 +1736,6 @@ public final class Models {
 
 	public static class GuardrailPolicyInput {
 		public java.util.List<String> allowedApiModelIds;
-		public Object budgets;
 		public String description;
 		public Boolean enabled;
 		public Object modelRestrictionMode;
@@ -1782,7 +1765,6 @@ public final class Models {
 
 	public static class GuardrailUpdateRequest {
 		public java.util.List<String> allowedApiModelIds;
-		public Object budgets;
 		public String description;
 		public Boolean enabled;
 		public Object modelRestrictionMode;

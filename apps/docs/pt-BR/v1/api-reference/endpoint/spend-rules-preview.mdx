@@ -1,0 +1,9 @@
+---
+title: "Pré-visualizar uma regra de gastos"
+sidebarTitle: "Pré-visualizar regra"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/preview"
+description: "Mostra o valor atual, a base e o próximo limite de uma regra de gastos."
+---
+
+Requer `spend_rules:read`. Nada é enviado nem registrado. Regras de previsão, pico e saldo incluem o próprio objeto `forecast`, `spike` ou `balance`.

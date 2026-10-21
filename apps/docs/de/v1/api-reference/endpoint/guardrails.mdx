@@ -10,7 +10,7 @@ Für die Guardrail-Verwaltung ist ein Management-API-Schlüssel erforderlich. Le
 
 Mit Guardrails kannst du Datenschutzkontrollen, Anbieter- und Modellbeschränkungen, den Umgang mit Prompt-Injection und Richtlinien für vertrauliche Informationen anwenden. Ein Guardrail kann API-Schlüsseln, Arbeitsbereichsmitgliedern oder beiden zugewiesen werden.
 
-Guardrails erzwingen keine Anfrage- oder Ausgabenlimits. Die Eingabe `budgets` und die Felder `*_limit_requests` und `*_limit_cost_nanos` werden aus Kompatibilitätsgründen angenommen und zurückgegeben, haben aber keine Wirkung. Verwende stattdessen [Limits für API-Schlüssel](./keys-update.mdx) oder [Arbeitsbereichsbudgets](./budgets-list.mdx).
+Guardrails begrenzen weder Anfragen noch Ausgaben. Verwende stattdessen [Limits für API-Schlüssel](./keys-update.mdx), [Arbeitsbereichsbudgets](./budgets-list.mdx) oder [Ausgabenwarnungen](../../guides/spend-alerts.mdx). Die Eingabe `budgets` und die Felder `*_limit_requests` und `*_limit_cost_nanos` wurden aus Guardrails entfernt; ein Client, der sie noch sendet, wird nicht abgewiesen, und sie werden ignoriert.
 
 Erfolgreiche Änderungen aktualisieren den Richtlinienstatus des Arbeitsbereichs und erscheinen im Auditprotokoll.
 

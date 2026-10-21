@@ -1,0 +1,9 @@
+---
+title: "支出ブロックを一覧表示"
+sidebarTitle: "ブロックを一覧表示"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /spend-blocks"
+description: "リクエストを拒否している支出ルールのブロックを一覧表示します。"
+---
+
+`spend_rules:read` が必要です。OAuth の呼び出し元はワークスペースのオーナーまたは管理者である必要があります。解除済みのブロックも含めるには `include_lifted=true` を追加します。ブロックはベストエフォートです。[リクエストのブロック](../../guides/spend-alerts.mdx#block-requests)を参照してください。

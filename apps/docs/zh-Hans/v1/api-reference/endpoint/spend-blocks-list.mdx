@@ -1,0 +1,9 @@
+---
+title: "列出支出拦截"
+sidebarTitle: "列出拦截"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /spend-blocks"
+description: "列出正在拒绝请求的支出规则拦截。"
+---
+
+需要 `spend_rules:read`。OAuth 调用方必须是工作区所有者或管理员。添加 `include_lifted=true` 可包含已解除的拦截。拦截为尽力而为，见[拦截请求](../../guides/spend-alerts.mdx#block-requests)。

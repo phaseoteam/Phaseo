@@ -1,0 +1,9 @@
+---
+title: "حذف قاعدة إنفاق"
+sidebarTitle: "حذف قاعدة"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml DELETE /spend-rules/{id}"
+description: "يحذف قاعدة إنفاق ويرفع أي حظر بدأته."
+---
+
+يتطلب `spend_rules:delete`. تتوقف القاعدة عن التقييم ولا تُحتسب ضمن حد الـ 50 قاعدة. يُرفع حظرها النشط إن وُجد.

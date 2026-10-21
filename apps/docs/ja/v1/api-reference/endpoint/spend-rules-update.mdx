@@ -1,0 +1,9 @@
+---
+title: "支出ルールを更新"
+sidebarTitle: "ルールを更新"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml PATCH /spend-rules/{id}"
+description: "支出ルールのフィールド、通知先、アクションを変更します。"
+---
+
+`spend_rules:write` が必要です。送信したフィールドは保存済みのルールに統合され、ルール全体が再度チェックされます。`destination_ids` はルールの通知先を置き換えます。省略すると現在の通知先が維持されます。ブロックするルールのアクション、スコープ、期間、ベースを変更すると、有効なブロックは解除されます。

@@ -1,0 +1,222 @@
+---
+title: "Spend Alerts"
+description: "Get alerts on spend, budgets, forecasts, spikes and low balance, and block requests once spend passes a limit."
+"og:image": "https://phaseo.app/og/dynamic?title=Spend%20Alerts&description=Get%20alerts%20on%20spend%2C%20budgets%2C%20forecasts%2C%20spikes%20and%20low%20balance%2C%20and%20block%20requests%20once%20spend%20passes%20a%20limit.&pathname=/docs/v1/guides/spend-alerts"
+icon: "badge-dollar-sign"
+---
+
+Spend rules watch your workspace's spend and send an alert when it crosses a threshold. A rule can also block requests once spend goes past a grace margin. Every plan can create up to 50 rules per workspace.
+
+<Note>Spend alerts, blocking and spend reports are being rolled out. Until they are switched on, rules and settings are saved but nothing is evaluated, blocked or sent.</Note>
+
+## How a rule works
+
+A rule combines:
+
+- a **metric**: what is measured (see [alert types](#alert-types-and-bases));
+- a **scope**: whose spend counts, such as the workspace, one API key or one department;
+- a **period**: a calendar day, week or month, or a rolling window of hours;
+- **thresholds**: the dollar amount or percentages that send an alert;
+- an **action**: `notify`, or `block` to also refuse requests past a limit.
+
+Phaseo evaluates rules from recorded usage, a few minutes after requests finish. Workspaces with rules are also checked every hour, and balance rules every 15 minutes. Spend includes video, batch, music and realtime jobs.
+
+To create a rule, open **Gateway → Settings → Notifications → Spend alerts** and select **Add alert**. The editor shows the current value of a saved rule and can send a test alert. The API key page and the budgets page have shortcuts that open the editor with the key's limit or the budget as the base. Members can see rules; owners and admins create, change, test and delete them.
+
+## Alert types and bases
+
+| Metric | Sends an alert when | Periods |
+| --- | --- | --- |
+| `spend` | spend in the period reaches `threshold_amount` | any |
+| `budget_percent` | spend reaches a percentage of a base, up to five thresholds such as 50, 80 and 100 | any |
+| `forecast` | spend projected to the end of the period reaches an amount, or a percentage of a base | day, week, month |
+| `spike` | spend in the last few hours is several times the usual spend | rolling |
+| `balance` | the available balance falls to an amount, or would last fewer than a number of days | rolling, workspace scope only |
+
+Percentages are measured against a base (`base_kind`):
+
+- `amount`: a dollar amount set on the rule, used only for alerts.
+- `workspace_budget`: the workspace budget with the matching interval (`base_ref`: `daily` for a day period, `weekly` for a week, `monthly` for a month). A lifetime budget cannot be a base.
+- `key_limit`: the spend limit of the rule's API key for the matching window. Needs the key scope.
+- `previous_period`: spend at the same point in the previous period, such as "yesterday by this time". For rolling rules it is the window before; for forecasts it is the whole previous period.
+
+A rule whose base is missing, such as a deleted budget or a key without a spend limit, sends nothing until the base exists again. Guardrails have no spend limits and cannot be a base.
+
+## Scopes
+
+| Scope | `scope_id` | Counts |
+| --- | --- | --- |
+| `workspace` | none | all of the workspace's spend |
+| `key` | API key ID | requests made with the key |
+| `member` | the member's user ID | requests made with keys the member created, plus the member's own OAuth requests |
+| `department` | department ID | everything done by people in the department (see below) |
+| `model` | model ID, such as `openai/gpt-5` | requests served by the model |
+| `provider` | provider ID | requests served by the provider |
+
+Department spend is attributed per request:
+
+1. A key assigned to a department counts only toward that department.
+2. Otherwise, the key's creator decides: their departments, or for OAuth requests, the signed-in user's departments.
+3. Someone in several departments counts toward **all** of them by default. Choose **Primary department only** instead of **All their departments** in **Workspace spend settings** (API: `spend.department_attribution: "primary"`) to count only their primary department. Without a department marked primary, a department they were added to by hand comes first, then the oldest.
+
+Department membership is read each time the rule is evaluated, so moving someone to another department moves their spend for the current period with them. Because a person can count toward several departments, department totals can add up to more than the workspace total. Usage from before September 2026 is not attributed to members or departments.
+
+## Periods and time zones
+
+Day, week and month are calendar periods. Weeks run Monday to Sunday. Each rule can set its own IANA `time_zone`, such as `Europe/London` or `America/New_York`; otherwise it uses the workspace's billing time zone, which defaults to UTC. Change the billing time zone in **Workspace spend settings** or with `spend.billing_time_zone` in the [notification settings API](../api-reference/endpoint/notifications-settings-update.mdx). Daylight saving time changes are handled, and zone names are case-sensitive.
+
+A `rolling` period covers the last `window_hours` (1 to 720) and moves continuously. Spike rules use it as the spike window, and balance rules as the time over which they average spend.
+
+<Note>[Key limits](../api-reference/limits.mdx#key-limits-and-budgets) and [workspace budgets](../api-reference/endpoint/budgets-list.mdx) always reset on UTC boundaries. A rule with a `workspace_budget` or `key_limit` base in another time zone compares its own local day, week or month with that limit, so its spend can differ from what the limit counts.</Note>
+
+## Thresholds and repeat alerts
+
+A rule has one to five percentage thresholds (1 to 1000) or one dollar threshold, depending on its metric.
+
+- On calendar periods, each threshold sends at most one alert per period. When spend crosses several thresholds at once, one alert names the highest and lists the others.
+- Rolling, spike and balance rules use `cooldown_minutes` (5 to 43,200, default 360) instead. During the cooldown only a higher threshold sends an alert; after it, the rule alerts again if spend is still over.
+- Thresholds already sent this period are not sent again when you edit the rule.
+
+**Send test** delivers the alert the rule would send now, marked `[TEST]`, to the rule's destinations. Nothing is recorded, and a workspace can send five tests a minute. Each rule's **History** lists the alerts and blocks it has sent.
+
+## Block requests
+
+A `spend` or `budget_percent` rule with `action: "block"` warns at its thresholds and blocks once spend reaches the block point: `block_at_percent` of the base (default 110, at least the highest threshold), or `block_at_amount` for a `spend` rule. Rules with a `previous_period` base cannot block. The space between the last alert and the block point is the grace margin: your team gets warned before requests stop.
+
+<Warning>Blocking is best effort. It uses recorded usage, so a block starts a few minutes after spend passes the block point, and spend can go past it in that time. For a hard cap that is checked on every request, use key limits or workspace budgets.</Warning>
+
+| | Spend rule block | Key limit | Workspace budget |
+| --- | --- | --- | --- |
+| Checked | every few minutes, from recorded usage | on every request | on every request |
+| Scope | workspace, key, member, department, model or provider | one key | the workspace |
+| Periods | day, week, month or rolling, in any time zone | UTC day, week or month | UTC day, week or month, or lifetime |
+| Free models | not blocked unless `block_free_models` is true | counted | counted |
+| Warning first | yes, at the rule's thresholds | no | no |
+| Lifting | by an owner or admin, for the rest of the period | raise the limit | raise the budget |
+
+While a block is active, requests in its scope get `429` with the `spend_rule_blocked` error code. The body includes `reason: "spend_rule_block"`, `rule_id`, `rule_name`, `block_id`, `limit_scope`, `limit_value` (USD) and `reset_at`. `Retry-After` gives the seconds until the period resets. A rolling rule has no reset time: its block lasts until spend in the window falls below the block point, and the response has no `Retry-After`. A provider block removes that provider's routes, and the request is refused only when no other route is left. Realtime sessions are not blocked yet.
+
+While spend is past the rule's last threshold but below its block point, responses to requests in scope carry an `x-phaseo-spend-warning` header listing up to three rules, for example `rule_id=…; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Clients can log it or slow down before the block starts.
+
+A block lifts by itself when the period resets, when a rolling rule's spend falls below its block point, or when the rule is disabled, deleted or changed. Owners and admins can lift it in **Spend alerts → Active blocks** or with [`POST /v1/spend-blocks/{id}/lift`](../api-reference/endpoint/spend-blocks-lift.mdx). A lifted block does not start again in the same period (for rolling rules, for one window). Spend block notifications are sent when a block starts and when it lifts.
+
+## Balance and runway
+
+A `balance` rule watches the workspace's available balance: its credit balance less amounts held for requests in progress. It uses the workspace scope and a rolling period, and alerts when either condition is met:
+
+- `threshold_amount`: the available balance is at or below this amount;
+- `runway_days`: at the average daily spend over the last `window_hours`, the balance would last fewer than this many days. Without recent spend, there is no runway alert.
+
+A balance rule alerts once per drop. It alerts again only after the balance has recovered and dropped again, and not more often than its cooldown. No alert is sent while auto top-up is on and working.
+
+The low-balance email in **Settings → Credits** stays as the simple default. It is sent once each time the balance drops below its threshold, at most every six hours, and not while auto top-up is working. Use a balance rule for runway alerts, other destinations or a different threshold.
+
+## Forecast
+
+A `forecast` rule projects spend to the end of the current day, week or month in a straight line: spend so far, divided by the share of the period that has passed. It waits until 3 hours of a day, 24 hours of a week or 72 hours of a month have passed, and until at least $0.01 has been spent, so a quiet start does not set off an alert. The alert says when the limit will be reached at the current pace.
+
+Set a dollar `threshold_amount`, or a base with percentages. With a `previous_period` base, the projection is compared with the whole of the previous period. Each threshold alerts once per period.
+
+## Spike
+
+A `spike` rule compares spend in the last `window_hours` (1 to 56) with the usual spend for that time:
+
+- For windows under 24 hours, the usual spend is the median of the same hours on each of the previous seven days. For longer windows, it is the median of the earlier windows of the same length in the previous seven days.
+- It alerts when spend is at least `spike_multiplier` times the usual (default 3) and at least `spike_floor` (default $5).
+- It needs workspace spend in at least three of those earlier windows. Until then the editor shows that it is still learning. When the usual spend is zero, only the floor applies.
+- It uses a cooldown (default 6 hours) and never blocks.
+
+The comparison uses exact 24-hour steps, so after a daylight saving change it compares with an hour earlier or later on the local clock. Spike rules are checked when new usage arrives.
+
+## Spend reports
+
+Owners get a weekly spend report by default, and admins can opt in. Daily and monthly reports are also available. The [workspace notifications guide](./workspace-notifications.mdx#spend-reports) covers the settings and contents. Also:
+
+- A report is sent between 09:00 and 21:00 in the billing time zone on the first day after its period. If it cannot be sent that day, it is skipped rather than sent late.
+- The forecast in a report is for the current billing month.
+- Member and department totals include async jobs and follow the department rule above, so they can differ slightly from the total.
+- Each person unsubscribes from their own copy of a workspace's report. Members who are not owners or admins never get it.
+
+## Routing and destinations
+
+Spend rules send three kinds of notification. Choose where each goes in **Settings → Notifications**:
+
+| Route | Kind | Sent when |
+| --- | --- | --- |
+| Spend Alerts | `spend_alert` | a rule's threshold is crossed |
+| Spend Blocks | `spend_blocked` | a block starts or lifts (`payload.state` is `started` or `lifted`) |
+| Spend Reports | `spend_report` | a spend report is due |
+
+A rule can have its own destinations. They replace the Spend Alerts and Spend Blocks routes for that rule; if they are all paused, the rule's alerts are not sent to the routes instead. Alerts and blocks also reach the mobile app for owners and admins, and for the key's creator or the member a rule is about.
+
+Custom webhooks receive the alert as JSON, with `title`, `message`, `rule_id`, `rule_name`, `metric`, `scope`, `period`, `value_nanos` and, depending on the metric, `base_nanos`, `forecast`, `spike` or the balance fields. Verify each delivery with its signature; see [Verify webhook signatures](./workspace-notifications.mdx#verify-webhook-signatures).
+
+## Manage rules with the API
+
+The [spend rules API](../api-reference/endpoint/spend-rules-list.mdx) uses a management key with `spend_rules:read`, `spend_rules:write` or `spend_rules:delete`. Amounts can be sent in dollars (`threshold_amount_usd`) or exactly in nanodollars (`threshold_amount_nanos`), and responses include both.
+
+```bash
+curl https://api.phaseo.app/v1/spend-rules \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Monthly budget",
+    "metric": "budget_percent",
+    "period": "month",
+    "base_kind": "workspace_budget",
+    "base_ref": "monthly",
+    "threshold_percents": [50, 80, 100],
+    "action": "block",
+    "block_at_percent": 110
+  }'
+```
+
+Use [`GET /v1/spend-rules/{id}/preview`](../api-reference/endpoint/spend-rules-preview.mdx) to see the current value and the next threshold, and [`POST /v1/spend-rules/{id}/test`](../api-reference/endpoint/spend-rules-test.mdx) to send a test. [`GET /v1/spend-blocks`](../api-reference/endpoint/spend-blocks-list.mdx) lists active blocks. The billing time zone, department attribution and report settings are in the `spend` object of the [notification settings](../api-reference/endpoint/notifications-settings-update.mdx).
+
+## Manage rules with Terraform
+
+The [Phaseo Terraform provider](https://github.com/phaseoteam/terraform-provider-phaseo) (`phaseoteam/phaseo`) has `phaseo_spend_rule` and `phaseo_workspace_budget` resources, and `phaseo_spend_rules`, `phaseo_spend_blocks` and `phaseo_workspace_budgets` data sources.
+
+```hcl
+resource "phaseo_workspace_budget" "monthly" {
+  interval = "monthly"
+  limit    = 500
+}
+
+resource "phaseo_spend_rule" "monthly_budget" {
+  name               = "Monthly budget"
+  metric             = "budget_percent"
+  period             = "month"
+  base_kind          = "workspace_budget"
+  base_ref           = "monthly"
+  threshold_percents = [50, 80, 100]
+  action             = "block"
+  block_at_percent   = 110
+
+  depends_on = [phaseo_workspace_budget.monthly]
+}
+
+resource "phaseo_spend_rule" "spike" {
+  name             = "Spend spike"
+  metric           = "spike"
+  period           = "rolling"
+  window_hours     = 3
+  spike_multiplier = 4
+}
+```
+
+Import an existing rule or budget by its ID:
+
+```bash
+terraform import phaseo_spend_rule.monthly_budget 11111111-1111-4111-8111-111111111111
+```
+
+<Visibility for="agents">
+Spend rule rules for agents, summarising this page:
+
+- Spend rule blocks are best effort and start minutes after the limit; for exact caps use key limits or workspace budgets.
+- A blocked request returns `429` with `spend_rule_blocked`, `rule_id`, `block_id` and `reset_at`. Wait for `Retry-After`; without it the block lasts until spend in the rolling window falls, or an owner or admin lifts it with `POST /v1/spend-blocks/{id}/lift`. Do not retry in a loop.
+- `x-phaseo-spend-warning` on a response means a blocking rule is past its last alert threshold; a block may follow.
+- Free models are not blocked unless the rule sets `block_free_models`.
+- Calendar periods use the rule's time zone (default: the workspace billing time zone, default UTC); key limits and workspace budgets use UTC.
+</Visibility>

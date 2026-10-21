@@ -1,0 +1,9 @@
+---
+title: "Lever un blocage de dépenses"
+sidebarTitle: "Lever un blocage"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /spend-blocks/{id}/lift"
+description: "Laisse de nouveau passer les requêtes dans la portée d'un blocage de dépenses."
+---
+
+Nécessite `spend_rules:write`. Les appelants OAuth doivent être propriétaires ou administrateurs de l'espace de travail. Le blocage ne reprend pas pendant la même période (pour les règles glissantes, pendant une fenêtre) et une notification **Blocages de dépenses** est envoyée. Les requêtes voient le changement en une minute environ.

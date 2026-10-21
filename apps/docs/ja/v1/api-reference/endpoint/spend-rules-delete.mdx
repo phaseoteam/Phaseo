@@ -1,0 +1,9 @@
+---
+title: "支出ルールを削除"
+sidebarTitle: "ルールを削除"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml DELETE /spend-rules/{id}"
+description: "支出ルールを削除し、そのルールが開始したブロックを解除します。"
+---
+
+`spend_rules:delete` が必要です。ルールは評価されなくなり、50 件の上限にも数えられなくなります。有効なブロックがあれば解除されます。

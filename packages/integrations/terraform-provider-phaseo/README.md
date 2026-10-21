@@ -1,6 +1,6 @@
 # Terraform Provider for Phaseo
 
-Manage Phaseo infrastructure with Terraform. The provider currently supports Gateway API keys, guardrails, BYOK provider credentials, SCIM group mappings, and observability destinations through Phaseo's management API. Read-only data sources expose models, providers, and credits.
+Manage Phaseo infrastructure with Terraform. The provider currently supports Gateway API keys, guardrails, BYOK provider credentials, SCIM group mappings, observability destinations, spend rules, and workspace budgets through Phaseo's management API. Read-only data sources expose models, providers, credits, spend rules, active spend blocks, and workspace budgets with live usage.
 
 ## Supported surface
 
@@ -11,12 +11,17 @@ Resources:
 - `phaseo_provider_credential`
 - `phaseo_scim_group_mapping`
 - `phaseo_observability_destination`
+- `phaseo_spend_rule`
+- `phaseo_workspace_budget`
 
 Data sources:
 
 - `phaseo_models`
 - `phaseo_providers`
 - `phaseo_credits`
+- `phaseo_spend_rules`
+- `phaseo_spend_blocks`
+- `phaseo_workspace_budgets`
 
 The catalogue data sources currently return canonical API output through a computed `json` attribute. Typed catalogue fields can be added without changing the underlying API.
 
@@ -64,7 +69,7 @@ go build .
 
 This directory is the source of truth. Merges to the Phaseo monorepo are tested and mirrored with provider-only history to the public `phaseoteam/terraform-provider-phaseo` repository. See [RELEASING.md](RELEASING.md) for repository setup and release instructions.
 
-Both resources support import by UUID:
+Every resource supports import by UUID:
 
 ```shell
 terraform import phaseo_api_key.application 11111111-1111-4111-8111-111111111111

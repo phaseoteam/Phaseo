@@ -49,8 +49,6 @@ import {
 	getSensitiveInfoRuleDefinitions,
 } from "./sensitiveInfoPreview";
 
-const NANOS_PER_USD = 1_000_000_000;
-
 type ProviderOption = { id: string; name: string };
 type ActiveProviderModel = {
 	providerId: string;
@@ -79,12 +77,6 @@ type GuardrailRow = {
 	sensitive_info_enabled?: boolean | null;
 	sensitive_info_default_action?: string | null;
 	sensitive_info_rules?: SensitiveInfoRulePayload[] | null;
-	daily_limit_requests?: number | null;
-	weekly_limit_requests?: number | null;
-	monthly_limit_requests?: number | null;
-	daily_limit_cost_nanos?: number | null;
-	weekly_limit_cost_nanos?: number | null;
-	monthly_limit_cost_nanos?: number | null;
 };
 
 function normalizeMode(value: unknown): ProviderRestrictionMode {
@@ -298,26 +290,6 @@ function SelectionDialog(props: {
 			</DialogContent>
 		</Dialog>
 	);
-}
-
-function formatUsdFromNanos(nanos: number): string {
-	if (!Number.isFinite(nanos) || nanos <= 0) return "";
-	const usd = nanos / NANOS_PER_USD;
-	return String(usd);
-}
-
-function parseUsdToNanos(value: string): number | null | undefined {
-	if (!value || value.trim().length === 0) return null;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0) return undefined;
-	return Math.round(parsed * NANOS_PER_USD);
-}
-
-function parseInteger(value: string): number | null | undefined {
-	if (!value || value.trim().length === 0) return null;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0) return undefined;
-	return Math.floor(parsed);
 }
 
 function GuardrailsSection(props: {
