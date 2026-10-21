@@ -670,7 +670,19 @@ export function applySensitiveInfoGuardrails(args: {
 		if (redacted.text === target.text) continue;
 		redactionCount += redacted.redactionCount;
 		setPathValue(nextBody, target.path, redacted.text);
-		setPathValue(nextRawBody, target.path, redacted.text);
+		if (!args.templateVariables) setPathValue(nextRawBody, target.path, redacted.text);
+	}
+	// A template adds turns ahead of the caller's input, so merged-body paths do not
+	// line up with the raw body. Redact the caller's own content at its own paths.
+	if (args.templateVariables) {
+		for (const target of collectSensitiveInfoTargets(args.endpoint, args.rawBody)) {
+			const targetMatches = analyzeSensitiveInfoText(target.text, rules).filter(
+				(match) => match.action === "redact",
+			);
+			if (targetMatches.length === 0) continue;
+			const redacted = redactText(target.text, targetMatches);
+			if (redacted.text !== target.text) setPathValue(nextRawBody, target.path, redacted.text);
+		}
 	}
 	for (const target of variableTargets) {
 		const targetMatches = analyzeSensitiveInfoText(target.text, rules).filter(

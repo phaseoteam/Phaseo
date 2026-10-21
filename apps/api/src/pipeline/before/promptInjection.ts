@@ -705,7 +705,17 @@ export function applyPromptInjectionGuardrails(args: {
 		if (redactedText === target.text) continue;
 		redactionCount += targetMatches.length;
 		setPathValue(nextBody, target.path, redactedText);
-		setPathValue(nextRawBody, target.path, redactedText);
+		if (!args.templateVariables) setPathValue(nextRawBody, target.path, redactedText);
+	}
+	// A template adds turns ahead of the caller's input, so merged-body paths do not
+	// line up with the raw body. Redact the caller's own content at its own paths.
+	if (args.templateVariables) {
+		for (const target of collectPromptInjectionTargets(args.endpoint, args.rawBody)) {
+			const targetMatches = analyzePromptInjectionText(target.text);
+			if (targetMatches.length === 0) continue;
+			const redactedText = redactText(target.text, targetMatches);
+			if (redactedText !== target.text) setPathValue(nextRawBody, target.path, redactedText);
+		}
 	}
 	for (const target of variableTargets) {
 		const targetMatches = analyzePromptInjectionText(target.text);
