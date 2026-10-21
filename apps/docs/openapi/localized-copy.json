@@ -8963,6 +8963,46 @@
 			"ja": "以前の音声レスポンスです。音声での会話を続けるために、アシスタントメッセージでその ID (message.audio.id) を指定して送り返します。OpenAI と Azure OpenAI のルートはこれを受け付けます。その他のプロバイダーはこれを破棄し、messages.audio を破棄されたパラメーターとして報告します。",
 			"zh-Hans": "之前的音频响应，在助手消息中通过其 id（message.audio.id）发回，以继续音频对话。OpenAI 和 Azure OpenAI 路由会接受它；其他提供商会丢弃它，并将 messages.audio 报告为已丢弃的参数。",
 			"ar": "استجابة صوتية سابقة تُعاد في رسالة المساعد عبر معرّفها (message.audio.id) لمتابعة محادثة صوتية. تقبلها مسارات OpenAI وAzure OpenAI؛ أما المزوّدون الآخرون فيتجاهلونها ويُبلغون عن messages.audio كمعامل متجاهَل."
+		},
+		"Messages with variable placeholders that the gateway fills in for each request, and the variables they take.": {
+			"es": "Mensajes con marcadores de variables que el gateway rellena en cada solicitud, y las variables que reciben.",
+			"fr": "Messages contenant des espaces réservés de variables que la passerelle remplit à chaque requête, et les variables qu’ils acceptent.",
+			"de": "Nachrichten mit Variablen-Platzhaltern, die das Gateway bei jeder Anfrage ausfüllt, und die Variablen, die sie erwarten.",
+			"pt-BR": "Mensagens com marcadores de variáveis que o gateway preenche em cada solicitação, e as variáveis que elas recebem.",
+			"hi": "वेरिएबल प्लेसहोल्डर वाले संदेश, जिन्हें गेटवे हर अनुरोध के लिए भरता है, और वे वेरिएबल जो वे लेते हैं।",
+			"ja": "変数プレースホルダーを含むメッセージ（ゲートウェイがリクエストごとに埋めます）と、それらが受け取る変数。",
+			"zh-Hans": "包含变量占位符的消息（网关会在每个请求中填入），以及它们接受的变量。",
+			"ar": "رسائل تحتوي على عناصر نائبة للمتغيرات تملؤها البوابة في كل طلب، والمتغيرات التي تأخذها."
+		},
+		"Fills in the prompt template saved on a preset. Leave out model or set it to the same reference, and send an empty conversation or the turns to add after the template.": {
+			"es": "Rellena la plantilla de prompt guardada en un preset. Omite model o usa la misma referencia, y envía una conversación vacía o los turnos que se añadirán después de la plantilla.",
+			"fr": "Remplit le modèle de prompt enregistré sur un preset. Omettez model ou indiquez la même référence, et envoyez une conversation vide ou les tours à ajouter après le modèle.",
+			"de": "Füllt die in einem Preset gespeicherte Prompt-Vorlage aus. Lassen Sie model weg oder setzen Sie dieselbe Referenz, und senden Sie eine leere Unterhaltung oder die Nachrichten, die nach der Vorlage folgen sollen.",
+			"pt-BR": "Preenche o template de prompt salvo em um preset. Omita model ou use a mesma referência, e envie uma conversa vazia ou os turnos a adicionar depois do template.",
+			"hi": "किसी प्रीसेट पर सहेजे गए प्रॉम्प्ट टेम्पलेट को भरता है। model छोड़ दें या उसे इसी संदर्भ पर सेट करें, और खाली बातचीत भेजें या वे टर्न भेजें जो टेम्पलेट के बाद जोड़ने हैं।",
+			"ja": "プリセットに保存されたプロンプトテンプレートを埋めます。model は省略するか同じ参照を指定し、空の会話か、テンプレートの後に追加するターンを送信してください。",
+			"zh-Hans": "填充保存在预设中的提示词模板。可省略 model 或将其设为同一引用，并发送空对话或要追加在模板之后的轮次。",
+			"ar": "يملأ قالب الموجّه المحفوظ في إعداد مسبق. اترك model أو اضبطه على المرجع نفسه، وأرسل محادثة فارغة أو الأدوار التي تُضاف بعد القالب."
+		},
+		"Preset reference starting with @, such as @support-triage or @publisher/support-triage.": {
+			"es": "Referencia del preset que empieza por @, como @support-triage o @publisher/support-triage.",
+			"fr": "Référence du preset commençant par @, comme @support-triage ou @publisher/support-triage.",
+			"de": "Preset-Referenz, die mit @ beginnt, etwa @support-triage oder @publisher/support-triage.",
+			"pt-BR": "Referência do preset que começa com @, como @support-triage ou @publisher/support-triage.",
+			"hi": "@ से शुरू होने वाला प्रीसेट संदर्भ, जैसे @support-triage या @publisher/support-triage।",
+			"ja": "@ で始まるプリセット参照（例: @support-triage、@publisher/support-triage）。",
+			"zh-Hans": "以 @ 开头的预设引用，例如 @support-triage 或 @publisher/support-triage。",
+			"ar": "مرجع الإعداد المسبق الذي يبدأ بـ @، مثل @support-triage أو @publisher/support-triage."
+		},
+		"Values for the template variables. Image variables take an https URL, a data URL or an image part.": {
+			"es": "Valores para las variables de la plantilla. Las variables de imagen aceptan una URL https, una URL de datos o una parte de imagen.",
+			"fr": "Valeurs des variables du modèle. Les variables d’image acceptent une URL https, une URL de données ou une partie image.",
+			"de": "Werte für die Vorlagenvariablen. Bildvariablen akzeptieren eine https-URL, eine Daten-URL oder einen Bildteil.",
+			"pt-BR": "Valores para as variáveis do template. Variáveis de imagem aceitam uma URL https, uma URL de dados ou uma parte de imagem.",
+			"hi": "टेम्पलेट वेरिएबल के मान। इमेज वेरिएबल https URL, data URL या इमेज पार्ट लेते हैं।",
+			"ja": "テンプレート変数の値。画像変数には https URL、データ URL、または画像パートを指定します。",
+			"zh-Hans": "模板变量的值。图像变量接受 https URL、data URL 或图像部分。",
+			"ar": "قيم متغيرات القالب. تقبل متغيرات الصور عنوان https أو عنوان data أو جزء صورة."
 		}
 	},
 	"GET /apps": {

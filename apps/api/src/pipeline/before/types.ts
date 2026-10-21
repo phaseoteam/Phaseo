@@ -134,6 +134,8 @@ export type PresetConfig = {
         enabled?: boolean | null;
         ttlSeconds?: number | null;
     } | null;
+    /** Prompt template (messages with {{variables}}); see core/prompt-templates. */
+    prompt?: unknown;
 };
 
 /**
@@ -731,6 +733,8 @@ export type PipelineContext = {
         slug?: string | null;
         config: PresetConfig;
     } | null;
+    /** Set when the preset rendered a prompt template; variable values are not kept. */
+    promptTemplate?: ({ presetId: string; presetSlug: string | null } & import("./promptTemplate").PromptTemplateApplication) | null;
     internal?: boolean;
     /** Classifies this request with the caller's credentials during the success audit. */
     requestClassifierCall?: ClassifierCall;

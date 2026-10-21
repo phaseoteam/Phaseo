@@ -2924,6 +2924,7 @@
 		"phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible": "عند تعطيل هذا الخيار، تصبح نقاط النهاية المجانية المعلّمة بأنها تنشر المطالبات غير مؤهلة.",
 		"Store Gateway I/O logs": "تخزين سجلات Gateway I/O",
 		"phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView": "تخزين مطالبات الطلبات وإجاباتها في مساحة R2 خاصة لعرض تفاصيل السجلات.",
+		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "يكون متوقفًا ما دام عدم الاحتفاظ بأي بيانات مشترطًا. لا تُخزَّن المطالبات والردود.",
 		"90 days": "90 يومًا",
 		"180 days": "180 يومًا",
 		"365 days": "365 يومًا",

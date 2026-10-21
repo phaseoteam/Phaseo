@@ -71,6 +71,7 @@ struct AnthropicMessagesRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::vector<std::any> plugins;
+	std::map<std::string, std::any> prompt;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -578,6 +579,7 @@ struct ChatCompletionsRequest {
 	std::vector<std::any> plugins;
 	std::map<std::string, std::any> prediction;
 	std::optional<double> presence_penalty;
+	std::map<std::string, std::any> prompt;
 	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> prompt_cache_options;
 	std::any prompt_cache_retention;
@@ -2585,6 +2587,7 @@ struct Preset {
 };
 
 struct PresetConfig {
+	std::map<std::string, std::any> prompt;
 };
 
 struct PresetCreateRequest {
@@ -2608,6 +2611,29 @@ struct PresetForkRequest {
 struct PresetListResponse {
 	std::vector<std::map<std::string, std::any>> data;
 	int total_count;
+};
+
+struct PresetPromptTemplate {
+	std::vector<std::map<std::string, std::any>> messages;
+	std::map<std::string, std::any> response_format;
+	std::any syntax;
+	std::any tool_choice;
+	std::vector<std::map<std::string, std::any>> tools;
+	std::map<std::string, std::any> variables;
+};
+
+struct PresetPromptTemplateMessage {
+	std::any content;
+	std::any role;
+};
+
+struct PresetPromptVariable {
+	std::any default;
+	std::string description;
+	std::vector<std::string> enum;
+	std::optional<int> max_length;
+	std::optional<bool> required;
+	std::any type;
 };
 
 struct PresetPublisher {
@@ -2812,6 +2838,11 @@ struct PromptCacheBreakpoint {
 struct PromptCacheOptions {
 	std::any mode;
 	std::string ttl;
+};
+
+struct PromptTemplateReference {
+	std::string id;
+	std::map<std::string, std::any> variables;
 };
 
 struct Provider {
@@ -3148,6 +3179,7 @@ struct ResponsesRequest {
 	std::optional<bool> parallel_tool_calls;
 	std::vector<std::any> plugins;
 	std::string previous_response_id;
+	std::map<std::string, std::any> prompt;
 	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> prompt_cache_options;
 	std::any prompt_cache_retention;

@@ -5,6 +5,7 @@
 
 import { passthroughWithPricing, passthrough } from "./streaming";
 import { createToolCallKeyResolver, type UnifiedStreamEvent } from "./stream-events";
+import { createChatChunkAccumulator, resolveChatStreamAuditResponse } from "./chat-stream-log-snapshot";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
@@ -213,6 +214,11 @@ export async function handleStreamResponse(
     let cachedFinishReason: string | null = null;
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
+    const chatChunkAccumulator = ctx.endpoint === "chat.completions" ? createChatChunkAccumulator() : null;
+    const auditGatewayResponse = () =>
+        chatChunkAccumulator
+            ? resolveChatStreamAuditResponse(latestGatewaySnapshot, chatChunkAccumulator)
+            : latestGatewaySnapshot;
 	let streamFailed = false;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
@@ -375,6 +381,7 @@ export async function handleStreamResponse(
         priceCard: card,
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
+            chatChunkAccumulator?.add(frame);
             const includeMeta = ctx.meta.returnMeta ?? false;
             const next: any = withServedModel({ ...frame }, ctx);
             delete next.provider;
@@ -829,7 +836,7 @@ export async function handleStreamResponse(
                     normalizedFinishReason,
                     upstreamStatus,
                     result.bill.upstream_id ?? null,
-                    latestGatewaySnapshot,
+                    auditGatewayResponse(),
                 );
 
                 return true;
@@ -905,7 +912,7 @@ export async function handleStreamResponse(
                     cachedFinishReason,
                     upstreamStatus,
                     result.bill.upstream_id ?? null,
-                    latestGatewaySnapshot,
+                    auditGatewayResponse(),
                 );
                 return;
             }
@@ -986,7 +993,7 @@ export async function handleStreamResponse(
                 cachedFinishReason,
                 upstreamStatus,
                 result.bill.upstream_id ?? null,
-                latestGatewaySnapshot,
+                auditGatewayResponse(),
             );
 
             } catch (error) {
@@ -1011,7 +1018,7 @@ export async function handleStreamResponse(
                     },
                     null,
                     {
-                        gatewayResponse: latestGatewaySnapshot,
+                        gatewayResponse: auditGatewayResponse(),
                         rawUsage: usageRaw ?? latestStreamUsageRaw ?? result.bill.usage,
                         pricingCard: card,
                     },

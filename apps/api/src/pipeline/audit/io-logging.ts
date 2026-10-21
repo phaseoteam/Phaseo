@@ -1,5 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { isGatewayIoLoggingFeatureEnabled } from "@/core/feature-flags";
+import { fetchWorkspacePolicy } from "@/pipeline/before/workspacePolicy";
 
 export type GatewayIoLogStatus = "not_enabled" | "stored" | "missing_bucket" | "too_large" | "error" | "deleted";
 
@@ -44,6 +45,8 @@ export type WorkspaceIoLoggingSettings = {
     retentionDays: number;
     includeProviderPayloads: boolean;
     billingStatus: "active" | "grace" | "suspended";
+    /** Zero data retention workspaces never store request or response bodies. */
+    zeroDataRetention: boolean;
 };
 
 const DEFAULT_MAX_BYTES = 5 * 1024 * 1024;
@@ -112,13 +115,14 @@ export async function getWorkspaceIoLoggingSettings(workspaceId: string): Promis
         retentionDays: DEFAULT_RETENTION_DAYS,
         includeProviderPayloads: true,
         billingStatus: "active" as const,
+        zeroDataRetention: false,
     };
 
     try {
         const client = getSupabaseAdmin();
         const primary = await client
             .from("workspace_settings")
-            .select("io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,io_logging_billing_status")
+            .select("io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,io_logging_billing_status,privacy_zdr_only")
             .eq("workspace_id", workspaceId)
             .maybeSingle();
         let data: Record<string, any> | null = primary.data as Record<string, any> | null;
@@ -127,7 +131,7 @@ export async function getWorkspaceIoLoggingSettings(workspaceId: string): Promis
         if (error && isMissingColumnError(error, "io_logging_billing_status")) {
             const fallback = await client
                 .from("workspace_settings")
-                .select("io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads")
+                .select("io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,privacy_zdr_only")
                 .eq("workspace_id", workspaceId)
                 .maybeSingle();
             data = fallback.data as Record<string, any> | null;
@@ -151,6 +155,7 @@ export async function getWorkspaceIoLoggingSettings(workspaceId: string): Promis
                 : normalizeRetentionDays(row.io_logging_retention_days),
             includeProviderPayloads: row.io_logging_include_provider_payloads !== false,
             billingStatus,
+            zeroDataRetention: row.privacy_zdr_only === true,
         };
         settingsCache.set(workspaceId, { value, expiresAt: now + 60_000 });
         return value;
@@ -172,8 +177,12 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     const bindings = getBindings();
     // Settings are cached per isolate; the feature gate is an external HTTP
     // call, so only evaluate it for workspaces that have logging switched on.
-    const settings = await getWorkspaceIoLoggingSettings(input.workspaceId);
-    const featureEnabled = settings.enabled
+    const workspaceSettings = await getWorkspaceIoLoggingSettings(input.workspaceId);
+    const zeroDataRetention = workspaceSettings.enabled
+        ? workspaceSettings.zeroDataRetention || await keyRequiresZeroDataRetention(input)
+        : workspaceSettings.zeroDataRetention;
+    const settings = { ...workspaceSettings, zeroDataRetention };
+    const featureEnabled = settings.enabled && !zeroDataRetention
         ? await isGatewayIoLoggingFeatureEnabled({
             workspaceId: input.workspaceId,
             apiKeyId: input.keyId ?? null,
@@ -182,8 +191,41 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     return {
         ...settings,
         featureEnabled,
-        captureEnabled: featureEnabled && settings.enabled,
+        captureEnabled: featureEnabled && settings.enabled && !zeroDataRetention,
     };
+}
+
+/**
+ * The effective ZDR setting for the calling key: the workspace setting or any of
+ * the key's guardrails. This is the policy routing enforces, read through the
+ * same cache, which is invalidated when settings or guardrails change. Requests
+ * rejected before routing never carry it in their diagnostics, so it is read
+ * here rather than from the log. A failed read keeps bodies out of storage.
+ */
+async function keyRequiresZeroDataRetention(input: { workspaceId: string; keyId?: string | null }): Promise<boolean> {
+    if (!input.keyId) return false;
+    try {
+        const policy = await fetchWorkspacePolicy({ workspaceId: input.workspaceId, apiKeyId: input.keyId });
+        return policy.privacyZdrOnly === true;
+    } catch (error) {
+        console.error("[io-logging] could not read the key's data policy", {
+            workspaceId: input.workspaceId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return true;
+    }
+}
+
+/**
+ * A second check on what the request itself recorded: the routing diagnostics in
+ * the log metadata, or in the error body of a request rejected by a guardrail.
+ */
+export function requestRequiresZeroDataRetention(...sources: unknown[]): boolean {
+    return sources.some((source) => {
+        if (!source || typeof source !== "object") return false;
+        const diagnostics = (source as Record<string, any>).routing_diagnostics;
+        return diagnostics?.workspacePolicy?.privacyZdrOnly === true;
+    });
 }
 
 async function persistGatewayIoLogMetadata(
@@ -236,6 +278,12 @@ export async function persistGatewayIoLog(
     if (!policy.captureEnabled) {
         return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
     }
+    if (requestRequiresZeroDataRetention(input.metadata, input.gatewayResponse, input.providerResponse)) {
+        return finalizeGatewayIoLog(input, {
+            io_log_status: "not_enabled",
+            io_log_error: "Skipped: zero data retention is required for this request",
+        });
+    }
 
     const bucket = bindings.GATEWAY_IO_LOGS_BUCKET;
     const bucketName = bindings.GATEWAY_IO_LOGS_BUCKET_NAME ?? "gateway-io-logs";
@@ -244,7 +292,8 @@ export async function persistGatewayIoLog(
             io_log_status: "missing_bucket",
             io_log_storage_provider: "cloudflare_r2",
             io_log_bucket: bucketName,
-            io_log_error: "GATEWAY_IO_LOGS_BUCKET binding is not configured",
+            // Regional (EU and US) workers have no I/O log storage, so their requests are never stored.
+            io_log_error: "Not stored: request contents aren't kept for requests served by regional endpoints",
         });
     }
 

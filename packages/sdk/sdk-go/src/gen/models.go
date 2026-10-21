@@ -65,6 +65,7 @@ type AnthropicMessagesRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Plugins *[]interface{} `json:"plugins,omitempty"`
+	Prompt *map[string]interface{} `json:"prompt,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -1250,6 +1251,7 @@ type ChatCompletionsRequest struct {
 	Plugins *[]interface{} `json:"plugins,omitempty"`
 	Prediction *map[string]interface{} `json:"prediction,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
+	Prompt *map[string]interface{} `json:"prompt,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	PromptCacheOptions *map[string]interface{} `json:"prompt_cache_options,omitempty"`
 	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
@@ -4128,6 +4130,7 @@ type Preset struct {
 }
 
 type PresetConfig struct {
+	Prompt *map[string]interface{} `json:"prompt,omitempty"`
 }
 
 type PresetCreateRequest struct {
@@ -4151,6 +4154,29 @@ type PresetForkRequest struct {
 type PresetListResponse struct {
 	Data []map[string]interface{} `json:"data"`
 	TotalCount int `json:"total_count"`
+}
+
+type PresetPromptTemplate struct {
+	Messages []map[string]interface{} `json:"messages"`
+	ResponseFormat *map[string]interface{} `json:"response_format,omitempty"`
+	Syntax *string `json:"syntax,omitempty"`
+	ToolChoice interface{} `json:"tool_choice,omitempty"`
+	Tools *[]map[string]interface{} `json:"tools,omitempty"`
+	Variables *map[string]interface{} `json:"variables,omitempty"`
+}
+
+type PresetPromptTemplateMessage struct {
+	Content interface{} `json:"content"`
+	Role string `json:"role"`
+}
+
+type PresetPromptVariable struct {
+	Default interface{} `json:"default,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Enum *[]string `json:"enum,omitempty"`
+	MaxLength *int `json:"max_length,omitempty"`
+	Required *bool `json:"required,omitempty"`
+	Type string `json:"type"`
 }
 
 type PresetPublisher struct {
@@ -4369,6 +4395,11 @@ type PromptCacheBreakpoint struct {
 type PromptCacheOptions struct {
 	Mode *string `json:"mode,omitempty"`
 	Ttl *string `json:"ttl,omitempty"`
+}
+
+type PromptTemplateReference struct {
+	Id string `json:"id"`
+	Variables *map[string]interface{} `json:"variables,omitempty"`
 }
 
 type Provider struct {
@@ -4720,6 +4751,7 @@ type ResponsesRequest struct {
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	Plugins *[]interface{} `json:"plugins,omitempty"`
 	PreviousResponseId *string `json:"previous_response_id,omitempty"`
+	Prompt *map[string]interface{} `json:"prompt,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	PromptCacheOptions *map[string]interface{} `json:"prompt_cache_options,omitempty"`
 	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`

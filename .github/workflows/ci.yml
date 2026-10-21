@@ -181,6 +181,9 @@ jobs:
             - name: Validate shared request classifier rules
               run: pnpm run validate:request-classifiers
 
+            - name: Validate shared prompt template rules
+              run: pnpm run validate:prompt-templates
+
             - name: Validate unique Supabase migration versions
               shell: bash
               run: |

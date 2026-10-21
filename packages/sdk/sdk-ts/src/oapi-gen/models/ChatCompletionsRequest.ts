@@ -195,6 +195,12 @@ export interface ChatCompletionsRequest {
     type: "content";
   };
   presence_penalty?: number;
+  prompt?: {
+    id: string;
+    variables?: {
+      [key: string]: unknown;
+    };
+  };
   prompt_cache_key?: string | null;
   prompt_cache_options?: {
     mode?: "implicit" | "explicit";
