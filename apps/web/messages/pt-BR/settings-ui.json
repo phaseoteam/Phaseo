@@ -1439,7 +1439,9 @@
 		"secretCreated": "Segredo de assinatura criado",
 		"secretCreateFailed": "Não foi possível criar o segredo de assinatura",
 		"configurationTestUnsigned": "Testes enviados antes de salvar não são assinados. Salve o destino e envie um teste a partir dele para verificar a assinatura.",
-		"verifySignaturesLink": "Como verificar assinaturas"
+		"verifySignaturesLink": "Como verificar assinaturas",
+		"broadcastAlertsTitle": "Alertas de Transmissão",
+		"broadcastAlertsDescription": "Receba um alerta quando um destino de Transmissão continuar falhando, uma vez sempre que ele começar a falhar."
 	},
 	"contributionCopy": {
 		"summary": "Cada solicitação elegível sem BYOK recebe um desconto de {discount}%. A Phaseo mantém até 100% dos prompts e das respostas concluídos com sucesso, após remover segredos e informações pessoais, em um espaço privado dedicado por no máximo 30 dias. Atualmente, {sampleRate}% é selecionado para classificação upstream. Aqui, apenas estatísticas agregadas das tarefas são exibidas; o conteúdo bruto nunca é publicado.",

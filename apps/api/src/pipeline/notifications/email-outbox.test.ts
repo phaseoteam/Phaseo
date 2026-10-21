@@ -33,11 +33,11 @@ function buildSupabaseMock() {
 					is: () => ({
 						lt: () => ({
 							not: (column: string, operator: string, value: string) => {
-								expect([column, operator, value]).toEqual(["kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled")']);
+								expect([column, operator, value]).toEqual(["kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled","broadcast_destination_failing")']);
 								return {
 									order: () => ({
 										limit: async (limit: number) => ({
-											data: state.rows.filter((row) => !["notification_test", "model_deprecation", "feedback_request", "rate_limit_throttled"].includes(String(row.kind))).slice(0, limit),
+											data: state.rows.filter((row) => !["notification_test", "model_deprecation", "feedback_request", "rate_limit_throttled", "broadcast_destination_failing"].includes(String(row.kind))).slice(0, limit),
 											error: null,
 										}),
 									}),

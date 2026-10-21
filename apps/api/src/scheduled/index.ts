@@ -566,6 +566,19 @@ async function handleOtelExportScheduledEvent(env: GatewayBindings): Promise<voi
 	}
 }
 
+// Queues alerts for failing Broadcast destinations; the notification delivery job
+// later in this tick sends them.
+async function handleBroadcastDestinationAlertsScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const { data, error } = await getSupabaseAdmin().rpc("enqueue_broadcast_destination_alerts");
+		if (error) throw new Error(error.message || "Failed to queue Broadcast destination alerts");
+		if (Number(data ?? 0) > 0) console.log("broadcast_destination_alerts_queued", { events: Number(data) });
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleOtelExportPruneScheduledEvent(env: GatewayBindings): Promise<void> {
 	configureRuntime(env);
 	try {
@@ -772,6 +785,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleOtelExportPruneScheduledEvent(env);
 		} catch (error) {
 			console.error("otel_export_prune_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleBroadcastDestinationAlertsScheduledEvent(env);
+		} catch (error) {
+			console.error("broadcast_destination_alerts_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleEmailOutboxScheduledEvent(event, env);

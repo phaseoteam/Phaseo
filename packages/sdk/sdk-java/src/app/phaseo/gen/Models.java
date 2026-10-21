@@ -4144,6 +4144,7 @@ public final class Models {
 
 	public static class WorkspaceNotificationRouteMap {
 		public java.util.List<String> auto_top_up_failed;
+		public java.util.List<String> broadcast_destination_failing;
 		public java.util.List<String> low_balance;
 		public java.util.List<String> model_deprecation;
 		public java.util.List<String> model_substitution;

@@ -1439,7 +1439,9 @@
 		"secretCreated": "Secret de signature créé",
 		"secretCreateFailed": "Impossible de créer le secret de signature",
 		"configurationTestUnsigned": "Les tests envoyés avant l’enregistrement ne sont pas signés. Enregistrez la destination, puis envoyez un test depuis celle-ci pour vérifier la signature.",
-		"verifySignaturesLink": "Comment vérifier les signatures"
+		"verifySignaturesLink": "Comment vérifier les signatures",
+		"broadcastAlertsTitle": "Alertes de Diffusion",
+		"broadcastAlertsDescription": "Recevez une alerte lorsqu’une destination de Diffusion échoue de façon répétée, une fois chaque fois qu’elle commence à échouer."
 	},
 	"contributionCopy": {
 		"summary": "Chaque requête éligible sans BYOK bénéficie d’une remise de {discount} %. Phaseo conserve jusqu’à 100 % des prompts et réponses menés à bien, après suppression des secrets et des informations personnelles, dans un espace privé dédié pendant 30 jours maximum. Le taux actuellement sélectionné pour la classification en amont est de {sampleRate} %. Seules des statistiques agrégées sur les tâches sont affichées ici ; le contenu brut n’est jamais publié.",

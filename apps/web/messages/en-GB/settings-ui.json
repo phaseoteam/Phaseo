@@ -1439,7 +1439,9 @@
 		"secretCreated": "Signing secret created",
 		"secretCreateFailed": "Could not create a signing secret",
 		"configurationTestUnsigned": "Tests sent before saving are unsigned. Save the destination, then send a test from it to check signature verification.",
-		"verifySignaturesLink": "How to verify signatures"
+		"verifySignaturesLink": "How to verify signatures",
+		"broadcastAlertsTitle": "Broadcast Alerts",
+		"broadcastAlertsDescription": "Get an alert when a Broadcast destination keeps failing, once each time it starts failing."
 	},
 	"contributionCopy": {
 		"summary": "Every eligible non-BYOK request receives a {discount}% discount. Phaseo retains up to 100% of successful prompts and completions after redacting secrets and personal information, in a dedicated private bucket for no more than 30 days. Only {sampleRate}% is currently selected for upstream classification. Only aggregate task statistics appear here; raw content is never published.",

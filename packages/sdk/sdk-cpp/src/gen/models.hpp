@@ -4103,6 +4103,7 @@ struct WorkspaceNotificationRoute {
 
 struct WorkspaceNotificationRouteMap {
 	std::vector<std::string> auto_top_up_failed;
+	std::vector<std::string> broadcast_destination_failing;
 	std::vector<std::string> low_balance;
 	std::vector<std::string> model_deprecation;
 	std::vector<std::string> model_substitution;

@@ -450,7 +450,7 @@ export type NotificationDestination = {
 	signingSecretRotatedAt?: string | null;
 };
 
-export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled";
+export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled" | "broadcast_destination_failing";
 
 export type SettingsPaymentMethodsInitialData = {
 	customerId: string | null;

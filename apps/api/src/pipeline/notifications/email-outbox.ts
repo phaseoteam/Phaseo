@@ -356,7 +356,7 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 		.select(columns)
 		.is("sent_at", null)
 		.lt("attempts", 5)
-		.not("kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled")')
+		.not("kind", "in", '("notification_test","model_deprecation","feedback_request","rate_limit_throttled","broadcast_destination_failing")')
 		.order("created_at", { ascending: true })
 		.limit(limit);
 

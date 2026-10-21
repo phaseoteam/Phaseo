@@ -1439,7 +1439,9 @@
 		"secretCreated": "Secreto de firma creado",
 		"secretCreateFailed": "No se pudo crear el secreto de firma",
 		"configurationTestUnsigned": "Las pruebas enviadas antes de guardar no van firmadas. Guarda el destino y envía una prueba desde él para comprobar la verificación de la firma.",
-		"verifySignaturesLink": "Cómo verificar las firmas"
+		"verifySignaturesLink": "Cómo verificar las firmas",
+		"broadcastAlertsTitle": "Alertas de Transmisión",
+		"broadcastAlertsDescription": "Reciba un aviso cuando un destino de Transmisión siga fallando, una vez cada vez que empiece a fallar."
 	},
 	"contributionCopy": {
 		"summary": "Cada solicitud apta que no use BYOK recibe un descuento del {discount}%. Phaseo conserva en un almacén privado específico hasta el 100% de los prompts y las respuestas completadas correctamente, después de eliminar secretos y datos personales, durante un máximo de 30 días. Actualmente, se selecciona el {sampleRate}% para la clasificación externa. Aquí solo se muestran estadísticas agregadas de las tareas; el contenido sin procesar nunca se publica.",

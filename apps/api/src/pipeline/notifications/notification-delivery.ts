@@ -5,7 +5,7 @@ import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppre
 import { getModelDeprecationContent, getModelDeprecationTemplateVariables, renderModelDeprecationEmail, renderNotificationTestEmail } from "@/pipeline/notifications/model-deprecation";
 import { getModelSubstitutionContent, renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
 
-const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "notification_test"];
+const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "notification_test"];
 const EVENT_PAGE_SIZE = 100;
 const MAX_ROUTING_PASSES = 20;
 // Kept below PostgREST's 1,000-row response cap; the RPC also clamps it.
@@ -53,6 +53,25 @@ function rateLimitThrottledMessage(payload: Record<string, unknown>): string {
 	return `Rate limit policies rejected ${total} ${total === 1 ? "request" : "requests"} in the last ${minutes} minutes.${top.length ? ` Most rejected: ${top.join(", ")}.` : ""}`;
 }
 
+// Destination names and vendor error text go to Slack, Discord and Teams, where
+// angle brackets can form mentions and links, so they are dropped.
+function plainText(value: unknown, max: number): string {
+	const text = String(value ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
+	return text.length > max ? text.slice(0, max - 1) + "…" : text;
+}
+
+function broadcastDestinationFailingMessage(payload: Record<string, unknown>): string {
+	const total = Number(payload.failing_destinations ?? 0);
+	const destinations = (Array.isArray(payload.destinations) ? payload.destinations : []) as Array<Record<string, unknown>>;
+	const details = destinations.slice(0, 5).map((destination) => {
+		const failures = Number(destination.consecutive_failures ?? 0);
+		const error = plainText(destination.last_error, 200);
+		return ` ${plainText(destination.name, 100) || "Unnamed destination"}: ${failures} ${failures === 1 ? "request" : "requests"} failed in a row${error ? ` (${error})` : ""}.`;
+	});
+	const more = total > details.length ? ` ${total - details.length} more failing.` : "";
+	return `Broadcast could not deliver traces to ${total} ${total === 1 ? "destination" : "destinations"}.${details.join("")}${more}`;
+}
+
 export function eventContent(event: EventRow) {
 	if (event.kind === "model_deprecation") {
 		const content = getModelDeprecationContent(event.payload ?? {});
@@ -63,14 +82,16 @@ export function eventContent(event: EventRow) {
 		return { title: content.title, message: content.message, settingsUrl: content.settingsUrl };
 	}
 	const payload = event.payload ?? {};
-	const title = String(payload.title ?? event.subject ?? ({ low_balance: "Low balance alert", auto_top_up_failed: "Auto Top-Up failed", payment_method_expiring: "Payment method expiring soon", model_deprecation: "Model deprecation alert", rate_limit_throttled: "Rate limit alert", notification_test: "Phaseo test notification" } as Record<string, string>)[event.kind] ?? "Phaseo notification");
+	const title = String(payload.title ?? event.subject ?? ({ low_balance: "Low balance alert", auto_top_up_failed: "Auto Top-Up failed", payment_method_expiring: "Payment method expiring soon", model_deprecation: "Model deprecation alert", rate_limit_throttled: "Rate limit alert", broadcast_destination_failing: "Broadcast destination failing", notification_test: "Phaseo test notification" } as Record<string, string>)[event.kind] ?? "Phaseo notification");
 	let message = String(payload.message ?? "");
 	if (!message && event.kind === "low_balance") message = `Your workspace balance is $${Number(payload.balance_usd ?? 0).toFixed(2)}, at or below the configured $${Number(payload.threshold_usd ?? 0).toFixed(2)} threshold.`;
 	if (!message && event.kind === "auto_top_up_failed") message = String(payload.reason ?? "Phaseo could not automatically add credits to your workspace.");
 	if (!message && event.kind === "payment_method_expiring") message = `The ${String(payload.brand ?? "card")} ending in ${String(payload.last4 ?? "unknown")} expires ${String(payload.expiry ?? "soon")}.`;
 	if (!message && event.kind === "model_deprecation") message = `${String(payload.model_name ?? payload.model_id ?? "A model used by your workspace")} has been deprecated${payload.retirement_date ? ` and is scheduled to retire on ${String(payload.retirement_date)}` : ""}.`;
 	if (!message && event.kind === "rate_limit_throttled") message = rateLimitThrottledMessage(payload);
-	return { title, message: message || "A workspace notification was generated.", settingsUrl: "https://phaseo.app/settings/notifications" };
+	if (!message && event.kind === "broadcast_destination_failing") message = broadcastDestinationFailingMessage(payload);
+	const settingsUrl = event.kind === "broadcast_destination_failing" ? "https://phaseo.app/settings/broadcast" : "https://phaseo.app/settings/notifications";
+	return { title, message: message || "A workspace notification was generated.", settingsUrl };
 }
 
 export function buildProviderRequest(type: string, target: string, content: ReturnType<typeof eventContent>, event: EventRow): { url: string; body: unknown; headers?: Record<string, string> } {

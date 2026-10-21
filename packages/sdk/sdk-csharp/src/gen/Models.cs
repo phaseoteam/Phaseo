@@ -9818,6 +9818,9 @@ public sealed class WorkspaceNotificationRouteMap
 	[JsonPropertyName("auto_top_up_failed")]
 	public List<string> AutoTopUpFailed { get; set; }
 
+	[JsonPropertyName("broadcast_destination_failing")]
+	public List<string> BroadcastDestinationFailing { get; set; }
+
 	[JsonPropertyName("low_balance")]
 	public List<string> LowBalance { get; set; }
 
