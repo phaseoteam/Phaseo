@@ -1025,6 +1025,11 @@ pub fn rotateWebhookEndpointSecret<T: Transport>(client: &Client<T>, path: &Hash
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn rotateWorkspaceNotificationDestinationSecret<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/notifications/destinations/{}/rotate-secret", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn setWorkspaceDepartmentMember<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/identity/departments/{}/members/{}", path_segment(path.get("departmentId").map(String::as_str).unwrap_or_default())?, path_segment(path.get("userId").map(String::as_str).unwrap_or_default())?);
 	client.request("PUT", &resolved_path, body)

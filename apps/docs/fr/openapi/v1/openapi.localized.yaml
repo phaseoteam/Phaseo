@@ -5006,6 +5006,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: Renouveler le secret de signature d’un webhook de notification
+      description: Génère un nouveau secret de signature pour une destination webhook personnalisée et ne le renvoie qu’une seule fois. Les destinations créées avant la signature obtiennent ainsi leur premier secret. Les envois suivants sont signés avec le nouveau secret et l’ancien n’est plus utilisé.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Secret de signature renouvelé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: La requête a échoué
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -21330,6 +21358,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: Indique si les envois sont signés avec x-phaseo-signature. Seules les destinations webhook personnalisées sont signées ; celles créées avant la signature restent non signées jusqu’à la génération d’un secret.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date de génération du secret de signature actuel.
+        signing_secret:
+          type: string
+          description: Le secret de signature du webhook. Renvoyé uniquement à la création d’une destination webhook personnalisée ou au renouvellement de son secret ; conservez-le en lieu sûr.
         created_at:
           type: string
           format: date-time

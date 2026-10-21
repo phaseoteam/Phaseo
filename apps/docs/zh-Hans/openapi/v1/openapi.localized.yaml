@@ -5006,6 +5006,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: 轮换通知 Webhook 签名密钥
+      description: 为自定义 Webhook 通知目标生成新的签名密钥，并且只返回一次。在签名功能推出前创建的目标通过此方式获得第一个密钥。之后的投递使用新密钥签名，旧密钥不再使用。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 签名密钥已轮换
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -21330,6 +21358,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: 投递是否使用 x-phaseo-signature 签名。只有自定义 Webhook 目标会签名；在签名功能推出前创建的目标在生成密钥之前保持未签名。
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 当前签名密钥的生成时间。
+        signing_secret:
+          type: string
+          description: Webhook 签名密钥。仅在创建自定义 Webhook 目标或轮换其密钥时返回；请妥善保存。
         created_at:
           type: string
           format: date-time

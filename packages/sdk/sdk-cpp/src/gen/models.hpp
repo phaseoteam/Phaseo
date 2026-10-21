@@ -3944,8 +3944,11 @@ using WorkspaceModelSuccessorPricePolicy = std::any;
 
 struct WorkspaceNotificationDestination {
 	std::optional<std::string> created_at;
+	std::optional<bool> has_signing_secret;
 	std::string id;
 	std::string name;
+	std::string signing_secret;
+	std::optional<std::string> signing_secret_rotated_at;
 	std::any status;
 	std::string target_preview;
 	std::any type;

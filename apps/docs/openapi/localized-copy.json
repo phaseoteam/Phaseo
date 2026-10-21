@@ -8943,6 +8943,36 @@
 			"ja": "保持期間12時間でキャッシュに書き込まれた入力トークン。入力料金の2.5倍で請求されます。",
 			"zh-Hans": "以 12 小时保留时长写入缓存的输入 token，按输入价格的 2.5 倍计费。",
 			"ar": "رموز الإدخال المكتوبة في التخزين المؤقت لمدة 12 ساعة، وتُحتسب بـ 2.5x سعر الإدخال."
+		},
+		"Whether deliveries are signed with x-phaseo-signature. Only custom webhook destinations are signed; ones created before signing stay unsigned until a secret is generated.": {
+			"es": "Indica si las entregas se firman con x-phaseo-signature. Solo se firman los destinos de webhook personalizados; los creados antes de la firma siguen sin firmar hasta que se genera un secreto.",
+			"fr": "Indique si les envois sont signés avec x-phaseo-signature. Seules les destinations webhook personnalisées sont signées ; celles créées avant la signature restent non signées jusqu’à la génération d’un secret.",
+			"de": "Gibt an, ob Zustellungen mit x-phaseo-signature signiert werden. Nur benutzerdefinierte Webhook-Ziele werden signiert; vor der Signierung angelegte Ziele bleiben unsigniert, bis ein Geheimnis erzeugt wird.",
+			"pt-BR": "Indica se as entregas são assinadas com x-phaseo-signature. Somente destinos de webhook personalizados são assinados; os criados antes da assinatura continuam sem assinatura até que um segredo seja gerado.",
+			"hi": "क्या डिलीवरी x-phaseo-signature से साइन होती हैं। केवल कस्टम वेबहुक गंतव्य साइन होते हैं; साइनिंग से पहले बने गंतव्य सीक्रेट बनने तक बिना साइन के रहते हैं।",
+			"ja": "配信が x-phaseo-signature で署名されるかどうか。署名されるのはカスタム Webhook 通知先のみです。署名導入前に作成された通知先は、シークレットを生成するまで署名されません。",
+			"zh-Hans": "投递是否使用 x-phaseo-signature 签名。只有自定义 Webhook 目标会签名；在签名功能推出前创建的目标在生成密钥之前保持未签名。",
+			"ar": "ما إذا كانت عمليات التسليم موقّعة باستخدام x-phaseo-signature. تُوقَّع وجهات webhook المخصصة فقط؛ وتبقى الوجهات التي أُنشئت قبل التوقيع غير موقّعة حتى يُنشأ سر."
+		},
+		"When the current signing secret was generated.": {
+			"es": "Cuándo se generó el secreto de firma actual.",
+			"fr": "Date de génération du secret de signature actuel.",
+			"de": "Zeitpunkt, zu dem das aktuelle Signaturgeheimnis erzeugt wurde.",
+			"pt-BR": "Quando o segredo de assinatura atual foi gerado.",
+			"hi": "मौजूदा साइनिंग सीक्रेट कब बनाया गया था।",
+			"ja": "現在の署名シークレットが生成された日時。",
+			"zh-Hans": "当前签名密钥的生成时间。",
+			"ar": "وقت إنشاء سر التوقيع الحالي."
+		},
+		"The webhook signing secret. Returned only when a custom webhook destination is created or its secret is rotated; store it securely.": {
+			"es": "El secreto de firma del webhook. Solo se devuelve al crear un destino de webhook personalizado o al rotar su secreto; guárdalo de forma segura.",
+			"fr": "Le secret de signature du webhook. Renvoyé uniquement à la création d’une destination webhook personnalisée ou au renouvellement de son secret ; conservez-le en lieu sûr.",
+			"de": "Das Signaturgeheimnis des Webhooks. Wird nur beim Anlegen eines benutzerdefinierten Webhook-Ziels oder beim Rotieren seines Geheimnisses zurückgegeben; sicher aufbewahren.",
+			"pt-BR": "O segredo de assinatura do webhook. Retornado somente quando um destino de webhook personalizado é criado ou seu segredo é rotacionado; guarde-o com segurança.",
+			"hi": "वेबहुक साइनिंग सीक्रेट। यह केवल कस्टम वेबहुक गंतव्य बनाते समय या उसका सीक्रेट बदलते समय लौटाया जाता है; इसे सुरक्षित रखें।",
+			"ja": "Webhook の署名シークレット。カスタム Webhook 通知先の作成時またはシークレットのローテーション時にのみ返されます。安全に保管してください。",
+			"zh-Hans": "Webhook 签名密钥。仅在创建自定义 Webhook 目标或轮换其密钥时返回；请妥善保存。",
+			"ar": "سر توقيع webhook. يُعاد فقط عند إنشاء وجهة webhook مخصصة أو تدوير سرها؛ احفظه بأمان."
 		}
 	},
 	"GET /apps": {
@@ -9956,6 +9986,50 @@
 				"ja": "テストに失敗しました",
 				"zh-Hans": "测试失败",
 				"ar": "فشل الاختبار"
+			}
+		}
+	},
+	"POST /notifications/destinations/{id}/rotate-secret": {
+		"summary": {
+			"es": "Rotar el secreto de firma de un webhook de notificaciones",
+			"fr": "Renouveler le secret de signature d’un webhook de notification",
+			"de": "Signaturgeheimnis eines Benachrichtigungs-Webhooks rotieren",
+			"pt-BR": "Rotacionar o segredo de assinatura de um webhook de notificação",
+			"hi": "सूचना वेबहुक का साइनिंग सीक्रेट बदलें",
+			"ja": "通知 Webhook の署名シークレットをローテーション",
+			"zh-Hans": "轮换通知 Webhook 签名密钥",
+			"ar": "تدوير سر توقيع webhook الإشعارات"
+		},
+		"description": {
+			"es": "Genera un nuevo secreto de firma para un destino de webhook personalizado y lo devuelve una sola vez. Los destinos creados antes de la firma obtienen así su primer secreto. Las entregas posteriores se firman con el nuevo secreto y el anterior deja de usarse.",
+			"fr": "Génère un nouveau secret de signature pour une destination webhook personnalisée et ne le renvoie qu’une seule fois. Les destinations créées avant la signature obtiennent ainsi leur premier secret. Les envois suivants sont signés avec le nouveau secret et l’ancien n’est plus utilisé.",
+			"de": "Erzeugt ein neues Signaturgeheimnis für ein benutzerdefiniertes Webhook-Ziel und gibt es nur einmal zurück. Ziele, die vor der Signierung angelegt wurden, erhalten so ihr erstes Geheimnis. Spätere Zustellungen werden mit dem neuen Geheimnis signiert; das vorherige wird nicht mehr verwendet.",
+			"pt-BR": "Gera um novo segredo de assinatura para um destino de webhook personalizado e o retorna uma única vez. Destinos criados antes da assinatura recebem assim o primeiro segredo. As entregas seguintes são assinadas com o novo segredo e o anterior deixa de ser usado.",
+			"hi": "कस्टम वेबहुक गंतव्य के लिए नया साइनिंग सीक्रेट बनाता है और उसे केवल एक बार लौटाता है। साइनिंग से पहले बने गंतव्यों को इसी तरह पहला सीक्रेट मिलता है। आगे की डिलीवरी नए सीक्रेट से साइन होती हैं और पिछला सीक्रेट उपयोग में नहीं रहता।",
+			"ja": "カスタム Webhook 通知先の新しい署名シークレットを生成し、一度だけ返します。署名導入前に作成された通知先は、この方法で最初のシークレットを取得します。以降の配信は新しいシークレットで署名され、以前のシークレットは使われなくなります。",
+			"zh-Hans": "为自定义 Webhook 通知目标生成新的签名密钥，并且只返回一次。在签名功能推出前创建的目标通过此方式获得第一个密钥。之后的投递使用新密钥签名，旧密钥不再使用。",
+			"ar": "ينشئ سر توقيع جديدًا لوجهة webhook مخصصة ويعيده مرة واحدة فقط. تحصل الوجهات التي أُنشئت قبل التوقيع على سرها الأول بهذه الطريقة. تُوقَّع عمليات التسليم اللاحقة بالسر الجديد ويتوقف استخدام السر السابق."
+		},
+		"responses": {
+			"200": {
+				"es": "Secreto de firma rotado",
+				"fr": "Secret de signature renouvelé",
+				"de": "Signaturgeheimnis rotiert",
+				"pt-BR": "Segredo de assinatura rotacionado",
+				"hi": "साइनिंग सीक्रेट बदल दिया गया",
+				"ja": "署名シークレットをローテーションしました",
+				"zh-Hans": "签名密钥已轮换",
+				"ar": "تم تدوير سر التوقيع"
+			},
+			"default": {
+				"es": "La solicitud ha fallado",
+				"fr": "La requête a échoué",
+				"de": "Anfrage fehlgeschlagen",
+				"pt-BR": "A solicitação falhou",
+				"hi": "अनुरोध विफल हुआ",
+				"ja": "リクエストに失敗しました",
+				"zh-Hans": "请求失败",
+				"ar": "فشل الطلب"
 			}
 		}
 	},

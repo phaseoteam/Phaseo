@@ -9457,11 +9457,20 @@ public sealed class WorkspaceNotificationDestination
 	[JsonPropertyName("created_at")]
 	public string? CreatedAt { get; set; }
 
+	[JsonPropertyName("has_signing_secret")]
+	public bool? HasSigningSecret { get; set; }
+
 	[JsonPropertyName("id")]
 	public string Id { get; set; }
 
 	[JsonPropertyName("name")]
 	public string Name { get; set; }
+
+	[JsonPropertyName("signing_secret")]
+	public string? SigningSecret { get; set; }
+
+	[JsonPropertyName("signing_secret_rotated_at")]
+	public string? SigningSecretRotatedAt { get; set; }
 
 	[JsonPropertyName("status")]
 	public string Status { get; set; }

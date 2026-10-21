@@ -441,6 +441,9 @@ export type NotificationDestination = {
 	targetPreview: string;
 	status: string;
 	createdAt: string | null;
+	/** Custom webhooks only: deliveries carry x-phaseo-signature. Older destinations stay unsigned until a secret is generated. */
+	hasSigningSecret?: boolean;
+	signingSecretRotatedAt?: string | null;
 };
 
 export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled";

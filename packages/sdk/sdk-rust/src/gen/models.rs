@@ -3945,8 +3945,11 @@ pub type WorkspaceModelSuccessorPricePolicy = JsonValue;
 
 pub struct WorkspaceNotificationDestination {
 	pub created_at: Option<Option<String>>,
+	pub has_signing_secret: Option<bool>,
 	pub id: String,
 	pub name: String,
+	pub signing_secret: Option<String>,
+	pub signing_secret_rotated_at: Option<Option<String>>,
 	pub status: String,
 	pub target_preview: String,
 	pub r#type: String,

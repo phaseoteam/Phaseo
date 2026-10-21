@@ -3509,8 +3509,11 @@ WorkspaceModelSuccessorPricePolicy = Literal["never", "limit", "any"]
 
 class WorkspaceNotificationDestination(TypedDict):
 	created_at: NotRequired[Optional[str]]
+	has_signing_secret: NotRequired[bool]
 	id: str
 	name: str
+	signing_secret: NotRequired[str]
+	signing_secret_rotated_at: NotRequired[Optional[str]]
 	status: Literal["active", "disabled"]
 	target_preview: str
 	type: Literal["email", "discord", "discord_webhook", "slack", "microsoft_teams", "custom_webhook"]

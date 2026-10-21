@@ -5006,6 +5006,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: Signaturgeheimnis eines Benachrichtigungs-Webhooks rotieren
+      description: Erzeugt ein neues Signaturgeheimnis für ein benutzerdefiniertes Webhook-Ziel und gibt es nur einmal zurück. Ziele, die vor der Signierung angelegt wurden, erhalten so ihr erstes Geheimnis. Spätere Zustellungen werden mit dem neuen Geheimnis signiert; das vorherige wird nicht mehr verwendet.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Signaturgeheimnis rotiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: Anfrage fehlgeschlagen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -21330,6 +21358,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: Gibt an, ob Zustellungen mit x-phaseo-signature signiert werden. Nur benutzerdefinierte Webhook-Ziele werden signiert; vor der Signierung angelegte Ziele bleiben unsigniert, bis ein Geheimnis erzeugt wird.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zeitpunkt, zu dem das aktuelle Signaturgeheimnis erzeugt wurde.
+        signing_secret:
+          type: string
+          description: Das Signaturgeheimnis des Webhooks. Wird nur beim Anlegen eines benutzerdefinierten Webhook-Ziels oder beim Rotieren seines Geheimnisses zurückgegeben; sicher aufbewahren.
         created_at:
           type: string
           format: date-time

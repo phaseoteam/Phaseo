@@ -5006,6 +5006,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: Rotar el secreto de firma de un webhook de notificaciones
+      description: Genera un nuevo secreto de firma para un destino de webhook personalizado y lo devuelve una sola vez. Los destinos creados antes de la firma obtienen así su primer secreto. Las entregas posteriores se firman con el nuevo secreto y el anterior deja de usarse.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Secreto de firma rotado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: La solicitud ha fallado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -21330,6 +21358,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: Indica si las entregas se firman con x-phaseo-signature. Solo se firman los destinos de webhook personalizados; los creados antes de la firma siguen sin firmar hasta que se genera un secreto.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Cuándo se generó el secreto de firma actual.
+        signing_secret:
+          type: string
+          description: El secreto de firma del webhook. Solo se devuelve al crear un destino de webhook personalizado o al rotar su secreto; guárdalo de forma segura.
         created_at:
           type: string
           format: date-time
