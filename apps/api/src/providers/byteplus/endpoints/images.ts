@@ -5,7 +5,7 @@
 import { ImagesEditSchema, ImagesGenerationSchema } from "@core/schemas";
 import type { ImagesEditRequest, ImagesGenerationRequest } from "@core/schemas";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 import { sanitizePayload } from "../../utils";
@@ -133,7 +133,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		if (typeof usageMeters.output_image !== "number") usageMeters.output_image = outputImageCount;
 		if (typeof usageMeters.input_image !== "number") usageMeters.input_image = resolveInputImageCount(pricingInput);
 
-		const pricedUsage = computeBill(
+		const pricedUsage = computeBillAfterProviderCharge(
 			usageMeters as Record<string, any>,
 			args.pricingCard,
 			buildImagePricingRequestOptions(pricingInput, usageMeters),
