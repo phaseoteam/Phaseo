@@ -34,6 +34,28 @@ import {
 } from "../classification/data-contribution";
 import { currentDataContributionDiscountNanos } from "../pricing/data-contribution-discount";
 
+/**
+ * Search and fetch details for the request log. A key that never stores content
+ * keeps the counts and statuses, not the queries, results, citations, titles or
+ * URLs, which all come from what was asked.
+ */
+function searchObservabilityForLog(ctx: PipelineContext, value: unknown): unknown {
+	if (ctx.neverStoreContent !== true || !value || typeof value !== "object") return value;
+	const search = value as Record<string, unknown>;
+	return { ...search, results: [], citations: [], nativeSearches: [], managedSearches: [] };
+}
+
+function webFetchObservabilityForLog(ctx: PipelineContext, value: unknown): unknown {
+	if (ctx.neverStoreContent !== true || !value || typeof value !== "object") return value;
+	const fetches = (value as { fetches?: unknown }).fetches;
+	return {
+		...(value as Record<string, unknown>),
+		fetches: Array.isArray(fetches)
+			? fetches.map((entry) => ({ ...(entry as Record<string, unknown>), url: null, finalUrl: null, title: null }))
+			: fetches,
+	};
+}
+
 function promptTemplateMetadata(ctx: PipelineContext) {
     const template = ctx.promptTemplate;
     if (!template) return null;
@@ -325,9 +347,9 @@ export async function handleFailureAudit(
                 provider_candidate_diagnostics: sanitizeForAxiom(
                     ctx.providerCandidateBuildDiagnostics ?? null,
                 ),
-                web_fetch_observability: sanitizeForAxiom(
+                web_fetch_observability: webFetchObservabilityForLog(ctx, sanitizeForAxiom(
                     mergeWebFetchObservability(ctx.webFetchObservability ?? null),
-                ),
+                )),
                 replay_supported: true,
             },
             usage: (result.bill?.usage && typeof result.bill.usage === "object")
@@ -478,17 +500,17 @@ export async function handleSuccessAudit(
             guardrail_enforcement: ctx.guardrailEnforcement,
         })
         : null;
-    const searchObservability = sanitizeForAxiom(
+    const searchObservability = searchObservabilityForLog(ctx, sanitizeForAxiom(
         extractSearchObservability({
             body: ctx.body,
             gatewayResponse: gatewayResponse ?? null,
             providerResponse: result.rawResponse ?? null,
             managedSearch: ctx.searchObservability ?? null,
         }),
-    );
-    const webFetchObservability = sanitizeForAxiom(
+    ));
+    const webFetchObservability = webFetchObservabilityForLog(ctx, sanitizeForAxiom(
         mergeWebFetchObservability(ctx.webFetchObservability ?? null),
-    );
+    ));
 
     const deliveries = await runGatewayTelemetryPipelines({
         requestId: ctx.requestId,
@@ -661,7 +683,8 @@ export async function handleSuccessAudit(
 		});
 	}
 
-	if (!isStealthRequest(ctx) && !byok && ctx.teamSettings?.dataContributionEnabled === true) {
+	// A key that never stores content is never sampled for data contribution either.
+	if (!isStealthRequest(ctx) && !byok && ctx.teamSettings?.dataContributionEnabled === true && ctx.neverStoreContent !== true) {
 		const pricing = (usageWithMultimodal as any)?.pricing;
 		const currentDiscountNanos = currentDataContributionDiscountNanos(pricing, totalNanos);
 		const capture = await persistDataContribution({
