@@ -22585,16 +22585,33 @@ components:
       maxLength: 64
       description: 用于没有自身时区的支出规则的日历周期以及支出报告的 IANA 时区。默认为 UTC。强制执行的密钥限额和工作区预算始终使用 UTC。
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: 工作区所有者接收支出报告邮件的频率（report_include_admins 开启时管理员也会收到）：off、daily（09:00 发送前一天的报告）、weekly（周一 09:00 发送上一个周一至周日的报告）或 monthly（每月 1 日 09:00 发送上个月的报告），时间均按计费时区。没有支出的周期会被跳过。工作区的 spend_report 路由每份报告收到一条摘要。默认为 weekly。
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: 将支出报告也通过邮件发送给工作区管理员，而不仅是所有者。默认为 false。任何人都可以通过邮件中的链接退订。
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -22686,6 +22703,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string

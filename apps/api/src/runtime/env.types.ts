@@ -67,6 +67,8 @@ export type GatewayBindings = {
 	SPEND_RULES_ENABLED?: string;
 	/** "true" lets block spend rules start blocks, publishes their KV entries and enforces them on requests. Off by default. */
 	SPEND_RULE_BLOCKS_ENABLED?: string;
+	/** Queue daily/weekly/monthly spend report emails (public.queue_spend_reports). Default "false": nothing is sent until turned on. */
+	SPEND_REPORTS_ENABLED?: string;
 	/** Kill switch: "false" stops request classifiers. On when unset. */
 	REQUEST_CLASSIFIERS_ENABLED?: string;
 	SPEND_LIMITS?: DurableObjectNamespace;

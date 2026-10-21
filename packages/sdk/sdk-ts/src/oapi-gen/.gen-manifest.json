@@ -540,6 +540,8 @@
     "models/WorkspaceSettingsResponse.ts",
     "models/WorkspaceSettingsUpdateRequest.ts",
     "models/WorkspaceSpendAttribution.ts",
+    "models/WorkspaceSpendReportCadence.ts",
+    "models/WorkspaceSpendReportIncludeAdmins.ts",
     "models/WorkspaceSpendSettings.ts",
     "models/WorkspaceSpendSettingsUpdate.ts",
     "models/WorkspaceSsoResponse.ts",

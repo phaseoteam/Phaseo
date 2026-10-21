@@ -4366,14 +4366,22 @@ pub struct WorkspaceSettingsUpdateRequest {
 
 pub type WorkspaceSpendAttribution = JsonValue;
 
+pub type WorkspaceSpendReportCadence = JsonValue;
+
+pub type WorkspaceSpendReportIncludeAdmins = JsonValue;
+
 pub struct WorkspaceSpendSettings {
 	pub billing_time_zone: String,
 	pub department_attribution: String,
+	pub report_cadence: String,
+	pub report_include_admins: bool,
 }
 
 pub struct WorkspaceSpendSettingsUpdate {
 	pub billing_time_zone: Option<String>,
 	pub department_attribution: Option<String>,
+	pub report_cadence: Option<String>,
+	pub report_include_admins: Option<bool>,
 }
 
 pub struct WorkspaceSsoResponse {

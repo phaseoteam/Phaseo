@@ -23636,16 +23636,41 @@ components:
         zone of their own, and for spend reports. Defaults to UTC. Enforced key
         limits and workspace budgets always use UTC.
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: >-
+        How often workspace owners get a spend report email, and admins too when
+        report_include_admins is on: off, daily (09:00 for the day before),
+        weekly (Monday 09:00 for the previous Monday-to-Sunday week) or monthly
+        (the 1st at 09:00 for the previous month), in the billing time zone.
+        Periods without spend are skipped. Workspace spend_report routes get one
+        summary per report. Defaults to weekly.
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: >-
+        Also email the spend report to workspace admins, not only owners.
+        Defaults to false. Anyone can unsubscribe from the link in the email.
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -23737,6 +23762,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string

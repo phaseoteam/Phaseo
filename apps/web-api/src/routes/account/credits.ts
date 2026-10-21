@@ -3,7 +3,7 @@ import { requireUser } from "@/auth/requireUser";
 import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
-import { encryptNotificationTarget, isNotificationEventKind, NOTIFICATION_DESTINATION_TYPES, parseIanaTimeZone, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
+import { encryptNotificationTarget, isNotificationEventKind, isSpendReportCadence, NOTIFICATION_DESTINATION_TYPES, parseIanaTimeZone, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
 
 const EMPTY_TIER_SUMMARY = { lastMonthCents: 0, mtdCents: 0, teamTier: "basic" as const };
 
@@ -271,7 +271,16 @@ creditsRouter.put("/notification-preferences", async (c) => {
 		if (!zone) return c.json({ error: "invalid_time_zone" }, 400, PRIVATE_NO_STORE_HEADERS);
 		update.billing_time_zone = zone;
 	}
-	if (!("auto_top_up_failure_email_enabled" in update) && !("payment_method_expiring_email_enabled" in update) && !("model_deprecation_alerts_enabled" in update) && !("model_deprecation_alerts_include_admins" in update) && !("department_spend_attribution" in update) && !("billing_time_zone" in update)) return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
+	// Spend report emails: how often (off, daily, weekly, monthly) and whether admins get them too.
+	if (body.spendReportCadence !== undefined) {
+		if (!isSpendReportCadence(body.spendReportCadence)) return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
+		update.spend_report_cadence = body.spendReportCadence;
+	}
+	if (body.spendReportIncludeAdmins !== undefined) {
+		if (typeof body.spendReportIncludeAdmins !== "boolean") return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
+		update.spend_report_include_admins = body.spendReportIncludeAdmins;
+	}
+	if (!("auto_top_up_failure_email_enabled" in update) && !("payment_method_expiring_email_enabled" in update) && !("model_deprecation_alerts_enabled" in update) && !("model_deprecation_alerts_include_admins" in update) && !("department_spend_attribution" in update) && !("billing_time_zone" in update) && !("spend_report_cadence" in update) && !("spend_report_include_admins" in update)) return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.from("workspace_settings").upsert(update, { onConflict: "workspace_id" });
 	// The database re-checks the zone against pg_timezone_names (validate_billing_time_zone trigger).
 	if (result.error) return result.error.message?.includes("invalid_time_zone") ? c.json({ error: "invalid_time_zone" }, 400, PRIVATE_NO_STORE_HEADERS) : c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);

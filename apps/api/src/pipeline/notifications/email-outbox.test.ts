@@ -207,6 +207,47 @@ describe("email outbox", () => {
 		expect(state.sendEmail).not.toHaveBeenCalled();
 	});
 
+	it("emails each owner's spend report with a one-click unsubscribe, and drops it for a deleted account", async () => {
+		const token = "4f1c2d3e-5a6b-4c7d-8e9f-0a1b2c3d4e5f";
+		const payload = {
+			workspace_name: "Acme", cadence: "weekly", time_zone: "Europe/London", title: "Acme weekly spend: $90.00 (Oct 12 – Oct 18, 2026)",
+			period: { label: "Oct 12 – Oct 18, 2026" }, totals: { spend_nanos: 90e9, requests: 182, tokens: 18300 },
+			previous_totals: { spend_nanos: 60e9 }, change: { spend_percent: 50 }, forecast: { month_label: "October", spend_nanos: 161e9, projected_nanos: 271.68e9 },
+			recipient: { user_id: "user_1", role: "owner", unsubscribe_token: token },
+		};
+		const row = (id: string, userId: string | null) => ({
+			id, created_at: "2026-10-19T08:30:00Z", kind: "spend_report_email", template: "spend_report", to_email: "owner@example.com",
+			subject: payload.title, workspace_id: "ws_1", user_id: userId, dedupe_key: `spend_report:ws_1:weekly:2026-10-11T23:00:00Z:email:${id}`,
+			payload, attempts: 0, last_error: null, sent_at: null,
+		});
+		state.rows.push(row("user_1", "user_1"), row("gone", null));
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 2, sent: 1, failed: 1 });
+		expect(state.sendEmail).toHaveBeenCalledTimes(1);
+		const sent = state.sendEmail.mock.calls[0]?.[0] as Record<string, any>;
+		expect(sent).toMatchObject({
+			to: "owner@example.com",
+			subject: "Acme weekly spend: $90.00 (Oct 12 – Oct 18, 2026)",
+			idempotencyKey: "spend_report:ws_1:weekly:2026-10-11T23:00:00Z:email:user_1",
+			headers: { "List-Unsubscribe": `<https://phaseo.app/api/_web/spend-reports/${token}/unsubscribe>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+		});
+		expect(sent.text).toContain("Spent $90.00 in the week of Oct 12 – Oct 18, 2026. Up 50% on the week before ($60.00).");
+		expect(sent.html).toContain(`https://phaseo.app/spend-reports/${token}/unsubscribe`);
+		expect(state.updateCalls).toContainEqual({ id: "gone", payload: { attempts: 5, last_error: "user_deleted" } });
+	});
+
+	it("never sends a spend report without its unsubscribe token", async () => {
+		state.rows.push({
+			id: "no_token", created_at: "2026-10-19T08:30:00Z", kind: "spend_report_email", template: "spend_report", to_email: "owner@example.com",
+			subject: "Acme weekly spend", workspace_id: "ws_1", user_id: "user_1", payload: { workspace_name: "Acme", totals: { spend_nanos: 1e9 } },
+			attempts: 0, last_error: null, sent_at: null,
+		});
+		const { drainEmailOutbox } = await import("./email-outbox");
+		await expect(drainEmailOutbox(10)).resolves.toEqual({ processed: 1, sent: 0, failed: 1 });
+		expect(state.sendEmail).not.toHaveBeenCalled();
+		expect(state.updateCalls[0]?.payload).toMatchObject({ attempts: 1, last_error: "invalid_spend_report_unsubscribe_token" });
+	});
+
 	it("emails the owner copy of a model deprecation notice", async () => {
 		state.rows.push({
 			id: "email_model_deprecation_owner",

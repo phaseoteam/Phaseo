@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isNotificationEventKind, parseIanaTimeZone, targetPreview, validateNotificationTarget } from "./notification-destinations";
+import { isNotificationEventKind, isSpendReportCadence, parseIanaTimeZone, targetPreview, validateNotificationTarget } from "./notification-destinations";
 
 describe("notification destination validation", () => {
 	it("accepts and masks multiple email destinations", () => { const target = validateNotificationTarget("email", JSON.stringify(["Alerts@Example.com", "ops@example.com"])); expect(JSON.parse(target)).toEqual(["alerts@example.com", "ops@example.com"]); expect(targetPreview("email", target)).toBe("al•••@example.com +1"); });
@@ -28,5 +28,10 @@ describe("notification destination validation", () => {
 		expect(parseIanaTimeZone("+05:30")).toBeNull();
 		expect(parseIanaTimeZone("Mars/Olympus_Mons")).toBeNull();
 		expect(parseIanaTimeZone(null)).toBeNull();
+	});
+
+	it("accepts the spend report cadences only", () => {
+		for (const cadence of ["off", "daily", "weekly", "monthly"]) expect(isSpendReportCadence(cadence)).toBe(true);
+		for (const value of ["hourly", "Weekly", "", null, 7]) expect(isSpendReportCadence(value)).toBe(false);
 	});
 });

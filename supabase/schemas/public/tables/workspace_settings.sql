@@ -64,6 +64,8 @@ CREATE TABLE "public"."workspace_settings" (
   "model_successor_max_price_increase_percent"   integer                  NOT NULL DEFAULT 0,
   "department_spend_attribution"                 text                     NOT NULL DEFAULT 'all'::text,
   "billing_time_zone"                            text                     NOT NULL DEFAULT 'UTC'::text,
+  "spend_report_cadence"                         text                     NOT NULL DEFAULT 'weekly'::text,
+  "spend_report_include_admins"                  boolean                  NOT NULL DEFAULT false,
   CONSTRAINT "workspace_settings_alpha_requires_beta_channel_check" CHECK (((alpha_channel_enabled = false) OR (beta_channel_enabled = true))),
   CONSTRAINT "workspace_settings_auto_routing_custom_prices_valid" CHECK (((auto_routing_spend_profile <> 'custom'::text) OR ((auto_routing_max_input_price_per_million IS
     NOT NULL) AND (auto_routing_max_input_price_per_million >= (0)::numeric) AND (auto_routing_max_output_price_per_million IS
@@ -93,6 +95,7 @@ CREATE TABLE "public"."workspace_settings" (
   CONSTRAINT "workspace_settings_pkey" PRIMARY KEY (workspace_id),
   CONSTRAINT "workspace_settings_provider_restriction_mode_check" CHECK ((provider_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
   CONSTRAINT "workspace_settings_response_healing_mode_check" CHECK ((response_healing_mode = ANY (ARRAY['safe'::text, 'strict'::text]))),
+  CONSTRAINT "workspace_settings_spend_report_cadence_check" CHECK ((spend_report_cadence = ANY (ARRAY['off'::text, 'daily'::text, 'weekly'::text, 'monthly'::text]))),
   CONSTRAINT "workspace_settings_sso_mode_check" CHECK ((sso_mode = ANY (ARRAY['none'::text, 'saml'::text, 'custom_oidc'::text]))),
   CONSTRAINT "workspace_settings_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
 );
@@ -172,5 +175,9 @@ COMMENT ON COLUMN "public"."workspace_settings"."model_successor_max_price_incre
 COMMENT ON COLUMN "public"."workspace_settings"."model_successor_price_policy" IS 'Whether a successor that costs more may serve redirected requests: never, limit (up to the percentage) or any.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."model_successor_redirect_enabled" IS 'Route requests for a model no provider serves any more to its admin-approved successor.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."spend_report_cadence" IS 'How often owners (and admins with spend_report_include_admins) get a spend report email: off, daily (09:00 for the day before), weekly (Monday 09:00 for the previous ISO week) or monthly (the 1st at 09:00 for the previous month), in billing_time_zone. Periods without spend are skipped. Queued by public.queue_spend_reports behind SPEND_REPORTS_ENABLED.';
+
+COMMENT ON COLUMN "public"."workspace_settings"."spend_report_include_admins" IS 'Also email the spend report to workspace admins, not only owners. Anyone can unsubscribe from the link in the email.';
 
 COMMENT ON COLUMN "public"."workspace_settings"."payment_method_expiring_email_enabled" IS 'Email the workspace owner before a saved card used for billing expires.';

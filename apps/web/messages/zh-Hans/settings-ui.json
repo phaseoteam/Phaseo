@@ -6506,7 +6506,21 @@
 			"attributionNote": "选择所有部门时，各部门合计可能超过工作区的支出。部门归属在检查警报时读取，因此调动某人会把其当前周期的支出一并移走。",
 			"saving": "正在保存…",
 			"saved": "已保存",
-			"saveFailed": "无法保存设置"
+			"saveFailed": "无法保存设置",
+			"report": "支出报告邮件",
+			"reportHelp": "汇总支出及与上一周期相比的变化、支出最多的密钥、模型、成员和部门、本月预测、余额可用天数以及提醒。所有者默认会收到。按计费时区在 09:00 发送，没有支出时不发送。",
+			"reportOff": "关闭",
+			"reportOffHelp": "不发送报告邮件。",
+			"reportDaily": "每天",
+			"reportDailyHelp": "每天早上，报告前一天。",
+			"reportWeekly": "每周",
+			"reportWeeklyHelp": "每周一早上，报告上一周。",
+			"reportMonthly": "每月",
+			"reportMonthlyHelp": "每月 1 日，报告上个月。",
+			"reportIncludeAdmins": "同时发送给管理员",
+			"reportIncludeAdminsHelp": "所有者始终会收到。管理员仅在开启此项时收到。",
+			"reportNote": "任何人都可以通过邮件中的链接退订。支出报告的通知路由每份报告收到一条摘要。",
+			"reportsOff": "报告邮件尚未开始发送。你的选择已保存，开始发送后生效。"
 		},
 		"shortcuts": {
 			"keyLimit": "在此密钥限额的 {percent}% 时提醒我",

@@ -319,6 +319,10 @@ export type SettingsCreditsInitialData = {
 	departmentSpendAttribution?: "all" | "primary";
 	/** IANA time zone for spend rule calendar periods (rules without their own zone) and spend reports. */
 	billingTimeZone?: string;
+	/** How often owners (and admins when included) get the spend report email. */
+	spendReportCadence?: SpendReportCadence;
+	/** Whether admins get the spend report email too. */
+	spendReportIncludeAdmins?: boolean;
 	notificationDestinations: NotificationDestination[];
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 	obfuscateInfo: boolean;
@@ -447,6 +451,9 @@ export type NotificationDestination = {
 	status: string;
 	createdAt: string | null;
 };
+
+/** workspace_settings.spend_report_cadence: daily 09:00, weekly Monday 09:00, monthly on the 1st, in the billing time zone. */
+export type SpendReportCadence = "off" | "daily" | "weekly" | "monthly";
 
 export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled" | "spend_alert" | "spend_blocked" | "spend_report";
 
@@ -617,8 +624,14 @@ export type SettingsSpendRulesInitialData = {
 	testSendsPerMinute: number;
 	/** Whether block rules block requests yet (SPEND_RULE_BLOCKS_ENABLED); until then they only notify. */
 	blocksEnabled?: boolean;
+	/** Whether spend report emails go out yet (SPEND_REPORTS_ENABLED); the settings save either way. */
+	reportsEnabled?: boolean;
 	/** The zone a rule with time_zone null uses. */
 	billingTimeZone: string;
+	/** How often owners (and admins when included) get the spend report email. */
+	spendReportCadence?: SpendReportCadence;
+	/** Whether admins get the spend report email too. */
+	spendReportIncludeAdmins?: boolean;
 	rules: SpendRule[];
 };
 /** GET /api/account/settings/spend-rules/options: what the rule editor's scope and base pickers offer. */

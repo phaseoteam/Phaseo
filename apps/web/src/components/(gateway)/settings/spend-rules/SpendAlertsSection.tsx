@@ -129,7 +129,14 @@ function SpendAlertsPanel({ data, destinations, departmentSpendAttribution }: {
 					<h3 className="text-sm font-medium">{t("workspace.title")}</h3>
 					<p className="mt-0.5 text-sm text-muted-foreground">{t("workspace.description")}</p>
 				</div>
-				<SpendWorkspaceSettings billingTimeZone={data.billingTimeZone} departmentSpendAttribution={departmentSpendAttribution} canManage={canManage} />
+				<SpendWorkspaceSettings
+					billingTimeZone={data.billingTimeZone}
+					departmentSpendAttribution={departmentSpendAttribution}
+					reportCadence={data.spendReportCadence ?? "weekly"}
+					reportIncludeAdmins={data.spendReportIncludeAdmins === true}
+					reportsEnabled={data.reportsEnabled === true}
+					canManage={canManage}
+				/>
 			</div>
 
 			<SpendRuleEditorSheet target={editor} onClose={() => setEditor(null)} data={data} destinations={destinations} />

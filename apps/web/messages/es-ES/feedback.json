@@ -49,5 +49,21 @@
 		"working": "Dando de baja…",
 		"done": "Te has dado de baja.",
 		"error": "No ha funcionado. Inténtalo de nuevo."
+	},
+	"spendReports": {
+		"metaTitle": "Correos con informes de gasto",
+		"title": "Correos con el informe de gasto de {workspace}",
+		"subscribedBody": "Recibes por correo el informe de gasto de este espacio de trabajo. Darte de baja solo detiene estos informes: los informes de otros espacios de trabajo, los avisos y los correos de cuenta y facturación seguirán llegando.",
+		"unsubscribedBody": "Ya no recibirás por correo el informe de gasto de este espacio de trabajo. Los propietarios y administradores pueden seguir viendo el gasto en la página de uso.",
+		"unsubscribe": "Darme de baja",
+		"unsubscribing": "Dando de baja…",
+		"subscribe": "Volver a suscribirme",
+		"subscribing": "Suscribiendo…",
+		"unsubscribed": "Te has dado de baja.",
+		"subscribed": "Te has vuelto a suscribir.",
+		"error": "No ha funcionado. Inténtalo de nuevo.",
+		"invalidTitle": "Este enlace no funciona",
+		"invalidBody": "Comprueba que se copió el enlace completo. También puedes cambiar los ajustes del informe de gasto en Ajustes → Notificaciones.",
+		"unavailable": "Esta página no está disponible ahora mismo. Inténtalo de nuevo más tarde."
 	}
 }

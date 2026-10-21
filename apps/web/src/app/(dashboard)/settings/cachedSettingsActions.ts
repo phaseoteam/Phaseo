@@ -65,6 +65,8 @@ async function readNotifications() {
 		modelDeprecationAlertsIncludeAdmins: data.modelDeprecationAlertsIncludeAdmins,
 		departmentSpendAttribution: data.departmentSpendAttribution ?? "all",
 		billingTimeZone: data.billingTimeZone ?? "UTC",
+		spendReportCadence: data.spendReportCadence ?? "weekly",
+		spendReportIncludeAdmins: data.spendReportIncludeAdmins ?? false,
 	};
 }
 

@@ -22585,16 +22585,33 @@ components:
       maxLength: 64
       description: 独自のタイムゾーンを持たない支出ルールの暦期間と支出レポートに使う IANA タイムゾーン。既定値は UTC です。適用されるキーの上限とワークスペース予算は常に UTC を使います。
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: ワークスペースのオーナーが支出レポートのメールを受け取る頻度（report_include_admins が有効なら管理者も）：off、daily（09:00 に前日分）、weekly（月曜 09:00 に前週の月曜〜日曜分）、monthly（1 日 09:00 に前月分）。時刻は請求タイムゾーンです。支出のない期間は送信されません。ワークスペースの spend_report ルートにはレポートごとに 1 件の要約が届きます。既定値は weekly です。
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: 支出レポートをオーナーだけでなくワークスペースの管理者にもメールで送ります。既定値は false です。メール内のリンクから誰でも配信を停止できます。
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -22686,6 +22703,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
