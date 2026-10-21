@@ -143,7 +143,10 @@ OpenAI 的缓存控制取决于模型代际。Phaseo 只在 OpenAI 接受时发�
 
 | 字段 | 取值 | 发送给 |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`：`implicit` 或 `explicit`；`ttl`：`30m`，OpenAI 上也可为 `12h` | GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI、DeepInfra 以及 Moonshot AI |
+| `prompt_cache_options` | `mode`：`implicit` 或 `explicit`；`ttl`：`30m` 或 `12h` | GPT-5.6 及以后版本的 OpenAI |
+| `prompt_cache_options` | `mode`：`implicit` 或 `explicit`；`ttl`：`30m` | GPT-5.6 及以后版本的 Azure OpenAI |
+| `prompt_cache_options` | `mode`：`explicit`；`ttl`：`5m` 或 `1h` | DeepInfra |
+| `prompt_cache_options` | `mode`：`implicit`；`ttl`：`5m`，Kimi K3 上也可为 `1h` | Moonshot AI |
 | `prompt_cache_retention` | `in_memory` 或 `24h` | GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型 |
 
 从 GPT-5.6 开始，OpenAI 接受 `30m`（默认）或 `12h` 的 `ttl`，Azure OpenAI 只接受 `30m`。`explicit` 模式只缓存你放置的断点。DeepInfra 使用同一对象，`ttl` 为 `5m` 或 `1h`，并要求会话中的每个请求都带上 `prompt_cache_key`。Moonshot AI 接受 `mode: "implicit"` 以及 `5m`（默认）或 `1h` 的 `ttl`。Phaseo 只把 `1h` 发送到有 1 小时写入价格的 Kimi K3 路由，因此这些写入按该价格计费；在其他路由上，Phaseo 会移除 `ttl`，并在 `X-Phaseo-Dropped-Params` 响应头中将其报告为 `prompt_cache_options.ttl`。其他供应商不会收到这两个字段。

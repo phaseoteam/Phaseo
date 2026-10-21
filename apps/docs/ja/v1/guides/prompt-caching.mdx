@@ -143,7 +143,10 @@ OpenAIのキャッシュ制御はモデルの世代によって異なります�
 
 | フィールド | 値 | 送信先 |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit`または`explicit`、`ttl`: `30m`（OpenAIでは`12h`も可） | OpenAIとAzure OpenAIのGPT-5.6以降、DeepInfra、Moonshot AI |
+| `prompt_cache_options` | `mode`: `implicit`または`explicit`、`ttl`: `30m`または`12h` | OpenAIのGPT-5.6以降 |
+| `prompt_cache_options` | `mode`: `implicit`または`explicit`、`ttl`: `30m` | Azure OpenAIのGPT-5.6以降 |
+| `prompt_cache_options` | `mode`: `explicit`、`ttl`: `5m`または`1h` | DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`、`ttl`: `5m`（Kimi K3では`1h`も可） | Moonshot AI |
 | `prompt_cache_retention` | `in_memory`または`24h` | GPT-5.6より前のOpenAIとAzure OpenAIのモデル |
 
 GPT-5.6以降でOpenAIが受け付ける`ttl`は`30m`（デフォルト）と`12h`で、Azure OpenAIは`30m`だけです。`explicit`モードでは自分で配置したブレークポイントだけがキャッシュされます。DeepInfraは同じオブジェクトを`5m`または`1h`の`ttl`で使い、セッション内のすべてのリクエストで`prompt_cache_key`が必要です。Moonshot AIは`mode: "implicit"`と、`5m`（デフォルト）または`1h`の`ttl`を受け付けます。Phaseoが`1h`を送るのは1時間の書き込み価格があるKimi K3のルートだけなので、その書き込みはその価格で課金されます。それ以外のルートでは`ttl`を削除し、`X-Phaseo-Dropped-Params`ヘッダーで`prompt_cache_options.ttl`として報告します。ほかのプロバイダーにはどちらのフィールドも送りません。

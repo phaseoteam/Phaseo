@@ -143,7 +143,10 @@ Os controles de cache da OpenAI dependem da geração do modelo. O Phaseo envia 
 
 | Campo | Valores | Enviado para |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` ou `explicit`; `ttl`: `30m`, ou `12h` na OpenAI | OpenAI e Azure OpenAI a partir do GPT-5.6, DeepInfra e Moonshot AI |
+| `prompt_cache_options` | `mode`: `implicit` ou `explicit`; `ttl`: `30m` ou `12h` | OpenAI a partir do GPT-5.6 |
+| `prompt_cache_options` | `mode`: `implicit` ou `explicit`; `ttl`: `30m` | Azure OpenAI a partir do GPT-5.6 |
+| `prompt_cache_options` | `mode`: `explicit`; `ttl`: `5m` ou `1h` | DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`; `ttl`: `5m`, ou `1h` no Kimi K3 | Moonshot AI |
 | `prompt_cache_retention` | `in_memory` ou `24h` | Modelos da OpenAI e da Azure OpenAI anteriores ao GPT-5.6 |
 
 A partir do GPT-5.6, a OpenAI aceita um `ttl` de `30m` (o padrão) ou `12h`, e o Azure OpenAI apenas `30m`. O modo `explicit` armazena em cache apenas os pontos de interrupção que você posiciona. A DeepInfra usa o mesmo objeto com `ttl` de `5m` ou `1h` e exige `prompt_cache_key` em todas as solicitações da sessão. A Moonshot AI aceita `mode: "implicit"` e um `ttl` de `5m` (o padrão) ou `1h`. O Phaseo envia `1h` apenas às rotas do Kimi K3 que têm um preço de gravação de 1 hora, para que essas gravações sejam cobradas por esse preço; nas demais, remove o `ttl` e o informa como `prompt_cache_options.ttl` no cabeçalho `X-Phaseo-Dropped-Params`. Os demais provedores não recebem nenhum dos dois campos.

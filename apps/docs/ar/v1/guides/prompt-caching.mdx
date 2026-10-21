@@ -143,7 +143,10 @@ icon: "database-zap"
 
 | الحقل | القيم | يُرسل إلى |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m`، أو `12h` في OpenAI | OpenAI وAzure OpenAI بدءًا من GPT-5.6، وDeepInfra وMoonshot AI |
+| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m` أو `12h` | OpenAI بدءًا من GPT-5.6 |
+| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m` | Azure OpenAI بدءًا من GPT-5.6 |
+| `prompt_cache_options` | `mode`: `explicit`؛ `ttl`: `5m` أو `1h` | DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`؛ `ttl`: `5m`، أو `1h` في Kimi K3 | Moonshot AI |
 | `prompt_cache_retention` | `in_memory` أو `24h` | نماذج OpenAI وAzure OpenAI السابقة لـ GPT-5.6 |
 
 بدءًا من GPT-5.6، يقبل OpenAI قيمة `ttl` هي `30m` (الافتراضية) أو `12h`، بينما لا يقبل Azure OpenAI سوى `30m`. ولا يخزّن الوضع `explicit` إلا نقاط التوقف التي تضعها. ويستخدم DeepInfra الكائن نفسه مع `ttl` قيمته `5m` أو `1h`، ويتطلب `prompt_cache_key` في كل طلب ضمن الجلسة. ويقبل Moonshot AI القيمة `mode: "implicit"` وقيمة `ttl` هي `5m` (الافتراضية) أو `1h`. ولا ترسل Phaseo القيمة `1h` إلا إلى مسارات Kimi K3 التي لها سعر لكتابة الساعة الواحدة، فتُحتسب تلك الكتابات بذلك السعر؛ وفي غيرها تحذف `ttl` وتُبلغ عنها باسم `prompt_cache_options.ttl` في ترويسة `X-Phaseo-Dropped-Params`. ولا يتلقى المزوّدون الآخرون أيًّا من الحقلين.

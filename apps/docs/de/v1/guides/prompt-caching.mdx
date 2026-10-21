@@ -143,7 +143,10 @@ Die Cache-Steuerungen von OpenAI hängen von der Modellgeneration ab. Phaseo sen
 
 | Feld | Werte | Gesendet an |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` oder `explicit`; `ttl`: `30m`, bei OpenAI auch `12h` | OpenAI und Azure OpenAI ab GPT-5.6, DeepInfra und Moonshot AI |
+| `prompt_cache_options` | `mode`: `implicit` oder `explicit`; `ttl`: `30m` oder `12h` | OpenAI ab GPT-5.6 |
+| `prompt_cache_options` | `mode`: `implicit` oder `explicit`; `ttl`: `30m` | Azure OpenAI ab GPT-5.6 |
+| `prompt_cache_options` | `mode`: `explicit`; `ttl`: `5m` oder `1h` | DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`; `ttl`: `5m`, bei Kimi K3 auch `1h` | Moonshot AI |
 | `prompt_cache_retention` | `in_memory` oder `24h` | OpenAI- und Azure-OpenAI-Modelle vor GPT-5.6 |
 
 Ab GPT-5.6 akzeptiert OpenAI als `ttl` `30m` (Standard) oder `12h`, Azure OpenAI nur `30m`. Im Modus `explicit` werden nur die Breakpoints gecacht, die du setzt. DeepInfra verwendet dasselbe Objekt mit einer `ttl` von `5m` oder `1h` und braucht `prompt_cache_key` bei jeder Anfrage der Sitzung. Moonshot AI nimmt `mode: "implicit"` und als `ttl` `5m` (Standard) oder `1h`. Phaseo sendet `1h` nur an Kimi-K3-Routen mit einem Preis für 1-Stunden-Schreibvorgänge, sodass diese Schreibvorgänge zu diesem Preis abgerechnet werden; sonst entfernt Phaseo die `ttl` und meldet sie als `prompt_cache_options.ttl` im Header `X-Phaseo-Dropped-Params`. Andere Provider erhalten keines der beiden Felder.
