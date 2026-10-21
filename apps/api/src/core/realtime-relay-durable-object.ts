@@ -39,7 +39,6 @@ const RELAY_DRAIN_TIMEOUT_MS = 20_000;
 const RELAY_AUTHORITATIVE_USAGE_TIMEOUT_MS = 10_000;
 const RELAY_USAGE_CHECKPOINT_INTERVAL_MS = 1_000;
 const RELAY_USAGE_PERSIST_INTERVAL_MS = 5_000;
-const RELAY_PROVIDER_STATE_PERSIST_INTERVAL_MS = 1_000;
 const RELAY_SETTLEMENT_RETRY_MS = 15_000;
 const RELAY_MAX_MESSAGE_BYTES = 96 * 1024;
 const RELAY_MAX_AUDIO_CHUNK_MS = 1_000;
@@ -50,10 +49,21 @@ const XAI_OUTPUT_SAMPLE_RATE = 24_000;
 const OPENAI_INPUT_SAMPLE_RATE = 24_000;
 const XAI_INPUT_SAMPLE_RATE = 24_000;
 const GOOGLE_INPUT_SAMPLE_RATE = 16_000;
+const GOOGLE_OUTPUT_SAMPLE_RATE = 24_000;
+const OPENAI_OUTPUT_SAMPLE_RATE = 24_000;
 const GOOGLE_SPEECH_RMS_THRESHOLD = 0.012;
 const GOOGLE_SILENCE_END_MS = 1_000;
-const BUDGET_CLOSING_INSTRUCTIONS =
-	"The realtime session budget is almost exhausted. Briefly tell the user that this voice session is ending, finish the current thought, and do not ask a follow-up question.";
+// Server VAD keeps this much audio before detected speech in the committed buffer.
+const OPENAI_VAD_PREFIX_PADDING_MS = 300;
+// After this many failed settlement attempts the session moves to billing
+// review instead of retrying forever.
+const RELAY_SETTLEMENT_MAX_ATTEMPTS = 20;
+// Documented audio token rates. Used only to estimate a turn whose provider
+// usage never arrived because the connection ended mid-turn.
+export const REALTIME_ESTIMATE_AUDIO_TOKENS_PER_SECOND: Record<"openai" | "google-ai-studio", { input: number; output: number }> = {
+	openai: { input: 10, output: 20 },
+	"google-ai-studio": { input: 25, output: 25 },
+};
 
 type RelayUsageAggregate = LiveUsage & {
 	input_text_tokens?: number;
@@ -75,6 +85,19 @@ type RelayUsageAggregate = LiveUsage & {
 	input_audio_clear_pending?: boolean;
 	provider_cost_usd_ticks?: number;
 	provider_cost_nanos?: number;
+	// Metered audio for the turn in progress; only used to estimate an interrupted turn.
+	pending_input_audio_ms?: number;
+	pending_vad_input_audio_ms?: number;
+	pending_output_audio_ms?: number;
+	billing_estimated?: boolean;
+	estimate_basis?: string;
+	estimated_input_audio_tokens?: number;
+	estimated_output_audio_tokens?: number;
+	// Connected provider wall-clock time (xAI server VAD sessions bill duration).
+	provider_connected_at_ms?: number;
+	provider_last_seen_ms?: number;
+	provider_closed_at_ms?: number;
+	session_audio_ms?: number;
 };
 
 type RelayProviderState = {
@@ -94,12 +117,31 @@ type PendingSettlement = {
 	status: "completed" | "failed" | "cancelled" | "expired";
 	reason: string;
 	phase?: "drain" | "authoritative" | "settle";
+	// Client disconnects settle as completed once any response has completed.
+	statusFromResponses?: boolean;
 };
 
 const STORAGE_SESSION_ID = "session_id";
 const STORAGE_USAGE = "usage";
 const STORAGE_PENDING_SETTLEMENT = "pending_settlement";
 const STORAGE_PROVIDER_STATE = "provider_state";
+const STORAGE_SETTLEMENT_ATTEMPTS = "settlement_attempts";
+const OPENAI_BILLING_EVENT_TYPES = new Set([
+	"input_audio_buffer.committed",
+	"response.created",
+	"response.output_item.added",
+	"response.content_part.added",
+	"response.output_audio.delta",
+	"response.output_audio.done",
+	"response.done",
+]);
+const LIVE_BILLING_EVENT_TYPES = new Set([
+	"session.started",
+	"session.usage.updated",
+	"session.closed",
+	"session.delegation.created",
+	"response.event",
+]);
 
 export function validateRealtimeAudioIngress(args: {
 	base64: string;
@@ -373,7 +415,6 @@ export class RealtimeRelayDurableObject {
 	private clientGoneHandled = false;
 	private lastUsageCheckpointAt = 0;
 	private lastUsagePersistAt = 0;
-	private lastProviderStatePersistAt = 0;
 	private audioStartedAt = 0;
 	private receivedAudioMs = 0;
 	private settling = false;
@@ -384,7 +425,13 @@ export class RealtimeRelayDurableObject {
 	private openAISpeechActive = false;
 	private openAIInputCommitted = false;
 	private waitingForOpenAIInputClear = false;
+	private openAISpeechStartMs: number | null = null;
 	private liveClosing = false;
+	private pendingSettlement: PendingSettlement | null = null;
+	// Responses created while ending for a disconnect or failure are cancelled,
+	// not played to nobody and billed.
+	private cancelResponsesOnDrain = false;
+	private lastActivityAt = 0;
 
 	private get isLive() { return isLiveModel(this.session?.model_id); }
 
@@ -565,6 +612,10 @@ export class RealtimeRelayDurableObject {
 			`wss://api.x.ai/v1/realtime?model=${encodeURIComponent(model)}`,
 			{ headers: { Authorization: `Bearer ${key}` } },
 		);
+		// Server VAD sessions are billed for connected duration from this point.
+		if (!this.usage.provider_connected_at_ms) this.usage.provider_connected_at_ms = Date.now();
+		delete this.usage.provider_closed_at_ms;
+		await this.checkpointUsage(true);
 		this.attachUpstream();
 		this.sendUpstream({
 			type: "session.update",
@@ -630,14 +681,13 @@ export class RealtimeRelayDurableObject {
 			phase: closedBeforeReady ? "setup" : "session",
 		});
 		this.upstream = null;
-		if (
-			provider !== "spacex-ai" &&
-			!closedBeforeReady &&
-			(this.responseInFlight || this.inputSinceLastResponse || this.providerState.googleTurnActive)
-		) {
-			await this.markBillingUnresolved("provider_socket_closed_before_authoritative_usage");
+		this.markProviderClosed();
+		if (this.pendingSettlement) {
+			// Already ending: the provider closing first means no more usage will arrive.
+			await this.settle(this.pendingSettlementStatus(this.pendingSettlement), this.pendingSettlement.reason);
 			return;
 		}
+		// An interrupted turn is settled from confirmed usage plus a metered estimate.
 		await this.settle(
 			closedBeforeReady || !this.providerCompletedResponseSeen
 				? "failed"
@@ -657,6 +707,7 @@ export class RealtimeRelayDurableObject {
 			return;
 		}
 		const message = parseJson(text) as ClientAudioMessage | null;
+		this.lastActivityAt = Date.now();
 		if (this.isLive && (message?.type as string) === "client.close") {
 			await this.requestLiveClose("completed", "client_requested_close");
 			return;
@@ -716,12 +767,19 @@ export class RealtimeRelayDurableObject {
 		} else {
 			this.usage = addDuration(this.usage, "input_audio_ms", validated.durationMs);
 		}
+		const pendingBefore = this.inputSinceLastResponse;
 		if (provider !== "spacex-ai") {
+			this.usage.pending_input_audio_ms = toNumber(this.usage.pending_input_audio_ms) + validated.durationMs;
+		}
+		// OpenAI only bills audio once the provider commits it and creates a
+		// response, so pending input is marked from provider events instead.
+		// Google speech (RMS gated above) can start a provider VAD turn.
+		if (provider === "google-ai-studio") {
 			this.inputSinceLastResponse = true;
 			this.usage.input_audio_pending = true;
 		}
 		this.resetIdleTimer();
-		await this.checkpointUsage();
+		await this.checkpointUsage(!pendingBefore && this.inputSinceLastResponse);
 		void this.maybePersistUsage();
 		if (provider === "google-ai-studio") {
 			this.sendUpstream({
@@ -741,21 +799,55 @@ export class RealtimeRelayDurableObject {
 	}
 
 	private async rejectAudio(reason: string) {
+		this.acceptingAudio = false;
 		this.sendClient({ type: "relay.input_rejected", reason });
-		await this.settle("failed", reason);
+		// Use the same drain as other endings so in-flight usage is not lost.
+		await this.forceAuthoritativeUsage("failed", reason);
+	}
+
+	private isBillingEvent(event: Record<string, unknown>): boolean {
+		if (!this.session) return false;
+		const type = getStringField(event, "type");
+		if (this.isLive) return LIVE_BILLING_EVENT_TYPES.has(type);
+		if (providerFromSession(this.session) === "google-ai-studio") {
+			return Boolean(event.usageMetadata || event.serverContent);
+		}
+		return OPENAI_BILLING_EVENT_TYPES.has(type);
 	}
 
 	private async handleUpstreamMessage(raw: unknown) {
 		const text = await parseMessageData(raw);
 		if (!text) return;
-		this.sendClientRaw(text);
+		this.lastActivityAt = Date.now();
+		// Bounds the billed duration of an xAI session if this object is evicted.
+		if (this.upstream && this.usage.provider_connected_at_ms) this.usage.provider_last_seen_ms = this.lastActivityAt;
 		const event = parseJson(text);
+		let forwarded = false;
+		const forward = () => {
+			if (forwarded) return;
+			forwarded = true;
+			this.sendClientRaw(text);
+		};
+		// Usage-bearing and in-flight events are journaled to Durable Object
+		// storage before the client sees them; everything else is forwarded first.
+		if (!event || !this.session || !this.isBillingEvent(event)) forward();
 		if (!event || !this.session) return;
+		try {
+			await this.processUpstreamEvent(event, forward);
+		} finally {
+			forward();
+		}
+	}
+
+	private async processUpstreamEvent(event: Record<string, unknown>, forward: () => void) {
+		if (!this.session) return;
 		this.providerEventSeen = true;
 		const provider = providerFromSession(this.session);
 		const type = getStringField(event, "type");
 		if (this.isLive) {
 			this.usage = { ...this.usage, ...ingestLiveUsage(this.usage, event) };
+			if (LIVE_BILLING_EVENT_TYPES.has(type)) await this.checkpointUsage(true);
+			forward();
 			if (type === "session.started") {
 				this.providerSetupComplete = true;
 				this.session = await markRealtimeSessionConnected({
@@ -765,8 +857,7 @@ export class RealtimeRelayDurableObject {
 				if (this.liveClosing) this.sendUpstream({ type: "session.close" });
 			}
 			if (type === "error") { await this.requestLiveClose("failed", "live_provider_error"); return; }
-			if (["session.started", "session.usage.updated", "session.closed", "session.delegation.created", "response.event"].includes(type)) {
-				await this.checkpointUsage(true);
+			if (LIVE_BILLING_EVENT_TYPES.has(type)) {
 				if (type !== "response.event" || getRecordField(event, "event")?.response
 					|| getRecordField(event, "event")?.type === "response.output_item.done") {
 					await this.persistUsage();
@@ -786,23 +877,52 @@ export class RealtimeRelayDurableObject {
 		}
 		if (type === "session.updated" || event.setupComplete) this.providerSetupComplete = true;
 		if (event.error && !this.providerSetupComplete) {
+			forward();
 			await this.settle("failed", "provider_session_setup_failed");
 			return;
 		}
+		const flagsBefore = this.billingFlagsKey();
+		const providerStateBefore = provider === "google-ai-studio" ? JSON.stringify(this.providerState) : "";
+		let completedTurn: { usage: Record<string, unknown>; responseId: string | null } | null = null;
+		let inputCleared = false;
+
 		if (provider === "openai") {
-			if (type === "input_audio_buffer.speech_started") this.openAISpeechActive = true;
-			if (type === "input_audio_buffer.speech_stopped") this.openAISpeechActive = false;
-			if (type === "input_audio_buffer.committed") this.openAIInputCommitted = true;
+			if (type === "input_audio_buffer.speech_started") {
+				this.openAISpeechActive = true;
+				const start = event.audio_start_ms;
+				this.openAISpeechStartMs = typeof start === "number" && Number.isFinite(start) ? start : null;
+			}
+			if (type === "input_audio_buffer.speech_stopped") {
+				this.openAISpeechActive = false;
+				const end = event.audio_end_ms;
+				if (this.openAISpeechStartMs != null && typeof end === "number" && Number.isFinite(end)) {
+					this.usage.pending_vad_input_audio_ms = toNumber(this.usage.pending_vad_input_audio_ms)
+						+ Math.max(0, end - this.openAISpeechStartMs) + OPENAI_VAD_PREFIX_PADDING_MS;
+				}
+				this.openAISpeechStartMs = null;
+			}
+			// OpenAI bills input once it is committed and a response is created;
+			// uncommitted microphone audio is never pending billing.
+			if (type === "input_audio_buffer.committed") {
+				this.openAIInputCommitted = true;
+				this.inputSinceLastResponse = true;
+				this.usage.input_audio_pending = true;
+			}
+			if (type === "response.created") {
+				this.openAIInputCommitted = false;
+				this.inputSinceLastResponse = true;
+				this.usage.input_audio_pending = true;
+				if (this.cancelResponsesOnDrain) this.sendUpstream({ type: "response.cancel" });
+			}
 			if (type === "input_audio_buffer.cleared" && this.waitingForOpenAIInputClear) {
 				this.waitingForOpenAIInputClear = false;
 				delete this.usage.input_audio_clear_pending;
 				this.openAISpeechActive = false;
-				if (!this.openAIInputCommitted && !this.responseInFlight) {
-					this.inputSinceLastResponse = false;
-					delete this.usage.input_audio_pending;
-					await this.checkpointUsage(true);
-					await this.settle(this.providerCompletedResponseSeen ? "completed" : "cancelled", "client_disconnected_input_cleared");
-				}
+				inputCleared = true;
+			}
+			if (type === "response.output_audio.delta") {
+				this.usage.pending_output_audio_ms = toNumber(this.usage.pending_output_audio_ms)
+					+ pcm16Base64DurationMs(getStringField(event, "delta"), OPENAI_OUTPUT_SAMPLE_RATE);
 			}
 		}
 
@@ -821,86 +941,113 @@ export class RealtimeRelayDurableObject {
 				"output_audio_ms",
 				pcm16Base64DurationMs(getStringField(event, "delta"), XAI_OUTPUT_SAMPLE_RATE),
 			);
-			await this.checkpointUsage();
-			void this.maybePersistUsage();
 		}
 
 		if (type === "response.done") {
 			const response = getRecordField(event, "response");
 			const responseId = response ? getStringField(response, "id") : "";
 			const usage = response ? getRecordField(response, "usage") : null;
-			// A terminal event without authoritative token usage cannot settle
-			// an OpenAI turn, even when an earlier turn had valid usage.
-			if (provider === "openai" && (!usage || Object.keys(usage).length === 0)) return;
-			if (usage && (!responseId || !this.providerState.seenResponseIds.includes(responseId))) {
-				this.usage = addOpenAIUsage(this.usage, usage);
-				if (provider === "spacex-ai") {
-					const costTicks = toNumber(usage.cost_in_usd_ticks ?? usage.costInUsdTicks);
-					if (costTicks > 0) {
-						this.usage.provider_cost_usd_ticks =
-							toNumber(this.usage.provider_cost_usd_ticks) + costTicks;
-						this.usage.provider_cost_nanos = Math.round(
-							toNumber(this.usage.provider_cost_usd_ticks) / 10,
-						);
+			const hasUsage = Boolean(usage && Object.keys(usage).length > 0);
+			const duplicate = Boolean(responseId && this.providerState.seenResponseIds.includes(responseId));
+			if (!duplicate) {
+				if (hasUsage && usage) {
+					this.usage = addOpenAIUsage(this.usage, usage);
+					if (provider === "spacex-ai") {
+						const costTicks = toNumber(usage.cost_in_usd_ticks ?? usage.costInUsdTicks);
+						if (costTicks > 0) {
+							this.usage.provider_cost_usd_ticks =
+								toNumber(this.usage.provider_cost_usd_ticks) + costTicks;
+							this.usage.provider_cost_nanos = Math.round(
+								toNumber(this.usage.provider_cost_usd_ticks) / 10,
+							);
+						}
 					}
+				} else if (provider === "openai") {
+					// A terminal event without usage still ends the turn: settle it
+					// from metered audio instead of leaving it in flight forever.
+					this.applyPendingEstimate("openai_response_usage_missing");
 				}
 				if (responseId) {
 					this.providerState.seenResponseIds = [
 						...this.providerState.seenResponseIds.slice(-255),
 						responseId,
 					];
-					await this.persistProviderState();
 				}
-				await this.persistUsage();
 			}
 			this.providerCompletedResponseSeen = true;
-			await this.emitTurnTelemetry(usage ?? {}, responseId || null);
-			this.markResponseComplete();
+			this.clearResponseState();
+			completedTurn = { usage: usage ?? {}, responseId: responseId || null };
+			if (responseId && !duplicate) await this.persistProviderState();
 		}
 
 		if (type === "response.output_audio.done" && provider === "spacex-ai") {
-			await this.persistUsage();
-			if (!this.providerCompletedResponseSeen) {
-				await this.emitTurnTelemetry({}, null);
-			}
+			const first = !this.providerCompletedResponseSeen;
 			this.providerCompletedResponseSeen = true;
-			this.markResponseComplete();
+			this.clearResponseState();
+			completedTurn = first ? { usage: {}, responseId: null } : { usage: {}, responseId: "" };
 		}
 
-		if (provider !== "google-ai-studio") return;
-		if (event.setupComplete) {
-			this.providerSetupComplete = true;
-		}
-		const serverContent = getRecordField(event, "serverContent");
-		if (serverContent) {
-			const interactionStatus =
-				getStringField(serverContent, "interactionStatus") ||
-				getStringField(event, "interactionStatus");
-			const modelTurn = getRecordField(serverContent, "modelTurn");
-			const parts = modelTurn ? getArrayField<Record<string, unknown>>(modelTurn, "parts") : [];
-			for (const part of parts) {
-				if (getRecordField(part, "inlineData") || getStringField(part, "text")) {
+		if (provider === "google-ai-studio") {
+			if (event.setupComplete) this.providerSetupComplete = true;
+			const serverContent = getRecordField(event, "serverContent");
+			if (serverContent) {
+				const interactionStatus =
+					getStringField(serverContent, "interactionStatus") ||
+					getStringField(event, "interactionStatus");
+				const modelTurn = getRecordField(serverContent, "modelTurn");
+				const parts = modelTurn ? getArrayField<Record<string, unknown>>(modelTurn, "parts") : [];
+				for (const part of parts) {
+					const inlineData = getRecordField(part, "inlineData");
+					if (inlineData || getStringField(part, "text")) {
+						this.beginGoogleTurn();
+						this.markResponseInFlight();
+					}
+					if (inlineData && getStringField(inlineData, "mimeType").startsWith("audio/")) {
+						this.usage.pending_output_audio_ms = toNumber(this.usage.pending_output_audio_ms)
+							+ pcm16Base64DurationMs(getStringField(inlineData, "data"), GOOGLE_OUTPUT_SAMPLE_RATE);
+					}
+				}
+				// generationComplete precedes turnComplete (and interrupted also has a
+				// following turnComplete). Only the latter closes the usage accumulator.
+				if (serverContent.turnComplete && interactionStatus !== "IN_PROGRESS") {
 					this.beginGoogleTurn();
-					this.markResponseInFlight();
+					this.providerState.googleTurnComplete = true;
 				}
 			}
-			// generationComplete precedes turnComplete (and interrupted also has a
-			// following turnComplete). Only the latter closes the usage accumulator.
-			if (serverContent.turnComplete && interactionStatus !== "IN_PROGRESS") {
+			const usageMetadata = getRecordField(event, "usageMetadata");
+			if (usageMetadata) {
 				this.beginGoogleTurn();
-				this.providerState.googleTurnComplete = true;
+				this.providerState.googleTurnUsage = mergeGoogleUsageSnapshot(
+					this.providerState.googleTurnUsage,
+					googleUsageSnapshot(usageMetadata),
+				);
 			}
+			const turnUsage = this.takeCompletedGoogleTurn();
+			if (turnUsage) completedTurn = { usage: turnUsage, responseId: null };
 		}
-		const usageMetadata = getRecordField(event, "usageMetadata");
-		if (usageMetadata) {
-			this.beginGoogleTurn();
-			this.providerState.googleTurnUsage = mergeGoogleUsageSnapshot(
-				this.providerState.googleTurnUsage,
-				googleUsageSnapshot(usageMetadata),
-			);
+
+		// Journal before forwarding: a crash after the client saw this event
+		// must not lose the usage or in-flight state it implies.
+		const flagsChanged = flagsBefore !== this.billingFlagsKey();
+		await this.checkpointUsage(flagsChanged || completedTurn != null);
+		if (provider === "google-ai-studio" && providerStateBefore !== JSON.stringify(this.providerState)) {
+			await this.persistProviderState();
 		}
-		await this.maybePersistProviderState();
-		await this.maybeCompleteGoogleTurn();
+		forward();
+
+		if (type === "response.output_audio.delta" && provider === "spacex-ai") void this.maybePersistUsage();
+		if (completedTurn) {
+			await this.persistUsage();
+			if (completedTurn.responseId !== "") {
+				await this.emitTurnTelemetry(completedTurn.usage, completedTurn.responseId);
+			}
+			await this.afterResponseComplete();
+		}
+		if (inputCleared) await this.finishDrainIfIdle();
+	}
+
+	private billingFlagsKey(): string {
+		return `${this.responseInFlight}|${this.inputSinceLastResponse}|${this.providerState.googleTurnActive}|${this.waitingForOpenAIInputClear}`;
 	}
 
 	private beginGoogleTurn() {
@@ -910,8 +1057,8 @@ export class RealtimeRelayDurableObject {
 		this.providerState.googleTurnUsage = {};
 	}
 
-	private async maybeCompleteGoogleTurn() {
-		if (!this.providerState.googleTurnActive || !this.providerState.googleTurnComplete) return;
+	private takeCompletedGoogleTurn(): RelayUsageAggregate | null {
+		if (!this.providerState.googleTurnActive || !this.providerState.googleTurnComplete) return null;
 		const turnUsage = this.providerState.googleTurnUsage;
 		const hasUsage =
 			toNumber(turnUsage.input_text_tokens) +
@@ -920,27 +1067,85 @@ export class RealtimeRelayDurableObject {
 			toNumber(turnUsage.input_video_tokens) +
 			toNumber(turnUsage.output_text_tokens) +
 			toNumber(turnUsage.output_audio_tokens) > 0;
-		if (!hasUsage) return;
+		if (!hasUsage) return null;
 		this.usage = addTokenUsage(this.usage, turnUsage);
 		this.providerState.googleTurnActive = false;
 		this.providerState.googleTurnComplete = false;
 		this.providerState.googleTurnUsage = {};
 		this.providerCompletedResponseSeen = true;
-		await this.emitTurnTelemetry(turnUsage, null);
-		await this.persistProviderState();
-		await this.persistUsage();
-		this.markResponseComplete();
+		this.clearResponseState();
+		return turnUsage;
 	}
 
 	private markResponseInFlight() {
 		if (!this.responseInFlight) this.turnStartedAtMs = Date.now();
 		this.responseInFlight = true;
 		this.usage.assistant_response_in_flight = true;
-		void this.checkpointUsage(true);
-		if (this.drainTimer != null) {
-			clearTimeout(this.drainTimer);
-			this.drainTimer = null;
+	}
+
+	private hasPendingBilling(): boolean {
+		if (!this.session || providerFromSession(this.session) === "spacex-ai") return false;
+		return this.responseInFlight || this.inputSinceLastResponse || this.providerState.googleTurnActive;
+	}
+
+	/**
+	 * Converts a turn whose provider usage never arrived into estimated token
+	 * meters from metered audio, so the session settles instead of waiting for
+	 * manual review. Returns false when nothing was pending.
+	 */
+	private applyPendingEstimate(basis: string): boolean {
+		if (!this.session || !this.hasPendingBilling()) return false;
+		const provider = providerFromSession(this.session) as "openai" | "google-ai-studio";
+		const rates = REALTIME_ESTIMATE_AUDIO_TOKENS_PER_SECOND[provider] ?? REALTIME_ESTIMATE_AUDIO_TOKENS_PER_SECOND.openai;
+		const googleTurn = provider === "google-ai-studio" && this.providerState.googleTurnActive
+			? this.providerState.googleTurnUsage
+			: {};
+		let inputMs = 0;
+		if (provider === "openai") {
+			const vadMs = toNumber(this.usage.pending_vad_input_audio_ms);
+			if (this.inputSinceLastResponse || this.responseInFlight) {
+				inputMs = vadMs > 0 ? vadMs : toNumber(this.usage.pending_input_audio_ms);
+			}
+		} else if (this.providerState.googleTurnActive || this.responseInFlight) {
+			// Speech that no model turn followed is not billed by Google.
+			inputMs = toNumber(this.usage.pending_input_audio_ms);
 		}
+		const outputMs = toNumber(this.usage.pending_output_audio_ms);
+		const estimate: RelayUsageAggregate = {
+			input_text_tokens: toNumber(googleTurn.input_text_tokens),
+			output_text_tokens: toNumber(googleTurn.output_text_tokens),
+			input_audio_tokens: Math.max(toNumber(googleTurn.input_audio_tokens), Math.ceil((inputMs / 1000) * rates.input)),
+			output_audio_tokens: Math.max(toNumber(googleTurn.output_audio_tokens), Math.ceil((outputMs / 1000) * rates.output)),
+		};
+		this.usage = addTokenUsage(this.usage, estimate);
+		this.usage.estimated_input_audio_tokens =
+			toNumber(this.usage.estimated_input_audio_tokens) + toNumber(estimate.input_audio_tokens);
+		this.usage.estimated_output_audio_tokens =
+			toNumber(this.usage.estimated_output_audio_tokens) + toNumber(estimate.output_audio_tokens);
+		this.usage.billing_estimated = true;
+		this.usage.estimate_basis = this.usage.estimate_basis && this.usage.estimate_basis !== basis
+			? "mixed"
+			: basis;
+		this.providerState.googleTurnActive = false;
+		this.providerState.googleTurnComplete = false;
+		this.providerState.googleTurnUsage = {};
+		this.clearResponseState(true);
+		return true;
+	}
+
+	private clearResponseState(force = false) {
+		this.responseInFlight = false;
+		// A commit after this response was created is still awaiting its own response.
+		const committedAfter = !force && this.openAIInputCommitted;
+		this.openAIInputCommitted = committedAfter;
+		this.inputSinceLastResponse = committedAfter;
+		delete this.usage.assistant_response_in_flight;
+		if (!committedAfter) {
+			delete this.usage.input_audio_pending;
+			delete this.usage.pending_input_audio_ms;
+			delete this.usage.pending_vad_input_audio_ms;
+		}
+		delete this.usage.pending_output_audio_ms;
 	}
 
 	private async emitTurnTelemetry(usage: Record<string, unknown>, responseId: string | null) {
@@ -969,102 +1174,95 @@ export class RealtimeRelayDurableObject {
 		}));
 	}
 
-	private markResponseComplete() {
-		this.responseInFlight = false;
-		this.openAIInputCommitted = false;
-		this.inputSinceLastResponse = this.waitingForOpenAIInputClear;
-		delete this.usage.assistant_response_in_flight;
-		if (!this.waitingForOpenAIInputClear) delete this.usage.input_audio_pending;
-		void this.checkpointUsage(true);
-		if (this.waitingForOpenAIInputClear) return;
-		if (this.budgetClosing) {
-			void this.settle("expired", "realtime_budget_closed_after_response");
+	private async afterResponseComplete() {
+		if (this.pendingSettlement) {
+			await this.finishDrainIfIdle();
 			return;
 		}
-		if (!this.client) {
-			void this.settle("completed", "client_disconnected_after_response");
+		if (!this.client && !this.waitingForOpenAIInputClear && !this.hasPendingBilling()) {
+			await this.settle("completed", "client_disconnected_after_response");
 		}
+	}
+
+	private pendingSettlementStatus(pending: PendingSettlement): PendingSettlement["status"] {
+		if (!pending.statusFromResponses) return pending.status;
+		return this.providerCompletedResponseSeen ? "completed" : "cancelled";
+	}
+
+	private async finishDrainIfIdle() {
+		const pending = this.pendingSettlement;
+		if (!pending || this.settled || this.settling) return;
+		if (this.hasPendingBilling() || this.waitingForOpenAIInputClear) return;
+		await this.settle(this.pendingSettlementStatus(pending), pending.reason);
+	}
+
+	private async setPendingSettlement(pending: PendingSettlement, timeoutMs: number) {
+		this.pendingSettlement = pending;
+		await this.state.storage.put(STORAGE_PENDING_SETTLEMENT, pending);
+		await this.state.storage.setAlarm(Date.now() + timeoutMs);
 	}
 
 	private async handleClientGone() {
 		this.acceptingAudio = false;
 		if (this.isLive) { await this.requestLiveClose("cancelled", "client_disconnected"); return; }
-		if (this.session && providerFromSession(this.session) === "openai" && this.receivedAudioMs > 0) {
-			if (this.openAISpeechActive && !this.openAIInputCommitted && !this.responseInFlight) {
-				this.sendUpstream({ type: "input_audio_buffer.commit" });
-				this.sendUpstream({ type: "response.create" });
-				this.markResponseInFlight();
-			} else {
-				// Wait for the provider to acknowledge discarding uncommitted input.
-				// Never infer silence from PCM volume or settle ahead of queued VAD events.
-				this.waitingForOpenAIInputClear = true;
-				this.usage.input_audio_clear_pending = true;
-				this.inputSinceLastResponse = true;
-				this.usage.input_audio_pending = true;
-				this.sendUpstream({ type: "input_audio_buffer.clear" });
-			}
+		const provider = this.session ? providerFromSession(this.session) : null;
+		if (provider === "openai" && this.receivedAudioMs > 0 && this.upstream?.readyState === WebSocket.OPEN) {
+			// Uncommitted audio is not billed: discard it rather than committing it
+			// and creating a reply nobody will hear. The acknowledgement orders any
+			// commit the provider already made ahead of the settlement.
+			this.waitingForOpenAIInputClear = true;
+			this.usage.input_audio_clear_pending = true;
+			this.sendUpstream({ type: "input_audio_buffer.clear" });
 		}
-		await this.checkpointUsage(true);
-		if (this.responseInFlight || this.inputSinceLastResponse || this.providerState.googleTurnActive) {
-			// Tell Google's VAD that the microphone ended immediately; otherwise
-			// the pending input can never finish while we wait for final usage.
-			if (this.session && providerFromSession(this.session) === "google-ai-studio") {
-				this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
-			}
-			await this.state.storage.put(STORAGE_PENDING_SETTLEMENT, {
-				status: "cancelled",
-				reason: "client_disconnected_drain_timeout",
-				phase: "drain",
-			} satisfies PendingSettlement);
-			await this.state.storage.setAlarm(Date.now() + RELAY_DRAIN_TIMEOUT_MS);
-			this.drainTimer = setTimeout(() => {
-				void this.forceAuthoritativeUsage("cancelled", "client_disconnected_drain_timeout");
-			}, RELAY_DRAIN_TIMEOUT_MS) as unknown as number;
-			return;
-		}
-		await this.settle(this.providerCompletedResponseSeen ? "completed" : "cancelled", "client_disconnected");
+		await this.forceAuthoritativeUsage(
+			this.providerCompletedResponseSeen ? "completed" : "cancelled",
+			"client_disconnected",
+			{ statusFromResponses: true },
+		);
 	}
 
+	/**
+	 * Ends the session: cancels an in-flight response (OpenAI) or ends the
+	 * microphone stream (Google), waits briefly for the provider's final usage
+	 * event, then settles. Never creates a new billed response.
+	 */
 	private async forceAuthoritativeUsage(
 		status: "completed" | "failed" | "cancelled" | "expired",
 		reason: string,
+		options?: { statusFromResponses?: boolean },
 	) {
-		if (!this.session || this.settled) return;
+		if (!this.session || this.settled || this.settling) return;
+		this.acceptingAudio = false;
 		if (this.isLive) { await this.requestLiveClose(status, reason); return; }
+		if (this.pendingSettlement?.phase === "authoritative") return;
 		const provider = providerFromSession(this.session);
-		if (this.usage.input_audio_clear_pending === true) {
-			await this.markBillingUnresolved("openai_input_clear_acknowledgement_missing");
-			return;
-		}
+		this.cancelResponsesOnDrain = true;
 		if (
 			provider === "spacex-ai" ||
-			(!this.responseInFlight && !this.inputSinceLastResponse && !this.providerState.googleTurnActive)
+			(!this.hasPendingBilling() && !this.waitingForOpenAIInputClear) ||
+			this.upstream?.readyState !== WebSocket.OPEN
 		) {
 			await this.settle(status, reason);
 			return;
 		}
 
 		if (provider === "openai") {
-			if (this.responseInFlight) {
-				this.sendUpstream({ type: "response.cancel" });
-			} else {
-				this.sendUpstream({ type: "input_audio_buffer.commit" });
-				this.sendUpstream({ type: "response.create" });
-				this.markResponseInFlight();
-			}
+			if (this.responseInFlight) this.sendUpstream({ type: "response.cancel" });
 		} else if (provider === "google-ai-studio") {
 			this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
 		}
-
-		await this.state.storage.put(STORAGE_PENDING_SETTLEMENT, {
+		await this.checkpointUsage(true);
+		await this.setPendingSettlement({
 			status,
 			reason,
 			phase: "authoritative",
-		} satisfies PendingSettlement);
-		await this.state.storage.setAlarm(Date.now() + RELAY_AUTHORITATIVE_USAGE_TIMEOUT_MS);
+			...(options?.statusFromResponses ? { statusFromResponses: true } : {}),
+		}, RELAY_AUTHORITATIVE_USAGE_TIMEOUT_MS);
 		if (this.drainTimer != null) clearTimeout(this.drainTimer);
 		this.drainTimer = setTimeout(() => {
-			void this.settle(status, `${reason}_authoritative_usage_timeout`);
+			this.drainTimer = null;
+			const pending = this.pendingSettlement;
+			void this.settle(pending ? this.pendingSettlementStatus(pending) : status, `${reason}_authoritative_usage_timeout`);
 		}, RELAY_AUTHORITATIVE_USAGE_TIMEOUT_MS) as unknown as number;
 	}
 
@@ -1083,21 +1281,36 @@ export class RealtimeRelayDurableObject {
 		await this.state.storage.put(STORAGE_USAGE, this.usage);
 	}
 
-	private async maybePersistProviderState() {
-		const now = Date.now();
-		if (now - this.lastProviderStatePersistAt < RELAY_PROVIDER_STATE_PERSIST_INTERVAL_MS) return;
-		this.lastProviderStatePersistAt = now;
-		await this.persistProviderState();
+	private async persistProviderState() {
+		await this.state.storage.put(STORAGE_PROVIDER_STATE, this.providerState);
 	}
 
-	private async persistProviderState() {
-		this.lastProviderStatePersistAt = Date.now();
-		await this.state.storage.put(STORAGE_PROVIDER_STATE, this.providerState);
+	private markProviderClosed() {
+		if (this.usage.provider_connected_at_ms && !this.usage.provider_closed_at_ms) {
+			this.usage.provider_closed_at_ms = Date.now();
+		}
+	}
+
+	/**
+	 * xAI bills server VAD sessions for connected duration, not for the audio
+	 * sent and received, so the billed audio meter is the provider wall clock.
+	 */
+	private refreshProviderSessionDuration() {
+		if (!this.session || providerFromSession(this.session) !== "spacex-ai") return;
+		const startedAt = toNumber(this.usage.provider_connected_at_ms);
+		if (startedAt <= 0) return;
+		const endedAt = toNumber(this.usage.provider_closed_at_ms)
+			|| (this.upstream?.readyState === WebSocket.OPEN
+				? Date.now()
+				: toNumber(this.usage.provider_last_seen_ms) || Date.now());
+		this.usage.session_audio_ms = Math.max(0, endedAt - startedAt);
+		this.usage.audio_ms = this.usage.session_audio_ms;
 	}
 
 	private async persistUsage() {
 		if (!this.session || this.settled) return;
 		this.lastUsagePersistAt = Date.now();
+		this.refreshProviderSessionDuration();
 		await this.checkpointUsage(true);
 		const updated = await updateRealtimeSessionUsage({
 			auth: authForSession(this.session, `realtime_relay_usage:${this.session.session_id}`),
@@ -1159,34 +1372,16 @@ export class RealtimeRelayDurableObject {
 		this.acceptingAudio = false;
 		this.sendClient({ type: "relay.budget_closing", reason });
 		if (this.isLive) { await this.requestLiveClose("expired", reason); return; }
-		const provider = this.session ? providerFromSession(this.session) : null;
-		if (provider === "openai") {
-			this.sendUpstream({
-				type: "response.create",
-				response: {
-					output_modalities: ["audio"],
-					instructions: BUDGET_CLOSING_INSTRUCTIONS,
-				},
-			});
-			this.markResponseInFlight();
-		} else if (provider === "spacex-ai") {
-			this.sendUpstream({
-				type: "response.create",
-				response: {
-					modalities: ["audio", "text"],
-					instructions: BUDGET_CLOSING_INSTRUCTIONS,
-				},
-			});
-			this.markResponseInFlight();
+		// Never start an extra billed closing response. A response already in
+		// progress may finish within the drain window; otherwise settle now.
+		if (!this.hasPendingBilling()) {
+			await this.settle("expired", reason);
+			return;
 		}
 		if (this.drainTimer != null) clearTimeout(this.drainTimer);
-		await this.state.storage.put(STORAGE_PENDING_SETTLEMENT, {
-			status: "expired",
-			reason,
-			phase: "drain",
-		} satisfies PendingSettlement);
-		await this.state.storage.setAlarm(Date.now() + RELAY_DRAIN_TIMEOUT_MS);
+		await this.setPendingSettlement({ status: "expired", reason, phase: "drain" }, RELAY_DRAIN_TIMEOUT_MS);
 		this.drainTimer = setTimeout(() => {
+			this.drainTimer = null;
 			void this.forceAuthoritativeUsage("expired", reason);
 		}, RELAY_DRAIN_TIMEOUT_MS) as unknown as number;
 	}
@@ -1261,16 +1456,18 @@ export class RealtimeRelayDurableObject {
 			}
 		}
 		const provider = providerFromSession(this.session);
-		if (
-			provider !== "spacex-ai" &&
-			(this.responseInFlight || this.inputSinceLastResponse || this.providerState.googleTurnActive)
-		) {
-			return this.markBillingUnresolved(reason);
-		}
 		this.settling = true;
 		this.acceptingAudio = false;
 		this.clearTimers();
+		// Settle confirmed usage plus a metered estimate for any turn whose
+		// provider usage never arrived, instead of opening a billing review.
+		this.applyPendingEstimate("interrupted_turn_metered_audio");
+		this.waitingForOpenAIInputClear = false;
+		delete this.usage.input_audio_clear_pending;
+		this.markProviderClosed();
+		this.refreshProviderSessionDuration();
 		const pending: PendingSettlement = { status, reason, phase: "settle" };
+		this.pendingSettlement = pending;
 		await this.state.storage.put({
 			[STORAGE_SESSION_ID]: this.session.session_id,
 			[STORAGE_USAGE]: this.usage,
@@ -1278,16 +1475,18 @@ export class RealtimeRelayDurableObject {
 			[STORAGE_PROVIDER_STATE]: this.providerState,
 		});
 		this.closeUpstream("realtime_relay_settling");
+		// The cost xAI itself reports is authoritative when present.
+		const providerCostNanos = provider === "spacex-ai" ? toNumber(this.usage.provider_cost_nanos) : 0;
 		try {
 			await settleRealtimeSession({
 				auth: authForSession(this.session, `realtime_relay_settle:${this.session.session_id}`),
 				sessionId: this.session.session_id,
 				status,
-				usage: {
-					...this.usage,
-					...(this.responseInFlight ? { assistant_response_in_flight: true } : {}),
-				},
+				usage: this.usage,
+				...(providerCostNanos > 0 ? { finalCostNanos: providerCostNanos } : {}),
 				disconnectReason: reason,
+				estimated: this.usage.billing_estimated === true,
+				estimateBasis: this.usage.estimate_basis ?? null,
 			});
 			this.settled = true;
 			// Successful sessions have no Durable Object state worth retaining.
@@ -1298,6 +1497,7 @@ export class RealtimeRelayDurableObject {
 				sessionId: this.session.session_id,
 				status,
 				reason,
+				estimated: this.usage.billing_estimated === true,
 			});
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
@@ -1306,8 +1506,13 @@ export class RealtimeRelayDurableObject {
 				return this.markBillingUnresolved(reason);
 			}
 			console.error("realtime_relay_settle_failed", error);
-			await this.state.storage.setAlarm(Date.now() + RELAY_SETTLEMENT_RETRY_MS);
+			const attempts = ((await this.state.storage.get<number>(STORAGE_SETTLEMENT_ATTEMPTS)) ?? 0) + 1;
 			this.settling = false;
+			if (attempts >= RELAY_SETTLEMENT_MAX_ATTEMPTS) {
+				return this.markBillingUnresolved("realtime_settlement_retry_exhausted");
+			}
+			await this.state.storage.put(STORAGE_SETTLEMENT_ATTEMPTS, attempts);
+			await this.state.storage.setAlarm(Date.now() + RELAY_SETTLEMENT_RETRY_MS);
 			return false;
 		}
 		this.settling = false;
@@ -1335,6 +1540,7 @@ export class RealtimeRelayDurableObject {
 					recovery_provider_state: this.providerState,
 				},
 				reason,
+				session: this.session,
 			});
 			this.settled = true;
 			// The authoritative unresolved record now lives in Supabase and this
@@ -1356,24 +1562,55 @@ export class RealtimeRelayDurableObject {
 		}
 	}
 
-	async alarm() {
-		const sessionId = await this.state.storage.get<string>(STORAGE_SESSION_ID);
-		if (!sessionId) return;
+	/**
+	 * Loads persisted state after an eviction. A live object keeps its newer
+	 * in-memory state: storage checkpoints are throttled and may be older.
+	 */
+	private async restoreStateIfEvicted(sessionId: string) {
+		const inMemory = this.session?.session_id === sessionId
+			&& (Object.keys(this.usage).length > 0 || this.upstream != null || this.client != null);
+		if (inMemory) return;
 		this.session = await getRealtimeSessionForInternal(sessionId);
 		this.usage = (await this.state.storage.get<RelayUsageAggregate>(STORAGE_USAGE)) ?? this.session.usage ?? {};
 		this.providerState = (await this.state.storage.get<RelayProviderState>(STORAGE_PROVIDER_STATE)) ?? this.providerState;
 		this.responseInFlight = this.usage.assistant_response_in_flight === true;
 		this.inputSinceLastResponse = this.usage.input_audio_pending === true;
-		const pending = await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT);
+		this.waitingForOpenAIInputClear = this.usage.input_audio_clear_pending === true;
+		this.pendingSettlement = (await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT)) ?? null;
+	}
+
+	async alarm() {
+		const sessionId = await this.state.storage.get<string>(STORAGE_SESSION_ID);
+		if (!sessionId) return;
+		// Every alarm ends the session (expiry, drain backup, settlement retry):
+		// stop accepting audio before anything else.
+		this.acceptingAudio = false;
+		await this.restoreStateIfEvicted(sessionId);
+		const pending = this.pendingSettlement
+			?? (await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT))
+			?? null;
 		if (pending?.phase === "drain") {
-			await this.forceAuthoritativeUsage(pending.status, pending.reason);
+			this.pendingSettlement = null;
+			await this.forceAuthoritativeUsage(pending.status, pending.reason, { statusFromResponses: pending.statusFromResponses });
 			return;
 		}
-		if (!pending && (this.responseInFlight || this.inputSinceLastResponse || this.providerState.googleTurnActive)) {
+		if (!pending && (this.hasPendingBilling() || this.waitingForOpenAIInputClear)) {
 			await this.forceAuthoritativeUsage("expired", "realtime_max_duration");
 			return;
 		}
-		await this.settle(pending?.status ?? "expired", pending?.reason ?? "realtime_max_duration");
+		await this.settle(
+			pending ? this.pendingSettlementStatus(pending) : "expired",
+			pending?.reason ?? "realtime_max_duration",
+		);
+	}
+
+	private isHealthy(): boolean {
+		return !this.settled
+			&& !this.settling
+			&& !this.pendingSettlement
+			&& this.client?.readyState === WebSocket.OPEN
+			&& this.upstream?.readyState === WebSocket.OPEN
+			&& Date.now() - this.lastActivityAt < REALTIME_IDLE_TIMEOUT_SECONDS * 1_000;
 	}
 
 	private async reconcile(sessionId: string): Promise<Response> {
@@ -1381,27 +1618,39 @@ export class RealtimeRelayDurableObject {
 		if (!storedSessionId || storedSessionId !== sessionId) {
 			return Response.json({ active: false, settled: false });
 		}
-		if (!this.session) this.session = await getRealtimeSessionForInternal(sessionId);
-		this.usage = (await this.state.storage.get<RelayUsageAggregate>(STORAGE_USAGE)) ?? this.session.usage ?? {};
-		this.providerState = (await this.state.storage.get<RelayProviderState>(STORAGE_PROVIDER_STATE)) ?? this.providerState;
-		this.responseInFlight = this.usage.assistant_response_in_flight === true;
-		this.inputSinceLastResponse = this.usage.input_audio_pending === true;
-		const pending = await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT);
-		const needsAuthoritativeDrain =
-			this.responseInFlight || this.inputSinceLastResponse || this.providerState.googleTurnActive;
-		const settled = pending?.phase === "drain" || (!pending && needsAuthoritativeDrain)
-			? (await this.forceAuthoritativeUsage(
+		// A connected session with recent traffic is not stuck: leave it alone.
+		if (this.session?.session_id === sessionId && this.isHealthy()) {
+			return Response.json({ active: true, settled: false, healthy: true });
+		}
+		this.acceptingAudio = false;
+		await this.restoreStateIfEvicted(sessionId);
+		const pending = this.pendingSettlement
+			?? (await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT))
+			?? null;
+		if (pending?.phase === "authoritative" && this.upstream?.readyState === WebSocket.OPEN) {
+			// Still inside its bounded wait for final usage.
+			return Response.json({ active: true, settled: false, healthy: true });
+		}
+		const needsAuthoritativeDrain = this.hasPendingBilling() || this.waitingForOpenAIInputClear;
+		if (pending?.phase === "drain" || (!pending && needsAuthoritativeDrain)) {
+			this.pendingSettlement = null;
+			await this.forceAuthoritativeUsage(
 				pending?.status ?? "expired",
 				pending?.reason ?? "realtime_session_reconciliation_expired",
-			), false)
-			: await this.settle(
-				pending?.status ?? "expired",
+				{ statusFromResponses: pending?.statusFromResponses },
+			);
+		} else {
+			await this.settle(
+				pending ? this.pendingSettlementStatus(pending) : "expired",
 				pending?.reason ?? "realtime_session_reconciliation_expired",
 			);
+		}
+		const settled = this.settled;
 		return Response.json({ active: true, settled }, { status: settled ? 200 : 503 });
 	}
 
 	private closeUpstream(reason: string) {
+		this.markProviderClosed();
 		try {
 			this.upstream?.close(1000, reason);
 		} catch {
