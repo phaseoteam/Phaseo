@@ -10382,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: 工具选择策略。接受 Phaseo 服务器工具类型，并将其改写为上游函数或工具目标。allowed_tools 对象会原样发送给 OpenAI；其他提供商会收到其模式（auto 或 required），当 required 只允许一个工具时，则收到对该工具的强制调用。
+      description: 工具选择策略。接受 Phaseo 服务器工具类型，并将其改写为上游函数或工具目标。allowed_tools 对象会连同所有工具原样发送给 OpenAI。其他提供商只会收到允许的工具及其模式（auto 或 required），当 required 只允许一个工具时，则收到对该工具的强制调用。如果 allowed_tools 列出了 tools 中未定义的工具，则只有 OpenAI 能处理该请求；否则返回 400 错误。
       oneOf:
         - type: string
           enum:

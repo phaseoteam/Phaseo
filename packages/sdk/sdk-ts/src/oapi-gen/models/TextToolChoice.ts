@@ -1,5 +1,5 @@
 /**
- * Tool selection strategy. Phaseo server-tool types are accepted and rewritten into upstream function/tool targets. An allowed_tools object is sent as is to OpenAI; other providers receive its mode (auto or required), or a forced call when required allows exactly one tool.
+ * Tool selection strategy. Phaseo server-tool types are accepted and rewritten into upstream function/tool targets. An allowed_tools object is sent as is to OpenAI, with every tool. Other providers are sent only the allowed tools and its mode (auto or required), or a forced call when required allows exactly one tool. If allowed_tools lists a tool that tools does not define, only OpenAI can serve the request; otherwise it returns a 400 error.
  *
  */
 export type TextToolChoice =

@@ -10382,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: Strategie zur Toolauswahl. Phaseo-Servertool-Typen werden akzeptiert und in Funktions- oder Toolziele des Upstreams umgeschrieben. Ein allowed_tools-Objekt wird unverändert an OpenAI gesendet; andere Anbieter erhalten dessen Modus (auto oder required) oder einen erzwungenen Aufruf, wenn required genau ein Tool erlaubt.
+      description: Strategie zur Toolauswahl. Phaseo-Servertool-Typen werden akzeptiert und in Funktions- oder Toolziele des Upstreams umgeschrieben. Ein allowed_tools-Objekt wird unverändert und mit allen Tools an OpenAI gesendet. Andere Anbieter erhalten nur die erlaubten Tools und dessen Modus (auto oder required) oder einen erzwungenen Aufruf, wenn required genau ein Tool erlaubt. Nennt allowed_tools ein Tool, das tools nicht definiert, kann nur OpenAI die Anfrage bedienen; andernfalls wird ein 400-Fehler zurückgegeben.
       oneOf:
         - type: string
           enum:

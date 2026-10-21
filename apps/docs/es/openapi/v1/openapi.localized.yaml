@@ -10382,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: Estrategia de selección de herramientas. Se aceptan los tipos de herramientas de servidor de Phaseo y se transforman en destinos de funciones o herramientas del proveedor de origen. Un objeto allowed_tools se envía tal cual a OpenAI; los demás proveedores reciben su modo (auto o required), o una llamada forzada cuando required permite exactamente una herramienta.
+      description: Estrategia de selección de herramientas. Se aceptan los tipos de herramientas de servidor de Phaseo y se transforman en destinos de funciones o herramientas del proveedor de origen. Un objeto allowed_tools se envía tal cual a OpenAI, junto con todas las herramientas. Los demás proveedores reciben solo las herramientas permitidas y su modo (auto o required), o una llamada forzada cuando required permite exactamente una herramienta. Si allowed_tools incluye una herramienta que tools no define, solo OpenAI puede atender la solicitud; de lo contrario, se devuelve un error 400.
       oneOf:
         - type: string
           enum:

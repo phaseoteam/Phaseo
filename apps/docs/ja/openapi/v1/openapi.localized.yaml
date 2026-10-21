@@ -10382,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: ツール選択の方法です。Phaseo サーバーツールのタイプを受け付け、上流の関数またはツールの指定に変換します。allowed_tools オブジェクトは OpenAI にはそのまま送られます。その他のプロバイダーにはそのモード（auto または required）が送られ、required で許可されるツールが 1 つだけの場合はそのツールの呼び出しが強制されます。
+      description: ツール選択の方法です。Phaseo サーバーツールのタイプを受け付け、上流の関数またはツールの指定に変換します。allowed_tools オブジェクトは、すべてのツールとともに OpenAI にそのまま送られます。その他のプロバイダーには、許可されたツールとそのモード（auto または required）だけが送られ、required で許可されるツールが 1 つだけの場合はそのツールの呼び出しが強制されます。tools に定義されていないツールが allowed_tools に含まれる場合、リクエストを処理できるのは OpenAI だけです。それ以外の場合は 400 エラーが返されます。
       oneOf:
         - type: string
           enum:
