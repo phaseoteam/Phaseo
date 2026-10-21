@@ -33,16 +33,18 @@ icon: "gauge"
 
 ## 速率限制策略
 
-工作区管理员可以通过 `/v1/rate-limits` 管理 API 创建命名的速率限制策略，并将其分配给 API 密钥、工作区成员、防护规则，或作为每个最终用户的默认值。网关会按滚动的一分钟窗口执行策略的 `requests_per_minute`：
+工作区管理员可以通过 `/v1/rate-limits` 管理 API 创建命名的速率限制策略，并将其分配给 API 密钥、工作区成员、防护规则，或作为每个最终用户的默认值。网关会按滚动的一分钟窗口分别执行策略的 `requests_per_minute` 和 `tokens_per_minute`：
 
 - **密钥：**该密钥自己的配额。
 - **成员：**由该成员的密钥和 OAuth 请求共享的一份配额。
 - **防护规则：**防护规则覆盖的每个密钥（或 OAuth 用户）各有一份独立配额。
 - **最终用户默认值：**每个最终用户各有一份独立配额，通过请求的 `user` 字段或 `X-Phaseo-User-Id` 请求头识别。没有最终用户 ID 的请求不受其限制。
 
-当多个策略同时适用时，每个策略都会计数，最先耗尽的策略会拒绝请求。策略限制在上述网关限制之外另行生效。`tokens_per_minute`、`concurrent_requests` 和部门分配尚未执行。策略变更约在一分钟内生效。
+当多个策略同时适用时，每个策略都会计数，最先耗尽的策略会拒绝请求。策略限制在上述网关限制之外另行生效。`concurrent_requests` 和部门分配尚未执行。策略变更约在一分钟内生效。
 
-被拒绝的请求返回 `429`，包含错误代码 `rate_limit_exceeded`、原因 `policy_requests_per_minute`、`policy_id` 和 `limit_scope`（`key`、`member`、`guardrail` 或 `end_user`），以及以秒为单位的 `Retry-After`。适用策略的请求的响应会包含最严格策略的 `x-ratelimit-limit-requests`、`x-ratelimit-remaining-requests` 和 `x-ratelimit-reset-requests`（例如 `60s`）。计数在后台进行，因此 `remaining` 为近似值。同一请求内的提供商回退只计一次，响应缓存命中不计数。
+`tokens_per_minute` 会在每个请求完成后统计其输入和输出 token，包括消耗了 token 的流式请求和失败请求。某个额度在最近一分钟内的用量一旦达到上限，后续请求就会被拒绝，因此已在处理中的请求可能使用量超出上限。
+
+被拒绝的请求返回 `429`，包含错误代码 `rate_limit_exceeded`、原因 `policy_requests_per_minute` 或 `policy_tokens_per_minute`、`policy_id` 和 `limit_scope`（`key`、`member`、`guardrail` 或 `end_user`），以及以秒为单位的 `Retry-After`。适用策略的请求的响应会包含最严格的请求数限制的 `x-ratelimit-limit-requests`、`x-ratelimit-remaining-requests` 和 `x-ratelimit-reset-requests`（例如 `60s`），以及最严格的 token 限制的 `x-ratelimit-limit-tokens`、`x-ratelimit-remaining-tokens` 和 `x-ratelimit-reset-tokens`。被拒绝的请求只包含导致拒绝的那个限制的响应头。计数在后台进行，因此 `remaining` 为近似值，且 token 响应头尚未包含当前请求本身的用量。同一请求内的提供商回退只计一次，响应缓存命中不计数。
 
 ## 提供商限制
 

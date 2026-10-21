@@ -35,6 +35,7 @@ import { buildCachedResponseRecord } from "@/core/response-cache";
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
+import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -255,6 +256,7 @@ function dispatchNonStreamSuccessSideEffects(args: {
 				usage: usageForBilling,
 				reservation: result.providerRateLimitReservation,
 			});
+			chargeRateLimitPolicyTokens(ctx, usageForBilling);
 
             await handleSuccessAudit(
                 ctx,

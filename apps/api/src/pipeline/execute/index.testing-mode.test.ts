@@ -20,6 +20,7 @@ const resolveProviderExecutorMock = vi.fn();
 const loadPriceCardMock = vi.fn();
 const freeQuotaMock = vi.fn();
 const policyGuardMock = vi.fn();
+const policyTokenChargeMock = vi.fn();
 const releaseBackgroundRuntimeMock = vi.fn();
 const ensureRuntimeForBackgroundMock = vi.fn(() => releaseBackgroundRuntimeMock);
 const runtimeBindings = vi.hoisted(() => ({ value: null as Record<string, unknown> | null }));
@@ -72,6 +73,7 @@ vi.mock("@core/customer-rate-limits", () => ({
 
 vi.mock("@core/rate-limit-policies", () => ({
 	guardRateLimitPolicies: (...args: any[]) => policyGuardMock(...args),
+	chargeRateLimitPolicyTokens: (...args: any[]) => policyTokenChargeMock(...args),
 }));
 
 vi.mock("../pricing", () => ({
@@ -689,7 +691,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		const firstExecutor = vi.fn().mockResolvedValue({
 			kind: "completed",
 			ir: {},
-			upstream: new Response(JSON.stringify({ error: "rate_limited" }), {
+			upstream: new Response(JSON.stringify({ error: "rate_limited", usage: { input_tokens: 12, output_tokens: 0 } }), {
 				status: 429,
 				headers: {
 					"retry-after": "10",
@@ -729,6 +731,8 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(ctx.lifecycle?.events.map((event) => event.type)).toEqual(["routing.completed", "provider.admission", "provider.started", "provider.completed", "provider.admission", "provider.started", "provider.completed"]);
 		expect(ctx.lifecycle?.events.filter((event) => event.type === "provider.started").map((event) => event.call_kind)).toEqual(["initial", "retry"]);
 		expect(guardAllFailedMock).not.toHaveBeenCalled();
+		// The failed attempt is charged to token policies under its own attempt key.
+		expect(policyTokenChargeMock).toHaveBeenCalledWith(ctx, [undefined, { input_tokens: 12, output_tokens: 0 }, expect.objectContaining({ error: "rate_limited" })], "attempt:1:first");
 		expect(ctx.attemptErrors?.[0]?.upstream_rate_limit_headers).toEqual({
 			"Retry-After": "10",
 		});
