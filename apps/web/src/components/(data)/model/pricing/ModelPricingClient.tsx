@@ -504,7 +504,7 @@ function getIgnoredPrivacyReasons(
     return reasons;
 }
 
-function matchesPrivacyFilter(
+export function matchesPrivacyFilter(
     provider: ProviderPricing,
     filter: PrivacyFilter,
     workspacePrivacySettings: WorkspacePrivacySettings | null,

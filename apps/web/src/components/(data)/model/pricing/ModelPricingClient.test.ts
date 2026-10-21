@@ -1,6 +1,7 @@
 import {
 	getPlanZdrEligibility,
 	getProviderPromptTrainingPolicy,
+	matchesPrivacyFilter,
 	getPriceColumnForSort,
 	getProviderServiceTierDisplayName,
 	isTerminalRuntimeStatsRetry,
@@ -110,6 +111,11 @@ describe("route retention in pricing table scopes", () => {
 		const provider = offer([{ trainingPolicy: "may_train" }]);
 		provider.provider.prompt_training_policy = "no_train";
 		expect(getProviderPromptTrainingPolicy(provider, "standard")).toBe("may_train");
+		expect(matchesPrivacyFilter(provider, "no_training", null, "standard")).toBe(false);
+		expect(matchesPrivacyFilter(provider, "workspace", {
+			isAuthenticated: true, privacyEnablePaidMayTrain: false, privacyEnableFreeMayTrain: false,
+			privacyZdrOnly: false, providerRestrictionMode: "none", providerRestrictionProviderIds: [],
+		}, "standard")).toBe(false);
 		provider.provider_models[0].data_policy = { trainingPolicy: "no_train", catalogManaged: true, validUntil: "2000-01-01T00:00:00Z" };
 		expect(getProviderPromptTrainingPolicy(provider, "standard")).toBe("unknown");
 		provider.provider_models[0].data_policy = { trainingPolicy: "no_train" };
