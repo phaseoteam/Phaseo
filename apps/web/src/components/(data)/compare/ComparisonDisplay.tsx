@@ -25,6 +25,9 @@ export default function ComparisonDisplay({
 	onSelectedIdsChange: (ids: string[]) => void;
 }) {
 	const t = useTranslations("Catalogue.compare");
+	const hasSubscriptionPlans = selectedModels.some(
+		(model) => (model.subscription_plans?.length ?? 0) > 0
+	);
 	return (
 		<div className="w-full flex flex-col space-y-10">
 			<DecisionMatrix
@@ -57,12 +60,14 @@ export default function ComparisonDisplay({
 						</h3>
 						<AvailabilityComparison selectedModels={selectedModels} hideHeader />
 					</div>
-					<div className="space-y-2">
-						<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-							{t("subscriptionPlans")}
-						</h3>
-						<SubscriptionPlansComparison selectedModels={selectedModels} hideHeader />
-					</div>
+					{hasSubscriptionPlans ? (
+						<div className="space-y-2">
+							<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+								{t("subscriptionPlans")}
+							</h3>
+							<SubscriptionPlansComparison selectedModels={selectedModels} hideHeader />
+						</div>
+					) : null}
 				</div>
 			</section>
 		</div>

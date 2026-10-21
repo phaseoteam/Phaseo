@@ -33,6 +33,14 @@ describe("modelDescription", () => {
 			.toContain("22 providers");
 	});
 
+	it("doesn't offer to compare a single provider in translated titles", () => {
+		const translate = (key: string, values?: Record<string, unknown>) => `${key}:${values?.model}:${values?.count}`;
+		expect(buildModelOverviewMetadataTitle("Qwen Max", { providerCount: 1, hasPricing: true }, translate as never))
+			.toBe("pricing:Qwen Max:1");
+		expect(buildModelOverviewMetadataTitle("Qwen Max", { providerCount: 2, hasPricing: true }, translate as never))
+			.toBe("pricingWithProviders:Qwen Max:2");
+	});
+
 	it("ignores empty provider identifiers and missing metadata", () => {
 		expect(countModelMetadataProviders()).toBe(0);
 		expect(countModelMetadataProviders([
