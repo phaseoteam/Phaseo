@@ -10,6 +10,7 @@ import {
 	defaultEffort,
 	ECI_BENCHMARK_ID,
 	effortLevels,
+	formatUsd,
 	groupBenchmarks,
 	intervalsOverlap,
 	pickResult,
@@ -19,6 +20,7 @@ import type { CompareEffort, CompareViewBenchmark, CompareViewModel } from "./ty
 const AA_HEADLINE_ID = /^aa-intelligence-index(-v\d+)?$/;
 
 function scoreText(benchmark: CompareViewBenchmark, score: number): string {
+	if (/\(USD\)/.test(benchmark.name)) return formatUsd(score);
 	if (benchmark.type === "percentage") return `${Number(score.toFixed(1))}%`;
 	return Math.abs(score) >= 100 ? score.toFixed(1) : String(Number(score.toFixed(2)));
 }
@@ -86,7 +88,7 @@ function EffortBarCard({ benchmark, models, effort }: { benchmark: CompareViewBe
 	const scores = picks.map((picked) => (picked.kind === "result" ? picked.result.score : null));
 	const best = bestIndices(scores, benchmark.higherIsBetter ? "higher" : "lower");
 	const max = Math.max(1, ...scores.filter((value): value is number => value != null));
-	const tested = scores.filter((value) => value != null).length;
+	const tested = picks.filter((picked) => picked.kind === "result" && picked.result.effort === effort).length;
 	return (
 		<div className="rounded-md border border-border p-4">
 			<h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">{benchmark.name} <SourceBadge benchmark={benchmark} /></h3>
@@ -103,6 +105,7 @@ function EffortBarCard({ benchmark, models, effort }: { benchmark: CompareViewBe
 								{picked.kind === "result" ? <span className="block h-full rounded-sm" style={{ width: `${(picked.result.score / max) * 100}%`, background: MODEL_COLOURS[index] }} /> : null}
 							</span>
 							<span className={cn("text-right tabular-nums", best.has(index) && "font-semibold text-emerald-700 dark:text-emerald-300")}>
+								{picked.kind === "result" && effort && picked.result.effort !== effort && picked.result.variant ? <span className="block text-[11px] font-normal text-muted-foreground">{picked.result.variant}</span> : null}
 								{picked.kind === "result" ? scoreText(benchmark, picked.result.score)
 									: <span className="text-xs font-normal text-muted-foreground">{picked.kind === "notAtEffort" ? t("notTested") : t("notReported")}</span>}
 							</span>
@@ -144,7 +147,7 @@ export function CompareBenchmarks({ models, benchmarks }: { models: CompareViewM
 	const label = (benchmark: CompareViewBenchmark) => (benchmark.link ? (
 		<a href={benchmark.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{benchmark.name}</a>
 	) : benchmark.name);
-	const labelSub = (benchmark: CompareViewBenchmark) => (benchmark.source === "lab" ? t("labReported") : benchmark.source === "artificial-analysis" ? t("byEffort") : undefined);
+	const labelSub = (benchmark: CompareViewBenchmark) => (benchmark.source === "lab" ? t("labReported") : benchmark.source === "artificial-analysis" && effort ? t("byEffort") : undefined);
 
 	return (
 		<section id="benchmarks" aria-labelledby="compare-benchmarks" className="scroll-mt-32 space-y-4">

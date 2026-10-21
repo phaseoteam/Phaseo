@@ -132,6 +132,7 @@ export function CompareSpecTable({
 		});
 	const windowNote = (field: "latencyWindow" | "throughputWindow") => {
 		const windows = [...new Set(models.map((model) => usage[model.id]?.[field]).filter(Boolean))];
+		if (!windows.length) return undefined;
 		return windows.length === 1 ? format.window(windows[0]) : t("windowMixed");
 	};
 

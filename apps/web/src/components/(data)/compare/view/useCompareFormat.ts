@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { formatUsd } from "./compareViewMath";
+import { asUtc, formatUsd } from "./compareViewMath";
 import type { CompareUsageWindow, CompareViewPriceRow } from "./types";
 
 const MODALITY_KEYS: Record<string, string> = {
@@ -53,8 +53,8 @@ export function useCompareFormat() {
 				? t("seconds", { value: format.number(ms / 1000, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) })
 				: t("milliseconds", { value: format.number(ms, { maximumFractionDigits: 0 }) }),
 			throughput: (value: number) => t("tokensPerSecond", { value: format.number(value, { maximumFractionDigits: 0 }) }),
-			monthYear: (value: string) => format.dateParts(value, { month: "short", year: "numeric", timeZone: "UTC" }),
-			date: (value: string) => format.dateParts(value, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }),
+			monthYear: (value: string) => format.dateParts(asUtc(value), { month: "short", year: "numeric", timeZone: "UTC" }),
+			date: (value: string) => format.dateParts(asUtc(value), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }),
 			modality: (type: string) => known(MODALITY_KEYS[type.toLowerCase()], capitalise(type)),
 			modalities: (types: string[]) => types.map((type) => known(MODALITY_KEYS[type.toLowerCase()], capitalise(type))).join(", "),
 			status: (status: string | null) => (status ? known(STATUS_KEYS[status.toLowerCase()], capitalise(status)) : ""),

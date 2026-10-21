@@ -51,14 +51,18 @@ export function hiddenConditionalRows(model: CompareViewModel, tier: string): nu
 	return rows.length - (tierRows(model, tier)?.length ?? 0);
 }
 
+/**
+ * The cheapest row of a kind. A model with no plain input or output row (a
+ * voice model priced per character, an image model priced per image token)
+ * falls back to its own input_* or output_* meter.
+ */
 export function priceRow(model: CompareViewModel, kind: ComparePriceKind, tier = "standard"): CompareViewPriceRow | null {
 	const rows = tierRows(model, tier) ?? [];
-	let best: CompareViewPriceRow | null = null;
-	for (const row of rows) {
-		if (row.kind !== kind) continue;
-		if (!best || row.price < best.price) best = row;
-	}
-	return best;
+	const cheapest = (candidates: CompareViewPriceRow[]) =>
+		candidates.reduce<CompareViewPriceRow | null>((best, row) => (!best || row.price < best.price ? row : best), null);
+	const direct = cheapest(rows.filter((row) => row.kind === kind));
+	if (direct || (kind !== "input" && kind !== "output")) return direct;
+	return cheapest(rows.filter((row) => row.kind === "other" && row.meter.startsWith(`${kind}_`) && !row.meter.includes("reasoning")));
 }
 
 /** USD per million tokens for a token-priced kind, or null when the model isn't priced per token. */
@@ -110,13 +114,23 @@ export function doSameJob(models: CompareViewModel[]): boolean {
 	return typed[0]!.outputTypes.some((type) => typed.every((model) => model.outputTypes.includes(type)));
 }
 
+/** Catalogue dates often lack a zone ("2024-10-01T00:00:00"); read them as UTC so months don't shift. */
+export function asUtc(value: string): string {
+	return /T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(value) ? `${value}Z` : value;
+}
+
 export function timeValue(value: string | null): number | null {
 	if (!value) return null;
-	const time = Date.parse(value);
+	const time = Date.parse(asUtc(value));
 	return Number.isFinite(time) ? time : null;
 }
 
 // Benchmarks
+
+/** Only these evaluators run one model at several effort levels with the same harness. */
+export function matchesEffort(benchmark: CompareViewBenchmark): boolean {
+	return benchmark.source === "artificial-analysis";
+}
 
 export function benchmarkEfforts(benchmark: CompareViewBenchmark, modelId: string): Set<CompareEffort> {
 	return new Set((benchmark.results[modelId] ?? []).map((result) => result.effort).filter((effort): effort is CompareEffort => effort != null));
@@ -127,7 +141,7 @@ export type EffortLevel = { effort: CompareEffort; models: number };
 /** Effort levels any selected model reports, with how many models report each. */
 export function effortLevels(benchmarks: CompareViewBenchmark[], modelIds: string[]): EffortLevel[] {
 	const byModel = new Map<string, Set<CompareEffort>>();
-	for (const benchmark of benchmarks) {
+	for (const benchmark of benchmarks.filter(matchesEffort)) {
 		for (const modelId of modelIds) {
 			const efforts = benchmarkEfforts(benchmark, modelId);
 			if (!efforts.size) continue;
@@ -156,13 +170,14 @@ export type PickedResult =
 	| { kind: "none" };
 
 /**
- * The result to show for a model: the chosen effort level when the benchmark
- * reports efforts, otherwise the model's best variant.
+ * The result to show for a model: the chosen effort level when the evaluator
+ * ran the model at several levels, otherwise the model's best variant. Lab
+ * results keep their own settings, so they're never hidden by the effort switch.
  */
 export function pickResult(benchmark: CompareViewBenchmark, modelId: string, effort: CompareEffort | null): PickedResult {
 	const results = benchmark.results[modelId] ?? [];
 	if (!results.length) return { kind: "none" };
-	const withEffort = results.filter((result) => result.effort != null);
+	const withEffort = matchesEffort(benchmark) ? results.filter((result) => result.effort != null) : [];
 	if (effort && withEffort.length) {
 		const match = withEffort.filter((result) => result.effort === effort);
 		if (!match.length) return { kind: "notAtEffort" };

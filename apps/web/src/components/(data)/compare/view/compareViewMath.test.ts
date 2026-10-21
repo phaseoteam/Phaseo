@@ -8,8 +8,10 @@ import {
 	groupBenchmarks,
 	hiddenConditionalRows,
 	pickResult,
+	priceRow,
 	requestCost,
 	sortTiers,
+	timeValue,
 	tokenPrice,
 	TYPICAL_REQUEST,
 	visibleOnPhone,
@@ -61,11 +63,15 @@ const speech = model("eleven-labs/eleven-v3", {
 	outputTypes: ["audio"],
 	pricing: {
 		provider: { id: "elevenlabs", name: "ElevenLabs", routed: true },
-		tiers: { standard: [{ meter: "input_characters", kind: "input", label: null, price: 0.1, per: 1000, unit: "character", conditional: false }] },
+		tiers: { standard: [{ meter: "input_characters", kind: "other", label: null, price: 0.1, per: 1000, unit: "character", conditional: false }] },
 	},
 });
 
 describe("formatUsd", () => {
+	it("reads zone-less catalogue dates as UTC", () => {
+		expect(new Date(timeValue("2024-10-01T00:00:00")!).getUTCMonth()).toBe(9);
+	});
+
 	it("shows US dollars without a US prefix", () => {
 		expect(formatUsd(1.25)).toBe("$1.25");
 		expect(formatUsd(10)).toBe("$10.00");
@@ -94,6 +100,8 @@ describe("pricing", () => {
 
 	it("doesn't treat a per-character price as a token price", () => {
 		expect(tokenPrice(speech, "input")).toBeNull();
+		expect(priceRow(speech, "input")).toMatchObject({ meter: "input_characters", per: 1000 });
+		expect(priceRow(speech, "output")).toBeNull();
 		expect(requestCost(speech, TYPICAL_REQUEST)).toBeNull();
 	});
 
@@ -165,6 +173,14 @@ describe("benchmark efforts", () => {
 		expect(pickResult(flagshipAa, "google/gemini-4-argon", "max")).toEqual({ kind: "notAtEffort" });
 		expect(pickResult(eci, "google/gemini-4-argon", "max")).toMatchObject({ kind: "result", result: { score: 164.56 } });
 		expect(pickResult(eci, "openai/gpt-5", "high")).toEqual({ kind: "none" });
+	});
+
+	it("never hides a lab result behind the effort switch", () => {
+		const lab: CompareViewBenchmark = { ...eci, id: "elimination-game", source: "independent", results: {
+			"openai/gpt-5": [{ score: 5.968, variant: "Medium reasoning", effort: "medium", ci: null, selfReported: false, sourceLink: null }],
+		} };
+		expect(pickResult(lab, "openai/gpt-5", "high")).toMatchObject({ kind: "result", result: { score: 5.968 } });
+		expect(effortLevels([lab], ["openai/gpt-5"])).toEqual([]);
 	});
 
 	it("keeps benchmarks two models share and sets aside the rest", () => {

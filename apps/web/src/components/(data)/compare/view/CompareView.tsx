@@ -108,13 +108,13 @@ export function CompareView({
 
 				<div className="sticky top-[var(--site-header-height,4rem)] z-20 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
 					<div className="flex flex-wrap items-center gap-2">
-						<ul className="flex min-w-0 flex-1 flex-wrap items-center gap-2" aria-label={t("selectedModels")}>
+						<ul className="grid w-full grid-cols-2 items-center gap-2 sm:flex sm:w-auto sm:min-w-0 sm:flex-1 sm:flex-wrap" aria-label={t("selectedModels")}>
 							{models.map((model, index) => (
 								<li key={model.id} className={cn("min-w-0", !visibleOnPhone(index, phonePage) && "hidden sm:block")}>
-									<span className="inline-flex h-9 max-w-full items-center gap-2 rounded-md border border-border bg-background pr-1 pl-1.5 text-sm font-medium sm:h-8">
+									<span className="flex h-9 w-full max-w-full items-center gap-2 rounded-md border border-border bg-background pr-1 pl-1.5 text-sm font-medium sm:inline-flex sm:h-8 sm:w-auto">
 										<span aria-hidden className="h-4 w-1 shrink-0 rounded-sm" style={{ background: MODEL_COLOURS[index] }} />
 										<ProviderLogo id={model.lab.id} alt={model.lab.name} size="xxs" className="shrink-0" />
-										<Link href={`/models/${model.id}`} className="truncate hover:underline">{model.name}</Link>
+										<Link href={`/models/${model.id}`} className="min-w-0 flex-1 truncate hover:underline">{model.name}</Link>
 										<button
 											type="button"
 											onClick={() => onSelectedIdsChange(selectedIds.filter((id) => id !== model.id))}
@@ -127,7 +127,7 @@ export function CompareView({
 								</li>
 							))}
 							{models.length < 4 ? (
-								<li>
+								<li className={cn(models.length % 2 === 0 && "col-span-2")}>
 									<ModelCombobox
 										selectedOptions={selectedOptions}
 										selected={selectedIds}
@@ -148,7 +148,7 @@ export function CompareView({
 								))}
 							</nav>
 						) : null}
-						<div className="flex items-center gap-3">
+						<div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-start">
 							<Toggle on={highlightBest} onChange={setHighlightBest} label={t("highlightBest")} />
 							<Toggle on={differencesOnly} onChange={setDifferencesOnly} label={t("differencesOnly")} />
 						</div>
