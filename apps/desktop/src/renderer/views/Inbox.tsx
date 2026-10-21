@@ -27,7 +27,7 @@ export function useAutopilotLog() {
 	return { log, error };
 }
 
-type Glyph = { Icon: ComponentType<{ className?: string }>; tone?: string };
+export type Glyph = { Icon: ComponentType<{ className?: string }>; tone?: string };
 const attention = "text-warning";
 /** Each reason a chat waits on the person gets its own mark; only the mark carries colour. */
 const reasonGlyphs: Record<string, Glyph> = {
@@ -53,7 +53,7 @@ function decisionGlyph(title: string): Glyph & { label: string } {
 	return { Icon, label, tone: Icon === Hand || Icon === Gauge ? attention : Icon === CircleCheck ? "text-success" : undefined };
 }
 
-function Group({ Icon, label, count, children }: { Icon: ComponentType<{ className?: string }>; label: string; count?: number; children: ReactNode }) {
+export function Group({ Icon, label, count, children }: { Icon: ComponentType<{ className?: string }>; label: string; count?: number; children: ReactNode }) {
 	return <section aria-label={label} className="flex flex-col gap-0.5">
 		<div className="flex items-center gap-2 px-3 pb-1 text-xs font-medium text-muted-foreground/70"><Icon aria-hidden className="size-3.5 shrink-0" /><h2 className="shrink-0">{label}</h2>{count !== undefined && <span className="shrink-0 text-muted-foreground/50 tabular-nums">{count}</span>}<span aria-hidden className="h-px min-w-2 flex-1 bg-border/60" /></div>
 		{children}
@@ -61,7 +61,7 @@ function Group({ Icon, label, count, children }: { Icon: ComponentType<{ classNa
 }
 
 /** One line of the Inbox, shaped like a pull request row: a mark, the title over its details, and the time. */
-function Row({ glyph, title, meta, aside, detail, label, onOpen }: { glyph: Glyph; title: ReactNode; meta?: ReactNode; aside: ReactNode; detail?: string; label: string; onOpen?: () => void }) {
+export function Row({ glyph, title, meta, aside, detail, label, onOpen }: { glyph: Glyph; title: ReactNode; meta?: ReactNode; aside: ReactNode; detail?: string; label: string; onOpen?: () => void }) {
 	return <button type="button" aria-label={label} disabled={!onOpen} onClick={onOpen} className="flex w-full items-start gap-2.5 rounded-md px-3 py-2 text-left transition-colors outline-none hover:bg-accent/60 focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset disabled:hover:bg-transparent">
 		<glyph.Icon aria-hidden className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground", glyph.tone)} />
 		<span className="min-w-0 flex-1">
@@ -71,7 +71,7 @@ function Row({ glyph, title, meta, aside, detail, label, onOpen }: { glyph: Glyp
 		</span>
 	</button>;
 }
-const Dot = () => <span aria-hidden className="text-muted-foreground/50">·</span>;
+export const Dot = () => <span aria-hidden className="text-muted-foreground/50">·</span>;
 const logPage = 30;
 
 /**

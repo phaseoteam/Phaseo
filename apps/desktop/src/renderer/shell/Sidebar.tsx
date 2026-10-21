@@ -2,7 +2,7 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, CalendarClock, Inbox, Columns3, GitPullRequestArrow, Ellipsis, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
+import { Archive, CalendarClock, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -173,6 +173,15 @@ function UndoNotice() {
 	</div>;
 }
 
+/** Today, in both modes: what Phaseo spent today against your usual, and what finished or is waiting. */
+function TodayLink() {
+	const { todayPage, openToday } = useWorkspace();
+	return <button type="button" aria-current={todayPage ? "page" : undefined} onClick={openToday}
+		className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", todayPage && "bg-sidebar-accent text-sidebar-foreground")}>
+		<ChartLine className="size-4 text-muted-foreground" />Today
+	</button>;
+}
+
 /** The Inbox, in both modes: it lists what needs the person across every chat and agent, with how many. */
 function InboxLink() {
 	const { inboxPage, openInbox, overview } = useWorkspace();
@@ -242,6 +251,7 @@ export function Sidebar() {
 				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
 			</button>
 			<InboxLink />
+			<TodayLink />
 			<ScheduledTasksLink />
 			{mode === "code" && <PullRequestsLink />}
 		</div>

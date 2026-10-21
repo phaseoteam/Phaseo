@@ -5,6 +5,7 @@ import { mentionPlainText } from "../shared/mentions";
 import { randomUUID } from "node:crypto";
 import { autoSettleAt } from "../shared/threadLifecycle";
 import { addUsage, formatCost, isPhaseoUsageId } from "../shared/usageAmounts";
+import { usageKind } from "../shared/usageLedger";
 import { autopilotOwner, chatSpend } from "../shared/chatSpend";
 import { answerForm, answerQuestions, autopilotBrief, autopilotModel, judgeTurn, reviewAction, reviewPlan, type AutopilotCall, type TurnVerdict } from "./autopilot";
 import type { AgentForm } from "../shared/agentForms";
@@ -145,6 +146,9 @@ export class WorkspaceRuntime {
 		const worthWaking = (id: string) => { try { return this.store.getTask(id).queue.some(item => (item.sourceTaskIds ?? (item.sourceTaskId ? [item.sourceTaskId] : [])).some(finished)); } catch { return false; } };
 		for (const id of new Set([...this.store.collectDelegationResults(), ...this.store.pendingDeliveryParents()])) if (worthWaking(id)) this.wake(id);
 		this.backfillUsageTotals();
+		// Today compares with the last week, so the ledger is filled once from recent chats and kept to 90 days.
+		// It reads each recent chat once, so it waits until startup has settled.
+		setTimeout(() => { if (this.closing) return; try { this.store.pruneUsageLedger(); this.store.backfillUsageLedger(); } catch { /* Today starts from now instead. */ } }, 2000).unref?.();
 	}
 	/** Chats saved before usage totals were kept get them from their history, a few at a time so startup stays quick. */
 	private backfillUsageTotals() {
@@ -239,6 +243,7 @@ export class WorkspaceRuntime {
 		task.activities.push(stored);
 		const usage = activity.type === "usage" && isPhaseoUsageId(stored.id);
 		if (usage) addUsage(task.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text);
+		if (usage) try { this.store.recordUsage(task, stored.id, activity.text, usageKind(stored.id) === "autopilot" || Boolean(task.autopilot && !task.autopilot.handback)); } catch { /* Today misses this request; the chat still counts it. */ }
 		this.store.saveTask(task, true); this.broadcastSoon();
 		if (usage) this.enforceAutopilotCap(id);
 	}
@@ -964,6 +969,8 @@ export class WorkspaceRuntime {
 				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) addUsage(current.usageTotals ??= { tokens: 0, costNanos: 0 }, activity.text, existing?.type === "usage" ? existing.text : undefined);
 				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; existing.summary = activity.summary; existing.compaction = activity.compaction; existing.nativeAgent = activity.nativeAgent; existing.proposed = activity.proposed; }
 				else current.activities.push({ id: activityId, timelineOrder: order(`activity:${activity.id}`), type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation, summary: activity.summary, compaction: activity.compaction, nativeAgent: activity.nativeAgent, ...(activity.proposed ? { proposed: activity.proposed } : {}) });
+				// The ledger keeps when each request was billed, for Today; a failed write leaves the chat's own record intact.
+				if (activity.type === "usage" && isPhaseoUsageId(activity.id)) try { this.store.recordUsage(current, activityId, current.activities.find(value => value.id === activityId)!.text, Boolean(message.autopilot)); } catch { /* Today misses this request; the chat still counts it. */ }
 			}
 			this.store.saveTask(current); deltas.clear(); activities = []; this.broadcastSoon();
 			if (priced) this.enforceAutopilotCap(id);

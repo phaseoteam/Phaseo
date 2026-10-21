@@ -8,7 +8,8 @@ import { DatabaseSync, type StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
 import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, UsageTotals, Workspace, WorkspaceCommand } from "../shared/workspace";
-import { usageTotalsOf } from "../shared/usageAmounts";
+import { usageAmounts, usageTotalsOf } from "../shared/usageAmounts";
+import { localDay, usageIdTime, usageKind, type TodayReport } from "../shared/usageLedger";
 import type { AutopilotDecision } from "../shared/inbox";
 import { publicMcpConnection, type McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
@@ -121,6 +122,9 @@ export class WorkspaceStore {
 			-- Autopilot's decisions across chats, for the Inbox; each is also an activity in its chat.
 			CREATE TABLE IF NOT EXISTS autopilot_log (id INTEGER PRIMARY KEY, task_id TEXT NOT NULL, at TEXT NOT NULL, title TEXT NOT NULL, text TEXT NOT NULL);
 			CREATE TRIGGER IF NOT EXISTS autopilot_log_removed AFTER DELETE ON tasks BEGIN DELETE FROM autopilot_log WHERE task_id = old.id; END;
+			-- Every billed Phaseo request with when it happened, for the Today page. Rows outlive deleted chats: the spend happened.
+			CREATE TABLE IF NOT EXISTS usage_ledger (key TEXT PRIMARY KEY, task_id TEXT NOT NULL, at TEXT NOT NULL, kind TEXT NOT NULL, autopilot INTEGER NOT NULL, model TEXT NOT NULL, project_id TEXT, tokens INTEGER NOT NULL, cost_nanos INTEGER NOT NULL);
+			CREATE INDEX IF NOT EXISTS usage_ledger_at ON usage_ledger (at);
 			${taskEntriesSchema}
 			PRAGMA user_version=${schemaVersion};`);
 		this.missions = new MissionStore(this.db);
@@ -385,6 +389,70 @@ export class WorkspaceStore {
 	/** Autopilot's latest decisions across chats, newest first. */
 	autopilotLog(limit = autopilotLogSize): AutopilotDecision[] {
 		return this.statement("SELECT id, task_id AS taskId, at, title, text FROM autopilot_log ORDER BY id DESC LIMIT ?").all(limit) as AutopilotDecision[];
+	}
+	/**
+	 * Keeps one usage report in the ledger the Today page sums. A report rewritten as it streams keeps the time it was
+	 * first seen and its latest amounts; one without a price or token count isn't kept.
+	 */
+	recordUsage(task: Pick<Task, "id" | "model" | "projectId">, key: string, text: string, autopilot: boolean, at = new Date().toISOString()) {
+		const amounts = usageAmounts(text);
+		if (amounts.costNanos === undefined && amounts.total === undefined) return;
+		this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, model, project_id, tokens, cost_nanos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(key) DO UPDATE SET tokens = excluded.tokens, cost_nanos = excluded.cost_nanos`)
+			.run(key, task.id, at, usageKind(key), autopilot ? 1 : 0, task.model, task.projectId ?? null, amounts.total ?? 0, amounts.costNanos ?? 0);
+	}
+	/**
+	 * Fills the ledger once from chats used in the last `days`, timing each report by its turn, so Today has a usual to
+	 * compare with from the first launch. Reports already recorded are left alone.
+	 */
+	backfillUsageLedger(days = 8, now = new Date()) {
+		if (this.statement("SELECT 1 FROM preferences WHERE id='usage-ledger-backfilled'").get()) return 0;
+		const cutoff = new Date(now.getTime() - days * 86_400_000).toISOString();
+		const ids = this.statement("SELECT id FROM tasks WHERE json_extract(data, '$.updatedAt') >= ?").all(cutoff).map(row => row.id as string);
+		let recorded = 0;
+		this.batch(() => {
+			const insert = this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, model, project_id, tokens, cost_nanos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(key) DO NOTHING`);
+			for (const id of ids) {
+				const task = this.getTask(id), turns = task.messages.filter(message => message.role === "user");
+				for (const entry of this.entries.phaseoUsageEntries(this.getHead(id).key)) {
+					const turn = turns.find(message => entry.id.startsWith(`${message.id}:`)), at = usageIdTime(entry.id) ?? turn?.startedAt ?? turn?.createdAt;
+					const amounts = usageAmounts(entry.text);
+					if (!at || at < cutoff || (amounts.costNanos === undefined && amounts.total === undefined)) continue;
+					const kind = usageKind(entry.id);
+					insert.run(entry.id, id, at, kind, kind === "autopilot" || turn?.autopilot ? 1 : 0, task.model, task.projectId ?? null, amounts.total ?? 0, amounts.costNanos ?? 0);
+					recorded++;
+				}
+			}
+			this.statement("INSERT OR REPLACE INTO preferences (id, data) VALUES ('usage-ledger-backfilled', ?)").run(JSON.stringify({ at: now.toISOString(), recorded }));
+		});
+		return recorded;
+	}
+	/** Drops ledger rows older than `days`; Today looks back a week. */
+	pruneUsageLedger(days = 90, now = new Date()) {
+		this.statement("DELETE FROM usage_ledger WHERE at < ?").run(new Date(now.getTime() - days * 86_400_000).toISOString());
+	}
+	/** Today's spend, the last day and week, each local hour of the last eight days, and where today's went; all summed in SQL. */
+	todayReport(now = new Date()): TodayReport {
+		const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+		const firstDay = new Date(startOfToday); firstDay.setDate(firstDay.getDate() - 7);
+		const today = startOfToday.toISOString();
+		const spend = (row: unknown) => { const value = row as { costNanos: number | null; tokens: number | null } | undefined; return { costNanos: value?.costNanos ?? 0, tokens: value?.tokens ?? 0 }; };
+		const total = (since: string) => spend(this.statement("SELECT SUM(cost_nanos) AS costNanos, SUM(tokens) AS tokens FROM usage_ledger WHERE at >= ?").get(since));
+		const autopilot = this.statement("SELECT SUM(cost_nanos) AS costNanos, SUM(tokens) AS tokens, COUNT(DISTINCT task_id) AS chats FROM usage_ledger WHERE at >= ? AND autopilot = 1").get(today) as { chats: number };
+		const hours = this.statement(`SELECT strftime('%Y-%m-%d', at, 'localtime') AS day, CAST(strftime('%H', at, 'localtime') AS INTEGER) AS hour, SUM(cost_nanos) AS costNanos
+			FROM usage_ledger WHERE at >= ? GROUP BY day, hour`).all(firstDay.toISOString()) as { day: string; hour: number; costNanos: number }[];
+		const days = Array.from({ length: 8 }, (_, index) => { const date = new Date(firstDay); date.setDate(date.getDate() + index); return { day: localDay(date), hours: Array(24).fill(0) as number[] }; });
+		for (const row of hours) { const day = days.find(value => value.day === row.day); if (day) day.hours[row.hour] += row.costNanos; }
+		const top = (column: string) => this.statement(`SELECT ${column} AS name, SUM(cost_nanos) AS costNanos, SUM(tokens) AS tokens FROM usage_ledger WHERE at >= ? GROUP BY ${column} ORDER BY costNanos DESC LIMIT 8`).all(today) as { name: string | null; costNanos: number; tokens: number }[];
+		const since = (this.statement("SELECT MIN(at) AS since FROM usage_ledger").get() as { since: string | null }).since;
+		return {
+			generatedAt: now.toISOString(), ...since ? { since } : {},
+			today: total(today), last24h: total(new Date(now.getTime() - 86_400_000).toISOString()), last7d: total(new Date(now.getTime() - 7 * 86_400_000).toISOString()),
+			autopilotToday: { ...spend(autopilot), chats: autopilot.chats ?? 0 }, days,
+			chats: top("task_id").map(({ name, ...value }) => ({ taskId: name ?? "", ...value })),
+			projects: top("project_id").map(({ name, ...value }) => ({ projectId: name, ...value })),
+			models: top("model").map(({ name, ...value }) => ({ model: name ?? "", ...value })),
+		};
 	}
 	/** A chat's Phaseo usage totals from its stored usage reports. */
 	phaseoUsageTotals(id: string): UsageTotals { return usageTotalsOf(this.entries.phaseoUsageReports(this.getHead(id).key)); }
