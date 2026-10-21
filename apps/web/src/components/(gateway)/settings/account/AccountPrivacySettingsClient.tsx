@@ -35,10 +35,10 @@ const compareModelsByOrganisationAndName = (a: PrivacyModel, b: PrivacyModel) =>
 	a.organisationName.localeCompare(b.organisationName, undefined, { sensitivity: "base" }) ||
 	a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
 
-function SettingRow({ title, description, checked, onCheckedChange }: { title: string; description: string; checked: boolean; onCheckedChange: (value: boolean) => void }) {
+function SettingRow({ title, description, checked, onCheckedChange, disabled }: { title: string; description: string; checked: boolean; onCheckedChange: (value: boolean) => void; disabled?: boolean }) {
 	return <div className="flex items-center justify-between gap-6 border-b border-border/60 py-4 last:border-b-0">
 		<div><div className="text-sm font-medium">{title}</div><p className="mt-0.5 text-sm text-muted-foreground">{description}</p></div>
-		<Switch checked={checked} onCheckedChange={onCheckedChange} />
+		<Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
 	</div>;
 }
 
@@ -233,8 +233,8 @@ export default function AccountPrivacySettingsClient({
 					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{s("phraseControlPrivateRequestAndResponsePayloadStorageForThisWorkspace")}</p>
 				</div>
 				<div className="min-w-0 rounded-lg border px-4">
-					<SettingRow title={s("Store request and response payloads")} description={s("phraseKeepPrivatePayloadCopiesForRequestDetailsAndReplay")} checked={logStorage.enabled} onCheckedChange={(enabled) => setLogStorage((current) => current ? { ...current, enabled } : current)} />
-					{logStorage.enabled ? <>
+					<SettingRow title={s("Store request and response payloads")} description={policy.privacyZdrOnly ? s("phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn") : s("phraseKeepPrivatePayloadCopiesForRequestDetailsAndReplay")} checked={logStorage.enabled && !policy.privacyZdrOnly} disabled={policy.privacyZdrOnly} onCheckedChange={(enabled) => setLogStorage((current) => current ? { ...current, enabled } : current)} />
+					{logStorage.enabled && !policy.privacyZdrOnly ? <>
 						<div className="flex flex-col gap-3 border-b border-border/60 py-4 sm:flex-row sm:items-center sm:justify-between">
 							<div><div className="text-sm font-medium">{s("Retention")}</div><p className="mt-0.5 text-sm text-muted-foreground">{s("phraseChooseHowLongPrivatePayloadCopiesRemainAvailable")}</p></div>
 							<Select value={String(logStorage.retentionDays)} onValueChange={(value) => setLogStorage((current) => current ? { ...current, retentionDays: Number(value) } : current)}>
