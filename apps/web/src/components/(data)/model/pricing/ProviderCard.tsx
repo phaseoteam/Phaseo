@@ -62,6 +62,7 @@ import {
 } from "@/components/(data)/model/pricing/ProviderModelParameters";
 import {
 	buildProviderSections,
+	compareTokenTiers,
 	buildProviderTablePriceSummaryForColumn,
 	fmtUSD,
 	ruleMatchCovers,
@@ -735,10 +736,7 @@ function renderCompactTierSummary(
 	freeLabel: string,
 	l: (value: string | null | undefined) => string,
 ) {
-	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
-		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
-		return a.per1M - b.per1M;
-	});
+	const orderedTiers = [...(tiers ?? [])].sort(compareTokenTiers);
 	if (!orderedTiers.length) {
 		return (
 			<div className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
@@ -800,10 +798,7 @@ function renderSecondaryTierSummary(
 	freeLabel: string,
 	l: (value: string | null | undefined) => string,
 ) {
-	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
-		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
-		return a.per1M - b.per1M;
-	});
+	const orderedTiers = [...(tiers ?? [])].sort(compareTokenTiers);
 	if (!orderedTiers.length) {
 		return <div className="text-xs font-semibold tabular-nums text-foreground">--</div>;
 	}
@@ -813,10 +808,10 @@ function renderSecondaryTierSummary(
 	return (
 		<div
 			className={cn(
-				"inline-grid items-baseline gap-x-1.5 gap-y-0.5",
+				"grid w-full min-w-0 items-baseline gap-x-1.5 gap-y-0.5",
 				hasAnyComparison
-					? "grid-cols-[max-content_repeat(3,max-content)]"
-					: "grid-cols-[max-content_repeat(2,max-content)]",
+					? "grid-cols-[repeat(3,max-content)_minmax(0,1fr)]"
+					: "grid-cols-[repeat(2,max-content)_minmax(0,1fr)]",
 			)}
 		>
 			{orderedTiers.map((tier, index) => {
@@ -846,7 +841,7 @@ function renderSecondaryTierSummary(
 						>
 							{tier.per1M === 0 ? freeLabel : fmtUSD(tier.per1M)}
 						</span>
-						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
+						<span className="min-w-0 break-words text-left text-[10px] text-muted-foreground">
 							{l(conditions[index])}
 						</span>
 					</React.Fragment>
@@ -854,7 +849,7 @@ function renderSecondaryTierSummary(
 			})}
 			<div
 				className={cn(
-					"justify-self-center text-[10px] text-muted-foreground",
+					"justify-self-start text-[10px] text-muted-foreground",
 					hasAnyComparison ? "col-span-3 col-start-2" : "col-span-2 col-start-2",
 				)}
 			>

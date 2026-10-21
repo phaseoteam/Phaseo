@@ -15,7 +15,7 @@ describe("generated pricing presentation copy", () => {
 			...(["token", "pixel", "image", "video", "second", "minute", "page", "call", "character", "byte", "frame", "message", "credit", "usd", "unknown"] as const).flatMap((unit) => [unitLabel(unit, 1), unitLabel(unit, 1000)]),
 			conciseConditionLabel([{ op: "eq", path: "cache_ttl", value: "5m" }]),
 			conciseConditionLabel([{ op: "eq", path: "cache_ttl", value: "nx" }]),
-			"Text Tokens · Cache Reads", "Image Tokens · Input", "Audio Inputs", "5 min TTL", "1 hour TTL", "quality = high", "Video Generation - With audio",
+			"Text Tokens · Cache Reads", "Image Tokens · Input", "Audio Inputs", "5 min TTL", "1 hour TTL", "30 min TTL", "12 hour TTL", "quality = high", "Video Generation - With audio",
 		];
 		for (const label of canonical) {
 			const display = localizedPricingDisplayLabel(label, locale, t as never);
