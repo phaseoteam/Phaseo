@@ -41,14 +41,15 @@ begin
  assert result->'zeroDataRetention'='true'::jsonb and result->>'confidence'='confirmed', 'Approved claim must become effective';
  assert (select metadata->'data_policy'->'zeroDataRetention'='true'::jsonb from public.v2_effective_route_capabilities where provider_model_id=offer and capability_id='text.generate'), 'Public and gateway projection must agree';
  -- A skipped projection must withdraw the previous grant before source freshness advances.
- update public.v2_models set metadata=metadata||'{"provider_catalog_owner":"another-provider"}'::jsonb where model_slug='catalog-policy-test/native';
+ -- Initial promotion publishes the fixture, so explicitly hide it again.
+ update public.v2_models set hidden=true, metadata=metadata||'{"provider_catalog_owner":"another-provider"}'::jsonb where model_slug='catalog-policy-test/native';
  run := gen_random_uuid();
  insert into public.provider_catalog_sync_runs(id,provider_slug,trigger) values(run,'catalog-policy-test','manual');
  perform public.apply_provider_catalog_snapshot('catalog-policy-test',run,jsonb_set(snapshot,'{0,serviceTiers,0,dataPolicy}','null'::jsonb));
  assert (select decision='needs_changes' from public.provider_catalog_sync_models where run_id=run and model_slug='catalog-policy-test/native'), 'Hidden unowned model must skip promotion';
  update public.provider_catalog_sources set last_success_at=now() where provider_slug='catalog-policy-test';
  assert public.resolve_catalog_data_policy(offer,'text.generate')->'zeroDataRetention'='false'::jsonb, 'Skipped promotion cannot refresh an older guarantee';
- update public.v2_models set metadata=metadata||'{"provider_catalog_owner":"catalog-policy-test"}'::jsonb where model_slug='catalog-policy-test/native';
+ update public.v2_models set hidden=false, metadata=metadata||'{"provider_catalog_owner":"catalog-policy-test"}'::jsonb where model_slug='catalog-policy-test/native';
  run := gen_random_uuid();
  insert into public.provider_catalog_sync_runs(id,provider_slug,trigger) values(run,'catalog-policy-test','manual');
  perform public.apply_provider_catalog_snapshot('catalog-policy-test',run,snapshot);
