@@ -106,6 +106,23 @@ describe("broadcast OTLP protocol", () => {
 		expect(await response.json()).toEqual({ error: "Signing secret must be 16 to 256 characters" });
 	});
 
+	it("rejects a rule regex the gateway matcher can't run", async () => {
+		const { accountSettingsBroadcastRouter } = await import("./settings-broadcast");
+		const response = await accountSettingsBroadcastRouter.request("https://example.com/broadcast", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				workspaceId: "workspace_1",
+				destinationId: "webhook",
+				name: "Hooks",
+				config: { url: "https://hooks.example.com/traces" },
+				ruleGroups: [{ match: "and", rules: [{ field: "model", condition: "matches_regex", value: "gpt(?!-4)" }] }],
+			}),
+		}, {});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({ error: "Invalid regex: Lookahead and lookbehind are not supported" });
+	});
+
 	it("rejects an unsupported protocol when testing a configuration", async () => {
 		const { accountSettingsBroadcastRouter } = await import("./settings-broadcast");
 		const response = await accountSettingsBroadcastRouter.request("https://example.com/broadcast/test-config", {

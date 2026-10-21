@@ -23,6 +23,7 @@ import {
 	OTLP_PROTOCOLS,
 	otlpProtocol,
 } from "@/observability/broadcast-destinations";
+import { compileSafeRegex } from "@/observability/safe-regex";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const TYPES = new Set<string>(AVAILABLE_BROADCAST_DESTINATION_IDS);
@@ -112,6 +113,7 @@ function ruleGroups(value: unknown): RuleGroup[] | null {
 			const valueless = condition === "exists" || condition === "not_exists";
 			const valueText = valueless ? null : String(inputRule?.value ?? "").trim();
 			if (!FIELDS.has(field) || !CONDITIONS.has(condition) || (!valueless && (!valueText || valueText.length > (condition === "matches_regex" ? 128 : 2_000)))) return null;
+			if (condition === "matches_regex" && !compileSafeRegex(valueText!).ok) return null;
 			rules.push({ field, condition, value: valueText });
 		}
 		output.push({ match, rules });

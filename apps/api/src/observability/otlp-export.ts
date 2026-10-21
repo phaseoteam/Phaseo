@@ -2,6 +2,7 @@ import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
 import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, broadcastWebhookSignatureHeaders, gzipBytes, resolveOtlpTarget } from "./broadcast-destinations";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
+import { compileSafeRegex, type SafeRegex } from "./safe-regex";
 import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
 import { BroadcastHealthRecorder } from "./broadcast-health";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
@@ -103,6 +104,20 @@ function ruleValues(args: GatewayGenAiTelemetry): Record<string, unknown> {
 	};
 }
 
+// Compiled rule regexes, shared across requests in this isolate. Null marks a
+// pattern saved before validation that the matcher can't run; it never matches.
+const RULE_REGEX_CACHE = new Map<string, SafeRegex | null>();
+const RULE_REGEX_CACHE_LIMIT = 500;
+
+function ruleRegex(pattern: string): SafeRegex | null {
+	if (RULE_REGEX_CACHE.has(pattern)) return RULE_REGEX_CACHE.get(pattern)!;
+	const compiled = compileSafeRegex(pattern);
+	const regex = compiled.ok ? compiled.regex : null;
+	if (RULE_REGEX_CACHE.size >= RULE_REGEX_CACHE_LIMIT) RULE_REGEX_CACHE.clear();
+	RULE_REGEX_CACHE.set(pattern, regex);
+	return regex;
+}
+
 function matchRule(rule: Rule, values: Record<string, unknown>): boolean {
 	const raw = values[rule.field];
 	const actual = raw === null || raw === undefined ? "" : String(raw);
@@ -117,12 +132,8 @@ function matchRule(rule: Rule, values: Record<string, unknown>): boolean {
 		case "exists": return actual !== "";
 		case "not_exists": return actual === "";
 		case "matches_regex":
-			if (expected.length > 128 || actual.length > 2_000) return false;
-			try {
-				return new RegExp(expected).test(actual);
-			} catch {
-				return false;
-			}
+			if (actual.length > 2_000) return false;
+			return ruleRegex(expected)?.test(actual) ?? false;
 		default: return false;
 	}
 }

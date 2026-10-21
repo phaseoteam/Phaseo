@@ -156,6 +156,20 @@ describe("Broadcast destination selection and metadata", () => {
 		] }, telemetry, "event_1")).toBe(true);
 	});
 
+	it("matches regex rules in linear time and never matches a pattern it can't run", () => {
+		const withRule = (value: string) => ({
+			...destination,
+			broadcast_destination_rule_groups: [{ match_operator: "and", broadcast_destination_rules: [{ field: "input", condition: "matches_regex", value }] }],
+		});
+		const long = { ...telemetry, requestPayload: { prompt: "a".repeat(1_500) } };
+		const started = performance.now();
+		expect(selected(withRule("(a+)+b"), long, "event_1")).toBe(false);
+		expect(performance.now() - started).toBeLessThan(1_000);
+		expect(selected(withRule("(a+)+\""), long, "event_1")).toBe(true);
+		// Saved before validation existed: lookahead is rejected, so the rule fails closed.
+		expect(selected(withRule("prompt(?=)"), long, "event_1")).toBe(false);
+	});
+
 	it("removes disabled metadata families from OTLP attributes", () => {
 		const payload = { resourceSpans: [{ attributes: [
 			{ key: "gen_ai.request.model", value: { stringValue: "gpt-5" } },
