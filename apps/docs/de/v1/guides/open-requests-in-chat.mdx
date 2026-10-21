@@ -1,0 +1,59 @@
+---
+title: "Anfragen im Chat öffnen"
+description: "Öffne eine protokollierte Anfrage oder einen Sitzungsschritt im Chat, wähle aus, was übernommen wird, und setze die Unterhaltung mit einem beliebigen Modell fort."
+icon: "message-square"
+---
+
+Wenn Gateway-I/O-Protokolle aktiviert sind, speichert Phaseo Prompt und Antwort jeder Anfrage. Du kannst jede gespeicherte Chat Completions-, Responses- oder Messages-Anfrage im Chat öffnen, prüfen, wie sie dargestellt wurde, und die Unterhaltung von dort mit demselben oder einem anderen Modell fortsetzen.
+
+## Bevor du beginnst
+
+- Aktiviere **Gateway-I/O-Protokolle speichern** unter **Einstellungen → Datenschutz**. Nur Anfragen, die gestellt wurden, während die Option aktiv war, lassen sich öffnen.
+- Workspaces mit aktiviertem **Nur ZDR-Endpunkte aktivieren** speichern nie Prompts oder Antworten, ebenso wenig Anfragen mit einem API-Schlüssel, dessen Guardrail Zero Data Retention verlangt. Ihre Anfragen lassen sich nicht öffnen.
+- Du musst Mitglied des Workspace sein, zu dem die Anfrage gehört. Jedes Mitglied, das eine Anfrage in den Protokollen sehen kann, kann sie öffnen.
+
+## Eine Anfrage öffnen
+
+| Wo | Wie |
+| --- | --- |
+| Anfragedetails | Wähle oben in den Details **Im Chat öffnen**. |
+| Anfrageprotokolle | Klicke mit der rechten Maustaste auf eine Anfrage und wähle **Im Chat öffnen**. |
+| Sitzungsdetails | Wähle **Im Chat öffnen**, um ab dem neuesten Schritt fortzufahren, oder das Chat-Symbol in einer Zeile, um ab diesem Schritt fortzufahren. |
+
+Jeder Schritt einer Sitzung enthält bereits die Unterhaltung bis zu diesem Punkt. Wenn du einen Schritt öffnest, wird also auch alles davor geöffnet.
+
+Der Link, den der Chat öffnet, enthält nur die Anfrage-ID. Du kannst ihn daher mit anderen Mitgliedern des Workspace teilen. Der Chat lädt die Anfrage für jede Person, die ihn öffnet, erneut und verwendet dabei deren eigene Zugriffsrechte.
+
+## Auswählen, was übernommen wird
+
+Bevor der Chat erstellt wird, zeigt der Chat, was die Anfrage enthält und was übernommen wird.
+
+| Option | Funktion |
+| --- | --- |
+| Anbieter festlegen | Sendet die fortgesetzten Schritte an den Provider, der die Anfrage bedient hat. Standardmäßig deaktiviert, sodass das Routing wie gewohnt einen Provider auswählt. |
+| Parameter | Übernimmt Temperatur, maximale Token, Top-p und Top-k, Seed, Penalties, Reasoning und Service-Tier. |
+| System-Prompt | Übernimmt die System- oder Entwickleranweisungen der Anfrage. |
+| Server-Tools | Übernimmt die Phaseo-Server-Tools, die die Anfrage verwendet hat, etwa die Websuche. |
+| Funktions-Tools | Deklariert die eigenen Funktions-Tools der Anfrage, damit frühere Tool-Aufrufe gültig bleiben. Der Chat kann sie nicht ausführen. Werden sie weggelassen, werden frühere Tool-Aufrufe und -Ergebnisse als Text gesendet. |
+| Die protokollierte Antwort | Bezieht die Antwort ein, die die Anfrage erhalten hat. Lass sie weg, um eine neue Antwort auf dieselbe Unterhaltung zu erzeugen. |
+
+Wenn das Modell der Anfrage im Chat nicht verfügbar ist, verwendet der Chat stattdessen dein aktuelles Modell. Du kannst das Modell nach dem Öffnen des Chats wechseln.
+
+## Wie der Chat fortgesetzt wird
+
+- Die Anfrage wird als neuer Chat mit eigener Sitzungs-ID geöffnet und wie jeder andere Chat in deinem Browser gespeichert. Fortgesetzte Schritte werden nicht der ursprünglichen Sitzung in den Protokollen hinzugefügt.
+- Nachrichten, die du nicht bearbeitet hast, werden in ihrer ursprünglichen Form gesendet, sodass Tool-Aufrufe, Tool-Ergebnisse, Bilder, Audio und Dateien im nächsten Schritt erhalten bleiben. Bearbeitete und neue Nachrichten werden wie in jedem Chat als Text gesendet.
+- Du kannst wie in jedem Chat Modelle wechseln, mehrere Modelle nebeneinander vergleichen, verzweigen oder bearbeiten.
+- Fortgesetzte Schritte laufen in deinem aktiven Workspace und werden wie jede andere Chat-Anfrage abgerechnet.
+
+## Was nicht übernommen werden kann
+
+Der Chat listet alles auf, was er nicht übernehmen konnte, bevor du fortfährst:
+
+- Schritte, die der Provider über `previous_response_id` oder eine Konversations-ID vorhält. Gespeichert werden nur die Schritte in der Anfrage selbst.
+- Anhänge, die per Datei-ID oder Remote-Referenz statt inline gesendet wurden.
+- Antworten, die fehlgeschlagen sind, abgebrochen wurden oder mehrere Auswahlmöglichkeiten enthielten (nur die erste wird übernommen).
+- Tool-Aufrufe, die nie ein Ergebnis erhalten haben. Diese werden als Text gesendet.
+- Inhaltstypen, die der Chat nicht anzeigen kann, etwa providerspezifische Blöcke.
+
+Anfragen, die zu groß zum Speichern sind, sowie Anfragen, deren gespeicherter Inhalt abgelaufen ist oder gelöscht wurde, lassen sich nicht öffnen. Bild-, Audio-, Video- und Embedding-Anfragen lassen sich noch nicht im Chat öffnen.

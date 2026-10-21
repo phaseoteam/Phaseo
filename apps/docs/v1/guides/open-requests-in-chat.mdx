@@ -1,0 +1,60 @@
+---
+title: "Open Requests in Chat"
+description: "Open a logged request or session turn in Chat, choose what to carry over, and continue the conversation with any model."
+"og:image": "https://phaseo.app/og/dynamic?title=Open%20Requests%20in%20Chat&description=Open%20a%20logged%20request%20or%20session%20turn%20in%20Chat%2C%20choose%20what%20to%20carry%20over%2C%20and%20continue%20the%20conversation%20with%20any%20model.&pathname=/docs/v1/guides/open-requests-in-chat"
+icon: "message-square"
+---
+
+When Gateway I/O logs are on, Phaseo stores the prompt and response of each request. You can open any stored Chat Completions, Responses or Messages request in Chat, check how it rendered, and continue the conversation from there with the same model or a different one.
+
+## Before you start
+
+- Turn on **Store Gateway I/O logs** in **Settings → Privacy**. Only requests made while it is on can be opened.
+- Workspaces with **ZDR endpoints only** on never store prompts or responses, and neither do requests made with an API key whose guardrail requires zero data retention. Their requests can't be opened.
+- You need to be a member of the workspace the request belongs to. Any member who can view a request in Logs can open it.
+
+## Open a request
+
+| Where | How |
+| --- | --- |
+| Request details | Select **Open in Chat** at the top of the details. |
+| Request logs | Right-click a request and select **Open in Chat**. |
+| Session details | Select **Open in Chat** to continue from the latest turn, or the chat icon on a row to continue from that turn. |
+
+Each turn of a session already contains the conversation up to that point, so opening a turn opens everything before it as well.
+
+The link Chat opens carries only the request ID, so you can share it with other members of the workspace. Chat loads the request again for whoever opens it, using their own access.
+
+## Choose what to carry over
+
+Before the chat is created, Chat shows what the request contains and what will be kept.
+
+| Option | What it does |
+| --- | --- |
+| Pin the provider | Sends the continued turns to the provider that served the request. Off by default, so routing picks a provider as usual. |
+| Parameters | Keeps temperature, maximum tokens, top-p and top-k, seed, penalties, reasoning and service tier. |
+| System prompt | Keeps the request's system or developer instructions. |
+| Server tools | Keeps the Phaseo server tools the request used, such as web search. |
+| Function tools | Declares the request's own function tools so earlier tool calls stay valid. Chat can't run them. When they're left out, earlier tool calls and results are sent as text. |
+| The logged response | Includes the response the request received. Leave it out to generate a new response to the same conversation. |
+
+If the request's model isn't available in Chat, the chat uses your current model instead. You can change models after the chat opens.
+
+## How the chat continues
+
+- The request opens as a new chat with its own session ID, saved in your browser like any other chat. Continued turns don't join the original session in Logs.
+- Messages you haven't edited are sent in their original form, so tool calls, tool results, images, audio and files are kept on the next turn. Edited and new messages are sent as text, as in any chat.
+- You can switch models, compare several models side by side, branch or edit, as in any chat.
+- Continued turns run in your active workspace and are billed like any other Chat request.
+
+## What can't be carried over
+
+Chat lists anything it couldn't carry over before you continue:
+
+- Turns kept by the provider through `previous_response_id` or a conversation ID. Only the turns in the request itself are stored.
+- Attachments sent by file ID or remote reference rather than inline.
+- Responses that failed, were cut short, or offered several choices (only the first is kept).
+- Tool calls that never received a result. These are sent as text.
+- Content types Chat can't show, such as provider-specific blocks.
+
+Requests too large to store, and requests whose stored content has expired or been deleted, can't be opened. Image, audio, video and embeddings requests can't be opened in Chat yet.

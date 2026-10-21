@@ -1,0 +1,59 @@
+---
+title: "Abrir solicitudes en Chat"
+description: "Abre una solicitud registrada o un turno de sesión en Chat, elige qué conservar y continúa la conversación con cualquier modelo."
+icon: "message-square"
+---
+
+Cuando los registros de I/O del Gateway están activados, Phaseo guarda el prompt y la respuesta de cada solicitud. Puedes abrir en Chat cualquier solicitud guardada de Chat Completions, Responses o Messages, comprobar cómo se mostró y continuar la conversación desde ahí con el mismo modelo o con otro.
+
+## Antes de empezar
+
+- Activa **Guardar registros de I/O del Gateway** en **Configuración → Privacidad**. Solo se pueden abrir las solicitudes realizadas mientras está activado.
+- Los espacios de trabajo con **Permitir solo endpoints con ZDR** activado nunca guardan prompts ni respuestas, y tampoco las solicitudes realizadas con una clave API cuya guardrail exige retención cero de datos. Sus solicitudes no se pueden abrir.
+- Debes ser miembro del espacio de trabajo al que pertenece la solicitud. Cualquier miembro que pueda ver una solicitud en Registros puede abrirla.
+
+## Abrir una solicitud
+
+| Dónde | Cómo |
+| --- | --- |
+| Detalles de la solicitud | Selecciona **Abrir en Chat** en la parte superior de los detalles. |
+| Registros de solicitudes | Haz clic derecho en una solicitud y selecciona **Abrir en Chat**. |
+| Detalles de la sesión | Selecciona **Abrir en Chat** para continuar desde el último turno, o el icono de chat de una fila para continuar desde ese turno. |
+
+Cada turno de una sesión ya contiene la conversación hasta ese punto, así que al abrir un turno también se abre todo lo anterior.
+
+El enlace que abre Chat solo incluye el ID de la solicitud, por lo que puedes compartirlo con otros miembros del espacio de trabajo. Chat vuelve a cargar la solicitud para quien lo abra, con sus propios permisos de acceso.
+
+## Elegir qué conservar
+
+Antes de crear el chat, Chat muestra lo que contiene la solicitud y lo que se conservará.
+
+| Opción | Qué hace |
+| --- | --- |
+| Fijar el proveedor | Envía los turnos continuados al proveedor que atendió la solicitud. Desactivado de forma predeterminada, así que el enrutamiento elige un proveedor como siempre. |
+| Parámetros | Conserva temperature, máximo de tokens, top-p y top-k, seed, penalizaciones, razonamiento y nivel de servicio. |
+| Prompt del sistema | Conserva las instrucciones de sistema o de desarrollador de la solicitud. |
+| Herramientas del servidor | Conserva las herramientas del servidor de Phaseo que usó la solicitud, como la búsqueda web. |
+| Herramientas de función | Declara las herramientas de función propias de la solicitud para que las llamadas a herramientas anteriores sigan siendo válidas. Chat no puede ejecutarlas. Si se omiten, las llamadas a herramientas y los resultados anteriores se envían como texto. |
+| La respuesta registrada | Incluye la respuesta que recibió la solicitud. Omítela para generar una respuesta nueva a la misma conversación. |
+
+Si el modelo de la solicitud no está disponible en Chat, el chat usa tu modelo actual. Puedes cambiar de modelo después de abrir el chat.
+
+## Cómo continúa el chat
+
+- La solicitud se abre como un chat nuevo con su propio ID de sesión, guardado en tu navegador como cualquier otro chat. Los turnos continuados no se añaden a la sesión original en Registros.
+- Los mensajes que no has editado se envían en su forma original, así que las llamadas a herramientas, los resultados de herramientas, las imágenes, el audio y los archivos se conservan en el siguiente turno. Los mensajes editados y nuevos se envían como texto, como en cualquier chat.
+- Puedes cambiar de modelo, comparar varios modelos en paralelo, crear ramas o editar, como en cualquier chat.
+- Los turnos continuados se ejecutan en tu espacio de trabajo activo y se facturan como cualquier otra solicitud de Chat.
+
+## Lo que no se puede conservar
+
+Chat enumera todo lo que no pudo conservar antes de que continúes:
+
+- Turnos que el proveedor mantiene mediante `previous_response_id` o un ID de conversación. Solo se guardan los turnos incluidos en la propia solicitud.
+- Adjuntos enviados mediante ID de archivo o referencia remota en lugar de en línea.
+- Respuestas que fallaron, se cortaron u ofrecieron varias opciones (solo se conserva la primera).
+- Llamadas a herramientas que nunca recibieron un resultado. Se envían como texto.
+- Tipos de contenido que Chat no puede mostrar, como bloques específicos de un proveedor.
+
+No se pueden abrir las solicitudes demasiado grandes para guardarse ni aquellas cuyo contenido guardado ha caducado o se ha eliminado. Las solicitudes de imagen, audio, video y embeddings todavía no se pueden abrir en Chat.
