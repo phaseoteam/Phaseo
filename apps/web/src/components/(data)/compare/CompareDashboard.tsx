@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { decodeModelIdFromUrl, encodeModelIdForUrl } from "./compareUrl";
 import type { CompareModelOption } from "./types";
@@ -21,8 +21,10 @@ export default function CompareDashboard({ selectedOptions, view, usage }: Compa
 	const params = useSearchParams();
 	const searchParams = useMemo(() => params ?? new URLSearchParams(), [params]);
 	const router = useRouter();
+	const pathname = usePathname();
 	const selectedIds = useMemo(
-		() => [...new Set(searchParams.getAll("models").map(decodeModelIdFromUrl).filter(Boolean))],
+		// The page fetches at most four, so ids past that are neither shown nor reported missing.
+		() => [...new Set(searchParams.getAll("models").map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4),
 		[searchParams],
 	);
 
@@ -31,7 +33,7 @@ export default function CompareDashboard({ selectedOptions, view, usage }: Compa
 		params.delete("models");
 		ids.forEach((id) => params.append("models", encodeModelIdForUrl(id)));
 		const query = params.toString();
-		router.replace(query ? `?${query}` : "/compare", { scroll: false });
+		router.replace(query ? `?${query}` : pathname, { scroll: false });
 	};
 
 	const modelsById = new Map(view.models.map((model) => [model.id, model]));

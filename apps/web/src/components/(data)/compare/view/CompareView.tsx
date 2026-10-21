@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Check, ChevronLeft, ChevronRight, Link2, MessageSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ export function CompareView({
 	onSelectedIdsChange: (ids: string[]) => void;
 }) {
 	const t = useTranslations("Catalogue.compareView");
+	const pathname = usePathname();
 	const models = view.models;
 	const [highlightBest, setHighlightBest] = useState(true);
 	const [differencesOnly, setDifferencesOnly] = useState(false);
@@ -80,7 +82,7 @@ export function CompareView({
 			<div className="space-y-8">
 				<div ref={titleRef} className="space-y-3">
 					<nav aria-label={t("breadcrumb")} className="text-xs text-muted-foreground">
-						<Link href="/compare" className="hover:underline">{t("compare")}</Link>
+						<Link href={pathname} className="hover:underline">{t("compare")}</Link>
 						<span aria-hidden> / </span>
 						<span>{title}</span>
 					</nav>

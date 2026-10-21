@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import ModelCombobox from "../ModelCombobox";
 import type { CompareModelOption } from "../types";
@@ -23,6 +24,8 @@ export function CompareEmptyState({
 	onSelect: (ids: string[]) => void;
 }) {
 	const t = useTranslations("Catalogue.compareView");
+	// Stay on the current locale's compare page.
+	const pathname = usePathname();
 	return (
 		<div className="space-y-8">
 			<div className="max-w-2xl">
@@ -49,7 +52,7 @@ export function CompareEmptyState({
 					{POPULAR.map((preset) => (
 						<li key={preset.key}>
 							<Link
-								href={`/compare?${preset.models.map(([id]) => `models=${encodeURIComponent(urlId(id))}`).join("&")}`}
+								href={`${pathname}?${preset.models.map(([id]) => `models=${encodeURIComponent(urlId(id))}`).join("&")}`}
 								className="block rounded-md border border-border p-4 transition-colors hover:bg-muted/50"
 							>
 								<span className="block text-sm font-semibold">{t(`preset.${preset.key}.title` as never)}</span>
