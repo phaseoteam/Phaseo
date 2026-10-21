@@ -216,8 +216,8 @@ export function ModelDetail({ id }: { id: string }) {
               <View className="flex-row items-start gap-3 px-4 pt-2">
                 <Logo id={organisationId} label={organisation} colour={card?.organisation_colour} size={44} />
                 <View className="flex-1">
-                  <Text className="text-[28px] font-bold leading-[34px] tracking-tight text-foreground" selectable accessibilityRole="header">
-                    <Text accessibilityRole="link" onPress={showLab} suppressHighlighting className="text-[28px] font-bold leading-[34px] tracking-tight text-foreground">{organisation}:</Text> {name}
+                  <Text variant="title" selectable accessibilityRole="header">
+                    <Text variant="title" accessibilityRole="link" onPress={showLab} suppressHighlighting>{organisation}:</Text> {name}
                   </Text>
                   <ModelIdentifier modelId={data?.id || id} aliases={gateway.data?.aliases?.length ? gateway.data.aliases : data?.aliases ?? []} variants={data?.variants ?? []} />
                 </View>
@@ -236,7 +236,7 @@ export function ModelDetail({ id }: { id: string }) {
             {data && data.status !== "Retired" && organisationId && id !== FREE_ROUTER_ID ? (
               <View className="mt-10">
                 <View className="mx-4 mb-6 h-px bg-border" />
-                <Text className="mx-4 mb-3 text-[20px] font-semibold leading-7 tracking-tight text-foreground">Other models from <Text className="text-[20px] font-semibold leading-7 tracking-tight text-link" onPress={showLab} suppressHighlighting>{organisation}</Text></Text>
+                <Text variant="heading" className="mx-4 mb-3">Other models from <Text variant="heading" className="text-link" onPress={showLab} suppressHighlighting>{organisation}</Text></Text>
                 <OtherModels modelId={id} organisationId={organisationId} />
               </View>
             ) : null}
@@ -328,8 +328,8 @@ function Description({ text }: { text: string }) {
   return (
     <View className="mt-5 px-4">
       {/* An unclamped, invisible copy measures whether the text runs past four lines. */}
-      <Text variant="body" aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none" className="absolute inset-x-4 top-0 leading-[24px] opacity-0" onTextLayout={(event) => setLong(event.nativeEvent.lines.length > 4)}>{text}</Text>
-      <Text variant="body" numberOfLines={open ? undefined : 4} className="leading-[24px] text-muted-foreground">{text}</Text>
+      <Text variant="muted" aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none" className="absolute inset-x-4 top-0 leading-[21px] opacity-0" onTextLayout={(event) => setLong(event.nativeEvent.lines.length > 4)}>{text}</Text>
+      <Text variant="muted" numberOfLines={open ? undefined : 4} className="leading-[21px]">{text}</Text>
       {long ? (
         <Pressable accessibilityRole="button" onPress={() => setOpen(!open)} className="mt-1 flex-row items-center gap-1 self-end">
           <Text variant="small" className="font-medium text-muted-foreground">{open ? "Show less" : "Show full"}</Text>
