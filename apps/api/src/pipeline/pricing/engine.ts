@@ -10,7 +10,14 @@ import type { PriceCard, PriceRule, PricingBreakdownLine, PricingDimensionKey, P
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage, resolveRequestCountUsage } from "@core/usage-normalization";
 import { CACHED_WRITE_TOKEN_PATHS, resolveCacheTokenUsage } from "@core/cache-usage";
 import { cacheTtlUnsupported } from "@pipeline/execute/cacheTtl";
-import { applyOpenAICacheWriteTtlSplit, OPENAI_CACHE_WRITE_12H_INPUT_MULTIPLIER, OPENAI_CACHE_WRITE_12H_METER, OPENAI_CACHE_WRITE_TTL_METERS } from "./openai-cache-ttl";
+import {
+    applyOpenAICacheWriteTtlSplit,
+    OPENAI_CACHE_WRITE_12H_INPUT_MULTIPLIER,
+    OPENAI_CACHE_WRITE_12H_METER,
+    OPENAI_CACHE_WRITE_30M_INPUT_MULTIPLIER,
+    OPENAI_CACHE_WRITE_30M_METER,
+    OPENAI_CACHE_WRITE_TTL_METERS,
+} from "./openai-cache-ttl";
 
 const KNOWN_METERS = new Set<string>([
     "input_tokens",
@@ -783,12 +790,13 @@ function oneHourWritesNeedOwnRate(card: PriceCard, meters: Record<string, number
  * Documented cache-write price as a multiple of the input price, for routes whose card has
  * no write row. Claude (every platform): 5-minute writes 1.25x, 1-hour writes 2x. OpenAI and
  * Azure GPT-5.6+ and Alibaba explicit cache: 1.25x. Kimi K3: 5-minute writes 1x, 1-hour 2x.
- * OpenAI 12-hour writes, on any route: 2.5x. Anything else: 1x.
+ * OpenAI 30-minute and 12-hour writes, on any route: 1.25x and 2.5x. Anything else: 1x.
  */
 function cacheWriteFallbackMultiplier(card: PriceCard, meter: string): number {
     const provider = String(card.provider ?? "").toLowerCase();
     const model = String(card.model ?? "").toLowerCase();
     if (meter === OPENAI_CACHE_WRITE_12H_METER) return OPENAI_CACHE_WRITE_12H_INPUT_MULTIPLIER;
+    if (meter === OPENAI_CACHE_WRITE_30M_METER) return OPENAI_CACHE_WRITE_30M_INPUT_MULTIPLIER;
     const isOneHour = meter === "cached_write_text_tokens_1h";
     if (model.includes("claude")) return isOneHour ? 2 : 1.25;
     if (provider.startsWith("moonshotai") || model.includes("kimi-k3")) return isOneHour ? 2 : 1;

@@ -342,6 +342,22 @@ describe("computeBillSummary with OpenAI per-TTL write meters", () => {
 		expect(Math.round(summary.cost_usd * 1e9)).toBe(EXPECTED_SPLIT);
 	});
 
+	it("prices per-TTL writes at 1.25x and 2.5x input when the card's rows do not match the request", () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const card = openAICard({ write30m: true, write12h: true });
+		// Lifetime rows that only apply to long prompts, as on a long-context-only price row.
+		card.rules = card.rules.map((rule) => rule.meter.endsWith("_30m") || rule.meter.endsWith("_12h")
+			? { ...rule, match: [{ path: "input_tokens", op: "gt", value: 272_000 }] }
+			: rule);
+		const summary = computeBillSummary(usage, { ...card, provider: "venice" } as PriceCard);
+		warn.mockRestore();
+		expect(Object.fromEntries(summary.cache_pricing_fallback?.map((entry) => [entry.meter, entry.multiplier]) ?? [])).toEqual({
+			cached_write_text_tokens_30m: 1.25,
+			cached_write_text_tokens_12h: 2.5,
+		});
+		expect(Math.round(summary.cost_usd * 1e9)).toBe(EXPECTED_SPLIT);
+	});
+
 	it("prices 12-hour writes at 2.5x input on a third-party card whose generic write row is cheaper", () => {
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const card = { ...openAICard(), provider: "venice" } as PriceCard;

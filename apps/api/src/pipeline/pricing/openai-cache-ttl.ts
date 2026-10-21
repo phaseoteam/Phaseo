@@ -20,6 +20,9 @@ export const OPENAI_CACHE_WRITE_TTL_METERS = [OPENAI_CACHE_WRITE_30M_METER, OPEN
  */
 export const OPENAI_CACHE_WRITE_12H_INPUT_MULTIPLIER = 2.5;
 
+/** OpenAI's documented 30-minute write price as a multiple of input, for the same fallback. */
+export const OPENAI_CACHE_WRITE_30M_INPUT_MULTIPLIER = 1.25;
+
 /**
  * Splits the cache-write meters by lifetime when the usage reports OpenAI's
  * `cache_write_tokens_details`. Each write token is priced once:
