@@ -4,7 +4,7 @@ import { useId, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { CompareGrid, CompareRow, MODEL_COLOURS, type CompareCell } from "./CompareGrid";
-import { bestIndices, doSameJob, requestCost, sortTiers, tierRows, type Workload } from "./compareViewMath";
+import { bestIndices, doSameJob, hiddenConditionalRows, requestCost, sortTiers, tierRows, type Workload } from "./compareViewMath";
 import type { ComparePriceKind, CompareViewModel, CompareViewPriceRow } from "./types";
 import { useCompareFormat } from "./useCompareFormat";
 
@@ -73,7 +73,7 @@ export function ComparePricing({ models }: { models: CompareViewModel[] }) {
 	const activeTier = tiers.includes(tier) ? tier : tiers[0] ?? "standard";
 	const sameJob = doSameJob(models);
 	const lines = meterLines(models, activeTier, format.meter, (kind) => t(KIND_LABELS[kind]));
-	const conditional = models.reduce((sum, model) => sum + (model.pricing?.tiers[activeTier]?.filter((row) => row.conditional).length ?? 0), 0);
+	const conditional = models.reduce((sum, model) => sum + hiddenConditionalRows(model, activeTier), 0);
 
 	const cells = (line: MeterLine): CompareCell[] => {
 		const rows = models.map((model) => {

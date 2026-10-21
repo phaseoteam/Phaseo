@@ -6,6 +6,7 @@ import {
 	effortLevels,
 	formatUsd,
 	groupBenchmarks,
+	hiddenConditionalRows,
 	pickResult,
 	requestCost,
 	sortTiers,
@@ -80,6 +81,15 @@ describe("pricing", () => {
 		expect(tokenPrice(sonnet, "input")).toBe(3);
 		expect(tokenPrice(gpt5, "input", "batch")).toBe(0.625);
 		expect(tokenPrice(sonnet, "input", "batch")).toBeNull();
+	});
+
+	it("uses a meter's base band when every row is conditional", () => {
+		const astra = model("openai/gpt-6-astra", { pricing: { provider: { id: "openai", name: "OpenAI", routed: true }, tiers: {
+			standard: [{ ...tokens("input", 10, true), condition: "input tokens ≤ 272K" }, { ...tokens("input", 20, true), condition: "input tokens > 272K" }, tokens("output", 50)],
+		} } });
+		expect(tokenPrice(astra, "input")).toBe(10);
+		expect(hiddenConditionalRows(astra, "standard")).toBe(1);
+		expect(tokenPrice(sonnet, "input")).toBe(3);
 	});
 
 	it("doesn't treat a per-character price as a token price", () => {

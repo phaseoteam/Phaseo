@@ -65,6 +65,8 @@ export type CompareViewPriceRow = {
 	per: number;
 	unit: string;
 	conditional: boolean;
+	/** For conditional rows, e.g. "input tokens ≤ 272K". */
+	condition?: string | null;
 };
 
 export type CompareViewProvider = {

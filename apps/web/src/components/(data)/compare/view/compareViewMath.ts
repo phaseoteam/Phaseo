@@ -32,10 +32,23 @@ export function sortTiers(tiers: Iterable<string>): string[] {
 	return [...new Set(tiers)].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
-/** Unconditional rows for a tier; conditional rows (long-context surcharges and the like) stay on the model page. */
+/**
+ * One base row per meter for a tier: the unconditional row when there is one,
+ * otherwise the first conditional row (the API lists a meter's base band first,
+ * e.g. "input tokens ≤ 272K"). Surcharge bands stay on the model page.
+ */
 export function tierRows(model: CompareViewModel, tier: string): CompareViewPriceRow[] | null {
 	const rows = model.pricing?.tiers[tier];
-	return rows ? rows.filter((row) => !row.conditional) : null;
+	if (!rows) return null;
+	const byMeter = new Map<string, CompareViewPriceRow[]>();
+	for (const row of rows) byMeter.set(row.meter, [...(byMeter.get(row.meter) ?? []), row]);
+	return [...byMeter.values()].map((group) => group.find((row) => !row.conditional) ?? group[0]!);
+}
+
+/** Conditional bands left out of the base rows, for a "see the model page" note. */
+export function hiddenConditionalRows(model: CompareViewModel, tier: string): number {
+	const rows = model.pricing?.tiers[tier] ?? [];
+	return rows.length - (tierRows(model, tier)?.length ?? 0);
 }
 
 export function priceRow(model: CompareViewModel, kind: ComparePriceKind, tier = "standard"): CompareViewPriceRow | null {

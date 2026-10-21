@@ -59,7 +59,7 @@ export function useCompareFormat() {
 			modalities: (types: string[]) => types.map((type) => known(MODALITY_KEYS[type.toLowerCase()], capitalise(type))).join(", "),
 			status: (status: string | null) => (status ? known(STATUS_KEYS[status.toLowerCase()], capitalise(status)) : ""),
 			tier: (tier: string) => capitalise(tier),
-			meter: (row: Pick<CompareViewPriceRow, "label" | "meter">) => row.label?.trim() || capitalise(row.meter),
+			meter: (row: Pick<CompareViewPriceRow, "label" | "meter">) => capitalise(row.label?.trim() || row.meter),
 			window: (window: CompareUsageWindow | null | undefined) =>
 				window ? t(`window${window}`) : t("window5d"),
 			/** "$10.00" for token prices (the section states per 1M), "$0.10 per 1K characters" otherwise. */
