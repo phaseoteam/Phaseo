@@ -205,6 +205,18 @@ const REPORTED_INPUT_TOTAL_PATHS = [
     "promptTokenCount",
 ] as const;
 
+/** Output totals a provider reports. output_text_tokens is not one: realtime reports it next to output_audio_tokens. */
+const REPORTED_OUTPUT_TOTAL_PATHS = [
+    "output_tokens",
+    "completion_tokens",
+    "completionTokens",
+    "completion_token_count",
+    "total_output_tokens",
+    "totalOutputTokens",
+    "outputTokens",
+    "candidatesTokenCount",
+] as const;
+
 /** Split raw usage into numeric meters and a context object */
 function splitUsage(
     usageRaw: any,
@@ -432,8 +444,10 @@ function splitUsage(
     if (meters.input_text_tokens == null) {
         meters.input_text_tokens = uncachedCanonicalInput;
     }
+    const reportedOutputTotal = pickFirstFiniteNumber(usageRaw, [...REPORTED_OUTPUT_TOTAL_PATHS]);
     const outputTextCoversOutput =
-        meters.output_text_tokens == null || meters.output_text_tokens === canonicalOutputTokens;
+        meters.output_text_tokens == null ||
+        (typeof reportedOutputTotal === "number" && meters.output_text_tokens === reportedOutputTotal);
     if (meters.output_text_tokens == null) {
         meters.output_text_tokens =
             card.rules.some((rule) => rule.meter === "output_reasoning_tokens") &&
