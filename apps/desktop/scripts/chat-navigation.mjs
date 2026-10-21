@@ -6,7 +6,7 @@ export async function installChatNavigation(window) {
   const settings={Accounts:'Accounts',Agents:'Agents',MCP:'MCP servers',Settings:'General',Appearance:'Appearance'};
   const panels={Projects:'Files & changes',Terminals:'Terminal',Proposals:'Linked pull requests',Browser:'Browser'};
   if(page==='Tasks'||page==='Home'){if(document.querySelector('nav[aria-label="Settings sections"]'))await window.__auditCloseSettings();return;}
-  if(page==='Scheduled tasks'){if(document.querySelector('nav[aria-label="Settings sections"]'))await window.__auditCloseSettings();const link=Array.from(document.querySelectorAll('aside button')).find(button=>button.textContent.startsWith('Scheduled tasks'));if(!link)throw Error('Scheduled tasks link missing');link.click();return;}
+  if(page==='Scheduled tasks'){if(document.querySelector('nav[aria-label="Settings sections"]'))await window.__auditCloseSettings();const link=document.querySelector('aside button[aria-label="Scheduled tasks"]');if(!link)throw Error('Scheduled tasks link missing');link.click();return;}
   if(settings[page]){await window.__auditSettings(settings[page]);return;}
   if(panels[page]){if(document.querySelector('nav[aria-label="Settings sections"]'))await window.__auditCloseSettings();await window.__auditPanel(panels[page]);return;}
   throw Error('No workspace area named '+page);
