@@ -8953,16 +8953,19 @@ components:
       additionalProperties: true
     PromptCacheBreakpoint:
       type: object
-      description: OpenAIのキャッシュブレークポイント。このブロックまでのすべてをキャッシュします。GPT-5.6以降のOpenAIとAzure OpenAI、およびDeepInfraに送られ、Claudeのルートにはcache_controlとして届きます。
+      description: OpenAIのキャッシュブレークポイント。このブロックまでのすべてをキャッシュします。GPT-5.6以降のOpenAIとAzure OpenAI、およびDeepInfraに送られ、Claudeのルートにはcache_controlとして届きます。ttlはOpenAIにだけ送られます。
       properties:
         mode:
           type: string
           enum:
             - explicit
+        ttl:
+          type: string
+          description: 'GPT-5.6以降のOpenAIでのこのブレークポイントのキャッシュの最低保持期間: 30mまたは12h。指定しない場合はprompt_cache_options.ttlが使われます。12hの書き込みは入力料金の2.5倍で請求されます。12hを受け付けないルートには12hを外したリクエストが送られ、外したことはX-Phaseo-Dropped-Paramsで報告されます。'
       additionalProperties: true
     PromptCacheOptions:
       type: object
-      description: GPT-5.6以降のOpenAIとAzure OpenAI（ttl 30m）、およびDeepInfra（ttl 5mまたは1h）向けのプロンプトキャッシュのモードとTTL。ほかのプロバイダーでは削除されます。
+      description: GPT-5.6以降のOpenAIとAzure OpenAI（ttl 30m、OpenAIでは12hも可）、およびDeepInfra（ttl 5mまたは1h）向けのプロンプトキャッシュのモードとTTL。ほかのプロバイダーでは削除されます。
       properties:
         mode:
           type: string
@@ -8971,6 +8974,7 @@ components:
             - explicit
         ttl:
           type: string
+          description: 'キャッシュの最低保持期間。GPT-5.6以降のOpenAI: 30m（デフォルト）または12h。12hを指定したリクエストはOpenAIのResponses APIで実行されます。Azure OpenAI: 30m。DeepInfra: 5mまたは1h。12hを受け付けないルートには12hを外したリクエストが送られ、外したことはX-Phaseo-Dropped-Paramsで報告されます。'
       additionalProperties: true
     ProviderOptions:
       type: object
@@ -10603,6 +10607,16 @@ components:
           nullable: true
           description: BYOK リクエストで、持ち込んだキーに対してプロバイダーが推論分として請求する額（米ドル、モデルの掲載価格で算出）。リクエストが Phaseo クレジットで実行される場合は null で、`cost` が請求額のすべてです。
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: GPT-5.6以降のOpenAIのResponses使用量における、保持期間別のキャッシュ書き込み。2つの値の合計がcache_write_tokensです。Chat Completionsのprompt_tokens_detailsには返されません。
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: 保持期間30分でキャッシュに書き込まれた入力トークン。入力料金の1.25倍で請求されます。
+        ttl_12h_tokens:
+          type: integer
+          description: 保持期間12時間でキャッシュに書き込まれた入力トークン。入力料金の2.5倍で請求されます。
     InputTokensDetails:
       type: object
       description: 入力トークンの内訳。
@@ -10613,6 +10627,8 @@ components:
         cache_write_tokens:
           type: integer
           description: プロバイダーのプロンプトキャッシュに書き込まれた入力トークン。
+        cache_write_tokens_details:
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: '`null` として送信された省略可能なトップレベルのフィールドは、省略した場合と同じく未設定として扱われます。'

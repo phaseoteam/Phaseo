@@ -101,7 +101,7 @@ Anthropic 每个请求最多接受四个缓存断点。默认策略会把你自�
 在内容块上设置缓存标记，即可缓存到该块为止（含该块）的全部内容。Phaseo 接受两种写法：
 
 - `cache_control`：`{"type": "ephemeral"}`，可选 `ttl` 为 `5m` 或 `1h`。
-- `prompt_cache_breakpoint`：OpenAI 的 `{"mode": "explicit"}`。同一块同时带有两者时，以 `prompt_cache_breakpoint` 为准。
+- `prompt_cache_breakpoint`：OpenAI 的 `{"mode": "explicit"}`，可选带 `30m` 或 `12h` 的 `ttl`。同一块同时带有两者时，以 `prompt_cache_breakpoint` 为准。
 
 ```json
 {
@@ -121,7 +121,8 @@ Anthropic 每个请求最多接受四个缓存断点。默认策略会把你自�
 | 供应商 | 块级 `cache_control` | `prompt_cache_breakpoint` |
 | --- | --- | --- |
 | Anthropic、Claude on AWS、Amazon Bedrock 和 Google Vertex AI 上的 Claude | 以带有你的 `ttl` 的 `{"type": "ephemeral"}` 发送 | 以 `cache_control: {"type": "ephemeral"}` 发送 |
-| OpenAI 和 Azure OpenAI，GPT-5.6 及以后版本 | 以 `prompt_cache_breakpoint: {"mode": "explicit"}` 发送；`ttl` 被丢弃 | 发送 |
+| OpenAI，GPT-5.6 及以后版本 | 以 `prompt_cache_breakpoint: {"mode": "explicit"}` 发送；`ttl` 被丢弃 | 连同其 `ttl` 发送 |
+| Azure OpenAI，GPT-5.6 及以后版本 | 以 `prompt_cache_breakpoint: {"mode": "explicit"}` 发送；`ttl` 被丢弃 | 不带 `ttl` 发送 |
 | OpenAI 和 Azure OpenAI，更早的模型 | 移除 | 移除 |
 | DeepInfra | 移除 | 发送 |
 | Alibaba Model Studio 和 Venice | 发送 | 移除 |
@@ -138,10 +139,10 @@ OpenAI 的缓存控制取决于模型代际。Phaseo 只在 OpenAI 接受时发�
 
 | 字段 | 取值 | 发送给 |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`：`implicit` 或 `explicit`；`ttl`：`30m` | GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra |
+| `prompt_cache_options` | `mode`：`implicit` 或 `explicit`；`ttl`：`30m`，OpenAI 上也可为 `12h` | GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra |
 | `prompt_cache_retention` | `in_memory` 或 `24h` | GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型 |
 
-从 GPT-5.6 开始，OpenAI 只接受 `30m` 这一个 `ttl`，`explicit` 模式只缓存你放置的断点。DeepInfra 使用同一对象，`ttl` 为 `5m` 或 `1h`，并要求会话中的每个请求都带上 `prompt_cache_key`。其他供应商不会收到这两个字段。
+从 GPT-5.6 开始，OpenAI 接受 `30m`（默认）或 `12h` 的 `ttl`，Azure OpenAI 只接受 `30m`。`explicit` 模式只缓存你放置的断点。DeepInfra 使用同一对象，`ttl` 为 `5m` 或 `1h`，并要求会话中的每个请求都带上 `prompt_cache_key`。其他供应商不会收到这两个字段。
 
 这两个字段都可以放在顶层或 `provider_options.openai` 下。两者同时存在时，以顶层值为准：
 
@@ -160,6 +161,33 @@ OpenAI 的缓存控制取决于模型代际。Phaseo 只在 OpenAI 接受时发�
   }
 }
 ```
+
+### OpenAI 的 12 小时缓存
+
+从 GPT-5.6 开始，设置 `ttl: "12h"` 后，OpenAI 会将缓存条目保留至少 12 小时。你可以在 `prompt_cache_options` 中为整个请求设置，也可以在 `prompt_cache_breakpoint` 中为单个断点设置。没有自己 `ttl` 的断点使用请求的 `ttl`。OpenAI 对 12 小时缓存写入按输入价格的 2.5 倍计费，对 30 分钟写入按 1.25 倍计费；两者的缓存读取价格相同。
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "prompt_cache_options": { "ttl": "30m" },
+  "input": [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Shared tool manual...",
+          "prompt_cache_breakpoint": { "mode": "explicit", "ttl": "12h" }
+        }
+      ]
+    },
+    { "role": "user", "content": "Find the failing test." }
+  ]
+}
+```
+
+- OpenAI 只在其 Responses API 上提供 12 小时的保留时长。请求它的 Chat Completions 请求会在 OpenAI 的 Responses API 上运行，响应仍保持 Chat Completions 格式。
+- 支持 12 小时缓存的路由（OpenAI 的全球 API）会优先尝试。其他路由，例如 Azure OpenAI、其他供应商或 GPT-5.6 之前的模型，收到的请求不含该设置，因此适用 30 分钟的默认值。请求仍会运行，被移除的字段会以 `prompt_cache_options.ttl` 或 `prompt_cache_breakpoint.ttl` 的形式在 `X-Phaseo-Dropped-Params` 响应头和 `meta.routing.dropped_params` 中报告。
 
 ### Google Gemini
 
@@ -309,10 +337,10 @@ Anthropic Messages 支持在以下内容上使用缓存控制：
 | 端点 | 输入总量 | 缓存读取 | 缓存写入 |
 | --- | --- | --- | --- |
 | Chat Completions | `prompt_tokens`，包含读取和写入 | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
-| Responses | `input_tokens`，包含读取和写入 | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens` |
+| Responses | `input_tokens`，包含读取和写入 | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`；GPT-5.6 及以后版本的 OpenAI 会按保留时长拆分到 `input_tokens_details.cache_write_tokens_details.ttl_30m_tokens` 和 `ttl_12h_tokens` |
 | Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`，按 TTL 拆分为 `cache_creation.ephemeral_5m_input_tokens` 和 `cache_creation.ephemeral_1h_input_tokens` |
 
-在 Chat Completions 和 Responses 中，未缓存的输入等于输入总量减去缓存读取和缓存写入。流式 Anthropic Messages 响应会在 `message_delta` 中携带缓存字段。
+在 Chat Completions 和 Responses 中，未缓存的输入等于输入总量减去缓存读取和缓存写入。流式 Anthropic Messages 响应会在 `message_delta` 中携带缓存字段。Chat Completions 的用量不按保留时长拆分写入，因为 OpenAI 没有在那里提供相应字段；请求详情中仍会记录这一拆分。
 
 <Note>
 以前的响应把缓存写入报告为 `output_tokens_details.cached_tokens`（在 Chat Completions 中为 `completion_tokens_details.cached_tokens`），而且 Claude 路由在 Chat Completions 和 Responses 上的 `input_tokens` 不包含缓存读取和写入。现在这两种情况都已不再适用：请从 `cache_write_tokens` 读取写入量。非流式 Anthropic Messages 响应以前返回 `cache_creation_input_tokens: null`，现在会返回实际值。
@@ -326,6 +354,8 @@ Anthropic Messages 支持在以下内容上使用缓存控制：
 | `cached_write_text_tokens` | 当供应商对缓存写入采用统一价格时使用的计费项。 |
 | `cached_write_text_tokens_5m` | 供应商报告按 TTL 区分的写入时，TTL 为 5 分钟的缓存写入 token。 |
 | `cached_write_text_tokens_1h` | 供应商报告按 TTL 区分的写入时，TTL 为 1 小时的缓存写入 token。 |
+| `cached_write_text_tokens_30m` | 保留时长为 30 分钟的 OpenAI 缓存写入 token。 |
+| `cached_write_text_tokens_12h` | 保留时长为 12 小时的 OpenAI 缓存写入 token。 |
 
 ### 缓存 token 如何计费
 
@@ -333,7 +363,7 @@ Phaseo 对每个输入 token 只计费一次，且只按一种价格计费：
 
 - 未缓存的输入按输入价格计费
 - 缓存读取按缓存读取价格计费
-- 缓存写入按缓存写入价格计费；供应商分别定价时，按 5 分钟和 1 小时的价格计费
+- 缓存写入按缓存写入价格计费；供应商分别定价时，按 5 分钟和 1 小时（Claude）或 30 分钟和 12 小时（OpenAI）的价格计费
 
 有些供应商把缓存写入计入输入总量，有些则单独报告。Phaseo 对这两种情况的计费方式相同，因此写入的 token 绝不会再按普通输入重复计费。
 
@@ -347,10 +377,12 @@ Phaseo 对每个输入 token 只计费一次，且只按一种价格计费：
 | 850 个输出 | $30.00 | $0.02550 |
 | 合计 | | $0.07875 |
 
+如果其中 2,000 个写入的保留时长为 12 小时，它们的价格将是每百万 $12.50 而不是 $6.25，该请求的费用为 $0.09125。
+
 如果供应商在目录中尚无缓存价格的路由上报告了缓存 token，Phaseo 不会让请求失败：
 
 - 缓存读取按该路由的输入价格计费。
-- 缓存写入按输入价格乘以供应商公布的写入倍率计费：Claude 5 分钟写入为 1.25 倍，1 小时写入为 2 倍；OpenAI、Azure OpenAI 和 Alibaba 为 1.25 倍；Kimi K3 5 分钟写入为 1 倍，1 小时写入为 2 倍；其他供应商为 1 倍。
+- 缓存写入按输入价格乘以供应商公布的写入倍率计费：Claude 5 分钟写入为 1.25 倍，1 小时写入为 2 倍；OpenAI、Azure OpenAI 和 Alibaba 为 1.25 倍；Kimi K3 5 分钟写入为 1 倍，1 小时写入为 2 倍；任何路由上的 OpenAI 12 小时写入为 2.5 倍；其他供应商为 1 倍。
 - 对应的价格行会标记 `pricing_fallback: "input_rate"`。
 
 如果某个 Claude 路由在目录中只有一个缓存写入价格，该价格就是 5 分钟写入价格。供应商报告为 1 小时写入的部分按输入价格的 2 倍计费，记在标有 `pricing_fallback: "input_rate"` 的 `cached_write_text_tokens_1h` 行上。
@@ -383,6 +415,7 @@ prompt 缓存位于某个供应商，通常还位于该供应商的某个区域�
 | 带有 `ttl: "1h"` 的 Anthropic `cache_control` | 90 分钟 |
 | 带有 `prompt_cache_retention: "24h"` 的 OpenAI 或 Azure OpenAI | 24 小时 |
 | 使用内存保留（默认）的 OpenAI 或 Azure OpenAI | 90 分钟 |
+| 在 `prompt_cache_options` 或断点上设置了 `ttl: "12h"` 的 OpenAI，或已报告 12 小时写入 | 18 小时 |
 | 带有 `prompt_cache_options.ttl: "30m"` 的 OpenAI 或 Azure OpenAI | 45 分钟 |
 | 其他所有情况 | 15 分钟 |
 

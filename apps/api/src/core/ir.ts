@@ -985,6 +985,9 @@ export type IRUsage = {
 		cachedWriteTokens?: number;
 		cachedWriteTokens5m?: number;
 		cachedWriteTokens1h?: number;
+		// OpenAI GPT-5.6+ cache writes by lifetime (Responses `cache_write_tokens_details`).
+		cachedWriteTokens30m?: number;
+		cachedWriteTokens12h?: number;
 		spentCredits?: number;
 		serverToolUse?: {
 			datetime_requests?: number;

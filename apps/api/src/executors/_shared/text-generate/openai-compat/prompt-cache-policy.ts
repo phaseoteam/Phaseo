@@ -7,6 +7,7 @@
 
 import type { IRCacheControl } from "@core/ir";
 import { resolveTextProviderParamPolicyOverride } from "@providers/textProfiles";
+import { isTwelveHourCacheTtl, openAIBreakpointTtl, supportsOpenAIPromptCacheOptions } from "./prompt-cache-ttl";
 
 const OPENAI_CACHE_PROVIDERS = new Set(["openai", "openai-eu", "azure"]);
 
@@ -25,6 +26,12 @@ const OPENAI_STYLE_BREAKPOINT_PROVIDERS = new Set(["deepinfra"]);
 // Request fields that are hints, not instructions. They are removed when the
 // provider's profile marks them unsupported, instead of costing the provider
 // its place in routing.
+// Breakpoint lifetimes per upstream: OpenAI documents "30m" and "12h" on
+// prompt_cache_breakpoint (GPT-5.6+, Responses). Azure and DeepInfra document
+// breakpoints without one.
+const OPENAI_BREAKPOINT_TTLS: ReadonlySet<string> = new Set(["30m", "12h"]);
+const NO_BREAKPOINT_TTLS: ReadonlySet<string> = new Set();
+
 const DROPPABLE_HINT_FIELDS = [
 	"prompt_cache_key",
 	"prompt_cache_retention",
@@ -40,12 +47,6 @@ type PromptCachePolicyArgs = {
 	irModel?: string | null;
 };
 
-function gptVersion(model: string | null | undefined): number | null {
-	const match = /(?:^|[/.])gpt-(\d+)(?:\.(\d+))?/.exec(String(model ?? "").toLowerCase());
-	if (!match) return null;
-	return Number(match[1]) + Number(match[2] ?? 0) / 10;
-}
-
 /**
  * OpenAI documents explicit breakpoints and `prompt_cache_options` for GPT-5.6
  * and later, and `prompt_cache_retention` for earlier models only
@@ -54,13 +55,16 @@ function gptVersion(model: string | null | undefined): number | null {
  * gateway model id is checked too.
  */
 function supportsExplicitOpenAIBreakpoints(args: PromptCachePolicyArgs): boolean {
-	const versions = [gptVersion(args.model), gptVersion(args.irModel)].filter((value): value is number => value !== null);
-	return versions.some((version) => version >= 5.6);
+	return supportsOpenAIPromptCacheOptions(args.model, args.irModel);
 }
+
+type MarkMode = "openai-explicit" | "openai-implicit" | "openai-style" | "cache-control" | "none";
 
 function stripPartMarks(
 	part: any,
-	mode: "openai-explicit" | "openai-implicit" | "openai-style" | "cache-control" | "none",
+	mode: MarkMode,
+	/** Breakpoint lifetimes the upstream documents; any other ttl is removed. */
+	breakpointTtls: ReadonlySet<string> = NO_BREAKPOINT_TTLS,
 ): boolean {
 	if (!part || typeof part !== "object") return false;
 	const hadBreakpoint = "prompt_cache_breakpoint" in part;
@@ -69,7 +73,13 @@ function stripPartMarks(
 	if (mode === "openai-explicit" || mode === "openai-style") {
 		// Block cache_control is the provider-neutral spelling of a breakpoint.
 		if (hadBreakpoint || (mode === "openai-explicit" && hadCacheControl)) {
-			part.prompt_cache_breakpoint = { mode: "explicit" };
+			// A breakpoint keeps its own lifetime where the upstream documents it. An
+			// Anthropic-style cache_control ttl ("5m", "1h") is never carried over.
+			const ttl = hadBreakpoint ? openAIBreakpointTtl(part.prompt_cache_breakpoint?.ttl) : undefined;
+			part.prompt_cache_breakpoint = {
+				mode: "explicit",
+				...(ttl && breakpointTtls.has(ttl) ? { ttl } : {}),
+			};
 		}
 		delete part.cache_control;
 	} else if (mode === "cache-control") {
@@ -94,12 +104,13 @@ function collapseTextParts(content: any[]): string | any[] {
 
 function applyToContent(
 	content: unknown,
-	mode: Parameters<typeof stripPartMarks>[1],
+	mode: MarkMode,
 	collapse: boolean,
+	breakpointTtls?: ReadonlySet<string>,
 ): unknown {
 	if (!Array.isArray(content)) return content;
 	let changed = false;
-	for (const part of content) changed = stripPartMarks(part, mode) || changed;
+	for (const part of content) changed = stripPartMarks(part, mode, breakpointTtls) || changed;
 	return changed && collapse ? collapseTextParts(content) : content;
 }
 
@@ -110,15 +121,24 @@ function applyToContent(
 export function cacheMarkFields(cacheControl: IRCacheControl | undefined): Record<string, unknown> {
 	if (!cacheControl) return {};
 	return cacheControl.type === "prompt_cache_breakpoint"
-		? { prompt_cache_breakpoint: { mode: cacheControl.mode } }
+		? { prompt_cache_breakpoint: promptCacheBreakpointValue(cacheControl) }
 		: { cache_control: cacheControl };
+}
+
+/** OpenAI's `prompt_cache_breakpoint` object for an IR breakpoint mark, keeping its lifetime. */
+export function promptCacheBreakpointValue(cacheControl: IRCacheControl): Record<string, unknown> {
+	return {
+		mode: cacheControl.mode,
+		...(typeof cacheControl.ttl === "string" && cacheControl.ttl ? { ttl: cacheControl.ttl } : {}),
+	};
 }
 
 export function applyPromptCacheFieldPolicy(request: Record<string, any>, args: PromptCachePolicyArgs): void {
 	const providerId = String(args.providerId ?? "").toLowerCase();
 	const openAIFamily = OPENAI_CACHE_PROVIDERS.has(providerId);
 	const explicit = openAIFamily && supportsExplicitOpenAIBreakpoints(args);
-	const mode = openAIFamily
+	const breakpointTtls = providerId === "openai" || providerId === "openai-eu" ? OPENAI_BREAKPOINT_TTLS : NO_BREAKPOINT_TTLS;
+	const mode: MarkMode = openAIFamily
 		? (explicit ? "openai-explicit" : "openai-implicit")
 		: OPENAI_STYLE_BREAKPOINT_PROVIDERS.has(providerId)
 			? "openai-style"
@@ -129,13 +149,13 @@ export function applyPromptCacheFieldPolicy(request: Record<string, any>, args: 
 		// User content with several parts was always an array; other roles and
 		// single-part user content were strings unless they carried a mark.
 		const collapse = message.role !== "user" || (Array.isArray(message.content) && message.content.length === 1);
-		message.content = applyToContent(message.content, mode, collapse);
+		message.content = applyToContent(message.content, mode, collapse, breakpointTtls);
 	}
 	const items = Array.isArray(request.input) ? request.input : Array.isArray(request.input_items) ? request.input_items : [];
 	for (const item of items) {
 		if (!item || typeof item !== "object") continue;
-		if (Array.isArray(item.content)) applyToContent(item.content, mode, false);
-		if (Array.isArray(item.output)) item.output = applyToContent(item.output, mode, true);
+		if (Array.isArray(item.content)) applyToContent(item.content, mode, false, breakpointTtls);
+		if (Array.isArray(item.output)) item.output = applyToContent(item.output, mode, true, breakpointTtls);
 	}
 	// OpenAI does not accept breakpoints on tool definitions; only providers that
 	// take Anthropic-style cache_control keep a tool mark.
@@ -148,6 +168,11 @@ export function applyPromptCacheFieldPolicy(request: Record<string, any>, args: 
 	if (openAIFamily) {
 		if (explicit) delete request.prompt_cache_retention;
 		else delete request.prompt_cache_options;
+		// Azure documents only the "30m" request lifetime.
+		if (providerId === "azure" && isTwelveHourCacheTtl(request.prompt_cache_options?.ttl)) {
+			const { ttl: _ttl, ...options } = request.prompt_cache_options;
+			request.prompt_cache_options = options;
+		}
 	} else if (mode !== "openai-style") {
 		delete request.prompt_cache_options;
 		delete request.prompt_cache_retention;

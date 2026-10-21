@@ -6,7 +6,7 @@
 // Transforms IR -> OpenAI Responses Response
 
 import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
-import { irUsageToOpenAIStyle } from "@core/cache-usage";
+import { irUsageToOpenAIStyle, openAICacheWriteTtlDetails } from "@core/cache-usage";
 import { responsesStatusFor } from "@core/finish-reason";
 import {
 	encodeResponsesReasoningItem,
@@ -42,6 +42,7 @@ export type OpenAIResponsesResponse = {
 		input_tokens_details?: {
 			cached_tokens?: number;
 			cache_write_tokens?: number;
+			cache_write_tokens_details?: { ttl_30m_tokens: number; ttl_12h_tokens: number };
 		};
 		output_tokens_details?: {
 			reasoning_tokens?: number;
@@ -307,10 +308,15 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 					...(typeof cache.writeTokens === "number"
 						? { cache_write_tokens: cache.writeTokens }
 						: {}),
+					...(openAICacheWriteTtlDetails(cache)
+						? { cache_write_tokens_details: openAICacheWriteTtlDetails(cache) }
+						: {}),
 				}
 				: undefined,
 		...(typeof cache.write5mTokens === "number" ? { cached_write_text_tokens_5m: cache.write5mTokens } : {}),
 		...(typeof cache.write1hTokens === "number" ? { cached_write_text_tokens_1h: cache.write1hTokens } : {}),
+		...(typeof cache.write30mTokens === "number" ? { cached_write_text_tokens_30m: cache.write30mTokens } : {}),
+		...(typeof cache.write12hTokens === "number" ? { cached_write_text_tokens_12h: cache.write12hTokens } : {}),
 		output_tokens_details:
 			typeof usage.reasoningTokens === "number"
 				? { reasoning_tokens: usage.reasoningTokens }

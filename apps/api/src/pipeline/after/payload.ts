@@ -9,7 +9,7 @@ import type { GatewayCompletionsChoice } from "@core/types";
 import type { IRChatResponse, IRUsage } from "@core/ir";
 import { encodeAnthropicMessagesResponse } from "@/protocols/anthropic-messages/encode";
 import { shapeUsageForClient } from "../usage";
-import { irUsageToOpenAIStyle } from "@core/cache-usage";
+import { irUsageToOpenAIStyle, openAICacheWriteTtlDetails } from "@core/cache-usage";
 
 type AnyRecord = Record<string, any>;
 
@@ -259,7 +259,7 @@ function deriveResponsesStatus(ir?: IRChatResponse) {
 }
 
 function encodeResponsesUsage(usage: IRUsage) {
-    const inputDetails: Record<string, number> = {};
+    const inputDetails: Record<string, any> = {};
     const outputDetails: Record<string, number> = {};
     // OpenAI semantics: input_tokens includes cache reads and writes.
     const cache = irUsageToOpenAIStyle(usage);
@@ -269,6 +269,8 @@ function encodeResponsesUsage(usage: IRUsage) {
     if (typeof cache.writeTokens === "number") {
         inputDetails.cache_write_tokens = cache.writeTokens;
     }
+    const writeTtlDetails = openAICacheWriteTtlDetails(cache);
+    if (writeTtlDetails) inputDetails.cache_write_tokens_details = writeTtlDetails;
     if (typeof usage._ext?.inputImageTokens === "number") {
         inputDetails.input_images = usage._ext.inputImageTokens;
     }
@@ -308,6 +310,8 @@ function encodeResponsesUsage(usage: IRUsage) {
 	if (typeof cache.write1hTokens === "number") {
 		out.cached_write_text_tokens_1h = cache.write1hTokens;
 	}
+	if (typeof cache.write30mTokens === "number") out.cached_write_text_tokens_30m = cache.write30mTokens;
+	if (typeof cache.write12hTokens === "number") out.cached_write_text_tokens_12h = cache.write12hTokens;
 	const serverToolUse = buildServerToolUsePayload(usage._ext?.serverToolUse);
 	if (serverToolUse) out.server_tool_use = serverToolUse;
 	if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
@@ -827,6 +831,9 @@ export function normalizeAnthropicUsage(raw: any, irUsage?: IRUsage) {
     delete extras.cache_creation;
     delete extras.cache_creation_input_tokens;
     delete extras.cache_read_input_tokens;
+    // Internal meters for OpenAI write lifetimes: Messages usage has no such fields.
+    delete extras.cached_write_text_tokens_30m;
+    delete extras.cached_write_text_tokens_12h;
     delete extras.input_tokens;
     delete extras.output_tokens;
     delete extras.server_tool_use;
@@ -881,6 +888,8 @@ function encodeChatUsage(usage: IRUsage) {
         cached_write_text_tokens: cache.writeTokens,
         cached_write_text_tokens_5m: cache.write5mTokens,
         cached_write_text_tokens_1h: cache.write1hTokens,
+        cached_write_text_tokens_30m: cache.write30mTokens,
+        cached_write_text_tokens_12h: cache.write12hTokens,
 		"x-spent-credits": usage._ext?.spentCredits,
         server_tool_use: buildServerToolUsePayload(usage._ext?.serverToolUse),
     };

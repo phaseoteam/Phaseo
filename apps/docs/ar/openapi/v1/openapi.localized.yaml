@@ -8953,16 +8953,19 @@ components:
       additionalProperties: true
     PromptCacheBreakpoint:
       type: object
-      description: نقطة توقف للتخزين المؤقت في OpenAI. تخزّن مؤقتًا كل ما يسبقها حتى هذه الكتلة، بما فيها الكتلة نفسها. تُرسل إلى OpenAI وAzure OpenAI بدءًا من GPT-5.6 وإلى DeepInfra؛ وتتلقاها مسارات Claude بصيغة cache_control.
+      description: نقطة توقف للتخزين المؤقت في OpenAI. تخزّن مؤقتًا كل ما يسبقها حتى هذه الكتلة، بما فيها الكتلة نفسها. تُرسل إلى OpenAI وAzure OpenAI بدءًا من GPT-5.6 وإلى DeepInfra؛ وتتلقاها مسارات Claude بصيغة cache_control. ولا يتلقى ttl الخاص بها إلا OpenAI.
       properties:
         mode:
           type: string
           enum:
             - explicit
+        ttl:
+          type: string
+          description: 'أقل مدة صلاحية للتخزين المؤقت لنقطة التوقف هذه في OpenAI بدءًا من GPT-5.6: 30m أو 12h. وبدونها تستخدم نقطة التوقف prompt_cache_options.ttl. تُحتسب كتابة 12h بـ 2.5x سعر الإدخال؛ والمسار الذي لا يقبل 12h يتلقى الطلب بدونها، ويُبلَّغ عن الحذف في X-Phaseo-Dropped-Params.'
       additionalProperties: true
     PromptCacheOptions:
       type: object
-      description: وضع ذاكرة المطالبات المؤقتة ومدة صلاحيتها لـ OpenAI وAzure OpenAI بدءًا من GPT-5.6 (ttl 30m) ولـ DeepInfra (ttl 5m أو 1h). يُحذف للمزوّدين الآخرين.
+      description: وضع ذاكرة المطالبات المؤقتة ومدة صلاحيتها لـ OpenAI وAzure OpenAI بدءًا من GPT-5.6 (ttl 30m، أو 12h في OpenAI) ولـ DeepInfra (ttl 5m أو 1h). يُحذف للمزوّدين الآخرين.
       properties:
         mode:
           type: string
@@ -8971,6 +8974,7 @@ components:
             - explicit
         ttl:
           type: string
+          description: 'أقل مدة صلاحية للتخزين المؤقت. OpenAI بدءًا من GPT-5.6: 30m (الافتراضية) أو 12h؛ ويُنفَّذ الطلب الذي يطلب 12h عبر Responses API من OpenAI. Azure OpenAI: 30m. DeepInfra: 5m أو 1h. والمسار الذي لا يقبل 12h يتلقى الطلب بدونها، ويُبلَّغ عن الحذف في X-Phaseo-Dropped-Params.'
       additionalProperties: true
     ProviderOptions:
       type: object
@@ -10603,6 +10607,16 @@ components:
           nullable: true
           description: في طلب BYOK، ما يفرضه المزوّد على مفتاحك الخاص مقابل الاستدلال، بالدولار الأمريكي، وفق أسعار النموذج المعلنة. يكون null عندما يعمل الطلب بأرصدة Phaseo، إذ يمثل `cost` الرسوم كاملة.
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: كتابات التخزين المؤقت مقسّمة حسب المدة، في استخدام Responses من OpenAI بدءًا من GPT-5.6. ومجموع القيمتين يساوي cache_write_tokens. لا يُعاد في prompt_tokens_details الخاص بـ Chat Completions.
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: رموز الإدخال المكتوبة في التخزين المؤقت لمدة 30 دقيقة، وتُحتسب بـ 1.25x سعر الإدخال.
+        ttl_12h_tokens:
+          type: integer
+          description: رموز الإدخال المكتوبة في التخزين المؤقت لمدة 12 ساعة، وتُحتسب بـ 2.5x سعر الإدخال.
     InputTokensDetails:
       type: object
       description: تفصيل رموز الإدخال.
@@ -10613,6 +10627,8 @@ components:
         cache_write_tokens:
           type: integer
           description: رموز الإدخال المكتوبة في ذاكرة المطالبات المؤقتة لدى المزوّد.
+        cache_write_tokens_details:
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: يُعامَل أي حقل اختياري في المستوى الأعلى يُرسَل بالقيمة `null` على أنه غير مضبوط، تمامًا كما لو حُذف.

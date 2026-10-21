@@ -3640,6 +3640,8 @@ export function mergeIRUsageTotals(base?: IRUsage, incoming?: IRUsage): IRUsage 
 		cachedWriteTokens: sumMaybe(base._ext?.cachedWriteTokens, incoming._ext?.cachedWriteTokens),
 		cachedWriteTokens5m: sumMaybe(base._ext?.cachedWriteTokens5m, incoming._ext?.cachedWriteTokens5m),
 		cachedWriteTokens1h: sumMaybe(base._ext?.cachedWriteTokens1h, incoming._ext?.cachedWriteTokens1h),
+		cachedWriteTokens30m: sumMaybe(base._ext?.cachedWriteTokens30m, incoming._ext?.cachedWriteTokens30m),
+		cachedWriteTokens12h: sumMaybe(base._ext?.cachedWriteTokens12h, incoming._ext?.cachedWriteTokens12h),
 	};
 	const writeSubset = mergeSubsetFlag(base.cachedWriteTokensAreSubsetOfInput, incoming.cachedWriteTokensAreSubsetOfInput);
 

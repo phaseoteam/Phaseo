@@ -462,6 +462,9 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.cached_write_text_tokens_1h) ??
 		parseUsageNumber(usageRaw.cache_creation?.ephemeral_1h_input_tokens);
 	if (cachedWriteTokens1h != null) ext.cachedWriteTokens1h = cachedWriteTokens1h;
+	// OpenAI 30-minute / 12-hour split (resolveCacheTokenUsage reads every documented shape).
+	if (cache.write30mTokens != null) ext.cachedWriteTokens30m = cache.write30mTokens;
+	if (cache.write12hTokens != null) ext.cachedWriteTokens12h = cache.write12hTokens;
 	const datetimeRequests =
 		parseUsageNumber(usageRaw.server_tool_use?.datetime_requests) ??
 		parseUsageNumber(usageRaw.serverToolUse?.datetime_requests);

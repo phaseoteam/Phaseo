@@ -8953,16 +8953,19 @@ components:
       additionalProperties: true
     PromptCacheBreakpoint:
       type: object
-      description: OpenAI 缓存断点。缓存到该块为止（含该块）的全部内容。会发送给 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra；Claude 路由会以 cache_control 的形式收到它。
+      description: OpenAI 缓存断点。缓存到该块为止（含该块）的全部内容。会发送给 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra；Claude 路由会以 cache_control 的形式收到它。只有 OpenAI 会收到它的 ttl。
       properties:
         mode:
           type: string
           enum:
             - explicit
+        ttl:
+          type: string
+          description: GPT-5.6 及以后版本的 OpenAI 上此断点的最短缓存保留时长：30m 或 12h。未设置时，断点使用 prompt_cache_options.ttl。12h 写入按输入价格的 2.5 倍计费；不支持 12h 的路由收到的请求不含该值，并在 X-Phaseo-Dropped-Params 中报告此次移除。
       additionalProperties: true
     PromptCacheOptions:
       type: object
-      description: 适用于 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI（ttl 30m）以及 DeepInfra（ttl 5m 或 1h）的 prompt 缓存模式和 TTL。对其他提供商会被移除。
+      description: 适用于 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI（ttl 30m，OpenAI 上也可为 12h）以及 DeepInfra（ttl 5m 或 1h）的 prompt 缓存模式和 TTL。对其他提供商会被移除。
       properties:
         mode:
           type: string
@@ -8971,6 +8974,7 @@ components:
             - explicit
         ttl:
           type: string
+          description: 最短缓存保留时长。GPT-5.6 及以后版本的 OpenAI：30m（默认）或 12h；请求 12h 的请求会在 OpenAI 的 Responses API 上运行。Azure OpenAI：30m。DeepInfra：5m 或 1h。不支持 12h 的路由收到的请求不含该值，并在 X-Phaseo-Dropped-Params 中报告此次移除。
       additionalProperties: true
     ProviderOptions:
       type: object
@@ -10603,6 +10607,16 @@ components:
           nullable: true
           description: 在 BYOK 请求中，提供商按模型的公布价格向你自己的密钥收取的推理费用（美元）。请求使用 Phaseo 额度时为 null，此时 `cost` 即为全部费用。
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: GPT-5.6 及以后版本的 OpenAI 在 Responses 用量中按保留时长拆分的缓存写入。两个数值之和等于 cache_write_tokens。Chat Completions 的 prompt_tokens_details 中不返回。
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: 以 30 分钟保留时长写入缓存的输入 token，按输入价格的 1.25 倍计费。
+        ttl_12h_tokens:
+          type: integer
+          description: 以 12 小时保留时长写入缓存的输入 token，按输入价格的 2.5 倍计费。
     InputTokensDetails:
       type: object
       description: 输入 token 的明细。
@@ -10613,6 +10627,8 @@ components:
         cache_write_tokens:
           type: integer
           description: 写入提供商 prompt 缓存的输入 token。
+        cache_write_tokens_details:
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: 以 `null` 发送的可选顶层字段会被视为未设置，与省略该字段相同。

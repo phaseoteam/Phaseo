@@ -538,6 +538,11 @@ struct CacheControl {
 	std::string type;
 };
 
+struct CacheWriteTokensDetails {
+	std::optional<int> ttl_12h_tokens;
+	std::optional<int> ttl_30m_tokens;
+};
+
 struct ChatAudioOutputPart {
 	std::map<std::string, std::any> audio_url;
 	std::any format;
@@ -1868,6 +1873,7 @@ struct ImagesGenerationResponse {
 
 struct InputTokensDetails {
 	std::optional<int> cache_write_tokens;
+	std::map<std::string, std::any> cache_write_tokens_details;
 	std::optional<int> cached_tokens;
 };
 
@@ -2785,6 +2791,7 @@ struct PrivateModelUpdateRequest {
 
 struct PromptCacheBreakpoint {
 	std::any mode;
+	std::string ttl;
 };
 
 struct PromptCacheOptions {

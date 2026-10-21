@@ -112,12 +112,20 @@ export interface ResponsesResponse {
     input_tokens?: number;
     input_tokens_details?: {
       cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
       cached_tokens?: number;
     };
     output_tokens?: number;
     prompt_tokens?: number;
     prompt_tokens_details?: {
       cache_write_tokens?: number;
+      cache_write_tokens_details?: {
+        ttl_12h_tokens?: number;
+        ttl_30m_tokens?: number;
+      };
       cached_tokens?: number;
     };
     server_tool_use?: {

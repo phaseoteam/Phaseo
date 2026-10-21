@@ -23,6 +23,8 @@ Unterstützt der Anbieter, der eine Anfrage bedient, einen ihrer Sampling-Parame
 
 Nur diese Parameter können entfernt werden: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` bei `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` und `image_config`. Nachrichten, Tools, `tool_choice`, `response_format`, Reasoning-Einstellungen und Ausgabelimits werden nie entfernt.
 
+Unabhängig davon wird eine Prompt-Cache-`ttl` von `12h` auf Routen entfernt, die den 12-Stunden-Cache von OpenAI nicht annehmen, und an denselben Stellen als `prompt_cache_options.ttl` oder `prompt_cache_breakpoint.ttl` gemeldet; siehe [Zwischenspeicherung von Prompts](../guides/prompt-caching.mdx).
+
 Bei erfolgreichen Antworten meldet Phaseo die entfernten Parameter, die die Anfrage selbst gesendet hat:
 
 - im Antwort-Header `X-Phaseo-Dropped-Params`, zum Beispiel `X-Phaseo-Dropped-Params: top_k, min_p`

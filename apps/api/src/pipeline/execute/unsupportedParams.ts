@@ -280,6 +280,13 @@ export function restoreDroppedParams(ctx: DroppedParamsContext, stored: unknown)
 	ctx.routingDiagnostics = { ...(ctx.routingDiagnostics ?? {}), droppedParams: stored };
 }
 
+/** Whether the 12-hour prompt-cache lifetime was removed for the provider that served the request. */
+export function twelveHourCacheDroppedFor(ctx: { routingDiagnostics?: Record<string, any> | null }, providerId: string): boolean {
+	return droppedParamsForClient(ctx).some((entry) =>
+		entry.provider === providerId &&
+		(entry.param === "prompt_cache_options.ttl" || entry.param === "prompt_cache_breakpoint.ttl"));
+}
+
 /** The drops to report to the client: those of the provider that served it, client-sent only. */
 export function droppedParamsForClient(ctx: { routingDiagnostics?: Record<string, any> | null }): Array<DroppedParam & { provider: string }> {
 	const record = ctx.routingDiagnostics?.droppedParams as DroppedParamsRecord | undefined;

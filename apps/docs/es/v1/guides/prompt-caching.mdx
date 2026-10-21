@@ -101,7 +101,7 @@ Si tus propios bloques llevan más de cuatro marcas, Phaseo conserva la primera 
 Coloca una marca de caché en un bloque de contenido para almacenar en caché todo lo anterior, incluido ese bloque. Phaseo acepta dos formas:
 
 - `cache_control`: `{"type": "ephemeral"}`, con un `ttl` opcional de `5m` o `1h`.
-- `prompt_cache_breakpoint`: el `{"mode": "explicit"}` de OpenAI. Cuando un bloque lleva ambos, prevalece `prompt_cache_breakpoint`.
+- `prompt_cache_breakpoint`: el `{"mode": "explicit"}` de OpenAI, con un `ttl` opcional de `30m` o `12h`. Cuando un bloque lleva ambos, prevalece `prompt_cache_breakpoint`.
 
 ```json
 {
@@ -121,7 +121,8 @@ Cada proveedor recibe la marca en su propio formato:
 | Proveedor | `cache_control` en bloques | `prompt_cache_breakpoint` |
 | --- | --- | --- |
 | Claude en Anthropic, Claude on AWS, Amazon Bedrock y Google Vertex AI | Se envía como `{"type": "ephemeral"}` con tu `ttl` | Se envía como `cache_control: {"type": "ephemeral"}` |
-| OpenAI y Azure OpenAI, GPT-5.6 y posteriores | Se envía como `prompt_cache_breakpoint: {"mode": "explicit"}`; el `ttl` se descarta | Se envía |
+| OpenAI, GPT-5.6 y posteriores | Se envía como `prompt_cache_breakpoint: {"mode": "explicit"}`; el `ttl` se descarta | Se envía, con su `ttl` |
+| Azure OpenAI, GPT-5.6 y posteriores | Se envía como `prompt_cache_breakpoint: {"mode": "explicit"}`; el `ttl` se descarta | Se envía sin `ttl` |
 | OpenAI y Azure OpenAI, modelos anteriores | Se elimina | Se elimina |
 | DeepInfra | Se elimina | Se envía |
 | Alibaba Model Studio y Venice | Se envía | Se elimina |
@@ -138,10 +139,10 @@ Los controles de caché de OpenAI dependen de la generación del modelo. Phaseo 
 
 | Campo | Valores | Se envía a |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` o `explicit`; `ttl`: `30m` | OpenAI y Azure OpenAI desde GPT-5.6, y DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit` o `explicit`; `ttl`: `30m`, o `12h` en OpenAI | OpenAI y Azure OpenAI desde GPT-5.6, y DeepInfra |
 | `prompt_cache_retention` | `in_memory` o `24h` | Modelos de OpenAI y Azure OpenAI anteriores a GPT-5.6 |
 
-Desde GPT-5.6, `30m` es el único `ttl` que acepta OpenAI, y el modo `explicit` solo almacena en caché los puntos de corte que colocas. DeepInfra usa el mismo objeto con un `ttl` de `5m` o `1h`, y necesita `prompt_cache_key` en cada solicitud de la sesión. Los demás proveedores no reciben ninguno de los dos campos.
+Desde GPT-5.6, OpenAI acepta un `ttl` de `30m` (el predeterminado) o `12h`, y Azure OpenAI solo `30m`. El modo `explicit` solo almacena en caché los puntos de corte que colocas. DeepInfra usa el mismo objeto con un `ttl` de `5m` o `1h`, y necesita `prompt_cache_key` en cada solicitud de la sesión. Los demás proveedores no reciben ninguno de los dos campos.
 
 Envía cualquiera de los dos campos en el nivel superior o dentro de `provider_options.openai`. Si están ambos, prevalece el valor de nivel superior:
 
@@ -160,6 +161,33 @@ Envía cualquiera de los dos campos en el nivel superior o dentro de `provider_o
   }
 }
 ```
+
+### Caché de 12 horas en OpenAI
+
+Desde GPT-5.6, OpenAI conserva una entrada de caché durante al menos 12 horas cuando defines `ttl: "12h"`, ya sea para toda la solicitud en `prompt_cache_options` o para un punto de corte en `prompt_cache_breakpoint`. Un punto de corte sin `ttl` propio usa el de la solicitud. OpenAI cobra una escritura de 12 horas a 2,5× la tarifa de entrada y una de 30 minutos a 1,25×; las lecturas del caché cuestan lo mismo en ambos casos.
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "prompt_cache_options": { "ttl": "30m" },
+  "input": [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Shared tool manual...",
+          "prompt_cache_breakpoint": { "mode": "explicit", "ttl": "12h" }
+        }
+      ]
+    },
+    { "role": "user", "content": "Find the failing test." }
+  ]
+}
+```
+
+- OpenAI documenta la duración de 12 horas solo en su API Responses. Una solicitud de Chat Completions que la pide se ejecuta en la API Responses de OpenAI, y la respuesta mantiene el formato de Chat Completions.
+- Las rutas que admiten un caché de 12 horas (la API global de OpenAI) se prueban primero. Cualquier otra ruta, como Azure OpenAI, otro proveedor o un modelo anterior a GPT-5.6, recibe la solicitud sin él, así que se aplica el valor predeterminado de 30 minutos. La solicitud se ejecuta igualmente, y el campo eliminado se informa como `prompt_cache_options.ttl` o `prompt_cache_breakpoint.ttl` en el encabezado `X-Phaseo-Dropped-Params` y en `meta.routing.dropped_params`.
 
 ### Google Gemini
 
@@ -309,10 +337,10 @@ El uso informa de lecturas y escrituras del caché en todos los endpoints de tex
 | Endpoint | Entrada total | Lecturas del caché | Escrituras en caché |
 | --- | --- | --- | --- |
 | Chat Completions | `prompt_tokens`, incluidas lecturas y escrituras | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
-| Responses | `input_tokens`, incluidas lecturas y escrituras | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens` |
+| Responses | `input_tokens`, incluidas lecturas y escrituras | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`, desglosado por duración en OpenAI GPT-5.6 y posteriores en `input_tokens_details.cache_write_tokens_details.ttl_30m_tokens` y `ttl_12h_tokens` |
 | Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`, desglosado por TTL en `cache_creation.ephemeral_5m_input_tokens` y `cache_creation.ephemeral_1h_input_tokens` |
 
-En Chat Completions y Responses, la entrada sin caché es la entrada total menos las lecturas y escrituras del caché. Las respuestas de Anthropic Messages en streaming incluyen los campos de caché en `message_delta`.
+En Chat Completions y Responses, la entrada sin caché es la entrada total menos las lecturas y escrituras del caché. Las respuestas de Anthropic Messages en streaming incluyen los campos de caché en `message_delta`. El uso de Chat Completions no desglosa las escrituras por duración, porque OpenAI no documenta ningún campo para ello ahí; los detalles de la solicitud lo registran igualmente.
 
 <Note>
 Las respuestas anteriores informaban de las escrituras en caché como `output_tokens_details.cached_tokens` (`completion_tokens_details.cached_tokens` en Chat Completions), y las rutas de Claude dejaban fuera de `input_tokens` las lecturas y escrituras del caché en Chat Completions y Responses. Ya no es así: lee las escrituras en `cache_write_tokens`. Las respuestas de Anthropic Messages sin streaming devolvían `cache_creation_input_tokens: null`; ahora devuelven los valores reales.
@@ -326,6 +354,8 @@ Los detalles de las solicitudes y los desgloses de precios usan estos medidores:
 | `cached_write_text_tokens` | Medidor de precio de las escrituras en caché cuando el proveedor tiene un único precio para ellas. |
 | `cached_write_text_tokens_5m` | Tokens escritos en caché con un TTL de 5 minutos, cuando el proveedor informa de escrituras por TTL. |
 | `cached_write_text_tokens_1h` | Tokens escritos en caché con un TTL de 1 hora, cuando el proveedor informa de escrituras por TTL. |
+| `cached_write_text_tokens_30m` | Tokens escritos en la caché de OpenAI con una duración de 30 minutos. |
+| `cached_write_text_tokens_12h` | Tokens escritos en la caché de OpenAI con una duración de 12 horas. |
 
 ### Cómo se cobran los tokens en caché
 
@@ -333,7 +363,7 @@ Phaseo factura cada token de entrada una sola vez, a una sola tarifa:
 
 - la entrada sin caché, a la tarifa de entrada
 - las lecturas del caché, a la tarifa de lectura del caché
-- las escrituras en caché, a la tarifa de escritura, o a las tarifas de 5 minutos y 1 hora cuando el proveedor las cobra por separado
+- las escrituras en caché, a la tarifa de escritura, o a las tarifas de 5 minutos y 1 hora (Claude) o de 30 minutos y 12 horas (OpenAI) cuando el proveedor las cobra por separado
 
 Algunos proveedores cuentan las escrituras dentro del total de entrada y otros las informan aparte. Phaseo factura ambos casos igual, de modo que un token escrito nunca se cobra además como entrada normal.
 
@@ -347,10 +377,12 @@ Por ejemplo, una solicitud a GPT-5.6 Sol con 53.100 tokens de entrada, de los qu
 | 850 de salida | $30.00 | $0.02550 |
 | Total | | $0.07875 |
 
+Si 2.000 de esas escrituras tuvieran una duración de 12 horas, costarían $12.50 por millón en lugar de $6.25, y la solicitud costaría $0.09125.
+
 Si un proveedor informa de tokens en caché en una ruta que aún no tiene precio de caché en el catálogo, Phaseo no hace fallar la solicitud:
 
 - Las lecturas del caché se facturan a la tarifa de entrada de la ruta.
-- Las escrituras se facturan a la tarifa de entrada multiplicada por el factor de escritura documentado por el proveedor: 1,25× para escrituras de Claude de 5 minutos y 2× para las de 1 hora; 1,25× para OpenAI, Azure OpenAI y Alibaba; 1× para escrituras de Kimi K3 de 5 minutos y 2× para las de 1 hora; 1× para los demás proveedores.
+- Las escrituras se facturan a la tarifa de entrada multiplicada por el factor de escritura documentado por el proveedor: 1,25× para escrituras de Claude de 5 minutos y 2× para las de 1 hora; 1,25× para OpenAI, Azure OpenAI y Alibaba; 1× para escrituras de Kimi K3 de 5 minutos y 2× para las de 1 hora; 2,5× para escrituras de OpenAI de 12 horas en cualquier ruta; 1× para los demás proveedores.
 - La línea de precio lleva la marca `pricing_fallback: "input_rate"`.
 
 En una ruta de Claude cuyo catálogo tiene un único precio de escritura en caché, ese precio es la tarifa de 5 minutos. Las escrituras que el proveedor informa como escrituras de 1 hora se facturan al doble de la tarifa de entrada, en una línea `cached_write_text_tokens_1h` con la marca `pricing_fallback: "input_rate"`.
@@ -383,6 +415,7 @@ La duración de una fijación depende de la retención del caché del proveedor:
 | Anthropic `cache_control` con `ttl: "1h"` | 90 minutos |
 | OpenAI o Azure OpenAI con `prompt_cache_retention: "24h"` | 24 horas |
 | OpenAI o Azure OpenAI con retención en memoria (predeterminada) | 90 minutos |
+| OpenAI con `ttl: "12h"` en `prompt_cache_options` o en un punto de corte, o una escritura de 12 horas informada | 18 horas |
 | OpenAI o Azure OpenAI con `prompt_cache_options.ttl: "30m"` | 45 minutos |
 | Cualquier otro caso | 15 minutos |
 

@@ -8,6 +8,7 @@ export type MessageContentPart =
       };
       prompt_cache_breakpoint?: {
         mode?: "explicit";
+        ttl?: string;
         [key: string]: unknown;
       };
       text: string;

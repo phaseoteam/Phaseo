@@ -50,6 +50,7 @@ export type { BatchRequestRow } from "./BatchRequestRow.js";
 export type { BatchResponse } from "./BatchResponse.js";
 export type { BenchmarkId } from "./BenchmarkId.js";
 export type { CacheControl } from "./CacheControl.js";
+export type { CacheWriteTokensDetails } from "./CacheWriteTokensDetails.js";
 export type { ChatAudioOutputPart } from "./ChatAudioOutputPart.js";
 export type { ChatChoice } from "./ChatChoice.js";
 export type { ChatCompletionsRequest } from "./ChatCompletionsRequest.js";

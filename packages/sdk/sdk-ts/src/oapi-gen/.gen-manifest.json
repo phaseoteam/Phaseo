@@ -55,6 +55,7 @@
     "models/BatchResponse.ts",
     "models/BenchmarkId.ts",
     "models/CacheControl.ts",
+    "models/CacheWriteTokensDetails.ts",
     "models/ChatAudioOutputPart.ts",
     "models/ChatChoice.ts",
     "models/ChatCompletionsRequest.ts",

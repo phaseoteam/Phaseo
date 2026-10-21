@@ -420,17 +420,22 @@ export function resolveSessionAffinityPreference(body: any, fallback = true): bo
 
 const BLOCK_CACHE_MARK_FIELDS = ["cache_control", "cacheControl", "prompt_cache_breakpoint"] as const;
 
-function collectBlockMarks(blocks: unknown, out: Record<string, unknown>[], depth = 0): void {
+function collectBlockMarks(
+    blocks: unknown,
+    out: Record<string, unknown>[],
+    depth = 0,
+    fields: readonly string[] = BLOCK_CACHE_MARK_FIELDS,
+): void {
     if (!Array.isArray(blocks) || depth > 2) return;
     for (const block of blocks) {
         if (!isPlainObject(block)) continue;
-        for (const field of BLOCK_CACHE_MARK_FIELDS) {
+        for (const field of fields) {
             const mark = (block as any)[field];
             if (isPlainObject(mark)) out.push(mark as Record<string, unknown>);
         }
         // Message items (Chat messages, Responses input items) and tool results nest blocks.
-        collectBlockMarks((block as any).content, out, depth + 1);
-        collectBlockMarks((block as any).output, out, depth + 1);
+        collectBlockMarks((block as any).content, out, depth + 1, fields);
+        collectBlockMarks((block as any).output, out, depth + 1, fields);
     }
 }
 
@@ -486,6 +491,29 @@ function longestBlockTtlSeconds(body: any): number | null {
     }
     return longest;
 }
+
+/**
+ * The longest lifetime named on an OpenAI `prompt_cache_breakpoint` ("30m" or "12h",
+ * GPT-5.6+ Responses), in seconds.
+ */
+function longestOpenAIBreakpointTtlSeconds(body: any): number | null {
+    const marks: Record<string, unknown>[] = [];
+    for (const items of [body?.messages, body?.input]) {
+        collectBlockMarks(markScanItems(items), marks, 0, ["prompt_cache_breakpoint"]);
+    }
+    let longest: number | null = null;
+    for (const mark of marks) {
+        const ttl = typeof mark.ttl === "string" ? mark.ttl.trim().toLowerCase() : "";
+        const seconds = ttl === "30m" || ttl === "12h" ? parseRetentionSeconds(ttl) : null;
+        if (seconds && (longest === null || seconds > longest)) longest = seconds;
+    }
+    return longest;
+}
+
+// Routes that take OpenAI's 12-hour lifetime; elsewhere it is removed before sending, so
+// the 30-minute default applies (see ./prompt-cache-ttl.ts).
+const OPENAI_TWELVE_HOUR_PROVIDERS = new Set(["openai", "openai-eu"]);
+const OPENAI_DEFAULT_TTL_SECONDS = 30 * 60;
 
 export async function resolveStickyRoutingContext(args: {
     endpoint: Endpoint;
@@ -551,12 +579,16 @@ const OPENAI_RETENTION_PROVIDERS = new Set(["openai", "openai-eu", "azure"]);
  * How long the serving provider keeps this request's prompt cache, where it is known.
  * Anthropic: cache_control ttl ("5m" default, "1h" extended); a reported 1h write proves 1h.
  * OpenAI/Azure: top-level prompt_cache_retention, then the provider_options alias, then
- * prompt_cache_options.ttl (GPT-5.6+), then the in-memory default.
+ * the longer of prompt_cache_options.ttl and any prompt_cache_breakpoint.ttl (GPT-5.6+;
+ * "12h" only where the route takes it, otherwise the 30-minute default), then the in-memory
+ * default. A reported 12-hour write proves 12 hours.
  */
 export function resolveProviderCacheRetentionSeconds(args: {
     body: any;
     providerId: string;
     usage?: any;
+    /** The 12-hour lifetime was removed before the request was sent (see ./prompt-cache-ttl.ts). */
+    twelveHourCacheDropped?: boolean;
 }): number | null {
     const body = args.body;
     const usage = args.usage;
@@ -579,13 +611,25 @@ export function resolveProviderCacheRetentionSeconds(args: {
         usage?.input_tokens_details?.cache_creation?.ephemeral_1h_input_tokens,
     ].some((value) => typeof value === "number" && value > 0);
     if (oneHourWrites) retention.push(60 * 60);
+    const twelveHourWrites = [
+        usage?.cached_write_text_tokens_12h,
+        usage?.input_tokens_details?.cache_write_tokens_details?.ttl_12h_tokens,
+    ].some((value) => typeof value === "number" && value > 0);
+    if (twelveHourWrites) retention.push(12 * 60 * 60);
 
     const providerId = String(args.providerId ?? "").trim().toLowerCase();
     if (OPENAI_RETENTION_PROVIDERS.has(providerId)) {
+        // Only a 12-hour lifetime the provider actually received pins for 12 hours; one removed
+        // before sending (an older model, or a route with no 12-hour price) leaves the default.
+        const takesTwelveHours = OPENAI_TWELVE_HOUR_PROVIDERS.has(providerId) && !args.twelveHourCacheDropped;
+        const capTtl = (seconds: number | null) =>
+            seconds !== null && seconds > OPENAI_DEFAULT_TTL_SECONDS && !takesTwelveHours ? OPENAI_DEFAULT_TTL_SECONDS : seconds;
+        const optionsTtl = capTtl(parseRetentionSeconds((body?.prompt_cache_options ?? openaiOptions?.prompt_cache_options)?.ttl));
+        const breakpointTtl = capTtl(longestOpenAIBreakpointTtlSeconds(body));
         const openaiRetention =
             parseRetentionSeconds(body?.prompt_cache_retention ?? body?.promptCacheRetention) ??
             parseRetentionSeconds(openaiOptions?.prompt_cache_retention ?? openaiOptions?.promptCacheRetention) ??
-            parseRetentionSeconds((body?.prompt_cache_options ?? openaiOptions?.prompt_cache_options)?.ttl) ??
+            (optionsTtl !== null || breakpointTtl !== null ? Math.max(optionsTtl ?? 0, breakpointTtl ?? 0) : null) ??
             60 * 60;
         retention.push(openaiRetention);
     }
@@ -598,6 +642,7 @@ export function resolveStickyPinTtlSeconds(args: {
     body: any;
     providerId: string;
     usage?: any;
+    twelveHourCacheDropped?: boolean;
 }): number {
     const retention = resolveProviderCacheRetentionSeconds(args);
     const fromRetention = retention ? Math.ceil(retention * RETENTION_TTL_MULTIPLIER) : 0;
@@ -732,6 +777,7 @@ export async function maybeWriteStickyRoutingFromUsage(args: {
     byokKeyId?: string | null;
     usage: any;
     enabled?: boolean;
+    twelveHourCacheDropped?: boolean;
 }): Promise<void> {
     if (!isCacheAwareRoutingEndpoint(args.endpoint)) return;
     if (args.enabled === false) return;
@@ -764,6 +810,7 @@ export async function maybeWriteStickyRoutingFromUsage(args: {
                 body: args.body,
                 providerId: args.providerId,
                 usage: args.usage,
+                twelveHourCacheDropped: args.twelveHourCacheDropped,
             }),
         },
     );

@@ -101,7 +101,7 @@ Anthropic हर अनुरोध में अधिकतम चार क�
 किसी कंटेंट ब्लॉक पर कैश चिह्न लगाएँ, ताकि उस ब्लॉक तक (उसे मिलाकर) सब कुछ कैश हो जाए। Phaseo दो रूप स्वीकार करता है:
 
 - `cache_control`: `{"type": "ephemeral"}`, जिसमें वैकल्पिक `ttl` का मान `5m` या `1h` हो सकता है।
-- `prompt_cache_breakpoint`: OpenAI का `{"mode": "explicit"}`। जब किसी ब्लॉक पर दोनों हों, तो `prompt_cache_breakpoint` लागू होता है।
+- `prompt_cache_breakpoint`: OpenAI का `{"mode": "explicit"}`, जिसमें `30m` या `12h` वाला `ttl` वैकल्पिक रूप से दिया जा सकता है। जब किसी ब्लॉक पर दोनों हों, तो `prompt_cache_breakpoint` लागू होता है।
 
 ```json
 {
@@ -121,7 +121,8 @@ Chat Completions और Responses में टेक्स्ट और इम�
 | प्रदाता | ब्लॉक-स्तरीय `cache_control` | `prompt_cache_breakpoint` |
 | --- | --- | --- |
 | Anthropic, Claude on AWS, Amazon Bedrock और Google Vertex AI पर Claude | आपके `ttl` के साथ `{"type": "ephemeral"}` के रूप में भेजा जाता है | `cache_control: {"type": "ephemeral"}` के रूप में भेजा जाता है |
-| OpenAI और Azure OpenAI, GPT-5.6 और बाद के मॉडल | `prompt_cache_breakpoint: {"mode": "explicit"}` के रूप में भेजा जाता है; `ttl` हटा दिया जाता है | भेजा जाता है |
+| OpenAI, GPT-5.6 और बाद के मॉडल | `prompt_cache_breakpoint: {"mode": "explicit"}` के रूप में भेजा जाता है; `ttl` हटा दिया जाता है | अपने `ttl` के साथ भेजा जाता है |
+| Azure OpenAI, GPT-5.6 और बाद के मॉडल | `prompt_cache_breakpoint: {"mode": "explicit"}` के रूप में भेजा जाता है; `ttl` हटा दिया जाता है | बिना `ttl` के भेजा जाता है |
 | OpenAI और Azure OpenAI, पुराने मॉडल | हटाया जाता है | हटाया जाता है |
 | DeepInfra | हटाया जाता है | भेजा जाता है |
 | Alibaba Model Studio और Venice | भेजा जाता है | हटाया जाता है |
@@ -138,10 +139,10 @@ OpenAI के कैश नियंत्रण मॉडल की पीढ�
 
 | फ़ील्ड | मान | किसे भेजा जाता है |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` या `explicit`; `ttl`: `30m` | GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडल, और DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit` या `explicit`; `ttl`: `30m`, या OpenAI पर `12h` | GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडल, और DeepInfra |
 | `prompt_cache_retention` | `in_memory` या `24h` | GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडल |
 
-GPT-5.6 और बाद के मॉडलों पर OpenAI केवल `30m` वाला `ttl` स्वीकार करता है, और `explicit` मोड में केवल वही ब्रेकपॉइंट कैश होते हैं जो आप लगाते हैं। DeepInfra वही ऑब्जेक्ट `5m` या `1h` वाले `ttl` के साथ उपयोग करता है, और सत्र के हर अनुरोध में `prompt_cache_key` चाहिए। अन्य प्रदाताओं को इनमें से कोई फ़ील्ड नहीं मिलता।
+GPT-5.6 और बाद के मॉडलों पर OpenAI `30m` (डिफ़ॉल्ट) या `12h` वाला `ttl` स्वीकार करता है, और Azure OpenAI केवल `30m`। `explicit` मोड में केवल वही ब्रेकपॉइंट कैश होते हैं जो आप लगाते हैं। DeepInfra वही ऑब्जेक्ट `5m` या `1h` वाले `ttl` के साथ उपयोग करता है, और सत्र के हर अनुरोध में `prompt_cache_key` चाहिए। अन्य प्रदाताओं को इनमें से कोई फ़ील्ड नहीं मिलता।
 
 दोनों में से कोई भी फ़ील्ड शीर्ष स्तर पर या `provider_options.openai` के अंतर्गत भेजें। दोनों मौजूद हों, तो शीर्ष-स्तरीय मान लागू होता है:
 
@@ -160,6 +161,33 @@ GPT-5.6 और बाद के मॉडलों पर OpenAI केवल `3
   }
 }
 ```
+
+### OpenAI पर 12 घंटे का कैश
+
+GPT-5.6 और बाद के मॉडलों पर, जब आप `ttl: "12h"` सेट करते हैं, तो OpenAI कैश एंट्री को कम से कम 12 घंटे रखता है। इसे पूरे अनुरोध के लिए `prompt_cache_options` में या किसी एक ब्रेकपॉइंट के लिए `prompt_cache_breakpoint` में सेट करें। जिस ब्रेकपॉइंट का अपना `ttl` नहीं है, वह अनुरोध का `ttl` उपयोग करता है। OpenAI 12 घंटे वाले कैश लेखन पर इनपुट दर का 2.5× और 30 मिनट वाले पर 1.25× शुल्क लेता है; कैश से पढ़ने की कीमत दोनों के लिए समान है।
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "prompt_cache_options": { "ttl": "30m" },
+  "input": [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Shared tool manual...",
+          "prompt_cache_breakpoint": { "mode": "explicit", "ttl": "12h" }
+        }
+      ]
+    },
+    { "role": "user", "content": "Find the failing test." }
+  ]
+}
+```
+
+- OpenAI 12 घंटे की अवधि केवल अपने Responses API पर दस्तावेज़ करता है। इसे माँगने वाला Chat Completions अनुरोध OpenAI के Responses API पर चलता है, और जवाब Chat Completions फ़ॉर्मैट में ही रहता है।
+- जो रूट 12 घंटे का कैश स्वीकार करते हैं (OpenAI का ग्लोबल API), उन्हें पहले आज़माया जाता है। किसी भी अन्य रूट, जैसे Azure OpenAI, किसी अन्य प्रदाता या GPT-5.6 से पहले के मॉडल, को अनुरोध इसके बिना मिलता है, इसलिए 30 मिनट का डिफ़ॉल्ट लागू होता है। अनुरोध फिर भी चलता है, और हटाया गया फ़ील्ड `prompt_cache_options.ttl` या `prompt_cache_breakpoint.ttl` के रूप में `X-Phaseo-Dropped-Params` हेडर और `meta.routing.dropped_params` में बताया जाता है।
 
 ### Google Gemini
 
@@ -309,10 +337,10 @@ Anthropic Messages में इन पर कैश नियंत्रण �
 | एंडपॉइंट | कुल इनपुट | कैश से पढ़ना | कैश में लिखना |
 | --- | --- | --- | --- |
 | Chat Completions | `prompt_tokens`, पढ़ने और लिखने सहित | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
-| Responses | `input_tokens`, पढ़ने और लिखने सहित | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens` |
+| Responses | `input_tokens`, पढ़ने और लिखने सहित | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`; GPT-5.6 और बाद के OpenAI मॉडलों पर अवधि के अनुसार `input_tokens_details.cache_write_tokens_details.ttl_30m_tokens` और `ttl_12h_tokens` में बँटा हुआ |
 | Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`, जिसे TTL के अनुसार `cache_creation.ephemeral_5m_input_tokens` और `cache_creation.ephemeral_1h_input_tokens` में बाँटा जाता है |
 
-Chat Completions और Responses में बिना कैश वाला इनपुट, कुल इनपुट में से कैश से पढ़ना और कैश में लिखना घटाने पर मिलता है। स्ट्रीम किए गए Anthropic Messages जवाबों में कैश फ़ील्ड `message_delta` में आते हैं।
+Chat Completions और Responses में बिना कैश वाला इनपुट, कुल इनपुट में से कैश से पढ़ना और कैश में लिखना घटाने पर मिलता है। स्ट्रीम किए गए Anthropic Messages जवाबों में कैश फ़ील्ड `message_delta` में आते हैं। Chat Completions के उपयोग में लेखन अवधि के अनुसार नहीं बँटता, क्योंकि OpenAI वहाँ इसके लिए कोई फ़ील्ड दस्तावेज़ नहीं करता; अनुरोध विवरण में यह बँटवारा फिर भी दर्ज होता है।
 
 <Note>
 पहले के जवाब कैश में लिखने की जानकारी `output_tokens_details.cached_tokens` (Chat Completions पर `completion_tokens_details.cached_tokens`) में देते थे, और Claude रूट Chat Completions और Responses पर कैश से पढ़ने और लिखने को `input_tokens` में शामिल नहीं करते थे। अब ये दोनों बातें लागू नहीं होतीं: कैश में लिखने की जानकारी `cache_write_tokens` से पढ़ें। बिना स्ट्रीमिंग वाले Anthropic Messages जवाब पहले `cache_creation_input_tokens: null` लौटाते थे; अब वे असली मान लौटाते हैं।
@@ -326,6 +354,8 @@ Chat Completions और Responses में बिना कैश वाला 
 | `cached_write_text_tokens` | जब प्रदाता के पास कैश में लिखने की एक ही कीमत हो, तब कैश में लिखने का मूल्य निर्धारण मीटर। |
 | `cached_write_text_tokens_5m` | जब प्रदाता TTL के अनुसार अलग-अलग लेखन रिपोर्ट करे, तब 5 मिनट के TTL के लिए कैश में लिखे गए टोकन। |
 | `cached_write_text_tokens_1h` | जब प्रदाता TTL के अनुसार अलग-अलग लेखन रिपोर्ट करे, तब 1 घंटे के TTL के लिए कैश में लिखे गए टोकन। |
+| `cached_write_text_tokens_30m` | 30 मिनट की अवधि वाले OpenAI कैश में लिखे गए टोकन। |
+| `cached_write_text_tokens_12h` | 12 घंटे की अवधि वाले OpenAI कैश में लिखे गए टोकन। |
 
 ### कैश्ड टोकन की कीमत कैसे तय होती है
 
@@ -333,7 +363,7 @@ Phaseo हर इनपुट टोकन का शुल्क केवल �
 
 - बिना कैश वाला इनपुट, इनपुट दर पर
 - कैश से पढ़ना, कैश-पठन दर पर
-- कैश में लिखना, कैश-लेखन दर पर, या जब प्रदाता 5 मिनट और 1 घंटे की कीमतें अलग रखता हो, तो उन दरों पर
+- कैश में लिखना, कैश-लेखन दर पर, या जब प्रदाता 5 मिनट और 1 घंटे (Claude) या 30 मिनट और 12 घंटे (OpenAI) की कीमतें अलग रखता हो, तो उन दरों पर
 
 कुछ प्रदाता कैश में लिखने को कुल इनपुट में गिनते हैं और कुछ उसे अलग से रिपोर्ट करते हैं। Phaseo दोनों का शुल्क एक जैसे लेता है, इसलिए लिखे गए टोकन का शुल्क सामान्य इनपुट के रूप में दोबारा कभी नहीं लिया जाता।
 
@@ -347,10 +377,12 @@ Phaseo हर इनपुट टोकन का शुल्क केवल �
 | 850 आउटपुट | $30.00 | $0.02550 |
 | कुल | | $0.07875 |
 
+अगर इनमें से 2,000 लेखन 12 घंटे की अवधि वाले होते, तो उनकी कीमत $6.25 के बजाय $12.50 प्रति 10 लाख होती, और अनुरोध की लागत $0.09125 होती।
+
 अगर कोई प्रदाता ऐसे रूट पर कैश्ड टोकन रिपोर्ट करता है जिसकी कैश कीमत अभी कैटलॉग में नहीं है, तो Phaseo अनुरोध को विफल नहीं करता:
 
 - कैश से पढ़ने का शुल्क रूट की इनपुट दर पर लिया जाता है।
-- कैश में लिखने का शुल्क इनपुट दर को प्रदाता के प्रकाशित लेखन गुणक से गुणा करके लिया जाता है: Claude के 5 मिनट वाले लेखन पर 1.25×, 1 घंटे वाले पर 2×; OpenAI, Azure OpenAI और Alibaba पर 1.25×; Kimi K3 के 5 मिनट वाले लेखन पर 1×, 1 घंटे वाले पर 2×; अन्य प्रदाताओं पर 1×।
+- कैश में लिखने का शुल्क इनपुट दर को प्रदाता के प्रकाशित लेखन गुणक से गुणा करके लिया जाता है: Claude के 5 मिनट वाले लेखन पर 1.25×, 1 घंटे वाले पर 2×; OpenAI, Azure OpenAI और Alibaba पर 1.25×; Kimi K3 के 5 मिनट वाले लेखन पर 1×, 1 घंटे वाले पर 2×; किसी भी रूट पर OpenAI के 12 घंटे वाले लेखन पर 2.5×; अन्य प्रदाताओं पर 1×।
 - मूल्य पंक्ति पर `pricing_fallback: "input_rate"` चिह्न होता है।
 
 जिस Claude रूट के कैटलॉग में कैश लेखन की केवल एक कीमत है, वहाँ वह कीमत 5 मिनट वाले लेखन की दर है। प्रदाता जिन लेखन को 1 घंटे वाले लेखन के रूप में रिपोर्ट करता है, उनका शुल्क इनपुट दर के 2× पर लिया जाता है, `pricing_fallback: "input_rate"` चिह्न वाली `cached_write_text_tokens_1h` पंक्ति में।
@@ -383,6 +415,7 @@ Phaseo हर इनपुट टोकन का शुल्क केवल �
 | `ttl: "1h"` के साथ Anthropic `cache_control` | 90 मिनट |
 | `prompt_cache_retention: "24h"` के साथ OpenAI या Azure OpenAI | 24 घंटे |
 | इन-मेमोरी प्रतिधारण (डिफ़ॉल्ट) के साथ OpenAI या Azure OpenAI | 90 मिनट |
+| `prompt_cache_options` में या किसी ब्रेकपॉइंट पर `ttl: "12h"` के साथ OpenAI, या रिपोर्ट किया गया 12 घंटे वाला कैश लेखन | 18 घंटे |
 | `prompt_cache_options.ttl: "30m"` के साथ OpenAI या Azure OpenAI | 45 मिनट |
 | बाकी सब | 15 मिनट |
 

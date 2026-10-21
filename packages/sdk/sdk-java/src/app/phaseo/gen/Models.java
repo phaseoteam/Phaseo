@@ -537,6 +537,11 @@ public final class Models {
 		public String type;
 	}
 
+	public static class CacheWriteTokensDetails {
+		public Integer ttl_12h_tokens;
+		public Integer ttl_30m_tokens;
+	}
+
 	public static class ChatAudioOutputPart {
 		public Object audio_url;
 		public Object format;
@@ -1881,6 +1886,7 @@ public final class Models {
 
 	public static class InputTokensDetails {
 		public Integer cache_write_tokens;
+		public Object cache_write_tokens_details;
 		public Integer cached_tokens;
 	}
 
@@ -2809,6 +2815,7 @@ public final class Models {
 
 	public static class PromptCacheBreakpoint {
 		public Object mode;
+		public String ttl;
 	}
 
 	public static class PromptCacheOptions {

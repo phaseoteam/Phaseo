@@ -7,7 +7,7 @@ import {
     resolveCanonicalTokenUsage,
     resolveRequestCountUsage,
 } from "@core/usage-normalization";
-import { resolveCacheTokenUsage, totalInputTokens } from "@core/cache-usage";
+import { openAICacheWriteTtlDetails, resolveCacheTokenUsage, totalInputTokens } from "@core/cache-usage";
 
 const pickNumber = (obj: any, path: string): number | undefined => {
     if (!obj || typeof obj !== "object") return undefined;
@@ -263,7 +263,7 @@ export function shapeUsageForClient(
     const outputAudio = outputAudioTokens ?? pickNumber(base, "output_audio_count");
     const outputVideo = outputVideoTokens ?? pickNumber(base, "output_video_count");
 
-    const inputDetails: Record<string, number> = {};
+    const inputDetails: Record<string, any> = {};
     const nativeDecisions = ctx?.endpoint === "decisions" && Array.isArray(ctx.body?.questions);
     if (nativeDecisions) {
         inputDetails.cached_tokens = cachedRead ?? 0;
@@ -271,6 +271,10 @@ export function shapeUsageForClient(
     }
     if (cachedRead !== undefined) inputDetails.cached_tokens = cachedRead;
     if (cachedWrite !== undefined) inputDetails.cache_write_tokens = cachedWrite;
+    // OpenAI documents the per-lifetime write split on Responses usage only; Chat Completions
+    // usage has no such field, so it keeps just the total.
+    const writeTtlDetails = openAICacheWriteTtlDetails(cache);
+    if (writeTtlDetails && ctx?.endpoint !== "chat.completions") inputDetails.cache_write_tokens_details = writeTtlDetails;
     if (inputImages !== undefined) inputDetails.input_images = inputImages;
     if (inputAudio !== undefined) inputDetails.input_audio = inputAudio;
     if (inputVideo !== undefined) inputDetails.input_videos = inputVideo;
@@ -342,6 +346,8 @@ export function shapeUsageForClient(
     }
     if (cachedWrite5m !== undefined) shaped.cached_write_text_tokens_5m = cachedWrite5m;
     if (cachedWrite1h !== undefined) shaped.cached_write_text_tokens_1h = cachedWrite1h;
+    if (cache.write30mTokens !== undefined) shaped.cached_write_text_tokens_30m = cache.write30mTokens;
+    if (cache.write12hTokens !== undefined) shaped.cached_write_text_tokens_12h = cache.write12hTokens;
     if (
         shaped.cached_write_text_tokens == null &&
         (cachedWrite5m !== undefined || cachedWrite1h !== undefined)
