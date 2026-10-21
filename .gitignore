@@ -5,6 +5,7 @@ build
 .next
 .mint
 .out
+*.tsbuildinfo
 .env*
 apps/mcp/.dev.vars
 apps/mcp/.wrangler/

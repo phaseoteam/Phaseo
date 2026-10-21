@@ -856,11 +856,12 @@
     "Common.ui.actions.copyModelId",
     "Common.ui.auditCopy.dateUnknown"
   ],
-  "[\"Catalogue\",\"Common.ui.benchmarkChartCopy\",\"Common.ui.benchmarkComparison\",\"Common.ui.chatComposer\",\"Common.ui.modelCreation\",\"Common.ui.modelEditor\",\"Common.ui.rankings\",\"Common.ui.requestBuilder\",\"Product.internalTools.dataEditor.searchModelsPlaceholder\",\"Product.latency.nA\",\"Site.homeQuickstart.rank\"]": [
+  "[\"Catalogue\",\"Common.ui.benchmarkChartCopy\",\"Common.ui.benchmarkComparison\",\"Common.ui.chatComposer\",\"Common.ui.chatSettings.export\",\"Common.ui.modelCreation\",\"Common.ui.modelEditor\",\"Common.ui.rankings\",\"Common.ui.requestBuilder\",\"Product.internalTools.dataEditor.searchModelsPlaceholder\",\"Product.latency.nA\",\"Site.homeQuickstart.rank\"]": [
     "Catalogue",
     "Common.ui.benchmarkChartCopy",
     "Common.ui.benchmarkComparison",
     "Common.ui.chatComposer",
+    "Common.ui.chatSettings.export",
     "Common.ui.modelCreation",
     "Common.ui.modelEditor",
     "Common.ui.rankings",

@@ -750,6 +750,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -800,6 +802,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -921,6 +925,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -1012,6 +1018,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DecisionCreateResponse'
+  /extractions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createExtraction
+      summary: 提取类型化值
+      description: 从文本或嵌入式图像中提取文本、数字、日期、时间、时长和类型化列表。返回类型化值及模型报告的不确定性。不支持估算、预测、流式传输或远程图像 URL。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractionRequest'
+      responses:
+        '200':
+          description: 类型化提取结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResponse'
   /audio/speech:
     post:
       x-beta: true
@@ -4721,6 +4748,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RateLimitDeleteResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listClassifiers
+      summary: List classifiers
+      description: Lists the workspace's request classifiers. A workspace can have up to five. Owners and admins only.
+      responses:
+        '200':
+          description: Classifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierListResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createClassifier
+      summary: Create a classifier
+      description: Creates a classifier. After each eligible request finishes, the chosen model places it in every dimension and the answers are added to the request as labels, so they can be filtered and grouped in logs, usage and analytics. Classification runs after the response is sent and is billed to the workspace at the model's normal price.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierCreateInput'
+      responses:
+        '201':
+          description: 分类器已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Classifier id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getClassifier
+      summary: Get a classifier
+      description: Returns one classifier. Owners and admins only.
+      responses:
+        '200':
+          description: Classifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateClassifier
+      summary: Update a classifier
+      description: Updates the fields you send. Changes reach the gateway within about a minute. Labels already written to past requests are not changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierUpdateInput'
+      responses:
+        '200':
+          description: 分类器已更新
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: 请求失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteClassifier
+      summary: Delete a classifier
+      description: Deletes a classifier. Labels it already wrote stay on past requests.
+      responses:
+        '200':
+          description: Classifier deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierDeleteResponse'
         default:
           description: 请求失败
           content:
@@ -8568,6 +8717,10 @@ components:
       description: 请求的模型被替换的原因和方式，例如 `reason=unserved; from=lab/old-model; to=lab/new-model`。仅当已停用模型的路由使用替代模型响应请求时才会发送。
       schema:
         type: string
+    DroppedParams:
+      description: 客户端发送、但处理请求的提供商不支持，因而被网关移除（而不是发送给提供商或拒绝请求）的请求参数，例如 `top_k, min_p`。仅在成功的响应中、且至少移除了一个来自请求正文的参数时才会发送。来自预设或默认值的参数不会列出。
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: 仅适用于 BYOK 的提供商配额元数据。使用托管提供商的请求不会返回此字段。
       schema:
@@ -8713,6 +8866,7 @@ components:
         data_collection:
           type: string
           nullable: true
+          description: '`allow`（默认值）不进行任何筛选。`deny` 尚不支持，会返回 400 unsupported_routing_filter。'
           enum:
             - allow
             - deny
@@ -8722,6 +8876,7 @@ components:
         enforce_distillable_text:
           type: boolean
           nullable: true
+          description: '`false`（默认值）不进行任何筛选。`true` 尚不支持，会返回 400 unsupported_routing_filter。'
         quantizations:
           type: array
           nullable: true
@@ -8787,12 +8942,34 @@ components:
             - full
     CacheControl:
       type: object
+      description: prompt 缓存控制。使用 type ephemeral，并可选设置 ttl 为 5m 或 1h。scope 仅适用于顶层 Claude 缓存策略。Amazon Bedrock 和 Google Vertex AI 对 Claude 3.7 Sonnet、3.5 Sonnet 和 3 Opus 只提供 5 分钟缓存；在这些路由上 ttl 会被移除，被移除的 1h 会在 X-Phaseo-Dropped-Params 中报告为 cache_control.ttl。
       properties:
         type:
           type: string
         ttl:
           type: string
         scope:
+          type: string
+      additionalProperties: true
+    PromptCacheBreakpoint:
+      type: object
+      description: OpenAI 缓存断点。缓存到该块为止（含该块）的全部内容。会发送给 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra；Claude 路由会以 cache_control 的形式收到它。
+      properties:
+        mode:
+          type: string
+          enum:
+            - explicit
+      additionalProperties: true
+    PromptCacheOptions:
+      type: object
+      description: 适用于 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI（ttl 30m）以及 DeepInfra（ttl 5m 或 1h）的 prompt 缓存模式和 TTL。对其他提供商会被移除。
+      properties:
+        mode:
+          type: string
+          enum:
+            - implicit
+            - explicit
+        ttl:
           type: string
       additionalProperties: true
     ProviderOptions:
@@ -8816,11 +8993,19 @@ components:
                 - type
             prompt_cache_retention:
               type: string
+            prompt_cache_options:
+              $ref: '#/components/schemas/PromptCacheOptions'
         anthropic:
           type: object
           properties:
             cache_control:
               $ref: '#/components/schemas/CacheControl'
+        xai:
+          type: object
+          properties:
+            conversation_id:
+              type: string
+              description: xAI 对话 ID，通过 x-grok-conv-id 请求头发送。
         google:
           type: object
           properties:
@@ -9375,6 +9560,7 @@ components:
         - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
+      description: 以 `null` 发送的可选顶层字段会被视为未设置，与省略该字段相同。
       required:
         - model
         - messages
@@ -9457,6 +9643,11 @@ components:
           default: true
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
+        plugins:
+          type: array
+          description: 此请求使用的网关插件。`web` 为任意模型添加网页搜索，`web-fetch` 添加网页读取；`response-healing` 修复非流式结构化响应中格式错误的 JSON。工作区和预设的默认值会与此列表合并。未知的插件 id 返回 400 `unknown_gateway_plugin`。
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         logprobs:
           type: boolean
           default: false
@@ -9516,8 +9707,31 @@ components:
           type: string
         user:
           type: string
+        include_reasoning:
+          type: boolean
+          description: 为保持兼容性而接受。无论此字段如何设置，只要模型生成了推理内容就会返回（`reasoning_content` 和 `reasoning_details`）。
+        prediction:
+          type: object
+          description: 预测输出，在事先已知大部分回复内容时加快响应速度。会转发给 OpenAI、Mistral 和 Moonshot 模型；其他提供商会忽略它。
+          required:
+            - type
+            - content
+          properties:
+            type:
+              type: string
+              enum:
+                - content
+            content:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: object
+                    additionalProperties: true
         service_tier:
           type: string
+          nullable: true
+          description: 选择受支持的路由或定价等级。`auto`（或 null）表示不指定特定等级，路由和计费方式与未设置此字段时相同；`scale` 按标准等级 `default` 处理。
           enum:
             - standard
             - default
@@ -9526,9 +9740,22 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         prompt_cache_key:
           type: string
           nullable: true
+          description: 将相关请求归为一组，使其保留在持有其 prompt 缓存的提供商上。Phaseo 向上游发送的是你的工作区与该键的哈希值，绝不发送原始键。
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: 适用于 GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型的 prompt 缓存保留策略。优先于 provider_options.openai.prompt_cache_retention。
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -9553,8 +9780,10 @@ components:
             - assistant
             - tool
         content:
-          oneOf:
+          description: 消息内容：字符串或内容部件数组。只有调用工具（带 tool_calls）的助手消息可以将其设为 null；其他角色的 null 内容会被网关以 400 错误拒绝。
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9574,15 +9803,80 @@ components:
             $ref: '#/components/schemas/ChatAudioOutputPart'
         tool_call_id:
           type: string
+        reasoning_content:
+          type: string
+          description: 模型的推理文本（在提供商返回时提供）。流式传输时以 delta.reasoning_content 发送。
+        reasoning:
+          type: string
+          description: 与 reasoning_content 相同的推理文本，使用部分客户端读取的字段名。流式传输时以 delta.reasoning 发送。在输入中可作为 reasoning_content 的别名。
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
       discriminator:
         propertyName: role
+    ChatReasoningDetail:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning.text
+            - reasoning.summary
+            - reasoning.encrypted
+        id:
+          type: string
+        index:
+          type: integer
+        format:
+          type: string
+        text:
+          type: string
+        summary:
+          type: string
+        signature:
+          type: string
+        data:
+          type: string
     MessageContentPart:
       oneOf:
         - $ref: '#/components/schemas/TextContentPart'
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: 文件输入，例如 PDF。将 file_data 设为 base64 数据 URL，或将 file_id 设为已上传到处理该请求的提供商的文件。
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+              minLength: 1
+            file_id:
+              type: string
+              minLength: 1
+            filename:
+              type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -9595,6 +9889,10 @@ components:
             - text
         text:
           type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     ImageContentPart:
       type: object
       required:
@@ -9756,6 +10054,8 @@ components:
         async:
           type: boolean
           description: 允许受支持的 OpenAI 模型在调用方执行此工具时继续处理。所有文本 API 均接受此设置，其他提供商会忽略它。
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         function:
           type: object
           required:
@@ -9879,6 +10179,147 @@ components:
           minimum: 1
           maximum: 100000
       additionalProperties: false
+    GatewayPlugin:
+      oneOf:
+        - $ref: '#/components/schemas/WebSearchPlugin'
+        - $ref: '#/components/schemas/WebFetchPlugin'
+        - $ref: '#/components/schemas/ResponseHealingPlugin'
+      discriminator:
+        propertyName: id
+        mapping:
+          web: '#/components/schemas/WebSearchPlugin'
+          web-fetch: '#/components/schemas/WebFetchPlugin'
+          response-healing: '#/components/schemas/ResponseHealingPlugin'
+    WebSearchPlugin:
+      type: object
+      description: 向请求添加 `phaseo:web_search` 服务器工具，让任意模型都能搜索网页。请求的运行方式以及搜索的计数和计费，与使用 `phaseo:web_search` 工具完全相同。如果请求已包含网页搜索工具，插件不会添加任何内容。其他选项会被忽略。
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - exa
+            - firecrawl
+            - parallel
+            - perplexity
+            - tinyfish
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 25
+        max_uses:
+          type: integer
+          minimum: 1
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        include_domains:
+          type: array
+          items:
+            type: string
+        exclude_domains:
+          type: array
+          items:
+            type: string
+    WebFetchPlugin:
+      type: object
+      description: 向请求添加 `phaseo:web_fetch` 服务器工具，让任意模型都能读取网页。请求的运行方式以及读取的计数和计费，与使用 `phaseo:web_fetch` 工具完全相同。如果请求已包含网页读取工具，插件不会添加任何内容。
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web-fetch
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - direct
+            - exa
+            - firecrawl
+            - parallel
+        max_uses:
+          type: integer
+          minimum: 1
+        max_content_tokens:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        allowed_domains:
+          type: array
+          items:
+            type: string
+        blocked_domains:
+          type: array
+          items:
+            type: string
+    ResponseHealingPlugin:
+      type: object
+      description: 修复请求了 `json_object` 或 `json_schema` 输出的非流式响应中格式错误的 JSON。流式响应会跳过。
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - response-healing
+        enabled:
+          type: boolean
+          default: true
+        mode:
+          type: string
+          enum:
+            - safe
+            - strict
+          default: safe
+    OpenAIWebSearchToolDefinition:
+      type: object
+      description: OpenAI 托管的网页搜索工具。OpenAI、Azure OpenAI（Responses）和 xAI 会原生运行它。在提供商无法运行它的模型上，网关将其作为 `phaseo:web_search` 运行：`search_context_size`、`filters.allowed_domains`、`max_results` 和 `engine` 会保留，搜索按 `phaseo:web_search` 搜索计费。其他 OpenAI 托管工具（`file_search`、`code_interpreter`、`computer_use_preview`、`mcp`、`image_generation`、`shell`、`local_shell`、`apply_patch`）在提供商无法运行它们的模型上会返回 400 `unsupported_hosted_tool`。
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - web_search
+            - web_search_2025_08_26
+            - web_search_preview
+            - web_search_preview_2025_03_11
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        filters:
+          type: object
+          properties:
+            allowed_domains:
+              type: array
+              items:
+                type: string
+        user_location:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
@@ -9888,6 +10329,7 @@ components:
         - $ref: '#/components/schemas/SubagentToolDefinition'
         - $ref: '#/components/schemas/FusionToolDefinition'
         - $ref: '#/components/schemas/SearchModelsToolDefinition'
+        - $ref: '#/components/schemas/OpenAIWebSearchToolDefinition'
     SubagentToolDefinition:
       type: object
       required:
@@ -9940,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: 工具选择策略。接受 Phaseo 服务器工具类型，并将其改写为上游函数或工具目标。
+      description: 工具选择策略。接受 Phaseo 服务器工具类型，并将其改写为上游函数或工具目标。allowed_tools 对象会连同所有工具原样发送给 OpenAI。其他提供商只会收到允许的工具及其模式（auto 或 required），当 required 只允许一个工具时，则收到对该工具的强制调用。如果 allowed_tools 列出了 tools 中未定义的工具，则只有 OpenAI 能处理该请求；否则返回 400 错误。
       oneOf:
         - type: string
           enum:
@@ -10001,7 +10443,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: 推理强度。省略或为 null 时，由 `max_tokens`、`enabled` 或模型自身的默认值决定模型的推理量。
         mode:
           type: string
           enum:
@@ -10033,7 +10476,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: 推理强度。省略或为 null 时，由 `max_tokens`、`enabled` 或模型自身的默认值决定模型的推理量。
         mode:
           type: string
           enum:
@@ -10126,14 +10570,52 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: 输入 token，包括缓存读取和缓存写入。
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: 输入 token，包括缓存读取和缓存写入。
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: 此请求让你花费的金额（美元）：从你的额度中扣除的金额，与 `cost_nanos` 数值相同，已计入可能适用的数据贡献折扣或零输出免收。请求完成定价后，会在 Chat Completions、Responses、Messages 和嵌入响应中返回。在流式响应中，它位于最后一个用量帧（Messages 中为最后一个 `message_delta`），涵盖整个流。如果发送该帧时费用尚未确定，流会省略此字段：一是 BYOK 流，其服务费在流结束时才计算（此时由 `cost_details.upstream_inference_cost` 给出模型价格）；二是已经失败的流，这类流不收费。
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: 请求费用的明细。
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: 在 BYOK 请求中，提供商按模型的公布价格向你自己的密钥收取的推理费用（美元）。请求使用 Phaseo 额度时为 null，此时 `cost` 即为全部费用。
+          example: null
+    InputTokensDetails:
+      type: object
+      description: 输入 token 的明细。
+      properties:
+        cached_tokens:
+          type: integer
+          description: 从提供商 prompt 缓存中读取的输入 token。
+        cache_write_tokens:
+          type: integer
+          description: 写入提供商 prompt 缓存的输入 token。
     AnthropicMessagesRequest:
       type: object
+      description: 以 `null` 发送的可选顶层字段会被视为未设置，与省略该字段相同。
       required:
         - model
         - messages
@@ -10177,6 +10659,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0
@@ -10205,6 +10689,11 @@ components:
           oneOf:
             - type: object
             - type: string
+        plugins:
+          type: array
+          description: 此请求使用的网关插件。`web` 为任意模型添加网页搜索，`web-fetch` 添加网页读取；`response-healing` 修复非流式结构化响应中格式错误的 JSON。工作区和预设的默认值会与此列表合并。未知的插件 id 返回 400 `unknown_gateway_plugin`。
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         stream:
           type: boolean
         metadata:
@@ -10216,10 +10705,30 @@ components:
           description: 用于可观测性统计的唯一标识符，可将相关请求（例如对话或代理工作流）归为一组。
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
+        context_management:
+          type: object
+          description: Anthropic 上下文编辑。`edits` 接受 `clear_tool_uses_*` 和 `clear_thinking_*` 策略，并附带相应的 beta 请求头发送给 Anthropic。其他提供商会在不含此字段的情况下运行请求，并在 `X-Phaseo-Dropped-Params` 中列出 `context_management`。压缩编辑（`compact_*`）返回 400。
+          properties:
+            edits:
+              type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                additionalProperties: true
+          additionalProperties: true
+        user:
+          type: string
+          description: 最终用户标识符，与 Chat Completions 中相同。除非已设置 `metadata.user_id`，否则 Claude 模型会以 `metadata.user_id` 的形式接收它。
         stop_sequences:
           type: array
           items:
             type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         usage:
@@ -10255,6 +10764,15 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AnthropicUsage'
+        context_management:
+          type: object
+          description: 当请求使用了 `context_management` 且 Anthropic 应用了编辑时出现。`applied_edits` 列出每项编辑及其清除的内容。流式响应中，它位于最后的 `message_delta` 事件里。
+          properties:
+            applied_edits:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     AnthropicMessage:
       type: object
       required:
@@ -10326,10 +10844,35 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: 未缓存的输入 token。与 Anthropic 一致，不包括缓存读取和缓存写入。
+        cache_read_input_tokens:
+          type: integer
+          description: 从提供商 prompt 缓存中读取的输入 token。
+        cache_creation_input_tokens:
+          type: integer
+          description: 写入提供商 prompt 缓存的输入 token。
+        cache_creation:
+          type: object
+          description: 按缓存有效期拆分的缓存写入。
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: 以 5 分钟缓存有效期写入的输入 token。
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: 以 1 小时缓存有效期写入的输入 token。
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: 此请求让你花费的金额（美元）：从你的额度中扣除的金额，与 `cost_nanos` 数值相同，已计入可能适用的数据贡献折扣或零输出免收。请求完成定价后，会在 Chat Completions、Responses、Messages 和嵌入响应中返回。在流式响应中，它位于最后一个用量帧（Messages 中为最后一个 `message_delta`），涵盖整个流。如果发送该帧时费用尚未确定，流会省略此字段：一是 BYOK 流，其服务费在流结束时才计算（此时由 `cost_details.upstream_inference_cost` 给出模型价格）；二是已经失败的流，这类流不收费。
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
+      description: 以 `null` 发送的可选顶层字段会被视为未设置，与省略该字段相同。
       required:
         - model
         - input
@@ -10368,10 +10911,13 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: 不支持。Phaseo 不存储响应，因此设置了 previous_response_id 或 conversation 的请求会返回 400 unsupported_param。请在 input 中发送完整对话。
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
+          nullable: true
+          description: 选择受支持的路由或定价等级。`auto`（或 null）表示不指定特定等级，路由和计费方式与未设置此字段时相同；`scale` 按标准等级 `default` 处理。
           enum:
             - standard
             - default
@@ -10380,6 +10926,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         store:
           type: boolean
         stream:
@@ -10390,6 +10938,11 @@ components:
           maximum: 2
         text:
           type: object
+        plugins:
+          type: array
+          description: 此请求使用的网关插件。`web` 为任意模型添加网页搜索，`web-fetch` 添加网页读取；`response-healing` 修复非流式结构化响应中格式错误的 JSON。工作区和预设的默认值会与此列表合并。未知的插件 id 返回 400 `unknown_gateway_plugin`。
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
         tools:
@@ -10411,6 +10964,17 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: 将相关请求归为一组，使其保留在持有其 prompt 缓存的提供商上。Phaseo 向上游发送的是你的工作区与该键的哈希值，绝不发送原始键。
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: 适用于 GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型的 prompt 缓存保留策略。优先于 provider_options.openai.prompt_cache_retention。
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -10503,6 +11067,8 @@ components:
       properties:
         type:
           type: string
+        id:
+          type: string
         role:
           type: string
           enum:
@@ -10517,11 +11083,32 @@ components:
               items:
                 type: object
             - type: object
+        summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
+        encrypted_content:
+          type: string
+          description: 来自先前响应的推理状态，原样发回。除非 format 指定了其他提供商，否则原始值按 OpenAI 的值解析。
+        signature:
+          type: string
+          description: 推理项上的原始提供商签名，例如 Claude 的 thinking 签名或 Gemini 的思考签名。需要同时提供 format。
+        format:
+          type: string
+          description: 推理项上 signature 或 encrypted_content 的提供商格式。
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: Responses API 输出项。
       properties:
         type:
+          type: string
+        id:
           type: string
         role:
           type: string
@@ -10535,11 +11122,43 @@ components:
           type: string
         arguments:
           type: string
+        summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
+        encrypted_content:
+          type: string
+    ResponsesReasoningSummaryPart:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - summary_text
+        text:
+          type: string
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: 推理输出项内容中的推理文本。
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:
@@ -11024,6 +11643,310 @@ components:
         - type: string
         - type: object
           additionalProperties: true
+    ExtractionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - model
+        - input
+        - fields
+      properties:
+        model:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: 具备 extraction.extract 能力的模型 ID。
+        input:
+          type: string
+          maxLength: 16384
+          description: 源文本。提供图像时可以为空。
+        fields:
+          type: object
+          minProperties: 1
+          maxProperties: 64
+          description: 字段名称须符合 ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$。
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionField'
+        images:
+          type: array
+          maxItems: 4
+          description: 嵌入式 PNG、JPEG 或 WebP 图像；解码后每张最多 4 MiB，合计最多 8 MiB。
+          items:
+            $ref: '#/components/schemas/ExtractionImage'
+        reference_date:
+          type: string
+          format: date
+          description: 用于补全不完整日期的明确日期上下文。
+    ExtractionImage:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - image/png
+            - image/jpeg
+            - image/webp
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Base64 编码的图像字节，不带数据 URL 前缀。
+    ExtractionField:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionTextField'
+        - $ref: '#/components/schemas/ExtractionNumberField'
+        - $ref: '#/components/schemas/ExtractionDateField'
+        - $ref: '#/components/schemas/ExtractionTimeField'
+        - $ref: '#/components/schemas/ExtractionDatetimeField'
+        - $ref: '#/components/schemas/ExtractionDurationField'
+        - $ref: '#/components/schemas/ExtractionListField'
+    ExtractionTextField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionNumberField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          maxLength: 64
+    ExtractionDateField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionTimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - time
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDatetimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - datetime
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDurationField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - duration
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          enum:
+            - seconds
+            - minutes
+            - hours
+            - days
+            - weeks
+            - months
+            - years
+    ExtractionListField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - items
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        instructions:
+          type: string
+          maxLength: 2048
+        items:
+          type: string
+          enum:
+            - text
+            - number
+            - date
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+    ExtractionResponse:
+      type: object
+      required:
+        - model
+        - answers
+        - truncated
+        - usage
+      properties:
+        model:
+          type: string
+        answers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionAnswer'
+        truncated:
+          type: boolean
+          description: 表示提供商是否截断了源文本。
+        usage:
+          $ref: '#/components/schemas/ExtractionUsage'
+    ExtractionAnswer:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionStringAnswer'
+        - $ref: '#/components/schemas/ExtractionNumberAnswer'
+        - $ref: '#/components/schemas/ExtractionListAnswer'
+    ExtractionStringAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+            - date
+            - time
+            - datetime
+        value:
+          type: string
+          description: 提取的文本或 ISO 日期/时间；无法确定时为 null。
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 模型报告的置信度，不保证正确。
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 无法确定该值的概率。
+    ExtractionNumberAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+            - duration
+        value:
+          type: number
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionListAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        value:
+          type: array
+          maxItems: 4096
+          items:
+            oneOf:
+              - type: string
+              - type: number
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionUsage:
+      type: object
+      required:
+        - input_tokens
+        - output_tokens
+        - total_tokens
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+          description: 提供商报告的所有处理轮次的输入令牌总数。
+        output_tokens:
+          type: integer
+          enum:
+            - 0
+        total_tokens:
+          type: integer
+          minimum: 0
     DecisionCreateRequest:
       description: 推荐 OpenAI 格式。原有格式仍受支持。回答遵循请求格式，请勿混用。
       oneOf:
@@ -14648,11 +15571,19 @@ components:
           type: boolean
           example: false
         error:
+          description: OpenAI 兼容 SDK 读取的错误对象（`code`、`message`、`type`、`param` 以及可选的 `metadata`）。以前的响应在此处返回代码字符串；现在它也作为顶层 `code` 返回。
           oneOf:
             - type: string
-            - type: object
-              additionalProperties: true
-          example: error_type
+            - $ref: '#/components/schemas/ErrorObject'
+          example:
+            code: validation_error
+            message: 'Unknown parameter: foo'
+            type: invalid_request_error
+            param: foo
+        code:
+          type: string
+          description: 错误代码，与 `error.code` 的值相同。
+          example: validation_error
         message:
           type: string
           example: Human-readable error message
@@ -14727,6 +15658,46 @@ components:
           items:
             type: object
             additionalProperties: true
+      additionalProperties: true
+    ErrorObject:
+      type: object
+      description: 采用 OpenAI SDK 读取格式的网关错误。`type` 由 HTTP 状态决定：大多数 4xx 为 invalid_request_error，authentication_error（401）、insufficient_quota（402）、permission_error（403）、not_found_error（404）、rate_limit_error（429）、service_unavailable（503）、overloaded（529），其他 5xx 为 server_error。
+      required:
+        - code
+        - message
+        - type
+      properties:
+        code:
+          type: string
+          description: 机器可读的错误代码。
+          example: validation_error
+        message:
+          type: string
+          description: 便于阅读的失败说明。
+          example: 'Unknown parameter: foo'
+        type:
+          type: string
+          description: 错误类型，遵循 OpenAI 文档中的错误类型。
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - permission_error
+            - not_found_error
+            - rate_limit_error
+            - insufficient_quota
+            - server_error
+            - service_unavailable
+            - overloaded
+          example: invalid_request_error
+        param:
+          type: string
+          nullable: true
+          description: 导致错误的请求参数（如已知）。
+          example: foo
+        metadata:
+          type: object
+          description: 同样在顶层返回的结构化详情，例如失败的提供商、`reason`、`failed_statuses`、`retry_after_seconds` 或 `upstream_error`。
+          additionalProperties: true
       additionalProperties: true
     ErrorUpstreamError:
       type: object
@@ -15133,8 +16104,13 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: API 密钥的明文，与 `data.key` 的值相同。仅在创建时返回一次。
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false
@@ -19458,6 +20434,300 @@ components:
             $ref: '#/components/schemas/WorkspaceBudget'
       additionalProperties: false
     WorkspaceBudgetDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    ClassifierValue:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        description:
+          type: string
+          maxLength: 300
+          nullable: true
+          description: Tells the model when to pick this value.
+      additionalProperties: false
+    ClassifierDimension:
+      type: object
+      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      required:
+        - key
+        - values
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        multiple:
+          type: boolean
+          default: false
+          description: Allow more than one value per request.
+        allow_other:
+          type: boolean
+          default: false
+          description: Let the model answer "other" when no listed value fits.
+        values:
+          type: array
+          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ClassifierValue'
+      additionalProperties: false
+    ClassifierScope:
+      type: object
+      description: Limits which requests are classified. Leave a list out to include everything.
+      properties:
+        key_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        app_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        models:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+      additionalProperties: false
+    ClassifierSampleBy:
+      type: string
+      description: request samples each request on its own. session keeps every request in a session in or out together.
+      enum:
+        - request
+        - session
+    ClassifierInputScope:
+      type: string
+      description: prompt classifies the request messages. prompt_and_response also shows the model the generated response.
+      enum:
+        - prompt
+        - prompt_and_response
+    Classifier:
+      type: object
+      description: A workspace taxonomy that a chosen model applies to requests after they finish.
+      required:
+        - id
+        - workspace_id
+        - name
+        - description
+        - enabled
+        - model
+        - instructions
+        - dimensions
+        - sample_rate
+        - sample_by
+        - input_scope
+        - scope
+        - monthly_budget_usd
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          description: Model that classifies requests, for example google/gemini-2.5-flash-lite.
+        instructions:
+          type: string
+          maxLength: 8000
+          description: Extra guidance for the model, added to the classification prompt.
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          description: Share of eligible requests to classify. 1 classifies every request.
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          nullable: true
+          description: Most the classifier may spend in a UTC calendar month. Classification pauses for the rest of the month once it is reached. null means no cap.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    ClassifierCreateInput:
+      type: object
+      required:
+        - name
+        - model
+        - dimensions
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+          default: true
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          default: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
+          nullable: true
+      additionalProperties: false
+    ClassifierUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
+          nullable: true
+      additionalProperties: false
+    ClassifierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierDeleteResponse:
       type: object
       required:
         - data

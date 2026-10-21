@@ -1,0 +1,32 @@
+{
+	"provider": "morpheus",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "morpheus:baai/bge-m3:text.embed",
+			"file": "packages/data/catalog/src/data/pricing/morpheus/baai-bge-m3/text.embed/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"output_text_tokens":1000,"input_tokens":1000,"output_tokens":1000,"total_tokens":2000},"expected":{"nanos":600000,"lines":[["input_text_tokens",1000,"#0","input_text_tokens",100000],["output_text_tokens",1000,"#1","output_text_tokens",500000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2963200,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#1","output_text_tokens",1728500]]}}
+			]
+		},
+		{
+			"key": "morpheus:z-ai/glm-5.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/morpheus/z-ai-glm-5.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","1.25/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":6066000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",3250000],["output_reasoning_tokens",192,"#1","output_text_tokens",844800,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":34116150,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",15433750],["output_reasoning_tokens",789,"#1","output_text_tokens",3471600,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",15210800]]}}
+			]
+		}
+	]
+}

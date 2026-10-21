@@ -12,8 +12,19 @@ export interface ChatChoice {
     }[];
     content?:
       | string
+      | null
       | (
           | {
+              cache_control?: {
+                scope?: string;
+                ttl?: string;
+                type?: string;
+                [key: string]: unknown;
+              };
+              prompt_cache_breakpoint?: {
+                mode?: "explicit";
+                [key: string]: unknown;
+              };
               text: string;
               type: "text";
             }
@@ -36,6 +47,20 @@ export interface ChatChoice {
               video_url: string;
             }
           | {
+              cache_control?: {
+                scope?: string;
+                ttl?: string;
+                type?: string;
+                [key: string]: unknown;
+              };
+              file: {
+                file_data?: string;
+                file_id?: string;
+                filename?: string;
+              };
+              type: "file";
+            }
+          | {
               function: {
                 arguments?: string;
                 name?: string;
@@ -52,6 +77,18 @@ export interface ChatChoice {
       type: "image_url";
     }[];
     name?: string;
+    reasoning?: string;
+    reasoning_content?: string;
+    reasoning_details?: {
+      data?: string;
+      format?: string;
+      id?: string;
+      index?: number;
+      signature?: string;
+      summary?: string;
+      text?: string;
+      type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+    }[];
     role: "system" | "developer" | "user" | "assistant" | "tool";
     tool_call_id?: string;
     tool_calls?: {

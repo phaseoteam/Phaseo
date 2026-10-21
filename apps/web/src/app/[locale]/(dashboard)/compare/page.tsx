@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import {
-	fetchFrontendCompareModels,
 	fetchFrontendCompareUsage,
 	fetchFrontendComparisonModels,
 	fetchFrontendModelPerformance,
@@ -118,24 +117,10 @@ function CompareDashboardFallback() {
 }
 
 async function ComparePageContent({ searchParams }: PageProps) {
-	const [models, resolvedSearchParams] = await Promise.all([
-		fetchFrontendCompareModels(),
-		searchParams,
-	]);
-	const typedModels = models.map(toCompareModelOption);
-	const selection = normalizeSelection(resolvedSearchParams?.models).map(
-		decodeModelIdFromUrl
-	);
-
-	const lookup = new Map<string, string>();
-	typedModels.forEach((model) => {
-		if (!model.id) return;
-		lookup.set(model.id, model.id);
-	});
-
-	const resolvedIds = selection
-		.map((value) => lookup.get(value) ?? value)
-		.filter((value): value is string => Boolean(value));
+	const resolvedSearchParams = await searchParams;
+	const resolvedIds = normalizeSelection(resolvedSearchParams?.models)
+		.map(decodeModelIdFromUrl)
+		.filter(Boolean);
 
 	const [comparisonData, usageByModel] = resolvedIds.length
 		? await Promise.all([
@@ -155,9 +140,11 @@ async function ComparePageContent({ searchParams }: PageProps) {
 			])
 		: [[], {}];
 
+	// The pickers load the full model list in the browser when opened, so the
+	// page only carries options for the models it compares.
 	return (
 		<CompareDashboard
-			models={typedModels}
+			selectedOptions={comparisonData.map(toCompareModelOption)}
 			comparisonData={comparisonData}
 			usageByModel={usageByModel}
 		/>

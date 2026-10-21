@@ -136,6 +136,10 @@
 					"title": "Schutzregel erstellen",
 					"subtitle": "Eine Richtlinie für Anfragen oder Antworten hinzufügen"
 				},
+				"action-create-classifier": {
+					"title": "Einen Klassifikator erstellen",
+					"subtitle": "Anfragen nach Abteilung, Aufgabe oder Zielgruppe labeln"
+				},
 				"action-copy-page-link": {
 					"title": "Aktuellen Seitenlink kopieren",
 					"subtitle": "Die URL dieser Seite in die Zwischenablage kopieren"
@@ -250,6 +254,7 @@
 				"nav-settings-presets": "Routing-Voreinstellungen",
 				"nav-settings-privacy": "Datenschutzeinstellungen",
 				"nav-settings-guardrails": "Schutzregeln",
+				"nav-settings-classifiers": "Klassifikatoren",
 				"nav-settings-oauth": "OAuth-Apps",
 				"nav-settings-broadcast": "Weiterleitung",
 				"nav-settings-webhooks": "Webhooks",
@@ -328,6 +333,7 @@
 				"nav-settings-account-privacy": "Kontodatenschutz",
 				"nav-settings-credits-onboarding": "Abrechnung einrichten",
 				"nav-settings-guardrails-new": "Schutzregel erstellen",
+				"nav-settings-classifiers-new": "Klassifikator erstellen",
 				"nav-settings-presets-new": "Routing-Voreinstellung erstellen",
 				"nav-how-phaseo-normalises-ai-benchmarks": "Wie Benchmarks normalisiert werden",
 				"nav-how-phaseo-measures-latency-throughput": "Wie Leistung gemessen wird",

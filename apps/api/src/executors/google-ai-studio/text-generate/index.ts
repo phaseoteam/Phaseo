@@ -7,7 +7,7 @@
 // Uses Google's native Gemini API format (NOT OpenAI-compatible)
 
 import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamChunk, IRStreamDelta, IRToolCall, IRUsage } from "@core/ir";
-import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
+import type { Bill, ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
@@ -18,6 +18,15 @@ import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../../google/shared/media";
+import {
+	appendGeminiFunctionResponse,
+	geminiFunctionResponsePart,
+	geminiFunctionCallId,
+	geminiReplayableAssistantParts,
+	geminiThoughtPartToIR,
+	irToolCallsToGeminiParts,
+	withoutEmptyGeminiTextParts,
+} from "../../google/shared/function-history";
 import { normalizeGoogleModelSlug, resolveGoogleModelCandidates } from "../../google/shared/model";
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "../../google/shared/usage-fallback";
 import {
@@ -28,10 +37,12 @@ import {
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 import { normalizeGoogleServiceTier } from "../../google/shared/service-tier";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
+import { geminiGroundingToAnnotations, toChatAnnotations } from "@protocols/shared/citations";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
 import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 import { supportsTextProviderInteractionsModel } from "@providers/textProfiles";
+import { GOOGLE_REASONING_FORMAT, canReplayReasoning, sealReasoningState } from "@core/reasoning-state";
 
 const DEFAULT_LYRIA_RETRY_ATTEMPTS = 3;
 const DEFAULT_LYRIA_RETRY_DELAY_MS = 300;
@@ -116,10 +127,16 @@ async function irToLegacyGemini(
 		}
 
 		if (message.role === "user" || message.role === "assistant") {
-			contents.push({
-				role: message.role === "assistant" ? "model" : "user",
-				parts: await irPartsToGeminiParts(message.content, { preserveReasoningAsThought: true, upstreamTiming }),
-			});
+			const sourceParts = message.role === "assistant"
+				? geminiReplayableAssistantParts(message.content, { providerId: "google-ai-studio", model: modelOverride ?? ir.model })
+				: message.content;
+			const contentParts = await irPartsToGeminiParts(sourceParts, { preserveReasoningAsThought: true, upstreamTiming });
+			const parts = message.role === "assistant"
+				? [...withoutEmptyGeminiTextParts(contentParts), ...irToolCallsToGeminiParts(message.toolCalls, modelOverride ?? ir.model, "google-ai-studio")]
+				: contentParts;
+			if (message.role === "user" || parts.length > 0) {
+				contents.push({ role: message.role === "assistant" ? "model" : "user", parts });
+			}
 			continue;
 		}
 
@@ -133,15 +150,11 @@ async function irToLegacyGemini(
 						response = { content: response };
 					}
 				}
-				contents.push({
-					role: "user",
-					parts: [{
-						functionResponse: {
-							name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
-							response,
-						},
-					}],
-				});
+				appendGeminiFunctionResponse(contents, geminiFunctionResponsePart(
+					toolResult.toolCallId,
+					toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+					response,
+				));
 			}
 		}
 	}
@@ -273,8 +286,27 @@ export async function irToGemini(
 				content: await irPartsToInteractionContent(msg.content, upstreamTiming),
 			});
 		} else if (msg.role === "assistant") {
+			const target = { providerId: "google-ai-studio", model: modelOverride ?? ir.model };
+			const replayable = geminiReplayableAssistantParts(msg.content, target);
+			const toolCallIds = new Set((msg.toolCalls ?? []).map((call) => call.id));
+			const thoughtStep = (part: Extract<IRContentPart, { type: "reasoning_text" }>) => {
+				const summaryText = part.summary || part.text;
+				return {
+					type: "thought",
+					...(part.thoughtSignature ? { signature: part.thoughtSignature } : {}),
+					...(summaryText ? { summary: { type: "text", text: summaryText } } : {}),
+				};
+			};
+			// Stateless Interactions needs every model-generated step back in
+			// order, with its signature: thoughts, then output and calls.
+			// https://ai.google.dev/gemini-api/docs/interactions/function-calling
+			for (const part of replayable) {
+				if (part.type !== "reasoning_text") continue;
+				if (part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) continue;
+				input.push(thoughtStep(part));
+			}
 			const outputContent = await irPartsToInteractionContent(
-				msg.content.filter((part) => part.type !== "reasoning_text"),
+				replayable.filter((part) => part.type !== "reasoning_text"),
 				upstreamTiming,
 			);
 			if (outputContent.length > 0) {
@@ -283,21 +315,23 @@ export async function irToGemini(
 					content: outputContent,
 				});
 			}
-			for (const part of msg.content) {
-				if (part.type !== "reasoning_text") continue;
-				input.push({
-					type: "thought",
-					...(part.thoughtSignature ? { signature: part.thoughtSignature } : {}),
-					summary: { type: "text", text: part.summary || part.text },
-				});
-			}
 			if (Array.isArray(msg.toolCalls)) {
 				for (const toolCall of msg.toolCalls) {
+					for (const part of replayable) {
+						if (part.type === "reasoning_text" && part.beforeToolCallId === toolCall.id) input.push(thoughtStep(part));
+					}
+					const signature = toolCall.thoughtSignature && canReplayReasoning(
+						{ format: GOOGLE_REASONING_FORMAT, model: toolCall.thoughtSignatureModel },
+						target,
+					)
+						? toolCall.thoughtSignature
+						: undefined;
 					input.push({
 						type: "function_call",
 						id: toolCall.id,
 						name: toolCall.name,
 						arguments: parseToolCallArguments(toolCall.arguments),
+						...(signature ? { signature } : {}),
 					});
 				}
 			}
@@ -620,27 +654,21 @@ function geminiToIR(
 	for (const candidate of json.candidates || []) {
 		const contentParts: IRContentPart[] = [];
 		const toolCalls: any[] = [];
+		const callIds = new Map<string, number>();
 
 		// Extract parts from candidate.content.parts
 		if (candidate.content?.parts) {
 			for (const part of candidate.content.parts) {
 				const inlineData = normalizeGeminiInlineData(part);
-				if (part.text) {
-					// Check if it's a reasoning part
-					if (part.thought) {
-						contentParts.push({
-							type: "reasoning_text",
-							text: part.text,
-							thoughtSignature: part.thought_signature,
-							summary: part.thought_summary,
-						} as any);
-					} else {
-						// Regular text part
-						contentParts.push({
-							type: "text",
-							text: part.text,
-						});
-					}
+				if (part.thought && (part.text || part.thoughtSignature || part.thought_signature)) {
+					// Thought, with its signature tagged so it goes back only to Gemini.
+					contentParts.push(geminiThoughtPartToIR(part, model, provider));
+				} else if (part.text) {
+					// Regular text part
+					contentParts.push({
+						type: "text",
+						text: part.text,
+					});
 				} else if (inlineData?.data) {
 					const mediaPart = inlineDataToIRContentPart(inlineData);
 					if (mediaPart) {
@@ -648,14 +676,22 @@ function geminiToIR(
 					}
 				} else if (part.functionCall) {
 					// Tool call
+					const signature = part.thoughtSignature ?? part.thought_signature;
 					toolCalls.push({
-						id: part.functionCall.name, // Google doesn't provide IDs
+						id: geminiFunctionCallId(part, callIds),
 						name: part.functionCall.name,
 						arguments: JSON.stringify(part.functionCall.args || {}),
+						...(typeof signature === "string" && signature
+							? { thoughtSignature: signature, thoughtSignatureModel: model }
+							: {}),
 					});
 				}
 			}
 		}
+
+		const groundingAnnotations = geminiGroundingToAnnotations(candidate);
+		const firstText = contentParts.find((part): part is Extract<IRContentPart, { type: "text" }> => part.type === "text");
+		if (firstText && groundingAnnotations.length > 0) firstText.annotations = groundingAnnotations;
 
 		// Map finish reason (tool calls should surface as tool_calls, not stop)
 		let finishReason = mapGeminiFinishReason(candidate.finishReason);
@@ -731,19 +767,31 @@ function interactionToIR(
 			}
 		} else if (step.type === "thought") {
 			const text = interactionTextFromContent(step.summary);
-			if (text) {
+			const signature = typeof step.signature === "string" && step.signature ? step.signature : undefined;
+			// A thought without a summary still carries the signature that
+			// stateless requests must send back.
+			if (text || signature) {
 				contentParts.push({
 					type: "reasoning_text",
 					text,
-					thoughtSignature: typeof step.signature === "string" ? step.signature : undefined,
-					summary: text,
+					...(text ? { summary: text } : {}),
+					...(signature
+						? {
+							thoughtSignature: signature,
+							reasoningFormat: GOOGLE_REASONING_FORMAT,
+							reasoningModel: model,
+							reasoningProvider: provider,
+						}
+						: {}),
 				});
 			}
 		} else if (step.type === "function_call") {
+			const signature = typeof step.signature === "string" && step.signature ? step.signature : undefined;
 			toolCalls.push({
 				id: typeof step.id === "string" ? step.id : `call_${requestId}_${toolCalls.length}`,
 				name: String(step.name ?? "function"),
 				arguments: stringifyToolArguments(step.arguments),
+				...(signature ? { thoughtSignature: signature, thoughtSignatureModel: model } : {}),
 			});
 		}
 	}
@@ -904,31 +952,45 @@ function interactionUsageToIRUsage(usage: any): IRUsage | undefined {
 	const outputByModality = readInteractionModalityCounts(usage.output_tokens_by_modality);
 	const cachedByModality = readInteractionModalityCounts(usage.cached_tokens_by_modality);
 
-	const inputTokens =
+	// Unlike generateContent's toolUsePromptTokenCount, Interactions' total_tool_use_tokens is
+	// not added to input: Google's function-calling example reports input 100, output 25,
+	// tool use 50 and total 125 (https://ai.google.dev/api/interactions-api-v1). Thought
+	// tokens are output on top of the responses (7 + 20 + 22 = 49 in the same docs), billed
+	// at the output price.
+	const promptTokens =
 		pickFiniteUsageNumber(usage.total_input_tokens ?? usage.input_tokens) ??
-		sumUsageCounts(inputByModality) ??
-		0;
-	const outputTokens =
-		pickFiniteUsageNumber(usage.total_output_tokens ?? usage.output_tokens) ??
-		sumUsageCounts(outputByModality) ??
-		0;
-	const totalTokens =
-		pickFiniteUsageNumber(usage.total_tokens) ??
-		inputTokens + outputTokens;
-	const cachedInputTokens =
-		pickFiniteUsageNumber(usage.total_cached_tokens ?? usage.cached_tokens) ??
-		sumUsageCounts(cachedByModality);
+		sumUsageCounts(inputByModality);
+	const inputTokens = promptTokens ?? 0;
 	const reasoningTokens =
 		pickFiniteUsageNumber(
 			usage.total_thought_tokens ??
 			usage.thought_tokens ??
 			usage.reasoning_tokens,
 		);
+	const responseTokens =
+		pickFiniteUsageNumber(usage.total_output_tokens ?? usage.output_tokens) ??
+		sumUsageCounts(outputByModality);
+	const outputTokens = (responseTokens ?? 0) + (reasoningTokens ?? 0);
+	const totalTokens = Math.max(
+		pickFiniteUsageNumber(usage.total_tokens) ?? 0,
+		inputTokens + outputTokens,
+	);
+	const cachedInputTokens =
+		pickFiniteUsageNumber(usage.total_cached_tokens ?? usage.cached_tokens) ??
+		sumUsageCounts(cachedByModality);
 
 	const ext: IRUsage["_ext"] = {};
-	if (pickFiniteUsageNumber(inputByModality.image) != null) ext.inputImageTokens = inputByModality.image;
-	if (pickFiniteUsageNumber(inputByModality.audio) != null) ext.inputAudioTokens = inputByModality.audio;
-	if (pickFiniteUsageNumber(inputByModality.video) != null) ext.inputVideoTokens = inputByModality.video;
+	// Media prompt tokens net of cached media: the cached part is billed through cachedInputTokens.
+	const uncachedModality = (modality: string) => {
+		const input = pickFiniteUsageNumber(inputByModality[modality]);
+		return input == null ? undefined : Math.max(0, input - (pickFiniteUsageNumber(cachedByModality[modality]) ?? 0));
+	};
+	const inputImageTokens = uncachedModality("image");
+	const inputAudioTokens = uncachedModality("audio");
+	const inputVideoTokens = uncachedModality("video");
+	if (inputImageTokens != null) ext.inputImageTokens = inputImageTokens;
+	if (inputAudioTokens != null) ext.inputAudioTokens = inputAudioTokens;
+	if (inputVideoTokens != null) ext.inputVideoTokens = inputVideoTokens;
 	if (pickFiniteUsageNumber(outputByModality.image) != null) ext.outputImageTokens = outputByModality.image;
 	if (pickFiniteUsageNumber(outputByModality.audio) != null) ext.outputAudioTokens = outputByModality.audio;
 	if (pickFiniteUsageNumber(outputByModality.video) != null) ext.outputVideoTokens = outputByModality.video;
@@ -1020,11 +1082,18 @@ function mapGeminiFinishReason(reason: string | undefined): IRChoice["finishReas
 			return "stop";
 		case "MAX_TOKENS":
 			return "length";
+		// Filter outcomes documented for the Gemini API and Vertex; each can end a candidate with no content.
 		case "SAFETY":
 		case "RECITATION":
 		case "PROHIBITED_CONTENT":
 		case "SPII":
 		case "BLOCKLIST":
+		case "LANGUAGE":
+		case "MODEL_ARMOR":
+		case "ESCALATION":
+		case "IMAGE_SAFETY":
+		case "IMAGE_PROHIBITED_CONTENT":
+		case "IMAGE_RECITATION":
 			return "content_filter";
 		case "MALFORMED_FUNCTION_CALL":
 			return "error";
@@ -1215,7 +1284,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			const totalMs = Date.now() - selectedDispatchAtMs;
 			const finalPayload = encodeOpenAIChatResponse(irResponse, requestId);
 			const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
-			const stream =
+			const syntheticStream =
 				protocol === "openai.chat.completions"
 					? buildSyntheticServerToolStream({
 						protocol,
@@ -1225,6 +1294,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 						created: finalPayload.created,
 					})
 					: createSyntheticResponsesStreamFromIR(irResponse, requestId);
+			// Messages clients need Messages events (message_start ... message_stop, thinking
+			// blocks), not the Responses events the synthetic stream is written in.
+			const stream =
+				syntheticStream && protocol === "anthropic.messages"
+					? resolveStreamForProtocol(new Response(syntheticStream), args, "responses", {
+						canonicalResponsesEvents: true,
+					})
+					: syntheticStream;
 
 			if (!stream) {
 				throw new Error("google_ai_studio_synthetic_stream_failed");
@@ -1256,17 +1333,23 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					...args,
 					providerModelSlug: model,
 				} as ExecutorExecuteArgs;
-				const transformedStream = transformStream(response.body, streamingArgs, headerServiceTier);
+				const bill: Bill = { cost_cents: 0, currency: "USD" };
+				const usageRecorder = createGeminiStreamUsageRecorder(bill);
+				const transformedStream = transformStream(response.body, streamingArgs, headerServiceTier, {
+					onUsage: usageRecorder.onUsage,
+				});
 				return {
 					kind: "stream",
 					stream: transformedStream,
 					streamAlreadyTransformed: true,
-					bill: { cost_cents: 0, currency: "USD" },
+					bill,
 					upstream: response,
 					keySource: keyInfo.source,
 					byokKeyId: keyInfo.byokId,
 					mappedRequest,
-					usageFinalizer: async () => null,
+					usageFinalizer: usageRecorder.finalize,
+					usageFinalizerAuthoritative: true,
+					usageSnapshot: usageRecorder.snapshot,
 				};
 			}
 
@@ -1489,10 +1572,38 @@ export function postprocess(ir: any, args: ExecutorExecuteArgs): any {
  *
  * We map this to IRStreamChunk, then to GatewayCompletionsResponse chunks.
  */
+export type GeminiStreamOptions = {
+	/** Called with each usage report the upstream stream carries (Google's counts are cumulative). */
+	onUsage?: (usage: IRUsage) => void;
+};
+
+/**
+ * Bill a Gemini stream from the upstream usage itself. Client frames carry only the
+ * client protocol's usage fields, so per-modality input (image, audio, video) would
+ * otherwise reach pricing as text.
+ */
+export function createGeminiStreamUsageRecorder(bill: Bill): {
+	onUsage: (usage: IRUsage) => void;
+	finalize: () => Promise<Bill | null>;
+	snapshot: () => Bill["usage"] | null;
+} {
+	// Kept here rather than on bill.usage: the pipeline copies the bill when the executor
+	// returns, and the stream finaliser overwrites bill.usage with the client frames' usage.
+	let meters: Record<string, any> | undefined;
+	return {
+		onUsage: (usage) => {
+			meters = normalizeTextUsageForPricing(usage) ?? meters;
+		},
+		finalize: async () => (meters ? { ...bill, usage: { ...meters } } : null),
+		snapshot: () => (meters ? { ...meters } : null),
+	};
+}
+
 export function transformStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
 	headerServiceTier?: string,
+	options?: GeminiStreamOptions,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
 	const decoder = new TextDecoder();
@@ -1500,8 +1611,14 @@ export function transformStream(
 	let buf = "";
 	type StreamToolState = {
 		id: string;
+		// Stream-wide position of this call in its candidate, so parallel calls
+		// that arrive in separate frames keep distinct chat `index` values.
+		toolIndex: number;
 		argumentsSoFar: string;
 		emittedName: boolean;
+		// Whole `args` already received: Gemini sends complete calls, so another
+		// complete call under the same key is a new call, not a continuation.
+		complete: boolean;
 	};
 	type InteractionStepState = {
 		type: string;
@@ -1512,10 +1629,14 @@ export function transformStream(
 		toolIndex: number;
 	};
 	const toolStates = new Map<string, StreamToolState>();
+	const toolCountByCandidate = new Map<number, number>();
 	const interactionStepStates = new Map<number, InteractionStepState>();
 	let interactionToolCallCount = 0;
 	let interactionSawFunctionCall = false;
 	let sawUsableOutput = false;
+	const emittedAnnotationKeys = new Set<string>();
+	// reasoning_details entries are numbered across the whole stream, per choice.
+	const reasoningDetailIndexes = new Map<number, number>();
 
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
@@ -1537,6 +1658,8 @@ export function transformStream(
 		controller: ReadableStreamDefaultController<Uint8Array>,
 	): void => {
 		if (irChunk.choices.some((choice: any) => {
+			// A safety block is a complete answer with no content, not a blank response.
+			if (choice.finishReason === "content_filter") return true;
 			if ((choice.delta?.toolCalls?.length ?? 0) > 0) return true;
 			if (typeof choice.delta?.content === "string" && choice.delta.content.trim().length > 0) return true;
 			return (choice.delta?.contentParts ?? []).some((part: any) => {
@@ -1550,7 +1673,14 @@ export function transformStream(
 		})) {
 			sawUsableOutput = true;
 		}
-		const openAIChunk = encodeIRChunkToOpenAI(irChunk);
+		if (irChunk.usage && options?.onUsage) {
+			try {
+				options.onUsage(irChunk.usage);
+			} catch {
+				// Usage observers must never break the client stream.
+			}
+		}
+		const openAIChunk = encodeIRChunkToOpenAI(irChunk, reasoningDetailIndexes);
 		controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
 	};
 	const buildBaseIRChunk = (): IRStreamChunk => ({
@@ -1731,9 +1861,27 @@ export function transformStream(
 						name?: string;
 						arguments?: string;
 					}> = [];
-					let functionCallIndex = 0;
+					// Thought signatures, sealed so chat clients can return them
+					// and the gateway replays them only to this Gemini model.
+					const signatureDetails: Array<Record<string, any>> = [];
+					const sealGeminiSignature = (signature: string, callId?: string) => sealReasoningState({
+						format: GOOGLE_REASONING_FORMAT,
+						kind: "signature",
+						value: signature,
+						model,
+						provider,
+						...(callId ? { callId } : {}),
+					});
 
 					for (const [partIdx, part] of parts.entries()) {
+						const partSignature = part.thoughtSignature ?? part.thought_signature;
+						if (part.thought && typeof partSignature === "string" && partSignature && !part.functionCall) {
+							signatureDetails.push({
+								type: "reasoning.encrypted",
+								data: sealGeminiSignature(partSignature),
+								format: GOOGLE_REASONING_FORMAT,
+							});
+						}
 						if (part.text) {
 							if (part.thought) {
 								reasoning += part.text;
@@ -1741,25 +1889,45 @@ export function transformStream(
 								content += part.text;
 							}
 						} else if (part.functionCall) {
-							const toolIndex = functionCallIndex++;
-							const stateKey = `${index}:${partIdx}:${part.functionCall.name || "tool"}`;
-							let state = toolStates.get(stateKey);
-							if (!state) {
-								state = {
-									id: `call_${args.requestId}_${index}_${partIdx}`,
-									argumentsSoFar: "",
-									emittedName: false,
-								};
-								toolStates.set(stateKey, state);
-							}
-
+							const upstreamId = typeof part.functionCall.id === "string" && part.functionCall.id
+								? part.functionCall.id
+								: null;
 							const partialArgs = typeof part.functionCall.partialArgs === "string"
 								? part.functionCall.partialArgs
 								: "";
 							const hasPartialArgs = partialArgs.length > 0;
-							const nextArguments = hasPartialArgs
-								? `${state.argumentsSoFar}${partialArgs}`
-								: JSON.stringify(part.functionCall.args || {});
+							const baseKey = upstreamId
+								? `${index}:id:${upstreamId}`
+								: `${index}:${partIdx}:${part.functionCall.name || "tool"}`;
+							const completeArguments = hasPartialArgs ? null : JSON.stringify(part.functionCall.args || {});
+							let stateKey = baseKey;
+							let state = toolStates.get(stateKey);
+							// Without upstream ids, a different complete call at the same part
+							// position and name (parallel calls in separate frames) is a new
+							// call; an identical re-send stays the same call.
+							for (
+								let repeat = 1;
+								state?.complete && completeArguments !== null && !upstreamId && state.argumentsSoFar !== completeArguments;
+								repeat += 1
+							) {
+								stateKey = `${baseKey}#${repeat}`;
+								state = toolStates.get(stateKey);
+							}
+							if (!state) {
+								const toolIndex = toolCountByCandidate.get(index) ?? 0;
+								toolCountByCandidate.set(index, toolIndex + 1);
+								state = {
+									id: upstreamId ?? `call_${args.requestId}_${index}_${toolIndex}`,
+									toolIndex,
+									argumentsSoFar: "",
+									emittedName: false,
+									complete: false,
+								};
+								toolStates.set(stateKey, state);
+							}
+							const toolIndex = state.toolIndex;
+							if (completeArguments !== null) state.complete = true;
+							const nextArguments = completeArguments ?? `${state.argumentsSoFar}${partialArgs}`;
 							let argumentsDelta = "";
 							if (hasPartialArgs) {
 								argumentsDelta = partialArgs;
@@ -1787,6 +1955,14 @@ export function transformStream(
 									id: state.id,
 									name: functionDelta.name,
 									arguments: functionDelta.arguments,
+								});
+							}
+							if (typeof partSignature === "string" && partSignature) {
+								signatureDetails.push({
+									type: "reasoning.encrypted",
+									id: state.id,
+									data: sealGeminiSignature(partSignature, state.id),
+									format: GOOGLE_REASONING_FORMAT,
 								});
 							}
 						} else {
@@ -1832,11 +2008,29 @@ export function transformStream(
 					if (toolCalls.length > 0) {
 						choice.delta.toolCalls = toolCalls;
 					}
+					if (signatureDetails.length > 0) {
+						choice.delta.reasoningDetails = signatureDetails;
+					}
+					// Grounding citations, once each, as Chat url_citation annotations.
+					const annotations = geminiGroundingToAnnotations(cand).filter((annotation) => {
+						const key = `${index}:${JSON.stringify(annotation)}`;
+						if (emittedAnnotationKeys.has(key)) return false;
+						emittedAnnotationKeys.add(key);
+						return true;
+					});
+					if (annotations.length > 0) {
+						choice.delta.annotations = annotations;
+					}
 
 					if (Object.keys(choice.delta).length > 0 || finishReason) {
 						irChunk.choices.push(choice);
 					}
 				}
+			}
+			// A blocked prompt arrives as promptFeedback.blockReason with no candidates.
+			const blockReason = payloadEntry?.promptFeedback?.blockReason;
+			if (!payloadEntry?.candidates?.length && blockReason && blockReason !== "BLOCK_REASON_UNSPECIFIED") {
+				irChunk.choices.push({ index: 0, delta: { role: "assistant" }, finishReason: "content_filter" } as any);
 			}
 
 			const chunkUsage = googleUsageMetadataToIRUsage(payloadEntry?.usageMetadata, headerServiceTier);
@@ -1971,9 +2165,12 @@ export function transformStream(
 }
 
 /**
- * Helper to encode IR Chunk to OpenAI Protocol Chunk
+ * Helper to encode IR Chunk to OpenAI Protocol Chunk. `reasoningDetailIndexes`
+ * holds the next reasoning_details index per choice, so each entry keeps its own
+ * index across chunks: a client that merges stream entries by index would
+ * otherwise collapse every Gemini signature into one.
  */
-function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
+function encodeIRChunkToOpenAI(chunk: IRStreamChunk, reasoningDetailIndexes?: Map<number, number>): any {
 	const choices = chunk.choices.map(c => {
 		const delta: any = {};
 		if (c.delta.role) delta.role = c.delta.role;
@@ -2024,6 +2221,14 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 				}
 			}
 		}
+		const reasoningDetails = (c.delta as any).reasoningDetails;
+		if (Array.isArray(reasoningDetails) && reasoningDetails.length > 0) {
+			const start = reasoningDetailIndexes?.get(c.index) ?? 0;
+			delta.reasoning_details = reasoningDetails.map((detail: Record<string, any>, offset: number) => ({ ...detail, index: start + offset }));
+			reasoningDetailIndexes?.set(c.index, start + reasoningDetails.length);
+		}
+		const annotations = toChatAnnotations((c.delta as any).annotations);
+		if (annotations.length > 0) delta.annotations = annotations;
 		if (Array.isArray(c.delta.toolCalls) && c.delta.toolCalls.length > 0) {
 			delta.tool_calls = c.delta.toolCalls.map((tc) => ({
 				index: tc.index,

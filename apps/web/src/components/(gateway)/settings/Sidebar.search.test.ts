@@ -2,12 +2,18 @@ import { getSettingsSidebar } from "@/components/(gateway)/settings/Sidebar.conf
 import { filterSettingsNavigation } from "@/components/(gateway)/settings/Sidebar.search";
 
 describe("settings navigation search", () => {
-	const groups = getSettingsSidebar({ showEnterprise: false, showAutoRouting: false });
+	const groups = getSettingsSidebar({ showEnterprise: false, showAutoRouting: false, showClassifiers: true });
 	it("finds nested pages across scopes and retains their parent", () => {
 		const results = filterSettingsNavigation(groups, "payment methods");
 		expect(results[0].scope).toBe("personal");
 		expect(results[0].items[0].children?.map((child) => child.href)).toEqual(["/settings/payment-methods"]);
 		expect(filterSettingsNavigation(groups, "notifications")[0].scope).toBe("workspace");
+	});
+	it("finds Classifiers in English and in translation", () => {
+		const byName = filterSettingsNavigation(groups, "classifiers");
+		expect(byName.flatMap((group) => group.items.map((item) => item.href))).toEqual(["/settings/classifiers"]);
+		const translated = filterSettingsNavigation(groups, "klassifikatoren", (label) => label === "Classifiers" ? "Klassifikatoren" : label);
+		expect(translated.flatMap((group) => group.items.map((item) => item.href))).toEqual(["/settings/classifiers"]);
 	});
 	it("keeps all children when their parent matches", () => {
 		const result = filterSettingsNavigation(groups, "billing");

@@ -6,6 +6,8 @@ icon: "tags"
 
 Usa etiquetas de solicitud cuando el código de la aplicación necesite una dimensión de coste estable y más específica que una clave API o una aplicación. Las etiquetas se registran con la auditoría de la solicitud y pueden filtrarse en analíticas sin cambiar la solicitud al modelo.
 
+Para etiquetar solicitudes automáticamente según su contenido, usa [clasificadores de solicitudes](./request-classifiers.mdx). Sus respuestas se guardan como etiquetas de solicitud y se filtran de la misma forma.
+
 ## Enviar etiquetas
 
 Configura `X-Phaseo-Metadata` como un objeto JSON que contenga hasta 32 pares únicos de clave y valor:

@@ -1,0 +1,268 @@
+{
+	"group": "byok",
+	"description": "BYOK versus managed credentials: which key reaches the provider, key source, the BYOK service fee (free allowance, then 2.5%), managed fallback after a failing key, and BYOK quota headers.",
+	"entries": [
+		{
+			"id": "byok-key-reaches-provider",
+			"cases": [
+				"byok.priority-within-free-allowance",
+				"byok.priority-fee-after-allowance",
+				"byok.priority-fee-stream",
+				"byok.failing-key-no-managed-fallback",
+				"byok.failing-key-managed-fallback",
+				"byok.rate-limited-quota-headers"
+			],
+			"checks": [
+				{
+					"path": "upstream.calls[0].auth",
+					"op": "equals",
+					"value": "byok:deepinfra-0001",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "BYOK considerations: Phaseo routes the request with your own provider API key."
+					}
+				}
+			]
+		},
+		{
+			"id": "byok-key-reaches-provider-anthropic",
+			"cases": "byok.anthropic-fee-cache-usage",
+			"checks": [
+				{
+					"path": "upstream.calls[0].auth",
+					"op": "equals",
+					"value": "byok:anthropic-0001",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "BYOK considerations."
+					}
+				}
+			]
+		},
+		{
+			"id": "byok-success-is-byok",
+			"cases": [
+				"byok.priority-within-free-allowance",
+				"byok.priority-fee-after-allowance",
+				"byok.priority-fee-stream",
+				"byok.anthropic-fee-cache-usage"
+			],
+			"checks": [
+				{
+					"path": "billing.byok",
+					"op": "equals",
+					"value": true,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "The selected provider bills model usage to your own account; the request is recorded as BYOK."
+					}
+				}
+			]
+		},
+		{
+			"id": "byok-free-allowance",
+			"cases": "byok.priority-within-free-allowance",
+			"checks": [
+				{
+					"path": "billing.chargeNanos",
+					"op": "equals",
+					"value": 0,
+					"kind": "billing_over",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "The first 250,000 completed BYOK requests in each UTC calendar month have no Phaseo service fee."
+					}
+				}
+			]
+		},
+		{
+			"id": "byok-fee-after-allowance",
+			"cases": [
+				"byok.priority-fee-after-allowance",
+				"byok.priority-fee-stream"
+			],
+			"checks": [
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 100003,
+							"output_text_tokens": 5003
+						},
+						"factor": 0.025
+					},
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "After that allowance, Phaseo charges 2.5% of provider-equivalent cost."
+					}
+				}
+			]
+		},
+		{
+			"id": "byok-fee-after-allowance-anthropic",
+			"cases": "byok.anthropic-fee-cache-usage",
+			"checks": [
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 100003,
+							"cached_read_text_tokens": 20011,
+							"cached_write_text_tokens_5m": 1013,
+							"cached_write_text_tokens_1h": 2006,
+							"output_text_tokens": 5003,
+							"native_web_search_requests": 2
+						},
+						"factor": 0.025
+					},
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "2.5% of provider-equivalent cost; the reference cost includes cache reads, cache writes and web searches (Anthropic prompt caching usage semantics)."
+					}
+				}
+			]
+		},
+		{
+			"id": "byok-no-managed-fallback",
+			"cases": "byok.failing-key-no-managed-fallback",
+			"checks": [
+				{
+					"path": "upstream.count",
+					"op": "equals",
+					"value": 1,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "BYOK fallback is explicit: teams choose whether a failed BYOK request may fall back to Phaseo credits."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 0,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "Disable managed fallback if a request must never use Phaseo credits."
+					}
+				}
+			]
+		},
+		{
+			"id": "byok-managed-fallback",
+			"cases": "byok.failing-key-managed-fallback",
+			"checks": [
+				{
+					"path": "upstream.calls[1].auth",
+					"op": "equals",
+					"value": "managed",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "A failed BYOK request may fall back to Phaseo credits when the workspace allows it."
+					}
+				},
+				{
+					"path": "billing.byok",
+					"op": "equals",
+					"value": false,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "The managed attempt is billed to Phaseo credits."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 100003,
+							"output_text_tokens": 5003
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "usage.prompt_tokens / completion_tokens priced with the serving route's catalogue card."
+					}
+				}
+			]
+		},
+		{
+			"id": "byok-rate-limit-headers",
+			"cases": "byok.rate-limited-quota-headers",
+			"checks": [
+				{
+					"path": "client.headers.retry-after",
+					"op": "equals",
+					"value": "9",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/limits.mdx",
+						"note": "Phaseo forwards a validated Retry-After value when the routed provider supplies one."
+					}
+				},
+				{
+					"path": "client.headers.x-phaseo-upstream-ratelimit-remaining-requests",
+					"op": "present",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/limits.mdx",
+						"note": "BYOK responses can also include X-Phaseo-Upstream-RateLimit-* headers describing the customer's own provider quota."
+					}
+				},
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 429,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/api-reference/limits.mdx",
+						"note": "A request can be throttled by the selected provider; it can still return 429."
+					}
+				}
+			]
+		},
+		{
+			"id": "byok-managed-baseline",
+			"cases": "byok.managed-baseline",
+			"checks": [
+				{
+					"path": "upstream.calls[0].auth",
+					"op": "equals",
+					"value": "managed",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "Without a BYOK key the managed provider key is used."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 100003,
+							"output_text_tokens": 5003
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "usage.prompt_tokens / completion_tokens priced with the serving route's catalogue card."
+					}
+				}
+			]
+		}
+	]
+}

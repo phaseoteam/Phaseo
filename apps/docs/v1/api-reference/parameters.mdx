@@ -1,6 +1,7 @@
 ---
 title: "Parameters"
 description: "Field-by-field request parameter reference for Phaseo text, routing, and debug controls."
+"og:image": "https://phaseo.app/og/dynamic?title=Parameters&description=Field-by-field%20request%20parameter%20reference%20for%20Phaseo%20text%2C%20routing%2C%20and%20debug%20controls.&pathname=/docs/v1/api-reference/parameters"
 icon: "sliders-horizontal"
 ---
 
@@ -16,6 +17,19 @@ Use it when you want to know:
 If you want tuning advice instead of field definitions, use [Inference Parameters](/v1/guides/inference-parameters) and [Sampling and Decoding](../guides/sampling-and-decoding.mdx).
 
 Parameter support still varies by endpoint, model, and provider. The model quickstart table shows support aggregated across currently active providers for a specific route.
+
+## Unsupported parameters
+
+If the provider serving a request does not support one of its sampling parameters, Phaseo drops that parameter. It is not sent upstream, and the request is not rejected, so clients that always send OpenAI defaults keep working. Support is decided per provider from Phaseo's provider profiles and the route's catalogue parameters. If a route declares no parameters, only the catalogue check is skipped: parameters the provider profile marks unsupported are still dropped, for example `top_k` on Cohere or `stop` on Reflection.
+
+Only these parameters can be dropped: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` on `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` and `image_config`. Messages, tools, `tool_choice`, `response_format`, reasoning settings and output limits are never dropped.
+
+On successful responses, Phaseo reports the dropped parameters that the request itself sent:
+
+- in the `X-Phaseo-Dropped-Params` response header, for example `X-Phaseo-Dropped-Params: top_k, min_p`
+- in `meta.routing.dropped_params` when the request sets `meta: true`, for example `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+A parameter that comes from a preset or a default value, not from the request body, can be dropped without appearing in either place. It is still recorded in the routing diagnostics that Phaseo stores with the request.
 
 ## Quick lookup
 
@@ -46,10 +60,10 @@ Parameter support still varies by endpoint, model, and provider. The model quick
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | Reasoning-specific token limit or accounting field. |
 | [`include_reasoning`](#include_reasoning) | `boolean` | Returning reasoning content or summaries where supported. |
 | [`service_tier`](#service_tier) | `string` | Choosing a supported request tier such as `fast`, `ultrafast`, or `flex`. |
-| [`prompt_cache_key`](#prompt_cache_key) | `string` | Keeping cache-aware routing sticky for related requests. |
-| [`prompt_cache_options`](#prompt_cache_options) | `object` | Setting OpenAI prompt-cache mode and TTL controls. |
-| [`cache_control`](#cache_control) | `object` | Applying provider-neutral prompt cache hints or breakpoints. |
-| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Setting OpenAI-compatible prompt cache retention. |
+| [`prompt_cache_key`](#prompt_cache_key) | `string` | Keeping related requests on the provider that holds their prompt cache. |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | Setting prompt-cache mode and TTL on OpenAI GPT-5.6 and later. |
+| [`cache_control`](#cache_control) | `object` | Setting a default Claude cache policy, or marking cache breakpoints on content blocks. |
+| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Setting prompt cache retention on OpenAI models before GPT-5.6. |
 | [`provider`](#provider) | `object` | Influencing routing and provider selection. |
 | [`provider_options`](#provider_options) | `object` | Passing provider-native settings through the gateway. |
 | [`meta`](#meta) / [`usage`](#usage) | `boolean` | Returning extra metadata or usage accounting in the response. |
@@ -423,14 +437,14 @@ Depending on the route, this may be a request knob, a limit, or a response accou
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-Requests reasoning content or reasoning summaries in responses where supported.
+Accepted on Chat Completions for compatibility. Reasoning content and summaries are returned whenever the model produces them, whatever this is set to.
 
 | Field | Value |
 | --- | --- |
 | Type | `boolean` |
-| Default | `false` |
+| Default | `true` |
 
-Use this carefully. Reasoning payloads can be larger, may not be available on every model, and may be a poor fit for production responses that do not need extra diagnostic detail.
+Reasoning payloads can be large and are not available on every model. To reduce reasoning, lower `reasoning.effort` or set `reasoning.enabled` to `false`.
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -451,6 +465,7 @@ Notes:
 
 - `Batch` is a separate API flow, not a service-tier value.
 - Support varies by endpoint and provider.
+- OpenAI's values are also accepted: `auto` (or `null`) asks for no particular tier and is treated like omitting the field, and `scale` is treated as `default`, the standard tier.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
@@ -462,48 +477,54 @@ Provides a stable cache affinity key for prompt-cache-aware routing.
 | Type | `string` |
 | Use for | Sticky routing for related cached prompts |
 
-Use this when a series of requests share stable prompt prefixes and should prefer the same upstream provider or region when possible. Phaseo can also derive cache affinity from request context, but an explicit key is better for long-running conversations, agent sessions, and repeated workflows.
+Use this when a series of requests share stable prompt prefixes, such as the steps of an agent loop. Phaseo pins the key to the provider and route (deployment or region) that served the first successful request, and keeps later requests with the same key there until that provider fails, Phaseo's managed quota on it runs out, or your routing policy no longer allows it. Pins are kept per workspace, and their lifetime follows the provider's cache retention. See [Provider affinity](../guides/prompt-caching.mdx#provider-affinity).
+
+Phaseo sends a hash of your workspace ID and key upstream, never the raw key, so workspaces that choose the same key do not share a provider cache. Responses echo the key you sent. Providers whose API rejects the field don't receive it, and sending it never excludes a provider from routing. Phaseo can also derive affinity from request context, but an explicit key is better for long-running conversations, agent sessions, and repeated workflows.
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
 
-Passes OpenAI prompt-cache controls through supported OpenAI routes.
+Passes prompt-cache controls to OpenAI and Azure OpenAI GPT-5.6 and later, including GPT-6 Astra, and to DeepInfra.
 
 | Field | Value |
 | --- | --- |
 | Type | `object` |
-| Common fields | `mode`, `ttl` |
-| Astra TTL | `30m` |
+| Common fields | `mode` (`implicit` or `explicit`), `ttl` |
+| OpenAI TTL | `30m` |
 
-For GPT-6 Astra, use `{"mode":"explicit","ttl":"30m"}` when you want explicit prompt caching. Phaseo preserves this object through its request normalization and sends it to OpenAI unchanged.
+Use `{"mode":"explicit","ttl":"30m"}` when you want OpenAI to cache only the breakpoints you place. `30m` is the only `ttl` OpenAI accepts. DeepInfra accepts `5m` or `1h` and needs `prompt_cache_key` on every request in the session.
+
+Phaseo sends the object unchanged to those routes. It removes the object for every other provider and for OpenAI models before GPT-5.6, which use [`prompt_cache_retention`](#prompt_cache_retention) instead. `provider_options.openai.prompt_cache_options` is also accepted; the top-level value wins.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
 
-Applies a provider-neutral prompt cache policy on supported text request surfaces.
+Sets a default prompt cache policy for Claude, or marks a cache breakpoint on a content block.
 
 | Field | Value |
 | --- | --- |
 | Type | `object` |
 | Common fields | `type`, `ttl`, `scope` |
-| Use for | Automatic prompt caching and explicit cache breakpoints |
+| Use for | Claude cache policies and explicit cache breakpoints |
 
-Use top-level `cache_control` on Chat Completions, Responses, and Anthropic Messages requests when you want the same cache hint to travel through the gateway's common schema. You can also place `cache_control` on supported content blocks when you need explicit cache breakpoints.
+Top-level `cache_control` is accepted on Chat Completions, Responses, and Anthropic Messages requests. It applies to Claude on Anthropic, Claude on AWS, Amazon Bedrock, and Google Vertex AI: Phaseo places up to four breakpoints according to `scope` (`all_text`, `last_user_message`, `agent`, or `none`). Other providers ignore it. `provider_options.anthropic.cache_control` is the same setting and wins when both are sent.
 
-Typical TTL values are `5m` and `1h`, depending on provider and model support. Provider-specific aliases such as `provider_options.anthropic.cache_control` and `provider_options.google.cache_control` remain accepted for native integrations.
+On a content block, tool definition, or tool result, `cache_control` marks a cache breakpoint. Phaseo sends it to Claude routes, Alibaba Model Studio, and Venice, converts it to `prompt_cache_breakpoint` for OpenAI and Azure OpenAI GPT-5.6 and later, and removes it for other providers. OpenAI's own `prompt_cache_breakpoint: {"mode": "explicit"}` is accepted on the same blocks and wins when a block has both.
+
+Use `type: "ephemeral"` with a `ttl` of `5m` (the default) or `1h`. Anthropic accepts at most four breakpoints per request; when your marks exceed that, Phaseo keeps the first and the latest three. See [Prompt Caching](../guides/prompt-caching.mdx#cache-controls) for the scopes and what each provider receives.
 
 <span id="prompt_cache_retention"></span>
 <h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
 
-Sets the OpenAI-compatible prompt cache retention policy on supported OpenAI-routed requests.
+Sets the prompt cache retention policy on OpenAI and Azure OpenAI models before GPT-5.6.
 
 | Field | Value |
 | --- | --- |
 | Type | `string` |
-| Example | `24h` |
+| Supported values | `in_memory`, `24h` |
 | Use for | OpenAI prompt cache retention |
 
-Use this when you want to pass OpenAI cache-retention options without nesting them under provider-specific options. The provider-specific alias `provider_options.openai.prompt_cache_retention` remains accepted. When both are present, the top-level `prompt_cache_retention` value takes precedence.
+Phaseo sends this field only to OpenAI and Azure OpenAI models before GPT-5.6, and only the models OpenAI lists accept `24h`. GPT-5.6 and later use [`prompt_cache_options.ttl`](#prompt_cache_options) instead, and other providers don't receive the field. The provider-specific alias `provider_options.openai.prompt_cache_retention` remains accepted. When both are present, the top-level `prompt_cache_retention` value takes precedence.
 
 <span id="provider"></span>
 <h3 id="parameter-provider"><code>provider</code></h3>
@@ -549,10 +570,12 @@ Examples include:
 - `openai.context_management`
 - `openai.prompt_cache_retention`
 - `anthropic.cache_control`
-- `google.cache_control`
 - `google.cached_content`
+- `xai.conversation_id`
 
-Use this when you need a provider-native feature but still want the rest of the request to stay on the gateway's common schema. Prefer top-level `cache_control` for common cache hints and top-level `prompt_cache_retention` for OpenAI-compatible retention.
+Use this when you need a provider-native feature but still want the rest of the request to stay on the gateway's common schema. Prefer top-level `cache_control` for Claude cache policies and, for OpenAI retention, top-level `prompt_cache_options` on GPT-5.6 and later or top-level `prompt_cache_retention` on earlier models.
+
+`google.cached_content` names an explicit Gemini cache. On Google AI Studio it works only with your own Google API key, and on Vertex AI the cache must belong to the project of the credential that serves the request. `google.cache_control` and `google.cache_ttl` are accepted but not sent to Google.
 
 For provider prompt caching examples across Chat Completions, Responses, and Anthropic Messages, see [Prompt Caching](../guides/prompt-caching.mdx).
 

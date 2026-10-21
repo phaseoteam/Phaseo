@@ -424,6 +424,7 @@ export default function UnifiedRequestsTable({
 	const [sourceFilter] = useQueryState("source");
 	const [labelKey] = useQueryState("label_key");
 	const [labelValue] = useQueryState("label_value");
+	const [labelOperator] = useQueryState("label_op");
 	const [inputTokensFilter] = useQueryState("input_tokens");
 	const [inputTokensMax] = useQueryState("input_tokens_max");
 	const [inputTokensOperator] = useQueryState("input_tokens_op");
@@ -495,7 +496,7 @@ export default function UnifiedRequestsTable({
 	const [dialogOpen, setDialogOpen] = useState(false);
 	// Build cache key from filters
 	const getCacheKey = useCallback(() => {
-		return `${timeRange.from}-${timeRange.to}-${pageSize}-${modelFilter}-${providerFilter}-${appFilter}-${endpointFilter}-${finishReasonFilter}-${streamFilter}-${errorCodeFilter}-${statusCodeFilter}-${keyFilter}-${statusFilter}-${requestFilter}-${sessionFilter}-${sourceFilter}-${labelKey}-${labelValue}-${inputTokensFilter}-${inputTokensMax}-${inputTokensOperator}-${outputTokensFilter}-${outputTokensMax}-${outputTokensOperator}-${totalTokensFilter}-${totalTokensMax}-${totalTokensOperator}-${JSON.stringify(filterOperators)}`;
+		return `${timeRange.from}-${timeRange.to}-${pageSize}-${modelFilter}-${providerFilter}-${appFilter}-${endpointFilter}-${finishReasonFilter}-${streamFilter}-${errorCodeFilter}-${statusCodeFilter}-${keyFilter}-${statusFilter}-${requestFilter}-${sessionFilter}-${sourceFilter}-${labelKey}-${labelValue}-${labelOperator}-${inputTokensFilter}-${inputTokensMax}-${inputTokensOperator}-${outputTokensFilter}-${outputTokensMax}-${outputTokensOperator}-${totalTokensFilter}-${totalTokensMax}-${totalTokensOperator}-${JSON.stringify(filterOperators)}`;
 	}, [
 		timeRange,
 		pageSize,
@@ -514,6 +515,7 @@ export default function UnifiedRequestsTable({
 		sourceFilter,
 		labelKey,
 		labelValue,
+		labelOperator,
 		inputTokensFilter,
 		inputTokensMax,
 		inputTokensOperator,
@@ -574,6 +576,7 @@ export default function UnifiedRequestsTable({
 					sourceFilter: sourceFilter || null,
 					labelKey: labelKey || null,
 					labelValue: labelValue || null,
+					labelOperator: labelOperator || null,
 					filterOperators,
 					inputTokensFilter: inputTokensFilter || null,
 					inputTokensMax: inputTokensMax || null,
@@ -674,6 +677,7 @@ export default function UnifiedRequestsTable({
 			sourceFilter,
 			labelKey,
 			labelValue,
+			labelOperator,
 			pageCursors,
 			filterOperators,
 			inputTokensFilter,

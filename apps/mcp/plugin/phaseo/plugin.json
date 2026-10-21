@@ -1,28 +1,40 @@
 {
-  "version": "0.3.0",
-  "author": {
-    "name": "Phaseo"
-  },
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "phaseo",
-  "description": "Compare AI models and pricing, estimate costs, and investigate Phaseo usage and request health.",
+  "version": "0.5.0",
+  "description": "Build on the Phaseo AI gateway: integration, migration, model selection, SDK and CLI skills, plus the Phaseo MCP for live models, pricing and usage.",
+  "author": {
+    "name": "Phaseo",
+    "url": "https://phaseo.app"
+  },
+  "homepage": "https://phaseo.app/docs",
+  "repository": "https://github.com/phaseoteam/Phaseo",
+  "license": "MIT",
+  "keywords": ["phaseo", "ai-gateway", "llm", "models", "pricing", "openai-compatible", "migration", "mcp"],
   "extensions": {
     "com.openai": {
       "interface": {
         "developerName": "Phaseo",
         "category": "Developer Tools",
         "displayName": "Phaseo",
-        "shortDescription": "Models, pricing and usage",
-        "longDescription": "Explore Phaseo models, save shortlists, copy integration examples, and inspect usage and request health. Review estimated costs before explicitly running a prompt across up to three text models with inference permission.",
-        "defaultPrompt": "Help me compare Phaseo models and estimate costs for my workload.",
+        "shortDescription": "Compare AI models and costs",
+        "longDescription": "Skills for integrating with the Phaseo AI gateway, moving existing integrations from other providers and gateways, choosing models, monitoring usage, and using the SDKs and CLI. The Phaseo MCP explores live models and pricing, saves shortlists, and inspects usage and request health; with inference permission you can review estimated costs before running a prompt across up to three text models.",
+        "defaultPrompt": [
+          "Add Phaseo to this project and run a smoke test.",
+          "Migrate this project to Phaseo.",
+          "Help me compare Phaseo models and estimate costs for my workload."
+        ],
+        "brandColor": "#0069A8",
+        "websiteURL": "https://phaseo.app",
+        "supportURL": "https://phaseo.app/support",
+        "privacyPolicyURL": "https://phaseo.app/privacy",
+        "termsOfServiceURL": "https://phaseo.app/terms",
         "logo": "./assets/logo_light.svg",
         "logoDark": "./assets/logo_dark.svg",
         "composerIcon": "./assets/logo_light.svg",
         "composerIconDark": "./assets/logo_dark.svg",
-        "capabilities": [
-          "Interactive"
-        ]
+        "capabilities": ["Interactive"]
       }
     }
-  },
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+  }
 }

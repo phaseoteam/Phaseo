@@ -1,6 +1,7 @@
 import { getBindings } from "@/runtime/env";
 import { fetchVertexBatchApi, vertexBatchOutputs } from "@providers/google-vertex/batch";
 import { readResponsePreview, readStreamTextWithLimit } from "@core/bounded-stream";
+import { withGatewayErrorObject } from "@core/error-object";
 import { resolveProviderKey } from "@providers/keys";
 import { reloadBatchCredential, type BatchProviderCredential } from "@core/batch-credentials";
 
@@ -31,12 +32,13 @@ const X_AI_BATCH_RESULTS_PAGE_SIZE = 1_000;
 
 function providerKeyMissingResponse(providerId: string): Response {
 	return new Response(
-		JSON.stringify({
+		JSON.stringify(withGatewayErrorObject({
 			error: {
 				type: "upstream_error",
 				reason: `${providerId.replace(/-/g, "_")}_key_missing`,
+				message: "No gateway key is configured for this batch provider.",
 			},
-		}),
+		}, 502)),
 		{ status: 502, headers: { "Content-Type": "application/json" } },
 	);
 }

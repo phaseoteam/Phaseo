@@ -37,7 +37,7 @@ Phaseo は各ティアの最新モデルを指すティアエイリアスも追�
 - GPT-5.6 は `reasoning.context` による推論制御の永続化に対応します。
 - GPT-5.6 は、対象となるツール多用型ワークフロー向けに、マルチエージェントと Programmatic Tool Calling のベータサポートを追加します。
 - プロンプトキャッシュでは、非キャッシュ入力、キャッシュ読み取り、キャッシュ書き込み、出力が別々に課金されます。
-- 明示的なプロンプトキャッシュは `prompt_cache_options` で利用できます。OpenAI は現在、`prompt_cache_retention` より `prompt_cache_options.ttl` を推奨しています。
+- 明示的なプロンプトキャッシュは、キャッシュブレークポイントと `prompt_cache_options` で利用できます。GPT-5.6 では `prompt_cache_options.ttl` が `prompt_cache_retention` に代わり、Phaseo は `prompt_cache_retention` を GPT-5.6 モデルに送りません。
 
 ## リクエストを更新する
 
@@ -92,7 +92,7 @@ OpenAI互換のフラットフィールドを引き続き送信する統合で�
 | Terra | $2.50 | $0.25 | $3.125 | $15.00 |
 | Luna | $1.00 | $0.10 | $1.25 | $6.00 |
 
-キャッシュの読み取りと書き込みには別々の料金が適用されます。現在のカタログでは、読み取りはキャッシュなしの入力より90%割引、書き込みはキャッシュなしの入力料金の1.25倍です。
+キャッシュの読み取りと書き込みには別々の料金が適用されます。現在のカタログでは、読み取りはキャッシュなしの入力より90%割引、書き込みはキャッシュなしの入力料金の1.25倍です。各入力トークンは、この3つの料金のいずれか1つだけで請求されます。使用量ではキャッシュの読み取りと書き込みを `input_tokens`（Chat Completions では `prompt_tokens`）に含め、書き込みを `cache_write_tokens` で報告します。[使用量と料金フィールド](../guides/prompt-caching.mdx#usage-and-pricing-fields)を参照してください。
 
 ## プロンプトキャッシュを意図的に使う
 
@@ -108,9 +108,8 @@ OpenAI互換のフラットフィールドを引き続き送信する統合で�
         {
           "type": "input_text",
           "text": "Stable policy document...",
-          "cache_control": {
-            "type": "ephemeral",
-            "ttl": "1h"
+          "prompt_cache_breakpoint": {
+            "mode": "explicit"
           }
         },
         {
@@ -122,12 +121,12 @@ OpenAI互換のフラットフィールドを引き続き送信する統合で�
   ],
   "prompt_cache_options": {
     "mode": "explicit",
-    "ttl": "24h"
+    "ttl": "30m"
   }
 }
 ```
 
-プロバイダーに依存しないキャッシュヒントや明示的なキャッシュ境界には `cache_control` を使います。OpenAI のキャッシュモードと TTL オプションを直接渡すには `prompt_cache_options` を使います。
+`prompt_cache_breakpoint` は、そのブロックまでのすべてをキャッシュします。`{"type": "ephemeral"}` のようなブロックの `cache_control` も使え、Phaseo はこれを GPT-5.6 に `prompt_cache_breakpoint` として送ります。どちらのマークも Claude にはキャッシュブレークポイントとして届くため、Claude にフォールバックしてもキャッシュが効きます。`explicit` モードでは OpenAI は自分で配置したブレークポイントだけをキャッシュし、受け付ける `ttl` は `30m` だけです。Phaseo は `prompt_cache_retention` を GPT-5.6 に送りません。[プロンプトキャッシュ](../guides/prompt-caching.mdx#openai-retention-and-options)を参照してください。
 
 ## テスト項目
 

@@ -3,11 +3,13 @@
 // How: Validates token limits, parameter support, and filters incompatible providers.
 
 import type { Endpoint } from "@core/types";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type { ParamRoutingDiagnostics, ProviderCandidate } from "./types";
 import { err } from "./http";
 import {
 	providerParamSupportStatus,
 	extractRequestedParams,
+	getGatewayFallbackParams,
 	getUnknownTopLevelParams,
 } from "./paramCapabilities";
 import { isAlwaysSupportedParam } from "./textParamPolicy";
@@ -171,12 +173,13 @@ function isJsonSchemaResponseFormat(body: any): boolean {
 	if (directFormat && typeof directFormat === "object" && directFormat.type === "json_schema") {
 		return true;
 	}
-	const textFormat = body?.text?.format;
+	// Responses text.format, or Anthropic Messages output_config.format (json_schema only).
+	const textFormat = body?.text?.format ?? body?.output_config?.format;
 	return Boolean(textFormat && typeof textFormat === "object" && textFormat.type === "json_schema");
 }
 
 function hasRequestedResponseFormat(body: any): boolean {
-	return body?.response_format != null || body?.text?.format != null;
+	return body?.response_format != null || body?.text?.format != null || body?.output_config?.format != null;
 }
 
 function filterProvidersByCapability(
@@ -205,6 +208,19 @@ function getRequestedMaxTokens(body: any): number | null {
 }
 
 /**
+ * Responses state parameters that cannot work through the gateway: OpenAI,
+ * Azure and xAI requests are forced to `store: false`, and a follow-up may be
+ * routed to a different provider, so the referenced state never exists there.
+ */
+function getUnsupportedStatefulResponsesParams(endpoint: Endpoint, rawBody: any): string[] {
+	if (endpoint !== "responses" || !rawBody || typeof rawBody !== "object") return [];
+	return ["previous_response_id", "conversation"].filter((param) => {
+		const value = rawBody[param];
+		return value !== undefined && value !== null && value !== "";
+	});
+}
+
+/**
  * Validates that providers support all requested parameters
  */
 function validateParameterSupport(args: {
@@ -229,6 +245,23 @@ function validateParameterSupport(args: {
 			ok: false,
 			response: err("validation_error", {
 				details,
+				request_id: args.requestId,
+				workspace_id: args.workspaceId,
+			}),
+		};
+	}
+
+	const statefulParams = getUnsupportedStatefulResponsesParams(args.endpoint, args.rawBody);
+	if (statefulParams.length > 0) {
+		return {
+			ok: false,
+			response: err("validation_error", {
+				details: statefulParams.map((param) => ({
+					message: `${param} is not supported: the gateway does not store responses (requests are sent with store=false and may be routed to any provider), so there is no earlier response or conversation to continue. Send the full conversation in input instead.`,
+					path: [param],
+					keyword: "unsupported_param",
+					params: { param, model: args.model },
+				})),
 				request_id: args.requestId,
 				workspace_id: args.workspaceId,
 			}),
@@ -263,13 +296,15 @@ function validateParameterSupport(args: {
 	}
 
 	const requireParameters = getEffectiveRoutingHints(args.body).requireParameters;
+	const gatewayFallbackParams = getGatewayFallbackParams(args.endpoint, args.rawBody);
 	return {
 		ok: true,
 		providers: requireParameters
 			? filterProvidersForRequiredParams({
 				endpoint: args.endpoint,
 				providers: args.providers,
-				requestedParams: requested,
+				// Params the gateway can satisfy itself never exclude a provider.
+				requestedParams: requested.filter((param) => !gatewayFallbackParams.includes(param)),
 				supportMap,
 			})
 			: args.providers,
@@ -333,12 +368,13 @@ function filterProvidersByTokenLimits(args: {
 
 	// Filter providers that can accommodate this token limit
 	const filtered = args.providers.filter((provider) => {
-		// If provider has no limit specified, assume it can handle the request
-		if (provider.maxOutputTokens === null || provider.maxOutputTokens === undefined) {
+		// No known limit (null, or a stored 0): assume it can handle the request.
+		const limit = routeOutputTokenLimit(provider.maxOutputTokens);
+		if (limit === null) {
 			return true;
 		}
 		// Provider must support at least the requested amount
-		return provider.maxOutputTokens >= requestedMaxTokens;
+		return limit >= requestedMaxTokens;
 	});
 
 	if (!filtered.length) {

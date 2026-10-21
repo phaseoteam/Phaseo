@@ -6,7 +6,10 @@
 // Transforms IR → OpenAI Chat Completions Response (Gateway format)
 
 import type { IRChatResponse, IRChoice, IRUsage, IRContentPart } from "@core/ir";
+import { irUsageToOpenAIStyle } from "@core/cache-usage";
 import type { GatewayCompletionsResponse, GatewayReasoningDetail, GatewayUsage } from "@core/types";
+import { encodeChatReasoningDetails, type ReasoningResponseOrigin } from "../shared/reasoning";
+import { toChatAnnotations } from "../shared/citations";
 
 /**
  * Encode IR response to OpenAI Chat Completions format (Gateway response)
@@ -31,7 +34,7 @@ export function encodeOpenAIChatResponse(
 		created: ir.created ?? Math.floor(Date.now() / 1000),
 		model: ir.model,
 		provider: ir.provider,
-		choices: ir.choices.map((choice) => encodeChoice(choice, resolvedRequestId)),
+		choices: ir.choices.map((choice) => encodeChoice(choice, resolvedRequestId, { provider: ir.provider, model: ir.model })),
 		usage: encodeUsage(ir.usage),
 		...(ir.usage?.serviceTier || ir.serviceTier ? { service_tier: ir.usage?.serviceTier ?? ir.serviceTier } : {}),
 		...(ir.citations ? { citations: ir.citations } : {}),
@@ -50,15 +53,21 @@ export function encodeOpenAIChatResponse(
 function encodeChoice(
 	choice: IRChoice,
 	requestId: string,
+	origin?: ReasoningResponseOrigin,
 ): GatewayCompletionsResponse["choices"][0] {
 	const { text, reasoningParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
 	const reasoningContent = reasoningParts.join("");
-	const reasoningDetails: GatewayReasoningDetail[] = reasoningParts.map((textPart, index) => ({
-		id: `${requestId}-reasoning-${choice.index}-${index + 1}`,
-		index,
-		type: "text",
-		text: textPart,
-	}));
+	const contentParts: IRContentPart[] = Array.isArray(choice.message.content) ? choice.message.content : [];
+	const annotations = toChatAnnotations(contentParts.flatMap((part) =>
+		part.type === "text" && Array.isArray(part.annotations) ? part.annotations : []));
+	// Signatures and encrypted reasoning travel in reasoning_details so agent
+	// clients can send them back on the next tool-loop step.
+	const reasoningDetails: GatewayReasoningDetail[] = encodeChatReasoningDetails(
+		choice.message.content as IRContentPart[],
+		choice.message.toolCalls,
+		`${requestId}-reasoning-${choice.index}`,
+		origin,
+	);
 	const images = imageParts.map((part) => ({
 		type: "image_url" as const,
 		image_url: {
@@ -101,6 +110,7 @@ function encodeChoice(
 			...(images.length > 0 ? { images } : {}),
 			...(audios.length > 0 ? { audios } : {}),
 			...(choice.message.refusal ? { refusal: choice.message.refusal } : {}),
+			...(annotations.length > 0 ? { annotations } : {}),
 			tool_calls: choice.message.toolCalls?.map((tc) => ({
 				id: tc.id,
 				...(tc.type === "custom"
@@ -116,8 +126,9 @@ function encodeChoice(
 						},
 					}),
 			})) as any,
-			// Per-message reasoning fields (MiniMax/Aion format)
-			...(reasoningContent ? { reasoning_content: reasoningContent } : {}),
+			// Per-message reasoning fields (MiniMax/Aion format). `reasoning` carries the
+			// same text for clients that read that name.
+			...(reasoningContent ? { reasoning_content: reasoningContent, reasoning: reasoningContent } : {}),
 			...(reasoningDetails.length > 0 ? { reasoning_details: reasoningDetails } : {}),
 		},
 		finish_reason: choice.finishReason,
@@ -162,9 +173,12 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 		promptTokens?: number;
 		completionTokens?: number;
 	};
-	const inputTokens = usage.inputTokens ?? usageAny.promptTokens;
+	const rawInputTokens = usage.inputTokens ?? usageAny.promptTokens;
 	const outputTokens = usage.outputTokens ?? usageAny.completionTokens;
-	const totalTokens = usage.totalTokens ?? ((inputTokens ?? 0) + (outputTokens ?? 0));
+	// OpenAI semantics: prompt tokens include cache reads and writes.
+	const cache = irUsageToOpenAIStyle({ ...usage, inputTokens: rawInputTokens ?? 0, outputTokens: outputTokens ?? 0 });
+	const inputTokens = rawInputTokens == null ? rawInputTokens : cache.inputTokens;
+	const totalTokens = usage.totalTokens == null ? ((inputTokens ?? 0) + (outputTokens ?? 0)) : cache.totalTokens;
 
 	const result: GatewayUsage = {
 		input_tokens: inputTokens,
@@ -193,19 +207,26 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 		(result as any).cost = usage._ext.providerCost;
 	}
 
-	if (usage.cachedInputTokens || usage._ext?.inputImageTokens || usage._ext?.inputAudioTokens || usage._ext?.inputVideoTokens) {
+	if (cache.readTokens || cache.writeTokens || usage._ext?.inputImageTokens || usage._ext?.inputAudioTokens || usage._ext?.inputVideoTokens) {
 		result.input_details = {
-			cached_tokens: usage.cachedInputTokens,
+			cached_tokens: cache.readTokens,
+			...(typeof cache.writeTokens === "number" ? { cache_write_tokens: cache.writeTokens } : {}),
 			input_images: usage._ext?.inputImageTokens,
 			input_audio: usage._ext?.inputAudioTokens,
 			input_videos: usage._ext?.inputVideoTokens,
 		};
 	}
+	if (typeof cache.readTokens === "number") (result as any).cached_read_tokens_are_subset_of_input = true;
+	if (typeof cache.writeTokens === "number") {
+		(result as any).cached_write_text_tokens = cache.writeTokens;
+		(result as any).cached_write_tokens_are_subset_of_input = true;
+	}
+	if (typeof cache.write5mTokens === "number") (result as any).cached_write_text_tokens_5m = cache.write5mTokens;
+	if (typeof cache.write1hTokens === "number") (result as any).cached_write_text_tokens_1h = cache.write1hTokens;
 
-	if (usage.reasoningTokens || usage._ext?.outputImageTokens || usage._ext?.outputAudioTokens || usage._ext?.cachedWriteTokens) {
+	if (usage.reasoningTokens || usage._ext?.outputImageTokens || usage._ext?.outputAudioTokens) {
 		result.output_tokens_details = {
 			reasoning_tokens: usage.reasoningTokens,
-			cached_tokens: usage._ext?.cachedWriteTokens,
 			output_images: usage._ext?.outputImageTokens,
 			output_audio: usage._ext?.outputAudioTokens,
 		};

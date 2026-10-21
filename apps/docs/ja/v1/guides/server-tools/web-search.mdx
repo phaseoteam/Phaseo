@@ -82,7 +82,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `firecrawl` | 設定されている場合はFirecrawl検索を使います。 |
 | `perplexity` | 設定されている場合、Perplexity公式のSearch APIを使います。順位付きの結果、`search_context_size`、`user_location.country`に基づく地域検索、許可または除外ドメインに対応しています。 |
 | `tinyfish` | `TINYFISH_API_KEY`が設定されている場合にTinyFish Searchを使います。多言語対応のページ分割されたランキング結果を提供し、`allowed_domains` / `excluded_domains`を検索演算子に変換します。ページ全文は提供しないため、より詳しい内容には`phaseo:web_fetch`を使ってください。 |
-| `native` | リクエストの形式が対応している場合、上流モデルを呼び出す前に、宣言をプロバイダー固有のネイティブWeb検索ツールへ変換します。 |
+| `native` | リクエストの形式が対応している場合、上流モデルを呼び出す前に、宣言をプロバイダー固有のネイティブWeb検索ツールへ変換します。Chat CompletionsとResponsesでは、Web検索を自ら実行するプロバイダーにのみリクエストを送ります。そのようなプロバイダーがモデルを提供していない場合は、代わりにPhaseoがデフォルトの検索エンジンを実行し、管理型検索として課金します。 |
 
 `engine: "native"`はツールの宣言内でのみ使用してください。モデルが出力済みのゲートウェイ検索呼び出し内で`engine: "native"`を指定すると、上流リクエストの送信前にネイティブツールを選択する必要があるため、Phaseoはツールエラーを返します。
 

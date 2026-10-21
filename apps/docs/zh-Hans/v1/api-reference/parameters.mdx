@@ -17,6 +17,19 @@ icon: "sliders-horizontal"
 
 参数支持情况仍因端点、模型和提供商而异。模型快速入门表汇总了特定路由上当前活跃提供商的支持情况。
 
+## 不支持的参数
+
+如果处理请求的提供商不支持请求中的某个采样参数，Phaseo 会移除该参数。该参数不会发送给提供商，请求也不会被拒绝，因此始终发送 OpenAI 默认值的客户端可以继续正常工作。是否支持由 Phaseo 的提供商配置和该路由的目录参数按提供商判断。如果某个路由没有声明任何参数，则只会跳过目录检查：提供商配置标记为不支持的参数仍会被移除，例如 Cohere 的 `top_k` 或 Reflection 的 `stop`。
+
+只有以下参数可能被移除：`temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`（在 `/v1/messages` 上为 `stop_sequences`）、`parallel_tool_calls`、`max_tool_calls` 和 `image_config`。消息、工具、`tool_choice`、`response_format`、推理设置和输出上限永远不会被移除。
+
+在成功的响应中，Phaseo 会在以下位置报告请求本身发送且已被移除的参数：
+
+- `X-Phaseo-Dropped-Params` 响应头，例如 `X-Phaseo-Dropped-Params: top_k, min_p`
+- 请求设置 `meta: true` 时的 `meta.routing.dropped_params`，例如 `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+
+来自预设或默认值（而不是请求正文）的参数可能会被移除，但不会出现在上述任何位置。它仍会记录在 Phaseo 随请求保存的路由诊断中。
+
 ## 快速查找
 
 | 参数 | 类型 | 用途 |
@@ -46,10 +59,10 @@ icon: "sliders-horizontal"
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | 推理专用 token 限制或用量统计字段。 |
 | [`include_reasoning`](#include_reasoning) | `boolean` | 在支持时返回推理内容或摘要。 |
 | [`service_tier`](#service_tier) | `string` | 选择受支持的请求层级，如 `fast`、`ultrafast` 或 `flex`。 |
-| [`prompt_cache_key`](#prompt_cache_key) | `string` | 让相关请求保持缓存感知路由亲和性。 |
-| [`prompt_cache_options`](#prompt_cache_options) | `object` | 设置 OpenAI 提示缓存模式和 TTL 控制。 |
-| [`cache_control`](#cache_control) | `object` | 应用与提供商无关的 prompt 缓存提示或断点。 |
-| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | 设置兼容 OpenAI 的 prompt 缓存保留策略。 |
+| [`prompt_cache_key`](#prompt_cache_key) | `string` | 让相关请求留在持有其 prompt 缓存的提供商上。 |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | 设置 OpenAI GPT-5.6 及以后版本的 prompt 缓存模式和 TTL。 |
+| [`cache_control`](#cache_control) | `object` | 为 Claude 设置默认缓存策略，或在内容块上标记缓存断点。 |
+| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | 设置 GPT-5.6 之前的 OpenAI 模型的 prompt 缓存保留策略。 |
 | [`provider`](#provider) | `object` | 影响路由和提供商选择。 |
 | [`provider_options`](#provider_options) | `object` | 通过网关传递提供商原生设置。 |
 | [`meta`](#meta) / [`usage`](#usage) | `boolean` | 在响应中返回额外元数据或用量统计。 |
@@ -423,14 +436,14 @@ token 一旦出现过，就会降低其再次使用的倾向，从而帮助模�
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-在支持时请求在响应中返回推理内容或摘要。
+为保持兼容性，在 Chat Completions 上接受此参数。无论此值如何设置，只要模型生成了推理内容和摘要，就会返回。
 
 | 字段 | 值 |
 | --- | --- |
 | 类型 | `boolean` |
-| 默认值 | `false` |
+| 默认值 | `true` |
 
-请谨慎使用。推理负载可能更大，并非所有模型都支持；对于不需要额外诊断信息的生产响应也可能不合适。
+推理负载可能很大，并非所有模型都支持。要减少推理，请降低 `reasoning.effort` 或将 `reasoning.enabled` 设为 `false`。
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -451,6 +464,7 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 
 - `Batch` 是独立的 API 流程，并非服务级别的取值。
 - 支持情况因端点和提供商而异。
+- 也接受 OpenAI 的取值：`auto`（或 `null`）表示不指定特定层级，按省略该字段处理；`scale` 按标准层级 `default` 处理。
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
@@ -462,48 +476,54 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 | 类型 | `string` |
 | 用途 | 让相关的缓存 prompt 保持路由亲和性 |
 
-当一系列请求共享稳定的 prompt 前缀，并希望尽可能使用相同的上游提供商或区域时使用。Phaseo 也可以根据请求上下文推导缓存亲和性，但显式键更适合长对话、agent 会话和重复工作流。
+当一系列请求共享稳定的 prompt 前缀时使用，例如智能体循环中的各个步骤。Phaseo 会把该键固定到处理第一个成功请求的提供商和路由（部署或区域），之后带有相同键的请求都会发往那里，直到该提供商发生故障、Phaseo 在其上的托管配额用尽，或你的路由策略不再允许使用它。固定按工作区保存，其有效时间取决于提供商的缓存保留时间。请参阅[供应商亲和性](../guides/prompt-caching.mdx#provider-affinity)。
+
+Phaseo 向上游发送的是你的工作区 ID 与该键的哈希值，绝不发送原始键，因此选择相同键的不同工作区不会共享提供商缓存。响应中会返回你发送的键。API 不接受该字段的提供商不会收到它，发送它也绝不会让某个提供商被排除在路由之外。Phaseo 也可以根据请求上下文推导亲和性，但对于长时间对话、智能体会话和重复执行的工作流，显式键更合适。
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
 
-通过受支持的 OpenAI 路由传递 OpenAI 提示缓存控制。
+将 prompt 缓存控制传递给 GPT-5.6 及以后版本（包括 GPT-6 Astra）的 OpenAI 和 Azure OpenAI，以及 DeepInfra。
 
 | 字段 | 值 |
 | --- | --- |
 | 类型 | `object` |
-| 常用字段 | `mode`, `ttl` |
-| Astra TTL | `30m` |
+| 常用字段 | `mode`（`implicit` 或 `explicit`）, `ttl` |
+| OpenAI TTL | `30m` |
 
-对于 GPT-6 Astra，需要显式提示缓存时使用 `{"mode":"explicit","ttl":"30m"}`。Phaseo 在请求规范化过程中保留此对象，并原样发送给 OpenAI。
+如果希望 OpenAI 只缓存你放置的断点，请使用 `{"mode":"explicit","ttl":"30m"}`。OpenAI 只接受 `30m` 这一个 `ttl`。DeepInfra 接受 `5m` 或 `1h`，并要求会话中的每个请求都带上 `prompt_cache_key`。
+
+Phaseo 会将该对象原样发送到这些路由。对于其他所有提供商，以及改用 [`prompt_cache_retention`](#prompt_cache_retention) 的 GPT-5.6 之前的 OpenAI 模型，Phaseo 会移除该对象。也接受 `provider_options.openai.prompt_cache_options`；以顶层值为准。
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
 
-在受支持的文本请求接口上应用与提供商无关的 prompt 缓存策略。
+为 Claude 设置默认 prompt 缓存策略，或在内容块上标记缓存断点。
 
 | 字段 | 值 |
 | --- | --- |
 | 类型 | `object` |
 | 通用字段 | `type`, `ttl`, `scope` |
-| 用途 | 自动 prompt 缓存和显式缓存断点 |
+| 用途 | Claude 缓存策略和显式缓存断点 |
 
-若要让相同的缓存提示通过网关通用 schema 传递，请在 Chat Completions、Responses 和 Anthropic Messages 请求的顶层使用 `cache_control`。需要显式缓存断点时，也可将其放在受支持的内容块上。
+Chat Completions、Responses 和 Anthropic Messages 请求都接受顶层 `cache_control`。它适用于 Anthropic、Claude on AWS、Amazon Bedrock 和 Google Vertex AI 上的 Claude：Phaseo 会根据 `scope`（`all_text`、`last_user_message`、`agent` 或 `none`）放置最多四个断点。其他提供商会忽略它。`provider_options.anthropic.cache_control` 是同一设置，两者都发送时以它为准。
 
-常见 TTL 值为 `5m` 和 `1h`，具体取决于提供商和模型的支持情况。原生集成仍接受 `provider_options.anthropic.cache_control` 和 `provider_options.google.cache_control` 等提供商专用别名。
+在内容块、工具定义或工具结果上，`cache_control` 表示一个缓存断点。Phaseo 会将它发送到 Claude 路由、Alibaba Model Studio 和 Venice，为 GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI 转换为 `prompt_cache_breakpoint`，并为其他提供商移除它。OpenAI 自己的 `prompt_cache_breakpoint: {"mode": "explicit"}` 也可用于相同的块；同一块同时带有两者时，以它为准。
+
+请使用 `type: "ephemeral"`，并将 `ttl` 设为 `5m`（默认值）或 `1h`。Anthropic 每个请求最多接受四个断点；你的标记超过这个数量时，Phaseo 会保留第一个和最新的三个。有关各个范围以及每个提供商收到的内容，请参阅[Prompt 缓存](../guides/prompt-caching.mdx#cache-controls)。
 
 <span id="prompt_cache_retention"></span>
 <h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
 
-在受支持的 OpenAI 路由请求上设置兼容 OpenAI 的 prompt 缓存保留策略。
+为 GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型设置 prompt 缓存保留策略。
 
 | 字段 | 值 |
 | --- | --- |
 | 类型 | `string` |
-| 示例 | `24h` |
+| 支持的值 | `in_memory`, `24h` |
 | 用途 | OpenAI prompt 缓存保留 |
 
-若要传递 OpenAI 缓存保留选项而不将其嵌套在提供商专用选项中，请使用此项。仍接受提供商专用别名 `provider_options.openai.prompt_cache_retention`。若两者同时提供，则顶层 `prompt_cache_retention` 优先。
+Phaseo 只会把该字段发送给 GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型，并且只有 OpenAI 列出的模型接受 `24h`。GPT-5.6 及以后版本改用 [`prompt_cache_options.ttl`](#prompt_cache_options)，其他提供商不会收到该字段。仍然接受提供商专属别名 `provider_options.openai.prompt_cache_retention`。两者同时存在时，以顶层 `prompt_cache_retention` 的值为准。
 
 <span id="provider"></span>
 <h3 id="parameter-provider"><code>provider</code></h3>
@@ -549,10 +569,12 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 - `openai.context_management`
 - `openai.prompt_cache_retention`
 - `anthropic.cache_control`
-- `google.cache_control`
 - `google.cached_content`
+- `xai.conversation_id`
 
-需要使用提供商原生功能，同时希望请求其余部分仍采用网关通用 schema 时使用。通用缓存提示优先使用顶层 `cache_control`；兼容 OpenAI 的保留设置优先使用顶层 `prompt_cache_retention`。
+需要使用提供商原生功能，同时希望请求其余部分仍采用网关通用 schema 时使用。Claude 缓存策略优先使用顶层 `cache_control`；OpenAI 保留设置在 GPT-5.6 及更高版本上使用顶层 `prompt_cache_options`，在更早的模型上使用顶层 `prompt_cache_retention`。
+
+`google.cached_content` 指定一个 Gemini 显式缓存。在 Google AI Studio 上，它仅在使用你自己的 Google API 密钥时有效；在 Vertex AI 上，缓存必须属于处理请求的凭据所在的项目。`google.cache_control` 和 `google.cache_ttl` 会被接受，但不会发送给 Google。
 
 有关 Chat Completions、Responses 和 Anthropic Messages 的提供商 prompt 缓存示例，请参阅[Prompt 缓存](../guides/prompt-caching.mdx)。
 

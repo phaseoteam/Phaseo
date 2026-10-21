@@ -2,8 +2,7 @@ import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { FeatureMessagesProvider } from "./LocaleMessagesProvider";
-import { getPublicMessages } from "@/i18n/messages";
-import { selectClientMessages } from "@/i18n/client-message-selection";
+import { prepareClientMessages } from "@/i18n/client-messages";
 import { isPublicLocale } from "@/i18n/routing";
 
 export type ScopedLayoutProps = {
@@ -16,8 +15,9 @@ export async function ScopedMessages({ children, params, namespaces }: ScopedLay
 }) {
 	const { locale } = await params;
 	if (!isPublicLocale(locale)) notFound();
-	const messages = selectClientMessages(await getPublicMessages(locale), namespaces);
-	return <FeatureMessagesProvider messages={messages}>{children}</FeatureMessagesProvider>;
+	// Only a reference reaches the page; browsers fetch the dictionary file once.
+	const source = await prepareClientMessages(locale, namespaces);
+	return <FeatureMessagesProvider source={source}>{children}</FeatureMessagesProvider>;
 }
 
 export function createScopedMessagesLayout(namespaces: readonly string[]) {

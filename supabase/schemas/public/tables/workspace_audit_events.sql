@@ -20,6 +20,9 @@ CREATE TABLE "public"."workspace_audit_events" (
 ALTER TABLE "public"."workspace_audit_events"
   ENABLE ROW LEVEL SECURITY;
 
+CREATE INDEX workspace_audit_events_api_key_created_idx ON public.workspace_audit_events USING btree (created_at, id)
+  WHERE (target_type = 'api_key'::text);
+
 CREATE INDEX workspace_audit_events_workspace_action_created_idx ON public.workspace_audit_events USING btree (workspace_id, action, created_at DESC);
 
 CREATE INDEX workspace_audit_events_workspace_created_idx ON public.workspace_audit_events USING btree (workspace_id, created_at DESC, id DESC);

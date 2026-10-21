@@ -49,12 +49,14 @@ export default function SettingsSidebarTrigger({
 	showBroadcast = true,
 	showWebhooks = true,
 	showAutoRouting = false,
+	showClassifiers = false,
 	providerMode = false,
 }: {
 	copy: SettingsNavigationCopy;
 	showBroadcast?: boolean;
 	showWebhooks?: boolean;
 	showAutoRouting?: boolean;
+	showClassifiers?: boolean;
 	providerMode?: boolean;
 }) {
 	const t = useTranslations("SettingsUI");
@@ -71,11 +73,12 @@ export default function SettingsSidebarTrigger({
 		getClientSnapshot,
 		getServerSnapshot,
 	);
-	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showAutoRouting, providerMode });
+	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showAutoRouting, showClassifiers, providerMode });
 	const activeNav = getActiveSettingsNav(pathname, {
 		showBroadcast,
 		showWebhooks,
 		showAutoRouting,
+		showClassifiers,
 		providerMode,
 	});
 	const activeItem = activeNav?.item ?? null;

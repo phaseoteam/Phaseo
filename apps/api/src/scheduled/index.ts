@@ -19,6 +19,9 @@ import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/billing-alerts";
 import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-request";
+import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
+import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
+import { runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
@@ -110,6 +113,10 @@ function getModelDiscoveryStepMinutesUtc(hour: number): number {
 
 function isCoreJobsTick(event: ScheduledController): boolean {
 	return getScheduledMinuteUtc(event) % 5 === 0;
+}
+
+function isQuarterHourTick(event: ScheduledController): boolean {
+	return getScheduledMinuteUtc(event) % 15 === 0;
 }
 
 function isModelDiscoveryTick(event: ScheduledController): boolean {
@@ -372,6 +379,38 @@ async function handleFeedbackRequestScheduledEvent(env: GatewayBindings): Promis
 	try {
 		const queued = await enqueueFeedbackRequestEmails();
 		console.log("feedback_request_emails_queued", { queued });
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleMobilePushScheduledEvent(env: GatewayBindings): Promise<void> {
+	// Off unless explicitly enabled; EXPO_ACCESS_TOKEN is only needed once Expo push security is on.
+	if (env.MOBILE_PUSH_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		// The weekly digest first, so its due pushes are claimed before the catalogue claim looks.
+		// It does nothing outside Sunday to Tuesday UTC, and never holds up catalogue pushes.
+		try {
+			const digest = await runMobilePushDigestJob({ accessToken: env.EXPO_ACCESS_TOKEN });
+			if (hasMobilePushDigestActivity(digest)) console.log("mobile_push_digest_completed", digest);
+		} catch (error) {
+			console.error("mobile_push_digest_failed", serializeError(error));
+		}
+		const summary = await runMobilePushJob({ accessToken: env.EXPO_ACCESS_TOKEN });
+		if (hasMobilePushActivity(summary)) console.log("mobile_push_completed", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
+// Budget warnings are push-only, so they are swept only where mobile push runs.
+async function handleSpendLimitSweepScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.MOBILE_PUSH_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await runSpendLimitWarningSweep();
+		if (summary.warned > 0) console.log("spend_limit_warnings_swept", summary);
 	} finally {
 		clearRuntime();
 	}
@@ -737,6 +776,18 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleNotificationDeliveryScheduledEvent(env);
 		} catch (error) {
 			console.error("notification_delivery_scheduled_failed", serializeError(error));
+		}
+		if (isQuarterHourTick(event)) {
+			try {
+				await handleSpendLimitSweepScheduledEvent(env);
+			} catch (error) {
+				console.error("spend_limit_sweep_scheduled_failed", serializeError(error));
+			}
+		}
+		try {
+			await handleMobilePushScheduledEvent(env);
+		} catch (error) {
+			console.error("mobile_push_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleAsyncWebhookRetriesScheduledEvent(event, env);

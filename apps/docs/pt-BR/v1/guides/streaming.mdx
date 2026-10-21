@@ -53,7 +53,9 @@ Passe um `AbortSignal` ao cliente HTTP do servidor e cancele quando o usuário p
 
 Exiba o texto parcial progressivamente, mas marque a resposta como concluída só após o evento final bem-sucedido do endpoint. Uma conexão fechada não comprova conclusão.
 
-Se o fluxo falhar após começar a saída:
+Se o fluxo falhar após começar a saída, ele termina com o evento de falha do endpoint em vez do evento final bem-sucedido: um frame `error` no Chat Completions (sem `finish_reason`), `response.failed` ou `error` no Responses e um evento `error` no Messages (sem `message_stop`). A Phaseo não cobra a saída parcial de um fluxo que falha.
+
+Quando isso acontecer:
 
 1. Marque a resposta parcial como interrompida.
 2. Mantenha ID da solicitação ou geração, endpoint e modelo nos logs.

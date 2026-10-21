@@ -11,6 +11,7 @@ import { tieredRead } from "@/core/tiered-cache";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { loadPrivateRouteRow } from "./privateModelCache";
 import { getWorkspacePolicyVersionToken } from "./workspacePolicy";
 import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
@@ -18,6 +19,7 @@ import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
 import { loadPriceCard } from "@pipeline/pricing";
+import { isFreePriceCard } from "@pipeline/pricing/free";
 import { getContextCapabilityCandidates } from "./context.capability-aliases";
 import {
 	applyNebiusRegionalModelAllowlist,
@@ -506,8 +508,10 @@ function mergeGatewayContextVariants(
                         : provider.capabilityParams,
                 maxInputTokens:
                     existing.maxInputTokens ?? provider.maxInputTokens ?? null,
+                // A stored 0 is unknown, so it must not hide the other row's real limit.
                 maxOutputTokens:
-                    existing.maxOutputTokens ?? provider.maxOutputTokens ?? null,
+                    routeOutputTokenLimit(existing.maxOutputTokens) ??
+                    routeOutputTokenLimit(provider.maxOutputTokens),
             };
         }
     }
@@ -1043,12 +1047,20 @@ async function fetchFreeRouterProviderPool(args: {
             row.provider_model_slug === null || row.provider_model_slug === undefined
                 ? null
                 : String(row.provider_model_slug);
+        // The router must never incur cost: pool only routes whose card bills
+        // nothing. A `:free` slug is not proof. A route whose free window has
+        // expired, or whose card also carries paid rules, is left out rather
+        // than letting it block (or bill) every phaseo/free request.
+        const card = await loadPriceCard(providerId, apiModelId, args.endpoint, providerModelSlug);
+        if (!isFreePriceCard(card)) continue;
+
         const providerStatus = providerStatusById.get(providerId);
         const residency = getProviderResidencyMetadata({
             providerId,
             providerModelSlug,
         });
 		const pricingKey = getProviderPricingKey(providerId, apiModelId, providerModelSlug);
+        pricing[pricingKey] = card;
         providers.push({
             providerId,
             providerStatus: providerStatus?.status ?? "not_ready",
@@ -1080,11 +1092,6 @@ async function fetchFreeRouterProviderPool(args: {
                     ? null
                     : Number(capability.max_output_tokens),
         });
-
-        const card = await loadPriceCard(providerId, apiModelId, args.endpoint, providerModelSlug);
-        if (card) {
-            pricing[pricingKey] = card;
-        }
     }
 
     return { providers, pricing };

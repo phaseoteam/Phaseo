@@ -1,0 +1,3003 @@
+{
+	"id": "moonshotai",
+	"source": {
+		"url": "https://platform.moonshot.ai/docs/openapi.json",
+		"docs": null,
+		"fetchedAt": "2026-10-18T08:41:00.938Z",
+		"sha256": "c160b187366dc261236200ba48f8a5441dd9f557b364b9325b07d589e5c8cfbf",
+		"handWritten": false,
+		"notes": "Served from the Kimi platform docs site. Server https://api.moonshot.ai."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"oneOf": [
+					{
+						"$ref": "#/components/schemas/KimiK3ChatRequest"
+					},
+					{
+						"$ref": "#/components/schemas/KimiK27CodeChatRequest"
+					},
+					{
+						"$ref": "#/components/schemas/KimiK26ChatRequest"
+					}
+				],
+				"discriminator": {
+					"propertyName": "model",
+					"mapping": {
+						"kimi-k3": "#/components/schemas/KimiK3ChatRequest",
+						"kimi-k2.7-code": "#/components/schemas/KimiK27CodeChatRequest",
+						"kimi-k2.7-code-highspeed": "#/components/schemas/KimiK27CodeChatRequest",
+						"kimi-k2.6": "#/components/schemas/KimiK26ChatRequest"
+					}
+				}
+			},
+			"response": {
+				"$ref": "#/components/schemas/ChatCompletionResponse"
+			}
+		},
+		"responses": {
+			"request": {
+				"$ref": "#/components/schemas/ResponsesRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/ResponsesResponse"
+			}
+		},
+		"messages": {
+			"request": {
+				"$ref": "#/components/schemas/MessagesRequest"
+			},
+			"response": {
+				"$ref": "#/components/schemas/MessagesResponse"
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"KimiK3ChatRequest": {
+				"title": "kimi-k3",
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/ChatRequestCommon"
+					},
+					{
+						"type": "object",
+						"properties": {
+							"model": {
+								"type": "string",
+								"description": "Model ID",
+								"enum": [
+									"kimi-k3"
+								],
+								"default": "kimi-k3"
+							},
+							"messages": {
+								"type": "array",
+								"description": "A list of Kimi K3 conversation messages. In addition to standard messages, you can insert a {\"role\": \"system\", \"tools\": [...]} message at any conversation position to dynamically load tools. A dynamic tool message omits content and only affects subsequent conversation turns.",
+								"items": {
+									"$ref": "#/components/schemas/KimiK3Message"
+								}
+							},
+							"reasoning_effort": {
+								"type": "string",
+								"enum": [
+									"low",
+									"high",
+									"max"
+								],
+								"default": "max",
+								"description": "Kimi K3 always enables thinking with Preserved Thinking. Reasoning effort supports low, high, and max, with max as the default."
+							}
+						},
+						"required": [
+							"model",
+							"messages"
+						]
+					}
+				]
+			},
+			"KimiK27CodeChatRequest": {
+				"title": "kimi-k2.7-code",
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/ChatRequestBase"
+					},
+					{
+						"type": "object",
+						"properties": {
+							"model": {
+								"type": "string",
+								"description": "Model ID. Either `kimi-k2.7-code` or its high-speed variant `kimi-k2.7-code-highspeed`; the two are the same model with identical parameters, while the high-speed variant outputs at approximately 180 Tokens/s (up to 260 Tokens/s in short-context scenarios).",
+								"enum": [
+									"kimi-k2.7-code",
+									"kimi-k2.7-code-highspeed"
+								],
+								"default": "kimi-k2.7-code"
+							},
+							"thinking": {
+								"type": "object",
+								"description": "Controls thinking for the kimi-k2.7-code model, and whether to fully preserve reasoning_content across multi-turn conversations. Optional parameter. Default value is {\"type\": \"enabled\", \"keep\": \"all\"}.\n\nDifferences from kimi-k2.6:\n- `type` only accepts `\"enabled\"`. Unlike kimi-k2.6, `\"disabled\"` is NOT supported — passing it returns an error. Thinking is always on for this model.\n- `keep` only accepts the valid value `\"all\"`; omitting it or passing `\"all\"` is treated as `\"all\"` on the server, while any other invalid value returns an error. Preserved Thinking is therefore always enabled for this model.",
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"enabled"
+										],
+										"description": "Enable thinking capability. For kimi-k2.7-code, only `\"enabled\"` is accepted; passing `\"disabled\"` returns an error. This differs from kimi-k2.6, which also supports `\"disabled\"`."
+									},
+									"keep": {
+										"type": [
+											"string",
+											"null"
+										],
+										"enum": [
+											"all",
+											null
+										],
+										"description": "Controls whether reasoning_content from previous turns is preserved across a multi-turn conversation, i.e. whether to enable Preserved Thinking.\n\n- For kimi-k2.7-code this parameter only accepts the valid value `\"all\"`: passing `\"all\"`, passing `null`, or omitting it all behave identically and are treated as `\"all\"` on the server — reasoning_content from historical turns is always preserved; passing any other invalid value returns an error. This differs from kimi-k2.6, whose default is `null` (historical thinking NOT preserved unless you explicitly set `\"all\"`).\n- Because Preserved Thinking is always on, keep the reasoning_content from every historical assistant message in messages as-is.\n- Note: This parameter only affects reasoning_content from historical turns; it does not change whether the model produces/outputs thinking within the current turn (that is controlled by `type`). For best practices, see [Preserved Thinking](/guide/use-thinking-models#preserved-thinking)."
+									}
+								},
+								"required": [
+									"type"
+								],
+								"additionalProperties": false
+							}
+						},
+						"required": [
+							"model"
+						]
+					}
+				]
+			},
+			"KimiK26ChatRequest": {
+				"title": "kimi-k2.6",
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/ChatRequestBase"
+					},
+					{
+						"type": "object",
+						"properties": {
+							"model": {
+								"type": "string",
+								"description": "Model ID",
+								"enum": [
+									"kimi-k2.6"
+								],
+								"default": "kimi-k2.6"
+							},
+							"thinking": {
+								"type": "object",
+								"description": "Controls whether thinking is enabled for the kimi-k2.6 model, and whether to fully preserve reasoning_content across multi-turn conversations. Optional parameter. Default value is {\"type\": \"enabled\"}.",
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"enabled",
+											"disabled"
+										],
+										"description": "Enable or disable thinking capability"
+									},
+									"keep": {
+										"type": [
+											"string",
+											"null"
+										],
+										"enum": [
+											"all",
+											null
+										],
+										"description": "Controls whether reasoning_content from previous turns is preserved across a multi-turn conversation, i.e. whether to enable Preserved Thinking. Defaults to `null`, meaning historical thinking is NOT preserved.\n\n- `null` (default) or omitted: The server ignores reasoning_content from historical turns.\n- `\"all\"`: Preserves reasoning_content from historical turns and provides it to the model as part of the context, enabling Preserved Thinking. When using this, keep the reasoning_content from every historical assistant message in messages as-is. Recommended to use together with `type: \"enabled\"`.\n- Note: This parameter only affects reasoning_content from historical turns; it does not change whether the model produces/outputs thinking within the current turn (that is controlled by `type`). For best practices, see [Preserved Thinking](/guide/use-thinking-models#preserved-thinking)."
+									}
+								},
+								"required": [
+									"type"
+								],
+								"additionalProperties": false
+							}
+						},
+						"required": [
+							"model"
+						]
+					}
+				]
+			},
+			"ChatCompletionResponse": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Unique identifier for the completion"
+					},
+					"object": {
+						"type": "string",
+						"description": "Object type",
+						"example": "chat.completion"
+					},
+					"created": {
+						"type": "integer",
+						"description": "Unix timestamp of when the completion was created"
+					},
+					"model": {
+						"type": "string",
+						"description": "Model used for the completion"
+					},
+					"choices": {
+						"type": "array",
+						"description": "List of completion choices",
+						"items": {
+							"type": "object",
+							"properties": {
+								"index": {
+									"type": "integer"
+								},
+								"message": {
+									"type": "object",
+									"properties": {
+										"role": {
+											"type": "string",
+											"enum": [
+												"assistant"
+											]
+										},
+										"content": {
+											"type": [
+												"string",
+												"null"
+											],
+											"description": "The assistant's message content"
+										},
+										"tool_calls": {
+											"type": "array",
+											"description": "Tool calls made by the model",
+											"items": {
+												"type": "object",
+												"properties": {
+													"id": {
+														"type": "string"
+													},
+													"type": {
+														"type": "string",
+														"enum": [
+															"function"
+														]
+													},
+													"function": {
+														"type": "object",
+														"properties": {
+															"name": {
+																"type": "string"
+															},
+															"arguments": {
+																"type": "string",
+																"description": "JSON string of function arguments"
+															}
+														}
+													}
+												}
+											}
+										},
+										"reasoning_content": {
+											"type": [
+												"string",
+												"null"
+											],
+											"description": "Reasoning process (returned only when thinking mode is enabled)"
+										}
+									}
+								},
+								"finish_reason": {
+									"type": "string",
+									"enum": [
+										"stop",
+										"length",
+										"tool_calls"
+									]
+								}
+							}
+						}
+					},
+					"usage": {
+						"type": "object",
+						"properties": {
+							"prompt_tokens": {
+								"type": "integer",
+								"description": "Number of tokens in the prompt"
+							},
+							"completion_tokens": {
+								"type": "integer",
+								"description": "Number of tokens in the completion"
+							},
+							"total_tokens": {
+								"type": "integer",
+								"description": "Total number of tokens used"
+							},
+							"cached_tokens": {
+								"type": "integer",
+								"description": "Number of tokens served from cache"
+							},
+							"prompt_tokens_details": {
+								"type": "object",
+								"description": "Breakdown of prompt tokens. cached_tokens, cache_write_tokens and the uncached remainder are mutually exclusive and sum to prompt_tokens",
+								"properties": {
+									"cached_tokens": {
+										"type": "integer",
+										"description": "Number of tokens served from cache"
+									},
+									"cache_write_tokens": {
+										"type": "integer",
+										"description": "Number of tokens written to the cache by this request. Billed according to the TTL at write time; see prompt_cache_options"
+									}
+								},
+								"required": [
+									"cached_tokens",
+									"cache_write_tokens"
+								]
+							}
+						}
+					}
+				}
+			},
+			"ResponsesRequest": {
+				"type": "object",
+				"required": [
+					"model",
+					"input"
+				],
+				"properties": {
+					"model": {
+						"type": "string",
+						"description": "ID of the model to use. This endpoint currently supports `kimi-k3`.",
+						"example": "kimi-k3"
+					},
+					"input": {
+						"description": "Input for this request. A string is equivalent to a single user message. An array holds ordered typed items and may contain conversation history, tool calls, and tool results.",
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/ResponsesInputItem"
+								}
+							}
+						]
+					},
+					"instructions": {
+						"type": "string",
+						"description": "Top-level system instructions, applied ahead of every input item."
+					},
+					"stream": {
+						"type": "boolean",
+						"default": false,
+						"description": "When true, the response is delivered as a stream of SSE events."
+					},
+					"max_output_tokens": {
+						"type": "integer",
+						"description": "Maximum number of tokens to generate for this response. For `kimi-k3` it defaults to 131072 and can be set up to 1048576. This refers to the length of tokens you expect us to return, not the total length of input plus output. When the limit is reached, `status` is `incomplete` and `incomplete_details.reason` is `max_output_tokens`."
+					},
+					"reasoning": {
+						"type": "object",
+						"description": "Reasoning configuration.",
+						"properties": {
+							"effort": {
+								"type": "string",
+								"enum": [
+									"low",
+									"high",
+									"max"
+								],
+								"default": "max",
+								"description": "Reasoning depth. Higher levels reason more thoroughly, which usually also increases latency and reasoning token usage."
+							}
+						}
+					},
+					"text": {
+						"type": "object",
+						"description": "Output text configuration.",
+						"properties": {
+							"format": {
+								"type": "object",
+								"required": [
+									"type",
+									"schema"
+								],
+								"description": "Constrains the output structure with a JSON Schema.",
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"json_schema"
+										]
+									},
+									"name": {
+										"type": "string",
+										"description": "Schema name. Defaults to `output`."
+									},
+									"schema": {
+										"type": "object",
+										"description": "JSON Schema describing the output structure."
+									},
+									"strict": {
+										"type": "boolean",
+										"description": "Whether the output must strictly conform to the schema."
+									}
+								}
+							}
+						}
+					},
+					"tools": {
+						"type": "array",
+						"description": "List of tools the model may call.",
+						"items": {
+							"$ref": "#/components/schemas/ResponsesTool"
+						}
+					},
+					"tool_choice": {
+						"$ref": "#/components/schemas/ResponsesToolChoice"
+					},
+					"include": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"enum": [
+								"web_search_call.results",
+								"web_search_call.action.sources"
+							]
+						},
+						"description": "Additional fields to return. Only effective when the `web_search` tool is used. `web_search_call.action.sources` returns the web pages the search hit; `web_search_call.results` returns image search results."
+					},
+					"prompt_cache_key": {
+						"type": "string",
+						"description": "Context cache identifier. Reusing the same value across a session improves cache hit rate."
+					},
+					"prompt_cache_options": {
+						"type": "object",
+						"description": "Context cache write options. When omitted, cache write is enabled by default (5m tier): the system automatically writes the request prefix to the 5m cache tier",
+						"properties": {
+							"mode": {
+								"type": "string",
+								"enum": [
+									"implicit"
+								],
+								"default": "implicit",
+								"description": "Cache write mode. Only implicit is supported: automatically writes the request prefix to the cache"
+							},
+							"ttl": {
+								"type": "string",
+								"enum": [
+									"5m",
+									"1h"
+								],
+								"default": "5m",
+								"description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL"
+							}
+						}
+					},
+					"safety_identifier": {
+						"type": "string",
+						"description": "A stable identifier used to help detect users of your application that may be violating usage policies. The ID should be a string that uniquely identifies each user. It is recommended to hash the username or email address to avoid sending any identifying information"
+					}
+				}
+			},
+			"ResponsesResponse": {
+				"type": "object",
+				"description": "A single model response.",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Unique identifier of the response.",
+						"example": "resp_68f0c1c2d3e4f5a6b7c8d9e0"
+					},
+					"object": {
+						"type": "string",
+						"enum": [
+							"response"
+						]
+					},
+					"created_at": {
+						"type": "integer",
+						"description": "Unix timestamp of when the response was created."
+					},
+					"completed_at": {
+						"type": [
+							"integer",
+							"null"
+						],
+						"description": "Unix timestamp of when the response finished. Present when `status` is `completed` or `incomplete`; `null` when `status` is `in_progress` or `failed`."
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"in_progress",
+							"completed",
+							"incomplete",
+							"failed"
+						],
+						"description": "Response status. The opening snapshot of a stream is `in_progress`."
+					},
+					"model": {
+						"type": "string",
+						"description": "Model that produced the response."
+					},
+					"output": {
+						"type": "array",
+						"description": "The output item array, ordered as web_search_call (if any), reasoning, message, tool calls.",
+						"items": {
+							"$ref": "#/components/schemas/ResponsesOutputItem"
+						}
+					},
+					"usage": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/ResponsesUsage"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"incomplete_details": {
+						"type": [
+							"object",
+							"null"
+						],
+						"description": "Reason the response is `incomplete`.",
+						"properties": {
+							"reason": {
+								"type": "string",
+								"enum": [
+									"max_output_tokens",
+									"content_filter"
+								]
+							}
+						}
+					},
+					"error": {
+						"type": [
+							"object",
+							"null"
+						],
+						"description": "Error information when `status` is `failed`.",
+						"properties": {
+							"code": {
+								"type": "string"
+							},
+							"message": {
+								"type": "string"
+							}
+						}
+					},
+					"instructions": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"reasoning": {
+						"type": [
+							"object",
+							"null"
+						]
+					},
+					"text": {
+						"type": [
+							"object",
+							"null"
+						]
+					},
+					"tools": {
+						"type": [
+							"array",
+							"null"
+						],
+						"items": {
+							"$ref": "#/components/schemas/ResponsesTool"
+						}
+					},
+					"tool_choice": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/ResponsesToolChoice"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"max_output_tokens": {
+						"type": [
+							"integer",
+							"null"
+						]
+					},
+					"temperature": {
+						"type": [
+							"number",
+							"null"
+						]
+					},
+					"top_p": {
+						"type": [
+							"number",
+							"null"
+						]
+					},
+					"metadata": {
+						"type": [
+							"object",
+							"null"
+						]
+					},
+					"parallel_tool_calls": {
+						"type": "boolean"
+					},
+					"service_tier": {
+						"type": [
+							"string",
+							"null"
+						]
+					},
+					"store": {
+						"type": "boolean",
+						"description": "Always `false`."
+					},
+					"background": {
+						"type": [
+							"boolean",
+							"null"
+						],
+						"description": "Always `false`."
+					},
+					"previous_response_id": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Always `null`."
+					},
+					"conversation": {
+						"type": [
+							"object",
+							"null"
+						],
+						"description": "Always `null`."
+					},
+					"prompt_cache_options": {
+						"type": "object",
+						"description": "The context cache write options actually applied by the server. When the request omits prompt_cache_options, refer to the mode and ttl returned here",
+						"properties": {
+							"mode": {
+								"type": "string",
+								"enum": [
+									"implicit"
+								],
+								"description": "The write mode actually applied"
+							},
+							"ttl": {
+								"type": "string",
+								"enum": [
+									"5m",
+									"1h"
+								],
+								"description": "The cache lifetime actually applied"
+							}
+						}
+					}
+				}
+			},
+			"MessagesRequest": {
+				"title": "kimi-k3",
+				"type": "object",
+				"properties": {
+					"model": {
+						"type": "string",
+						"description": "Model ID",
+						"enum": [
+							"kimi-k3"
+						],
+						"default": "kimi-k3"
+					},
+					"messages": {
+						"type": "array",
+						"description": "The conversation messages. If the last message is from the assistant, the model continues from that content (Partial Mode).",
+						"items": {
+							"$ref": "#/components/schemas/MessagesMessageParam"
+						}
+					},
+					"max_tokens": {
+						"type": "integer",
+						"minimum": 1,
+						"description": "Maximum number of tokens to generate, required. If the limit is reached before the model finishes, `stop_reason` is `max_tokens`."
+					},
+					"system": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/MessagesTextBlockParam"
+								}
+							}
+						],
+						"description": "System prompt, either a string or an array of text blocks"
+					},
+					"stream": {
+						"type": "boolean",
+						"default": false,
+						"description": "Whether to stream the response as Server-Sent Events, default false"
+					},
+					"stop_sequences": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"maxItems": 5,
+						"description": "Stop sequences. Generation stops on an exact match; the matched sequence itself is not output. Up to 5 entries, each at most 32 bytes."
+					},
+					"tools": {
+						"type": "array",
+						"description": "List of tools the model may call",
+						"items": {
+							"$ref": "#/components/schemas/MessagesTool"
+						}
+					},
+					"tool_choice": {
+						"$ref": "#/components/schemas/MessagesToolChoice"
+					},
+					"metadata": {
+						"type": "object",
+						"properties": {
+							"user_id": {
+								"type": "string",
+								"description": "A stable identifier for the end user or session, used to improve cache hit rate and for abuse detection. Use a hashed value; do not send personally identifiable information. For coding agents, pass the session id and keep it constant for the whole session."
+							}
+						}
+					},
+					"cache_control": {
+						"type": "object",
+						"description": "Context cache write options. Only effective when passed at the top level; cache_control markers inside the messages array are ignored. When omitted, cache reads and writes use the 5m TTL by default",
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"ephemeral"
+								],
+								"description": "Cache type, fixed as ephemeral"
+							},
+							"ttl": {
+								"type": "string",
+								"enum": [
+									"5m",
+									"1h"
+								],
+								"default": "5m",
+								"description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL"
+							}
+						},
+						"required": [
+							"type"
+						]
+					},
+					"output_config": {
+						"type": "object",
+						"description": "Output configuration: reasoning effort and structured output",
+						"properties": {
+							"effort": {
+								"type": "string",
+								"enum": [
+									"low",
+									"high",
+									"max"
+								],
+								"default": "max",
+								"description": "Reasoning effort: low, high, or max; default max. Changing the level breaks prefix-cache hits, so decide it before the session starts."
+							},
+							"format": {
+								"type": "object",
+								"description": "Structured output. When set, the model outputs JSON that strictly follows the given JSON Schema.",
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"json_schema"
+										]
+									},
+									"schema": {
+										"type": "object",
+										"description": "The JSON Schema the output must follow",
+										"additionalProperties": true
+									}
+								},
+								"required": [
+									"type",
+									"schema"
+								]
+							}
+						}
+					}
+				},
+				"required": [
+					"model",
+					"messages",
+					"max_tokens"
+				]
+			},
+			"MessagesResponse": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "Unique identifier of the response"
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"message"
+						],
+						"example": "message"
+					},
+					"role": {
+						"type": "string",
+						"enum": [
+							"assistant"
+						]
+					},
+					"model": {
+						"type": "string",
+						"description": "The model specified in the request"
+					},
+					"content": {
+						"type": "array",
+						"description": "Content blocks, ordered thinking → text → tool_use",
+						"items": {
+							"oneOf": [
+								{
+									"title": "thinking",
+									"type": "object",
+									"properties": {
+										"type": {
+											"type": "string",
+											"enum": [
+												"thinking"
+											]
+										},
+										"thinking": {
+											"type": "string"
+										},
+										"signature": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"type",
+										"thinking"
+									]
+								},
+								{
+									"title": "text",
+									"type": "object",
+									"properties": {
+										"type": {
+											"type": "string",
+											"enum": [
+												"text"
+											]
+										},
+										"text": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"type",
+										"text"
+									]
+								},
+								{
+									"title": "tool_use",
+									"type": "object",
+									"properties": {
+										"type": {
+											"type": "string",
+											"enum": [
+												"tool_use"
+											]
+										},
+										"id": {
+											"type": "string"
+										},
+										"name": {
+											"type": "string"
+										},
+										"input": {
+											"type": "object",
+											"additionalProperties": true
+										}
+									},
+									"required": [
+										"type",
+										"id",
+										"name",
+										"input"
+									]
+								}
+							]
+						}
+					},
+					"stop_reason": {
+						"type": [
+							"string",
+							"null"
+						],
+						"enum": [
+							"end_turn",
+							"max_tokens",
+							"tool_use",
+							"refusal",
+							null
+						],
+						"description": "Stop reason. `end_turn`: finished naturally (including a `stop_sequences` match); `max_tokens`: reached the max_tokens limit; `tool_use`: the model issued a tool call; `refusal`: content safety review was triggered."
+					},
+					"stop_sequence": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "The stop sequence that was matched"
+					},
+					"usage": {
+						"type": "object",
+						"description": "Token usage",
+						"properties": {
+							"input_tokens": {
+								"type": "integer",
+								"description": "Input tokens (excluding cache hits and cache writes). Total input = input_tokens + cache_read_input_tokens + cache_creation_input_tokens"
+							},
+							"output_tokens": {
+								"type": "integer",
+								"description": "Output tokens (including reasoning tokens)"
+							},
+							"cache_read_input_tokens": {
+								"type": "integer",
+								"description": "Input tokens served from cache"
+							},
+							"cache_creation_input_tokens": {
+								"type": "integer",
+								"description": "Input tokens written to cache"
+							},
+							"cache_creation": {
+								"type": "object",
+								"description": "Cache write breakdown by TTL",
+								"properties": {
+									"ephemeral_5m_input_tokens": {
+										"type": "integer",
+										"description": "Input tokens written to the 5-minute cache tier"
+									},
+									"ephemeral_1h_input_tokens": {
+										"type": "integer",
+										"description": "Input tokens written to the 1-hour cache tier"
+									}
+								},
+								"required": [
+									"ephemeral_5m_input_tokens",
+									"ephemeral_1h_input_tokens"
+								]
+							},
+							"output_tokens_details": {
+								"type": "object",
+								"properties": {
+									"thinking_tokens": {
+										"type": "integer",
+										"description": "The portion of output tokens used for reasoning"
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"ChatRequestCommon": {
+				"type": "object",
+				"properties": {
+					"logprobs": {
+						"type": "boolean",
+						"default": false,
+						"description": "Whether to return log probabilities of the output tokens. If true, the log probability of each output token is returned in the logprobs field of the response message."
+					},
+					"top_logprobs": {
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 20,
+						"description": "An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true when this parameter is used."
+					},
+					"prediction": {
+						"type": "object",
+						"description": "Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time (for example, regenerating a file with only minor changes).",
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"content"
+								],
+								"description": "The type of the predicted content. Currently only content is supported."
+							},
+							"content": {
+								"oneOf": [
+									{
+										"type": "string"
+									},
+									{
+										"type": "array",
+										"items": {
+											"type": "object"
+										}
+									}
+								],
+								"description": "The static predicted output content that should be matched when generating the model response, such as the content of a text file being regenerated. Accepts a string or an array of content parts (text parts only)."
+							}
+						}
+					},
+					"max_tokens": {
+						"type": "integer",
+						"deprecated": true,
+						"description": "Deprecated, please refer to max_completion_tokens"
+					},
+					"max_completion_tokens": {
+						"type": "integer",
+						"description": "The maximum number of tokens to generate for the chat completion. The default varies by model: for Kimi K3 it defaults to 131072 and can be set up to 1048576. If the result reaches the maximum number of tokens without ending, the finish reason will be \"length\"; otherwise, it will be \"stop\". This refers to the length of tokens you expect us to return, not the total length of input plus output. If input plus max_completion_tokens exceeds the model context window, the API returns invalid_request_error."
+					},
+					"response_format": {
+						"type": "object",
+						"description": "Controls the model output format. Default is {\"type\": \"text\"} for plain text output. Set to {\"type\": \"json_object\"} to enable JSON mode, ensuring output is a valid JSON object (you must guide the model to output JSON in the prompt). Set to {\"type\": \"json_schema\"} to enable Structured Output, constraining output to match a specified JSON Schema (recommended, requires the json_schema field). If you encounter schema validation issues, please submit feedback at walle GitHub Issues (https://github.com/MoonshotAI/walle/issues).",
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"text",
+									"json_object",
+									"json_schema"
+								],
+								"description": "Output format type. text: default, plain text output; json_object: ensures output is a valid JSON object; json_schema: constrains output to match a specified JSON Schema (recommended, requires the json_schema field)"
+							},
+							"json_schema": {
+								"type": "object",
+								"description": "Used when type is json_schema. Defines the JSON Schema that the output should conform to.",
+								"properties": {
+									"name": {
+										"type": "string",
+										"description": "Schema name for identification"
+									},
+									"strict": {
+										"type": "boolean",
+										"default": true,
+										"description": "Whether to strictly constrain output according to the schema. Defaults to true. When true, the schema must conform to the MFJS specification; non-conforming schemas will return errors or warnings. When false, only guarantees the output is a valid JSON object without enforcing internal structure."
+									},
+									"schema": {
+										"type": "object",
+										"description": "The JSON Schema object defining the structure the output should conform to. Must conform to MFJS (Moonshot Flavored JSON Schema) specification. You can use the walle CLI tool to validate: go install github.com/moonshotai/walle/cmd/walle@latest && walle -schema 'your_schema' -level strict",
+										"additionalProperties": true
+									}
+								},
+								"required": [
+									"name",
+									"schema"
+								]
+							}
+						}
+					},
+					"stop": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"type": "string"
+								},
+								"maxItems": 5
+							}
+						],
+						"default": null,
+						"description": "Stop words, which will halt the output when a full match is found. The matched words themselves will not be output. A maximum of 5 strings is allowed, and each string must not exceed 32 bytes"
+					},
+					"stream": {
+						"type": "boolean",
+						"default": false,
+						"description": "Whether to return the response in a streaming fashion. Default is false."
+					},
+					"stream_options": {
+						"type": "object",
+						"description": "Options for streaming responses",
+						"properties": {
+							"include_usage": {
+								"type": "boolean",
+								"default": false,
+								"description": "If set, an additional chunk will be streamed before the data: [DONE] message. The usage field on this chunk shows the token usage statistics for the entire request, and the choices field will always be an empty array. All other chunks will also include a usage field, but with a null value. NOTE: If the stream is interrupted, you may not receive the final usage chunk which contains the total token usage for the request"
+							}
+						}
+					},
+					"tools": {
+						"type": "array",
+						"description": "A list of tools the model may call",
+						"items": {
+							"$ref": "#/components/schemas/ToolDefinition"
+						}
+					},
+					"prompt_cache_key": {
+						"type": "string",
+						"default": null,
+						"description": "Used to cache responses for similar requests to optimize cache hit rates. For Coding Agents, this is typically a session id or task id representing a single session; if the session is exited and later resumed, this value should remain the same. For Kimi Code Plan, this field is required to improve cache hit rates. For other agents involving multi-turn conversations, it is also recommended to implement this field"
+					},
+					"prompt_cache_options": {
+						"type": "object",
+						"description": "Context cache write options. When omitted, cache write is enabled by default (5m tier): the system automatically writes the request prefix to the 5m cache tier",
+						"properties": {
+							"mode": {
+								"type": "string",
+								"enum": [
+									"implicit"
+								],
+								"default": "implicit",
+								"description": "Cache write mode. Only implicit is supported: automatically writes the request prefix to the cache"
+							},
+							"ttl": {
+								"type": "string",
+								"enum": [
+									"5m",
+									"1h"
+								],
+								"default": "5m",
+								"description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL"
+							}
+						}
+					},
+					"safety_identifier": {
+						"type": "string",
+						"description": "A stable identifier used to help detect users of your application that may be violating usage policies. The ID should be a string that uniquely identifies each user. It is recommended to hash the username or email address to avoid sending any identifying information"
+					},
+					"tool_choice": {
+						"oneOf": [
+							{
+								"type": "string",
+								"enum": [
+									"auto",
+									"none",
+									"required"
+								],
+								"description": "auto: the model decides whether to call tools; none: no tool calls; required: force a tool call"
+							},
+							{
+								"type": "object",
+								"description": "Force a specific tool call",
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"function"
+										]
+									},
+									"function": {
+										"type": "object",
+										"properties": {
+											"name": {
+												"type": "string",
+												"description": "The name of the function to call"
+											}
+										},
+										"required": [
+											"name"
+										]
+									}
+								},
+								"required": [
+									"type",
+									"function"
+								]
+							}
+						],
+						"description": "Controls whether the model calls tools. `auto` (default): the model decides whether to call tools; `none`: no tool calls; `required`: force a tool call; or pass an object specifying a particular function to force that tool call."
+					}
+				}
+			},
+			"KimiK3Message": {
+				"oneOf": [
+					{
+						"title": "Standard message",
+						"$ref": "#/components/schemas/Message"
+					},
+					{
+						"title": "Dynamic tool message",
+						"$ref": "#/components/schemas/KimiK3DynamicToolMessage"
+					}
+				],
+				"description": "A Kimi K3 conversation message. Supports both standard messages and system messages that omit content and declare dynamically loaded tools through tools."
+			},
+			"ChatRequestBase": {
+				"type": "object",
+				"properties": {
+					"logprobs": {
+						"type": "boolean",
+						"default": false,
+						"description": "Whether to return log probabilities of the output tokens. If true, the log probability of each output token is returned in the logprobs field of the response message."
+					},
+					"top_logprobs": {
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 20,
+						"description": "An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true when this parameter is used."
+					},
+					"prediction": {
+						"type": "object",
+						"description": "Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time (for example, regenerating a file with only minor changes).",
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"content"
+								],
+								"description": "The type of the predicted content. Currently only content is supported."
+							},
+							"content": {
+								"oneOf": [
+									{
+										"type": "string"
+									},
+									{
+										"type": "array",
+										"items": {
+											"type": "object"
+										}
+									}
+								],
+								"description": "The static predicted output content that should be matched when generating the model response, such as the content of a text file being regenerated. Accepts a string or an array of content parts (text parts only)."
+							}
+						}
+					},
+					"messages": {
+						"type": "array",
+						"description": "A list of messages in the conversation so far. Each element has the format {\"role\": \"user\", \"content\": \"Hello\"}. role supports system, user, assistant, or tool. content must not be empty. The content field can be a string or an array[object] (for multimodal input).",
+						"items": {
+							"$ref": "#/components/schemas/Message"
+						}
+					},
+					"max_tokens": {
+						"type": "integer",
+						"deprecated": true,
+						"description": "Deprecated, please refer to max_completion_tokens"
+					},
+					"max_completion_tokens": {
+						"type": "integer",
+						"description": "The maximum number of tokens to generate for the chat completion. The default varies by model: for Kimi K3 it defaults to 131072 and can be set up to 1048576. If the result reaches the maximum number of tokens without ending, the finish reason will be \"length\"; otherwise, it will be \"stop\". This refers to the length of tokens you expect us to return, not the total length of input plus output. If input plus max_completion_tokens exceeds the model context window, the API returns invalid_request_error."
+					},
+					"response_format": {
+						"type": "object",
+						"description": "Controls the model output format. Default is {\"type\": \"text\"} for plain text output. Set to {\"type\": \"json_object\"} to enable JSON mode, ensuring output is a valid JSON object (you must guide the model to output JSON in the prompt). Set to {\"type\": \"json_schema\"} to enable Structured Output, constraining output to match a specified JSON Schema (recommended, requires the json_schema field). If you encounter schema validation issues, please submit feedback at walle GitHub Issues (https://github.com/MoonshotAI/walle/issues).",
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"text",
+									"json_object",
+									"json_schema"
+								],
+								"description": "Output format type. text: default, plain text output; json_object: ensures output is a valid JSON object; json_schema: constrains output to match a specified JSON Schema (recommended, requires the json_schema field)"
+							},
+							"json_schema": {
+								"type": "object",
+								"description": "Used when type is json_schema. Defines the JSON Schema that the output should conform to.",
+								"properties": {
+									"name": {
+										"type": "string",
+										"description": "Schema name for identification"
+									},
+									"strict": {
+										"type": "boolean",
+										"default": true,
+										"description": "Whether to strictly constrain output according to the schema. Defaults to true. When true, the schema must conform to the MFJS specification; non-conforming schemas will return errors or warnings. When false, only guarantees the output is a valid JSON object without enforcing internal structure."
+									},
+									"schema": {
+										"type": "object",
+										"description": "The JSON Schema object defining the structure the output should conform to. Must conform to MFJS (Moonshot Flavored JSON Schema) specification. You can use the walle CLI tool to validate: go install github.com/moonshotai/walle/cmd/walle@latest && walle -schema 'your_schema' -level strict",
+										"additionalProperties": true
+									}
+								},
+								"required": [
+									"name",
+									"schema"
+								]
+							}
+						}
+					},
+					"stop": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"type": "string"
+								},
+								"maxItems": 5
+							}
+						],
+						"default": null,
+						"description": "Stop words, which will halt the output when a full match is found. The matched words themselves will not be output. A maximum of 5 strings is allowed, and each string must not exceed 32 bytes"
+					},
+					"stream": {
+						"type": "boolean",
+						"default": false,
+						"description": "Whether to return the response in a streaming fashion. Default is false."
+					},
+					"stream_options": {
+						"type": "object",
+						"description": "Options for streaming responses",
+						"properties": {
+							"include_usage": {
+								"type": "boolean",
+								"default": false,
+								"description": "If set, an additional chunk will be streamed before the data: [DONE] message. The usage field on this chunk shows the token usage statistics for the entire request, and the choices field will always be an empty array. All other chunks will also include a usage field, but with a null value. NOTE: If the stream is interrupted, you may not receive the final usage chunk which contains the total token usage for the request"
+							}
+						}
+					},
+					"tools": {
+						"type": "array",
+						"description": "A list of tools the model may call",
+						"items": {
+							"$ref": "#/components/schemas/ToolDefinition"
+						}
+					},
+					"prompt_cache_key": {
+						"type": "string",
+						"default": null,
+						"description": "Used to cache responses for similar requests to optimize cache hit rates. For Coding Agents, this is typically a session id or task id representing a single session; if the session is exited and later resumed, this value should remain the same. For Kimi Code Plan, this field is required to improve cache hit rates. For other agents involving multi-turn conversations, it is also recommended to implement this field"
+					},
+					"prompt_cache_options": {
+						"type": "object",
+						"description": "Context cache write options. When omitted, cache write is enabled by default (5m tier): the system automatically writes the request prefix to the 5m cache tier",
+						"properties": {
+							"mode": {
+								"type": "string",
+								"enum": [
+									"implicit"
+								],
+								"default": "implicit",
+								"description": "Cache write mode. Only implicit is supported: automatically writes the request prefix to the cache"
+							},
+							"ttl": {
+								"type": "string",
+								"enum": [
+									"5m",
+									"1h"
+								],
+								"default": "5m",
+								"description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL"
+							}
+						}
+					},
+					"safety_identifier": {
+						"type": "string",
+						"description": "A stable identifier used to help detect users of your application that may be violating usage policies. The ID should be a string that uniquely identifies each user. It is recommended to hash the username or email address to avoid sending any identifying information"
+					},
+					"tool_choice": {
+						"oneOf": [
+							{
+								"type": "string",
+								"enum": [
+									"auto",
+									"none",
+									"required"
+								],
+								"description": "auto: the model decides whether to call tools; none: no tool calls; required: force a tool call"
+							},
+							{
+								"type": "object",
+								"description": "Force a specific tool call",
+								"properties": {
+									"type": {
+										"type": "string",
+										"enum": [
+											"function"
+										]
+									},
+									"function": {
+										"type": "object",
+										"properties": {
+											"name": {
+												"type": "string",
+												"description": "The name of the function to call"
+											}
+										},
+										"required": [
+											"name"
+										]
+									}
+								},
+								"required": [
+									"type",
+									"function"
+								]
+							}
+						],
+						"description": "Controls whether the model calls tools. `auto` (default): the model decides whether to call tools; `none`: no tool calls; `required`: force a tool call; or pass an object specifying a particular function to force that tool call."
+					}
+				},
+				"required": [
+					"messages"
+				]
+			},
+			"ResponsesInputItem": {
+				"description": "An element of the input array, discriminated by `type`. When `type` is omitted the item is treated as `message`.",
+				"oneOf": [
+					{
+						"$ref": "#/components/schemas/ResponsesMessageItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesReasoningItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesFunctionCallItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesFunctionCallOutputItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesCustomToolCallItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesCustomToolCallOutputItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesWebSearchCallItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesAdditionalToolsItem"
+					}
+				]
+			},
+			"ResponsesTool": {
+				"description": "A tool definition, discriminated by `type`. Supported types are `function`, `custom` (only `apply_patch`), `namespace`, and `web_search`; other tool types are not supported.",
+				"oneOf": [
+					{
+						"$ref": "#/components/schemas/ResponsesFunctionTool"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesCustomTool"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesNamespaceTool"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesWebSearchTool"
+					}
+				],
+				"discriminator": {
+					"propertyName": "type",
+					"mapping": {
+						"function": "#/components/schemas/ResponsesFunctionTool",
+						"custom": "#/components/schemas/ResponsesCustomTool",
+						"namespace": "#/components/schemas/ResponsesNamespaceTool",
+						"web_search": "#/components/schemas/ResponsesWebSearchTool"
+					}
+				}
+			},
+			"ResponsesToolChoice": {
+				"type": "string",
+				"enum": [
+					"auto"
+				],
+				"description": "Controls tool-calling behavior. With `auto`, the model decides whether to call a tool."
+			},
+			"ResponsesOutputItem": {
+				"description": "An element of the output array, discriminated by `type`.",
+				"oneOf": [
+					{
+						"$ref": "#/components/schemas/ResponsesOutputReasoningItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesOutputMessageItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesOutputFunctionCallItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesOutputCustomToolCallItem"
+					},
+					{
+						"$ref": "#/components/schemas/ResponsesOutputWebSearchCallItem"
+					}
+				],
+				"discriminator": {
+					"propertyName": "type",
+					"mapping": {
+						"reasoning": "#/components/schemas/ResponsesOutputReasoningItem",
+						"message": "#/components/schemas/ResponsesOutputMessageItem",
+						"function_call": "#/components/schemas/ResponsesOutputFunctionCallItem",
+						"custom_tool_call": "#/components/schemas/ResponsesOutputCustomToolCallItem",
+						"web_search_call": "#/components/schemas/ResponsesOutputWebSearchCallItem"
+					}
+				}
+			},
+			"ResponsesUsage": {
+				"type": "object",
+				"description": "Token usage for this response.",
+				"properties": {
+					"input_tokens": {
+						"type": "integer",
+						"description": "Number of input tokens, including cached tokens."
+					},
+					"input_tokens_details": {
+						"type": "object",
+						"properties": {
+							"cached_tokens": {
+								"type": "integer",
+								"description": "Number of tokens served from the context cache."
+							},
+							"cache_write_tokens": {
+								"type": "integer",
+								"description": "Number of tokens written to the context cache."
+							}
+						}
+					},
+					"output_tokens": {
+						"type": "integer",
+						"description": "Number of output tokens, including reasoning tokens."
+					},
+					"output_tokens_details": {
+						"type": "object",
+						"properties": {
+							"reasoning_tokens": {
+								"type": "integer",
+								"description": "Number of tokens spent on reasoning."
+							}
+						}
+					},
+					"total_tokens": {
+						"type": "integer",
+						"description": "Total number of tokens."
+					}
+				}
+			},
+			"MessagesMessageParam": {
+				"type": "object",
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"user",
+							"assistant"
+						],
+						"example": "user",
+						"description": "The role of the message. Supports user and assistant. Use the top-level `system` field for the system prompt."
+					},
+					"content": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"oneOf": [
+										{
+											"title": "text",
+											"type": "object",
+											"properties": {
+												"type": {
+													"type": "string",
+													"enum": [
+														"text"
+													]
+												},
+												"text": {
+													"type": "string",
+													"description": "Text content"
+												}
+											},
+											"required": [
+												"type",
+												"text"
+											]
+										},
+										{
+											"title": "image",
+											"type": "object",
+											"properties": {
+												"type": {
+													"type": "string",
+													"enum": [
+														"image"
+													]
+												},
+												"source": {
+													"type": "object",
+													"description": "Image source. When `type` is `base64`, provide both `media_type` and `data`; when `type` is `url`, pass an `ms://<file_id>` file reference in `url`.",
+													"properties": {
+														"type": {
+															"type": "string",
+															"enum": [
+																"base64",
+																"url"
+															]
+														},
+														"media_type": {
+															"type": "string",
+															"enum": [
+																"image/jpeg",
+																"image/png",
+																"image/gif",
+																"image/webp"
+															],
+															"description": "Image MIME type, required only when `type=base64`"
+														},
+														"data": {
+															"type": "string",
+															"description": "Base64-encoded image content, required only when `type=base64`"
+														},
+														"url": {
+															"type": "string",
+															"description": "Reference to an uploaded image by file ID in the form `ms://<file_id>`, required only when `type=url`. See [Upload File](/api/files-upload)."
+														}
+													},
+													"required": [
+														"type"
+													]
+												}
+											},
+											"required": [
+												"type",
+												"source"
+											]
+										},
+										{
+											"title": "thinking",
+											"type": "object",
+											"description": "The model's reasoning. In multi-turn conversations, pass the thinking block from the response (including `signature`) back unchanged inside the assistant message.",
+											"properties": {
+												"type": {
+													"type": "string",
+													"enum": [
+														"thinking"
+													]
+												},
+												"thinking": {
+													"type": "string",
+													"description": "Reasoning content"
+												},
+												"signature": {
+													"type": "string",
+													"description": "Signature of the reasoning content; keep it unchanged when passing back"
+												}
+											},
+											"required": [
+												"type",
+												"thinking"
+											]
+										},
+										{
+											"title": "tool_use",
+											"type": "object",
+											"description": "A tool call issued by the model (appears in assistant messages)",
+											"properties": {
+												"type": {
+													"type": "string",
+													"enum": [
+														"tool_use"
+													]
+												},
+												"id": {
+													"type": "string",
+													"description": "Tool call ID; must match `tool_use_id` when submitting the result"
+												},
+												"name": {
+													"type": "string",
+													"description": "Tool name"
+												},
+												"input": {
+													"type": "object",
+													"description": "Tool input",
+													"additionalProperties": true
+												}
+											},
+											"required": [
+												"type",
+												"id",
+												"name",
+												"input"
+											]
+										},
+										{
+											"title": "tool_result",
+											"type": "object",
+											"description": "The result of a tool execution (appears in user messages)",
+											"properties": {
+												"type": {
+													"type": "string",
+													"enum": [
+														"tool_result"
+													]
+												},
+												"tool_use_id": {
+													"type": "string",
+													"description": "The `id` of the corresponding tool_use block"
+												},
+												"content": {
+													"oneOf": [
+														{
+															"type": "string"
+														},
+														{
+															"type": "array",
+															"items": {
+																"oneOf": [
+																	{
+																		"title": "text",
+																		"type": "object",
+																		"properties": {
+																			"type": {
+																				"type": "string",
+																				"enum": [
+																					"text"
+																				]
+																			},
+																			"text": {
+																				"type": "string",
+																				"description": "Text content"
+																			}
+																		},
+																		"required": [
+																			"type",
+																			"text"
+																		]
+																	},
+																	{
+																		"title": "image",
+																		"type": "object",
+																		"properties": {
+																			"type": {
+																				"type": "string",
+																				"enum": [
+																					"image"
+																				]
+																			},
+																			"source": {
+																				"type": "object",
+																				"description": "Image source. When `type` is `base64`, provide both `media_type` and `data`; when `type` is `url`, pass an `ms://<file_id>` file reference in `url`.",
+																				"properties": {
+																					"type": {
+																						"type": "string",
+																						"enum": [
+																							"base64",
+																							"url"
+																						]
+																					},
+																					"media_type": {
+																						"type": "string",
+																						"enum": [
+																							"image/jpeg",
+																							"image/png",
+																							"image/gif",
+																							"image/webp"
+																						],
+																						"description": "Image MIME type, required only when `type=base64`"
+																					},
+																					"data": {
+																						"type": "string",
+																						"description": "Base64-encoded image content, required only when `type=base64`"
+																					},
+																					"url": {
+																						"type": "string",
+																						"description": "Reference to an uploaded image by file ID in the form `ms://<file_id>`, required only when `type=url`. See [Upload File](/api/files-upload)."
+																					}
+																				},
+																				"required": [
+																					"type"
+																				]
+																			}
+																		},
+																		"required": [
+																			"type",
+																			"source"
+																		]
+																	}
+																]
+															}
+														}
+													],
+													"description": "Tool output, either a string or an array of text / image blocks"
+												}
+											},
+											"required": [
+												"type",
+												"tool_use_id",
+												"content"
+											]
+										}
+									]
+								}
+							}
+						],
+						"example": "Hello",
+						"description": "Message content. Either a plain string or an array of content blocks (text / image / thinking / tool_use / tool_result)."
+					}
+				},
+				"required": [
+					"role",
+					"content"
+				]
+			},
+			"MessagesTextBlockParam": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"text"
+						]
+					},
+					"text": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"type",
+					"text"
+				]
+			},
+			"MessagesTool": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"custom"
+						],
+						"description": "Tool type, may be omitted"
+					},
+					"name": {
+						"type": "string",
+						"description": "Tool name. Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
+						"pattern": "^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$"
+					},
+					"description": {
+						"type": "string",
+						"description": "Description of what the tool does"
+					},
+					"input_schema": {
+						"type": "object",
+						"description": "JSON Schema for the tool input; the top-level `type` must be `object`. Must conform to the [MFJS (Moonshot Flavored JSON Schema) specification](https://github.com/MoonshotAI/walle/blob/main/docs/mfjs-spec.md).",
+						"additionalProperties": true
+					}
+				},
+				"required": [
+					"name",
+					"input_schema"
+				]
+			},
+			"MessagesToolChoice": {
+				"type": "object",
+				"description": "Controls whether the model calls tools. `auto` (default): the model decides; `any`: force a call to any tool; `none`: do not call tools.",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"auto",
+							"any",
+							"none"
+						],
+						"default": "auto"
+					}
+				},
+				"required": [
+					"type"
+				]
+			},
+			"ToolDefinition": {
+				"type": "object",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						]
+					},
+					"function": {
+						"type": "object",
+						"properties": {
+							"name": {
+								"type": "string",
+								"description": "Function name. Must follow the regex: ^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
+								"pattern": "^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$"
+							},
+							"description": {
+								"type": "string",
+								"description": "Description of what the function does"
+							},
+							"parameters": {
+								"type": "object",
+								"description": "Function parameters as JSON Schema. Must conform to the [MFJS (Moonshot Flavored JSON Schema) specification](https://github.com/MoonshotAI/walle/blob/main/docs/mfjs-spec.md).",
+								"additionalProperties": true
+							},
+							"strict": {
+								"type": "boolean",
+								"default": true,
+								"description": "Whether to strictly constrain tool call arguments according to the parameters schema. Defaults to true. When false, only guarantees the output is a valid JSON object without enforcing internal structure."
+							}
+						},
+						"required": [
+							"name",
+							"parameters"
+						]
+					}
+				},
+				"required": [
+					"type",
+					"function"
+				]
+			},
+			"Message": {
+				"type": "object",
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"system",
+							"user",
+							"assistant",
+							"tool"
+						],
+						"example": "user",
+						"description": "The role of the message sender. Supports system, user, assistant, tool."
+					},
+					"content": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"oneOf": [
+										{
+											"title": "text",
+											"type": "object",
+											"properties": {
+												"type": {
+													"type": "string",
+													"enum": [
+														"text"
+													]
+												},
+												"text": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"type",
+												"text"
+											]
+										},
+										{
+											"title": "image_url",
+											"type": "object",
+											"properties": {
+												"type": {
+													"type": "string",
+													"enum": [
+														"image_url"
+													]
+												},
+												"image_url": {
+													"oneOf": [
+														{
+															"type": "object",
+															"properties": {
+																"url": {
+																	"type": "string"
+																}
+															},
+															"required": [
+																"url"
+															]
+														},
+														{
+															"type": "string"
+														}
+													]
+												}
+											},
+											"required": [
+												"type",
+												"image_url"
+											]
+										},
+										{
+											"title": "video_url",
+											"type": "object",
+											"properties": {
+												"type": {
+													"type": "string",
+													"enum": [
+														"video_url"
+													]
+												},
+												"video_url": {
+													"oneOf": [
+														{
+															"type": "object",
+															"properties": {
+																"url": {
+																	"type": "string"
+																}
+															},
+															"required": [
+																"url"
+															]
+														},
+														{
+															"type": "string"
+														}
+													]
+												}
+											},
+											"required": [
+												"type",
+												"video_url"
+											]
+										}
+									]
+								}
+							}
+						],
+						"example": "Hello",
+						"description": "The content of the message. Can be a plain text string, or an array of objects with text/image_url/video_url types (for multimodal input)"
+					},
+					"name": {
+						"type": "string",
+						"default": null,
+						"description": "Optional name for the message sender"
+					},
+					"partial": {
+						"type": "boolean",
+						"default": false,
+						"description": "Enable Partial Mode by setting this to true in the last assistant message"
+					}
+				},
+				"required": [
+					"role",
+					"content"
+				]
+			},
+			"KimiK3DynamicToolMessage": {
+				"type": "object",
+				"description": "A Kimi K3 dynamic tool loading message. This message must use the system role, declares tools available to subsequent conversation turns from its position, and does not include a content field.",
+				"properties": {
+					"role": {
+						"type": "string",
+						"enum": [
+							"system"
+						],
+						"description": "The role of a dynamic tool loading message. Always system."
+					},
+					"tools": {
+						"type": "array",
+						"description": "Tools available for the model to call from this message onward",
+						"items": {
+							"$ref": "#/components/schemas/ToolDefinition"
+						}
+					}
+				},
+				"required": [
+					"role",
+					"tools"
+				],
+				"additionalProperties": false
+			},
+			"ResponsesMessageItem": {
+				"type": "object",
+				"title": "Message",
+				"description": "A conversation message. `type` may be omitted.",
+				"required": [
+					"role",
+					"content"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"message"
+						]
+					},
+					"role": {
+						"type": "string",
+						"enum": [
+							"user",
+							"assistant",
+							"developer"
+						],
+						"description": "Message role. `developer` is handled as a system instruction."
+					},
+					"content": {
+						"description": "Message content, either a string or an array of content parts.",
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/ResponsesInputContentPart"
+								}
+							}
+						]
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"completed"
+						]
+					}
+				}
+			},
+			"ResponsesReasoningItem": {
+				"type": "object",
+				"title": "Reasoning",
+				"description": "Replays reasoning content from a previous turn. `content` takes precedence over `summary`.",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"reasoning"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"summary": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"required": [
+								"type",
+								"text"
+							],
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"summary_text"
+									]
+								},
+								"text": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"content": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"required": [
+								"type",
+								"text"
+							],
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"reasoning_text"
+									]
+								},
+								"text": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"completed"
+						]
+					}
+				}
+			},
+			"ResponsesFunctionCallItem": {
+				"type": "object",
+				"title": "Function call",
+				"description": "Replays a function call.",
+				"required": [
+					"type",
+					"call_id",
+					"name",
+					"arguments"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"function_call"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"call_id": {
+						"type": "string",
+						"description": "Call ID paired with the matching `function_call_output`."
+					},
+					"name": {
+						"type": "string"
+					},
+					"namespace": {
+						"type": "string",
+						"description": "Namespace the tool belongs to, returned for namespace tool calls."
+					},
+					"arguments": {
+						"type": "string",
+						"description": "JSON string of the function arguments."
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"completed"
+						]
+					}
+				}
+			},
+			"ResponsesFunctionCallOutputItem": {
+				"type": "object",
+				"title": "Function call output",
+				"description": "Result of executing a function call.",
+				"required": [
+					"type",
+					"call_id",
+					"output"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"function_call_output"
+						]
+					},
+					"call_id": {
+						"type": "string",
+						"description": "Same call ID as the matching `function_call`."
+					},
+					"output": {
+						"description": "Content returned by the tool.",
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/ResponsesInputContentPart"
+								}
+							}
+						]
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"completed"
+						]
+					}
+				}
+			},
+			"ResponsesCustomToolCallItem": {
+				"type": "object",
+				"title": "Custom tool call",
+				"description": "Replays a custom tool call.",
+				"required": [
+					"type",
+					"call_id",
+					"name",
+					"input"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"custom_tool_call"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"call_id": {
+						"type": "string",
+						"description": "Call ID paired with the matching `custom_tool_call_output`."
+					},
+					"name": {
+						"type": "string"
+					},
+					"namespace": {
+						"type": "string",
+						"description": "Namespace the tool belongs to, returned for namespace tool calls."
+					},
+					"input": {
+						"type": "string",
+						"description": "Free-form text input generated by the model."
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"completed"
+						]
+					}
+				}
+			},
+			"ResponsesCustomToolCallOutputItem": {
+				"type": "object",
+				"title": "Custom tool call output",
+				"description": "Result of executing a custom tool call.",
+				"required": [
+					"type",
+					"call_id",
+					"output"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"custom_tool_call_output"
+						]
+					},
+					"call_id": {
+						"type": "string",
+						"description": "Same call ID as the matching `custom_tool_call`."
+					},
+					"output": {
+						"description": "Content returned by the tool.",
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/ResponsesInputContentPart"
+								}
+							}
+						]
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"completed"
+						]
+					}
+				}
+			},
+			"ResponsesWebSearchCallItem": {
+				"type": "object",
+				"title": "Web search call",
+				"description": "Replays a previous web search call. Kept for history only and ignored during conversion; the search results are already carried by the assistant message that follows.",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"web_search_call"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"completed"
+						]
+					},
+					"action": {
+						"type": "object",
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"search"
+								]
+							},
+							"query": {
+								"type": "string"
+							}
+						}
+					}
+				}
+			},
+			"ResponsesAdditionalToolsItem": {
+				"type": "object",
+				"title": "Additional tools",
+				"description": "Adds callable tools partway through a conversation, effective from the position of this item.",
+				"required": [
+					"type",
+					"role",
+					"tools"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"additional_tools"
+						]
+					},
+					"id": {
+						"type": "string"
+					},
+					"role": {
+						"type": "string",
+						"enum": [
+							"developer"
+						]
+					},
+					"tools": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ResponsesTool"
+						}
+					}
+				}
+			},
+			"ResponsesFunctionTool": {
+				"type": "object",
+				"title": "Function tool",
+				"description": "A function tool whose arguments are described by a JSON Schema.",
+				"required": [
+					"type",
+					"name"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						]
+					},
+					"name": {
+						"type": "string",
+						"description": "Function name. Must follow the regex: ^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
+						"pattern": "^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$"
+					},
+					"description": {
+						"type": "string"
+					},
+					"parameters": {
+						"type": "object",
+						"description": "JSON Schema describing the function arguments."
+					},
+					"strict": {
+						"type": "boolean"
+					}
+				}
+			},
+			"ResponsesCustomTool": {
+				"type": "object",
+				"title": "Custom tool",
+				"description": "A custom tool that takes free-form text input. Only the custom tool named `apply_patch` is supported, and it must define a `grammar` + `lark` format; when the model calls it, a `custom_tool_call` item is returned in the output.",
+				"required": [
+					"type",
+					"name",
+					"format"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"custom"
+						]
+					},
+					"name": {
+						"type": "string",
+						"enum": [
+							"apply_patch"
+						],
+						"description": "Tool name. Only `apply_patch` is supported."
+					},
+					"description": {
+						"type": "string"
+					},
+					"format": {
+						"type": "object",
+						"description": "Input format constraint. Only the `grammar` type with `lark` syntax is supported.",
+						"required": [
+							"type",
+							"syntax",
+							"definition"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"grammar"
+								]
+							},
+							"syntax": {
+								"type": "string",
+								"enum": [
+									"lark"
+								]
+							},
+							"definition": {
+								"type": "string",
+								"description": "The Lark grammar definition."
+							}
+						}
+					}
+				}
+			},
+			"ResponsesNamespaceTool": {
+				"type": "object",
+				"title": "Namespace tool",
+				"description": "Groups a set of function or custom tools under one namespace.",
+				"required": [
+					"type",
+					"name",
+					"description",
+					"tools"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"namespace"
+						]
+					},
+					"name": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"tools": {
+						"type": "array",
+						"items": {
+							"oneOf": [
+								{
+									"$ref": "#/components/schemas/ResponsesFunctionTool"
+								},
+								{
+									"$ref": "#/components/schemas/ResponsesCustomTool"
+								}
+							]
+						}
+					}
+				}
+			},
+			"ResponsesWebSearchTool": {
+				"type": "object",
+				"title": "Web search tool",
+				"description": "A web search tool executed on the server side. When present, the server first decides from the input whether a search is needed; if so, it runs the search, injects the results into the model context, and returns a `web_search_call` item in the output. At most one `web_search` tool is allowed per request. `search_context_size`, `blocked_domains`, and `filters.blocked_domains` are not supported and return `invalid_request_error`; `user_location`, `external_web_access`, and `indexed_web_access` are ignored.",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"web_search"
+						]
+					},
+					"filters": {
+						"type": "object",
+						"description": "Search scope filters.",
+						"properties": {
+							"allowed_domains": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								},
+								"maxItems": 100,
+								"description": "Restrict the search to these domains, up to 100."
+							}
+						}
+					},
+					"search_content_types": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"enum": [
+								"text",
+								"image"
+							]
+						},
+						"default": [
+							"text"
+						],
+						"description": "Result types to search for. Defaults to `text` only. Including `image` additionally runs an image search."
+					},
+					"image_settings": {
+						"type": "object",
+						"description": "Image search settings. Only effective when `search_content_types` includes `image`.",
+						"properties": {
+							"max_results": {
+								"type": "integer",
+								"minimum": 1,
+								"maximum": 10,
+								"default": 3,
+								"description": "Maximum number of images to return."
+							},
+							"caption": {
+								"type": "boolean",
+								"default": false,
+								"description": "Whether to generate a caption for each image."
+							}
+						}
+					}
+				}
+			},
+			"ResponsesOutputReasoningItem": {
+				"type": "object",
+				"title": "Reasoning",
+				"description": "Reasoning content produced by the model.",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"reasoning"
+						]
+					},
+					"id": {
+						"type": "string",
+						"example": "rs_68f0c1c2d3e4f5a6b7c8d9e0"
+					},
+					"summary": {
+						"type": "array",
+						"description": "The reasoning content.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"summary_text"
+									]
+								},
+								"text": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"encrypted_content": {
+						"type": [
+							"string",
+							"null"
+						],
+						"description": "Always `null`."
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"in_progress",
+							"completed"
+						]
+					}
+				}
+			},
+			"ResponsesOutputMessageItem": {
+				"type": "object",
+				"title": "Message",
+				"description": "Text reply produced by the model.",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"message"
+						]
+					},
+					"id": {
+						"type": "string",
+						"example": "msg_68f0c1c2d3e4f5a6b7c8d9e0"
+					},
+					"role": {
+						"type": "string",
+						"enum": [
+							"assistant"
+						]
+					},
+					"content": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"output_text"
+									]
+								},
+								"text": {
+									"type": "string"
+								},
+								"annotations": {
+									"type": "array",
+									"items": {}
+								}
+							}
+						}
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"in_progress",
+							"completed"
+						]
+					}
+				}
+			},
+			"ResponsesOutputFunctionCallItem": {
+				"type": "object",
+				"title": "Function call",
+				"description": "A function call initiated by the model.",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"function_call"
+						]
+					},
+					"id": {
+						"type": "string",
+						"example": "fc_68f0c1c2d3e4f5a6b7c8d9e0"
+					},
+					"call_id": {
+						"type": "string",
+						"description": "Use this value in `function_call_output` when returning the result."
+					},
+					"name": {
+						"type": "string"
+					},
+					"namespace": {
+						"type": "string",
+						"description": "Returned for namespace tool calls."
+					},
+					"arguments": {
+						"type": "string",
+						"description": "JSON string of the function arguments."
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"in_progress",
+							"completed"
+						]
+					}
+				}
+			},
+			"ResponsesOutputCustomToolCallItem": {
+				"type": "object",
+				"title": "Custom tool call",
+				"description": "A custom tool call initiated by the model.",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"custom_tool_call"
+						]
+					},
+					"id": {
+						"type": "string",
+						"example": "ctc_68f0c1c2d3e4f5a6b7c8d9e0"
+					},
+					"call_id": {
+						"type": "string",
+						"description": "Use this value in `custom_tool_call_output` when returning the result."
+					},
+					"name": {
+						"type": "string"
+					},
+					"namespace": {
+						"type": "string",
+						"description": "Returned for namespace tool calls."
+					},
+					"input": {
+						"type": "string",
+						"description": "Free-form text input generated by the model."
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"in_progress",
+							"completed"
+						]
+					}
+				}
+			},
+			"ResponsesOutputWebSearchCallItem": {
+				"type": "object",
+				"title": "Web search call",
+				"description": "A web search call executed on the server side. Returned only when the request includes the `web_search` tool and the server decides a search is needed. It appears first in the output array.",
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"web_search_call"
+						]
+					},
+					"id": {
+						"type": "string",
+						"example": "ws_68f0c1c2d3e4f5a6b7c8d9e0"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"in_progress",
+							"completed"
+						]
+					},
+					"action": {
+						"type": "object",
+						"description": "The action performed by this search.",
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"search"
+								]
+							},
+							"query": {
+								"type": "string",
+								"description": "The search query actually used."
+							},
+							"sources": {
+								"type": "array",
+								"description": "Web pages the search hit. Returned only when `include` contains `web_search_call.action.sources`.",
+								"items": {
+									"type": "object",
+									"properties": {
+										"type": {
+											"type": "string",
+											"enum": [
+												"url"
+											]
+										},
+										"url": {
+											"type": "string"
+										},
+										"title": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					},
+					"results": {
+						"type": "array",
+						"description": "Image search results. Returned only when `include` contains `web_search_call.results` and `search_content_types` includes `image`.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"type": "string",
+									"enum": [
+										"image_result"
+									]
+								},
+								"image_url": {
+									"type": "string"
+								},
+								"thumbnail_url": {
+									"type": "string"
+								},
+								"source_website_url": {
+									"type": "string"
+								},
+								"caption": {
+									"type": "string",
+									"description": "Image caption. Returned only when `image_settings.caption` is enabled."
+								}
+							}
+						}
+					}
+				}
+			},
+			"ResponsesInputContentPart": {
+				"description": "An element of a content array, discriminated by `type`.",
+				"oneOf": [
+					{
+						"type": "object",
+						"title": "Input text",
+						"required": [
+							"type",
+							"text"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"input_text"
+								]
+							},
+							"text": {
+								"type": "string"
+							}
+						}
+					},
+					{
+						"type": "object",
+						"title": "Input image",
+						"required": [
+							"type",
+							"image_url"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"input_image"
+								]
+							},
+							"image_url": {
+								"type": "string",
+								"description": "Data URL of the image, for example `data:image/png;base64,<base64>`. Public http(s) URLs are not supported."
+							},
+							"detail": {
+								"type": "string",
+								"enum": [
+									"auto",
+									"low",
+									"high",
+									"original"
+								]
+							}
+						}
+					},
+					{
+						"type": "object",
+						"title": "Output text",
+						"description": "Used when replaying assistant text from history.",
+						"required": [
+							"type",
+							"text"
+						],
+						"properties": {
+							"type": {
+								"type": "string",
+								"enum": [
+									"output_text"
+								]
+							},
+							"text": {
+								"type": "string"
+							}
+						}
+					}
+				]
+			}
+		}
+	},
+	"servers": [
+		{
+			"url": "https://api.moonshot.ai",
+			"description": "Production"
+		}
+	],
+	"securitySchemes": {
+		"bearerAuth": {
+			"type": "http",
+			"scheme": "bearer",
+			"description": "The Authorization header expects a Bearer token. Use an MOONSHOT_API_KEY as the token. This is a server-side secret key. Generate one on the [API keys page](https://platform.kimi.ai/console/api-keys) in your dashboard."
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses",
+		"messages": "/anthropic/v1/messages"
+	}
+}

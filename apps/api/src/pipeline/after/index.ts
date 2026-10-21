@@ -11,16 +11,19 @@ import { guardUpstreamStatus } from "./guards";
 import { loadProviderPricing, calculatePricing } from "./pricing";
 import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "./payload";
 import { handleStreamResponse, handlePassthroughFallback } from "./stream";
+import { handleSpeechStreamResponse } from "./speech-stream";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
+import { withServedModel } from "./served-model";
 import { recordUsageAndChargeOnce } from "./charge";
-import { shapeUsageForClient } from "../usage";
+import { keepStreamServerToolMeters, mergeBillAndPayloadUsage, shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import { getBaseModel } from "../execute/utils";
+import { cachedDroppedParams, droppedParamsForClient } from "../execute/unsupportedParams";
 import { dispatchBackground, ensureRuntimeForBackground, getResponseCache } from "@/runtime/env";
 import { resolveNonStreamLatencyMs } from "./timing";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
@@ -198,6 +201,8 @@ function dispatchNonStreamSuccessSideEffects(args: {
                         routingMode: ctx.routingMode ?? null,
                         presetId: ctx.preset?.id ?? null,
                         presetSlug: ctx.preset?.slug ?? null,
+                        // Cache hits report the same X-Phaseo-Dropped-Params as this response.
+                        droppedParams: cachedDroppedParams(ctx),
                         ttlSeconds: cacheState.ttlSeconds,
                     });
                     await responseCache.set(
@@ -222,6 +227,10 @@ function dispatchNonStreamSuccessSideEffects(args: {
                     model: getBaseModel(ctx.model),
                     body: ctx.body,
                     providerId: result.provider,
+                    apiModelId: result.apiModelId ?? null,
+                    providerModelSlug: result.providerModelSlug ?? null,
+                    keySource: result.keySource ?? null,
+                    byokKeyId: result.byokKeyId ?? null,
                     usage: usageForSticky,
                     enabled: cacheAwareRoutingEnabled,
                 });
@@ -293,6 +302,8 @@ export function attachGatewaySuccessMeta(args: {
                     provider: entry.providerId,
                     unsupported_params: entry.unsupportedParams,
                 })) ?? [],
+            // Parameters the serving provider does not support, removed before the call.
+            dropped_params: droppedParamsForClient(ctx).map(({ param, reason }) => ({ param, reason })),
         },
         ...(ctx.responseCache ? { response_cache: ctx.responseCache } : {}),
         ...(ctx.guardrailEnforcement
@@ -371,13 +382,19 @@ export async function finalizeRequest(args: {
         return await handleNonStreamResponse(ctx, result, args.timingHeader);
     }
 
-    // 4) Passthrough fallback for endpoints where binary/media passthrough is expected
+    // 4) Speech audio streamed straight from the provider: forward the bytes, then price,
+    // charge and audit once the body has ended (or the client has gone).
+    if (ctx.endpoint === "audio.speech" && result.kind === "stream" && result.stream) {
+        return await handleSpeechStreamResponse(ctx, result, args.timingHeader);
+    }
+
+    // 5) Passthrough fallback for endpoints where binary/media passthrough is expected
     const passthroughOk = ["audio.speech", "audio.transcription", "audio.translations", "video.generation", "images.edits"].includes(ctx.endpoint);
     if (passthroughOk) {
         return handlePassthroughFallback(result.upstream);
     }
 
-    // 5) If we reach this state without a normalized payload, treat as failure.
+    // 6) If we reach this state without a normalized payload, treat as failure.
     const status = 502;
     const errorCode = "normalization_failed";
     const errorMessage = "Gateway could not normalize upstream response.";
@@ -437,18 +454,14 @@ async function handleNonStreamResponse(
     payload = pluginOutcome.payload;
     result.normalized = payload;
     ctx.pluginExecutions = pluginOutcome.executions;
-    const usageFromPayload = payload?.usage ?? null;
-    const usageFromBill = result.bill?.usage ?? null;
-    const payloadUsageObject =
-        usageFromPayload && typeof usageFromPayload === "object" ? usageFromPayload : null;
-    const billUsageObject =
-        usageFromBill && typeof usageFromBill === "object" ? usageFromBill : null;
     // Keep payload usage authoritative for overlapping fields, but preserve
     // bill-only meters (for providers that meter requests/non-token dimensions).
-    const usageNormalized = {
-        ...(billUsageObject ?? {}),
-        ...(payloadUsageObject ?? {}),
-    };
+    // Cache hints follow the payload's input_tokens (Anthropic semantics on Messages).
+    const usageNormalized = keepStreamServerToolMeters(
+        mergeBillAndPayloadUsage(result.bill?.usage, payload?.usage),
+        result.bill?.usage,
+        result.usageFinalizerAuthoritative === true,
+    );
     result.bill.usage = usageNormalized;
     result.bill.finish_reason = finishReason;
     const toolUsage = summarizeToolUsage({
@@ -589,6 +602,7 @@ async function handleNonStreamResponse(
         includeMeta,
     });
     if (responseBody && typeof responseBody === "object" && !Array.isArray(responseBody)) {
+        withServedModel(responseBody, ctx);
         attachRoutingDiagnosticsToPayload({
             ctx,
             payload: responseBody,

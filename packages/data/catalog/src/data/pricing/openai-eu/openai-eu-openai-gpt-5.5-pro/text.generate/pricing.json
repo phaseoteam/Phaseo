@@ -38,6 +38,38 @@
       "source": null
     },
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 33,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "OpenAI lists no cached-input price (\"-\") for this model, so cached tokens bill at the standard input rate (accessed 2026-10-17).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-04-24T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "source": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -100,6 +132,38 @@
         }
       ],
       "source": null
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 66,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "OpenAI lists no cached-input price (\"-\") for this model, so cached tokens bill at the standard input rate (accessed 2026-10-17).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-04-24T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "source": "https://developers.openai.com/api/docs/pricing"
     },
     {
       "meter": "output_text_tokens",
@@ -267,7 +331,9 @@
     "standard",
     "flex"
   ],
-  "sources": [],
+  "sources": [
+    "https://developers.openai.com/api/docs/pricing"
+  ],
   "verification": {
     "status": "unverified",
     "checked_at": null,

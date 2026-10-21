@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { MODEL_DISCOVERY_PROVIDERS } from "./providers";
 
 describe("MODEL_DISCOVERY_PROVIDERS", () => {
+	it("discovers Inference.net's public catalog without inference credentials", () => {
+		const provider = MODEL_DISCOVERY_PROVIDERS.find((entry) => entry.providerId === "inference-net");
+
+		expect(provider).toMatchObject({
+			modelsEndpoint: "https://api.inference.net/v1/models",
+			authStyle: "none",
+		});
+	});
+
 	it("includes the newly supported self-serve providers with model APIs", () => {
 		const providerIds = new Set(MODEL_DISCOVERY_PROVIDERS.map((provider) => provider.providerId));
 
@@ -46,10 +55,11 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providerIds.has("zai")).toBe(false);
 	});
 
-	it("watches Pioneer at the host its retired API names as the replacement", () => {
-		const pioneer = MODEL_DISCOVERY_PROVIDERS.find((provider) => provider.providerId === "pioneer");
+	it("watches Fastino separately from the retired Pioneer provider", () => {
+		const fastino = MODEL_DISCOVERY_PROVIDERS.find((provider) => provider.providerId === "fastino");
 
-		expect(pioneer).toMatchObject({ modelsEndpoint: "https://api.fastino.ai/v1/models", authStyle: "none" });
+		expect(fastino).toMatchObject({ providerName: "Fastino", modelsEndpoint: "https://api.fastino.ai/v1/models", authStyle: "none" });
+		expect(MODEL_DISCOVERY_PROVIDERS.some((provider) => provider.providerId === "pioneer")).toBe(false);
 	});
 
 	it("does not poll Clarifai while its API host does not resolve", () => {
@@ -94,7 +104,7 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 
 	it("includes models.dev parity aggregator and public catalog endpoints", () => {
 		const providers = new Map(MODEL_DISCOVERY_PROVIDERS.map((provider) => [provider.providerId, provider]));
-		for (const providerId of ["crossmodel", "digitalocean", "empiriolabs", "llmgateway", "ovhcloud", "pioneer", "vercel"]) {
+		for (const providerId of ["crossmodel", "digitalocean", "empiriolabs", "llmgateway", "ovhcloud", "fastino", "vercel"]) {
 			expect(providers.has(providerId), providerId).toBe(true);
 		}
 		for (const providerId of ["huggingface", "kilo", "nano-gpt"]) {

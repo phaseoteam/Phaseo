@@ -56,3 +56,20 @@ Cuando se usa una herramienta del servidor, los datos de uso incluyen:
 ## Nota sobre el streaming
 
 También se admite `stream: true`. Para las herramientas de servidor administradas por Gateway, Phaseo puede materializar el turno de llamada a la herramienta upstream, continuar el ciclo y volver a emitir un flujo sintético.
+
+## Razonamiento en ciclos de herramientas
+
+Los modelos de razonamiento devuelven su razonamiento en dos campos del mensaje del asistente:
+
+- `reasoning_content`: el texto del razonamiento, cuando el proveedor lo devuelve.
+- `reasoning_details`: un array de bloques de razonamiento en el formato que usa OpenRouter. Cada entrada tiene un `type` (`reasoning.text`, `reasoning.summary` o `reasoning.encrypted`), un `index` y un `format` que indica la familia del proveedor, por ejemplo `anthropic-claude-v1` o `google-gemini-v1`.
+
+Las entradas pueden llevar estado del proveedor que el modelo necesita en el siguiente paso de un ciclo de herramientas:
+
+- Firmas de thinking de Claude, en `signature` en las entradas `reasoning.text`.
+- Thinking censurado de Claude y razonamiento cifrado de OpenAI, en `data` en las entradas `reasoning.encrypted`.
+- Firmas de pensamiento de Gemini, en `data` en las entradas `reasoning.encrypted` cuyo `id` es la llamada a herramienta a la que pertenecen.
+
+Con streaming, llega un delta de `reasoning_details` cuando se completa cada bloque de razonamiento.
+
+Para que el modelo conserve su razonamiento entre pasos, devuelva el mensaje del asistente con su `reasoning_details` sin cambios. Los valores de `signature` y `data` son opacos y registran el proveedor y el modelo que los generaron. Phaseo los envía solo a esa familia de proveedores y a ese modelo, así que un fallback a otro proveedor los descarta en lugar de fallar. Los modelos Claude en modo de thinking manual necesitan recibir su thinking para seguir pensando durante un ciclo de herramientas; si falta, ese paso se ejecuta sin thinking.

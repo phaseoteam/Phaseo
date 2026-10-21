@@ -90,6 +90,11 @@ inline Response CreateChatCompletion(Client& client, const std::map<std::string,
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateDataContributionClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data-contribution/classifiers";
 	return client.request("POST", resolved_path, body);
@@ -102,6 +107,11 @@ inline Response CreateDynamicRoute(Client& client, const std::map<std::string, s
 
 inline Response CreateEmbedding(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/embeddings";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateExtraction(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/extractions";
 	return client.request("POST", resolved_path, body);
 }
 
@@ -285,6 +295,11 @@ inline Response DeleteApiKey(Client& client, const std::map<std::string, std::st
 	return client.request("DELETE", resolved_path, body);
 }
 
+inline Response DeleteClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
 inline Response DeleteDataContributionClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data-contribution/classifiers/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
@@ -432,6 +447,11 @@ inline Response GetActivityAlias(Client& client, const std::map<std::string, std
 
 inline Response GetApiKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/keys/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
@@ -662,6 +682,11 @@ inline Response ListBatchRequests(Client& client, const std::map<std::string, st
 
 inline Response ListBatchRequestsAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/batch/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/requests";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListClassifiers(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -1027,6 +1052,11 @@ inline Response TestWorkspaceNotificationDestinationConfig(Client& client, const
 
 inline Response UpdateApiKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/keys/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateClassifier(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/classifiers/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 

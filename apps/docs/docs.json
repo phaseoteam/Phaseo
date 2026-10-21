@@ -141,6 +141,7 @@
                   },
                   "v1/guides/app-attribution",
                   "v1/guides/request-labels",
+                  "v1/guides/request-classifiers",
                   "v1/guides/workspace-notifications"
                 ]
               },
@@ -365,14 +366,14 @@
                 "icon": "video",
                 "tag": "Beta",
                 "pages": [
-                  "v1/api-reference/endpoint/video-list",
                   "v1/api-reference/endpoint/video-create",
-                  "v1/api-reference/endpoint/video-models",
                   "v1/api-reference/endpoint/video-status",
-                  "v1/api-reference/endpoint/video-delete",
-                  "v1/api-reference/endpoint/video-cancel",
                   "v1/api-reference/endpoint/video-content",
-                  "v1/api-reference/endpoint/video-download-url"
+                  "v1/api-reference/endpoint/video-download-url",
+                  "v1/api-reference/endpoint/video-cancel",
+                  "v1/api-reference/endpoint/video-delete",
+                  "v1/api-reference/endpoint/video-list",
+                  "v1/api-reference/endpoint/video-models"
                 ]
               },
               {
@@ -386,7 +387,8 @@
                 "group": "Decisions",
                 "icon": "signpost",
                 "pages": [
-                  "v1/api-reference/endpoint/decisions"
+                  "v1/api-reference/endpoint/decisions",
+                  "v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -449,18 +451,18 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "v1/api-reference/endpoint/batches-list",
                       "v1/api-reference/endpoint/batches-create",
-                      "v1/api-reference/endpoint/batches-models",
-                      "v1/api-reference/endpoint/batches-capabilities",
-                      "v1/api-reference/endpoint/batches-files-list",
-                      "v1/api-reference/endpoint/batches-files-upload",
-                      "v1/api-reference/endpoint/batches-files-retrieve",
-                      "v1/api-reference/endpoint/batches-files-content",
                       "v1/api-reference/endpoint/batches-retrieve",
                       "v1/api-reference/endpoint/batches-results",
                       "v1/api-reference/endpoint/batches-requests",
-                      "v1/api-reference/endpoint/batches-cancel"
+                      "v1/api-reference/endpoint/batches-cancel",
+                      "v1/api-reference/endpoint/batches-list",
+                      "v1/api-reference/endpoint/batches-files-upload",
+                      "v1/api-reference/endpoint/batches-files-retrieve",
+                      "v1/api-reference/endpoint/batches-files-content",
+                      "v1/api-reference/endpoint/batches-files-list",
+                      "v1/api-reference/endpoint/batches-models",
+                      "v1/api-reference/endpoint/batches-capabilities"
                     ]
                   },
                   {
@@ -468,9 +470,9 @@
                     "expanded": true,
                     "pages": [
                       "v1/api-reference/endpoint/files",
-                      "v1/api-reference/endpoint/files-list",
                       "v1/api-reference/endpoint/files-retrieve",
-                      "v1/api-reference/endpoint/files-content"
+                      "v1/api-reference/endpoint/files-content",
+                      "v1/api-reference/endpoint/files-list"
                     ]
                   },
                   {
@@ -478,12 +480,12 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "v1/api-reference/endpoint/webhook-endpoints-list",
                       "v1/api-reference/endpoint/webhook-endpoints-create",
                       "v1/api-reference/endpoint/webhook-endpoints-get",
                       "v1/api-reference/endpoint/webhook-endpoints-update",
+                      "v1/api-reference/endpoint/webhook-endpoints-rotate-secret",
                       "v1/api-reference/endpoint/webhook-endpoints-delete",
-                      "v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
+                      "v1/api-reference/endpoint/webhook-endpoints-list"
                     ]
                   }
                 ]
@@ -511,53 +513,53 @@
                     "pages": [
                       "v1/api-reference/endpoint/workspace-settings-get",
                       "v1/api-reference/endpoint/workspace-settings-update",
-                      "v1/api-reference/endpoint/dynamic-routes-list",
                       "v1/api-reference/endpoint/dynamic-routes-create",
                       "v1/api-reference/endpoint/dynamic-routes-get",
                       "v1/api-reference/endpoint/dynamic-routes-update",
                       "v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "v1/api-reference/endpoint/dynamic-routes-deploy",
-                      "v1/api-reference/endpoint/dynamic-routes-delete"
+                      "v1/api-reference/endpoint/dynamic-routes-delete",
+                      "v1/api-reference/endpoint/dynamic-routes-list"
                     ]
                   },
                   {
                     "group": "Presets",
                     "expanded": false,
                     "pages": [
-                      "v1/api-reference/endpoint/presets-list",
                       "v1/api-reference/endpoint/presets-create",
                       "v1/api-reference/endpoint/presets-get",
                       "v1/api-reference/endpoint/presets-update",
-                      "v1/api-reference/endpoint/presets-versions-list",
                       "v1/api-reference/endpoint/presets-version-publish",
+                      "v1/api-reference/endpoint/presets-versions-list",
                       "v1/api-reference/endpoint/presets-fork",
                       "v1/api-reference/endpoint/presets-upstream-apply",
+                      "v1/api-reference/endpoint/presets-delete",
+                      "v1/api-reference/endpoint/presets-list",
                       "v1/api-reference/endpoint/presets-publisher-get",
-                      "v1/api-reference/endpoint/presets-publisher-update",
-                      "v1/api-reference/endpoint/presets-delete"
+                      "v1/api-reference/endpoint/presets-publisher-update"
                     ]
                   },
                   {
                     "group": "Private Models",
                     "expanded": false,
                     "pages": [
-                      "v1/api-reference/endpoint/private-models-list",
                       "v1/api-reference/endpoint/private-models-create",
                       "v1/api-reference/endpoint/private-models-get",
                       "v1/api-reference/endpoint/private-models-update",
-                      "v1/api-reference/endpoint/private-models-delete"
+                      "v1/api-reference/endpoint/private-models-delete",
+                      "v1/api-reference/endpoint/private-models-list"
                     ]
                   },
                   {
                     "group": "Provider credentials",
                     "expanded": false,
                     "pages": [
-                      "v1/api-reference/endpoint/provider-credentials-list",
                       "v1/api-reference/endpoint/provider-credentials-create",
                       "v1/api-reference/endpoint/provider-credentials-get",
                       "v1/api-reference/endpoint/provider-credentials-update",
+                      "v1/api-reference/endpoint/provider-credentials-reorder",
                       "v1/api-reference/endpoint/provider-credentials-delete",
-                      "v1/api-reference/endpoint/provider-credentials-reorder"
+                      "v1/api-reference/endpoint/provider-credentials-list"
                     ]
                   },
                   {
@@ -565,18 +567,18 @@
                     "expanded": false,
                     "pages": [
                       "v1/api-reference/endpoint/guardrails",
-                      "v1/api-reference/endpoint/guardrails-list",
                       "v1/api-reference/endpoint/guardrails-create",
                       "v1/api-reference/endpoint/guardrails-get",
                       "v1/api-reference/endpoint/guardrails-update",
                       "v1/api-reference/endpoint/guardrails-delete",
-                      "v1/api-reference/endpoint/guardrail-keys-list",
-                      "v1/api-reference/endpoint/guardrail-keys-replace",
+                      "v1/api-reference/endpoint/guardrails-list",
                       "v1/api-reference/endpoint/guardrail-keys-add",
+                      "v1/api-reference/endpoint/guardrail-keys-replace",
                       "v1/api-reference/endpoint/guardrail-keys-remove",
-                      "v1/api-reference/endpoint/guardrail-members-list",
+                      "v1/api-reference/endpoint/guardrail-keys-list",
                       "v1/api-reference/endpoint/guardrail-members-add",
-                      "v1/api-reference/endpoint/guardrail-members-remove"
+                      "v1/api-reference/endpoint/guardrail-members-remove",
+                      "v1/api-reference/endpoint/guardrail-members-list"
                     ]
                   }
                 ]
@@ -611,11 +613,11 @@
                     "pages": [
                       "v1/api-reference/endpoint/observability-logging-policy-get",
                       "v1/api-reference/endpoint/observability-logging-policy-update",
-                      "v1/api-reference/endpoint/observability-destinations-list",
                       "v1/api-reference/endpoint/observability-destinations-create",
                       "v1/api-reference/endpoint/observability-destinations-get",
                       "v1/api-reference/endpoint/observability-destinations-update",
-                      "v1/api-reference/endpoint/observability-destinations-delete"
+                      "v1/api-reference/endpoint/observability-destinations-delete",
+                      "v1/api-reference/endpoint/observability-destinations-list"
                     ]
                   },
                   {
@@ -623,15 +625,15 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "v1/api-reference/endpoint/feedback-list",
                       "v1/api-reference/endpoint/feedback-create",
+                      "v1/api-reference/endpoint/feedback-list",
                       "v1/api-reference/endpoint/feedback-summary",
-                      "v1/api-reference/endpoint/events-list",
                       "v1/api-reference/endpoint/events-create",
-                      "v1/api-reference/endpoint/preset-test-runs-list",
+                      "v1/api-reference/endpoint/events-list",
                       "v1/api-reference/endpoint/preset-test-run-create",
                       "v1/api-reference/endpoint/preset-test-run-get",
-                      "v1/api-reference/endpoint/preset-test-run-update"
+                      "v1/api-reference/endpoint/preset-test-run-update",
+                      "v1/api-reference/endpoint/preset-test-runs-list"
                     ]
                   }
                 ]
@@ -644,18 +646,18 @@
                     "group": "Workspaces",
                     "expanded": false,
                     "pages": [
-                      "v1/api-reference/endpoint/workspaces-list",
                       "v1/api-reference/endpoint/workspaces-create",
                       "v1/api-reference/endpoint/workspaces-get",
-                      "v1/api-reference/endpoint/workspaces-delete",
                       "v1/api-reference/endpoint/workspaces-update",
-                      "v1/api-reference/endpoint/workspace-members-list",
+                      "v1/api-reference/endpoint/workspaces-delete",
+                      "v1/api-reference/endpoint/workspaces-list",
                       "v1/api-reference/endpoint/workspace-members-add",
-                      "v1/api-reference/endpoint/workspace-members-remove",
                       "v1/api-reference/endpoint/workspace-member-role-update",
-                      "v1/api-reference/endpoint/workspace-invites-list",
+                      "v1/api-reference/endpoint/workspace-members-remove",
+                      "v1/api-reference/endpoint/workspace-members-list",
                       "v1/api-reference/endpoint/workspace-invites-create",
                       "v1/api-reference/endpoint/workspace-invites-delete",
+                      "v1/api-reference/endpoint/workspace-invites-list",
                       "v1/api-reference/endpoint/workspace-join-requests-list",
                       "v1/api-reference/endpoint/workspace-join-request-approve",
                       "v1/api-reference/endpoint/workspace-join-request-reject"
@@ -666,24 +668,24 @@
                     "expanded": false,
                     "pages": [
                       "v1/api-reference/endpoint/key-current",
-                      "v1/api-reference/endpoint/keys-list",
                       "v1/api-reference/endpoint/keys-create",
                       "v1/api-reference/endpoint/keys-get",
-                      "v1/api-reference/endpoint/keys-rotate",
-                      "v1/api-reference/endpoint/keys-delete",
                       "v1/api-reference/endpoint/keys-update",
-                      "v1/api-reference/endpoint/keys-invalidate"
+                      "v1/api-reference/endpoint/keys-rotate",
+                      "v1/api-reference/endpoint/keys-invalidate",
+                      "v1/api-reference/endpoint/keys-delete",
+                      "v1/api-reference/endpoint/keys-list"
                     ]
                   },
                   {
                     "group": "Management Keys",
                     "expanded": false,
                     "pages": [
-                      "v1/api-reference/endpoint/management-keys-list",
                       "v1/api-reference/endpoint/management-keys-create",
                       "v1/api-reference/endpoint/management-keys-get",
                       "v1/api-reference/endpoint/management-keys-update",
-                      "v1/api-reference/endpoint/management-keys-delete"
+                      "v1/api-reference/endpoint/management-keys-delete",
+                      "v1/api-reference/endpoint/management-keys-list"
                     ]
                   },
                   {
@@ -691,11 +693,11 @@
                     "expanded": false,
                     "pages": [
                       "v1/api-reference/endpoint/credits",
-                      "v1/api-reference/endpoint/budgets-list",
                       "v1/api-reference/endpoint/budgets-create",
                       "v1/api-reference/endpoint/budgets-get",
                       "v1/api-reference/endpoint/budgets-update",
-                      "v1/api-reference/endpoint/budgets-delete"
+                      "v1/api-reference/endpoint/budgets-delete",
+                      "v1/api-reference/endpoint/budgets-list"
                     ]
                   },
                   {
@@ -703,12 +705,12 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "v1/api-reference/endpoint/oauth-clients-list",
                       "v1/api-reference/endpoint/oauth-clients-create",
                       "v1/api-reference/endpoint/oauth-clients-get",
                       "v1/api-reference/endpoint/oauth-clients-update",
+                      "v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "v1/api-reference/endpoint/oauth-clients-delete",
-                      "v1/api-reference/endpoint/oauth-clients-regenerate-secret"
+                      "v1/api-reference/endpoint/oauth-clients-list"
                     ]
                   },
                   {
@@ -732,16 +734,16 @@
                     "pages": [
                       "v1/api-reference/endpoint/identity-directory-get",
                       "v1/api-reference/endpoint/identity-directory-member-update",
-                      "v1/api-reference/endpoint/identity-departments-list",
                       "v1/api-reference/endpoint/identity-department-create",
                       "v1/api-reference/endpoint/identity-department-update",
                       "v1/api-reference/endpoint/identity-department-delete",
+                      "v1/api-reference/endpoint/identity-departments-list",
                       "v1/api-reference/endpoint/identity-department-member-set",
                       "v1/api-reference/endpoint/identity-department-member-delete",
-                      "v1/api-reference/endpoint/identity-group-mappings-list",
                       "v1/api-reference/endpoint/identity-group-mapping-create",
                       "v1/api-reference/endpoint/identity-group-mapping-update",
-                      "v1/api-reference/endpoint/identity-group-mapping-delete"
+                      "v1/api-reference/endpoint/identity-group-mapping-delete",
+                      "v1/api-reference/endpoint/identity-group-mappings-list"
                     ]
                   },
                   {
@@ -751,11 +753,11 @@
                     "pages": [
                       "v1/api-reference/endpoint/notifications-settings-get",
                       "v1/api-reference/endpoint/notifications-settings-update",
-                      "v1/api-reference/endpoint/notifications-destinations-list",
                       "v1/api-reference/endpoint/notifications-destination-create",
-                      "v1/api-reference/endpoint/notifications-destination-delete",
                       "v1/api-reference/endpoint/notifications-destination-config-test",
                       "v1/api-reference/endpoint/notifications-destination-test",
+                      "v1/api-reference/endpoint/notifications-destination-delete",
+                      "v1/api-reference/endpoint/notifications-destinations-list",
                       "v1/api-reference/endpoint/notifications-routes-list",
                       "v1/api-reference/endpoint/notifications-route-update"
                     ]
@@ -1795,6 +1797,7 @@
                   },
                   "es/v1/guides/app-attribution",
                   "es/v1/guides/request-labels",
+                  "es/v1/guides/request-classifiers",
                   "es/v1/guides/workspace-notifications"
                 ]
               },
@@ -2019,14 +2022,14 @@
                 "icon": "video",
                 "tag": "Beta",
                 "pages": [
-                  "es/v1/api-reference/endpoint/video-list",
                   "es/v1/api-reference/endpoint/video-create",
-                  "es/v1/api-reference/endpoint/video-models",
                   "es/v1/api-reference/endpoint/video-status",
-                  "es/v1/api-reference/endpoint/video-delete",
-                  "es/v1/api-reference/endpoint/video-cancel",
                   "es/v1/api-reference/endpoint/video-content",
-                  "es/v1/api-reference/endpoint/video-download-url"
+                  "es/v1/api-reference/endpoint/video-download-url",
+                  "es/v1/api-reference/endpoint/video-cancel",
+                  "es/v1/api-reference/endpoint/video-delete",
+                  "es/v1/api-reference/endpoint/video-list",
+                  "es/v1/api-reference/endpoint/video-models"
                 ]
               },
               {
@@ -2040,7 +2043,8 @@
                 "group": "Decisiones",
                 "icon": "signpost",
                 "pages": [
-                  "es/v1/api-reference/endpoint/decisions"
+                  "es/v1/api-reference/endpoint/decisions",
+                  "es/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -2103,18 +2107,18 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "es/v1/api-reference/endpoint/batches-list",
                       "es/v1/api-reference/endpoint/batches-create",
-                      "es/v1/api-reference/endpoint/batches-models",
-                      "es/v1/api-reference/endpoint/batches-capabilities",
-                      "es/v1/api-reference/endpoint/batches-files-list",
-                      "es/v1/api-reference/endpoint/batches-files-upload",
-                      "es/v1/api-reference/endpoint/batches-files-retrieve",
-                      "es/v1/api-reference/endpoint/batches-files-content",
                       "es/v1/api-reference/endpoint/batches-retrieve",
                       "es/v1/api-reference/endpoint/batches-results",
                       "es/v1/api-reference/endpoint/batches-requests",
-                      "es/v1/api-reference/endpoint/batches-cancel"
+                      "es/v1/api-reference/endpoint/batches-cancel",
+                      "es/v1/api-reference/endpoint/batches-list",
+                      "es/v1/api-reference/endpoint/batches-files-upload",
+                      "es/v1/api-reference/endpoint/batches-files-retrieve",
+                      "es/v1/api-reference/endpoint/batches-files-content",
+                      "es/v1/api-reference/endpoint/batches-files-list",
+                      "es/v1/api-reference/endpoint/batches-models",
+                      "es/v1/api-reference/endpoint/batches-capabilities"
                     ]
                   },
                   {
@@ -2122,9 +2126,9 @@
                     "expanded": true,
                     "pages": [
                       "es/v1/api-reference/endpoint/files",
-                      "es/v1/api-reference/endpoint/files-list",
                       "es/v1/api-reference/endpoint/files-retrieve",
-                      "es/v1/api-reference/endpoint/files-content"
+                      "es/v1/api-reference/endpoint/files-content",
+                      "es/v1/api-reference/endpoint/files-list"
                     ]
                   },
                   {
@@ -2132,12 +2136,12 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "es/v1/api-reference/endpoint/webhook-endpoints-list",
                       "es/v1/api-reference/endpoint/webhook-endpoints-create",
                       "es/v1/api-reference/endpoint/webhook-endpoints-get",
                       "es/v1/api-reference/endpoint/webhook-endpoints-update",
+                      "es/v1/api-reference/endpoint/webhook-endpoints-rotate-secret",
                       "es/v1/api-reference/endpoint/webhook-endpoints-delete",
-                      "es/v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
+                      "es/v1/api-reference/endpoint/webhook-endpoints-list"
                     ]
                   }
                 ]
@@ -2165,53 +2169,53 @@
                     "pages": [
                       "es/v1/api-reference/endpoint/workspace-settings-get",
                       "es/v1/api-reference/endpoint/workspace-settings-update",
-                      "es/v1/api-reference/endpoint/dynamic-routes-list",
                       "es/v1/api-reference/endpoint/dynamic-routes-create",
                       "es/v1/api-reference/endpoint/dynamic-routes-get",
                       "es/v1/api-reference/endpoint/dynamic-routes-update",
                       "es/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "es/v1/api-reference/endpoint/dynamic-routes-deploy",
-                      "es/v1/api-reference/endpoint/dynamic-routes-delete"
+                      "es/v1/api-reference/endpoint/dynamic-routes-delete",
+                      "es/v1/api-reference/endpoint/dynamic-routes-list"
                     ]
                   },
                   {
                     "group": "Ajustes preestablecidos",
                     "expanded": false,
                     "pages": [
-                      "es/v1/api-reference/endpoint/presets-list",
                       "es/v1/api-reference/endpoint/presets-create",
                       "es/v1/api-reference/endpoint/presets-get",
                       "es/v1/api-reference/endpoint/presets-update",
-                      "es/v1/api-reference/endpoint/presets-versions-list",
                       "es/v1/api-reference/endpoint/presets-version-publish",
+                      "es/v1/api-reference/endpoint/presets-versions-list",
                       "es/v1/api-reference/endpoint/presets-fork",
                       "es/v1/api-reference/endpoint/presets-upstream-apply",
+                      "es/v1/api-reference/endpoint/presets-delete",
+                      "es/v1/api-reference/endpoint/presets-list",
                       "es/v1/api-reference/endpoint/presets-publisher-get",
-                      "es/v1/api-reference/endpoint/presets-publisher-update",
-                      "es/v1/api-reference/endpoint/presets-delete"
+                      "es/v1/api-reference/endpoint/presets-publisher-update"
                     ]
                   },
                   {
                     "group": "Modelos privados",
                     "expanded": false,
                     "pages": [
-                      "es/v1/api-reference/endpoint/private-models-list",
                       "es/v1/api-reference/endpoint/private-models-create",
                       "es/v1/api-reference/endpoint/private-models-get",
                       "es/v1/api-reference/endpoint/private-models-update",
-                      "es/v1/api-reference/endpoint/private-models-delete"
+                      "es/v1/api-reference/endpoint/private-models-delete",
+                      "es/v1/api-reference/endpoint/private-models-list"
                     ]
                   },
                   {
                     "group": "Credenciales de proveedores",
                     "expanded": false,
                     "pages": [
-                      "es/v1/api-reference/endpoint/provider-credentials-list",
                       "es/v1/api-reference/endpoint/provider-credentials-create",
                       "es/v1/api-reference/endpoint/provider-credentials-get",
                       "es/v1/api-reference/endpoint/provider-credentials-update",
+                      "es/v1/api-reference/endpoint/provider-credentials-reorder",
                       "es/v1/api-reference/endpoint/provider-credentials-delete",
-                      "es/v1/api-reference/endpoint/provider-credentials-reorder"
+                      "es/v1/api-reference/endpoint/provider-credentials-list"
                     ]
                   },
                   {
@@ -2219,18 +2223,18 @@
                     "expanded": false,
                     "pages": [
                       "es/v1/api-reference/endpoint/guardrails",
-                      "es/v1/api-reference/endpoint/guardrails-list",
                       "es/v1/api-reference/endpoint/guardrails-create",
                       "es/v1/api-reference/endpoint/guardrails-get",
                       "es/v1/api-reference/endpoint/guardrails-update",
                       "es/v1/api-reference/endpoint/guardrails-delete",
-                      "es/v1/api-reference/endpoint/guardrail-keys-list",
-                      "es/v1/api-reference/endpoint/guardrail-keys-replace",
+                      "es/v1/api-reference/endpoint/guardrails-list",
                       "es/v1/api-reference/endpoint/guardrail-keys-add",
+                      "es/v1/api-reference/endpoint/guardrail-keys-replace",
                       "es/v1/api-reference/endpoint/guardrail-keys-remove",
-                      "es/v1/api-reference/endpoint/guardrail-members-list",
+                      "es/v1/api-reference/endpoint/guardrail-keys-list",
                       "es/v1/api-reference/endpoint/guardrail-members-add",
-                      "es/v1/api-reference/endpoint/guardrail-members-remove"
+                      "es/v1/api-reference/endpoint/guardrail-members-remove",
+                      "es/v1/api-reference/endpoint/guardrail-members-list"
                     ]
                   }
                 ]
@@ -2265,11 +2269,11 @@
                     "pages": [
                       "es/v1/api-reference/endpoint/observability-logging-policy-get",
                       "es/v1/api-reference/endpoint/observability-logging-policy-update",
-                      "es/v1/api-reference/endpoint/observability-destinations-list",
                       "es/v1/api-reference/endpoint/observability-destinations-create",
                       "es/v1/api-reference/endpoint/observability-destinations-get",
                       "es/v1/api-reference/endpoint/observability-destinations-update",
-                      "es/v1/api-reference/endpoint/observability-destinations-delete"
+                      "es/v1/api-reference/endpoint/observability-destinations-delete",
+                      "es/v1/api-reference/endpoint/observability-destinations-list"
                     ]
                   },
                   {
@@ -2277,15 +2281,15 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "es/v1/api-reference/endpoint/feedback-list",
                       "es/v1/api-reference/endpoint/feedback-create",
+                      "es/v1/api-reference/endpoint/feedback-list",
                       "es/v1/api-reference/endpoint/feedback-summary",
-                      "es/v1/api-reference/endpoint/events-list",
                       "es/v1/api-reference/endpoint/events-create",
-                      "es/v1/api-reference/endpoint/preset-test-runs-list",
+                      "es/v1/api-reference/endpoint/events-list",
                       "es/v1/api-reference/endpoint/preset-test-run-create",
                       "es/v1/api-reference/endpoint/preset-test-run-get",
-                      "es/v1/api-reference/endpoint/preset-test-run-update"
+                      "es/v1/api-reference/endpoint/preset-test-run-update",
+                      "es/v1/api-reference/endpoint/preset-test-runs-list"
                     ]
                   }
                 ]
@@ -2298,18 +2302,18 @@
                     "group": "Espacios de trabajo",
                     "expanded": false,
                     "pages": [
-                      "es/v1/api-reference/endpoint/workspaces-list",
                       "es/v1/api-reference/endpoint/workspaces-create",
                       "es/v1/api-reference/endpoint/workspaces-get",
-                      "es/v1/api-reference/endpoint/workspaces-delete",
                       "es/v1/api-reference/endpoint/workspaces-update",
-                      "es/v1/api-reference/endpoint/workspace-members-list",
+                      "es/v1/api-reference/endpoint/workspaces-delete",
+                      "es/v1/api-reference/endpoint/workspaces-list",
                       "es/v1/api-reference/endpoint/workspace-members-add",
-                      "es/v1/api-reference/endpoint/workspace-members-remove",
                       "es/v1/api-reference/endpoint/workspace-member-role-update",
-                      "es/v1/api-reference/endpoint/workspace-invites-list",
+                      "es/v1/api-reference/endpoint/workspace-members-remove",
+                      "es/v1/api-reference/endpoint/workspace-members-list",
                       "es/v1/api-reference/endpoint/workspace-invites-create",
                       "es/v1/api-reference/endpoint/workspace-invites-delete",
+                      "es/v1/api-reference/endpoint/workspace-invites-list",
                       "es/v1/api-reference/endpoint/workspace-join-requests-list",
                       "es/v1/api-reference/endpoint/workspace-join-request-approve",
                       "es/v1/api-reference/endpoint/workspace-join-request-reject"
@@ -2320,24 +2324,24 @@
                     "expanded": false,
                     "pages": [
                       "es/v1/api-reference/endpoint/key-current",
-                      "es/v1/api-reference/endpoint/keys-list",
                       "es/v1/api-reference/endpoint/keys-create",
                       "es/v1/api-reference/endpoint/keys-get",
-                      "es/v1/api-reference/endpoint/keys-rotate",
-                      "es/v1/api-reference/endpoint/keys-delete",
                       "es/v1/api-reference/endpoint/keys-update",
-                      "es/v1/api-reference/endpoint/keys-invalidate"
+                      "es/v1/api-reference/endpoint/keys-rotate",
+                      "es/v1/api-reference/endpoint/keys-invalidate",
+                      "es/v1/api-reference/endpoint/keys-delete",
+                      "es/v1/api-reference/endpoint/keys-list"
                     ]
                   },
                   {
                     "group": "Claves de administración",
                     "expanded": false,
                     "pages": [
-                      "es/v1/api-reference/endpoint/management-keys-list",
                       "es/v1/api-reference/endpoint/management-keys-create",
                       "es/v1/api-reference/endpoint/management-keys-get",
                       "es/v1/api-reference/endpoint/management-keys-update",
-                      "es/v1/api-reference/endpoint/management-keys-delete"
+                      "es/v1/api-reference/endpoint/management-keys-delete",
+                      "es/v1/api-reference/endpoint/management-keys-list"
                     ]
                   },
                   {
@@ -2345,11 +2349,11 @@
                     "expanded": false,
                     "pages": [
                       "es/v1/api-reference/endpoint/credits",
-                      "es/v1/api-reference/endpoint/budgets-list",
                       "es/v1/api-reference/endpoint/budgets-create",
                       "es/v1/api-reference/endpoint/budgets-get",
                       "es/v1/api-reference/endpoint/budgets-update",
-                      "es/v1/api-reference/endpoint/budgets-delete"
+                      "es/v1/api-reference/endpoint/budgets-delete",
+                      "es/v1/api-reference/endpoint/budgets-list"
                     ]
                   },
                   {
@@ -2357,12 +2361,12 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "es/v1/api-reference/endpoint/oauth-clients-list",
                       "es/v1/api-reference/endpoint/oauth-clients-create",
                       "es/v1/api-reference/endpoint/oauth-clients-get",
                       "es/v1/api-reference/endpoint/oauth-clients-update",
+                      "es/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "es/v1/api-reference/endpoint/oauth-clients-delete",
-                      "es/v1/api-reference/endpoint/oauth-clients-regenerate-secret"
+                      "es/v1/api-reference/endpoint/oauth-clients-list"
                     ]
                   },
                   {
@@ -2386,16 +2390,16 @@
                     "pages": [
                       "es/v1/api-reference/endpoint/identity-directory-get",
                       "es/v1/api-reference/endpoint/identity-directory-member-update",
-                      "es/v1/api-reference/endpoint/identity-departments-list",
                       "es/v1/api-reference/endpoint/identity-department-create",
                       "es/v1/api-reference/endpoint/identity-department-update",
                       "es/v1/api-reference/endpoint/identity-department-delete",
+                      "es/v1/api-reference/endpoint/identity-departments-list",
                       "es/v1/api-reference/endpoint/identity-department-member-set",
                       "es/v1/api-reference/endpoint/identity-department-member-delete",
-                      "es/v1/api-reference/endpoint/identity-group-mappings-list",
                       "es/v1/api-reference/endpoint/identity-group-mapping-create",
                       "es/v1/api-reference/endpoint/identity-group-mapping-update",
-                      "es/v1/api-reference/endpoint/identity-group-mapping-delete"
+                      "es/v1/api-reference/endpoint/identity-group-mapping-delete",
+                      "es/v1/api-reference/endpoint/identity-group-mappings-list"
                     ]
                   },
                   {
@@ -2405,11 +2409,11 @@
                     "pages": [
                       "es/v1/api-reference/endpoint/notifications-settings-get",
                       "es/v1/api-reference/endpoint/notifications-settings-update",
-                      "es/v1/api-reference/endpoint/notifications-destinations-list",
                       "es/v1/api-reference/endpoint/notifications-destination-create",
-                      "es/v1/api-reference/endpoint/notifications-destination-delete",
                       "es/v1/api-reference/endpoint/notifications-destination-config-test",
                       "es/v1/api-reference/endpoint/notifications-destination-test",
+                      "es/v1/api-reference/endpoint/notifications-destination-delete",
+                      "es/v1/api-reference/endpoint/notifications-destinations-list",
                       "es/v1/api-reference/endpoint/notifications-routes-list",
                       "es/v1/api-reference/endpoint/notifications-route-update"
                     ]
@@ -3483,6 +3487,7 @@
                   },
                   "fr/v1/guides/app-attribution",
                   "fr/v1/guides/request-labels",
+                  "fr/v1/guides/request-classifiers",
                   "fr/v1/guides/workspace-notifications"
                 ]
               },
@@ -3707,14 +3712,14 @@
                 "icon": "video",
                 "tag": "Beta",
                 "pages": [
-                  "fr/v1/api-reference/endpoint/video-list",
                   "fr/v1/api-reference/endpoint/video-create",
-                  "fr/v1/api-reference/endpoint/video-models",
                   "fr/v1/api-reference/endpoint/video-status",
-                  "fr/v1/api-reference/endpoint/video-delete",
-                  "fr/v1/api-reference/endpoint/video-cancel",
                   "fr/v1/api-reference/endpoint/video-content",
-                  "fr/v1/api-reference/endpoint/video-download-url"
+                  "fr/v1/api-reference/endpoint/video-download-url",
+                  "fr/v1/api-reference/endpoint/video-cancel",
+                  "fr/v1/api-reference/endpoint/video-delete",
+                  "fr/v1/api-reference/endpoint/video-list",
+                  "fr/v1/api-reference/endpoint/video-models"
                 ]
               },
               {
@@ -3728,7 +3733,8 @@
                 "group": "Décisions",
                 "icon": "signpost",
                 "pages": [
-                  "fr/v1/api-reference/endpoint/decisions"
+                  "fr/v1/api-reference/endpoint/decisions",
+                  "fr/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -3791,18 +3797,18 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "fr/v1/api-reference/endpoint/batches-list",
                       "fr/v1/api-reference/endpoint/batches-create",
-                      "fr/v1/api-reference/endpoint/batches-models",
-                      "fr/v1/api-reference/endpoint/batches-capabilities",
-                      "fr/v1/api-reference/endpoint/batches-files-list",
-                      "fr/v1/api-reference/endpoint/batches-files-upload",
-                      "fr/v1/api-reference/endpoint/batches-files-retrieve",
-                      "fr/v1/api-reference/endpoint/batches-files-content",
                       "fr/v1/api-reference/endpoint/batches-retrieve",
                       "fr/v1/api-reference/endpoint/batches-results",
                       "fr/v1/api-reference/endpoint/batches-requests",
-                      "fr/v1/api-reference/endpoint/batches-cancel"
+                      "fr/v1/api-reference/endpoint/batches-cancel",
+                      "fr/v1/api-reference/endpoint/batches-list",
+                      "fr/v1/api-reference/endpoint/batches-files-upload",
+                      "fr/v1/api-reference/endpoint/batches-files-retrieve",
+                      "fr/v1/api-reference/endpoint/batches-files-content",
+                      "fr/v1/api-reference/endpoint/batches-files-list",
+                      "fr/v1/api-reference/endpoint/batches-models",
+                      "fr/v1/api-reference/endpoint/batches-capabilities"
                     ]
                   },
                   {
@@ -3810,9 +3816,9 @@
                     "expanded": true,
                     "pages": [
                       "fr/v1/api-reference/endpoint/files",
-                      "fr/v1/api-reference/endpoint/files-list",
                       "fr/v1/api-reference/endpoint/files-retrieve",
-                      "fr/v1/api-reference/endpoint/files-content"
+                      "fr/v1/api-reference/endpoint/files-content",
+                      "fr/v1/api-reference/endpoint/files-list"
                     ]
                   },
                   {
@@ -3820,12 +3826,12 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "fr/v1/api-reference/endpoint/webhook-endpoints-list",
                       "fr/v1/api-reference/endpoint/webhook-endpoints-create",
                       "fr/v1/api-reference/endpoint/webhook-endpoints-get",
                       "fr/v1/api-reference/endpoint/webhook-endpoints-update",
+                      "fr/v1/api-reference/endpoint/webhook-endpoints-rotate-secret",
                       "fr/v1/api-reference/endpoint/webhook-endpoints-delete",
-                      "fr/v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
+                      "fr/v1/api-reference/endpoint/webhook-endpoints-list"
                     ]
                   }
                 ]
@@ -3853,53 +3859,53 @@
                     "pages": [
                       "fr/v1/api-reference/endpoint/workspace-settings-get",
                       "fr/v1/api-reference/endpoint/workspace-settings-update",
-                      "fr/v1/api-reference/endpoint/dynamic-routes-list",
                       "fr/v1/api-reference/endpoint/dynamic-routes-create",
                       "fr/v1/api-reference/endpoint/dynamic-routes-get",
                       "fr/v1/api-reference/endpoint/dynamic-routes-update",
                       "fr/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "fr/v1/api-reference/endpoint/dynamic-routes-deploy",
-                      "fr/v1/api-reference/endpoint/dynamic-routes-delete"
+                      "fr/v1/api-reference/endpoint/dynamic-routes-delete",
+                      "fr/v1/api-reference/endpoint/dynamic-routes-list"
                     ]
                   },
                   {
                     "group": "Préréglages",
                     "expanded": false,
                     "pages": [
-                      "fr/v1/api-reference/endpoint/presets-list",
                       "fr/v1/api-reference/endpoint/presets-create",
                       "fr/v1/api-reference/endpoint/presets-get",
                       "fr/v1/api-reference/endpoint/presets-update",
-                      "fr/v1/api-reference/endpoint/presets-versions-list",
                       "fr/v1/api-reference/endpoint/presets-version-publish",
+                      "fr/v1/api-reference/endpoint/presets-versions-list",
                       "fr/v1/api-reference/endpoint/presets-fork",
                       "fr/v1/api-reference/endpoint/presets-upstream-apply",
+                      "fr/v1/api-reference/endpoint/presets-delete",
+                      "fr/v1/api-reference/endpoint/presets-list",
                       "fr/v1/api-reference/endpoint/presets-publisher-get",
-                      "fr/v1/api-reference/endpoint/presets-publisher-update",
-                      "fr/v1/api-reference/endpoint/presets-delete"
+                      "fr/v1/api-reference/endpoint/presets-publisher-update"
                     ]
                   },
                   {
                     "group": "Modèles privés",
                     "expanded": false,
                     "pages": [
-                      "fr/v1/api-reference/endpoint/private-models-list",
                       "fr/v1/api-reference/endpoint/private-models-create",
                       "fr/v1/api-reference/endpoint/private-models-get",
                       "fr/v1/api-reference/endpoint/private-models-update",
-                      "fr/v1/api-reference/endpoint/private-models-delete"
+                      "fr/v1/api-reference/endpoint/private-models-delete",
+                      "fr/v1/api-reference/endpoint/private-models-list"
                     ]
                   },
                   {
                     "group": "Identifiants des fournisseurs",
                     "expanded": false,
                     "pages": [
-                      "fr/v1/api-reference/endpoint/provider-credentials-list",
                       "fr/v1/api-reference/endpoint/provider-credentials-create",
                       "fr/v1/api-reference/endpoint/provider-credentials-get",
                       "fr/v1/api-reference/endpoint/provider-credentials-update",
+                      "fr/v1/api-reference/endpoint/provider-credentials-reorder",
                       "fr/v1/api-reference/endpoint/provider-credentials-delete",
-                      "fr/v1/api-reference/endpoint/provider-credentials-reorder"
+                      "fr/v1/api-reference/endpoint/provider-credentials-list"
                     ]
                   },
                   {
@@ -3907,18 +3913,18 @@
                     "expanded": false,
                     "pages": [
                       "fr/v1/api-reference/endpoint/guardrails",
-                      "fr/v1/api-reference/endpoint/guardrails-list",
                       "fr/v1/api-reference/endpoint/guardrails-create",
                       "fr/v1/api-reference/endpoint/guardrails-get",
                       "fr/v1/api-reference/endpoint/guardrails-update",
                       "fr/v1/api-reference/endpoint/guardrails-delete",
-                      "fr/v1/api-reference/endpoint/guardrail-keys-list",
-                      "fr/v1/api-reference/endpoint/guardrail-keys-replace",
+                      "fr/v1/api-reference/endpoint/guardrails-list",
                       "fr/v1/api-reference/endpoint/guardrail-keys-add",
+                      "fr/v1/api-reference/endpoint/guardrail-keys-replace",
                       "fr/v1/api-reference/endpoint/guardrail-keys-remove",
-                      "fr/v1/api-reference/endpoint/guardrail-members-list",
+                      "fr/v1/api-reference/endpoint/guardrail-keys-list",
                       "fr/v1/api-reference/endpoint/guardrail-members-add",
-                      "fr/v1/api-reference/endpoint/guardrail-members-remove"
+                      "fr/v1/api-reference/endpoint/guardrail-members-remove",
+                      "fr/v1/api-reference/endpoint/guardrail-members-list"
                     ]
                   }
                 ]
@@ -3953,11 +3959,11 @@
                     "pages": [
                       "fr/v1/api-reference/endpoint/observability-logging-policy-get",
                       "fr/v1/api-reference/endpoint/observability-logging-policy-update",
-                      "fr/v1/api-reference/endpoint/observability-destinations-list",
                       "fr/v1/api-reference/endpoint/observability-destinations-create",
                       "fr/v1/api-reference/endpoint/observability-destinations-get",
                       "fr/v1/api-reference/endpoint/observability-destinations-update",
-                      "fr/v1/api-reference/endpoint/observability-destinations-delete"
+                      "fr/v1/api-reference/endpoint/observability-destinations-delete",
+                      "fr/v1/api-reference/endpoint/observability-destinations-list"
                     ]
                   },
                   {
@@ -3965,15 +3971,15 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "fr/v1/api-reference/endpoint/feedback-list",
                       "fr/v1/api-reference/endpoint/feedback-create",
+                      "fr/v1/api-reference/endpoint/feedback-list",
                       "fr/v1/api-reference/endpoint/feedback-summary",
-                      "fr/v1/api-reference/endpoint/events-list",
                       "fr/v1/api-reference/endpoint/events-create",
-                      "fr/v1/api-reference/endpoint/preset-test-runs-list",
+                      "fr/v1/api-reference/endpoint/events-list",
                       "fr/v1/api-reference/endpoint/preset-test-run-create",
                       "fr/v1/api-reference/endpoint/preset-test-run-get",
-                      "fr/v1/api-reference/endpoint/preset-test-run-update"
+                      "fr/v1/api-reference/endpoint/preset-test-run-update",
+                      "fr/v1/api-reference/endpoint/preset-test-runs-list"
                     ]
                   }
                 ]
@@ -3986,18 +3992,18 @@
                     "group": "Espaces de travail",
                     "expanded": false,
                     "pages": [
-                      "fr/v1/api-reference/endpoint/workspaces-list",
                       "fr/v1/api-reference/endpoint/workspaces-create",
                       "fr/v1/api-reference/endpoint/workspaces-get",
-                      "fr/v1/api-reference/endpoint/workspaces-delete",
                       "fr/v1/api-reference/endpoint/workspaces-update",
-                      "fr/v1/api-reference/endpoint/workspace-members-list",
+                      "fr/v1/api-reference/endpoint/workspaces-delete",
+                      "fr/v1/api-reference/endpoint/workspaces-list",
                       "fr/v1/api-reference/endpoint/workspace-members-add",
-                      "fr/v1/api-reference/endpoint/workspace-members-remove",
                       "fr/v1/api-reference/endpoint/workspace-member-role-update",
-                      "fr/v1/api-reference/endpoint/workspace-invites-list",
+                      "fr/v1/api-reference/endpoint/workspace-members-remove",
+                      "fr/v1/api-reference/endpoint/workspace-members-list",
                       "fr/v1/api-reference/endpoint/workspace-invites-create",
                       "fr/v1/api-reference/endpoint/workspace-invites-delete",
+                      "fr/v1/api-reference/endpoint/workspace-invites-list",
                       "fr/v1/api-reference/endpoint/workspace-join-requests-list",
                       "fr/v1/api-reference/endpoint/workspace-join-request-approve",
                       "fr/v1/api-reference/endpoint/workspace-join-request-reject"
@@ -4008,24 +4014,24 @@
                     "expanded": false,
                     "pages": [
                       "fr/v1/api-reference/endpoint/key-current",
-                      "fr/v1/api-reference/endpoint/keys-list",
                       "fr/v1/api-reference/endpoint/keys-create",
                       "fr/v1/api-reference/endpoint/keys-get",
-                      "fr/v1/api-reference/endpoint/keys-rotate",
-                      "fr/v1/api-reference/endpoint/keys-delete",
                       "fr/v1/api-reference/endpoint/keys-update",
-                      "fr/v1/api-reference/endpoint/keys-invalidate"
+                      "fr/v1/api-reference/endpoint/keys-rotate",
+                      "fr/v1/api-reference/endpoint/keys-invalidate",
+                      "fr/v1/api-reference/endpoint/keys-delete",
+                      "fr/v1/api-reference/endpoint/keys-list"
                     ]
                   },
                   {
                     "group": "Clés de gestion",
                     "expanded": false,
                     "pages": [
-                      "fr/v1/api-reference/endpoint/management-keys-list",
                       "fr/v1/api-reference/endpoint/management-keys-create",
                       "fr/v1/api-reference/endpoint/management-keys-get",
                       "fr/v1/api-reference/endpoint/management-keys-update",
-                      "fr/v1/api-reference/endpoint/management-keys-delete"
+                      "fr/v1/api-reference/endpoint/management-keys-delete",
+                      "fr/v1/api-reference/endpoint/management-keys-list"
                     ]
                   },
                   {
@@ -4033,11 +4039,11 @@
                     "expanded": false,
                     "pages": [
                       "fr/v1/api-reference/endpoint/credits",
-                      "fr/v1/api-reference/endpoint/budgets-list",
                       "fr/v1/api-reference/endpoint/budgets-create",
                       "fr/v1/api-reference/endpoint/budgets-get",
                       "fr/v1/api-reference/endpoint/budgets-update",
-                      "fr/v1/api-reference/endpoint/budgets-delete"
+                      "fr/v1/api-reference/endpoint/budgets-delete",
+                      "fr/v1/api-reference/endpoint/budgets-list"
                     ]
                   },
                   {
@@ -4045,12 +4051,12 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "fr/v1/api-reference/endpoint/oauth-clients-list",
                       "fr/v1/api-reference/endpoint/oauth-clients-create",
                       "fr/v1/api-reference/endpoint/oauth-clients-get",
                       "fr/v1/api-reference/endpoint/oauth-clients-update",
+                      "fr/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "fr/v1/api-reference/endpoint/oauth-clients-delete",
-                      "fr/v1/api-reference/endpoint/oauth-clients-regenerate-secret"
+                      "fr/v1/api-reference/endpoint/oauth-clients-list"
                     ]
                   },
                   {
@@ -4074,16 +4080,16 @@
                     "pages": [
                       "fr/v1/api-reference/endpoint/identity-directory-get",
                       "fr/v1/api-reference/endpoint/identity-directory-member-update",
-                      "fr/v1/api-reference/endpoint/identity-departments-list",
                       "fr/v1/api-reference/endpoint/identity-department-create",
                       "fr/v1/api-reference/endpoint/identity-department-update",
                       "fr/v1/api-reference/endpoint/identity-department-delete",
+                      "fr/v1/api-reference/endpoint/identity-departments-list",
                       "fr/v1/api-reference/endpoint/identity-department-member-set",
                       "fr/v1/api-reference/endpoint/identity-department-member-delete",
-                      "fr/v1/api-reference/endpoint/identity-group-mappings-list",
                       "fr/v1/api-reference/endpoint/identity-group-mapping-create",
                       "fr/v1/api-reference/endpoint/identity-group-mapping-update",
-                      "fr/v1/api-reference/endpoint/identity-group-mapping-delete"
+                      "fr/v1/api-reference/endpoint/identity-group-mapping-delete",
+                      "fr/v1/api-reference/endpoint/identity-group-mappings-list"
                     ]
                   },
                   {
@@ -4093,11 +4099,11 @@
                     "pages": [
                       "fr/v1/api-reference/endpoint/notifications-settings-get",
                       "fr/v1/api-reference/endpoint/notifications-settings-update",
-                      "fr/v1/api-reference/endpoint/notifications-destinations-list",
                       "fr/v1/api-reference/endpoint/notifications-destination-create",
-                      "fr/v1/api-reference/endpoint/notifications-destination-delete",
                       "fr/v1/api-reference/endpoint/notifications-destination-config-test",
                       "fr/v1/api-reference/endpoint/notifications-destination-test",
+                      "fr/v1/api-reference/endpoint/notifications-destination-delete",
+                      "fr/v1/api-reference/endpoint/notifications-destinations-list",
                       "fr/v1/api-reference/endpoint/notifications-routes-list",
                       "fr/v1/api-reference/endpoint/notifications-route-update"
                     ]
@@ -5171,6 +5177,7 @@
                   },
                   "de/v1/guides/app-attribution",
                   "de/v1/guides/request-labels",
+                  "de/v1/guides/request-classifiers",
                   "de/v1/guides/workspace-notifications"
                 ]
               },
@@ -5395,14 +5402,14 @@
                 "icon": "video",
                 "tag": "Beta",
                 "pages": [
-                  "de/v1/api-reference/endpoint/video-list",
                   "de/v1/api-reference/endpoint/video-create",
-                  "de/v1/api-reference/endpoint/video-models",
                   "de/v1/api-reference/endpoint/video-status",
-                  "de/v1/api-reference/endpoint/video-delete",
-                  "de/v1/api-reference/endpoint/video-cancel",
                   "de/v1/api-reference/endpoint/video-content",
-                  "de/v1/api-reference/endpoint/video-download-url"
+                  "de/v1/api-reference/endpoint/video-download-url",
+                  "de/v1/api-reference/endpoint/video-cancel",
+                  "de/v1/api-reference/endpoint/video-delete",
+                  "de/v1/api-reference/endpoint/video-list",
+                  "de/v1/api-reference/endpoint/video-models"
                 ]
               },
               {
@@ -5416,7 +5423,8 @@
                 "group": "Entscheidungen",
                 "icon": "signpost",
                 "pages": [
-                  "de/v1/api-reference/endpoint/decisions"
+                  "de/v1/api-reference/endpoint/decisions",
+                  "de/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -5479,18 +5487,18 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "de/v1/api-reference/endpoint/batches-list",
                       "de/v1/api-reference/endpoint/batches-create",
-                      "de/v1/api-reference/endpoint/batches-models",
-                      "de/v1/api-reference/endpoint/batches-capabilities",
-                      "de/v1/api-reference/endpoint/batches-files-list",
-                      "de/v1/api-reference/endpoint/batches-files-upload",
-                      "de/v1/api-reference/endpoint/batches-files-retrieve",
-                      "de/v1/api-reference/endpoint/batches-files-content",
                       "de/v1/api-reference/endpoint/batches-retrieve",
                       "de/v1/api-reference/endpoint/batches-results",
                       "de/v1/api-reference/endpoint/batches-requests",
-                      "de/v1/api-reference/endpoint/batches-cancel"
+                      "de/v1/api-reference/endpoint/batches-cancel",
+                      "de/v1/api-reference/endpoint/batches-list",
+                      "de/v1/api-reference/endpoint/batches-files-upload",
+                      "de/v1/api-reference/endpoint/batches-files-retrieve",
+                      "de/v1/api-reference/endpoint/batches-files-content",
+                      "de/v1/api-reference/endpoint/batches-files-list",
+                      "de/v1/api-reference/endpoint/batches-models",
+                      "de/v1/api-reference/endpoint/batches-capabilities"
                     ]
                   },
                   {
@@ -5498,9 +5506,9 @@
                     "expanded": true,
                     "pages": [
                       "de/v1/api-reference/endpoint/files",
-                      "de/v1/api-reference/endpoint/files-list",
                       "de/v1/api-reference/endpoint/files-retrieve",
-                      "de/v1/api-reference/endpoint/files-content"
+                      "de/v1/api-reference/endpoint/files-content",
+                      "de/v1/api-reference/endpoint/files-list"
                     ]
                   },
                   {
@@ -5508,12 +5516,12 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "de/v1/api-reference/endpoint/webhook-endpoints-list",
                       "de/v1/api-reference/endpoint/webhook-endpoints-create",
                       "de/v1/api-reference/endpoint/webhook-endpoints-get",
                       "de/v1/api-reference/endpoint/webhook-endpoints-update",
+                      "de/v1/api-reference/endpoint/webhook-endpoints-rotate-secret",
                       "de/v1/api-reference/endpoint/webhook-endpoints-delete",
-                      "de/v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
+                      "de/v1/api-reference/endpoint/webhook-endpoints-list"
                     ]
                   }
                 ]
@@ -5541,53 +5549,53 @@
                     "pages": [
                       "de/v1/api-reference/endpoint/workspace-settings-get",
                       "de/v1/api-reference/endpoint/workspace-settings-update",
-                      "de/v1/api-reference/endpoint/dynamic-routes-list",
                       "de/v1/api-reference/endpoint/dynamic-routes-create",
                       "de/v1/api-reference/endpoint/dynamic-routes-get",
                       "de/v1/api-reference/endpoint/dynamic-routes-update",
                       "de/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "de/v1/api-reference/endpoint/dynamic-routes-deploy",
-                      "de/v1/api-reference/endpoint/dynamic-routes-delete"
+                      "de/v1/api-reference/endpoint/dynamic-routes-delete",
+                      "de/v1/api-reference/endpoint/dynamic-routes-list"
                     ]
                   },
                   {
                     "group": "Voreinstellungen",
                     "expanded": false,
                     "pages": [
-                      "de/v1/api-reference/endpoint/presets-list",
                       "de/v1/api-reference/endpoint/presets-create",
                       "de/v1/api-reference/endpoint/presets-get",
                       "de/v1/api-reference/endpoint/presets-update",
-                      "de/v1/api-reference/endpoint/presets-versions-list",
                       "de/v1/api-reference/endpoint/presets-version-publish",
+                      "de/v1/api-reference/endpoint/presets-versions-list",
                       "de/v1/api-reference/endpoint/presets-fork",
                       "de/v1/api-reference/endpoint/presets-upstream-apply",
+                      "de/v1/api-reference/endpoint/presets-delete",
+                      "de/v1/api-reference/endpoint/presets-list",
                       "de/v1/api-reference/endpoint/presets-publisher-get",
-                      "de/v1/api-reference/endpoint/presets-publisher-update",
-                      "de/v1/api-reference/endpoint/presets-delete"
+                      "de/v1/api-reference/endpoint/presets-publisher-update"
                     ]
                   },
                   {
                     "group": "Private Modelle",
                     "expanded": false,
                     "pages": [
-                      "de/v1/api-reference/endpoint/private-models-list",
                       "de/v1/api-reference/endpoint/private-models-create",
                       "de/v1/api-reference/endpoint/private-models-get",
                       "de/v1/api-reference/endpoint/private-models-update",
-                      "de/v1/api-reference/endpoint/private-models-delete"
+                      "de/v1/api-reference/endpoint/private-models-delete",
+                      "de/v1/api-reference/endpoint/private-models-list"
                     ]
                   },
                   {
                     "group": "Anbieter-Zugangsdaten",
                     "expanded": false,
                     "pages": [
-                      "de/v1/api-reference/endpoint/provider-credentials-list",
                       "de/v1/api-reference/endpoint/provider-credentials-create",
                       "de/v1/api-reference/endpoint/provider-credentials-get",
                       "de/v1/api-reference/endpoint/provider-credentials-update",
+                      "de/v1/api-reference/endpoint/provider-credentials-reorder",
                       "de/v1/api-reference/endpoint/provider-credentials-delete",
-                      "de/v1/api-reference/endpoint/provider-credentials-reorder"
+                      "de/v1/api-reference/endpoint/provider-credentials-list"
                     ]
                   },
                   {
@@ -5595,18 +5603,18 @@
                     "expanded": false,
                     "pages": [
                       "de/v1/api-reference/endpoint/guardrails",
-                      "de/v1/api-reference/endpoint/guardrails-list",
                       "de/v1/api-reference/endpoint/guardrails-create",
                       "de/v1/api-reference/endpoint/guardrails-get",
                       "de/v1/api-reference/endpoint/guardrails-update",
                       "de/v1/api-reference/endpoint/guardrails-delete",
-                      "de/v1/api-reference/endpoint/guardrail-keys-list",
-                      "de/v1/api-reference/endpoint/guardrail-keys-replace",
+                      "de/v1/api-reference/endpoint/guardrails-list",
                       "de/v1/api-reference/endpoint/guardrail-keys-add",
+                      "de/v1/api-reference/endpoint/guardrail-keys-replace",
                       "de/v1/api-reference/endpoint/guardrail-keys-remove",
-                      "de/v1/api-reference/endpoint/guardrail-members-list",
+                      "de/v1/api-reference/endpoint/guardrail-keys-list",
                       "de/v1/api-reference/endpoint/guardrail-members-add",
-                      "de/v1/api-reference/endpoint/guardrail-members-remove"
+                      "de/v1/api-reference/endpoint/guardrail-members-remove",
+                      "de/v1/api-reference/endpoint/guardrail-members-list"
                     ]
                   }
                 ]
@@ -5641,11 +5649,11 @@
                     "pages": [
                       "de/v1/api-reference/endpoint/observability-logging-policy-get",
                       "de/v1/api-reference/endpoint/observability-logging-policy-update",
-                      "de/v1/api-reference/endpoint/observability-destinations-list",
                       "de/v1/api-reference/endpoint/observability-destinations-create",
                       "de/v1/api-reference/endpoint/observability-destinations-get",
                       "de/v1/api-reference/endpoint/observability-destinations-update",
-                      "de/v1/api-reference/endpoint/observability-destinations-delete"
+                      "de/v1/api-reference/endpoint/observability-destinations-delete",
+                      "de/v1/api-reference/endpoint/observability-destinations-list"
                     ]
                   },
                   {
@@ -5653,15 +5661,15 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "de/v1/api-reference/endpoint/feedback-list",
                       "de/v1/api-reference/endpoint/feedback-create",
+                      "de/v1/api-reference/endpoint/feedback-list",
                       "de/v1/api-reference/endpoint/feedback-summary",
-                      "de/v1/api-reference/endpoint/events-list",
                       "de/v1/api-reference/endpoint/events-create",
-                      "de/v1/api-reference/endpoint/preset-test-runs-list",
+                      "de/v1/api-reference/endpoint/events-list",
                       "de/v1/api-reference/endpoint/preset-test-run-create",
                       "de/v1/api-reference/endpoint/preset-test-run-get",
-                      "de/v1/api-reference/endpoint/preset-test-run-update"
+                      "de/v1/api-reference/endpoint/preset-test-run-update",
+                      "de/v1/api-reference/endpoint/preset-test-runs-list"
                     ]
                   }
                 ]
@@ -5674,18 +5682,18 @@
                     "group": "Arbeitsbereiche",
                     "expanded": false,
                     "pages": [
-                      "de/v1/api-reference/endpoint/workspaces-list",
                       "de/v1/api-reference/endpoint/workspaces-create",
                       "de/v1/api-reference/endpoint/workspaces-get",
-                      "de/v1/api-reference/endpoint/workspaces-delete",
                       "de/v1/api-reference/endpoint/workspaces-update",
-                      "de/v1/api-reference/endpoint/workspace-members-list",
+                      "de/v1/api-reference/endpoint/workspaces-delete",
+                      "de/v1/api-reference/endpoint/workspaces-list",
                       "de/v1/api-reference/endpoint/workspace-members-add",
-                      "de/v1/api-reference/endpoint/workspace-members-remove",
                       "de/v1/api-reference/endpoint/workspace-member-role-update",
-                      "de/v1/api-reference/endpoint/workspace-invites-list",
+                      "de/v1/api-reference/endpoint/workspace-members-remove",
+                      "de/v1/api-reference/endpoint/workspace-members-list",
                       "de/v1/api-reference/endpoint/workspace-invites-create",
                       "de/v1/api-reference/endpoint/workspace-invites-delete",
+                      "de/v1/api-reference/endpoint/workspace-invites-list",
                       "de/v1/api-reference/endpoint/workspace-join-requests-list",
                       "de/v1/api-reference/endpoint/workspace-join-request-approve",
                       "de/v1/api-reference/endpoint/workspace-join-request-reject"
@@ -5696,24 +5704,24 @@
                     "expanded": false,
                     "pages": [
                       "de/v1/api-reference/endpoint/key-current",
-                      "de/v1/api-reference/endpoint/keys-list",
                       "de/v1/api-reference/endpoint/keys-create",
                       "de/v1/api-reference/endpoint/keys-get",
-                      "de/v1/api-reference/endpoint/keys-rotate",
-                      "de/v1/api-reference/endpoint/keys-delete",
                       "de/v1/api-reference/endpoint/keys-update",
-                      "de/v1/api-reference/endpoint/keys-invalidate"
+                      "de/v1/api-reference/endpoint/keys-rotate",
+                      "de/v1/api-reference/endpoint/keys-invalidate",
+                      "de/v1/api-reference/endpoint/keys-delete",
+                      "de/v1/api-reference/endpoint/keys-list"
                     ]
                   },
                   {
                     "group": "Verwaltungsschlüssel",
                     "expanded": false,
                     "pages": [
-                      "de/v1/api-reference/endpoint/management-keys-list",
                       "de/v1/api-reference/endpoint/management-keys-create",
                       "de/v1/api-reference/endpoint/management-keys-get",
                       "de/v1/api-reference/endpoint/management-keys-update",
-                      "de/v1/api-reference/endpoint/management-keys-delete"
+                      "de/v1/api-reference/endpoint/management-keys-delete",
+                      "de/v1/api-reference/endpoint/management-keys-list"
                     ]
                   },
                   {
@@ -5721,11 +5729,11 @@
                     "expanded": false,
                     "pages": [
                       "de/v1/api-reference/endpoint/credits",
-                      "de/v1/api-reference/endpoint/budgets-list",
                       "de/v1/api-reference/endpoint/budgets-create",
                       "de/v1/api-reference/endpoint/budgets-get",
                       "de/v1/api-reference/endpoint/budgets-update",
-                      "de/v1/api-reference/endpoint/budgets-delete"
+                      "de/v1/api-reference/endpoint/budgets-delete",
+                      "de/v1/api-reference/endpoint/budgets-list"
                     ]
                   },
                   {
@@ -5733,12 +5741,12 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "de/v1/api-reference/endpoint/oauth-clients-list",
                       "de/v1/api-reference/endpoint/oauth-clients-create",
                       "de/v1/api-reference/endpoint/oauth-clients-get",
                       "de/v1/api-reference/endpoint/oauth-clients-update",
+                      "de/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "de/v1/api-reference/endpoint/oauth-clients-delete",
-                      "de/v1/api-reference/endpoint/oauth-clients-regenerate-secret"
+                      "de/v1/api-reference/endpoint/oauth-clients-list"
                     ]
                   },
                   {
@@ -5762,16 +5770,16 @@
                     "pages": [
                       "de/v1/api-reference/endpoint/identity-directory-get",
                       "de/v1/api-reference/endpoint/identity-directory-member-update",
-                      "de/v1/api-reference/endpoint/identity-departments-list",
                       "de/v1/api-reference/endpoint/identity-department-create",
                       "de/v1/api-reference/endpoint/identity-department-update",
                       "de/v1/api-reference/endpoint/identity-department-delete",
+                      "de/v1/api-reference/endpoint/identity-departments-list",
                       "de/v1/api-reference/endpoint/identity-department-member-set",
                       "de/v1/api-reference/endpoint/identity-department-member-delete",
-                      "de/v1/api-reference/endpoint/identity-group-mappings-list",
                       "de/v1/api-reference/endpoint/identity-group-mapping-create",
                       "de/v1/api-reference/endpoint/identity-group-mapping-update",
-                      "de/v1/api-reference/endpoint/identity-group-mapping-delete"
+                      "de/v1/api-reference/endpoint/identity-group-mapping-delete",
+                      "de/v1/api-reference/endpoint/identity-group-mappings-list"
                     ]
                   },
                   {
@@ -5781,11 +5789,11 @@
                     "pages": [
                       "de/v1/api-reference/endpoint/notifications-settings-get",
                       "de/v1/api-reference/endpoint/notifications-settings-update",
-                      "de/v1/api-reference/endpoint/notifications-destinations-list",
                       "de/v1/api-reference/endpoint/notifications-destination-create",
-                      "de/v1/api-reference/endpoint/notifications-destination-delete",
                       "de/v1/api-reference/endpoint/notifications-destination-config-test",
                       "de/v1/api-reference/endpoint/notifications-destination-test",
+                      "de/v1/api-reference/endpoint/notifications-destination-delete",
+                      "de/v1/api-reference/endpoint/notifications-destinations-list",
                       "de/v1/api-reference/endpoint/notifications-routes-list",
                       "de/v1/api-reference/endpoint/notifications-route-update"
                     ]
@@ -6859,6 +6867,7 @@
                   },
                   "pt-BR/v1/guides/app-attribution",
                   "pt-BR/v1/guides/request-labels",
+                  "pt-BR/v1/guides/request-classifiers",
                   "pt-BR/v1/guides/workspace-notifications"
                 ]
               },
@@ -7083,14 +7092,14 @@
                 "icon": "video",
                 "tag": "Beta",
                 "pages": [
-                  "pt-BR/v1/api-reference/endpoint/video-list",
                   "pt-BR/v1/api-reference/endpoint/video-create",
-                  "pt-BR/v1/api-reference/endpoint/video-models",
                   "pt-BR/v1/api-reference/endpoint/video-status",
-                  "pt-BR/v1/api-reference/endpoint/video-delete",
-                  "pt-BR/v1/api-reference/endpoint/video-cancel",
                   "pt-BR/v1/api-reference/endpoint/video-content",
-                  "pt-BR/v1/api-reference/endpoint/video-download-url"
+                  "pt-BR/v1/api-reference/endpoint/video-download-url",
+                  "pt-BR/v1/api-reference/endpoint/video-cancel",
+                  "pt-BR/v1/api-reference/endpoint/video-delete",
+                  "pt-BR/v1/api-reference/endpoint/video-list",
+                  "pt-BR/v1/api-reference/endpoint/video-models"
                 ]
               },
               {
@@ -7104,7 +7113,8 @@
                 "group": "Decisões",
                 "icon": "signpost",
                 "pages": [
-                  "pt-BR/v1/api-reference/endpoint/decisions"
+                  "pt-BR/v1/api-reference/endpoint/decisions",
+                  "pt-BR/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -7167,18 +7177,18 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "pt-BR/v1/api-reference/endpoint/batches-list",
                       "pt-BR/v1/api-reference/endpoint/batches-create",
-                      "pt-BR/v1/api-reference/endpoint/batches-models",
-                      "pt-BR/v1/api-reference/endpoint/batches-capabilities",
-                      "pt-BR/v1/api-reference/endpoint/batches-files-list",
-                      "pt-BR/v1/api-reference/endpoint/batches-files-upload",
-                      "pt-BR/v1/api-reference/endpoint/batches-files-retrieve",
-                      "pt-BR/v1/api-reference/endpoint/batches-files-content",
                       "pt-BR/v1/api-reference/endpoint/batches-retrieve",
                       "pt-BR/v1/api-reference/endpoint/batches-results",
                       "pt-BR/v1/api-reference/endpoint/batches-requests",
-                      "pt-BR/v1/api-reference/endpoint/batches-cancel"
+                      "pt-BR/v1/api-reference/endpoint/batches-cancel",
+                      "pt-BR/v1/api-reference/endpoint/batches-list",
+                      "pt-BR/v1/api-reference/endpoint/batches-files-upload",
+                      "pt-BR/v1/api-reference/endpoint/batches-files-retrieve",
+                      "pt-BR/v1/api-reference/endpoint/batches-files-content",
+                      "pt-BR/v1/api-reference/endpoint/batches-files-list",
+                      "pt-BR/v1/api-reference/endpoint/batches-models",
+                      "pt-BR/v1/api-reference/endpoint/batches-capabilities"
                     ]
                   },
                   {
@@ -7186,9 +7196,9 @@
                     "expanded": true,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/files",
-                      "pt-BR/v1/api-reference/endpoint/files-list",
                       "pt-BR/v1/api-reference/endpoint/files-retrieve",
-                      "pt-BR/v1/api-reference/endpoint/files-content"
+                      "pt-BR/v1/api-reference/endpoint/files-content",
+                      "pt-BR/v1/api-reference/endpoint/files-list"
                     ]
                   },
                   {
@@ -7196,12 +7206,12 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "pt-BR/v1/api-reference/endpoint/webhook-endpoints-list",
                       "pt-BR/v1/api-reference/endpoint/webhook-endpoints-create",
                       "pt-BR/v1/api-reference/endpoint/webhook-endpoints-get",
                       "pt-BR/v1/api-reference/endpoint/webhook-endpoints-update",
+                      "pt-BR/v1/api-reference/endpoint/webhook-endpoints-rotate-secret",
                       "pt-BR/v1/api-reference/endpoint/webhook-endpoints-delete",
-                      "pt-BR/v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
+                      "pt-BR/v1/api-reference/endpoint/webhook-endpoints-list"
                     ]
                   }
                 ]
@@ -7229,53 +7239,53 @@
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/workspace-settings-get",
                       "pt-BR/v1/api-reference/endpoint/workspace-settings-update",
-                      "pt-BR/v1/api-reference/endpoint/dynamic-routes-list",
                       "pt-BR/v1/api-reference/endpoint/dynamic-routes-create",
                       "pt-BR/v1/api-reference/endpoint/dynamic-routes-get",
                       "pt-BR/v1/api-reference/endpoint/dynamic-routes-update",
                       "pt-BR/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "pt-BR/v1/api-reference/endpoint/dynamic-routes-deploy",
-                      "pt-BR/v1/api-reference/endpoint/dynamic-routes-delete"
+                      "pt-BR/v1/api-reference/endpoint/dynamic-routes-delete",
+                      "pt-BR/v1/api-reference/endpoint/dynamic-routes-list"
                     ]
                   },
                   {
                     "group": "Predefinições",
                     "expanded": false,
                     "pages": [
-                      "pt-BR/v1/api-reference/endpoint/presets-list",
                       "pt-BR/v1/api-reference/endpoint/presets-create",
                       "pt-BR/v1/api-reference/endpoint/presets-get",
                       "pt-BR/v1/api-reference/endpoint/presets-update",
-                      "pt-BR/v1/api-reference/endpoint/presets-versions-list",
                       "pt-BR/v1/api-reference/endpoint/presets-version-publish",
+                      "pt-BR/v1/api-reference/endpoint/presets-versions-list",
                       "pt-BR/v1/api-reference/endpoint/presets-fork",
                       "pt-BR/v1/api-reference/endpoint/presets-upstream-apply",
+                      "pt-BR/v1/api-reference/endpoint/presets-delete",
+                      "pt-BR/v1/api-reference/endpoint/presets-list",
                       "pt-BR/v1/api-reference/endpoint/presets-publisher-get",
-                      "pt-BR/v1/api-reference/endpoint/presets-publisher-update",
-                      "pt-BR/v1/api-reference/endpoint/presets-delete"
+                      "pt-BR/v1/api-reference/endpoint/presets-publisher-update"
                     ]
                   },
                   {
                     "group": "Modelos privados",
                     "expanded": false,
                     "pages": [
-                      "pt-BR/v1/api-reference/endpoint/private-models-list",
                       "pt-BR/v1/api-reference/endpoint/private-models-create",
                       "pt-BR/v1/api-reference/endpoint/private-models-get",
                       "pt-BR/v1/api-reference/endpoint/private-models-update",
-                      "pt-BR/v1/api-reference/endpoint/private-models-delete"
+                      "pt-BR/v1/api-reference/endpoint/private-models-delete",
+                      "pt-BR/v1/api-reference/endpoint/private-models-list"
                     ]
                   },
                   {
                     "group": "Credenciais de provedores",
                     "expanded": false,
                     "pages": [
-                      "pt-BR/v1/api-reference/endpoint/provider-credentials-list",
                       "pt-BR/v1/api-reference/endpoint/provider-credentials-create",
                       "pt-BR/v1/api-reference/endpoint/provider-credentials-get",
                       "pt-BR/v1/api-reference/endpoint/provider-credentials-update",
+                      "pt-BR/v1/api-reference/endpoint/provider-credentials-reorder",
                       "pt-BR/v1/api-reference/endpoint/provider-credentials-delete",
-                      "pt-BR/v1/api-reference/endpoint/provider-credentials-reorder"
+                      "pt-BR/v1/api-reference/endpoint/provider-credentials-list"
                     ]
                   },
                   {
@@ -7283,18 +7293,18 @@
                     "expanded": false,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/guardrails",
-                      "pt-BR/v1/api-reference/endpoint/guardrails-list",
                       "pt-BR/v1/api-reference/endpoint/guardrails-create",
                       "pt-BR/v1/api-reference/endpoint/guardrails-get",
                       "pt-BR/v1/api-reference/endpoint/guardrails-update",
                       "pt-BR/v1/api-reference/endpoint/guardrails-delete",
-                      "pt-BR/v1/api-reference/endpoint/guardrail-keys-list",
-                      "pt-BR/v1/api-reference/endpoint/guardrail-keys-replace",
+                      "pt-BR/v1/api-reference/endpoint/guardrails-list",
                       "pt-BR/v1/api-reference/endpoint/guardrail-keys-add",
+                      "pt-BR/v1/api-reference/endpoint/guardrail-keys-replace",
                       "pt-BR/v1/api-reference/endpoint/guardrail-keys-remove",
-                      "pt-BR/v1/api-reference/endpoint/guardrail-members-list",
+                      "pt-BR/v1/api-reference/endpoint/guardrail-keys-list",
                       "pt-BR/v1/api-reference/endpoint/guardrail-members-add",
-                      "pt-BR/v1/api-reference/endpoint/guardrail-members-remove"
+                      "pt-BR/v1/api-reference/endpoint/guardrail-members-remove",
+                      "pt-BR/v1/api-reference/endpoint/guardrail-members-list"
                     ]
                   }
                 ]
@@ -7329,11 +7339,11 @@
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/observability-logging-policy-get",
                       "pt-BR/v1/api-reference/endpoint/observability-logging-policy-update",
-                      "pt-BR/v1/api-reference/endpoint/observability-destinations-list",
                       "pt-BR/v1/api-reference/endpoint/observability-destinations-create",
                       "pt-BR/v1/api-reference/endpoint/observability-destinations-get",
                       "pt-BR/v1/api-reference/endpoint/observability-destinations-update",
-                      "pt-BR/v1/api-reference/endpoint/observability-destinations-delete"
+                      "pt-BR/v1/api-reference/endpoint/observability-destinations-delete",
+                      "pt-BR/v1/api-reference/endpoint/observability-destinations-list"
                     ]
                   },
                   {
@@ -7341,15 +7351,15 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "pt-BR/v1/api-reference/endpoint/feedback-list",
                       "pt-BR/v1/api-reference/endpoint/feedback-create",
+                      "pt-BR/v1/api-reference/endpoint/feedback-list",
                       "pt-BR/v1/api-reference/endpoint/feedback-summary",
-                      "pt-BR/v1/api-reference/endpoint/events-list",
                       "pt-BR/v1/api-reference/endpoint/events-create",
-                      "pt-BR/v1/api-reference/endpoint/preset-test-runs-list",
+                      "pt-BR/v1/api-reference/endpoint/events-list",
                       "pt-BR/v1/api-reference/endpoint/preset-test-run-create",
                       "pt-BR/v1/api-reference/endpoint/preset-test-run-get",
-                      "pt-BR/v1/api-reference/endpoint/preset-test-run-update"
+                      "pt-BR/v1/api-reference/endpoint/preset-test-run-update",
+                      "pt-BR/v1/api-reference/endpoint/preset-test-runs-list"
                     ]
                   }
                 ]
@@ -7362,18 +7372,18 @@
                     "group": "Espaços de trabalho",
                     "expanded": false,
                     "pages": [
-                      "pt-BR/v1/api-reference/endpoint/workspaces-list",
                       "pt-BR/v1/api-reference/endpoint/workspaces-create",
                       "pt-BR/v1/api-reference/endpoint/workspaces-get",
-                      "pt-BR/v1/api-reference/endpoint/workspaces-delete",
                       "pt-BR/v1/api-reference/endpoint/workspaces-update",
-                      "pt-BR/v1/api-reference/endpoint/workspace-members-list",
+                      "pt-BR/v1/api-reference/endpoint/workspaces-delete",
+                      "pt-BR/v1/api-reference/endpoint/workspaces-list",
                       "pt-BR/v1/api-reference/endpoint/workspace-members-add",
-                      "pt-BR/v1/api-reference/endpoint/workspace-members-remove",
                       "pt-BR/v1/api-reference/endpoint/workspace-member-role-update",
-                      "pt-BR/v1/api-reference/endpoint/workspace-invites-list",
+                      "pt-BR/v1/api-reference/endpoint/workspace-members-remove",
+                      "pt-BR/v1/api-reference/endpoint/workspace-members-list",
                       "pt-BR/v1/api-reference/endpoint/workspace-invites-create",
                       "pt-BR/v1/api-reference/endpoint/workspace-invites-delete",
+                      "pt-BR/v1/api-reference/endpoint/workspace-invites-list",
                       "pt-BR/v1/api-reference/endpoint/workspace-join-requests-list",
                       "pt-BR/v1/api-reference/endpoint/workspace-join-request-approve",
                       "pt-BR/v1/api-reference/endpoint/workspace-join-request-reject"
@@ -7384,24 +7394,24 @@
                     "expanded": false,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/key-current",
-                      "pt-BR/v1/api-reference/endpoint/keys-list",
                       "pt-BR/v1/api-reference/endpoint/keys-create",
                       "pt-BR/v1/api-reference/endpoint/keys-get",
-                      "pt-BR/v1/api-reference/endpoint/keys-rotate",
-                      "pt-BR/v1/api-reference/endpoint/keys-delete",
                       "pt-BR/v1/api-reference/endpoint/keys-update",
-                      "pt-BR/v1/api-reference/endpoint/keys-invalidate"
+                      "pt-BR/v1/api-reference/endpoint/keys-rotate",
+                      "pt-BR/v1/api-reference/endpoint/keys-invalidate",
+                      "pt-BR/v1/api-reference/endpoint/keys-delete",
+                      "pt-BR/v1/api-reference/endpoint/keys-list"
                     ]
                   },
                   {
                     "group": "Chaves de gerenciamento",
                     "expanded": false,
                     "pages": [
-                      "pt-BR/v1/api-reference/endpoint/management-keys-list",
                       "pt-BR/v1/api-reference/endpoint/management-keys-create",
                       "pt-BR/v1/api-reference/endpoint/management-keys-get",
                       "pt-BR/v1/api-reference/endpoint/management-keys-update",
-                      "pt-BR/v1/api-reference/endpoint/management-keys-delete"
+                      "pt-BR/v1/api-reference/endpoint/management-keys-delete",
+                      "pt-BR/v1/api-reference/endpoint/management-keys-list"
                     ]
                   },
                   {
@@ -7409,11 +7419,11 @@
                     "expanded": false,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/credits",
-                      "pt-BR/v1/api-reference/endpoint/budgets-list",
                       "pt-BR/v1/api-reference/endpoint/budgets-create",
                       "pt-BR/v1/api-reference/endpoint/budgets-get",
                       "pt-BR/v1/api-reference/endpoint/budgets-update",
-                      "pt-BR/v1/api-reference/endpoint/budgets-delete"
+                      "pt-BR/v1/api-reference/endpoint/budgets-delete",
+                      "pt-BR/v1/api-reference/endpoint/budgets-list"
                     ]
                   },
                   {
@@ -7421,12 +7431,12 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "pt-BR/v1/api-reference/endpoint/oauth-clients-list",
                       "pt-BR/v1/api-reference/endpoint/oauth-clients-create",
                       "pt-BR/v1/api-reference/endpoint/oauth-clients-get",
                       "pt-BR/v1/api-reference/endpoint/oauth-clients-update",
+                      "pt-BR/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "pt-BR/v1/api-reference/endpoint/oauth-clients-delete",
-                      "pt-BR/v1/api-reference/endpoint/oauth-clients-regenerate-secret"
+                      "pt-BR/v1/api-reference/endpoint/oauth-clients-list"
                     ]
                   },
                   {
@@ -7450,16 +7460,16 @@
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/identity-directory-get",
                       "pt-BR/v1/api-reference/endpoint/identity-directory-member-update",
-                      "pt-BR/v1/api-reference/endpoint/identity-departments-list",
                       "pt-BR/v1/api-reference/endpoint/identity-department-create",
                       "pt-BR/v1/api-reference/endpoint/identity-department-update",
                       "pt-BR/v1/api-reference/endpoint/identity-department-delete",
+                      "pt-BR/v1/api-reference/endpoint/identity-departments-list",
                       "pt-BR/v1/api-reference/endpoint/identity-department-member-set",
                       "pt-BR/v1/api-reference/endpoint/identity-department-member-delete",
-                      "pt-BR/v1/api-reference/endpoint/identity-group-mappings-list",
                       "pt-BR/v1/api-reference/endpoint/identity-group-mapping-create",
                       "pt-BR/v1/api-reference/endpoint/identity-group-mapping-update",
-                      "pt-BR/v1/api-reference/endpoint/identity-group-mapping-delete"
+                      "pt-BR/v1/api-reference/endpoint/identity-group-mapping-delete",
+                      "pt-BR/v1/api-reference/endpoint/identity-group-mappings-list"
                     ]
                   },
                   {
@@ -7469,11 +7479,11 @@
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/notifications-settings-get",
                       "pt-BR/v1/api-reference/endpoint/notifications-settings-update",
-                      "pt-BR/v1/api-reference/endpoint/notifications-destinations-list",
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-create",
-                      "pt-BR/v1/api-reference/endpoint/notifications-destination-delete",
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-config-test",
                       "pt-BR/v1/api-reference/endpoint/notifications-destination-test",
+                      "pt-BR/v1/api-reference/endpoint/notifications-destination-delete",
+                      "pt-BR/v1/api-reference/endpoint/notifications-destinations-list",
                       "pt-BR/v1/api-reference/endpoint/notifications-routes-list",
                       "pt-BR/v1/api-reference/endpoint/notifications-route-update"
                     ]
@@ -8547,6 +8557,7 @@
                   },
                   "ja/v1/guides/app-attribution",
                   "ja/v1/guides/request-labels",
+                  "ja/v1/guides/request-classifiers",
                   "ja/v1/guides/workspace-notifications"
                 ]
               },
@@ -8771,14 +8782,14 @@
                 "icon": "video",
                 "tag": "Beta",
                 "pages": [
-                  "ja/v1/api-reference/endpoint/video-list",
                   "ja/v1/api-reference/endpoint/video-create",
-                  "ja/v1/api-reference/endpoint/video-models",
                   "ja/v1/api-reference/endpoint/video-status",
-                  "ja/v1/api-reference/endpoint/video-delete",
-                  "ja/v1/api-reference/endpoint/video-cancel",
                   "ja/v1/api-reference/endpoint/video-content",
-                  "ja/v1/api-reference/endpoint/video-download-url"
+                  "ja/v1/api-reference/endpoint/video-download-url",
+                  "ja/v1/api-reference/endpoint/video-cancel",
+                  "ja/v1/api-reference/endpoint/video-delete",
+                  "ja/v1/api-reference/endpoint/video-list",
+                  "ja/v1/api-reference/endpoint/video-models"
                 ]
               },
               {
@@ -8792,7 +8803,8 @@
                 "group": "判断",
                 "icon": "signpost",
                 "pages": [
-                  "ja/v1/api-reference/endpoint/decisions"
+                  "ja/v1/api-reference/endpoint/decisions",
+                  "ja/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -8855,18 +8867,18 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "ja/v1/api-reference/endpoint/batches-list",
                       "ja/v1/api-reference/endpoint/batches-create",
-                      "ja/v1/api-reference/endpoint/batches-models",
-                      "ja/v1/api-reference/endpoint/batches-capabilities",
-                      "ja/v1/api-reference/endpoint/batches-files-list",
-                      "ja/v1/api-reference/endpoint/batches-files-upload",
-                      "ja/v1/api-reference/endpoint/batches-files-retrieve",
-                      "ja/v1/api-reference/endpoint/batches-files-content",
                       "ja/v1/api-reference/endpoint/batches-retrieve",
                       "ja/v1/api-reference/endpoint/batches-results",
                       "ja/v1/api-reference/endpoint/batches-requests",
-                      "ja/v1/api-reference/endpoint/batches-cancel"
+                      "ja/v1/api-reference/endpoint/batches-cancel",
+                      "ja/v1/api-reference/endpoint/batches-list",
+                      "ja/v1/api-reference/endpoint/batches-files-upload",
+                      "ja/v1/api-reference/endpoint/batches-files-retrieve",
+                      "ja/v1/api-reference/endpoint/batches-files-content",
+                      "ja/v1/api-reference/endpoint/batches-files-list",
+                      "ja/v1/api-reference/endpoint/batches-models",
+                      "ja/v1/api-reference/endpoint/batches-capabilities"
                     ]
                   },
                   {
@@ -8874,9 +8886,9 @@
                     "expanded": true,
                     "pages": [
                       "ja/v1/api-reference/endpoint/files",
-                      "ja/v1/api-reference/endpoint/files-list",
                       "ja/v1/api-reference/endpoint/files-retrieve",
-                      "ja/v1/api-reference/endpoint/files-content"
+                      "ja/v1/api-reference/endpoint/files-content",
+                      "ja/v1/api-reference/endpoint/files-list"
                     ]
                   },
                   {
@@ -8884,12 +8896,12 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "ja/v1/api-reference/endpoint/webhook-endpoints-list",
                       "ja/v1/api-reference/endpoint/webhook-endpoints-create",
                       "ja/v1/api-reference/endpoint/webhook-endpoints-get",
                       "ja/v1/api-reference/endpoint/webhook-endpoints-update",
+                      "ja/v1/api-reference/endpoint/webhook-endpoints-rotate-secret",
                       "ja/v1/api-reference/endpoint/webhook-endpoints-delete",
-                      "ja/v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
+                      "ja/v1/api-reference/endpoint/webhook-endpoints-list"
                     ]
                   }
                 ]
@@ -8917,53 +8929,53 @@
                     "pages": [
                       "ja/v1/api-reference/endpoint/workspace-settings-get",
                       "ja/v1/api-reference/endpoint/workspace-settings-update",
-                      "ja/v1/api-reference/endpoint/dynamic-routes-list",
                       "ja/v1/api-reference/endpoint/dynamic-routes-create",
                       "ja/v1/api-reference/endpoint/dynamic-routes-get",
                       "ja/v1/api-reference/endpoint/dynamic-routes-update",
                       "ja/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "ja/v1/api-reference/endpoint/dynamic-routes-deploy",
-                      "ja/v1/api-reference/endpoint/dynamic-routes-delete"
+                      "ja/v1/api-reference/endpoint/dynamic-routes-delete",
+                      "ja/v1/api-reference/endpoint/dynamic-routes-list"
                     ]
                   },
                   {
                     "group": "プリセット",
                     "expanded": false,
                     "pages": [
-                      "ja/v1/api-reference/endpoint/presets-list",
                       "ja/v1/api-reference/endpoint/presets-create",
                       "ja/v1/api-reference/endpoint/presets-get",
                       "ja/v1/api-reference/endpoint/presets-update",
-                      "ja/v1/api-reference/endpoint/presets-versions-list",
                       "ja/v1/api-reference/endpoint/presets-version-publish",
+                      "ja/v1/api-reference/endpoint/presets-versions-list",
                       "ja/v1/api-reference/endpoint/presets-fork",
                       "ja/v1/api-reference/endpoint/presets-upstream-apply",
+                      "ja/v1/api-reference/endpoint/presets-delete",
+                      "ja/v1/api-reference/endpoint/presets-list",
                       "ja/v1/api-reference/endpoint/presets-publisher-get",
-                      "ja/v1/api-reference/endpoint/presets-publisher-update",
-                      "ja/v1/api-reference/endpoint/presets-delete"
+                      "ja/v1/api-reference/endpoint/presets-publisher-update"
                     ]
                   },
                   {
                     "group": "プライベートモデル",
                     "expanded": false,
                     "pages": [
-                      "ja/v1/api-reference/endpoint/private-models-list",
                       "ja/v1/api-reference/endpoint/private-models-create",
                       "ja/v1/api-reference/endpoint/private-models-get",
                       "ja/v1/api-reference/endpoint/private-models-update",
-                      "ja/v1/api-reference/endpoint/private-models-delete"
+                      "ja/v1/api-reference/endpoint/private-models-delete",
+                      "ja/v1/api-reference/endpoint/private-models-list"
                     ]
                   },
                   {
                     "group": "プロバイダー認証情報",
                     "expanded": false,
                     "pages": [
-                      "ja/v1/api-reference/endpoint/provider-credentials-list",
                       "ja/v1/api-reference/endpoint/provider-credentials-create",
                       "ja/v1/api-reference/endpoint/provider-credentials-get",
                       "ja/v1/api-reference/endpoint/provider-credentials-update",
+                      "ja/v1/api-reference/endpoint/provider-credentials-reorder",
                       "ja/v1/api-reference/endpoint/provider-credentials-delete",
-                      "ja/v1/api-reference/endpoint/provider-credentials-reorder"
+                      "ja/v1/api-reference/endpoint/provider-credentials-list"
                     ]
                   },
                   {
@@ -8971,18 +8983,18 @@
                     "expanded": false,
                     "pages": [
                       "ja/v1/api-reference/endpoint/guardrails",
-                      "ja/v1/api-reference/endpoint/guardrails-list",
                       "ja/v1/api-reference/endpoint/guardrails-create",
                       "ja/v1/api-reference/endpoint/guardrails-get",
                       "ja/v1/api-reference/endpoint/guardrails-update",
                       "ja/v1/api-reference/endpoint/guardrails-delete",
-                      "ja/v1/api-reference/endpoint/guardrail-keys-list",
-                      "ja/v1/api-reference/endpoint/guardrail-keys-replace",
+                      "ja/v1/api-reference/endpoint/guardrails-list",
                       "ja/v1/api-reference/endpoint/guardrail-keys-add",
+                      "ja/v1/api-reference/endpoint/guardrail-keys-replace",
                       "ja/v1/api-reference/endpoint/guardrail-keys-remove",
-                      "ja/v1/api-reference/endpoint/guardrail-members-list",
+                      "ja/v1/api-reference/endpoint/guardrail-keys-list",
                       "ja/v1/api-reference/endpoint/guardrail-members-add",
-                      "ja/v1/api-reference/endpoint/guardrail-members-remove"
+                      "ja/v1/api-reference/endpoint/guardrail-members-remove",
+                      "ja/v1/api-reference/endpoint/guardrail-members-list"
                     ]
                   }
                 ]
@@ -9017,11 +9029,11 @@
                     "pages": [
                       "ja/v1/api-reference/endpoint/observability-logging-policy-get",
                       "ja/v1/api-reference/endpoint/observability-logging-policy-update",
-                      "ja/v1/api-reference/endpoint/observability-destinations-list",
                       "ja/v1/api-reference/endpoint/observability-destinations-create",
                       "ja/v1/api-reference/endpoint/observability-destinations-get",
                       "ja/v1/api-reference/endpoint/observability-destinations-update",
-                      "ja/v1/api-reference/endpoint/observability-destinations-delete"
+                      "ja/v1/api-reference/endpoint/observability-destinations-delete",
+                      "ja/v1/api-reference/endpoint/observability-destinations-list"
                     ]
                   },
                   {
@@ -9029,15 +9041,15 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "ja/v1/api-reference/endpoint/feedback-list",
                       "ja/v1/api-reference/endpoint/feedback-create",
+                      "ja/v1/api-reference/endpoint/feedback-list",
                       "ja/v1/api-reference/endpoint/feedback-summary",
-                      "ja/v1/api-reference/endpoint/events-list",
                       "ja/v1/api-reference/endpoint/events-create",
-                      "ja/v1/api-reference/endpoint/preset-test-runs-list",
+                      "ja/v1/api-reference/endpoint/events-list",
                       "ja/v1/api-reference/endpoint/preset-test-run-create",
                       "ja/v1/api-reference/endpoint/preset-test-run-get",
-                      "ja/v1/api-reference/endpoint/preset-test-run-update"
+                      "ja/v1/api-reference/endpoint/preset-test-run-update",
+                      "ja/v1/api-reference/endpoint/preset-test-runs-list"
                     ]
                   }
                 ]
@@ -9050,18 +9062,18 @@
                     "group": "ワークスペース",
                     "expanded": false,
                     "pages": [
-                      "ja/v1/api-reference/endpoint/workspaces-list",
                       "ja/v1/api-reference/endpoint/workspaces-create",
                       "ja/v1/api-reference/endpoint/workspaces-get",
-                      "ja/v1/api-reference/endpoint/workspaces-delete",
                       "ja/v1/api-reference/endpoint/workspaces-update",
-                      "ja/v1/api-reference/endpoint/workspace-members-list",
+                      "ja/v1/api-reference/endpoint/workspaces-delete",
+                      "ja/v1/api-reference/endpoint/workspaces-list",
                       "ja/v1/api-reference/endpoint/workspace-members-add",
-                      "ja/v1/api-reference/endpoint/workspace-members-remove",
                       "ja/v1/api-reference/endpoint/workspace-member-role-update",
-                      "ja/v1/api-reference/endpoint/workspace-invites-list",
+                      "ja/v1/api-reference/endpoint/workspace-members-remove",
+                      "ja/v1/api-reference/endpoint/workspace-members-list",
                       "ja/v1/api-reference/endpoint/workspace-invites-create",
                       "ja/v1/api-reference/endpoint/workspace-invites-delete",
+                      "ja/v1/api-reference/endpoint/workspace-invites-list",
                       "ja/v1/api-reference/endpoint/workspace-join-requests-list",
                       "ja/v1/api-reference/endpoint/workspace-join-request-approve",
                       "ja/v1/api-reference/endpoint/workspace-join-request-reject"
@@ -9072,24 +9084,24 @@
                     "expanded": false,
                     "pages": [
                       "ja/v1/api-reference/endpoint/key-current",
-                      "ja/v1/api-reference/endpoint/keys-list",
                       "ja/v1/api-reference/endpoint/keys-create",
                       "ja/v1/api-reference/endpoint/keys-get",
-                      "ja/v1/api-reference/endpoint/keys-rotate",
-                      "ja/v1/api-reference/endpoint/keys-delete",
                       "ja/v1/api-reference/endpoint/keys-update",
-                      "ja/v1/api-reference/endpoint/keys-invalidate"
+                      "ja/v1/api-reference/endpoint/keys-rotate",
+                      "ja/v1/api-reference/endpoint/keys-invalidate",
+                      "ja/v1/api-reference/endpoint/keys-delete",
+                      "ja/v1/api-reference/endpoint/keys-list"
                     ]
                   },
                   {
                     "group": "管理用キー",
                     "expanded": false,
                     "pages": [
-                      "ja/v1/api-reference/endpoint/management-keys-list",
                       "ja/v1/api-reference/endpoint/management-keys-create",
                       "ja/v1/api-reference/endpoint/management-keys-get",
                       "ja/v1/api-reference/endpoint/management-keys-update",
-                      "ja/v1/api-reference/endpoint/management-keys-delete"
+                      "ja/v1/api-reference/endpoint/management-keys-delete",
+                      "ja/v1/api-reference/endpoint/management-keys-list"
                     ]
                   },
                   {
@@ -9097,11 +9109,11 @@
                     "expanded": false,
                     "pages": [
                       "ja/v1/api-reference/endpoint/credits",
-                      "ja/v1/api-reference/endpoint/budgets-list",
                       "ja/v1/api-reference/endpoint/budgets-create",
                       "ja/v1/api-reference/endpoint/budgets-get",
                       "ja/v1/api-reference/endpoint/budgets-update",
-                      "ja/v1/api-reference/endpoint/budgets-delete"
+                      "ja/v1/api-reference/endpoint/budgets-delete",
+                      "ja/v1/api-reference/endpoint/budgets-list"
                     ]
                   },
                   {
@@ -9109,12 +9121,12 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "ja/v1/api-reference/endpoint/oauth-clients-list",
                       "ja/v1/api-reference/endpoint/oauth-clients-create",
                       "ja/v1/api-reference/endpoint/oauth-clients-get",
                       "ja/v1/api-reference/endpoint/oauth-clients-update",
+                      "ja/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "ja/v1/api-reference/endpoint/oauth-clients-delete",
-                      "ja/v1/api-reference/endpoint/oauth-clients-regenerate-secret"
+                      "ja/v1/api-reference/endpoint/oauth-clients-list"
                     ]
                   },
                   {
@@ -9138,16 +9150,16 @@
                     "pages": [
                       "ja/v1/api-reference/endpoint/identity-directory-get",
                       "ja/v1/api-reference/endpoint/identity-directory-member-update",
-                      "ja/v1/api-reference/endpoint/identity-departments-list",
                       "ja/v1/api-reference/endpoint/identity-department-create",
                       "ja/v1/api-reference/endpoint/identity-department-update",
                       "ja/v1/api-reference/endpoint/identity-department-delete",
+                      "ja/v1/api-reference/endpoint/identity-departments-list",
                       "ja/v1/api-reference/endpoint/identity-department-member-set",
                       "ja/v1/api-reference/endpoint/identity-department-member-delete",
-                      "ja/v1/api-reference/endpoint/identity-group-mappings-list",
                       "ja/v1/api-reference/endpoint/identity-group-mapping-create",
                       "ja/v1/api-reference/endpoint/identity-group-mapping-update",
-                      "ja/v1/api-reference/endpoint/identity-group-mapping-delete"
+                      "ja/v1/api-reference/endpoint/identity-group-mapping-delete",
+                      "ja/v1/api-reference/endpoint/identity-group-mappings-list"
                     ]
                   },
                   {
@@ -9157,11 +9169,11 @@
                     "pages": [
                       "ja/v1/api-reference/endpoint/notifications-settings-get",
                       "ja/v1/api-reference/endpoint/notifications-settings-update",
-                      "ja/v1/api-reference/endpoint/notifications-destinations-list",
                       "ja/v1/api-reference/endpoint/notifications-destination-create",
-                      "ja/v1/api-reference/endpoint/notifications-destination-delete",
                       "ja/v1/api-reference/endpoint/notifications-destination-config-test",
                       "ja/v1/api-reference/endpoint/notifications-destination-test",
+                      "ja/v1/api-reference/endpoint/notifications-destination-delete",
+                      "ja/v1/api-reference/endpoint/notifications-destinations-list",
                       "ja/v1/api-reference/endpoint/notifications-routes-list",
                       "ja/v1/api-reference/endpoint/notifications-route-update"
                     ]
@@ -10235,6 +10247,7 @@
                   },
                   "zh-Hans/v1/guides/app-attribution",
                   "zh-Hans/v1/guides/request-labels",
+                  "zh-Hans/v1/guides/request-classifiers",
                   "zh-Hans/v1/guides/workspace-notifications"
                 ]
               },
@@ -10459,14 +10472,14 @@
                 "icon": "video",
                 "tag": "Beta",
                 "pages": [
-                  "zh-Hans/v1/api-reference/endpoint/video-list",
                   "zh-Hans/v1/api-reference/endpoint/video-create",
-                  "zh-Hans/v1/api-reference/endpoint/video-models",
                   "zh-Hans/v1/api-reference/endpoint/video-status",
-                  "zh-Hans/v1/api-reference/endpoint/video-delete",
-                  "zh-Hans/v1/api-reference/endpoint/video-cancel",
                   "zh-Hans/v1/api-reference/endpoint/video-content",
-                  "zh-Hans/v1/api-reference/endpoint/video-download-url"
+                  "zh-Hans/v1/api-reference/endpoint/video-download-url",
+                  "zh-Hans/v1/api-reference/endpoint/video-cancel",
+                  "zh-Hans/v1/api-reference/endpoint/video-delete",
+                  "zh-Hans/v1/api-reference/endpoint/video-list",
+                  "zh-Hans/v1/api-reference/endpoint/video-models"
                 ]
               },
               {
@@ -10480,7 +10493,8 @@
                 "group": "决策",
                 "icon": "signpost",
                 "pages": [
-                  "zh-Hans/v1/api-reference/endpoint/decisions"
+                  "zh-Hans/v1/api-reference/endpoint/decisions",
+                  "zh-Hans/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -10543,18 +10557,18 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "zh-Hans/v1/api-reference/endpoint/batches-list",
                       "zh-Hans/v1/api-reference/endpoint/batches-create",
-                      "zh-Hans/v1/api-reference/endpoint/batches-models",
-                      "zh-Hans/v1/api-reference/endpoint/batches-capabilities",
-                      "zh-Hans/v1/api-reference/endpoint/batches-files-list",
-                      "zh-Hans/v1/api-reference/endpoint/batches-files-upload",
-                      "zh-Hans/v1/api-reference/endpoint/batches-files-retrieve",
-                      "zh-Hans/v1/api-reference/endpoint/batches-files-content",
                       "zh-Hans/v1/api-reference/endpoint/batches-retrieve",
                       "zh-Hans/v1/api-reference/endpoint/batches-results",
                       "zh-Hans/v1/api-reference/endpoint/batches-requests",
-                      "zh-Hans/v1/api-reference/endpoint/batches-cancel"
+                      "zh-Hans/v1/api-reference/endpoint/batches-cancel",
+                      "zh-Hans/v1/api-reference/endpoint/batches-list",
+                      "zh-Hans/v1/api-reference/endpoint/batches-files-upload",
+                      "zh-Hans/v1/api-reference/endpoint/batches-files-retrieve",
+                      "zh-Hans/v1/api-reference/endpoint/batches-files-content",
+                      "zh-Hans/v1/api-reference/endpoint/batches-files-list",
+                      "zh-Hans/v1/api-reference/endpoint/batches-models",
+                      "zh-Hans/v1/api-reference/endpoint/batches-capabilities"
                     ]
                   },
                   {
@@ -10562,9 +10576,9 @@
                     "expanded": true,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/files",
-                      "zh-Hans/v1/api-reference/endpoint/files-list",
                       "zh-Hans/v1/api-reference/endpoint/files-retrieve",
-                      "zh-Hans/v1/api-reference/endpoint/files-content"
+                      "zh-Hans/v1/api-reference/endpoint/files-content",
+                      "zh-Hans/v1/api-reference/endpoint/files-list"
                     ]
                   },
                   {
@@ -10572,12 +10586,12 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "zh-Hans/v1/api-reference/endpoint/webhook-endpoints-list",
                       "zh-Hans/v1/api-reference/endpoint/webhook-endpoints-create",
                       "zh-Hans/v1/api-reference/endpoint/webhook-endpoints-get",
                       "zh-Hans/v1/api-reference/endpoint/webhook-endpoints-update",
+                      "zh-Hans/v1/api-reference/endpoint/webhook-endpoints-rotate-secret",
                       "zh-Hans/v1/api-reference/endpoint/webhook-endpoints-delete",
-                      "zh-Hans/v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
+                      "zh-Hans/v1/api-reference/endpoint/webhook-endpoints-list"
                     ]
                   }
                 ]
@@ -10605,53 +10619,53 @@
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/workspace-settings-get",
                       "zh-Hans/v1/api-reference/endpoint/workspace-settings-update",
-                      "zh-Hans/v1/api-reference/endpoint/dynamic-routes-list",
                       "zh-Hans/v1/api-reference/endpoint/dynamic-routes-create",
                       "zh-Hans/v1/api-reference/endpoint/dynamic-routes-get",
                       "zh-Hans/v1/api-reference/endpoint/dynamic-routes-update",
                       "zh-Hans/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "zh-Hans/v1/api-reference/endpoint/dynamic-routes-deploy",
-                      "zh-Hans/v1/api-reference/endpoint/dynamic-routes-delete"
+                      "zh-Hans/v1/api-reference/endpoint/dynamic-routes-delete",
+                      "zh-Hans/v1/api-reference/endpoint/dynamic-routes-list"
                     ]
                   },
                   {
                     "group": "预设",
                     "expanded": false,
                     "pages": [
-                      "zh-Hans/v1/api-reference/endpoint/presets-list",
                       "zh-Hans/v1/api-reference/endpoint/presets-create",
                       "zh-Hans/v1/api-reference/endpoint/presets-get",
                       "zh-Hans/v1/api-reference/endpoint/presets-update",
-                      "zh-Hans/v1/api-reference/endpoint/presets-versions-list",
                       "zh-Hans/v1/api-reference/endpoint/presets-version-publish",
+                      "zh-Hans/v1/api-reference/endpoint/presets-versions-list",
                       "zh-Hans/v1/api-reference/endpoint/presets-fork",
                       "zh-Hans/v1/api-reference/endpoint/presets-upstream-apply",
+                      "zh-Hans/v1/api-reference/endpoint/presets-delete",
+                      "zh-Hans/v1/api-reference/endpoint/presets-list",
                       "zh-Hans/v1/api-reference/endpoint/presets-publisher-get",
-                      "zh-Hans/v1/api-reference/endpoint/presets-publisher-update",
-                      "zh-Hans/v1/api-reference/endpoint/presets-delete"
+                      "zh-Hans/v1/api-reference/endpoint/presets-publisher-update"
                     ]
                   },
                   {
                     "group": "私有模型",
                     "expanded": false,
                     "pages": [
-                      "zh-Hans/v1/api-reference/endpoint/private-models-list",
                       "zh-Hans/v1/api-reference/endpoint/private-models-create",
                       "zh-Hans/v1/api-reference/endpoint/private-models-get",
                       "zh-Hans/v1/api-reference/endpoint/private-models-update",
-                      "zh-Hans/v1/api-reference/endpoint/private-models-delete"
+                      "zh-Hans/v1/api-reference/endpoint/private-models-delete",
+                      "zh-Hans/v1/api-reference/endpoint/private-models-list"
                     ]
                   },
                   {
                     "group": "提供商凭证",
                     "expanded": false,
                     "pages": [
-                      "zh-Hans/v1/api-reference/endpoint/provider-credentials-list",
                       "zh-Hans/v1/api-reference/endpoint/provider-credentials-create",
                       "zh-Hans/v1/api-reference/endpoint/provider-credentials-get",
                       "zh-Hans/v1/api-reference/endpoint/provider-credentials-update",
+                      "zh-Hans/v1/api-reference/endpoint/provider-credentials-reorder",
                       "zh-Hans/v1/api-reference/endpoint/provider-credentials-delete",
-                      "zh-Hans/v1/api-reference/endpoint/provider-credentials-reorder"
+                      "zh-Hans/v1/api-reference/endpoint/provider-credentials-list"
                     ]
                   },
                   {
@@ -10659,18 +10673,18 @@
                     "expanded": false,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/guardrails",
-                      "zh-Hans/v1/api-reference/endpoint/guardrails-list",
                       "zh-Hans/v1/api-reference/endpoint/guardrails-create",
                       "zh-Hans/v1/api-reference/endpoint/guardrails-get",
                       "zh-Hans/v1/api-reference/endpoint/guardrails-update",
                       "zh-Hans/v1/api-reference/endpoint/guardrails-delete",
-                      "zh-Hans/v1/api-reference/endpoint/guardrail-keys-list",
-                      "zh-Hans/v1/api-reference/endpoint/guardrail-keys-replace",
+                      "zh-Hans/v1/api-reference/endpoint/guardrails-list",
                       "zh-Hans/v1/api-reference/endpoint/guardrail-keys-add",
+                      "zh-Hans/v1/api-reference/endpoint/guardrail-keys-replace",
                       "zh-Hans/v1/api-reference/endpoint/guardrail-keys-remove",
-                      "zh-Hans/v1/api-reference/endpoint/guardrail-members-list",
+                      "zh-Hans/v1/api-reference/endpoint/guardrail-keys-list",
                       "zh-Hans/v1/api-reference/endpoint/guardrail-members-add",
-                      "zh-Hans/v1/api-reference/endpoint/guardrail-members-remove"
+                      "zh-Hans/v1/api-reference/endpoint/guardrail-members-remove",
+                      "zh-Hans/v1/api-reference/endpoint/guardrail-members-list"
                     ]
                   }
                 ]
@@ -10705,11 +10719,11 @@
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/observability-logging-policy-get",
                       "zh-Hans/v1/api-reference/endpoint/observability-logging-policy-update",
-                      "zh-Hans/v1/api-reference/endpoint/observability-destinations-list",
                       "zh-Hans/v1/api-reference/endpoint/observability-destinations-create",
                       "zh-Hans/v1/api-reference/endpoint/observability-destinations-get",
                       "zh-Hans/v1/api-reference/endpoint/observability-destinations-update",
-                      "zh-Hans/v1/api-reference/endpoint/observability-destinations-delete"
+                      "zh-Hans/v1/api-reference/endpoint/observability-destinations-delete",
+                      "zh-Hans/v1/api-reference/endpoint/observability-destinations-list"
                     ]
                   },
                   {
@@ -10717,15 +10731,15 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "zh-Hans/v1/api-reference/endpoint/feedback-list",
                       "zh-Hans/v1/api-reference/endpoint/feedback-create",
+                      "zh-Hans/v1/api-reference/endpoint/feedback-list",
                       "zh-Hans/v1/api-reference/endpoint/feedback-summary",
-                      "zh-Hans/v1/api-reference/endpoint/events-list",
                       "zh-Hans/v1/api-reference/endpoint/events-create",
-                      "zh-Hans/v1/api-reference/endpoint/preset-test-runs-list",
+                      "zh-Hans/v1/api-reference/endpoint/events-list",
                       "zh-Hans/v1/api-reference/endpoint/preset-test-run-create",
                       "zh-Hans/v1/api-reference/endpoint/preset-test-run-get",
-                      "zh-Hans/v1/api-reference/endpoint/preset-test-run-update"
+                      "zh-Hans/v1/api-reference/endpoint/preset-test-run-update",
+                      "zh-Hans/v1/api-reference/endpoint/preset-test-runs-list"
                     ]
                   }
                 ]
@@ -10738,18 +10752,18 @@
                     "group": "工作区",
                     "expanded": false,
                     "pages": [
-                      "zh-Hans/v1/api-reference/endpoint/workspaces-list",
                       "zh-Hans/v1/api-reference/endpoint/workspaces-create",
                       "zh-Hans/v1/api-reference/endpoint/workspaces-get",
-                      "zh-Hans/v1/api-reference/endpoint/workspaces-delete",
                       "zh-Hans/v1/api-reference/endpoint/workspaces-update",
-                      "zh-Hans/v1/api-reference/endpoint/workspace-members-list",
+                      "zh-Hans/v1/api-reference/endpoint/workspaces-delete",
+                      "zh-Hans/v1/api-reference/endpoint/workspaces-list",
                       "zh-Hans/v1/api-reference/endpoint/workspace-members-add",
-                      "zh-Hans/v1/api-reference/endpoint/workspace-members-remove",
                       "zh-Hans/v1/api-reference/endpoint/workspace-member-role-update",
-                      "zh-Hans/v1/api-reference/endpoint/workspace-invites-list",
+                      "zh-Hans/v1/api-reference/endpoint/workspace-members-remove",
+                      "zh-Hans/v1/api-reference/endpoint/workspace-members-list",
                       "zh-Hans/v1/api-reference/endpoint/workspace-invites-create",
                       "zh-Hans/v1/api-reference/endpoint/workspace-invites-delete",
+                      "zh-Hans/v1/api-reference/endpoint/workspace-invites-list",
                       "zh-Hans/v1/api-reference/endpoint/workspace-join-requests-list",
                       "zh-Hans/v1/api-reference/endpoint/workspace-join-request-approve",
                       "zh-Hans/v1/api-reference/endpoint/workspace-join-request-reject"
@@ -10760,24 +10774,24 @@
                     "expanded": false,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/key-current",
-                      "zh-Hans/v1/api-reference/endpoint/keys-list",
                       "zh-Hans/v1/api-reference/endpoint/keys-create",
                       "zh-Hans/v1/api-reference/endpoint/keys-get",
-                      "zh-Hans/v1/api-reference/endpoint/keys-rotate",
-                      "zh-Hans/v1/api-reference/endpoint/keys-delete",
                       "zh-Hans/v1/api-reference/endpoint/keys-update",
-                      "zh-Hans/v1/api-reference/endpoint/keys-invalidate"
+                      "zh-Hans/v1/api-reference/endpoint/keys-rotate",
+                      "zh-Hans/v1/api-reference/endpoint/keys-invalidate",
+                      "zh-Hans/v1/api-reference/endpoint/keys-delete",
+                      "zh-Hans/v1/api-reference/endpoint/keys-list"
                     ]
                   },
                   {
                     "group": "管理密钥",
                     "expanded": false,
                     "pages": [
-                      "zh-Hans/v1/api-reference/endpoint/management-keys-list",
                       "zh-Hans/v1/api-reference/endpoint/management-keys-create",
                       "zh-Hans/v1/api-reference/endpoint/management-keys-get",
                       "zh-Hans/v1/api-reference/endpoint/management-keys-update",
-                      "zh-Hans/v1/api-reference/endpoint/management-keys-delete"
+                      "zh-Hans/v1/api-reference/endpoint/management-keys-delete",
+                      "zh-Hans/v1/api-reference/endpoint/management-keys-list"
                     ]
                   },
                   {
@@ -10785,11 +10799,11 @@
                     "expanded": false,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/credits",
-                      "zh-Hans/v1/api-reference/endpoint/budgets-list",
                       "zh-Hans/v1/api-reference/endpoint/budgets-create",
                       "zh-Hans/v1/api-reference/endpoint/budgets-get",
                       "zh-Hans/v1/api-reference/endpoint/budgets-update",
-                      "zh-Hans/v1/api-reference/endpoint/budgets-delete"
+                      "zh-Hans/v1/api-reference/endpoint/budgets-delete",
+                      "zh-Hans/v1/api-reference/endpoint/budgets-list"
                     ]
                   },
                   {
@@ -10797,12 +10811,12 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "zh-Hans/v1/api-reference/endpoint/oauth-clients-list",
                       "zh-Hans/v1/api-reference/endpoint/oauth-clients-create",
                       "zh-Hans/v1/api-reference/endpoint/oauth-clients-get",
                       "zh-Hans/v1/api-reference/endpoint/oauth-clients-update",
+                      "zh-Hans/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "zh-Hans/v1/api-reference/endpoint/oauth-clients-delete",
-                      "zh-Hans/v1/api-reference/endpoint/oauth-clients-regenerate-secret"
+                      "zh-Hans/v1/api-reference/endpoint/oauth-clients-list"
                     ]
                   },
                   {
@@ -10826,16 +10840,16 @@
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/identity-directory-get",
                       "zh-Hans/v1/api-reference/endpoint/identity-directory-member-update",
-                      "zh-Hans/v1/api-reference/endpoint/identity-departments-list",
                       "zh-Hans/v1/api-reference/endpoint/identity-department-create",
                       "zh-Hans/v1/api-reference/endpoint/identity-department-update",
                       "zh-Hans/v1/api-reference/endpoint/identity-department-delete",
+                      "zh-Hans/v1/api-reference/endpoint/identity-departments-list",
                       "zh-Hans/v1/api-reference/endpoint/identity-department-member-set",
                       "zh-Hans/v1/api-reference/endpoint/identity-department-member-delete",
-                      "zh-Hans/v1/api-reference/endpoint/identity-group-mappings-list",
                       "zh-Hans/v1/api-reference/endpoint/identity-group-mapping-create",
                       "zh-Hans/v1/api-reference/endpoint/identity-group-mapping-update",
-                      "zh-Hans/v1/api-reference/endpoint/identity-group-mapping-delete"
+                      "zh-Hans/v1/api-reference/endpoint/identity-group-mapping-delete",
+                      "zh-Hans/v1/api-reference/endpoint/identity-group-mappings-list"
                     ]
                   },
                   {
@@ -10845,11 +10859,11 @@
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/notifications-settings-get",
                       "zh-Hans/v1/api-reference/endpoint/notifications-settings-update",
-                      "zh-Hans/v1/api-reference/endpoint/notifications-destinations-list",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-create",
-                      "zh-Hans/v1/api-reference/endpoint/notifications-destination-delete",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-config-test",
                       "zh-Hans/v1/api-reference/endpoint/notifications-destination-test",
+                      "zh-Hans/v1/api-reference/endpoint/notifications-destination-delete",
+                      "zh-Hans/v1/api-reference/endpoint/notifications-destinations-list",
                       "zh-Hans/v1/api-reference/endpoint/notifications-routes-list",
                       "zh-Hans/v1/api-reference/endpoint/notifications-route-update"
                     ]
@@ -11923,6 +11937,7 @@
                   },
                   "hi/v1/guides/app-attribution",
                   "hi/v1/guides/request-labels",
+                  "hi/v1/guides/request-classifiers",
                   "hi/v1/guides/workspace-notifications"
                 ]
               },
@@ -12147,14 +12162,14 @@
                 "icon": "video",
                 "tag": "Beta",
                 "pages": [
-                  "hi/v1/api-reference/endpoint/video-list",
                   "hi/v1/api-reference/endpoint/video-create",
-                  "hi/v1/api-reference/endpoint/video-models",
                   "hi/v1/api-reference/endpoint/video-status",
-                  "hi/v1/api-reference/endpoint/video-delete",
-                  "hi/v1/api-reference/endpoint/video-cancel",
                   "hi/v1/api-reference/endpoint/video-content",
-                  "hi/v1/api-reference/endpoint/video-download-url"
+                  "hi/v1/api-reference/endpoint/video-download-url",
+                  "hi/v1/api-reference/endpoint/video-cancel",
+                  "hi/v1/api-reference/endpoint/video-delete",
+                  "hi/v1/api-reference/endpoint/video-list",
+                  "hi/v1/api-reference/endpoint/video-models"
                 ]
               },
               {
@@ -12168,7 +12183,8 @@
                 "group": "निर्णय",
                 "icon": "signpost",
                 "pages": [
-                  "hi/v1/api-reference/endpoint/decisions"
+                  "hi/v1/api-reference/endpoint/decisions",
+                  "hi/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -12231,18 +12247,18 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "hi/v1/api-reference/endpoint/batches-list",
                       "hi/v1/api-reference/endpoint/batches-create",
-                      "hi/v1/api-reference/endpoint/batches-models",
-                      "hi/v1/api-reference/endpoint/batches-capabilities",
-                      "hi/v1/api-reference/endpoint/batches-files-list",
-                      "hi/v1/api-reference/endpoint/batches-files-upload",
-                      "hi/v1/api-reference/endpoint/batches-files-retrieve",
-                      "hi/v1/api-reference/endpoint/batches-files-content",
                       "hi/v1/api-reference/endpoint/batches-retrieve",
                       "hi/v1/api-reference/endpoint/batches-results",
                       "hi/v1/api-reference/endpoint/batches-requests",
-                      "hi/v1/api-reference/endpoint/batches-cancel"
+                      "hi/v1/api-reference/endpoint/batches-cancel",
+                      "hi/v1/api-reference/endpoint/batches-list",
+                      "hi/v1/api-reference/endpoint/batches-files-upload",
+                      "hi/v1/api-reference/endpoint/batches-files-retrieve",
+                      "hi/v1/api-reference/endpoint/batches-files-content",
+                      "hi/v1/api-reference/endpoint/batches-files-list",
+                      "hi/v1/api-reference/endpoint/batches-models",
+                      "hi/v1/api-reference/endpoint/batches-capabilities"
                     ]
                   },
                   {
@@ -12250,9 +12266,9 @@
                     "expanded": true,
                     "pages": [
                       "hi/v1/api-reference/endpoint/files",
-                      "hi/v1/api-reference/endpoint/files-list",
                       "hi/v1/api-reference/endpoint/files-retrieve",
-                      "hi/v1/api-reference/endpoint/files-content"
+                      "hi/v1/api-reference/endpoint/files-content",
+                      "hi/v1/api-reference/endpoint/files-list"
                     ]
                   },
                   {
@@ -12260,12 +12276,12 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "hi/v1/api-reference/endpoint/webhook-endpoints-list",
                       "hi/v1/api-reference/endpoint/webhook-endpoints-create",
                       "hi/v1/api-reference/endpoint/webhook-endpoints-get",
                       "hi/v1/api-reference/endpoint/webhook-endpoints-update",
+                      "hi/v1/api-reference/endpoint/webhook-endpoints-rotate-secret",
                       "hi/v1/api-reference/endpoint/webhook-endpoints-delete",
-                      "hi/v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
+                      "hi/v1/api-reference/endpoint/webhook-endpoints-list"
                     ]
                   }
                 ]
@@ -12293,53 +12309,53 @@
                     "pages": [
                       "hi/v1/api-reference/endpoint/workspace-settings-get",
                       "hi/v1/api-reference/endpoint/workspace-settings-update",
-                      "hi/v1/api-reference/endpoint/dynamic-routes-list",
                       "hi/v1/api-reference/endpoint/dynamic-routes-create",
                       "hi/v1/api-reference/endpoint/dynamic-routes-get",
                       "hi/v1/api-reference/endpoint/dynamic-routes-update",
                       "hi/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "hi/v1/api-reference/endpoint/dynamic-routes-deploy",
-                      "hi/v1/api-reference/endpoint/dynamic-routes-delete"
+                      "hi/v1/api-reference/endpoint/dynamic-routes-delete",
+                      "hi/v1/api-reference/endpoint/dynamic-routes-list"
                     ]
                   },
                   {
                     "group": "प्रीसेट",
                     "expanded": false,
                     "pages": [
-                      "hi/v1/api-reference/endpoint/presets-list",
                       "hi/v1/api-reference/endpoint/presets-create",
                       "hi/v1/api-reference/endpoint/presets-get",
                       "hi/v1/api-reference/endpoint/presets-update",
-                      "hi/v1/api-reference/endpoint/presets-versions-list",
                       "hi/v1/api-reference/endpoint/presets-version-publish",
+                      "hi/v1/api-reference/endpoint/presets-versions-list",
                       "hi/v1/api-reference/endpoint/presets-fork",
                       "hi/v1/api-reference/endpoint/presets-upstream-apply",
+                      "hi/v1/api-reference/endpoint/presets-delete",
+                      "hi/v1/api-reference/endpoint/presets-list",
                       "hi/v1/api-reference/endpoint/presets-publisher-get",
-                      "hi/v1/api-reference/endpoint/presets-publisher-update",
-                      "hi/v1/api-reference/endpoint/presets-delete"
+                      "hi/v1/api-reference/endpoint/presets-publisher-update"
                     ]
                   },
                   {
                     "group": "निजी मॉडल",
                     "expanded": false,
                     "pages": [
-                      "hi/v1/api-reference/endpoint/private-models-list",
                       "hi/v1/api-reference/endpoint/private-models-create",
                       "hi/v1/api-reference/endpoint/private-models-get",
                       "hi/v1/api-reference/endpoint/private-models-update",
-                      "hi/v1/api-reference/endpoint/private-models-delete"
+                      "hi/v1/api-reference/endpoint/private-models-delete",
+                      "hi/v1/api-reference/endpoint/private-models-list"
                     ]
                   },
                   {
                     "group": "प्रदाता क्रेडेंशियल",
                     "expanded": false,
                     "pages": [
-                      "hi/v1/api-reference/endpoint/provider-credentials-list",
                       "hi/v1/api-reference/endpoint/provider-credentials-create",
                       "hi/v1/api-reference/endpoint/provider-credentials-get",
                       "hi/v1/api-reference/endpoint/provider-credentials-update",
+                      "hi/v1/api-reference/endpoint/provider-credentials-reorder",
                       "hi/v1/api-reference/endpoint/provider-credentials-delete",
-                      "hi/v1/api-reference/endpoint/provider-credentials-reorder"
+                      "hi/v1/api-reference/endpoint/provider-credentials-list"
                     ]
                   },
                   {
@@ -12347,18 +12363,18 @@
                     "expanded": false,
                     "pages": [
                       "hi/v1/api-reference/endpoint/guardrails",
-                      "hi/v1/api-reference/endpoint/guardrails-list",
                       "hi/v1/api-reference/endpoint/guardrails-create",
                       "hi/v1/api-reference/endpoint/guardrails-get",
                       "hi/v1/api-reference/endpoint/guardrails-update",
                       "hi/v1/api-reference/endpoint/guardrails-delete",
-                      "hi/v1/api-reference/endpoint/guardrail-keys-list",
-                      "hi/v1/api-reference/endpoint/guardrail-keys-replace",
+                      "hi/v1/api-reference/endpoint/guardrails-list",
                       "hi/v1/api-reference/endpoint/guardrail-keys-add",
+                      "hi/v1/api-reference/endpoint/guardrail-keys-replace",
                       "hi/v1/api-reference/endpoint/guardrail-keys-remove",
-                      "hi/v1/api-reference/endpoint/guardrail-members-list",
+                      "hi/v1/api-reference/endpoint/guardrail-keys-list",
                       "hi/v1/api-reference/endpoint/guardrail-members-add",
-                      "hi/v1/api-reference/endpoint/guardrail-members-remove"
+                      "hi/v1/api-reference/endpoint/guardrail-members-remove",
+                      "hi/v1/api-reference/endpoint/guardrail-members-list"
                     ]
                   }
                 ]
@@ -12393,11 +12409,11 @@
                     "pages": [
                       "hi/v1/api-reference/endpoint/observability-logging-policy-get",
                       "hi/v1/api-reference/endpoint/observability-logging-policy-update",
-                      "hi/v1/api-reference/endpoint/observability-destinations-list",
                       "hi/v1/api-reference/endpoint/observability-destinations-create",
                       "hi/v1/api-reference/endpoint/observability-destinations-get",
                       "hi/v1/api-reference/endpoint/observability-destinations-update",
-                      "hi/v1/api-reference/endpoint/observability-destinations-delete"
+                      "hi/v1/api-reference/endpoint/observability-destinations-delete",
+                      "hi/v1/api-reference/endpoint/observability-destinations-list"
                     ]
                   },
                   {
@@ -12405,15 +12421,15 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "hi/v1/api-reference/endpoint/feedback-list",
                       "hi/v1/api-reference/endpoint/feedback-create",
+                      "hi/v1/api-reference/endpoint/feedback-list",
                       "hi/v1/api-reference/endpoint/feedback-summary",
-                      "hi/v1/api-reference/endpoint/events-list",
                       "hi/v1/api-reference/endpoint/events-create",
-                      "hi/v1/api-reference/endpoint/preset-test-runs-list",
+                      "hi/v1/api-reference/endpoint/events-list",
                       "hi/v1/api-reference/endpoint/preset-test-run-create",
                       "hi/v1/api-reference/endpoint/preset-test-run-get",
-                      "hi/v1/api-reference/endpoint/preset-test-run-update"
+                      "hi/v1/api-reference/endpoint/preset-test-run-update",
+                      "hi/v1/api-reference/endpoint/preset-test-runs-list"
                     ]
                   }
                 ]
@@ -12426,18 +12442,18 @@
                     "group": "कार्यस्थान",
                     "expanded": false,
                     "pages": [
-                      "hi/v1/api-reference/endpoint/workspaces-list",
                       "hi/v1/api-reference/endpoint/workspaces-create",
                       "hi/v1/api-reference/endpoint/workspaces-get",
-                      "hi/v1/api-reference/endpoint/workspaces-delete",
                       "hi/v1/api-reference/endpoint/workspaces-update",
-                      "hi/v1/api-reference/endpoint/workspace-members-list",
+                      "hi/v1/api-reference/endpoint/workspaces-delete",
+                      "hi/v1/api-reference/endpoint/workspaces-list",
                       "hi/v1/api-reference/endpoint/workspace-members-add",
-                      "hi/v1/api-reference/endpoint/workspace-members-remove",
                       "hi/v1/api-reference/endpoint/workspace-member-role-update",
-                      "hi/v1/api-reference/endpoint/workspace-invites-list",
+                      "hi/v1/api-reference/endpoint/workspace-members-remove",
+                      "hi/v1/api-reference/endpoint/workspace-members-list",
                       "hi/v1/api-reference/endpoint/workspace-invites-create",
                       "hi/v1/api-reference/endpoint/workspace-invites-delete",
+                      "hi/v1/api-reference/endpoint/workspace-invites-list",
                       "hi/v1/api-reference/endpoint/workspace-join-requests-list",
                       "hi/v1/api-reference/endpoint/workspace-join-request-approve",
                       "hi/v1/api-reference/endpoint/workspace-join-request-reject"
@@ -12448,24 +12464,24 @@
                     "expanded": false,
                     "pages": [
                       "hi/v1/api-reference/endpoint/key-current",
-                      "hi/v1/api-reference/endpoint/keys-list",
                       "hi/v1/api-reference/endpoint/keys-create",
                       "hi/v1/api-reference/endpoint/keys-get",
-                      "hi/v1/api-reference/endpoint/keys-rotate",
-                      "hi/v1/api-reference/endpoint/keys-delete",
                       "hi/v1/api-reference/endpoint/keys-update",
-                      "hi/v1/api-reference/endpoint/keys-invalidate"
+                      "hi/v1/api-reference/endpoint/keys-rotate",
+                      "hi/v1/api-reference/endpoint/keys-invalidate",
+                      "hi/v1/api-reference/endpoint/keys-delete",
+                      "hi/v1/api-reference/endpoint/keys-list"
                     ]
                   },
                   {
                     "group": "प्रबंधन कुंजियाँ",
                     "expanded": false,
                     "pages": [
-                      "hi/v1/api-reference/endpoint/management-keys-list",
                       "hi/v1/api-reference/endpoint/management-keys-create",
                       "hi/v1/api-reference/endpoint/management-keys-get",
                       "hi/v1/api-reference/endpoint/management-keys-update",
-                      "hi/v1/api-reference/endpoint/management-keys-delete"
+                      "hi/v1/api-reference/endpoint/management-keys-delete",
+                      "hi/v1/api-reference/endpoint/management-keys-list"
                     ]
                   },
                   {
@@ -12473,11 +12489,11 @@
                     "expanded": false,
                     "pages": [
                       "hi/v1/api-reference/endpoint/credits",
-                      "hi/v1/api-reference/endpoint/budgets-list",
                       "hi/v1/api-reference/endpoint/budgets-create",
                       "hi/v1/api-reference/endpoint/budgets-get",
                       "hi/v1/api-reference/endpoint/budgets-update",
-                      "hi/v1/api-reference/endpoint/budgets-delete"
+                      "hi/v1/api-reference/endpoint/budgets-delete",
+                      "hi/v1/api-reference/endpoint/budgets-list"
                     ]
                   },
                   {
@@ -12485,12 +12501,12 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "hi/v1/api-reference/endpoint/oauth-clients-list",
                       "hi/v1/api-reference/endpoint/oauth-clients-create",
                       "hi/v1/api-reference/endpoint/oauth-clients-get",
                       "hi/v1/api-reference/endpoint/oauth-clients-update",
+                      "hi/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "hi/v1/api-reference/endpoint/oauth-clients-delete",
-                      "hi/v1/api-reference/endpoint/oauth-clients-regenerate-secret"
+                      "hi/v1/api-reference/endpoint/oauth-clients-list"
                     ]
                   },
                   {
@@ -12514,16 +12530,16 @@
                     "pages": [
                       "hi/v1/api-reference/endpoint/identity-directory-get",
                       "hi/v1/api-reference/endpoint/identity-directory-member-update",
-                      "hi/v1/api-reference/endpoint/identity-departments-list",
                       "hi/v1/api-reference/endpoint/identity-department-create",
                       "hi/v1/api-reference/endpoint/identity-department-update",
                       "hi/v1/api-reference/endpoint/identity-department-delete",
+                      "hi/v1/api-reference/endpoint/identity-departments-list",
                       "hi/v1/api-reference/endpoint/identity-department-member-set",
                       "hi/v1/api-reference/endpoint/identity-department-member-delete",
-                      "hi/v1/api-reference/endpoint/identity-group-mappings-list",
                       "hi/v1/api-reference/endpoint/identity-group-mapping-create",
                       "hi/v1/api-reference/endpoint/identity-group-mapping-update",
-                      "hi/v1/api-reference/endpoint/identity-group-mapping-delete"
+                      "hi/v1/api-reference/endpoint/identity-group-mapping-delete",
+                      "hi/v1/api-reference/endpoint/identity-group-mappings-list"
                     ]
                   },
                   {
@@ -12533,11 +12549,11 @@
                     "pages": [
                       "hi/v1/api-reference/endpoint/notifications-settings-get",
                       "hi/v1/api-reference/endpoint/notifications-settings-update",
-                      "hi/v1/api-reference/endpoint/notifications-destinations-list",
                       "hi/v1/api-reference/endpoint/notifications-destination-create",
-                      "hi/v1/api-reference/endpoint/notifications-destination-delete",
                       "hi/v1/api-reference/endpoint/notifications-destination-config-test",
                       "hi/v1/api-reference/endpoint/notifications-destination-test",
+                      "hi/v1/api-reference/endpoint/notifications-destination-delete",
+                      "hi/v1/api-reference/endpoint/notifications-destinations-list",
                       "hi/v1/api-reference/endpoint/notifications-routes-list",
                       "hi/v1/api-reference/endpoint/notifications-route-update"
                     ]
@@ -13611,6 +13627,7 @@
                   },
                   "ar/v1/guides/app-attribution",
                   "ar/v1/guides/request-labels",
+                  "ar/v1/guides/request-classifiers",
                   "ar/v1/guides/workspace-notifications"
                 ]
               },
@@ -13835,14 +13852,14 @@
                 "icon": "video",
                 "tag": "Beta",
                 "pages": [
-                  "ar/v1/api-reference/endpoint/video-list",
                   "ar/v1/api-reference/endpoint/video-create",
-                  "ar/v1/api-reference/endpoint/video-models",
                   "ar/v1/api-reference/endpoint/video-status",
-                  "ar/v1/api-reference/endpoint/video-delete",
-                  "ar/v1/api-reference/endpoint/video-cancel",
                   "ar/v1/api-reference/endpoint/video-content",
-                  "ar/v1/api-reference/endpoint/video-download-url"
+                  "ar/v1/api-reference/endpoint/video-download-url",
+                  "ar/v1/api-reference/endpoint/video-cancel",
+                  "ar/v1/api-reference/endpoint/video-delete",
+                  "ar/v1/api-reference/endpoint/video-list",
+                  "ar/v1/api-reference/endpoint/video-models"
                 ]
               },
               {
@@ -13856,7 +13873,8 @@
                 "group": "القرارات",
                 "icon": "signpost",
                 "pages": [
-                  "ar/v1/api-reference/endpoint/decisions"
+                  "ar/v1/api-reference/endpoint/decisions",
+                  "ar/v1/api-reference/endpoint/extractions"
                 ]
               },
               {
@@ -13919,18 +13937,18 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "ar/v1/api-reference/endpoint/batches-list",
                       "ar/v1/api-reference/endpoint/batches-create",
-                      "ar/v1/api-reference/endpoint/batches-models",
-                      "ar/v1/api-reference/endpoint/batches-capabilities",
-                      "ar/v1/api-reference/endpoint/batches-files-list",
-                      "ar/v1/api-reference/endpoint/batches-files-upload",
-                      "ar/v1/api-reference/endpoint/batches-files-retrieve",
-                      "ar/v1/api-reference/endpoint/batches-files-content",
                       "ar/v1/api-reference/endpoint/batches-retrieve",
                       "ar/v1/api-reference/endpoint/batches-results",
                       "ar/v1/api-reference/endpoint/batches-requests",
-                      "ar/v1/api-reference/endpoint/batches-cancel"
+                      "ar/v1/api-reference/endpoint/batches-cancel",
+                      "ar/v1/api-reference/endpoint/batches-list",
+                      "ar/v1/api-reference/endpoint/batches-files-upload",
+                      "ar/v1/api-reference/endpoint/batches-files-retrieve",
+                      "ar/v1/api-reference/endpoint/batches-files-content",
+                      "ar/v1/api-reference/endpoint/batches-files-list",
+                      "ar/v1/api-reference/endpoint/batches-models",
+                      "ar/v1/api-reference/endpoint/batches-capabilities"
                     ]
                   },
                   {
@@ -13938,9 +13956,9 @@
                     "expanded": true,
                     "pages": [
                       "ar/v1/api-reference/endpoint/files",
-                      "ar/v1/api-reference/endpoint/files-list",
                       "ar/v1/api-reference/endpoint/files-retrieve",
-                      "ar/v1/api-reference/endpoint/files-content"
+                      "ar/v1/api-reference/endpoint/files-content",
+                      "ar/v1/api-reference/endpoint/files-list"
                     ]
                   },
                   {
@@ -13948,12 +13966,12 @@
                     "tag": "Beta",
                     "expanded": true,
                     "pages": [
-                      "ar/v1/api-reference/endpoint/webhook-endpoints-list",
                       "ar/v1/api-reference/endpoint/webhook-endpoints-create",
                       "ar/v1/api-reference/endpoint/webhook-endpoints-get",
                       "ar/v1/api-reference/endpoint/webhook-endpoints-update",
+                      "ar/v1/api-reference/endpoint/webhook-endpoints-rotate-secret",
                       "ar/v1/api-reference/endpoint/webhook-endpoints-delete",
-                      "ar/v1/api-reference/endpoint/webhook-endpoints-rotate-secret"
+                      "ar/v1/api-reference/endpoint/webhook-endpoints-list"
                     ]
                   }
                 ]
@@ -13981,53 +13999,53 @@
                     "pages": [
                       "ar/v1/api-reference/endpoint/workspace-settings-get",
                       "ar/v1/api-reference/endpoint/workspace-settings-update",
-                      "ar/v1/api-reference/endpoint/dynamic-routes-list",
                       "ar/v1/api-reference/endpoint/dynamic-routes-create",
                       "ar/v1/api-reference/endpoint/dynamic-routes-get",
                       "ar/v1/api-reference/endpoint/dynamic-routes-update",
                       "ar/v1/api-reference/endpoint/dynamic-routes-keys-update",
                       "ar/v1/api-reference/endpoint/dynamic-routes-deploy",
-                      "ar/v1/api-reference/endpoint/dynamic-routes-delete"
+                      "ar/v1/api-reference/endpoint/dynamic-routes-delete",
+                      "ar/v1/api-reference/endpoint/dynamic-routes-list"
                     ]
                   },
                   {
                     "group": "الإعدادات المسبقة",
                     "expanded": false,
                     "pages": [
-                      "ar/v1/api-reference/endpoint/presets-list",
                       "ar/v1/api-reference/endpoint/presets-create",
                       "ar/v1/api-reference/endpoint/presets-get",
                       "ar/v1/api-reference/endpoint/presets-update",
-                      "ar/v1/api-reference/endpoint/presets-versions-list",
                       "ar/v1/api-reference/endpoint/presets-version-publish",
+                      "ar/v1/api-reference/endpoint/presets-versions-list",
                       "ar/v1/api-reference/endpoint/presets-fork",
                       "ar/v1/api-reference/endpoint/presets-upstream-apply",
+                      "ar/v1/api-reference/endpoint/presets-delete",
+                      "ar/v1/api-reference/endpoint/presets-list",
                       "ar/v1/api-reference/endpoint/presets-publisher-get",
-                      "ar/v1/api-reference/endpoint/presets-publisher-update",
-                      "ar/v1/api-reference/endpoint/presets-delete"
+                      "ar/v1/api-reference/endpoint/presets-publisher-update"
                     ]
                   },
                   {
                     "group": "النماذج الخاصة",
                     "expanded": false,
                     "pages": [
-                      "ar/v1/api-reference/endpoint/private-models-list",
                       "ar/v1/api-reference/endpoint/private-models-create",
                       "ar/v1/api-reference/endpoint/private-models-get",
                       "ar/v1/api-reference/endpoint/private-models-update",
-                      "ar/v1/api-reference/endpoint/private-models-delete"
+                      "ar/v1/api-reference/endpoint/private-models-delete",
+                      "ar/v1/api-reference/endpoint/private-models-list"
                     ]
                   },
                   {
                     "group": "بيانات اعتماد المزودين",
                     "expanded": false,
                     "pages": [
-                      "ar/v1/api-reference/endpoint/provider-credentials-list",
                       "ar/v1/api-reference/endpoint/provider-credentials-create",
                       "ar/v1/api-reference/endpoint/provider-credentials-get",
                       "ar/v1/api-reference/endpoint/provider-credentials-update",
+                      "ar/v1/api-reference/endpoint/provider-credentials-reorder",
                       "ar/v1/api-reference/endpoint/provider-credentials-delete",
-                      "ar/v1/api-reference/endpoint/provider-credentials-reorder"
+                      "ar/v1/api-reference/endpoint/provider-credentials-list"
                     ]
                   },
                   {
@@ -14035,18 +14053,18 @@
                     "expanded": false,
                     "pages": [
                       "ar/v1/api-reference/endpoint/guardrails",
-                      "ar/v1/api-reference/endpoint/guardrails-list",
                       "ar/v1/api-reference/endpoint/guardrails-create",
                       "ar/v1/api-reference/endpoint/guardrails-get",
                       "ar/v1/api-reference/endpoint/guardrails-update",
                       "ar/v1/api-reference/endpoint/guardrails-delete",
-                      "ar/v1/api-reference/endpoint/guardrail-keys-list",
-                      "ar/v1/api-reference/endpoint/guardrail-keys-replace",
+                      "ar/v1/api-reference/endpoint/guardrails-list",
                       "ar/v1/api-reference/endpoint/guardrail-keys-add",
+                      "ar/v1/api-reference/endpoint/guardrail-keys-replace",
                       "ar/v1/api-reference/endpoint/guardrail-keys-remove",
-                      "ar/v1/api-reference/endpoint/guardrail-members-list",
+                      "ar/v1/api-reference/endpoint/guardrail-keys-list",
                       "ar/v1/api-reference/endpoint/guardrail-members-add",
-                      "ar/v1/api-reference/endpoint/guardrail-members-remove"
+                      "ar/v1/api-reference/endpoint/guardrail-members-remove",
+                      "ar/v1/api-reference/endpoint/guardrail-members-list"
                     ]
                   }
                 ]
@@ -14081,11 +14099,11 @@
                     "pages": [
                       "ar/v1/api-reference/endpoint/observability-logging-policy-get",
                       "ar/v1/api-reference/endpoint/observability-logging-policy-update",
-                      "ar/v1/api-reference/endpoint/observability-destinations-list",
                       "ar/v1/api-reference/endpoint/observability-destinations-create",
                       "ar/v1/api-reference/endpoint/observability-destinations-get",
                       "ar/v1/api-reference/endpoint/observability-destinations-update",
-                      "ar/v1/api-reference/endpoint/observability-destinations-delete"
+                      "ar/v1/api-reference/endpoint/observability-destinations-delete",
+                      "ar/v1/api-reference/endpoint/observability-destinations-list"
                     ]
                   },
                   {
@@ -14093,15 +14111,15 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "ar/v1/api-reference/endpoint/feedback-list",
                       "ar/v1/api-reference/endpoint/feedback-create",
+                      "ar/v1/api-reference/endpoint/feedback-list",
                       "ar/v1/api-reference/endpoint/feedback-summary",
-                      "ar/v1/api-reference/endpoint/events-list",
                       "ar/v1/api-reference/endpoint/events-create",
-                      "ar/v1/api-reference/endpoint/preset-test-runs-list",
+                      "ar/v1/api-reference/endpoint/events-list",
                       "ar/v1/api-reference/endpoint/preset-test-run-create",
                       "ar/v1/api-reference/endpoint/preset-test-run-get",
-                      "ar/v1/api-reference/endpoint/preset-test-run-update"
+                      "ar/v1/api-reference/endpoint/preset-test-run-update",
+                      "ar/v1/api-reference/endpoint/preset-test-runs-list"
                     ]
                   }
                 ]
@@ -14114,18 +14132,18 @@
                     "group": "مساحات العمل",
                     "expanded": false,
                     "pages": [
-                      "ar/v1/api-reference/endpoint/workspaces-list",
                       "ar/v1/api-reference/endpoint/workspaces-create",
                       "ar/v1/api-reference/endpoint/workspaces-get",
-                      "ar/v1/api-reference/endpoint/workspaces-delete",
                       "ar/v1/api-reference/endpoint/workspaces-update",
-                      "ar/v1/api-reference/endpoint/workspace-members-list",
+                      "ar/v1/api-reference/endpoint/workspaces-delete",
+                      "ar/v1/api-reference/endpoint/workspaces-list",
                       "ar/v1/api-reference/endpoint/workspace-members-add",
-                      "ar/v1/api-reference/endpoint/workspace-members-remove",
                       "ar/v1/api-reference/endpoint/workspace-member-role-update",
-                      "ar/v1/api-reference/endpoint/workspace-invites-list",
+                      "ar/v1/api-reference/endpoint/workspace-members-remove",
+                      "ar/v1/api-reference/endpoint/workspace-members-list",
                       "ar/v1/api-reference/endpoint/workspace-invites-create",
                       "ar/v1/api-reference/endpoint/workspace-invites-delete",
+                      "ar/v1/api-reference/endpoint/workspace-invites-list",
                       "ar/v1/api-reference/endpoint/workspace-join-requests-list",
                       "ar/v1/api-reference/endpoint/workspace-join-request-approve",
                       "ar/v1/api-reference/endpoint/workspace-join-request-reject"
@@ -14136,24 +14154,24 @@
                     "expanded": false,
                     "pages": [
                       "ar/v1/api-reference/endpoint/key-current",
-                      "ar/v1/api-reference/endpoint/keys-list",
                       "ar/v1/api-reference/endpoint/keys-create",
                       "ar/v1/api-reference/endpoint/keys-get",
-                      "ar/v1/api-reference/endpoint/keys-rotate",
-                      "ar/v1/api-reference/endpoint/keys-delete",
                       "ar/v1/api-reference/endpoint/keys-update",
-                      "ar/v1/api-reference/endpoint/keys-invalidate"
+                      "ar/v1/api-reference/endpoint/keys-rotate",
+                      "ar/v1/api-reference/endpoint/keys-invalidate",
+                      "ar/v1/api-reference/endpoint/keys-delete",
+                      "ar/v1/api-reference/endpoint/keys-list"
                     ]
                   },
                   {
                     "group": "مفاتيح الإدارة",
                     "expanded": false,
                     "pages": [
-                      "ar/v1/api-reference/endpoint/management-keys-list",
                       "ar/v1/api-reference/endpoint/management-keys-create",
                       "ar/v1/api-reference/endpoint/management-keys-get",
                       "ar/v1/api-reference/endpoint/management-keys-update",
-                      "ar/v1/api-reference/endpoint/management-keys-delete"
+                      "ar/v1/api-reference/endpoint/management-keys-delete",
+                      "ar/v1/api-reference/endpoint/management-keys-list"
                     ]
                   },
                   {
@@ -14161,11 +14179,11 @@
                     "expanded": false,
                     "pages": [
                       "ar/v1/api-reference/endpoint/credits",
-                      "ar/v1/api-reference/endpoint/budgets-list",
                       "ar/v1/api-reference/endpoint/budgets-create",
                       "ar/v1/api-reference/endpoint/budgets-get",
                       "ar/v1/api-reference/endpoint/budgets-update",
-                      "ar/v1/api-reference/endpoint/budgets-delete"
+                      "ar/v1/api-reference/endpoint/budgets-delete",
+                      "ar/v1/api-reference/endpoint/budgets-list"
                     ]
                   },
                   {
@@ -14173,12 +14191,12 @@
                     "tag": "Beta",
                     "expanded": false,
                     "pages": [
-                      "ar/v1/api-reference/endpoint/oauth-clients-list",
                       "ar/v1/api-reference/endpoint/oauth-clients-create",
                       "ar/v1/api-reference/endpoint/oauth-clients-get",
                       "ar/v1/api-reference/endpoint/oauth-clients-update",
+                      "ar/v1/api-reference/endpoint/oauth-clients-regenerate-secret",
                       "ar/v1/api-reference/endpoint/oauth-clients-delete",
-                      "ar/v1/api-reference/endpoint/oauth-clients-regenerate-secret"
+                      "ar/v1/api-reference/endpoint/oauth-clients-list"
                     ]
                   },
                   {
@@ -14202,16 +14220,16 @@
                     "pages": [
                       "ar/v1/api-reference/endpoint/identity-directory-get",
                       "ar/v1/api-reference/endpoint/identity-directory-member-update",
-                      "ar/v1/api-reference/endpoint/identity-departments-list",
                       "ar/v1/api-reference/endpoint/identity-department-create",
                       "ar/v1/api-reference/endpoint/identity-department-update",
                       "ar/v1/api-reference/endpoint/identity-department-delete",
+                      "ar/v1/api-reference/endpoint/identity-departments-list",
                       "ar/v1/api-reference/endpoint/identity-department-member-set",
                       "ar/v1/api-reference/endpoint/identity-department-member-delete",
-                      "ar/v1/api-reference/endpoint/identity-group-mappings-list",
                       "ar/v1/api-reference/endpoint/identity-group-mapping-create",
                       "ar/v1/api-reference/endpoint/identity-group-mapping-update",
-                      "ar/v1/api-reference/endpoint/identity-group-mapping-delete"
+                      "ar/v1/api-reference/endpoint/identity-group-mapping-delete",
+                      "ar/v1/api-reference/endpoint/identity-group-mappings-list"
                     ]
                   },
                   {
@@ -14221,11 +14239,11 @@
                     "pages": [
                       "ar/v1/api-reference/endpoint/notifications-settings-get",
                       "ar/v1/api-reference/endpoint/notifications-settings-update",
-                      "ar/v1/api-reference/endpoint/notifications-destinations-list",
                       "ar/v1/api-reference/endpoint/notifications-destination-create",
-                      "ar/v1/api-reference/endpoint/notifications-destination-delete",
                       "ar/v1/api-reference/endpoint/notifications-destination-config-test",
                       "ar/v1/api-reference/endpoint/notifications-destination-test",
+                      "ar/v1/api-reference/endpoint/notifications-destination-delete",
+                      "ar/v1/api-reference/endpoint/notifications-destinations-list",
                       "ar/v1/api-reference/endpoint/notifications-routes-list",
                       "ar/v1/api-reference/endpoint/notifications-route-update"
                     ]

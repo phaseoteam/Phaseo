@@ -1,10 +1,16 @@
 // Purpose: Stream synthesis and stream-to-IR normalization for server tools.
 
 import type { IRChatResponse, IRContentPart, IRToolCall, IRUsage } from "@core/ir";
+import { isSealedReasoningValue } from "@core/reasoning-state";
+import { resolveCacheTokenUsage } from "@core/cache-usage";
+import { normalizeFinishReason } from "@core/finish-reason";
 import type { Protocol } from "@protocols/detect";
+import { createStreamCitationCollector } from "./stream-citations";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
 import { SseParser } from "@core/sse-parser";
+import { createStreamReasoningStateCollector } from "./stream-reasoning-state";
+import { UpstreamStreamError } from "@core/stream-errors";
 
 export type ServerToolTraceItem = {
 	id: string;
@@ -118,6 +124,11 @@ function buildUnifiedEventsFromChatCompletionsPayload(payload: any): UnifiedStre
 				});
 			}
 		}
+		const reasoningState = reasoningDetails.filter((detail: any) =>
+			isSealedReasoningValue(detail?.signature) || isSealedReasoningValue(detail?.data));
+		if (reasoningState.length > 0) {
+			events.push({ type: "reasoning_state", details: reasoningState, choiceIndex });
+		}
 		if (reasoningDetails.length === 0 && typeof message?.reasoning_content === "string" && message.reasoning_content.length > 0) {
 			events.push({
 				type: "delta_text",
@@ -216,7 +227,7 @@ function buildUnifiedEventsFromResponsesPayload(payload: any): UnifiedStreamEven
 		if (itemType === "reasoning") {
 			const contentParts = Array.isArray(item?.content) ? item.content : [];
 			for (const part of contentParts) {
-				if (part?.type === "output_text" && typeof part?.text === "string" && part.text.length > 0) {
+				if ((part?.type === "reasoning_text" || part?.type === "output_text") && typeof part?.text === "string" && part.text.length > 0) {
 					events.push({
 						type: "delta_text",
 						channel: "reasoning_text",
@@ -349,6 +360,8 @@ type StreamChoiceAccumulator = {
 	toolCallsByKey: Map<string, IRToolCall>;
 	toolCallOrder: string[];
 	finishReason?: IRChatResponse["choices"][number]["finishReason"];
+	finishDetail?: IRChatResponse["choices"][number]["finishDetail"];
+	stopSequence?: string;
 };
 
 type AccumulationState = {
@@ -357,17 +370,6 @@ type AccumulationState = {
 	sawToolDelta: boolean;
 	sawContentPartDelta: boolean;
 };
-
-function mapStopReasonToIr(reason: string | null | undefined): IRChatResponse["choices"][number]["finishReason"] {
-	const normalized = String(reason ?? "").trim().toLowerCase();
-	if (!normalized) return "stop";
-	if (normalized === "stop" || normalized === "end_turn" || normalized === "completed") return "stop";
-	if (normalized === "max_tokens" || normalized === "length") return "length";
-	if (normalized === "tool_use" || normalized === "tool_calls" || normalized.includes("tool")) return "tool_calls";
-	if (normalized.includes("content") || normalized.includes("refusal") || normalized.includes("safety")) return "content_filter";
-	if (normalized === "error" || normalized === "failed") return "error";
-	return "stop";
-}
 
 function parseUsageNumber(value: unknown): number | undefined {
 	if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -395,16 +397,24 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.total_tokens) ??
 		parseUsageNumber(usageRaw.totalTokens) ??
 		(inputTokens + outputTokens);
+	// The stream carries the client protocol's usage: OpenAI-style details (reads and writes
+	// inside input) for Chat and Responses, Anthropic's top-level cache fields (on top of
+	// input) for Messages. Keep that reading in IR, so the re-encoded body and the bill agree.
+	const cache = resolveCacheTokenUsage(usageRaw, inputTokens, { readSubsetDefault: true });
 	const cachedInputTokens =
+		cache.readTokens ??
 		parseUsageNumber(usageRaw.cached_read_tokens) ??
 		parseUsageNumber(usageRaw.cached_input_tokens) ??
 		parseUsageNumber(usageRaw.cached_tokens) ??
 		parseUsageNumber(usageRaw.prompt_cache_hit_tokens) ??
+		parseUsageNumber(usageRaw.cache_read_input_tokens) ??
 		parseUsageNumber(usageRaw.prompt_tokens_details?.cached_tokens) ??
-		parseUsageNumber(usageRaw.input_tokens_details?.cached_tokens);
+		parseUsageNumber(usageRaw.input_tokens_details?.cached_tokens) ??
+		parseUsageNumber(usageRaw.input_details?.cached_tokens);
 	const reasoningTokens =
 		parseUsageNumber(usageRaw.reasoning_tokens) ??
-		parseUsageNumber(usageRaw.output_tokens_details?.reasoning_tokens);
+		parseUsageNumber(usageRaw.output_tokens_details?.reasoning_tokens) ??
+		parseUsageNumber(usageRaw.completion_tokens_details?.reasoning_tokens);
 
 	const ext: NonNullable<IRUsage["_ext"]> = {};
 	const inputImageTokens =
@@ -432,6 +442,7 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.output_video_tokens);
 	if (outputVideoTokens != null) ext.outputVideoTokens = outputVideoTokens;
 	const cachedWriteTokens =
+		cache.writeTokens ??
 		parseUsageNumber(usageRaw.output_tokens_details?.cached_tokens) ??
 		parseUsageNumber(usageRaw.input_tokens_details?.cache_creation_input_tokens) ??
 		parseUsageNumber(usageRaw.prompt_tokens_details?.cache_creation_input_tokens) ??
@@ -442,10 +453,12 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		parseUsageNumber(usageRaw.cached_write_tokens);
 	if (cachedWriteTokens != null) ext.cachedWriteTokens = cachedWriteTokens;
 	const cachedWriteTokens5m =
+		cache.write5mTokens ??
 		parseUsageNumber(usageRaw.cached_write_text_tokens_5m) ??
 		parseUsageNumber(usageRaw.cache_creation?.ephemeral_5m_input_tokens);
 	if (cachedWriteTokens5m != null) ext.cachedWriteTokens5m = cachedWriteTokens5m;
 	const cachedWriteTokens1h =
+		cache.write1hTokens ??
 		parseUsageNumber(usageRaw.cached_write_text_tokens_1h) ??
 		parseUsageNumber(usageRaw.cache_creation?.ephemeral_1h_input_tokens);
 	if (cachedWriteTokens1h != null) ext.cachedWriteTokens1h = cachedWriteTokens1h;
@@ -501,6 +514,8 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 		totalTokens,
 		...(typeof usageRaw.service_tier === "string" ? { serviceTier: usageRaw.service_tier } : {}),
 		...(cachedInputTokens != null ? { cachedInputTokens } : {}),
+		...(cache.readTokens != null ? { cachedReadTokensAreSubsetOfInput: cache.readSubset } : {}),
+		...(cache.writeTokens != null ? { cachedWriteTokensAreSubsetOfInput: cache.writeSubset } : {}),
 		...(reasoningTokens != null ? { reasoningTokens } : {}),
 		...(Object.keys(ext).length > 0 ? { _ext: ext } : {}),
 	};
@@ -627,10 +642,18 @@ function applyUnifiedEventToAccumulators(args: {
 	}
 
 	if (event.type === "stop") {
-		const finishReason = mapStopReasonToIr(event.finishReason);
-		if (Number.isFinite(event.choiceIndex)) {
-			getChoiceAccumulator(choices, Number(event.choiceIndex)).finishReason = finishReason;
-		}
+		// A stop without a reason (Anthropic message_stop) only ends the stream; it
+		// must not replace the reason from the preceding message_delta.
+		if (event.finishReason == null) return;
+		const { finishReason, finishDetail } = normalizeFinishReason(event.finishReason);
+		const indexed = Number.isFinite(event.choiceIndex);
+		// Choice 0 carries the detail of a stream-wide stop (Messages and Responses).
+		const accumulator = getChoiceAccumulator(choices, indexed ? Number(event.choiceIndex) : 0);
+		if (indexed) accumulator.finishReason = finishReason;
+		accumulator.finishDetail = finishDetail;
+		accumulator.stopSequence = typeof event.stopSequence === "string" && event.stopSequence
+			? event.stopSequence
+			: undefined;
 		setGlobalFinishReason(finishReason);
 	}
 }
@@ -791,8 +814,14 @@ function buildIRFromAccumulatedEvents(args: {
 		const toolCalls = accumulator.toolCallOrder
 			.map((key) => accumulator.toolCallsByKey.get(key))
 			.filter((value): value is IRToolCall => Boolean(value));
+		// A stream-wide truncation (Responses response.incomplete) wins over an accumulated
+		// tool call: its arguments may be cut off, and tool_calls would invite running them.
+		const truncated = args.globalFinishReason === "length" || args.globalFinishReason === "content_filter"
+			? args.globalFinishReason
+			: null;
 		const finishReason =
 			accumulator.finishReason ??
+			truncated ??
 			(toolCalls.length > 0 ? "tool_calls" : null) ??
 			args.globalFinishReason ??
 			"stop";
@@ -805,6 +834,8 @@ function buildIRFromAccumulatedEvents(args: {
 				...(toolCalls.length > 0 ? { toolCalls } : {}),
 			},
 			finishReason,
+			...(accumulator.finishDetail ? { finishDetail: accumulator.finishDetail } : {}),
+			...(accumulator.stopSequence ? { stopSequence: accumulator.stopSequence } : {}),
 		};
 	});
 
@@ -848,13 +879,16 @@ export async function consumeTextProtocolStreamToIR(args: {
 	let nativeId: string | undefined;
 	let modelFromStream: string | undefined;
 	let globalFinishReason: IRChatResponse["choices"][number]["finishReason"] | null = null;
+	let streamErrorMessage: string | null = null;
 	const choiceAccumulators = new Map<number, StreamChoiceAccumulator>();
+	const reasoningState = createStreamReasoningStateCollector(args.protocol);
 	const accumulationState: AccumulationState = {
 		sawOutputTextDelta: false,
 		sawReasoningTextDelta: false,
 		sawToolDelta: false,
 		sawContentPartDelta: false,
 	};
+	const citations = createStreamCitationCollector();
 
 	while (true) {
 		const { done, value } = await reader.read();
@@ -881,9 +915,11 @@ export async function consumeTextProtocolStreamToIR(args: {
 				firstFrameMs = Math.max(0, Date.now() - baseStartedAt);
 			}
 			lastPayload = payload;
+			reasoningState.push(eventName, payload);
 			const normalizedPayloadForMeta = resolveRawPayloadForUsage(payload);
 			nativeId = nativeId ?? resolveNativeId(normalizedPayloadForMeta);
 			modelFromStream = modelFromStream ?? resolveModelFromPayload(normalizedPayloadForMeta);
+			citations.observe(eventName, payload);
 			const events = extractUnifiedStreamEvents({
 				protocol: args.protocol,
 				eventName,
@@ -892,6 +928,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 
 			for (const event of events) {
 				args.onEvent?.(event);
+				if (event.type === "error") { streamErrorMessage ??= event.message ?? "stream_error"; continue; }
 				if (event.type === "snapshot" && event.isFinal) {
 					finalSnapshot = event.payload;
 					nativeId = nativeId ?? resolveNativeId(event.payload);
@@ -930,13 +967,16 @@ export async function consumeTextProtocolStreamToIR(args: {
 					firstFrameMs = Math.max(0, Date.now() - baseStartedAt);
 				}
 				lastPayload = payload;
+				reasoningState.push(eventName, payload);
 				const events = extractUnifiedStreamEvents({
 					protocol: args.protocol,
 					eventName,
 					frame: payload,
 				});
+				citations.observe(eventName, payload);
 				for (const event of events) {
 					args.onEvent?.(event);
+					if (event.type === "error") { streamErrorMessage ??= event.message ?? "stream_error"; continue; }
 					if (event.type === "snapshot" && event.isFinal) {
 						finalSnapshot = event.payload;
 						nativeId = nativeId ?? resolveNativeId(event.payload);
@@ -1020,9 +1060,12 @@ export async function consumeTextProtocolStreamToIR(args: {
 		nativeId,
 		modelFromStream,
 	});
+	reasoningState.apply(ir);
+	// The upstream reported a failure after output began: never a completion.
+	if (streamErrorMessage !== null) throw new UpstreamStreamError(streamErrorMessage, { ir, rawResponse: rawResponse ?? null, usageRaw: effectiveUsageRaw });
 
 	return {
-		ir,
+		ir: citations.apply(ir),
 		rawResponse: rawResponse ?? null,
 		usageRaw: effectiveUsageRaw,
 		frameCount,

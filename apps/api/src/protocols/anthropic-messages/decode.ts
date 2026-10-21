@@ -15,6 +15,7 @@ import type {
 } from "@core/ir";
 import { extractToolNameOrType, isNativeAdvisorTool, isNativeWebFetchTool, isNativeWebSearchTool } from "@core/nativeTools";
 import { mapAnthropicEffortToIr } from "@core/reasoningEffort";
+import { applyToolCallSignatures, decodeAnthropicThinkingBlock, type ToolCallSignature } from "../shared/reasoning";
 import {
 	normalizeProviderGeoPreferences,
 	normalizeProviderCacheOptions,
@@ -39,12 +40,12 @@ export type AnthropicMessagesRequest = {
 	metadata?: Record<string, any>;
 	service_tier?: string;
 	thinking?: {
-		type: "enabled" | "disabled" | "adaptive";
+		type: "enabled" | "disabled" | "adaptive" | "between_tools";
 		budget_tokens?: number;
 		display?: "summarized" | "omitted";
 	};
 	output_config?: {
-		effort?: "low" | "medium" | "high" | "max";
+		effort?: "low" | "medium" | "high" | "xhigh" | "max";
 		format?: { type: "json_schema"; schema: Record<string, any> } | null;
 	};
 	provider_options?: Record<string, any>;
@@ -56,11 +57,13 @@ export type AnthropicMessagesRequest = {
 	webSearchOptions?: Record<string, any>;
 	stop_sequences?: string[];
 	reasoning?: {
-		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
-		enabled?: boolean;
-		summary?: "auto" | "concise" | "detailed";
-		max_tokens?: number;
+		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
+		enabled?: boolean | null;
+		summary?: "auto" | "concise" | "detailed" | null;
+		max_tokens?: number | null;
 	};
+	context_management?: Record<string, any>;
+	user?: string;
 	image_config?: {
 		aspect_ratio?: string;
 		image_size?: "0.5K" | "1K" | "2K" | "4K";
@@ -176,10 +179,13 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 
 			for (const block of msg.content) {
 				if (block.type === "tool_result") {
+					const parts = toolResultParts(block.content);
 					toolResults.push({
 						toolCallId: block.tool_use_id,
 						content: normalizeToolResultContent(block.content),
 						cacheControl: normalizeAnthropicCacheControl((block as any).cache_control),
+						...(parts ? { parts } : {}),
+						...((block as any).is_error === true ? { isError: true } : {}),
 					});
 					continue;
 				}
@@ -217,6 +223,8 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 
 			// Separate tool_use blocks from text content
 			const textContent: IRContentPart[] = [];
+			const toolSignatures = new Map<string, ToolCallSignature>();
+			const unanchored: Array<Extract<IRContentPart, { type: "reasoning_text" }>> = [];
 			for (const part of content) {
 				if ((part as any).type === "tool_use") {
 					const toolUse = part as any;
@@ -225,10 +233,23 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 						name: toolUse.name,
 						arguments: JSON.stringify(toolUse.input),
 					});
-				} else {
-					textContent.push(part);
+					// Thinking generated after an earlier tool call precedes this one.
+					for (const reasoning of unanchored.splice(0)) reasoning.beforeToolCallId = toolUse.id;
+					continue;
 				}
+				const thinking = part.type === "provider_block" ? decodeAnthropicThinkingBlock(part.block) : null;
+				if (thinking?.kind === "tool_signature") {
+					toolSignatures.set(thinking.callId, thinking.signature);
+					continue;
+				}
+				if (thinking?.kind === "part") {
+					textContent.push(thinking.part);
+					if (toolCalls.length > 0) unanchored.push(thinking.part);
+					continue;
+				}
+				textContent.push(part);
 			}
+			applyToolCallSignatures(toolCalls, toolSignatures);
 
 			messages.push({
 				role: "assistant",
@@ -246,6 +267,8 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 	// Transform tool choice
 	const toolChoice = normalizeAnthropicToolChoice(req.tool_choice);
 	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
+	const providerOptions = req.provider_options ?? req.providerOptions;
+	const vendor = decodeVendorProviderOptions(providerOptions);
 	const providerGeo = normalizeProviderGeoPreferences(req as any);
 	const explicitInferenceGeo =
 		typeof req.inference_geo === "string" && req.inference_geo.trim().length > 0
@@ -294,10 +317,24 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// Advanced parameters
 		stop: req.stop_sequences,
 		metadata: req.metadata,
-		serviceTier: resolveTextServiceTier({
-			service_tier: req.service_tier,
-		}),
+		// As on Chat; Claude routes send it as metadata.user_id unless metadata sets one.
+		userId: typeof req.user === "string" && req.user.length > 0 ? req.user : undefined,
+		anthropicContextManagement:
+			req.context_management && typeof req.context_management === "object" && !Array.isArray(req.context_management)
+				? { ...req.context_management }
+				: undefined,
+		// Anthropic's "auto" picks no gateway tier (routing and pricing read the
+		// body and ignore it) but is kept so the Anthropic executor sends it.
+		serviceTier: isAutoServiceTier(req.service_tier)
+			? "auto"
+			: resolveTextServiceTier({ service_tier: req.service_tier }),
+		// provider_options apply as they do on Chat and Responses.
+		promptCacheRetention: providerCacheOptions.promptCacheRetention,
+		promptCacheOptions: providerOptions?.openai?.prompt_cache_options,
 		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
+		googleCachedContent: providerCacheOptions.googleCachedContent,
+		xaiConversationId: providerCacheOptions.xaiConversationId,
+		vendor,
 		geo,
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
 		imageConfig: req.image_config
@@ -318,13 +355,31 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 	};
 }
 
+function isAutoServiceTier(value: unknown): boolean {
+	return typeof value === "string" && value.trim().toLowerCase() === "auto";
+}
+
+/**
+ * Provider-scoped options that the Chat decoder passes to executors as
+ * vendor options. Each executor reads only its own entry.
+ */
+function decodeVendorProviderOptions(providerOptions: Record<string, any> | undefined): IRChatRequest["vendor"] {
+	if (!providerOptions || typeof providerOptions !== "object") return undefined;
+	const vendor: Record<string, Record<string, any>> = {};
+	for (const [key, target] of [["deepinfra", "deepinfra"], ["fireworks", "fireworks"], ["gmicloud", "gmicloud"], ["venice", "venice"], ["zai", "zai"], ["z-ai", "zai"]] as const) {
+		const value = providerOptions[key];
+		if (value && typeof value === "object" && !Array.isArray(value) && !vendor[target]) vendor[target] = { ...value };
+	}
+	return Object.keys(vendor).length > 0 ? vendor as IRChatRequest["vendor"] : undefined;
+}
+
 function resolveRequestedReasoning(req: AnthropicMessagesRequest): IRChatRequest["reasoning"] {
 	const reasoningReq = req.reasoning;
 	const effort = mapAnthropicEffortToIr(reasoningReq?.effort ?? req.output_config?.effort);
 	const enabled =
 		typeof reasoningReq?.enabled === "boolean"
 			? reasoningReq.enabled
-			: req.thinking?.type === "disabled"
+			: req.thinking?.type === "disabled" || req.thinking?.type === "between_tools"
 				? false
 				: req.thinking?.type === "enabled" || req.thinking?.type === "adaptive"
 					? true
@@ -438,6 +493,16 @@ function normalizeAnthropicCacheControl(value: unknown): AnthropicCacheControl |
 	if (typeof next.scope === "string") next.scope = next.scope.trim();
 	return Object.keys(next).length > 0 ? next : undefined;
 }
+/** Text and image blocks of an array tool result, kept so they reach upstreams that take them. */
+function toolResultParts(content: unknown): IRContentPart[] | undefined {
+	if (!Array.isArray(content)) return undefined;
+	const parts = content
+		.filter((block) => block && (block.type === "text" || block.type === "image"))
+		.map((block) => normalizeAnthropicContent(block) as IRContentPart)
+		.filter(Boolean);
+	return parts.length > 0 ? parts : undefined;
+}
+
 function normalizeToolResultContent(content: string | any[]): string {
 	if (typeof content === "string") {
 		return content;

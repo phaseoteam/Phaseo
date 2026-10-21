@@ -54,6 +54,8 @@ type AnthropicMessage struct {
 }
 
 type AnthropicMessagesRequest struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	ContextManagement *map[string]interface{} `json:"context_management,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	MaxTokens int `json:"max_tokens"`
@@ -62,6 +64,7 @@ type AnthropicMessagesRequest struct {
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
+	Plugins *[]interface{} `json:"plugins,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -76,10 +79,12 @@ type AnthropicMessagesRequest struct {
 	TopK *int `json:"top_k,omitempty"`
 	TopP *float64 `json:"top_p,omitempty"`
 	Usage *bool `json:"usage,omitempty"`
+	User *string `json:"user,omitempty"`
 }
 
 type AnthropicMessagesResponse struct {
 	Content *[]map[string]interface{} `json:"content,omitempty"`
+	ContextManagement *map[string]interface{} `json:"context_management,omitempty"`
 	Id *string `json:"id,omitempty"`
 	Model *string `json:"model,omitempty"`
 	Role *string `json:"role,omitempty"`
@@ -97,6 +102,11 @@ type AnthropicTool struct {
 }
 
 type AnthropicUsage struct {
+	CacheCreation *map[string]interface{} `json:"cache_creation,omitempty"`
+	CacheCreationInputTokens *int `json:"cache_creation_input_tokens,omitempty"`
+	CacheReadInputTokens *int `json:"cache_read_input_tokens,omitempty"`
+	Cost *float64 `json:"cost,omitempty"`
+	CostDetails *map[string]interface{} `json:"cost_details,omitempty"`
 	InputTokens *int `json:"input_tokens,omitempty"`
 	OutputTokens *int `json:"output_tokens,omitempty"`
 }
@@ -246,6 +256,7 @@ type ApiKeyWithValue struct {
 
 type ApiKeyWithValueResponse struct {
 	Data map[string]interface{} `json:"data"`
+	Key string `json:"key"`
 }
 
 type AsyncJobWebSocketClientEvent struct {
@@ -1213,10 +1224,12 @@ type ChatChoice struct {
 }
 
 type ChatCompletionsRequest struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	FrequencyPenalty *float64 `json:"frequency_penalty,omitempty"`
 	ImageConfig *map[string]interface{} `json:"image_config,omitempty"`
+	IncludeReasoning *bool `json:"include_reasoning,omitempty"`
 	LogitBias *map[string]interface{} `json:"logit_bias,omitempty"`
 	Logprobs *bool `json:"logprobs,omitempty"`
 	MaxCompletionTokens *int `json:"max_completion_tokens,omitempty"`
@@ -1229,8 +1242,12 @@ type ChatCompletionsRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
+	Plugins *[]interface{} `json:"plugins,omitempty"`
+	Prediction *map[string]interface{} `json:"prediction,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
+	PromptCacheOptions *map[string]interface{} `json:"prompt_cache_options,omitempty"`
+	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -1276,9 +1293,118 @@ type ChatMessage struct {
 	Content interface{} `json:"content,omitempty"`
 	Images *[]map[string]interface{} `json:"images,omitempty"`
 	Name *string `json:"name,omitempty"`
+	Reasoning *string `json:"reasoning,omitempty"`
+	ReasoningContent *string `json:"reasoning_content,omitempty"`
+	ReasoningDetails *[]map[string]interface{} `json:"reasoning_details,omitempty"`
 	Role string `json:"role"`
 	ToolCallId *string `json:"tool_call_id,omitempty"`
 	ToolCalls *[]map[string]interface{} `json:"tool_calls,omitempty"`
+}
+
+type ChatReasoningDetail struct {
+	Data *string `json:"data,omitempty"`
+	Format *string `json:"format,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Index *int `json:"index,omitempty"`
+	Signature *string `json:"signature,omitempty"`
+	Summary *string `json:"summary,omitempty"`
+	Text *string `json:"text,omitempty"`
+	Type string `json:"type"`
+}
+
+type Classifier struct {
+	CreatedAt string `json:"created_at"`
+	CreatedBy *string `json:"created_by"`
+	Description *string `json:"description"`
+	Dimensions []map[string]interface{} `json:"dimensions"`
+	Enabled bool `json:"enabled"`
+	Id string `json:"id"`
+	InputScope string `json:"input_scope"`
+	Instructions string `json:"instructions"`
+	Model string `json:"model"`
+	MonthlyBudgetUsd *float64 `json:"monthly_budget_usd"`
+	Name string `json:"name"`
+	SampleBy string `json:"sample_by"`
+	SampleRate float64 `json:"sample_rate"`
+	Scope map[string]interface{} `json:"scope"`
+	UpdatedAt string `json:"updated_at"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type ClassifierCreateInput struct {
+	Description *string `json:"description,omitempty"`
+	Dimensions []map[string]interface{} `json:"dimensions"`
+	Enabled *bool `json:"enabled,omitempty"`
+	InputScope *string `json:"input_scope,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Model string `json:"model"`
+	MonthlyBudgetUsd *float64 `json:"monthly_budget_usd,omitempty"`
+	Name string `json:"name"`
+	SampleBy *string `json:"sample_by,omitempty"`
+	SampleRate *float64 `json:"sample_rate,omitempty"`
+	Scope *map[string]interface{} `json:"scope,omitempty"`
+}
+
+type ClassifierDeleteResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type ClassifierDimension struct {
+	AllowOther *bool `json:"allow_other,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Key string `json:"key"`
+	Multiple *bool `json:"multiple,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Values []map[string]interface{} `json:"values"`
+}
+
+type ClassifierInputScope string
+
+const (
+	ClassifierInputScopePrompt ClassifierInputScope = "prompt"
+	ClassifierInputScopePromptAndResponse ClassifierInputScope = "prompt_and_response"
+)
+
+
+type ClassifierListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type ClassifierResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type ClassifierSampleBy string
+
+const (
+	ClassifierSampleByRequest ClassifierSampleBy = "request"
+	ClassifierSampleBySession ClassifierSampleBy = "session"
+)
+
+
+type ClassifierScope struct {
+	AppIds *[]string `json:"app_ids,omitempty"`
+	KeyIds *[]string `json:"key_ids,omitempty"`
+	Models *[]string `json:"models,omitempty"`
+}
+
+type ClassifierUpdateInput struct {
+	Description *string `json:"description,omitempty"`
+	Dimensions *[]map[string]interface{} `json:"dimensions,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+	InputScope *string `json:"input_scope,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Model *string `json:"model,omitempty"`
+	MonthlyBudgetUsd *float64 `json:"monthly_budget_usd,omitempty"`
+	Name *string `json:"name,omitempty"`
+	SampleBy *string `json:"sample_by,omitempty"`
+	SampleRate *float64 `json:"sample_rate,omitempty"`
+	Scope *map[string]interface{} `json:"scope,omitempty"`
+}
+
+type ClassifierValue struct {
+	Description *string `json:"description,omitempty"`
+	Value string `json:"value"`
 }
 
 type CreditsResponse struct {
@@ -1708,6 +1834,14 @@ type ErrorFailureSampleItem struct {
 	UpstreamPayloadPreview *string `json:"upstream_payload_preview,omitempty"`
 }
 
+type ErrorObject struct {
+	Code string `json:"code"`
+	Message string `json:"message"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Param *string `json:"param,omitempty"`
+	Type string `json:"type"`
+}
+
 type ErrorProviderCandidateDiagnostics struct {
 	CandidateCount *int `json:"candidateCount,omitempty"`
 	DroppedMissingAdapter *[]map[string]interface{} `json:"droppedMissingAdapter,omitempty"`
@@ -1731,6 +1865,7 @@ type ErrorProviderFailureDiagnostics struct {
 
 type ErrorResponse struct {
 	AttemptCount *int `json:"attempt_count,omitempty"`
+	Code *string `json:"code,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Details *[]map[string]interface{} `json:"details,omitempty"`
 	Error interface{} `json:"error"`
@@ -1765,6 +1900,105 @@ type ErrorUpstreamError struct {
 	Param *string `json:"param,omitempty"`
 }
 
+type ExtractionAnswer = interface{}
+
+type ExtractionDateField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionDatetimeField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionDurationField struct {
+	Decimals *int `json:"decimals,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Integer *bool `json:"integer,omitempty"`
+	Type string `json:"type"`
+	Unit *string `json:"unit,omitempty"`
+}
+
+type ExtractionField = interface{}
+
+type ExtractionImage struct {
+	Base64 string `json:"base64"`
+	ContentType string `json:"content_type"`
+}
+
+type ExtractionListAnswer struct {
+	Confidence float64 `json:"confidence"`
+	Type string `json:"type"`
+	Value []interface{} `json:"value"`
+}
+
+type ExtractionListField struct {
+	Decimals *int `json:"decimals,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Items string `json:"items"`
+	Type string `json:"type"`
+}
+
+type ExtractionNumberAnswer struct {
+	Confidence float64 `json:"confidence"`
+	PNull float64 `json:"p_null"`
+	Type string `json:"type"`
+	Value *float64 `json:"value"`
+}
+
+type ExtractionNumberField struct {
+	Decimals *int `json:"decimals,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Integer *bool `json:"integer,omitempty"`
+	Type string `json:"type"`
+	Unit *string `json:"unit,omitempty"`
+}
+
+type ExtractionRequest struct {
+	Fields map[string]interface{} `json:"fields"`
+	Images *[]map[string]interface{} `json:"images,omitempty"`
+	Input string `json:"input"`
+	Model string `json:"model"`
+	ReferenceDate *string `json:"reference_date,omitempty"`
+}
+
+type ExtractionResponse struct {
+	Answers map[string]interface{} `json:"answers"`
+	Model string `json:"model"`
+	Truncated bool `json:"truncated"`
+	Usage map[string]interface{} `json:"usage"`
+}
+
+type ExtractionStringAnswer struct {
+	Confidence float64 `json:"confidence"`
+	PNull float64 `json:"p_null"`
+	Type string `json:"type"`
+	Value *string `json:"value"`
+}
+
+type ExtractionTextField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionTimeField struct {
+	Instructions *string `json:"instructions,omitempty"`
+	Type string `json:"type"`
+}
+
+type ExtractionUsage struct {
+	InputTokens int `json:"input_tokens"`
+	OutputTokens string `json:"output_tokens"`
+	TotalTokens int `json:"total_tokens"`
+}
+
+type FileContentPart struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	File map[string]interface{} `json:"file"`
+	Type string `json:"type"`
+}
+
 type FileResponse struct {
 	Bytes *int `json:"bytes,omitempty"`
 	CreatedAt *int `json:"created_at,omitempty"`
@@ -1783,6 +2017,7 @@ type FileUploadRequest struct {
 
 type FunctionToolDefinition struct {
 	Async *bool `json:"async,omitempty"`
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Function map[string]interface{} `json:"function"`
 	Type string `json:"type"`
 }
@@ -1968,6 +2203,8 @@ type GatewayObservabilityEventListResponse struct {
 type GatewayObservabilityEventResponse struct {
 	Data map[string]interface{} `json:"data"`
 }
+
+type GatewayPlugin = interface{}
 
 type GatewayPricing struct {
 	Meters map[string]interface{} `json:"meters"`
@@ -2356,6 +2593,11 @@ type ImagesGenerationRequest struct {
 type ImagesGenerationResponse struct {
 	Created *int `json:"created,omitempty"`
 	Data *[]map[string]interface{} `json:"data,omitempty"`
+}
+
+type InputTokensDetails struct {
+	CacheWriteTokens *int `json:"cache_write_tokens,omitempty"`
+	CachedTokens *int `json:"cached_tokens,omitempty"`
 }
 
 type InvalidRequestResponse struct {
@@ -3671,6 +3913,13 @@ type OpenAIReasoningConfig struct {
 	Summary *string `json:"summary,omitempty"`
 }
 
+type OpenAIWebSearchToolDefinition struct {
+	Filters *map[string]interface{} `json:"filters,omitempty"`
+	SearchContextSize *string `json:"search_context_size,omitempty"`
+	Type string `json:"type"`
+	UserLocation *map[string]interface{} `json:"user_location,omitempty"`
+}
+
 type OrganisationId string
 
 const (
@@ -4091,6 +4340,15 @@ type PrivateModelUpdateRequest struct {
 	UpstreamModelId *string `json:"upstream_model_id,omitempty"`
 }
 
+type PromptCacheBreakpoint struct {
+	Mode *string `json:"mode,omitempty"`
+}
+
+type PromptCacheOptions struct {
+	Mode *string `json:"mode,omitempty"`
+	Ttl *string `json:"ttl,omitempty"`
+}
+
 type Provider struct {
 	ApiProviderId *string `json:"api_provider_id,omitempty"`
 	ApiProviderName *string `json:"api_provider_name,omitempty"`
@@ -4176,6 +4434,7 @@ type ProviderOptions struct {
 	Anthropic *map[string]interface{} `json:"anthropic,omitempty"`
 	Google *map[string]interface{} `json:"google,omitempty"`
 	Openai *map[string]interface{} `json:"openai,omitempty"`
+	Xai *map[string]interface{} `json:"xai,omitempty"`
 }
 
 type ProviderRoutingOptions struct {
@@ -4359,9 +4618,20 @@ type RerankResult struct {
 	RelevanceScore *float64 `json:"relevance_score,omitempty"`
 }
 
+type ResponseHealingPlugin struct {
+	Enabled *bool `json:"enabled,omitempty"`
+	Id string `json:"id"`
+	Mode *string `json:"mode,omitempty"`
+}
+
 type ResponsesInputItem struct {
 	Content interface{} `json:"content,omitempty"`
+	EncryptedContent *string `json:"encrypted_content,omitempty"`
+	Format *string `json:"format,omitempty"`
+	Id *string `json:"id,omitempty"`
 	Role *string `json:"role,omitempty"`
+	Signature *string `json:"signature,omitempty"`
+	Summary *[]map[string]interface{} `json:"summary,omitempty"`
 	Type *string `json:"type,omitempty"`
 }
 
@@ -4386,8 +4656,11 @@ type ResponsesOutputItem struct {
 	Arguments *string `json:"arguments,omitempty"`
 	CallId *string `json:"call_id,omitempty"`
 	Content *[]interface{} `json:"content,omitempty"`
+	EncryptedContent *string `json:"encrypted_content,omitempty"`
+	Id *string `json:"id,omitempty"`
 	Name *string `json:"name,omitempty"`
 	Role *string `json:"role,omitempty"`
+	Summary *[]map[string]interface{} `json:"summary,omitempty"`
 	Type *string `json:"type,omitempty"`
 }
 
@@ -4397,8 +4670,19 @@ type ResponsesOutputTextPart struct {
 	Type string `json:"type"`
 }
 
+type ResponsesReasoningSummaryPart struct {
+	Text string `json:"text"`
+	Type string `json:"type"`
+}
+
+type ResponsesReasoningTextPart struct {
+	Text string `json:"text"`
+	Type string `json:"type"`
+}
+
 type ResponsesRequest struct {
 	Background *bool `json:"background,omitempty"`
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	ImageConfig *map[string]interface{} `json:"image_config,omitempty"`
@@ -4412,8 +4696,11 @@ type ResponsesRequest struct {
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
+	Plugins *[]interface{} `json:"plugins,omitempty"`
 	PreviousResponseId *string `json:"previous_response_id,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
+	PromptCacheOptions *map[string]interface{} `json:"prompt_cache_options,omitempty"`
+	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -4528,6 +4815,8 @@ type SystemOneUsage struct {
 }
 
 type TextContentPart struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	PromptCacheBreakpoint *map[string]interface{} `json:"prompt_cache_breakpoint,omitempty"`
 	Text string `json:"text"`
 	Type string `json:"type"`
 }
@@ -4559,9 +4848,19 @@ type UpdatedResponse struct {
 
 type Usage struct {
 	CompletionTokens *int `json:"completion_tokens,omitempty"`
+	Cost *float64 `json:"cost,omitempty"`
+	CostDetails *map[string]interface{} `json:"cost_details,omitempty"`
+	InputTokens *int `json:"input_tokens,omitempty"`
+	InputTokensDetails *map[string]interface{} `json:"input_tokens_details,omitempty"`
+	OutputTokens *int `json:"output_tokens,omitempty"`
 	PromptTokens *int `json:"prompt_tokens,omitempty"`
+	PromptTokensDetails *map[string]interface{} `json:"prompt_tokens_details,omitempty"`
 	ServerToolUse *map[string]interface{} `json:"server_tool_use,omitempty"`
 	TotalTokens *int `json:"total_tokens,omitempty"`
+}
+
+type UsageCostDetails struct {
+	UpstreamInferenceCost *float64 `json:"upstream_inference_cost,omitempty"`
 }
 
 type VideoBillingSummary struct {
@@ -4709,6 +5008,16 @@ type VideoOutputConfig struct {
 	Access *string `json:"access,omitempty"`
 }
 
+type WebFetchPlugin struct {
+	AllowedDomains *[]string `json:"allowed_domains,omitempty"`
+	BlockedDomains *[]string `json:"blocked_domains,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+	Engine *string `json:"engine,omitempty"`
+	Id string `json:"id"`
+	MaxContentTokens *int `json:"max_content_tokens,omitempty"`
+	MaxUses *int `json:"max_uses,omitempty"`
+}
+
 type WebhookEndpoint struct {
 	CreatedAt *string `json:"createdAt,omitempty"`
 	CreatedBy *string `json:"createdBy,omitempty"`
@@ -4801,6 +5110,17 @@ type WebhookEndpointUpdateRequest struct {
 	Name *string `json:"name,omitempty"`
 	Status *string `json:"status,omitempty"`
 	Url *string `json:"url,omitempty"`
+}
+
+type WebSearchPlugin struct {
+	Enabled *bool `json:"enabled,omitempty"`
+	Engine *string `json:"engine,omitempty"`
+	ExcludeDomains *[]string `json:"exclude_domains,omitempty"`
+	Id string `json:"id"`
+	IncludeDomains *[]string `json:"include_domains,omitempty"`
+	MaxResults *int `json:"max_results,omitempty"`
+	MaxUses *int `json:"max_uses,omitempty"`
+	SearchContextSize *string `json:"search_context_size,omitempty"`
 }
 
 type Workspace struct {

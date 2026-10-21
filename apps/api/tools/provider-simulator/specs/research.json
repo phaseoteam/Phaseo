@@ -1,0 +1,1417 @@
+{
+	"accessed": "2026-10-17",
+	"note": "Facts transcribed from each provider's public API reference (chatReferenceUrl). Used for upstream URL, unsupported-parameter and usage expectations where no machine-readable spec exists. Re-check against the URL before relying on an entry.",
+	"providers": {
+		"openai": {
+			"chatReferenceUrl": "https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Official openai/openai-openapi repo (default branch main, last commit 2026-10-17). Server https://api.openai.com/v1. A JSON twin is at .../main/openapi.json. /chat/completions also has GET (list stored completions)."
+		},
+		"azure": {
+			"chatReferenceUrl": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/ai/data-plane/OpenAI.v1/azure-v1-v1-generated.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Azure OpenAI v1 GA data-plane spec (TypeSpec-generated, OpenAPI 3.2.0). Server is {endpoint}/openai/v1, i.e. https://<resource>.openai.azure.com/openai/v1; model is the deployment name in the body. The older dated /openai/deployments/{deployment-id}/chat/completions?api-version=... surface lives in specification/cognitiveservices/data-plane/AzureOpenAI/inference (path not re-verified here; the stable/2024-10-21 path returned 404). Note OpenAPI 3.2.0 may not be accepted by older validators."
+		},
+		"anthropic": {
+			"chatReferenceUrl": "https://app.stainless.com/api/spec/documented/anthropic/openapi.documented.yml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Stainless \"documented\" spec, served live by app.stainless.com (current). Beta variants are separate paths suffixed ?beta=true. Server https://api.anthropic.com."
+		},
+		"amazon-bedrock": {
+			"chatReferenceUrl": "https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html",
+			"baseUrl": "https://bedrock-mantle.{region}.api.aws/v1 (some models under /openai/v1); also https://bedrock-runtime.{region}.amazonaws.com/openai/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not documented on the Chat Completions page (stream: true shown, usage not described).",
+			"finishReasons": [],
+			"notes": "Chat Completions page defers to the OpenAI reference (\"For complete API details, see the OpenAI Chat Completions documentation\"). bedrock-runtime is now the recommended endpoint; mantle is \"compatibility\". Path prefix on mantle varies per model (/v1 vs /openai/v1); check the model card. Responses API exists on both endpoints for some models (GPT OSS on bedrock-runtime: Chat Completions only). Claude on InvokeModel (https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-request-response.html): body fields anthropic_version (\"bedrock-2023-05-31\", required), anthropic_beta (string[]), max_tokens (required), system, messages, temperature, top_p, top_k, tools, tool_choice {type: any|auto|tool, name}, stop_sequences, output_config.effort (beta header effort-2025-11-24); no model or stream field in the body (model is the path, streaming is InvokeModelWithResponseStream). Response usage shown as input_tokens/output_tokens only on that page (cache fields not documented there). stop_reason values: end_turn, max_tokens, stop_sequence, refusal (with stop_details), tool_use, model_context_window_exceeded."
+		},
+		"google-ai-studio": {
+			"chatReferenceUrl": "https://ai.google.dev/gemini-api/docs/openai",
+			"baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai/",
+			"requestParams": [
+				"model",
+				"messages",
+				"reasoning_effort",
+				"stream",
+				"stream_options",
+				"tools",
+				"tool_choice",
+				"response_format",
+				"n",
+				"service_tier"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not stated; an example passes stream_options.include_usage=true and reads chunk.usage.",
+			"finishReasons": [],
+			"notes": "Compatibility layer is described as beta. Params list above is only what examples use; no full list. reasoning_effort mapping: minimal/low/medium/high to thinking levels (Gemini 3+) or budgets 1024/1024/8192/24576 (2.5); \"none\" disables thinking on 2.5 only. Python examples nest extra_body inconsistently (extra_body={\"extra_body\":{\"google\":...}})."
+		},
+		"google-vertex": {
+			"chatReferenceUrl": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/migrate/openai/overview",
+			"baseUrl": "https://aiplatform.googleapis.com/v1/projects/{project}/locations/{location}/endpoints/openapi (path ends /chat/completions); base URL not stated on the overview page itself",
+			"requestParams": [
+				"messages",
+				"model",
+				"detail",
+				"max_tokens",
+				"max_completion_tokens",
+				"modalities",
+				"n",
+				"frequency_penalty",
+				"presence_penalty",
+				"reasoning_effort",
+				"response_format",
+				"seed",
+				"stop",
+				"stream",
+				"temperature",
+				"top_p",
+				"tools",
+				"tool_choice",
+				"web_search_options",
+				"function_call",
+				"functions"
+			],
+			"unsupportedOpenAIParams": [
+				"Any parameter not listed is ignored (page: \"If you pass any unsupported parameter, it is ignored\")"
+			],
+			"usageFields": [],
+			"streamUsage": "Not documented on the overview page.",
+			"finishReasons": [],
+			"notes": "response_format: json_object -> application/json, json_schema supported except fully recursive schemas, text -> text/plain. tool_choice: none, auto, required (ANY), validated. reasoning_effort low/medium/high -> 1024/8192/24576 thinking tokens. Tool parameters use the OpenAPI schema subset, not full JSON Schema. Supported Google models listed: Gemini 4 Argon family; self-deployed TGI/vLLM models also use this layer."
+		},
+		"spacex-ai": {
+			"chatReferenceUrl": "https://docs.x.ai/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Same file is served at https://api.x.ai/api-docs/openapi.json and https://docs.x.ai/api/openapi.json. Server https://api.x.ai."
+		},
+		"deepseek": {
+			"chatReferenceUrl": "https://api-docs.deepseek.com/api/create-chat-completion",
+			"baseUrl": "https://api.deepseek.com (beta features: https://api.deepseek.com/beta). Main base URL is not stated on the reference page itself.",
+			"requestParams": [
+				"messages",
+				"model",
+				"thinking",
+				"reasoning_effort",
+				"max_tokens",
+				"response_format",
+				"stop",
+				"stream",
+				"stream_options",
+				"temperature",
+				"top_p",
+				"tools",
+				"tool_choice",
+				"logprobs",
+				"top_logprobs",
+				"user_id",
+				"frequency_penalty",
+				"presence_penalty"
+			],
+			"unsupportedOpenAIParams": [
+				"frequency_penalty (deprecated, ignored)",
+				"presence_penalty (deprecated, ignored)",
+				"temperature (no effect in thinking mode)",
+				"tool_choice required / named function (400 in thinking mode)"
+			],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens",
+				"prompt_cache_hit_tokens",
+				"prompt_cache_miss_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"completion_tokens_details.reasoning_tokens"
+			],
+			"streamUsage": "Final chunk before [DONE] always carries whole-request usage regardless of include_usage; no separate usage-only chunk. With include_usage=true every chunk has usage (null except last); otherwise usage is absent except on the last chunk. stream_options without stream=true returns 400.",
+			"finishReasons": [
+				"stop",
+				"length",
+				"content_filter",
+				"tool_calls",
+				"insufficient_system_resource",
+				"aborted"
+			],
+			"notes": "response_format types: text, json_object. tool_choice: none, auto, required, named function. Models listed: deepseek-flash, deepseek-v4-pro. max_tokens 1-393216. prompt_cache_hit_tokens/miss are top-level in usage in the examples (schema indentation is ambiguous). Docs site uses docusaurus-openapi-docs but no spec download is exposed."
+		},
+		"mistral": {
+			"chatReferenceUrl": "https://docs.mistral.ai/openapi.yaml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by docs.mistral.ai (current). An older copy exists at raw.githubusercontent.com/mistralai/platform-docs-public/main/openapi.yaml (661 KB, stale). Server https://api.mistral.ai (gateway also uses api.eu.mistral.ai)."
+		},
+		"cohere": {
+			"chatReferenceUrl": "https://docs.cohere.com/docs/compatibility-api",
+			"baseUrl": "https://api.cohere.ai/compatibility/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"reasoning_effort",
+				"response_format",
+				"tools",
+				"temperature",
+				"max_tokens",
+				"stop",
+				"seed",
+				"top_p",
+				"frequency_penalty",
+				"presence_penalty"
+			],
+			"unsupportedOpenAIParams": [
+				"store",
+				"metadata",
+				"logit_bias",
+				"top_logprobs",
+				"n",
+				"modalities",
+				"prediction",
+				"audio",
+				"service_tier",
+				"parallel_tool_calls"
+			],
+			"usageFields": [],
+			"streamUsage": "Not documented on this page.",
+			"finishReasons": [],
+			"notes": "reasoning_effort accepts only none and high (maps to Cohere thinking off/on); low and medium \"not supported at this time\". Cohere-native params (connectors, documents, citation_options, ...) are not available through this API. System prompts are sent with the developer role. tools[].function.strict supported. Structured output: response_format type json_object plus a schema. The native v2 Chat API has a Fern-based spec, but the gateway uses the compatibility API, which has no machine-readable spec."
+		},
+		"groq": {
+			"chatReferenceUrl": "https://storage.googleapis.com/stainless-sdk-openapi-specs/groqcloud/groqcloud-debd965baa031e12228c41e538741fa6055bf2813bcd062840a19f84a17cea95.yml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Stainless spec URL taken from the last groq/groq-typescript .stats.yml that published one (commit 1df552f, 2026-06-21); newer .stats.yml files omit openapi_spec_url, so this may lag the live API by ~4 months. Server https://api.groq.com."
+		},
+		"cerebras": {
+			"chatReferenceUrl": "https://storage.googleapis.com/stainless-sdk-openapi-specs/cerebras/cerebras-cloud-5471bd6d34fdddff21977458788b979ce93f6b080e11ff0d35777182b6615baa.yml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Stainless spec from Cerebras/cerebras-cloud-sdk-node .stats.yml (updated 2026-07-08). Server https://api.cerebras.ai. The docs site also embeds a newer per-operation spec (see additionalSpecs)."
+		},
+		"together": {
+			"chatReferenceUrl": "https://docs.together.ai/openapi.yaml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by docs.together.ai (the API reference .md pages cite openapi.yaml). Server https://api.together.ai/v1. No /responses or /messages path in this spec."
+		},
+		"fireworks": {
+			"chatReferenceUrl": "https://storage.googleapis.com/stainless-sdk-openapi-specs/fireworks-ai/fireworks-ai-65b17041c3092296c4492a7bb6a368b62cb49c14a7bea6e8f053261641d8a0cc.yml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Stainless spec from fw-ai-external/python-sdk .stats.yml (last updated 2026-05-01; may lag). No servers block; base is https://api.fireworks.ai/inference (chat at https://api.fireworks.ai/inference/v1/chat/completions). The docs page embeds a newer chat-only spec (additionalSpecs)."
+		},
+		"deepinfra": {
+			"chatReferenceUrl": "https://api.deepinfra.com/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served live by the API host (server https://api.deepinfra.com). The spec lists chat at /v1/chat/completions, but the gateway code references the /v1/openai prefix and the spec has no /v1/openai/chat/completions path (only /v1/openai/videos*). Assumed (unverified) that both prefixes share the same body schema."
+		},
+		"perplexity": {
+			"chatReferenceUrl": "https://storage.googleapis.com/stainless-sdk-openapi-specs/perplexity-ai/perplexity-9fca0405579d6d1a2b8e686dfa59daaaf3a60d0627d0638c8079c6d85a4ff7d9.yml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Stainless spec from perplexityai/perplexity-node .stats.yml on branch next (updated 2026-07-17). Server https://api.perplexity.ai. Note chat is /chat/completions (no /v1) while responses is /v1/responses."
+		},
+		"sambanova": {
+			"chatReferenceUrl": "https://storage.googleapis.com/stainless-sdk-openapi-specs/sambanova/sambanova-50fb2e3f57f67505e5e7230bf1191aaa021757640fd2c889fe30d5228a240f80.yml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Stainless spec from the last SambaNova/sambanova-python .stats.yml that published one (commit 6e9c54e, 2026-06-25). Base https://api.sambanova.ai/v1."
+		},
+		"novita": {
+			"chatReferenceUrl": "https://docs.novita.ai/api-reference/model-apis-llm-create-chat-completion",
+			"baseUrl": "https://api.novita.ai/openai (gateway config); endpoint not stated on the page",
+			"requestParams": [
+				"model",
+				"messages",
+				"max_tokens",
+				"stream",
+				"stream_options",
+				"n",
+				"seed",
+				"frequency_penalty",
+				"presence_penalty",
+				"repetition_penalty",
+				"stop",
+				"temperature",
+				"top_p",
+				"top_k",
+				"min_p",
+				"logit_bias",
+				"logprobs",
+				"top_logprobs",
+				"tools",
+				"response_format",
+				"separate_reasoning",
+				"enable_thinking"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			],
+			"streamUsage": "With stream_options.include_usage, an extra chunk with empty choices carries usage before [DONE]; other chunks have usage: null.",
+			"finishReasons": [
+				"stop",
+				"length"
+			],
+			"notes": "max_tokens is marked required. response_format types: text, json_object, json_schema. tool_choice not documented. Content parts: text, image_url, video_url, input_audio. Page has range inconsistencies (n \"1 < x < 128\" with default 1). No machine-readable spec found (no embedded OpenAPI in the .md export)."
+		},
+		"siliconflow": {
+			"chatReferenceUrl": "https://docs.siliconflow.com/en/api-reference/chat-completions/chat-completions.md",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "No standalone spec URL found; the Mintlify .md export of the chat page embeds a single-operation OpenAPI 3.0.0 document (verified: parses, POST /chat/completions). Server https://api.siliconflow.com/v1."
+		},
+		"moonshotai": {
+			"chatReferenceUrl": "https://platform.moonshot.ai/docs/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served from the Kimi platform docs site. Server https://api.moonshot.ai."
+		},
+		"minimax": {
+			"chatReferenceUrl": "https://platform.minimax.io/docs/api-reference/text-openai-api",
+			"baseUrl": "https://api.minimax.io/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"stream_options",
+				"tools",
+				"temperature",
+				"top_p",
+				"max_tokens",
+				"max_completion_tokens",
+				"thinking",
+				"reasoning_effort",
+				"reasoning_split",
+				"service_tier"
+			],
+			"unsupportedOpenAIParams": [
+				"presence_penalty (ignored)",
+				"frequency_penalty (ignored)",
+				"logit_bias (ignored)",
+				"n (must be 1)",
+				"function_call (not supported)",
+				"audio input"
+			],
+			"usageFields": [],
+			"streamUsage": "Set stream_options.include_usage=true to receive usage; field names not documented.",
+			"finishReasons": [
+				"length"
+			],
+			"notes": "temperature range [0,2], out-of-range errors. Thinking tokens count toward max_tokens. Only \"length\" finish_reason is mentioned."
+		},
+		"z-ai": {
+			"chatReferenceUrl": "https://docs.z.ai/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by docs.z.ai. Server https://api.z.ai/api. Coding-plan and Anthropic-compatible endpoints are not in this spec."
+		},
+		"alibaba-cloud": {
+			"chatReferenceUrl": "https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-chat-completions",
+			"baseUrl": "https://{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1 (Singapore; also us-east-1, cn-beijing, cn-hongkong, eu-central-1, ap-northeast-1). Legacy https://dashscope-intl.aliyuncs.com/compatible-mode/v1 still works (gateway uses it).",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"stream_options",
+				"modalities",
+				"audio",
+				"temperature",
+				"top_p",
+				"presence_penalty",
+				"seed",
+				"stop",
+				"response_format",
+				"max_tokens",
+				"max_completion_tokens",
+				"n",
+				"logprobs",
+				"top_logprobs",
+				"tools",
+				"tool_choice",
+				"parallel_tool_calls",
+				"reasoning_effort"
+			],
+			"unsupportedOpenAIParams": [
+				"tool_choice \"required\" (Qwen does not support; thinking mode rejects it)",
+				"forcing a specific function on thinking models",
+				"system_fingerprint (returned as empty/null)"
+			],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"prompt_tokens_details.text_tokens",
+				"prompt_tokens_details.image_tokens",
+				"prompt_tokens_details.video_tokens",
+				"prompt_tokens_details.audio_tokens",
+				"completion_tokens_details.reasoning_tokens",
+				"completion_tokens_details.text_tokens",
+				"completion_tokens_details.audio_tokens",
+				"cache_creation_input_tokens",
+				"cache_creation.ephemeral_5m_input_tokens",
+				"cache_type",
+				"x_tools.search.count"
+			],
+			"streamUsage": "Only when stream_options.include_usage=true: usage in the final chunk, which has an empty choices array (other chunks usage: null).",
+			"finishReasons": [
+				"stop",
+				"length",
+				"tool_calls"
+			],
+			"notes": "Non-OpenAI params go at top level for raw HTTP (extra_body in the Python SDK). response_format: text, json_object (prompt must mention JSON), json_schema. tool_choice: auto (default), none, required, named. parallel_tool_calls defaults to false. reasoning_effort values vary by model (qwen3.8: low/medium/xhigh; DeepSeek-V4 and GLM: high/max). Nesting of cache_creation* fields is ambiguous on the page (listed after prompt_tokens_details). completion_tokens_details.text_tokens includes reasoning tokens. Older page https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope lists only prompt/completion/total usage and finish_reason null/stop/length. No Responses API statement on either page."
+		},
+		"baidu": {
+			"chatReferenceUrl": "https://cloud.baidu.com/doc/qianfan-api/s/3m7of64lb",
+			"baseUrl": "https://qianfan.baidubce.com/v2",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"stream_options",
+				"temperature",
+				"top_p",
+				"penalty_score",
+				"max_tokens",
+				"max_completion_tokens",
+				"seed",
+				"stop",
+				"frequency_penalty",
+				"presence_penalty",
+				"repetition_penalty",
+				"tools",
+				"tool_choice",
+				"parallel_tool_calls",
+				"web_search",
+				"response_format",
+				"metadata",
+				"thinking",
+				"enable_thinking",
+				"thinking_budget",
+				"thinking_strategy",
+				"reasoning_effort",
+				"user"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [
+				"prompt_tokens",
+				"prompt_tokens_details.search_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"completion_tokens",
+				"total_tokens"
+			],
+			"streamUsage": "Not included by default when streaming; include_usage=true puts real usage on the last chunk (others null); chunk_include_usage=true puts cumulative usage on every chunk.",
+			"finishReasons": [
+				"stop",
+				"length",
+				"content_filter",
+				"tool_calls"
+			],
+			"notes": "Page in Chinese. response_format: text, json_object, json_schema. tool_choice: none, auto, required, or {type: function, function: {name}}. stop up to 4 entries of max 20 chars. max_completion_tokens overrides max_tokens; both count reasoning. cached_tokens documented as only for ERNIE-4.0-Turbo-8K. Response may also include search_results, reasoning_content, flag, ban_round."
+		},
+		"byteplus": {
+			"chatReferenceUrl": "https://docs.byteplus.com/en/docs/ModelArk/1494384",
+			"baseUrl": "https://ark.ap-southeast.bytepluses.com/api/v3",
+			"requestParams": [
+				"messages",
+				"model",
+				"frequency_penalty",
+				"logit_bias",
+				"logprobs",
+				"max_completion_tokens",
+				"max_tokens",
+				"parallel_tool_calls",
+				"presence_penalty",
+				"prompt_cache_key",
+				"reasoning_effort",
+				"response_format",
+				"service_tier",
+				"stop",
+				"stream",
+				"stream_options",
+				"temperature",
+				"thinking",
+				"tool_choice",
+				"tools",
+				"top_logprobs",
+				"top_p"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"prompt_tokens_details.audio_cached_tokens",
+				"prompt_tokens_details.audio_tokens",
+				"completion_tokens_details.reasoning_tokens"
+			],
+			"streamUsage": "Default: no usage (null) for most models; include_usage=true adds a final chunk with empty choices and whole-request usage before [DONE]; chunk_include_usage=true gives cumulative usage per chunk. Some models (glm-5-2-260617, deepseek-v4-*-ga) return usage by default.",
+			"finishReasons": [
+				"stop",
+				"length",
+				"content_filter",
+				"tool_calls"
+			],
+			"notes": "Page is client-rendered; content read from the MDContent JSON embedded in the HTML (updated 2026-10-17). response_format types: text, json_schema, json_object. tool_choice: none, auto, required, or named function. Response extras: moderation_hit_type, service_status.model_fallback. A Responses API exists at /api/v3/responses (separate docs, not reviewed)."
+		},
+		"stepfun": {
+			"chatReferenceUrl": "https://platform.stepfun.ai/docs/en/api-reference/chat/chat-completion-create",
+			"baseUrl": "https://api.stepfun.ai/v1 (international); https://api.stepfun.com/v1 (China; gateway config)",
+			"requestParams": [
+				"model",
+				"messages",
+				"tools",
+				"max_tokens",
+				"temperature",
+				"top_p",
+				"n",
+				"stream",
+				"stop",
+				"frequency_penalty",
+				"response_format",
+				"reasoning_format",
+				"reasoning_effort"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [
+				"prompt_tokens",
+				"cached_tokens",
+				"completion_tokens",
+				"total_tokens"
+			],
+			"streamUsage": "Usage appears in every chunk, cumulative; no stream_options needed.",
+			"finishReasons": [
+				"stop"
+			],
+			"notes": "Undocumented (possibly unsupported): stream_options, tool_choice, presence_penalty, logprobs, seed, max_completion_tokens, json_schema. frequency_penalty range 0-1. Defaults temperature 0.5, top_p 0.9. response_format text|json_object. UNCERTAIN cached_tokens nesting: the English reference fetched shows it flat under usage; a search summary of the Chinese reference placed it at usage.prompt_tokens_details.cached_tokens and mentioned completion_tokens_details.reasoning_tokens. Intermediate stream chunks use finish_reason \"\" (empty string), not null."
+		},
+		"xiaomi": {
+			"chatReferenceUrl": "https://mimo.mi.com/docs/en-US/quick-start/summary/first-api-call",
+			"baseUrl": "https://api.xiaomimimo.com/v1 (Anthropic: https://api.xiaomimimo.com/anthropic; token plan: https://token-plan-{cn,sgp,ams}.xiaomimimo.com/v1)",
+			"requestParams": [
+				"model",
+				"messages",
+				"max_completion_tokens",
+				"temperature",
+				"top_p",
+				"stream",
+				"stop",
+				"frequency_penalty",
+				"presence_penalty",
+				"tools",
+				"tool_choice"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not documented.",
+			"finishReasons": [],
+			"notes": "Only a quick-start page found; params are those used in the examples, not a reference list. Example curl authenticates with an \"api-key\" header (gateway may use Bearer). Assistant messages carry reasoning_content in thinking mode and docs recommend sending it back in multi-turn tool calls. Thinking on/off parameter is on a separate Deep Thinking guide (not reviewed); third-party guides use extra_body thinking: {type: disabled}. V2.5 model IDs invalid from 2026-10-21."
+		},
+		"ai21": {
+			"chatReferenceUrl": "https://api.ai21.com/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "FastAPI spec served by the API host (no servers block); base https://api.ai21.com. Also contains many Studio app endpoints."
+		},
+		"aion-labs": {
+			"chatReferenceUrl": "https://www.aionlabs.ai/docs/api-reference/",
+			"baseUrl": "https://api.aionlabs.ai/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"temperature",
+				"max_tokens",
+				"stop",
+				"stream",
+				"stream_options",
+				"tools",
+				"metadata",
+				"reasoning_split",
+				"reasoning_effort"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Final chunk always carries usage; include_usage accepted for compatibility; continuous_usage_stats adds cumulative usage to every chunk.",
+			"finishReasons": [],
+			"notes": "Recorded from a web-search summary of the official API reference page (not fetched directly); verify before relying on it. reasoning_effort listed for Aion 2.0/3.0/3.0 Mini."
+		},
+		"akashml": {
+			"chatReferenceUrl": "https://api.akashml.com/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served live by the API host. Server https://api.akashml.com."
+		},
+		"ambient": {
+			"chatReferenceUrl": "https://api.ambient.xyz/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served live by the API host (no servers block; base https://api.ambient.xyz)."
+		},
+		"arcee-ai": {
+			"chatReferenceUrl": "https://docs.arcee.ai/api-reference/chat-completion",
+			"baseUrl": "https://api.arcee.ai/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"timeout",
+				"temperature",
+				"top_p",
+				"n",
+				"stream",
+				"stop",
+				"max_tokens",
+				"presence_penalty",
+				"frequency_penalty",
+				"logit_bias",
+				"user",
+				"seed",
+				"logprobs",
+				"top_logprobs",
+				"functions",
+				"function_call",
+				"tools",
+				"tool_choice"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not documented (SSE with data: [DONE]).",
+			"finishReasons": [],
+			"notes": "Docs page lacks response_format, stream_options, parallel_tool_calls, max_completion_tokens, reasoning_effort (absent, not stated unsupported). tool_choice string enum auto|none|required. Response note: provider-specific extras are stripped."
+		},
+		"atlascloud": {
+			"chatReferenceUrl": "https://www.atlascloud.ai/docs/createChatCompletion",
+			"baseUrl": "https://api.atlascloud.ai/v1",
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not documented in the text export.",
+			"finishReasons": [],
+			"notes": "Reference page renders from an internal schema (src/lib/schemas/llm.yaml) that is not publicly downloadable (guessed URLs 404). https://www.atlascloud.ai/docs/llm-protocols lists POST /v1/chat/completions, /v1/completions, /v1/responses, /v1/messages and /v1beta/models/{model}:generateContent on one base URL; auth via Bearer, x-api-key or x-goog-api-key. Each model publishes supported_apis."
+		},
+		"avian": {
+			"chatReferenceUrl": "https://avian.io/docs/",
+			"baseUrl": "https://api.avian.io/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"tools"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary (page not fetched; avian.io/docs/llms.txt is 404)."
+		},
+		"baseten": {
+			"chatReferenceUrl": "https://docs.baseten.co/reference/inference-api/llm-openapi-spec.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Model APIs spec linked from the chat reference page (embedded as reference/inference-api/llm-openapi-spec.json). Server https://inference.baseten.co. Self-deployed models use a different per-deployment base URL."
+		},
+		"canopy-wave": {
+			"chatReferenceUrl": "https://canopywave.com/docs/get-started/openai-compatible",
+			"baseUrl": "https://inference.canopywave.io/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"tools",
+				"tool_choice"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary; structured outputs and tool calling shown in examples."
+		},
+		"cloudflare": {
+			"chatReferenceUrl": "https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/",
+			"baseUrl": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1",
+			"requestParams": [
+				"model",
+				"messages"
+			],
+			"unsupportedOpenAIParams": [
+				"Responses API streaming (only stream: false)",
+				"Responses API on models other than @cf/openai/gpt-oss-120b and gpt-oss-20b"
+			],
+			"usageFields": [],
+			"streamUsage": "Not documented.",
+			"finishReasons": [],
+			"notes": "Page says OpenAI-compatible; no full parameter list. Endpoints: /chat/completions (most text models), /embeddings, /responses (gpt-oss only). Model ids use the @cf/ prefix."
+		},
+		"friendli": {
+			"chatReferenceUrl": "https://friendli.ai/docs/openapi.yaml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by friendli.ai/docs. Server https://api.friendli.ai. Streaming variants appear as separate \"#stream\" path keys (e.g. /serverless/v1/chat/completions#stream), a Mintlify convention, not real URLs."
+		},
+		"gmicloud": {
+			"chatReferenceUrl": "https://docs.gmicloud.ai/inference-engine/api-reference/llm-api-reference",
+			"baseUrl": "https://api.gmi-serving.com/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"tools",
+				"max_tokens",
+				"temperature",
+				"top_p",
+				"top_k",
+				"ignore_eos",
+				"stop",
+				"response_format",
+				"stream",
+				"context_length_exceeded_behavior"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			],
+			"streamUsage": "Page says streaming responses include usage stats in the final chunk (no opt-in mentioned).",
+			"finishReasons": [],
+			"notes": "Only {\"type\": \"json_object\"} response_format shown. tool_choice not listed. \"Parameter support varies by model\". max_tokens stated range \"1-128\" contradicts default 2000."
+		},
+		"inception": {
+			"chatReferenceUrl": "https://docs.inceptionlabs.ai/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by docs.inceptionlabs.ai. Server https://api.inceptionlabs.ai. (docs.inceptionlabs.ai/api-reference/openapi.json is an unrelated Mintlify sample.)"
+		},
+		"inflection": {
+			"chatReferenceUrl": "https://github.com/Inflection-Ops/inflection-ai-cookbook",
+			"baseUrl": "https://api.inflection.ai (gateway config); /v1/chat/completions per third-party listing",
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Official developer docs (developers.inflection.ai) were unreachable. Cookbook says an OpenAI-spec API was released in early 2025; legacy /external/api/inference uses {context:[{text,type}], config}. Treat as unverified."
+		},
+		"io-net": {
+			"chatReferenceUrl": "https://io.net/docs/openapi/ai-models/create-chat-completion.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Single-operation spec referenced by the Mintlify page https://io.net/docs/reference/ai-models/create-chat-completion. Server https://api.intelligence.io.solutions."
+		},
+		"ionrouter": {
+			"chatReferenceUrl": "https://ionrouter.io/docs",
+			"baseUrl": "https://api.ionrouter.io/v1 (also https://kimi.ionrouter.io/v1, https://minimax.ionrouter.io/v1)",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"max_tokens",
+				"temperature",
+				"top_p",
+				"system_prompt"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Recorded from a web-search summary of ionrouter.io/docs (not fetched directly)."
+		},
+		"longcat": {
+			"chatReferenceUrl": "https://longcat.chat/platform/docs/api/chat.html",
+			"baseUrl": "https://api.longcat.chat/openai (chat at /openai/v1/chat/completions); Anthropic at https://api.longcat.chat/anthropic",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"max_tokens",
+				"temperature",
+				"top_p",
+				"thinking"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Recorded from a web-search summary of the official page. temperature range 0-1; messages content text-only; tools/stop/penalties/response_format not listed."
+		},
+		"meta": {
+			"chatReferenceUrl": "https://storage.googleapis.com/stainless-sdk-openapi-specs/meta%2Fllama-api-edf0a308dd29bea2feb29f2e7f04eec4dbfb130ffe52511641783958168f60a4.yml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Llama API Stainless spec from meta-llama/llama-api-typescript .stats.yml (last updated 2025-10-01, likely stale). Spec server is http://api.llama.com while the Phaseo gateway config uses https://api.meta.ai - confirm which API the provider id targets."
+		},
+		"modelscope": {
+			"chatReferenceUrl": null,
+			"baseUrl": "https://api-inference.modelscope.cn/v1",
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "No official API-Inference parameter reference found; only third-party guides confirm the OpenAI-compatible base URL (and Anthropic-compatible at https://api-inference.modelscope.cn). enable_thinking handling unconfirmed."
+		},
+		"morph": {
+			"chatReferenceUrl": "https://docs.morphllm.com/api-reference/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by docs.morphllm.com. Server https://api.morphllm.com."
+		},
+		"morpheus": {
+			"chatReferenceUrl": "https://api.mor.org/api/v1/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "FastAPI spec from the Morpheus API Gateway (v1.50.0). Base https://api.mor.org."
+		},
+		"nebius-token-factory": {
+			"chatReferenceUrl": "https://api.tokenfactory.nebius.com/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served live by the API host (same file at api.studio.nebius.com). Title \"Nebius OpenAI-compatible inference API\", version 20261015."
+		},
+		"ovhcloud": {
+			"chatReferenceUrl": "https://oai.endpoints.kepler.ai.cloud.ovh.net/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by the unified AI Endpoints host (title \"OpenAI Compatible API\" 0.3.11). Per-model hosts may expose their own specs."
+		},
+		"parasail": {
+			"chatReferenceUrl": "https://docs.parasail.io/parasail-docs/api-reference/chat-completions",
+			"baseUrl": "https://api.parasail.io/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"temperature",
+				"top_p",
+				"top_k",
+				"max_tokens",
+				"repetition_penalty",
+				"presence_penalty",
+				"frequency_penalty",
+				"seed",
+				"stream",
+				"tools",
+				"tool_choice"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			],
+			"streamUsage": "Not documented.",
+			"finishReasons": [
+				"stop",
+				"length",
+				"tool_calls"
+			],
+			"notes": "tool_choice: auto (default), required, none, or a specific tool. /v1/responses available on serverless. Python example uses max_completion_tokens though the table lists max_tokens."
+		},
+		"poolside": {
+			"chatReferenceUrl": "https://docs.poolside.ai/api/overview",
+			"baseUrl": "https://inference.poolside.ai/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"tools"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary. Responses include reasoning_content; docs ask clients to send prior reasoning_content back. A third-party profile mentions an OpenAPI at https://api.poolsi.de/openai/openapi.json for self-hosted deployments (not checked)."
+		},
+		"reka": {
+			"chatReferenceUrl": "https://docs.reka.ai/openapi/api-reference.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Listed on https://docs.reka.ai/openapi.json (an HTML index, not a spec). Server https://api.reka.ai/v1. A second spec (openapi/api-reference-2.json) is the Vision Agent API."
+		},
+		"relace": {
+			"chatReferenceUrl": "https://docs.relace.ai/api-reference/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by docs.relace.ai. Servers https://models.relace.ai (models) and https://api.relace.run (infra)."
+		},
+		"sail-research": {
+			"chatReferenceUrl": "https://docs.sailresearch.com/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by docs.sailresearch.com. Server https://api.sailresearch.com/v1."
+		},
+		"sakana": {
+			"chatReferenceUrl": "https://console.sakana.ai/get-started",
+			"baseUrl": "https://api.sakana.ai/v1",
+			"requestParams": [
+				"model",
+				"messages"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary. Chat Completions, Responses and Anthropic Messages supported; docs recommend Responses."
+		},
+		"streamlake": {
+			"chatReferenceUrl": "https://streamlake.ai/document/DOC/mg6k6nlp8j6qxicx4c9",
+			"baseUrl": "https://vanchin.streamlake.ai/api/gateway/v1/endpoints (pay-as-you-go); coding plan https://vanchin.streamlake.ai/api/gateway/coding/v1",
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Only a coding-tool integration guide found (search summary). No parameter reference."
+		},
+		"tensorix": {
+			"chatReferenceUrl": "https://docs.tensorx.ai/api-reference/chat-completions",
+			"baseUrl": "https://api.tensorx.ai/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"max_tokens",
+				"temperature",
+				"top_p",
+				"top_k",
+				"stream",
+				"stop",
+				"presence_penalty",
+				"frequency_penalty",
+				"response_format",
+				"tools"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			],
+			"streamUsage": "Not documented (example chunks have no usage).",
+			"finishReasons": [
+				"stop",
+				"length",
+				"tool_calls"
+			],
+			"notes": "Only json_object response_format shown; tool_choice not documented; reasoning params on a separate page; reasoning appears in reasoning_content."
+		},
+		"upstage": {
+			"chatReferenceUrl": "https://console.upstage.ai/api/chat",
+			"baseUrl": "https://api.upstage.ai/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"reasoning_effort",
+				"max_tokens",
+				"stream",
+				"stream_options",
+				"temperature",
+				"top_p",
+				"frequency_penalty",
+				"presence_penalty",
+				"tools",
+				"tool_choice",
+				"parallel_tool_calls",
+				"response_format",
+				"prompt_cache_key"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"prompt_tokens_details.audio_tokens",
+				"completion_tokens_details.reasoning_tokens",
+				"completion_tokens_details.audio_tokens",
+				"completion_tokens_details.accepted_prediction_tokens",
+				"completion_tokens_details.rejected_prediction_tokens"
+			],
+			"streamUsage": "Not documented (stream_options attributes collapsed on the page).",
+			"finishReasons": [
+				"stop"
+			],
+			"notes": "Reasoning text in choices[].message.reasoning / delta.reasoning. response_format json_object (conversation must contain \"JSON\") or json_schema (strict true, additionalProperties false, all properties required). tool_choice none|auto|required|named. frequency_penalty default 1.1. n, stop, seed, logprobs, user absent from the page."
+		},
+		"venice": {
+			"chatReferenceUrl": "https://api.venice.ai/doc/api/swagger.yaml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by the API host. Base https://api.venice.ai/api/v1."
+		},
+		"wafer": {
+			"chatReferenceUrl": "https://docs.wafer.ai/serverless/chat-completions",
+			"baseUrl": "https://pass.wafer.ai/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"max_tokens",
+				"max_completion_tokens",
+				"temperature",
+				"top_p",
+				"top_k",
+				"min_p",
+				"frequency_penalty",
+				"presence_penalty",
+				"repetition_penalty",
+				"stop",
+				"seed",
+				"n",
+				"logprobs",
+				"top_logprobs",
+				"stream",
+				"tools",
+				"tool_choice",
+				"parallel_tool_calls",
+				"response_format",
+				"reasoning_effort",
+				"reasoning",
+				"thinking",
+				"regex"
+			],
+			"unsupportedOpenAIParams": [
+				"Unknown fields are not rejected but may have no effect",
+				"GLM-5.3 ignores frequency_penalty",
+				"GLM-5.2 ignores temperature, top_p, presence_penalty, frequency_penalty"
+			],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"completion_tokens_details.reasoning_tokens"
+			],
+			"streamUsage": "Always sent on successful streams in a final chunk with empty choices before [DONE]; stream_options not needed.",
+			"finishReasons": [
+				"stop",
+				"length",
+				"tool_calls"
+			],
+			"notes": "reasoning_effort none|low|medium|high|xhigh|max. tool_choice auto|none|required|named. If both max_tokens and max_completion_tokens are sent, max_tokens wins. Unsupported JSON-schema keywords are dropped from the constraint."
+		},
+		"weights-and-biases": {
+			"chatReferenceUrl": "https://docs.coreweave.com/inference/api-reference/chat-completions",
+			"baseUrl": "https://api.inference.wandb.ai/v1",
+			"requestParams": [
+				"model",
+				"messages"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not documented.",
+			"finishReasons": [],
+			"notes": "docs.wandb.ai inference pages redirect to docs.coreweave.com. Page says OpenAI-compatible; no full parameter list."
+		},
+		"openrouter": {
+			"chatReferenceUrl": "https://openrouter.ai/openapi.json",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "Served by openrouter.ai (YAML twin at /openapi.yaml). Base https://openrouter.ai/api/v1."
+		},
+		"chutes": {
+			"chatReferenceUrl": "https://chutes.ai/agents",
+			"baseUrl": "https://llm.chutes.ai/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"max_tokens",
+				"temperature"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary; tools, JSON mode and structured outputs claimed supported."
+		},
+		"crusoe": {
+			"chatReferenceUrl": "https://docs.crusoecloud.com/quickstart/getting-started-with-managed-inference",
+			"baseUrl": "https://api.inference.crusoecloud.com/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"max_tokens"
+			],
+			"unsupportedOpenAIParams": [
+				"reasoning_effort has no effect on DeepSeek-V4-Pro (support article); thinking param rejected by the proxy"
+			],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Recorded from a web-search summary. vLLM-backed. The Intelligence Foundry swagger (https://api.intelligence.crusoecloud.com/v1/swagger.json, Swagger 2.0) covers files/batches/fine-tuning only, and docs.crusoe.ai/openapi.json is the cloud management API; neither has chat."
+		},
+		"hyperbolic": {
+			"chatReferenceUrl": "https://www.hyperbolic.ai/docs/inference/quickstart",
+			"baseUrl": "https://api.hyperbolic.xyz/v1 (new host api.hyperbolic.ai)",
+			"requestParams": [
+				"model",
+				"messages",
+				"max_tokens",
+				"temperature",
+				"top_p",
+				"stream"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary. https://www.hyperbolic.ai/docs/api-reference/openapi.json exists (verified OpenAPI 3.1.0) but covers the GPU/storage marketplace only, no chat paths."
+		},
+		"featherless": {
+			"chatReferenceUrl": "https://featherless.ai/docs/completions",
+			"baseUrl": "https://api.featherless.ai/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"presence_penalty",
+				"frequency_penalty",
+				"repetition_penalty",
+				"temperature",
+				"top_p",
+				"top_k",
+				"min_p",
+				"seed",
+				"stop",
+				"stop_token_ids",
+				"include_stop_str_in_output",
+				"max_tokens",
+				"min_tokens",
+				"chat_template_kwargs"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			],
+			"streamUsage": "Not documented.",
+			"finishReasons": [
+				"stop"
+			],
+			"notes": "stream, n, logprobs, logit_bias, tools, user are absent from this page (tool calling on a separate page). seed \"not reliable\". Asks for HTTP-Referer and X-Title headers."
+		},
+		"mancer": {
+			"chatReferenceUrl": "https://mancer.tech/docs/clients/",
+			"baseUrl": "https://neuro.mancer.tech/oai/v1 (gateway config host neuro.mancer.tech)",
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "No parameter reference found (search summary). Docs describe text-generation-webui-style sampling and an X-API-KEY header; /v1/chat/completions and /v1/completions exist per the models page."
+		},
+		"infermatic": {
+			"chatReferenceUrl": "https://ui.infermatic.ai/docs",
+			"baseUrl": "https://api.totalgpt.ai/v1 (credits key: https://api-dev.totalgpt.ai/v1)",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"temperature",
+				"max_tokens",
+				"top_p"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Recorded from a web-search summary. Models without a chat template are rejected on /v1/chat/completions."
+		},
+		"nvidia": {
+			"chatReferenceUrl": "https://docs.api.nvidia.com/nim/reference/llm-apis",
+			"baseUrl": "https://integrate.api.nvidia.com/v1",
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not documented on the index page.",
+			"finishReasons": [],
+			"notes": "Index page lists models and links per-model \"-infer\" reference pages (each likely carries its own OpenAPI on the ReadMe site); no global spec download found. Parameters vary per model."
+		},
+		"scaleway": {
+			"chatReferenceUrl": "https://www.scaleway.com/en/developers/api/generative-apis/v1/schema.yml",
+			"baseUrl": null,
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": null,
+			"finishReasons": [],
+			"notes": "\"Download schema\" link on the API reference. Server https://api.scaleway.ai; project_id path segment is optional in practice (examples use https://api.scaleway.ai/v1/chat/completions). curl on this machine failed the TLS chain for scaleway.com; fetched with Node."
+		},
+		"thinking-machines": {
+			"chatReferenceUrl": "https://tinker-docs.thinkingmachines.ai/tinker/compatible-apis/openai/",
+			"baseUrl": "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1",
+			"requestParams": [
+				"model",
+				"prompt",
+				"max_tokens",
+				"temperature"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Recorded from a web-search summary. Docs describe OpenAI Completions compatibility (beta); chat completions also served per a tinker-cookbook issue (#684: reasoning returned inline in content, reasoning_content always None). model is a tinker:// sampler weight path or a base model name."
+		},
+		"darkbloom": {
+			"chatReferenceUrl": "https://docs.darkbloom.dev/reference/chat-completions",
+			"baseUrl": "https://api.darkbloom.dev/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"max_tokens",
+				"temperature",
+				"top_p",
+				"stop",
+				"seed"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			],
+			"streamUsage": "Not documented; a final stream event may carry se_signature/response_hash with empty choices.",
+			"finishReasons": [
+				"stop",
+				"length"
+			],
+			"notes": "Claims full OpenAI compatibility but documents no tools or response_format. max_tokens defaults to 8192 if omitted. /v1/responses is an alias auto-detected by input vs messages. Attestation response headers (X-Provider-*)."
+		},
+		"doubleword": {
+			"chatReferenceUrl": "https://docs.doubleword.ai/inference-api/realtime-inference",
+			"baseUrl": "https://api.doubleword.ai/v1",
+			"requestParams": [
+				"model",
+				"messages"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary."
+		},
+		"mara": {
+			"chatReferenceUrl": "https://cloud.mara.com/",
+			"baseUrl": "https://api.cloud.mara.com/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"stream",
+				"temperature",
+				"top_p"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not found.",
+			"finishReasons": [],
+			"notes": "Page says OpenAI-compatible; no full parameter list. Only the dashboard landing page found (search summary); its Python example uses the SambaNova SDK, suggesting (unconfirmed) a SambaNova-compatible backend."
+		},
+		"inference-net": {
+			"chatReferenceUrl": "https://docs.inference.net/platform/deploy/serverless-deployments",
+			"baseUrl": "https://api.inference.net/v1",
+			"requestParams": [
+				"model",
+				"messages"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "Not documented.",
+			"finishReasons": [],
+			"notes": "Page says \"Streaming, structured outputs, and the other chat completions features work\" with the OpenAI-compatible API; no parameter list."
+		},
+		"tencent-cloud": {
+			"chatReferenceUrl": "https://www.tencentcloud.com/document/product/1300/80695",
+			"baseUrl": "https://tokenhub-intl.tencentcloudmaas.com/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"temperature",
+				"max_tokens",
+				"stream",
+				"stream_options",
+				"thinking"
+			],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "stream_options.include_usage=true returns usage in the stream (details not given).",
+			"finishReasons": [],
+			"notes": "Recorded from a web-search summary of the Hy/GLM/DeepSeek API guides. Integration PDF has a typo host \"tokenhubintl\"."
+		},
+		"phala": {
+			"chatReferenceUrl": "https://docs.phala.com/phala-cloud/confidential-ai/confidential-model/api-reference/chat-completions",
+			"baseUrl": "https://inference.phala.com/v1",
+			"requestParams": [
+				"model",
+				"messages",
+				"temperature",
+				"max_tokens",
+				"max_completion_tokens",
+				"stream",
+				"tools",
+				"tool_choice",
+				"response_format",
+				"provider"
+			],
+			"unsupportedOpenAIParams": [
+				"max_tokens rejected by newer OpenAI reasoning models (use max_completion_tokens)"
+			],
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			],
+			"streamUsage": "Not documented.",
+			"finishReasons": [
+				"stop"
+			],
+			"notes": "tool_choice auto|none|specific. Receipt headers x-receipt-id, x-aci-identity, x-aci-keyset-digest. Responses and Messages pages also exist (not reviewed)."
+		},
+		"qwen": {
+			"chatReferenceUrl": "https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-chat-completions",
+			"baseUrl": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+			"requestParams": [],
+			"unsupportedOpenAIParams": [],
+			"usageFields": [],
+			"streamUsage": "See alibaba-cloud.",
+			"finishReasons": [],
+			"notes": "No separate \"qwen\" provider folder exists in apps/api/src/providers; Qwen's first-party API is Alibaba Model Studio. Use the alibaba-cloud entry."
+		}
+	}
+}

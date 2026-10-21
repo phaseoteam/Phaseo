@@ -3,11 +3,12 @@
 // How: Uses code-first text param policy + provider capability metadata.
 
 import type { Endpoint } from "@core/types";
-import { isNativeWebSearchTool, isNativeWebSearchToolType } from "@core/nativeTools";
+import { isNativeWebSearchTool, isNativeWebSearchToolType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
 import type { ProviderCandidate } from "./types";
 import {
 	expandCapabilityParamAliases,
 	isAlwaysSupportedParam,
+	isDroppableHintParam,
 	resolveProviderParamSupportOverride,
 	textEndpointRegistryFor,
 } from "./textParamPolicy";
@@ -81,6 +82,22 @@ function hasNativeWebSearchToolUsage(tools: unknown, toolChoice: unknown): boole
 	);
 }
 
+/**
+ * Requested params the gateway can satisfy on a provider without native
+ * support, so `require_parameters` must not exclude providers for them. An
+ * OpenAI hosted web search tool asks for native search (`web_search_options`)
+ * where the provider has it; elsewhere it runs as the gateway's own
+ * phaseo:web_search (see ./hostedTools.ts). An explicit top-level
+ * `web_search_options` stays a real requirement.
+ */
+export function getGatewayFallbackParams(endpoint: Endpoint, rawBody: any): string[] {
+	if ((endpoint !== "chat.completions" && endpoint !== "responses") || !isPlainObject(rawBody)) return [];
+	if (rawBody.web_search_options != null || rawBody.webSearchOptions != null) return [];
+	const hasHostedWebSearch = Array.isArray(rawBody.tools)
+		&& rawBody.tools.some((tool: unknown) => isOpenAINativeWebSearchTool(tool));
+	return hasHostedWebSearch ? ["web_search_options"] : [];
+}
+
 export function getUnknownTopLevelParams(endpoint: Endpoint, rawBody: any): string[] {
 	if (!rawBody || typeof rawBody !== "object") return [];
 	const registry = textEndpointRegistryFor(endpoint);
@@ -95,6 +112,8 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 
 	const params: string[] = [];
 	for (const [key, canonical] of Object.entries(registry.keyToCanonicalParam)) {
+		// Cache and identity hints are best effort and never constrain routing.
+		if (isDroppableHintParam(canonical)) continue;
 		if (Object.prototype.hasOwnProperty.call(rawBody, key)) {
 			const rawValue = rawBody[key];
 			if (canonical === "provider_options") {
@@ -124,6 +143,11 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 	// Normalize /responses text.format into canonical response_format parameter.
 	if (endpoint === "responses" && rawBody.text?.format != null) {
 		params.push("response_format");
+	}
+	// Anthropic's output_config carries reasoning effort and structured output; route on both.
+	if (endpoint === "messages" && isPlainObject(rawBody.output_config)) {
+		if (rawBody.output_config.effort != null) params.push("reasoning.effort");
+		if (rawBody.output_config.format != null) params.push("response_format");
 	}
 
 	// Infer tool usage from message/input surfaces where tools may be omitted but active.

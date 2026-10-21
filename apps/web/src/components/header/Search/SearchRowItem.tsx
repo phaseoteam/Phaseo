@@ -1,6 +1,7 @@
 "use client";
 
 import { Logo } from "@/components/Logo";
+import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import {
 	CommandItem,
 } from "@/components/ui/command";
@@ -47,6 +48,7 @@ export function SearchRowItem({
 			className="flex min-h-8 items-center gap-2 rounded-lg px-2 py-1.5"
 		>
 			<SearchRowIcon
+				href={href}
 				logoId={logoId}
 				flagIso={flagIso}
 				leftLogoId={leftLogoId}
@@ -70,6 +72,7 @@ export function SearchRowItem({
 }
 
 function SearchRowIcon({
+	href,
 	logoId,
 	flagIso,
 	leftLogoId,
@@ -77,6 +80,7 @@ function SearchRowIcon({
 	title,
 	type = "default",
 }: {
+	href: string;
 	logoId?: string | null;
 	flagIso?: string;
 	leftLogoId?: string;
@@ -85,6 +89,9 @@ function SearchRowIcon({
 	type?: "benchmark" | "comparison" | "default";
 }) {
 	if (type === "benchmark") {
+		if (/\/benchmarks\/(?:artificial-analysis|aa-[^/?#]+)(?:[/?#]|$)/.test(href)) {
+			return <ArtificialAnalysisLogo size={20} />;
+		}
 		return (
 			<div className="flex size-5 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
 				<Trophy className="size-3" />

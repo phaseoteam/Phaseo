@@ -57,6 +57,8 @@ public final class Models {
 	}
 
 	public static class AnthropicMessagesRequest {
+		public Object cache_control;
+		public Object context_management;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Integer max_tokens;
@@ -65,6 +67,7 @@ public final class Models {
 		public Object metadata;
 		public String model;
 		public java.util.List<String> models;
+		public java.util.List<Object> plugins;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -79,10 +82,12 @@ public final class Models {
 		public Integer top_k;
 		public Double top_p;
 		public Boolean usage;
+		public String user;
 	}
 
 	public static class AnthropicMessagesResponse {
 		public java.util.List<Object> content;
+		public Object context_management;
 		public String id;
 		public String model;
 		public Object role;
@@ -100,6 +105,11 @@ public final class Models {
 	}
 
 	public static class AnthropicUsage {
+		public Object cache_creation;
+		public Integer cache_creation_input_tokens;
+		public Integer cache_read_input_tokens;
+		public Double cost;
+		public Object cost_details;
 		public Integer input_tokens;
 		public Integer output_tokens;
 	}
@@ -250,6 +260,7 @@ public final class Models {
 
 	public static class ApiKeyWithValueResponse {
 		public Object data;
+		public String key;
 	}
 
 	public static class AsyncJobWebSocketClientEvent {
@@ -540,10 +551,12 @@ public final class Models {
 	}
 
 	public static class ChatCompletionsRequest {
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Double frequency_penalty;
 		public Object image_config;
+		public Boolean include_reasoning;
 		public Object logit_bias;
 		public Boolean logprobs;
 		public Integer max_completion_tokens;
@@ -556,8 +569,12 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public Boolean parallel_tool_calls;
+		public java.util.List<Object> plugins;
+		public Object prediction;
 		public Double presence_penalty;
 		public String prompt_cache_key;
+		public Object prompt_cache_options;
+		public Object prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -603,9 +620,108 @@ public final class Models {
 		public Object content;
 		public java.util.List<Object> images;
 		public String name;
+		public String reasoning;
+		public String reasoning_content;
+		public java.util.List<Object> reasoning_details;
 		public Object role;
 		public String tool_call_id;
 		public java.util.List<Object> tool_calls;
+	}
+
+	public static class ChatReasoningDetail {
+		public String data;
+		public String format;
+		public String id;
+		public Integer index;
+		public String signature;
+		public String summary;
+		public String text;
+		public Object type;
+	}
+
+	public static class Classifier {
+		public String created_at;
+		public String created_by;
+		public String description;
+		public java.util.List<Object> dimensions;
+		public Boolean enabled;
+		public String id;
+		public Object input_scope;
+		public String instructions;
+		public String model;
+		public Double monthly_budget_usd;
+		public String name;
+		public Object sample_by;
+		public Double sample_rate;
+		public Object scope;
+		public String updated_at;
+		public String workspace_id;
+	}
+
+	public static class ClassifierCreateInput {
+		public String description;
+		public java.util.List<Object> dimensions;
+		public Boolean enabled;
+		public Object input_scope;
+		public String instructions;
+		public String model;
+		public Double monthly_budget_usd;
+		public String name;
+		public Object sample_by;
+		public Double sample_rate;
+		public Object scope;
+	}
+
+	public static class ClassifierDeleteResponse {
+		public Object data;
+	}
+
+	public static class ClassifierDimension {
+		public Boolean allow_other;
+		public String description;
+		public String key;
+		public Boolean multiple;
+		public String name;
+		public java.util.List<Object> values;
+	}
+
+	public static class ClassifierInputScope {
+	}
+
+	public static class ClassifierListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class ClassifierResponse {
+		public Object data;
+	}
+
+	public static class ClassifierSampleBy {
+	}
+
+	public static class ClassifierScope {
+		public java.util.List<String> app_ids;
+		public java.util.List<String> key_ids;
+		public java.util.List<String> models;
+	}
+
+	public static class ClassifierUpdateInput {
+		public String description;
+		public java.util.List<Object> dimensions;
+		public Boolean enabled;
+		public Object input_scope;
+		public String instructions;
+		public String model;
+		public Double monthly_budget_usd;
+		public String name;
+		public Object sample_by;
+		public Double sample_rate;
+		public Object scope;
+	}
+
+	public static class ClassifierValue {
+		public String description;
+		public String value;
 	}
 
 	public static class CreditsResponse {
@@ -1039,6 +1155,14 @@ public final class Models {
 		public String upstream_payload_preview;
 	}
 
+	public static class ErrorObject {
+		public String code;
+		public String message;
+		public Object metadata;
+		public String param;
+		public Object type;
+	}
+
 	public static class ErrorProviderCandidateDiagnostics {
 		public Integer candidateCount;
 		public java.util.List<Object> droppedMissingAdapter;
@@ -1062,6 +1186,7 @@ public final class Models {
 
 	public static class ErrorResponse {
 		public Integer attempt_count;
+		public String code;
 		public String description;
 		public java.util.List<Object> details;
 		public Object error;
@@ -1096,6 +1221,107 @@ public final class Models {
 		public String param;
 	}
 
+	public static class ExtractionAnswer {
+	}
+
+	public static class ExtractionDateField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionDatetimeField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionDurationField {
+		public Integer decimals;
+		public String instructions;
+		public Boolean integer;
+		public Object type;
+		public Object unit;
+	}
+
+	public static class ExtractionField {
+	}
+
+	public static class ExtractionImage {
+		public String base64;
+		public Object content_type;
+	}
+
+	public static class ExtractionListAnswer {
+		public Double confidence;
+		public Object type;
+		public java.util.List<Object> value;
+	}
+
+	public static class ExtractionListField {
+		public Integer decimals;
+		public String instructions;
+		public Object items;
+		public Object type;
+	}
+
+	public static class ExtractionNumberAnswer {
+		public Double confidence;
+		public Double p_null;
+		public Object type;
+		public Double value;
+	}
+
+	public static class ExtractionNumberField {
+		public Integer decimals;
+		public String instructions;
+		public Boolean integer;
+		public Object type;
+		public String unit;
+	}
+
+	public static class ExtractionRequest {
+		public Object fields;
+		public java.util.List<Object> images;
+		public String input;
+		public String model;
+		public String reference_date;
+	}
+
+	public static class ExtractionResponse {
+		public Object answers;
+		public String model;
+		public Boolean truncated;
+		public Object usage;
+	}
+
+	public static class ExtractionStringAnswer {
+		public Double confidence;
+		public Double p_null;
+		public Object type;
+		public String value;
+	}
+
+	public static class ExtractionTextField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionTimeField {
+		public String instructions;
+		public Object type;
+	}
+
+	public static class ExtractionUsage {
+		public Integer input_tokens;
+		public Object output_tokens;
+		public Integer total_tokens;
+	}
+
+	public static class FileContentPart {
+		public Object cache_control;
+		public Object file;
+		public Object type;
+	}
+
 	public static class FileResponse {
 		public Integer bytes;
 		public Integer created_at;
@@ -1114,6 +1340,7 @@ public final class Models {
 
 	public static class FunctionToolDefinition {
 		public Boolean async;
+		public Object cache_control;
 		public Object function;
 		public Object type;
 	}
@@ -1289,6 +1516,9 @@ public final class Models {
 
 	public static class GatewayObservabilityEventResponse {
 		public Object data;
+	}
+
+	public static class GatewayPlugin {
 	}
 
 	public static class GatewayPricing {
@@ -1647,6 +1877,11 @@ public final class Models {
 	public static class ImagesGenerationResponse {
 		public Integer created;
 		public java.util.List<Object> data;
+	}
+
+	public static class InputTokensDetails {
+		public Integer cache_write_tokens;
+		public Integer cached_tokens;
 	}
 
 	public static class InvalidRequestResponse {
@@ -2277,6 +2512,13 @@ public final class Models {
 		public Object summary;
 	}
 
+	public static class OpenAIWebSearchToolDefinition {
+		public Object filters;
+		public Object search_context_size;
+		public Object type;
+		public Object user_location;
+	}
+
 	public static class OrganisationId {
 	}
 
@@ -2565,6 +2807,15 @@ public final class Models {
 		public String upstream_model_id;
 	}
 
+	public static class PromptCacheBreakpoint {
+		public Object mode;
+	}
+
+	public static class PromptCacheOptions {
+		public Object mode;
+		public String ttl;
+	}
+
 	public static class Provider {
 		public String api_provider_id;
 		public String api_provider_name;
@@ -2645,6 +2896,7 @@ public final class Models {
 		public Object anthropic;
 		public Object google;
 		public Object openai;
+		public Object xai;
 	}
 
 	public static class ProviderRoutingOptions {
@@ -2821,9 +3073,20 @@ public final class Models {
 		public Double relevance_score;
 	}
 
+	public static class ResponseHealingPlugin {
+		public Boolean enabled;
+		public Object id;
+		public Object mode;
+	}
+
 	public static class ResponsesInputItem {
 		public Object content;
+		public String encrypted_content;
+		public Object format;
+		public String id;
 		public Object role;
+		public String signature;
+		public java.util.List<Object> summary;
 		public String type;
 	}
 
@@ -2849,8 +3112,11 @@ public final class Models {
 		public String arguments;
 		public String call_id;
 		public java.util.List<Object> content;
+		public String encrypted_content;
+		public String id;
 		public String name;
 		public String role;
+		public java.util.List<Object> summary;
 		public String type;
 	}
 
@@ -2860,8 +3126,19 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class ResponsesReasoningSummaryPart {
+		public String text;
+		public Object type;
+	}
+
+	public static class ResponsesReasoningTextPart {
+		public String text;
+		public Object type;
+	}
+
 	public static class ResponsesRequest {
 		public Boolean background;
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Object image_config;
@@ -2875,8 +3152,11 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public Boolean parallel_tool_calls;
+		public java.util.List<Object> plugins;
 		public String previous_response_id;
 		public String prompt_cache_key;
+		public Object prompt_cache_options;
+		public Object prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -2992,6 +3272,8 @@ public final class Models {
 	}
 
 	public static class TextContentPart {
+		public Object cache_control;
+		public Object prompt_cache_breakpoint;
 		public String text;
 		public Object type;
 	}
@@ -3025,9 +3307,19 @@ public final class Models {
 
 	public static class Usage {
 		public Integer completion_tokens;
+		public Double cost;
+		public Object cost_details;
+		public Integer input_tokens;
+		public Object input_tokens_details;
+		public Integer output_tokens;
 		public Integer prompt_tokens;
+		public Object prompt_tokens_details;
 		public Object server_tool_use;
 		public Integer total_tokens;
+	}
+
+	public static class UsageCostDetails {
+		public Double upstream_inference_cost;
 	}
 
 	public static class VideoBillingSummary {
@@ -3176,6 +3468,16 @@ public final class Models {
 		public Object access;
 	}
 
+	public static class WebFetchPlugin {
+		public java.util.List<String> allowed_domains;
+		public java.util.List<String> blocked_domains;
+		public Boolean enabled;
+		public Object engine;
+		public Object id;
+		public Integer max_content_tokens;
+		public Integer max_uses;
+	}
+
 	public static class WebhookEndpoint {
 		public String createdAt;
 		public String createdBy;
@@ -3244,6 +3546,17 @@ public final class Models {
 		public String name;
 		public Object status;
 		public String url;
+	}
+
+	public static class WebSearchPlugin {
+		public Boolean enabled;
+		public Object engine;
+		public java.util.List<String> exclude_domains;
+		public Object id;
+		public java.util.List<String> include_domains;
+		public Integer max_results;
+		public Integer max_uses;
+		public Object search_context_size;
 	}
 
 	public static class Workspace {

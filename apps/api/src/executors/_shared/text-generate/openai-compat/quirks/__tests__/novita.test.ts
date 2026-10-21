@@ -27,7 +27,7 @@ describe("Novita quirks", () => {
 		expect(request.enable_thinking).toBe(true);
 	});
 
-	it("rewrites developer role and maps reasoning to enable_thinking for supported models", () => {
+	it("rewrites developer role and maps reasoning to enable_thinking", () => {
 		const request: Record<string, any> = {
 			model: "deepseek/deepseek-v3.1",
 			messages: [
@@ -48,7 +48,7 @@ describe("Novita quirks", () => {
 
 		expect(request.messages[0].role).toBe("system");
 		expect(request.enable_thinking).toBe(true);
-		expect(request.separate_reasoning).toBeUndefined();
+		expect(request.separate_reasoning).toBe(true);
 	});
 
 	it("maps reasoning.enabled=false to enable_thinking=false on supported models", () => {
@@ -71,26 +71,30 @@ describe("Novita quirks", () => {
 		expect(request.separate_reasoning).toBeUndefined();
 	});
 
-	it("only maps enable_thinking for explicit Novita-supported models", () => {
+	// enable_thinking is a request field for every model; hybrid models such as
+	// moonshotai/kimi-k2.5 use it and always-on models ignore it
+	// (https://docs.novita.ai/api-reference/model-apis-llm-create-chat-completion).
+	it("maps enable_thinking for any model, not a fixed list", () => {
 		const request: Record<string, any> = {
-			model: "deepseek/deepseek-r1-turbo",
+			model: "moonshotai/kimi-k2.5",
 			messages: [{ role: "user", content: "hello" }],
 		};
 
 		novitaQuirks.transformRequest?.({
 			request,
-			model: "deepseek/deepseek-r1-turbo",
+			model: "moonshotai/kimi-k2.5",
 			ir: {
 				reasoning: {
-					enabled: true,
+					enabled: false,
 				},
 			} as any,
 		});
 
-		expect(request.enable_thinking).toBeUndefined();
+		expect(request.enable_thinking).toBe(false);
+		expect(request.separate_reasoning).toBeUndefined();
 	});
 
-	it("maps separate_reasoning only for deepseek/deepseek-r1-turbo", () => {
+	it("asks for separate reasoning when reasoning is on", () => {
 		const request: Record<string, any> = {
 			model: "deepseek/deepseek-r1-turbo",
 			messages: [{ role: "user", content: "hello" }],
@@ -109,7 +113,7 @@ describe("Novita quirks", () => {
 		expect(request.separate_reasoning).toBe(true);
 	});
 
-	it("accepts gateway-prefixed Novita model IDs for allowlist matching", () => {
+	it("maps reasoning for gateway-prefixed Novita model IDs", () => {
 		const request: Record<string, any> = {
 			model: "novitaai/deepseek/deepseek-v3.2-exp",
 			messages: [{ role: "user", content: "hello" }],

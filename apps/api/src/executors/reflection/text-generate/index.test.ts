@@ -63,7 +63,7 @@ describe("Reflection text executor", () => {
 			expect(mock.calls).toHaveLength(0);
 		} finally { mock.restore(); }
 	});
-	it.each([{ reasoning: { enabled: false } }, { reasoning: { effort: "none" } }, { reasoning: { effort: "instant" } }, { reasoning: { effort: "minimal" } }, { stop: ["END"] }, { store: true }])("rejects unsupported controls after normalization: %j", async controls => {
+	it.each([{ reasoning: { enabled: false } }, { reasoning: { effort: "none" } }, { reasoning: { effort: "instant" } }, { reasoning: { effort: "minimal" } }, { store: true }])("rejects unsupported controls after normalization: %j", async controls => {
 		const mock = installFetchMock([]);
 		try {
 			const requestArgs = args(controls);
@@ -73,6 +73,16 @@ describe("Reflection text executor", () => {
 			expect(result).toMatchObject({ terminal: true, localClientError: true });
 			expect(mock.calls).toHaveLength(0);
 		} finally { mock.restore(); }
+	});
+	it("drops stop sequences before the executor instead of rejecting the request", () => {
+		const dropped: unknown[] = [];
+		const requestArgs = args({ stop: ["END"] });
+		const next = normalizeIRForProvider(requestArgs.ir, "reflection", "openai.chat.completions", {
+			capabilityParams: { "reasoning.effort": { enum: ["low", "medium", "high", "xhigh", "max"] } },
+			onDroppedParams: (entries) => dropped.push(...entries),
+		});
+		expect(next.stop).toBeUndefined();
+		expect(dropped).toEqual([{ param: "stop", reason: "unsupported_by_provider", source: "provider_profile" }]);
 	});
 	it("passes fragmented reasoning and usage frames through streaming", async () => {
 		const frame = (value: unknown) => `data: ${JSON.stringify(value)}\n\n`;

@@ -850,6 +850,19 @@ export type CreateAnthropicMessageParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
+    context_management?: {
+      edits?: {
+        type: string;
+        [key: string]: unknown;
+      }[];
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -891,6 +904,40 @@ export type CreateAnthropicMessageParams = {
     };
     model: string;
     models?: string[];
+    plugins?: (
+      | {
+          enabled?: boolean;
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
+          exclude_domains?: string[];
+          id: "web";
+          include_domains?: string[];
+          max_results?: number;
+          max_uses?: number;
+          search_context_size?: "low" | "medium" | "high";
+        }
+      | {
+          allowed_domains?: string[];
+          blocked_domains?: string[];
+          enabled?: boolean;
+          engine?:
+            "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+          id: "web-fetch";
+          max_content_tokens?: number;
+          max_uses?: number;
+        }
+      | {
+          enabled?: boolean;
+          id: "response-healing";
+          mode?: "safe" | "strict";
+        }
+    )[];
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -952,11 +999,20 @@ export type CreateAnthropicMessageParams = {
           compact_threshold?: number;
           type: "compaction";
         };
+        prompt_cache_options?: {
+          mode?: "implicit" | "explicit";
+          ttl?: string;
+          [key: string]: unknown;
+        };
         prompt_cache_retention?: string;
+      };
+      xai?: {
+        conversation_id?: string;
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      effort?:
+        "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -969,7 +1025,9 @@ export type CreateAnthropicMessageParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch";
+      | "batch"
+      | "auto"
+      | "standard_only";
     session_id?: string;
     stop_sequences?: string[];
     stream?: boolean;
@@ -1063,6 +1121,7 @@ export type CreateAnthropicMessageParams = {
     top_k?: number;
     top_p?: number;
     usage?: boolean;
+    user?: string;
   };
 };
 
@@ -1094,6 +1153,11 @@ export async function createAnthropicMessage(
     tool_use_id?: string;
     type?: "text" | "image" | "tool_use" | "tool_result";
   }[];
+  context_management?: {
+    applied_edits?: {
+      [key: string]: unknown;
+    }[];
+  };
   id?: string;
   model?: string;
   role?: "assistant";
@@ -1101,6 +1165,16 @@ export async function createAnthropicMessage(
   stop_sequence?: string;
   type?: string;
   usage?: {
+    cache_creation?: {
+      ephemeral_1h_input_tokens?: number;
+      ephemeral_5m_input_tokens?: number;
+    };
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
     input_tokens?: number;
     output_tokens?: number;
   };
@@ -1129,6 +1203,11 @@ export async function createAnthropicMessage(
       tool_use_id?: string;
       type?: "text" | "image" | "tool_use" | "tool_result";
     }[];
+    context_management?: {
+      applied_edits?: {
+        [key: string]: unknown;
+      }[];
+    };
     id?: string;
     model?: string;
     role?: "assistant";
@@ -1136,6 +1215,16 @@ export async function createAnthropicMessage(
     stop_sequence?: string;
     type?: string;
     usage?: {
+      cache_creation?: {
+        ephemeral_1h_input_tokens?: number;
+        ephemeral_5m_input_tokens?: number;
+      };
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
       input_tokens?: number;
       output_tokens?: number;
     };
@@ -1247,6 +1336,7 @@ export async function createApiKey(
     usage_weekly: number;
     workspace_id: string;
   };
+  key: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/keys";
@@ -1311,6 +1401,7 @@ export async function createApiKey(
       usage_weekly: number;
       workspace_id: string;
     };
+    key: string;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -1985,6 +2076,12 @@ export type CreateChatCompletionParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -2008,6 +2105,7 @@ export type CreateChatCompletionParams = {
       super_resolution_references?: string[];
       [key: string]: unknown;
     };
+    include_reasoning?: boolean;
     logit_bias?: {
       [key: string]: number;
     };
@@ -2026,8 +2124,19 @@ export type CreateChatCompletionParams = {
       }[];
       content?:
         | string
+        | null
         | (
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                prompt_cache_breakpoint?: {
+                  mode?: "explicit";
+                  [key: string]: unknown;
+                };
                 text: string;
                 type: "text";
               }
@@ -2050,6 +2159,20 @@ export type CreateChatCompletionParams = {
                 video_url: string;
               }
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
+              }
+            | {
                 function: {
                   arguments?: string;
                   name?: string;
@@ -2066,6 +2189,18 @@ export type CreateChatCompletionParams = {
         type: "image_url";
       }[];
       name?: string;
+      reasoning?: string;
+      reasoning_content?: string;
+      reasoning_details?: {
+        data?: string;
+        format?: string;
+        id?: string;
+        index?: number;
+        signature?: string;
+        summary?: string;
+        text?: string;
+        type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+      }[];
       role: "system" | "developer" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
@@ -2087,8 +2222,56 @@ export type CreateChatCompletionParams = {
     model: string;
     models?: string[];
     parallel_tool_calls?: boolean;
+    plugins?: (
+      | {
+          enabled?: boolean;
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
+          exclude_domains?: string[];
+          id: "web";
+          include_domains?: string[];
+          max_results?: number;
+          max_uses?: number;
+          search_context_size?: "low" | "medium" | "high";
+        }
+      | {
+          allowed_domains?: string[];
+          blocked_domains?: string[];
+          enabled?: boolean;
+          engine?:
+            "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+          id: "web-fetch";
+          max_content_tokens?: number;
+          max_uses?: number;
+        }
+      | {
+          enabled?: boolean;
+          id: "response-healing";
+          mode?: "safe" | "strict";
+        }
+    )[];
+    prediction?: {
+      content:
+        | string
+        | {
+            [key: string]: unknown;
+          }[];
+      type: "content";
+    };
     presence_penalty?: number;
     prompt_cache_key?: string | null;
+    prompt_cache_options?: {
+      mode?: "implicit" | "explicit";
+      ttl?: string;
+      [key: string]: unknown;
+    };
+    prompt_cache_retention?: "in_memory" | "24h";
     provider?:
       | "openai"
       | "anthropic"
@@ -2160,7 +2343,15 @@ export type CreateChatCompletionParams = {
           compact_threshold?: number;
           type: "compaction";
         };
+        prompt_cache_options?: {
+          mode?: "implicit" | "explicit";
+          ttl?: string;
+          [key: string]: unknown;
+        };
         prompt_cache_retention?: string;
+      };
+      xai?: {
+        conversation_id?: string;
       };
     };
     reasoning?: {
@@ -2172,7 +2363,8 @@ export type CreateChatCompletionParams = {
         | "medium"
         | "high"
         | "xhigh"
-        | "max";
+        | "max"
+        | null;
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -2202,7 +2394,10 @@ export type CreateChatCompletionParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch";
+      | "batch"
+      | "auto"
+      | "scale"
+      | null;
     session_id?: string;
     stop?: string | string[];
     store?: boolean;
@@ -2226,6 +2421,12 @@ export type CreateChatCompletionParams = {
     tools?: (
       | {
           async?: boolean;
+          cache_control?: {
+            scope?: string;
+            ttl?: string;
+            type?: string;
+            [key: string]: unknown;
+          };
           function: {
             description?: string;
             name: string;
@@ -2299,6 +2500,21 @@ export type CreateChatCompletionParams = {
           };
           type: "phaseo:search_models";
         }
+      | {
+          filters?: {
+            allowed_domains?: string[];
+          };
+          search_context_size?: "low" | "medium" | "high";
+          type:
+            | "web_search"
+            | "web_search_2025_08_26"
+            | "web_search_preview"
+            | "web_search_preview_2025_03_11";
+          user_location?: {
+            [key: string]: unknown;
+          };
+          [key: string]: unknown;
+        }
     )[];
     top_logprobs?: number;
     top_p?: number;
@@ -2329,8 +2545,19 @@ export async function createChatCompletion(
       }[];
       content?:
         | string
+        | null
         | (
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                prompt_cache_breakpoint?: {
+                  mode?: "explicit";
+                  [key: string]: unknown;
+                };
                 text: string;
                 type: "text";
               }
@@ -2353,6 +2580,20 @@ export async function createChatCompletion(
                 video_url: string;
               }
             | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                file: {
+                  file_data?: string;
+                  file_id?: string;
+                  filename?: string;
+                };
+                type: "file";
+              }
+            | {
                 function: {
                   arguments?: string;
                   name?: string;
@@ -2369,6 +2610,18 @@ export async function createChatCompletion(
         type: "image_url";
       }[];
       name?: string;
+      reasoning?: string;
+      reasoning_content?: string;
+      reasoning_details?: {
+        data?: string;
+        format?: string;
+        id?: string;
+        index?: number;
+        signature?: string;
+        summary?: string;
+        text?: string;
+        type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+      }[];
       role: "system" | "developer" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
@@ -2391,7 +2644,21 @@ export async function createChatCompletion(
   provider?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -2423,8 +2690,19 @@ export async function createChatCompletion(
         }[];
         content?:
           | string
+          | null
           | (
               | {
+                  cache_control?: {
+                    scope?: string;
+                    ttl?: string;
+                    type?: string;
+                    [key: string]: unknown;
+                  };
+                  prompt_cache_breakpoint?: {
+                    mode?: "explicit";
+                    [key: string]: unknown;
+                  };
                   text: string;
                   type: "text";
                 }
@@ -2453,6 +2731,20 @@ export async function createChatCompletion(
                   video_url: string;
                 }
               | {
+                  cache_control?: {
+                    scope?: string;
+                    ttl?: string;
+                    type?: string;
+                    [key: string]: unknown;
+                  };
+                  file: {
+                    file_data?: string;
+                    file_id?: string;
+                    filename?: string;
+                  };
+                  type: "file";
+                }
+              | {
                   function: {
                     arguments?: string;
                     name?: string;
@@ -2469,6 +2761,18 @@ export async function createChatCompletion(
           type: "image_url";
         }[];
         name?: string;
+        reasoning?: string;
+        reasoning_content?: string;
+        reasoning_details?: {
+          data?: string;
+          format?: string;
+          id?: string;
+          index?: number;
+          signature?: string;
+          summary?: string;
+          text?: string;
+          type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+        }[];
         role: "system" | "developer" | "user" | "assistant" | "tool";
         tool_call_id?: string;
         tool_calls?: {
@@ -2491,7 +2795,21 @@ export async function createChatCompletion(
     provider?: string;
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -2504,6 +2822,123 @@ export async function createChatCompletion(
         web_search_requests?: number;
       };
       total_tokens?: number;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateClassifierParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    description?: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled?: boolean;
+    input_scope?: "prompt" | "prompt_and_response";
+    instructions?: string;
+    model: string;
+    monthly_budget_usd?: number | null;
+    name: string;
+    sample_by?: "request" | "session";
+    sample_rate?: number;
+    scope?: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+  };
+};
+
+/**
+ * Creates a classifier. After each eligible request finishes, the chosen model places it in every dimension and the answers are added to the request as labels, so they can be filtered and grouped in logs, usage and analytics. Classification runs after the response is sent and is billed to the workspace at the model's normal price.
+ */
+export async function createClassifier(
+  client: Client,
+  args: CreateClassifierParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/classifiers";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
+      workspace_id: string;
     };
   }>({
     method: "POST",
@@ -3012,7 +3447,21 @@ export async function createEmbedding(
   object?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -3039,7 +3488,21 @@ export async function createEmbedding(
     object?: string;
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -3052,6 +3515,141 @@ export async function createEmbedding(
         web_search_requests?: number;
       };
       total_tokens?: number;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateExtractionParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    fields: {
+      [key: string]:
+        | {
+            instructions?: string;
+            type: "text";
+          }
+        | {
+            decimals?: number;
+            instructions?: string;
+            integer?: boolean;
+            type: "number";
+            unit?: string;
+          }
+        | {
+            instructions?: string;
+            type: "date";
+          }
+        | {
+            instructions?: string;
+            type: "time";
+          }
+        | {
+            instructions?: string;
+            type: "datetime";
+          }
+        | {
+            decimals?: number;
+            instructions?: string;
+            integer?: boolean;
+            type: "duration";
+            unit?:
+              | "seconds"
+              | "minutes"
+              | "hours"
+              | "days"
+              | "weeks"
+              | "months"
+              | "years";
+          }
+        | {
+            decimals?: number;
+            instructions?: string;
+            items: "text" | "number" | "date";
+            type: "list";
+          };
+    };
+    images?: {
+      base64: string;
+      content_type: "image/png" | "image/jpeg" | "image/webp";
+    }[];
+    input: string;
+    model: string;
+    reference_date?: string;
+  };
+};
+
+/**
+ * Extracts text, numbers, dates, times, durations and typed lists from text or embedded images. Returns typed values and model-reported uncertainty. Estimates, forecasts, streaming and remote image URLs are not supported.
+ */
+export async function createExtraction(
+  client: Client,
+  args: CreateExtractionParams = {},
+): Promise<{
+  answers: {
+    [key: string]:
+      | {
+          confidence: number;
+          p_null: number;
+          type: "text" | "date" | "time" | "datetime";
+          value: string | null;
+        }
+      | {
+          confidence: number;
+          p_null: number;
+          type: "number" | "duration";
+          value: number | null;
+        }
+      | {
+          confidence: number;
+          type: "list";
+          value: (string | number)[];
+        };
+  };
+  model: string;
+  truncated: boolean;
+  usage: {
+    input_tokens: number;
+    output_tokens: 0;
+    total_tokens: number;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/extractions";
+  return client.request<{
+    answers: {
+      [key: string]:
+        | {
+            confidence: number;
+            p_null: number;
+            type: "text" | "date" | "time" | "datetime";
+            value: string | null;
+          }
+        | {
+            confidence: number;
+            p_null: number;
+            type: "number" | "duration";
+            value: number | null;
+          }
+        | {
+            confidence: number;
+            type: "list";
+            value: (string | number)[];
+          };
+    };
+    model: string;
+    truncated: boolean;
+    usage: {
+      input_tokens: number;
+      output_tokens: 0;
+      total_tokens: number;
     };
   }>({
     method: "POST",
@@ -5001,7 +5599,21 @@ export async function createRerank(
   }[];
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -5034,7 +5646,21 @@ export async function createRerank(
     }[];
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -5063,6 +5689,12 @@ export type CreateResponseParams = {
   headers?: Record<string, never>;
   body?: {
     background?: boolean;
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -5090,7 +5722,20 @@ export type CreateResponseParams = {
       | string
       | {
           content?: string | {}[] | {};
+          encrypted_content?: string;
+          format?:
+            | "anthropic-claude-v1"
+            | "openai-responses-v1"
+            | "azure-openai-responses-v1"
+            | "xai-responses-v1"
+            | "google-gemini-v1";
+          id?: string;
           role?: "user" | "assistant" | "system" | "developer";
+          signature?: string;
+          summary?: {
+            text: string;
+            type: "summary_text";
+          }[];
           type?: string;
         }[]
       | {};
@@ -5104,8 +5749,48 @@ export type CreateResponseParams = {
     model: string;
     models?: string[];
     parallel_tool_calls?: boolean;
+    plugins?: (
+      | {
+          enabled?: boolean;
+          engine?:
+            | "auto"
+            | "native"
+            | "exa"
+            | "firecrawl"
+            | "parallel"
+            | "perplexity"
+            | "tinyfish";
+          exclude_domains?: string[];
+          id: "web";
+          include_domains?: string[];
+          max_results?: number;
+          max_uses?: number;
+          search_context_size?: "low" | "medium" | "high";
+        }
+      | {
+          allowed_domains?: string[];
+          blocked_domains?: string[];
+          enabled?: boolean;
+          engine?:
+            "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+          id: "web-fetch";
+          max_content_tokens?: number;
+          max_uses?: number;
+        }
+      | {
+          enabled?: boolean;
+          id: "response-healing";
+          mode?: "safe" | "strict";
+        }
+    )[];
     previous_response_id?: string;
     prompt_cache_key?: string | null;
+    prompt_cache_options?: {
+      mode?: "implicit" | "explicit";
+      ttl?: string;
+      [key: string]: unknown;
+    };
+    prompt_cache_retention?: "in_memory" | "24h";
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -5167,7 +5852,15 @@ export type CreateResponseParams = {
           compact_threshold?: number;
           type: "compaction";
         };
+        prompt_cache_options?: {
+          mode?: "implicit" | "explicit";
+          ttl?: string;
+          [key: string]: unknown;
+        };
         prompt_cache_retention?: string;
+      };
+      xai?: {
+        conversation_id?: string;
       };
     };
     reasoning?: {
@@ -5179,7 +5872,8 @@ export type CreateResponseParams = {
         | "medium"
         | "high"
         | "xhigh"
-        | "max";
+        | "max"
+        | null;
       enabled?: boolean;
       max_tokens?: number;
       mode?: "standard" | "pro";
@@ -5193,7 +5887,10 @@ export type CreateResponseParams = {
       | "ultrafast"
       | "priority"
       | "flex"
-      | "batch";
+      | "batch"
+      | "auto"
+      | "scale"
+      | null;
     session_id?: string;
     store?: boolean;
     stream?: boolean;
@@ -5216,6 +5913,12 @@ export type CreateResponseParams = {
     tools?: (
       | {
           async?: boolean;
+          cache_control?: {
+            scope?: string;
+            ttl?: string;
+            type?: string;
+            [key: string]: unknown;
+          };
           function: {
             description?: string;
             name: string;
@@ -5289,6 +5992,21 @@ export type CreateResponseParams = {
           };
           type: "phaseo:search_models";
         }
+      | {
+          filters?: {
+            allowed_domains?: string[];
+          };
+          search_context_size?: "low" | "medium" | "high";
+          type:
+            | "web_search"
+            | "web_search_2025_08_26"
+            | "web_search_preview"
+            | "web_search_preview_2025_03_11";
+          user_location?: {
+            [key: string]: unknown;
+          };
+          [key: string]: unknown;
+        }
     )[];
     top_p?: number;
     truncation?: "auto" | "disabled";
@@ -5327,6 +6045,10 @@ export async function createResponse(
           type: "output_text";
         }
       | {
+          text: string;
+          type: "reasoning_text";
+        }
+      | {
           b64_json?: string;
           image_url?: {
             url?: string;
@@ -5344,8 +6066,14 @@ export async function createResponse(
           type: "output_audio";
         }
     )[];
+    encrypted_content?: string;
+    id?: string;
     name?: string;
     role?: string;
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   output_items?: {
@@ -5358,6 +6086,10 @@ export async function createResponse(
           type: "output_text";
         }
       | {
+          text: string;
+          type: "reasoning_text";
+        }
+      | {
           b64_json?: string;
           image_url?: {
             url?: string;
@@ -5375,8 +6107,14 @@ export async function createResponse(
           type: "output_audio";
         }
     )[];
+    encrypted_content?: string;
+    id?: string;
     name?: string;
     role?: string;
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   pricing_lines?: {
@@ -5390,7 +6128,21 @@ export async function createResponse(
   type?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;
@@ -5431,6 +6183,10 @@ export async function createResponse(
             type: "output_text";
           }
         | {
+            text: string;
+            type: "reasoning_text";
+          }
+        | {
             b64_json?: string;
             image_url?: {
               url?: string;
@@ -5448,8 +6204,14 @@ export async function createResponse(
             type: "output_audio";
           }
       )[];
+      encrypted_content?: string;
+      id?: string;
       name?: string;
       role?: string;
+      summary?: {
+        text: string;
+        type: "summary_text";
+      }[];
       type?: string;
     }[];
     output_items?: {
@@ -5462,6 +6224,10 @@ export async function createResponse(
             type: "output_text";
           }
         | {
+            text: string;
+            type: "reasoning_text";
+          }
+        | {
             b64_json?: string;
             image_url?: {
               url?: string;
@@ -5479,8 +6245,14 @@ export async function createResponse(
             type: "output_audio";
           }
       )[];
+      encrypted_content?: string;
+      id?: string;
       name?: string;
       role?: string;
+      summary?: {
+        text: string;
+        type: "summary_text";
+      }[];
       type?: string;
     }[];
     pricing_lines?: {
@@ -5494,7 +6266,21 @@ export async function createResponse(
     type?: string;
     usage?: {
       completion_tokens?: number;
+      cost?: number;
+      cost_details?: {
+        upstream_inference_cost?: number | null;
+      };
+      input_tokens?: number;
+      input_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
+      output_tokens?: number;
       prompt_tokens?: number;
+      prompt_tokens_details?: {
+        cache_write_tokens?: number;
+        cached_tokens?: number;
+      };
       server_tool_use?: {
         advisor_requests?: number;
         apply_patch_requests?: number;
@@ -7052,6 +7838,45 @@ export async function deleteApiKey(
   });
 }
 
+export type DeleteClassifierParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Deletes a classifier. Labels it already wrote stay on past requests.
+ */
+export async function deleteClassifier(
+  client: Client,
+  args: DeleteClassifierParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/classifiers/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type DeleteDataContributionClassifierParams = {
   path: {
     id: string;
@@ -8573,6 +9398,101 @@ export async function getApiKey(
       };
       usage_monthly: number;
       usage_weekly: number;
+      workspace_id: string;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetClassifierParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one classifier. Owners and admins only.
+ */
+export async function getClassifier(
+  client: Client,
+  args: GetClassifierParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/classifiers/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
       workspace_id: string;
     };
   }>({
@@ -12783,6 +13703,97 @@ export async function listBatchRequestsAlias(
       } | null;
     }[];
     object?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListClassifiersParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's request classifiers. A workspace can have up to five. Owners and admins only.
+ */
+export async function listClassifiers(
+  client: Client,
+  args: ListClassifiersParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/classifiers";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
+      workspace_id: string;
+    }[];
   }>({
     method: "GET",
     path: resolvedPath,
@@ -20187,6 +21198,127 @@ export async function updateApiKey(
       };
       usage_monthly: number;
       usage_weekly: number;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateClassifierParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    description?: string | null;
+    dimensions?: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled?: boolean;
+    input_scope?: "prompt" | "prompt_and_response";
+    instructions?: string;
+    model?: string;
+    monthly_budget_usd?: number | null;
+    name?: string;
+    sample_by?: "request" | "session";
+    sample_rate?: number;
+    scope?: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+  };
+};
+
+/**
+ * Updates the fields you send. Changes reach the gateway within about a minute. Labels already written to past requests are not changed.
+ */
+export async function updateClassifier(
+  client: Client,
+  args: UpdateClassifierParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by: string | null;
+    description: string | null;
+    dimensions: {
+      allow_other?: boolean;
+      description?: string | null;
+      key: string;
+      multiple?: boolean;
+      name?: string;
+      values: {
+        description?: string | null;
+        value: string;
+      }[];
+    }[];
+    enabled: boolean;
+    id: string;
+    input_scope: "prompt" | "prompt_and_response";
+    instructions: string;
+    model: string;
+    monthly_budget_usd: number | null;
+    name: string;
+    sample_by: "request" | "session";
+    sample_rate: number;
+    scope: {
+      app_ids?: string[];
+      key_ids?: string[];
+      models?: string[];
+    };
+    updated_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/classifiers/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by: string | null;
+      description: string | null;
+      dimensions: {
+        allow_other?: boolean;
+        description?: string | null;
+        key: string;
+        multiple?: boolean;
+        name?: string;
+        values: {
+          description?: string | null;
+          value: string;
+        }[];
+      }[];
+      enabled: boolean;
+      id: string;
+      input_scope: "prompt" | "prompt_and_response";
+      instructions: string;
+      model: string;
+      monthly_budget_usd: number | null;
+      name: string;
+      sample_by: "request" | "session";
+      sample_rate: number;
+      scope: {
+        app_ids?: string[];
+        key_ids?: string[];
+        models?: string[];
+      };
+      updated_at: string;
       workspace_id: string;
     };
   }>({

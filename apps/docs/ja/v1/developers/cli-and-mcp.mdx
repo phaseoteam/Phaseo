@@ -13,6 +13,7 @@ CLI を使ってターミナルから Phaseo を操作するか、MCP 経由で 
 | Phaseo CLI | ターミナルでの作業、CI、管理、自動化 | スコープとワークスペースのロールに応じた読み取り・書き込み |
 | Phaseo MCP | Codex、Claude、ChatGPT などの MCP クライアントから参照できる Phaseo の最新データ | 認証済み・読み取り専用 |
 | Docs MCP | 開発中に Phaseo の最新ドキュメントを検索する | ドキュメントのみ・読み取り専用 |
+| Phaseo プラグイン | Claude Code や Codex に Phaseo MCP、Docs MCP、Phaseo スキルをまとめてインストールする | 各 MCP サーバーと同じ |
 
 ## Phaseo CLI
 
@@ -95,9 +96,33 @@ codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 	ドキュメントサーバーを Codex、Claude Code、Cursor、OpenCode、VS Code に接続します。
 </Card>
 
+## Phaseo プラグイン
+
+Phaseo プラグインには、Phaseo MCP、Docs MCP、そして統合、移行、モデル選択、使用状況の監視、SDK、CLI のための Phaseo エージェントスキルがまとめて含まれています。それぞれを個別に接続する代わりに、一度インストールするだけで使えます。
+
+### Claude Code
+
+```bash
+claude plugin marketplace add phaseoteam/skills
+claude plugin install phaseo@phaseo
+```
+
+`/mcp` を実行して `plugin:phaseo:phaseo` にサインインし、Phaseo アカウントを接続します。スキルはリクエストに合致したときに読み込まれます。`/phaseo:phaseo-gateway` のように直接実行することもできます。
+
+### Codex
+
+```bash
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+codex mcp login phaseo
+```
+
+最後のコマンドで Phaseo MCP の Phaseo OAuth が開きます。スキルはリクエストに合致したときに読み込まれます。
+
 ## 適切なインターフェースを選ぶ
 
 - キーの作成、設定変更、ワークスペース管理、管理タスクの自動化には **CLI** を使用します。
 - AI クライアントに Phaseo の最新データへの安全なアクセスを提供するには **Phaseo MCP** を使用します。
 - アカウントにアクセスさせず、コーディングアシスタントに Phaseo の最新ドキュメントを提供するには **Docs MCP** を使用します。
+- Claude Code や Codex に 2 つの MCP サーバーと Phaseo スキルをまとめて設定するには **Phaseo プラグイン** を使用します。
 

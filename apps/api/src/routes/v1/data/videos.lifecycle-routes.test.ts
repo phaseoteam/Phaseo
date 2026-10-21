@@ -158,7 +158,7 @@ describe("videosRoutes lifecycle routes", () => {
 
 		expect(response.status).toBe(501);
 		expect(await response.json()).toMatchObject({
-			error: "not_implemented_yet",
+			code: "not_implemented_yet",
 			reason: "video_cancellation_disabled",
 			video_id: "video_cancel",
 		});
@@ -195,7 +195,7 @@ describe("videosRoutes lifecycle routes", () => {
 
 		expect(response.status).toBe(501);
 		expect(await response.json()).toMatchObject({
-			error: "not_implemented_yet",
+			code: "not_implemented_yet",
 			reason: "video_cancellation_disabled",
 			video_id: "video_dashscope",
 		});
@@ -232,7 +232,7 @@ describe("videosRoutes lifecycle routes", () => {
 
 		expect(response.status).toBe(501);
 		expect(await response.json()).toMatchObject({
-			error: "not_implemented_yet",
+			code: "not_implemented_yet",
 			reason: "video_cancellation_disabled",
 			video_id: "video_runway",
 		});
@@ -269,7 +269,7 @@ describe("videosRoutes lifecycle routes", () => {
 
 		expect(response.status).toBe(501);
 		expect(await response.json()).toMatchObject({
-			error: "not_implemented_yet",
+			code: "not_implemented_yet",
 			reason: "video_cancellation_disabled",
 			video_id: "video_cancelled_again",
 		});
@@ -301,7 +301,7 @@ describe("videosRoutes lifecycle routes", () => {
 
 		expect(response.status).toBe(501);
 		expect(await response.json()).toMatchObject({
-			error: "not_implemented_yet",
+			code: "not_implemented_yet",
 			reason: "video_cancellation_disabled",
 			request_id: "req_video_lifecycle_test",
 			workspace_id: "ws_video_lifecycle_test",
@@ -322,7 +322,14 @@ describe("videosRoutes lifecycle routes", () => {
 
 		expect(response.status).toBe(501);
 		expect(await response.json()).toEqual({
-			error: "not_implemented_yet",
+			error: {
+				code: "not_implemented_yet",
+				message: "Video endpoints are temporarily disabled while the public contract is finalized.",
+				type: "server_error",
+				param: null,
+				metadata: { reason: "video_api_temporarily_disabled" },
+			},
+			code: "not_implemented_yet",
 			reason: "video_api_temporarily_disabled",
 			message: "Video endpoints are temporarily disabled while the public contract is finalized.",
 			status_code: 501,
@@ -350,7 +357,7 @@ describe("videosRoutes lifecycle routes", () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "video_delete_requires_terminal_status",
 			request_id: "req_video_lifecycle_test",
 			workspace_id: "ws_video_lifecycle_test",

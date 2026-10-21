@@ -12,6 +12,7 @@ const DEFAULT_REALTIME_VOICE_GATE = "gateway_realtime_voice";
 const DEFAULT_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging";
 const DEFAULT_DATA_CONTRIBUTION_GATE = "gateway_data_contribution";
 const DEFAULT_AUTO_ROUTING_GATE = "gateway_auto_routing";
+const DEFAULT_REQUEST_CLASSIFIERS_GATE = "gateway_request_classifiers";
 const WORKSPACE_OWNER_CACHE_TTL_MS = 5 * 60 * 1000;
 
 type StatsigGateSubject = {
@@ -94,6 +95,10 @@ export function getDataContributionFeatureGateName(bindings: Partial<GatewayBind
 
 export function getAutoRoutingFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
 	return normalizeText(bindings.STATSIG_AUTO_ROUTING_GATE) ?? DEFAULT_AUTO_ROUTING_GATE;
+}
+
+export function getRequestClassifiersFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
+	return normalizeText(bindings.STATSIG_REQUEST_CLASSIFIERS_GATE) ?? DEFAULT_REQUEST_CLASSIFIERS_GATE;
 }
 
 async function resolveWorkspaceOwnerUserId(workspaceId: string): Promise<string | null> {
@@ -303,5 +308,16 @@ export async function isAutoRoutingAccessEnabled(
 		userId: auth.userId,
 		internal: auth.internal,
 		surface: "gateway_auto_routing",
+	}, bindings);
+}
+
+/** Without a userId the gate is decided for the workspace owner, so a workspace is either in or out. */
+export async function isRequestClassifiersAccessEnabled(
+	subject: Omit<StatsigGateSubject, "surface">,
+	bindings: Partial<GatewayBindings> = getBindings(),
+): Promise<boolean> {
+	return isStatsigGateEnabled(getRequestClassifiersFeatureGateName(bindings), {
+		...subject,
+		surface: "gateway_request_classifiers",
 	}, bindings);
 }

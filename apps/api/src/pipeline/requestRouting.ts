@@ -615,20 +615,25 @@ export function collectUnsupportedRoutingFields(body: any): Array<{
 	if (provider) sources.push(["provider", provider]);
 	if (routing) sources.push(["routing", routing]);
 
+	// The documented default of each field (`noOpValue`) asks for no filtering,
+	// so it is accepted; only the restrictive value needs metadata the gateway lacks.
 	const mappings: Array<{
 		field: string;
 		aliases: string[];
+		noOpValue: unknown;
 		message: string;
 	}> = [
 		{
 			field: "data_collection",
 			aliases: ["data_collection", "dataCollection"],
+			noOpValue: "allow",
 			message:
 				"Routing by provider data-collection policy is not yet backed by provider metadata in Phaseo Gateway.",
 		},
 		{
 			field: "enforce_distillable_text",
 			aliases: ["enforce_distillable_text", "enforceDistillableText"],
+			noOpValue: false,
 			message:
 				"Routing by distillable-text policy is not yet backed by provider metadata in Phaseo Gateway.",
 		},
@@ -640,6 +645,7 @@ export function collectUnsupportedRoutingFields(body: any): Array<{
 				if (!(alias in source)) continue;
 				const value = source[alias];
 				if (value === undefined || value === null) continue;
+				if (value === mapping.noOpValue) break;
 				out.push({
 					field: mapping.field,
 					path: [sourceName, alias],

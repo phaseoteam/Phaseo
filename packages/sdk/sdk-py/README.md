@@ -17,7 +17,7 @@ asyncio.run(main())
 ```
 
 The async client includes responses, chat completions, messages, images, audio,
-embeddings, OCR, rerank, parse, moderations, decisions, models, files, music, video
+embeddings, OCR, rerank, parse, moderations, decisions, extractions, models, files, music, video
 and batches. Use `request(method, path, ...)` for additional HTTP operations.
 `async for event in client.responses.stream(request)` streams parsed events.
 `collect_async_stream(events)` collects text and usage. Standard asyncio task

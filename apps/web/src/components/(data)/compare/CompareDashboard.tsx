@@ -28,7 +28,8 @@ const encodeModelIdForUrl = (value: string): string => {
 };
 
 type CompareDashboardProps = {
-	models: CompareModelOption[];
+	/** Options for the selected models, from their comparison data. Pickers load the full list when opened. */
+	selectedOptions: CompareModelOption[];
 	comparisonData: ExtendedModel[];
 	usageByModel: CompareGatewayUsageByModel;
 };
@@ -48,10 +49,10 @@ function CompareFrame({
 }
 
 function EmptyComparisonState({
-	models,
+	selectedOptions,
 	onSelect,
 }: {
-	models: CompareModelOption[];
+	selectedOptions: CompareModelOption[];
 	onSelect: (ids: string[]) => void;
 }) {
 	const t = useTranslations("Catalogue.compare");
@@ -70,7 +71,7 @@ function EmptyComparisonState({
 				{["first", "second"].map((slot) => (
 					<ModelCombobox
 						key={slot}
-						models={models}
+						selectedOptions={selectedOptions}
 						selected={[]}
 						setSelected={onSelect}
 						labelWhenEmpty={t("selectModel")}
@@ -85,7 +86,7 @@ function EmptyComparisonState({
 }
 
 export default function CompareDashboard({
-	models,
+	selectedOptions,
 	comparisonData,
 	usageByModel,
 }: CompareDashboardProps) {
@@ -97,38 +98,25 @@ export default function CompareDashboard({
 		.map((value) => decodeModelIdFromUrl(value))
 		.filter(Boolean);
 
-	const selectionLookup = useMemo(() => {
-		const map = new Map<string, string>();
-		models.forEach((model) => {
-			if (!model.id) return;
-			map.set(model.id, model.id);
-		});
-		return map;
-	}, [models]);
-
-	const resolvedSelectionIds = useMemo(
-		() => selected.map((value) => selectionLookup.get(value) ?? value),
-		[selected, selectionLookup]
-	);
 	const uniqueResolvedSelectionIds = useMemo(() => {
 		const uniqueIds: string[] = [];
 		const seen = new Set<string>();
-		for (const id of resolvedSelectionIds) {
+		for (const id of selected) {
 			if (!id || seen.has(id)) continue;
 			seen.add(id);
 			uniqueIds.push(id);
 		}
 		return uniqueIds;
-	}, [resolvedSelectionIds]);
+	}, [selected]);
 
 	const modelsById = useMemo(() => {
 		const map = new Map<string, CompareModelOption>();
-		for (const model of models) {
+		for (const model of selectedOptions) {
 			if (!model.id) continue;
 			map.set(model.id, model);
 		}
 		return map;
-	}, [models]);
+	}, [selectedOptions]);
 
 	const setSelected = (ids: string[]) => {
 		const params = new URLSearchParams(searchParams.toString());
@@ -166,7 +154,7 @@ export default function CompareDashboard({
 
 	if (selected.length === 0) {
 		return (
-			<EmptyComparisonState models={models} onSelect={setSelected} />
+			<EmptyComparisonState selectedOptions={selectedOptions} onSelect={setSelected} />
 		);
 	}
 
@@ -194,7 +182,7 @@ export default function CompareDashboard({
 				</div>
 				<Separator className="my-8 w-full max-w-4xl" />
 				<MainCard
-					models={models}
+					selectedOptions={selectedOptions}
 					selected={[]}
 					setSelected={setSelected}
 				/>
@@ -210,33 +198,12 @@ export default function CompareDashboard({
 		);
 	}
 
-	if (selected.length > 0 && comparisonData.length === 0) {
-		console.warn("[compare] No comparison data resolved", {
-			selection: selected,
-			resolvedIds: uniqueResolvedSelectionIds,
-		});
-		return (
-			<CompareFrame>
-				<div className="flex flex-col items-center justify-center min-h-[40vh] text-center text-muted-foreground space-y-2">
-				<p>{t("loadFailure")}</p>
-				<button
-					type="button"
-					className="text-sm font-medium underline underline-offset-4"
-					onClick={() => setSelected(uniqueResolvedSelectionIds)}
-				>
-					{t("refreshSelection")}
-				</button>
-				</div>
-			</CompareFrame>
-		);
-	}
-
 	return (
 		<CompareFrame>
 			<ComparisonDisplay
 				selectedModels={orderedComparisonData}
 				usageByModel={usageByModel}
-				models={models}
+				selectedOptions={selectedOptions}
 				selectedIds={uniqueResolvedSelectionIds}
 				onSelectedIdsChange={setSelected}
 			/>

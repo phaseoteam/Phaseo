@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Timer } from "../telemetry/timer";
 import { doRequestWithIR } from "./index";
+import { executor as extractionExecutor } from "@executors/cloudflare/extraction";
+import { decodeExtractionRequest, encodeExtractionResponse } from "@protocols/extraction";
+import { ExtractionsSchema } from "@core/extraction";
+import { formatClientPayload } from "../after/payload";
+import { installFetchMock, jsonResponse } from "../../../tests/helpers/mock-fetch";
 
 const guardCandidatesMock = vi.fn();
 const guardPricingFoundMock = vi.fn();
@@ -22,6 +27,7 @@ const runtimeBindings = vi.hoisted(() => ({ value: null as Record<string, unknow
 const classifyHealthCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 
 vi.mock("@/runtime/env", () => ({
+	getBindings: () => runtimeBindings.value ?? {},
 	getCache: () => ({ get: async () => null, put: async () => undefined }),
 	getBindingsIfConfigured: () => runtimeBindings.value,
 	dispatchBackground: (promise: Promise<unknown>) => void promise,
@@ -124,6 +130,40 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		onCallEndMock.mockResolvedValue(undefined);
 		maybeOpenOnRecentErrorsMock.mockResolvedValue(undefined);
 		reportProbeResultMock.mockResolvedValue(undefined);
+	});
+
+	it("executes extraction through provider routing and presents typed answers with aggregate usage", async () => {
+		runtimeBindings.value = { CLOUDFLARE_ACCOUNT_ID: "test-account", CLOUDFLARE_API_TOKEN: "test-token" };
+		const body = ExtractionsSchema.parse({ model: "cloudflare/clairic", input: "Total: $1080", fields: { total: { type: "number" } } });
+		const candidate = { providerId: "cloudflare", providerModelSlug: "@cf/cloudflare/clairic", pricingCard: { currency: "USD", rules: [] }, byokMeta: [], capabilityParams: {}, inputModalities: ["text"] };
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+		resolveProviderExecutorMock.mockReturnValue(extractionExecutor);
+		const mock = installFetchMock([{ match: url => url.endsWith("/ai/run/@cf/cloudflare/clairic"), response: jsonResponse({ success: true, result: {
+			model: "clairic", truncated: false, answers: { total: { type: "number", value: 1080, confidence: 0.99, p_null: 0.001 } },
+			usage: { input_tokens: 655, output_tokens: 0, passes: 3 },
+		} }) }]);
+		try {
+			const ctx = createCtx({ endpoint: "extractions", capability: "extraction.extract", model: body.model, body, rawBody: body, testingMode: true });
+			const result = await doRequestWithIR(ctx, decodeExtractionRequest(body), createTiming());
+			if (result instanceof Response) throw new Error(await result.text());
+			const payload = encodeExtractionResponse(result.result.ir as import("@core/ir").IRExtractionResponse);
+			const presented = formatClientPayload({ ctx, result: result.result, payload, includeMeta: false });
+			expect(presented).toMatchObject({ model: body.model, truncated: false, answers: { total: { type: "number", value: 1080, p_null: 0.001 } }, usage: { input_tokens: 655, output_tokens: 0, total_tokens: 655 } });
+			expect(mock.calls).toHaveLength(1);
+			expect(result.result.bill.usage?.input_tokens).toBe(655);
+		} finally { mock.restore(); runtimeBindings.value = null; }
+	});
+
+	it("rejects extraction images before dispatch when the route lacks image capability", async () => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [{ providerId: "cloudflare", inputModalities: ["text"], capabilityParams: {} }] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "extractions", capability: "extraction.extract" }), {
+			model: "cloudflare/clairic", sourceText: "", fields: { x: { type: "text" } }, images: [{ contentType: "image/png", base64: "AQID" }],
+		}, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
 	});
 
 	it("returns a customer free quota denial before dispatch or provider fallback", async () => {

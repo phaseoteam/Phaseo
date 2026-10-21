@@ -1,5 +1,6 @@
 import type { Endpoint } from "@core/types";
 import type { ProviderAttemptLog } from "@pipeline/before/types";
+import { reportedCacheTokens } from "@core/cache-usage";
 
 type TraceContext = {
 	traceId: string;
@@ -45,6 +46,8 @@ export type GatewayGenAiTelemetry = {
 	serverPort?: number | null;
 	sessionId?: string | null;
 	edgeColo?: string | null;
+	/** Request labels, from the x-phaseo-metadata header and request classifiers. */
+	labels?: Array<{ key: string; value: string }> | null;
 	/** Set when a workspace rate limit policy rejected the request. */
 	rateLimitPolicyId?: string | null;
 	rateLimitScope?: string | null;
@@ -299,13 +302,13 @@ export function normaliseToolDefinitions(payload: unknown): Array<Record<string,
 
 function usageAttributes(rawUsage: unknown): Array<OtlpAttribute | null> {
 	const usage = object(rawUsage);
+	// Cache reads and writes as billed (priced meters), whichever field name the provider used.
+	const cache = reportedCacheTokens(usage);
 	return [
 		attr("gen_ai.usage.input_tokens", finite(usage.input_tokens ?? usage.prompt_tokens)),
 		attr("gen_ai.usage.output_tokens", finite(usage.output_tokens ?? usage.completion_tokens)),
-		attr("gen_ai.usage.cache_read.input_tokens", finite(
-			usage.cache_read_input_tokens ?? object(usage.input_tokens_details).cached_tokens,
-		)),
-		attr("gen_ai.usage.cache_creation.input_tokens", finite(usage.cache_creation_input_tokens)),
+		attr("gen_ai.usage.cache_read.input_tokens", finite(cache.readTokens)),
+		attr("gen_ai.usage.cache_creation.input_tokens", finite(cache.writeTokens)),
 		attr("gen_ai.usage.reasoning.output_tokens", finite(
 			usage.reasoning_output_tokens ?? object(usage.output_tokens_details).reasoning_tokens,
 		)),
@@ -390,7 +393,23 @@ function commonPhaseoAttributes(args: GatewayGenAiTelemetry): Array<OtlpAttribut
 		attr("phaseo.edge.colo", args.edgeColo),
 		attr("phaseo.rate_limit.policy_id", args.rateLimitPolicyId),
 		attr("phaseo.rate_limit.scope", args.rateLimitScope),
+		...labelAttributes(args.labels),
 	];
+}
+
+const MAX_LABEL_ATTRIBUTES = 64;
+
+/** One phaseo.label.<key> attribute per label key; a key with several values (a multi-value classifier dimension) becomes an array. */
+function labelAttributes(labels: GatewayGenAiTelemetry["labels"]): Array<OtlpAttribute | null> {
+	if (!Array.isArray(labels) || labels.length === 0) return [];
+	const values = new Map<string, string[]>();
+	for (const label of labels) {
+		if (typeof label?.key !== "string" || typeof label.value !== "string" || !label.key) continue;
+		const existing = values.get(label.key);
+		if (existing) existing.push(label.value);
+		else if (values.size < MAX_LABEL_ATTRIBUTES) values.set(label.key, [label.value]);
+	}
+	return [...values].map(([key, entries]) => attr(`phaseo.label.${key}`, entries.length === 1 ? entries[0] : entries));
 }
 
 function safeHost(input: unknown): string | null {

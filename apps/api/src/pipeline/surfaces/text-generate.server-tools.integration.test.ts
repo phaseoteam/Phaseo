@@ -214,7 +214,9 @@ describe("runTextGeneratePipeline Responses server tools integration", () => {
 		} else {
 			expect(payload.output).toEqual([{
 				type: "reasoning",
-				content: [{ type: "output_text", text: "Partial reasoning.", annotations: [] }],
+				id: "rs_req_datetime_pipeline_0_0",
+				summary: [],
+				content: [{ type: "reasoning_text", text: "Partial reasoning." }],
 			}]);
 			expect(payload.status).toBe(finishReason === "length" ? "incomplete" : "completed");
 		}

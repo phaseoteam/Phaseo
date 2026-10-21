@@ -294,9 +294,11 @@ Un modèle retiré reste servi tant qu’un fournisseur le sert. Dès qu’aucun
 
 ## Affinité liée au cache et à la session
 
-Le routage tenant compte du cache est activé par défaut sur les points de terminaison de génération de texte. Lorsqu’un fournisseur signale une véritable lecture du cache de prompt, Phaseo épingle le contexte correspondant à ce fournisseur pendant 15 minutes, à condition qu’il reste sain et autorisé par la route, le préréglage, les garde-fous et la politique de requête actifs.
+Le routage tenant compte du cache est activé par défaut sur les points de terminaison de génération de texte. Les requêtes qui envoient `prompt_cache_key` ou `session_id`, ou qui activent la mise en cache avec `cache_control` (au premier niveau, dans `provider_options.anthropic.cache_control` ou sous forme de marque `cache_control` ou `prompt_cache_breakpoint` sur un bloc de message ou un outil), sont épinglées au fournisseur et à la route qui ont servi leur première requête réussie. Les autres requêtes sont épinglées pendant 15 minutes dès qu’un fournisseur signale une lecture ou une écriture du cache de prompts pour le même contexte initial, à condition que l’entrée en cache de ce fournisseur coûte moins cher que son entrée standard.
 
-Lorsque `session_id` est présent, l’affinité du cache est associée à la session et non uniquement au contexte initial. Phaseo la renouvelle lorsqu’il observe une nouvelle lecture du cache et la conserve pendant 24 heures maximum d’activité de session. Les disjoncteurs et les filtres de politique restent toujours prioritaires sur l’affinité.
+Les épinglages sont conservés par espace de travail et durent de 15 minutes à 24 heures, selon la rétention du cache du fournisseur. Un épinglage ne change que lorsque le disjoncteur de son fournisseur s’ouvre, que son taux d’erreur récent est élevé, que le quota géré par Phaseo chez ce fournisseur est épuisé, ou que la route, le préréglage, les garde-fous ou la politique de requête actifs ne l’autorisent plus.
+
+Lorsque `session_id` est présent, l’affinité du cache est associée à la session et non uniquement au contexte initial, et elle est conservée pendant 24 heures maximum d’activité de session. Consultez [Affinité au fournisseur](./prompt-caching.mdx#provider-affinity) pour la durée des épinglages et les indications d’affinité que Phaseo envoie à chaque fournisseur.
 
 Désactivez cette option pour une seule requête sans modifier les valeurs par défaut de l’espace de travail ou de la route dynamique :
 

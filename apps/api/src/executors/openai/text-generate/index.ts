@@ -3,10 +3,16 @@
 // How: Transforms IR to OpenAI-compatible APIs and normalizes usage.
 
 import type { IRChatRequest, IRReasoning } from "@core/ir";
+import { isOpenAIHostedToolType } from "@core/nativeTools";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
-import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
+import {
+	capabilitySupportsReasoning,
+	ensureEncryptedReasoningInclude,
+	irToOpenAIResponses,
+	openAIResponsesToIR,
+} from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { sanitizeOpenAICompatRequest } from "@executors/_shared/text-generate/openai-compat/provider-policy";
@@ -17,6 +23,7 @@ import {
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
+import { canReplayReasoning } from "@core/reasoning-state";
 
 type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
@@ -42,18 +49,23 @@ const REASONING_EFFORT_TO_PERCENT: Record<ReasoningEffort, number> = {
 
 const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"gpt-5": new Set(["minimal", "low", "medium", "high"]),
-	"gpt-5-pro": new Set(["minimal", "low", "medium", "high"]),
-	"gpt-5-pro-preview": new Set(["minimal", "low", "medium", "high"]),
+	// gpt-5-pro "defaults to (and only supports) reasoning.effort: high".
+	"gpt-5-pro": new Set(["high"]),
+	"gpt-5-pro-preview": new Set(["high"]),
 	"gpt-5.1": new Set(["none", "minimal", "low", "medium", "high"]),
 	"gpt-5.1-codex-max": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
 	"gpt-5.2": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
 	"gpt-5.2-codex": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
+	"gpt-5.2-pro": new Set(["medium", "high", "xhigh"]),
 	"gpt-5.3": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
-	"gpt-5.3-codex": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
+	"gpt-5.3-codex": new Set(["low", "medium", "high", "xhigh"]),
 	"gpt-5.4": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-mini": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-nano": new Set(["none", "low", "medium", "high", "xhigh"]),
 	"gpt-5.4-pro": new Set(["medium", "high", "xhigh"]),
+	// https://developers.openai.com/api/docs/models/gpt-5.5 and /gpt-5.5-pro
+	"gpt-5.5": new Set(["none", "low", "medium", "high", "xhigh"]),
+	"gpt-5.5-pro": new Set(["medium", "high", "xhigh"]),
 	"gpt-5.6-luna": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-5.6-luna-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-5.6-sol": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
@@ -73,6 +85,15 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"o1-mini": new Set(["low", "medium", "high"]),
 	"o3-mini": new Set(["low", "medium", "high"]),
 };
+
+// Models whose pages list Chat Completions as not supported (Responses and Batch only), e.g.
+// https://developers.openai.com/api/docs/models/gpt-5.5-pro and /gpt-5.3-codex. A dated
+// snapshot of the same model matches too.
+const OPENAI_RESPONSES_ONLY_MODELS = /^(?:gpt-5(?:\.[245])?-pro|o1-pro|o3-pro|gpt-5\.3-codex)(?:-\d{4}-\d{2}-\d{2})?$/;
+
+// Chat Completions fields with no CreateResponse property
+// (https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml).
+const OPENAI_CHAT_ONLY_FIELDS = ["stop", "seed", "frequency_penalty", "presence_penalty", "logit_bias"] as const;
 
 const OPENAI_WEBSOCKET_RECOVERABLE_ERRORS = new Set([
 	"session_timeout",
@@ -278,7 +299,9 @@ async function createOpenAIResponsesWebSocketStream(args: {
 						emitFrame(payload);
 
 						const type = typeof payload?.type === "string" ? payload.type : "";
-						if (type === "response.completed" && payload?.response) {
+						// response.incomplete (max_output_tokens, content filter) ends the
+						// response just like response.completed.
+						if ((type === "response.completed" || type === "response.incomplete") && payload?.response) {
 							finalResponsePayload = payload.response;
 							try {
 								const ir = openAIResponsesToIR(
@@ -760,6 +783,26 @@ function cherryPickIRParams(
 	return next;
 }
 
+/**
+ * True when an assistant turn in the history carries encrypted reasoning this
+ * route can continue from. Only the Responses API takes it back (Chat
+ * Completions has no field for it), so such a request must go there even when
+ * it does not set `reasoning` again.
+ * https://platform.openai.com/docs/guides/reasoning#encrypted-reasoning-items
+ */
+function historyCarriesReplayableReasoning(ir: IRChatRequest, providerId: string, model: string): boolean {
+	return (ir.messages ?? []).some((message) =>
+		message.role === "assistant" &&
+		Array.isArray(message.content) &&
+		message.content.some((part) =>
+			part.type === "reasoning_text" &&
+			Boolean(part.encryptedContent) &&
+			canReplayReasoning(
+				{ format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider },
+				{ providerId, model },
+			)));
+}
+
 async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const requestBuildStartMs = Date.now();
 	const keyInfo = resolveOpenAICompatKey({
@@ -772,14 +815,20 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	const modelForRouting = normalizedRoutingModel.model ?? requestedRoutingModel;
 	const normalizedModel = normalizeModelName(modelForRouting).toLowerCase();
 	const requiresResponsesRoute = normalizedModel === "gpt-6.1-sol" ||
+		OPENAI_RESPONSES_ONLY_MODELS.test(normalizedModel) ||
 		(normalizedModel === "gpt-6-astra" && (args.ir as IRChatRequest).serviceTier === "ultrafast");
 	const hasAsyncTool = (args.ir as IRChatRequest).tools?.some((tool) => tool.async === true) ?? false;
+	// Chat Completions defines only function and custom tools; hosted tools such
+	// as web_search run on /v1/responses.
+	const hasHostedTool = (args.ir as IRChatRequest).tools?.some((tool) => isOpenAIHostedToolType(tool.type)) ?? false;
 	const useNativeChatRoute =
 		isOpenAIProviderOffer(args.providerId) &&
 		args.protocol === "openai.chat.completions" &&
 		!(args.ir as IRChatRequest).reasoning &&
 		!requiresResponsesRoute &&
-		!hasAsyncTool;
+		!hasAsyncTool &&
+		!hasHostedTool &&
+		!historyCarriesReplayableReasoning(args.ir as IRChatRequest, args.providerId, modelForRouting);
 	const irWithRequestMetadata = withOpenAIRequestMetadata(
 		args.ir as IRChatRequest,
 		args.providerId,
@@ -796,8 +845,31 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		? irToOpenAIResponses(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams)
 		: irToOpenAIChat(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams);
 
+	if (route === "responses" && isOpenAIProviderOffer(args.providerId) && args.protocol === "openai.chat.completions") {
+		// Chat requests rerouted to /v1/responses (Responses-only models, reasoning) can carry
+		// Chat-only fields that OpenAI's CreateResponse does not define. Logprobs have a
+		// Responses form: include message.output_text.logprobs (with top_logprobs).
+		for (const field of OPENAI_CHAT_ONLY_FIELDS) delete requestPayload[field];
+		if (requestPayload.logprobs === true) {
+			const include = Array.isArray(requestPayload.include) ? requestPayload.include : [];
+			if (!include.includes("message.output_text.logprobs")) include.push("message.output_text.logprobs");
+			requestPayload.include = include;
+		}
+		delete requestPayload.logprobs;
+	}
+
 	requestPayload.stream = true;
-	requestPayload.store = false;
+	// Responses requests always go upstream with store: false (documented on the
+	// Responses endpoint page). Chat Completions does not store by default, so
+	// store is only sent there when the client set it, and then as false.
+	if (route === "responses" || (args.ir as IRChatRequest).store !== undefined) requestPayload.store = false;
+	if (
+		route === "responses"
+		&& isOpenAIProviderOffer(args.providerId)
+		&& (requestPayload.reasoning || capabilitySupportsReasoning(args.capabilityParams))
+	) {
+		ensureEncryptedReasoningInclude(requestPayload);
+	}
 	if (route === "chat") {
 		requestPayload.stream_options = {
 			...(requestPayload.stream_options ?? {}),

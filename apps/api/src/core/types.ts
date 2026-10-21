@@ -15,6 +15,7 @@ export type Endpoint =
     | "moderations"
     | "rerank"
     | "decisions"
+    | "extractions"
     | "video.generation"
     | "embeddings"
     | "batch"
@@ -237,6 +238,7 @@ export type GatewayCompletionsChoice = {
         }>;
         // Per-message reasoning fields (MiniMax/Aion format)
         reasoning_content?: string; // Simple format: single string with all reasoning
+        reasoning?: string; // The same text under the name other Chat clients read
         reasoning_details?: GatewayReasoningDetail[]; // Structured format: array of reasoning blocks
     };
     finish_reason: "stop" | "length" | "tool_calls" | "content_filter" | "error" | null;
@@ -313,10 +315,15 @@ export type GatewayUsage = {
 
 }
 
+// Follows the `reasoning_details` convention OpenRouter uses. `signature` and
+// `data` are sealed gateway values; send them back unchanged.
 export type GatewayReasoningDetail = {
     id: string;
     index: number;
-    type: "summary" | "encrypted" | "text";
-    text?: string; // For type "text" or "summary"
-    data?: string; // For type "encrypted" (base64 encoded)
+    type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+    text?: string; // For type "reasoning.text"
+    summary?: string; // For type "reasoning.summary"
+    signature?: string; // Thinking or thought signature for "reasoning.text"
+    data?: string; // For type "reasoning.encrypted"
+    format?: string; // Provider format, for example "anthropic-claude-v1", or "unknown"
 };

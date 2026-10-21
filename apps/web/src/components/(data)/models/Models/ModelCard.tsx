@@ -30,6 +30,7 @@ import {
 	FileText,
 	CircleDot,
 	Scale,
+	TextSelect,
 	type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -162,6 +163,7 @@ const providerStatusOrderIndex = new Map<string, number>(
 function toTitleLabel(value: string): string {
 	const normalized = value.trim().toLowerCase();
 	if (normalized === "realtime") return "Realtime";
+	if (normalized === "extraction" || normalized === "extraction.extract") return "Extraction";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
@@ -419,6 +421,7 @@ function summarizeDuplicatePricingItems(
 
 function getModalityIcon(value: string): LucideIcon {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
+	if (normalized.includes("extract")) return TextSelect;
 	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;

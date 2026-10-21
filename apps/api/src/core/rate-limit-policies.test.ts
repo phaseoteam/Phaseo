@@ -249,6 +249,13 @@ describe("rate limit policy enforcement", () => {
 		expect(mocks.getByName).toHaveBeenCalledWith(`rate-limit-policy:v1:${WS}:${LOOSE}:key:key-1`);
 	});
 
+	it("does not count a request classifier's own call against the caller's policies", async () => {
+		publishPlan(plan);
+		expect(await guardRateLimitPolicies(ctx({ classifierSubrequest: true }))).toBeNull();
+		await settle();
+		expect(mocks.admit).not.toHaveBeenCalled();
+	});
+
 	it("reads the plan once per request and counts fallback attempts once", async () => {
 		publishPlan(plan);
 		const request = ctx();
@@ -286,7 +293,7 @@ describe("rate limit policy enforcement", () => {
 		expect(response?.headers.get("x-ratelimit-remaining-requests")).toBe("0");
 		expect(response?.headers.get("x-ratelimit-reset-requests")).toBe("42s");
 		expect(await response?.json()).toMatchObject({
-			error: "rate_limit_exceeded",
+			code: "rate_limit_exceeded",
 			error_origin: "user",
 			reason: "policy_requests_per_minute",
 			policy_id: STRICT,
@@ -409,7 +416,8 @@ describe("tokens per minute", () => {
 		expect(response?.headers.get("x-ratelimit-remaining-tokens")).toBe("0");
 		expect(response?.headers.get("x-ratelimit-limit-requests")).toBeNull();
 		expect(await response?.json()).toMatchObject({
-			error: "rate_limit_exceeded",
+			code: "rate_limit_exceeded",
+			error: { code: "rate_limit_exceeded", type: "rate_limit_error", metadata: { reason: "policy_tokens_per_minute", policy_id: TPM, limit_scope: "key" } },
 			reason: "policy_tokens_per_minute",
 			policy_id: TPM,
 			limit_scope: "key",

@@ -18,6 +18,7 @@ import SessionsPanel from "@/components/(gateway)/usage/SessionsPanel";
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
 import UsageViewFilters from "@/components/(gateway)/usage/UsageViewFilters";
 import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
+import { buildLabelKeyOptions, labelValueDisplay } from "@/components/(gateway)/usage/requestClassifierLabels";
 import InvestigateGeneration from "@/components/(gateway)/usage/UsageHeader/InvestigateGeneration";
 import UpstreamRequestsTable from "@/components/(gateway)/usage/UpstreamRequestsTable";
 import {
@@ -158,6 +159,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 	scope: AccountQueryScope;
 }) {
 	const t = useTranslations("SettingsUI");
+	const tLabels = useTranslations("SettingsUI.requestClassifierUsage");
 	const locale = useLocale();
 	const detailQuery = usePrivateUsageQuery(scope, "request-detail", { request: selectedRequestId ?? "" }, firstSearchParam(sp.usage_preset) === "live", (signal) => fetchPrivateUsageRequest(selectedRequestId!, scope, signal), Boolean(selectedRequestId));
 
@@ -349,6 +351,12 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 		const clientSources = showSampleSources
 			? Array.from(new Map([...SAMPLE_CLIENT_SOURCES.map((source) => [source.id, { id: source.id, name: source.name }] as const), ...data.clientSources.map((source) => [source.id, source] as const)]).values())
 			: data.clientSources;
+		const labelSummaryOption = data.labelSummary
+			? buildLabelKeyOptions(data.labelFacets, data.requestClassifiers ?? []).find((option) => option.key === data.labelSummary!.key)
+			: null;
+		const labelSummaryKeyName = labelSummaryOption?.kind === "classifier_calls"
+			? tLabels("classifierCalls")
+			: labelSummaryOption?.name ?? data.labelSummary?.key ?? "";
 		filters = (
 			<>
 				<UsageViewFilters
@@ -368,7 +376,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 					logErrorCodes={data.logErrorCodes}
 					logStatusCodes={data.logStatusCodes}
 				/>
-				<RequestLabelFilter facets={data.labelFacets} />
+				<RequestLabelFilter facets={data.labelFacets} classifiers={data.requestClassifiers ?? []} mode="logs" />
 			</>
 		);
 
@@ -380,9 +388,9 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 							<div className="min-w-0">
 								<p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{t("strings.Filtered spend" as never)}</p>
 								<p className="mt-1 truncate text-sm font-medium">
-									<span className="font-mono">{data.labelSummary.key}</span>
+									<span className="font-mono">{labelSummaryKeyName}</span>
 									<span className="px-1.5 text-muted-foreground">=</span>
-									<span>{data.labelSummary.value}</span>
+									<span>{labelValueDisplay(data.labelSummary.key, data.labelSummary.value, data.requestClassifiers ?? [])}</span>
 								</p>
 							</div>
 							<div className="flex items-center gap-6 text-sm">
@@ -430,6 +438,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 				detailDialog = (
 					<RouteRequestDetailDialog
 						detail={investigated.data}
+						requestClassifiers={investigated.data.requestClassifiers ?? data.requestClassifiers ?? []}
 						closeHref={buildLogsRequestHref(sp)}
 						previousHref={
 							currentIndex > 0

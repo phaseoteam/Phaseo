@@ -85,6 +85,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createDataContributionClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution/classifiers";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -97,6 +102,11 @@ public final class Operations {
 
 	public static Object createEmbedding(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/embeddings";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object createExtraction(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/extractions";
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
@@ -280,6 +290,11 @@ public final class Operations {
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
+	public static Object deleteClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("DELETE", resolvedPath, query, headers, body);
+	}
+
 	public static Object deleteDataContributionClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/data-contribution/classifiers/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
@@ -427,6 +442,11 @@ public final class Operations {
 
 	public static Object getApiKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/keys/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -657,6 +677,11 @@ public final class Operations {
 
 	public static Object listBatchRequestsAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/batch/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/requests";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listClassifiers(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -1022,6 +1047,11 @@ public final class Operations {
 
 	public static Object updateApiKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/keys/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Object updateClassifier(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/classifiers/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 

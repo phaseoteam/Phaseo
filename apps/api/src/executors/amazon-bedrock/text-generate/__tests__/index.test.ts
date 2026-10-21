@@ -270,44 +270,42 @@ describe("amazon-bedrock text executor", () => {
 	});
 
 	it.each([
-		{
-			client: "Chat Completions",
-			endpoint: "chat.completions",
-			protocol: "openai.chat.completions",
-			path: "/openai/v1/chat/completions",
-			response: {
-				id: "chatcmpl_claude", model: "anthropic.claude-sonnet-5",
-				choices: [{ index: 0, message: { role: "assistant", content: "mantle ok" }, finish_reason: "stop" }],
-				usage: { prompt_tokens: 4, completion_tokens: 2, total_tokens: 6 },
-			},
-		},
-		{
-			client: "Responses",
-			endpoint: "responses",
-			protocol: "openai.responses",
-			path: "/openai/v1/responses",
-			response: {
-				id: "resp_claude", object: "response", model: "anthropic.claude-sonnet-5", status: "completed",
-				output: [{ id: "msg_1", type: "message", role: "assistant", content: [{ type: "output_text", text: "mantle ok", annotations: [] }] }],
-				usage: { input_tokens: 4, output_tokens: 2, total_tokens: 6 },
-			},
-		},
-	])("preserves the $client protocol for Claude Sonnet 5", async ({ endpoint, protocol, path, response }) => {
+		{ client: "Chat Completions", endpoint: "chat.completions", protocol: "openai.chat.completions" },
+		{ client: "Responses", endpoint: "responses", protocol: "openai.responses" },
+	])("sends Claude Sonnet 5 to Mantle Messages for $client clients", async ({ endpoint, protocol }) => {
+		// Model card: Claude Sonnet 5 on bedrock-mantle supports Messages only.
 		const mock = installFetchMock([{
-			match: (url) => url.endsWith(path),
+			match: (url) => url === "https://api.bedrock.example/anthropic/v1/messages",
 			onRequest: (call) => {
-				expect(call.headers.Authorization).toBe("Bearer test-bedrock-key");
+				expect(call.headers["x-api-key"]).toBe("test-bedrock-key");
+				expect(call.headers["anthropic-version"]).toBe("2023-06-01");
 				expect(call.bodyJson?.model).toBe("anthropic.claude-sonnet-5");
-				expect(call.bodyJson?.stream).toBe(true);
+				expect(call.bodyJson?.system).toEqual([
+					{ type: "text", text: "Policy text", cache_control: { type: "ephemeral" } },
+				]);
+				expect(call.bodyJson?.messages).toEqual([
+					{ role: "user", content: [{ type: "text", text: "hello mantle" }] },
+				]);
 			},
-			response: jsonResponse(response, { headers: { "x-amzn-requestid": "bedrock-mantle-req" } }),
+			response: jsonResponse({
+				id: "msg_bdrk_01",
+				type: "message",
+				role: "assistant",
+				model: "anthropic.claude-sonnet-5",
+				content: [{ type: "text", text: "mantle ok" }],
+				stop_reason: "end_turn",
+				usage: { input_tokens: 4, cache_creation_input_tokens: 1200, cache_read_input_tokens: 0, output_tokens: 2 },
+			}, { headers: { "x-amzn-requestid": "bedrock-mantle-req" } }),
 		}]);
 
 		const result = await execute(buildArgs({
 			model: "anthropic.claude-sonnet-5",
 			stream: false,
 			maxTokens: 512,
-			messages: [{ role: "user", content: [{ type: "text", text: "hello mantle" }] }],
+			messages: [
+				{ role: "system", content: [{ type: "text", text: "Policy text", cacheControl: { type: "prompt_cache_breakpoint", mode: "explicit" } }] },
+				{ role: "user", content: [{ type: "text", text: "hello mantle" }] },
+			],
 		}, {
 			endpoint,
 			protocol,
@@ -316,11 +314,11 @@ describe("amazon-bedrock text executor", () => {
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
-		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
 		expect((result.ir?.choices?.[0]?.message?.content?.[0] as any)?.text).toBe("mantle ok");
 		expect(result.bill.upstream_id).toBe("bedrock-mantle-req");
+		expect(result.bill.usage).toMatchObject({ cached_write_text_tokens: 1200 });
 		expect(mock.calls).toHaveLength(1);
-		expect(mock.calls[0]?.url.endsWith(path)).toBe(true);
+		expect(mock.calls[0]?.url).not.toContain("/openai/v1/");
 	});
 
 	it("uses Mantle Messages for Claude models beyond Sonnet 5", async () => {
@@ -348,13 +346,14 @@ describe("amazon-bedrock text executor", () => {
 		expect(mock.calls[0]?.url).toContain("/anthropic/v1/messages");
 	});
 
-	it("keeps Claude JSON Schema requests on the requested Responses surface", async () => {
+	it("sends Claude JSON Schema Responses requests to Mantle Messages", async () => {
 		const mock = installFetchMock([{
-			match: (url) => url.endsWith("/openai/v1/responses"),
+			match: (url) => url.endsWith("/anthropic/v1/messages"),
 			onRequest: (call) => {
-				expect(call.bodyJson?.text?.format?.type).toBe("json_schema");
-				expect(call.bodyJson?.store).toBe(true);
-				expect(call.bodyJson?.previous_response_id).toBe("resp_previous");
+				expect(call.bodyJson?.output_config?.format?.type).toBe("json_schema");
+				expect(call.bodyJson?.stream).toBe(true);
+				expect(call.bodyJson?.store).toBeUndefined();
+				expect(call.bodyJson?.previous_response_id).toBeUndefined();
 			},
 			response: new Response(new ReadableStream<Uint8Array>(), { status: 200 }),
 		}]);
@@ -366,8 +365,6 @@ describe("amazon-bedrock text executor", () => {
 				name: "answer",
 				schema: { type: "object", properties: { answer: { type: "string" } } },
 			},
-			store: true,
-			previousResponseId: "resp_previous",
 			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
 		}, {
 			endpoint: "responses",
@@ -375,6 +372,7 @@ describe("amazon-bedrock text executor", () => {
 		}));
 		mock.restore();
 		expect(result.kind).toBe("stream");
+		expect(mock.calls[0]?.url).not.toContain("/openai/v1/");
 	});
 
 	it("streams Claude Sonnet 5 on the Anthropic Messages protocol", async () => {

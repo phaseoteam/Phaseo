@@ -264,6 +264,12 @@ export function estimateProviderTokenReservation(args: {
 	providerMaxInputTokens?: number | null;
 	providerMaxOutputTokens?: number | null;
 }): number | null {
+	if (args.capability === "extraction.extract") {
+		const fields = (args.body as { fields?: Record<string, unknown> } | null)?.fields;
+		const count = fields && typeof fields === "object" ? Object.keys(fields).length : 0;
+		// One field per full model context is deliberately conservative across parallel passes.
+		return count >= 1 && count <= 64 ? count * 65536 : null;
+	}
 	const stats = requestBodyStats(args.body, args.bodyBytes);
 	const inputUpperBound = stats.unbounded
 		? positiveSafeInteger(args.providerMaxInputTokens)
@@ -754,6 +760,17 @@ export async function settleFailedManagedProviderReservation(args: {
 	return false;
 }
 
+/**
+ * Gateway usage counts cache reads inside input tokens (OpenAI semantics). Anthropic's input
+ * token limits do not count cache reads, so leave them out of its managed token windows.
+ */
+function rateLimitExemptCacheReads(providerId: string, usage: unknown): number {
+	if (!providerId.startsWith("anthropic")) return 0;
+	const record = usage && typeof usage === "object" ? usage as Record<string, any> : {};
+	const reads = record.input_tokens_details?.cached_tokens ?? record.prompt_tokens_details?.cached_tokens;
+	return typeof reads === "number" && Number.isFinite(reads) ? Math.max(0, reads) : 0;
+}
+
 export async function recordManagedProviderTokensOnce(args: {
 	ctx: PipelineContext;
 	providerId: string;
@@ -768,7 +785,10 @@ export async function recordManagedProviderTokensOnce(args: {
 		? meta.__providerRateLimitTokensRecorded as string[]
 		: [];
 	if (recorded.includes(accountingKey)) return;
-	const tokens = resolveCanonicalTokenUsage(args.usage).totalTokens;
+	const tokens = Math.max(
+		0,
+		resolveCanonicalTokenUsage(args.usage).totalTokens - rateLimitExemptCacheReads(args.providerId, args.usage),
+	);
 	// Once dispatch may have occurred, missing usage is not evidence of zero provider consumption.
 	// Keep the conservative reservation until its fixed window expires rather than reopening capacity.
 	if (tokens <= 0) return;

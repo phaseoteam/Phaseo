@@ -5,11 +5,16 @@
 // OpenAI Chat Completions format transformations
 // Transforms IR <-> OpenAI Chat Completions upstream format
 
-import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRTool } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRTool, IRToolCall } from "@core/ir";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks-bridge";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
+import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
+import { isSealedReasoningValue } from "@core/reasoning-state";
+import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/shared/reasoning";
+import { toIRAnnotations } from "@protocols/shared/citations";
+import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -28,30 +33,38 @@ export function irToOpenAIChat(
 			messages.push({
 				role: "system",
 				content: mapSystemLikeContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "developer") {
 			messages.push({
 				role: "developer",
 				content: mapSystemLikeContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "user") {
 			messages.push({
 				role: "user",
 				content: mapIRContentToOpenAI(msg.content),
+				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "assistant") {
 			const assistantText = msg.content
 				.filter((c) => c.type === "text")
 				.map((c) => c.text)
 				.join("");
+			// Plain reasoning text goes back to providers that accept it. Reasoning
+			// that carries another provider family's state (Claude signatures,
+			// OpenAI encrypted reasoning, Gemini thoughts) never does.
 			const assistantReasoning = msg.content
-				.filter((c) => c.type === "reasoning_text")
+				.filter((c): c is Extract<IRContentPart, { type: "reasoning_text" }> => c.type === "reasoning_text")
+				.filter((c) => !c.reasoningFormat)
 				.map((c) => c.text)
 				.join("");
 
 			const message: any = {
 				role: "assistant",
 				content: assistantText || null,
+				...messageNameField(msg.name, providerId),
 			};
 
 			const providerSupportsAssistantReasoningContent =
@@ -70,9 +83,30 @@ export function irToOpenAIChat(
 				providerId === "siliconflow" ||
 				providerId === "stepfun" ||
 				providerId === "wafer" ||
-				providerId === "doubleword";
+				providerId === "wafer-zdr" ||
+				providerId === "doubleword" ||
+				// Beam returns 400 without it (https://docs.baseten.co/inference/model-apis/reasoning);
+				// Arcee, Together and DeepInfra document it on assistant messages for tool loops.
+				providerId === "baseten" ||
+				providerId === "arcee" ||
+				providerId === "arcee-ai" ||
+				providerId === "together" ||
+				providerId === "deepinfra";
 			if (providerSupportsAssistantReasoningContent && assistantReasoning.length > 0) {
-				message.reasoning_content = assistantReasoning;
+				if (providerId === "minimax" || providerId === "minimax-lightning") {
+					// With reasoning_split, MiniMax returns thinking in reasoning_details
+					// and documents passing that field back unchanged in tool loops.
+					// https://platform.minimax.io/docs/guides/text-m3-function-call
+					message.reasoning_details = [{
+						type: "reasoning.text",
+						id: "reasoning-text-1",
+						format: "MiniMax-response-v1",
+						index: 0,
+						text: assistantReasoning,
+					}];
+				} else {
+					message.reasoning_content = assistantReasoning;
+				}
 			}
 
 			if (msg.toolCalls && msg.toolCalls.length > 0) {
@@ -99,7 +133,7 @@ export function irToOpenAIChat(
 				messages.push({
 					role: "tool",
 					tool_call_id: result.toolCallId,
-					content: result.content,
+					content: mapToolResultToOpenAIChat(result, providerId),
 				});
 			}
 		}
@@ -195,8 +229,10 @@ export function irToOpenAIChat(
 	if (ir.stop) request.stop = ir.stop;
 	if (ir.seed !== undefined) request.seed = ir.seed;
 	if (ir.background !== undefined) request.background = ir.background;
-	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
-	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
+	// The provider's own name for the tier (OpenAI, Azure and DeepInfra call standard "default").
+	if (ir.serviceTier !== undefined) request.service_tier = normalizeTextProviderServiceTier(providerId ?? "", ir.serviceTier) ?? ir.serviceTier;
+	// Never send null: absent keys stay absent. The pipeline has already namespaced the key per workspace.
+	if (typeof ir.promptCacheKey === "string" && ir.promptCacheKey.length > 0) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;
 	if (ir.promptCacheOptions !== undefined) request.prompt_cache_options = ir.promptCacheOptions;
 	if (ir.textVerbosity !== undefined) request.verbosity = ir.textVerbosity;
@@ -291,6 +327,8 @@ export function irToOpenAIChat(
 		if (openAIOptions?.moderation !== undefined) request.moderation = openAIOptions.moderation;
 	}
 
+	applyPromptCacheFieldPolicy(request, { providerId, model, irModel: ir.model });
+
 	// Apply provider-specific request transformations after base params are set.
 	applyChatRequestQuirks({ ir, providerId, model, request });
 
@@ -313,6 +351,7 @@ function toOpenAIChatTool(tool: IRTool): any {
 			parameters: tool.parameters,
 			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 		},
+		...cacheMarkFields(tool.cacheControl),
 	};
 }
 
@@ -321,6 +360,50 @@ function toOpenAIChatTool(tool: IRTool): any {
  */
 function hasCacheControl(content: IRContentPart[]): boolean {
 	return content.some((part) => part.type === "text" && part.cacheControl);
+}
+
+// Chat APIs whose message schema defines a participant `name` on system, user and
+// assistant messages (from each provider's published spec). Strict APIs such as
+// Mistral's reject the field, so it is sent only here.
+const MESSAGE_NAME_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure", "akashml", "ambient", "baidu", "baseten", "cerebras", "deepinfra",
+	"deepseek", "friendli", "io-net", "moonshot-ai", "moonshotai", "nebius-token-factory",
+	"nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1", "ovhcloud",
+	"sail-research", "together", "venice",
+]);
+
+// Chat APIs whose tool message content may be an array of text parts, as in
+// OpenAI's schema. Others take a string.
+const TOOL_CONTENT_PARTS_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure", "akashml", "ambient", "baseten", "cerebras", "deepinfra",
+	"deepseek", "groq", "inception", "io-net", "meta", "mistral", "mistral-eu", "moonshot-ai", "moonshotai",
+	"nebius-token-factory", "nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1",
+	"ovhcloud", "perplexity", "reka", "sail-research", "sambanova",
+]);
+
+function messageNameField(name: string | undefined, providerId: string | undefined): { name?: string } {
+	if (!name || !providerId || !MESSAGE_NAME_PROVIDERS.has(providerId)) return {};
+	return { name };
+}
+
+/**
+ * Tool result content: the client's text parts as an array where the provider
+ * accepts one, otherwise the text parts joined. Chat tool messages carry text
+ * only, so image parts in a tool result have no place here.
+ */
+function mapToolResultToOpenAIChat(
+	result: Extract<IRMessage, { role: "tool" }>["toolResults"][number],
+	providerId: string | undefined,
+): any {
+	const textParts = (result.parts ?? []).filter((part): part is Extract<IRContentPart, { type: "text" }> => part.type === "text");
+	if (textParts.length > 0 && providerId && TOOL_CONTENT_PARTS_PROVIDERS.has(providerId)) {
+		return textParts.map((part) => mapTextPartToOpenAI(part));
+	}
+	// A marked result is sent as a text part so the mark survives;
+	// the cache policy turns it back into a string where unsupported.
+	return result.cacheControl
+		? [mapTextPartToOpenAI({ type: "text", text: result.content, cacheControl: result.cacheControl })]
+		: result.content;
 }
 
 function mapTextPartToOpenAI(part: Extract<IRContentPart, { type: "text" }>, type = "text"): any {
@@ -345,14 +428,53 @@ function mapSystemLikeContentToOpenAI(content: IRContentPart[]): any {
 		.map((part) => mapTextPartToOpenAI(part));
 }
 
+/**
+ * Chat Completions `file` part: base64 `file_data` (as a data URL) or an
+ * uploaded `file_id`. Chat has no URL form, so a file given by URL is left out
+ * rather than sent in a shape the provider would reject.
+ * https://platform.openai.com/docs/api-reference/chat/create
+ */
+export function mapFilePartToOpenAIChat(part: Extract<IRContentPart, { type: "file" }>): any | null {
+	const filename = part.filename ? { filename: part.filename } : {};
+	if (part.source === "data") {
+		return {
+			type: "file",
+			file: { ...filename, file_data: `data:${part.mimeType || "application/pdf"};base64,${part.data}` },
+			...cacheMarkFields(part.cacheControl),
+		};
+	}
+	if (part.source === "id") {
+		return {
+			type: "file",
+			file: { ...filename, file_id: part.data },
+			...cacheMarkFields(part.cacheControl),
+		};
+	}
+	return null;
+}
+
 function mapIRContentToOpenAI(content: IRContentPart[]): any {
 	if (content.length === 1 && content[0].type === "text" && !content[0].cacheControl) {
 		return content[0].text;
 	}
 
-	return content.map((part) => {
+	return content.flatMap((part) => {
 		if (part.type === "text") {
 			return mapTextPartToOpenAI(part);
+		}
+
+		if (part.type === "file") {
+			const mapped = mapFilePartToOpenAIChat(part);
+			// Chat Completions has no file-by-URL field. Dropping the document would let the model
+			// answer without it, so fail this attempt instead: routing then tries a provider that can
+			// carry it, and the client gets an explicit error if none can.
+			if (!mapped) {
+				throw Object.assign(
+					new Error("This provider's Chat Completions API cannot take a file by URL; send the file as file_data or file_id."),
+					{ code: "unsupported_parameter", param: "file" },
+				);
+			}
+			return [mapped];
 		}
 
 		if (part.type === "image") {
@@ -360,17 +482,13 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 				return {
 					type: "image_url",
 					image_url: { url: part.data, detail: part.detail },
-					...(part.cacheControl?.type === "prompt_cache_breakpoint"
-						? { prompt_cache_breakpoint: { mode: part.cacheControl.mode } }
-						: {}),
+					...cacheMarkFields(part.cacheControl),
 				};
 			} else {
 				return {
 					type: "image_url",
 					image_url: { url: `data:${part.mimeType || "image/jpeg"};base64,${part.data}` },
-					...(part.cacheControl?.type === "prompt_cache_breakpoint"
-						? { prompt_cache_breakpoint: { mode: part.cacheControl.mode } }
-						: {}),
+					...cacheMarkFields(part.cacheControl),
 				};
 			}
 		}
@@ -405,6 +523,35 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 /**
  * Transform OpenAI Chat Completions response to IR
  */
+/**
+ * Read reasoning state the gateway sealed into `reasoning_details` while
+ * converting a provider stream to chat chunks (Gemini thought signatures).
+ * Unsealed entries are a provider's own text (for example MiniMax) and are
+ * already handled by the provider quirks.
+ */
+function applySealedReasoningDetails(
+	details: unknown,
+	contentParts: IRContentPart[],
+	toolCalls: IRToolCall[] | undefined,
+): void {
+	if (!Array.isArray(details)) return;
+	const sealed = details.filter((entry: any) =>
+		isSealedReasoningValue(entry?.signature) || isSealedReasoningValue(entry?.data));
+	if (sealed.length === 0) return;
+	const decoded = decodeChatReasoningDetails(sealed, new Set((toolCalls ?? []).map((call) => call.id)));
+	applyToolCallSignatures(toolCalls, decoded.toolSignatures);
+	for (const part of decoded.parts) {
+		const plain = contentParts.find((candidate): candidate is Extract<IRContentPart, { type: "reasoning_text" }> =>
+			candidate.type === "reasoning_text" && !candidate.reasoningFormat);
+		// The signed detail repeats the plain reasoning_content text, or carries none.
+		if (plain && (!part.text || part.text === plain.text)) {
+			Object.assign(plain, { ...part, text: plain.text });
+		} else {
+			contentParts.push(part);
+		}
+	}
+}
+
 export function openAIChatToIR(
 	json: any,
 	requestId: string,
@@ -581,24 +728,27 @@ export function openAIChatToIR(
 			const rawContent = extractChoiceContent(choice.message?.content);
 			const { main, reasoning } = applyChatResponseQuirks({ providerId: provider, choice, rawContent });
 
-			// Add reasoning as reasoning_text parts
-			if (reasoning.length > 0) {
-				for (const reasoningText of reasoning) {
-					contentParts.push({
-						type: "reasoning_text",
-						text: reasoningText,
-					});
-				}
+			// Add reasoning as reasoning_text parts. Without a provider quirk, the
+			// plain reasoning_content (or reasoning) field carries it.
+			const plainReasoning = reasoning.length === 0 ? plainChatReasoning(choice.message) : undefined;
+			for (const reasoningText of plainReasoning ? [plainReasoning] : reasoning) {
+				contentParts.push({
+					type: "reasoning_text",
+					text: reasoningText,
+				});
 			}
 
 			// Add main content as text part
 			if (main) {
+				const annotations = toIRAnnotations(choice.message?.annotations);
 				contentParts.push({
 					type: "text",
 					text: main,
+					...(annotations.length > 0 ? { annotations } : {}),
 				});
 			}
 		}
+		applySealedReasoningDetails(choice.message?.reasoning_details, contentParts, toolCalls);
 		contentParts.push(...extractInlineImages(choice.message?.content));
 		contentParts.push(...extractInlineImages(choice.message?.images));
 		contentParts.push(...extractInlineAudios(choice.message?.content));
@@ -610,6 +760,9 @@ export function openAIChatToIR(
 				role: "assistant" as const,
 				content: contentParts,
 				toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
+				...(typeof choice.message?.refusal === "string" && choice.message.refusal.length > 0
+					? { refusal: choice.message.refusal }
+					: {}),
 			},
 			finishReason: mapFinishReason(choice.finish_reason),
 			logprobs: choice.logprobs,
@@ -658,19 +811,63 @@ export function openAIChatToIR(
 	};
 }
 
+function plainChatReasoning(message: any): string | undefined {
+	for (const value of [message?.reasoning_content, message?.reasoning]) {
+		if (typeof value === "string" && value.length > 0) return value;
+	}
+	return undefined;
+}
+
+function firstFiniteNumber(...values: unknown[]): number | undefined {
+	for (const value of values) {
+		if (typeof value === "number" && Number.isFinite(value)) return value;
+	}
+	return undefined;
+}
+
 function normalizeChatUsage(usage: any, observedServiceTier?: unknown): IRChatResponse["usage"] {
 	if (!usage || typeof usage !== "object") return undefined;
 
 	const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details;
 	const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details;
-	const cachedInputTokens = inputDetails?.cached_tokens ?? usage.cached_input_tokens;
-	const cachedWriteTokens =
-		inputDetails?.cache_write_tokens ??
-		inputDetails?.cache_creation_input_tokens ??
-		inputDetails?.cache_creation_tokens ??
-		outputDetails?.cached_tokens;
+	// Top-level fallbacks: StepFun and some Together/Alibaba models report `cached_tokens`,
+	// DeepSeek and SiliconFlow `prompt_cache_hit_tokens`. All count inside prompt tokens.
+	const cachedInputTokens = firstFiniteNumber(
+		inputDetails?.cached_tokens,
+		usage.cached_tokens,
+		usage.prompt_cache_hit_tokens,
+		usage.cached_input_tokens,
+	);
+	// Writes nested in input details (OpenAI/Azure GPT-5.6+, Kimi, Alibaba, Venice) are part
+	// of prompt tokens; the top-level and output-detail forms are reported on top of input.
+	const nestedCachedWriteTokens = firstFiniteNumber(
+		inputDetails?.cache_write_tokens,
+		inputDetails?.cache_creation_input_tokens,
+		inputDetails?.cache_creation_tokens,
+	);
+	const cachedWriteTokens5m = firstFiniteNumber(
+		usage.cached_write_text_tokens_5m,
+		usage.cache_creation?.ephemeral_5m_input_tokens,
+	);
+	const cachedWriteTokens1h = firstFiniteNumber(
+		usage.cached_write_text_tokens_1h,
+		usage.cache_creation?.ephemeral_1h_input_tokens,
+	);
+	// TTL-split writes (Anthropic-shaped `cache_creation`, gateway meters) sit on top of input.
+	const ttlCachedWriteTokens =
+		cachedWriteTokens5m !== undefined || cachedWriteTokens1h !== undefined
+			? (cachedWriteTokens5m ?? 0) + (cachedWriteTokens1h ?? 0)
+			: undefined;
+	const cachedWriteTokens = nestedCachedWriteTokens ?? firstFiniteNumber(
+		usage.cache_write_tokens,
+		usage.cache_creation_input_tokens,
+		outputDetails?.cached_tokens,
+	) ?? ttlCachedWriteTokens;
 	const reasoningTokens = usage.reasoning_tokens ?? outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
+	const cachedWriteTokensAreSubsetOfInput = typeof nestedCachedWriteTokens === "number" || typeof usage.cache_write_tokens === "number"
+		? true
+		: typeof cachedWriteTokens === "number" ? false : undefined;
 	const inputTokens = usage.prompt_tokens ?? usage.input_tokens ?? usage.input_text_tokens ?? 0;
 	const outputTokens = usage.completion_tokens ?? usage.output_tokens ?? usage.output_text_tokens ?? 0;
 	const totalTokens = usage.total_tokens ?? (inputTokens + outputTokens);
@@ -741,6 +938,7 @@ function normalizeChatUsage(usage: any, observedServiceTier?: unknown): IRChatRe
 		totalTokens,
 		cachedInputTokens,
 		cachedReadTokensAreSubsetOfInput,
+		...(cachedWriteTokensAreSubsetOfInput !== undefined ? { cachedWriteTokensAreSubsetOfInput } : {}),
 		reasoningTokens,
 		...(
 			typeof observedServiceTier === "string"
@@ -762,6 +960,8 @@ function normalizeChatUsage(usage: any, observedServiceTier?: unknown): IRChatRe
 			outputAudioTokens: outputDetails?.audio_tokens ?? outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
 			cachedWriteTokens,
+			...(cachedWriteTokens5m !== undefined ? { cachedWriteTokens5m } : {}),
+			...(cachedWriteTokens1h !== undefined ? { cachedWriteTokens1h } : {}),
 			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};

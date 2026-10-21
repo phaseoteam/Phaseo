@@ -1,6 +1,7 @@
 ---
 title: "OpenAI GPT-5.6"
 description: "What to know when adopting GPT-5.6 Sol, Terra, or Luna for production workloads."
+"og:image": "https://phaseo.app/og/dynamic?title=OpenAI%20GPT-5.6&description=What%20to%20know%20when%20adopting%20GPT-5.6%20Sol%2C%20Terra%2C%20or%20Luna%20for%20production%20workloads.&pathname=/docs/v1/model-migrations/openai-migrating-to-gpt-5-6"
 icon: "/icons/brands/openai.svg"
 ---
 
@@ -37,7 +38,7 @@ Phaseo also tracks tier aliases for the latest model in each tier: `openai/gpt-s
 - GPT-5.6 adds persisted reasoning controls through `reasoning.context`.
 - GPT-5.6 adds beta multi-agent support and Programmatic Tool Calling for eligible tool-heavy workflows.
 - Prompt caching is priced with separate uncached input, cache read, cache write, and output meters.
-- Explicit prompt caching is supported through `prompt_cache_options`; OpenAI currently recommends `prompt_cache_options.ttl` instead of `prompt_cache_retention`.
+- Explicit prompt caching is supported through cache breakpoints and `prompt_cache_options`. On GPT-5.6, `prompt_cache_options.ttl` replaces `prompt_cache_retention`, which Phaseo does not send to GPT-5.6 models.
 
 ## Update your request
 
@@ -92,7 +93,7 @@ GPT-5.6 pricing is tracked per 1M tokens in the catalog.
 | Terra | $2.50 | $0.25 | $3.125 | $15.00 |
 | Luna | $1.00 | $0.10 | $1.25 | $6.00 |
 
-Cache reads are priced separately from cache writes. In the current catalog, cache reads use a 90% discount from uncached input, while cache writes are priced at 1.25x uncached input.
+Cache reads are priced separately from cache writes. In the current catalog, cache reads use a 90% discount from uncached input, while cache writes are priced at 1.25x uncached input. Each input token is billed at one of the three rates. Usage counts cache reads and writes inside `input_tokens` (`prompt_tokens` on Chat Completions) and reports writes in `cache_write_tokens`; see [usage and pricing fields](../guides/prompt-caching.mdx#usage-and-pricing-fields).
 
 ## Use prompt caching deliberately
 
@@ -108,9 +109,8 @@ For repeated context, keep the stable part of the prompt in cacheable blocks and
         {
           "type": "input_text",
           "text": "Stable policy document...",
-          "cache_control": {
-            "type": "ephemeral",
-            "ttl": "1h"
+          "prompt_cache_breakpoint": {
+            "mode": "explicit"
           }
         },
         {
@@ -122,12 +122,12 @@ For repeated context, keep the stable part of the prompt in cacheable blocks and
   ],
   "prompt_cache_options": {
     "mode": "explicit",
-    "ttl": "24h"
+    "ttl": "30m"
   }
 }
 ```
 
-Use `cache_control` when you want provider-neutral cache hints or explicit cache breakpoints. Use `prompt_cache_options` when you want to pass OpenAI cache mode and TTL options directly.
+`prompt_cache_breakpoint` caches everything up to and including its block. A block `cache_control` such as `{"type": "ephemeral"}` works too, and Phaseo sends it to GPT-5.6 as `prompt_cache_breakpoint`. Either mark reaches Claude as a cache breakpoint, so a fallback to Claude still caches. In `explicit` mode OpenAI caches only the breakpoints you place, and `30m` is the only `ttl` it accepts. Phaseo does not send `prompt_cache_retention` to GPT-5.6. See [Prompt Caching](../guides/prompt-caching.mdx#openai-retention-and-options).
 
 ## What to test
 

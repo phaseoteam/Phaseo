@@ -1,6 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
-import { AVAILABLE_BROADCAST_DESTINATION_IDS, otlpProtocol, otlpTracesEndpoint } from "./broadcast-destinations";
+import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, gzipBytes, resolveOtlpTarget } from "./broadcast-destinations";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
 import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
@@ -16,7 +16,8 @@ import {
 type Rule = { field: string; condition: string; value: string | null };
 export type Destination = {
 	id: string;
-	destination_id: "otel_collector" | "webhook";
+	// A BroadcastDestinationId whose delivery is not null.
+	destination_id: string;
 	destination_config: Record<string, unknown> | null;
 	destination_config_ciphertext?: string | null;
 	destination_config_iv?: string | null;
@@ -189,7 +190,7 @@ async function loadDestinations(workspaceId: string): Promise<Destination[]> {
 function metadataCategory(key: string): "generation" | "cost" | "identity" | "context" | null {
 	if (key.startsWith("phaseo.cost.")) return "cost";
 	if (key === "user.id" || key.startsWith("phaseo.api_key.") || key.startsWith("phaseo.app.") || key.startsWith("phaseo.client.") || key === "phaseo.request.id" || key === "phaseo.workspace.id") return "identity";
-	if (key.startsWith("http.") || key.startsWith("server.") || key.startsWith("phaseo.edge.") || key === "phaseo.endpoint" || key === "phaseo.requested_model" || key === "gen_ai.conversation.id") return "context";
+	if (key.startsWith("http.") || key.startsWith("server.") || key.startsWith("phaseo.edge.") || key === "phaseo.endpoint" || key === "phaseo.requested_model" || key === "gen_ai.conversation.id" || key.startsWith("phaseo.label.")) return "context";
 	if (key.startsWith("gen_ai.") || key.startsWith("phaseo.generation.") || key.startsWith("phaseo.provider.")) return "generation";
 	return null;
 }
@@ -325,8 +326,7 @@ export async function enqueueAsyncGenAiOtlpExport(args: AsyncGenAiTelemetry & {
 	});
 }
 
-function endpoint(config: Record<string, unknown>): URL {
-	const resolved = otlpTracesEndpoint(config);
+function endpoint(resolved: string): URL {
 	if (!resolved) throw new Error("OTLP endpoint is required");
 	const url = new URL(resolved);
 	if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
@@ -417,21 +417,32 @@ export async function deliverGatewayOtlpPayload(
 	payload: unknown,
 	config: Record<string, unknown>,
 	attempts = 1,
+	destinationType = "otel_collector",
 ) {
 	let collectorEndpoint: URL;
 	let collectorHeaders: Headers;
 	let body: BodyInit;
 	try {
-		collectorEndpoint = endpoint(config);
-		collectorHeaders = headers(config);
-		const protocol = otlpProtocol(config);
-		if (!protocol) throw new Error("OTLP protocol must be http/json or http/protobuf");
-		if (protocol === "http/protobuf") {
+		const target = resolveOtlpTarget(destinationType, config);
+		collectorEndpoint = endpoint(target.endpoint);
+		collectorHeaders = new Headers({
+			"Content-Type": "application/json",
+			"Accept": "application/json",
+			"Accept-Encoding": "gzip",
+		});
+		for (const [key, value] of Object.entries(target.headers)) collectorHeaders.set(key, value);
+		const request = applyOtlpTarget(payload, target);
+		let encoded: string | Uint8Array;
+		if (target.protocol === "http/protobuf") {
 			// Set after configured headers: the body is protobuf whatever they say.
 			collectorHeaders.set("Content-Type", "application/x-protobuf");
 			collectorHeaders.set("Accept", "application/x-protobuf");
-			body = encodeOtlpTraceRequest(payload);
-		} else body = JSON.stringify(payload);
+			encoded = encodeOtlpTraceRequest(request);
+		} else encoded = JSON.stringify(request);
+		if (target.compression === "gzip") {
+			collectorHeaders.set("Content-Encoding", "gzip");
+			body = await gzipBytes(encoded) as Uint8Array<ArrayBuffer>;
+		} else body = encoded as BodyInit;
 		// Reuse the hardened outbound-webhook boundary so mapped IPv6 literals
 		// and DNS records resolving to private networks are rejected immediately
 		// before the collector request.
@@ -570,7 +581,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 			const config = await destinationConfig(destination);
 			outcome = destination.destination_id === "webhook"
 				? await deliverGatewayWebhookPayload(row.payload, config, row.attempts)
-				: await deliverGatewayOtlpPayload(row.payload, config, row.attempts);
+				: await deliverGatewayOtlpPayload(row.payload, config, row.attempts, destination.destination_id);
 		} catch (deliveryError) {
 			outcome = {
 				delivered: false,

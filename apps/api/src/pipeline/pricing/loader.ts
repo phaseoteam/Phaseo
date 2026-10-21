@@ -5,6 +5,7 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { awaitShared } from "@core/shared-wait";
 import type { PriceCard, PriceRule, PricingTimeWindow } from "./types";
+import { canonicalPricingPlan } from "./service-tiers";
 
 const PRICING_L1_TTL_MS = 60_000;
 const PRICING_L1_NEGATIVE_TTL_MS = 15_000;
@@ -139,7 +140,7 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             if (!Number.isFinite(priceNanos)) return [];
             return [{
             id: String(meter.sku_meter_id),
-            pricing_plan: sku.service_tier_slug === "fast" ? "priority" : sku.service_tier_slug ?? "standard",
+            pricing_plan: canonicalPricingPlan(sku.service_tier_slug),
             meter: meter.meter_key,
             unit: meter.unit,
             unit_size: Number(meter.unit_quantity ?? 1),

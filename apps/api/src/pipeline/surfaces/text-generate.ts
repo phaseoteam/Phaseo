@@ -8,6 +8,7 @@ import { detectTextProtocol } from "@protocols/detect";
 import type { UnifiedStreamEvent } from "../after/stream-events";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { doRequestWithIR } from "../execute";
+import { droppedParamsForClient, restoreDroppedParams } from "../execute/unsupportedParams";
 import { finalizeRequest, settleNonBillableFailure } from "../after";
 import { handleFailureAudit, handleSuccessAudit } from "../after/audit";
 import { makeHeaders, createResponse } from "../after/http";
@@ -34,6 +35,9 @@ import {
 	mergeIRUsageTotals,
 	prepareServerToolsForTextRequest,
 } from "./server-tools";
+import { UpstreamStreamError } from "@core/stream-errors";
+import { suppressFailedResponseBilling } from "../after/billing-policy";
+import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import {
 	buildResponseCacheFingerprint,
 	buildResponseCacheKey,
@@ -89,6 +93,19 @@ function createJsonErrorResponse(
 	);
 }
 
+/**
+ * tool_choice for the request that continues after a server tool ran. A forced
+ * choice ("required" or a named tool) would make the model call a tool again
+ * on every round, so it relaxes to "auto". Anything else is kept as the client
+ * sent it, so the follow-up's prefix matches the first request and its cache.
+ */
+export function serverToolFollowUpToolChoice(
+	toolChoice: IRChatRequest["toolChoice"],
+): IRChatRequest["toolChoice"] {
+	if (toolChoice === "required" || (toolChoice && typeof toolChoice === "object")) return "auto";
+	return toolChoice;
+}
+
 function cloneJsonValue<T>(value: T): T {
 	if (value === null || value === undefined) return value;
 	return JSON.parse(JSON.stringify(value)) as T;
@@ -102,6 +119,62 @@ function extractAssistantText(response: IRChatResponse): string {
 		.map((part) => part.text)
 		.join("")
 		.trim();
+}
+
+const UPSTREAM_STREAM_FAILURE_MESSAGE = "The upstream stream failed before successful completion.";
+
+/**
+ * A buffered client asked for one complete response, so an upstream stream
+ * that failed after output began is a failed request: the client gets a 502
+ * and no partial text. Billing follows the streaming path
+ * (pipeline/after/stream.ts): partial output of a failed stream is not charged,
+ * but its tokens still count against managed provider rate limits.
+ */
+export async function settleBufferedUpstreamStreamFailure(
+	ctx: PipelineContext,
+	result: any,
+	error: UpstreamStreamError,
+	/** Usage of earlier server-tool rounds of the same request, which the failing round's usage does not include. */
+	priorUsage?: IRChatResponse["usage"],
+): Promise<Response> {
+	const usage = priorUsage
+		? mergeIRUsageTotals(priorUsage, (error.partial.ir as IRChatResponse | undefined)?.usage) ?? null
+		: error.partial.usageRaw ?? result.bill?.usage ?? null;
+	const partialResult = {
+		...result,
+		kind: "completed" as const,
+		ir: error.partial.ir,
+		stream: null,
+		usageFinalizer: null,
+		rawResponse: error.partial.rawResponse,
+		bill: { ...result.bill, usage: usage ?? undefined },
+	};
+	await recordManagedProviderTokensOnce({
+		ctx,
+		providerId: result.provider,
+		keySource: result.keySource,
+		usage,
+		reservation: result.providerRateLimitReservation,
+	});
+	suppressFailedResponseBilling({ ctx, result: partialResult, usage: usage ?? undefined, reason: "upstream_failure" });
+	await handleFailureAudit(
+		ctx,
+		partialResult,
+		502,
+		"upstream",
+		"upstream_stream_failure",
+		UPSTREAM_STREAM_FAILURE_MESSAGE,
+		{ upstream_error_message: sanitizeErrorMessage(error.upstreamMessage) },
+		{
+			generation_id: ctx.requestId,
+			status_code: 502,
+			error: "upstream_stream_failure",
+			description: UPSTREAM_STREAM_FAILURE_MESSAGE,
+		},
+	);
+	return createJsonErrorResponse(502, "upstream_stream_failure", UPSTREAM_STREAM_FAILURE_MESSAGE, {
+		error_origin: "upstream",
+	});
 }
 
 function emptyProviderResponse(
@@ -474,6 +547,9 @@ async function handleCachedTextResponse(args: {
 	const ctx = pre.ctx;
 	ctx.meta.generation_ms = 0;
 	ctx.meta.latency_ms = ctx.meta.before_ms ?? 0;
+	// The cached result was generated without these parameters; report them as
+	// a live call would (header, meta and audit). Older entries carry none.
+	restoreDroppedParams(ctx, record.droppedParams);
 
 	const result = {
 		kind: "completed" as const,
@@ -541,8 +617,16 @@ async function handleCachedTextResponse(args: {
 			responseBodyRecord.meta && typeof responseBodyRecord.meta === "object"
 				? responseBodyRecord.meta
 				: {};
+		const existingRouting =
+			existingMeta.routing && typeof existingMeta.routing === "object"
+				? existingMeta.routing
+				: null;
+		const droppedParams = droppedParamsForClient(ctx).map(({ param, reason }) => ({ param, reason }));
 		responseBodyRecord.meta = {
 			...existingMeta,
+			...(existingRouting || droppedParams.length > 0
+				? { routing: { ...(existingRouting ?? {}), dropped_params: droppedParams } }
+				: {}),
 			...(ctx.responseCache ? { response_cache: ctx.responseCache } : {}),
 			...(ctx.guardrailEnforcement
 				? { guardrail_enforcement: ctx.guardrailEnforcement }
@@ -579,6 +663,21 @@ async function materializeStreamResultToCompleted(args: {
 		0,
 		Math.round(performance.now() - materializeStartedAt),
 	);
+	// Executors that read usage from the upstream stream itself are authoritative for
+	// streamed clients (pipeline/after/stream.ts); buffered clients bill from the same usage.
+	// The finalizer is read once: its usage also carries the server-tool counters.
+	const finalizedUsage = await readAuthoritativeFinalizedUsage(args.result);
+	const authoritativeUsage = args.protocol === "anthropic.messages"
+		? null
+		: billableAuthoritativeUsage(finalizedUsage);
+	const baseUsage =
+		authoritativeUsage ??
+		((args.result.bill?.usage && typeof args.result.bill.usage === "object")
+			? args.result.bill.usage
+			: (consumed.usageRaw && typeof consumed.usageRaw === "object"
+				? consumed.usageRaw
+				: args.result.bill?.usage));
+	const serverToolMeters = serverToolMetersFrom(finalizedUsage);
 	return {
 		...args.result,
 		kind: "completed" as const,
@@ -601,14 +700,61 @@ async function materializeStreamResultToCompleted(args: {
 		},
 		bill: {
 			...args.result.bill,
-			usage:
-				(args.result.bill?.usage && typeof args.result.bill.usage === "object")
-					? args.result.bill.usage
-					: (consumed.usageRaw && typeof consumed.usageRaw === "object"
-						? consumed.usageRaw
-						: args.result.bill?.usage),
+			usage: serverToolMeters && (baseUsage == null || typeof baseUsage === "object")
+				? { ...(baseUsage ?? {}), ...serverToolMeters }
+				: baseUsage,
 		},
 	};
+}
+
+/** The usage an executor's own stream finalizer reports, when the executor marks it authoritative. */
+async function readAuthoritativeFinalizedUsage(result: any): Promise<Record<string, any> | null> {
+	if (result?.usageFinalizerAuthoritative !== true || typeof result.usageFinalizer !== "function") return null;
+	try {
+		const finalized = await result.usageFinalizer();
+		const usage = finalized?.usage;
+		return usage && typeof usage === "object" ? usage : null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * The after-stage lays the client payload's usage over these meters, so they are only used
+ * when their input_tokens means what an OpenAI-shaped payload's does: the whole prompt with
+ * cache reads and writes inside it. Anthropic-semantics meters (Claude accounting) and the
+ * Messages payload (cache on top of input_tokens) would contradict each other's hints.
+ */
+function billableAuthoritativeUsage(usage: Record<string, any> | null): Record<string, any> | null {
+	if (!usage) return null;
+	if (usage.cached_read_tokens_are_subset_of_input === false || usage.cached_write_tokens_are_subset_of_input === false) {
+		return null;
+	}
+	const billable = ["input_tokens", "output_tokens", "cached_read_text_tokens", "cached_write_text_tokens"]
+		.some((key) => typeof usage[key] === "number" && usage[key] > 0);
+	return billable ? usage : null;
+}
+
+const SERVER_TOOL_METER_KEYS = ["native_web_search_requests", "native_web_fetch_requests", "server_tool_use"] as const;
+
+function serverToolMetersFrom(usage: Record<string, any> | null): Record<string, unknown> | null {
+	if (!usage) return null;
+	const meters: Record<string, unknown> = {};
+	for (const key of SERVER_TOOL_METER_KEYS) {
+		const value = usage[key];
+		if ((typeof value === "number" && Number.isFinite(value) && value >= 0) || (value && typeof value === "object")) meters[key] = value;
+	}
+	return Object.keys(meters).length ? meters : null;
+}
+
+/**
+ * Server-tool counters from an executor whose usage finalizer reads the upstream stream
+ * itself (Claude on Anthropic, Bedrock and Vertex). The client-protocol stream a buffered
+ * request is materialised from carries no such counters, so without this a buffered
+ * request's web searches (usage.server_tool_use.web_search_requests) were never billed.
+ */
+export async function readAuthoritativeServerToolMeters(result: any): Promise<Record<string, unknown> | null> {
+	return serverToolMetersFrom(await readAuthoritativeFinalizedUsage(result));
 }
 
 export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise<Response> {
@@ -840,21 +986,25 @@ async function runTextGeneratePipelineInner(
 					onEvent: liveSink?.beginRound(),
 				});
 				finishStreamingProvider(pre.ctx);
-			} catch {
+			} catch (error) {
 				finishStreamingProvider(pre.ctx, "error");
 				const header = timing.timer.header();
 				pre.ctx.timing = timing.timer.snapshot();
+				const upstreamFailed = error instanceof UpstreamStreamError;
 				return await handleError({
 					stage: "execute",
-					res: createJsonErrorResponse(
-						502,
-						"gateway_stream_materialization_error",
-						"The upstream stream could not be materialized.",
-					),
+					res: upstreamFailed
+						? await settleBufferedUpstreamStreamFailure(pre.ctx, exec.result, error)
+						: createJsonErrorResponse(
+							502,
+							"gateway_stream_materialization_error",
+							"The upstream stream could not be materialized.",
+						),
 					endpoint,
 					ctx: pre.ctx,
 					timingHeader: header || undefined,
-					auditFailure,
+					// The upstream failure is audited with its partial result above.
+					auditFailure: upstreamFailed ? async () => {} : auditFailure,
 					req,
 				});
 			}
@@ -1106,7 +1256,7 @@ async function runTextGeneratePipelineInner(
 				nextIrRequest = {
 					...nextIrRequest,
 					stream: true,
-					toolChoice: "auto",
+					toolChoice: serverToolFollowUpToolChoice(nextIrRequest.toolChoice),
 					...(latestIrResponse.provider === "google-ai-studio" &&
 						latestIrResponse.nativeId &&
 						latestIrResponse.nativeId !== pre.ctx.requestId &&
@@ -1156,21 +1306,24 @@ async function runTextGeneratePipelineInner(
 							onEvent: liveSink?.beginRound(),
 						});
 						finishStreamingProvider(pre.ctx);
-					} catch {
+					} catch (error) {
 						finishStreamingProvider(pre.ctx, "error");
 						const header = timing.timer.header();
 						pre.ctx.timing = timing.timer.snapshot();
+						const upstreamFailed = error instanceof UpstreamStreamError;
 						return await handleError({
 							stage: "execute",
-							res: createJsonErrorResponse(
-								502,
-								"gateway_stream_materialization_error",
-								"The upstream stream could not be materialized.",
-							),
+							res: upstreamFailed
+								? await settleBufferedUpstreamStreamFailure(pre.ctx, followUpResult, error, aggregateUsage)
+								: createJsonErrorResponse(
+									502,
+									"gateway_stream_materialization_error",
+									"The upstream stream could not be materialized.",
+								),
 							endpoint,
 							ctx: pre.ctx,
 							timingHeader: header || undefined,
-							auditFailure,
+							auditFailure: upstreamFailed ? async () => {} : auditFailure,
 							req,
 						});
 					}

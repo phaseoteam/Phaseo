@@ -10,6 +10,7 @@ import type { Timer } from "../telemetry/timer";
 import type { Endpoint, RequestMeta } from "@core/types";
 import type { PriceCard } from "../pricing";
 import type { ProviderAdapter } from "@providers/types";
+import type { ClassificationOutcome, ClassifierCall } from "../classification/request-classifiers";
 import type {
     GatewayPluginExecutionMetadata,
     NormalizedGatewayPluginConfig,
@@ -472,7 +473,8 @@ export type ProviderEnablementDiagnostics = {
             | "capability_disabled"
             | "adapter_missing"
             | "pricing_missing"
-            | "service_tier_unsupported";
+            | "service_tier_unsupported"
+            | "hosted_tool_unsupported";
     }>;
 };
 
@@ -730,6 +732,12 @@ export type PipelineContext = {
         config: PresetConfig;
     } | null;
     internal?: boolean;
+    /** Classifies this request with the caller's credentials during the success audit. */
+    requestClassifierCall?: ClassifierCall;
+    /** Set on the in-process classifier call itself: never classified, not rate limited. */
+    classifierSubrequest?: boolean;
+    /** Per-classifier outcomes, kept in detail_metadata.classifications. */
+    requestClassifications?: ClassificationOutcome[] | null;
     timing?: Record<string, number>;
     timer?: Timer;
     routingDiagnostics?: Record<string, any> | null;

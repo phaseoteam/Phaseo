@@ -102,6 +102,7 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	"venice-e2ee": veniceQuirks,
 	sakana: sakanaQuirks,
 	wafer: waferQuirks,
+	"wafer-zdr": waferQuirks,
 	ambient: ambientQuirks,
 	baidu: baiduQuirks,
 	chutes: chutesQuirks,

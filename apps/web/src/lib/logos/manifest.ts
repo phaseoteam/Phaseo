@@ -1,4 +1,16 @@
 export const logoManifest = {
+	nace: {
+		light: "/logos/nace_light.svg",
+		dark: "/logos/nace_dark.svg",
+	},
+	pioneer: {
+		light: "/logos/fastino_light.svg",
+		dark: "/logos/fastino_dark.svg",
+	},
+	fastino: {
+		light: "/logos/fastino_light.svg",
+		dark: "/logos/fastino_dark.svg",
+	},
 	"abliteration-ai": {
 		color: "/logos/abliteration-ai.svg",
 	},

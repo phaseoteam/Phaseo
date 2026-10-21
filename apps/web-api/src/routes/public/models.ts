@@ -10,6 +10,7 @@ import { composeGatewayMetadata, fetchGatewayMetadataSource } from "@/models/gat
 import { fetchModelPricingSources, publicPricingRouteIdentity } from "@/models/pricing";
 import { publicProviderDisplayName, publicProviderPayload, STEALTH_PROVIDER_DISPLAY_NAME } from "@/models/provider-identity";
 import { buildFreeRouterCatalogueRow, fetchFreeRouterOverview } from "@/models/free-router";
+import { normalizeModelLicense } from "@/models/license";
 import { PRIVATE_NO_STORE_HEADERS, withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 // Public performance and usage telemetry is aggregated, cached, and excludes
@@ -214,6 +215,13 @@ function supportedParameters(params: unknown): string[] {
 function numberOrNull(value: unknown): number | null {
 	const number = Number(value);
 	return Number.isFinite(number) ? number : null;
+}
+
+// numberOrNull reads SQL null as 0; prices need to tell "not listed" from "$0".
+function listedPrice(value: unknown): number | null {
+	if (value === null || value === undefined || value === "") return null;
+	const number = numberOrNull(value);
+	return number !== null && number >= 0 ? number : null;
 }
 
 function median(values: number[]): number | null {
@@ -455,6 +463,14 @@ export async function fetchGatewayMonitorRows(
 		fetchProviderStatuses(env, providerIds, signal),
 	]);
 
+	// `:free` variants without a licence of their own use their base model's.
+	const licenseByBaseModelId = new Map<string, string>();
+	for (const row of rows) {
+		const license = normalizeModelLicense(row.model_license);
+		const baseId = String(row.model_id ?? row.api_model_id ?? "").trim().replace(/:free$/i, "");
+		if (license && baseId && !licenseByBaseModelId.has(baseId)) licenseByBaseModelId.set(baseId, license);
+	}
+
 	const byModelId = new Map<string, Record<string, unknown>[]>();
 	for (const row of rows) {
 		const baseModelId = String(row.model_id ?? row.api_model_id ?? "").trim();
@@ -490,6 +506,9 @@ export async function fetchGatewayMonitorRows(
 			apiModelId,
 			organisationId: row.organisation_id ?? undefined,
 			organisationName: row.organisation_name ?? undefined,
+			license: normalizeModelLicense(row.model_license)
+				?? licenseByBaseModelId.get(modelId.replace(/:free$/i, ""))
+				?? undefined,
 			provider: {
 				name: publicProviderDisplayName(providerId, row.api_provider_name),
 				id: providerId,
@@ -503,6 +522,10 @@ export async function fetchGatewayMonitorRows(
 				standardOutputPriceUnit: row.standard_output_price_unit ?? null,
 				fromPrice: numberOrNull(row.from_price),
 				fromPriceUnit: row.from_price_unit ?? null,
+				// Standard per-1M token rates, preferring text and falling back to
+				// audio, image or video tokens; null when the route lists none.
+				listedInputPrice: listedPrice(row.input_price) ?? listedPrice(row.standard_input_price),
+				listedOutputPrice: listedPrice(row.output_price) ?? listedPrice(row.standard_output_price),
 				pricingDetailRows: [],
 				features: gatewayFeatures(params),
 				executionRegions: providerRegionsById.get(normalizedProviderId) ?? [],
@@ -600,17 +623,32 @@ function buildModelsTablePayload(
 			);
 		}
 
+		// A null token price means the route lists none, so the table must not
+		// show $0. Free offers keep their genuine $0.
+		const free = row.tier === "free";
+		const tokenPrice = (value: unknown) => listedPrice(value) ?? (free ? 0 : null);
+		// Per-image, per-second and similar charges have no token rate; the
+		// cheapest such charge is shown instead when it uses a single unit.
+		// Billing at provider cost ("usd") is not a listed price.
+		const usageUnit = String(provider.fromPriceUnit ?? "").trim();
+		const usagePrice = listedPrice(provider.fromPrice);
+		const usage = !free && usageUnit && !["1m tokens", "usd"].includes(usageUnit.toLowerCase()) && usagePrice !== null
+			? { usagePrice, usageUnit }
+			: {};
+
 		return {
 			id: row.id,
 			model: row.model,
 			modelId: row.modelId,
 			organisationId: row.organisationId,
 			organisationName: row.organisationName,
+			license: row.license,
 			provider: {
 				name: provider.name,
 				id: provider.id,
-				inputPrice: provider.inputPrice,
-				outputPrice: provider.outputPrice,
+				inputPrice: tokenPrice(provider.listedInputPrice),
+				outputPrice: tokenPrice(provider.listedOutputPrice),
+				...usage,
 				features: provider.features,
 				executionRegions: provider.executionRegions,
 			},

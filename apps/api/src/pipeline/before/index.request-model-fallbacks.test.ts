@@ -322,7 +322,7 @@ describe("beforeRequest request model fallbacks", () => {
 		if (!result.ok) {
 			expect(result.response.status).toBe(400);
 			const payload = await result.response.json();
-			expect(payload).toMatchObject({ error: "validation_error", reason });
+			expect(payload).toMatchObject({ code: "validation_error", reason });
 			expect(payload.details[0].path).toEqual(["models"]);
 		}
 		expect(guardZodMock).not.toHaveBeenCalled();

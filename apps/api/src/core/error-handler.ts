@@ -14,12 +14,13 @@ import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
 import { buildResponseTimeline } from "@pipeline/after/timing";
 import { getEdgeMeta } from "./edge";
+import { withErrorObject } from "./error-object";
 import { sanitizeForAxiom } from "@observability/privacy";
 import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
-import { extractDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
+import { readDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 
 const REDACT_ERROR_KEYS = new Set([
@@ -678,7 +679,8 @@ export async function handleError({
     },
 }): Promise<Response> {
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
-    applyDownstreamRateLimitHeaders(headers, extractDownstreamRateLimitHeaders(res.headers, { includeQuotaDetails: false }));
+    // Keeps BYOK quota headers the execute stage already put in downstream form.
+    applyDownstreamRateLimitHeaders(headers, readDownstreamRateLimitHeaders(res.headers));
     if (timingHeader) {
         headers.set("Server-Timing", timingHeader);
         headers.set("Timing-Allow-Origin", "*");
@@ -834,6 +836,7 @@ export async function handleError({
         error_type: errorType,
         error_origin: errorOrigin,
         description: fallbackDescription,
+        message: fallbackDescription,
     };
     if (operationalKind) {
         errorPayload.error_operational_kind = operationalKind;
@@ -946,6 +949,13 @@ export async function handleError({
             routing: routingDebug,
         };
     }
+    // `error` becomes the object OpenAI-compatible clients read; the code string
+    // stays as top-level `code`.
+    const shaped = withErrorObject(errorPayload, statusCode, {
+        retryAfter: headers.get("Retry-After") ?? res.headers.get("Retry-After"),
+    });
+    errorPayload.error = shaped.error;
+    errorPayload.code = shaped.code;
     const gatewayErrorPayload = sanitizeForAxiom(errorPayload);
     const replayRequestPayload = requestPayloadForObservability;
 

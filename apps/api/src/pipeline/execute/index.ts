@@ -86,6 +86,8 @@ import type {
 	IRRerankResponse,
 	IRDecisionsRequest,
 	IRDecisionsResponse,
+	IRExtractionRequest,
+	IRExtractionResponse,
 	IROcrRequest,
 	IROcrResponse,
 	IRParseRequest,
@@ -98,6 +100,7 @@ import type {
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { createUpstreamTimingTracker } from "@executors/_shared/timing/upstream";
 import { getReasoningEffortAllowlist, normalizeIRForProvider } from "./normalize";
+import { clearDroppedParams, recordDroppedParams } from "./unsupportedParams";
 import { normalizeCapability } from "@/executors";
 import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
@@ -108,6 +111,8 @@ import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-header
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import { chargeRateLimitPolicyTokens, guardRateLimitPolicies } from "@core/rate-limit-policies";
 import { shouldRecordLastUsed } from "@core/last-used-throttle";
+import { applyUpstreamPromptCacheKey, resolveUpstreamPromptCacheKey } from "./prompt-cache-key";
+import { resolveSessionAffinityPreference } from "./sticky-routing";
 import {
 	chargeManagedProvider,
 	estimateProviderTokenReservation,
@@ -215,6 +220,42 @@ export function buildCredentialAttemptPlan(
 		...gatewayAttempts,
 		...fallbackAttempts,
 	];
+}
+
+type CredentialAttempt = ReturnType<typeof buildCredentialAttemptPlan>[number];
+
+/**
+ * A provider cache belongs to one account. When a pin names the credential that served
+ * the cached turn, try that credential first for the pinned route; the others stay as
+ * failover in their usual order.
+ */
+export function preferPinnedCredential(
+	plan: CredentialAttempt[],
+	sticky: {
+		hintedProvider?: string | null;
+		hintedProviderModelSlug?: string | null;
+		hintedKeySource?: "gateway" | "byok" | null;
+		hintedByokKeyId?: string | null;
+	} | null | undefined,
+): CredentialAttempt[] {
+	if (!sticky?.hintedProvider || !sticky.hintedKeySource) return plan;
+	const routeMatches = (attempt: CredentialAttempt) =>
+		attempt.routed.candidate.providerId === sticky.hintedProvider
+		&& (!sticky.hintedProviderModelSlug
+			|| String(attempt.routed.candidate.providerModelSlug ?? "").trim() === sticky.hintedProviderModelSlug);
+	const firstForRoute = plan.findIndex(routeMatches);
+	if (firstForRoute < 0) return plan;
+	const routed = plan[firstForRoute].routed;
+	const pinnedIndex = plan.findIndex((attempt) => attempt.routed === routed && (
+		sticky.hintedKeySource === "byok"
+			? attempt.credential.kind === "byok" && attempt.credential.key.id === sticky.hintedByokKeyId
+			: attempt.credential.kind === "gateway"
+	));
+	if (pinnedIndex <= firstForRoute) return plan;
+	const reordered = [...plan];
+	const [pinned] = reordered.splice(pinnedIndex, 1);
+	reordered.splice(firstForRoute, 0, pinned);
+	return reordered;
 }
 
 function shouldRetrySingleProviderStatus(status: number | null | undefined): boolean {
@@ -437,6 +478,7 @@ export type IRRequestResult = {
 		| IRModerationsResponse
 		| IRRerankResponse
 		| IRDecisionsResponse
+		| IRExtractionResponse
 		| IRImageGenerationResponse
 		| IRAudioSpeechResponse
 		| IRAudioTranscriptionResponse
@@ -449,6 +491,11 @@ export type IRRequestResult = {
 	upstream: Response;
 	stream?: ReadableStream<Uint8Array> | null;
 	usageFinalizer?: (() => Promise<Bill | null>) | null;
+	// The finalizer reads usage straight from the upstream stream; prefer it over usage in
+	// transformed client frames, which may omit meters such as Anthropic cache writes.
+	usageFinalizerAuthoritative?: boolean;
+	// The finalizer's usage so far, read synchronously; usage frames price from it.
+	usageSnapshot?: (() => Bill["usage"] | null) | null;
 	provider: string;
 	apiModelId?: string | null;
 	pricingKey?: string | null;
@@ -479,6 +526,7 @@ export async function doRequestWithIR(
 		| IRModerationsRequest
 		| IRRerankRequest
 		| IRDecisionsRequest
+		| IRExtractionRequest
 		| IRImageGenerationRequest
 		| IRAudioSpeechRequest
 		| IRAudioTranscriptionRequest
@@ -500,6 +548,10 @@ export async function doRequestWithIR(
 
 	// 1.5) Filter providers by requested input/output modalities
 	const normalizedCapability = normalizeCapability(ctx.capability);
+	if (normalizedCapability === "extraction.extract" && (ir as IRExtractionRequest).images?.length) {
+		candidates = candidates.filter(candidate => candidate.inputModalities?.includes("image") && candidate.capabilityParams?.images === true);
+		if (!candidates.length) return Response.json({ error: "unsupported_parameter", message: "No extraction route supports image input.", request_id: ctx.requestId }, { status: 400 });
+	}
 	if (normalizedCapability === "decisions.make" && (ir as IRDecisionsRequest).decisionContext) {
 		const native = (ir as IRDecisionsRequest).decisionContext!;
 		const requestsImageDetail = typeof native.input !== "string" && native.input.some(message =>
@@ -611,10 +663,10 @@ export async function doRequestWithIR(
 	const allowFallbacks = getEffectiveRoutingHints(ctx.body).allowFallbacks;
 	const maxTries = calculateMaxTries(ranked.length, allowFallbacks);
 	const rankedProviders = ranked.slice(0, maxTries);
-	const credentialPlan = buildCredentialAttemptPlan(rankedProviders, {
+	const credentialPlan = preferPinnedCredential(buildCredentialAttemptPlan(rankedProviders, {
 		includeFallbackByok: true,
 		allowManagedFallback: ctx.teamSettings?.byokFallbackEnabled === true,
-	});
+	}), (ctx as any).routingDiagnostics?.stickyRouting);
 	if (credentialPlan.length === 0 && rankedProviders.some((entry) => entry.candidate.credentialMode === "byok_only")) {
 		return err("byok_credentials_required", {
 			reason: "byok_credentials_required",
@@ -714,6 +766,7 @@ async function attemptProviderWithIR(
 		| IRModerationsRequest
 		| IRRerankRequest
 		| IRDecisionsRequest
+		| IRExtractionRequest
 		| IRImageGenerationRequest
 		| IRAudioSpeechRequest
 		| IRAudioTranscriptionRequest
@@ -917,6 +970,7 @@ async function attemptProviderWithIR(
 			ctx.teamSettings?.ioLoggingEnabled === true &&
 			ctx.teamSettings?.ioLoggingIncludeProviderPayloads === true;
 
+		if (isTextGenerate) clearDroppedParams(ctx);
 		const normalizedIr = await timing.timer.span(`${attemptPrefix}_normalize_ir`, () =>
 			isTextGenerate
 				? normalizeIRForProvider(
@@ -927,6 +981,7 @@ async function attemptProviderWithIR(
 						capabilityParams: candidate.capabilityParams,
 						providerMaxOutputTokens: candidate.maxOutputTokens,
 						modelForReasoning,
+						onDroppedParams: (dropped) => recordDroppedParams(ctx, candidate.providerId, dropped),
 					},
 				)
 				: normalizedCapability === "video.generate"
@@ -957,9 +1012,22 @@ async function attemptProviderWithIR(
 		}
 		let reservationDenial: import("@core/video-reservations").VideoReservationDenial | undefined;
 		const catalogTier = readProviderCatalogTier(candidate.capabilityParams);
-		const executorIr = isTextGenerate && catalogTier
+		// Upstream prompt cache keys are namespaced per workspace. ctx.body keeps the
+		// client key for sticky routing inside Phaseo. A session_id only becomes an
+		// upstream key while session affinity is on (routing.session_affinity: false opts out).
+		const upstreamPromptCacheKey = isTextGenerate
+			? await resolveUpstreamPromptCacheKey({
+				workspaceId: ctx.workspaceId,
+				promptCacheKey: (ir as IRChatRequest).promptCacheKey,
+				sessionId: resolveSessionAffinityPreference(ctx.rawBody) ? ctx.meta.sessionId : undefined,
+			})
+			: null;
+		const tieredIr = isTextGenerate && catalogTier
 			? { ...normalizedIr, serviceTier: catalogTier.upstream ?? undefined }
 			: normalizedIr;
+		const executorIr = isTextGenerate
+			? applyUpstreamPromptCacheKey(tieredIr as IRChatRequest, candidate.providerId, upstreamPromptCacheKey)
+			: tieredIr;
 		const buildExecutorArgs = () =>
 			({
 				ir: executorIr,
@@ -994,6 +1062,7 @@ async function attemptProviderWithIR(
 							: undefined,
 					appId: ctx.meta.appId ?? null,
 					sessionId: ctx.meta.sessionId ?? null,
+					cacheAffinityKey: upstreamPromptCacheKey?.key ?? null,
 					requestUserId: ctx.meta.requestUserId ?? null,
 					trace: ctx.meta.trace ?? null,
 					testId: ctx.meta.testId ?? null,
@@ -1137,7 +1206,7 @@ async function attemptProviderWithIR(
 			? Math.max(0, Date.now() - selectedUpstreamTiming.dispatchAtMs)
 			: generationTimeMs;
 		ctx.meta.provider_duration_ms = selectedProviderDurationMs;
-		if (normalizedCapability === "decisions.make" && executorResult.upstream.ok) {
+		if ((normalizedCapability === "decisions.make" || normalizedCapability === "extraction.extract") && executorResult.upstream.ok) {
 			// Decisions are non-streaming, so generation ends once the selected
 			// provider response has been fully received and parsed.
 			ctx.meta.generation_ms = Math.max(
@@ -1175,7 +1244,7 @@ async function attemptProviderWithIR(
 				normalizedCapability === "image.generate" ||
 				normalizedCapability === "audio.speech";
 			const preservesStructuredProviderTiming =
-				(normalizedCapability === "moderations" || normalizedCapability === "decisions.make") &&
+				(normalizedCapability === "moderations" || normalizedCapability === "decisions.make" || normalizedCapability === "extraction.extract") &&
 				executorResult.upstream.ok;
 			if (!isTextGenerate && !preservesStructuredProviderTiming) {
 				delete (ctx.meta as Record<string, unknown>).latency_ms;
@@ -1323,6 +1392,8 @@ async function attemptProviderWithIR(
 			upstream: executorResult.upstream,
 			stream: executorResult.kind === "stream" ? executorResult.stream : undefined,
 			usageFinalizer: executorResult.kind === "stream" ? executorResult.usageFinalizer : undefined,
+			usageFinalizerAuthoritative: executorResult.kind === "stream" ? executorResult.usageFinalizerAuthoritative === true : undefined,
+			usageSnapshot: executorResult.kind === "stream" ? executorResult.usageSnapshot : undefined,
 			provider: candidate.providerId,
 			apiModelId: candidateApiModelId,
 			pricingKey:

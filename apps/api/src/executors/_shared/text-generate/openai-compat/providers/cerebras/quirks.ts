@@ -90,6 +90,11 @@ export const cerebrasQuirks: ProviderQuirks = {
 		} else if (ir.reasoning?.enabled === true) {
 			request.reasoning_effort = "medium";
 		}
+		// gpt-oss takes low, medium or high only; its reasoning cannot be turned off
+		// (https://inference-docs.cerebras.ai/api-reference/chat-completions).
+		if (model.toLowerCase().includes("gpt-oss") && request.reasoning_effort === "none") {
+			delete request.reasoning_effort;
+		}
 
 		if (Array.isArray(request.messages)) {
 			request.messages = request.messages.map((msg: any) =>

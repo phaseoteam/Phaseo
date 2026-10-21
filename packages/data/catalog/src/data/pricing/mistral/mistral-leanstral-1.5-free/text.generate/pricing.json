@@ -22,6 +22,22 @@
       "source": null
     },
     {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "Mistral: cached prompt tokens are billed at 10% of the standard input token price (accessed 2026-10-17).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "region": null,
+      "cache_duration_seconds": null,
+      "conditions": [],
+      "source": "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching"
+    },
+    {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
@@ -42,7 +58,9 @@
   "service_tiers": [
     "free"
   ],
-  "sources": [],
+  "sources": [
+    "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching"
+  ],
   "verification": {
     "status": "unverified",
     "checked_at": null,

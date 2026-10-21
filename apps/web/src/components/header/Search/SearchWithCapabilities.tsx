@@ -1,5 +1,6 @@
 import {
 	autoRoutingFlag,
+	requestClassifiersFlag,
 	batchApiFlag,
 	enterpriseSelfServePreviewEnabled,
 	realtimeVoiceFlag,
@@ -16,8 +17,9 @@ export async function SearchWithCapabilities(props: { className?: string }) {
 	// Explicitly opt this boundary into request time so Cache Components does not
 	// attempt to evaluate those values during prerendering.
 	await connection();
-	const [autoRouting, enterprise, webhooks, video, realtime, games, authHeader] = await Promise.all([
+	const [autoRouting, classifiers, enterprise, webhooks, video, realtime, games, authHeader] = await Promise.all([
 		autoRoutingFlag().catch(() => false),
+		requestClassifiersFlag().catch(() => false),
 		enterpriseSelfServePreviewEnabled().catch(() => false),
 		batchApiFlag().catch(() => false),
 		videoApiFlag().catch(() => false),
@@ -30,7 +32,7 @@ export async function SearchWithCapabilities(props: { className?: string }) {
 		<SearchWrapper
 			{...props}
 			isAdmin={Boolean(authHeader?.user?.id) && authHeader?.userRole === "admin"}
-			capabilities={{ autoRouting, enterprise, webhooks, video, realtime, games }}
+			capabilities={{ autoRouting, classifiers, enterprise, webhooks, video, realtime, games }}
 			accountQueryScope={toAccountQueryScope({
 				userId: authHeader?.user?.id,
 				workspaceId: authHeader?.currentTeamId,

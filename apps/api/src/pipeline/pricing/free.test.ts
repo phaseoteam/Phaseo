@@ -58,11 +58,48 @@ describe("isFreePriceCard", () => {
 		).toBe(false);
 	});
 
-	it("rejects zero-priced rules that are not explicitly on the free plan", () => {
+	// The v2 catalogue derives pricing_plan from the SKU's service tier, and
+	// "free" stopped being a canonical tier in August 2026, so $0 free routes
+	// are also written on the standard tier. Price, not the label, decides.
+	it("accepts a zero-priced card labelled with the standard plan", () => {
 		expect(
 			isFreePriceCard(card([
 				{ pricingPlan: "standard", pricePerUnit: "0" },
+				{ pricingPlan: "standard", pricePerUnit: "0.000000000" },
 			])),
+		).toBe(true);
+	});
+
+	it("rejects a zero-priced card whose time window charges", () => {
+		const peakPriced = card([{ pricingPlan: "standard", pricePerUnit: "0" }]);
+		peakPriced.rules[0].time_windows = [{
+			label: "peak",
+			timezone: "UTC",
+			start_time: "09:00",
+			end_time: "17:00",
+			price_per_unit: "0.000001",
+		}];
+		expect(isFreePriceCard(peakPriced)).toBe(false);
+
+		peakPriced.rules[0].time_windows[0].price_per_unit = null;
+		expect(isFreePriceCard(peakPriced)).toBe(true);
+	});
+
+	it("rejects a card that mixes a free plan with a paid one", () => {
+		expect(
+			isFreePriceCard(card([
+				{ pricingPlan: "free", pricePerUnit: "0" },
+				{ pricingPlan: "standard", pricePerUnit: "0.000002" },
+			])),
+		).toBe(false);
+	});
+
+	it("rejects a workspace private model's placeholder $0 card", () => {
+		expect(
+			isFreePriceCard({
+				...card([{ pricingPlan: "standard", pricePerUnit: "0" }]),
+				provider: "private-model",
+			}),
 		).toBe(false);
 	});
 });

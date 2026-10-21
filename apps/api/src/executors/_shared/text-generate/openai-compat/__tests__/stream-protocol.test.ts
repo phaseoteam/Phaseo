@@ -1055,7 +1055,7 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const frames = parseSseJsonFrames(output);
-		const completed = frames.find((payload) => payload?.response?.object === "response");
+		const completed = frames.find((payload) => payload?.response?.object === "response" && payload.response.status !== "in_progress");
 		const outputItems = completed?.response?.output ?? [];
 		const messageItem = outputItems.find((item: any) => item?.type === "message");
 		const imageBlock = Array.isArray(messageItem?.content)
@@ -1103,7 +1103,7 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const frames = parseSseJsonFrames(output);
-		const completed = frames.find((payload) => payload?.response?.object === "response");
+		const completed = frames.find((payload) => payload?.response?.object === "response" && payload.response.status !== "in_progress");
 		const outputItems = completed?.response?.output ?? [];
 		const messageItem = outputItems.find((item: any) => item?.type === "message");
 		const imageBlock = Array.isArray(messageItem?.content)
@@ -1162,7 +1162,7 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const frames = parseSseJsonFrames(output);
-		const completed = frames.find((payload) => payload?.response?.object === "response");
+		const completed = frames.find((payload) => payload?.response?.object === "response" && payload.response.status !== "in_progress");
 		const outputItems = completed?.response?.output ?? [];
 		const messageItem = outputItems.find((item: any) => item?.type === "message");
 		const audioBlock = Array.isArray(messageItem?.content)

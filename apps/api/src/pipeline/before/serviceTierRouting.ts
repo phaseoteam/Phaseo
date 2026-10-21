@@ -5,6 +5,7 @@ import { normalizeTextServiceTier, readRequestedServiceTier, readProviderCatalog
 import type { PriceCard } from "../pricing/types";
 import { getProviderPricingKey, ROUTABLE_CAPABILITY_STATUSES, isWithinEffectiveWindow } from "./context.shared";
 import type { ProviderCandidate } from "./types";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { resolveEffectiveDataPolicy } from "./dataPolicy";
 
@@ -307,10 +308,8 @@ async function remapToTierSibling(
             siblingCapability?.max_input_tokens === null || siblingCapability?.max_input_tokens === undefined
                 ? candidate.maxInputTokens
                 : Number(siblingCapability.max_input_tokens),
-        maxOutputTokens:
-            siblingCapability?.max_output_tokens === null || siblingCapability?.max_output_tokens === undefined
-                ? candidate.maxOutputTokens
-                : Number(siblingCapability.max_output_tokens),
+        // A sibling row with no known limit (null or a stored 0) keeps the candidate limit.
+        maxOutputTokens: routeOutputTokenLimit(siblingCapability?.max_output_tokens) ?? candidate.maxOutputTokens,
     };
 	return {
 		...remapped,
@@ -411,10 +410,8 @@ async function remapToHiddenTierSibling(
             siblingCapability?.max_input_tokens === null || siblingCapability?.max_input_tokens === undefined
                 ? candidate.maxInputTokens
                 : Number(siblingCapability.max_input_tokens),
-        maxOutputTokens:
-            siblingCapability?.max_output_tokens === null || siblingCapability?.max_output_tokens === undefined
-                ? candidate.maxOutputTokens
-                : Number(siblingCapability.max_output_tokens),
+        // A sibling row with no known limit (null or a stored 0) keeps the candidate limit.
+        maxOutputTokens: routeOutputTokenLimit(siblingCapability?.max_output_tokens) ?? candidate.maxOutputTokens,
     };
 	return {
 		...remapped,

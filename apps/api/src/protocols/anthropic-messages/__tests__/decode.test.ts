@@ -611,7 +611,9 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.serviceTier).toBeUndefined();
 	});
 
-	it("should decode reasoning.effort=max into IR reasoning effort xhigh", () => {
+	// max and xhigh are separate Anthropic effort levels
+	// (https://platform.claude.com/docs/en/build-with-claude/effort).
+	it("should decode reasoning.effort=max into IR reasoning effort max", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
 			max_tokens: 2048,
@@ -622,7 +624,7 @@ describe("decodeAnthropicMessagesRequest", () => {
 		};
 
 		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
-		expect(ir.reasoning?.effort).toBe("xhigh");
+		expect(ir.reasoning?.effort).toBe("max");
 	});
 
 	it("should decode reasoning.effort=xhigh on Anthropic messages surface", () => {
@@ -735,9 +737,10 @@ describe("decodeAnthropicMessagesRequest", () => {
 		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
 
 		if (ir.messages[0].role === "assistant") {
-			// Thinking blocks are preserved in content
+			// Thinking blocks become reasoning parts; an unsigned block has no
+			// provider state, so it is never replayed as Claude thinking.
 			expect(ir.messages[0].content).toHaveLength(2);
-			expect(ir.messages[0].content[0].type).toBe("provider_block");
+			expect(ir.messages[0].content[0]).toEqual({ type: "reasoning_text", text: "Let me analyze this problem..." });
 			expect(ir.messages[0].content[1].type).toBe("text");
 		}
 	});

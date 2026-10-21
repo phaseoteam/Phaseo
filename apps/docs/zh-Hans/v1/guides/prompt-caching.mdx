@@ -9,7 +9,7 @@ icon: "database-zap"
 prompt 缓存不同于[响应缓存](../cookbook/response-caching-with-presets.mdx)。prompt 缓存仍会运行推理，但可降低重复处理输入的成本和延迟。响应缓存则会针对完全相同的请求返回此前生成的答案。
 
 <Note>
-prompt 缓存因供应商和模型而异。不支持的供应商会忽略缓存提示，或在不采用缓存计费的情况下路由请求。请查看模型页面的价格表，了解缓存读写费率。
+prompt 缓存因供应商和模型而异。Phaseo 只向每个供应商发送其文档中列出的缓存控制，其余一律移除；缓存控制永远不会让某个供应商被排除在路由之外。如果供应商在尚无缓存价格的路由上报告了缓存 token，Phaseo 会按该路由的常规输入价格对缓存读取计费，并按输入价格乘以供应商公布的写入倍率对缓存写入计费。请查看模型页面的价格表，了解缓存读写费率。
 </Note>
 
 ## 缓存内容
@@ -24,9 +24,35 @@ prompt 缓存因供应商和模型而异。不支持的供应商会忽略缓存�
 
 避免缓存每次请求都会变化的内容、简短的一次性用户输入，或根据你的政策不允许所选供应商存储的敏感数据。
 
+## 自动缓存与需启用的缓存
+
+大多数供应商会自动缓存重复出现的 prompt 前缀。Claude 需要显式启用。
+
+| 供应商 | 缓存方式 | Phaseo 发送的内容 |
+| --- | --- | --- |
+| [OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching)、[Azure OpenAI](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/prompt-caching) | prompt 达到 1,024 个 token 时自动缓存 | `prompt_cache_key`；GPT-5.6 及以后版本发送断点和 `prompt_cache_options`；更早的模型发送 `prompt_cache_retention` |
+| Anthropic、Claude on AWS、Amazon Bedrock 和 Google Vertex AI 上的 [Anthropic Claude](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) | 需启用 | `cache_control` 断点，每个请求最多四个 |
+| Google AI Studio 和 [Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) 上的 [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) | Gemini 2.5 及以后版本自动缓存 | 指向你创建的显式缓存的 `cached_content` |
+| [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | 自动 | `prompt_cache_key` 和 `x-grok-conv-id` 请求头 |
+| [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | 自动 | 无需额外内容 |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | 自动，使用 5 分钟 TTL | 无需额外内容 |
+| [Groq](https://console.groq.com/docs/prompt-caching) | Groq 列出的模型自动缓存 | 无需额外内容 |
+| [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | 自动 | `prompt_cache_key`，以及 `x-session-affinity` 请求头和 `user` |
+| [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | 自动 | `prompt_cache_key` |
+| [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/features/prompt-caching) | 部分模型自动缓存 | `x-session-affinity` 请求头 |
+| [Together AI](https://docs.together.ai/docs/inference/chat/prompt-caching)、[Mistral](https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching) | 自动；`prompt_cache_key` 可提高命中率 | `prompt_cache_key` |
+| [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | 自动（隐式）；显式缓存需启用 | 块级 `cache_control` |
+| [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | 自动；Venice 会自行添加 Claude 断点 | 块级 `cache_control` |
+| [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | 自动；保留时间窗口需启用 | `prompt_cache_key`、`prompt_cache_breakpoint` 和 `prompt_cache_options` |
+
+其他 OpenAI 兼容供应商在其 API 接受该字段时会收到 `prompt_cache_key`，不会收到其他缓存控制。Phaseo 始终发送你的工作区与该键的哈希值，而不是键本身。请参阅[供应商亲和性](#provider-affinity)。
+
+<span id="cache-controls"></span>
 ## 缓存控制
 
-Phaseo 在 Chat Completions、Responses 和 Anthropic Messages 请求中接受顶层兼容性提示 `cache_control`：
+### Claude 的默认策略
+
+Phaseo 在 Chat Completions、Responses 和 Anthropic Messages 请求中接受顶层 `cache_control`：
 
 ```json
 {
@@ -37,22 +63,9 @@ Phaseo 在 Chat Completions、Responses 和 Anthropic Messages 请求中接受�
 }
 ```
 
-短期共享上下文使用 `ttl: "5m"`；当供应商和模型支持更长时间的 prompt 缓存时，使用 `ttl: "1h"`。支持该功能的供应商会将顶层缓存控制视为自动或默认缓存策略。
+它为 Claude 路由设置默认缓存策略：Phaseo 会替你放置缓存断点。短期共享上下文使用 `ttl: "5m"`（默认值）；当模型支持更长时间的 prompt 缓存时，使用 `ttl: "1h"`。其他供应商会忽略它。顶层 `cache_control` 还会让对话保持在同一个供应商上；请参阅[供应商亲和性](#provider-affinity)。
 
-你也可以在受支持的文本、图像、工具结果和工具定义块上直接设置 `cache_control`，以明确指定缓存断点：
-
-```json
-{
-  "type": "text",
-  "text": "Large stable reference text...",
-  "cache_control": {
-    "type": "ephemeral",
-    "ttl": "1h"
-  }
-}
-```
-
-仍支持供应商专属别名。例如，你可以通过 `provider_options` 应用默认的 Anthropic 缓存策略：
+`provider_options.anthropic.cache_control` 是同一设置。请求同时发送两者时，以 `provider_options` 中的值为准：
 
 ```json
 {
@@ -72,11 +85,101 @@ Phaseo 在 Chat Completions、Responses 和 Anthropic Messages 请求中接受�
 
 | 范围 | 行为 |
 | --- | --- |
-| `all_text` | 为尚未设置缓存控制的系统文本和用户文本/图像块添加缓存控制。 |
+| `all_text` | 默认值。为系统文本以及最近三条包含文本或图像的用户消息添加缓存控制。 |
 | `last_user_message` | 仅为最新的用户消息添加缓存控制。 |
+| `agent` | 用于工具循环。为最后一个工具定义、系统文本、最后一条消息（包括工具结果）以及上一步的消息添加缓存控制。`conversation` 是其别名。 |
 | `none` | 不应用默认缓存策略。 |
 
 块级 `cache_control` 优先于默认策略。
+
+Anthropic 每个请求最多接受四个缓存断点。默认策略会把你自己设置的 `cache_control` 计算在内，达到四个即停止。无法识别的 `scope` 值按 `agent` 处理。多步工具循环请使用 `agent`：`all_text` 和 `last_user_message` 不会标记仅包含工具结果的消息，因此缓存前缀无法继续延伸。
+
+如果你自己在块上设置的标记超过四个，Phaseo 会保留第一个和最新的三个并移除其余标记，以免请求被拒绝。
+
+### 块级缓存断点
+
+在内容块上设置缓存标记，即可缓存到该块为止（含该块）的全部内容。Phaseo 接受两种写法：
+
+- `cache_control`：`{"type": "ephemeral"}`，可选 `ttl` 为 `5m` 或 `1h`。
+- `prompt_cache_breakpoint`：OpenAI 的 `{"mode": "explicit"}`。同一块同时带有两者时，以 `prompt_cache_breakpoint` 为准。
+
+```json
+{
+  "type": "text",
+  "text": "Large stable reference text...",
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+  }
+}
+```
+
+在 Chat Completions 和 Responses 中，可以在文本和图像部分、函数工具定义，以及内容为文本部分数组的工具结果上设置标记。Anthropic Messages 在 Anthropic 接受 `cache_control` 的所有位置都接受它。
+
+每个供应商会以自己的格式收到标记：
+
+| 供应商 | 块级 `cache_control` | `prompt_cache_breakpoint` |
+| --- | --- | --- |
+| Anthropic、Claude on AWS、Amazon Bedrock 和 Google Vertex AI 上的 Claude | 以带有你的 `ttl` 的 `{"type": "ephemeral"}` 发送 | 以 `cache_control: {"type": "ephemeral"}` 发送 |
+| OpenAI 和 Azure OpenAI，GPT-5.6 及以后版本 | 以 `prompt_cache_breakpoint: {"mode": "explicit"}` 发送；`ttl` 被丢弃 | 发送 |
+| OpenAI 和 Azure OpenAI，更早的模型 | 移除 | 移除 |
+| DeepInfra | 移除 | 发送 |
+| Alibaba Model Studio 和 Venice | 发送 | 移除 |
+| 其他供应商 | 移除 | 移除 |
+
+工具定义上的标记只会发送到 Claude 路由、Alibaba Model Studio 和 Venice；OpenAI 不接受工具上的断点。移除标记不会改变 prompt 的其余部分，因此缓存前缀与不带标记的请求一致。
+
+Amazon Bedrock 和 Google Vertex AI 对 Claude 3.7 Sonnet、3.5 Sonnet 和 3 Opus 只提供 5 分钟缓存，Bedrock 还可能拒绝这些模型上的 `ttl`。在这些路由上，Phaseo 发送不带 `ttl` 的断点，因此缓存时长为 5 分钟，并在 `X-Phaseo-Dropped-Params` 响应头和 `meta.routing.dropped_params` 中把被移除的 `1h` 报告为 `cache_control.ttl`。
+
+<span id="openai-retention-and-options"></span>
+### OpenAI 的保留时间与选项
+
+OpenAI 的缓存控制取决于模型代际。Phaseo 只在 OpenAI 接受时发送相应字段：
+
+| 字段 | 取值 | 发送给 |
+| --- | --- | --- |
+| `prompt_cache_options` | `mode`：`implicit` 或 `explicit`；`ttl`：`30m` | GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra |
+| `prompt_cache_retention` | `in_memory` 或 `24h` | GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型 |
+
+从 GPT-5.6 开始，OpenAI 只接受 `30m` 这一个 `ttl`，`explicit` 模式只缓存你放置的断点。DeepInfra 使用同一对象，`ttl` 为 `5m` 或 `1h`，并要求会话中的每个请求都带上 `prompt_cache_key`。其他供应商不会收到这两个字段。
+
+这两个字段都可以放在顶层或 `provider_options.openai` 下。两者同时存在时，以顶层值为准：
+
+```json
+{
+  "prompt_cache_retention": "24h"
+}
+```
+
+```json
+{
+  "provider_options": {
+    "openai": {
+      "prompt_cache_retention": "24h"
+    }
+  }
+}
+```
+
+### Google Gemini
+
+Gemini 2.5 及以后版本会隐式缓存，你无需发送任何内容。如需使用通过 Google 缓存 API 创建的显式缓存，请在 `provider_options.google.cached_content` 中传入其名称：
+
+```json
+{
+  "provider_options": {
+    "google": {
+      "cached_content": "cachedContents/abc123"
+    }
+  }
+}
+```
+
+- 在 Google AI Studio 上，`cached_content` 仅在使用你自己的 Google API 密钥（BYOK）时有效。使用 Phaseo 的密钥时，请求会返回 400，因为缓存属于创建它的账号。
+- 在 Vertex AI 上，缓存必须属于处理请求的凭据所在的 Google Cloud 项目，因此请使用你自己的 Vertex AI 凭据。
+- 从 Gemini 4 Argon 开始，Google 不再支持显式缓存。
+
+`provider_options.google.cache_control` 和 `provider_options.google.cache_ttl` 会被接受，但不会发送给 Google。
 
 ## Chat Completions
 
@@ -105,26 +208,6 @@ curl https://api.phaseo.app/v1/chat/completions \
       }
     ]
   }'
-```
-
-对于路由到 OpenAI 的请求，请通过 OpenAI 兼容的顶层字段传递 OpenAI 缓存保留选项：
-
-```json
-{
-  "prompt_cache_retention": "24h"
-}
-```
-
-也可以使用供应商专属别名：
-
-```json
-{
-  "provider_options": {
-    "openai": {
-      "prompt_cache_retention": "24h"
-    }
-  }
-}
 ```
 
 ## Responses
@@ -156,17 +239,7 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-如果你已有 Google Gemini 缓存内容资源，请通过 `provider_options.google.cached_content` 传入：
-
-```json
-{
-  "provider_options": {
-    "google": {
-      "cached_content": "cachedContents/abc123"
-    }
-  }
-}
-```
+Phaseo 不存储响应。设置了 `previous_response_id` 或 `conversation` 的请求会返回 400 `unsupported_param`，因此请在每一步都通过 `input` 发送完整对话。对话中稳定的开头部分就是被缓存的前缀。在工具循环中，也要把 `reasoning` 输出项发回；请参阅[工具循环中的推理](../api-reference/endpoint/responses.mdx)。
 
 ## Anthropic Messages
 
@@ -226,20 +299,65 @@ Anthropic Messages 支持在以下内容上使用缓存控制：
 - 工具结果块
 - 工具定义
 
+一个请求中出现多种 TTL 时，Anthropic 要求 `1h` 断点位于 `5m` 断点之前。
+
+<span id="usage-and-pricing-fields"></span>
 ## 用量与定价字段
 
-供应商返回缓存用量时，Phaseo 会将其规范化为通用用量字段。
+所有文本端点的用量都会报告缓存读取和写入。Chat Completions 和 Responses 遵循 OpenAI 的语义：输入数量包含缓存读取和写入。Anthropic Messages 遵循 Anthropic 的语义：`input_tokens` 不包含它们。
+
+| 端点 | 输入总量 | 缓存读取 | 缓存写入 |
+| --- | --- | --- | --- |
+| Chat Completions | `prompt_tokens`，包含读取和写入 | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
+| Responses | `input_tokens`，包含读取和写入 | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens` |
+| Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`，按 TTL 拆分为 `cache_creation.ephemeral_5m_input_tokens` 和 `cache_creation.ephemeral_1h_input_tokens` |
+
+在 Chat Completions 和 Responses 中，未缓存的输入等于输入总量减去缓存读取和缓存写入。流式 Anthropic Messages 响应会在 `message_delta` 中携带缓存字段。
+
+<Note>
+以前的响应把缓存写入报告为 `output_tokens_details.cached_tokens`（在 Chat Completions 中为 `completion_tokens_details.cached_tokens`），而且 Claude 路由在 Chat Completions 和 Responses 上的 `input_tokens` 不包含缓存读取和写入。现在这两种情况都已不再适用：请从 `cache_write_tokens` 读取写入量。非流式 Anthropic Messages 响应以前返回 `cache_creation_input_tokens: null`，现在会返回实际值。
+</Note>
+
+请求详情和价格明细使用以下计费项：
 
 | 字段 | 含义 |
 | --- | --- |
-| `input_tokens_details.cached_tokens` | 从供应商 prompt 缓存中读取的缓存输入 token。 |
-| `output_tokens_details.cached_tokens` | 写入供应商 prompt 缓存的缓存输入 token。 |
 | `cached_read_text_tokens` | 缓存读取的计费项，表示从供应商缓存中复用的输入文本。 |
 | `cached_write_text_tokens` | 当供应商对缓存写入采用统一价格时使用的计费项。 |
 | `cached_write_text_tokens_5m` | 供应商报告按 TTL 区分的写入时，TTL 为 5 分钟的缓存写入 token。 |
 | `cached_write_text_tokens_1h` | 供应商报告按 TTL 区分的写入时，TTL 为 1 小时的缓存写入 token。 |
 
-缓存写入通常比普通输入 token 更贵，读取通常更便宜。具体价格取决于供应商、模型和 TTL。
+### 缓存 token 如何计费
+
+Phaseo 对每个输入 token 只计费一次，且只按一种价格计费：
+
+- 未缓存的输入按输入价格计费
+- 缓存读取按缓存读取价格计费
+- 缓存写入按缓存写入价格计费；供应商分别定价时，按 5 分钟和 1 小时的价格计费
+
+有些供应商把缓存写入计入输入总量，有些则单独报告。Phaseo 对这两种情况的计费方式相同，因此写入的 token 绝不会再按普通输入重复计费。
+
+例如，一个 GPT-5.6 Sol 请求包含 53,100 个输入 token（其中 48,000 个为缓存读取，3,000 个为缓存写入）和 850 个输出 token，费用如下：
+
+| Token | 每百万价格 | 费用 |
+| --- | ---: | ---: |
+| 2,100 个未缓存输入 | $5.00 | $0.01050 |
+| 48,000 个缓存读取 | $0.50 | $0.02400 |
+| 3,000 个缓存写入 | $6.25 | $0.01875 |
+| 850 个输出 | $30.00 | $0.02550 |
+| 合计 | | $0.07875 |
+
+如果供应商在目录中尚无缓存价格的路由上报告了缓存 token，Phaseo 不会让请求失败：
+
+- 缓存读取按该路由的输入价格计费。
+- 缓存写入按输入价格乘以供应商公布的写入倍率计费：Claude 5 分钟写入为 1.25 倍，1 小时写入为 2 倍；OpenAI、Azure OpenAI 和 Alibaba 为 1.25 倍；Kimi K3 5 分钟写入为 1 倍，1 小时写入为 2 倍；其他供应商为 1 倍。
+- 对应的价格行会标记 `pricing_fallback: "input_rate"`。
+
+如果某个 Claude 路由在目录中只有一个缓存写入价格，该价格就是 5 分钟写入价格。供应商报告为 1 小时写入的部分按输入价格的 2 倍计费，记在标有 `pricing_fallback: "input_rate"` 的 `cached_write_text_tokens_1h` 行上。
+
+流式 Claude 响应的最后一个 `message_delta` 会报告缓存写入的累计总数，但不按 TTL 拆分。超出拆分部分的写入按 5 分钟写入计费，因为即使请求要求 1 小时，服务器工具的写入也可能使用 5 分钟。
+
+有些供应商在部分模型上不对缓存 token 打折。这些模型的页面会显示相同的输入价格和缓存读取价格。
 
 ## 实际检查
 
@@ -247,23 +365,36 @@ Anthropic Messages 支持在以下内容上使用缓存控制：
 
 1. 发送一个请求以创建或预热缓存。
 2. 使用相同的可缓存内容发送第二个请求。
-3. 检查响应用量和请求详情中的缓存读写字段。
+3. 检查响应用量中的 `cached_tokens` 和 `cache_write_tokens`，以及请求详情中的缓存计费项。
 4. 比较多次调用的延迟和成本，不要只看第一次。
 
+<span id="provider-affinity"></span>
 ## 供应商亲和性
 
-默认情况下，Phaseo 会将供应商 prompt 缓存用量作为路由信号。当供应商
-返回缓存输入 token 后，具有相同缓存键或稳定开头上下文的请求
-会优先使用该供应商 15 分钟。这样就无需付费让另一个
-供应商重新构建相同的 prompt 缓存。
+prompt 缓存位于某个供应商，通常还位于该供应商的某个区域或部署。Phaseo 会让相关请求留在曾处理它们的供应商和路由上，这样智能体循环就不必付费在另一个供应商上重建缓存。
 
-如果包含 `session_id`，观察到缓存读取时也会创建会话亲和性。
-Phaseo 会在当前会话窗口内保留该亲和性，同时仍允许
-在供应商异常或不再符合策略条件时进行故障转移。
+发送 `prompt_cache_key` 或 `session_id`，或通过 `cache_control`（顶层、`provider_options.anthropic.cache_control`，或消息块、工具上的 `cache_control` / `prompt_cache_breakpoint` 标记）启用缓存，即可固定一段对话。Phaseo 会把它固定到处理第一个成功请求的供应商和路由，之后带有相同键的请求也会发送到那里。固定按工作区保存。
+
+固定的有效时间取决于供应商的缓存保留时间：
+
+| 请求 | 固定有效时间 |
+| --- | --- |
+| `session_id` | 24 小时，会话活跃期间会续期 |
+| 带有 `ttl: "1h"` 的 Anthropic `cache_control` | 90 分钟 |
+| 带有 `prompt_cache_retention: "24h"` 的 OpenAI 或 Azure OpenAI | 24 小时 |
+| 使用内存保留（默认）的 OpenAI 或 Azure OpenAI | 90 分钟 |
+| 带有 `prompt_cache_options.ttl: "30m"` 的 OpenAI 或 Azure OpenAI | 45 分钟 |
+| 其他所有情况 | 15 分钟 |
+
+只有在以下情况下固定才会转移：其供应商发生故障（熔断器打开或近期错误率较高）、Phaseo 在该供应商上的托管配额用尽，或当前生效的路由、预设、护栏或请求策略不再允许使用它。此时请求会进行故障转移，固定会转到处理该请求的供应商。请求详情会在路由诊断中将其记录为 `sticky_routing.demotionReason`。已固定的请求不会用于探测正在恢复的供应商。
+
+如果没有键、`session_id` 或缓存标记，Phaseo 仍会把开头上下文固定到曾为其报告缓存读取或写入的供应商 15 分钟，前提是该供应商的缓存输入比标准输入便宜。
+
+Phaseo 向供应商发送的是你的工作区与 `prompt_cache_key` 的哈希值，绝不发送原始键，因此两个工作区中的相同键永远不会共享供应商缓存。只有 `session_id` 时，Phaseo 会为 OpenAI、xAI、Fireworks 和 Cerebras 从会话派生该哈希值。Fireworks 和 Cloudflare Workers AI 还会在 `x-session-affinity` 请求头中收到它；除非你设置了 `provider_options.xai.conversation_id`，xAI 会以 `x-grok-conv-id` 的形式收到它。响应中仍会返回你自己的 `prompt_cache_key`。
 
 如需对单个请求停用此功能，请将 `provider.cache_aware_routing` 设为 `false`。如果请求中
 包含 `session_id`，但你只想使用常规的上下文路由，请将 `routing.session_affinity`
-设为 `false`。
+设为 `false`。此时 Phaseo 也不再从会话派生供应商缓存键。
 
 ## 相关页面
 
@@ -271,5 +402,6 @@ Phaseo 会在当前会话窗口内保留该亲和性，同时仍允许
 - [Responses](../api-reference/endpoint/responses.mdx)
 - [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
 - [参数](../api-reference/parameters.mdx)
+- [路由与回退](./routing-and-fallbacks.mdx)
 - [上下文与 Token 预算](./context-and-token-budgeting.mdx)
 - [使用预设进行响应缓存](../cookbook/response-caching-with-presets.mdx)

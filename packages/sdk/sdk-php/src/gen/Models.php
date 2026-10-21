@@ -98,6 +98,10 @@ class AnthropicMessage
 class AnthropicMessagesRequest
 {
 	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
+	public $context_management;
+	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -113,6 +117,8 @@ class AnthropicMessagesRequest
 	public $model;
 	/** @var array|null */
 	public $models;
+	/** @var array|null */
+	public $plugins;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -141,12 +147,16 @@ class AnthropicMessagesRequest
 	public $top_p;
 	/** @var bool|null */
 	public $usage;
+	/** @var string|null */
+	public $user;
 }
 
 class AnthropicMessagesResponse
 {
 	/** @var array|null */
 	public $content;
+	/** @var array<string, mixed>|null */
+	public $context_management;
 	/** @var string|null */
 	public $id;
 	/** @var string|null */
@@ -177,6 +187,16 @@ class AnthropicTool
 
 class AnthropicUsage
 {
+	/** @var array<string, mixed>|null */
+	public $cache_creation;
+	/** @var int|null */
+	public $cache_creation_input_tokens;
+	/** @var int|null */
+	public $cache_read_input_tokens;
+	/** @var float|null */
+	public $cost;
+	/** @var array<string, mixed>|null */
+	public $cost_details;
 	/** @var int|null */
 	public $input_tokens;
 	/** @var int|null */
@@ -443,6 +463,8 @@ class ApiKeyWithValueResponse
 {
 	/** @var array<string, mixed> */
 	public $data;
+	/** @var string */
+	public $key;
 }
 
 class AsyncJobWebSocketClientEvent
@@ -966,6 +988,8 @@ class ChatChoice
 class ChatCompletionsRequest
 {
 	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -973,6 +997,8 @@ class ChatCompletionsRequest
 	public $frequency_penalty;
 	/** @var array<string, mixed>|null */
 	public $image_config;
+	/** @var bool|null */
+	public $include_reasoning;
 	/** @var array<string, mixed>|null */
 	public $logit_bias;
 	/** @var bool|null */
@@ -997,10 +1023,18 @@ class ChatCompletionsRequest
 	public $models;
 	/** @var bool|null */
 	public $parallel_tool_calls;
+	/** @var array|null */
+	public $plugins;
+	/** @var array<string, mixed>|null */
+	public $prediction;
 	/** @var float|null */
 	public $presence_penalty;
 	/** @var string|null */
 	public $prompt_cache_key;
+	/** @var array<string, mixed>|null */
+	public $prompt_cache_options;
+	/** @var string|null */
+	public $prompt_cache_retention;
 	/** @var string|array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -1079,18 +1113,188 @@ class ChatMessage
 {
 	/** @var array|null */
 	public $audios;
-	/** @var string|array|null */
+	/** @var string|null|array */
 	public $content;
 	/** @var array|null */
 	public $images;
 	/** @var string|null */
 	public $name;
+	/** @var string|null */
+	public $reasoning;
+	/** @var string|null */
+	public $reasoning_content;
+	/** @var array|null */
+	public $reasoning_details;
 	/** @var string */
 	public $role;
 	/** @var string|null */
 	public $tool_call_id;
 	/** @var array|null */
 	public $tool_calls;
+}
+
+class ChatReasoningDetail
+{
+	/** @var string|null */
+	public $data;
+	/** @var string|null */
+	public $format;
+	/** @var string|null */
+	public $id;
+	/** @var int|null */
+	public $index;
+	/** @var string|null */
+	public $signature;
+	/** @var string|null */
+	public $summary;
+	/** @var string|null */
+	public $text;
+	/** @var string */
+	public $type;
+}
+
+class Classifier
+{
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string|null */
+	public $description;
+	/** @var array */
+	public $dimensions;
+	/** @var bool */
+	public $enabled;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $input_scope;
+	/** @var string */
+	public $instructions;
+	/** @var string */
+	public $model;
+	/** @var float|null */
+	public $monthly_budget_usd;
+	/** @var string */
+	public $name;
+	/** @var string */
+	public $sample_by;
+	/** @var float */
+	public $sample_rate;
+	/** @var array<string, mixed> */
+	public $scope;
+	/** @var string */
+	public $updated_at;
+	/** @var string */
+	public $workspace_id;
+}
+
+class ClassifierCreateInput
+{
+	/** @var string|null */
+	public $description;
+	/** @var array */
+	public $dimensions;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $input_scope;
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $model;
+	/** @var float|null */
+	public $monthly_budget_usd;
+	/** @var string */
+	public $name;
+	/** @var string|null */
+	public $sample_by;
+	/** @var float|null */
+	public $sample_rate;
+	/** @var array<string, mixed>|null */
+	public $scope;
+}
+
+class ClassifierDeleteResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class ClassifierDimension
+{
+	/** @var bool|null */
+	public $allow_other;
+	/** @var string|null */
+	public $description;
+	/** @var string */
+	public $key;
+	/** @var bool|null */
+	public $multiple;
+	/** @var string|null */
+	public $name;
+	/** @var array */
+	public $values;
+}
+
+class ClassifierInputScope { }
+
+class ClassifierListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class ClassifierResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class ClassifierSampleBy { }
+
+class ClassifierScope
+{
+	/** @var array|null */
+	public $app_ids;
+	/** @var array|null */
+	public $key_ids;
+	/** @var array|null */
+	public $models;
+}
+
+class ClassifierUpdateInput
+{
+	/** @var string|null */
+	public $description;
+	/** @var array|null */
+	public $dimensions;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $input_scope;
+	/** @var string|null */
+	public $instructions;
+	/** @var string|null */
+	public $model;
+	/** @var float|null */
+	public $monthly_budget_usd;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $sample_by;
+	/** @var float|null */
+	public $sample_rate;
+	/** @var array<string, mixed>|null */
+	public $scope;
+}
+
+class ClassifierValue
+{
+	/** @var string|null */
+	public $description;
+	/** @var string */
+	public $value;
 }
 
 class CreditsResponse
@@ -1821,6 +2025,20 @@ class ErrorFailureSampleItem
 	public $upstream_payload_preview;
 }
 
+class ErrorObject
+{
+	/** @var string */
+	public $code;
+	/** @var string */
+	public $message;
+	/** @var array<string, mixed>|null */
+	public $metadata;
+	/** @var string|null */
+	public $param;
+	/** @var string */
+	public $type;
+}
+
 class ErrorProviderCandidateDiagnostics
 {
 	/** @var int|null */
@@ -1861,6 +2079,8 @@ class ErrorResponse
 {
 	/** @var int|null */
 	public $attempt_count;
+	/** @var string|null */
+	public $code;
 	/** @var string|null */
 	public $description;
 	/** @var array|null */
@@ -1923,6 +2143,170 @@ class ErrorUpstreamError
 	public $param;
 }
 
+class ExtractionAnswer { }
+
+class ExtractionDateField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionDatetimeField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionDurationField
+{
+	/** @var int|null */
+	public $decimals;
+	/** @var string|null */
+	public $instructions;
+	/** @var bool|null */
+	public $integer;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $unit;
+}
+
+class ExtractionField { }
+
+class ExtractionImage
+{
+	/** @var string */
+	public $base64;
+	/** @var string */
+	public $content_type;
+}
+
+class ExtractionListAnswer
+{
+	/** @var float */
+	public $confidence;
+	/** @var string */
+	public $type;
+	/** @var array */
+	public $value;
+}
+
+class ExtractionListField
+{
+	/** @var int|null */
+	public $decimals;
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $items;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionNumberAnswer
+{
+	/** @var float */
+	public $confidence;
+	/** @var float */
+	public $p_null;
+	/** @var string */
+	public $type;
+	/** @var float|null */
+	public $value;
+}
+
+class ExtractionNumberField
+{
+	/** @var int|null */
+	public $decimals;
+	/** @var string|null */
+	public $instructions;
+	/** @var bool|null */
+	public $integer;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $unit;
+}
+
+class ExtractionRequest
+{
+	/** @var array<string, mixed> */
+	public $fields;
+	/** @var array|null */
+	public $images;
+	/** @var string */
+	public $input;
+	/** @var string */
+	public $model;
+	/** @var string|null */
+	public $reference_date;
+}
+
+class ExtractionResponse
+{
+	/** @var array<string, mixed> */
+	public $answers;
+	/** @var string */
+	public $model;
+	/** @var bool */
+	public $truncated;
+	/** @var array<string, mixed> */
+	public $usage;
+}
+
+class ExtractionStringAnswer
+{
+	/** @var float */
+	public $confidence;
+	/** @var float */
+	public $p_null;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $value;
+}
+
+class ExtractionTextField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionTimeField
+{
+	/** @var string|null */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class ExtractionUsage
+{
+	/** @var int */
+	public $input_tokens;
+	/** @var string */
+	public $output_tokens;
+	/** @var int */
+	public $total_tokens;
+}
+
+class FileContentPart
+{
+	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed> */
+	public $file;
+	/** @var string */
+	public $type;
+}
+
 class FileResponse
 {
 	/** @var int|null */
@@ -1955,6 +2339,8 @@ class FunctionToolDefinition
 {
 	/** @var bool|null */
 	public $async;
+	/** @var array<string, mixed>|null */
+	public $cache_control;
 	/** @var array<string, mixed> */
 	public $function;
 	/** @var string */
@@ -2262,6 +2648,8 @@ class GatewayObservabilityEventResponse
 	/** @var array<string, mixed> */
 	public $data;
 }
+
+class GatewayPlugin { }
 
 class GatewayPricing
 {
@@ -2895,6 +3283,14 @@ class ImagesGenerationResponse
 	public $created;
 	/** @var array|null */
 	public $data;
+}
+
+class InputTokensDetails
+{
+	/** @var int|null */
+	public $cache_write_tokens;
+	/** @var int|null */
+	public $cached_tokens;
 }
 
 class InvalidRequestResponse
@@ -4005,6 +4401,18 @@ class OpenAIReasoningConfig
 	public $summary;
 }
 
+class OpenAIWebSearchToolDefinition
+{
+	/** @var array<string, mixed>|null */
+	public $filters;
+	/** @var string|null */
+	public $search_context_size;
+	/** @var string */
+	public $type;
+	/** @var array<string, mixed>|null */
+	public $user_location;
+}
+
 class OrganisationId { }
 
 class OrganisationIdList { }
@@ -4491,6 +4899,20 @@ class PrivateModelUpdateRequest
 	public $upstream_model_id;
 }
 
+class PromptCacheBreakpoint
+{
+	/** @var string|null */
+	public $mode;
+}
+
+class PromptCacheOptions
+{
+	/** @var string|null */
+	public $mode;
+	/** @var string|null */
+	public $ttl;
+}
+
 class Provider
 {
 	/** @var string|null */
@@ -4629,6 +5051,8 @@ class ProviderOptions
 	public $google;
 	/** @var array<string, mixed>|null */
 	public $openai;
+	/** @var array<string, mixed>|null */
+	public $xai;
 }
 
 class ProviderRoutingOptions
@@ -4933,12 +5357,32 @@ class RerankResult
 	public $relevance_score;
 }
 
+class ResponseHealingPlugin
+{
+	/** @var bool|null */
+	public $enabled;
+	/** @var string */
+	public $id;
+	/** @var string|null */
+	public $mode;
+}
+
 class ResponsesInputItem
 {
 	/** @var string|array|array<string, mixed>|null */
 	public $content;
 	/** @var string|null */
+	public $encrypted_content;
+	/** @var string|null */
+	public $format;
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
 	public $role;
+	/** @var string|null */
+	public $signature;
+	/** @var array|null */
+	public $summary;
 	/** @var string|null */
 	public $type;
 }
@@ -4980,9 +5424,15 @@ class ResponsesOutputItem
 	/** @var array|null */
 	public $content;
 	/** @var string|null */
+	public $encrypted_content;
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
 	public $name;
 	/** @var string|null */
 	public $role;
+	/** @var array|null */
+	public $summary;
 	/** @var string|null */
 	public $type;
 }
@@ -4997,10 +5447,28 @@ class ResponsesOutputTextPart
 	public $type;
 }
 
+class ResponsesReasoningSummaryPart
+{
+	/** @var string */
+	public $text;
+	/** @var string */
+	public $type;
+}
+
+class ResponsesReasoningTextPart
+{
+	/** @var string */
+	public $text;
+	/** @var string */
+	public $type;
+}
+
 class ResponsesRequest
 {
 	/** @var bool|null */
 	public $background;
+	/** @var array<string, mixed>|null */
+	public $cache_control;
 	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
@@ -5027,10 +5495,16 @@ class ResponsesRequest
 	public $models;
 	/** @var bool|null */
 	public $parallel_tool_calls;
+	/** @var array|null */
+	public $plugins;
 	/** @var string|null */
 	public $previous_response_id;
 	/** @var string|null */
 	public $prompt_cache_key;
+	/** @var array<string, mixed>|null */
+	public $prompt_cache_options;
+	/** @var string|null */
+	public $prompt_cache_retention;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -5233,6 +5707,10 @@ class SystemOneUsage
 
 class TextContentPart
 {
+	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
+	public $prompt_cache_breakpoint;
 	/** @var string */
 	public $text;
 	/** @var string */
@@ -5281,12 +5759,30 @@ class Usage
 {
 	/** @var int|null */
 	public $completion_tokens;
+	/** @var float|null */
+	public $cost;
+	/** @var array<string, mixed>|null */
+	public $cost_details;
+	/** @var int|null */
+	public $input_tokens;
+	/** @var array<string, mixed>|null */
+	public $input_tokens_details;
+	/** @var int|null */
+	public $output_tokens;
 	/** @var int|null */
 	public $prompt_tokens;
+	/** @var array<string, mixed>|null */
+	public $prompt_tokens_details;
 	/** @var array<string, mixed>|null */
 	public $server_tool_use;
 	/** @var int|null */
 	public $total_tokens;
+}
+
+class UsageCostDetails
+{
+	/** @var float|null */
+	public $upstream_inference_cost;
 }
 
 class VideoBillingSummary
@@ -5555,6 +6051,24 @@ class VideoOutputConfig
 	public $access;
 }
 
+class WebFetchPlugin
+{
+	/** @var array|null */
+	public $allowed_domains;
+	/** @var array|null */
+	public $blocked_domains;
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $engine;
+	/** @var string */
+	public $id;
+	/** @var int|null */
+	public $max_content_tokens;
+	/** @var int|null */
+	public $max_uses;
+}
+
 class WebhookEndpoint
 {
 	/** @var string|null */
@@ -5673,6 +6187,26 @@ class WebhookEndpointUpdateRequest
 	public $status;
 	/** @var string|null */
 	public $url;
+}
+
+class WebSearchPlugin
+{
+	/** @var bool|null */
+	public $enabled;
+	/** @var string|null */
+	public $engine;
+	/** @var array|null */
+	public $exclude_domains;
+	/** @var string */
+	public $id;
+	/** @var array|null */
+	public $include_domains;
+	/** @var int|null */
+	public $max_results;
+	/** @var int|null */
+	public $max_uses;
+	/** @var string|null */
+	public $search_context_size;
 }
 
 class Workspace

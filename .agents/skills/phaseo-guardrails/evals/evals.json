@@ -1,0 +1,37 @@
+[
+	{
+		"id": "restrict-models",
+		"query": "Our support bot key should only call two models and never send card numbers upstream.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Creates a workspace guardrail and attaches it to that key",
+			"Uses a model restriction and a sensitive-information rule",
+			"Validates with the guardrail preview using a benign and a matching example"
+		]
+	},
+	{
+		"id": "staged-rollout",
+		"query": "We want prompt-injection protection but we're worried about false positives.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Starts with flag or redact before block",
+			"Starts with one key and checks the Guardrail Enforcement panel"
+		]
+	},
+	{
+		"id": "unexpected-block",
+		"query": "Requests from one key started failing with a guardrail block yesterday.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Inspects the request's guardrail enforcement details and routing diagnostics before changing policy"
+		]
+	},
+	{
+		"id": "not-for-cache",
+		"query": "Why are our response cache hits so low?",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Uses the routing and presets skill for caching"
+		]
+	}
+]

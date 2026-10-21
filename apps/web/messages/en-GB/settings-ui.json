@@ -4421,7 +4421,10 @@
 		"enterprise": "Enterprise",
 		"scimProvisioning": "SCIM provisioning",
 		"singleSignOn": "Single sign-on",
-		"workspaces": "Workspaces"
+		"workspaces": "Workspaces",
+		"classifiers": "Classifiers",
+		"newClassifier": "New classifier",
+		"classifier": "Classifier"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4647,7 +4650,8 @@
 		"searchPlaceholder": "Search settings…",
 		"becomeProvider": "Become a provider",
 		"empty": "No settings found.",
-		"providerProfile": "Provider profile"
+		"providerProfile": "Provider profile",
+		"classifiers": "Classifiers"
 	},
 	"settingsAvailability": {
 		"title": "Settings are temporarily unavailable",
@@ -5123,6 +5127,59 @@
 		"copyBalanced": "Balanced",
 		"copyPrice": "Price",
 		"copyThroughput": "Throughput"
+	},
+	"requestClassifierUsage": {
+		"filterLabel": "Label",
+		"filterAria": "Filter requests by label",
+		"changeFilterAria": "Change label filter: {filter}",
+		"clearFilter": "Clear label filter",
+		"searchLabels": "Search labels…",
+		"operatorAria": "Match",
+		"opIs": "is",
+		"opIsNot": "is not",
+		"noMatches": "No matching labels",
+		"noLabels": "No request labels in this time range",
+		"classifierGroup": "Classifiers",
+		"classifierCallsGroup": "Classifier spend",
+		"callerGroup": "Request labels",
+		"classifierCalls": "Classifier calls",
+		"classifierHint": "Set by the {name} classifier",
+		"anyValue": "any value",
+		"notSet": "not set",
+		"filterIs": "{key} = {value}",
+		"filterIsNot": "{key} ≠ {value}",
+		"filterAny": "{key} has any value",
+		"filterNotSet": "{key} is not set",
+		"breakdownTitle": "Usage by label",
+		"breakdownDescription": "Requests, spend and tokens for each value of a label in this period.",
+		"classifierCallsNote": "What classifier calls cost in this period, by classifier.",
+		"chooseKey": "Choose a label",
+		"noLabelKeys": "No labels or classifiers to group by yet.",
+		"loadFailed": "Couldn't load usage by label. Try again in a moment.",
+		"value": "Value",
+		"requests": "Requests",
+		"successRate": "Success",
+		"tokens": "Tokens",
+		"spend": "Spend",
+		"shareOfSpend": "Share of spend",
+		"loading": "Loading…",
+		"noRows": "No requests carry this label in this period.",
+		"total": "Total",
+		"multiValueNote": "A request with several values counts once under each.",
+		"notFilteredByLabel": "This table ignores the label filter above.",
+		"classificationsTitle": "Classifications",
+		"labelsTitle": "Labels",
+		"thisIsClassifierCall": "This request is a classifier call for {name}.",
+		"statusClassified": "Classified",
+		"statusSessionCache": "Reused from session",
+		"statusBudgetReached": "Budget reached",
+		"statusFailed": "Failed",
+		"confidence": "{value} confidence",
+		"noAnswer": "No value fitted",
+		"model": "Model",
+		"cost": "Cost",
+		"openClassifierCall": "Open classifier call",
+		"callerLabels": "Sent with the request"
 	},
 	"providerCatalogCopy": {
 		"serviceTier": "Service tier",
@@ -5958,6 +6015,195 @@
 			"invalid_model": "Enter a model ID such as lab/model.",
 			"invalid_successor": "Enter a replacement model ID, or \"never\".",
 			"too_many_replacements": "This workspace has reached the limit of 500 replacements."
+		}
+	},
+	"classifiers": {
+		"title": "Classifiers",
+		"description": "Label requests automatically with a model, then filter and group usage by those labels.",
+		"newClassifier": "New classifier",
+		"feedback": "How could classifiers work better for you?",
+		"limitReached": "This workspace already has {limit} classifiers, the most allowed.",
+		"selectWorkspace": "Select a workspace to manage its classifiers.",
+		"adminsOnly": "Only workspace owners and admins can view and change classifiers, because they decide which request content is sent to a model.",
+		"emptyTitle": "No classifiers yet",
+		"emptyBody": "Create one from a preset such as Department or Task type, then choose a model and how much traffic to classify.",
+		"billingNote": "Each classification is a normal request to the model you choose, billed to this workspace at that model's usual price. These requests appear in Usage and Logs with the label phaseo.classifier.",
+		"statusOn": "On",
+		"statusOff": "Off",
+		"listModel": "Model",
+		"listLabels": "Label keys",
+		"listSampling": "Sampling",
+		"sampledRequests": "{percent}% of requests",
+		"sampledSessions": "{percent}% of sessions",
+		"listThisMonth": "This month",
+		"spendSummary": "{spend} for {count, plural, one {# classification} other {# classifications}}",
+		"noBudget": "no budget",
+		"budgetOf": "budget {budget}",
+		"backToList": "Back to classifiers",
+		"newTitle": "New classifier",
+		"newDescription": "Choose the labels, a model and how much traffic to classify.",
+		"editTitle": "Classifier",
+		"editDescription": "Change what this classifier labels and how often it runs.",
+		"notFound": "This classifier no longer exists.",
+		"resultsNote": "Answers are saved as request labels, with the dimension key as the label key, so you can filter and group by them in Logs and Usage. If your app already sends a label with the same key, your app's value is kept.",
+		"presets": {
+			"title": "Start from a preset",
+			"description": "A preset fills in the dimensions. You can change everything afterwards.",
+			"department": {
+				"title": "Department",
+				"summary": "Which team the request is for"
+			},
+			"audience": {
+				"title": "Audience",
+				"summary": "Who will read the output"
+			},
+			"task_type": {
+				"title": "Task type",
+				"summary": "Coding, analysis, writing, support and more"
+			},
+			"engineering_work": {
+				"title": "Engineering work",
+				"summary": "Features, bug fixes, reviews, tests"
+			},
+			"agent_complexity": {
+				"title": "Agent complexity",
+				"summary": "How hard the task is, and its family"
+			},
+			"compliance": {
+				"title": "Compliance",
+				"summary": "Personal data and regulated topics"
+			}
+		},
+		"sections": {
+			"details": "Details",
+			"model": "Model",
+			"dimensions": "Dimensions",
+			"instructions": "Instructions",
+			"sampling": "Sampling",
+			"scope": "Scope",
+			"budget": "Monthly budget",
+			"results": "Where results appear",
+			"test": "Try it on a sample"
+		},
+		"fields": {
+			"name": "Name",
+			"namePlaceholder": "Department",
+			"description": "Description",
+			"enabled": "Classify requests",
+			"enabledDescription": "When this is off, nothing is classified and nothing is billed."
+		},
+		"model": {
+			"label": "Classifier model",
+			"help": "Any text or decision model works. A small, fast model is usually enough.",
+			"format": {
+				"json_schema": "Answers with structured outputs, so replies always match your values.",
+				"decisions": "Answers through Decisions, with the model's own probability for each value.",
+				"json": "This model has no structured outputs, so it is asked for JSON in the prompt. Replies outside your values are dropped, which can leave a dimension unlabelled."
+			}
+		},
+		"dimensions": {
+			"help": "Each dimension becomes one label. Add up to {max} dimensions with up to {values} values each.",
+			"addDimension": "Add dimension",
+			"dimensionTitle": "Dimension {index}",
+			"moveDimensionUp": "Move dimension {index} up",
+			"moveDimensionDown": "Move dimension {index} down",
+			"removeDimension": "Remove dimension {index}",
+			"name": "Name",
+			"namePlaceholder": "Cost centre",
+			"key": "Label key",
+			"keyHelp": "Letters, digits, and _ . : - only.",
+			"description": "What it means",
+			"descriptionPlaceholder": "The team that will use the answer",
+			"multiple": "Allow several values",
+			"allowOther": "Add other when nothing fits",
+			"value": "Value",
+			"valueDescription": "Description (helps the model choose)",
+			"valueActions": "Actions",
+			"valueAt": "Value {index}",
+			"valuePlaceholder": "engineering",
+			"valueDescriptionAt": "Description of value {index}",
+			"valueDescriptionPlaceholder": "Optional",
+			"moveValueUp": "Move value {index} up",
+			"moveValueDown": "Move value {index} down",
+			"removeValue": "Remove value {index}",
+			"addValue": "Add value",
+			"otherAutomatic": "The model can also answer other."
+		},
+		"instructions": {
+			"help": "Optional guidance for edge cases. It is added after the dimensions.",
+			"placeholder": "Treat contract questions from the sales team as legal."
+		},
+		"sampling": {
+			"percent": "Share of traffic",
+			"percentHelp": "From 0.01% to 100%. Sampling is deterministic, so a request or session always gets the same decision.",
+			"sampleBy": "Sample by",
+			"byRequest": "Request",
+			"bySession": "Session",
+			"byRequestHelp": "Each request is sampled on its own.",
+			"bySessionHelp": "Requests with the same session ID are sampled together. Later requests in the session reuse the first answer for up to an hour, so a session is usually billed once.",
+			"includeResponse": "Include the response",
+			"includeResponseHelp": "Also sends the model's reply to the classifier. This helps some labels but costs more."
+		},
+		"scope": {
+			"help": "Leave a list empty to classify all traffic in the workspace.",
+			"keys": "API keys",
+			"apps": "Apps",
+			"models": "Requested models",
+			"allKeys": "All keys",
+			"allApps": "All apps",
+			"allModels": "All models",
+			"selected": "{count} selected",
+			"search": "Search",
+			"none": "Nothing to choose from yet."
+		},
+		"budget": {
+			"label": "Budget in USD",
+			"placeholder": "No budget",
+			"help": "Once spend reaches the budget, classification pauses until the next calendar month (UTC). Spend is checked about once a minute, so it can go slightly over.",
+			"spent": "Spent this month: {spend} for {count, plural, one {# classification} other {# classifications}}."
+		},
+		"results": {
+			"viewValue": "requests labelled",
+			"classifierRequests": "This classifier's own requests and their cost in Logs",
+			"afterSave": "Links to Logs filtered by each label appear here once the classifier is saved."
+		},
+		"test": {
+			"description": "Sends one sample through the same request the gateway builds, as you. It is billed like a classification and labelled phaseo.classifier_test. Nothing is saved.",
+			"prompt": "Sample prompt",
+			"promptPlaceholder": "Can you check this contract clause before I send it to the customer?",
+			"response": "Sample response (optional)",
+			"run": "Run test",
+			"running": "Running…",
+			"fixFirst": "Fix the classifier before testing it.",
+			"privacyReview": "Open Chat once and review your workspace privacy settings, then try again.",
+			"openChat": "Open Chat",
+			"failed": "The test failed.",
+			"failedWithMessage": "The test failed: {message}",
+			"labelKey": "Label key",
+			"labelValue": "Value",
+			"confidence": "Confidence",
+			"noAnswer": "The model did not return a usable answer. Try another model or simplify the dimensions.",
+			"costLine": "Cost {cost} with {model}"
+		},
+		"actions": {
+			"save": "Save changes",
+			"create": "Create classifier",
+			"saving": "Saving…",
+			"cancel": "Cancel",
+			"delete": "Delete classifier",
+			"deleteTitle": "Delete {name}?",
+			"deleteBody": "New requests are no longer classified. Labels already saved stay on past requests.",
+			"deleteConfirm": "Delete",
+			"saved": "Classifier saved",
+			"created": "Classifier created",
+			"deleted": "Classifier deleted"
+		},
+		"errors": {
+			"invalid": "Check the classifier: {message}",
+			"saveFailed": "The classifier could not be saved.",
+			"deleteFailed": "The classifier could not be deleted.",
+			"samplePercent": "Enter a share from 0.01% to 100%.",
+			"budgetUsd": "Enter a budget greater than $0, or leave it empty."
 		}
 	}
 }

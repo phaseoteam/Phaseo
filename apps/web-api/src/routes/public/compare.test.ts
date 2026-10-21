@@ -98,4 +98,46 @@ describe("public compare routes", () => {
 			}],
 		});
 	});
+
+	it("pages past the 1,000-row database limit and serves slim picker options", async () => {
+		const row = (index: number) => ({
+			model_slug: `lab/model-${String(index).padStart(4, "0")}`,
+			name: `Model ${String(index).padStart(4, "0")}`,
+			lab_slug: "lab",
+			released_at: "2026-07-01",
+			input_modalities: ["text"],
+			output_modalities: ["text", "image"],
+			lab: { lab_slug: "lab", name: "Lab" },
+		});
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(String(input));
+			const offset = Number(url.searchParams.get("offset") ?? 0);
+			// PostgREST caps every response at 1,000 rows.
+			const limit = Math.min(Number(url.searchParams.get("limit") ?? 1_000), 1_000);
+			const rows = Array.from({ length: 1_250 }, (_, index) => row(index)).slice(offset, offset + limit);
+			return new Response(JSON.stringify(rows), { status: 200 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const [models, options] = await Promise.all([
+			app.request("https://phaseo.app/api/_web/compare/models", {}, env),
+			app.request("https://phaseo.app/api/_web/compare/options", {}, env),
+		]);
+
+		expect((await models.json() as { models: unknown[] }).models).toHaveLength(1_250);
+		expect(options.status).toBe(200);
+		expect(options.headers.get("cache-tag")).toContain("web-api-compare");
+		const { models: picker } = await options.json() as { models: Array<Record<string, unknown>> };
+		expect(picker).toHaveLength(1_250);
+		expect(picker[1_249]).toEqual({
+			id: "lab/model-1249",
+			name: "Model 1249",
+			release_date: "2026-07-01",
+			input_types: ["text"],
+			output_types: ["text", "image"],
+			provider: { provider_id: "lab", name: "Lab" },
+		});
+		const urls = fetchMock.mock.calls.map(([input]) => decodeURIComponent(String(input)));
+		expect(urls.every((url) => url.includes("order=name.asc,model_slug.asc"))).toBe(true);
+	});
 });

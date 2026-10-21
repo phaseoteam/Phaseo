@@ -1,0 +1,31 @@
+{
+	"id": "avian",
+	"source": {
+		"url": null,
+		"docs": "https://avian.io/docs/",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Page says OpenAI-compatible; no full parameter list. Recorded from a web-search summary (page not fetched; avian.io/docs/llms.txt is 404)."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"tools": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

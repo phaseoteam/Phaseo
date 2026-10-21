@@ -22,6 +22,10 @@ export interface ResponsesResponse {
           type: "output_text";
         }
       | {
+          text: string;
+          type: "reasoning_text";
+        }
+      | {
           b64_json?: string;
           image_url?: {
             url?: string;
@@ -39,8 +43,14 @@ export interface ResponsesResponse {
           type: "output_audio";
         }
     )[];
+    encrypted_content?: string;
+    id?: string;
     name?: string;
     role?: string;
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   output_items?: {
@@ -53,6 +63,10 @@ export interface ResponsesResponse {
           type: "output_text";
         }
       | {
+          text: string;
+          type: "reasoning_text";
+        }
+      | {
           b64_json?: string;
           image_url?: {
             url?: string;
@@ -70,8 +84,14 @@ export interface ResponsesResponse {
           type: "output_audio";
         }
     )[];
+    encrypted_content?: string;
+    id?: string;
     name?: string;
     role?: string;
+    summary?: {
+      text: string;
+      type: "summary_text";
+    }[];
     type?: string;
   }[];
   pricing_lines?: {
@@ -85,7 +105,21 @@ export interface ResponsesResponse {
   type?: string;
   usage?: {
     completion_tokens?: number;
+    cost?: number;
+    cost_details?: {
+      upstream_inference_cost?: number | null;
+    };
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
     prompt_tokens?: number;
+    prompt_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
     server_tool_use?: {
       advisor_requests?: number;
       apply_patch_requests?: number;

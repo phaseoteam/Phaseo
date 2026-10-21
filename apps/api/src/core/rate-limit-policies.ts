@@ -323,7 +323,8 @@ function limitedSubject(entry: ApplicableRateLimit): string {
  * Returns the 429 response when a policy allowance is known to be exhausted.
  */
 export async function guardRateLimitPolicies(ctx: PipelineContext): Promise<Response | null> {
-	if (ctx.internal) return null;
+	// Classifier calls are billed but must not use up the caller's own allowance.
+	if (ctx.internal || ctx.classifierSubrequest) return null;
 	try {
 		return await admitRequest(ctx);
 	} catch (error) {

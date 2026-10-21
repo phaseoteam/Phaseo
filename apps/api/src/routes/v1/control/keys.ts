@@ -676,8 +676,11 @@ async function handleCreateKey(req: Request) {
 		if (!data) throw new Error("Failed to create API key");
 		await auditApiKey(auth.value, "api_key.created", data as KeyRow);
 
+		// The secret is shown once. Return it at the top level, where key-creation clients
+		// read it, and keep data.key for existing callers.
 		return json(
 			{
+				key: generated.plaintext,
 				data: {
 					...formatApiKey(data as KeyRow),
 					key: generated.plaintext,
@@ -851,7 +854,11 @@ async function handleUpdateKey(req: Request) {
 			throw new Error(refetchError.message || "Failed to fetch updated API key");
 		}
 		if (!updated) throw new Error("Failed to fetch updated API key");
-		await auditApiKey(auth.value, "api_key.updated", updated as KeyRow, { changed_fields: Object.keys(updatePayload) });
+		// Pausing and resuming are recorded as such, as the dashboard does, but only when the status
+		// changes: a retried request is an update, not another pause.
+		const statusChanged = typeof updatePayload.status === "string" && updatePayload.status !== String(existing.status ?? "");
+		const action = statusChanged ? (updatePayload.status === "paused" ? "api_key.paused" : "api_key.resumed") : "api_key.updated";
+		await auditApiKey(auth.value, action, updated as KeyRow, { changed_fields: Object.keys(updatePayload) });
 
 		return json({ data: formatApiKey(updated as KeyRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {

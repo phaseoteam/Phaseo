@@ -6,6 +6,8 @@ icon: "tags"
 
 Verwende Request-Labels, wenn der Anwendungscode eine stabile Kostenkategorie benötigt, die genauer ist als ein API-Schlüssel oder eine Anwendung. Labels werden mit dem Anfrage-Audit erfasst und lassen sich in Analysen filtern, ohne die Modellanfrage zu ändern.
 
+Um Anfragen automatisch anhand ihres Inhalts zu kennzeichnen, verwende [Anfrage-Klassifikatoren](./request-classifiers.mdx). Ihre Antworten werden als Request-Labels gespeichert und lassen sich genauso filtern.
+
 ## Labels senden
 
 Setze `X-Phaseo-Metadata` auf ein JSON-Objekt mit bis zu 32 eindeutigen Schlüssel-Wert-Labels:

@@ -57,7 +57,7 @@ SDK、プロバイダー、Gateway を変更し、現在の連携を Phaseo に�
 {`Migrate this project's AI requests to Phaseo Gateway.
 
 1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
-   They include phaseo-gateway, and openrouter-to-phaseo-migration for OpenRouter projects.
+   Use phaseo-migration, which has a guide for each source platform (and openrouter-to-phaseo-migration for a detailed OpenRouter move).
 2. Find every place the project calls its current provider or gateway (OpenAI, Anthropic, OpenRouter, Vercel AI Gateway, LiteLLM or another), including environment variables, SDK clients, base URLs and model IDs.
 3. Read the matching guide at https://phaseo.app/docs/v1/migration-guides and map each call to its Phaseo equivalent at https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
 4. Check every model ID with GET /v1/models. Do not assume IDs carry over unchanged.

@@ -3,6 +3,8 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Builds standardized error responses for before-stage failures.
 
+import { withErrorObject } from "@core/error-object";
+
 export type ErrorCode =
     | "unauthorised"
     | "invalid_json"
@@ -137,7 +139,7 @@ export function err(code: ErrorCode, payload: Record<string, unknown>) {
     if (providerFailureDiagnostics) {
         body.provider_failure_diagnostics = providerFailureDiagnostics;
     }
-    return json(body, STATUS[code]);
+    return json(withErrorObject(body, STATUS[code]), STATUS[code]);
 }
 
 

@@ -750,6 +750,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -800,6 +802,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -921,6 +925,8 @@ paths:
               $ref: '#/components/headers/RequestedModel'
             X-Phaseo-Model-Substitution:
               $ref: '#/components/headers/ModelSubstitution'
+            X-Phaseo-Dropped-Params:
+              $ref: '#/components/headers/DroppedParams'
           content:
             application/json:
               schema:
@@ -1012,6 +1018,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DecisionCreateResponse'
+  /extractions:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createExtraction
+      summary: Typisierte Werte extrahieren
+      description: Extrahiert Text, Zahlen, Datumsangaben, Uhrzeiten, Zeitspannen und typisierte Listen aus Text oder eingebetteten Bildern. Gibt typisierte Werte und die vom Modell gemeldete Unsicherheit zurück. Schätzungen, Prognosen, Streaming und URLs entfernter Bilder werden nicht unterstützt.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractionRequest'
+      responses:
+        '200':
+          description: Typisierte Extraktionsantworten
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResponse'
   /audio/speech:
     post:
       x-beta: true
@@ -4721,6 +4748,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RateLimitDeleteResponse'
+        default:
+          description: Anfrage fehlgeschlagen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listClassifiers
+      summary: List classifiers
+      description: Lists the workspace's request classifiers. A workspace can have up to five. Owners and admins only.
+      responses:
+        '200':
+          description: Classifiers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierListResponse'
+        default:
+          description: Anfrage fehlgeschlagen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createClassifier
+      summary: Create a classifier
+      description: Creates a classifier. After each eligible request finishes, the chosen model places it in every dimension and the answers are added to the request as labels, so they can be filtered and grouped in logs, usage and analytics. Classification runs after the response is sent and is billed to the workspace at the model's normal price.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierCreateInput'
+      responses:
+        '201':
+          description: Klassifizierer erstellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: Anfrage fehlgeschlagen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /classifiers/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Classifier id.
+        schema:
+          type: string
+          format: uuid
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getClassifier
+      summary: Get a classifier
+      description: Returns one classifier. Owners and admins only.
+      responses:
+        '200':
+          description: Classifier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: Anfrage fehlgeschlagen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: updateClassifier
+      summary: Update a classifier
+      description: Updates the fields you send. Changes reach the gateway within about a minute. Labels already written to past requests are not changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifierUpdateInput'
+      responses:
+        '200':
+          description: Klassifizierer aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierResponse'
+        default:
+          description: Anfrage fehlgeschlagen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: deleteClassifier
+      summary: Delete a classifier
+      description: Deletes a classifier. Labels it already wrote stay on past requests.
+      responses:
+        '200':
+          description: Classifier deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifierDeleteResponse'
         default:
           description: Anfrage fehlgeschlagen
           content:
@@ -8568,6 +8717,10 @@ components:
       description: Warum und wie das angeforderte Modell ersetzt wurde, zum Beispiel `reason=unserved; from=lab/old-model; to=lab/new-model`. Wird nur gesendet, wenn das Routing für eingestellte Modelle die Anfrage mit einem Ersatzmodell beantwortet hat.
       schema:
         type: string
+    DroppedParams:
+      description: Vom Client gesendete Parameter, die der bedienende Anbieter nicht unterstützt und die das Gateway entfernt hat, statt sie an den Anbieter zu senden oder die Anfrage abzulehnen, zum Beispiel `top_k, min_p`. Wird nur bei erfolgreichen Antworten gesendet und nur, wenn mindestens ein Parameter aus dem Anfrage-Body entfernt wurde. Parameter aus einem Preset oder einem Standardwert werden nicht aufgeführt.
+      schema:
+        type: string
     UpstreamRateLimitValue:
       description: Anbieter-Kontingentmetadaten nur für BYOK. Bei Anfragen über verwaltete Anbieter werden sie weggelassen.
       schema:
@@ -8713,6 +8866,7 @@ components:
         data_collection:
           type: string
           nullable: true
+          description: '`allow` (der Standardwert) filtert nichts. `deny` wird noch nicht unterstützt und liefert 400 unsupported_routing_filter.'
           enum:
             - allow
             - deny
@@ -8722,6 +8876,7 @@ components:
         enforce_distillable_text:
           type: boolean
           nullable: true
+          description: '`false` (der Standardwert) filtert nichts. `true` wird noch nicht unterstützt und liefert 400 unsupported_routing_filter.'
         quantizations:
           type: array
           nullable: true
@@ -8787,12 +8942,34 @@ components:
             - full
     CacheControl:
       type: object
+      description: Prompt-Cache-Steuerung. Verwende type ephemeral mit einer optionalen ttl von 5m oder 1h. scope gilt nur für eine Claude-Cache-Richtlinie auf oberster Ebene. Amazon Bedrock und Google Vertex AI cachen Claude 3.7 Sonnet, 3.5 Sonnet und 3 Opus nur für 5 Minuten; dort wird die ttl entfernt, und eine entfernte 1h wird in X-Phaseo-Dropped-Params als cache_control.ttl gemeldet.
       properties:
         type:
           type: string
         ttl:
           type: string
         scope:
+          type: string
+      additionalProperties: true
+    PromptCacheBreakpoint:
+      type: object
+      description: OpenAI-Cache-Breakpoint. Cacht alles bis einschließlich dieses Blocks. Wird an OpenAI und Azure OpenAI ab GPT-5.6 sowie an DeepInfra gesendet; Claude-Routen erhalten ihn als cache_control.
+      properties:
+        mode:
+          type: string
+          enum:
+            - explicit
+      additionalProperties: true
+    PromptCacheOptions:
+      type: object
+      description: Prompt-Cache-Modus und TTL für OpenAI und Azure OpenAI ab GPT-5.6 (ttl 30m) sowie für DeepInfra (ttl 5m oder 1h). Wird für andere Anbieter entfernt.
+      properties:
+        mode:
+          type: string
+          enum:
+            - implicit
+            - explicit
+        ttl:
           type: string
       additionalProperties: true
     ProviderOptions:
@@ -8816,11 +8993,19 @@ components:
                 - type
             prompt_cache_retention:
               type: string
+            prompt_cache_options:
+              $ref: '#/components/schemas/PromptCacheOptions'
         anthropic:
           type: object
           properties:
             cache_control:
               $ref: '#/components/schemas/CacheControl'
+        xai:
+          type: object
+          properties:
+            conversation_id:
+              type: string
+              description: xAI-Unterhaltungs-ID, gesendet im Header x-grok-conv-id.
         google:
           type: object
           properties:
@@ -9375,6 +9560,7 @@ components:
         - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
+      description: Ein optionales Feld der obersten Ebene, das als `null` gesendet wird, gilt als nicht gesetzt, genau wie ein weggelassenes Feld.
       required:
         - model
         - messages
@@ -9457,6 +9643,11 @@ components:
           default: true
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
+        plugins:
+          type: array
+          description: Gateway-Plugins für diese Anfrage. `web` ergänzt jedes Modell um Websuche und `web-fetch` um das Abrufen von Seiten; `response-healing` repariert fehlerhaftes JSON in nicht gestreamten strukturierten Antworten. Standardwerte aus Workspace und Preset werden mit dieser Liste zusammengeführt. Eine unbekannte Plugin-ID liefert 400 `unknown_gateway_plugin`.
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         logprobs:
           type: boolean
           default: false
@@ -9516,8 +9707,31 @@ components:
           type: string
         user:
           type: string
+        include_reasoning:
+          type: boolean
+          description: Wird aus Kompatibilitätsgründen akzeptiert. Reasoning wird immer zurückgegeben, wenn das Modell es erzeugt (`reasoning_content` und `reasoning_details`), unabhängig vom Wert dieses Felds.
+        prediction:
+          type: object
+          description: Vorhergesagte Ausgabe für schnellere Antworten, wenn der Großteil der Antwort im Voraus bekannt ist. Wird an Modelle von OpenAI, Mistral und Moonshot weitergeleitet; andere Anbieter ignorieren sie.
+          required:
+            - type
+            - content
+          properties:
+            type:
+              type: string
+              enum:
+                - content
+            content:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: object
+                    additionalProperties: true
         service_tier:
           type: string
+          nullable: true
+          description: Wählt eine unterstützte Routing- oder Preisstufe. `auto` (oder null) fordert keine bestimmte Stufe an und wird so geroutet und abgerechnet, als wäre das Feld nicht gesetzt; `scale` wird als `default` behandelt, die Standardstufe.
           enum:
             - standard
             - default
@@ -9526,9 +9740,22 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         prompt_cache_key:
           type: string
           nullable: true
+          description: Gruppiert zusammengehörige Anfragen, damit sie bei dem Anbieter bleiben, der ihren Prompt-Cache hat. Phaseo sendet einen Hash aus deinem Workspace und diesem Schlüssel an den Anbieter, nie den Rohschlüssel.
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: Prompt-Cache-Aufbewahrung für OpenAI- und Azure-OpenAI-Modelle vor GPT-5.6. Hat Vorrang vor provider_options.openai.prompt_cache_retention.
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -9553,8 +9780,10 @@ components:
             - assistant
             - tool
         content:
-          oneOf:
+          description: 'Inhalt der Nachricht: ein String oder ein Array von Inhaltsteilen. Nur Assistant-Nachrichten, die Tools aufrufen (mit tool_calls), können ihn auf null setzen; das Gateway lehnt null-Inhalte bei anderen Rollen mit einem 400-Fehler ab.'
+          anyOf:
             - type: string
+              nullable: true
             - type: array
               items:
                 $ref: '#/components/schemas/MessageContentPart'
@@ -9574,15 +9803,80 @@ components:
             $ref: '#/components/schemas/ChatAudioOutputPart'
         tool_call_id:
           type: string
+        reasoning_content:
+          type: string
+          description: Der Reasoning-Text des Modells, sofern der Anbieter ihn zurückgibt. Wird als delta.reasoning_content gestreamt.
+        reasoning:
+          type: string
+          description: Derselbe Reasoning-Text wie reasoning_content, unter dem Namen, den manche Clients lesen. Wird als delta.reasoning gestreamt. In der Eingabe als Alias für reasoning_content akzeptiert.
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
       discriminator:
         propertyName: role
+    ChatReasoningDetail:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning.text
+            - reasoning.summary
+            - reasoning.encrypted
+        id:
+          type: string
+        index:
+          type: integer
+        format:
+          type: string
+        text:
+          type: string
+        summary:
+          type: string
+        signature:
+          type: string
+        data:
+          type: string
     MessageContentPart:
       oneOf:
         - $ref: '#/components/schemas/TextContentPart'
         - $ref: '#/components/schemas/ImageContentPart'
         - $ref: '#/components/schemas/AudioContentPart'
         - $ref: '#/components/schemas/VideoContentPart'
+        - $ref: '#/components/schemas/FileContentPart'
         - $ref: '#/components/schemas/ToolCallContentPart'
+    FileContentPart:
+      type: object
+      description: Dateieingabe, etwa ein PDF. Setze file_data auf eine base64-Daten-URL oder file_id auf eine Datei, die beim Anbieter hochgeladen wurde, der die Anfrage bearbeitet.
+      required:
+        - type
+        - file
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+        file:
+          type: object
+          properties:
+            file_data:
+              type: string
+              minLength: 1
+            file_id:
+              type: string
+              minLength: 1
+            filename:
+              type: string
+          anyOf:
+            - required:
+                - file_data
+            - required:
+                - file_id
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     TextContentPart:
       type: object
       required:
@@ -9595,6 +9889,10 @@ components:
             - text
         text:
           type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
+        prompt_cache_breakpoint:
+          $ref: '#/components/schemas/PromptCacheBreakpoint'
     ImageContentPart:
       type: object
       required:
@@ -9756,6 +10054,8 @@ components:
         async:
           type: boolean
           description: Lässt unterstützte OpenAI-Modelle weiterarbeiten, während der Aufrufer dieses Tool ausführt. Wird auf allen Text-API-Schnittstellen akzeptiert und von anderen Anbietern ignoriert.
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         function:
           type: object
           required:
@@ -9879,6 +10179,147 @@ components:
           minimum: 1
           maximum: 100000
       additionalProperties: false
+    GatewayPlugin:
+      oneOf:
+        - $ref: '#/components/schemas/WebSearchPlugin'
+        - $ref: '#/components/schemas/WebFetchPlugin'
+        - $ref: '#/components/schemas/ResponseHealingPlugin'
+      discriminator:
+        propertyName: id
+        mapping:
+          web: '#/components/schemas/WebSearchPlugin'
+          web-fetch: '#/components/schemas/WebFetchPlugin'
+          response-healing: '#/components/schemas/ResponseHealingPlugin'
+    WebSearchPlugin:
+      type: object
+      description: Fügt der Anfrage das Server-Tool `phaseo:web_search` hinzu, sodass jedes Modell im Web suchen kann. Die Anfrage läuft, und Suchen werden gezählt und abgerechnet, genau wie mit einem `phaseo:web_search`-Tool. Enthält die Anfrage bereits ein Websuche-Tool, fügt das Plugin nichts hinzu. Andere Optionen werden ignoriert.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - exa
+            - firecrawl
+            - parallel
+            - perplexity
+            - tinyfish
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 25
+        max_uses:
+          type: integer
+          minimum: 1
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        include_domains:
+          type: array
+          items:
+            type: string
+        exclude_domains:
+          type: array
+          items:
+            type: string
+    WebFetchPlugin:
+      type: object
+      description: Fügt der Anfrage das Server-Tool `phaseo:web_fetch` hinzu, sodass jedes Modell Webseiten lesen kann. Die Anfrage läuft, und Abrufe werden gezählt und abgerechnet, genau wie mit einem `phaseo:web_fetch`-Tool. Enthält die Anfrage bereits ein Web-Abruf-Tool, fügt das Plugin nichts hinzu.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - web-fetch
+        enabled:
+          type: boolean
+          default: true
+        engine:
+          type: string
+          enum:
+            - auto
+            - native
+            - direct
+            - exa
+            - firecrawl
+            - parallel
+        max_uses:
+          type: integer
+          minimum: 1
+        max_content_tokens:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        allowed_domains:
+          type: array
+          items:
+            type: string
+        blocked_domains:
+          type: array
+          items:
+            type: string
+    ResponseHealingPlugin:
+      type: object
+      description: Repariert fehlerhaftes JSON in nicht gestreamten Antworten, die eine Ausgabe als `json_object` oder `json_schema` angefordert haben. Bei Streams wird es übersprungen.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          enum:
+            - response-healing
+        enabled:
+          type: boolean
+          default: true
+        mode:
+          type: string
+          enum:
+            - safe
+            - strict
+          default: safe
+    OpenAIWebSearchToolDefinition:
+      type: object
+      description: 'Das gehostete Websuche-Tool von OpenAI. OpenAI, Azure OpenAI (Responses) und xAI führen es nativ aus. Auf Modellen, deren Anbieter es nicht ausführen können, führt das Gateway es als `phaseo:web_search` aus: `search_context_size`, `filters.allowed_domains`, `max_results` und `engine` werden übernommen, und Suchen werden als `phaseo:web_search`-Suchen abgerechnet. Andere gehostete OpenAI-Tools (`file_search`, `code_interpreter`, `computer_use_preview`, `mcp`, `image_generation`, `shell`, `local_shell`, `apply_patch`) schlagen auf Modellen, deren Anbieter sie nicht ausführen können, mit 400 `unsupported_hosted_tool` fehl.'
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - web_search
+            - web_search_2025_08_26
+            - web_search_preview
+            - web_search_preview_2025_03_11
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        filters:
+          type: object
+          properties:
+            allowed_domains:
+              type: array
+              items:
+                type: string
+        user_location:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
@@ -9888,6 +10329,7 @@ components:
         - $ref: '#/components/schemas/SubagentToolDefinition'
         - $ref: '#/components/schemas/FusionToolDefinition'
         - $ref: '#/components/schemas/SearchModelsToolDefinition'
+        - $ref: '#/components/schemas/OpenAIWebSearchToolDefinition'
     SubagentToolDefinition:
       type: object
       required:
@@ -9940,7 +10382,7 @@ components:
               minimum: 1
               maximum: 20
     TextToolChoice:
-      description: Strategie zur Toolauswahl. Phaseo-Servertool-Typen werden akzeptiert und in Funktions- oder Toolziele des Upstreams umgeschrieben.
+      description: Strategie zur Toolauswahl. Phaseo-Servertool-Typen werden akzeptiert und in Funktions- oder Toolziele des Upstreams umgeschrieben. Ein allowed_tools-Objekt wird unverändert und mit allen Tools an OpenAI gesendet. Andere Anbieter erhalten nur die erlaubten Tools und dessen Modus (auto oder required) oder einen erzwungenen Aufruf, wenn required genau ein Tool erlaubt. Nennt allowed_tools ein Tool, das tools nicht definiert, kann nur OpenAI die Anfrage bedienen; andernfalls wird ein 400-Fehler zurückgegeben.
       oneOf:
         - type: string
           enum:
@@ -10001,7 +10443,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: Reasoning-Aufwand. Fehlt er oder ist er null, bestimmen `max_tokens`, `enabled` oder der eigene Standardwert des Modells, wie viel Reasoning das Modell betreibt.
         mode:
           type: string
           enum:
@@ -10033,7 +10476,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: Reasoning-Aufwand. Fehlt er oder ist er null, bestimmen `max_tokens`, `enabled` oder der eigene Standardwert des Modells, wie viel Reasoning das Modell betreibt.
         mode:
           type: string
           enum:
@@ -10126,14 +10570,52 @@ components:
       properties:
         prompt_tokens:
           type: integer
+          description: Eingabetoken, einschließlich Cache-Lese- und Schreibvorgängen.
+        prompt_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
         completion_tokens:
+          type: integer
+        input_tokens:
+          type: integer
+          description: Eingabetoken, einschließlich Cache-Lese- und Schreibvorgängen.
+        input_tokens_details:
+          $ref: '#/components/schemas/InputTokensDetails'
+        output_tokens:
           type: integer
         total_tokens:
           type: integer
         server_tool_use:
           $ref: '#/components/schemas/ServerToolUsage'
+        cost:
+          type: number
+          format: double
+          description: 'Was dich die Anfrage kostet, in US-Dollar: der von deinem Guthaben abgebuchte Betrag, derselbe Wert wie `cost_nanos`, nach einem etwaigen Rabatt für Datenweitergabe oder Erlass bei leerer Ausgabe. Wird in Antworten von Chat Completions, Responses, Messages und Embeddings zurückgegeben, sobald die Anfrage bepreist ist. Bei einem Stream steht er im letzten Nutzungs-Frame (bei Messages im letzten `message_delta`) und deckt den ganzen Stream ab. Ein Stream lässt ihn weg, wenn die Belastung beim Senden dieses Frames noch nicht feststeht: bei einem BYOK-Stream, dessen Servicegebühr erst am Ende des Streams berechnet wird (`cost_details.upstream_inference_cost` liefert stattdessen den Modellpreis), und bei einem bereits fehlgeschlagenen Stream, der nicht berechnet wird.'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
+    UsageCostDetails:
+      type: object
+      description: Aufschlüsselung der Kosten der Anfrage.
+      properties:
+        upstream_inference_cost:
+          type: number
+          format: double
+          nullable: true
+          description: Bei einer BYOK-Anfrage der Betrag, den der Anbieter deinem eigenen Schlüssel für die Inferenz berechnet, in US-Dollar zu den gelisteten Preisen des Modells. Null, wenn die Anfrage über Phaseo-Guthaben läuft; dann ist `cost` die gesamte Belastung.
+          example: null
+    InputTokensDetails:
+      type: object
+      description: Aufschlüsselung der Eingabetoken.
+      properties:
+        cached_tokens:
+          type: integer
+          description: Aus dem Prompt-Cache des Anbieters gelesene Eingabetoken.
+        cache_write_tokens:
+          type: integer
+          description: In den Prompt-Cache des Anbieters geschriebene Eingabetoken.
     AnthropicMessagesRequest:
       type: object
+      description: Ein optionales Feld der obersten Ebene, das als `null` gesendet wird, gilt als nicht gesetzt, genau wie ein weggelassenes Feld.
       required:
         - model
         - messages
@@ -10177,6 +10659,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - standard_only
         temperature:
           type: number
           minimum: 0
@@ -10205,6 +10689,11 @@ components:
           oneOf:
             - type: object
             - type: string
+        plugins:
+          type: array
+          description: Gateway-Plugins für diese Anfrage. `web` ergänzt jedes Modell um Websuche und `web-fetch` um das Abrufen von Seiten; `response-healing` repariert fehlerhaftes JSON in nicht gestreamten strukturierten Antworten. Standardwerte aus Workspace und Preset werden mit dieser Liste zusammengeführt. Eine unbekannte Plugin-ID liefert 400 `unknown_gateway_plugin`.
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         stream:
           type: boolean
         metadata:
@@ -10216,10 +10705,30 @@ components:
           description: Eindeutige Kennung, um zusammengehörige Anfragen (zum Beispiel eine Unterhaltung oder einen Agenten-Workflow) für die Beobachtbarkeit zu gruppieren.
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
+        context_management:
+          type: object
+          description: Kontextbearbeitung von Anthropic. `edits` akzeptiert die Strategien `clear_tool_uses_*` und `clear_thinking_*` und wird mit dem zugehörigen Beta-Header an Anthropic gesendet. Andere Anbieter führen die Anfrage ohne dieses Feld aus und nennen `context_management` in `X-Phaseo-Dropped-Params`. Bearbeitungen zur Komprimierung (`compact_*`) liefern 400.
+          properties:
+            edits:
+              type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                additionalProperties: true
+          additionalProperties: true
+        user:
+          type: string
+          description: Endbenutzerkennung, wie bei Chat Completions. Claude-Modelle erhalten sie als `metadata.user_id`, sofern `metadata.user_id` nicht gesetzt ist.
         stop_sequences:
           type: array
           items:
             type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         usage:
@@ -10255,6 +10764,15 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AnthropicUsage'
+        context_management:
+          type: object
+          description: Vorhanden, wenn die Anfrage `context_management` verwendet und Anthropic eine Bearbeitung angewendet hat. `applied_edits` listet jede Bearbeitung mit den entfernten Inhalten auf. Bei Streams steht es im abschließenden `message_delta`-Ereignis.
+          properties:
+            applied_edits:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     AnthropicMessage:
       type: object
       required:
@@ -10326,10 +10844,35 @@ components:
       properties:
         input_tokens:
           type: integer
+          description: Ungecachte Eingabetoken. Wie bei Anthropic sind Cache-Lese- und Schreibvorgänge nicht enthalten.
+        cache_read_input_tokens:
+          type: integer
+          description: Aus dem Prompt-Cache des Anbieters gelesene Eingabetoken.
+        cache_creation_input_tokens:
+          type: integer
+          description: In den Prompt-Cache des Anbieters geschriebene Eingabetoken.
+        cache_creation:
+          type: object
+          description: Cache-Schreibvorgänge, aufgeteilt nach Cache-Lebensdauer.
+          properties:
+            ephemeral_5m_input_tokens:
+              type: integer
+              description: Mit einer Cache-Lebensdauer von 5 Minuten geschriebene Eingabetoken.
+            ephemeral_1h_input_tokens:
+              type: integer
+              description: Mit einer Cache-Lebensdauer von 1 Stunde geschriebene Eingabetoken.
         output_tokens:
           type: integer
+        cost:
+          type: number
+          format: double
+          description: 'Was dich die Anfrage kostet, in US-Dollar: der von deinem Guthaben abgebuchte Betrag, derselbe Wert wie `cost_nanos`, nach einem etwaigen Rabatt für Datenweitergabe oder Erlass bei leerer Ausgabe. Wird in Antworten von Chat Completions, Responses, Messages und Embeddings zurückgegeben, sobald die Anfrage bepreist ist. Bei einem Stream steht er im letzten Nutzungs-Frame (bei Messages im letzten `message_delta`) und deckt den ganzen Stream ab. Ein Stream lässt ihn weg, wenn die Belastung beim Senden dieses Frames noch nicht feststeht: bei einem BYOK-Stream, dessen Servicegebühr erst am Ende des Streams berechnet wird (`cost_details.upstream_inference_cost` liefert stattdessen den Modellpreis), und bei einem bereits fehlgeschlagenen Stream, der nicht berechnet wird.'
+          example: 0.001234567
+        cost_details:
+          $ref: '#/components/schemas/UsageCostDetails'
     ResponsesRequest:
       type: object
+      description: Ein optionales Feld der obersten Ebene, das als `null` gesendet wird, gilt als nicht gesetzt, genau wie ein weggelassenes Feld.
       required:
         - model
         - input
@@ -10368,10 +10911,13 @@ components:
           type: boolean
         previous_response_id:
           type: string
+          description: Nicht unterstützt. Phaseo speichert keine Antworten, daher geben Anfragen mit previous_response_id oder conversation 400 unsupported_param zurück. Sende die gesamte Unterhaltung in input.
         reasoning:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
+          nullable: true
+          description: Wählt eine unterstützte Routing- oder Preisstufe. `auto` (oder null) fordert keine bestimmte Stufe an und wird so geroutet und abgerechnet, als wäre das Feld nicht gesetzt; `scale` wird als `default` behandelt, die Standardstufe.
           enum:
             - standard
             - default
@@ -10380,6 +10926,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         store:
           type: boolean
         stream:
@@ -10390,6 +10938,11 @@ components:
           maximum: 2
         text:
           type: object
+        plugins:
+          type: array
+          description: Gateway-Plugins für diese Anfrage. `web` ergänzt jedes Modell um Websuche und `web-fetch` um das Abrufen von Seiten; `response-healing` repariert fehlerhaftes JSON in nicht gestreamten strukturierten Antworten. Standardwerte aus Workspace und Preset werden mit dieser Liste zusammengeführt. Eine unbekannte Plugin-ID liefert 400 `unknown_gateway_plugin`.
+          items:
+            $ref: '#/components/schemas/GatewayPlugin'
         tool_choice:
           $ref: '#/components/schemas/TextToolChoice'
         tools:
@@ -10411,6 +10964,17 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+          description: Gruppiert zusammengehörige Anfragen, damit sie bei dem Anbieter bleiben, der ihren Prompt-Cache hat. Phaseo sendet einen Hash aus deinem Workspace und diesem Schlüssel an den Anbieter, nie den Rohschlüssel.
+        prompt_cache_retention:
+          type: string
+          enum:
+            - in_memory
+            - 24h
+          description: Prompt-Cache-Aufbewahrung für OpenAI- und Azure-OpenAI-Modelle vor GPT-5.6. Hat Vorrang vor provider_options.openai.prompt_cache_retention.
+        prompt_cache_options:
+          $ref: '#/components/schemas/PromptCacheOptions'
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         safety_identifier:
           type: string
           nullable: true
@@ -10503,6 +11067,8 @@ components:
       properties:
         type:
           type: string
+        id:
+          type: string
         role:
           type: string
           enum:
@@ -10517,11 +11083,32 @@ components:
               items:
                 type: object
             - type: object
+        summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
+        encrypted_content:
+          type: string
+          description: Reasoning-Zustand aus einer früheren Antwort, unverändert zurückgesendet. Ein Rohwert wird als OpenAI-Wert gelesen, sofern format keinen anderen Anbieter nennt.
+        signature:
+          type: string
+          description: Bei einem Reasoning-Element eine rohe Anbietersignatur, etwa eine Claude-Thinking-Signatur oder eine Gemini-Thought-Signatur. Erfordert format.
+        format:
+          type: string
+          description: Bei einem Reasoning-Element das Anbieterformat von signature oder encrypted_content.
+          enum:
+            - anthropic-claude-v1
+            - openai-responses-v1
+            - azure-openai-responses-v1
+            - xai-responses-v1
+            - google-gemini-v1
     ResponsesOutputItem:
       type: object
       description: Ausgabeelement der Responses API.
       properties:
         type:
+          type: string
+        id:
           type: string
         role:
           type: string
@@ -10535,11 +11122,43 @@ components:
           type: string
         arguments:
           type: string
+        summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponsesReasoningSummaryPart'
+        encrypted_content:
+          type: string
+    ResponsesReasoningSummaryPart:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - summary_text
+        text:
+          type: string
     ResponsesOutputContentPart:
       oneOf:
         - $ref: '#/components/schemas/ResponsesOutputTextPart'
+        - $ref: '#/components/schemas/ResponsesReasoningTextPart'
         - $ref: '#/components/schemas/ResponsesOutputImagePart'
         - $ref: '#/components/schemas/ResponsesOutputAudioPart'
+    ResponsesReasoningTextPart:
+      type: object
+      description: Reasoning-Text im Inhalt eines Reasoning-Ausgabeelements.
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - reasoning_text
+        text:
+          type: string
     ResponsesOutputTextPart:
       type: object
       required:
@@ -11024,6 +11643,310 @@ components:
         - type: string
         - type: object
           additionalProperties: true
+    ExtractionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - model
+        - input
+        - fields
+      properties:
+        model:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: Modell-ID mit der Fähigkeit extraction.extract.
+        input:
+          type: string
+          maxLength: 16384
+          description: Quelltext. Darf leer sein, wenn Bilder übergeben werden.
+        fields:
+          type: object
+          minProperties: 1
+          maxProperties: 64
+          description: Feldnamen entsprechen ^[A-Za-z_][A-Za-z0-9_.-]{0,63}$.
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionField'
+        images:
+          type: array
+          maxItems: 4
+          description: Eingebettete PNG-, JPEG- oder WebP-Bilder; nach dem Dekodieren 4 MiB pro Bild und insgesamt 8 MiB.
+          items:
+            $ref: '#/components/schemas/ExtractionImage'
+        reference_date:
+          type: string
+          format: date
+          description: Expliziter Datumskontext für unvollständige Datumsangaben.
+    ExtractionImage:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - image/png
+            - image/jpeg
+            - image/webp
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Base64-kodierte Bilddaten ohne Daten-URL-Präfix.
+    ExtractionField:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionTextField'
+        - $ref: '#/components/schemas/ExtractionNumberField'
+        - $ref: '#/components/schemas/ExtractionDateField'
+        - $ref: '#/components/schemas/ExtractionTimeField'
+        - $ref: '#/components/schemas/ExtractionDatetimeField'
+        - $ref: '#/components/schemas/ExtractionDurationField'
+        - $ref: '#/components/schemas/ExtractionListField'
+    ExtractionTextField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionNumberField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          maxLength: 64
+    ExtractionDateField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionTimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - time
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDatetimeField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - datetime
+        instructions:
+          type: string
+          maxLength: 2048
+    ExtractionDurationField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - duration
+        instructions:
+          type: string
+          maxLength: 2048
+        integer:
+          type: boolean
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+        unit:
+          type: string
+          enum:
+            - seconds
+            - minutes
+            - hours
+            - days
+            - weeks
+            - months
+            - years
+    ExtractionListField:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - items
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        instructions:
+          type: string
+          maxLength: 2048
+        items:
+          type: string
+          enum:
+            - text
+            - number
+            - date
+        decimals:
+          type: integer
+          minimum: 0
+          maximum: 6
+    ExtractionResponse:
+      type: object
+      required:
+        - model
+        - answers
+        - truncated
+        - usage
+      properties:
+        model:
+          type: string
+        answers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ExtractionAnswer'
+        truncated:
+          type: boolean
+          description: Gibt an, ob der Anbieter den Quelltext gekürzt hat.
+        usage:
+          $ref: '#/components/schemas/ExtractionUsage'
+    ExtractionAnswer:
+      oneOf:
+        - $ref: '#/components/schemas/ExtractionStringAnswer'
+        - $ref: '#/components/schemas/ExtractionNumberAnswer'
+        - $ref: '#/components/schemas/ExtractionListAnswer'
+    ExtractionStringAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+            - date
+            - time
+            - datetime
+        value:
+          type: string
+          description: Extrahierter Text oder ISO-Datum/-Uhrzeit; null bei unbestimmtem Wert.
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Vom Modell gemeldete Konfidenz; keine Garantie für Richtigkeit.
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Wahrscheinlichkeit, dass der Wert unbestimmt ist.
+    ExtractionNumberAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+        - p_null
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+            - duration
+        value:
+          type: number
+          nullable: true
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        p_null:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionListAnswer:
+      type: object
+      required:
+        - type
+        - value
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - list
+        value:
+          type: array
+          maxItems: 4096
+          items:
+            oneOf:
+              - type: string
+              - type: number
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+    ExtractionUsage:
+      type: object
+      required:
+        - input_tokens
+        - output_tokens
+        - total_tokens
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+          description: Vom Anbieter gemeldete Summe der Eingabetokens über alle Durchläufe.
+        output_tokens:
+          type: integer
+          enum:
+            - 0
+        total_tokens:
+          type: integer
+          minimum: 0
     DecisionCreateRequest:
       description: Das OpenAI-Format wird empfohlen. Das bisherige Format bleibt unterstützt. Die Antwort folgt der Anfrage; Formate nicht mischen.
       oneOf:
@@ -14648,11 +15571,19 @@ components:
           type: boolean
           example: false
         error:
+          description: Das Fehlerobjekt (`code`, `message`, `type`, `param` und optional `metadata`), das OpenAI-kompatible SDKs lesen. Frühere Antworten lieferten hier den Code als String; er wird jetzt zusätzlich als `code` auf oberster Ebene zurückgegeben.
           oneOf:
             - type: string
-            - type: object
-              additionalProperties: true
-          example: error_type
+            - $ref: '#/components/schemas/ErrorObject'
+          example:
+            code: validation_error
+            message: 'Unknown parameter: foo'
+            type: invalid_request_error
+            param: foo
+        code:
+          type: string
+          description: Der Fehlercode, derselbe Wert wie `error.code`.
+          example: validation_error
         message:
           type: string
           example: Human-readable error message
@@ -14727,6 +15658,46 @@ components:
           items:
             type: object
             additionalProperties: true
+      additionalProperties: true
+    ErrorObject:
+      type: object
+      description: 'Ein Gateway-Fehler in der Form, die die SDKs von OpenAI lesen. `type` ergibt sich aus dem HTTP-Status: invalid_request_error für die meisten 4xx, authentication_error (401), insufficient_quota (402), permission_error (403), not_found_error (404), rate_limit_error (429), service_unavailable (503), overloaded (529) und server_error für andere 5xx.'
+      required:
+        - code
+        - message
+        - type
+      properties:
+        code:
+          type: string
+          description: Maschinenlesbarer Fehlercode.
+          example: validation_error
+        message:
+          type: string
+          description: Verständliche Erklärung des Fehlers.
+          example: 'Unknown parameter: foo'
+        type:
+          type: string
+          description: Der Fehlertyp, nach den von OpenAI dokumentierten Fehlertypen.
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - permission_error
+            - not_found_error
+            - rate_limit_error
+            - insufficient_quota
+            - server_error
+            - service_unavailable
+            - overloaded
+          example: invalid_request_error
+        param:
+          type: string
+          nullable: true
+          description: Der Anfrageparameter, der den Fehler verursacht hat, sofern bekannt.
+          example: foo
+        metadata:
+          type: object
+          description: Strukturierte Details, die auch auf oberster Ebene zurückgegeben werden, etwa der fehlgeschlagene Anbieter, `reason`, `failed_statuses`, `retry_after_seconds` oder `upstream_error`.
+          additionalProperties: true
       additionalProperties: true
     ErrorUpstreamError:
       type: object
@@ -15133,8 +16104,13 @@ components:
     ApiKeyWithValueResponse:
       type: object
       required:
+        - key
         - data
       properties:
+        key:
+          type: string
+          description: API-Schlüssel im Klartext, derselbe Wert wie `data.key`. Wird nur einmal bei der Erstellung zurückgegeben.
+          example: phaseo_v1_sk_abcd1234_supersecretvalue
         data:
           $ref: '#/components/schemas/ApiKeyWithValue'
       additionalProperties: false
@@ -19458,6 +20434,300 @@ components:
             $ref: '#/components/schemas/WorkspaceBudget'
       additionalProperties: false
     WorkspaceBudgetDeleteResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - id
+            - deleted
+          properties:
+            id:
+              type: string
+              format: uuid
+            deleted:
+              type: boolean
+          additionalProperties: false
+      additionalProperties: false
+    ClassifierValue:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        description:
+          type: string
+          maxLength: 300
+          nullable: true
+          description: Tells the model when to pick this value.
+      additionalProperties: false
+    ClassifierDimension:
+      type: object
+      description: One question the classifier answers about each request. The answer is written as a request label whose key is this dimension's key. If the caller already sent a label with that key, the dimension is skipped.
+      required:
+        - key
+        - values
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9_.:-]+$
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        multiple:
+          type: boolean
+          default: false
+          description: Allow more than one value per request.
+        allow_other:
+          type: boolean
+          default: false
+          description: Let the model answer "other" when no listed value fits.
+        values:
+          type: array
+          description: Between 2 and 50 values. A single value is allowed only when allow_other is true.
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ClassifierValue'
+      additionalProperties: false
+    ClassifierScope:
+      type: object
+      description: Limits which requests are classified. Leave a list out to include everything.
+      properties:
+        key_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        app_ids:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        models:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+      additionalProperties: false
+    ClassifierSampleBy:
+      type: string
+      description: request samples each request on its own. session keeps every request in a session in or out together.
+      enum:
+        - request
+        - session
+    ClassifierInputScope:
+      type: string
+      description: prompt classifies the request messages. prompt_and_response also shows the model the generated response.
+      enum:
+        - prompt
+        - prompt_and_response
+    Classifier:
+      type: object
+      description: A workspace taxonomy that a chosen model applies to requests after they finish.
+      required:
+        - id
+        - workspace_id
+        - name
+        - description
+        - enabled
+        - model
+        - instructions
+        - dimensions
+        - sample_rate
+        - sample_by
+        - input_scope
+        - scope
+        - monthly_budget_usd
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          description: Model that classifies requests, for example google/gemini-2.5-flash-lite.
+        instructions:
+          type: string
+          maxLength: 8000
+          description: Extra guidance for the model, added to the classification prompt.
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          description: Share of eligible requests to classify. 1 classifies every request.
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          nullable: true
+          description: Most the classifier may spend in a UTC calendar month. Classification pauses for the rest of the month once it is reached. null means no cap.
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    ClassifierCreateInput:
+      type: object
+      required:
+        - name
+        - model
+        - dimensions
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+          default: true
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+          default: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
+          nullable: true
+      additionalProperties: false
+    ClassifierUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        enabled:
+          type: boolean
+        model:
+          type: string
+          maxLength: 200
+        instructions:
+          type: string
+          maxLength: 8000
+        dimensions:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/ClassifierDimension'
+        sample_rate:
+          type: number
+          format: double
+          minimum: 0.0001
+          maximum: 1
+        sample_by:
+          $ref: '#/components/schemas/ClassifierSampleBy'
+        input_scope:
+          $ref: '#/components/schemas/ClassifierInputScope'
+        scope:
+          $ref: '#/components/schemas/ClassifierScope'
+        monthly_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000
+          nullable: true
+      additionalProperties: false
+    ClassifierResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Classifier'
+      additionalProperties: false
+    ClassifierDeleteResponse:
       type: object
       required:
         - data

@@ -1,4 +1,20 @@
+/**
+ * An optional top-level field sent as `null` is treated as unset, the same as leaving it out.
+ */
 export interface AnthropicMessagesRequest {
+  cache_control?: {
+    scope?: string;
+    ttl?: string;
+    type?: string;
+    [key: string]: unknown;
+  };
+  context_management?: {
+    edits?: {
+      type: string;
+      [key: string]: unknown;
+    }[];
+    [key: string]: unknown;
+  };
   debug?: {
     enabled?: boolean;
     return_upstream_request?: boolean;
@@ -40,6 +56,40 @@ export interface AnthropicMessagesRequest {
   };
   model: string;
   models?: string[];
+  plugins?: (
+    | {
+        enabled?: boolean;
+        engine?:
+          | "auto"
+          | "native"
+          | "exa"
+          | "firecrawl"
+          | "parallel"
+          | "perplexity"
+          | "tinyfish";
+        exclude_domains?: string[];
+        id: "web";
+        include_domains?: string[];
+        max_results?: number;
+        max_uses?: number;
+        search_context_size?: "low" | "medium" | "high";
+      }
+    | {
+        allowed_domains?: string[];
+        blocked_domains?: string[];
+        enabled?: boolean;
+        engine?:
+          "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+        id: "web-fetch";
+        max_content_tokens?: number;
+        max_uses?: number;
+      }
+    | {
+        enabled?: boolean;
+        id: "response-healing";
+        mode?: "safe" | "strict";
+      }
+  )[];
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;
@@ -101,11 +151,20 @@ export interface AnthropicMessagesRequest {
         compact_threshold?: number;
         type: "compaction";
       };
+      prompt_cache_options?: {
+        mode?: "implicit" | "explicit";
+        ttl?: string;
+        [key: string]: unknown;
+      };
       prompt_cache_retention?: string;
+    };
+    xai?: {
+      conversation_id?: string;
     };
   };
   reasoning?: {
-    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+    effort?:
+      "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
     enabled?: boolean;
     max_tokens?: number;
     mode?: "standard" | "pro";
@@ -118,7 +177,9 @@ export interface AnthropicMessagesRequest {
     | "ultrafast"
     | "priority"
     | "flex"
-    | "batch";
+    | "batch"
+    | "auto"
+    | "standard_only";
   session_id?: string;
   stop_sequences?: string[];
   stream?: boolean;
@@ -212,4 +273,5 @@ export interface AnthropicMessagesRequest {
   top_k?: number;
   top_p?: number;
   usage?: boolean;
+  user?: string;
 }

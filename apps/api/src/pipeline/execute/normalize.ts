@@ -3,7 +3,9 @@
 // How: Adjusts IR params that are not provider-specific.
 
 import type { IRChatRequest } from "@core/ir";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type { Protocol } from "@protocols/detect";
+import { forwardsOpenAIAllowedTools } from "@protocols/shared/text-normalizers";
 import { getProviderProfile } from "@providers/providerProfiles";
 import {
 	DEFAULT_ANTHROPIC_MAX_TOKENS,
@@ -14,6 +16,9 @@ import {
 	REASONING_EFFORT_ORDER,
 	type ReasoningEffort,
 } from "./textNormalizePolicy";
+import { dropUnsupportedParams, type DroppedParam } from "./unsupportedParams";
+import { dropVerbatimResponsesItems } from "./responsesItems";
+import { dropUnsupportedCacheTtl } from "./cacheTtl";
 type ParamRange = {
     min?: number;
     max?: number;
@@ -178,8 +183,10 @@ function normalizeMaxTokens(
         keys: ["max_tokens", "max_output_tokens"],
         fallback: { min: 1 },
     });
-    if (typeof providerMaxOutputTokens === "number" && Number.isFinite(providerMaxOutputTokens)) {
-        range.max = Math.min(range.max ?? Number.POSITIVE_INFINITY, providerMaxOutputTokens);
+    // A stored limit of 0 is unknown, not a cap of zero tokens.
+    const providerLimit = routeOutputTokenLimit(providerMaxOutputTokens);
+    if (providerLimit !== null) {
+        range.max = Math.min(range.max ?? Number.POSITIVE_INFINITY, providerLimit);
     }
 
     if (typeof ir.maxTokens === "number" && Number.isFinite(ir.maxTokens)) {
@@ -194,6 +201,24 @@ function normalizeMaxTokens(
     return undefined;
 }
 
+/**
+ * An `allowed_tools` choice limits the model to some of the defined tools.
+ * OpenAI is sent the original choice and every tool, which keeps the tool list
+ * (and its prompt cache) the same across turns; every other provider has no
+ * such choice, so it is sent only the allowed tools.
+ */
+function restrictToAllowedTools(ir: IRChatRequest, providerId: string): IRChatRequest {
+    if (!ir.allowedToolNames) return ir;
+    const { allowedToolNames, ...rest } = ir;
+    if (forwardsOpenAIAllowedTools(providerId) || !rest.tools) return rest;
+    const allowed = new Set(allowedToolNames);
+    const tools = rest.tools.filter((tool) => allowed.has(tool.name));
+    if (tools.length > 0) return { ...rest, tools };
+    // Nothing the model may call. (An entry that names no defined tool keeps
+    // these providers out of routing; see providerDocsValidation.)
+    return { ...rest, tools: undefined, toolChoice: undefined };
+}
+
 export function normalizeIRForProvider(
     ir: IRChatRequest,
     providerId: string,
@@ -202,9 +227,21 @@ export function normalizeIRForProvider(
         capabilityParams?: Record<string, any> | null;
         providerMaxOutputTokens?: number | null;
         modelForReasoning?: string | null;
+        /** Called with the optional parameters removed for this provider. */
+        onDroppedParams?: (dropped: DroppedParam[]) => void;
     }
 ): IRChatRequest {
     const capabilityParams = options?.capabilityParams ?? null;
+    // Parameters the provider does not support are dropped (and reported), not
+    // forwarded: see ./unsupportedParams.ts.
+    const supported = dropUnsupportedParams(ir, providerId, capabilityParams);
+    // Responses input items only OpenAI's API defines are removed the same way.
+    const items = dropVerbatimResponsesItems(supported.ir, providerId);
+    // So is a 1-hour cache TTL on a model the provider caches for 5 minutes only.
+    const cacheTtl = dropUnsupportedCacheTtl(items.ir, providerId, [options?.modelForReasoning]);
+    const dropped = [...supported.dropped, ...items.dropped, ...cacheTtl.dropped];
+    if (dropped.length > 0) options?.onDroppedParams?.(dropped);
+    ir = restrictToAllowedTools(cacheTtl.ir, providerId);
     const modelForReasoning = options?.modelForReasoning ?? ir.model;
     const nextMaxTokens = normalizeMaxTokens(
         ir,

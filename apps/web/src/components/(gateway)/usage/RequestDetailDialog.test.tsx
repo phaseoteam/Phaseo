@@ -73,6 +73,12 @@ describe("RequestDetailDialog", () => {
 		expect(timeline.indexOf("Model call")).toBeLessThan(timeline.indexOf("datetime"));
 		expect(timeline.indexOf("datetime")).toBeLessThan(timeline.indexOf("Model continuation"));
 	});
+	it("shows a request's classifications by classifier name", () => {
+		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} classifiers={[{ id: "c1", name: "Department", enabled: true, dimensions: [{ key: "department", name: "Department", multiple: false, values: ["legal"] }] }]} request={{ ...historicalRequestWithoutCollections, detail_metadata: { labels: [{ key: "department", value: "legal" }], classifications: [{ classifier_id: "c1", status: "classified", model: "m", labels: [{ key: "department", value: "legal", confidence: 0.5 }], response_id: "req_c", cost_nanos: 1000 }] } }} />);
+		expect(markup).toContain("Classifications");
+		expect(markup).toContain("50% confidence");
+		expect(markup).toContain("/settings/usage/logs/requests/req_c");
+	});
 	it("shows the Trace tab only when its rollout gate passes", () => {
 		const render = () => renderToStaticMarkup(<TraceViewGateProvider enabled={mockTraceEnabled}><RequestDetailDialog open onOpenChange={() => {}} request={historicalRequestWithoutCollections} /></TraceViewGateProvider>);
 		expect(render()).not.toContain('value="trace"');

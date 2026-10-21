@@ -14,13 +14,13 @@ import { useTranslations } from "next-intl";
 export default function ComparisonDisplay({
 	selectedModels,
 	usageByModel,
-	models,
+	selectedOptions,
 	selectedIds,
 	onSelectedIdsChange,
 }: {
 	selectedModels: ExtendedModel[];
 	usageByModel: CompareGatewayUsageByModel;
-	models: CompareModelOption[];
+	selectedOptions: CompareModelOption[];
 	selectedIds: string[];
 	onSelectedIdsChange: (ids: string[]) => void;
 }) {
@@ -30,7 +30,7 @@ export default function ComparisonDisplay({
 			<DecisionMatrix
 				selectedModels={selectedModels}
 				usageByModel={usageByModel}
-				models={models}
+				selectedOptions={selectedOptions}
 				selectedIds={selectedIds}
 				onSelectedIdsChange={onSelectedIdsChange}
 			/>

@@ -360,11 +360,26 @@ function collectGenericPromptTargets(body: any): TextTarget[] {
 	return targets;
 }
 
+function collectExtractionTargets(body: any): TextTarget[] {
+	const targets = collectGenericPromptTargets(body);
+	if (body?.fields && typeof body.fields === "object") {
+		for (const [name, field] of Object.entries(body.fields)) {
+			collectDecisionTargetsFromValue(
+				(field as { instructions?: unknown })?.instructions,
+				["fields", name, "instructions"],
+				targets,
+			);
+		}
+	}
+	return targets;
+}
+
 function collectSensitiveInfoTargets(endpoint: Endpoint, body: any): TextTarget[] {
 	if (endpoint === "chat.completions") return collectChatTargets(body);
 	if (endpoint === "messages") return collectAnthropicTargets(body);
 	if (endpoint === "responses") return collectResponsesTargets(body);
 	if (endpoint === "decisions") return collectDecisionTargets(body);
+	if (endpoint === "extractions") return collectExtractionTargets(body);
 	return collectGenericPromptTargets(body);
 }
 

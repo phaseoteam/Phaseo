@@ -24,6 +24,22 @@ describe("normalizeIRForProvider", () => {
 		expect(normalized.maxTokens).toBe(4096);
 	});
 
+	it.each([0, -1])("does not clamp maxTokens to a stored route limit of %s", (limit) => {
+		const normalized = normalizeIRForProvider(baseIr({ maxTokens: 777 }), "parasail", "anthropic.messages", {
+			providerMaxOutputTokens: limit,
+		});
+
+		expect(normalized.maxTokens).toBe(777);
+	});
+
+	it("clamps maxTokens to a known route limit", () => {
+		const normalized = normalizeIRForProvider(baseIr({ maxTokens: 777 }), "parasail", "anthropic.messages", {
+			providerMaxOutputTokens: 512,
+		});
+
+		expect(normalized.maxTokens).toBe(512);
+	});
+
 	it("uses capability range metadata to clamp numeric params", () => {
 		const ir = baseIr({
 			temperature: 0.1,

@@ -136,6 +136,10 @@
 					"title": "Criar uma proteção",
 					"subtitle": "Adicionar uma política para solicitações ou respostas"
 				},
+				"action-create-classifier": {
+					"title": "Criar um classificador",
+					"subtitle": "Rotule solicitações por departamento, tarefa ou público"
+				},
 				"action-copy-page-link": {
 					"title": "Copiar o link da página atual",
 					"subtitle": "Copiar a URL desta página para a área de transferência"
@@ -250,6 +254,7 @@
 				"nav-settings-presets": "Predefinições de roteamento",
 				"nav-settings-privacy": "Configurações de privacidade",
 				"nav-settings-guardrails": "Proteções",
+				"nav-settings-classifiers": "Classificadores",
 				"nav-settings-oauth": "Aplicativos OAuth",
 				"nav-settings-broadcast": "Transmissão",
 				"nav-settings-webhooks": "Webhooks",
@@ -328,6 +333,7 @@
 				"nav-settings-account-privacy": "Privacidade da conta",
 				"nav-settings-credits-onboarding": "Configurar faturamento",
 				"nav-settings-guardrails-new": "Criar guardrail",
+				"nav-settings-classifiers-new": "Criar classificador",
 				"nav-settings-presets-new": "Criar predefinição de roteamento",
 				"nav-how-phaseo-normalises-ai-benchmarks": "Como os benchmarks são normalizados",
 				"nav-how-phaseo-measures-latency-throughput": "Como o desempenho é medido",

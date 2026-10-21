@@ -28,6 +28,8 @@ export type {
 	PreviewLocale,
 	PublicLocale,
 	RuntimeLocale,
+	ShippedLocale,
+	StagedLocale,
 	TranslationLocale,
 	VariantLocale,
 } from "./locales";

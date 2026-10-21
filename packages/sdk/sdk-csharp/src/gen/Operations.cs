@@ -196,6 +196,18 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Task<Dictionary<string, object>?> CreateClassifierAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/classifiers";
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Task<Dictionary<string, object>?> CreateDataContributionClassifierAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -229,6 +241,18 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/embeddings";
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> CreateExtractionAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/extractions";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
@@ -668,6 +692,19 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
 
+	public static Task<Dictionary<string, object>?> DeleteClassifierAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		var resolvedPath = "/classifiers/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
+		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
+	}
+
 	public static Task<Dictionary<string, object>?> DeleteDataContributionClassifierAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -1053,6 +1090,19 @@ public static class Operations
 	{
 		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/keys/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> GetClassifierAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		var resolvedPath = "/classifiers/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
@@ -1630,6 +1680,18 @@ public static class Operations
 	{
 		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batch/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/requests";
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> ListClassifiersAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/classifiers";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
@@ -2542,6 +2604,19 @@ public static class Operations
 	{
 		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/keys/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
+		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> UpdateClassifierAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		var resolvedPath = "/classifiers/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
 

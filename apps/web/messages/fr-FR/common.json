@@ -136,6 +136,10 @@
 					"title": "Créer un garde-fou",
 					"subtitle": "Ajouter une politique pour les requêtes ou les réponses"
 				},
+				"action-create-classifier": {
+					"title": "Créer un classificateur",
+					"subtitle": "Étiqueter les requêtes par service, tâche ou public"
+				},
 				"action-copy-page-link": {
 					"title": "Copier le lien de la page",
 					"subtitle": "Copier l’URL de cette page dans le presse-papiers"
@@ -250,6 +254,7 @@
 				"nav-settings-presets": "Préréglages de routage",
 				"nav-settings-privacy": "Paramètres de confidentialité",
 				"nav-settings-guardrails": "Garde-fous",
+				"nav-settings-classifiers": "Classificateurs",
 				"nav-settings-oauth": "Applications OAuth",
 				"nav-settings-broadcast": "Diffusion",
 				"nav-settings-webhooks": "Webhooks",
@@ -328,6 +333,7 @@
 				"nav-settings-account-privacy": "Confidentialité du compte",
 				"nav-settings-credits-onboarding": "Configurer la facturation",
 				"nav-settings-guardrails-new": "Créer un garde-fou",
+				"nav-settings-classifiers-new": "Créer un classificateur",
 				"nav-settings-presets-new": "Créer un préréglage de routage",
 				"nav-how-phaseo-normalises-ai-benchmarks": "Comment les benchmarks sont normalisés",
 				"nav-how-phaseo-measures-latency-throughput": "Comment les performances sont mesurées",

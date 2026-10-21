@@ -1,7 +1,7 @@
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { getServerAccountContext } from "./serverAccountContext";
 import { resolveAccessibleWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
-import type { UsageLabelFacet, UsageLabelSummary } from "./settingsTypes";
+import type { RequestClassifierSummary, UsageLabelFacet, UsageLabelSummary } from "./settingsTypes";
 import type { UsageDay } from "@/lib/gateway/usage/periodUsageKpis";
 
 /** Exact usage for one bucket, model, provider, key, app and BYOK, summed in the database. */
@@ -44,6 +44,8 @@ export type SettingsObservabilityData = {
 	previous: ObservabilityUsageWindow;
 	/** The last 7 days under the same filters, which set the forecasts' pace. */
 	recent?: ObservabilityUsageWindow;
+	/** Classifier names for label keys and classifier calls. */
+	requestClassifiers?: RequestClassifierSummary[];
 	signedIn: boolean;
 	workspaceId: string | null;
 };

@@ -1,4 +1,4 @@
-import { groupModelRows, type ModelData } from "./modelTableGrouping";
+import { describeProviderRoutes, groupModelRows, lowestDisplayedPrice, type ModelData } from "./modelTableGrouping";
 
 function row(overrides: Partial<ModelData>): ModelData {
 	return {
@@ -32,7 +32,7 @@ describe("groupModelRows", () => {
 		const groups = groupModelRows([
 			row({ modelId: "openai/gpt-6-luna", endpoint: "text.generate" }),
 			row({ modelId: "openai/gpt-6-luna", endpoint: "decisions.make",
-				provider: { id: "openai", name: "OpenAI", inputPrice: 0.1, outputPrice: 0, features: [] } }),
+				provider: { id: "openai", name: "OpenAI", inputPrice: 0.1, outputPrice: null, features: [] } }),
 		]);
 		expect(groups).toHaveLength(1);
 		expect(groups[0].endpoints).toEqual(["text.generate", "decisions.make"]);
@@ -40,8 +40,8 @@ describe("groupModelRows", () => {
 		expect(groups[0].inputPrices).toEqual([1]);
 		expect(groups[0].outputPrices).toEqual([2]);
 		expect(groups[0].operationPrices).toEqual([
-			{ capability: "text.generate", inputPrices: [1], outputPrices: [2] },
-			{ capability: "decisions.make", inputPrices: [0.1], outputPrices: [0] },
+			{ capability: "text.generate", inputPrices: [1], outputPrices: [2], usagePrices: [] },
+			{ capability: "decisions.make", inputPrices: [0.1], outputPrices: [], usagePrices: [] },
 		]);
 	});
 	it("renders one aggregate per canonical model with deduplicated providers", () => {
@@ -72,21 +72,208 @@ describe("groupModelRows", () => {
 		expect(result).toHaveLength(1);
 		expect(result[0]).toMatchObject({
 			modelId: "openai/gpt-test",
-			endpoints: ["responses", "chat.completions"],
+			endpoints: ["text.generate"],
 			statusEndpoints: [
-				{ status: "active", endpoint: "responses" },
-				{ status: "active", endpoint: "chat.completions" },
-				{ status: "disabled", endpoint: "chat.completions" },
+				{ status: "active", endpoints: ["text.generate"] },
+				{ status: "disabled", endpoints: ["text.generate"] },
 			],
 			inputModalities: ["text", "image"],
 			features: ["tools", "json"],
 			executionRegions: ["us", "eu"],
 			context: 256_000,
-			inputPrices: [0, 1],
-			outputPrices: [2, 3],
+			// Azure and OpenAI tie on 3 combined; the cheaper input wins.
+			inputPrices: [0],
+			outputPrices: [3],
 			popularityTokensWeek: 150,
 		});
 		expect(result[0]?.providers.map(({ id }) => id)).toEqual(["azure", "openai"]);
+	});
+
+	it("shows a separate image capability under one status icon when it shares the text rate", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "image.generate", provider: { id: "google-ai-studio", name: "Google AI Studio", inputPrice: 1.5, outputPrice: 7.5, features: [] } }),
+			row({ endpoint: "text.generate", provider: { id: "google-ai-studio", name: "Google AI Studio", inputPrice: 1.5, outputPrice: 7.5, features: [] } }),
+		]);
+		expect(group.endpoints).toEqual(["text.generate", "image.generate"]);
+		expect(group.statusEndpoints).toEqual([{ status: "active", endpoints: ["text.generate", "image.generate"] }]);
+		expect(group.inputPrices).toEqual([1.5]);
+		expect(group.outputPrices).toEqual([7.5]);
+		expect(group.operationPrices).toEqual([]);
+	});
+
+	it("collapses endpoint aliases into one capability", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "embeddings", gatewayStatus: "disabled" }),
+			row({ endpoint: "text.embed" }),
+			row({ endpoint: "/v1/images/generations" }),
+		]);
+		expect(group.endpoints).toEqual(["image.generate", "text.embed"]);
+		expect(group.statusEndpoints).toEqual([
+			{ status: "disabled", endpoints: ["text.embed"] },
+			{ status: "active", endpoints: ["image.generate", "text.embed"] },
+		]);
+	});
+
+	it("does not let a batch row without a token rate become a $0 price floor", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "batch", tier: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: null, outputPrice: null, features: [] } }),
+			row({ endpoint: "text.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 2, outputPrice: 10, features: [] } }),
+		]);
+		expect(group.endpoints).toEqual(["text.generate", "batch"]);
+		expect(group.tiers).toEqual(["batch", "standard"]);
+		expect(group.inputPrices).toEqual([2]);
+		expect(group.outputPrices).toEqual([10]);
+		expect(group.operationPrices).toEqual([]);
+	});
+
+	it("treats a batch row's 0/0 placeholder as no price, as older projections send it", () => {
+		const [group] = groupModelRows([
+			row({ modelId: "openai/gpt-6.1-sol", endpoint: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
+			row({ modelId: "openai/gpt-6.1-sol", endpoint: "text.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 2, outputPrice: 10, features: [] } }),
+		]);
+		expect(group.endpoints).toEqual(["text.generate", "batch"]);
+		expect(group.inputPrices).toEqual([2]);
+		expect(group.outputPrices).toEqual([10]);
+		expect(group.operationPrices).toEqual([]);
+		expect(group.usagePrices).toEqual([]);
+	});
+
+	it("keeps a free batch route's $0 and a listed batch rate", () => {
+		const [free] = groupModelRows([
+			row({ endpoint: "batch", tier: "free", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
+		]);
+		expect(free.inputPrices).toEqual([0]);
+		const [listed] = groupModelRows([
+			row({ endpoint: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: 1, outputPrice: 5, features: [] } }),
+		]);
+		expect(listed.outputPrices).toEqual([5]);
+	});
+
+	it("shows the cheapest provider's rates rather than a range", () => {
+		const [group] = groupModelRows([
+			row({ provider: { id: "openai", name: "OpenAI", inputPrice: 1, outputPrice: 2, features: [] } }),
+			row({ provider: { id: "azure", name: "Azure", inputPrice: 1.1, outputPrice: 2.2, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([1]);
+		expect(group.outputPrices).toEqual([2]);
+	});
+
+	it("never mixes one provider's input with another's output", () => {
+		const [group] = groupModelRows([
+			row({ provider: { id: "a", name: "A", inputPrice: 0.5, outputPrice: 9, features: [] } }),
+			row({ provider: { id: "b", name: "B", inputPrice: 2, outputPrice: 3, features: [] } }),
+		]);
+		// B is cheaper overall (5 against 9.5); A's $0.50 input is not offered with B's output.
+		expect(group.inputPrices).toEqual([2]);
+		expect(group.outputPrices).toEqual([3]);
+	});
+
+	it("ranks a discounted tier behind a standard route", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "text.generate", tier: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: 0.5, outputPrice: 1, features: [] } }),
+			row({ endpoint: "text.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 1, outputPrice: 2, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([1]);
+		expect(group.outputPrices).toEqual([2]);
+	});
+
+	it("prefers a route that lists both sides over one that lists only a cheap input", () => {
+		const [group] = groupModelRows([
+			row({ provider: { id: "a", name: "A", inputPrice: 0.1, outputPrice: null, features: [] } }),
+			row({ provider: { id: "b", name: "B", inputPrice: 1, outputPrice: 2, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([1]);
+		expect(group.outputPrices).toEqual([2]);
+	});
+
+	it("keeps a genuinely free route's $0", () => {
+		const [group] = groupModelRows([
+			row({ tier: "free", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
+			row({ provider: { id: "azure", name: "Azure", inputPrice: 1.1, outputPrice: 2.2, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([0]);
+		expect(group.outputPrices).toEqual([0]);
+	});
+
+	it("keeps a listed $0 standard rate", () => {
+		const [group] = groupModelRows([
+			row({ provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([0]);
+		expect(group.outputPrices).toEqual([0]);
+	});
+
+	it("shows a per-second video model's charge instead of a $0 token price", () => {
+		const video = (providerId: string, usagePrice: number) => row({
+			modelId: "alibaba/happyhorse-1.0",
+			endpoint: "video.generate",
+			provider: { id: providerId, name: providerId, inputPrice: null, outputPrice: null, usagePrice, usageUnit: "second", features: [] },
+		});
+		const [group] = groupModelRows([video("venice", 0.2), video("alibaba-cloud", 0.14), video("runway", 0.14)]);
+		expect(group.inputPrices).toEqual([]);
+		expect(group.outputPrices).toEqual([]);
+		expect(group.usagePrices).toEqual([{ price: 0.14, unit: "second" }]);
+		expect(group.operationPrices).toEqual([]);
+	});
+
+	it("states per-pixel and per-character charges per million", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "image.generate", provider: { id: "together", name: "Together", inputPrice: null, outputPrice: null, usagePrice: 5.8e-9, usageUnit: "pixel", features: [] } }),
+			row({ endpoint: "audio.speech", provider: { id: "deepinfra", name: "DeepInfra", inputPrice: null, outputPrice: null, usagePrice: 6.2e-7, usageUnit: "character", features: [] } }),
+		]);
+		expect(group.usagePrices.map(({ unit }) => unit)).toEqual(["megapixel", "1M characters"]);
+		expect(group.usagePrices[0].price).toBeCloseTo(0.0058);
+		expect(group.usagePrices[1].price).toBeCloseTo(0.62);
+	});
+
+	it("shows no price for an image model whose routes list none", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "image.generate", provider: { id: "openai", name: "OpenAI", inputPrice: null, outputPrice: null, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([]);
+		expect(group.outputPrices).toEqual([]);
+		expect(group.usagePrices).toEqual([]);
+	});
+
+	it("sorts by the cheapest rate shown for any capability", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "text.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 10, outputPrice: 30, features: [] } }),
+			row({ endpoint: "image.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 1, outputPrice: 8, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([10]);
+		expect(lowestDisplayedPrice(group, "inputPrices")).toBe(1);
+		expect(lowestDisplayedPrice(group, "outputPrices")).toBe(8);
+		const [unpriced] = groupModelRows([
+			row({ endpoint: "image.generate", provider: { id: "openai", name: "OpenAI", inputPrice: null, outputPrice: null, features: [] } }),
+		]);
+		expect(lowestDisplayedPrice(unpriced, "inputPrices")).toBe(Number.POSITIVE_INFINITY);
+	});
+
+	it("keeps a per-image charge beside the text token rate", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "text.generate", provider: { id: "google", name: "Google", inputPrice: 0.3, outputPrice: 2.5, features: [] } }),
+			row({ endpoint: "image.generate", provider: { id: "google", name: "Google", inputPrice: null, outputPrice: null, usagePrice: 0.039, usageUnit: "image", features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([0.3]);
+		expect(group.outputPrices).toEqual([2.5]);
+		expect(group.usagePrices).toEqual([{ price: 0.039, unit: "image" }]);
+		expect(group.operationPrices).toEqual([
+			{ capability: "text.generate", inputPrices: [0.3], outputPrices: [2.5], usagePrices: [] },
+			{ capability: "image.generate", inputPrices: [], outputPrices: [], usagePrices: [{ price: 0.039, unit: "image" }] },
+		]);
+	});
+
+	it("keeps per-capability prices when capabilities charge different rates", () => {
+		const [group] = groupModelRows([
+			row({ endpoint: "ocr", provider: { id: "atlascloud", name: "AtlasCloud", inputPrice: 0.05, outputPrice: 0.08, features: [] } }),
+			row({ endpoint: "text.generate", provider: { id: "atlascloud", name: "AtlasCloud", inputPrice: 0.04, outputPrice: 0.08, features: [] } }),
+		]);
+		expect(group.inputPrices).toEqual([0.04]);
+		expect(lowestDisplayedPrice(group, "inputPrices")).toBe(0.04);
+		expect(group.operationPrices).toEqual([
+			{ capability: "text.generate", inputPrices: [0.04], outputPrices: [0.08], usagePrices: [] },
+			{ capability: "ocr", inputPrices: [0.05], outputPrices: [0.08], usagePrices: [] },
+		]);
 	});
 
 	it("keeps models separate and only marks a model retired when every variant is retired", () => {
@@ -98,5 +285,47 @@ describe("groupModelRows", () => {
 
 		expect(result).toHaveLength(2);
 		expect(result.find(({ modelId }) => modelId === "openai/gpt-test")?.retired).toBeUndefined();
+	});
+});
+
+describe("describeProviderRoutes", () => {
+	const provider = (id: string, name: string, executionRegions: string[]): ModelData["provider"] => ({
+		id, name, executionRegions, inputPrice: 1, outputPrice: 2, features: [],
+	});
+
+	it("tells Mistral's two routes apart by offer and execution regions", () => {
+		const routes = describeProviderRoutes([
+			provider("mistral", "Mistral", ["eu", "global"]),
+			provider("mistral-eu", "Mistral", ["eu"]),
+		]);
+		expect(routes).toEqual([
+			{ id: "mistral", name: "Mistral", regions: ["global", "eu"] },
+			{ id: "mistral-eu", name: "Mistral (EU)", regions: ["eu"] },
+		]);
+	});
+
+	it("names Claude Sonnet 5.5's Anthropic routes from catalogue data", () => {
+		const routes = describeProviderRoutes([
+			provider("anthropic", "Anthropic", ["global", "us"]),
+			provider("anthropic-aws", "Anthropic", ["global", "us"]),
+			provider("anthropic-aws-us", "Anthropic", ["us"]),
+			provider("anthropic-us", "Anthropic", ["us"]),
+		]);
+		expect(routes.map(({ name, regions }) => `${name} ${regions.join("/")}`)).toEqual([
+			"Anthropic global/us",
+			"Claude Platform for AWS global/us",
+			"Claude Platform for AWS (US) us",
+			"Anthropic (US) us",
+		]);
+		expect(routes.every(({ routeId }) => routeId === undefined)).toBe(true);
+	});
+
+	it("adds the route id only when name and regions still collide", () => {
+		const routes = describeProviderRoutes([
+			provider("stepfun", "StepFun", []),
+			provider("stepfun-ai", "StepFun", []),
+			provider("google-vertex", "Google Vertex", ["us"]),
+		]);
+		expect(routes.map(({ routeId }) => routeId)).toEqual(["stepfun", "stepfun-ai", undefined]);
 	});
 });

@@ -4421,7 +4421,10 @@
 		"enterprise": "Empresa",
 		"scimProvisioning": "Provisionamento SCIM",
 		"singleSignOn": "Login único",
-		"workspaces": "Espaços de trabalho"
+		"workspaces": "Espaços de trabalho",
+		"classifiers": "Classificadores",
+		"newClassifier": "Novo classificador",
+		"classifier": "Classificador"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4647,7 +4650,8 @@
 		"searchPlaceholder": "Buscar configurações…",
 		"becomeProvider": "Tornar-se um provedor",
 		"empty": "Nenhuma configuração encontrada.",
-		"providerProfile": "Perfil do provedor"
+		"providerProfile": "Perfil do provedor",
+		"classifiers": "Classificadores"
 	},
 	"settingsAvailability": {
 		"title": "As configurações estão temporariamente indisponíveis",
@@ -5123,6 +5127,59 @@
 		"copyBalanced": "Equilibrado",
 		"copyPrice": "Preço",
 		"copyThroughput": "Vazão"
+	},
+	"requestClassifierUsage": {
+		"filterLabel": "Rótulo",
+		"filterAria": "Filtrar solicitações por rótulo",
+		"changeFilterAria": "Alterar o filtro de rótulo: {filter}",
+		"clearFilter": "Limpar o filtro de rótulo",
+		"searchLabels": "Pesquisar rótulos…",
+		"operatorAria": "Correspondência",
+		"opIs": "é",
+		"opIsNot": "não é",
+		"noMatches": "Nenhum rótulo correspondente",
+		"noLabels": "Nenhum rótulo de solicitação neste período",
+		"classifierGroup": "Classificadores",
+		"classifierCallsGroup": "Gasto com classificadores",
+		"callerGroup": "Rótulos de solicitação",
+		"classifierCalls": "Chamadas de classificador",
+		"classifierHint": "Definido pelo classificador {name}",
+		"anyValue": "qualquer valor",
+		"notSet": "não definido",
+		"filterIs": "{key} = {value}",
+		"filterIsNot": "{key} ≠ {value}",
+		"filterAny": "{key} tem algum valor",
+		"filterNotSet": "{key} não está definido",
+		"breakdownTitle": "Uso por rótulo",
+		"breakdownDescription": "Solicitações, gasto e tokens de cada valor de um rótulo neste período.",
+		"classifierCallsNote": "Quanto as chamadas de classificador custaram neste período, por classificador.",
+		"chooseKey": "Escolha um rótulo",
+		"noLabelKeys": "Ainda não há rótulos nem classificadores para agrupar.",
+		"loadFailed": "Não foi possível carregar o uso por rótulo. Tente novamente em instantes.",
+		"value": "Valor",
+		"requests": "Solicitações",
+		"successRate": "Sucesso",
+		"tokens": "Tokens",
+		"spend": "Gasto",
+		"shareOfSpend": "Parte do gasto",
+		"loading": "Carregando…",
+		"noRows": "Nenhuma solicitação tem este rótulo neste período.",
+		"total": "Total",
+		"multiValueNote": "Uma solicitação com vários valores conta uma vez em cada um.",
+		"notFilteredByLabel": "Esta tabela ignora o filtro de rótulo acima.",
+		"classificationsTitle": "Classificações",
+		"labelsTitle": "Rótulos",
+		"thisIsClassifierCall": "Esta solicitação é uma chamada do classificador {name}.",
+		"statusClassified": "Classificada",
+		"statusSessionCache": "Reaproveitada da sessão",
+		"statusBudgetReached": "Orçamento atingido",
+		"statusFailed": "Falhou",
+		"confidence": "{value} de confiança",
+		"noAnswer": "Nenhum valor se encaixou",
+		"model": "Modelo",
+		"cost": "Custo",
+		"openClassifierCall": "Abrir a chamada do classificador",
+		"callerLabels": "Enviados com a solicitação"
 	},
 	"providerCatalogCopy": {
 		"serviceTier": "Nível de serviço",
@@ -5958,6 +6015,195 @@
 			"invalid_model": "Digite um ID de modelo como lab/model.",
 			"invalid_successor": "Digite um ID de modelo substituto ou \"never\".",
 			"too_many_replacements": "Este workspace atingiu o limite de 500 substitutos."
+		}
+	},
+	"classifiers": {
+		"title": "Classificadores",
+		"description": "Rotule solicitações automaticamente com um modelo e depois filtre e agrupe o uso por esses rótulos.",
+		"newClassifier": "Novo classificador",
+		"feedback": "Como os classificadores poderiam funcionar melhor para você?",
+		"limitReached": "Este workspace já tem {limit} classificadores, o máximo permitido.",
+		"selectWorkspace": "Selecione um workspace para gerenciar os classificadores dele.",
+		"adminsOnly": "Somente proprietários e administradores do workspace podem ver e alterar classificadores, porque eles decidem qual conteúdo das solicitações é enviado a um modelo.",
+		"emptyTitle": "Nenhum classificador ainda",
+		"emptyBody": "Crie um a partir de um modelo pronto, como Departamento ou Tipo de tarefa, e escolha um modelo e quanto tráfego classificar.",
+		"billingNote": "Cada classificação é uma solicitação normal ao modelo escolhido, cobrada deste workspace pelo preço habitual desse modelo. Essas solicitações aparecem em Uso e Registros com o rótulo phaseo.classifier.",
+		"statusOn": "Ativado",
+		"statusOff": "Desativado",
+		"listModel": "Modelo",
+		"listLabels": "Chaves de rótulo",
+		"listSampling": "Amostragem",
+		"sampledRequests": "{percent}% das solicitações",
+		"sampledSessions": "{percent}% das sessões",
+		"listThisMonth": "Este mês",
+		"spendSummary": "{spend} em {count, plural, one {# classificação} other {# classificações}}",
+		"noBudget": "sem orçamento",
+		"budgetOf": "orçamento {budget}",
+		"backToList": "Voltar aos classificadores",
+		"newTitle": "Novo classificador",
+		"newDescription": "Escolha os rótulos, um modelo e quanto tráfego classificar.",
+		"editTitle": "Classificador",
+		"editDescription": "Altere o que este classificador rotula e com que frequência ele é executado.",
+		"notFound": "Este classificador não existe mais.",
+		"resultsNote": "As respostas são salvas como rótulos da solicitação, com a chave da dimensão como chave do rótulo, para que você possa filtrar e agrupar por elas em Registros e Uso. Se o seu app já envia um rótulo com a mesma chave, o valor do app é mantido.",
+		"presets": {
+			"title": "Começar com um modelo pronto",
+			"description": "Um modelo pronto preenche as dimensões. Depois você pode alterar tudo.",
+			"department": {
+				"title": "Departamento",
+				"summary": "Para qual equipe é a solicitação"
+			},
+			"audience": {
+				"title": "Público",
+				"summary": "Quem vai ler o resultado"
+			},
+			"task_type": {
+				"title": "Tipo de tarefa",
+				"summary": "Programação, análise, redação, suporte e mais"
+			},
+			"engineering_work": {
+				"title": "Trabalho de engenharia",
+				"summary": "Recursos, correções, revisões, testes"
+			},
+			"agent_complexity": {
+				"title": "Complexidade do agente",
+				"summary": "Quão difícil é a tarefa e sua família"
+			},
+			"compliance": {
+				"title": "Conformidade",
+				"summary": "Dados pessoais e temas regulamentados"
+			}
+		},
+		"sections": {
+			"details": "Detalhes",
+			"model": "Modelo",
+			"dimensions": "Dimensões",
+			"instructions": "Instruções",
+			"sampling": "Amostragem",
+			"scope": "Escopo",
+			"budget": "Orçamento mensal",
+			"results": "Onde os resultados aparecem",
+			"test": "Testar com um exemplo"
+		},
+		"fields": {
+			"name": "Nome",
+			"namePlaceholder": "Departamento",
+			"description": "Descrição",
+			"enabled": "Classificar solicitações",
+			"enabledDescription": "Quando desativado, nada é classificado nem cobrado."
+		},
+		"model": {
+			"label": "Modelo do classificador",
+			"help": "Qualquer modelo de texto ou de decisões funciona. Um modelo pequeno e rápido costuma bastar.",
+			"format": {
+				"json_schema": "Responde com saídas estruturadas, então as respostas sempre correspondem aos seus valores.",
+				"decisions": "Responde pelo Decisions, com a probabilidade do próprio modelo para cada valor.",
+				"json": "Este modelo não tem saídas estruturadas, então o JSON é pedido no prompt. Respostas fora dos seus valores são descartadas, o que pode deixar uma dimensão sem rótulo."
+			}
+		},
+		"dimensions": {
+			"help": "Cada dimensão vira um rótulo. Adicione até {max} dimensões com até {values} valores cada.",
+			"addDimension": "Adicionar dimensão",
+			"dimensionTitle": "Dimensão {index}",
+			"moveDimensionUp": "Mover a dimensão {index} para cima",
+			"moveDimensionDown": "Mover a dimensão {index} para baixo",
+			"removeDimension": "Remover a dimensão {index}",
+			"name": "Nome",
+			"namePlaceholder": "Centro de custo",
+			"key": "Chave do rótulo",
+			"keyHelp": "Apenas letras, dígitos e _ . : -",
+			"description": "O que significa",
+			"descriptionPlaceholder": "A equipe que vai usar a resposta",
+			"multiple": "Permitir vários valores",
+			"allowOther": "Adicionar other quando nada se encaixar",
+			"value": "Valor",
+			"valueDescription": "Descrição (ajuda o modelo a escolher)",
+			"valueActions": "Ações",
+			"valueAt": "Valor {index}",
+			"valuePlaceholder": "engineering",
+			"valueDescriptionAt": "Descrição do valor {index}",
+			"valueDescriptionPlaceholder": "Opcional",
+			"moveValueUp": "Mover o valor {index} para cima",
+			"moveValueDown": "Mover o valor {index} para baixo",
+			"removeValue": "Remover o valor {index}",
+			"addValue": "Adicionar valor",
+			"otherAutomatic": "O modelo também pode responder other."
+		},
+		"instructions": {
+			"help": "Orientações opcionais para casos limite. Elas são adicionadas depois das dimensões.",
+			"placeholder": "Trate perguntas sobre contratos da equipe de vendas como legal."
+		},
+		"sampling": {
+			"percent": "Parcela do tráfego",
+			"percentHelp": "De 0,01% a 100%. A amostragem é determinística, então uma solicitação ou sessão sempre recebe a mesma decisão.",
+			"sampleBy": "Amostrar por",
+			"byRequest": "Solicitação",
+			"bySession": "Sessão",
+			"byRequestHelp": "Cada solicitação é amostrada separadamente.",
+			"bySessionHelp": "Solicitações com o mesmo ID de sessão são amostradas juntas. As solicitações seguintes da sessão reutilizam a primeira resposta por até uma hora, então uma sessão costuma ser cobrada uma única vez.",
+			"includeResponse": "Incluir a resposta",
+			"includeResponseHelp": "Também envia a resposta do modelo ao classificador. Ajuda em alguns rótulos, mas custa mais."
+		},
+		"scope": {
+			"help": "Deixe uma lista vazia para classificar todo o tráfego do workspace.",
+			"keys": "Chaves de API",
+			"apps": "Apps",
+			"models": "Modelos solicitados",
+			"allKeys": "Todas as chaves",
+			"allApps": "Todos os apps",
+			"allModels": "Todos os modelos",
+			"selected": "{count} selecionados",
+			"search": "Pesquisar",
+			"none": "Ainda não há nada para escolher."
+		},
+		"budget": {
+			"label": "Orçamento em USD",
+			"placeholder": "Sem orçamento",
+			"help": "Quando o gasto atinge o orçamento, a classificação é pausada até o próximo mês do calendário (UTC). O gasto é verificado cerca de uma vez por minuto, então pode passar um pouco do limite.",
+			"spent": "Gasto neste mês: {spend} em {count, plural, one {# classificação} other {# classificações}}."
+		},
+		"results": {
+			"viewValue": "solicitações rotuladas",
+			"classifierRequests": "As solicitações deste classificador e seu custo em Registros",
+			"afterSave": "Links para Registros filtrados por cada rótulo aparecem aqui depois que o classificador for salvo."
+		},
+		"test": {
+			"description": "Envia um exemplo com a mesma solicitação que o gateway monta, em seu nome. Ele é cobrado como uma classificação e rotulado com phaseo.classifier_test. Nada é salvo.",
+			"prompt": "Prompt de exemplo",
+			"promptPlaceholder": "Você pode revisar esta cláusula do contrato antes que eu envie ao cliente?",
+			"response": "Resposta de exemplo (opcional)",
+			"run": "Executar teste",
+			"running": "Executando…",
+			"fixFirst": "Corrija o classificador antes de testá-lo.",
+			"privacyReview": "Abra o Chat uma vez e revise as configurações de privacidade do seu workspace; depois tente de novo.",
+			"openChat": "Abrir o Chat",
+			"failed": "O teste falhou.",
+			"failedWithMessage": "O teste falhou: {message}",
+			"labelKey": "Chave do rótulo",
+			"labelValue": "Valor",
+			"confidence": "Confiança",
+			"noAnswer": "O modelo não retornou uma resposta utilizável. Tente outro modelo ou simplifique as dimensões.",
+			"costLine": "Custo {cost} com {model}"
+		},
+		"actions": {
+			"save": "Salvar alterações",
+			"create": "Criar classificador",
+			"saving": "Salvando…",
+			"cancel": "Cancelar",
+			"delete": "Excluir classificador",
+			"deleteTitle": "Excluir {name}?",
+			"deleteBody": "Novas solicitações deixam de ser classificadas. Os rótulos já salvos continuam nas solicitações anteriores.",
+			"deleteConfirm": "Excluir",
+			"saved": "Classificador salvo",
+			"created": "Classificador criado",
+			"deleted": "Classificador excluído"
+		},
+		"errors": {
+			"invalid": "Revise o classificador: {message}",
+			"saveFailed": "Não foi possível salvar o classificador.",
+			"deleteFailed": "Não foi possível excluir o classificador.",
+			"samplePercent": "Insira uma parcela de 0,01% a 100%.",
+			"budgetUsd": "Insira um orçamento maior que $0 ou deixe o campo vazio."
 		}
 	}
 }

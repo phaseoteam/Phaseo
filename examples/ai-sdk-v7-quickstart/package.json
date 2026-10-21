@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "rerank": "node rerank.js",
-    "typecheck": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@phaseo/ai-sdk-provider": "workspace:*",
@@ -14,6 +14,6 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   }
 }

@@ -1,0 +1,98 @@
+{
+	"provider": "xiaomi",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "xiaomi:xiaomi/mimo-v2.5-asr:audio.transcription",
+			"file": "packages/data/catalog/src/data/pricing/xiaomi/xiaomi-mimo-v2.5-asr/audio.transcription/pricing.json",
+			"rules": [
+				["#0","standard","input_audio_seconds","0.074/3600 second",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_audio_seconds":60},"expected":{"nanos":1233333,"lines":[["input_audio_seconds",60,"#0","input_audio_seconds",1233333]]}},
+				{"id":"rule.standard.input_audio_seconds","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":1253889,"lines":[["input_audio_seconds",61,"#0","input_audio_seconds",1253889]]}}
+			]
+		},
+		{
+			"key": "xiaomi:xiaomi/mimo-v2.5-pro-ultraspeed:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/xiaomi/xiaomi-mimo-v2.5-pro-ultraspeed/text.generate/pricing.json",
+			"rules": [
+				["#0","early_access","cached_read_text_tokens","0.0108/1000000 token",100,null,null,null],
+				["#1","early_access","input_text_tokens","1.305/1000000 token",100,null,null,null],
+				["#2","early_access","output_text_tokens","2.61/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":3738139,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",11059],["input_text_tokens",1576,"#1","input_text_tokens",2056680],["output_reasoning_tokens",192,"#2","output_text_tokens",501120,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1169280]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":27244219,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",49324],["input_text_tokens",12347,"#1","input_text_tokens",16112835],["output_reasoning_tokens",789,"#2","output_text_tokens",2059290,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",9022770]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":27194895,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",16112835],["output_reasoning_tokens",789,"#2","output_text_tokens",2059290,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",9022770]]}}
+			]
+		},
+		{
+			"key": "xiaomi:xiaomi/mimo-v2.5-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/xiaomi/xiaomi-mimo-v2.5-pro/text.generate/pricing.json",
+			"rules": [
+				["#7","standard","cached_read_text_tokens","0.0036/1000000 token",100,null,null,null],
+				["#8","standard","input_text_tokens","0.435/1000000 token",100,null,null,null],
+				["#9","standard","output_text_tokens","0.87/1000000 token",100,null,null,null],
+				["#10","standard","cached_write_text_tokens","0/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1079006,"lines":[["cached_read_text_tokens",1024,"#7","cached_read_text_tokens",3686],["input_text_tokens",1576,"#8","input_text_tokens",685560],["output_text_tokens",448,"#9","output_text_tokens",389760]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#7"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":8394976,"lines":[["cached_read_text_tokens",4567,"#7","cached_read_text_tokens",16441],["input_text_tokens",12347,"#8","input_text_tokens",5370945],["output_text_tokens",3457,"#9","output_text_tokens",3007590]]}},
+				{"id":"rule.standard.cached_write_text_tokens","kind":"rule","targets":["#10"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":13334,"output_tokens":3457,"total_tokens":16791},"expected":{"nanos":8378535,"lines":[["cached_write_text_tokens",987,"#10","cached_write_text_tokens",0],["input_text_tokens",12347,"#8","input_text_tokens",5370945],["output_text_tokens",3457,"#9","output_text_tokens",3007590]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#8","#9"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":8378535,"lines":[["input_text_tokens",12347,"#8","input_text_tokens",5370945],["output_text_tokens",3457,"#9","output_text_tokens",3007590]]}}
+			]
+		},
+		{
+			"key": "xiaomi:xiaomi/mimo-v2.5-tts-voiceclone:free:audio.speech",
+			"file": "packages/data/catalog/src/data/pricing/xiaomi/xiaomi-mimo-v2.5-tts-voiceclone-free/audio.speech/pricing.json",
+			"rules": [
+				["#0","free","requests","0/1 request",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1},"expected":{"nanos":0,"lines":[["requests",1,"#0","requests",0]]}},
+				{"id":"rule.free.requests","kind":"rule","targets":["#0"],"plan":"free","usage":{"requests":1},"expected":{"nanos":0,"lines":[["requests",1,"#0","requests",0]]}}
+			]
+		},
+		{
+			"key": "xiaomi:xiaomi/mimo-v2.5-tts-voicedesign:free:audio.speech",
+			"file": "packages/data/catalog/src/data/pricing/xiaomi/xiaomi-mimo-v2.5-tts-voicedesign-free/audio.speech/pricing.json",
+			"rules": [
+				["#0","free","requests","0/1 request",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1},"expected":{"nanos":0,"lines":[["requests",1,"#0","requests",0]]}},
+				{"id":"rule.free.requests","kind":"rule","targets":["#0"],"plan":"free","usage":{"requests":1},"expected":{"nanos":0,"lines":[["requests",1,"#0","requests",0]]}}
+			]
+		},
+		{
+			"key": "xiaomi:xiaomi/mimo-v2.5-tts:free:audio.speech",
+			"file": "packages/data/catalog/src/data/pricing/xiaomi/xiaomi-mimo-v2.5-tts-free/audio.speech/pricing.json",
+			"rules": [
+				["#0","free","requests","0/1 request",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1},"expected":{"nanos":0,"lines":[["requests",1,"#0","requests",0]]}},
+				{"id":"rule.free.requests","kind":"rule","targets":["#0"],"plan":"free","usage":{"requests":1},"expected":{"nanos":0,"lines":[["requests",1,"#0","requests",0]]}}
+			]
+		},
+		{
+			"key": "xiaomi:xiaomi/mimo-v2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/xiaomi/xiaomi-mimo-v2.5/text.generate/pricing.json",
+			"rules": [
+				["#7","standard","cached_read_text_tokens","0.0028/1000000 token",100,null,null,null],
+				["#8","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#9","standard","output_text_tokens","0.28/1000000 token",100,null,null,null],
+				["#10","standard","cached_write_text_tokens","0/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":348947,"lines":[["cached_read_text_tokens",1024,"#7","cached_read_text_tokens",2867],["input_text_tokens",1576,"#8","input_text_tokens",220640],["output_text_tokens",448,"#9","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#7"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2709328,"lines":[["cached_read_text_tokens",4567,"#7","cached_read_text_tokens",12788],["input_text_tokens",12347,"#8","input_text_tokens",1728580],["output_text_tokens",3457,"#9","output_text_tokens",967960]]}},
+				{"id":"rule.standard.cached_write_text_tokens","kind":"rule","targets":["#10"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":13334,"output_tokens":3457,"total_tokens":16791},"expected":{"nanos":2696540,"lines":[["cached_write_text_tokens",987,"#10","cached_write_text_tokens",0],["input_text_tokens",12347,"#8","input_text_tokens",1728580],["output_text_tokens",3457,"#9","output_text_tokens",967960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#8","#9"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2696540,"lines":[["input_text_tokens",12347,"#8","input_text_tokens",1728580],["output_text_tokens",3457,"#9","output_text_tokens",967960]]}}
+			]
+		}
+	]
+}

@@ -1,6 +1,21 @@
 import { resolveGatewayPath } from "./endpoint-paths";
 import { buildEndpointRoutes, ENDPOINT_OPTIONS } from "./endpointRoutes";
 import { buildExamplePayload, jsonToPythonLiteral } from "./quickstartPayloads";
+import { PHASEO_METHODS, OPENAI_METHODS } from "./quickstartSdkConfig";
+
+describe("Extraction quickstart", () => {
+	test("uses the dedicated route, typed invoice fields and native SDK resources", () => {
+		expect(resolveGatewayPath("extraction.extract")).toBe("/extractions");
+		expect(buildExamplePayload("extractions", "cloudflare/clairic")).toEqual({
+			model: "cloudflare/clairic",
+			input: "Invoice INV-2291. Total due: USD 1080. No purchase order is listed.",
+			fields: { invoice_number: { type: "text" }, total: { type: "number" }, purchase_order: { type: "text" } },
+		});
+		expect(PHASEO_METHODS.extractions).toEqual({ ts: "extractions.create", py: "extractions.create" });
+		expect(OPENAI_METHODS.extractions).toBeUndefined();
+		expect(buildEndpointRoutes([{ value: "extractions", label: "Extractions" }])[0].path).toBe("/v1/extractions");
+	});
+});
 
 describe("Parse quickstart", () => {
 	test("uses the dedicated Parse route", () => {

@@ -1,0 +1,982 @@
+{
+	"provider": "atlascloud",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "atlascloud:bytedance/seed-1.6-2025-10-15:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/bytedance-seed-1.6-2025-10-15/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.05/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#1","standard","input_text_tokens","0.25/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#3","standard","cached_read_text_tokens","0.05/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#4","standard","input_text_tokens","0.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#5","standard","output_text_tokens","4/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2237200,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",51200],["input_text_tokens",1576,"#1","input_text_tokens",394000],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"documented.long-context@131073","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":111073,"input_tokens":131073,"output_tokens":448,"total_tokens":131521},"ir":{"inputTokens":131073,"outputTokens":448,"totalTokens":131521,"cachedInputTokens":111073,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":17345650,"lines":[["cached_read_text_tokens",111073,"#3","cached_read_text_tokens",5553650],["input_text_tokens",20000,"#4","input_text_tokens",10000000],["output_text_tokens",448,"#5","output_text_tokens",1792000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126506,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":77309350,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",228350],["input_text_tokens",126506,"#4","input_text_tokens",63253000],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126505,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":45682600,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",228350],["input_text_tokens",126505,"#1","input_text_tokens",31626250],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131073,"output_text_tokens":3457,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":79364500,"lines":[["input_text_tokens",131073,"#4","input_text_tokens",65536500],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131072,"output_text_tokens":3457,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":46596000,"lines":[["input_text_tokens",131072,"#1","input_text_tokens",32768000],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:bytedance/seed-1.6-flash-2025-08-28:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/bytedance-seed-1.6-flash-2025-08-28/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.015/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#1","standard","input_text_tokens","0.075/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#2","standard","output_text_tokens","0.8/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#3","standard","cached_read_text_tokens","0.015/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#4","standard","input_text_tokens","0.1/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#5","standard","output_text_tokens","0.8/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":491960,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",15360],["input_text_tokens",1576,"#1","input_text_tokens",118200],["output_text_tokens",448,"#2","output_text_tokens",358400]]}},
+				{"id":"documented.long-context@131073","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":111073,"input_tokens":131073,"output_tokens":448,"total_tokens":131521},"ir":{"inputTokens":131073,"outputTokens":448,"totalTokens":131521,"cachedInputTokens":111073,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4024495,"lines":[["cached_read_text_tokens",111073,"#3","cached_read_text_tokens",1666095],["input_text_tokens",20000,"#4","input_text_tokens",2000000],["output_text_tokens",448,"#5","output_text_tokens",358400]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126506,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":15484705,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",68505],["input_text_tokens",126506,"#4","input_text_tokens",12650600],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126505,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":12321980,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",68505],["input_text_tokens",126505,"#1","input_text_tokens",9487875],["output_text_tokens",3457,"#2","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131073,"output_text_tokens":3457,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":15872900,"lines":[["input_text_tokens",131073,"#4","input_text_tokens",13107300],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131072,"output_text_tokens":3457,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":12596000,"lines":[["input_text_tokens",131072,"#1","input_text_tokens",9830400],["output_text_tokens",3457,"#2","output_text_tokens",2765600]]}}
+			]
+		},
+		{
+			"key": "atlascloud:bytedance/seed-1.8-2025-12-28:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/bytedance-seed-1.8-2025-12-28/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.05/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#1","standard","input_text_tokens","0.25/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#3","standard","cached_read_text_tokens","0.05/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#4","standard","input_text_tokens","0.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#5","standard","output_text_tokens","4/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2237200,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",51200],["input_text_tokens",1576,"#1","input_text_tokens",394000],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"documented.long-context@131073","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":111073,"input_tokens":131073,"output_tokens":448,"total_tokens":131521},"ir":{"inputTokens":131073,"outputTokens":448,"totalTokens":131521,"cachedInputTokens":111073,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":17345650,"lines":[["cached_read_text_tokens",111073,"#3","cached_read_text_tokens",5553650],["input_text_tokens",20000,"#4","input_text_tokens",10000000],["output_text_tokens",448,"#5","output_text_tokens",1792000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126506,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":77309350,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",228350],["input_text_tokens",126506,"#4","input_text_tokens",63253000],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126505,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":45682600,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",228350],["input_text_tokens",126505,"#1","input_text_tokens",31626250],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131073,"output_text_tokens":3457,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":79364500,"lines":[["input_text_tokens",131073,"#4","input_text_tokens",65536500],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131072,"output_text_tokens":3457,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":46596000,"lines":[["input_text_tokens",131072,"#1","input_text_tokens",32768000],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:bytedance/seed-2.0-code-preview-2026-02-15:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/bytedance-seed-2.0-code-preview-2026-02-15/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.2/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#1","standard","input_text_tokens","0.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#2","standard","output_text_tokens","6/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#3","standard","cached_read_text_tokens","0.2/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#4","standard","input_text_tokens","1/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#5","standard","output_text_tokens","6/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3680800,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",204800],["input_text_tokens",1576,"#1","input_text_tokens",788000],["output_text_tokens",448,"#2","output_text_tokens",2688000]]}},
+				{"id":"documented.long-context@131073","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":111073,"input_tokens":131073,"output_tokens":448,"total_tokens":131521},"ir":{"inputTokens":131073,"outputTokens":448,"totalTokens":131521,"cachedInputTokens":111073,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":44902600,"lines":[["cached_read_text_tokens",111073,"#3","cached_read_text_tokens",22214600],["input_text_tokens",20000,"#4","input_text_tokens",20000000],["output_text_tokens",448,"#5","output_text_tokens",2688000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126506,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":148161400,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",913400],["input_text_tokens",126506,"#4","input_text_tokens",126506000],["output_text_tokens",3457,"#5","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126505,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":84907900,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",913400],["input_text_tokens",126505,"#1","input_text_tokens",63252500],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131073,"output_text_tokens":3457,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":151815000,"lines":[["input_text_tokens",131073,"#4","input_text_tokens",131073000],["output_text_tokens",3457,"#5","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131072,"output_text_tokens":3457,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":86278000,"lines":[["input_text_tokens",131072,"#1","input_text_tokens",65536000],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:bytedance/seed-2.0-lite-2026-04-28:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/bytedance-seed-2.0-lite-2026-04-28/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.1/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#1","standard","input_text_tokens","0.25/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#3","standard","cached_read_text_tokens","0.1/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#4","standard","input_text_tokens","0.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#5","standard","output_text_tokens","4/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2288400,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",102400],["input_text_tokens",1576,"#1","input_text_tokens",394000],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"documented.long-context@131073","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":111073,"input_tokens":131073,"output_tokens":448,"total_tokens":131521},"ir":{"inputTokens":131073,"outputTokens":448,"totalTokens":131521,"cachedInputTokens":111073,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":22899300,"lines":[["cached_read_text_tokens",111073,"#3","cached_read_text_tokens",11107300],["input_text_tokens",20000,"#4","input_text_tokens",10000000],["output_text_tokens",448,"#5","output_text_tokens",1792000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126506,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":77537700,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",456700],["input_text_tokens",126506,"#4","input_text_tokens",63253000],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126505,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":45910950,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",456700],["input_text_tokens",126505,"#1","input_text_tokens",31626250],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131073,"output_text_tokens":3457,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":79364500,"lines":[["input_text_tokens",131073,"#4","input_text_tokens",65536500],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131072,"output_text_tokens":3457,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":46596000,"lines":[["input_text_tokens",131072,"#1","input_text_tokens",32768000],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:bytedance/seed-2.0-mini-2026-04-28:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/bytedance-seed-2.0-mini-2026-04-28/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.04/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#1","standard","input_text_tokens","0.1/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#2","standard","output_text_tokens","0.8/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#3","standard","cached_read_text_tokens","0.04/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#4","standard","input_text_tokens","0.2/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#5","standard","output_text_tokens","0.8/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":556960,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",40960],["input_text_tokens",1576,"#1","input_text_tokens",157600],["output_text_tokens",448,"#2","output_text_tokens",358400]]}},
+				{"id":"documented.long-context@131073","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":111073,"input_tokens":131073,"output_tokens":448,"total_tokens":131521},"ir":{"inputTokens":131073,"outputTokens":448,"totalTokens":131521,"cachedInputTokens":111073,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":8801320,"lines":[["cached_read_text_tokens",111073,"#3","cached_read_text_tokens",4442920],["input_text_tokens",20000,"#4","input_text_tokens",4000000],["output_text_tokens",448,"#5","output_text_tokens",358400]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126506,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":28249480,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",182680],["input_text_tokens",126506,"#4","input_text_tokens",25301200],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126505,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":15598780,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",182680],["input_text_tokens",126505,"#1","input_text_tokens",12650500],["output_text_tokens",3457,"#2","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131073,"output_text_tokens":3457,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":28980200,"lines":[["input_text_tokens",131073,"#4","input_text_tokens",26214600],["output_text_tokens",3457,"#5","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131072,"output_text_tokens":3457,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":15872800,"lines":[["input_text_tokens",131072,"#1","input_text_tokens",13107200],["output_text_tokens",3457,"#2","output_text_tokens",2765600]]}}
+			]
+		},
+		{
+			"key": "atlascloud:bytedance/seed-2.0-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/bytedance-seed-2.0-pro/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.2/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#1","standard","input_text_tokens","0.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#2","standard","output_text_tokens","6/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#3","standard","cached_read_text_tokens","0.2/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#4","standard","input_text_tokens","1/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null],
+				["#5","standard","output_text_tokens","6/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":131072}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3680800,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",204800],["input_text_tokens",1576,"#1","input_text_tokens",788000],["output_text_tokens",448,"#2","output_text_tokens",2688000]]}},
+				{"id":"documented.long-context@131073","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":111073,"input_tokens":131073,"output_tokens":448,"total_tokens":131521},"ir":{"inputTokens":131073,"outputTokens":448,"totalTokens":131521,"cachedInputTokens":111073,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":44902600,"lines":[["cached_read_text_tokens",111073,"#3","cached_read_text_tokens",22214600],["input_text_tokens",20000,"#4","input_text_tokens",20000000],["output_text_tokens",448,"#5","output_text_tokens",2688000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126506,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":148161400,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",913400],["input_text_tokens",126506,"#4","input_text_tokens",126506000],["output_text_tokens",3457,"#5","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":126505,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":84907900,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",913400],["input_text_tokens",126505,"#1","input_text_tokens",63252500],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt131072)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131073,"output_text_tokens":3457,"input_tokens":131073,"output_tokens":3457,"total_tokens":134530},"expected":{"nanos":151815000,"lines":[["input_text_tokens",131073,"#4","input_text_tokens",131073000],["output_text_tokens",3457,"#5","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte131072)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":131072,"output_text_tokens":3457,"input_tokens":131072,"output_tokens":3457,"total_tokens":134529},"expected":{"nanos":86278000,"lines":[["input_text_tokens",131072,"#1","input_text_tokens",65536000],["output_text_tokens",3457,"#2","output_text_tokens",20742000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:bytedance/seed-2.1-turbo:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/bytedance-seed-2.1-turbo/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.09/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.45/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.25/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1809360,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",92160],["input_text_tokens",1576,"#1","input_text_tokens",709200],["output_text_tokens",448,"#2","output_text_tokens",1008000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":13745430,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",411030],["input_text_tokens",12347,"#1","input_text_tokens",5556150],["output_text_tokens",3457,"#2","output_text_tokens",7778250]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":13334400,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",5556150],["output_text_tokens",3457,"#2","output_text_tokens",7778250]]}}
+			]
+		},
+		{
+			"key": "atlascloud:deepseek/deepseek-ocr:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-ocr/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.04/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.08/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":139840,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",104000],["output_text_tokens",448,"#1","output_text_tokens",35840]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":770440,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",493880],["output_text_tokens",3457,"#1","output_text_tokens",276560]]}}
+			]
+		},
+		{
+			"key": "atlascloud:deepseek/deepseek-v3.1-terminus:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v3.1-terminus/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.13/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.95/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1213920,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",133120],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",182400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",425600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":8331510,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",593710],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",749550,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3284150]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":7737800,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",749550,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3284150]]}}
+			]
+		},
+		{
+			"key": "atlascloud:deepseek/deepseek-v3.1:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v3.1/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.13/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.95/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1213920,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",133120],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",182400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",425600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":8331510,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",593710],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",749550,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3284150]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":7737800,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",749550,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",3284150]]}}
+			]
+		},
+		{
+			"key": "atlascloud:deepseek/deepseek-v3.2-exp:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v3.2-exp/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.41/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":964400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",702000],["output_reasoning_tokens",192,"#1","output_text_tokens",78720,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",183680]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":5074550,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3333690],["output_reasoning_tokens",789,"#1","output_text_tokens",323490,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",1417370]]}}
+			]
+		},
+		{
+			"key": "atlascloud:deepseek/deepseek-v3.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v3.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.13/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.26/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.38/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":786080,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",133120],["input_text_tokens",1576,"#1","input_text_tokens",409760],["output_reasoning_tokens",192,"#2","output_text_tokens",72960,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",170240]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":5417410,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",593710],["input_text_tokens",12347,"#1","input_text_tokens",3210220],["output_reasoning_tokens",789,"#2","output_text_tokens",299820,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1313660]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":4823700,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3210220],["output_reasoning_tokens",789,"#2","output_text_tokens",299820,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",1313660]]}}
+			]
+		},
+		{
+			"key": "atlascloud:deepseek/deepseek-v4-flash-0731:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v4-flash-0731/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.028/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.44/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.32/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1566912,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",28672],["input_text_tokens",1576,"#1","input_text_tokens",693440],["output_reasoning_tokens",192,"#2","output_text_tokens",253440,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",591360]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":11165276,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",127876],["input_text_tokens",12347,"#1","input_text_tokens",5432680],["output_reasoning_tokens",789,"#2","output_text_tokens",1041480,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4563240]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":11037400,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",5432680],["output_reasoning_tokens",789,"#2","output_text_tokens",1041480,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4563240]]}}
+			]
+		},
+		{
+			"key": "atlascloud:deepseek/deepseek-v4-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v4-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.028/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":374752,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",28672],["input_text_tokens",1576,"#1","input_text_tokens",220640],["output_text_tokens",448,"#2","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2824416,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",127876],["input_text_tokens",12347,"#1","input_text_tokens",1728580],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2696540,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",1728580],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}}
+			]
+		},
+		{
+			"key": "atlascloud:deepseek/deepseek-v4-pro-0813:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v4-pro-0813/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.132/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1.32/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.96/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3989568,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",135168],["input_text_tokens",1576,"#1","input_text_tokens",2080320],["output_text_tokens",448,"#2","output_text_tokens",1774080]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":30590604,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",602844],["input_text_tokens",12347,"#1","input_text_tokens",16298040],["output_text_tokens",3457,"#2","output_text_tokens",13689720]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":29987760,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",16298040],["output_text_tokens",3457,"#2","output_text_tokens",13689720]]}}
+			]
+		},
+		{
+			"key": "atlascloud:deepseek/deepseek-v4-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/deepseek-deepseek-v4-pro/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.13/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1.68/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.38/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4295040,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",133120],["input_text_tokens",1576,"#1","input_text_tokens",2647680],["output_text_tokens",448,"#2","output_text_tokens",1514240]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":33021330,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",593710],["input_text_tokens",12347,"#1","input_text_tokens",20742960],["output_text_tokens",3457,"#2","output_text_tokens",11684660]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":32427620,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",20742960],["output_text_tokens",3457,"#2","output_text_tokens",11684660]]}}
+			]
+		},
+		{
+			"key": "atlascloud:google/gemini-3.1-flash-lite:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/google-gemini-3.1-flash-lite/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.025/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1091600,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",25600],["input_text_tokens",1576,"#1","input_text_tokens",394000],["output_text_tokens",448,"#2","output_text_tokens",672000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":8386425,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",114175],["input_text_tokens",12347,"#1","input_text_tokens",3086750],["output_text_tokens",3457,"#2","output_text_tokens",5185500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":8272250,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3086750],["output_text_tokens",3457,"#2","output_text_tokens",5185500]]}}
+			]
+		},
+		{
+			"key": "atlascloud:google/gemini-3.1-pro-preview:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/google-gemini-3.1-pro-preview/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.4/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#1","standard","input_text_tokens","2/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#2","standard","output_text_tokens","18/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#3","standard","cached_read_text_tokens","0.4/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#4","standard","input_text_tokens","4/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#5","standard","output_text_tokens","18/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":200000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":11625600,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",409600],["input_text_tokens",1576,"#1","input_text_tokens",3152000],["output_text_tokens",448,"#2","output_text_tokens",8064000]]}},
+				{"id":"documented.long-context@200001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":180001,"input_tokens":200001,"output_tokens":448,"total_tokens":200449},"ir":{"inputTokens":200001,"outputTokens":448,"totalTokens":200449,"cachedInputTokens":180001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":160064400,"lines":[["cached_read_text_tokens",180001,"#3","cached_read_text_tokens",72000400],["input_text_tokens",20000,"#4","input_text_tokens",80000000],["output_text_tokens",448,"#5","output_text_tokens",8064000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt200000)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":195434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":200001,"output_tokens":3457,"total_tokens":203458},"expected":{"nanos":845788800,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",1826800],["input_text_tokens",195434,"#4","input_text_tokens",781736000],["output_text_tokens",3457,"#5","output_text_tokens",62226000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte200000)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":195433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":200000,"output_tokens":3457,"total_tokens":203457},"expected":{"nanos":454918800,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1826800],["input_text_tokens",195433,"#1","input_text_tokens",390866000],["output_text_tokens",3457,"#2","output_text_tokens",62226000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt200000)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":200001,"output_text_tokens":3457,"input_tokens":200001,"output_tokens":3457,"total_tokens":203458},"expected":{"nanos":862230000,"lines":[["input_text_tokens",200001,"#4","input_text_tokens",800004000],["output_text_tokens",3457,"#5","output_text_tokens",62226000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte200000)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":200000,"output_text_tokens":3457,"input_tokens":200000,"output_tokens":3457,"total_tokens":203457},"expected":{"nanos":462226000,"lines":[["input_text_tokens",200000,"#1","input_text_tokens",400000000],["output_text_tokens",3457,"#2","output_text_tokens",62226000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:google/gemini-3.5-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/google-gemini-3.5-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1.5/1000000 token",100,null,null,null],
+				["#2","standard","cached_write_text_tokens","0.083/1000000 token",100,null,null,null],
+				["#3","standard","output_text_tokens","9/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":6549600,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",153600],["input_text_tokens",1576,"#1","input_text_tokens",2364000],["output_text_tokens",448,"#3","output_text_tokens",4032000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":50318550,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",685050],["input_text_tokens",12347,"#1","input_text_tokens",18520500],["output_text_tokens",3457,"#3","output_text_tokens",31113000]]}},
+				{"id":"rule.standard.cached_write_text_tokens","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":13334,"output_tokens":3457,"total_tokens":16791},"expected":{"nanos":49715421,"lines":[["cached_write_text_tokens",987,"#2","cached_write_text_tokens",81921],["input_text_tokens",12347,"#1","input_text_tokens",18520500],["output_text_tokens",3457,"#3","output_text_tokens",31113000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":49633500,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",18520500],["output_text_tokens",3457,"#3","output_text_tokens",31113000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:kwaipilot/kat-coder-air-v2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/kwaipilot-kat-coder-air-v2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.03/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":651120,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",30720],["input_text_tokens",1576,"#1","input_text_tokens",236400],["output_reasoning_tokens",192,"#2","output_text_tokens",115200,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",268800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":4536660,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",137010],["input_text_tokens",12347,"#1","input_text_tokens",1852050],["output_reasoning_tokens",789,"#2","output_text_tokens",473400,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2074200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":4399650,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",1852050],["output_reasoning_tokens",789,"#2","output_text_tokens",473400,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2074200]]}}
+			]
+		},
+		{
+			"key": "atlascloud:kwaipilot/kat-coder-pro-v2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/kwaipilot-kat-coder-pro-v2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1071840,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",61440],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":8126520,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",274020],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7852500,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "atlascloud:kwaipilot/kat-coder-pro-v2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/kwaipilot-kat-coder-pro-v2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.15/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.74/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.96/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":3214240,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",153600],["input_text_tokens",1576,"#1","input_text_tokens",1166240],["output_reasoning_tokens",192,"#2","output_text_tokens",568320,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1326080]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":22389990,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",685050],["input_text_tokens",12347,"#1","input_text_tokens",9136780],["output_reasoning_tokens",789,"#2","output_text_tokens",2335440,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",10232720]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":21704940,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",9136780],["output_reasoning_tokens",789,"#2","output_text_tokens",2335440,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",10232720]]}}
+			]
+		},
+		{
+			"key": "atlascloud:meituan/longcat-2.0:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/meituan-longcat-2.0/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.006/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1246944,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",6144],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",230400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":8826702,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",27402],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8799300,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "atlascloud:minimax/minimax-m2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/minimax-minimax-m2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.295/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1294360,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",61440],["input_text_tokens",1576,"#1","input_text_tokens",464920],["output_reasoning_tokens",192,"#2","output_text_tokens",230400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":9011585,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",274020],["input_text_tokens",12347,"#1","input_text_tokens",3642365],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8737565,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3642365],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "atlascloud:minimax/minimax-m2.7:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/minimax-minimax-m2.7/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.06/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1302240,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",61440],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",230400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":9073320,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",274020],["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8799300,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		},
+		{
+			"key": "atlascloud:minimax/minimax-m3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/minimax-minimax-m3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.12/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":512000}],null,null],
+				["#1","standard","input_text_tokens","0.3/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":512000}],null,null],
+				["#2","standard","output_text_tokens","2.4/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":512000}],null,null],
+				["#3","standard","cached_read_text_tokens","0.12/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":512000}],null,null],
+				["#4","standard","input_text_tokens","0.6/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":512000}],null,null],
+				["#5","standard","output_text_tokens","2.4/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":512000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1670880,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",122880],["input_text_tokens",1576,"#1","input_text_tokens",472800],["output_text_tokens",448,"#2","output_text_tokens",1075200]]}},
+				{"id":"documented.long-context@512001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":492001,"input_tokens":512001,"output_tokens":448,"total_tokens":512449},"ir":{"inputTokens":512001,"outputTokens":448,"totalTokens":512449,"cachedInputTokens":492001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":72115320,"lines":[["cached_read_text_tokens",492001,"#3","cached_read_text_tokens",59040120],["input_text_tokens",20000,"#4","input_text_tokens",12000000],["output_text_tokens",448,"#5","output_text_tokens",1075200]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt512000)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":507434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":512001,"output_tokens":3457,"total_tokens":515458},"expected":{"nanos":313305240,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",548040],["input_text_tokens",507434,"#4","input_text_tokens",304460400],["output_text_tokens",3457,"#5","output_text_tokens",8296800]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte512000)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":507433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":512000,"output_tokens":3457,"total_tokens":515457},"expected":{"nanos":161074740,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",548040],["input_text_tokens",507433,"#1","input_text_tokens",152229900],["output_text_tokens",3457,"#2","output_text_tokens",8296800]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt512000)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":512001,"output_text_tokens":3457,"input_tokens":512001,"output_tokens":3457,"total_tokens":515458},"expected":{"nanos":315497400,"lines":[["input_text_tokens",512001,"#4","input_text_tokens",307200600],["output_text_tokens",3457,"#5","output_text_tokens",8296800]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte512000)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":512000,"output_text_tokens":3457,"input_tokens":512000,"output_tokens":3457,"total_tokens":515457},"expected":{"nanos":161896800,"lines":[["input_text_tokens",512000,"#1","input_text_tokens",153600000],["output_text_tokens",3457,"#2","output_text_tokens",8296800]]}}
+			]
+		},
+		{
+			"key": "atlascloud:moonshotai/kimi-k2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/moonshotai-kimi-k2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.49/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2577040,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",204800],["input_text_tokens",1576,"#1","input_text_tokens",772240],["output_reasoning_tokens",192,"#2","output_text_tokens",480000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1120000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":17578430,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",913400],["input_text_tokens",12347,"#1","input_text_tokens",6050030],["output_reasoning_tokens",789,"#2","output_text_tokens",1972500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8642500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":16665030,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",6050030],["output_reasoning_tokens",789,"#2","output_text_tokens",1972500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",8642500]]}}
+			]
+		},
+		{
+			"key": "atlascloud:moonshotai/kimi-k2.6:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/moonshotai-kimi-k2.6/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.16/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":4221040,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",163840],["input_text_tokens",1576,"#1","input_text_tokens",1497200],["output_reasoning_tokens",192,"#2","output_text_tokens",768000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":29444370,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",730720],["input_text_tokens",12347,"#1","input_text_tokens",11729650],["output_reasoning_tokens",789,"#2","output_text_tokens",3156000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":28713650,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",11729650],["output_reasoning_tokens",789,"#2","output_text_tokens",3156000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:moonshotai/kimi-k2.7-code:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/moonshotai-kimi-k2.7-code/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.16/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":4221040,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",163840],["input_text_tokens",1576,"#1","input_text_tokens",1497200],["output_reasoning_tokens",192,"#2","output_text_tokens",768000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":29444370,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",730720],["input_text_tokens",12347,"#1","input_text_tokens",11729650],["output_reasoning_tokens",789,"#2","output_text_tokens",3156000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":28713650,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",11729650],["output_reasoning_tokens",789,"#2","output_text_tokens",3156000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:moonshotai/kimi-k3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/moonshotai-kimi-k3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","3/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":14635200,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",307200],["input_text_tokens",1576,"#1","input_text_tokens",4728000],["output_reasoning_tokens",192,"#2","output_text_tokens",2880000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",6720000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":102101100,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1370100],["input_text_tokens",12347,"#1","input_text_tokens",37041000],["output_reasoning_tokens",789,"#2","output_text_tokens",11835000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":100731000,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",37041000],["output_reasoning_tokens",789,"#2","output_text_tokens",11835000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",51855000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:openai/gpt-5.4:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/openai-gpt-5.4/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#1","standard","input_text_tokens","2.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#2","standard","output_text_tokens","22.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#3","standard","cached_read_text_tokens","0.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#4","standard","input_text_tokens","5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#5","standard","output_text_tokens","22.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":14532000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",512000],["input_text_tokens",1576,"#1","input_text_tokens",3940000],["output_text_tokens",448,"#2","output_text_tokens",10080000]]}},
+				{"id":"documented.long-context@272001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":252001,"input_tokens":272001,"output_tokens":448,"total_tokens":272449},"ir":{"inputTokens":272001,"outputTokens":448,"totalTokens":272449,"cachedInputTokens":252001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":236080500,"lines":[["cached_read_text_tokens",252001,"#3","cached_read_text_tokens",126000500],["input_text_tokens",20000,"#4","input_text_tokens",100000000],["output_text_tokens",448,"#5","output_text_tokens",10080000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":267434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":1417236000,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",2283500],["input_text_tokens",267434,"#4","input_text_tokens",1337170000],["output_text_tokens",3457,"#5","output_text_tokens",77782500]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":267433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":748648500,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",2283500],["input_text_tokens",267433,"#1","input_text_tokens",668582500],["output_text_tokens",3457,"#2","output_text_tokens",77782500]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":272001,"output_text_tokens":3457,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":1437787500,"lines":[["input_text_tokens",272001,"#4","input_text_tokens",1360005000],["output_text_tokens",3457,"#5","output_text_tokens",77782500]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":272000,"output_text_tokens":3457,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":757782500,"lines":[["input_text_tokens",272000,"#1","input_text_tokens",680000000],["output_text_tokens",3457,"#2","output_text_tokens",77782500]]}}
+			]
+		},
+		{
+			"key": "atlascloud:openai/gpt-5.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/openai-gpt-5.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","1/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#1","standard","input_text_tokens","5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#2","standard","output_text_tokens","45/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#3","standard","cached_read_text_tokens","1/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#4","standard","input_text_tokens","10/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#5","standard","output_text_tokens","45/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":29064000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",1024000],["input_text_tokens",1576,"#1","input_text_tokens",7880000],["output_text_tokens",448,"#2","output_text_tokens",20160000]]}},
+				{"id":"documented.long-context@272001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":252001,"input_tokens":272001,"output_tokens":448,"total_tokens":272449},"ir":{"inputTokens":272001,"outputTokens":448,"totalTokens":272449,"cachedInputTokens":252001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":472161000,"lines":[["cached_read_text_tokens",252001,"#3","cached_read_text_tokens",252001000],["input_text_tokens",20000,"#4","input_text_tokens",200000000],["output_text_tokens",448,"#5","output_text_tokens",20160000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":267434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":2834472000,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",4567000],["input_text_tokens",267434,"#4","input_text_tokens",2674340000],["output_text_tokens",3457,"#5","output_text_tokens",155565000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":267433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":1497297000,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",4567000],["input_text_tokens",267433,"#1","input_text_tokens",1337165000],["output_text_tokens",3457,"#2","output_text_tokens",155565000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":272001,"output_text_tokens":3457,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":2875575000,"lines":[["input_text_tokens",272001,"#4","input_text_tokens",2720010000],["output_text_tokens",3457,"#5","output_text_tokens",155565000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":272000,"output_text_tokens":3457,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":1515565000,"lines":[["input_text_tokens",272000,"#1","input_text_tokens",1360000000],["output_text_tokens",3457,"#2","output_text_tokens",155565000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:openai/gpt-5.6-luna:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/openai-gpt-5.6-luna/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.2/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#1","standard","input_text_tokens","1/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#2","standard","cached_write_text_tokens","2.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#3","standard","output_text_tokens","9/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.2/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#5","standard","input_text_tokens","2/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#6","standard","cached_write_text_tokens","2.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#7","standard","output_text_tokens","9/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":5812800,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",204800],["input_text_tokens",1576,"#1","input_text_tokens",1576000],["output_text_tokens",448,"#3","output_text_tokens",4032000]]}},
+				{"id":"documented.long-context@272001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":252001,"input_tokens":272001,"output_tokens":448,"total_tokens":272449},"ir":{"inputTokens":272001,"outputTokens":448,"totalTokens":272449,"cachedInputTokens":252001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":94432200,"lines":[["cached_read_text_tokens",252001,"#4","cached_read_text_tokens",50400200],["input_text_tokens",20000,"#5","input_text_tokens",40000000],["output_text_tokens",448,"#7","output_text_tokens",4032000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":267434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":566894400,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",913400],["input_text_tokens",267434,"#5","input_text_tokens",534868000],["output_text_tokens",3457,"#7","output_text_tokens",31113000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":267433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":299459400,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",913400],["input_text_tokens",267433,"#1","input_text_tokens",267433000],["output_text_tokens",3457,"#3","output_text_tokens",31113000]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#6"],"plan":"standard","usage":{"requests":1,"input_text_tokens":271014,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":575608500,"lines":[["cached_write_text_tokens",987,"#6","cached_write_text_tokens",2467500],["input_text_tokens",271014,"#5","input_text_tokens",542028000],["output_text_tokens",3457,"#7","output_text_tokens",31113000]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":271013,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":304593500,"lines":[["cached_write_text_tokens",987,"#2","cached_write_text_tokens",2467500],["input_text_tokens",271013,"#1","input_text_tokens",271013000],["output_text_tokens",3457,"#3","output_text_tokens",31113000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#5","#7"],"plan":"standard","usage":{"requests":1,"input_text_tokens":272001,"output_text_tokens":3457,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":575115000,"lines":[["input_text_tokens",272001,"#5","input_text_tokens",544002000],["output_text_tokens",3457,"#7","output_text_tokens",31113000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#1","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":272000,"output_text_tokens":3457,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":303113000,"lines":[["input_text_tokens",272000,"#1","input_text_tokens",272000000],["output_text_tokens",3457,"#3","output_text_tokens",31113000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:openai/gpt-5.6-sol:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/openai-gpt-5.6-sol/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","1/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#1","standard","input_text_tokens","5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#2","standard","cached_write_text_tokens","12.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#3","standard","output_text_tokens","45/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#4","standard","cached_read_text_tokens","1/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#5","standard","input_text_tokens","10/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#6","standard","cached_write_text_tokens","12.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#7","standard","output_text_tokens","45/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":29064000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",1024000],["input_text_tokens",1576,"#1","input_text_tokens",7880000],["output_text_tokens",448,"#3","output_text_tokens",20160000]]}},
+				{"id":"documented.long-context@272001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":252001,"input_tokens":272001,"output_tokens":448,"total_tokens":272449},"ir":{"inputTokens":272001,"outputTokens":448,"totalTokens":272449,"cachedInputTokens":252001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":472161000,"lines":[["cached_read_text_tokens",252001,"#4","cached_read_text_tokens",252001000],["input_text_tokens",20000,"#5","input_text_tokens",200000000],["output_text_tokens",448,"#7","output_text_tokens",20160000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":267434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":2834472000,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",4567000],["input_text_tokens",267434,"#5","input_text_tokens",2674340000],["output_text_tokens",3457,"#7","output_text_tokens",155565000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":267433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":1497297000,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",4567000],["input_text_tokens",267433,"#1","input_text_tokens",1337165000],["output_text_tokens",3457,"#3","output_text_tokens",155565000]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#6"],"plan":"standard","usage":{"requests":1,"input_text_tokens":271014,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":2878042500,"lines":[["cached_write_text_tokens",987,"#6","cached_write_text_tokens",12337500],["input_text_tokens",271014,"#5","input_text_tokens",2710140000],["output_text_tokens",3457,"#7","output_text_tokens",155565000]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":271013,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":1522967500,"lines":[["cached_write_text_tokens",987,"#2","cached_write_text_tokens",12337500],["input_text_tokens",271013,"#1","input_text_tokens",1355065000],["output_text_tokens",3457,"#3","output_text_tokens",155565000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#5","#7"],"plan":"standard","usage":{"requests":1,"input_text_tokens":272001,"output_text_tokens":3457,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":2875575000,"lines":[["input_text_tokens",272001,"#5","input_text_tokens",2720010000],["output_text_tokens",3457,"#7","output_text_tokens",155565000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#1","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":272000,"output_text_tokens":3457,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":1515565000,"lines":[["input_text_tokens",272000,"#1","input_text_tokens",1360000000],["output_text_tokens",3457,"#3","output_text_tokens",155565000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:openai/gpt-5.6-terra:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/openai-gpt-5.6-terra/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#1","standard","input_text_tokens","2.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#2","standard","cached_write_text_tokens","6.25/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#3","standard","output_text_tokens","22.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#5","standard","input_text_tokens","5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#6","standard","cached_write_text_tokens","6.25/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null],
+				["#7","standard","output_text_tokens","22.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":272000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":14532000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",512000],["input_text_tokens",1576,"#1","input_text_tokens",3940000],["output_text_tokens",448,"#3","output_text_tokens",10080000]]}},
+				{"id":"documented.long-context@272001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":252001,"input_tokens":272001,"output_tokens":448,"total_tokens":272449},"ir":{"inputTokens":272001,"outputTokens":448,"totalTokens":272449,"cachedInputTokens":252001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":236080500,"lines":[["cached_read_text_tokens",252001,"#4","cached_read_text_tokens",126000500],["input_text_tokens",20000,"#5","input_text_tokens",100000000],["output_text_tokens",448,"#7","output_text_tokens",10080000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":267434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":1417236000,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",2283500],["input_text_tokens",267434,"#5","input_text_tokens",1337170000],["output_text_tokens",3457,"#7","output_text_tokens",77782500]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":267433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":748648500,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",2283500],["input_text_tokens",267433,"#1","input_text_tokens",668582500],["output_text_tokens",3457,"#3","output_text_tokens",77782500]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#6"],"plan":"standard","usage":{"requests":1,"input_text_tokens":271014,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":1439021250,"lines":[["cached_write_text_tokens",987,"#6","cached_write_text_tokens",6168750],["input_text_tokens",271014,"#5","input_text_tokens",1355070000],["output_text_tokens",3457,"#7","output_text_tokens",77782500]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":271013,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":761483750,"lines":[["cached_write_text_tokens",987,"#2","cached_write_text_tokens",6168750],["input_text_tokens",271013,"#1","input_text_tokens",677532500],["output_text_tokens",3457,"#3","output_text_tokens",77782500]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt272000)","kind":"rule","targets":["#5","#7"],"plan":"standard","usage":{"requests":1,"input_text_tokens":272001,"output_text_tokens":3457,"input_tokens":272001,"output_tokens":3457,"total_tokens":275458},"expected":{"nanos":1437787500,"lines":[["input_text_tokens",272001,"#5","input_text_tokens",1360005000],["output_text_tokens",3457,"#7","output_text_tokens",77782500]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte272000)","kind":"rule","targets":["#1","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":272000,"output_text_tokens":3457,"input_tokens":272000,"output_tokens":3457,"total_tokens":275457},"expected":{"nanos":757782500,"lines":[["input_text_tokens",272000,"#1","input_text_tokens",680000000],["output_text_tokens",3457,"#3","output_text_tokens",77782500]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3-235b-a22b-2507:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3-235b-a22b-2507/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.88/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":914240,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",520000],["output_text_tokens",448,"#1","output_text_tokens",394240]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":5511560,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2469400],["output_text_tokens",3457,"#1","output_text_tokens",3042160]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.5-122b-a10b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.5-122b-a10b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":2316000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",780000],["output_reasoning_tokens",192,"#1","output_text_tokens",460800,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",1075200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":13894500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_reasoning_tokens",789,"#1","output_text_tokens",1893600,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",8296800]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.5-27b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.5-27b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.27/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","2.16/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":2084400,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",702000],["output_reasoning_tokens",192,"#1","output_text_tokens",414720,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",967680]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":12505050,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3333690],["output_reasoning_tokens",789,"#1","output_text_tokens",1704240,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",7467120]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.5-35b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.5-35b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.225/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.8/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":1737000,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",585000],["output_reasoning_tokens",192,"#1","output_text_tokens",345600,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",806400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":10420875,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2778075],["output_reasoning_tokens",789,"#1","output_text_tokens",1420200,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",6222600]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.5-397b-a17b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.5-397b-a17b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.55/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.55/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":3670000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",563200],["input_text_tokens",1576,"#1","input_text_tokens",866800],["output_reasoning_tokens",192,"#2","output_text_tokens",672000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1568000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":24163700,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",2511850],["input_text_tokens",12347,"#1","input_text_tokens",6790850],["output_reasoning_tokens",789,"#2","output_text_tokens",2761500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",12099500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":21651850,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",6790850],["output_reasoning_tokens",789,"#2","output_text_tokens",2761500,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",12099500]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.5-flash:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.5-flash/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","0.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":439200,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",260000],["output_text_tokens",448,"#1","output_text_tokens",179200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2617500,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",1234700],["output_text_tokens",3457,"#1","output_text_tokens",1382800]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.5-plus:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.5-plus/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.05/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#1","standard","input_text_tokens","0.4/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#2","standard","cached_write_text_tokens","0.625/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#3","standard","output_text_tokens","3/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#4","standard","cached_read_text_tokens","0.05/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#5","standard","input_text_tokens","0.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#6","standard","cached_write_text_tokens","0.625/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#7","standard","output_text_tokens","3/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":262144}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2025600,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",51200],["input_text_tokens",1576,"#1","input_text_tokens",630400],["output_text_tokens",448,"#3","output_text_tokens",1344000]]}},
+				{"id":"documented.long-context@262145","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":242145,"input_tokens":262145,"output_tokens":448,"total_tokens":262593},"ir":{"inputTokens":262145,"outputTokens":448,"totalTokens":262593,"cachedInputTokens":242145,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":23451250,"lines":[["cached_read_text_tokens",242145,"#4","cached_read_text_tokens",12107250],["input_text_tokens",20000,"#5","input_text_tokens",10000000],["output_text_tokens",448,"#7","output_text_tokens",1344000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt262144)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":257578,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":262145,"output_tokens":3457,"total_tokens":265602},"expected":{"nanos":139388350,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",228350],["input_text_tokens",257578,"#5","input_text_tokens",128789000],["output_text_tokens",3457,"#7","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte262144)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":257577,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":262144,"output_tokens":3457,"total_tokens":265601},"expected":{"nanos":113630150,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",228350],["input_text_tokens",257577,"#1","input_text_tokens",103030800],["output_text_tokens",3457,"#3","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokensgt262144)","kind":"rule","targets":["#6"],"plan":"standard","usage":{"requests":1,"input_text_tokens":261158,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":262145,"output_tokens":3457,"total_tokens":265602},"expected":{"nanos":141566875,"lines":[["cached_write_text_tokens",987,"#6","cached_write_text_tokens",616875],["input_text_tokens",261158,"#5","input_text_tokens",130579000],["output_text_tokens",3457,"#7","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokenslte262144)","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":261157,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":262144,"output_tokens":3457,"total_tokens":265601},"expected":{"nanos":115450675,"lines":[["cached_write_text_tokens",987,"#2","cached_write_text_tokens",616875],["input_text_tokens",261157,"#1","input_text_tokens",104462800],["output_text_tokens",3457,"#3","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt262144)","kind":"rule","targets":["#5","#7"],"plan":"standard","usage":{"requests":1,"input_text_tokens":262145,"output_text_tokens":3457,"input_tokens":262145,"output_tokens":3457,"total_tokens":265602},"expected":{"nanos":141443500,"lines":[["input_text_tokens",262145,"#5","input_text_tokens",131072500],["output_text_tokens",3457,"#7","output_text_tokens",10371000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte262144)","kind":"rule","targets":["#1","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":262144,"output_text_tokens":3457,"input_tokens":262144,"output_tokens":3457,"total_tokens":265601},"expected":{"nanos":115228600,"lines":[["input_text_tokens",262144,"#1","input_text_tokens",104857600],["output_text_tokens",3457,"#3","output_text_tokens",10371000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.6-35b-a3b:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.6-35b-a3b/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.186/1000000 token",100,null,null,null],
+				["#1","standard","output_text_tokens","1.114/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"reasoningTokens":192},"expected":{"nanos":1196560,"lines":[["input_text_tokens",2600,"#0","input_text_tokens",483600],["output_reasoning_tokens",192,"#1","output_text_tokens",213888,"reasoning at the output price"],["output_text_tokens",448,"#1","output_text_tokens",499072]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":7026586,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",2296542],["output_reasoning_tokens",789,"#1","output_text_tokens",878946,"reasoning at the output price"],["output_text_tokens",3457,"#1","output_text_tokens",3851098]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.6-plus:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.6-plus/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.13/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":256000}],null,null],
+				["#1","standard","input_text_tokens","0.325/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":256000}],null,null],
+				["#2","standard","cached_write_text_tokens","1.625/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":256000}],null,null],
+				["#3","standard","output_text_tokens","3.9/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":256000}],null,null],
+				["#4","standard","cached_read_text_tokens","0.13/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":256000}],null,null],
+				["#5","standard","input_text_tokens","1.3/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":256000}],null,null],
+				["#6","standard","cached_write_text_tokens","1.625/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":256000}],null,null],
+				["#7","standard","output_text_tokens","3.9/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":256000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":3141320,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",133120],["input_text_tokens",1576,"#1","input_text_tokens",512200],["output_reasoning_tokens",192,"#3","output_text_tokens",748800,"reasoning at the output price"],["output_text_tokens",448,"#3","output_text_tokens",1747200]]}},
+				{"id":"documented.long-context@256001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":236001,"output_reasoning_tokens":192,"input_tokens":256001,"output_tokens":640,"total_tokens":256641},"ir":{"inputTokens":256001,"outputTokens":640,"totalTokens":256641,"cachedInputTokens":236001,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":59176130,"lines":[["cached_read_text_tokens",236001,"#4","cached_read_text_tokens",30680130],["input_text_tokens",20000,"#5","input_text_tokens",26000000],["output_reasoning_tokens",192,"#7","output_text_tokens",748800,"reasoning at the output price"],["output_text_tokens",448,"#7","output_text_tokens",1747200]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt256000)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":251434,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":256001,"output_tokens":4246,"total_tokens":260247},"expected":{"nanos":344017310,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",593710],["input_text_tokens",251434,"#5","input_text_tokens",326864200],["output_reasoning_tokens",789,"#7","output_text_tokens",3077100,"reasoning at the output price"],["output_text_tokens",3457,"#7","output_text_tokens",13482300]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte256000)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":251433,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":256000,"output_tokens":4246,"total_tokens":260246},"expected":{"nanos":98868835,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",593710],["input_text_tokens",251433,"#1","input_text_tokens",81715725],["output_reasoning_tokens",789,"#3","output_text_tokens",3077100,"reasoning at the output price"],["output_text_tokens",3457,"#3","output_text_tokens",13482300]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokensgt256000)","kind":"rule","targets":["#6"],"plan":"standard","usage":{"requests":1,"input_text_tokens":255014,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_write_text_tokens":987,"input_tokens":256001,"output_tokens":4246,"total_tokens":260247},"expected":{"nanos":349681475,"lines":[["cached_write_text_tokens",987,"#6","cached_write_text_tokens",1603875],["input_text_tokens",255014,"#5","input_text_tokens",331518200],["output_reasoning_tokens",789,"#7","output_text_tokens",3077100,"reasoning at the output price"],["output_text_tokens",3457,"#7","output_text_tokens",13482300]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokenslte256000)","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":255013,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_write_text_tokens":987,"input_tokens":256000,"output_tokens":4246,"total_tokens":260246},"expected":{"nanos":101042500,"lines":[["cached_write_text_tokens",987,"#2","cached_write_text_tokens",1603875],["input_text_tokens",255013,"#1","input_text_tokens",82879225],["output_reasoning_tokens",789,"#3","output_text_tokens",3077100,"reasoning at the output price"],["output_text_tokens",3457,"#3","output_text_tokens",13482300]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt256000)","kind":"rule","targets":["#5","#7"],"plan":"standard","usage":{"requests":1,"input_text_tokens":256001,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":256001,"output_tokens":4246,"total_tokens":260247},"expected":{"nanos":349360700,"lines":[["input_text_tokens",256001,"#5","input_text_tokens",332801300],["output_reasoning_tokens",789,"#7","output_text_tokens",3077100,"reasoning at the output price"],["output_text_tokens",3457,"#7","output_text_tokens",13482300]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte256000)","kind":"rule","targets":["#1","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":256000,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":256000,"output_tokens":4246,"total_tokens":260246},"expected":{"nanos":99759400,"lines":[["input_text_tokens",256000,"#1","input_text_tokens",83200000],["output_reasoning_tokens",789,"#3","output_text_tokens",3077100,"reasoning at the output price"],["output_text_tokens",3457,"#3","output_text_tokens",13482300]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.7-max:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.7-max/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.5/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","2.5/1000000 token",100,null,null,null],
+				["#2","standard","cached_write_text_tokens","3.125/1000000 token",100,null,null,null],
+				["#3","standard","output_text_tokens","7.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":7812000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",512000],["input_text_tokens",1576,"#1","input_text_tokens",3940000],["output_text_tokens",448,"#3","output_text_tokens",3360000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":59078500,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",2283500],["input_text_tokens",12347,"#1","input_text_tokens",30867500],["output_text_tokens",3457,"#3","output_text_tokens",25927500]]}},
+				{"id":"rule.standard.cached_write_text_tokens","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":13334,"output_tokens":3457,"total_tokens":16791},"expected":{"nanos":59879375,"lines":[["cached_write_text_tokens",987,"#2","cached_write_text_tokens",3084375],["input_text_tokens",12347,"#1","input_text_tokens",30867500],["output_text_tokens",3457,"#3","output_text_tokens",25927500]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":56795000,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",30867500],["output_text_tokens",3457,"#3","output_text_tokens",25927500]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.7-plus:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.7-plus/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.24/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#1","standard","input_text_tokens","0.4/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#2","standard","cached_write_text_tokens","1.5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#3","standard","output_text_tokens","4.8/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#4","standard","cached_read_text_tokens","0.24/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#5","standard","input_text_tokens","1.2/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#6","standard","cached_write_text_tokens","1.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":262144}],null,null],
+				["#7","standard","output_text_tokens","4.8/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":262144}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3026560,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",245760],["input_text_tokens",1576,"#1","input_text_tokens",630400],["output_text_tokens",448,"#3","output_text_tokens",2150400]]}},
+				{"id":"documented.long-context@262145","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":242145,"input_tokens":262145,"output_tokens":448,"total_tokens":262593},"ir":{"inputTokens":262145,"outputTokens":448,"totalTokens":262593,"cachedInputTokens":242145,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":84265200,"lines":[["cached_read_text_tokens",242145,"#4","cached_read_text_tokens",58114800],["input_text_tokens",20000,"#5","input_text_tokens",24000000],["output_text_tokens",448,"#7","output_text_tokens",2150400]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt262144)","kind":"rule","targets":["#4"],"plan":"standard","usage":{"requests":1,"input_text_tokens":257578,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":262145,"output_tokens":3457,"total_tokens":265602},"expected":{"nanos":326783280,"lines":[["cached_read_text_tokens",4567,"#4","cached_read_text_tokens",1096080],["input_text_tokens",257578,"#5","input_text_tokens",309093600],["output_text_tokens",3457,"#7","output_text_tokens",16593600]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte262144)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":257577,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":262144,"output_tokens":3457,"total_tokens":265601},"expected":{"nanos":120720480,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1096080],["input_text_tokens",257577,"#1","input_text_tokens",103030800],["output_text_tokens",3457,"#3","output_text_tokens",16593600]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokensgt262144)","kind":"rule","targets":["#6"],"plan":"standard","usage":{"requests":1,"input_text_tokens":261158,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":262145,"output_tokens":3457,"total_tokens":265602},"expected":{"nanos":331463700,"lines":[["cached_write_text_tokens",987,"#6","cached_write_text_tokens",1480500],["input_text_tokens",261158,"#5","input_text_tokens",313389600],["output_text_tokens",3457,"#7","output_text_tokens",16593600]]}},
+				{"id":"rule.standard.cached_write_text_tokens.when(input_tokenslte262144)","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":261157,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":262144,"output_tokens":3457,"total_tokens":265601},"expected":{"nanos":122536900,"lines":[["cached_write_text_tokens",987,"#2","cached_write_text_tokens",1480500],["input_text_tokens",261157,"#1","input_text_tokens",104462800],["output_text_tokens",3457,"#3","output_text_tokens",16593600]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt262144)","kind":"rule","targets":["#5","#7"],"plan":"standard","usage":{"requests":1,"input_text_tokens":262145,"output_text_tokens":3457,"input_tokens":262145,"output_tokens":3457,"total_tokens":265602},"expected":{"nanos":331167600,"lines":[["input_text_tokens",262145,"#5","input_text_tokens",314574000],["output_text_tokens",3457,"#7","output_text_tokens",16593600]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte262144)","kind":"rule","targets":["#1","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":262144,"output_text_tokens":3457,"input_tokens":262144,"output_tokens":3457,"total_tokens":265601},"expected":{"nanos":121451200,"lines":[["input_text_tokens",262144,"#1","input_text_tokens",104857600],["output_text_tokens",3457,"#3","output_text_tokens",16593600]]}}
+			]
+		},
+		{
+			"key": "atlascloud:qwen/qwen3.8-max:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3.8-max/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.25/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","2/1000000 token",100,null,null,null],
+				["#2","standard","cached_write_text_tokens","2.5/1000000 token",100,null,null,null],
+				["#3","standard","output_text_tokens","6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":6096000,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",256000],["input_text_tokens",1576,"#1","input_text_tokens",3152000],["output_text_tokens",448,"#3","output_text_tokens",2688000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":46577750,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1141750],["input_text_tokens",12347,"#1","input_text_tokens",24694000],["output_text_tokens",3457,"#3","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.cached_write_text_tokens","kind":"rule","targets":["#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_write_text_tokens":987,"input_tokens":13334,"output_tokens":3457,"total_tokens":16791},"expected":{"nanos":47903500,"lines":[["cached_write_text_tokens",987,"#2","cached_write_text_tokens",2467500],["input_text_tokens",12347,"#1","input_text_tokens",24694000],["output_text_tokens",3457,"#3","output_text_tokens",20742000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":45436000,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",24694000],["output_text_tokens",3457,"#3","output_text_tokens",20742000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:spacex-ai/grok-4.3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/spacex-ai-grok-4.3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.4/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#1","standard","input_text_tokens","1.25/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#2","standard","output_text_tokens","5/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#3","standard","cached_read_text_tokens","0.4/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#4","standard","input_text_tokens","2.5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#5","standard","output_text_tokens","5/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":200000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":4619600,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",409600],["input_text_tokens",1576,"#1","input_text_tokens",1970000],["output_text_tokens",448,"#2","output_text_tokens",2240000]]}},
+				{"id":"documented.long-context@200001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":180001,"input_tokens":200001,"output_tokens":448,"total_tokens":200449},"ir":{"inputTokens":200001,"outputTokens":448,"totalTokens":200449,"cachedInputTokens":180001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":124240400,"lines":[["cached_read_text_tokens",180001,"#3","cached_read_text_tokens",72000400],["input_text_tokens",20000,"#4","input_text_tokens",50000000],["output_text_tokens",448,"#5","output_text_tokens",2240000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt200000)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":195434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":200001,"output_tokens":3457,"total_tokens":203458},"expected":{"nanos":507696800,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",1826800],["input_text_tokens",195434,"#4","input_text_tokens",488585000],["output_text_tokens",3457,"#5","output_text_tokens",17285000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte200000)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":195433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":200000,"output_tokens":3457,"total_tokens":203457},"expected":{"nanos":263403050,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1826800],["input_text_tokens",195433,"#1","input_text_tokens",244291250],["output_text_tokens",3457,"#2","output_text_tokens",17285000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt200000)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":200001,"output_text_tokens":3457,"input_tokens":200001,"output_tokens":3457,"total_tokens":203458},"expected":{"nanos":517287500,"lines":[["input_text_tokens",200001,"#4","input_text_tokens",500002500],["output_text_tokens",3457,"#5","output_text_tokens",17285000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte200000)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":200000,"output_text_tokens":3457,"input_tokens":200000,"output_tokens":3457,"total_tokens":203457},"expected":{"nanos":267285000,"lines":[["input_text_tokens",200000,"#1","input_text_tokens",250000000],["output_text_tokens",3457,"#2","output_text_tokens",17285000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:spacex-ai/grok-4.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/spacex-ai-grok-4.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.6/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#1","standard","input_text_tokens","2/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#2","standard","output_text_tokens","12/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#3","standard","cached_read_text_tokens","0.6/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#4","standard","input_text_tokens","4/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":200000}],null,null],
+				["#5","standard","output_text_tokens","12/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":200000}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":9142400,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",614400],["input_text_tokens",1576,"#1","input_text_tokens",3152000],["output_text_tokens",448,"#2","output_text_tokens",5376000]]}},
+				{"id":"documented.long-context@200001","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":180001,"input_tokens":200001,"output_tokens":448,"total_tokens":200449},"ir":{"inputTokens":200001,"outputTokens":448,"totalTokens":200449,"cachedInputTokens":180001,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":193376600,"lines":[["cached_read_text_tokens",180001,"#3","cached_read_text_tokens",108000600],["input_text_tokens",20000,"#4","input_text_tokens",80000000],["output_text_tokens",448,"#5","output_text_tokens",5376000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt200000)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":195434,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":200001,"output_tokens":3457,"total_tokens":203458},"expected":{"nanos":825960200,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",2740200],["input_text_tokens",195434,"#4","input_text_tokens",781736000],["output_text_tokens",3457,"#5","output_text_tokens",41484000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte200000)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":195433,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":200000,"output_tokens":3457,"total_tokens":203457},"expected":{"nanos":435090200,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",2740200],["input_text_tokens",195433,"#1","input_text_tokens",390866000],["output_text_tokens",3457,"#2","output_text_tokens",41484000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt200000)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":200001,"output_text_tokens":3457,"input_tokens":200001,"output_tokens":3457,"total_tokens":203458},"expected":{"nanos":841488000,"lines":[["input_text_tokens",200001,"#4","input_text_tokens",800004000],["output_text_tokens",3457,"#5","output_text_tokens",41484000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte200000)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":200000,"output_text_tokens":3457,"input_tokens":200000,"output_tokens":3457,"total_tokens":203457},"expected":{"nanos":441484000,"lines":[["input_text_tokens",200000,"#1","input_text_tokens",400000000],["output_text_tokens",3457,"#2","output_text_tokens",41484000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:spacex-ai/grok-build-0.1:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/spacex-ai-grok-build-0.1/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.4/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":204800}],null,null],
+				["#1","standard","input_text_tokens","1/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":204800}],null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",200,[{"path":"input_tokens","op":"lte","or_group":1,"and_index":1,"value":204800}],null,null],
+				["#3","standard","cached_read_text_tokens","0.4/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":204800}],null,null],
+				["#4","standard","input_text_tokens","2/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":204800}],null,null],
+				["#5","standard","output_text_tokens","4/1000000 token",200,[{"path":"input_tokens","op":"gt","or_group":1,"and_index":1,"value":204800}],null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":3777600,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",409600],["input_text_tokens",1576,"#1","input_text_tokens",1576000],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"documented.long-context@204801","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":20000,"output_text_tokens":448,"cached_read_text_tokens":184801,"input_tokens":204801,"output_tokens":448,"total_tokens":205249},"ir":{"inputTokens":204801,"outputTokens":448,"totalTokens":205249,"cachedInputTokens":184801,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":115712400,"lines":[["cached_read_text_tokens",184801,"#3","cached_read_text_tokens",73920400],["input_text_tokens",20000,"#4","input_text_tokens",40000000],["output_text_tokens",448,"#5","output_text_tokens",1792000]]},"source":{"kind":"docs","url":"https://platform.claude.com/docs/en/about-claude/pricing#long-context-pricing","note":"Long-context thresholds count cache reads and writes."}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokensgt204800)","kind":"rule","targets":["#3"],"plan":"standard","usage":{"requests":1,"input_text_tokens":200234,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":204801,"output_tokens":3457,"total_tokens":208258},"expected":{"nanos":416122800,"lines":[["cached_read_text_tokens",4567,"#3","cached_read_text_tokens",1826800],["input_text_tokens",200234,"#4","input_text_tokens",400468000],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.cached_read_text_tokens.when(input_tokenslte204800)","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":200233,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":204800,"output_tokens":3457,"total_tokens":208257},"expected":{"nanos":215887800,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1826800],["input_text_tokens",200233,"#1","input_text_tokens",200233000],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokensgt204800)","kind":"rule","targets":["#4","#5"],"plan":"standard","usage":{"requests":1,"input_text_tokens":204801,"output_text_tokens":3457,"input_tokens":204801,"output_tokens":3457,"total_tokens":208258},"expected":{"nanos":423430000,"lines":[["input_text_tokens",204801,"#4","input_text_tokens",409602000],["output_text_tokens",3457,"#5","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens.when(input_tokenslte204800)","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":204800,"output_text_tokens":3457,"input_tokens":204800,"output_tokens":3457,"total_tokens":208257},"expected":{"nanos":218628000,"lines":[["input_text_tokens",204800,"#1","input_text_tokens",204800000],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		},
+		{
+			"key": "atlascloud:tencent/hy3:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/tencent-hy3/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.05/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.8/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":878400,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",51200],["input_text_tokens",1576,"#1","input_text_tokens",315200],["output_reasoning_tokens",192,"#2","output_text_tokens",153600,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",358400]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":6094550,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",228350],["input_text_tokens",12347,"#1","input_text_tokens",2469400],["output_reasoning_tokens",789,"#2","output_text_tokens",631200,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2765600]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":5866200,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",2469400],["output_reasoning_tokens",789,"#2","output_text_tokens",631200,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",2765600]]}}
+			]
+		},
+		{
+			"key": "atlascloud:xiaomi/mimo-v2.5-pro:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/xiaomi-mimo-v2.5-pro/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.004/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.435/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.87/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1079416,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",4096],["input_text_tokens",1576,"#1","input_text_tokens",685560],["output_text_tokens",448,"#2","output_text_tokens",389760]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":8396803,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",18268],["input_text_tokens",12347,"#1","input_text_tokens",5370945],["output_text_tokens",3457,"#2","output_text_tokens",3007590]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":8378535,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",5370945],["output_text_tokens",3457,"#2","output_text_tokens",3007590]]}}
+			]
+		},
+		{
+			"key": "atlascloud:xiaomi/mimo-v2.5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/xiaomi-mimo-v2.5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.003/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":349152,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",3072],["input_text_tokens",1576,"#1","input_text_tokens",220640],["output_text_tokens",448,"#2","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2710241,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",13701],["input_text_tokens",12347,"#1","input_text_tokens",1728580],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2696540,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",1728580],["output_text_tokens",3457,"#2","output_text_tokens",967960]]}}
+			]
+		},
+		{
+			"key": "atlascloud:z-ai/glm-4.6:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/z-ai-glm-4.6/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.11/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.6/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","2.2/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2466240,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",112640],["input_text_tokens",1576,"#1","input_text_tokens",945600],["output_reasoning_tokens",192,"#2","output_text_tokens",422400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",985600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":17251770,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",502370],["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",1735800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",7605400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":16749400,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",7408200],["output_reasoning_tokens",789,"#2","output_text_tokens",1735800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",7605400]]}}
+			]
+		},
+		{
+			"key": "atlascloud:z-ai/glm-4.7:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/z-ai-glm-4.7/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.12/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.52/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.85/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":2126400,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",122880],["input_text_tokens",1576,"#1","input_text_tokens",819520],["output_reasoning_tokens",192,"#2","output_text_tokens",355200,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",828800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":14823580,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",548040],["input_text_tokens",12347,"#1","input_text_tokens",6420440],["output_reasoning_tokens",789,"#2","output_text_tokens",1459650,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",6395450]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":14275540,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",6420440],["output_reasoning_tokens",789,"#2","output_text_tokens",1459650,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",6395450]]}}
+			]
+		},
+		{
+			"key": "atlascloud:z-ai/glm-5:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/z-ai-glm-5/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.19/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","0.95/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":3707760,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",194560],["input_text_tokens",1576,"#1","input_text_tokens",1497200],["output_reasoning_tokens",192,"#2","output_text_tokens",604800,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1411200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":25972280,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",867730],["input_text_tokens",12347,"#1","input_text_tokens",11729650],["output_reasoning_tokens",789,"#2","output_text_tokens",2485350,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",10889550]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":25104550,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",11729650],["output_reasoning_tokens",789,"#2","output_text_tokens",2485350,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",10889550]]}}
+			]
+		},
+		{
+			"key": "atlascloud:z-ai/glm-5.1:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/z-ai-glm-5.1/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.234/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1.26/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.96/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":4759776,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",239616],["input_text_tokens",1576,"#1","input_text_tokens",1985760],["output_reasoning_tokens",192,"#2","output_text_tokens",760320,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1774080]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":33440058,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1068678],["input_text_tokens",12347,"#1","input_text_tokens",15557220],["output_reasoning_tokens",789,"#2","output_text_tokens",3124440,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13689720]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":32371380,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",15557220],["output_reasoning_tokens",789,"#2","output_text_tokens",3124440,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13689720]]}}
+			]
+		},
+		{
+			"key": "atlascloud:z-ai/glm-5.2:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/z-ai-glm-5.2/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.234/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1.26/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","3.96/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":4759776,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",239616],["input_text_tokens",1576,"#1","input_text_tokens",1985760],["output_reasoning_tokens",192,"#2","output_text_tokens",760320,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1774080]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":33440058,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1068678],["input_text_tokens",12347,"#1","input_text_tokens",15557220],["output_reasoning_tokens",789,"#2","output_text_tokens",3124440,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13689720]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":32371380,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",15557220],["output_reasoning_tokens",789,"#2","output_text_tokens",3124440,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13689720]]}}
+			]
+		},
+		{
+			"key": "atlascloud:z-ai/glm-5v-turbo:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/atlascloud/z-ai-glm-5v-turbo/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","cached_read_text_tokens","0.24/1000000 token",100,null,null,null],
+				["#1","standard","input_text_tokens","1.2/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":4696960,"lines":[["cached_read_text_tokens",1024,"#0","cached_read_text_tokens",245760],["input_text_tokens",1576,"#1","input_text_tokens",1891200],["output_reasoning_tokens",192,"#2","output_text_tokens",768000,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",1792000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#0"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":32896480,"lines":[["cached_read_text_tokens",4567,"#0","cached_read_text_tokens",1096080],["input_text_tokens",12347,"#1","input_text_tokens",14816400],["output_reasoning_tokens",789,"#2","output_text_tokens",3156000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#1","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":31800400,"lines":[["input_text_tokens",12347,"#1","input_text_tokens",14816400],["output_reasoning_tokens",789,"#2","output_text_tokens",3156000,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",13828000]]}}
+			]
+		}
+	]
+}

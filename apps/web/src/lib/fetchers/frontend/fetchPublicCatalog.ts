@@ -24,7 +24,7 @@ import type { APIProviderModelListItem } from "@/lib/fetchers/api-providers/prov
 import type { ProviderAppTokenTimeseries, ProviderTokenTimeseries } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { AppStats, ModelStats, APIProviderUpdates } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { ProviderMetrics } from "@/lib/fetchers/api-providers/providerDataTypes";
-import type { BenchmarkCard, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
+import type { ArtificialAnalysisPublicData, BenchmarkCard, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import type { CountryListSummary, CountrySummary } from "@/lib/fetchers/countries/types";
 import { getComparisonModelsCached } from "@/lib/fetchers/compare/getComparisonModels";
 import type { FamilyCard, FamilyInfo } from "@/lib/fetchers/families/types";
@@ -653,12 +653,15 @@ export async function fetchFrontendOrganisationHeader(
 	return payload?.organisation ?? null;
 }
 
+/** `limit` returns only the organisation's newest models (by release or announcement date). */
 export async function fetchFrontendOrganisationModels(
 	organisationId: string,
+	{ limit }: { limit?: number } = {},
 ): Promise<OrganisationModelCards[]> {
+	const query = limit === undefined ? "" : `?limit=${encodeURIComponent(String(limit))}`;
 	const payload = await fetchOptionalPublicWebApi<{
 		models: OrganisationModelCards[];
-	}>(`/api/_web/organisations/${encodeURIComponent(organisationId)}/models`);
+	}>(`/api/_web/organisations/${encodeURIComponent(organisationId)}/models${query}`);
 	return payload?.models ?? [];
 }
 
@@ -674,14 +677,27 @@ export async function fetchFrontendBenchmarks(
 
 export async function fetchFrontendBenchmark(
 	benchmarkId: string,
+	selection: { version?: string; metric?: string } = {},
 ): Promise<BenchmarkPage | null> {
 	// Epoch ECI was initially cached with inverted score ordering. Keep the
 	// corrected cache namespace explicit while older edge entries expire.
-	const cacheRevision = benchmarkId === "epoch-capabilities-index" ? "?revision=2" : "";
+	const query = new URLSearchParams();
+	if (benchmarkId === "epoch-capabilities-index") query.set("revision", "2");
+	if (benchmarkId === "artificial-analysis") {
+		if (selection.version) query.set("version", selection.version);
+		if (selection.metric) query.set("metric", selection.metric);
+	}
+	const cacheRevision = query.size ? `?${query}` : "";
 	const payload = await fetchOptionalPublicWebApi<{ benchmark: BenchmarkPage }>(
 		`/api/_web/benchmarks/${encodeURIComponent(benchmarkId)}${cacheRevision}`,
 	);
 	return payload?.benchmark ?? null;
+}
+
+export async function fetchFrontendArtificialAnalysisData(selection: { model?: string; version?: number; limit?: number; offset?: number } = {}): Promise<ArtificialAnalysisPublicData | null> {
+	const query = new URLSearchParams();
+	for (const [key, value] of Object.entries(selection)) if (value !== undefined) query.set(key, String(value));
+	return fetchOptionalPublicWebApi<ArtificialAnalysisPublicData>(`/api/_web/benchmarks/artificial-analysis/data?${query}`);
 }
 
 export async function fetchFrontendFamilies(): Promise<FamilyCard[]> {
@@ -1109,10 +1125,6 @@ export async function fetchFrontendOrganisationLogoIdsByNames(
 ): Promise<Record<string, string>> {
 	if (!names.length) return {};
 	return (await fetchPublicWebApi<{ organisations: Record<string, string> }>(`/api/_web/rankings/organisation-logo-ids?names=${encodeURIComponent([...new Set(names)].sort().join(","))}`)).organisations;
-}
-
-export async function fetchFrontendCompareModels(): Promise<ExtendedModel[]> {
-	return (await fetchPublicWebApi<{ models: ExtendedModel[] }>("/api/_web/compare/models")).models;
 }
 
 export async function fetchFrontendComparisonModels(

@@ -51,6 +51,11 @@ function renderModels(models: IRModel[]): string {
 	return lines.join("\n");
 }
 
+// Fields that hold either a string or an object. A Rust String cannot hold the
+// object, so they are typed as serde_json::Value, which deserialises both:
+// ErrorResponse.error is the error object, or the code string older responses sent.
+const JSON_VALUE_FIELDS = new Set(["ErrorResponse.error"]);
+
 function renderModel(model: IRModel): string {
 	if (model.schema.kind === "object") {
 		const required = new Set(model.schema.required);
@@ -58,11 +63,13 @@ function renderModel(model: IRModel): string {
 		const lines: string[] = [`pub struct ${model.name} {`];
 		for (const field of fields) {
 			const name = sanitizeIdentifier(field);
-			const type = renderFieldType(
-				model.schema.properties[field],
-				required.has(field),
-				model.name === "ImagesEditRequest" && field === "image"
-			);
+			const type = JSON_VALUE_FIELDS.has(`${model.name}.${field}`)
+				? renderJsonValueFieldType(required.has(field))
+				: renderFieldType(
+					model.schema.properties[field],
+					required.has(field),
+					model.name === "ImagesEditRequest" && field === "image"
+				);
 			lines.push(`\tpub ${name}: ${type},`);
 		}
 		lines.push("}");
@@ -219,6 +226,10 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 	return args.length === 0
 		? `String::from(${JSON.stringify(path)})`
 		: `format!("${formatString}", ${args.join(", ")})`;
+}
+
+function renderJsonValueFieldType(required: boolean): string {
+	return required ? "serde_json::Value" : "Option<serde_json::Value>";
 }
 
 function renderFieldType(schema: IRSchema, required: boolean, stringOrStringArray = false): string {

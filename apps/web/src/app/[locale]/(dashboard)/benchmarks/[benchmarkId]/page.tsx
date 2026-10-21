@@ -51,7 +51,7 @@ export async function generateMetadata(props: {
 		});
 	}
 
-	const cleanName: string = benchmark.name ?? t("keywordAiBenchmark");
+	const cleanName: string = benchmark.suite?.name ?? benchmark.name ?? t("keywordAiBenchmark");
 	const modelCount = benchmark.results?.length ?? 0;
 
 	return buildLocalizedPageMetadata({
@@ -73,13 +73,19 @@ export async function generateMetadata(props: {
 
 export default async function Page({
 	params,
+	searchParams,
 }: {
 	params: Promise<{ benchmarkId: string }>;
+	searchParams: Promise<{ version?: string | string[]; metric?: string | string[] }>;
 }) {
 	const t = await getTranslations("Catalogue.benchmarks");
 	const tNav = await getTranslations("Common.nav");
 	const { benchmarkId } = await params;
-	const benchmark = await fetchFrontendBenchmark(benchmarkId);
+	const selection = benchmarkId === "artificial-analysis" ? await searchParams : {};
+	const benchmark = await fetchFrontendBenchmark(benchmarkId, {
+		version: typeof selection.version === "string" ? selection.version : undefined,
+		metric: typeof selection.metric === "string" ? selection.metric : undefined,
+	});
 
 	if (!benchmark) {
 		notFound();
@@ -97,11 +103,12 @@ export default async function Page({
 		}),
 	} : benchmark;
 	const artificialAnalysisRankings = artificialAnalysis
-		? await (async () => {
+		? (async () => {
 			const metricDefinitions = artificialAnalysisMetricsForBenchmark(benchmark.id);
 			const [rankings, organisations] = await Promise.all([
 				Promise.all(metricDefinitions.map(async ({ id }) => {
-					const metricBenchmark = id === benchmark.id ? benchmark : await fetchFrontendBenchmark(id).catch(() => null);
+					const metricBenchmark = benchmark.comparison_benchmarks?.find((metric) => metric.id === id)
+						?? (id === benchmark.id ? benchmark : await fetchFrontendBenchmark(id).catch(() => null));
 					return metricBenchmark ? buildArtificialAnalysisRanking(metricBenchmark) : null;
 				})),
 				fetchFrontendOrganisations().catch(() => []),
@@ -116,7 +123,7 @@ export default async function Page({
 
 	// Generate structured data for the benchmark page.
 	const generateStructuredData = () => {
-		const benchmarkName = benchmark.name || t("keywordAiBenchmark");
+		const benchmarkName = benchmark.suite?.name ?? benchmark.name ?? t("keywordAiBenchmark");
 
 		// Dataset Schema
 		const datasetSchema = {
@@ -170,7 +177,7 @@ export default async function Page({
 				</>
 			)}
 			<BenchmarkDetailShell benchmark={displayBenchmark} tocItems={artificialAnalysis
-				? [{ id: "summary", label: t("tocSummary") }, { id: "comparisons", label: t("tocIndexComparisons") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]
+				? []
 				: epochCapabilitiesIndex ? [{ id: "summary", label: t("tocSummary") }, { id: "comparisons", label: t("tocIndexLeaderboard") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]
 				: [{ id: "summary", label: t("tocSummary") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]}>
 				<BenchmarkOverview benchmark={displayBenchmark} artificialAnalysisRankings={artificialAnalysisRankings} />

@@ -1,0 +1,26 @@
+{
+	"provider": "longcat",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from packages/data/catalog/src/data",
+	"clock": "2026-10-18T12:00:00.000Z",
+	"legend": { "rules": "[id, plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "longcat:meituan/longcat-2.0:text.generate",
+			"file": "packages/data/catalog/src/data/pricing/longcat/meituan-longcat-2.0/text.generate/pricing.json",
+			"rules": [
+				["#0","standard","input_text_tokens","0.3/1000000 token",100,null,null,null],
+				["#1","standard","cached_read_text_tokens","0.006/1000000 token",100,null,null,null],
+				["#2","standard","output_text_tokens","1.2/1000000 token",100,null,null,null],
+				["#3","standard","input_text_tokens","0.75/1000000 token",90,null,null,null],
+				["#4","standard","cached_read_text_tokens","0.015/1000000 token",90,null,null,null],
+				["#5","standard","output_text_tokens","2.95/1000000 token",90,null,null,null]
+			],
+			"unreachable": [{"ruleId":"#3","reason":"shadowed by #0 (same plan, meter and conditions; priority 100 vs 90, price 0.3 vs 0.75)"},{"ruleId":"#4","reason":"shadowed by #1 (same plan, meter and conditions; priority 100 vs 90, price 0.006 vs 0.015)"},{"ruleId":"#5","reason":"shadowed by #2 (same plan, meter and conditions; priority 100 vs 90, price 1.2 vs 2.95)"}],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":1246944,"lines":[["cached_read_text_tokens",1024,"#1","cached_read_text_tokens",6144],["input_text_tokens",1576,"#0","input_text_tokens",472800],["output_reasoning_tokens",192,"#2","output_text_tokens",230400,"reasoning at the output price"],["output_text_tokens",448,"#2","output_text_tokens",537600]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["#1"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":8826702,"lines":[["cached_read_text_tokens",4567,"#1","cached_read_text_tokens",27402],["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["#0","#2"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":8799300,"lines":[["input_text_tokens",12347,"#0","input_text_tokens",3704100],["output_reasoning_tokens",789,"#2","output_text_tokens",946800,"reasoning at the output price"],["output_text_tokens",3457,"#2","output_text_tokens",4148400]]}}
+			]
+		}
+	]
+}

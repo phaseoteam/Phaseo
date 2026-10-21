@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { passthroughWithPricing } from "./streaming";
+import { createAnthropicToResponsesStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 
 function makeSseResponse(frames: Array<{ event?: string; data: any }>): Response {
 	const text = frames
@@ -66,7 +67,132 @@ function baseCtx(overrides?: Record<string, unknown>): any {
 	};
 }
 
+describe("passthroughWithPricing client stream grammar", () => {
+	function dataFrames(text: string): string[] {
+		return text.split(/\n\n/).map((block) => block.split("\n").find((line) => line.startsWith("data:"))?.slice(5).trim() ?? "").filter(Boolean);
+	}
+
+	it("sends Chat clients chunks only, then one [DONE], while internal hooks still see the snapshot", async () => {
+		const snapshots: any[] = [];
+		const usageCalls: any[] = [];
+		const frames = makeSseResponse([
+			{ data: { id: "c", object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: "Hi" }, finish_reason: null }] } },
+			{ data: { id: "c", object: "chat.completion", choices: [{ index: 0, message: { role: "assistant", content: "Hi" }, finish_reason: "length" }], usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 } } },
+		]);
+		const upstream = new Response(`${await frames.text()}data: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream" } });
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx({ endpoint: "chat.completions", protocol: "openai.chat.completions" }),
+			provider: "groq",
+			priceCard: null,
+			onFinalSnapshot: (snapshot) => snapshots.push(snapshot),
+			onFinalUsage: (usage) => {
+				usageCalls.push(usage);
+			},
+		});
+		const out = dataFrames(await drain(response));
+		expect(out[out.length - 1]).toBe("[DONE]");
+		expect(out.filter((frame) => frame === "[DONE]")).toHaveLength(1);
+		const chunks = out.slice(0, -1).map((frame) => JSON.parse(frame));
+		expect(chunks.every((chunk) => chunk.object === "chat.completion.chunk")).toBe(true);
+		expect(chunks.flatMap((chunk) => chunk.choices.map((choice: any) => choice.finish_reason)).filter(Boolean)).toEqual(["length"]);
+		expect(chunks[chunks.length - 1]).toMatchObject({ choices: [], usage: { prompt_tokens: 3 } });
+		expect(snapshots[0]?.object).toBe("chat.completion");
+		expect(usageCalls).toEqual([{ prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 }]);
+	});
+
+	it("sends Responses clients one name per event, sequence numbers and the lifecycle events a source left out", async () => {
+		// A Claude stream as the Anthropic transformer delivers it to the client boundary.
+		const claude = makeSseResponse([
+			{ event: "message_start", data: { type: "message_start", message: { id: "msg_1", usage: { input_tokens: 3, output_tokens: 1 } } } },
+			{ event: "content_block_start", data: { type: "content_block_start", index: 0, content_block: { type: "thinking", thinking: "" } } },
+			{ event: "content_block_delta", data: { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "Plan." } } },
+			{ event: "content_block_delta", data: { type: "content_block_delta", index: 0, delta: { type: "signature_delta", signature: "sig" } } },
+			{ event: "content_block_stop", data: { type: "content_block_stop", index: 0 } },
+			{ event: "content_block_start", data: { type: "content_block_start", index: 1, content_block: { type: "text", text: "" } } },
+			{ event: "content_block_delta", data: { type: "content_block_delta", index: 1, delta: { type: "text_delta", text: "Hi" } } },
+			{ event: "content_block_stop", data: { type: "content_block_stop", index: 1 } },
+			{ event: "message_delta", data: { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 4 } } },
+			{ event: "message_stop", data: { type: "message_stop" } },
+		]);
+		const upstream = new Response(claude.body!.pipeThrough(createAnthropicToResponsesStreamTransformer("req_claude", "claude-sonnet-5", { providerId: "anthropic" })));
+		const response = await passthroughWithPricing({ upstream, ctx: baseCtx(), provider: "anthropic", priceCard: null });
+		const events = (await drain(response)).split(/\n\n/).filter(Boolean).map((block) => ({
+			event: block.split("\n").find((line) => line.startsWith("event: "))?.slice(7),
+			data: JSON.parse(block.split("\n").find((line) => line.startsWith("data: "))!.slice(6)),
+		}));
+
+		for (const [index, { event, data }] of events.entries()) {
+			expect(data.type).toBe(event);
+			expect(data.sequence_number).toBe(index);
+		}
+		const names = events.map(({ event }) => event);
+		expect(names.slice(0, 2)).toEqual(["response.created", "response.in_progress"]);
+		const reasoningDone = names.indexOf("response.reasoning_text.done");
+		expect(reasoningDone).toBeGreaterThan(names.indexOf("response.reasoning_text.delta"));
+		expect(names[reasoningDone + 1]).toBe("response.content_part.done");
+		expect(events[reasoningDone].data).toMatchObject({ text: "Plan.", content_index: 0 });
+		expect(names.at(-1)).toBe("response.completed");
+	});
+
+	it("does not forward frames of another protocol that map to no client event", async () => {
+		const upstream = makeSseResponse([
+			{ event: "response.created", data: { type: "response.created", response: { id: "r", object: "response", status: "in_progress" } } },
+			{ event: "response.output_text.delta", data: { type: "response.output_text.delta", output_index: 0, item_id: "m", delta: "Hi" } },
+			{ event: "response.output_text.done", data: { type: "response.output_text.done", output_index: 0, item_id: "m", text: "Hi" } },
+			{ event: "response.completed", data: { type: "response.completed", response: { id: "r", object: "response", status: "completed", output: [], usage: { input_tokens: 1, output_tokens: 1 } } } },
+		]);
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx({ endpoint: "messages", protocol: "anthropic.messages" }),
+			provider: "google-ai-studio",
+			priceCard: null,
+		});
+		const types = dataFrames(await drain(response)).map((frame) => JSON.parse(frame).type);
+		expect(types).toEqual(["message_start", "content_block_start", "content_block_delta", "content_block_stop", "message_delta", "message_stop"]);
+	});
+});
+
 describe("passthroughWithPricing", () => {
+	it("finalizes usage from response.incomplete and strips the internal stop carrier", async () => {
+		const usageCalls: Array<any> = [];
+		const snapshots: Array<any> = [];
+		const upstream = makeSseResponse([
+			{ event: "response.created", data: { response: { id: "resp_1", object: "response", status: "in_progress" } } },
+			{
+				event: "response.incomplete",
+				data: {
+					type: "response.incomplete",
+					response: {
+						id: "resp_1",
+						object: "response",
+						status: "incomplete",
+						incomplete_details: { reason: "content_filter" },
+						_phaseo_stop: { reason: "refusal" },
+						usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
+					},
+				},
+			},
+		]);
+
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx(),
+			provider: "anthropic",
+			priceCard: null,
+			onFinalSnapshot: (snapshot) => snapshots.push(snapshot),
+			onFinalUsage: (usage) => {
+				usageCalls.push(usage);
+			},
+		});
+
+		const text = await drain(response);
+		expect(text).not.toContain("_phaseo_stop");
+		expect(text).toContain("\"incomplete_details\":{\"reason\":\"content_filter\"}");
+		expect(snapshots).toHaveLength(1);
+		expect(usageCalls).toEqual([{ input_tokens: 3, output_tokens: 2, total_tokens: 5 }]);
+	});
+
 	it("finalizes usage once from response.completed events", async () => {
 		const usageCalls: Array<any> = [];
 		const upstream = makeSseResponse([
