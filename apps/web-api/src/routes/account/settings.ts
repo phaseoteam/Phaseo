@@ -6,6 +6,7 @@ import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
+import { readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import { isProviderAccount } from "./provider-account";
 import { accountSettingsPolicyRouter } from "./settings-policy";
 import { accountChatPrivacyReviewRouter } from "./settings-chat-privacy-review";
@@ -356,12 +357,13 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		workspaceId,
 	});
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	let [teamResult, settingsResult, providersResult, modelsResult, contributionGatewayResult] = await Promise.all([
+	let [teamResult, settingsResult, providersResult, modelsResult, contributionGatewayResult, ioLogContentsAccess] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", workspaceId).maybeSingle(),
 		context.client.from("workspace_settings").select("privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,model_restriction_model_ids,response_healing_enabled,response_healing_locked,response_healing_mode").eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,routable,routing_enabled,status").eq("routable", true).eq("routing_enabled", true).in("status", ["active", "degraded"]).order("name", { ascending: true }),
 		context.client.from("v2_model_provider_routes").select("provider_id:provider_slug,api_model_id:model_slug,internal_model_id:model_slug,is_active_gateway:routing_enabled").eq("routing_enabled", true).in("status", ["active", "degraded"]),
 		callDataContributionGateway({ env: c.env, request: c.req.raw, workspaceId: context.workspaceId }),
+		readIoLogContentsAccess(context.client, workspaceId),
 	]);
 	if (settingsResult.error && /model_restriction_(mode|model_ids)/i.test(settingsResult.error.message)) {
 		settingsResult = await context.client.from("workspace_settings")
@@ -399,7 +401,10 @@ accountSettingsRouter.get("/privacy", async (c) => {
 			internalModelId: row.internal_model_id ?? null,
 			providerId: row.provider_id,
 		})),
-		initialGlobal: settingsResult.data ?? null,
+		initialGlobal: settingsResult.data
+			// null when the setting couldn't be read, so the page doesn't save a guess.
+			? { ...settingsResult.data, io_logging_contents_access: ioLogContentsAccess }
+			: null,
 		accountPolicy: null,
 		policy: {
 			privacyEnablePaidMayTrain: settings?.privacy_enable_paid_may_train !== false,

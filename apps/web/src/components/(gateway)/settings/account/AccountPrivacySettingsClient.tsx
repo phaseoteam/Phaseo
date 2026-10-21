@@ -27,6 +27,8 @@ type Props = Omit<SettingsAccountPrivacyInitialData, "signedIn"> & {
 		enabled: boolean;
 		retentionDays: number;
 		includeProviderPayloads: boolean;
+		// null when the current value couldn't be loaded; the selector stays locked.
+		contentsAccess: "members" | "admins" | null;
 	} | null;
 };
 type PrivacyModel = Props["models"][number];
@@ -118,6 +120,7 @@ export default function AccountPrivacySettingsClient({
 					ioLoggingEnabled: logStorage.enabled,
 					ioLoggingRetentionDays: logStorage.retentionDays,
 					ioLoggingIncludeProviderPayloads: logStorage.includeProviderPayloads,
+					ioLoggingContentsAccess: logStorage.contentsAccess ?? undefined,
 				}, workspaceId);
 				void invalidateSettings();
 				if (cancelled) return;
@@ -244,6 +247,13 @@ export default function AccountPrivacySettingsClient({
 						</div>
 						<SettingRow title={s("Include provider payloads")} description={s("phraseAlsoRetainTheTransformedUpstreamRequestAndProviderResponse")} checked={logStorage.includeProviderPayloads} onCheckedChange={(includeProviderPayloads) => setLogStorage((current) => current ? { ...current, includeProviderPayloads } : current)} />
 					</> : null}
+					<div className="flex flex-col gap-3 border-b border-border/60 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+						<div><div className="text-sm font-medium">{tUi("privacy.contentsAccessTitle")}</div><p className="mt-0.5 text-sm text-muted-foreground">{tUi("privacy.contentsAccessDescription")}</p></div>
+						<Select value={logStorage.contentsAccess ?? undefined} disabled={logStorage.contentsAccess === null} onValueChange={(value) => setLogStorage((current) => current ? { ...current, contentsAccess: value === "admins" ? "admins" : "members" } : current)}>
+							<SelectTrigger className="w-full rounded-md sm:w-48"><SelectValue /></SelectTrigger>
+							<SelectContent><SelectItem value="members">{tUi("privacy.contentsAccessMembers")}</SelectItem><SelectItem value="admins">{tUi("privacy.contentsAccessAdmins")}</SelectItem></SelectContent>
+						</Select>
+					</div>
 				</div>
 			</div>
 		</section> : null}

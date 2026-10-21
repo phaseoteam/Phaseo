@@ -10,6 +10,25 @@ afterEach(() => {
 });
 
 describe("account usage settings routes", () => {
+	it("hides legacy upstream payloads from members when contents are limited to owners and admins", async () => {
+		const upstreamFor = async (role: string) => {
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = new URL(input instanceof Request ? input.url : String(input));
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: "viewer" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role }]);
+				if (url.pathname.endsWith("workspaces")) return Response.json([{ owner_user_id: "owner" }]);
+				if (url.pathname.endsWith("workspace_settings")) return Response.json([{ io_logging_contents_access: "admins" }]);
+				if (url.pathname.endsWith("gateway_upstream_requests")) return Response.json([{ id: "upstream-1", request_id: "request-1", model_id: "openai/gpt-test", provider: "openai", request_payload: { messages: [{ role: "user", content: "secret" }] }, response_payload: { output_text: "secret" } }]);
+				return Response.json([]);
+			}));
+			const response = await app.request("https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream", { headers: { authorization: "Bearer token" } }, env);
+			expect(response.status).toBe(200);
+			const body = await response.json() as { data: { upstreamRequests: Array<Record<string, unknown>> } };
+			return body.data.upstreamRequests[0];
+		};
+		await expect(upstreamFor("member")).resolves.toMatchObject({ id: "upstream-1", request_payload: null, response_payload: null });
+		await expect(upstreamFor("admin")).resolves.toMatchObject({ request_payload: { messages: [{ role: "user", content: "secret" }] }, response_payload: { output_text: "secret" } });
+	});
 	it("denies a member's attempt to inspect another creator's activity", async () => {
 		const privateReads: string[] = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
