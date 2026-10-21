@@ -205,6 +205,18 @@ const REPORTED_INPUT_TOTAL_PATHS = [
     "promptTokenCount",
 ] as const;
 
+/** Output totals a provider reports. output_text_tokens is not one: realtime reports it next to output_audio_tokens. */
+const REPORTED_OUTPUT_TOTAL_PATHS = [
+    "output_tokens",
+    "completion_tokens",
+    "completionTokens",
+    "completion_token_count",
+    "total_output_tokens",
+    "totalOutputTokens",
+    "outputTokens",
+    "candidatesTokenCount",
+] as const;
+
 /** Split raw usage into numeric meters and a context object */
 function splitUsage(
     usageRaw: any,
@@ -215,6 +227,8 @@ function splitUsage(
     context: Record<string, any>;
     /** input_text_tokens is the whole uncached prompt, so it still contains any image, audio or video tokens. */
     inputTextCoversPrompt: boolean;
+    /** output_text_tokens is the whole output, so it still contains any audio tokens. */
+    outputTextCoversOutput: boolean;
 } {
     const meters: Record<string, number> = {};
     const context: Record<string, any> = {};
@@ -430,6 +444,10 @@ function splitUsage(
     if (meters.input_text_tokens == null) {
         meters.input_text_tokens = uncachedCanonicalInput;
     }
+    const reportedOutputTotal = pickFirstFiniteNumber(usageRaw, [...REPORTED_OUTPUT_TOTAL_PATHS]);
+    const outputTextCoversOutput =
+        meters.output_text_tokens == null ||
+        (typeof reportedOutputTotal === "number" && meters.output_text_tokens === reportedOutputTotal);
     if (meters.output_text_tokens == null) {
         meters.output_text_tokens =
             card.rules.some((rule) => rule.meter === "output_reasoning_tokens") &&
@@ -474,7 +492,7 @@ function splitUsage(
         context,
     });
 
-    return { meters, context, inputTextCoversPrompt };
+    return { meters, context, inputTextCoversPrompt, outputTextCoversOutput };
 }
 
 const INPUT_MODALITY_METERS: PricingDimensionKey[] = ["input_image_tokens", "input_audio_tokens", "input_video_tokens"];
@@ -498,6 +516,24 @@ function separatePricedInputModalities(
         const moved = Math.min(text, quantity);
         meters.input_text_tokens = text - moved;
     }
+}
+
+/**
+ * Audio output tokens are part of the output total (OpenAI Chat completion_tokens, Gemini
+ * candidatesTokenCount). When the card prices output_audio_tokens on its own meter, take them
+ * out of output_text_tokens so they are billed once, at the audio rate. When it does not,
+ * they stay in output_text_tokens and are billed as text, as before.
+ */
+function separatePricedOutputAudio(
+    meters: Record<string, number>,
+    outputTextCoversOutput: boolean,
+    hasRule: (meter: PricingDimensionKey) => boolean,
+): void {
+    const quantity = meters.output_audio_tokens;
+    if (typeof quantity !== "number" || !(quantity > 0)) return;
+    if (!outputTextCoversOutput || !hasRule("output_audio_tokens")) return;
+    const text = meters.output_text_tokens ?? 0;
+    meters.output_text_tokens = text - Math.min(text, quantity);
 }
 
 /** price qty at rule's price/unit_size using nanos math */
@@ -898,7 +934,7 @@ export function computeBillSummary(
     if (requiresExplicitServiceTier(card) && !card.rules.some((rule) => rule.pricing_plan === pricingPlan)) {
         throw new Error(`pricing_plan_missing:${pricingPlan}`);
     }
-    const { meters, context: usageContext, inputTextCoversPrompt } = splitUsage(usageRaw, card, requestOptions);
+    const { meters, context: usageContext, inputTextCoversPrompt, outputTextCoversOutput } = splitUsage(usageRaw, card, requestOptions);
     const ctx = { ...(requestOptions ?? {}), ...(usageContext ?? {}) };
     {
         const modalityContext = { ...ctx, ...meters };
@@ -908,13 +944,15 @@ export function computeBillSummary(
             );
         // Mirrors the rule selection in the meter loop below, so a modality only leaves
         // input_text_tokens when the loop will price it.
-        separatePricedInputModalities(meters, inputTextCoversPrompt, (meter) => {
+        const willPrice = (meter: PricingDimensionKey) => {
             if (ruleMatches(pricingPlan, meter)) return true;
             if (pricingPlan === "standard") return false;
             const planDefinesMeter = card.rules.some((rule) => rule.pricing_plan === pricingPlan && rule.meter === meter);
             if (planDefinesMeter) return pricingPlan !== "batch";
             return ruleMatches("standard", meter);
-        });
+        };
+        separatePricedInputModalities(meters, inputTextCoversPrompt, willPrice);
+        separatePricedOutputAudio(meters, outputTextCoversOutput, willPrice);
     }
 
     logPricingDebug("usage_received", {

@@ -1123,6 +1123,8 @@ class ChatImageOutputPart
 
 class ChatMessage
 {
+	/** @var array<string, mixed>|null */
+	public $audio;
 	/** @var array|null */
 	public $audios;
 	/** @var string|null|array */
@@ -1163,6 +1165,32 @@ class ChatReasoningDetail
 	public $text;
 	/** @var string */
 	public $type;
+}
+
+class ChatResponseMessage
+{
+	/** @var array<string, mixed>|null */
+	public $audio;
+	/** @var array|null */
+	public $audios;
+	/** @var string|null|array */
+	public $content;
+	/** @var array|null */
+	public $images;
+	/** @var string|null */
+	public $name;
+	/** @var string|null */
+	public $reasoning;
+	/** @var string|null */
+	public $reasoning_content;
+	/** @var array|null */
+	public $reasoning_details;
+	/** @var string */
+	public $role;
+	/** @var string|null */
+	public $tool_call_id;
+	/** @var array|null */
+	public $tool_calls;
 }
 
 class Classifier
