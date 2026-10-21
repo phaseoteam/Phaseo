@@ -329,7 +329,7 @@ function Picks({ label, onPick, children }: { label: string; onPick(): void; chi
 /** A row that is one switch: tapping anywhere on it toggles, and screen readers hear a single control. */
 function Toggle({ title, subtitle, value, onChange, disabled, last }: { title: string; subtitle?: string; value: boolean; onChange(value: boolean): void; disabled?: boolean; last?: boolean }) {
   return (
-    <Pressable accessibilityRole="switch" accessibilityLabel={title} accessibilityHint={subtitle} accessibilityState={{ checked: value, disabled }} disabled={disabled} onPress={() => { switchHaptic(); onChange(!value); }} className={cn("flex-row items-center pl-4 pr-3 active:bg-accent", disabled && "opacity-50")}>
+    <Pressable accessibilityRole="switch" accessibilityLabel={title} accessibilityHint={subtitle} accessibilityState={{ checked: value, disabled }} disabled={disabled} onPress={() => { switchHaptic(!value); onChange(!value); }} className={cn("flex-row items-center pl-4 pr-3 active:bg-accent", disabled && "opacity-50")}>
       <View className={cn("min-h-[52px] flex-1 flex-row items-center gap-3 py-3", !last && "border-b border-border")}>
         <View className="flex-1">
           <Text variant="body">{title}</Text>

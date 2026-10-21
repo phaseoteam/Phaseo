@@ -4,6 +4,7 @@ import { Modal, Pressable, ScrollView, useWindowDimensions, View } from "react-n
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 import { Icon } from "./icon";
 import { placeDropdown, type Anchor } from "./overlay";
 import type { MenuAction } from "./overlayStore";
@@ -103,7 +104,11 @@ function MenuSurface({ open, onClose, anchor, title, children }: { open: boolean
  * that opened it (pass `anchor`), like the website's selects. Closes on pick, outside tap or Back.
  */
 export function OptionSheet<T extends string>({ open, title, value, options, onChange, onClose, anchor }: { open: boolean; title?: string; value?: T | null; options: SelectOption<T>[]; onChange(value: T): void; onClose(): void; anchor?: Anchor | null }) {
-  const pick = (next: T) => { onChange(next); onClose(); };
+  const pick = (next: T) => {
+    if (next !== value) haptic("selection");
+    onChange(next);
+    onClose();
+  };
   return (
     <MenuSurface open={open} onClose={onClose} anchor={anchor} title={title}>
       {(compact) => <OptionList value={value} options={options} onPick={pick} compact={compact} />}

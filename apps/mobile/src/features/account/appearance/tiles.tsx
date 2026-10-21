@@ -4,6 +4,7 @@ import { Pressable, View, type LayoutChangeEvent } from "react-native";
 import { Icon, Text } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
+import { haptic } from "@/lib/haptics";
 
 const GAP = 8;
 
@@ -34,7 +35,10 @@ export function SwatchTile({ name, selected, onPress, width, children, accessibi
       accessibilityRole="radio"
       accessibilityState={{ checked: selected }}
       accessibilityLabel={accessibilityLabel ?? name}
-      onPress={onPress}
+      onPress={() => {
+        if (!selected) haptic("selection");
+        onPress();
+      }}
       className={cn("rounded-md border p-2 active:bg-accent", selected ? "border-primary" : "border-border")}
       style={{ width }}
     >

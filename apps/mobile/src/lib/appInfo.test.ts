@@ -3,6 +3,7 @@ import { versionLabel } from "./appInfo";
 // Only the pure label is tested; the device and build modules load native code.
 jest.mock("expo-device", () => ({}));
 jest.mock("expo-constants", () => ({ __esModule: true, default: { expoConfig: { version: "0.1.0", extra: {} } } }));
+jest.mock("./haptics", () => ({ hapticsHere: () => "" }));
 
 describe("versionLabel", () => {
   it("shows the build number, and the commit only when asked", () => {
