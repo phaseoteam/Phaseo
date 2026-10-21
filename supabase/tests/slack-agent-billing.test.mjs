@@ -255,6 +255,14 @@ try {
   await rows('delete from public.workspace_guardrails where id = $1', [guardrail.id]);
   assert.equal((await rows('select guardrail_id from public.slack_installations where id = $1', [first.id]))[0].guardrail_id, null);
 
+  // A company's own Slack app can't be deleted while any installation (live or past) points at it,
+  // so deleting it never cascades away billing history.
+  const [app] = await rows(`insert into public.slack_apps (workspace_id, slack_app_id, client_id, secrets_ciphertext) values ($1, 'A0APP0001', '123.456', 'v1.cipher') returning id`, [ws(2)]);
+  await rows('update public.slack_installations set slack_app_id = $2 where id = $1', [second.id, app.id]);
+  await assert.rejects(rows('delete from public.slack_apps where id = $1', [app.id]), /slack_installations_slack_app_id_fkey/);
+  await rows('update public.slack_installations set slack_app_id = null where id = $1', [second.id]);
+  await rows('delete from public.slack_apps where id = $1', [app.id]);
+
   // Account links follow the installation.
   await rows(`insert into public.slack_user_links (installation_id, slack_user_id, user_id) values ($1, 'U0PERSON1', $2)`, [first.id, user(1)]);
   await assert.rejects(rows(`insert into public.slack_user_links (installation_id, slack_user_id, user_id) values ($1, 'U0PERSON1', $2)`, [first.id, user(1)]), /slack_user_links_pkey/);

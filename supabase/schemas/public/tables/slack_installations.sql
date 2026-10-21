@@ -42,7 +42,7 @@ CREATE TABLE "public"."slack_installations" (
   CONSTRAINT "slack_installations_pkey" PRIMARY KEY (id),
   CONSTRAINT "slack_installations_plan_people_check" CHECK (((plan_people >= 1) AND (plan_people <= 10000000))),
   CONSTRAINT "slack_installations_secrets_check" CHECK ((length(secrets_ciphertext) > 0)),
-  CONSTRAINT "slack_installations_slack_app_id_fkey" FOREIGN KEY (slack_app_id) REFERENCES public.slack_apps(id) ON DELETE CASCADE,
+  CONSTRAINT "slack_installations_slack_app_id_fkey" FOREIGN KEY (slack_app_id) REFERENCES public.slack_apps(id) ON DELETE RESTRICT,
   CONSTRAINT "slack_installations_status_check" CHECK ((status = ANY (ARRAY['active'::text, 'paused'::text, 'payment_due'::text, 'uninstalled'::text]))),
   CONSTRAINT "slack_installations_team_check" CHECK (((team_id IS NOT NULL) OR (enterprise_id IS NOT NULL))),
   CONSTRAINT "slack_installations_team_id_check" CHECK (((team_id IS NULL) OR (team_id ~ '^T[A-Z0-9]{2,31}$'::text))),
