@@ -281,7 +281,7 @@ export class FakeSlack {
 				const failure = this.failures.get(method)?.shift();
 				if (failure === "ratelimited") return { ok: false, error: "ratelimited", retryAfterSeconds: 60 };
 				if (failure) return { ok: false, error: failure };
-				if (method === "chat.startStream") {
+				if (method === "chat.startStream" || method === "chat.postMessage") {
 					this.streams += 1;
 					return { ok: true, data: { ok: true, channel: args.channel, ts: `1792600100.${String(this.streams).padStart(6, "0")}` } as T };
 				}

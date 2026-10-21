@@ -50,6 +50,8 @@ export type TurnInput = {
 	/** The reply text and tool notes, staged by the run until the turn ends. */
 	stagedReply: string | null;
 	stagedTools: string[];
+	/** What each attempt of the run spent, in nanodollars, by attempt number. */
+	attemptCosts: Record<string, number>;
 	memory: MemoryEntry[];
 };
 
@@ -88,6 +90,15 @@ function turnRef(row: TurnRow): TurnRef {
 
 const TURN_COLUMNS = "id, thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, status, started_at";
 
+/** turns columns added after the first release, created on objects that predate them. */
+const ADDED_TURN_COLUMNS: Array<[name: string, type: string]> = [
+	["context", "TEXT"],
+	["reply_ts", "TEXT"],
+	["staged_reply", "TEXT"],
+	["staged_tools", "TEXT"],
+	["attempt_costs", "TEXT"],
+];
+
 export class ThreadCoordinator extends DurableObject<Env> {
 	/** Starts turns; replaced in tests. */
 	runner: TurnRunner;
@@ -119,12 +130,14 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			text TEXT NOT NULL,
 			status TEXT NOT NULL,
 			created_at INTEGER NOT NULL,
-			started_at INTEGER,
-			context TEXT,
-			reply_ts TEXT,
-			staged_reply TEXT,
-			staged_tools TEXT
+			started_at INTEGER
 		)`);
+		// Columns added after the first release. CREATE TABLE IF NOT EXISTS leaves an
+		// existing object's table as it was, so add whichever are missing.
+		const columns = new Set(this.sql.exec<{ name: string }>("PRAGMA table_info(turns)").toArray().map((column) => column.name));
+		for (const [name, type] of ADDED_TURN_COLUMNS) {
+			if (!columns.has(name)) this.sql.exec(`ALTER TABLE turns ADD COLUMN ${name} ${type}`);
+		}
 		this.sql.exec("CREATE TABLE IF NOT EXISTS memory (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, text TEXT NOT NULL, at INTEGER NOT NULL)");
 	}
 
@@ -272,8 +285,8 @@ export class ThreadCoordinator extends DurableObject<Env> {
 
 	/** What a turn works from, while it is queued or running: its message, thread history, reply and working memory. */
 	turnInput(turnId: number): TurnInput | null {
-		const row = this.sql.exec<{ text: string; context: string | null; reply_ts: string | null; staged_reply: string | null; staged_tools: string | null }>(
-			"SELECT text, context, reply_ts, staged_reply, staged_tools FROM turns WHERE id = ?", turnId,
+		const row = this.sql.exec<{ text: string; context: string | null; reply_ts: string | null; staged_reply: string | null; staged_tools: string | null; attempt_costs: string | null }>(
+			"SELECT text, context, reply_ts, staged_reply, staged_tools, attempt_costs FROM turns WHERE id = ?", turnId,
 		).toArray()[0];
 		if (!row) return null;
 		return {
@@ -282,6 +295,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			replyTs: row.reply_ts,
 			stagedReply: row.staged_reply,
 			stagedTools: row.staged_tools ? JSON.parse(row.staged_tools) as string[] : [],
+			attemptCosts: row.attempt_costs ? JSON.parse(row.attempt_costs) as Record<string, number> : {},
 			memory: this.workingMemory(),
 		};
 	}
@@ -297,12 +311,23 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		this.sql.exec("UPDATE turns SET reply_ts = coalesce(reply_ts, ?) WHERE id = ?", ts, turnId);
 	}
 
-	/** The run's reply and tool notes, moved to working memory when the turn ends. */
-	stageTurnOutput(turnId: number, output: { reply: string; tools: string[] }): void {
-		this.sql.exec(
-			"UPDATE turns SET staged_reply = ?, staged_tools = ? WHERE id = ?",
-			output.reply.slice(0, MAX_MESSAGE_CHARS), JSON.stringify(output.tools.slice(0, MAX_TOOLS_PER_TURN).map((tool) => tool.slice(0, MAX_TOOL_CHARS))), turnId,
-		);
+	/**
+	 * The run's reply and tool notes so far, staged after every agent step for the
+	 * reply step to deliver and moved to working memory when the turn ends, with
+	 * what this attempt has spent, so a retried run counts it against the turn's cap.
+	 */
+	stageTurnOutput(turnId: number, output: { attempt: number; costNanos: number; reply: string; tools: string[] }): void {
+		this.ctx.storage.transactionSync(() => {
+			const row = this.sql.exec<{ attempt_costs: string | null }>("SELECT attempt_costs FROM turns WHERE id = ?", turnId).toArray()[0];
+			if (!row) return;
+			const costs = row.attempt_costs ? JSON.parse(row.attempt_costs) as Record<string, number> : {};
+			costs[String(output.attempt)] = Math.max(costs[String(output.attempt)] ?? 0, Math.round(output.costNanos));
+			this.sql.exec(
+				"UPDATE turns SET staged_reply = ?, staged_tools = ?, attempt_costs = ? WHERE id = ?",
+				output.reply.slice(0, MAX_MESSAGE_CHARS), JSON.stringify(output.tools.slice(0, MAX_TOOLS_PER_TURN).map((tool) => tool.slice(0, MAX_TOOL_CHARS))),
+				JSON.stringify(costs), turnId,
+			);
+		});
 	}
 
 	/** The bot's earlier replies and tool summaries in this thread, oldest first. */

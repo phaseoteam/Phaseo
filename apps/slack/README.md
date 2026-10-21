@@ -53,7 +53,7 @@ carry ids and statuses only, as Slack's API terms require.
 ## Agent turns
 
 Each answer is an `AgentTurnWorkflow` instance (`AGENT_TURNS`, Cloudflare
-Workflows), one per Slack event, kept for 1 day. It has four steps:
+Workflows), one per Slack event, kept for 1 day. It has five steps:
 
 1. `load`: re-checks the installation and access. It sets the Slack session to `processing` (`agents.sessions.setStatus`).
 2. `context`: reads up to 15 messages of the thread (`conversations.replies`). When Slack rate limits that, it uses the coordinator's working memory instead.
@@ -64,12 +64,19 @@ Workflows), one per Slack event, kept for 1 day. It has four steps:
    - `provider.data_collection: "deny"`;
    - the gateway's web search and fetch tools.
 
-   It stops after 12 steps or $0.50 of model spend. The answer streams into Slack with `chat.startStream` and `chat.appendStream`, batched about every 400 ms. The cancel flag is checked between steps.
-4. `finish`: stops the stream with a footer (model and cost), counts the answer in the meter, and tells the coordinator.
+   It stops after 12 steps or $0.50 of model spend. The answer streams into Slack with `chat.startStream` and `chat.appendStream`, batched about every 400 ms. After every agent step the answer so far and what it cost are staged in the coordinator, and the cancel flag is checked.
+4. `reply`: finishes the Slack message with a footer (model and cost). It stops the stream, or, when the live stream failed or the run was retried, writes the staged answer with `chat.update` (or `chat.postMessage` if the stream never started).
+5. `finish`: counts the answer in the meter, if the person could see it, and tells the coordinator.
 
 Step outputs hold ids and statuses only. A retried step never posts twice: the
 reply's `ts` is stored as soon as Slack returns it, and a retry updates that
 message.
+
+A failed Slack write never runs the model again. The live stream stops, the
+model finishes, and the `reply` step (retried up to 3 times on its own) delivers
+the staged answer. The `run` step is retried once for other failures; the retry
+counts what earlier attempts spent against the $0.50 limit, and the footer shows
+the total.
 
 The usage tools are `get_spend`, `get_credit_balance`, `get_key_usage` and
 `find_models`. They are offered only when the installation's `usage_data_mode`

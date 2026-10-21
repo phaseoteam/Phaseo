@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { finishReply, footerText, MAX_REPLY_CHARS, SlackPostError, SlackReplyStream, STREAM_BATCH_MS, type ReplyTarget } from "../src/reply-stream";
+import { finishReply, footerText, MAX_REPLY_CHARS, postReply, replaceReply, SlackPostError, SlackReplyStream, STREAM_BATCH_MS, type ReplyTarget } from "../src/reply-stream";
 import { FakeSlack } from "./fakes";
 
 const CHANNEL: ReplyTarget = { channel: "C0CHANNEL1", threadTs: "1792600000.000100", recipientUserId: "U0PERSON01", recipientTeamId: "T0TEST0001" };
@@ -75,23 +75,36 @@ describe("SlackReplyStream", () => {
 		expect(slack.of("chat.appendStream")).toHaveLength(1);
 	});
 
-	it("throws when Slack refuses a post, so the step retries", async () => {
+	it("keeps the text and stops writing live when Slack refuses a post, so the model never runs again for it", async () => {
+		const reply = stream();
+		await reply.push("Hi");
+		slack.failures.set("chat.appendStream", ["internal_error"]);
+		clock.now += 1_000;
+		await expect(reply.push(" there")).resolves.toBeUndefined();
+		expect(reply.failure).toBe("appendStream_internal_error");
+		clock.now += 1_000;
+		await reply.push(", more");
+		await reply.close();
+		expect(slack.of("chat.appendStream")).toHaveLength(1);
+		expect(reply.text).toBe("Hi there, more");
+		expect(reply.streaming).toBe(false);
+
+		const unstarted = stream();
 		slack.failures.set("chat.startStream", ["internal_error"]);
-		await expect(stream().push("Hi")).rejects.toBeInstanceOf(SlackPostError);
+		await unstarted.push("Hello");
+		expect(unstarted).toMatchObject({ ts: null, failure: "startStream_internal_error", text: "Hello" });
+		expect(unstarted.streaming).toBe(false);
 	});
 
-	it("on a retry, writes nothing while running and then replaces the earlier message", async () => {
+	it("on a retry, writes nothing while running, leaving the earlier message to the reply step", async () => {
 		const reply = stream(CHANNEL, "1792600100.000009");
 		await reply.push("A fresh ");
 		clock.now += 1_000;
 		await reply.push("answer");
-		await reply.flush();
-		expect(slack.calls).toHaveLength(0);
 		await reply.close();
-		expect(slack.calls.map((call) => [call.method, call.args])).toEqual([
-			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000009" }],
-			["chat.update", { channel: "C0CHANNEL1", ts: "1792600100.000009", markdown_text: "A fresh answer" }],
-		]);
+		expect(slack.calls).toHaveLength(0);
+		expect(reply).toMatchObject({ ts: "1792600100.000009", text: "A fresh answer" });
+		expect(reply.streaming).toBe(false);
 		expect(started).toEqual([]);
 	});
 });
@@ -110,6 +123,33 @@ describe("finishing a reply", () => {
 			await finishReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", ts: "1792600100.000001", text: "Answer", footer: "phaseo/auto · $0.0123" });
 		}
 		expect(slack.of("chat.update").map((call) => call.args.markdown_text)).toEqual(["Answer\n\n_phaseo/auto · $0.0123_", "Answer\n\n_phaseo/auto · $0.0123_"]);
+	});
+
+	it("throws when that update fails, so the step retries instead of losing the footer", async () => {
+		slack.failures.set("chat.stopStream", ["message_not_in_streaming_state"]);
+		slack.failures.set("chat.update", ["internal_error"]);
+		const args = { channel: "C0CHANNEL1", ts: "1792600100.000001", text: "Answer", footer: "phaseo/auto · $0.0123" };
+		await expect(finishReply(slack.client("xoxb-1-test-token"), args)).rejects.toMatchObject({ method: "update", code: "internal_error" });
+		await expect(finishReply(slack.client("xoxb-1-test-token"), args)).resolves.toBe(true);
+	});
+
+	it("replaces a message's text with the whole answer, stopping its stream first", async () => {
+		const args = { channel: "C0CHANNEL1", ts: "1792600100.000009", text: "A fresh answer", footer: "phaseo/auto · $0.0010" };
+		await expect(replaceReply(slack.client("xoxb-1-test-token"), args)).resolves.toBe(true);
+		expect(slack.calls.map((call) => [call.method, call.args])).toEqual([
+			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000009" }],
+			["chat.update", { channel: "C0CHANNEL1", ts: "1792600100.000009", markdown_text: "A fresh answer\n\n_phaseo/auto · $0.0010_" }],
+		]);
+		slack.failures.set("chat.update", ["ratelimited"]);
+		await expect(replaceReply(slack.client("xoxb-1-test-token"), args)).rejects.toBeInstanceOf(SlackPostError);
+	});
+
+	it("posts the whole answer when its stream never started", async () => {
+		const ts = await postReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", threadTs: "1792600000.000100", text: "Answer", footer: "phaseo/auto · $0.0123" });
+		expect(ts).toBe("1792600100.000001");
+		expect(slack.of("chat.postMessage")[0].args).toEqual({ channel: "C0CHANNEL1", thread_ts: "1792600000.000100", markdown_text: "Answer\n\n_phaseo/auto · $0.0123_" });
+		slack.failures.set("chat.postMessage", ["channel_not_found"]);
+		await expect(postReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", threadTs: "1792600000.000100", text: "Answer", footer: null })).rejects.toBeInstanceOf(SlackPostError);
 	});
 
 	it("shows the model that answered and the cost in US dollars", () => {

@@ -103,7 +103,7 @@ describe("AgentTurnWorkflow", () => {
 			await hooks.onText("You spent ");
 			world.clock.now += 500;
 			await hooks.onText("$12.50 this week.");
-			await hooks.onStep();
+			await hooks.onStep({ costUsd: 0.0123 });
 			return answer();
 		});
 		const turn = await startTurn();
@@ -121,10 +121,11 @@ describe("AgentTurnWorkflow", () => {
 		expect(coordinatorOf(turn).workingMemory()).toEqual([{ kind: "reply", text: "You spent $12.50 this week.", at: world.clock.now }]);
 
 		// Step outputs are kept with the instance: ids and statuses only.
-		expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "finish"]);
+		expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "reply", "finish"]);
 		const stored = JSON.stringify(step.outputs);
 		for (const secretOrText of ["spent", "what did we", GATEWAY_KEY, BOT_TOKEN]) expect(stored).not.toContain(secretOrText);
-		expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "answered", ts: "1792600100.000001", costNanos: 12_300_000, model: "openai/gpt-test", error: null });
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toEqual({ status: "answered", ts: "1792600100.000001", streamed: true, explained: true, costNanos: 12_300_000, model: "openai/gpt-test", error: null });
+		expect(step.outputs.find((entry) => entry.name === "reply")?.output).toEqual({ shown: true, stopped: true });
 
 		const [request] = agent.requests;
 		expect(request).toMatchObject({
@@ -207,34 +208,115 @@ describe("AgentTurnWorkflow", () => {
 		].join("\n"));
 	});
 
-	it("retries a failed Slack post by updating the same message, never posting a second one", async () => {
+	it("never runs the model again when a Slack write fails: the reply step delivers the whole answer", async () => {
 		world.slack.failures.set("chat.appendStream", ["internal_error"]);
-		// The retry's own stopStream works; the finish step's then finds the stream already stopped.
-		world.slack.failures.set("chat.stopStream", ["", "message_not_in_streaming_state"]);
-		const agent = new ScriptedAgent(async (_request, hooks, call) => {
-			if (call === 1) {
-				await hooks.onText("Part one");
-				world.clock.now += 500;
-				await hooks.onText(", part two");
-			} else {
-				await hooks.onText("The whole answer");
-				world.clock.now += 500;
-				await hooks.onText(", again.");
-			}
+		const agent = new ScriptedAgent(async (_request, hooks) => {
+			await hooks.onText("Part one");
+			world.clock.now += 500;
+			await hooks.onText(", part two");
+			await hooks.onStep({ costUsd: 0.001 });
+			world.clock.now += 500;
+			await hooks.onText(", part three.");
 			return answer("openai/gpt-test", 0.001);
 		});
 		const turn = await startTurn();
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
-		expect(step.failures).toEqual([{ name: "run", attempt: 1 }]);
+		expect(agent.requests).toHaveLength(1);
+		expect(step.failures).toEqual([]);
 		expect(world.slack.of("chat.startStream")).toHaveLength(1);
-		expect(world.slack.of("chat.update").map((call) => call.args)).toEqual([
-			{ channel: "C0CHANNEL1", ts: "1792600100.000001", markdown_text: "The whole answer, again." },
-			{ channel: "C0CHANNEL1", ts: "1792600100.000001", markdown_text: "The whole answer, again.\n\n_phaseo/auto → openai/gpt-test · $0.0010_" },
+		expect(world.slack.of("chat.appendStream")).toHaveLength(1);
+		expect(world.slack.calls.slice(-2).map((call) => [call.method, call.args])).toEqual([
+			["chat.stopStream", { channel: "C0CHANNEL1", ts: "1792600100.000001" }],
+			["chat.update", { channel: "C0CHANNEL1", ts: "1792600100.000001", markdown_text: "Part one, part two, part three.\n\n_phaseo/auto → openai/gpt-test · $0.0010_" }],
 		]);
-		// The stream had stopped before the footer, so the session is set back to active by hand.
+		// Stopping the stream also set the session back to active.
+		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing"]);
+		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		expect(coordinatorOf(turn).workingMemory()).toEqual([{ kind: "reply", text: "Part one, part two, part three.", at: world.clock.now }]);
+	});
+
+	it("posts the whole answer when the stream never started, and doesn't run the model again", async () => {
+		world.slack.failures.set("chat.startStream", ["internal_error"]);
+		const agent = new ScriptedAgent(async (_request, hooks) => {
+			await hooks.onText("Hello");
+			return answer();
+		});
+		const turn = await startTurn();
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(agent.requests).toHaveLength(1);
+		expect(world.slack.of("chat.postMessage").map((call) => call.args)).toEqual([
+			{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: "Hello\n\n_phaseo/auto → openai/gpt-test · $0.0123_" },
+		]);
 		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing", "active"]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
-		expect(coordinatorOf(turn).workingMemory()).toEqual([{ kind: "reply", text: "The whole answer, again.", at: world.clock.now }]);
+	});
+
+	it("retries the reply step, not the model, when Slack's footer update fails", async () => {
+		// The person pressed stop just as the answer ended, so the footer goes on with an update, which fails once.
+		world.slack.failures.set("chat.stopStream", ["message_not_in_streaming_state", "message_not_in_streaming_state"]);
+		world.slack.failures.set("chat.update", ["internal_error"]);
+		const agent = new ScriptedAgent(async (_request, hooks) => {
+			await hooks.onText("Answer");
+			return answer();
+		});
+		await expect(runTurn(deps(agent), await startTurn(), step)).resolves.toEqual({ status: "answered" });
+		expect(step.failures).toEqual([{ name: "reply", attempt: 1 }]);
+		expect(agent.requests).toHaveLength(1);
+		expect(world.slack.of("chat.update").map((call) => call.args.markdown_text)).toEqual([
+			"Answer\n\n_phaseo/auto → openai/gpt-test · $0.0123_",
+			"Answer\n\n_phaseo/auto → openai/gpt-test · $0.0123_",
+		]);
+		expect(meter().usage(NOW)).toMatchObject({ answers: 1 });
+	});
+
+	it("counts every attempt's cost against the turn's limit and in the footer when the run step is retried", async () => {
+		let turn!: TurnRef;
+		const agent = new ScriptedAgent(async (request, hooks, call) => {
+			if (call === 1) {
+				await hooks.onText("First try");
+				await hooks.onStep({ costUsd: 0.3 });
+				// The step dies after the model was paid (here: the coordinator can't stage the end of it).
+				const coordinator = coordinatorOf(turn);
+				const stage = coordinator.stageTurnOutput.bind(coordinator);
+				coordinator.stageTurnOutput = () => {
+					coordinator.stageTurnOutput = stage;
+					throw new Error("storage_unavailable");
+				};
+				return answer("openai/gpt-test", 0.3);
+			}
+			expect(request.maxCostUsd).toBeCloseTo(0.2, 9);
+			await hooks.onText("Second try");
+			return answer("openai/gpt-test", 0.1);
+		});
+		turn = await startTurn();
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(step.failures).toEqual([{ name: "run", attempt: 1 }]);
+		expect(agent.requests.map((request) => request.maxCostUsd)).toEqual([0.5, expect.closeTo(0.2, 9)]);
+		expect(step.outputs.find((entry) => entry.name === "run")?.output).toMatchObject({ costNanos: 400_000_000, streamed: false });
+		expect(world.slack.of("chat.startStream")).toHaveLength(1);
+		expect(world.slack.of("chat.update").at(-1)?.args.markdown_text).toBe("Second try\n\n_phaseo/auto → openai/gpt-test · $0.4000_");
+	});
+
+	it("doesn't run the model again when earlier attempts used the whole limit", async () => {
+		let turn!: TurnRef;
+		const agent = new ScriptedAgent(async (_request, hooks) => {
+			await hooks.onText("A long answer");
+			await hooks.onStep({ costUsd: 0.5 });
+			const coordinator = coordinatorOf(turn);
+			const stage = coordinator.stageTurnOutput.bind(coordinator);
+			coordinator.stageTurnOutput = () => {
+				coordinator.stageTurnOutput = stage;
+				throw new Error("storage_unavailable");
+			};
+			return answer("openai/gpt-test", 0.5);
+		});
+		turn = await startTurn();
+		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+		expect(agent.requests).toHaveLength(1);
+		expect(world.slack.of("chat.update").at(-1)?.args.markdown_text).toBe(
+			"A long answer\n\n_I stopped here to keep this answer within its $0.50 cost limit._\n\n_phaseo/auto · $0.5000_",
+		);
+		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
 	});
 
 	it("stops between steps when the thread is cancelled, and doesn't count the answer", async () => {
@@ -242,7 +324,7 @@ describe("AgentTurnWorkflow", () => {
 		const agent = new ScriptedAgent(async (request, hooks) => {
 			await hooks.onText("Looking at your spend");
 			await coordinatorOf(turn).cancel(NOW);
-			await hooks.onStep();
+			await hooks.onStep({ costUsd: 0 });
 			expect(request.signal.aborted).toBe(true);
 			throw new Error("aborted");
 		});
@@ -295,12 +377,12 @@ describe("AgentTurnWorkflow", () => {
 	});
 
 	it("ends the turn with a private reply when the run step fails outright", async () => {
-		world.slack.failures.set("chat.startStream", ["internal_error", "internal_error"]);
-		const agent = new ScriptedAgent(async (_request, hooks) => {
-			await hooks.onText("Hello");
-			return answer();
-		});
+		const agent = new ScriptedAgent(async () => answer());
 		const turn = await startTurn();
+		// Every attempt dies after the model answered, before anything was written to Slack.
+		coordinatorOf(turn).stageTurnOutput = () => {
+			throw new Error("storage_unavailable");
+		};
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
 		expect(step.failures).toEqual([{ name: "run", attempt: 1 }, { name: "run", attempt: 2 }]);
 		expect(world.slack.ephemerals().map((call) => call.args)).toEqual([

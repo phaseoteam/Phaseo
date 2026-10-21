@@ -26,6 +26,7 @@ function request(overrides: Partial<AgentTurnRequest> = {}): AgentTurnRequest {
 		endUser: "slack:T0TEST0001:U0PERSON01",
 		labels: { slackTeam: "T0TEST0001", slackChannel: "C0CHANNEL1" },
 		tools: [],
+		maxCostUsd: 0.5,
 		signal: new AbortController().signal,
 		...overrides,
 	};
@@ -55,12 +56,13 @@ describe("the SDK agent runner", () => {
 		});
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
 		const deltas: string[] = [];
-		let steps = 0;
+		const steps: number[] = [];
 		const tool = { id: "get_spend", description: "Spend", parameters: { type: "object", properties: {} }, execute: async () => ({}) };
-		const output = await runner.run(request({ tools: [tool] }), { onText: async (delta) => { deltas.push(delta); }, onStep: async () => { steps += 1; } });
+		const output = await runner.run(request({ tools: [tool] }), { onText: async (delta) => { deltas.push(delta); }, onStep: async (progress) => { steps.push(progress.costUsd); } });
 
 		expect(deltas.join("")).toBe("Hello there");
-		expect(steps).toBe(1);
+		// Each step reports what the run has spent so far, so a retried turn can count it.
+		expect(steps).toEqual([0.0021]);
 		expect(output).toEqual({ costUsd: 0.0021, model: "openai/gpt-test", stopReason: null });
 		expect(seen).toHaveLength(1);
 		const [sent] = seen;
@@ -83,6 +85,13 @@ describe("the SDK agent runner", () => {
 			{ type: "phaseo:web_fetch" },
 		]);
 		expect(JSON.stringify(sent.body.input)).toContain("New message from <@U0PERSON01>");
+	});
+
+	it("stops at the cost a retried turn has left, not the whole turn's limit", async () => {
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL) => (isModelLookup(input) ? Response.json({ data: [] }) : sse([COMPLETED])));
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const output = await runner.run(request({ maxCostUsd: 0.001 }), { onText: async () => undefined, onStep: async () => undefined });
+		expect(output).toMatchObject({ costUsd: 0.0021, stopReason: "max_cost:0.001" });
 	});
 
 	it("goes through the PHASEO_API service binding when there is one", async () => {

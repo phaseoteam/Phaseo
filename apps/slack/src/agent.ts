@@ -5,6 +5,8 @@ import {
 	isAgentGatewayError,
 	maxCost,
 	stepCountIs,
+	type AgentModelClient,
+	type AgentModelResponse,
 	type AgentRunResult,
 	type AgentTool,
 } from "@phaseo/agent-sdk";
@@ -36,13 +38,15 @@ export type AgentTurnRequest = {
 	endUser: string;
 	labels: { slackTeam: string; slackChannel: string };
 	tools: AgentTool<any, any>[];
+	/** What this run may spend, in US dollars: the turn's limit less what earlier attempts spent. */
+	maxCostUsd: number;
 	signal: AbortSignal;
 };
 
 export type AgentTurnHooks = {
 	onText(delta: string): Promise<void>;
-	/** After each agent step; the turn flushes text and checks its cancel flag here. */
-	onStep(): Promise<void>;
+	/** After each agent step, with what the run has spent so far; the turn stages its reply and cost and checks its cancel flag here. */
+	onStep(progress: { costUsd: number }): Promise<void>;
 };
 
 export type AgentTurnOutput = {
@@ -79,6 +83,37 @@ export function gatewayFetch(env: Pick<Env, "PHASEO_API">): typeof fetch {
 	return ((input: RequestInfo | URL, init?: RequestInit) => binding.fetch(new Request(input, init))) as typeof fetch;
 }
 
+/** A model response's cost, read the way the SDK's maxCost reads it. */
+function responseCost(response: AgentModelResponse): number {
+	if (typeof response.cost === "number") return response.cost;
+	for (const key of ["cost", "total_cost", "totalCost"]) {
+		const value = response.usage?.[key];
+		if (typeof value === "number" && Number.isFinite(value)) return value;
+	}
+	return 0;
+}
+
+/** The gateway client, adding up what each model response cost, so a turn can record its spend after every step. */
+function meteredClient(client: AgentModelClient, onCost: (usd: number) => void): AgentModelClient {
+	const stream = client.stream;
+	return {
+		...client,
+		async generate(request) {
+			const response = await client.generate(request);
+			onCost(responseCost(response));
+			return response;
+		},
+		...(stream ? {
+			async *stream(request) {
+				for await (const event of stream.call(client, request)) {
+					if (event.type === "response.completed") onCost(responseCost(event.response));
+					yield event;
+				}
+			},
+		} : {}),
+	};
+}
+
 function lastModel(result: AgentRunResult<unknown, unknown, unknown>): string | null {
 	for (let index = result.steps.length - 1; index >= 0; index -= 1) {
 		const model = result.steps[index]?.model;
@@ -90,7 +125,8 @@ function lastModel(result: AgentRunResult<unknown, unknown, unknown>): string | 
 export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl: string }): AgentRunner {
 	return {
 		async run(request, hooks) {
-			const client = createGatewayAgentClient({
+			let spentUsd = 0;
+			const client = meteredClient(createGatewayAgentClient({
 				clientOptions: {
 					apiKey: request.gatewayKey,
 					baseUrl: options.baseUrl,
@@ -105,6 +141,8 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 				provider: { data_collection: "deny" },
 				user: request.endUser,
 				gatewayTools: GATEWAY_TOOLS,
+			}), (usd) => {
+				spentUsd += usd;
 			});
 			const agent = createAgent({
 				id: AGENT_ID,
@@ -113,7 +151,7 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 				instructions: () => request.instructions,
 				tools: request.tools,
 				maxSteps: MAX_STEPS,
-				stopWhen: [stepCountIs(MAX_STEPS), maxCost(TURN_MAX_COST_USD)],
+				stopWhen: [stepCountIs(MAX_STEPS), maxCost(request.maxCostUsd)],
 			});
 			const stream = agent.stream({ input: request.prompt, client, signal: request.signal, devtools: { enabled: false } });
 			// A failed run also rejects the result promise; the error reaches us through the stream below.
@@ -121,12 +159,12 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 			let result: AgentRunResult<unknown, unknown, unknown> | null = null;
 			for await (const event of stream.getFullStream()) {
 				if (event.type === "response.output_text.delta") await hooks.onText(event.delta);
-				else if (event.type === "step.completed") await hooks.onStep();
+				else if (event.type === "step.completed") await hooks.onStep({ costUsd: spentUsd });
 				else if (event.type === "result") result = event.result;
 			}
 			result ??= await stream.getResult();
 			return {
-				costUsd: result.usage?.cost ?? 0,
+				costUsd: result.usage?.cost ?? spentUsd,
 				model: lastModel(result),
 				stopReason: result.run.status === "stopped" ? result.run.stopReason ?? null : null,
 			};

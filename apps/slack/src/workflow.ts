@@ -15,7 +15,7 @@ import type { ContextEntry, ThreadCoordinator, TurnInput } from "./coordinator";
 import type { Env } from "./env";
 import { botToken, coordinatorFor, defaultDeps, type Deps } from "./events";
 import { installationSecrets, loadInstallation, type Installation } from "./installations";
-import { finishReply, footerText, SlackPostError, SlackReplyStream, type ReplyTarget } from "./reply-stream";
+import { finishReply, footerText, postReply, replaceReply, SlackReplyStream, type ReplyTarget } from "./reply-stream";
 import { postEphemeral, type SlackClient } from "./slack-api";
 import type { TurnRef } from "./turns";
 import { conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTools } from "./usage-tools";
@@ -28,14 +28,23 @@ import { conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTool
 //            allowed here; the Slack session goes to "processing"
 //   context  the thread's recent messages (conversations.replies); when Slack rate
 //            limits that, the coordinator's working memory is used instead
-//   run      the agent through the gateway, streaming the answer into Slack
-//   finish   stop the stream with a footer (model and cost), count the answer in
-//            the meter, and tell the coordinator
+//   run      the agent through the gateway, streaming the answer into Slack and
+//            staging it, with what it has spent, in the coordinator after every
+//            agent step
+//   reply    finish the Slack message with a footer (model and cost): stop the
+//            stream, or write the staged answer when the live stream failed or
+//            the run was retried
+//   finish   count the answer in the meter, and tell the coordinator
 //
 // Step outputs are kept with the instance (for a day), so they hold ids and
 // statuses only. Slack text lives in the coordinator, which deletes it within 7
 // days. A retried step never posts twice: the reply's ts is stored as soon as
 // Slack returns it, and a retry updates that message.
+//
+// Slack writes are retried apart from the model: a failed Slack call never runs
+// the agent again, it leaves the staged answer to the reply step. The run step
+// itself is retried once, for anything else; the retry counts what earlier
+// attempts spent against the turn's cost limit, and the footer shows the total.
 
 export const DEFAULT_MODEL = "phaseo/auto";
 /** Slack caps non-Marketplace apps at 15 messages per conversations.replies call. */
@@ -44,8 +53,10 @@ const NANOS_PER_USD = 1_000_000_000;
 
 const LOAD_STEP = { retries: { limit: 2, delay: "2 seconds", backoff: "exponential" }, timeout: "30 seconds" } as const;
 const CONTEXT_STEP = { retries: { limit: 1, delay: "2 seconds" }, timeout: "30 seconds" } as const;
-/** The streaming step gets one retry at most. */
+/** The streaming step gets one retry at most, and never for a Slack write. */
 const RUN_STEP = { retries: { limit: 1, delay: "5 seconds" }, timeout: "8 minutes" } as const;
+/** Slack delivery, retried on its own. */
+const REPLY_STEP = { retries: { limit: 3, delay: "2 seconds", backoff: "exponential" }, timeout: "30 seconds" } as const;
 const FINISH_STEP = { retries: { limit: 3, delay: "2 seconds", backoff: "exponential" }, timeout: "30 seconds" } as const;
 
 export type StepConfig = {
@@ -65,10 +76,17 @@ type ContextResult = { source: "replies" | "memory" | "none"; messages: number }
 export type RunResult = {
 	status: "answered" | "cancelled" | "failed";
 	ts: string | null;
+	/** The live stream shows the whole staged answer; otherwise the reply step writes it. */
+	streamed: boolean;
+	/** The staged answer explains how it ended. False when the run step failed outright. */
+	explained: boolean;
+	/** Every attempt of the run together. */
 	costNanos: number;
 	model: string | null;
 	error: TurnErrorKind | null;
 };
+
+type ReplyResult = { shown: boolean; stopped: boolean };
 
 type SlackHistoryMessage = { ts?: string; user?: string; bot_id?: string; text?: string; subtype?: string };
 
@@ -148,14 +166,21 @@ async function requireToken(deps: TurnDeps, installation: Installation): Promise
 	return token;
 }
 
-async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, load: { usageTools: boolean }, context: ContextResult): Promise<RunResult> {
+function toNanos(usd: number): number {
+	return Math.round(usd * NANOS_PER_USD);
+}
+
+async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, load: { usageTools: boolean }, context: ContextResult, attempt: number): Promise<RunResult> {
 	const installation = await requireInstallation(deps, turn);
 	const secrets = await installationSecrets(deps.env, installation.secrets_ciphertext);
 	const slack = deps.slack(await requireToken(deps, installation));
 	const input: TurnInput | null = await coordinator.turnInput(turn.turnId);
 	// The turn ended meanwhile (timed out, or the thread was stopped and cleared).
-	if (!input) return { status: "failed", ts: null, costNanos: 0, model: null, error: null };
+	if (!input) return { status: "failed", ts: null, streamed: false, explained: true, costNanos: 0, model: null, error: null };
 
+	// A retried run: what earlier attempts spent counts against this turn's limit and shows in its footer.
+	const earlierNanos = Object.entries(input.attemptCosts).reduce((sum, [key, nanos]) => (Number(key) === attempt ? sum : sum + nanos), 0);
+	const budgetUsd = TURN_MAX_COST_USD - earlierNanos / NANOS_PER_USD;
 	const reply = new SlackReplyStream({
 		slack,
 		target: replyTarget(turn),
@@ -163,6 +188,21 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		onStarted: async (ts) => { await coordinator.setReplyTs(turn.turnId, ts); },
 		now: deps.now,
 	});
+	const notes: string[] = [];
+	let costUsd = 0;
+	const stage = async () => {
+		await coordinator.stageTurnOutput(turn.turnId, { attempt, costNanos: toNanos(costUsd), reply: reply.text, tools: notes });
+	};
+
+	if (budgetUsd <= 0) {
+		// Earlier attempts used the whole limit: keep what they wrote instead of paying for it again.
+		await reply.push(input.stagedReply ?? "");
+		await reply.push(`${reply.text ? "\n\n" : ""}${stopNote(`max_cost:${TURN_MAX_COST_USD}`)}`);
+		await reply.close();
+		await stage();
+		return { status: input.stagedReply ? "answered" : "failed", ts: reply.ts, streamed: reply.streaming, explained: true, costNanos: earlierNanos, model: null, error: null };
+	}
+
 	const controller = new AbortController();
 	let cancelled = false;
 	const checkCancel = async () => {
@@ -172,7 +212,6 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 			controller.abort(new Error("turn_cancelled"));
 		}
 	};
-	const notes: string[] = [];
 	const team = turn.teamId ?? installation.team_id ?? installation.enterprise_id ?? "unknown";
 	let output: AgentTurnOutput | null = null;
 	let error: TurnErrorKind | null = null;
@@ -185,20 +224,23 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 			endUser: `slack:${team}:${turn.slackUserId}`,
 			labels: { slackTeam: team, slackChannel: turn.channel },
 			tools: load.usageTools ? usageTools({ db: deps.db, workspaceId: installation.workspace_id, now: deps.now, notes }) : [],
+			maxCostUsd: budgetUsd,
 			signal: controller.signal,
 		}, {
 			onText: async (delta) => {
 				await reply.push(delta);
 				if (reply.stoppedByUser) await checkCancel();
 			},
-			onStep: async () => {
+			onStep: async (progress) => {
+				costUsd = progress.costUsd;
 				await reply.flush();
+				await stage();
 				await checkCancel();
 			},
 		});
+		costUsd = output.costUsd;
 	} catch (caught) {
-		// A failed Slack post retries the step; the reply's ts is stored, so the retry updates that message.
-		if (caught instanceof SlackPostError) throw caught;
+		controller.abort();
 		if (!cancelled) {
 			error = classifyTurnError(caught);
 			console.error("[slack-agent] agent run failed", { turnId: turn.turnId, installationId: turn.installationId, kind: error });
@@ -213,14 +255,54 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		await reply.push(`${gap}${stopNote(output.stopReason)}`);
 	}
 	await reply.close();
-	await coordinator.stageTurnOutput(turn.turnId, { reply: reply.text, tools: notes });
+	await stage();
+	if (reply.failure) console.warn("[slack-agent] live reply stopped, the reply step will deliver it", { turnId: turn.turnId, failure: reply.failure });
 	return {
 		status: cancelled ? "cancelled" : error ? "failed" : "answered",
 		ts: reply.ts,
-		costNanos: Math.round((output?.costUsd ?? 0) * NANOS_PER_USD),
+		streamed: reply.streaming,
+		explained: true,
+		costNanos: earlierNanos + toNanos(costUsd),
 		model: output?.model ?? null,
 		error,
 	};
+}
+
+/**
+ * Finishes the Slack message from what the run staged. Throws on a failed Slack
+ * write so the step retries; each try is safe to repeat.
+ */
+async function deliverReply(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, run: RunResult): Promise<ReplyResult> {
+	const installation = await loadInstallation(deps.db, turn.installationId);
+	const token = installation ? await botToken(deps, installation) : null;
+	// Uninstalled meanwhile: nothing can be written any more.
+	if (!installation || !token) return { shown: run.streamed && run.ts !== null, stopped: false };
+	const slack = deps.slack(token);
+	const input = await coordinator.turnInput(turn.turnId);
+	const ts = input?.replyTs ?? run.ts;
+	const text = input?.stagedReply ?? "";
+	const footer = run.status === "failed" ? null : footerText({ model: installation.model || DEFAULT_MODEL, answeredBy: run.model, costNanos: run.costNanos });
+	// A run step that failed outright never wrote its error into the reply.
+	const closing = run.explained ? null : turnErrorText(run.error ?? "failed");
+	if (ts && run.streamed) {
+		return { shown: true, stopped: await finishReply(slack, { channel: turn.channel, ts, text, footer, closingText: closing ? `\n\n${closing}` : null }) };
+	}
+	const whole = closing ? `${text}${text ? "\n\n" : ""}${closing}` : text;
+	if (ts) return { shown: Boolean(whole), stopped: await replaceReply(slack, { channel: turn.channel, ts, text: whole, footer }) };
+	if (text) {
+		const posted = await postReply(slack, { channel: turn.channel, threadTs: turn.threadTs, text, footer });
+		await coordinator.setReplyTs(turn.turnId, posted);
+		return { shown: true, stopped: false };
+	}
+	if (closing) {
+		await postEphemeral(slack, {
+			channel: turn.channel,
+			user: turn.slackUserId,
+			text: closing,
+			...(turn.threadTs !== turn.messageTs ? { thread_ts: turn.threadTs } : {}),
+		});
+	}
+	return { shown: false, stopped: false };
 }
 
 /** Runs one turn. Each step is safe to repeat. */
@@ -262,44 +344,31 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 		return { source: "replies", messages: entries.length };
 	}).catch((): ContextResult => ({ source: "memory", messages: 0 }));
 
-	const run = await step.do<RunResult>("run", RUN_STEP, async () => runAgent(deps, turn, coordinator, load, context))
+	const run = await step.do<RunResult>("run", RUN_STEP, async ({ attempt }) => runAgent(deps, turn, coordinator, load, context, attempt))
 		.catch((error: unknown): RunResult => {
 			console.error("[slack-agent] turn run step failed", { turnId: turn.turnId, error: error instanceof Error ? error.message : "unknown" });
-			return { status: "failed", ts: null, costNanos: 0, model: null, error: "failed" };
+			return { status: "failed", ts: null, streamed: false, explained: false, costNanos: 0, model: null, error: "failed" };
+		});
+
+	// Retried on its own: a Slack write that fails here never runs the model again.
+	const delivered = await step.do<ReplyResult>("reply", REPLY_STEP, async () => deliverReply(deps, turn, coordinator, run))
+		.catch((error: unknown): ReplyResult => {
+			console.error("[slack-agent] turn reply step failed", { turnId: turn.turnId, error: error instanceof Error ? error.message : "unknown" });
+			return { shown: run.streamed && run.ts !== null, stopped: false };
 		});
 
 	return step.do("finish", FINISH_STEP, async () => {
-		const installation = await loadInstallation(deps.db, turn.installationId);
-		const input = await coordinator.turnInput(turn.turnId);
-		const ts = run.ts ?? input?.replyTs ?? null;
-		const token = installation ? await botToken(deps, installation) : null;
-		if (installation && token) {
-			const slack = deps.slack(token);
-			// A run step that failed outright never wrote its error into the reply.
-			const unexplained = run.status === "failed" && input !== null && !input.stagedReply;
-			let stopped = false;
-			if (ts) {
-				stopped = await finishReply(slack, {
-					channel: turn.channel,
-					ts,
-					text: input?.stagedReply ?? "",
-					footer: run.status === "failed" ? null : footerText({ model: installation.model || DEFAULT_MODEL, answeredBy: run.model, costNanos: run.costNanos }),
-					closingText: unexplained ? `\n\n${turnErrorText(run.error ?? "failed")}` : null,
-				});
-			} else if (unexplained) {
-				await postEphemeral(slack, {
-					channel: turn.channel,
-					user: turn.slackUserId,
-					text: turnErrorText(run.error ?? "failed"),
-					...(turn.threadTs !== turn.messageTs ? { thread_ts: turn.threadTs } : {}),
-				});
-			}
-			if (!stopped) await setSessionStatus(slack, turn, "active");
+		if (!delivered.stopped) {
+			const installation = await loadInstallation(deps.db, turn.installationId);
+			const token = installation ? await botToken(deps, installation) : null;
+			if (token) await setSessionStatus(deps.slack(token), turn, "active");
 		}
-		if (run.status === "answered") {
+		// Only an answer the person could see is counted; otherwise its meter place is given back.
+		const answered = run.status === "answered" && delivered.shown;
+		if (answered) {
 			await deps.env.METERS.get(deps.env.METERS.idFromName(turn.installationId)).recordAnswer({ eventId: turn.eventId, slackUserId: turn.slackUserId, now: deps.now() });
 		}
-		await coordinator.finishTurn(turn.turnId, { status: run.status === "answered" ? "done" : run.status === "cancelled" ? "cancelled" : "failed" }, deps.now());
+		await coordinator.finishTurn(turn.turnId, { status: answered ? "done" : run.status === "cancelled" ? "cancelled" : "failed" }, deps.now());
 		console.log("[slack-agent] turn finished", { turnId: turn.turnId, installationId: turn.installationId, status: run.status, costNanos: run.costNanos });
 		return { status: run.status };
 	});
