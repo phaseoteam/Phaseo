@@ -14,8 +14,8 @@ import {
 describe("Broadcast destination registry", () => {
 	it("lists only destinations with an exporter as available", () => {
 		expect(AVAILABLE_BROADCAST_DESTINATION_IDS).toEqual([
-			"arize", "braintrust", "comet_opik", "datadog", "grafana_cloud", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog",
-			"sentry", "wandb_weave", "webhook",
+			"arize", "axiom", "braintrust", "comet_opik", "datadog", "dynatrace", "elastic", "grafana_cloud", "honeycomb", "langfuse",
+			"langsmith", "new_relic", "otel_collector", "posthog", "respan", "sentry", "wandb_weave", "webhook",
 		]);
 	});
 
@@ -246,6 +246,56 @@ describe("Broadcast destination registry", () => {
 				resourceAttributes: { "wandb.entity": "team", "wandb.project": "gateway" },
 			});
 			expect(() => resolveOtlpTarget("wandb_weave", { api_key: "wb", entity: "team" })).toThrow("project is required");
+		});
+
+		it("sends Axiom traces to the dataset's edge deployment", () => {
+			expect(resolveOtlpTarget("axiom", { api_token: "xaat-1", dataset: "traces" })).toMatchObject({
+				endpoint: "https://us-east-1.aws.edge.axiom.co/v1/traces",
+				headers: { authorization: "Bearer xaat-1", "x-axiom-dataset": "traces" },
+				protocol: "http/protobuf",
+			});
+			expect(resolveOtlpTarget("axiom", { api_token: "xaat-1", dataset: "traces", region: "EU" }).endpoint)
+				.toBe("https://eu-central-1.aws.edge.axiom.co/v1/traces");
+			expect(() => resolveOtlpTarget("axiom", { api_token: "xaat-1" })).toThrow("dataset is required");
+		});
+
+		it("sends Dynatrace traces with an access or platform token", () => {
+			const config = { environment_url: "https://abc12345.live.dynatrace.com/", api_token: "dt0c01.x" };
+			expect(resolveOtlpTarget("dynatrace", config)).toMatchObject({
+				endpoint: "https://abc12345.live.dynatrace.com/api/v2/otlp/v1/traces",
+				headers: { authorization: "Api-Token dt0c01.x" },
+				protocol: "http/protobuf",
+			});
+			expect(resolveOtlpTarget("dynatrace", { ...config, token_type: "Platform" }).headers).toEqual({ authorization: "Bearer dt0c01.x" });
+			expect(() => resolveOtlpTarget("dynatrace", { ...config, token_type: "oauth" })).toThrow("token_type must be one of: access, platform");
+		});
+
+		it("sends Elastic traces to the managed OTLP endpoint with an API key", () => {
+			expect(resolveOtlpTarget("elastic", { otlp_endpoint: "https://d.ingest.us-east-1.aws.elastic.cloud:443", api_key: "k" })).toMatchObject({
+				endpoint: "https://d.ingest.us-east-1.aws.elastic.cloud:443/v1/traces",
+				headers: { authorization: "ApiKey k" },
+				protocol: "http/protobuf",
+			});
+		});
+
+		it("sends Honeycomb traces to the region, with a dataset only when set", () => {
+			expect(resolveOtlpTarget("honeycomb", { api_key: "hc" })).toMatchObject({
+				endpoint: "https://api.honeycomb.io/v1/traces",
+				headers: { "x-honeycomb-team": "hc" },
+				protocol: "http/protobuf",
+			});
+			expect(resolveOtlpTarget("honeycomb", { api_key: "hc", region: "eu", dataset: "gw" })).toMatchObject({
+				endpoint: "https://api.eu1.honeycomb.io/v1/traces",
+				headers: { "x-honeycomb-team": "hc", "x-honeycomb-dataset": "gw" },
+			});
+		});
+
+		it("sends Respan traces with a Bearer key", () => {
+			expect(resolveOtlpTarget("respan", { api_key: "rs" })).toMatchObject({
+				endpoint: "https://api.respan.ai/api/v2/traces",
+				headers: { authorization: "Bearer rs" },
+				protocol: "http/protobuf",
+			});
 		});
 
 		it("copies the conversation id to Langfuse's session attribute", () => {

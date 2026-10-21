@@ -46,6 +46,17 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		],
 	},
 	{
+		id: "axiom",
+		label: "Axiom",
+		description: "Send traces to an Axiom dataset over OpenTelemetry.",
+		logoId: "observability-axiom",
+		fields: [
+			{ key: "api_token", label: "API Token", placeholder: "xaat-...", type: "password" },
+			{ key: "dataset", label: "Dataset", placeholder: "phaseo-traces" },
+			{ key: "region", label: "Region (Optional)", placeholder: "US or EU, where the dataset was created", required: false },
+		],
+	},
+	{
 		id: "braintrust",
 		label: "Braintrust",
 		description: "Send GenAI traces to a Braintrust project over OpenTelemetry.",
@@ -108,6 +119,35 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		],
 	},
 	{
+		id: "dynatrace",
+		label: "Dynatrace",
+		description: "Send traces to a Dynatrace environment over OpenTelemetry.",
+		logoId: "observability-dynatrace",
+		fields: [
+			{ key: "environment_url", label: "Environment URL", placeholder: "https://abc12345.live.dynatrace.com" },
+			{ key: "api_token", label: "Token", placeholder: "dt0c01....", type: "password" },
+			{
+				key: "token_type",
+				label: "Token Type (Optional)",
+				placeholder: "access (default) or platform",
+				required: false,
+			},
+		],
+	},
+	{
+		id: "elastic",
+		label: "Elastic",
+		description: "Send traces to Elastic Observability through its managed OTLP endpoint.",
+		fields: [
+			{
+				key: "otlp_endpoint",
+				label: "Managed OTLP Endpoint",
+				placeholder: "https://my-deployment.ingest.us-east-1.aws.elastic.cloud",
+			},
+			{ key: "api_key", label: "API Key", placeholder: "Base64 API key", type: "password" },
+		],
+	},
+	{
 		id: "grafana_cloud",
 		label: "Grafana Cloud",
 		description: "Send traces to Grafana Cloud Tempo with your stack's OpenTelemetry credentials.",
@@ -120,6 +160,16 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 			},
 			{ key: "instance_id", label: "Instance ID", placeholder: "1234567" },
 			{ key: "api_key", label: "Access Policy Token", placeholder: "glc_...", type: "password" },
+		],
+	},
+	{
+		id: "honeycomb",
+		label: "Honeycomb",
+		description: "Send traces to Honeycomb over OpenTelemetry.",
+		fields: [
+			{ key: "api_key", label: "Ingest Key", placeholder: "hcaik_...", type: "password" },
+			{ key: "region", label: "Region (Optional)", placeholder: "US or EU", required: false },
+			{ key: "dataset", label: "Dataset (Classic only, Optional)", placeholder: "phaseo-gateway", required: false },
 		],
 	},
 	{
@@ -200,6 +250,21 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 				key: "base_url",
 				label: "Host (Optional)",
 				placeholder: "https://us.i.posthog.com or https://eu.i.posthog.com",
+				required: false,
+			},
+		],
+	},
+	{
+		id: "respan",
+		label: "Respan",
+		description: "Send GenAI traces to Respan over OpenTelemetry.",
+		logoId: "respan",
+		fields: [
+			{ key: "api_key", label: "API Key", placeholder: "Your Respan API key", type: "password" },
+			{
+				key: "base_url",
+				label: "Base URL (Optional)",
+				placeholder: "https://api.respan.ai",
 				required: false,
 			},
 		],
@@ -328,20 +393,6 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 		.filter((destination) => !EXECUTABLE_DESTINATION_IDS.has(destination.id))
 		.map(({ label, logoId, fields }) => ({ label, logoId, fields })),
 	{
-		label: "Axiom",
-		logoId: "observability-axiom",
-		fields: [
-			{ key: "token", label: "Token", placeholder: "xaat-...", type: "password" },
-			{ key: "dataset", label: "Dataset", placeholder: "gateway-traces" },
-			{
-				key: "endpoint",
-				label: "Endpoint (Optional)",
-				placeholder: "https://api.axiom.co",
-				required: false,
-			},
-		],
-	},
-	{
 		label: "AWS Firehose",
 		logoId: "aws",
 		fields: [
@@ -361,18 +412,6 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 				type: "password",
 				required: false,
 			},
-		],
-	},
-	{
-		label: "Dynatrace",
-		logoId: "observability-dynatrace",
-		fields: [
-			{
-				key: "otlp_endpoint",
-				label: "OTLP Endpoint",
-				placeholder: "https://<env>.live.dynatrace.com/api/v2/otlp/v1/traces",
-			},
-			{ key: "api_token", label: "API Token", placeholder: "dt0c01....", type: "password" },
 		],
 	},
 	{
@@ -420,41 +459,11 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 		],
 	},
 	{
-		label: "Helicone",
-		logoId: "helicone",
-		fields: [
-			{
-				key: "api_key",
-				label: "Helicone API Key",
-				placeholder: "sk-helicone-...",
-				type: "password",
-			},
-			{
-				key: "base_url",
-				label: "Base URL (Optional)",
-				placeholder: "https://oai.helicone.ai",
-				required: false,
-			},
-		],
-	},
-	{
 		label: "HoneyHive",
 		logoId: "observability-honeyhive",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "hh_...", type: "password" },
 			{ key: "project", label: "Project", placeholder: "gateway-prod" },
-		],
-	},
-	{
-		label: "Keywords AI",
-		fields: [
-			{ key: "api_key", label: "API Key", placeholder: "kw_...", type: "password" },
-			{
-				key: "endpoint",
-				label: "Endpoint (Optional)",
-				placeholder: "https://api.keywordsai.co",
-				required: false,
-			},
 		],
 	},
 	{
@@ -514,24 +523,6 @@ export const COMING_SOON_DESTINATIONS: ComingSoonDestination[] = [
 				label: "API Key (Optional)",
 				placeholder: "phoenix_...",
 				type: "password",
-				required: false,
-			},
-		],
-	},
-	{
-		label: "Portkey",
-		fields: [
-			{ key: "api_key", label: "API Key", placeholder: "pk_...", type: "password" },
-			{
-				key: "base_url",
-				label: "Base URL (Optional)",
-				placeholder: "https://api.portkey.ai",
-				required: false,
-			},
-			{
-				key: "workspace_slug",
-				label: "Workspace Slug (Optional)",
-				placeholder: "my-workspace",
 				required: false,
 			},
 		],

@@ -47,15 +47,20 @@ export interface ObservabilityDestination {
   sampling_rate: number;
   type:
     | "arize"
+    | "axiom"
     | "braintrust"
     | "comet_opik"
     | "datadog"
+    | "dynatrace"
+    | "elastic"
     | "grafana_cloud"
+    | "honeycomb"
     | "langfuse"
     | "langsmith"
     | "new_relic"
     | "otel_collector"
     | "posthog"
+    | "respan"
     | "sentry"
     | "wandb_weave"
     | "webhook";
