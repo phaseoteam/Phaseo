@@ -46,7 +46,9 @@ export interface ObservabilityDestinationCreateRequest {
   }[];
   sampling_rate?: number;
   type:
+    | "arize"
     | "braintrust"
+    | "comet_opik"
     | "datadog"
     | "grafana_cloud"
     | "langfuse"
@@ -55,5 +57,6 @@ export interface ObservabilityDestinationCreateRequest {
     | "otel_collector"
     | "posthog"
     | "sentry"
+    | "wandb_weave"
     | "webhook";
 }

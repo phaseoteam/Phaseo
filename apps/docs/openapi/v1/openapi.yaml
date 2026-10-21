@@ -18792,7 +18792,9 @@ components:
     ObservabilityDestinationType:
       type: string
       enum:
+        - arize
         - braintrust
+        - comet_opik
         - datadog
         - grafana_cloud
         - langfuse
@@ -18801,6 +18803,7 @@ components:
         - otel_collector
         - posthog
         - sentry
+        - wandb_weave
         - webhook
     ObservabilityKeyFilter:
       type: object

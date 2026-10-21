@@ -4669,7 +4669,9 @@ export type CreateObservabilityDestinationParams = {
     }[];
     sampling_rate?: number;
     type:
+      | "arize"
       | "braintrust"
+      | "comet_opik"
       | "datadog"
       | "grafana_cloud"
       | "langfuse"
@@ -4678,6 +4680,7 @@ export type CreateObservabilityDestinationParams = {
       | "otel_collector"
       | "posthog"
       | "sentry"
+      | "wandb_weave"
       | "webhook";
   };
 };
@@ -4737,7 +4740,9 @@ export async function createObservabilityDestination(
     }[];
     sampling_rate: number;
     type:
+      | "arize"
       | "braintrust"
+      | "comet_opik"
       | "datadog"
       | "grafana_cloud"
       | "langfuse"
@@ -4746,6 +4751,7 @@ export async function createObservabilityDestination(
       | "otel_collector"
       | "posthog"
       | "sentry"
+      | "wandb_weave"
       | "webhook";
     updated_at?: string | null;
     workspace_id: string;
@@ -4802,7 +4808,9 @@ export async function createObservabilityDestination(
       }[];
       sampling_rate: number;
       type:
+        | "arize"
         | "braintrust"
+        | "comet_opik"
         | "datadog"
         | "grafana_cloud"
         | "langfuse"
@@ -4811,6 +4819,7 @@ export async function createObservabilityDestination(
         | "otel_collector"
         | "posthog"
         | "sentry"
+        | "wandb_weave"
         | "webhook";
       updated_at?: string | null;
       workspace_id: string;
@@ -11155,7 +11164,9 @@ export async function getObservabilityDestination(
     }[];
     sampling_rate: number;
     type:
+      | "arize"
       | "braintrust"
+      | "comet_opik"
       | "datadog"
       | "grafana_cloud"
       | "langfuse"
@@ -11164,6 +11175,7 @@ export async function getObservabilityDestination(
       | "otel_collector"
       | "posthog"
       | "sentry"
+      | "wandb_weave"
       | "webhook";
     updated_at?: string | null;
     workspace_id: string;
@@ -11222,7 +11234,9 @@ export async function getObservabilityDestination(
       }[];
       sampling_rate: number;
       type:
+        | "arize"
         | "braintrust"
+        | "comet_opik"
         | "datadog"
         | "grafana_cloud"
         | "langfuse"
@@ -11231,6 +11245,7 @@ export async function getObservabilityDestination(
         | "otel_collector"
         | "posthog"
         | "sentry"
+        | "wandb_weave"
         | "webhook";
       updated_at?: string | null;
       workspace_id: string;
@@ -16681,7 +16696,9 @@ export async function listObservabilityDestinations(
     }[];
     sampling_rate: number;
     type:
+      | "arize"
       | "braintrust"
+      | "comet_opik"
       | "datadog"
       | "grafana_cloud"
       | "langfuse"
@@ -16690,6 +16707,7 @@ export async function listObservabilityDestinations(
       | "otel_collector"
       | "posthog"
       | "sentry"
+      | "wandb_weave"
       | "webhook";
     updated_at?: string | null;
     workspace_id: string;
@@ -16747,7 +16765,9 @@ export async function listObservabilityDestinations(
       }[];
       sampling_rate: number;
       type:
+        | "arize"
         | "braintrust"
+        | "comet_opik"
         | "datadog"
         | "grafana_cloud"
         | "langfuse"
@@ -16756,6 +16776,7 @@ export async function listObservabilityDestinations(
         | "otel_collector"
         | "posthog"
         | "sentry"
+        | "wandb_weave"
         | "webhook";
       updated_at?: string | null;
       workspace_id: string;
@@ -23183,7 +23204,9 @@ export async function updateObservabilityDestination(
     }[];
     sampling_rate: number;
     type:
+      | "arize"
       | "braintrust"
+      | "comet_opik"
       | "datadog"
       | "grafana_cloud"
       | "langfuse"
@@ -23192,6 +23215,7 @@ export async function updateObservabilityDestination(
       | "otel_collector"
       | "posthog"
       | "sentry"
+      | "wandb_weave"
       | "webhook";
     updated_at?: string | null;
     workspace_id: string;
@@ -23250,7 +23274,9 @@ export async function updateObservabilityDestination(
       }[];
       sampling_rate: number;
       type:
+        | "arize"
         | "braintrust"
+        | "comet_opik"
         | "datadog"
         | "grafana_cloud"
         | "langfuse"
@@ -23259,6 +23285,7 @@ export async function updateObservabilityDestination(
         | "otel_collector"
         | "posthog"
         | "sentry"
+        | "wandb_weave"
         | "webhook";
       updated_at?: string | null;
       workspace_id: string;
