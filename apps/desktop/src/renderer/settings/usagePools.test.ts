@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountHue, initials, tierTag, uniqueAccounts, usagePools, usageRings, type UsageAccount } from "./usagePools";
+import { accountHue, initials, rankRings, tierTag, uniqueAccounts, usagePools, usageRings, sidebarRings, type ProviderRings, type UsageAccount } from "./usagePools";
 
 const account = (key: string, provider: UsageAccount["provider"], email: string | undefined, usage: NonNullable<UsageAccount["status"]["usage"]>, source = "Hub"): UsageAccount =>
 	({ key, provider, email, label: email ?? key, source, status: { checkedAt: "2026-10-15T12:00:00Z", authenticated: true, usage } });
@@ -74,5 +74,19 @@ describe("usage pools", () => {
 		expect(claude.segments).toBeUndefined();
 		expect(claude.outer?.remaining).toBe(70);
 		expect(claude.accounts).toHaveLength(7);
+	});
+	it("ranks pairs running low, then in use, then pinned, then tightest, and fits the row with a count for the rest", () => {
+		const pair = (key: string, provider: ProviderRings["provider"], inner: number | null, outer: number, tier?: string): ProviderRings => ({ key, provider, ...tier ? { tier } : {}, inner: inner === null ? null : { label: "5-hour", remaining: inner, resetsAt: null }, outer: { label: "Weekly", remaining: outer, resetsAt: null }, accounts: [] });
+		const rings = [pair("codex", "codex", 64, 94), pair("claude:5x", "claude", 81, 100, "Team premium 5x"), pair("claude:std", "claude", null, 20, "Team standard"), pair("grok", "grok", null, 70), pair("cursor", "cursor", null, 50)];
+		const ranked = rankRings(rings, { inUse: new Set(["codex"]), pinned: new Set(["grok"]) });
+		// Standard is low (20%), Codex is in use, Grok is pinned, then the tightest: Cursor (50) before Claude 5x (81).
+		expect(ranked.map(value => value.key)).toEqual(["claude:std", "codex", "grok", "cursor", "claude:5x"]);
+		// Three fit beside "+2"; Standard needs no tag, as the other Claude pair is hidden.
+		const row = sidebarRings(ranked);
+		expect([row.shown.map(({ pair, tag }) => [pair.key, tag]), row.hidden]).toEqual([[["claude:std", undefined], ["codex", undefined], ["grok", undefined]], 2]);
+		// Both Claude plans shown: each gets its tag.
+		expect(sidebarRings([rings[1], rings[2]]).shown.map(({ tag }) => tag)).toEqual(["5x", "Std"]);
+		// Four untagged pairs fit without a count.
+		expect(sidebarRings([pair("a", "codex", 1, 1), pair("b", "claude", 1, 1), pair("c", "grok", 1, 1), pair("d", "cursor", 1, 1)])).toMatchObject({ hidden: 0 });
 	});
 });

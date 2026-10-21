@@ -128,3 +128,42 @@ export function tierTag(plan: string) {
 	const word = plan.trim().split(/\s+/).at(-1) ?? plan;
 	return word.charAt(0).toUpperCase() + word.slice(1);
 }
+
+/** A pair is running low when either pooled figure is at or below this; one spent account in a pool isn't enough. */
+export const lowAt = 25;
+const tightest = (pair: ProviderRings) => Math.min(pair.inner?.remaining ?? 100, pair.outer?.remaining ?? 100);
+
+/**
+ * The order pairs are shown in: running low first, then what is in use (the open chat, running tasks), then pinned,
+ * then the tightest. Ties keep the providers' usual order.
+ */
+export function rankRings(rings: ProviderRings[], { inUse, pinned }: { inUse: ReadonlySet<UsageProvider>; pinned: ReadonlySet<string> }) {
+	const score = (pair: ProviderRings) => [tightest(pair) <= lowAt ? 0 : 1, inUse.has(pair.provider) ? 0 : 1, pinned.has(pair.key) ? 0 : 1, tightest(pair)];
+	return rings.map((pair, index) => ({ pair, index, score: score(pair) }))
+		.sort((a, b) => a.score.reduce((order, value, at) => order || value - b.score[at], 0) || a.index - b.index)
+		.map(({ pair }) => pair);
+}
+
+/** Sidebar room for rings, in px as measured: a logo and ring, each letter of a tag and its gap, between pairs, the "+N" count. */
+const ringRoom = { width: 218, pair: 40, tagLetter: 6, tagGap: 4, gap: 10, more: 24, max: 3 };
+export type SidebarRing = { pair: ProviderRings; tag?: string };
+/**
+ * What the sidebar row shows of the ranked pairs: all of them when they fit, otherwise as many as fit beside a "+N"
+ * count, at most three, so the row stays the same size however many subscriptions there are. A pair carries its tier
+ * tag only when another shown pair has the same logo; otherwise the logo is enough and the popover names the plan.
+ */
+export function sidebarRings(ranked: ProviderRings[]): { shown: SidebarRing[]; hidden: number } {
+	const layout = (count: number) => {
+		const pairs = ranked.slice(0, count);
+		const shown = pairs.map(pair => pair.tier && pairs.some(other => other !== pair && other.provider === pair.provider) ? { pair, tag: tierTag(pair.tier) } : { pair });
+		const width = shown.reduce((sum, { tag }, index) => sum + ringRoom.pair + (tag ? ringRoom.tagGap + tag.length * ringRoom.tagLetter : 0) + (index ? ringRoom.gap : 0), 0);
+		return { shown, width: width + (count < ranked.length ? ringRoom.gap + ringRoom.more : 0) };
+	};
+	const all = layout(ranked.length);
+	if (all.width <= ringRoom.width) return { shown: all.shown, hidden: 0 };
+	for (let count = Math.min(ringRoom.max, ranked.length); count > 1; count--) {
+		const fitted = layout(count);
+		if (fitted.width <= ringRoom.width) return { shown: fitted.shown, hidden: ranked.length - count };
+	}
+	return { shown: layout(1).shown, hidden: ranked.length - 1 };
+}

@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { RotateCw } from "lucide-react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Pin, RotateCw } from "lucide-react";
 import { useWorkspace } from "../app/workspace";
 import { HarnessLogo } from "../components/HarnessLogo";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
+import { ScrollArea } from "../components/ui/scroll-area";
+import { usePersistedState } from "../lib/persistedState";
 import { cn } from "../lib/utils";
 import { RedactedText } from "../components/RedactedText";
 import { AccountChip, providerNames } from "../settings/UsageLimits";
 import { resetText } from "../settings/UsageMeters";
 import { checkAllUsage, refreshUsageIfStale, usageAccounts, usageChecking, usageLocals, useUsageLimits } from "../settings/usageLimitsStore";
-import { tierTag, usagePools, usageRings, type ProviderRings, type RingAccount, type UsageRing } from "../settings/usagePools";
+import { rankRings, usagePools, usageRings, sidebarRings, type ProviderRings, type RingAccount, type UsageProvider, type UsageRing } from "../settings/usagePools";
 import { relativeTime } from "../views/pullRequests/pullRequestLogic";
 
 const minute = 60_000;
@@ -46,10 +48,17 @@ function RingLine({ ring, pooled }: { ring: UsageRing; pooled?: boolean }) {
 	</div>;
 }
 
+/** A pair's plan after its provider's name: "Max 20x" rather than "Claude Claude Max 20x". */
+const planName = (pair: ProviderRings) => pair.tier?.startsWith(`${providerNames[pair.provider]} `) ? pair.tier.slice(providerNames[pair.provider].length + 1) : pair.tier;
+const pairName = (pair: ProviderRings) => [providerNames[pair.provider], planName(pair)].filter(Boolean).join(" ");
+
+/** "5h", "wk", "Fable": short enough for a line of figures. */
+const shortLabel = (label: string) => label === "5-hour" ? "5h" : label === "Weekly" ? "wk" : label === "Daily" ? "day" : label.replace(/ weekly$/, "");
+
 /** One account of several: who it is, then what it has left in each window. */
 function AccountLine({ value }: { value: RingAccount }) {
 	const { account, inner, outer } = value;
-	const figure = (ring: UsageRing | null) => ring && <span title={`${ring.label}: ${resetText(ring.resetsAt) || "no reset reported"}`} className={cn("tabular-nums", ring.remaining <= 25 ? tone(ring.remaining) : "text-muted-foreground")}>{ring.label === "5-hour" ? "5h" : ring.label === "Weekly" ? "wk" : ring.label.replace(/ weekly$/, "")} {ring.remaining}%</span>;
+	const figure = (ring: UsageRing | null) => ring && <span title={`${ring.label}: ${resetText(ring.resetsAt) || "no reset reported"}`} className={cn("tabular-nums", ring.remaining <= 25 ? tone(ring.remaining) : "text-muted-foreground")}>{shortLabel(ring.label)} {ring.remaining}%</span>;
 	return <div className="flex min-w-0 items-center gap-2">
 		<AccountChip account={account} className="size-4.5 text-[8px]" />
 		<span className="min-w-0 flex-1 truncate">{account.email ? <RedactedText text={account.email} /> : account.label}</span>
@@ -58,17 +67,51 @@ function AccountLine({ value }: { value: RingAccount }) {
 }
 
 /**
- * The sidebar's limit rings, one pair per subscription provider, with each window's figure and reset on hover.
+ * One pair as a line of the popover's list: who, the rings and their figures. Opening it shows each window's reset
+ * and, with several accounts, what each one has left.
+ */
+function PairLine({ pair, open, pinned, onToggle, onPin }: { pair: ProviderRings; open: boolean; pinned: boolean; onToggle: () => void; onPin: () => void }) {
+	const name = pairName(pair);
+	const rings = [pair.inner, pair.outer].filter((ring): ring is UsageRing => ring !== null);
+	return <section aria-label={`${name} limits`} className="flex flex-col">
+		<div className="group flex items-center gap-0.5 rounded-md hover:bg-muted/60">
+			<button type="button" aria-expanded={open} onClick={onToggle} className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
+				<Logo provider={pair.provider} />
+				<span title={pair.accounts.length > 1 ? `${name} · ${pair.accounts.length} accounts` : name} className="min-w-0 flex-1 truncate"><span className="font-medium">{providerNames[pair.provider]}</span>{pair.tier && <span className="text-muted-foreground"> {planName(pair)}</span>}{pair.accounts.length > 1 && <span className="text-muted-foreground"> · {pair.accounts.length}</span>}</span>
+				<RingPair rings={pair} size={18} />
+				<span className="shrink-0 text-right whitespace-nowrap tabular-nums">{rings.map((ring, index) => <Fragment key={ring.label}>{index > 0 && <span className="text-muted-foreground"> · </span>}<span className={ring.remaining <= 25 ? tone(ring.remaining) : "text-muted-foreground"}>{shortLabel(ring.label)} {ring.remaining}%</span></Fragment>)}</span>
+			</button>
+			<button type="button" aria-label={pinned ? `Unpin ${name} from the sidebar` : `Pin ${name} to the sidebar`} aria-pressed={pinned} title={pinned ? "Pinned to the sidebar" : "Pin to the sidebar"} onClick={onPin}
+				className={cn("grid size-6 shrink-0 place-items-center rounded-md hover:bg-muted hover:text-foreground focus-visible:opacity-100", pinned ? "text-foreground" : "text-muted-foreground opacity-0 group-hover:opacity-100")}><Pin className={cn("size-3", pinned && "fill-current")} /></button>
+		</div>
+		{open && <div className="mt-0.5 mr-7 mb-1.5 ml-7 flex flex-col gap-1.5">
+			<div className="grid grid-cols-[5.5rem_auto_minmax(0,1fr)] gap-x-3 gap-y-1">{rings.map(ring => <RingLine key={ring.label} ring={ring} pooled={pair.accounts.length > 1} />)}</div>
+			{pair.accounts.length > 1 && <div className="flex flex-col gap-1">{pair.accounts.map(value => <AccountLine key={value.account.key} value={value} />)}</div>}
+		</div>}
+	</section>;
+}
+
+const Heading = ({ children }: { children: string }) => <h3 className="flex items-center gap-2 px-1.5 pt-1 text-2xs font-medium text-muted-foreground/70">{children}<span className="h-px flex-1 bg-border/60" /></h3>;
+
+/**
+ * The sidebar's limit rings: the pairs that matter most (running low, in use, pinned, tightest) in one row that always
+ * fits, a count for the rest, and every pair as a line of the popover.
  * Each check starts an agent or calls a hub, so they are read on launch, after turns end and when opened, at most
  * every few minutes, and never for someone whose last check found no subscription.
  */
 export function UsageRings() {
-	const { api, overview, openSettings } = useWorkspace();
+	const { api, overview, openSettings, selectedId } = useWorkspace();
 	const limits = useUsageLimits();
 	const locals = useMemo(() => usageLocals(overview.accounts), [overview.accounts]);
 	const [now, setNow] = useState(() => Date.now());
 	useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), minute); return () => window.clearInterval(timer); }, []);
+	const [pins, setPins] = usePersistedState<string[]>("phaseo.desktop.usagePins", []);
+	const [opened, setOpened] = useState<string[]>([]);
 	const rings = useMemo(() => usageRings(usagePools(usageAccounts(locals, limits)), now), [locals, limits, now]);
+	// What is in use: the open chat's agent and anything running now.
+	const inUse = useMemo(() => new Set(overview.tasks.filter(task => task.id === selectedId || task.status === "running").map(task => task.harness as UsageProvider)), [overview.tasks, selectedId]);
+	const ranked = useMemo(() => rankRings(rings, { inUse, pinned: new Set(pins) }), [rings, inUse, pins]);
+	const { shown: row, hidden } = sidebarRings(ranked), shown = row.length;
 	// A check that failed (an agent timing out, a hub offline) is tried again; only finding no subscription stops checks.
 	const failed = Object.values(limits.statuses).some(status => typeof status === "object" && "error" in status) || Object.values(limits.snapshots).some(snapshot => typeof snapshot === "object" && Boolean(snapshot.error));
 	const tracked = rings.length > 0 || limits.checkedAt === undefined || failed;
@@ -79,21 +122,25 @@ export function UsageRings() {
 	useEffect(() => { if (running < previous.current) refresh(5 * minute); previous.current = running; }, [running]);
 	if (!rings.length) return null;
 	const busy = usageChecking(limits);
-	const summary = rings.map(pair => [pair.tier ? `${providerNames[pair.provider]} ${pair.tier}` : providerNames[pair.provider], pair.inner && `${pair.inner.label} ${pair.inner.remaining}% left`, pair.outer && `${pair.outer.label} ${pair.outer.remaining}% left`].filter(Boolean).join(", ")).join("; ");
+	const summary = ranked.map(pair => [pairName(pair), pair.inner && `${pair.inner.label} ${pair.inner.remaining}% left`, pair.outer && `${pair.outer.label} ${pair.outer.remaining}% left`].filter(Boolean).join(", ")).join("; ");
+	const toggle = (list: string[], key: string) => list.includes(key) ? list.filter(value => value !== key) : [...list, key];
+	const line = (pair: ProviderRings) => <PairLine key={pair.key} pair={pair} open={ranked.length === 1 || opened.includes(pair.key)} pinned={pins.includes(pair.key)}
+		onToggle={() => setOpened(current => toggle(current, pair.key))} onPin={() => setPins(current => toggle(current, pair.key))} />;
 	return <div className="px-2.5 pt-2"><Popover onOpenChange={open => { if (open) refresh(minute); }}>
-		<PopoverTrigger openOnHover delay={200} render={<button type="button" aria-label={`Usage limits: ${summary}`} className="flex h-8 w-full items-center gap-3 rounded-md px-2 outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:bg-sidebar-accent" />}>
-			{rings.map(pair => <span key={pair.key} className="flex items-center gap-1"><Logo provider={pair.provider} />{pair.tier && <span className="text-2xs font-medium text-muted-foreground">{tierTag(pair.tier)}</span>}<RingPair rings={pair} /></span>)}
+		<PopoverTrigger openOnHover delay={200} render={<button type="button" aria-label={`Usage limits: ${summary}`} className="flex h-8 w-full items-center gap-2.5 rounded-md px-2 outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:bg-sidebar-accent" />}>
+			{row.map(({ pair, tag }) => <span key={pair.key} className="flex items-center gap-1"><Logo provider={pair.provider} />{tag && <span className="text-2xs font-medium text-muted-foreground">{tag}</span>}<RingPair rings={pair} /></span>)}
+			{hidden > 0 && <span className="rounded-md bg-muted-foreground/15 px-1 py-px text-2xs font-semibold text-muted-foreground tabular-nums">+{hidden}</span>}
 		</PopoverTrigger>
-		<PopoverContent side="top" align="start" sideOffset={6} className="w-[22rem] gap-3 p-3 text-xs">
-			{rings.map(pair => <section key={pair.key} aria-label={`${providerNames[pair.provider]}${pair.tier ? ` ${pair.tier}` : ""} limits`} className="flex flex-col gap-1.5">
-				<h3 className="flex min-w-0 items-center gap-2 text-[13px] font-semibold"><Logo provider={pair.provider} /><span className="shrink-0">{providerNames[pair.provider]}</span>{(pair.tier || pair.accounts.length > 1) && <span className="min-w-0 truncate font-normal text-muted-foreground">{[pair.tier, pair.accounts.length > 1 && `${pair.accounts.length} accounts`].filter(Boolean).join(" · ")}</span>}<span className="ml-auto"><RingPair rings={pair} size={18} /></span></h3>
-				<div className="grid grid-cols-[5.5rem_auto_minmax(0,1fr)] gap-x-3 gap-y-1">
-					{pair.inner && <RingLine ring={pair.inner} pooled={pair.accounts.length > 1} />}
-					{pair.outer && <RingLine ring={pair.outer} pooled={pair.accounts.length > 1} />}
+		<PopoverContent side="top" align="start" sideOffset={6} className="w-[24rem] gap-2 p-2 text-xs">
+			<ScrollArea className="max-h-96" viewportClassName="max-h-96">
+				<div className="flex flex-col gap-0.5">
+					{hidden > 0 && <Heading>In the sidebar</Heading>}
+					{ranked.slice(0, shown).map(line)}
+					{hidden > 0 && <Heading>Also tracked</Heading>}
+					{ranked.slice(shown).map(line)}
 				</div>
-				{pair.accounts.length > 1 && <div className="mt-1 flex max-h-48 flex-col gap-1 overflow-y-auto">{pair.accounts.map(value => <AccountLine key={value.account.key} value={value} />)}</div>}
-			</section>)}
-			<div className="flex items-center gap-1 border-t border-border/60 pt-2 text-muted-foreground">
+			</ScrollArea>
+			<div className="flex items-center gap-1 border-t border-border/60 px-1 pt-2 text-muted-foreground">
 				<span className="min-w-0 flex-1 truncate">{busy ? "Checking…" : limits.checkedAt ? `Checked ${relativeTime(new Date(limits.checkedAt).toISOString(), now)}` : ""}</span>
 				<button type="button" aria-label="Check limits again" title="Check again" disabled={busy || !api} onClick={() => { if (api) void checkAllUsage(api, locals); }} className="grid size-6 place-items-center rounded-md hover:bg-muted hover:text-foreground disabled:opacity-50"><RotateCw className={cn("size-3.5", busy && "animate-spin")} /></button>
 				<button type="button" onClick={() => openSettings("usage")} className="rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Usage & limits</button>
