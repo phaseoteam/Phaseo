@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	applyPresetPromptTemplate,
+	capabilityViewOfTemplatedRequest,
 	collectTemplateVariableTargets,
 	extractPromptReference,
 	withoutMessagesPlaceholder,
@@ -43,12 +44,13 @@ function apply(body: any, endpoint: "chat.completions" | "responses" | "messages
 describe("extractPromptReference", () => {
 	it("fills model and an empty conversation from a preset reference", () => {
 		const chat = extractPromptReference({ prompt: { id: "@support-triage", variables } }, "chat.completions");
-		expect(chat.ok && chat.rawBody).toMatchObject({ model: "@support-triage", messages: [] });
+		expect(chat.ok && chat.rawBody.model).toBe("@support-triage");
+		expect(chat.ok && withoutMessagesPlaceholder(chat.rawBody).messages).toEqual([]);
 		const responses = extractPromptReference({ prompt: { id: "@support-triage" } }, "responses");
 		expect(responses.ok && responses.rawBody).toMatchObject({ model: "@support-triage", input: [] });
 	});
 
-	it("uses a placeholder Messages turn that is removed after validation", () => {
+	it("uses a placeholder turn on Messages requests that is removed after validation", () => {
 		const result = extractPromptReference({ prompt: { id: "@support-triage" }, max_tokens: 100 }, "messages");
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
@@ -72,6 +74,19 @@ describe("extractPromptReference", () => {
 		expect(same.ok).toBe(true);
 		const pinned = extractPromptReference({ prompt: { id: "@support-triage", version: "3" } }, "chat.completions");
 		expect(pinned.ok === false && pinned.issue.reason).toBe("prompt_version_unsupported");
+	});
+});
+
+describe("capabilityViewOfTemplatedRequest", () => {
+	it("drops the reference and adds the tools and response format the template supplied", () => {
+		const rawBody = { model: "@support-triage", prompt: { id: "@support-triage" }, messages: [], temperature: 0.2 };
+		const body = apply({ ...rawBody }, "chat.completions");
+		const view = capabilityViewOfTemplatedRequest(rawBody, body);
+		expect(view).not.toHaveProperty("prompt");
+		expect(view.temperature).toBe(0.2);
+		expect(view.tools?.[0]?.function?.name).toBe("assign");
+		expect(view.response_format?.type).toBe("json_schema");
+		expect(rawBody).toHaveProperty("prompt");
 	});
 });
 
@@ -145,10 +160,12 @@ describe("applyPresetPromptTemplate", () => {
 		expect(result.ok === false && result.issues[0].keyword).toBe("preset_template_invalid");
 	});
 
-	it("fails a Messages request whose template renders no conversation", () => {
+	it("fails a Messages request whose template renders no conversation; chat keeps the system turn", () => {
 		const systemOnly = preset({ prompt: { messages: [{ role: "system", content: "Hi" }] } });
-		const result = applyPresetPromptTemplate({ body: { messages: [], max_tokens: 10 }, preset: systemOnly, reference: null, endpoint: "messages" });
-		expect(result.ok === false && result.issues[0].keyword).toBe("template_rendered_empty");
+		const messages = applyPresetPromptTemplate({ body: { messages: [], max_tokens: 10 }, preset: systemOnly, reference: null, endpoint: "messages" });
+		expect(messages.ok === false && messages.issues[0].keyword).toBe("template_rendered_empty");
+		const chat = applyPresetPromptTemplate({ body: { messages: [] }, preset: systemOnly, reference: null, endpoint: "chat.completions" });
+		expect(chat.ok && chat.body.messages).toEqual([{ role: "system", content: "Hi" }]);
 	});
 
 	it("records variable names but not values", () => {

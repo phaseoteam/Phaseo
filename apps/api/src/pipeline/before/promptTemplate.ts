@@ -16,7 +16,10 @@ import {
 import type { PresetData } from "./types";
 
 const TEMPLATE_ENDPOINTS = new Set<Endpoint>(["chat.completions", "responses", "messages"]);
-/** Stands in for `messages` on Messages requests (which require one) until the template fills them. */
+/**
+ * Stands in for `messages` on chat and Messages requests (whose schemas require
+ * at least one) until the template fills them.
+ */
 const MESSAGES_PLACEHOLDER = Object.freeze({ role: "user", content: "\u0000prompt-template-placeholder" });
 
 export type PromptReference = {
@@ -68,20 +71,36 @@ export function extractPromptReference(rawBody: any, endpoint: Endpoint):
 	}
 
 	const next: any = { ...rawBody, model: model || id };
-	if (endpoint === "chat.completions" && next.messages === undefined) next.messages = [];
 	if (endpoint === "responses" && next.input === undefined) next.input = [];
-	if (endpoint === "messages" && (next.messages === undefined || (Array.isArray(next.messages) && next.messages.length === 0))) {
+	if (endpoint !== "responses" && (next.messages === undefined || (Array.isArray(next.messages) && next.messages.length === 0))) {
 		next.messages = [MESSAGES_PLACEHOLDER];
 	}
 	return { ok: true, rawBody: next, reference: { id, variables: prompt.variables } };
 }
 
-/** Remove the Messages placeholder after schema validation. */
+/** Remove the messages placeholder after schema validation. */
 export function withoutMessagesPlaceholder(body: any): any {
 	if (!Array.isArray(body?.messages) || body.messages.length !== 1) return body;
 	const [first] = body.messages;
 	if (first?.role !== MESSAGES_PLACEHOLDER.role || first?.content !== MESSAGES_PLACEHOLDER.content) return body;
 	return { ...body, messages: [] };
+}
+
+const TEMPLATE_REQUEST_FIELDS = ["tools", "tool_choice", "response_format", "text", "output_config"] as const;
+
+/**
+ * The request as capability checks should see it: without the `prompt`
+ * reference (not a model parameter) and with the tools and response format the
+ * template added, so providers that cannot honour them are filtered out.
+ */
+export function capabilityViewOfTemplatedRequest(rawBody: any, body: any): any {
+	if (!isPlainObject(rawBody)) return rawBody;
+	const view: any = { ...rawBody };
+	delete view.prompt;
+	for (const field of TEMPLATE_REQUEST_FIELDS) {
+		if (view[field] === undefined && body?.[field] !== undefined) view[field] = body[field];
+	}
+	return view;
 }
 
 export type PromptTemplateApplication = {
@@ -151,7 +170,7 @@ export function applyPresetPromptTemplate(args: {
 	if (rendered.ok === false) return rendered;
 
 	const merged = mergeRendered(body, rendered.value, compiled.value, endpoint);
-	if (endpoint === "messages" && (!Array.isArray(merged.messages) || merged.messages.length === 0)) {
+	if (endpoint !== "responses" && (!Array.isArray(merged.messages) || merged.messages.length === 0)) {
 		return {
 			ok: false,
 			issues: [{ path: ["messages"], keyword: "template_rendered_empty", message: `Preset "${templateName}" rendered no user or assistant messages; send "messages" or add one to the template` }],

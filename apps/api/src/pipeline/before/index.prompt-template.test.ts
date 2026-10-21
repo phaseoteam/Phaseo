@@ -279,7 +279,8 @@ describe("beforeRequest prompt templates", () => {
 
 		expect(result.ok).toBe(true);
 		// The reference supplies the model and an empty conversation before validation.
-		expect(guardZodMock.mock.calls[0]?.[1]).toMatchObject({ model: "@support-triage", messages: [] });
+		// (chat and Messages schemas need one message, so a placeholder stands in until rendering).
+		expect(guardZodMock.mock.calls[0]?.[1]).toMatchObject({ model: "@support-triage", messages: [{ role: "user" }] });
 		expect(guardContextMock.mock.calls[0]?.[0].model).toBe("@support-triage");
 		const expectedMessages = [
 			{ role: "system", content: "Follow the house style.\n\nYou triage tickets for Acme." },
@@ -289,6 +290,8 @@ describe("beforeRequest prompt templates", () => {
 		expect(applyPromptInjectionGuardrailsMock.mock.calls[0]?.[0].templateVariables.map((target: any) => target.text)).toEqual(["Acme", "Login fails"]);
 		expect(applySensitiveInfoGuardrailsMock.mock.calls[0]?.[0].templateVariables).toHaveLength(2);
 		expect(validateCapabilitiesMock.mock.calls[0]?.[0].body.messages).toEqual(expectedMessages);
+		// Capability checks see neither the reference nor the placeholder.
+		expect(validateCapabilitiesMock.mock.calls[0]?.[0].rawBody).not.toHaveProperty("prompt");
 		if (result.ok) {
 			expect(result.ctx.body.prompt).toBeUndefined();
 			expect(result.ctx.rawBody.prompt.variables).toEqual({ company: "Acme", ticket: "Login fails" });

@@ -586,6 +586,23 @@ export async function guardContext(args: {
             },
         };
     } catch (e) {
+        // A missing or unusable preset is the caller's mistake (often a typo in
+        // the @reference), not a gateway failure.
+        const message = e instanceof Error ? e.message : String(e);
+        if (args.model.startsWith("@") && (message.includes("preset_not_found") || message.includes("preset_no_model"))) {
+            const missing = message.includes("preset_not_found");
+            return {
+                ok: false,
+                response: err(missing ? "not_found" : "validation_error", {
+                    reason: missing ? "preset_not_found" : "preset_no_model",
+                    description: missing
+                        ? `Preset "${args.model}" was not found, or this key cannot use it`
+                        : `Preset "${args.model}" has no model configured`,
+                    request_id: args.requestId,
+                    workspace_id: args.workspaceId,
+                }),
+            };
+        }
         console.error("[guardContext] gateway_context_failed", e);
         return {
             ok: false,

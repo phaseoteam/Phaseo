@@ -37,7 +37,7 @@ import { applyServerToolPlugins } from "@/plugins/server-tool-plugins";
 import { resolveHostedTools } from "./hostedTools";
 import { validateSynchronousTextServiceTierRequest } from "./serviceTierValidation";
 import { withoutNullTextParams } from "./textParamPolicy";
-import { applyPresetPromptTemplate, collectTemplateVariableTargets, extractPromptReference, withoutMessagesPlaceholder, type PromptTemplateApplication } from "./promptTemplate";
+import { applyPresetPromptTemplate, capabilityViewOfTemplatedRequest, collectTemplateVariableTargets, extractPromptReference, withoutMessagesPlaceholder, type PromptTemplateApplication } from "./promptTemplate";
 import { normalizeLegacySpeedModel } from "./legacySpeedModels";
 import {
 	applyProviderQualifiedModelConstraint,
@@ -1373,7 +1373,7 @@ export async function beforeRequest(
     const capabilityValidation = await timer.span("validateCapabilities", () =>
         validateCapabilities({
             endpoint,
-            rawBody,
+            rawBody: promptReference ? capabilityViewOfTemplatedRequest(rawBody, mergedBody) : rawBody,
             body: mergedBody,
             requestId,
             workspaceId,
