@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { filterCandidatesByModalities } from "./modalities";
+import { filterCandidatesByModalities, routeUploadedFileIds } from "./modalities";
 import type { IRChatRequest, IRContentPart } from "@core/ir";
 import type { ProviderCandidate } from "../before/types";
 
-function candidate(providerId: string, inputModalities: string[] | null, providerModelSlug: string | null = null): ProviderCandidate {
+function candidate(providerId: string, inputModalities: string[] | null, providerModelSlug: string | null = null, byokMeta: any[] = []): ProviderCandidate {
 	return {
 		providerId,
 		providerStatus: "active",
 		adapter: undefined as any,
 		baseWeight: 1,
-		byokMeta: [],
+		byokMeta,
 		pricingCard: null,
 		providerModelSlug,
 		inputModalities,
@@ -40,12 +40,32 @@ describe("file and document routing", () => {
 		expect(ids(filtered)).toEqual(["openai", "reka", "google-ai-studio"]);
 	});
 
-	it("treats an Anthropic document block the IR could not translate as a file", () => {
+	it("sends an Anthropic document block the IR could not translate only to routes that keep Claude's block", () => {
+		const document: IRContentPart = {
+			type: "provider_block",
+			block: { type: "document", source: { type: "content", content: [{ type: "image", source: { type: "base64", media_type: "image/png", data: "aW1n" } }] } },
+		};
 		const filtered = filterCandidatesByModalities([
 			candidate("anthropic", ["text", "image"]),
+			candidate("anthropic-aws", ["text", "image"]),
+			candidate("azure", ["text", "image"], "claude-sonnet-4-6"),
+			candidate("google-vertex", ["text", "image"], "claude-sonnet-4-6"),
+			candidate("amazon-bedrock", ["text", "image"], "anthropic.claude-sonnet-4-6"),
+			candidate("google-ai-studio", ["text", "image"]),
+			candidate("openai", ["text", "image"]),
+			candidate("deepinfra", ["text", "image"]),
+			candidate("reka", ["text", "image", "document"]),
 			candidate("together", ["text", "image"]),
-		], userRequest("anthropic/claude-sonnet-4.6", [{ type: "provider_block", block: { type: "document", source: { type: "content", content: [] } } }]));
-		expect(ids(filtered)).toEqual(["anthropic"]);
+		], userRequest("anthropic/claude-sonnet-4.6", [document]));
+		expect(ids(filtered)).toEqual(["anthropic", "anthropic-aws", "azure", "google-vertex", "amazon-bedrock"]);
+	});
+
+	it("keeps an untranslatable document off a Foundry route that serves a non-Claude model", () => {
+		const request = userRequest("openai/gpt-5.5", [{ type: "provider_block", block: { type: "document", source: { type: "content", content: [] } } }]);
+		expect(filterCandidatesByModalities([
+			candidate("azure", ["text", "image"], "gpt-5.5"),
+			candidate("openai", ["text", "image"]),
+		], request)).toEqual([]);
 	});
 
 	it("takes files on Vertex AI and Bedrock only for Claude and Gemini models", () => {
@@ -75,16 +95,86 @@ describe("file and document routing", () => {
 		expect(ids(filtered)).toEqual(["openai"]);
 	});
 
-	it("sends uploaded file ids only to providers that can resolve them", () => {
+	it("sends an OpenAI file id only to OpenAI-format Files APIs", () => {
 		const request = userRequest("x/model", [{ type: "file", source: "id", data: "file-abc123" }]);
 		const filtered = filterCandidatesByModalities([
 			candidate("openai", ["text", "image"]),
+			candidate("openai-eu", ["text", "image"]),
+			candidate("azure", ["text", "image"], "gpt-5.5"),
+			candidate("x-ai", ["text", "image"]),
 			candidate("google-ai-studio", ["text", "image"]),
 			candidate("google-vertex", ["text", "image"], "claude-sonnet-4-6"),
 			candidate("anthropic", ["text", "image"]),
 			candidate("deepinfra", ["text", "image"]),
 		], request);
-		expect(ids(filtered)).toEqual(["openai", "anthropic"]);
+		expect(ids(filtered)).toEqual(["openai", "openai-eu", "azure"]);
+	});
+
+	it("tells Anthropic and xAI file ids apart by their documented formats", () => {
+		const routes = [
+			candidate("openai", ["text", "image"]),
+			candidate("anthropic", ["text", "image"]),
+			candidate("x-ai", ["text", "image"]),
+			candidate("mistral", ["text", "image"]),
+		];
+		const route = (id: string) => ids(filterCandidatesByModalities(routes, userRequest("x/model", [{ type: "file", source: "id", data: id }])));
+		expect(route("file_011CNha8iCJcU1wXNR6q4V8w")).toEqual(["anthropic"]);
+		expect(route("file_a128090d-f0c9-4873-bd84-e499777e7417")).toEqual(["x-ai"]);
+		expect(route("a128090d-f0c9-4873-bd84-e499777e7417")).toEqual(["mistral"]);
+	});
+
+	it("uses the account holding the client's own key when an id's provider has several", () => {
+		const request = userRequest("openai/gpt-5.5", [{ type: "file", source: "id", data: "file-abc123" }]);
+		const routes = filterCandidatesByModalities([
+			candidate("openai", ["text", "image"], null, [{ id: "key_1" }]),
+			candidate("openai-eu", ["text", "image"]),
+			candidate("azure", ["text", "image"], "gpt-5.5"),
+		], request);
+		const routed = routeUploadedFileIds(routes, request);
+		expect(routed.ok && ids(routed.candidates)).toEqual(["openai", "openai-eu"]);
+	});
+
+	it("asks for a provider pin rather than trying accounts that cannot read the id", () => {
+		const request = userRequest("openai/gpt-5.5", [{ type: "file", source: "id", data: "file-abc123" }]);
+		const routes = filterCandidatesByModalities([
+			candidate("openai", ["text", "image"]),
+			candidate("azure", ["text", "image"], "gpt-5.5"),
+		], request);
+		expect(routeUploadedFileIds(routes, request)).toEqual({ ok: false, providers: ["openai", "azure"] });
+		// Pinned (only one provider left), the request goes through.
+		const pinned = routeUploadedFileIds(routes.filter((entry) => entry.providerId === "openai"), request);
+		expect(pinned.ok && ids(pinned.candidates)).toEqual(["openai"]);
+	});
+
+	it("needs a provider pin for a file id in no documented format", () => {
+		const request = userRequest("x/model", [{ type: "file", source: "id", data: "upload-42" }]);
+		const routes = filterCandidatesByModalities([
+			candidate("openai", ["text", "image"]),
+			candidate("mistral", ["text", "image"]),
+			candidate("deepinfra", ["text", "image"]),
+		], request);
+		expect(ids(routes)).toEqual(["openai", "mistral"]);
+		expect(routeUploadedFileIds(routes, request).ok).toBe(false);
+		expect(routeUploadedFileIds(routes.slice(1), request).ok).toBe(true);
+	});
+
+	it("leaves requests without file ids alone", () => {
+		const request = userRequest("x/model", [pdf]);
+		const routes = [candidate("openai", ["text", "image"]), candidate("azure", ["text", "image"])];
+		expect(routeUploadedFileIds(routes, request)).toEqual({ ok: true, candidates: routes });
+	});
+
+	it("routes a Gemini Files API audio upload only to Google AI Studio", () => {
+		const request = userRequest("google/gemini-3-pro", [{ type: "file", source: "id", data: "files/abc", mimeType: "audio/mpeg" }]);
+		const filtered = filterCandidatesByModalities([
+			candidate("google-ai-studio", ["text", "image", "audio", "video"]),
+			candidate("google-vertex", ["text", "image", "audio", "video"], "gemini-3-pro"),
+			candidate("openai", ["text", "image", "audio"]),
+			candidate("deepinfra", ["text", "audio"]),
+		], request);
+		expect(ids(filtered)).toEqual(["google-ai-studio"]);
+		// The model must still take audio.
+		expect(filterCandidatesByModalities([candidate("google-ai-studio", ["text", "image"])], request)).toEqual([]);
 	});
 
 	it("keeps Gemini Files API names on Google AI Studio", () => {
@@ -105,6 +195,8 @@ describe("file and document routing", () => {
 			candidate("openai", ["text", "image"]),
 		], request, { protocol: "anthropic.messages" });
 		expect(ids(filtered)).toEqual(["anthropic", "anthropic-aws"]);
+		// Two Claude accounts remain, so the client must pick one.
+		expect(routeUploadedFileIds(filtered, request).ok).toBe(false);
 	});
 
 	it("leaves text-only and image requests as before", () => {

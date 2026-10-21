@@ -230,6 +230,12 @@ function normalizeGeminiPart(part: any): IRContentPart | null {
 		if (mimeType?.startsWith("image/")) {
 			return { type: "image", source: geminiFile ? "id" : "url", data: fileUri, mimeType };
 		}
+		// A Files API upload belongs to the Gemini API project that made it, so
+		// audio and video uploads stay file references that only Google AI
+		// Studio is sent, not URLs another provider would try to fetch.
+		if (geminiFile && (mimeType?.startsWith("audio/") || mimeType?.startsWith("video/"))) {
+			return { type: "file", source: "id", data: fileUri, mimeType };
+		}
 		if (mimeType?.startsWith("audio/")) {
 			const format = AUDIO_FORMAT_BY_MIME[mimeType];
 			return { type: "audio", source: "url", data: fileUri, ...(format ? { format } : {}) };

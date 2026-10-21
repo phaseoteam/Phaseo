@@ -67,6 +67,23 @@ describe("Responses media input decoding", () => {
 		expect(JSON.stringify(content)).not.toContain("[object Object]");
 	});
 
+	it("keeps Gemini Files API audio and video as provider-owned file references", () => {
+		expect(userContent([{
+			role: "user",
+			content: [
+				{ fileData: { mimeType: "audio/mpeg", fileUri: "files/abc" } },
+				{ file_data: { mime_type: "audio/wav", file_uri: "https://generativelanguage.googleapis.com/v1beta/files/def" } },
+				{ fileData: { mimeType: "video/mp4", fileUri: "files/ghi" } },
+				{ fileData: { mimeType: "audio/mpeg", fileUri: "https://cdn.example/clip.mp3" } },
+			],
+		}])).toEqual([
+			{ type: "file", source: "id", data: "files/abc", mimeType: "audio/mpeg" },
+			{ type: "file", source: "id", data: "https://generativelanguage.googleapis.com/v1beta/files/def", mimeType: "audio/wav" },
+			{ type: "file", source: "id", data: "files/ghi", mimeType: "video/mp4" },
+			{ type: "audio", source: "url", data: "https://cdn.example/clip.mp3", format: "mp3" },
+		]);
+	});
+
 	it("treats top-level Gemini parts as user content", () => {
 		expect(decode([{ inlineData: { mimeType: "image/webp", data: "d2Vi" } }]).messages[0]).toEqual({
 			role: "user",
