@@ -112,8 +112,17 @@ export function deriveCachePricingContext(body: any): Record<string, any> {
 		),
 	);
 
+	// Request-level lifetime in prompt_cache_options (Moonshot and DeepInfra: "5m" or "1h").
+	// Kept apart from cache_ttl: the engine uses it only for undivided writes on a card with
+	// 1-hour write rows, which is where the lifetime is sent (see execute/cacheTtl.ts).
+	const promptCacheOptions = isObject(body?.prompt_cache_options)
+		? body.prompt_cache_options
+		: isObject(openaiOptions?.prompt_cache_options) ? openaiOptions.prompt_cache_options : undefined;
+	const promptCacheOptionsTtl = normalizeCacheTtl(pickFirstString(promptCacheOptions?.ttl));
+
 	const out: Record<string, any> = {};
 	if (promptCacheRetention) out.prompt_cache_retention = promptCacheRetention;
+	if (promptCacheOptionsTtl) out.prompt_cache_options_ttl = promptCacheOptionsTtl;
 	if (anthropicCacheControl) out.anthropic_cache_control = anthropicCacheControl;
 	if (googleCachedContent) out.google_cached_content = googleCachedContent;
 	if (googleCacheControl) out.google_cache_control = googleCacheControl;

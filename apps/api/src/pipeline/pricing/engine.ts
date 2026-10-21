@@ -194,6 +194,12 @@ function analyzeRuleSelection(candidates: PriceRule[], ctx: Record<string, any>)
     };
 }
 
+// Providers that receive a request-level cache lifetime as prompt_cache_options.ttl ("5m" or
+// "1h") and report writes without a lifetime split: Moonshot
+// (https://platform.kimi.ai/docs/api/chat) and DeepInfra
+// (https://docs.deepinfra.com/chat/prompt-cache-retention).
+const PROMPT_CACHE_OPTIONS_TTL_PROVIDERS = new Set(["moonshotai", "deepinfra"]);
+
 const REPORTED_INPUT_TOTAL_PATHS = [
     "input_tokens",
     "prompt_tokens",
@@ -282,13 +288,22 @@ function splitUsage(
         rule.meter === "cached_write_text_tokens_1h"
     );
     // Writes with no TTL detail were made with the TTL the request asked for
-    // (cache_control.ttl, prompt_cache_retention); 5 minutes otherwise.
+    // (cache_control.ttl, prompt_cache_retention, then prompt_cache_options.ttl, which is
+    // only sent to a route with a 1-hour write row); 5 minutes otherwise. Moonshot reports
+    // one cache_write_tokens count, "Billed according to the TTL at write time"
+    // (https://platform.kimi.ai/docs/api/chat).
     const undividedWriteMeter = (): "cached_write_text_tokens_5m" | "cached_write_text_tokens_1h" => {
+        const promptCacheOptionsTtl =
+            PROMPT_CACHE_OPTIONS_TTL_PROVIDERS.has(String(card.provider ?? "").toLowerCase()) &&
+            card.rules.some((rule) => rule.meter === "cached_write_text_tokens_1h")
+                ? requestOptions?.prompt_cache_options_ttl
+                : undefined;
         const ttlHint = String(
             usageRaw?.cache_ttl ??
             usageRaw?.cache_ttl_seconds ??
             usageRaw?.context?.cache_ttl ??
             requestOptions?.cache_ttl ??
+            promptCacheOptionsTtl ??
             "5m",
         ).trim().toLowerCase();
         return ttlHint === "1h" || ttlHint === "60m" || ttlHint === "3600"

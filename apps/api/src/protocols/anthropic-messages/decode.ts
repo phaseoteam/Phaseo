@@ -328,6 +328,8 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		serviceTier: isAutoServiceTier(req.service_tier)
 			? "auto"
 			: resolveTextServiceTier({ service_tier: req.service_tier }),
+		// As on Chat and Responses: namespaced per workspace before it is sent upstream.
+		promptCacheKey: typeof req.prompt_cache_key === "string" ? req.prompt_cache_key : undefined,
 		// provider_options apply as they do on Chat and Responses.
 		promptCacheRetention: providerCacheOptions.promptCacheRetention,
 		promptCacheOptions: providerOptions?.openai?.prompt_cache_options,

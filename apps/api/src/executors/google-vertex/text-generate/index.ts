@@ -69,6 +69,22 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		bindings.GOOGLE_VERTEX_ACCESS_TOKEN || bindings.GOOGLE_VERTEX_API_KEY,
 	);
 	const route = resolveVertexModelRoute(model);
+	// A cachedContent name is resolved in the project of the credential that serves the
+	// request. With Phaseo's credential that is Phaseo's project, so a customer could reach
+	// a cache that is not theirs: refuse, as on Google AI Studio.
+	if (route.family === "gemini" && irRequest.googleCachedContent !== undefined && keyInfo.source !== "byok") {
+		return {
+			kind: "completed",
+			ir: undefined,
+			upstream: new Response(JSON.stringify({ error: "cachedContent requires a customer-managed Vertex AI credential" }), {
+				status: 400,
+				headers: { "Content-Type": "application/json" },
+			}),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+		};
+	}
 	const apiBase = resolveVertexApiBase(bindings, args.providerId, route.family, route.modelForPayload);
 
 	let payload: any;

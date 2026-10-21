@@ -18,7 +18,7 @@ import {
 } from "./textNormalizePolicy";
 import { dropUnsupportedParams, type DroppedParam } from "./unsupportedParams";
 import { dropVerbatimResponsesItems } from "./responsesItems";
-import { dropUnsupportedCacheTtl } from "./cacheTtl";
+import { dropUnsupportedCacheTtl, dropUnsupportedPromptCacheOptions } from "./cacheTtl";
 import { dropUnsupportedTwelveHourCache } from "./prompt-cache-ttl";
 type ParamRange = {
     min?: number;
@@ -247,9 +247,17 @@ export function normalizeIRForProvider(
         models: [options?.modelForReasoning, cacheTtl.ir.model],
         pricingCard: options?.pricingCard,
     });
-    const dropped = [...supported.dropped, ...items.dropped, ...cacheTtl.dropped, ...twelveHourCache.dropped];
+    // And Moonshot's prompt_cache_options, to the mode and lifetimes the route can take.
+    const cacheOptions = dropUnsupportedPromptCacheOptions(twelveHourCache.ir, providerId, options?.pricingCard);
+    const dropped = [
+        ...supported.dropped,
+        ...items.dropped,
+        ...cacheTtl.dropped,
+        ...twelveHourCache.dropped,
+        ...cacheOptions.dropped,
+    ];
     if (dropped.length > 0) options?.onDroppedParams?.(dropped);
-    ir = restrictToAllowedTools(twelveHourCache.ir, providerId);
+    ir = restrictToAllowedTools(cacheOptions.ir, providerId);
     const modelForReasoning = options?.modelForReasoning ?? ir.model;
     const nextMaxTokens = normalizeMaxTokens(
         ir,
