@@ -1155,6 +1155,14 @@ public final class Models {
 		public String upstream_payload_preview;
 	}
 
+	public static class ErrorObject {
+		public String code;
+		public String message;
+		public Object metadata;
+		public String param;
+		public Object type;
+	}
+
 	public static class ErrorProviderCandidateDiagnostics {
 		public Integer candidateCount;
 		public java.util.List<Object> droppedMissingAdapter;
@@ -1178,6 +1186,7 @@ public final class Models {
 
 	public static class ErrorResponse {
 		public Integer attempt_count;
+		public String code;
 		public String description;
 		public java.util.List<Object> details;
 		public Object error;

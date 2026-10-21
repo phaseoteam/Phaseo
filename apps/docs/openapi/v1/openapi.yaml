@@ -16349,11 +16349,23 @@ components:
           type: boolean
           example: false
         error:
+          description: >-
+            The error object (`code`, `message`, `type`, `param` and optional
+            `metadata`) that OpenAI-compatible SDKs read. Earlier responses
+            returned the code string here; it is now also returned as top-level
+            `code`.
           oneOf:
             - type: string
-            - type: object
-              additionalProperties: true
-          example: error_type
+            - $ref: '#/components/schemas/ErrorObject'
+          example:
+            code: validation_error
+            message: 'Unknown parameter: foo'
+            type: invalid_request_error
+            param: foo
+        code:
+          type: string
+          description: The error code, the same value as `error.code`.
+          example: validation_error
         message:
           type: string
           example: Human-readable error message
@@ -16430,6 +16442,54 @@ components:
           items:
             type: object
             additionalProperties: true
+      additionalProperties: true
+    ErrorObject:
+      type: object
+      description: >-
+        A gateway error in the shape OpenAI's SDKs read. `type` is set from the
+        HTTP status: invalid_request_error for most 4xx, authentication_error
+        (401), insufficient_quota (402), permission_error (403), not_found_error
+        (404), rate_limit_error (429), service_unavailable (503), overloaded
+        (529) and server_error for other 5xx.
+      required:
+        - code
+        - message
+        - type
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code.
+          example: validation_error
+        message:
+          type: string
+          description: Human-readable explanation of the failure.
+          example: 'Unknown parameter: foo'
+        type:
+          type: string
+          description: The error type, following OpenAI's documented error types.
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - permission_error
+            - not_found_error
+            - rate_limit_error
+            - insufficient_quota
+            - server_error
+            - service_unavailable
+            - overloaded
+          example: invalid_request_error
+        param:
+          type: string
+          nullable: true
+          description: The request parameter that caused the error, when known.
+          example: foo
+        metadata:
+          type: object
+          description: >-
+            Structured detail also returned at the top level, such as the
+            failing provider, `reason`, `failed_statuses`, `retry_after_seconds`
+            or `upstream_error`.
+          additionalProperties: true
       additionalProperties: true
     ErrorUpstreamError:
       type: object

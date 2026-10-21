@@ -8813,6 +8813,86 @@
 			"ja": "ツール選択の方法です。Phaseo サーバーツールのタイプを受け付け、上流の関数またはツールの指定に変換します。allowed_tools オブジェクトは、すべてのツールとともに OpenAI にそのまま送られます。その他のプロバイダーには、許可されたツールとそのモード（auto または required）だけが送られ、required で許可されるツールが 1 つだけの場合はそのツールの呼び出しが強制されます。tools に定義されていないツールが allowed_tools に含まれる場合、リクエストを処理できるのは OpenAI だけです。それ以外の場合は 400 エラーが返されます。",
 			"zh-Hans": "工具选择策略。接受 Phaseo 服务器工具类型，并将其改写为上游函数或工具目标。allowed_tools 对象会连同所有工具原样发送给 OpenAI。其他提供商只会收到允许的工具及其模式（auto 或 required），当 required 只允许一个工具时，则收到对该工具的强制调用。如果 allowed_tools 列出了 tools 中未定义的工具，则只有 OpenAI 能处理该请求；否则返回 400 错误。",
 			"ar": "استراتيجية اختيار الأدوات. تُقبل أنواع أدوات خادم Phaseo وتُحوّل إلى أهداف وظائف أو أدوات لدى المزوّد upstream. يُرسل كائن allowed_tools كما هو إلى OpenAI مع جميع الأدوات. ولا يتلقى المزوّدون الآخرون إلا الأدوات المسموح بها ووضعه (auto أو required)، أو استدعاءً إلزاميًا للأداة عندما يسمح required بأداة واحدة فقط. إذا أدرج allowed_tools أداة لا تعرّفها tools، فلا يمكن إلا لـ OpenAI معالجة الطلب؛ وإلا يُعاد خطأ 400."
+		},
+		"The error object (`code`, `message`, `type`, `param` and optional `metadata`) that OpenAI-compatible SDKs read. Earlier responses returned the code string here; it is now also returned as top-level `code`.": {
+			"es": "El objeto de error (`code`, `message`, `type`, `param` y `metadata` opcional) que leen los SDK compatibles con OpenAI. Las respuestas anteriores devolvían aquí la cadena del código; ahora también se devuelve como `code` de nivel superior.",
+			"fr": "L'objet d'erreur (`code`, `message`, `type`, `param` et `metadata` facultatif) que lisent les SDK compatibles avec OpenAI. Les réponses précédentes renvoyaient ici la chaîne du code ; elle est désormais aussi renvoyée dans `code` au niveau supérieur.",
+			"de": "Das Fehlerobjekt (`code`, `message`, `type`, `param` und optional `metadata`), das OpenAI-kompatible SDKs lesen. Frühere Antworten lieferten hier den Code als String; er wird jetzt zusätzlich als `code` auf oberster Ebene zurückgegeben.",
+			"pt-BR": "O objeto de erro (`code`, `message`, `type`, `param` e `metadata` opcional) que os SDKs compatíveis com a OpenAI leem. Respostas anteriores retornavam aqui a string do código; agora ela também é retornada como `code` no nível superior.",
+			"hi": "त्रुटि ऑब्जेक्ट (`code`, `message`, `type`, `param` और वैकल्पिक `metadata`) जिसे OpenAI-संगत SDK पढ़ते हैं। पहले के रिस्पॉन्स यहाँ कोड स्ट्रिंग लौटाते थे; अब वह शीर्ष स्तर के `code` के रूप में भी लौटाई जाती है।",
+			"ja": "OpenAI 互換の SDK が読み取るエラーオブジェクト（`code`、`message`、`type`、`param`、および任意の `metadata`）。以前のレスポンスはここでコード文字列を返していました。現在はトップレベルの `code` としても返されます。",
+			"zh-Hans": "OpenAI 兼容 SDK 读取的错误对象（`code`、`message`、`type`、`param` 以及可选的 `metadata`）。以前的响应在此处返回代码字符串；现在它也作为顶层 `code` 返回。",
+			"ar": "كائن الخطأ (`code` و`message` و`type` و`param` و`metadata` الاختياري) الذي تقرؤه حزم SDK المتوافقة مع OpenAI. كانت الاستجابات السابقة تُرجع سلسلة الرمز هنا؛ وهي تُرجع الآن أيضًا في `code` على المستوى الأعلى."
+		},
+		"The error code, the same value as `error.code`.": {
+			"es": "El código de error, con el mismo valor que `error.code`.",
+			"fr": "Le code d'erreur, avec la même valeur que `error.code`.",
+			"de": "Der Fehlercode, derselbe Wert wie `error.code`.",
+			"pt-BR": "O código de erro, com o mesmo valor de `error.code`.",
+			"hi": "त्रुटि कोड, `error.code` के समान मान।",
+			"ja": "エラーコード。`error.code` と同じ値です。",
+			"zh-Hans": "错误代码，与 `error.code` 的值相同。",
+			"ar": "رمز الخطأ، بالقيمة نفسها الموجودة في `error.code`."
+		},
+		"A gateway error in the shape OpenAI's SDKs read. `type` is set from the HTTP status: invalid_request_error for most 4xx, authentication_error (401), insufficient_quota (402), permission_error (403), not_found_error (404), rate_limit_error (429), service_unavailable (503), overloaded (529) and server_error for other 5xx.": {
+			"es": "Un error del gateway con la forma que leen los SDK de OpenAI. `type` se determina a partir del estado HTTP: invalid_request_error para la mayoría de los 4xx, authentication_error (401), insufficient_quota (402), permission_error (403), not_found_error (404), rate_limit_error (429), service_unavailable (503), overloaded (529) y server_error para los demás 5xx.",
+			"fr": "Une erreur de la passerelle dans la forme que lisent les SDK d'OpenAI. `type` est déterminé par le statut HTTP : invalid_request_error pour la plupart des 4xx, authentication_error (401), insufficient_quota (402), permission_error (403), not_found_error (404), rate_limit_error (429), service_unavailable (503), overloaded (529) et server_error pour les autres 5xx.",
+			"de": "Ein Gateway-Fehler in der Form, die die SDKs von OpenAI lesen. `type` ergibt sich aus dem HTTP-Status: invalid_request_error für die meisten 4xx, authentication_error (401), insufficient_quota (402), permission_error (403), not_found_error (404), rate_limit_error (429), service_unavailable (503), overloaded (529) und server_error für andere 5xx.",
+			"pt-BR": "Um erro do gateway no formato que os SDKs da OpenAI leem. `type` é definido pelo status HTTP: invalid_request_error para a maioria dos 4xx, authentication_error (401), insufficient_quota (402), permission_error (403), not_found_error (404), rate_limit_error (429), service_unavailable (503), overloaded (529) e server_error para os demais 5xx.",
+			"hi": "गेटवे त्रुटि, उस रूप में जिसे OpenAI के SDK पढ़ते हैं। `type` HTTP स्टेटस से तय होता है: अधिकांश 4xx के लिए invalid_request_error, authentication_error (401), insufficient_quota (402), permission_error (403), not_found_error (404), rate_limit_error (429), service_unavailable (503), overloaded (529) और अन्य 5xx के लिए server_error।",
+			"ja": "OpenAI の SDK が読み取る形式のゲートウェイエラー。`type` は HTTP ステータスから決まります。ほとんどの 4xx は invalid_request_error、authentication_error（401）、insufficient_quota（402）、permission_error（403）、not_found_error（404）、rate_limit_error（429）、service_unavailable（503）、overloaded（529）、その他の 5xx は server_error です。",
+			"zh-Hans": "采用 OpenAI SDK 读取格式的网关错误。`type` 由 HTTP 状态决定：大多数 4xx 为 invalid_request_error，authentication_error（401）、insufficient_quota（402）、permission_error（403）、not_found_error（404）、rate_limit_error（429）、service_unavailable（503）、overloaded（529），其他 5xx 为 server_error。",
+			"ar": "خطأ من البوابة بالشكل الذي تقرؤه حزم SDK من OpenAI. يُحدَّد `type` من حالة HTTP: invalid_request_error لمعظم رموز 4xx، وauthentication_error (401)، وinsufficient_quota (402)، وpermission_error (403)، وnot_found_error (404)، وrate_limit_error (429)، وservice_unavailable (503)، وoverloaded (529)، وserver_error لبقية رموز 5xx."
+		},
+		"Machine-readable error code.": {
+			"es": "Código de error legible por máquina.",
+			"fr": "Code d'erreur lisible par une machine.",
+			"de": "Maschinenlesbarer Fehlercode.",
+			"pt-BR": "Código de erro legível por máquina.",
+			"hi": "मशीन द्वारा पढ़ा जा सकने वाला त्रुटि कोड।",
+			"ja": "機械可読なエラーコード。",
+			"zh-Hans": "机器可读的错误代码。",
+			"ar": "رمز خطأ قابل للقراءة آليًا."
+		},
+		"Human-readable explanation of the failure.": {
+			"es": "Explicación legible del fallo.",
+			"fr": "Explication lisible de l'échec.",
+			"de": "Verständliche Erklärung des Fehlers.",
+			"pt-BR": "Explicação legível da falha.",
+			"hi": "विफलता की मानव-पठनीय व्याख्या।",
+			"ja": "失敗内容のわかりやすい説明。",
+			"zh-Hans": "便于阅读的失败说明。",
+			"ar": "شرح مقروء لسبب الإخفاق."
+		},
+		"The error type, following OpenAI's documented error types.": {
+			"es": "El tipo de error, según los tipos de error documentados por OpenAI.",
+			"fr": "Le type d'erreur, selon les types d'erreur documentés par OpenAI.",
+			"de": "Der Fehlertyp, nach den von OpenAI dokumentierten Fehlertypen.",
+			"pt-BR": "O tipo de erro, de acordo com os tipos de erro documentados pela OpenAI.",
+			"hi": "त्रुटि का प्रकार, OpenAI के प्रलेखित त्रुटि प्रकारों के अनुसार।",
+			"ja": "エラーの種類。OpenAI が文書化しているエラータイプに従います。",
+			"zh-Hans": "错误类型，遵循 OpenAI 文档中的错误类型。",
+			"ar": "نوع الخطأ، وفق أنواع الأخطاء الموثّقة لدى OpenAI."
+		},
+		"The request parameter that caused the error, when known.": {
+			"es": "El parámetro de la solicitud que causó el error, cuando se conoce.",
+			"fr": "Le paramètre de la requête à l'origine de l'erreur, lorsqu'il est connu.",
+			"de": "Der Anfrageparameter, der den Fehler verursacht hat, sofern bekannt.",
+			"pt-BR": "O parâmetro da solicitação que causou o erro, quando conhecido.",
+			"hi": "अनुरोध का वह पैरामीटर जिससे त्रुटि हुई, यदि ज्ञात हो।",
+			"ja": "エラーの原因となったリクエストパラメーター（判明している場合）。",
+			"zh-Hans": "导致错误的请求参数（如已知）。",
+			"ar": "معامل الطلب الذي تسبّب في الخطأ، عند معرفته."
+		},
+		"Structured detail also returned at the top level, such as the failing provider, `reason`, `failed_statuses`, `retry_after_seconds` or `upstream_error`.": {
+			"es": "Detalles estructurados que también se devuelven en el nivel superior, como el proveedor que falló, `reason`, `failed_statuses`, `retry_after_seconds` o `upstream_error`.",
+			"fr": "Détails structurés également renvoyés au niveau supérieur, comme le fournisseur en échec, `reason`, `failed_statuses`, `retry_after_seconds` ou `upstream_error`.",
+			"de": "Strukturierte Details, die auch auf oberster Ebene zurückgegeben werden, etwa der fehlgeschlagene Anbieter, `reason`, `failed_statuses`, `retry_after_seconds` oder `upstream_error`.",
+			"pt-BR": "Detalhes estruturados também retornados no nível superior, como o provedor que falhou, `reason`, `failed_statuses`, `retry_after_seconds` ou `upstream_error`.",
+			"hi": "संरचित विवरण जो शीर्ष स्तर पर भी लौटाए जाते हैं, जैसे विफल प्रदाता, `reason`, `failed_statuses`, `retry_after_seconds` या `upstream_error`।",
+			"ja": "トップレベルにも返される構造化された詳細。失敗したプロバイダー、`reason`、`failed_statuses`、`retry_after_seconds`、`upstream_error` などです。",
+			"zh-Hans": "同样在顶层返回的结构化详情，例如失败的提供商、`reason`、`failed_statuses`、`retry_after_seconds` 或 `upstream_error`。",
+			"ar": "تفاصيل منظّمة تُرجع أيضًا على المستوى الأعلى، مثل المزوّد الذي أخفق و`reason` و`failed_statuses` و`retry_after_seconds` و`upstream_error`."
 		}
 	},
 	"GET /apps": {

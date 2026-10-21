@@ -15571,11 +15571,19 @@ components:
           type: boolean
           example: false
         error:
+          description: El objeto de error (`code`, `message`, `type`, `param` y `metadata` opcional) que leen los SDK compatibles con OpenAI. Las respuestas anteriores devolvían aquí la cadena del código; ahora también se devuelve como `code` de nivel superior.
           oneOf:
             - type: string
-            - type: object
-              additionalProperties: true
-          example: error_type
+            - $ref: '#/components/schemas/ErrorObject'
+          example:
+            code: validation_error
+            message: 'Unknown parameter: foo'
+            type: invalid_request_error
+            param: foo
+        code:
+          type: string
+          description: El código de error, con el mismo valor que `error.code`.
+          example: validation_error
         message:
           type: string
           example: Human-readable error message
@@ -15650,6 +15658,46 @@ components:
           items:
             type: object
             additionalProperties: true
+      additionalProperties: true
+    ErrorObject:
+      type: object
+      description: 'Un error del gateway con la forma que leen los SDK de OpenAI. `type` se determina a partir del estado HTTP: invalid_request_error para la mayoría de los 4xx, authentication_error (401), insufficient_quota (402), permission_error (403), not_found_error (404), rate_limit_error (429), service_unavailable (503), overloaded (529) y server_error para los demás 5xx.'
+      required:
+        - code
+        - message
+        - type
+      properties:
+        code:
+          type: string
+          description: Código de error legible por máquina.
+          example: validation_error
+        message:
+          type: string
+          description: Explicación legible del fallo.
+          example: 'Unknown parameter: foo'
+        type:
+          type: string
+          description: El tipo de error, según los tipos de error documentados por OpenAI.
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - permission_error
+            - not_found_error
+            - rate_limit_error
+            - insufficient_quota
+            - server_error
+            - service_unavailable
+            - overloaded
+          example: invalid_request_error
+        param:
+          type: string
+          nullable: true
+          description: El parámetro de la solicitud que causó el error, cuando se conoce.
+          example: foo
+        metadata:
+          type: object
+          description: Detalles estructurados que también se devuelven en el nivel superior, como el proveedor que falló, `reason`, `failed_statuses`, `retry_after_seconds` o `upstream_error`.
+          additionalProperties: true
       additionalProperties: true
     ErrorUpstreamError:
       type: object

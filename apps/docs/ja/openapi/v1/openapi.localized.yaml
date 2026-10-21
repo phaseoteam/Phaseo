@@ -15571,11 +15571,19 @@ components:
           type: boolean
           example: false
         error:
+          description: OpenAI 互換の SDK が読み取るエラーオブジェクト（`code`、`message`、`type`、`param`、および任意の `metadata`）。以前のレスポンスはここでコード文字列を返していました。現在はトップレベルの `code` としても返されます。
           oneOf:
             - type: string
-            - type: object
-              additionalProperties: true
-          example: error_type
+            - $ref: '#/components/schemas/ErrorObject'
+          example:
+            code: validation_error
+            message: 'Unknown parameter: foo'
+            type: invalid_request_error
+            param: foo
+        code:
+          type: string
+          description: エラーコード。`error.code` と同じ値です。
+          example: validation_error
         message:
           type: string
           example: Human-readable error message
@@ -15650,6 +15658,46 @@ components:
           items:
             type: object
             additionalProperties: true
+      additionalProperties: true
+    ErrorObject:
+      type: object
+      description: OpenAI の SDK が読み取る形式のゲートウェイエラー。`type` は HTTP ステータスから決まります。ほとんどの 4xx は invalid_request_error、authentication_error（401）、insufficient_quota（402）、permission_error（403）、not_found_error（404）、rate_limit_error（429）、service_unavailable（503）、overloaded（529）、その他の 5xx は server_error です。
+      required:
+        - code
+        - message
+        - type
+      properties:
+        code:
+          type: string
+          description: 機械可読なエラーコード。
+          example: validation_error
+        message:
+          type: string
+          description: 失敗内容のわかりやすい説明。
+          example: 'Unknown parameter: foo'
+        type:
+          type: string
+          description: エラーの種類。OpenAI が文書化しているエラータイプに従います。
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - permission_error
+            - not_found_error
+            - rate_limit_error
+            - insufficient_quota
+            - server_error
+            - service_unavailable
+            - overloaded
+          example: invalid_request_error
+        param:
+          type: string
+          nullable: true
+          description: エラーの原因となったリクエストパラメーター（判明している場合）。
+          example: foo
+        metadata:
+          type: object
+          description: トップレベルにも返される構造化された詳細。失敗したプロバイダー、`reason`、`failed_statuses`、`retry_after_seconds`、`upstream_error` などです。
+          additionalProperties: true
       additionalProperties: true
     ErrorUpstreamError:
       type: object

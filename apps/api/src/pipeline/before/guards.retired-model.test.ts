@@ -66,7 +66,7 @@ describe("guardContext for retired models", () => {
 		expect(result.response.status).toBe(410);
 		const payload = await result.response.json();
 		expect(payload).toMatchObject({
-			error: "model_retired",
+			code: "model_retired",
 			error_type: "user",
 			model: "openai/gpt-3.5-turbo-0613",
 			retired_at: "2024-09-13T00:00:00+00:00",
@@ -87,7 +87,7 @@ describe("guardContext for retired models", () => {
 		expect(result.ok).toBe(false);
 		if (result.ok) return;
 		expect(result.response.status).toBe(400);
-		expect((await result.response.json()).error).toBe("unsupported_model_or_endpoint");
+		expect((await result.response.json()).code).toBe("unsupported_model_or_endpoint");
 	});
 
 	it("does not look up lifecycle when providers exist but none support the endpoint", async () => {

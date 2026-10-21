@@ -11,6 +11,7 @@ import { encodeUnifiedStreamEvent, type EncodedStreamFrame, type StreamProtocol 
 import { normalizeFinishReason, responsesStatusFor, anthropicStopReasonFor } from "@core/finish-reason";
 import { resolveCacheTokenUsage, uncachedInputTokens } from "@core/cache-usage";
 import { pickFirstFiniteNumber } from "@core/usage-normalization";
+import { chatStreamErrorFrame } from "@core/error-object";
 import { createToolCallKeyResolver, type UnifiedStreamEvent } from "./stream-events";
 
 export type StreamSourceFrame = { eventName?: string | null; frame: any };
@@ -57,14 +58,7 @@ export function encodeStreamInterruption(target: StreamProtocol, ctx: EncodeCont
 				},
 			};
 		default:
-			return {
-				frame: {
-					object: "error",
-					message,
-					// OpenAI SDKs raise on a frame's `error` field.
-					error: { message, type: "upstream_error", code: INTERRUPTION_CODE },
-				},
-			};
+			return { frame: chatStreamErrorFrame({ message, code: INTERRUPTION_CODE }) };
 	}
 }
 

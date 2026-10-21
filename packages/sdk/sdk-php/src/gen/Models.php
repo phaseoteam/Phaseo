@@ -2025,6 +2025,20 @@ class ErrorFailureSampleItem
 	public $upstream_payload_preview;
 }
 
+class ErrorObject
+{
+	/** @var string */
+	public $code;
+	/** @var string */
+	public $message;
+	/** @var array<string, mixed>|null */
+	public $metadata;
+	/** @var string|null */
+	public $param;
+	/** @var string */
+	public $type;
+}
+
 class ErrorProviderCandidateDiagnostics
 {
 	/** @var int|null */
@@ -2065,6 +2079,8 @@ class ErrorResponse
 {
 	/** @var int|null */
 	public $attempt_count;
+	/** @var string|null */
+	public $code;
 	/** @var string|null */
 	public $description;
 	/** @var array|null */

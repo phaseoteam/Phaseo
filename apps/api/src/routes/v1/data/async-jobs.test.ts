@@ -119,8 +119,11 @@ describe("asyncJobsRoutes", () => {
 		expect(response.status).toBe(426);
 		expect(response.headers.get("upgrade")).toBe("websocket");
 		expect(await response.json()).toMatchObject({
+			code: "websocket_upgrade_required",
 			error: {
 				code: "websocket_upgrade_required",
+				message: "Use WebSocket upgrade for async job updates.",
+				type: "invalid_request_error",
 			},
 		});
 	});
@@ -137,7 +140,7 @@ describe("asyncJobsRoutes", () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "invalid_async_job_path",
 		});
 	});
@@ -155,7 +158,7 @@ describe("asyncJobsRoutes", () => {
 
 		expect(response.status).toBe(404);
 		expect(await response.json()).toMatchObject({
-			error: "not_found",
+			code: "not_found",
 			reason: "async_job_not_found_or_not_owned",
 		});
 	});

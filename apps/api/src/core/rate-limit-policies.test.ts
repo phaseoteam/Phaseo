@@ -287,7 +287,7 @@ describe("rate limit policy enforcement", () => {
 		expect(response?.headers.get("x-ratelimit-remaining-requests")).toBe("0");
 		expect(response?.headers.get("x-ratelimit-reset-requests")).toBe("42s");
 		expect(await response?.json()).toMatchObject({
-			error: "rate_limit_exceeded",
+			code: "rate_limit_exceeded",
 			error_origin: "user",
 			reason: "policy_requests_per_minute",
 			policy_id: STRICT,

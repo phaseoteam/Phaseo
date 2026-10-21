@@ -70,7 +70,7 @@ describe("budget alerts from rejected requests", () => {
 		expect(result.ok).toBe(false);
 		if (result.ok) return;
 		expect(result.response.status).toBe(429);
-		expect(await result.response.json()).toMatchObject({ error: "key_limit_exceeded", reason: "workspace_monthly_cost_budget_reached" });
+		expect(await result.response.json()).toMatchObject({ code: "key_limit_exceeded", reason: "workspace_monthly_cost_budget_reached" });
 		expect(state.rpc).toHaveBeenCalledWith("record_spend_limit_reached", {
 			p_workspace_id: "ws_1",
 			p_key_id: null,

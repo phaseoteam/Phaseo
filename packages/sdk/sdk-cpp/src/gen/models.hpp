@@ -1150,6 +1150,14 @@ struct ErrorFailureSampleItem {
 	std::optional<std::string> upstream_payload_preview;
 };
 
+struct ErrorObject {
+	std::string code;
+	std::string message;
+	std::map<std::string, std::any> metadata;
+	std::optional<std::string> param;
+	std::any type;
+};
+
 struct ErrorProviderCandidateDiagnostics {
 	std::optional<int> candidateCount;
 	std::vector<std::map<std::string, std::any>> droppedMissingAdapter;
@@ -1173,6 +1181,7 @@ struct ErrorProviderFailureDiagnostics {
 
 struct ErrorResponse {
 	std::optional<int> attempt_count;
+	std::string code;
 	std::string description;
 	std::vector<std::map<std::string, std::any>> details;
 	std::any error;

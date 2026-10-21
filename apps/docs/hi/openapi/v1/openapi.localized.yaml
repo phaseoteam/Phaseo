@@ -15571,11 +15571,19 @@ components:
           type: boolean
           example: false
         error:
+          description: त्रुटि ऑब्जेक्ट (`code`, `message`, `type`, `param` और वैकल्पिक `metadata`) जिसे OpenAI-संगत SDK पढ़ते हैं। पहले के रिस्पॉन्स यहाँ कोड स्ट्रिंग लौटाते थे; अब वह शीर्ष स्तर के `code` के रूप में भी लौटाई जाती है।
           oneOf:
             - type: string
-            - type: object
-              additionalProperties: true
-          example: error_type
+            - $ref: '#/components/schemas/ErrorObject'
+          example:
+            code: validation_error
+            message: 'Unknown parameter: foo'
+            type: invalid_request_error
+            param: foo
+        code:
+          type: string
+          description: त्रुटि कोड, `error.code` के समान मान।
+          example: validation_error
         message:
           type: string
           example: Human-readable error message
@@ -15650,6 +15658,46 @@ components:
           items:
             type: object
             additionalProperties: true
+      additionalProperties: true
+    ErrorObject:
+      type: object
+      description: 'गेटवे त्रुटि, उस रूप में जिसे OpenAI के SDK पढ़ते हैं। `type` HTTP स्टेटस से तय होता है: अधिकांश 4xx के लिए invalid_request_error, authentication_error (401), insufficient_quota (402), permission_error (403), not_found_error (404), rate_limit_error (429), service_unavailable (503), overloaded (529) और अन्य 5xx के लिए server_error।'
+      required:
+        - code
+        - message
+        - type
+      properties:
+        code:
+          type: string
+          description: मशीन द्वारा पढ़ा जा सकने वाला त्रुटि कोड।
+          example: validation_error
+        message:
+          type: string
+          description: विफलता की मानव-पठनीय व्याख्या।
+          example: 'Unknown parameter: foo'
+        type:
+          type: string
+          description: त्रुटि का प्रकार, OpenAI के प्रलेखित त्रुटि प्रकारों के अनुसार।
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - permission_error
+            - not_found_error
+            - rate_limit_error
+            - insufficient_quota
+            - server_error
+            - service_unavailable
+            - overloaded
+          example: invalid_request_error
+        param:
+          type: string
+          nullable: true
+          description: अनुरोध का वह पैरामीटर जिससे त्रुटि हुई, यदि ज्ञात हो।
+          example: foo
+        metadata:
+          type: object
+          description: संरचित विवरण जो शीर्ष स्तर पर भी लौटाए जाते हैं, जैसे विफल प्रदाता, `reason`, `failed_statuses`, `retry_after_seconds` या `upstream_error`।
+          additionalProperties: true
       additionalProperties: true
     ErrorUpstreamError:
       type: object

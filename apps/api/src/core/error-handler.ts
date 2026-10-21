@@ -14,6 +14,7 @@ import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
 import { buildResponseTimeline } from "@pipeline/after/timing";
 import { getEdgeMeta } from "./edge";
+import { withErrorObject } from "./error-object";
 import { sanitizeForAxiom } from "@observability/privacy";
 import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
@@ -834,6 +835,7 @@ export async function handleError({
         error_type: errorType,
         error_origin: errorOrigin,
         description: fallbackDescription,
+        message: fallbackDescription,
     };
     if (operationalKind) {
         errorPayload.error_operational_kind = operationalKind;
@@ -946,6 +948,13 @@ export async function handleError({
             routing: routingDebug,
         };
     }
+    // `error` becomes the object OpenAI-compatible clients read; the code string
+    // stays as top-level `code`.
+    const shaped = withErrorObject(errorPayload, statusCode, {
+        retryAfter: headers.get("Retry-After") ?? res.headers.get("Retry-After"),
+    });
+    errorPayload.error = shaped.error;
+    errorPayload.code = shaped.code;
     const gatewayErrorPayload = sanitizeForAxiom(errorPayload);
     const replayRequestPayload = requestPayloadForObservability;
 

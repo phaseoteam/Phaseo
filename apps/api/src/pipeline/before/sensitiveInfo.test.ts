@@ -154,7 +154,7 @@ describe("sensitive info guardrails", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(403);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("guardrail_blocked");
+		expect(payload.code).toBe("guardrail_blocked");
 		expect(payload.reason).toBe("sensitive_info_detected");
 		expect(payload.guardrail_enforcement?.action).toBe("block");
 	});

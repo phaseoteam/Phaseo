@@ -107,7 +107,7 @@ describe("validateCapabilities", () => {
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
 			const json = await result.response.json();
-			expect(json.error).toBe("validation_error");
+			expect(json.code).toBe("validation_error");
 			expect(JSON.stringify(json.details ?? [])).toContain("\"unknown_param\"");
 			expect(JSON.stringify(json.details ?? [])).toContain("\"foo\"");
 		}

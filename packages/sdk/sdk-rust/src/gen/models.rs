@@ -1151,6 +1151,14 @@ pub struct ErrorFailureSampleItem {
 	pub upstream_payload_preview: Option<Option<String>>,
 }
 
+pub struct ErrorObject {
+	pub code: String,
+	pub message: String,
+	pub metadata: Option<HashMap<String, String>>,
+	pub param: Option<Option<String>>,
+	pub r#type: String,
+}
+
 pub struct ErrorProviderCandidateDiagnostics {
 	pub candidateCount: Option<i64>,
 	pub droppedMissingAdapter: Option<Vec<HashMap<String, String>>>,
@@ -1174,9 +1182,10 @@ pub struct ErrorProviderFailureDiagnostics {
 
 pub struct ErrorResponse {
 	pub attempt_count: Option<i64>,
+	pub code: Option<String>,
 	pub description: Option<String>,
 	pub details: Option<Vec<HashMap<String, String>>>,
-	pub error: String,
+	pub error: serde_json::Value,
 	pub error_origin: Option<String>,
 	pub error_type: Option<String>,
 	pub failed_providers: Option<Vec<String>>,

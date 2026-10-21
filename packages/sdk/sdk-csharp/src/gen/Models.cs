@@ -2779,6 +2779,25 @@ public sealed class ErrorFailureSampleItem
 
 }
 
+public sealed class ErrorObject
+{
+	[JsonPropertyName("code")]
+	public string Code { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("metadata")]
+	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("param")]
+	public string? Param { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class ErrorProviderCandidateDiagnostics
 {
 	[JsonPropertyName("candidateCount")]
@@ -2831,6 +2850,9 @@ public sealed class ErrorResponse
 {
 	[JsonPropertyName("attempt_count")]
 	public long? AttemptCount { get; set; }
+
+	[JsonPropertyName("code")]
+	public string? Code { get; set; }
 
 	[JsonPropertyName("description")]
 	public string? Description { get; set; }

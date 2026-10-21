@@ -829,7 +829,7 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 		expect(statusResponse.status).toBe(502);
 		const statusBody = await statusResponse.json();
 		expect(statusBody).toMatchObject({
-			error: "upstream_error",
+			code: "upstream_error",
 			reason: "google_vertex_operation_fetch_failed",
 			request_id: "req_auth_video_e2e",
 			workspace_id: "ws_video_e2e",

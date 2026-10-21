@@ -4,6 +4,7 @@ import { authenticate } from "@pipeline/before/auth";
 import type { AuthFailure } from "@pipeline/before/auth";
 import { generatePublicId } from "@pipeline/before/genId";
 import { err } from "@pipeline/before/http";
+import { withGatewayErrorObject } from "@core/error-object";
 import { getAsyncOperation } from "@core/async-operations";
 import {
 	buildAsyncNotificationData,
@@ -48,12 +49,12 @@ function sendSocketJson(socket: WebSocket, payload: Record<string, unknown>) {
 async function asyncJobsWsHandler(req: Request): Promise<Response> {
 	if ((req.headers.get("upgrade") || "").toLowerCase() !== "websocket") {
 		return json(
-			{
+			withGatewayErrorObject({
 				error: {
 					code: "websocket_upgrade_required",
 					message: "Use WebSocket upgrade for async job updates.",
 				},
-			},
+			}, 426),
 			426,
 			{ Upgrade: "websocket" },
 		);

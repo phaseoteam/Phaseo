@@ -6,15 +6,34 @@ icon: "bug"
 
 请使用本页了解 Phaseo 错误代表什么，以及接下来应该采取什么操作。
 
-所有错误响应都使用相同的 JSON 格式，因此应用可以在不同模型和提供商之间一致地处理失败。
+所有错误响应都使用相同的 JSON 格式，因此应用可以在不同模型和提供商之间一致地处理失败。 `error` 字段是一个包含 `code`、`message` 和 `type` 的对象，即 OpenAI 兼容 SDK 读取的格式，因此这些 SDK 的异常会带上网关的消息。
 
 ## 错误响应示例
 
 ```json
 {
+  "error": {
+    "code": "upstream_error",
+    "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+    "type": "server_error",
+    "param": null,
+    "metadata": {
+      "reason": "all_candidates_failed",
+      "attempt_count": 1,
+      "failed_providers": ["google-ai-studio"],
+      "failed_statuses": [403],
+      "upstream_error": {
+        "code": "PERMISSION_DENIED",
+        "message": "The caller does not have permission.",
+        "description": null,
+        "param": null
+      }
+    }
+  },
+  "code": "upstream_error",
+  "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
   "generation_id": "G-abc123",
   "status_code": 502,
-  "error": "upstream_error",
   "error_type": "system",
   "error_origin": "upstream",
   "reason": "all_candidates_failed",
@@ -53,7 +72,14 @@ icon: "bug"
 
 - `generation_id`：稳定的请求 ID，可提供给支持团队。
 - `status_code`：与 HTTP 状态代码一致。
-- `error`：机器可读的错误代码，例如 `validation_error`。
+- `error`：描述失败情况的对象：
+  - `error.code`：机器可读的错误代码，例如 `validation_error`。
+  - `error.message`：用通俗语言说明发生了什么。
+  - `error.type`：错误类型（见下方的“错误类型”一节）。
+  - `error.param`：导致错误的请求参数；网关无法确定时为 `null`。
+  - `error.metadata`（可选）：结构化详情，例如失败的提供商、子原因、失败的状态码或 `retry_after_seconds`。相同的值也会在顶层返回。
+- `code`：与 `error.code` 相同的代码。以前的响应把此代码作为字符串放在 `error` 中；如果你的客户端在那里期望字符串，请改读 `code`。
+- `message`：与 `error.message` 相同的文本。
 - `error_type`：较高层级的分类，通常为 `user` 或 `system`。
 - `error_origin`：指出问题主要由调用方、Phaseo 还是上游提供商导致。
 - `description`：对问题的通俗说明。
@@ -70,6 +96,24 @@ icon: "bug"
 - `upstream_error` 和 `failure_sample`：如果请求到达了提供商，则尽可能总结首次提供商故障。
 - `failed_providers`、`failed_statuses` 和 `attempt_count`：重试和故障转移的补充信息。
 
+## 错误类型
+
+`error.type` 遵循 OpenAI [文档中的错误类型](https://platform.openai.com/docs/guides/error-codes)，并由 HTTP 状态决定：
+
+| 状态 | `error.type` |
+| --- | --- |
+| `400`, `409`, `410`, `413`, `422` 及其他 4xx | `invalid_request_error` |
+| `401` | `authentication_error` |
+| `402` | `insufficient_quota` |
+| `403` | `permission_error` |
+| `404` | `not_found_error` |
+| `429` | `rate_limit_error` |
+| `503` | `service_unavailable` |
+| `529` | `overloaded` |
+| `500`, `502` 及其他 5xx | `server_error` |
+
+`/v1/messages` 的错误使用相同的响应体，因此 Anthropic SDK 也能读到 `error.type` 和 `error.message`。
+
 ## 状态码类别指南
 
 | 状态 | 含义 | 建议操作 |
@@ -80,20 +124,21 @@ icon: "bug"
 
 ## 常见错误代码
 
-| 类型 | HTTP 状态 | 说明 |
-| --- | --- | --- |
-| `authentication_error` | `401` | API 密钥缺失或无效。 |
-| `authorization_error` | `403` | 此密钥无权访问该资源。 |
-| `not_found_error` | `404` | 找不到端点或资源。 |
-| `model_retired` | `410` | 该模型已停用，且不再有任何提供商提供。请改用 `replacement_model`。 |
-| `rate_limit_error` | `429` | 请求过多。请在指定延迟后重试。 |
-| `phaseo_free_model_limit_exceeded` | `429` | Phaseo 免费模型的共享每日配额已用尽（默认 1,500 次请求）。请遵循 `Retry-After`，等待 00:00 UTC 重置，或选择付费模型。 |
-| `rate_limit_exceeded` | `429` | 工作区的某个[速率限制策略](./limits.mdx)已耗尽。可通过 `policy_id` 和 `limit_scope` 确定是哪一个。请遵循 `Retry-After`，或请工作区管理员修改该策略。 |
-| `validation_error` | `400` | 参数或请求正文无效。 |
-| `upstream_error` | `429` | 为该请求尝试的所有提供商都对其进行了速率限制。请遵循 `Retry-After`；BYOK 请求还会带有 `X-Phaseo-Upstream-RateLimit-*` 标头。其他提供商故障使用 `502`。 |
-| `provider_error` | `502` | 上游模型提供商未能正确响应。 |
-| `upstream_stream_failure` | `502` | 非流式请求的提供商在开始生成后失败。不会返回部分输出，也不会对该请求计费。 |
-| `server_error` | `500` | Phaseo 内部发生意外问题。 |
+| `error.code` | HTTP 状态 | `error.type` | 说明 |
+| --- | --- | --- | --- |
+| `unauthorised` | `401` | `authentication_error` | API 密钥缺失或无效。 |
+| `guardrail_blocked` | `403` | `permission_error` | 工作区的护栏或访问策略阻止了该请求。 |
+| `not_found` | `404` | `not_found_error` | 找不到端点或资源。 |
+| `model_retired` | `410` | `invalid_request_error` | 该模型已停用，且不再有任何提供商提供。请改用 `replacement_model`。 |
+| `insufficient_funds` | `402` | `insufficient_quota` | 工作区的额度不足以完成该请求。 |
+| `key_limit_exceeded` | `429` | `rate_limit_error` | API 密钥已达到其某项限制。 |
+| `phaseo_free_model_limit_exceeded` | `429` | `rate_limit_error` | Phaseo 免费模型的共享每日配额已用尽（默认 1,500 次请求）。请遵循 `Retry-After`，等待 00:00 UTC 重置，或选择付费模型。 |
+| `rate_limit_exceeded` | `429` | `rate_limit_error` | 工作区的某个[速率限制策略](./limits.mdx)已耗尽。可通过 `policy_id` 和 `limit_scope` 确定是哪一个。请遵循 `Retry-After`，或请工作区管理员修改该策略。 |
+| `validation_error` | `400` | `invalid_request_error` | 参数或请求正文无效。 `error.param` 指出第一个无效字段。 |
+| `upstream_error` | `429` | `rate_limit_error` | 为该请求尝试的所有提供商都对其进行了速率限制。请遵循 `Retry-After`；BYOK 请求还会带有 `X-Phaseo-Upstream-RateLimit-*` 标头。 |
+| `upstream_error` | `502` | `server_error` | 上游模型提供商未能正确响应。 |
+| `upstream_stream_failure` | `502` | `server_error` | 非流式请求的提供商在开始生成后失败。不会返回部分输出，也不会对该请求计费。 |
+| `gateway_error` | `500` | `server_error` | Phaseo 内部发生意外问题。 |
 
 ## 提供商故障时
 
@@ -149,9 +194,15 @@ icon: "bug"
 
 ```json
 {
+  "error": {
+    "code": "unsupported_model_or_endpoint",
+    "message": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+    "type": "invalid_request_error",
+    "param": null
+  },
+  "code": "unsupported_model_or_endpoint",
   "generation_id": "G-unsupported123",
   "status_code": 400,
-  "error": "unsupported_model_or_endpoint",
   "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
   "provider_candidate_diagnostics": {
     "totalProviders": 3,
@@ -201,9 +252,19 @@ icon: "bug"
 
 ```json
 {
+  "error": {
+    "code": "model_retired",
+    "message": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+    "type": "invalid_request_error",
+    "param": null,
+    "metadata": {
+      "retired_at": "2026-09-30T00:00:00Z",
+      "replacement_model": "lab/new-model"
+    }
+  },
+  "code": "model_retired",
   "generation_id": "G-retired123",
   "status_code": 410,
-  "error": "model_retired",
   "reason": "model_retired_without_providers",
   "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
   "model": "lab/old-model",
@@ -256,6 +317,21 @@ icon: "bug"
 
 - 如果请求在流式传输开始前失败，会收到标准 JSON 错误负载。
 - 如果请求在流式传输期间失败，流会以端点的失败事件结束，而不是正常完成：Chat Completions 为 `error` 帧，Responses 为 `response.failed`（或 `error`），Messages 为 `error` 事件。请将不完整的部分流视为未完成，并提供重试选项。
+- Chat Completions 的 `error` 帧同样带有该错误对象，`error.type` 由代码决定：
+
+  ```json
+  {
+    "object": "error",
+    "message": "The upstream stream ended before the response completed.",
+    "code": "upstream_stream_failure",
+    "error": {
+      "code": "upstream_stream_failure",
+      "message": "The upstream stream ended before the response completed.",
+      "type": "server_error",
+      "param": null
+    }
+  }
+  ```
 - 非流式请求的提供商中途失败时，会返回带有 `upstream_stream_failure` 的 `502`，而不是部分响应。
 - 请始终记录 `generation_id` 以及端点和模型元数据。
 
@@ -294,7 +370,7 @@ icon: "bug"
 <Visibility for="agents">
 面向智能体的错误处理规则（本页摘要）：
 
-- 根据 JSON 中的 `error` 代码和 `status_code` 分支处理，不要依据 `description` 文本。每次失败都记录 `generation_id`。
+- 根据 `error.code`（也会作为顶层 `code` 返回）、`error.type` 和 `status_code` 做判断，而不是根据消息文本。每次失败都记录 `generation_id`。
 - `400`、`401`、`403` 和 `404`：先修正请求、密钥或访问权限。不要原样重试同一请求。
 - 带有 `model_retired` 的 `410`：`replacement_model` 不为 `null` 时改用它；否则通过 `GET /v1/models` 选择新模型。
 - `429`：如果有 `Retry-After`（秒数或 HTTP 日期），先等待该时长再重试；否则使用带抖动的指数退避。没有 `Retry-After` 的 `key_limit_exceeded` 错误不会自动重置，因此不要重试。

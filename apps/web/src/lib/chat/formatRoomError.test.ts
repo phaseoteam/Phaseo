@@ -597,4 +597,23 @@ describe("formatRoomError", () => {
 			},
 		});
 	});
+
+	test("reads the gateway error object as well as the old code string", () => {
+		const formatted = formatRoomError(
+			JSON.stringify({
+				error: {
+					code: "insufficient_funds",
+					message: "Your workspace has insufficient credits.",
+					type: "insufficient_quota",
+					param: null,
+				},
+				code: "insufficient_funds",
+				status_code: 402,
+			}),
+		);
+
+		expect(formatted.title).toBe("Insufficient funds");
+		expect(formatted.message).toBe("Your workspace has insufficient credits.");
+		expect(formatted.statusCode).toBe(402);
+	});
 });

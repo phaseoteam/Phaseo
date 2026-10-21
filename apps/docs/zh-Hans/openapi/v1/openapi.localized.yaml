@@ -15571,11 +15571,19 @@ components:
           type: boolean
           example: false
         error:
+          description: OpenAI 兼容 SDK 读取的错误对象（`code`、`message`、`type`、`param` 以及可选的 `metadata`）。以前的响应在此处返回代码字符串；现在它也作为顶层 `code` 返回。
           oneOf:
             - type: string
-            - type: object
-              additionalProperties: true
-          example: error_type
+            - $ref: '#/components/schemas/ErrorObject'
+          example:
+            code: validation_error
+            message: 'Unknown parameter: foo'
+            type: invalid_request_error
+            param: foo
+        code:
+          type: string
+          description: 错误代码，与 `error.code` 的值相同。
+          example: validation_error
         message:
           type: string
           example: Human-readable error message
@@ -15650,6 +15658,46 @@ components:
           items:
             type: object
             additionalProperties: true
+      additionalProperties: true
+    ErrorObject:
+      type: object
+      description: 采用 OpenAI SDK 读取格式的网关错误。`type` 由 HTTP 状态决定：大多数 4xx 为 invalid_request_error，authentication_error（401）、insufficient_quota（402）、permission_error（403）、not_found_error（404）、rate_limit_error（429）、service_unavailable（503）、overloaded（529），其他 5xx 为 server_error。
+      required:
+        - code
+        - message
+        - type
+      properties:
+        code:
+          type: string
+          description: 机器可读的错误代码。
+          example: validation_error
+        message:
+          type: string
+          description: 便于阅读的失败说明。
+          example: 'Unknown parameter: foo'
+        type:
+          type: string
+          description: 错误类型，遵循 OpenAI 文档中的错误类型。
+          enum:
+            - invalid_request_error
+            - authentication_error
+            - permission_error
+            - not_found_error
+            - rate_limit_error
+            - insufficient_quota
+            - server_error
+            - service_unavailable
+            - overloaded
+          example: invalid_request_error
+        param:
+          type: string
+          nullable: true
+          description: 导致错误的请求参数（如已知）。
+          example: foo
+        metadata:
+          type: object
+          description: 同样在顶层返回的结构化详情，例如失败的提供商、`reason`、`failed_statuses`、`retry_after_seconds` 或 `upstream_error`。
+          additionalProperties: true
       additionalProperties: true
     ErrorUpstreamError:
       type: object
