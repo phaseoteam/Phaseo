@@ -8,6 +8,7 @@ import { enqueueAsyncGenAiOtlpExport } from "@/observability/otlp-export";
 import type { Endpoint } from "@core/types";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage } from "@core/usage-normalization";
+import { CACHED_WRITE_12H_TOKEN_PATHS, CACHED_WRITE_30M_TOKEN_PATHS } from "@core/cache-usage";
 import {
 	getBatchJobRecord,
 	isBatchJobBilled,
@@ -54,6 +55,8 @@ type BatchUsageAggregate = {
 	cached_write_text_tokens: number;
 	cached_write_text_tokens_5m: number;
 	cached_write_text_tokens_1h: number;
+	cached_write_text_tokens_30m: number;
+	cached_write_text_tokens_12h: number;
 };
 
 type BatchPricingLineAggregate = {
@@ -254,6 +257,8 @@ function createUsageAggregate(): BatchUsageAggregate {
 		cached_write_text_tokens: 0,
 		cached_write_text_tokens_5m: 0,
 		cached_write_text_tokens_1h: 0,
+		cached_write_text_tokens_30m: 0,
+		cached_write_text_tokens_12h: 0,
 	};
 }
 
@@ -306,9 +311,15 @@ function addUsageSample(target: BatchUsageAggregate, usageRaw: any): void {
 		"cache_creation_1h_input_tokens",
 		"cache_creation_ephemeral_1h_input_tokens",
 	]);
-	target.cached_write_text_tokens += cachedWriteTokens ?? (cachedWriteTokens5m ?? 0) + (cachedWriteTokens1h ?? 0);
+	// OpenAI GPT-5.6+ writes by lifetime (Responses cache_write_tokens_details).
+	const cachedWriteTokens30m = pickFirstFiniteNumber(usageRaw, [...CACHED_WRITE_30M_TOKEN_PATHS]);
+	const cachedWriteTokens12h = pickFirstFiniteNumber(usageRaw, [...CACHED_WRITE_12H_TOKEN_PATHS]);
+	target.cached_write_text_tokens += cachedWriteTokens ??
+		(cachedWriteTokens5m ?? 0) + (cachedWriteTokens1h ?? 0) + (cachedWriteTokens30m ?? 0) + (cachedWriteTokens12h ?? 0);
 	target.cached_write_text_tokens_5m += cachedWriteTokens5m ?? 0;
 	target.cached_write_text_tokens_1h += cachedWriteTokens1h ?? 0;
+	target.cached_write_text_tokens_30m += cachedWriteTokens30m ?? 0;
+	target.cached_write_text_tokens_12h += cachedWriteTokens12h ?? 0;
 }
 
 function buildAggregatePricedUsage(args: {
@@ -331,6 +342,8 @@ function buildAggregatePricedUsage(args: {
 		cached_write_text_tokens: args.usage.cached_write_text_tokens,
 		cached_write_text_tokens_5m: args.usage.cached_write_text_tokens_5m,
 		cached_write_text_tokens_1h: args.usage.cached_write_text_tokens_1h,
+		...(args.usage.cached_write_text_tokens_30m > 0 ? { cached_write_text_tokens_30m: args.usage.cached_write_text_tokens_30m } : {}),
+		...(args.usage.cached_write_text_tokens_12h > 0 ? { cached_write_text_tokens_12h: args.usage.cached_write_text_tokens_12h } : {}),
 		pricing: {
 			total_nanos: costNanos,
 			total_usd_str: (costNanos / 1e9).toFixed(9),

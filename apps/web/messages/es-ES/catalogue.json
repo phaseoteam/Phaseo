@@ -2976,7 +2976,18 @@
 			"rerank": "Reordenación",
 			"embeddings": "Representaciones vectoriales"
 		},
-		"scheduledRelease": "Aún no se puede enrutar. Programado para una publicación futura."
+		"scheduledRelease": "Aún no se puede enrutar. Programado para una publicación futura.",
+		"viewDetails": "Ver precios y parámetros",
+		"details": "Detalles",
+		"endpoints": "Endpoints",
+		"parametersCount": "{count, plural, one {# parámetro} other {# parámetros}}",
+		"openModelPage": "Abrir página del modelo",
+		"released": "Lanzamiento",
+		"noPricing": "Precios no indicados",
+		"previousModel": "Modelo anterior",
+		"nextModel": "Modelo siguiente",
+		"modelIndex": "{current} de {total} modelos",
+		"compareProviders": "Comparar proveedores"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "Panorama de IA: {country}",

@@ -808,6 +808,11 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String, nil]
     CacheControl = Struct.new(:scope, :ttl, :type, keyword_init: true)
+    # @!attribute [rw] ttl_12h_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] ttl_30m_tokens
+    #   @return [Integer, nil]
+    CacheWriteTokensDetails = Struct.new(:ttl_12h_tokens, :ttl_30m_tokens, keyword_init: true)
     # @!attribute [rw] audio_url
     #   @return [Hash{String => Object}]
     # @!attribute [rw] format
@@ -2659,9 +2664,11 @@ module Phaseo
     ImagesGenerationResponse = Struct.new(:created, :data, keyword_init: true)
     # @!attribute [rw] cache_write_tokens
     #   @return [Integer, nil]
+    # @!attribute [rw] cache_write_tokens_details
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] cached_tokens
     #   @return [Integer, nil]
-    InputTokensDetails = Struct.new(:cache_write_tokens, :cached_tokens, keyword_init: true)
+    InputTokensDetails = Struct.new(:cache_write_tokens, :cache_write_tokens_details, :cached_tokens, keyword_init: true)
     # @!attribute [rw] error
     #   @return [String]
     # @!attribute [rw] max_offset
@@ -3965,7 +3972,9 @@ module Phaseo
     PrivateModelUpdateRequest = Struct.new(:base_url, :context_length, :credential, :custom_provider_name, :custom_provider_url, :description, :enabled, :host_provider_id, :max_output_tokens, :model_reference, :name, :routing_policy, :supports_responses, :upstream_model_id, keyword_init: true)
     # @!attribute [rw] mode
     #   @return [String, nil]
-    PromptCacheBreakpoint = Struct.new(:mode, keyword_init: true)
+    # @!attribute [rw] ttl
+    #   @return [String, nil]
+    PromptCacheBreakpoint = Struct.new(:mode, :ttl, keyword_init: true)
     # @!attribute [rw] mode
     #   @return [String, nil]
     # @!attribute [rw] ttl

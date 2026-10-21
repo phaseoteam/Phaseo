@@ -25,7 +25,7 @@ import {
 	maybeOpenOnRecentErrors,
 } from "../execute/health";
 import { getBaseModel } from "../execute/utils";
-import { droppedParamsForClient } from "../execute/unsupportedParams";
+import { droppedParamsForClient, twelveHourCacheDroppedFor } from "../execute/unsupportedParams";
 import { noteModelSubstitutionServed } from "../before/modelSuccessor";
 import { withServedModel } from "./served-model";
 import { logDebugEvent, previewValue } from "../debug";
@@ -603,6 +603,7 @@ export async function handleStreamResponse(
                         byokKeyId: result.byokKeyId ?? null,
                         usage: usageForSticky,
                         enabled: cacheAwareRoutingEnabled,
+                        twelveHourCacheDropped: twelveHourCacheDroppedFor(ctx, result.provider),
                     });
                 } catch (error) {
                     console.warn("[gateway] sticky routing write failed", {

@@ -8953,16 +8953,19 @@ components:
       additionalProperties: true
     PromptCacheBreakpoint:
       type: object
-      description: OpenAI कैश ब्रेकपॉइंट। इस ब्लॉक तक (इसे मिलाकर) सब कुछ कैश करता है। GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों तथा DeepInfra को भेजा जाता है; Claude रूट इसे cache_control के रूप में पाते हैं।
+      description: OpenAI कैश ब्रेकपॉइंट। इस ब्लॉक तक (इसे मिलाकर) सब कुछ कैश करता है। GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों तथा DeepInfra को भेजा जाता है; Claude रूट इसे cache_control के रूप में पाते हैं। इसका ttl केवल OpenAI को भेजा जाता है।
       properties:
         mode:
           type: string
           enum:
             - explicit
+        ttl:
+          type: string
+          description: 'GPT-5.6 और बाद के OpenAI मॉडलों पर इस ब्रेकपॉइंट के लिए कैश की न्यूनतम अवधि: 30m या 12h। इसके बिना ब्रेकपॉइंट prompt_cache_options.ttl का उपयोग करता है। 12h वाले लेखन पर इनपुट दर का 2.5x शुल्क लगता है; जो रूट 12h स्वीकार नहीं करता, उसे अनुरोध इसके बिना मिलता है, और इसे हटाए जाने की जानकारी X-Phaseo-Dropped-Params में दी जाती है।'
       additionalProperties: true
     PromptCacheOptions:
       type: object
-      description: GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों (ttl 30m) तथा DeepInfra (ttl 5m या 1h) के लिए प्रॉम्प्ट कैश मोड और TTL। अन्य प्रदाताओं के लिए हटा दिया जाता है।
+      description: GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों (ttl 30m, या OpenAI पर 12h) तथा DeepInfra (ttl 5m या 1h) के लिए प्रॉम्प्ट कैश मोड और TTL। अन्य प्रदाताओं के लिए हटा दिया जाता है।
       properties:
         mode:
           type: string
@@ -8971,6 +8974,7 @@ components:
             - explicit
         ttl:
           type: string
+          description: 'कैश की न्यूनतम अवधि। GPT-5.6 और बाद के OpenAI मॉडल: 30m (डिफ़ॉल्ट) या 12h; 12h माँगने वाला अनुरोध OpenAI के Responses API पर चलता है। Azure OpenAI: 30m। DeepInfra: 5m या 1h। जो रूट 12h स्वीकार नहीं करता, उसे अनुरोध इसके बिना मिलता है, और इसे हटाए जाने की जानकारी X-Phaseo-Dropped-Params में दी जाती है।'
       additionalProperties: true
     ProviderOptions:
       type: object
@@ -10603,6 +10607,16 @@ components:
           nullable: true
           description: BYOK अनुरोध पर, प्रदाता इनफ़रेंस के लिए आपकी अपनी कुंजी से जितना शुल्क लेता है, US डॉलर में, मॉडल की सूचीबद्ध कीमतों पर। जब अनुरोध Phaseo क्रेडिट पर चलता है तब null होता है, क्योंकि तब `cost` ही पूरा शुल्क है।
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: GPT-5.6 और बाद के OpenAI मॉडलों के Responses उपयोग में अवधि के अनुसार बँटे कैश लेखन। दोनों संख्याओं का योग cache_write_tokens होता है। Chat Completions के prompt_tokens_details में नहीं लौटाया जाता।
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: 30 मिनट की अवधि के साथ कैश में लिखे गए इनपुट टोकन, जिन पर इनपुट दर का 1.25x शुल्क लगता है।
+        ttl_12h_tokens:
+          type: integer
+          description: 12 घंटे की अवधि के साथ कैश में लिखे गए इनपुट टोकन, जिन पर इनपुट दर का 2.5x शुल्क लगता है।
     InputTokensDetails:
       type: object
       description: इनपुट टोकन का विवरण।
@@ -10613,6 +10627,8 @@ components:
         cache_write_tokens:
           type: integer
           description: प्रदाता के प्रॉम्प्ट कैश में लिखे गए इनपुट टोकन।
+        cache_write_tokens_details:
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: '`null` के रूप में भेजे गए किसी वैकल्पिक शीर्ष-स्तरीय फ़ील्ड को सेट न किया गया माना जाता है, ठीक वैसे ही जैसे उसे छोड़ दिया गया हो।'

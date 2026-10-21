@@ -8953,16 +8953,19 @@ components:
       additionalProperties: true
     PromptCacheBreakpoint:
       type: object
-      description: OpenAI-Cache-Breakpoint. Cacht alles bis einschließlich dieses Blocks. Wird an OpenAI und Azure OpenAI ab GPT-5.6 sowie an DeepInfra gesendet; Claude-Routen erhalten ihn als cache_control.
+      description: OpenAI-Cache-Breakpoint. Cacht alles bis einschließlich dieses Blocks. Wird an OpenAI und Azure OpenAI ab GPT-5.6 sowie an DeepInfra gesendet; Claude-Routen erhalten ihn als cache_control. Nur OpenAI erhält seine ttl.
       properties:
         mode:
           type: string
           enum:
             - explicit
+        ttl:
+          type: string
+          description: 'Mindestlebensdauer des Caches für diesen Breakpoint bei OpenAI ab GPT-5.6: 30m oder 12h. Ohne sie verwendet der Breakpoint prompt_cache_options.ttl. Ein 12h-Schreibvorgang wird mit dem 2,5-Fachen des Eingabepreises berechnet; eine Route, die 12h nicht annimmt, erhält die Anfrage ohne sie, und das Entfernen wird in X-Phaseo-Dropped-Params gemeldet.'
       additionalProperties: true
     PromptCacheOptions:
       type: object
-      description: Prompt-Cache-Modus und TTL für OpenAI und Azure OpenAI ab GPT-5.6 (ttl 30m) sowie für DeepInfra (ttl 5m oder 1h). Wird für andere Anbieter entfernt.
+      description: Prompt-Cache-Modus und TTL für OpenAI und Azure OpenAI ab GPT-5.6 (ttl 30m, bei OpenAI auch 12h) sowie für DeepInfra (ttl 5m oder 1h). Wird für andere Anbieter entfernt.
       properties:
         mode:
           type: string
@@ -8971,6 +8974,7 @@ components:
             - explicit
         ttl:
           type: string
+          description: 'Mindestlebensdauer des Caches. OpenAI ab GPT-5.6: 30m (Standard) oder 12h; eine Anfrage mit 12h läuft über die Responses API von OpenAI. Azure OpenAI: 30m. DeepInfra: 5m oder 1h. Eine Route, die 12h nicht annimmt, erhält die Anfrage ohne sie, und das Entfernen wird in X-Phaseo-Dropped-Params gemeldet.'
       additionalProperties: true
     ProviderOptions:
       type: object
@@ -10603,6 +10607,16 @@ components:
           nullable: true
           description: Bei einer BYOK-Anfrage der Betrag, den der Anbieter deinem eigenen Schlüssel für die Inferenz berechnet, in US-Dollar zu den gelisteten Preisen des Modells. Null, wenn die Anfrage über Phaseo-Guthaben läuft; dann ist `cost` die gesamte Belastung.
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: Cache-Schreibvorgänge nach Lebensdauer aufgeteilt, in der Responses-Nutzung von OpenAI ab GPT-5.6. Die beiden Werte ergeben zusammen cache_write_tokens. Wird in prompt_tokens_details von Chat Completions nicht zurückgegeben.
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: Mit einer Lebensdauer von 30 Minuten in den Cache geschriebene Eingabetoken, berechnet mit dem 1,25-Fachen des Eingabepreises.
+        ttl_12h_tokens:
+          type: integer
+          description: Mit einer Lebensdauer von 12 Stunden in den Cache geschriebene Eingabetoken, berechnet mit dem 2,5-Fachen des Eingabepreises.
     InputTokensDetails:
       type: object
       description: Aufschlüsselung der Eingabetoken.
@@ -10613,6 +10627,8 @@ components:
         cache_write_tokens:
           type: integer
           description: In den Prompt-Cache des Anbieters geschriebene Eingabetoken.
+        cache_write_tokens_details:
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: Ein optionales Feld der obersten Ebene, das als `null` gesendet wird, gilt als nicht gesetzt, genau wie ein weggelassenes Feld.

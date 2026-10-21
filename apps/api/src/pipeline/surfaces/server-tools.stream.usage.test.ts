@@ -194,3 +194,35 @@ describe("buffered usage through the materialised stream", () => {
 		expect(client).not.toHaveProperty("input_tokens_details");
 	});
 });
+
+describe("OpenAI 30-minute and 12-hour cache writes through the materialised stream", () => {
+	it("keeps the lifetime split from a Responses usage frame", async () => {
+		const usage = {
+			input_tokens: 53_100,
+			output_tokens: 850,
+			total_tokens: 53_950,
+			input_tokens_details: {
+				cached_tokens: 48_000,
+				cache_write_tokens: 3_000,
+				cache_write_tokens_details: { ttl_30m_tokens: 1_000, ttl_12h_tokens: 2_000 },
+			},
+		};
+		const response = { id: "resp_1", object: "response", status: "completed", model: "m", output: [], usage };
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.responses",
+			stream: sse([{ event: "response.completed", data: { type: "response.completed", response } }]),
+			requestId: "req_usage",
+			model: "m",
+			provider: "p",
+		});
+		expect(consumed.ir.usage?._ext).toMatchObject({ cachedWriteTokens: 3_000, cachedWriteTokens30m: 1_000, cachedWriteTokens12h: 2_000 });
+		const encoded = encodeProtocol("openai.responses", consumed.ir, "req_usage");
+		const shaped = shapeUsageForClient({ ...(consumed.usageRaw ?? {}), ...(encoded?.usage ?? {}) }, { endpoint: "responses", includeInternalHints: true });
+		expect(shaped).toMatchObject({
+			input_tokens: 53_100,
+			cached_write_text_tokens_30m: 1_000,
+			cached_write_text_tokens_12h: 2_000,
+			input_tokens_details: { cache_write_tokens: 3_000, cache_write_tokens_details: { ttl_30m_tokens: 1_000, ttl_12h_tokens: 2_000 } },
+		});
+	});
+});

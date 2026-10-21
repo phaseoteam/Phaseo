@@ -10,7 +10,7 @@ import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks-bridge";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
-import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
+import { applyPromptCacheFieldPolicy, cacheMarkFields, promptCacheBreakpointValue } from "./prompt-cache-policy";
 import { isSealedReasoningValue } from "@core/reasoning-state";
 import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/shared/reasoning";
 import { toIRAnnotations } from "@protocols/shared/citations";
@@ -408,7 +408,7 @@ function mapToolResultToOpenAIChat(
 
 function mapTextPartToOpenAI(part: Extract<IRContentPart, { type: "text" }>, type = "text"): any {
 	const promptCacheBreakpoint = part.cacheControl?.type === "prompt_cache_breakpoint"
-		? { mode: part.cacheControl.mode }
+		? promptCacheBreakpointValue(part.cacheControl)
 		: undefined;
 	return {
 		type,
@@ -501,7 +501,7 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 				type: "input_audio",
 				input_audio: inputAudio,
 				...(part.cacheControl?.type === "prompt_cache_breakpoint"
-					? { prompt_cache_breakpoint: { mode: part.cacheControl.mode } }
+					? { prompt_cache_breakpoint: promptCacheBreakpointValue(part.cacheControl) }
 					: {}),
 			};
 		}

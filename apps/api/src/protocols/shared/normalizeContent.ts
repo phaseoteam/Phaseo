@@ -117,9 +117,14 @@ function normalizeFilePart(part: any): IRContentPart | null {
 export function normalizePartCacheControl(part: any): IRCacheControl | undefined {
 	const breakpoint = part?.prompt_cache_breakpoint;
 	if (breakpoint && typeof breakpoint === "object" && !Array.isArray(breakpoint)) {
+		// OpenAI's per-breakpoint lifetime ("30m" or "12h", GPT-5.6+ Responses).
+		const breakpointTtl = typeof breakpoint.ttl === "string" && breakpoint.ttl.trim()
+			? breakpoint.ttl.trim()
+			: undefined;
 		return {
 			type: "prompt_cache_breakpoint",
 			mode: breakpoint.mode,
+			...(breakpointTtl ? { ttl: breakpointTtl } : {}),
 		};
 	}
 	const cacheControl = part?.cache_control ?? part?.cacheControl;

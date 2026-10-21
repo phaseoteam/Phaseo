@@ -23,6 +23,8 @@ icon: "sliders-horizontal"
 
 只有以下参数可能被移除：`temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`（在 `/v1/messages` 上为 `stop_sequences`）、`parallel_tool_calls`、`max_tool_calls` 和 `image_config`。消息、工具、`tool_choice`、`response_format`、推理设置和输出上限永远不会被移除。
 
+此外，在不支持 OpenAI 12 小时缓存的路由上，提示缓存 `ttl` 的 `12h` 值会被移除，并在同样的位置以 `prompt_cache_options.ttl` 或 `prompt_cache_breakpoint.ttl` 报告；参见[提示缓存](../guides/prompt-caching.mdx)。
+
 在成功的响应中，Phaseo 会在以下位置报告请求本身发送且已被移除的参数：
 
 - `X-Phaseo-Dropped-Params` 响应头，例如 `X-Phaseo-Dropped-Params: top_k, min_p`

@@ -1210,6 +1210,11 @@ type CacheControl struct {
 	Type *string `json:"type,omitempty"`
 }
 
+type CacheWriteTokensDetails struct {
+	Ttl12hTokens *int `json:"ttl_12h_tokens,omitempty"`
+	Ttl30mTokens *int `json:"ttl_30m_tokens,omitempty"`
+}
+
 type ChatAudioOutputPart struct {
 	AudioUrl map[string]interface{} `json:"audio_url"`
 	Format *string `json:"format,omitempty"`
@@ -2597,6 +2602,7 @@ type ImagesGenerationResponse struct {
 
 type InputTokensDetails struct {
 	CacheWriteTokens *int `json:"cache_write_tokens,omitempty"`
+	CacheWriteTokensDetails *map[string]interface{} `json:"cache_write_tokens_details,omitempty"`
 	CachedTokens *int `json:"cached_tokens,omitempty"`
 }
 
@@ -4342,6 +4348,7 @@ type PrivateModelUpdateRequest struct {
 
 type PromptCacheBreakpoint struct {
 	Mode *string `json:"mode,omitempty"`
+	Ttl *string `json:"ttl,omitempty"`
 }
 
 type PromptCacheOptions struct {

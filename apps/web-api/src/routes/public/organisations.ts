@@ -9,62 +9,10 @@ const ORGANISATION_CACHE = {
 	staleWhileRevalidateSeconds: 7 * 24 * 60 * 60,
 } as const;
 
-type OrganisationIdentity = {
-	organisation_id: string;
-	name: string | null;
-	colour: string | null;
-};
-
 function parseLimit(value: string | undefined): number {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed)) return 8;
 	return Math.max(1, Math.min(100, Math.trunc(parsed)));
-}
-
-function primaryDateFields(releaseDate: unknown, announcementDate: unknown) {
-	const primaryDate = [releaseDate, announcementDate].find(
-		(value): value is string => typeof value === "string" && value.length > 0,
-	) ?? null;
-	if (!primaryDate) {
-		return { primary_date: null, primary_timestamp: null, primary_group_key: null };
-	}
-	const timestamp = Date.parse(primaryDate);
-	if (!Number.isFinite(timestamp)) {
-		return { primary_date: primaryDate, primary_timestamp: null, primary_group_key: null };
-	}
-	const date = new Date(timestamp);
-	return {
-		primary_date: primaryDate,
-		primary_timestamp: timestamp,
-		primary_group_key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
-	};
-}
-
-function toModelCard(row: Record<string, unknown>, organisation: OrganisationIdentity) {
-	return {
-		model_id: String(row.model_slug ?? row.model_id ?? ""),
-		name: String(row.name ?? ""),
-		organisation_id: organisation.organisation_id,
-		organisation_name: organisation.name,
-		organisation_colour: organisation.colour,
-		description: row.description ?? null,
-		status: row.status ?? null,
-		hidden: Boolean(row.hidden),
-		release_date: row.released_at ?? row.release_date ?? null,
-		announcement_date: row.announced_at ?? row.announcement_date ?? null,
-		updated_at: row.updated_at ?? null,
-		api_model_id: row.model_slug ?? row.api_model_id ?? null,
-		input_types: row.input_modalities ?? [],
-		output_types: row.output_modalities ?? [],
-		input_modalities: row.input_modalities ?? [],
-		output_modalities: row.output_modalities ?? [],
-		...primaryDateFields(row.released_at ?? row.release_date, row.announced_at ?? row.announcement_date),
-	};
-}
-
-/** Newest release (or announcement) first, the order model pages list an organisation's models in. */
-function newestFirst<T extends { primary_timestamp?: unknown }>(models: T[]): T[] {
-	return [...models].sort((left, right) => Number(right.primary_timestamp ?? 0) - Number(left.primary_timestamp ?? 0));
 }
 
 function cacheTags(organisationId: string, resource: string) {
@@ -76,18 +24,14 @@ function cacheTags(organisationId: string, resource: string) {
 	];
 }
 
-async function getOrganisationIdentity(env: Env, organisationId: string) {
+async function organisationExists(env: Env, organisationId: string) {
 	const { data, error } = await getDataClient(env)
 		.from("v2_labs")
-		.select("lab_slug,name,metadata")
+		.select("lab_slug")
 		.eq("lab_slug", organisationId)
 		.maybeSingle();
 	if (error) throw error;
-	if (!data) return null;
-	const details = data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
-		? data.metadata as Record<string, unknown>
-		: {};
-	return { organisation_id: data.lab_slug, name: data.name, colour: typeof details.colour === "string" ? details.colour : null };
+	return Boolean(data);
 }
 
 export const publicOrganisationsRouter = new Hono<{ Bindings: Env }>();
@@ -120,19 +64,16 @@ publicOrganisationsRouter.get("/organisations/:organisationId/header", async (c)
 publicOrganisationsRouter.get("/organisations/:organisationId/models", async (c) => {
 	const organisationId = c.req.param("organisationId");
 	try {
-		const organisation = await getOrganisationIdentity(c.env, organisationId);
-		if (!organisation) return c.json({ error: "organisation_not_found" }, 404);
-		const { data, error } = await getDataClient(c.env)
-			.from("v2_models")
-			.select("model_slug,name,description,status,released_at,announced_at,lab_slug,hidden,input_modalities,output_modalities,updated_at")
-			.eq("lab_slug", organisationId)
-			.eq("hidden", false)
-			.order("released_at", { ascending: false });
-		if (error) throw error;
-		const models = (data ?? []).map((row) => toModelCard(row, organisation));
+		if (!(await organisationExists(c.env, organisationId))) return c.json({ error: "organisation_not_found" }, 404);
+		// Same card rows as the overview, so status, providers, pricing and
+		// modalities render, and draft or internal models stay out.
+		const catalogue = await fetchModelsPageCatalogue(c.env, { organisationId }, "v2");
+		const models = catalogue.models.sort((left, right) =>
+			Number(right.primary_timestamp ?? 0) - Number(left.primary_timestamp ?? 0),
+		);
 		// Optional `limit` returns only the newest models, for pages that show a few.
 		const limit = c.req.query("limit");
-		return withPublicCache(c.json({ models: limit === undefined ? models : newestFirst(models).slice(0, parseLimit(limit)) }), {
+		return withPublicCache(c.json({ models: limit === undefined ? models : models.slice(0, parseLimit(limit)) }), {
 			...ORGANISATION_CACHE,
 			cacheTags: cacheTags(organisationId, "models"),
 		});

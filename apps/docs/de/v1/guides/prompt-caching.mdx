@@ -101,7 +101,7 @@ Tragen deine eigenen Blöcke mehr als vier Markierungen, behält Phaseo die erst
 Setze eine Cache-Markierung auf einen Inhaltsblock, um alles bis einschließlich dieses Blocks zu cachen. Phaseo akzeptiert zwei Schreibweisen:
 
 - `cache_control`: `{"type": "ephemeral"}`, optional mit einer `ttl` von `5m` oder `1h`.
-- `prompt_cache_breakpoint`: OpenAIs `{"mode": "explicit"}`. Trägt ein Block beides, gilt `prompt_cache_breakpoint`.
+- `prompt_cache_breakpoint`: OpenAIs `{"mode": "explicit"}`, optional mit einer `ttl` von `30m` oder `12h`. Trägt ein Block beides, gilt `prompt_cache_breakpoint`.
 
 ```json
 {
@@ -121,7 +121,8 @@ Jeder Provider erhält die Markierung in seiner eigenen Form:
 | Provider | `cache_control` auf Blockebene | `prompt_cache_breakpoint` |
 | --- | --- | --- |
 | Claude bei Anthropic, Claude on AWS, Amazon Bedrock und Google Vertex AI | Gesendet als `{"type": "ephemeral"}` mit deiner `ttl` | Gesendet als `cache_control: {"type": "ephemeral"}` |
-| OpenAI und Azure OpenAI ab GPT-5.6 | Gesendet als `prompt_cache_breakpoint: {"mode": "explicit"}`; die `ttl` entfällt | Gesendet |
+| OpenAI ab GPT-5.6 | Gesendet als `prompt_cache_breakpoint: {"mode": "explicit"}`; die `ttl` entfällt | Gesendet, mit seiner `ttl` |
+| Azure OpenAI ab GPT-5.6 | Gesendet als `prompt_cache_breakpoint: {"mode": "explicit"}`; die `ttl` entfällt | Ohne `ttl` gesendet |
 | OpenAI und Azure OpenAI, ältere Modelle | Entfernt | Entfernt |
 | DeepInfra | Entfernt | Gesendet |
 | Alibaba Model Studio und Venice | Gesendet | Entfernt |
@@ -138,10 +139,10 @@ Die Cache-Steuerungen von OpenAI hängen von der Modellgeneration ab. Phaseo sen
 
 | Feld | Werte | Gesendet an |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` oder `explicit`; `ttl`: `30m` | OpenAI und Azure OpenAI ab GPT-5.6 sowie DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit` oder `explicit`; `ttl`: `30m`, bei OpenAI auch `12h` | OpenAI und Azure OpenAI ab GPT-5.6 sowie DeepInfra |
 | `prompt_cache_retention` | `in_memory` oder `24h` | OpenAI- und Azure-OpenAI-Modelle vor GPT-5.6 |
 
-Ab GPT-5.6 akzeptiert OpenAI als `ttl` nur `30m`, und im Modus `explicit` werden nur die Breakpoints gecacht, die du setzt. DeepInfra verwendet dasselbe Objekt mit einer `ttl` von `5m` oder `1h` und braucht `prompt_cache_key` bei jeder Anfrage der Sitzung. Andere Provider erhalten keines der beiden Felder.
+Ab GPT-5.6 akzeptiert OpenAI als `ttl` `30m` (Standard) oder `12h`, Azure OpenAI nur `30m`. Im Modus `explicit` werden nur die Breakpoints gecacht, die du setzt. DeepInfra verwendet dasselbe Objekt mit einer `ttl` von `5m` oder `1h` und braucht `prompt_cache_key` bei jeder Anfrage der Sitzung. Andere Provider erhalten keines der beiden Felder.
 
 Sende beide Felder auf oberster Ebene oder unter `provider_options.openai`. Sind beide angegeben, gilt der Wert auf oberster Ebene:
 
@@ -160,6 +161,33 @@ Sende beide Felder auf oberster Ebene oder unter `provider_options.openai`. Sind
   }
 }
 ```
+
+### 12-Stunden-Cache bei OpenAI
+
+Ab GPT-5.6 hält OpenAI einen Cache-Eintrag mindestens 12 Stunden lang, wenn du `ttl: "12h"` setzt, entweder für die ganze Anfrage in `prompt_cache_options` oder für einen einzelnen Breakpoint in `prompt_cache_breakpoint`. Ein Breakpoint ohne eigene `ttl` übernimmt die der Anfrage. OpenAI berechnet einen 12-Stunden-Schreibvorgang mit dem 2,5-Fachen des Eingabepreises und einen 30-Minuten-Schreibvorgang mit dem 1,25-Fachen; Cache-Lesevorgänge kosten bei beiden gleich viel.
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "prompt_cache_options": { "ttl": "30m" },
+  "input": [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Shared tool manual...",
+          "prompt_cache_breakpoint": { "mode": "explicit", "ttl": "12h" }
+        }
+      ]
+    },
+    { "role": "user", "content": "Find the failing test." }
+  ]
+}
+```
+
+- OpenAI dokumentiert die 12-Stunden-Lebensdauer nur für seine Responses API. Eine Chat-Completions-Anfrage, die sie anfordert, läuft über die Responses API von OpenAI, und die Antwort behält das Chat-Completions-Format.
+- Routen, die einen 12-Stunden-Cache annehmen (die globale API von OpenAI), werden zuerst versucht. Jede andere Route, etwa Azure OpenAI, ein anderer Provider oder ein Modell vor GPT-5.6, erhält die Anfrage ohne ihn, sodass der 30-Minuten-Standard gilt. Die Anfrage läuft trotzdem, und das entfernte Feld wird als `prompt_cache_options.ttl` oder `prompt_cache_breakpoint.ttl` im Header `X-Phaseo-Dropped-Params` und in `meta.routing.dropped_params` gemeldet.
 
 ### Google Gemini
 
@@ -309,10 +337,10 @@ Die Nutzungsdaten melden Cache-Lese- und Schreibvorgänge auf jedem Text-Endpunk
 | Endpunkt | Gesamte Eingabe | Cache-Lesevorgänge | Cache-Schreibvorgänge |
 | --- | --- | --- | --- |
 | Chat Completions | `prompt_tokens`, einschließlich Lese- und Schreibvorgängen | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
-| Responses | `input_tokens`, einschließlich Lese- und Schreibvorgängen | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens` |
+| Responses | `input_tokens`, einschließlich Lese- und Schreibvorgängen | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`, bei OpenAI ab GPT-5.6 nach Lebensdauer aufgeteilt in `input_tokens_details.cache_write_tokens_details.ttl_30m_tokens` und `ttl_12h_tokens` |
 | Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`, nach TTL aufgeteilt in `cache_creation.ephemeral_5m_input_tokens` und `cache_creation.ephemeral_1h_input_tokens` |
 
-Bei Chat Completions und Responses ist die ungecachte Eingabe die gesamte Eingabe abzüglich der Cache-Lese- und Schreibvorgänge. Gestreamte Anthropic-Messages-Antworten enthalten die Cache-Felder in `message_delta`.
+Bei Chat Completions und Responses ist die ungecachte Eingabe die gesamte Eingabe abzüglich der Cache-Lese- und Schreibvorgänge. Gestreamte Anthropic-Messages-Antworten enthalten die Cache-Felder in `message_delta`. Die Nutzungsdaten von Chat Completions enthalten keine Aufteilung nach Lebensdauer, weil OpenAI dort keine dokumentiert; die Anfragedetails erfassen sie trotzdem.
 
 <Note>
 Frühere Antworten meldeten Cache-Schreibvorgänge als `output_tokens_details.cached_tokens` (bei Chat Completions als `completion_tokens_details.cached_tokens`), und Claude-Routen ließen Cache-Lese- und Schreibvorgänge bei Chat Completions und Responses aus `input_tokens` heraus. Beides gilt nicht mehr: Lies Schreibvorgänge aus `cache_write_tokens`. Nicht gestreamte Anthropic-Messages-Antworten gaben früher `cache_creation_input_tokens: null` zurück; jetzt enthalten sie die tatsächlichen Werte.
@@ -326,6 +354,8 @@ Anfragedetails und Preisaufschlüsselungen verwenden diese Meter:
 | `cached_write_text_tokens` | Abrechnungs-Meter für Cache-Schreibvorgänge, wenn der Provider einen einheitlichen Schreibpreis hat. |
 | `cached_write_text_tokens_5m` | Cache-Schreibtoken für eine TTL von fünf Minuten, wenn der Provider TTL-spezifische Schreibvorgänge meldet. |
 | `cached_write_text_tokens_1h` | Cache-Schreibtoken für eine TTL von einer Stunde, wenn der Provider TTL-spezifische Schreibvorgänge meldet. |
+| `cached_write_text_tokens_30m` | OpenAI-Cache-Schreibtoken mit einer Lebensdauer von 30 Minuten. |
+| `cached_write_text_tokens_12h` | OpenAI-Cache-Schreibtoken mit einer Lebensdauer von 12 Stunden. |
 
 ### Wie gecachte Token abgerechnet werden
 
@@ -333,7 +363,7 @@ Phaseo rechnet jedes Eingabetoken genau einmal zu genau einem Preis ab:
 
 - ungecachte Eingabe zum Eingabepreis
 - Cache-Lesevorgänge zum Cache-Lesepreis
-- Cache-Schreibvorgänge zum Cache-Schreibpreis oder zu den Preisen für 5 Minuten und 1 Stunde, wenn der Provider sie getrennt berechnet
+- Cache-Schreibvorgänge zum Cache-Schreibpreis oder zu den Preisen für 5 Minuten und 1 Stunde (Claude) bzw. 30 Minuten und 12 Stunden (OpenAI), wenn der Provider sie getrennt berechnet
 
 Manche Provider zählen Cache-Schreibvorgänge in die Eingabesumme, andere melden sie zusätzlich. Phaseo rechnet beide gleich ab, sodass ein geschriebenes Token nie zusätzlich als normale Eingabe berechnet wird.
 
@@ -347,10 +377,12 @@ Eine Anfrage an GPT-5.6 Sol mit 53.100 Eingabetoken, davon 48.000 Cache-Lesevorg
 | 850 Ausgabe | $30.00 | $0.02550 |
 | Gesamt | | $0.07875 |
 
+Hätten 2.000 dieser Schreibvorgänge eine Lebensdauer von 12 Stunden, kosteten sie $12.50 statt $6.25 pro 1 Mio., und die Anfrage würde $0.09125 kosten.
+
 Meldet ein Provider gecachte Token auf einer Route, für die der Katalog noch keinen Cache-Preis hat, lässt Phaseo die Anfrage nicht fehlschlagen:
 
 - Cache-Lesevorgänge werden zum Eingabepreis der Route abgerechnet.
-- Cache-Schreibvorgänge werden zum Eingabepreis mal dem dokumentierten Schreibfaktor des Providers abgerechnet: 1,25× für Claude-Schreibvorgänge mit 5 Minuten und 2× mit 1 Stunde; 1,25× für OpenAI, Azure OpenAI und Alibaba; 1× für Kimi-K3-Schreibvorgänge mit 5 Minuten und 2× mit 1 Stunde; 1× für andere Provider.
+- Cache-Schreibvorgänge werden zum Eingabepreis mal dem dokumentierten Schreibfaktor des Providers abgerechnet: 1,25× für Claude-Schreibvorgänge mit 5 Minuten und 2× mit 1 Stunde; 1,25× für OpenAI, Azure OpenAI und Alibaba; 1× für Kimi-K3-Schreibvorgänge mit 5 Minuten und 2× mit 1 Stunde; 2,5× für OpenAI-Schreibvorgänge mit 12 Stunden auf jeder Route; 1× für andere Provider.
 - Die Preiszeile ist mit `pricing_fallback: "input_rate"` gekennzeichnet.
 
 Auf einer Claude-Route, deren Katalog nur einen Preis für Cache-Schreibvorgänge hat, ist dieser Preis der 5-Minuten-Preis. Schreibvorgänge, die der Provider als 1-Stunden-Schreibvorgänge meldet, werden zum doppelten Eingabepreis abgerechnet, in einer Zeile `cached_write_text_tokens_1h` mit der Kennzeichnung `pricing_fallback: "input_rate"`.
@@ -383,6 +415,7 @@ Wie lange eine Festlegung gilt, hängt von der Cache-Aufbewahrung des Providers 
 | Anthropic `cache_control` mit `ttl: "1h"` | 90 Minuten |
 | OpenAI oder Azure OpenAI mit `prompt_cache_retention: "24h"` | 24 Stunden |
 | OpenAI oder Azure OpenAI mit In-Memory-Aufbewahrung (Standard) | 90 Minuten |
+| OpenAI mit `ttl: "12h"` in `prompt_cache_options` oder an einem Breakpoint, oder ein gemeldeter 12-Stunden-Schreibvorgang | 18 Stunden |
 | OpenAI oder Azure OpenAI mit `prompt_cache_options.ttl: "30m"` | 45 Minuten |
 | Alles andere | 15 Minuten |
 

@@ -504,6 +504,7 @@ export type EmbeddingsRequest = z.infer<typeof EmbeddingsSchema>;
 // both before decoding.
 const PromptCacheBreakpointSchema = lazySchema(() => z.object({
 	mode: z.string().optional(),
+	ttl: z.string().optional(),
 }).passthrough());
 
 const ContentCacheMarkFields = () => ({

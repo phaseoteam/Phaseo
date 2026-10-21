@@ -223,6 +223,9 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 	}
 	if (typeof cache.write5mTokens === "number") (result as any).cached_write_text_tokens_5m = cache.write5mTokens;
 	if (typeof cache.write1hTokens === "number") (result as any).cached_write_text_tokens_1h = cache.write1hTokens;
+	// Internal meters only: Chat Completions documents no per-lifetime write field.
+	if (typeof cache.write30mTokens === "number") (result as any).cached_write_text_tokens_30m = cache.write30mTokens;
+	if (typeof cache.write12hTokens === "number") (result as any).cached_write_text_tokens_12h = cache.write12hTokens;
 
 	if (usage.reasoningTokens || usage._ext?.outputImageTokens || usage._ext?.outputAudioTokens) {
 		result.output_tokens_details = {

@@ -23,6 +23,8 @@ Si le fournisseur qui traite une requête ne prend pas en charge l'un de ses par
 
 Seuls ces paramètres peuvent être retirés : `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`stop_sequences` sur `/v1/messages`), `parallel_tool_calls`, `max_tool_calls` et `image_config`. Les messages, les outils, `tool_choice`, `response_format`, les réglages de raisonnement et les limites de sortie ne sont jamais retirés.
 
+Par ailleurs, un `ttl` de cache de prompts de `12h` est retiré sur les routes qui n’acceptent pas le cache de 12 heures d’OpenAI, et signalé aux mêmes endroits comme `prompt_cache_options.ttl` ou `prompt_cache_breakpoint.ttl` ; voir [Mise en cache des prompts](../guides/prompt-caching.mdx).
+
 Pour les réponses réussies, Phaseo signale les paramètres retirés que la requête a elle-même envoyés :
 
 - dans l'en-tête de réponse `X-Phaseo-Dropped-Params`, par exemple `X-Phaseo-Dropped-Params: top_k, min_p`

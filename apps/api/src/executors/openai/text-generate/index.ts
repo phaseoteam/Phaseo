@@ -16,6 +16,7 @@ import {
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { sanitizeOpenAICompatRequest } from "@executors/_shared/text-generate/openai-compat/provider-policy";
+import { irRequestsTwelveHourCache } from "@executors/_shared/text-generate/openai-compat/prompt-cache-ttl";
 import {
 	openAICompatHeaders,
 	openAICompatUrl,
@@ -821,6 +822,10 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	// Chat Completions defines only function and custom tools; hosted tools such
 	// as web_search run on /v1/responses.
 	const hasHostedTool = (args.ir as IRChatRequest).tools?.some((tool) => isOpenAIHostedToolType(tool.type)) ?? false;
+	// The 12-hour prompt cache is documented on the Responses API only; Chat Completions
+	// takes "30m". (Routes that cannot take 12h never get it: pipeline/execute/prompt-cache-ttl.ts.)
+	// https://developers.openai.com/api/docs/guides/prompt-caching
+	const requestsTwelveHourCache = irRequestsTwelveHourCache(args.ir as IRChatRequest);
 	const useNativeChatRoute =
 		isOpenAIProviderOffer(args.providerId) &&
 		args.protocol === "openai.chat.completions" &&
@@ -828,6 +833,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		!requiresResponsesRoute &&
 		!hasAsyncTool &&
 		!hasHostedTool &&
+		!requestsTwelveHourCache &&
 		!historyCarriesReplayableReasoning(args.ir as IRChatRequest, args.providerId, modelForRouting);
 	const irWithRequestMetadata = withOpenAIRequestMetadata(
 		args.ir as IRChatRequest,

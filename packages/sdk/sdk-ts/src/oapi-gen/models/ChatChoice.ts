@@ -23,6 +23,7 @@ export interface ChatChoice {
               };
               prompt_cache_breakpoint?: {
                 mode?: "explicit";
+                ttl?: string;
                 [key: string]: unknown;
               };
               text: string;

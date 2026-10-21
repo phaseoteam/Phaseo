@@ -7,6 +7,7 @@ export interface TextContentPart {
   };
   prompt_cache_breakpoint?: {
     mode?: "explicit";
+    ttl?: string;
     [key: string]: unknown;
   };
   text: string;

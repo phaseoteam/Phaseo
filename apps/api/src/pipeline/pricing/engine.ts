@@ -10,6 +10,14 @@ import type { PriceCard, PriceRule, PricingBreakdownLine, PricingDimensionKey, P
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage, resolveRequestCountUsage } from "@core/usage-normalization";
 import { CACHED_WRITE_TOKEN_PATHS, resolveCacheTokenUsage } from "@core/cache-usage";
 import { cacheTtlUnsupported } from "@pipeline/execute/cacheTtl";
+import {
+    applyOpenAICacheWriteTtlSplit,
+    OPENAI_CACHE_WRITE_12H_INPUT_MULTIPLIER,
+    OPENAI_CACHE_WRITE_12H_METER,
+    OPENAI_CACHE_WRITE_30M_INPUT_MULTIPLIER,
+    OPENAI_CACHE_WRITE_30M_METER,
+    OPENAI_CACHE_WRITE_TTL_METERS,
+} from "./openai-cache-ttl";
 
 const KNOWN_METERS = new Set<string>([
     "input_tokens",
@@ -28,6 +36,7 @@ const KNOWN_METERS = new Set<string>([
     "server_tool_image_generation_requests", "server_tool_apply_patch_requests",
     "native_web_search_requests", "native_web_fetch_requests",
     "requests",
+    ...OPENAI_CACHE_WRITE_TTL_METERS,
 ]);
 
 const CACHE_METERS = new Set<string>([
@@ -35,6 +44,7 @@ const CACHE_METERS = new Set<string>([
     "cached_write_text_tokens", "cached_write_text_tokens_5m", "cached_write_text_tokens_1h",
     "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",
     "cached_read_text_tokens", "cached_read_image_tokens", "cached_read_video_tokens", "cached_read_audio_tokens",
+    ...OPENAI_CACHE_WRITE_TTL_METERS,
 ]);
 
 function cacheMeterCanUseAggregate(meter: string, usage: Record<string, unknown>): boolean {
@@ -314,6 +324,8 @@ function splitUsage(
         }
         delete meters.cached_write_text_tokens;
     }
+    // OpenAI 30-minute / 12-hour writes (GPT-5.6+): see ./openai-cache-ttl.ts.
+    applyOpenAICacheWriteTtlSplit(meters, card, cache);
     if (typeof reasoningTokens === "number" && meters.output_reasoning_tokens == null) {
         meters.output_reasoning_tokens = reasoningTokens;
     }
@@ -444,7 +456,9 @@ function splitUsage(
         (meters.cached_read_text_tokens ?? 0) +
         (meters.cached_write_text_tokens ?? 0) +
         (meters.cached_write_text_tokens_5m ?? 0) +
-        (meters.cached_write_text_tokens_1h ?? 0);
+        (meters.cached_write_text_tokens_1h ?? 0) +
+        (meters.cached_write_text_tokens_30m ?? 0) +
+        (meters.cached_write_text_tokens_12h ?? 0);
     // Prompt length for `input_tokens` tier conditions (Claude and Gemini long-context rates,
     // OpenAI's 272k tier): the reported input plus cache reads and writes the usage states
     // are reported outside it (Anthropic: "A request's prompt length counts all of its input
@@ -776,11 +790,13 @@ function oneHourWritesNeedOwnRate(card: PriceCard, meters: Record<string, number
  * Documented cache-write price as a multiple of the input price, for routes whose card has
  * no write row. Claude (every platform): 5-minute writes 1.25x, 1-hour writes 2x. OpenAI and
  * Azure GPT-5.6+ and Alibaba explicit cache: 1.25x. Kimi K3: 5-minute writes 1x, 1-hour 2x.
- * Anything else: 1x.
+ * OpenAI 30-minute and 12-hour writes, on any route: 1.25x and 2.5x. Anything else: 1x.
  */
 function cacheWriteFallbackMultiplier(card: PriceCard, meter: string): number {
     const provider = String(card.provider ?? "").toLowerCase();
     const model = String(card.model ?? "").toLowerCase();
+    if (meter === OPENAI_CACHE_WRITE_12H_METER) return OPENAI_CACHE_WRITE_12H_INPUT_MULTIPLIER;
+    if (meter === OPENAI_CACHE_WRITE_30M_METER) return OPENAI_CACHE_WRITE_30M_INPUT_MULTIPLIER;
     const isOneHour = meter === "cached_write_text_tokens_1h";
     if (model.includes("claude")) return isOneHour ? 2 : 1.25;
     if (provider.startsWith("moonshotai") || model.includes("kimi-k3")) return isOneHour ? 2 : 1;

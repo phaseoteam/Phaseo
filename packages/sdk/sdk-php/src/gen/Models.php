@@ -963,6 +963,14 @@ class CacheControl
 	public $type;
 }
 
+class CacheWriteTokensDetails
+{
+	/** @var int|null */
+	public $ttl_12h_tokens;
+	/** @var int|null */
+	public $ttl_30m_tokens;
+}
+
 class ChatAudioOutputPart
 {
 	/** @var array<string, mixed> */
@@ -3289,6 +3297,8 @@ class InputTokensDetails
 {
 	/** @var int|null */
 	public $cache_write_tokens;
+	/** @var array<string, mixed>|null */
+	public $cache_write_tokens_details;
 	/** @var int|null */
 	public $cached_tokens;
 }
@@ -4903,6 +4913,8 @@ class PromptCacheBreakpoint
 {
 	/** @var string|null */
 	public $mode;
+	/** @var string|null */
+	public $ttl;
 }
 
 class PromptCacheOptions

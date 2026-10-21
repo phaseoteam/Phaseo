@@ -2976,7 +2976,18 @@
 			"rerank": "Neusortierung",
 			"embeddings": "Vektoreinbettungen"
 		},
-		"scheduledRelease": "Noch nicht routbar. Für eine spätere Veröffentlichung geplant."
+		"scheduledRelease": "Noch nicht routbar. Für eine spätere Veröffentlichung geplant.",
+		"viewDetails": "Preise und Parameter anzeigen",
+		"details": "Details",
+		"endpoints": "Endpunkte",
+		"parametersCount": "{count, plural, one {# Parameter} other {# Parameter}}",
+		"openModelPage": "Modellseite öffnen",
+		"released": "Veröffentlicht",
+		"noPricing": "Keine Preise angegeben",
+		"previousModel": "Vorheriges Modell",
+		"nextModel": "Nächstes Modell",
+		"modelIndex": "{current} von {total} Modellen",
+		"compareProviders": "Anbieter vergleichen"
 	},
 	"countryDetail": {
 		"metadataUnknownTitle": "KI-Übersicht für {country}",

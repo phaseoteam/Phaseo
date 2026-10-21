@@ -48,6 +48,38 @@ try {
       { model_slug: 'qwen/qwen3.8-flash', license: null, license_url: null },
     ]);
   }
+
+  await db.exec(`
+    delete from public.v2_models;
+    insert into public.v2_labs (lab_slug, name) values ('tencent', 'Tencent'), ('google', 'Google'), ('z-ai', 'Z.ai'), ('deepseek', 'DeepSeek');
+    insert into public.v2_models (model_slug, lab_slug, name, license, license_url, variant_kind, base_model_slug) values
+      -- wrong licence corrected; the preview keeps its own licence under the new name
+      ('tencent/hy3', 'tencent', 'a', 'Tencent Hy Community License Agreement', null, 'standard', null),
+      ('tencent/hy3-preview', 'tencent', 'b', 'Tencent Hy Community License Agreement', null, 'standard', null),
+      -- "Open weights" gets the real licence
+      ('z-ai/glm-5.2-fast', 'z-ai', 'c', 'Open weights', null, 'standard', null),
+      -- an admin edit made after the audit is kept
+      ('deepseek/deepseek-chat', 'deepseek', 'd', 'Custom', null, 'standard', null),
+      -- missing licence filled
+      ('deepseek/deepseek-v4.1-flash-fast', 'deepseek', 'e', null, null, 'standard', null),
+      -- renames, with the Health AI terms link added
+      ('google/gemma-3-27b-it', 'google', 'f', 'Gemma', 'https://example.com/gemma', 'standard', null),
+      ('google/medgemma-1.5-4b', 'google', 'g', 'Google Health AI', null, 'standard', null);
+  `);
+  const tidy = await read('../migrations/20261021090011_tidy_model_licence_names.sql');
+  for (let run = 0; run < 2; run++) {
+    await db.exec(tidy);
+    const { rows } = await db.query('select model_slug, license, license_url from public.v2_models order by model_slug');
+    assert.deepEqual(rows, [
+      { model_slug: 'deepseek/deepseek-chat', license: 'Custom', license_url: null },
+      { model_slug: 'deepseek/deepseek-v4.1-flash-fast', license: 'MIT', license_url: 'https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash' },
+      { model_slug: 'google/gemma-3-27b-it', license: 'Gemma Terms of Use', license_url: 'https://example.com/gemma' },
+      { model_slug: 'google/medgemma-1.5-4b', license: 'Health AI Developer Foundations Terms', license_url: 'https://developers.google.com/health-ai-developer-foundations/terms' },
+      { model_slug: 'tencent/hy3', license: 'Apache 2.0', license_url: 'https://huggingface.co/tencent/Hy3/blob/main/LICENSE' },
+      { model_slug: 'tencent/hy3-preview', license: 'Tencent Hy Community License', license_url: null },
+      { model_slug: 'z-ai/glm-5.2-fast', license: 'MIT', license_url: 'https://huggingface.co/zai-org/GLM-5.2' },
+    ]);
+  }
   console.log('model licence data: ok');
 } finally {
   await db.close();

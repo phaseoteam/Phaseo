@@ -19,6 +19,7 @@ import {
 import { dropUnsupportedParams, type DroppedParam } from "./unsupportedParams";
 import { dropVerbatimResponsesItems } from "./responsesItems";
 import { dropUnsupportedCacheTtl } from "./cacheTtl";
+import { dropUnsupportedTwelveHourCache } from "./prompt-cache-ttl";
 type ParamRange = {
     min?: number;
     max?: number;
@@ -229,6 +230,8 @@ export function normalizeIRForProvider(
         modelForReasoning?: string | null;
         /** Called with the optional parameters removed for this provider. */
         onDroppedParams?: (dropped: DroppedParam[]) => void;
+        /** The route's price card: a 12-hour cache needs a 12-hour write row. */
+        pricingCard?: { rules?: Array<{ meter?: string }> } | null;
     }
 ): IRChatRequest {
     const capabilityParams = options?.capabilityParams ?? null;
@@ -239,9 +242,14 @@ export function normalizeIRForProvider(
     const items = dropVerbatimResponsesItems(supported.ir, providerId);
     // So is a 1-hour cache TTL on a model the provider caches for 5 minutes only.
     const cacheTtl = dropUnsupportedCacheTtl(items.ir, providerId, [options?.modelForReasoning]);
-    const dropped = [...supported.dropped, ...items.dropped, ...cacheTtl.dropped];
+    // And OpenAI's 12-hour cache lifetime, where the route cannot take it: see ./prompt-cache-ttl.ts.
+    const twelveHourCache = dropUnsupportedTwelveHourCache(cacheTtl.ir, providerId, {
+        models: [options?.modelForReasoning, cacheTtl.ir.model],
+        pricingCard: options?.pricingCard,
+    });
+    const dropped = [...supported.dropped, ...items.dropped, ...cacheTtl.dropped, ...twelveHourCache.dropped];
     if (dropped.length > 0) options?.onDroppedParams?.(dropped);
-    ir = restrictToAllowedTools(cacheTtl.ir, providerId);
+    ir = restrictToAllowedTools(twelveHourCache.ir, providerId);
     const modelForReasoning = options?.modelForReasoning ?? ir.model;
     const nextMaxTokens = normalizeMaxTokens(
         ir,

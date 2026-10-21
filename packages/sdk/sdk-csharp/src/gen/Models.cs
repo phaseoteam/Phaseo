@@ -1342,6 +1342,16 @@ public sealed class CacheControl
 
 }
 
+public sealed class CacheWriteTokensDetails
+{
+	[JsonPropertyName("ttl_12h_tokens")]
+	public long? Ttl12hTokens { get; set; }
+
+	[JsonPropertyName("ttl_30m_tokens")]
+	public long? Ttl30mTokens { get; set; }
+
+}
+
 public sealed class ChatAudioOutputPart
 {
 	[JsonPropertyName("audio_url")]
@@ -4510,6 +4520,9 @@ public sealed class InputTokensDetails
 	[JsonPropertyName("cache_write_tokens")]
 	public long? CacheWriteTokens { get; set; }
 
+	[JsonPropertyName("cache_write_tokens_details")]
+	public Dictionary<string, object>? CacheWriteTokensDetails { get; set; }
+
 	[JsonPropertyName("cached_tokens")]
 	public long? CachedTokens { get; set; }
 
@@ -6721,6 +6734,9 @@ public sealed class PromptCacheBreakpoint
 {
 	[JsonPropertyName("mode")]
 	public string? Mode { get; set; }
+
+	[JsonPropertyName("ttl")]
+	public string? Ttl { get; set; }
 
 }
 
