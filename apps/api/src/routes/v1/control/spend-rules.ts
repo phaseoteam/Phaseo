@@ -16,6 +16,7 @@ import { parseIanaTimeZone } from "@/lib/time-zones";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { SpendRuleTestError, sendSpendRuleTest } from "@/pipeline/notifications/spend-rule-test";
 import { getSupabaseAdmin } from "@/runtime/env";
+import { publishSpendBlockEntry } from "@core/spend-blocks";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "@/routes/utils";
 import {
@@ -199,6 +200,8 @@ async function handleUpdate(req: Request) {
 		}
 		const rule = savedRule(data);
 		await audit(access.auth, "updated", rule, { ...ruleMetadata(rule), changed: Object.keys(body).sort() });
+		// A disabled, rescoped or raised rule lifts its block in the same transaction.
+		if (rule.action === "block" || "action" in body) await publishSpendBlockEntry(access.auth.workspaceId);
 		return json({ data: rule }, 200, NO_STORE);
 	} catch (error) {
 		return internalServerError("spend_rules.update", error);
@@ -219,6 +222,7 @@ async function handleDelete(req: Request) {
 		if (!data) return notFound();
 		const rule = formatSpendRule(data as unknown as SpendRuleRow);
 		await audit(access.auth, "deleted", rule, { metric: rule.metric, scope_type: rule.scope_type, scope_id: rule.scope_id });
+		if (rule.action === "block") await publishSpendBlockEntry(access.auth.workspaceId);
 		return json({ data: { id: rule.id, deleted: true } }, 200, NO_STORE);
 	} catch (error) {
 		return internalServerError("spend_rules.delete", error);

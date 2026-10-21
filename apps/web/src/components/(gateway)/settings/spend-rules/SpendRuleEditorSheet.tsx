@@ -11,6 +11,15 @@ import {
 	ProviderInspectorSheetHeader,
 	ProviderInspectorSheetTitle,
 } from "@/components/(data)/model/pricing/ProviderInspectorSheet";
+import {
+	AlertDialog,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +46,7 @@ import {
 	draftFromRule,
 	draftIssues,
 	emptyDraft,
+	needsWorkspaceBlockConfirm,
 	parseUsd,
 	periodsFor,
 	previewSummary,
@@ -50,6 +60,7 @@ import {
 	withMetric,
 	withPeriod,
 	withScope,
+	workspaceBlockConfirmMatches,
 	type DraftField,
 	type SpendRuleDraft,
 	type SpendRulePrefill,
@@ -137,6 +148,8 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 	const [formError, setFormError] = useState<string | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [testing, setTesting] = useState(false);
+	const [confirmingBlock, setConfirmingBlock] = useState(false);
+	const [confirmText, setConfirmText] = useState("");
 	const zones = useMemo(() => timeZoneOptions(), []);
 
 	const issues = showIssues ? draftIssues(draft) : [];
@@ -181,7 +194,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 		});
 	}
 
-	async function save() {
+	async function save(confirmed = false) {
 		setShowIssues(true);
 		setFormError(null);
 		const check = checkDraft(draft);
@@ -189,6 +202,13 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 			if (check.message) setFormError(check.message);
 			return;
 		}
+		// A workspace-wide block rule can stop every request: confirm by typing its name.
+		if (!confirmed && needsWorkspaceBlockConfirm(draft, rule)) {
+			setConfirmText("");
+			setConfirmingBlock(true);
+			return;
+		}
+		setConfirmingBlock(false);
 		setSaving(true);
 		const result = await write(rule ? updateSpendRule(rule.id, check.payload) : createSpendRule(check.payload));
 		setSaving(false);
@@ -455,7 +475,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 												keys: (chunks) => <Link href="/settings/keys" className="underline underline-offset-3 hover:text-foreground">{chunks}</Link>,
 												budgets: (chunks) => <Link href="/settings/budgets" className="underline underline-offset-3 hover:text-foreground">{chunks}</Link>,
 											})}</p>
-											<p className="font-medium text-foreground">{t("editor.blockingLater")}</p>
+											{data.blocksEnabled ? null : <p className="font-medium text-foreground">{t("editor.blockingOff")}</p>}
 										</div>
 									</>
 								) : null}
@@ -502,6 +522,24 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 					{canManage ? <Button type="submit" form="spend-rule-editor" className="rounded-md" disabled={saving}>{saving ? t("editor.saving") : rule ? t("editor.save") : t("editor.create")}</Button> : null}
 				</div>
 			</div>
+			<AlertDialog open={confirmingBlock} onOpenChange={(open) => { if (!open) setConfirmingBlock(false); }}>
+				<AlertDialogContent className="rounded-md">
+					<form onSubmit={(event) => { event.preventDefault(); if (workspaceBlockConfirmMatches(confirmText, draft.name)) void save(true); }}>
+						<AlertDialogHeader>
+							<AlertDialogTitle>{t("confirmBlock.title")}</AlertDialogTitle>
+							<AlertDialogDescription>{t("confirmBlock.body", { name: draft.name.trim() })}</AlertDialogDescription>
+						</AlertDialogHeader>
+						<div className="my-4 space-y-1.5">
+							<Label htmlFor="spend-rule-confirm-block">{t("confirmBlock.label", { name: draft.name.trim() })}</Label>
+							<Input id="spend-rule-confirm-block" className="rounded-md" value={confirmText} autoComplete="off" autoFocus onChange={(event) => setConfirmText(event.target.value)} />
+						</div>
+						<AlertDialogFooter>
+							<AlertDialogCancel type="button" className="rounded-md">{t("delete.cancel")}</AlertDialogCancel>
+							<Button type="submit" variant="destructive" className="rounded-md" disabled={!workspaceBlockConfirmMatches(confirmText, draft.name)}>{t("confirmBlock.confirm")}</Button>
+						</AlertDialogFooter>
+					</form>
+				</AlertDialogContent>
+			</AlertDialog>
 		</>
 	);
 }

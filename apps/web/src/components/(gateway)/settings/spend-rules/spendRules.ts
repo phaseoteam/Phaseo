@@ -750,3 +750,86 @@ export type SpendRuleTestResult = {
 	failed: number;
 	deliveries: SpendRuleTestDelivery[];
 };
+
+// ---- Spend blocks (grace-margin blocking): public.list_workspace_spend_blocks and
+// public.lift_workspace_spend_block, shared by the control API (/v1/control/spend-blocks) and
+// web-api (Settings → Notifications).
+
+export const SPEND_BLOCK_LIFT_REASONS = ["manual", "period_reset", "below_limit", "rule_changed", "rule_disabled", "rule_deleted"] as const;
+export type SpendBlockLiftReason = (typeof SPEND_BLOCK_LIFT_REASONS)[number];
+export const MAX_SPEND_BLOCK_PAGE = 100;
+export const DEFAULT_SPEND_BLOCK_PAGE = 50;
+
+export type SpendBlock = {
+	id: string;
+	workspace_id: string;
+	/** Null once the rule has been deleted outright (its key, member or department was removed). */
+	rule_id: string | null;
+	rule_name: string | null;
+	scope_type: SpendRuleScope;
+	scope_id: string | null;
+	scope_label: string;
+	block_free_models: boolean;
+	period_start: string;
+	/** When the block lifts by itself: the end of the rule's period (the 429's Retry-After). */
+	resets_at: string | null;
+	spend_nanos: number;
+	spend_usd: number;
+	limit_nanos: number;
+	limit_usd: number;
+	started_at: string;
+	lifted_at: string | null;
+	lifted_by: string | null;
+	lift_reason: SpendBlockLiftReason | null;
+	/** Not lifted, and its reset has not passed. */
+	active: boolean;
+};
+
+/** One row of public.list_workspace_spend_blocks with *_usd alongside each amount. */
+export function formatSpendBlock(raw: Json): SpendBlock {
+	const spend = nanosOrNull(raw.spend_nanos) ?? 0;
+	const limit = nanosOrNull(raw.limit_nanos) ?? 0;
+	return {
+		id: String(raw.id ?? ""),
+		workspace_id: String(raw.workspace_id ?? ""),
+		rule_id: (raw.rule_id ?? null) as string | null,
+		rule_name: (raw.rule_name ?? null) as string | null,
+		scope_type: raw.scope_type as SpendRuleScope,
+		scope_id: (raw.scope_id ?? null) as string | null,
+		scope_label: String(raw.scope_label ?? raw.scope_id ?? ""),
+		block_free_models: raw.block_free_models === true,
+		period_start: String(raw.period_start ?? ""),
+		resets_at: (raw.resets_at ?? null) as string | null,
+		spend_nanos: spend,
+		spend_usd: spend / 1_000_000_000,
+		limit_nanos: limit,
+		limit_usd: limit / 1_000_000_000,
+		started_at: String(raw.started_at ?? ""),
+		lifted_at: (raw.lifted_at ?? null) as string | null,
+		lifted_by: (raw.lifted_by ?? null) as string | null,
+		lift_reason: (raw.lift_reason ?? null) as SpendBlockLiftReason | null,
+		active: raw.active === true,
+	};
+}
+
+export function formatSpendBlocks(raw: unknown): SpendBlock[] {
+	return Array.isArray(raw) ? (raw as Json[]).map(formatSpendBlock) : [];
+}
+
+/** ?include_lifted=true|false&limit=1..100 for the block list. */
+export function parseSpendBlockListQuery(includeLiftedValue: string | null | undefined, limitValue: string | null | undefined): Parsed<{ includeLifted: boolean; limit: number }> {
+	const includeLifted = includeLiftedValue == null || includeLiftedValue === "" ? false
+		: includeLiftedValue === "true" ? true : includeLiftedValue === "false" ? false : null;
+	if (includeLifted === null) return { ok: false, message: "include_lifted must be true or false" };
+	const limit = limitValue == null || limitValue === "" ? DEFAULT_SPEND_BLOCK_PAGE : Number(limitValue);
+	if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_SPEND_BLOCK_PAGE) return { ok: false, message: `limit must be a whole number from 1 to ${MAX_SPEND_BLOCK_PAGE}` };
+	return { ok: true, value: { includeLifted, limit } };
+}
+
+/** Maps public.lift_workspace_spend_block's errors; null for anything else (a 5xx). */
+export function spendBlockLiftError(error: { message?: string | null } | null | undefined): { status: 404 | 409; error: string; message: string } | null {
+	const message = String(error?.message ?? "");
+	if (message.includes("spend_block_not_found")) return { status: 404, error: "not_found", message: "Spend block not found" };
+	if (message.includes("spend_block_not_active")) return { status: 409, error: "spend_block_not_active", message: "This block has already been lifted" };
+	return null;
+}

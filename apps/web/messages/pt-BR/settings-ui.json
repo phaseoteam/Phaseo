@@ -6226,7 +6226,9 @@
 			"notEvaluated": "Ainda não avaliado",
 			"notEvaluatedHelp": "Este tipo de alerta é salvo, mas ainda não é verificado. Ele começa a ser enviado em uma versão futura.",
 			"blocks": "Notifica e depois bloqueia",
-			"disabled": "Desativado"
+			"disabled": "Desativado",
+			"blockingNow": "Bloqueando agora",
+			"blockingNowHelp": "Esta regra está recusando solicitações no escopo dela. Você pode remover o bloqueio em Bloqueios ativos."
 		},
 		"metric": {
 			"spend": "Valor de gastos",
@@ -6385,7 +6387,6 @@
 			"blockFreeModels": "Também bloquear modelos gratuitos",
 			"blockFreeModelsHelp": "Desativado por padrão, para que os modelos gratuitos continuem funcionando durante um bloqueio.",
 			"bestEffort": "O bloqueio é feito na medida do possível: começa alguns minutos depois que os gastos passam da margem, então algumas solicitações podem ultrapassá-la. Para um teto exato, use <keys>limites de chave</keys> ou <budgets>orçamentos do espaço de trabalho</budgets>.",
-			"blockingLater": "O bloqueio será ativado em uma versão futura. Até lá, este alerta só notifica.",
 			"sectionDestinations": "Para onde enviar",
 			"destinations": "Destinos",
 			"destinationsRoutes": "Rotas de alertas de gastos",
@@ -6402,7 +6403,8 @@
 			"close": "Fechar",
 			"save": "Salvar",
 			"create": "Adicionar alerta",
-			"saving": "Salvando…"
+			"saving": "Salvando…",
+			"blockingOff": "O bloqueio ainda não está ativado. Até lá, este alerta só notifica."
 		},
 		"issues": {
 			"nameRequired": "Digite um nome de até 100 caracteres.",
@@ -6439,7 +6441,8 @@
 			"enabled": "Alerta ativado",
 			"disabled": "Alerta desativado",
 			"testSent": "{count, plural, =0 {Teste enviado} one {Teste enviado para # destino} other {Teste enviado para # destinos}}",
-			"testPartial": "Teste enviado para {delivered}, falhou em {failed}"
+			"testPartial": "Teste enviado para {delivered}, falhou em {failed}",
+			"lifted": "Bloqueio removido"
 		},
 		"delete": {
 			"title": "Excluir {name}?",
@@ -6493,6 +6496,30 @@
 			"keyLimitName": "{key}: {percent}% do limite {interval, select, daily {diário} weekly {semanal} other {mensal}}",
 			"budget": "Alertar em 50/80/100%",
 			"budgetName": "Alerta do orçamento {interval, select, daily {diário} weekly {semanal} other {mensal}}"
+		},
+		"blocks": {
+			"title": "Bloqueios ativos",
+			"description": "Estas regras de gastos estão recusando solicitações agora. Solicitações no escopo recebem um 429 até o bloqueio ser redefinido ou removido.",
+			"badge": "Bloqueando",
+			"deletedRule": "Regra excluída",
+			"freeModelsAllowed": "Modelos gratuitos permitidos",
+			"spent": "{spend} gastos, limite {limit}",
+			"resets": "Redefine em {date}",
+			"noReset": "É removido quando os gastos ficam abaixo do limite",
+			"since": "Desde {date}",
+			"lift": "Remover",
+			"bestEffort": "Os bloqueios começam alguns minutos depois de os gastos passarem do limite. A remoção chega a todas as solicitações em cerca de um minuto.",
+			"alreadyLifted": "Este bloqueio já foi removido.",
+			"liftTitle": "Remover o bloqueio de {name}?",
+			"liftBody": "As solicitações no escopo voltam a funcionar em cerca de um minuto. A regra só volta a bloquear quando o período for redefinido, mas continua enviando alertas.",
+			"lifting": "Removendo…",
+			"liftConfirm": "Remover bloqueio"
+		},
+		"confirmBlock": {
+			"title": "Bloquear todo o workspace?",
+			"body": "Quando os gastos chegarem ao limite de bloqueio, {name} recusa solicitações de todas as chaves e membros deste workspace até o período ser redefinido ou um proprietário ou administrador remover o bloqueio.",
+			"label": "Digite {name} para confirmar",
+			"confirm": "Salvar e permitir bloqueio"
 		}
 	}
 }

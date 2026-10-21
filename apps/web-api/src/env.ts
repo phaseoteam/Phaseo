@@ -32,6 +32,8 @@ export type Env = {
 	PHASEO_CONTROL_SECRET?: string;
 	GATEWAY_API_ORIGIN?: string;
 	GATEWAY_INTERNAL_TEST_TOKEN?: string;
+	/** Display only: "true" when the gateway enforces spend rule blocks (mirrors its SPEND_RULE_BLOCKS_ENABLED). */
+	SPEND_RULE_BLOCKS_ENABLED?: string;
 	RESEND_API_KEY?: string;
 	EXPO_ACCESS_TOKEN?: string;
 	FEEDBACK_REWARD_USD?: string;

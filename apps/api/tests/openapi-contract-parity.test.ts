@@ -39,7 +39,7 @@ const MANAGEMENT_ROUTE_PREFIXES = [
 	"/activity", "/analytics", "/apps", "/audit-events", "/budgets", "/byok", "/credits",
 	"/data-contribution", "/events", "/feedback", "/guardrails", "/identity", "/key", "/keys",
 	"/logs", "/management-keys", "/notifications", "/oauth-clients", "/observability", "/presets",
-	"/preset-test-runs", "/classifiers", "/rate-limits", "/routing", "/security", "/settings", "/spend-rules", "/webhook-endpoints", "/workspaces",
+	"/preset-test-runs", "/classifiers", "/rate-limits", "/routing", "/security", "/settings", "/spend-blocks", "/spend-rules", "/webhook-endpoints", "/workspaces",
 ] as const;
 
 const INTERNAL_DATA_OPERATIONS = new Set([

@@ -65,6 +65,8 @@ export type GatewayBindings = {
 	RATE_LIMIT_POLICIES_ENABLED?: string;
 	/** "true" runs the spend rule alert sweep (sweep_spend_rules) every 5 minutes. Off by default. */
 	SPEND_RULES_ENABLED?: string;
+	/** "true" lets block spend rules start blocks, publishes their KV entries and enforces them on requests. Off by default. */
+	SPEND_RULE_BLOCKS_ENABLED?: string;
 	/** Kill switch: "false" stops request classifiers. On when unset. */
 	REQUEST_CLASSIFIERS_ENABLED?: string;
 	SPEND_LIMITS?: DurableObjectNamespace;

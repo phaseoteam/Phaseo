@@ -12802,6 +12802,95 @@ export async function invalidateApiKeyCache(
   });
 }
 
+export type LiftSpendBlockParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lifts an active spend block so requests in its scope are accepted again within about a minute. The rule does not block again until its period resets, but it keeps sending alerts. Owners and admins only; the lift is recorded in the audit log and queues a spend_blocked event with state lifted. Returns 404 for an unknown block and 409 spend_block_not_active when it was already lifted.
+ */
+export async function liftSpendBlock(
+  client: Client,
+  args: LiftSpendBlockParams,
+): Promise<{
+  data: {
+    active: boolean;
+    block_free_models: boolean;
+    id: string;
+    lift_reason:
+      | "manual"
+      | "period_reset"
+      | "below_limit"
+      | "rule_changed"
+      | "rule_disabled"
+      | "rule_deleted"
+      | null;
+    lifted_at: string | null;
+    lifted_by: string | null;
+    limit_nanos: number;
+    limit_usd: number;
+    period_start: string;
+    resets_at: string | null;
+    rule_id: string | null;
+    rule_name: string | null;
+    scope_id: string | null;
+    scope_label: string;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spend_nanos: number;
+    spend_usd: number;
+    started_at: string;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/spend-blocks/${encodeURIComponent(String(path["id"]))}/lift`;
+  return client.request<{
+    data: {
+      active: boolean;
+      block_free_models: boolean;
+      id: string;
+      lift_reason:
+        | "manual"
+        | "period_reset"
+        | "below_limit"
+        | "rule_changed"
+        | "rule_disabled"
+        | "rule_deleted"
+        | null;
+      lifted_at: string | null;
+      lifted_by: string | null;
+      limit_nanos: number;
+      limit_usd: number;
+      period_start: string;
+      resets_at: string | null;
+      rule_id: string | null;
+      rule_name: string | null;
+      scope_id: string | null;
+      scope_label: string;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spend_nanos: number;
+      spend_usd: number;
+      started_at: string;
+      workspace_id: string;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListApiKeysParams = {
   path?: Record<string, never>;
   query?: {
@@ -17021,6 +17110,94 @@ export async function listRateLimitPolicies(
       workspace_id: string;
     }[];
     has_more: boolean;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListSpendBlocksParams = {
+  path?: Record<string, never>;
+  query?: {
+    include_lifted?: boolean;
+    limit?: number;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists the workspace's spend blocks, newest first: the blocks that spend rules with action block have started once spend reached their block point. Active blocks only, unless include_lifted is true. Owners and admins only.
+ */
+export async function listSpendBlocks(
+  client: Client,
+  args: ListSpendBlocksParams = {},
+): Promise<{
+  data: {
+    active: boolean;
+    block_free_models: boolean;
+    id: string;
+    lift_reason:
+      | "manual"
+      | "period_reset"
+      | "below_limit"
+      | "rule_changed"
+      | "rule_disabled"
+      | "rule_deleted"
+      | null;
+    lifted_at: string | null;
+    lifted_by: string | null;
+    limit_nanos: number;
+    limit_usd: number;
+    period_start: string;
+    resets_at: string | null;
+    rule_id: string | null;
+    rule_name: string | null;
+    scope_id: string | null;
+    scope_label: string;
+    scope_type:
+      "workspace" | "key" | "member" | "department" | "model" | "provider";
+    spend_nanos: number;
+    spend_usd: number;
+    started_at: string;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/spend-blocks";
+  return client.request<{
+    data: {
+      active: boolean;
+      block_free_models: boolean;
+      id: string;
+      lift_reason:
+        | "manual"
+        | "period_reset"
+        | "below_limit"
+        | "rule_changed"
+        | "rule_disabled"
+        | "rule_deleted"
+        | null;
+      lifted_at: string | null;
+      lifted_by: string | null;
+      limit_nanos: number;
+      limit_usd: number;
+      period_start: string;
+      resets_at: string | null;
+      rule_id: string | null;
+      rule_name: string | null;
+      scope_id: string | null;
+      scope_label: string;
+      scope_type:
+        "workspace" | "key" | "member" | "department" | "model" | "provider";
+      spend_nanos: number;
+      spend_usd: number;
+      started_at: string;
+      workspace_id: string;
+    }[];
   }>({
     method: "GET",
     path: resolvedPath,

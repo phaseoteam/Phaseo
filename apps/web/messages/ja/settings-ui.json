@@ -6226,7 +6226,9 @@
 			"notEvaluated": "未評価",
 			"notEvaluatedHelp": "このアラートの種類は保存されますが、まだ確認されません。今後のリリースで送信が始まります。",
 			"blocks": "通知してからブロック",
-			"disabled": "オフ"
+			"disabled": "オフ",
+			"blockingNow": "現在ブロック中",
+			"blockingNowHelp": "このルールは対象範囲のリクエストを拒否しています。「有効なブロック」から解除できます。"
 		},
 		"metric": {
 			"spend": "支出額",
@@ -6385,7 +6387,6 @@
 			"blockFreeModels": "無料モデルもブロック",
 			"blockFreeModelsHelp": "既定ではオフなので、ブロック中も無料モデルは使えます。",
 			"bestEffort": "ブロックはベストエフォートです。支出が猶予幅を超えてから数分後に始まるため、一部のリクエストは超過する場合があります。正確な上限には<keys>キーの上限</keys>または<budgets>ワークスペースの予算</budgets>を使ってください。",
-			"blockingLater": "ブロックは今後のリリースで有効になります。それまでこのアラートは通知のみです。",
 			"sectionDestinations": "送信先",
 			"destinations": "送信先",
 			"destinationsRoutes": "支出アラートのルート",
@@ -6402,7 +6403,8 @@
 			"close": "閉じる",
 			"save": "保存",
 			"create": "アラートを追加",
-			"saving": "保存中…"
+			"saving": "保存中…",
+			"blockingOff": "ブロックはまだ有効になっていません。それまでこのアラートは通知のみです。"
 		},
 		"issues": {
 			"nameRequired": "100文字以内で名前を入力してください。",
@@ -6439,7 +6441,8 @@
 			"enabled": "アラートをオンにしました",
 			"disabled": "アラートをオフにしました",
 			"testSent": "{count, plural, =0 {テストを送信しました} other {# 件の送信先にテストを送信しました}}",
-			"testPartial": "{delivered} 件に送信、{failed} 件で失敗しました"
+			"testPartial": "{delivered} 件に送信、{failed} 件で失敗しました",
+			"lifted": "ブロックを解除しました"
 		},
 		"delete": {
 			"title": "{name} を削除しますか？",
@@ -6493,6 +6496,30 @@
 			"keyLimitName": "{key}: {interval, select, daily {日次} weekly {週次} other {月次}}上限の {percent}%",
 			"budget": "50/80/100% でアラート",
 			"budgetName": "{interval, select, daily {日次} weekly {週次} other {月次}}予算のアラート"
+		},
+		"blocks": {
+			"title": "有効なブロック",
+			"description": "これらの支出ルールは現在リクエストを拒否しています。対象のリクエストには、ブロックがリセットされるか解除されるまで 429 が返されます。",
+			"badge": "ブロック中",
+			"deletedRule": "削除されたルール",
+			"freeModelsAllowed": "無料モデルは利用可",
+			"spent": "支出 {spend}、上限 {limit}",
+			"resets": "{date} にリセット",
+			"noReset": "支出が上限を下回ると解除",
+			"since": "{date} から",
+			"lift": "解除",
+			"bestEffort": "ブロックは支出が上限を超えてから数分後に始まります。解除は約 1 分以内にすべてのリクエストに反映されます。",
+			"alreadyLifted": "このブロックはすでに解除されています。",
+			"liftTitle": "{name} のブロックを解除しますか？",
+			"liftBody": "対象のリクエストは約 1 分以内に再び使えるようになります。ルールは期間がリセットされるまで再びブロックしませんが、アラートは引き続き送信します。",
+			"lifting": "解除中…",
+			"liftConfirm": "ブロックを解除"
+		},
+		"confirmBlock": {
+			"title": "ワークスペース全体をブロックしますか？",
+			"body": "支出がブロック上限に達すると、{name} は期間がリセットされるか、オーナーまたは管理者がブロックを解除するまで、このワークスペースのすべてのキーとメンバーからのリクエストを拒否します。",
+			"label": "確認のため {name} と入力してください",
+			"confirm": "保存してブロックを許可"
 		}
 	}
 }

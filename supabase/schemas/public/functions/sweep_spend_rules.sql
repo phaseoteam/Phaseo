@@ -1,6 +1,7 @@
 CREATE OR REPLACE FUNCTION public.sweep_spend_rules (
   p_now   timestamp with time zone DEFAULT now(),
-  p_limit integer                  DEFAULT 100
+  p_limit  integer                  DEFAULT 100,
+  p_blocks boolean                  DEFAULT false
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -15,14 +16,17 @@ CREATE OR REPLACE FUNCTION public.sweep_spend_rules (
 --                kept for the next call.
 --   2. rollover: workspaces with an enabled rule that has no state row for its current period,
 --                so a new day, week or month (in the rule's time zone) or a new rule is picked up
---                within one call, with or without traffic.
+--                within one call, with or without traffic, and workspaces with an active block
+--                past its reset, so the block lifts on time.
 --   3. periodic: one twelfth of the workspaces with enabled rules, by a hash of the workspace id
 --                and the 5-minute slot of p_now, so each is evaluated about once an hour when
 --                called every 5 minutes. This catches changes no usage marks: a budget or key
 --                limit lowered, a rule edited, rollup hours rebuilt late.
 -- Workspaces that no longer exist are skipped. One sweep runs at a time; a concurrent call
--- returns skipped_locked. Returns the counts and the events queued, plus "blocks": [] for
--- block changes (none yet: rules only notify).
+-- returns skipped_locked. p_blocks (SPEND_RULE_BLOCKS_ENABLED) lets block rules start blocks;
+-- blocks are lifted either way. Returns the counts, the events queued, the block changes
+-- ("blocks": [{workspace_id, block_id, rule_id, state, reason, event_id}]) and "publish": the
+-- evaluated workspaces with block rules or blocks, whose gateway entry the job republishes.
 declare
   v_slots constant integer := 12;
   v_slot integer;
@@ -32,6 +36,8 @@ declare
   v_workspace uuid;
   v_result jsonb;
   v_events jsonb := '[]'::jsonb;
+  v_blocks jsonb := '[]'::jsonb;
+  v_publish uuid[] := '{}';
   v_evaluated integer := 0;
   v_rules integer := 0;
   v_fired integer := 0;
@@ -45,7 +51,7 @@ begin
   end if;
   if not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('public.sweep_spend_rules', 0)) then
     return jsonb_build_object('skipped_locked', true, 'dirty', 0, 'rollover', 0, 'periodic', 0, 'evaluated', 0,
-      'rules', 0, 'fired', 0, 'state_rows', 0, 'events', '[]'::jsonb, 'blocks', '[]'::jsonb);
+      'rules', 0, 'fired', 0, 'state_rows', 0, 'events', '[]'::jsonb, 'blocks', '[]'::jsonb, 'publish', '[]'::jsonb);
   end if;
 
   with claimed as (
@@ -63,7 +69,7 @@ begin
 
   select coalesce(array_agg(due.workspace_id), '{}') into v_rollover
   from (
-    select distinct rule.workspace_id
+    select rule.workspace_id
     from public.workspace_spend_rules rule
     left join public.workspace_settings settings on settings.workspace_id = rule.workspace_id
     cross join lateral private.spend_rule_period(rule.period, coalesce(rule.time_zone, settings.billing_time_zone, 'UTC'), p_now) period
@@ -75,7 +81,14 @@ begin
         select 1 from public.workspace_spend_rule_state state
         where state.rule_id = rule.id and state.period_start = period.period_start
       )
-    order by rule.workspace_id
+    union
+    -- workspace_spend_blocks_workspace_active_idx
+    select block.workspace_id
+    from public.workspace_spend_blocks block
+    where block.lifted_at is null
+      and block.resets_at <= p_now
+      and block.workspace_id <> all (v_dirty)
+    order by 1
     limit p_limit
   ) due;
 
@@ -95,7 +108,7 @@ begin
   ) due;
 
   foreach v_workspace in array v_dirty || v_rollover || v_periodic loop
-    v_result := private.evaluate_workspace_spend_rules(v_workspace, p_now);
+    v_result := private.evaluate_workspace_spend_rules(v_workspace, p_now, coalesce(p_blocks, false));
     if coalesce((v_result ->> 'missing')::boolean, false) then
       continue;
     end if;
@@ -109,6 +122,15 @@ begin
         from jsonb_array_elements(v_result -> 'events') event
       );
     end if;
+    if jsonb_array_length(coalesce(v_result -> 'blocks', '[]'::jsonb)) > 0 then
+      v_blocks := v_blocks || (
+        select jsonb_agg(block || jsonb_build_object('workspace_id', v_workspace))
+        from jsonb_array_elements(v_result -> 'blocks') block
+      );
+    end if;
+    if coalesce((v_result ->> 'block_scope')::boolean, false) then
+      v_publish := v_publish || v_workspace;
+    end if;
   end loop;
 
   return jsonb_build_object(
@@ -120,17 +142,18 @@ begin
     'fired', v_fired,
     'state_rows', v_state_rows,
     'events', v_events,
-    'blocks', '[]'::jsonb
+    'blocks', v_blocks,
+    'publish', to_jsonb(v_publish)
   );
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer) IS 'Evaluates spend rules for dirty workspaces (claimed with SKIP LOCKED), workspaces whose rule periods rolled over, and an hourly slice of all workspaces with enabled rules. Notify only. Called every 5 minutes by the API scheduled job when SPEND_RULES_ENABLED is true.';
+COMMENT ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) IS 'Evaluates spend rules for dirty workspaces (claimed with SKIP LOCKED), workspaces whose rule periods rolled over or whose blocks reached their reset, and an hourly slice of all workspaces with enabled rules. Queues alerts, lifts blocks and, with p_blocks, starts them. Called every 5 minutes by the API scheduled job when SPEND_RULES_ENABLED is true (p_blocks = SPEND_RULE_BLOCKS_ENABLED).';
 
-GRANT EXECUTE ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) FROM PUBLIC, "anon", "authenticated";
