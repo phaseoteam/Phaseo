@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
+import { localDay, todayPace } from "../shared/usageLedger";
 import { DatabaseSync } from "node:sqlite";
 
 describe("workspace durability", () => {
@@ -224,6 +225,58 @@ describe("IPC validation", () => {
 			expect(store.backfillUsageTotals(10)).toBe(1);
 			expect(store.getOverview().tasks.find(value => value.id === task.id)?.usageTotals).toEqual({ tokens: 410, costNanos: 4_100_000 });
 			expect(store.backfillUsageTotals(10)).toBe(0);
+		} finally { store.close(); }
+	});
+
+	it("keeps a ledger of billed requests by time and sums today, the week and where today's went", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const now = new Date(2026, 9, 21, 14, 30), at = (daysAgo: number, hour: number) => new Date(2026, 9, 21 - daysAgo, hour, 10).toISOString();
+			const chat = store.apply({ type: "create-task", harness: "codex", model: "anthropic/claude-opus-5.5", mode: "code" }), other = store.apply({ type: "create-task", harness: "codex", model: "openai/gpt-6.1", mode: "chat" });
+			const priced = (nanos: number) => JSON.stringify({ total_tokens: 100, pricing: { total_nanos: nanos } });
+			store.recordUsage(chat, "a:usage:0", priced(1_000_000), false, at(0, 9));
+			// A report rewritten as it streams keeps the time it was first seen and its latest amount.
+			store.recordUsage(chat, "a:usage:0", priced(2_000_000), false, at(0, 13));
+			store.recordUsage(other, "b:autopilot:1792540000000:usage", priced(500_000), true, at(0, 10));
+			store.recordUsage(chat, "c:usage:0", priced(4_000_000), false, at(1, 9));
+			store.recordUsage(chat, "d:usage:0", priced(8_000_000), false, at(9, 9));
+			// Another harness's context report has no price or token count, so it isn't kept.
+			store.recordUsage(chat, "e:usage", JSON.stringify({ total: { input_tokens: 9999 } }), false, at(0, 11));
+			const report = store.todayReport(now);
+			expect(report.today).toEqual({ costNanos: 2_500_000, tokens: 200 });
+			expect([report.last24h.costNanos, report.last7d.costNanos]).toEqual([2_500_000, 6_500_000]);
+			expect(report.autopilotToday).toEqual({ costNanos: 500_000, tokens: 100, chats: 1 });
+			expect(report.days.map(day => day.day)).toEqual(Array.from({ length: 8 }, (_, index) => localDay(new Date(2026, 9, 14 + index))));
+			expect([report.days[7].hours[9], report.days[7].hours[10], report.days[6].hours[9]]).toEqual([2_000_000, 500_000, 4_000_000]);
+			expect(report.chats.map(value => [value.taskId, value.costNanos])).toEqual([[chat.id, 2_000_000], [other.id, 500_000]]);
+			expect(report.models.map(value => value.model)).toEqual(["anthropic/claude-opus-5.5", "openai/gpt-6.1"]);
+			// The usual is the average of the seven days before today: only yesterday spent, $0.004 by 9:10.
+			const pace = todayPace(report, now);
+			expect(pace.basedOn).toBe(7);
+			expect(pace.usualByNow).toBeCloseTo(4_000_000 / 7);
+			expect(pace.forecast).toBeCloseTo(2_500_000);
+			expect(pace.cumulative.at(-1)).toBe(2_500_000);
+			store.pruneUsageLedger(5, now);
+			expect(store.todayReport(now).since).toBe(at(1, 9));
+		} finally { store.close(); }
+	});
+
+	it("fills the ledger once from recent chats, timing each report by its turn", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const now = new Date(), turnStarted = new Date(now.getTime() - 3_600_000).toISOString();
+			const task = store.apply({ type: "create-task", harness: "codex", model: "anthropic/claude-opus-5.5", mode: "code" });
+			const saved = store.getTask(task.id);
+			saved.messages = [{ id: "turn", role: "user", text: "Hello", startedAt: turnStarted, createdAt: turnStarted, autopilot: true }];
+			saved.activities = [
+				{ id: "turn:usage:0", type: "usage", title: "Usage", text: JSON.stringify({ total_tokens: 120, pricing: { total_nanos: 1_500_000 } }) },
+				{ id: "turn:compaction:1600000000000:usage", type: "usage", title: "Compaction usage", text: JSON.stringify({ total_tokens: 60, pricing: { total_nanos: 100_000 } }) },
+			];
+			store.saveTask(saved);
+			expect(store.backfillUsageLedger(8, now)).toBe(1);
+			expect(store.backfillUsageLedger(8, now)).toBe(0);
+			// The compaction's id says it ran in 2020, before the cutoff, so only the step is kept.
+			expect(store.todayReport(now)).toMatchObject({ since: turnStarted, last24h: { costNanos: 1_500_000, tokens: 120 } });
 		} finally { store.close(); }
 	});
 

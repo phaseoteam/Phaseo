@@ -177,8 +177,10 @@ export class TaskEntries {
 	}
 
 	/** The texts of a chat's Phaseo usage reports (steps and compactions), read by id from its activities alone. */
-	phaseoUsageReports(key: number): string[] {
+	phaseoUsageReports(key: number): string[] { return this.phaseoUsageEntries(key).map(entry => entry.text); }
+	/** The same reports with their ids, which say which turn each belongs to. */
+	phaseoUsageEntries(key: number): { id: string; text: string }[] {
 		const rows = this.statement(`SELECT ${entryColumns} FROM task_entries WHERE rowid >= ? AND rowid < ? AND (id GLOB '*usage:[0-9]*' OR id GLOB '*compaction:*:usage' OR id GLOB '*autopilot:*:usage')`).all(base(key, 1), base(key, 1) + kindSpan) as Row[];
-		return rows.filter(row => isPhaseoUsageId(row.id)).map(row => decode(row) as AgentActivity).filter(activity => activity.type === "usage").map(activity => activity.text);
+		return rows.filter(row => isPhaseoUsageId(row.id)).map(row => ({ id: row.id, activity: decode(row) as AgentActivity })).filter(({ activity }) => activity.type === "usage").map(({ id, activity }) => ({ id, text: activity.text }));
 	}
 }

@@ -1,5 +1,6 @@
 import type { Delegation, Launch } from "./orchestration";
 import type { AutopilotDecision } from "./inbox";
+import type { TodayReport } from "./usageLedger";
 import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
 import type { ImportableHub, UsageHub, UsageHubRequest, UsageHubSnapshot } from "./usageHubs";
 import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
@@ -186,6 +187,8 @@ export type WorkspaceApi = {
 	/** Autopilot's latest decisions across chats, newest first (the Inbox's log). */
 	autopilotLog: () => Promise<AutopilotDecision[]>;
 	onAutopilotLogChange: (listener: () => void) => () => void;
+	/** Spend through Phaseo today, over the last day and week, by hour, and where today's went (the Today page). */
+	usageToday: () => Promise<TodayReport>;
 	preferences: () => Promise<{ preferences: WorkspacePreferences; notificationsSupported: boolean }>;
 	savePreferences: (preferences: WorkspacePreferences) => Promise<WorkspacePreferences>;
 	globalInstructions: () => Promise<InstructionDocument>;

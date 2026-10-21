@@ -45,6 +45,9 @@ type WorkspaceState = {
 	openPullRequests: () => void;
 	/** The Inbox: what needs the person across every chat and agent, and Autopilot's decisions. It keeps the current mode. */
 	inboxPage: boolean;
+	/** Today: what Phaseo spent today against your usual, where it went, and what finished or is waiting. It keeps the current mode. */
+	todayPage: boolean;
+	openToday: () => void;
 	openInbox: () => void;
 	openSettings: (page?: SettingsPage) => void;
 	/** The project the Project settings page shows. */
@@ -63,7 +66,7 @@ export function errorText(reason: unknown) {
 	return (reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "");
 }
 
-type Location = { mode: WorkspaceMode; selectedId?: string; compareId?: string; settings?: SettingsPage; settingsProjectId?: string; scheduled?: boolean; pullRequests?: boolean; inbox?: boolean };
+type Location = { mode: WorkspaceMode; selectedId?: string; compareId?: string; settings?: SettingsPage; settingsProjectId?: string; scheduled?: boolean; pullRequests?: boolean; inbox?: boolean; today?: boolean };
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	const api = window.phaseoDesktop?.workspace;
@@ -82,8 +85,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	const [scheduled, setScheduled] = useState(false);
 	const [pullRequestsPage, setPullRequestsPage] = useState(false);
 	const [inboxPage, setInboxPage] = useState(false);
+	const [todayPage, setTodayPage] = useState(false);
 	const [settingsProjectId, setSettingsProjectId] = useState<string>();
-	const setSettings = useCallback((page?: SettingsPage) => { setSettingsState(page); if (page) { setScheduled(false); setPullRequestsPage(false); setInboxPage(false); } }, []);
+	const setSettings = useCallback((page?: SettingsPage) => { setSettingsState(page); if (page) { setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setTodayPage(false); } }, []);
 	const [commandsOpen, setCommandsOpen] = useState(false);
 	const [navigation, setNavigation] = useState<{ entries: Location[]; index: number }>({ entries: [], index: -1 });
 
@@ -108,7 +112,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		return () => media.removeEventListener("change", apply);
 	}, [theme]);
 
-	const location = useMemo(() => ({ mode, selectedId, compareId, settings, ...(settings === "project" && settingsProjectId ? { settingsProjectId } : {}), ...(scheduled ? { scheduled } : {}), ...(pullRequestsPage ? { pullRequests: true } : {}), ...(inboxPage ? { inbox: true } : {}) }), [mode, selectedId, compareId, settings, settingsProjectId, scheduled, pullRequestsPage, inboxPage]);
+	const location = useMemo(() => ({ mode, selectedId, compareId, settings, ...(settings === "project" && settingsProjectId ? { settingsProjectId } : {}), ...(scheduled ? { scheduled } : {}), ...(pullRequestsPage ? { pullRequests: true } : {}), ...(inboxPage ? { inbox: true } : {}), ...(todayPage ? { today: true } : {}) }), [mode, selectedId, compareId, settings, settingsProjectId, scheduled, pullRequestsPage, inboxPage, todayPage]);
 	useEffect(() => {
 		setNavigation(previous => {
 			if (JSON.stringify(previous.entries[previous.index]) === JSON.stringify(location)) return previous;
@@ -120,7 +124,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		const target = navigation.entries[navigation.index + direction];
 		if (!target) return;
 		setNavigation(previous => ({ ...previous, index: previous.index + direction }));
-		setModeState(target.mode); setSelectedId(target.selectedId); setCompareId(target.compareId); setSettings(target.settings); setSettingsProjectId(target.settingsProjectId); setScheduled(Boolean(target.scheduled)); setPullRequestsPage(Boolean(target.pullRequests)); setInboxPage(Boolean(target.inbox));
+		setModeState(target.mode); setSelectedId(target.selectedId); setCompareId(target.compareId); setSettings(target.settings); setSettingsProjectId(target.settingsProjectId); setScheduled(Boolean(target.scheduled)); setPullRequestsPage(Boolean(target.pullRequests)); setInboxPage(Boolean(target.inbox)); setTodayPage(Boolean(target.today));
 	};
 
 	const command = useCallback(async (value: WorkspaceCommand) => {
@@ -134,20 +138,21 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	}, [api]);
 
 	// Notifications and scheduled tasks open a chat from anywhere, including the settings page.
-	useEffect(() => api?.onOpenTask(id => { if (id) { setSelectedId(id); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); } }), [api, setSelectedId, setCompareId, setSettings]);
+	useEffect(() => api?.onOpenTask(id => { if (id) { setSelectedId(id); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setTodayPage(false); } }), [api, setSelectedId, setCompareId, setSettings]);
 
 	const taskById = useCallback((id: string) => overview.tasks.find(task => task.id === id), [overview.tasks]);
 	const select = useCallback((id?: string) => {
-		setCompareId(undefined); setSelectedId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false);
+		setCompareId(undefined); setSelectedId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setTodayPage(false);
 		const task = id ? overview.tasks.find(value => value.id === id) : undefined;
 		if (task) setModeState(task.projectId ? "code" : "chat");
 	}, [overview.tasks, setCompareId, setSelectedId, setModeState, setSettings]);
-	const openCompare = useCallback((id?: string) => { setSelectedId(undefined); setCompareId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); if (id) setModeState("chat"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
-	const openScheduled = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setPullRequestsPage(false); setInboxPage(false); setScheduled(true); }, [setSelectedId, setCompareId, setSettings]);
-	const openPullRequests = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setInboxPage(false); setPullRequestsPage(true); setModeState("code"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
-	const openInbox = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(true); }, [setSelectedId, setCompareId, setSettings]);
+	const openCompare = useCallback((id?: string) => { setSelectedId(undefined); setCompareId(id); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setTodayPage(false); if (id) setModeState("chat"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
+	const openScheduled = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setPullRequestsPage(false); setInboxPage(false); setTodayPage(false); setScheduled(true); }, [setSelectedId, setCompareId, setSettings]);
+	const openPullRequests = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setInboxPage(false); setTodayPage(false); setPullRequestsPage(true); setModeState("code"); }, [setSelectedId, setCompareId, setModeState, setSettings]);
+	const openInbox = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setTodayPage(false); setInboxPage(true); }, [setSelectedId, setCompareId, setSettings]);
+	const openToday = useCallback(() => { setSelectedId(undefined); setCompareId(undefined); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setTodayPage(true); }, [setSelectedId, setCompareId, setSettings]);
 	const setMode = useCallback((next: WorkspaceMode) => {
-		setModeState(next); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false);
+		setModeState(next); setSettings(undefined); setScheduled(false); setPullRequestsPage(false); setInboxPage(false); setTodayPage(false);
 		const task = selectedId ? overview.tasks.find(value => value.id === selectedId) : undefined;
 		if (task && (next === "code") !== Boolean(task.projectId)) setSelectedId(undefined);
 		if (next === "code") setCompareId(undefined);
@@ -165,7 +170,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 		rightPanel, setRightPanel,
 		scheduled, openScheduled,
 		pullRequestsPage, openPullRequests,
-		inboxPage, openInbox,
+		inboxPage, openInbox, todayPage, openToday,
 		settings, openSettings: page => setSettings(page ?? "general"), closeSettings: () => setSettings(undefined),
 		settingsProjectId, openProjectSettings: id => { setSettingsProjectId(id); setSettings("project"); },
 		commandsOpen, setCommandsOpen,

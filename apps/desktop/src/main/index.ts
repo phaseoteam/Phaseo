@@ -132,6 +132,7 @@ function terminalOwners() {
 }
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
+ipcMain.handle("workspace:usage-today", event => { if (!senderWindow(event)) throw new Error("Invalid usage request."); return workspaceRuntime.store.todayReport(); });
 ipcMain.handle("workspace:autopilot-log", event => { if (!senderWindow(event)) throw new Error("Invalid Autopilot log request."); return workspaceRuntime.store.autopilotLog(); });
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
 ipcMain.handle("workspace:save-global-instructions", (event, edit: unknown) => { if (!senderWindow(event) || shutdownStarted) throw new Error("Instruction editing is unavailable."); return globalInstructions.save(edit); });

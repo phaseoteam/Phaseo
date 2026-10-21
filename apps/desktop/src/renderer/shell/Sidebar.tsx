@@ -2,7 +2,7 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, CalendarClock, Inbox, Columns3, GitPullRequestArrow, Ellipsis, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings } from "lucide-react";
+import { Archive, CalendarClock, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -11,7 +11,8 @@ import { usablePhaseoAccounts, useWorkspace, type CompareGroup } from "../app/wo
 import { cn } from "../lib/utils";
 import { shortcut } from "../lib/keybindings";
 import { usePersistedState } from "../lib/persistedState";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
+import { Tip } from "../components/ui/tooltip";
 import { SettingsNav } from "../settings/SettingsPage";
 import { ModelStack } from "../chat/ModelPicker";
 import { useScheduledTasks } from "../views/ScheduledTasks";
@@ -148,17 +149,47 @@ function ChatList({ viewport }: { viewport: HTMLDivElement | null }) {
 	</div>;
 }
 
+/** A page button in the footer: an icon with a tooltip, marked while its page is open. */
+function FooterButton({ name, tip, active, onClick, children }: { name: string; tip?: string; active?: boolean; onClick: () => void; children: ReactNode }) {
+	return <Tip label={tip ?? name}><button type="button" aria-label={name} aria-current={active ? "page" : undefined} onClick={onClick}
+		className={cn("relative grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 [&_svg]:size-4", active && "bg-sidebar-accent text-foreground")}>{children}</button></Tip>;
+}
+
+const Avatar = ({ name, className }: { name: string; className?: string }) => <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-md bg-linear-to-br from-[#0078b8] to-[#7c3aed] font-bold text-white", className)}>{name.slice(0, 2).toUpperCase()}</span>;
+
+/**
+ * The sidebar's footer: the limit rings, then the profile as an avatar (its menu has the account and settings) and the
+ * pages that don't need a full row: Today, Scheduled tasks, Settings.
+ */
 function AccountFooter() {
-	const { overview, openSettings } = useWorkspace();
+	const { overview, openSettings, settings, todayPage, openToday, scheduled, openScheduled } = useWorkspace();
+	const { tasks } = useScheduledTasks();
+	const on = tasks.filter(task => task.enabled).length;
 	const account = usablePhaseoAccounts(overview)[0];
-	return <div className="border-t border-sidebar-border"><UsageRings /><div className="flex items-center gap-2.5 p-2.5">
+	return <div className="sidebar-footer border-t border-sidebar-border"><UsageRings /><div className="flex items-center gap-1 p-2.5">
 		{account
-			? <button type="button" onClick={() => openSettings("accounts")} className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md p-1 text-left hover:bg-sidebar-accent/70">
-				<span className="grid size-7 shrink-0 place-items-center rounded-full bg-linear-to-br from-[#0078b8] to-[#7c3aed] text-[11px] font-bold text-white">{account.name.slice(0, 2).toUpperCase()}</span>
-				<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{account.name}</span><span className="block truncate text-[11px] text-muted-foreground">Signed in to Phaseo</span></span>
-			</button>
-			: <button type="button" onClick={() => openSettings("accounts")} className="flex flex-1 items-center gap-2 rounded-md p-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in to Phaseo</button>}
-		<button type="button" aria-label="Settings" title={`Settings (${shortcut("settings.open")})`} onClick={() => openSettings()} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Settings className="size-4" /></button>
+			? <DropdownMenu>
+				<DropdownMenuTrigger render={<button type="button" aria-label={`Profile: ${account.name}, signed in to Phaseo`} className="grid size-7 shrink-0 place-items-center rounded-md outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:bg-sidebar-accent" />}>
+					<Avatar name={account.name} className="size-6 text-[10px]" />
+				</DropdownMenuTrigger>
+				<DropdownMenuContent side="top" align="start" className="w-56">
+					<div className="flex items-center gap-2.5 px-2 py-1.5">
+						<Avatar name={account.name} className="size-7 text-[11px]" />
+						<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{account.name}</span><span className="block truncate text-[11px] text-muted-foreground">Signed in to Phaseo</span></span>
+					</div>
+					<DropdownMenuSeparator />
+					<DropdownMenuItem onClick={() => openSettings("accounts")}><UserRound />Accounts</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => openSettings("usage")}><Gauge />Usage & limits</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => openSettings()}><Settings />Settings<DropdownMenuShortcut>{shortcut("settings.open")}</DropdownMenuShortcut></DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+			: <button type="button" onClick={() => openSettings("accounts")} className="flex h-7 items-center gap-1.5 rounded-md px-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in</button>}
+		<span className="flex-1" />
+		<FooterButton name="Today" tip="Today: spend and what finished" active={todayPage} onClick={openToday}><ChartLine /></FooterButton>
+		<FooterButton name="Scheduled tasks" tip={on ? `Scheduled tasks · ${on} on` : "Scheduled tasks"} active={scheduled} onClick={openScheduled}>
+			<CalendarClock />{on > 0 && <span aria-hidden className="absolute top-1 right-1 size-1.5 rounded-[2px] bg-primary" />}
+		</FooterButton>
+		<FooterButton name="Settings" tip={`Settings (${shortcut("settings.open")})`} active={Boolean(settings)} onClick={() => openSettings()}><Settings /></FooterButton>
 	</div></div>;
 }
 
@@ -184,18 +215,7 @@ function InboxLink() {
 	</button>;
 }
 
-function ScheduledTasksLink() {
-	const { scheduled, openScheduled } = useWorkspace();
-	const { tasks } = useScheduledTasks();
-	const on = tasks.filter(task => task.enabled).length;
-	return <button type="button" aria-current={scheduled ? "page" : undefined} onClick={openScheduled}
-		className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", scheduled && "bg-sidebar-accent text-sidebar-foreground")}>
-		<CalendarClock className="size-4 text-muted-foreground" />Scheduled tasks
-		{on > 0 && <span className="ml-auto text-[11px] text-muted-foreground" title={`${on} turned on`}>{on}</span>}
-	</button>;
-}
-
-/** T3 puts Pull requests among the sidebar's page links, beside Scheduled tasks. Chat mode has no projects, so only Code shows it. */
+/** T3 puts Pull requests among the sidebar's page links. Chat mode has no projects, so only Code shows it. */
 function PullRequestsLink() {
 	const { pullRequestsPage, openPullRequests } = useWorkspace();
 	return <button type="button" aria-current={pullRequestsPage ? "page" : undefined} onClick={openPullRequests}
@@ -242,7 +262,6 @@ export function Sidebar() {
 				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
 			</button>
 			<InboxLink />
-			<ScheduledTasksLink />
 			{mode === "code" && <PullRequestsLink />}
 		</div>
 		{mode === "chat"

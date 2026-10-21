@@ -273,6 +273,18 @@ try {
 		["revoke", "Autopilot answered", "Scope: Revoke every key the grant issued\nSigning out should end every session the grant opened.", 9],
 		["revoke", "Autopilot: keep going", "Add a test that signs out with two active keys.\nThe revoke path has no test yet.", 5],
 	]) fixtureStore.recordAutopilotDecision(demoId(name), title, text, at(minutes));
+	// A week of spend for Today: working hours on each earlier day, and today up to now, a little ahead of the usual.
+	const spenders = [["usage-fix", "anthropic/claude-opus-5.5", "phaseo", false], ["revoke", "anthropic/claude-opus-5.5", "phaseo", true], ["ci", "anthropic/claude-opus-5.5", "phaseo", true], ["pricing", "anthropic/claude-opus-5.5", undefined, false], ["notes", "openai/gpt-6", undefined, false], ["french", "google/gemini-3.5-flash", undefined, false]];
+	const today = new Date(now); today.setHours(0, 0, 0, 0);
+	let seed = 7;
+	const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+	for (let daysAgo = 7; daysAgo >= 0; daysAgo--) for (let hour = 9; hour <= 18; hour++) {
+		const time = new Date(today); time.setDate(time.getDate() - daysAgo); time.setHours(hour, 10 + Math.floor(random() * 40));
+		if (time.getTime() > now || (daysAgo % 7 === 6 && hour > 12)) continue;
+		const [name, model, projectId, autopilot] = spenders[Math.floor(random() * (daysAgo ? spenders.length : 4))];
+		const nanos = Math.round((daysAgo ? 120_000_000 : 175_000_000) * (0.4 + random()));
+		fixtureStore.recordUsage({ id: demoId(name), model, projectId }, `ledger-${daysAgo}-${hour}:usage:0`, JSON.stringify({ total_tokens: Math.round(nanos / 900), pricing: { total_nanos: nanos } }), autopilot, time.toISOString());
+	}
 } finally { fixtureStore.close(); }
 
 const models = [
@@ -329,6 +341,9 @@ app.whenReady().then(async () => {
 		"compare-hover": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.compareGroups": [{ id: "compare-1", title: "What does a 10k-token prompt with a 2k-token answer cost?", taskIds: ["pricing", "pricing-gpt", "pricing-gemini"].map(demoId), createdAt: at(30) }] }, hover: "aside [data-slot=tooltip-trigger]:nth-child(2)" },
 		"compare": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedCompare": "compare-1", "phaseo.desktop.compareGroups": [{ id: "compare-1", title: "What does a 10k-token prompt with a 2k-token answer cost?", taskIds: ["pricing", "pricing-gpt", "pricing-gemini"].map(demoId), createdAt: at(30) }] } },
 		"settings": { storage: { "phaseo.desktop.workspaceMode": "chat", "phaseo.desktop.selectedTask": demoId("pricing") }, script: `document.querySelector('[aria-label="Settings"]').click()` },
+		// The footer: the profile as an avatar with its menu open, beside Today, Scheduled tasks and Settings.
+		"profile-menu": { storage: { "phaseo.desktop.workspaceMode": "code" }, script: `(async () => { const b = document.querySelector('aside button[aria-label^="Profile"]'); const o = { bubbles: true, cancelable: true, button: 0, buttons: 1, pointerId: 1, pointerType: "mouse", isPrimary: true }; b.dispatchEvent(new PointerEvent("pointerdown", o)); b.dispatchEvent(new MouseEvent("mousedown", o)); b.dispatchEvent(new PointerEvent("pointerup", { ...o, buttons: 0 })); b.dispatchEvent(new MouseEvent("mouseup", { ...o, buttons: 0 })); b.dispatchEvent(new MouseEvent("click", { ...o, buttons: 0 })); })()` },
+		"today": { storage: { "phaseo.desktop.workspaceMode": "code" }, script: `document.querySelector('aside button[aria-label="Today"]')?.click()` },
 		"inbox": { storage: { "phaseo.desktop.workspaceMode": "code" }, script: `[...document.querySelectorAll('aside button')].find(button => button.textContent.startsWith('Inbox'))?.click()` },
 		// Sample subscription limits, read as just checked so the rings don't start the real agents.
 		"rings": { storage: { "phaseo.desktop.workspaceMode": "code", "phaseo.desktop.usageLimits": { checkedAt: Date.now(),
