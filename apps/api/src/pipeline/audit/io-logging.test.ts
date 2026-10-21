@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
 		put: vi.fn(async () => null),
 	},
 	metadataRows: [] as Array<Record<string, unknown>>,
-	keyPolicy: { privacyZdrOnly: false } as { privacyZdrOnly: boolean } | Error,
+	keyPolicy: { privacyZdrOnly: false } as { privacyZdrOnly: boolean; neverStoreContent?: boolean } | Error,
 }));
 
 vi.mock("@/pipeline/before/workspacePolicy", () => ({
@@ -229,6 +229,78 @@ describe("persistGatewayIoLog", () => {
 
 		await expect(resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1", keyId: "key_1" }))
 			.resolves.toMatchObject({ captureEnabled: false });
+	});
+
+	it("never stores bodies for a key created with never_store_content, even with workspace logging on", async () => {
+		state.keyPolicy = { privacyZdrOnly: false, neverStoreContent: true };
+		const { persistGatewayIoLog, resolveGatewayIoLoggingPolicy } = await import("./io-logging");
+
+		const policy = await resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1", keyId: "key_agent" });
+		const result = await persistGatewayIoLog({
+			requestId: "req_never_store",
+			workspaceId: "workspace_1",
+			keyId: "key_agent",
+			success: true,
+			requestPayload: { messages: [{ role: "user", content: "secret" }] },
+			gatewayResponse: { output: "answer" },
+		});
+
+		expect(policy).toMatchObject({
+			enabled: true,
+			zeroDataRetention: false,
+			neverStoreContent: true,
+			featureEnabled: false,
+			captureEnabled: false,
+		});
+		expect(result).toEqual({ io_log_status: "not_enabled" });
+		expect(state.bucket.put).not.toHaveBeenCalled();
+	});
+
+	it("still stores bodies for other keys in the same workspace", async () => {
+		state.keyPolicy = { privacyZdrOnly: false, neverStoreContent: false };
+		const { resolveGatewayIoLoggingPolicy } = await import("./io-logging");
+
+		await expect(resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1", keyId: "key_1" }))
+			.resolves.toMatchObject({ neverStoreContent: false, captureEnabled: true });
+	});
+});
+
+describe("keyNeverStoresContent", () => {
+	beforeEach(() => {
+		state.keyPolicy = { privacyZdrOnly: false };
+		vi.resetModules();
+	});
+
+	it("uses what the request context already knows", async () => {
+		state.keyPolicy = new Error("must not be read");
+		const { keyNeverStoresContent } = await import("./io-logging");
+
+		await expect(keyNeverStoresContent({ workspaceId: "workspace_1", keyId: "key_1", known: true })).resolves.toBe(true);
+		await expect(keyNeverStoresContent({ workspaceId: "workspace_1", keyId: "key_1", known: false })).resolves.toBe(false);
+	});
+
+	it("reads the key's policy for requests that failed before routing", async () => {
+		const { keyNeverStoresContent } = await import("./io-logging");
+
+		state.keyPolicy = { privacyZdrOnly: false, neverStoreContent: true };
+		await expect(keyNeverStoresContent({ workspaceId: "workspace_1", keyId: "key_agent" })).resolves.toBe(true);
+		state.keyPolicy = { privacyZdrOnly: false };
+		await expect(keyNeverStoresContent({ workspaceId: "workspace_1", keyId: "key_2" })).resolves.toBe(false);
+	});
+
+	it("has nothing to look up without a key or a workspace", async () => {
+		state.keyPolicy = new Error("must not be read");
+		const { keyNeverStoresContent } = await import("./io-logging");
+
+		await expect(keyNeverStoresContent({ workspaceId: "workspace_1", keyId: null })).resolves.toBe(false);
+		await expect(keyNeverStoresContent({ workspaceId: "unknown", keyId: "key_1" })).resolves.toBe(false);
+	});
+
+	it("counts an unreadable policy as never store", async () => {
+		state.keyPolicy = new Error("kv down");
+		const { keyNeverStoresContent } = await import("./io-logging");
+
+		await expect(keyNeverStoresContent({ workspaceId: "workspace_1", keyId: "key_1" })).resolves.toBe(true);
 	});
 
 	it("reads ZDR diagnostics from a guardrail rejection's error body", async () => {

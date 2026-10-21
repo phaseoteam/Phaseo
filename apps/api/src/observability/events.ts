@@ -9,6 +9,7 @@ import { sendAxiomWideEvent } from "./axiom";
 import { reportedCacheTokens } from "@core/cache-usage";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "./privacy";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { keyNeverStoresContent } from "@pipeline/audit/io-logging";
 
 type EventArgs = {
     ctx?: PipelineContext;
@@ -1182,17 +1183,27 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const containsParsedDocumentContent = (args.endpoint ?? args.ctx?.endpoint) === "parse";
         const includeDetailedPayloads =
             observabilityPlan.detailLevel === "full" && !containsParsedDocumentContent;
+        // A key created with never_store_content keeps the operational detail
+        // (routing, attempts, headers) but none of its requests or responses.
+        const neverStoreContent = includeDetailedPayloads || !args.success
+            ? await keyNeverStoresContent({
+                workspaceId,
+                keyId: args.keyId ?? ctx?.meta?.apiKeyId ?? null,
+                known: ctx?.neverStoreContent,
+            })
+            : false;
+        const includeContent = includeDetailedPayloads && !neverStoreContent;
 
-        const sanitizedGatewayRequest = includeDetailedPayloads
+        const sanitizedGatewayRequest = includeContent
             ? sanitizeForAxiom(args.requestPayload ?? ctx?.rawBody ?? ctx?.body ?? null)
             : null;
-        const sanitizedUpstreamRequest = includeDetailedPayloads
+        const sanitizedUpstreamRequest = includeContent
             ? sanitizeJsonStringForAxiom(args.mappedRequest ?? args.result?.mappedRequest ?? null)
             : null;
-        const sanitizedErrorDetails = includeDetailedPayloads || (!args.success && !containsParsedDocumentContent)
+        const sanitizedErrorDetails = !neverStoreContent && (includeDetailedPayloads || (!args.success && !containsParsedDocumentContent))
             ? sanitizeForAxiom(args.errorDetails ?? null)
             : null;
-        const sanitizedProviderResponse = includeDetailedPayloads
+        const sanitizedProviderResponse = includeContent
             ? sanitizeForAxiom(args.providerResponse ?? args.result?.rawResponse ?? null)
             : null;
         const sanitizedProviderResponseHeaders = includeDetailedPayloads
@@ -1201,7 +1212,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const providerHeaderSignals = readProviderHeaderSignals(
             args.result?.upstream?.headers ?? args.providerResponseHeaders,
         );
-        const sanitizedGatewayResponse = includeDetailedPayloads
+        const sanitizedGatewayResponse = includeContent
             ? sanitizeForAxiom(args.gatewayResponse ?? null)
             : null;
         const sanitizedParamRoutingDiagnostics = includeDetailedPayloads
@@ -1513,7 +1524,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             upstream_error_param: upstreamError?.param ?? null,
             upstream_error_message: containsParsedDocumentContent ? null : upstreamError?.message ?? null,
             upstream_error_status: upstreamError?.status ?? null,
-            upstream_error_json: includeDetailedPayloads
+            upstream_error_json: includeContent
                 ? stringifyDetailForAxiom(sanitizeForAxiom(upstreamError?.raw ?? null))
                 : null,
             provider_failure_category: providerFailure?.category ?? null,
