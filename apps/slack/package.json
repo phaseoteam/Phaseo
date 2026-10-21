@@ -1,0 +1,23 @@
+{
+	"name": "@phaseo/slack-agent",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "wrangler dev --port 8789",
+		"build": "wrangler deploy --dry-run --env=",
+		"build:production": "wrangler deploy --dry-run --env production",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"hono": "^4.13.11"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20260710.1",
+		"@typescript/native": "catalog:",
+		"typescript": "catalog:",
+		"vitest": "^4.1.7",
+		"wrangler": "^4.118.0"
+	}
+}
