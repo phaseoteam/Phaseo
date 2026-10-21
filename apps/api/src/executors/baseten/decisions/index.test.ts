@@ -12,7 +12,7 @@ import { executor } from "./index";
 
 const card: PriceCard = {
 	provider: "baseten", model: "baselabs/elephant-1", endpoint: "decisions.make",
-	currency: "USD", version: 2, effective_from: null, effective_to: "2026-10-28T06:59:00Z",
+	currency: "USD", version: "2", effective_from: null, effective_to: "2026-10-28T06:59:00Z",
 	rules: ["input_tokens", "output_tokens"].map(meter => ({
 		meter, price_per_unit: "0", unit: "token", unit_size: 1_000_000,
 		currency: "USD", pricing_plan: "standard", match: [], priority: 200,
