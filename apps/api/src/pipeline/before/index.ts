@@ -561,7 +561,7 @@ export async function beforeRequest(
 		model: candidateModel,
 		requestId,
 		internal,
-		oauth: a.value.authMethod === "oauth",
+		shadowSpendLimit: a.value.authMethod !== "oauth",
 		testingMode: flags.testingMode,
 		internalOnly: flags.internalOnly,
 		disableCache: debugEnabled,
@@ -896,7 +896,7 @@ export async function beforeRequest(
                     onCreditCacheWrite,
                     requestId,
                     internal,
-                    oauth: a.value.authMethod === "oauth",
+                    shadowSpendLimit: a.value.authMethod !== "oauth",
                     testingMode: testingModeEnabled,
                     disableCache: debugEnabled,
                 })

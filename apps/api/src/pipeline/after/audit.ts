@@ -490,7 +490,7 @@ export async function handleSuccessAudit(
         mergeWebFetchObservability(ctx.webFetchObservability ?? null),
     );
 
-    await runGatewayTelemetryPipelines({
+    const deliveries = await runGatewayTelemetryPipelines({
         requestId: ctx.requestId,
         workspaceId: ctx.workspaceId,
         writeSupabase: shouldPersistGatewayAudit(ctx) ? () => auditSuccess({
@@ -648,8 +648,9 @@ export async function handleSuccessAudit(
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     });
 
-	// Shadow mode only: the success row now exists, so the spend-limit coordinator can count it.
-	if (shouldPersistGatewayAudit(ctx) && ctx.meta.authMethod !== "oauth" && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
+	// Shadow mode only: once the success row is written, the spend-limit coordinator can count it.
+	const rowWritten = deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered);
+	if (rowWritten && ctx.meta.authMethod !== "oauth" && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
 		recordShadowSpend({
 			workspaceId: ctx.workspaceId,
 			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,

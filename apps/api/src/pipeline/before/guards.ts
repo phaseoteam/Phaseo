@@ -454,8 +454,12 @@ export async function guardContext(args: {
     model: string;
     requestId: string;
     internal?: boolean;
-    /** OAuth requests carry the client ID in apiKeyId; the spend-limit shadow skips them. */
-    oauth?: boolean;
+    /**
+     * Compare the key-limit decision with the spend-limit coordinator (shadow mode). Only callers
+     * whose successes reach handleSuccessAudit, which records their spend, opt in; batch and
+     * realtime do not. OAuth requests carry a client ID in apiKeyId and must not opt in.
+     */
+    shadowSpendLimit?: boolean;
     testingMode?: boolean;
     internalOnly?: boolean;
     disableCache?: boolean;
@@ -484,7 +488,7 @@ export async function guardContext(args: {
             };
         }
 
-        if (!args.internal && !args.oauth && (!context.keyLimit.ok || hasConfiguredKeyLimits(context.keyLimit))) {
+        if (args.shadowSpendLimit && !args.internal && (!context.keyLimit.ok || hasConfiguredKeyLimits(context.keyLimit))) {
             // Shadow mode only: compares the spend-limit coordinator with this check, in the background.
             shadowSpendLimitOnce({ workspaceId: args.workspaceId, keyId: args.apiKeyId, requestId: args.requestId }, context.keyLimit);
         }

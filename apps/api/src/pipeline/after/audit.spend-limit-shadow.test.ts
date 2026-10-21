@@ -80,10 +80,16 @@ describe("handleSuccessAudit spend-limit shadow", () => {
 		});
 	});
 
-	it("skips keys without limits, OAuth requests and unpersisted testing requests", async () => {
+	it("skips keys without limits, OAuth requests, unpersisted testing requests and failed row writes", async () => {
 		await audit({ keyLimit: { ok: true, reason: null, resetAt: null, buckets: null, budgets: [] } });
 		await audit({ meta: { authMethod: "oauth" } });
 		await audit({ testingMode: true });
+		const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		auditSuccessMock.mockRejectedValueOnce(new Error("database unavailable"));
+		await audit();
+		auditSuccessMock.mockResolvedValueOnce(false);
+		await audit();
+		error.mockRestore();
 		expect(recordShadowSpendMock).not.toHaveBeenCalled();
 	});
 });
