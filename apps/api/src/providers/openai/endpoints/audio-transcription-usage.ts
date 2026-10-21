@@ -210,6 +210,33 @@ export function mergeSpeechToTextUsage(
     };
 }
 
+/** Groq bills every transcription or translation as at least 10 seconds of audio. */
+const GROQ_MINIMUM_BILLED_SECONDS = 10;
+
+/**
+ * Apply a provider's documented speech-to-text billing basis to the merged usage:
+ * - Groq: "Minimum Billed Length: 10 seconds. If you submit a request less than this, you will
+ *   still be billed for 10 seconds." (https://console.groq.com/docs/speech-to-text)
+ * - Together: Whisper is priced per audio minute (https://www.together.ai/pricing); the audio
+ *   length is the `duration` (seconds) of a verbose_json response, else the measured file.
+ */
+export function applyProviderSpeechToTextBilling(providerId: string, usage: Record<string, any>): Record<string, any> {
+    if (providerId === "groq") {
+        const seconds = finiteNumber(usage.input_audio_seconds) ?? 0;
+        if (seconds < GROQ_MINIMUM_BILLED_SECONDS) {
+            return { ...usage, input_audio_seconds: GROQ_MINIMUM_BILLED_SECONDS };
+        }
+        return usage;
+    }
+    if (providerId === "together") {
+        const seconds = finiteNumber(usage.input_audio_seconds);
+        if (seconds !== undefined && finiteNumber(usage.input_audio_minutes) === undefined) {
+            return { ...usage, input_audio_minutes: seconds / 60 };
+        }
+    }
+    return usage;
+}
+
 export async function estimateOpenAiSpeechToTextUsage(args: {
     file: File | Blob;
     prompt?: string;

@@ -12,6 +12,7 @@ import { loadProviderPricing, calculatePricing } from "./pricing";
 import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "./payload";
 import { handleStreamResponse, handlePassthroughFallback } from "./stream";
 import { handleSpeechStreamResponse } from "./speech-stream";
+import { alertUnexpectedZeroCostMedia } from "./media-zero-cost";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { withServedModel } from "./served-model";
@@ -500,6 +501,7 @@ async function handleNonStreamResponse(
         tier,
         ctx.meta
     ));
+    alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
     const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const pricedWithByokSubtotal = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFee({
         workspaceId: ctx.workspaceId,
