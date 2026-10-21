@@ -288,6 +288,79 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(executor.mock.calls[0][0]).toMatchObject({ apiKeyId: "key_test_1" });
 	});
 
+	const syncMediaCases = [
+		["image.generate", "images.generations"],
+		["image.edit", "images.edits"],
+		["audio.speech", "audio.speech"],
+		["audio.transcription", "audio.transcription"],
+		["audio.translations", "audio.translations"],
+		["music.generate", "music.generate"],
+		["ocr", "ocr"],
+	] as const;
+
+	function mediaCandidates() {
+		const candidates = ["first", "second"].map((providerId) => ({
+			providerId, pricingCard: { rules: [], currency: "USD" }, byokMeta: [],
+			providerModelSlug: "media-model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+	}
+
+	const succeeded = () => ({
+		kind: "completed", ir: { ok: true }, upstream: new Response("{}", { status: 200 }),
+		bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway",
+	});
+
+	it.each(syncMediaCases)("does not send a %s request to a second provider once the first has answered 2xx", async (capability, endpoint) => {
+		mediaCandidates();
+		const first = vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+			await args.upstreamTiming.fetch("https://provider.test/media", { method: "POST" });
+			fetchSpy.mockRestore();
+			// The provider has charged; mapping or pricing its answer then fails.
+			throw new Error("pricing_rule_missing:output_image");
+		});
+		const second = vi.fn(async () => succeeded());
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => providerId === "first" ? first : second);
+		const result = await doRequestWithIR(createCtx({ capability, endpoint }), { model: "media-model", prompt: "x" } as any, createTiming());
+		expect(first).toHaveBeenCalledTimes(1);
+		expect(second).not.toHaveBeenCalled();
+		expect((result as Response).status).toBe(502);
+	});
+
+	it("does not send a media request elsewhere when a later call fails after an earlier provider call succeeded", async () => {
+		mediaCandidates();
+		const first = vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+			await args.upstreamTiming.fetch("https://provider.test/music", { method: "POST" });
+			fetchSpy.mockRestore();
+			return { kind: "completed", upstream: new Response("{}", { status: 500 }), bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		});
+		const second = vi.fn(async () => succeeded());
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => providerId === "first" ? first : second);
+		await doRequestWithIR(createCtx({ capability: "music.generate", endpoint: "music.generate" }), { model: "media-model", prompt: "x" } as any, createTiming());
+		expect(second).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		["a non-2xx answer", 503],
+		["a transport error", "transport"],
+	] as const)("still fails a media request over to the next provider after %s", async (_label, failure) => {
+		mediaCandidates();
+		const first = vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: failure === "transport" ? 200 : failure }));
+			if (failure === "transport") fetchSpy.mockRejectedValue(new Error("Network connection lost."));
+			const response = await args.upstreamTiming.fetch("https://provider.test/media", { method: "POST" }).finally(() => fetchSpy.mockRestore());
+			return { kind: "completed", upstream: response, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		});
+		const second = vi.fn(async () => succeeded());
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => providerId === "first" ? first : second);
+		const result = await doRequestWithIR(createCtx({ capability: "image.generate", endpoint: "images.generations" }), { model: "media-model", prompt: "x" } as any, createTiming());
+		expect(second).toHaveBeenCalledTimes(1);
+		expect((result as any).ok).toBe(true);
+	});
+
     it.each(["completed", "stream"] as const)("retains private health identity through %s execution", async kind => {
         const candidate = { providerId: "private-model", privateEndpoint: { baseUrl: "https://private.example/v1", supportsResponses: true }, pricingCard: { currency: "USD", rules: [] }, byokMeta: [{ id: "route-1", key: "test-private-key", value: "test-private-key", alwaysUse: true, routingMode: "priority" }], providerModelSlug: "private", capabilityParams: {} };
         const scopedProvider = "private-model:workspace-a:route-1";
