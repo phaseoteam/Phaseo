@@ -26,17 +26,14 @@ begin
   where workspace_id = p_workspace_id and session_id = p_session_id
   for update;
   if not found then raise exception 'realtime_session_not_found'; end if;
-  if v_session.status not in ('created', 'connected', 'ending') then
+  if v_session.status not in ('created', 'connecting', 'connected', 'ending') then
     raise exception 'realtime_session_terminal';
   end if;
 
   v_additional := greatest(0, coalesce(p_target_reserved_nanos, 0) - coalesce(v_session.reserved_nanos, 0));
   if v_additional > 0 then
+    -- The relay begins the budget close when this raises.
     if coalesce(v_wallet.balance_nanos, 0) - coalesce(v_wallet.reserved_nanos, 0) < v_additional then
-      update public.gateway_realtime_sessions
-      set status = 'ending', disconnect_reason = 'credit_hold_extension_failed',
-          error_code = 'insufficient_funds', updated_at = now()
-      where id = v_session.id;
       raise exception 'insufficient_funds';
     end if;
 
