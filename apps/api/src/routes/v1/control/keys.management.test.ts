@@ -615,6 +615,15 @@ describe("management key routes", () => {
 			]);
 			expect(state.updatePayloads[0]).toEqual({ department_id: DEPARTMENT_ID });
 			expect(body.data.department_id).toBe(DEPARTMENT_ID);
+			// The department's rate limit now applies to the key.
+			expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
+		});
+
+		it("does not republish rate limits when the department is unchanged", async () => {
+			state.keyRows.push(keyRow({ department_id: DEPARTMENT_ID }), keyRow({ department_id: DEPARTMENT_ID }));
+			state.departmentRows.push({ id: DEPARTMENT_ID });
+			expect((await patch({ department_id: DEPARTMENT_ID })).status).toBe(200);
+			expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
 		});
 
 		it("rejects a department outside the workspace or a malformed id", async () => {
@@ -637,6 +646,7 @@ describe("management key routes", () => {
 			expect(state.departmentLookups).toHaveLength(0);
 			expect(state.updatePayloads[0]).toEqual({ department_id: null });
 			await expect(response.json()).resolves.toMatchObject({ data: { department_id: null } });
+			expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
 		});
 	});
 
@@ -740,6 +750,15 @@ describe("management key routes", () => {
 		expect(state.copyRateLimit).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws_1", fromKeyId: "key_old", toKeyId: "key_new" }));
 		expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
 		expect(state.deletedKeyIds).toEqual([]);
+	});
+
+	it("republishes when the rotated key is linked to a department", async () => {
+		pushRotationRows();
+		state.keyRows[0].department_id = "dept_1";
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(200);
+		expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
 	});
 
 	it("does not republish when the rotated key had no rate limit policy", async () => {

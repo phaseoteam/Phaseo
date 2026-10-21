@@ -4711,9 +4711,9 @@ paths:
       summary: List rate limit policies
       description: >-
         Lists the workspace's named rate limit policies. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute and tokens_per_minute for key, member, department,
+        guardrail and end-user-default assignments; concurrent_requests is not
+        enforced yet.
       responses:
         '200':
           description: Rate limit policies
@@ -4736,9 +4736,8 @@ paths:
       description: >-
         Creates a named policy with requests per minute, tokens per minute, or
         concurrent request limits. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        tokens_per_minute for key, member, department, guardrail and
+        end-user-default assignments; concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -4775,9 +4774,8 @@ paths:
       summary: Get a rate limit policy
       description: >-
         Returns one rate limit policy. The gateway enforces requests_per_minute
-        and tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        and tokens_per_minute for key, member, department, guardrail and
+        end-user-default assignments; concurrent_requests is not enforced yet.
       responses:
         '200':
           description: Rate limit policy
@@ -4801,8 +4799,8 @@ paths:
         Changes a policy's name, description, limits, or fail-closed setting.
         Set a limit to null to remove it; at least one limit must remain. The
         gateway enforces requests_per_minute and tokens_per_minute for key,
-        member, guardrail and end-user-default assignments; concurrent_requests
-        and department assignments are not enforced yet.
+        member, department, guardrail and end-user-default assignments;
+        concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -4830,9 +4828,9 @@ paths:
       summary: Delete a rate limit policy
       description: >-
         Deletes a policy and every assignment that uses it. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute and tokens_per_minute for key, member, department,
+        guardrail and end-user-default assignments; concurrent_requests is not
+        enforced yet.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -4856,9 +4854,8 @@ paths:
       description: >-
         Lists where rate limit policies apply, optionally filtered by policy or
         target type. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        tokens_per_minute for key, member, department, guardrail and
+        end-user-default assignments; concurrent_requests is not enforced yet.
       parameters:
         - name: policy_id
           in: query
@@ -4913,9 +4910,8 @@ paths:
         Applies a policy to one API key, workspace member, department, or
         guardrail, or sets the workspace default for each end user. Each target
         can have one policy. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        tokens_per_minute for key, member, department, guardrail and
+        end-user-default assignments; concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -4952,9 +4948,9 @@ paths:
       summary: Get a rate limit assignment
       description: >-
         Returns one rate limit assignment. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute and tokens_per_minute for key, member, department,
+        guardrail and end-user-default assignments; concurrent_requests is not
+        enforced yet.
       responses:
         '200':
           description: Rate limit assignment
@@ -4977,8 +4973,8 @@ paths:
       description: >-
         Switches the policy applied to an assignment's target. The gateway
         enforces requests_per_minute and tokens_per_minute for key, member,
-        guardrail and end-user-default assignments; concurrent_requests and
-        department assignments are not enforced yet.
+        department, guardrail and end-user-default assignments;
+        concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -5006,9 +5002,9 @@ paths:
       summary: Delete a rate limit assignment
       description: >-
         Removes a policy from its target. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute and tokens_per_minute for key, member, department,
+        guardrail and end-user-default assignments; concurrent_requests is not
+        enforced yet.
       responses:
         '200':
           description: Rate limit assignment deleted
