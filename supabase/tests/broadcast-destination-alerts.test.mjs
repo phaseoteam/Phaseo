@@ -12,9 +12,10 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const alertsMigration = await read('../migrations/20261021135140_broadcast_destination_alerts.sql');
 const enqueue = async () => (await rows('select public.enqueue_broadcast_destination_alerts() as n'))[0].n;
 const alerts = () => rows(`select workspace_id, to_email, payload, dedupe_key from public.email_outbox where kind = 'broadcast_destination_failing' order by created_at, workspace_id`);
-const destination = async (workspace, name, type = 'langfuse') => (await rows(
-  `insert into public.workspace_broadcast_destinations(workspace_id,destination_id,name,enabled) values($1,$2,$3,true) returning id`,
-  [workspace, type, name],
+// Destinations are created a day ago unless createdMinutesAgo says otherwise.
+const destination = async (workspace, name, type = 'langfuse', createdMinutesAgo = 24 * 60) => (await rows(
+  `insert into public.workspace_broadcast_destinations(workspace_id,destination_id,name,enabled,created_at) values($1,$2,$3,true, now() - make_interval(mins => $4::int)) returning id`,
+  [workspace, type, name, createdMinutesAgo],
 ))[0].id;
 // Sets a destination's health as if its last `failures` requests failed `minutesAgo` minutes ago.
 const failing = (destinationId, workspace, failures, { successMinutesAgo = null, minutesAgo = 1, alertedMinutesAgo = null } = {}) => db.query(`
@@ -89,13 +90,18 @@ try {
   const recovering = await destination(ws(1), 'Honeycomb', 'honeycomb');
   const otherWorkspace = await destination(ws(2), 'Disabled route');
   const unrouted = await destination(ws(3), 'Unrouted');
+  const fresh = await destination(ws(1), 'New destination', 'axiom', 2);
 
-  // Below the streak threshold, with a recent success, or unrouted: no alert.
+  // Below the streak threshold, with a recent success, never delivered but created
+  // within the quiet period, or unrouted: no alert.
   await failing(broken, ws(1), 4);
+  await failing(fresh, ws(1), 9);
   await failing(recovering, ws(1), 9, { successMinutesAgo: 5 });
   await failing(otherWorkspace, ws(2), 20);
   await failing(unrouted, ws(3), 20);
   assert.equal(await enqueue(), 0);
+
+  await db.query('delete from public.workspace_broadcast_destinations where id = $1', [fresh]);
 
   // Five failures in a row with no success for 15 minutes alerts once for the workspace.
   await failing(broken, ws(1), 12);

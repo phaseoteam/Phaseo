@@ -22,6 +22,11 @@ begin
   -- at most once per hour each. A destination is included once per failing
   -- streak: again only after a later success and at least six hours. The routed
   -- delivery job sends the event.
+  --
+  -- The quiet period runs from the last success, or from creation for a
+  -- destination that has never delivered. Candidate health rows are locked, so a
+  -- success recorded concurrently is waited for and the row rechecked rather than
+  -- marked alerted from a stale read.
   with routed as (
     select distinct route.workspace_id
     from public.notification_event_destinations route
@@ -46,11 +51,12 @@ begin
     where destination.enabled
       and health.consecutive_failures >= v_min_failures
       and health.last_failure_at > now() - interval '24 hours'
-      and (health.last_success_at is null or health.last_success_at < now() - v_quiet)
+      and coalesce(health.last_success_at, destination.created_at) < now() - v_quiet
       and (
         health.alerted_at is null
         or (health.alerted_at < health.last_success_at and health.alerted_at < now() - v_realert)
       )
+    for update of health
   ),
   ranked as (
     select
