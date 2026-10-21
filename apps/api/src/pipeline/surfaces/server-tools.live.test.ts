@@ -123,6 +123,29 @@ describe("managed tool live stream", () => {
 		expect(chunks.at(-1)!.choices[0].finish_reason).toBe("tool_calls");
 	});
 
+	it("sends each held Chat tool call under the choice that made it, numbered per choice", async () => {
+		const response = await createManagedToolLiveResponse({
+			protocol: "openai.chat.completions",
+			requestId: "req_chat_choices",
+			model: "test-model",
+			async run(sink) {
+				const round = sink.beginRound();
+				round({ type: "delta_text", channel: "output_text", text: "Checking.", choiceIndex: 0 });
+				round({ type: "delta_tool", toolCallId: "call_w1", toolName: "get_weather", argumentsDelta: "{\"city\":\"Paris\"}", choiceIndex: 1, toolIndex: 0 });
+				round({ type: "delta_tool", toolCallId: "call_w0", toolName: "get_weather", argumentsDelta: "{\"city\":\"London\"}", choiceIndex: 0, toolIndex: 0 });
+				round({ type: "delta_tool", toolCallId: "call_t1", toolName: "get_time", argumentsDelta: "{}", choiceIndex: 1, toolIndex: 1 });
+				return new Response('data: {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"},{"index":1,"delta":{},"finish_reason":"tool_calls"}]}\n\ndata: [DONE]\n\n', { headers: { "content-type": "text/event-stream" } });
+			},
+		});
+		const chunks = framesOf(await response.text()).filter((frame) => frame.data !== "[DONE]").map((frame) => frame.data);
+		expect(chunks.filter((chunk) => chunk.choices?.some((choice: any) => choice.delta?.tool_calls)).map((chunk) => chunk.choices)).toEqual([
+			[{ index: 1, delta: { tool_calls: [{ index: 0, id: "call_w1", type: "function", function: { name: "get_weather", arguments: "{\"city\":\"Paris\"}" } }] }, finish_reason: null }],
+			[{ index: 0, delta: { tool_calls: [{ index: 0, id: "call_w0", type: "function", function: { name: "get_weather", arguments: "{\"city\":\"London\"}" } }] }, finish_reason: null }],
+			[{ index: 1, delta: { tool_calls: [{ index: 1, id: "call_t1", type: "function", function: { name: "get_time", arguments: "{}" } }] }, finish_reason: null }],
+		]);
+		expect(chunks.at(-1)!.choices.map((choice: any) => [choice.index, choice.finish_reason])).toEqual([[0, "tool_calls"], [1, "tool_calls"]]);
+	});
+
 	it("emits buffered Chat Completions text before the final chunk", async () => {
 		const response = await createManagedToolLiveResponse({
 			protocol: "openai.chat.completions",

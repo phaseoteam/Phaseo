@@ -25,6 +25,8 @@ type LiveText = { channel: TextChannel; key: string; index: number; id: string; 
 /** A tool call a model turn made, with the arguments streamed or held so far. */
 type LiveCall = {
 	index: number;
+	/** The Chat choice that made the call. */
+	choiceIndex: number;
 	id: string;
 	callId?: string;
 	upstreamKey?: string;
@@ -120,7 +122,8 @@ export async function createManagedToolLiveResponse(args: {
 			/** Responses items in output order, from every round and tool result. */
 			const items: Array<LiveText | LiveCall> = [];
 			let nextIndex = 0;
-			let shownCalls = 0;
+			/** Tool call indexes sent to Chat clients so far, per choice. */
+			const shownCalls = new Map<number, number>();
 			let openBlock: LiveText | null = null;
 			let outputText = "";
 			let finalTurnBuffered = false;
@@ -205,6 +208,7 @@ export async function createManagedToolLiveResponse(args: {
 					const upstreamKey = event.toolCallKey ?? event.toolCallId;
 					call = {
 						index,
+						choiceIndex: event.choiceIndex ?? 0,
 						id: upstreamKey ?? `fc_${args.requestId}_${index}`,
 						callId: event.toolCallId,
 						upstreamKey,
@@ -254,11 +258,13 @@ export async function createManagedToolLiveResponse(args: {
 				}
 				if (call.callId && executed.has(call.callId)) return;
 				if (chat) {
+					const toolIndex = shownCalls.get(call.choiceIndex) ?? 0;
+					shownCalls.set(call.choiceIndex, toolIndex + 1);
 					write(null, {
 						object: "chat.completion.chunk",
 						choices: [{
-							index: 0,
-							delta: { tool_calls: [{ index: shownCalls++, id: call.callId ?? call.id, type: "function", function: { name: call.name, arguments: call.args } }] },
+							index: call.choiceIndex,
+							delta: { tool_calls: [{ index: toolIndex, id: call.callId ?? call.id, type: "function", function: { name: call.name, arguments: call.args } }] },
 							finish_reason: null,
 						}],
 					});
@@ -342,7 +348,7 @@ export async function createManagedToolLiveResponse(args: {
 						// The turn that made this call was not streamed: send the call whole, with its result.
 						const { frames, items: [sent] } = responsesOutputItemFrames([serverToolTraceOutputItem(item)], { firstOutputIndex: nextIndex, idPrefix: `fc_${args.requestId}` });
 						for (const frame of frames) write(frame.eventName, frame.frame);
-						items.push({ index: nextIndex++, id: sent.id, callId: item.id, name: item.name, args: item.arguments ?? "", sent: "full", argsDone: true, done: true, result: item });
+						items.push({ index: nextIndex++, choiceIndex: 0, id: sent.id, callId: item.id, name: item.name, args: item.arguments ?? "", sent: "full", argsDone: true, done: true, result: item });
 					}
 					flush();
 				},
