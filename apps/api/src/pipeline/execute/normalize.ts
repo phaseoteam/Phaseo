@@ -18,6 +18,7 @@ import {
 } from "./textNormalizePolicy";
 import { dropUnsupportedParams, type DroppedParam } from "./unsupportedParams";
 import { dropVerbatimResponsesItems } from "./responsesItems";
+import { dropUnsupportedCacheTtl } from "./cacheTtl";
 type ParamRange = {
     min?: number;
     max?: number;
@@ -236,9 +237,11 @@ export function normalizeIRForProvider(
     const supported = dropUnsupportedParams(ir, providerId, capabilityParams);
     // Responses input items only OpenAI's API defines are removed the same way.
     const items = dropVerbatimResponsesItems(supported.ir, providerId);
-    const dropped = [...supported.dropped, ...items.dropped];
+    // So is a 1-hour cache TTL on a model the provider caches for 5 minutes only.
+    const cacheTtl = dropUnsupportedCacheTtl(items.ir, providerId, [options?.modelForReasoning]);
+    const dropped = [...supported.dropped, ...items.dropped, ...cacheTtl.dropped];
     if (dropped.length > 0) options?.onDroppedParams?.(dropped);
-    ir = restrictToAllowedTools(items.ir, providerId);
+    ir = restrictToAllowedTools(cacheTtl.ir, providerId);
     const modelForReasoning = options?.modelForReasoning ?? ir.model;
     const nextMaxTokens = normalizeMaxTokens(
         ir,
