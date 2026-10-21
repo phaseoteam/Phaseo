@@ -31,6 +31,61 @@ beforeEach(() => setupRuntimeFromEnv({ BASETEN_API_KEY: "baseten-test" }));
 afterEach(teardownTestRuntime);
 
 describe("Baseten Decisions", () => {
+	it("rejects oversized string state before contacting Baseten", async () => {
+		const mock = installFetchMock([]);
+		try {
+			const result = await executor(argsFor({ state: "x".repeat(50_001) }));
+			expect(result).toMatchObject({ terminal: true, localClientError: true });
+			expect(result.upstream.status).toBe(400);
+			expect(mock.calls).toHaveLength(0);
+		} finally { mock.restore(); }
+	});
+	it.each(["x".repeat(50_000), "😀".repeat(25_001)])("uses code points for the state character boundary", async state => {
+		const mock = installFetchMock([{ match: () => true,
+			response: jsonResponse({ answers: { billing: { type: "noul", noul: 0.9 } }, usage: { input_tokens: 10, output_tokens: 1 } }),
+		}]);
+		try {
+			expect((await executor(argsFor({ state }))).upstream.status).toBe(200);
+			expect(mock.calls).toHaveLength(1);
+		} finally { mock.restore(); }
+	});
+	it.each([
+		"State exceeds 50000 characters",
+		"OneJev prompt has 25102 tokens, exceeding max_len 16384; prompts are never truncated",
+	])("returns upstream input limits as client errors: %s", async error => {
+		const mock = installFetchMock([{ match: () => true,
+			response: jsonResponse({ error, error_type: "Validation" }, { status: 422 }),
+		}]);
+		try {
+			const result = await executor(argsFor({ state: { text: "large structured input" } }));
+			expect(result).toMatchObject({ terminal: true, localClientError: true });
+			expect(result.upstream.status).toBe(400);
+			expect(await result.upstream.json()).toMatchObject({ error: "invalid_decision_request", message: error });
+			expect(result.bill.usage).toBeUndefined();
+		} finally { mock.restore(); }
+	});
+	it.each([
+		{ error: "Unrecognized model configuration", error_type: "Validation" },
+		{ error: "State exceeds 50000 characters", error_type: "Internal" },
+		"invalid JSON",
+	])("preserves unrelated upstream 422 failures", async payload => {
+		const raw = typeof payload === "string" ? payload : JSON.stringify(payload);
+		const mock = installFetchMock([{ match: () => true, response: new Response(raw, { status: 422 }) }]);
+		try {
+			const result = await executor(argsFor());
+			expect(result.upstream.status).toBe(422);
+			expect(await result.upstream.text()).toBe(raw);
+			expect(result.localClientError).not.toBe(true);
+		} finally { mock.restore(); }
+	});
+	it("bounds oversized upstream validation errors", async () => {
+		const mock = installFetchMock([{ match: () => true, response: new Response("x".repeat(65_537), { status: 422 }) }]);
+		try {
+			const result = await executor(argsFor());
+			expect(result.upstream.status).toBe(502);
+			expect(result.bill.usage).toBeUndefined();
+		} finally { mock.restore(); }
+	});
 	it.each([
 		["baselabs/elephant-1", "decision-models/baseten-elephant-9b-latest"],
 		["baselabs/mammoth-1", "decision-models/baseten-mammoth-27b-latest"],
