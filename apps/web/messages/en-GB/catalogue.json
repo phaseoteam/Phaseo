@@ -1225,6 +1225,8 @@
 				"audio_seconds": "Audio seconds",
 				"cached_write_text_tokens_5m": "Cache write text tokens (5 min TTL)",
 				"cached_write_text_tokens_1h": "Cache write text tokens (1 hour TTL)",
+				"cached_write_text_tokens_30m": "Cache write text tokens (30 min TTL)",
+				"cached_write_text_tokens_12h": "Cache write text tokens (12 hour TTL)",
 				"output_video_seconds": "Output video seconds",
 				"output_video_frames": "Output video frames",
 				"bfl_credits": "BFL credits",

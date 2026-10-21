@@ -1225,6 +1225,8 @@
 				"audio_seconds": "Segundos de audio",
 				"cached_write_text_tokens_5m": "Tokens de escritura de caché de texto (TTL de 5 min)",
 				"cached_write_text_tokens_1h": "Tokens de escritura de caché de texto (TTL de 1 h)",
+				"cached_write_text_tokens_30m": "Tokens de escritura de caché de texto (TTL de 30 min)",
+				"cached_write_text_tokens_12h": "Tokens de escritura de caché de texto (TTL de 12 h)",
 				"output_video_seconds": "Segundos de vídeo de salida",
 				"output_video_frames": "Fotogramas de vídeo de salida",
 				"bfl_credits": "Créditos de BFL",

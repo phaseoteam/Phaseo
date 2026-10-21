@@ -10,6 +10,11 @@ describe("generated pricing presentation copy", () => {
 		const catalogs = Object.fromEntries([["Common", "common"], ["Catalogue", "catalogue"], ["Product", "product"]].map(([namespace, file]) => [namespace, JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "messages", locale, file + ".json"), "utf8"))]));
 		const t = createTranslator({ locale, messages: catalogs });
 		for (const key of Object.values(PRICING_DISPLAY_LABEL_KEYS)) expect(t.has(key)).toBe(true);
+		for (const meter of ["cached_write_text_tokens_30m", "cached_write_text_tokens_12h"]) {
+			const key = `Catalogue.modelDetail.pricing.meters.${meter}`;
+			expect(t.has(key)).toBe(true);
+			expect(t(key)).not.toContain("Catalogue.");
+		}
 		const canonical = [
 			...Object.keys(PRICING_DISPLAY_LABEL_KEYS),
 			...(["token", "pixel", "image", "video", "second", "minute", "page", "call", "character", "byte", "frame", "message", "credit", "usd", "unknown"] as const).flatMap((unit) => [unitLabel(unit, 1), unitLabel(unit, 1000)]),

@@ -1225,6 +1225,8 @@
 				"audio_seconds": "Audiosekunden",
 				"cached_write_text_tokens_5m": "In den Textcache geschriebene Tokens (5 Min. TTL)",
 				"cached_write_text_tokens_1h": "In den Textcache geschriebene Tokens (1 Std. TTL)",
+				"cached_write_text_tokens_30m": "In den Textcache geschriebene Tokens (30 Min. TTL)",
+				"cached_write_text_tokens_12h": "In den Textcache geschriebene Tokens (12 Std. TTL)",
 				"output_video_seconds": "Ausgabe-Videosekunden",
 				"output_video_frames": "Ausgabe-Videoframes",
 				"bfl_credits": "BFL-Credits",
