@@ -1475,7 +1475,8 @@ export class RealtimeRelayDurableObject {
 			[STORAGE_PROVIDER_STATE]: this.providerState,
 		});
 		this.closeUpstream("realtime_relay_settling");
-		// The cost xAI itself reports is authoritative when present.
+		// xAI's reported cost can raise the bill above connected-time pricing but
+		// never lower it: server-VAD sessions are billed for their full duration.
 		const providerCostNanos = provider === "spacex-ai" ? toNumber(this.usage.provider_cost_nanos) : 0;
 		try {
 			await settleRealtimeSession({
@@ -1483,7 +1484,7 @@ export class RealtimeRelayDurableObject {
 				sessionId: this.session.session_id,
 				status,
 				usage: this.usage,
-				...(providerCostNanos > 0 ? { finalCostNanos: providerCostNanos } : {}),
+				...(providerCostNanos > 0 ? { providerCostNanos } : {}),
 				disconnectReason: reason,
 				estimated: this.usage.billing_estimated === true,
 				estimateBasis: this.usage.estimate_basis ?? null,
