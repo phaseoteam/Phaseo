@@ -576,7 +576,7 @@ Exemples :
 
 Utilisez-le pour bénéficier d’une fonctionnalité native du fournisseur tout en gardant le reste de la requête dans le schéma commun de la passerelle. Privilégiez `cache_control` au niveau supérieur pour les politiques de cache Claude et, pour la conservation OpenAI, `prompt_cache_options` au niveau supérieur à partir de GPT-5.6 ou `prompt_cache_retention` au niveau supérieur pour les modèles antérieurs.
 
-`google.cached_content` désigne un cache Gemini explicite. Il ne fonctionne qu’avec vos propres identifiants : une clé API Google sur Google AI Studio, ou des identifiants Vertex AI sur Vertex AI, dont le projet doit posséder le cache. Avec les identifiants de Phaseo, la requête renvoie 400. `google.cache_control` et `google.cache_ttl` sont acceptés, mais ne sont pas envoyés à Google.
+`google.cached_content` désigne un cache Gemini explicite. Il ne fonctionne qu’avec vos propres identifiants : une clé API Google sur Google AI Studio, ou des identifiants Vertex AI sur Vertex AI. Sur Vertex AI, Phaseo envoie la requête au projet et à l’emplacement indiqués dans le nom complet du cache (`projects/{project}/locations/{location}/cachedContents/{id}`) ; un nom court utilise le `project_id` et la `region` du JSON de votre compte de service. Avec les identifiants de Phaseo, la requête renvoie 400. `google.cache_control` et `google.cache_ttl` sont acceptés, mais ne sont pas envoyés à Google.
 
 Pour des exemples de cache de prompts par fournisseur dans Chat Completions, Responses et Anthropic Messages, consultez [Cache de prompts](../guides/prompt-caching.mdx).
 

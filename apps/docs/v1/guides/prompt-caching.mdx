@@ -207,7 +207,7 @@ Gemini caches implicitly on Gemini 2.5 and later, with nothing to send. To use a
 ```
 
 - On Google AI Studio, `cached_content` works only with your own Google API key (BYOK). With Phaseo's key the request returns 400, because the cache belongs to the account that created it.
-- On Vertex AI, the cache must belong to the Google Cloud project of the credential that serves the request, so use your own Vertex AI credential. With Phaseo's credential the request returns 400.
+- On Vertex AI, `cached_content` works only with your own Vertex AI credential; with Phaseo's credential the request returns 400. Send the cache's full name, `projects/{project}/locations/{location}/cachedContents/{id}`, and Phaseo sends the request to that project and location. A short name such as `cachedContents/abc123` uses the `project_id` and `region` in your service-account JSON, and returns 400 if either is missing.
 - Google does not support explicit caches on Gemini 4 Argon and later.
 
 `provider_options.google.cache_control` and `provider_options.google.cache_ttl` are accepted but not sent to Google.

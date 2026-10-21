@@ -61,7 +61,7 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	const irRequest = args.ir as IRChatRequest;
+	let irRequest = args.ir as IRChatRequest;
 	const model = args.providerModelSlug ?? irRequest.model;
 	assertClaudeRequestSupported(irRequest, model, args.providerId);
 	const bindings = getBindings() as any;
@@ -69,23 +69,36 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		bindings.GOOGLE_VERTEX_ACCESS_TOKEN || bindings.GOOGLE_VERTEX_API_KEY,
 	);
 	const route = resolveVertexModelRoute(model);
+	const refuse = (error: string): ExecutorResult => ({
+		kind: "completed",
+		ir: undefined,
+		upstream: new Response(JSON.stringify({ error }), {
+			status: 400,
+			headers: { "Content-Type": "application/json" },
+		}),
+		bill: { cost_cents: 0, currency: "USD" },
+		keySource: keyInfo.source,
+		byokKeyId: keyInfo.byokId,
+	});
 	// A cachedContent name is resolved in the project of the credential that serves the
 	// request. With Phaseo's credential that is Phaseo's project, so a customer could reach
 	// a cache that is not theirs: refuse, as on Google AI Studio.
 	if (route.family === "gemini" && irRequest.googleCachedContent !== undefined && keyInfo.source !== "byok") {
-		return {
-			kind: "completed",
-			ir: undefined,
-			upstream: new Response(JSON.stringify({ error: "cachedContent requires a customer-managed Vertex AI credential" }), {
-				status: 400,
-				headers: { "Content-Type": "application/json" },
-			}),
-			bill: { cost_cents: 0, currency: "USD" },
-			keySource: keyInfo.source,
-			byokKeyId: keyInfo.byokId,
-		};
+		return refuse("cachedContent requires a customer-managed Vertex AI credential");
 	}
-	const apiBase = resolveVertexApiBase(bindings, args.providerId, route.family, route.modelForPayload);
+	// The customer's own credential runs in the customer's project, not Phaseo's, and a
+	// cache is used from the project and location it was created in.
+	let scope: VertexResourceScope | undefined;
+	if (keyInfo.source === "byok") {
+		scope = vertexCredentialScope(keyInfo.key);
+		if (route.family === "gemini" && irRequest.googleCachedContent !== undefined) {
+			const cache = resolveVertexCachedContentScope(irRequest.googleCachedContent, scope, args.providerId, route);
+			if ("error" in cache) return refuse(cache.error);
+			scope = cache.scope;
+			irRequest = { ...irRequest, googleCachedContent: cache.cachedContent };
+		}
+	}
+	const apiBase = resolveVertexApiBase(bindings, args.providerId, route.family, route.modelForPayload, scope);
 
 	let payload: any;
 	let endpoint: string;
@@ -412,11 +425,9 @@ export function resolveVertexModelRoute(model: string): VertexModelRoute {
 	return { family: "openapi_chat", modelForPath: value, modelForPayload: value };
 }
 
-export function resolveVertexApiBase(bindings: Record<string, any>, providerId?: string, family?: VertexModelRoute["family"], model?: string): string {
-	const rawBase = String(bindings.GOOGLE_VERTEX_BASE_URL || "").replace(/\/+$/, "");
-	const project = String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
-	const configuredLocation = String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
-	const requiredLocation = providerId === "google-vertex-eu" && family === "anthropic" ? "eu"
+/** The only Vertex location some models are served in, whatever location is configured. */
+export function vertexRequiredLocation(providerId?: string, family?: VertexModelRoute["family"], model?: string): string | undefined {
+	return providerId === "google-vertex-eu" && family === "anthropic" ? "eu"
 		// Served only on global and the us/eu multi-regions, no single region
 		// (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-1-flash-lite).
 		: providerId === "google-vertex-eu" && family === "gemini" && /^(?:google\/)?gemini-3\.1-flash-lite$/.test(model ?? "") ? "eu"
@@ -424,7 +435,103 @@ export function resolveVertexApiBase(bindings: Record<string, any>, providerId?:
 		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-3\.1-flash-lite)$/.test(model ?? "") ? "global"
 		: providerId === "google-vertex" && family === "openapi_chat" && model?.endsWith("-maas")
 			? model === "openai/gpt-oss-20b-maas" ? "us-central1" : "global" : undefined;
+}
+
+/** A Google Cloud project and location taken from the customer's request or credential. */
+export type VertexResourceScope = { project?: string; location?: string };
+
+const VERTEX_LOCATION_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const VERTEX_CACHED_CONTENT_NAME = /^projects\/([^/]+)\/locations\/([^/]+)\/cachedContents\/([^/]+)$/;
+const VERTEX_SHORT_CACHED_CONTENT_NAME = /^(?:cachedContents\/)?([^/]+)$/;
+
+/**
+ * The project and location a customer's Vertex credential names: `project_id` from a
+ * service-account JSON (Google always includes it) and the optional `region` (or
+ * `location`) field the BYOK form documents. A plain access token names neither.
+ */
+export function vertexCredentialScope(rawKey: string): VertexResourceScope {
+	const value = rawKey.trim();
+	if (!value.startsWith("{")) return {};
+	try {
+		const parsed = JSON.parse(value) as Record<string, unknown>;
+		if (!parsed || typeof parsed !== "object") return {};
+		const project = typeof parsed.project_id === "string" ? parsed.project_id.trim() : "";
+		const rawLocation = typeof parsed.region === "string" ? parsed.region
+			: typeof parsed.location === "string" ? parsed.location : "";
+		const location = rawLocation.trim().toLowerCase();
+		return {
+			...(project && !project.includes("/") ? { project } : {}),
+			...(VERTEX_LOCATION_PATTERN.test(location) ? { location } : {}),
+		};
+	} catch {
+		return {};
+	}
+}
+
+/**
+ * Where a customer's cachedContent lives. Vertex names a cache
+ * `projects/{project}/locations/{location}/cachedContents/{id}`, and a cache is used from
+ * the project and location it was created in, so a full name decides the endpoint. A
+ * short name (`cachedContents/{id}`) needs the project and region from the credential.
+ */
+export function resolveVertexCachedContentScope(
+	cachedContent: string,
+	credential: VertexResourceScope,
+	providerId: string | undefined,
+	route: VertexModelRoute,
+): { scope: VertexResourceScope; cachedContent: string } | { error: string } {
+	const name = cachedContent.trim();
+	const full = VERTEX_CACHED_CONTENT_NAME.exec(name);
+	const shortId = full ? undefined : VERTEX_SHORT_CACHED_CONTENT_NAME.exec(name)?.[1];
+	if (!full && !shortId) {
+		return { error: "cachedContent must be a Vertex AI cache name: projects/{project}/locations/{location}/cachedContents/{id}" };
+	}
+	const project = full ? full[1] : credential.project;
+	const location = full ? full[2].toLowerCase() : credential.location;
+	if (!project || !location) {
+		return {
+			error: "cachedContent on Vertex AI needs the cache's project and location. Send the full name, projects/{project}/locations/{location}/cachedContents/{id}, or use a service-account credential with project_id and region",
+		};
+	}
+	if (!VERTEX_LOCATION_PATTERN.test(location)) {
+		return { error: `cachedContent names an invalid Vertex AI location: ${location}` };
+	}
+	const required = vertexRequiredLocation(providerId, route.family, route.modelForPayload);
+	if (required && required !== location) {
+		return { error: `This model is served on Vertex AI only in ${required}, but the cache is in ${location}` };
+	}
+	if (providerId === "google-vertex-eu" && !required && !/^europe-/.test(location)) {
+		return { error: `Google Vertex EU serves only European locations, but the cache is in ${location}` };
+	}
+	return {
+		scope: { project, location },
+		cachedContent: full ? name : `projects/${project}/locations/${location}/cachedContents/${shortId}`,
+	};
+}
+
+function isGoogleVertexHost(rawBase: string): boolean {
+	try {
+		const host = new URL(rawBase).hostname;
+		return host.endsWith("aiplatform.googleapis.com") || /^aiplatform\.[a-z0-9-]+\.rep\.googleapis\.com$/.test(host);
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * The Vertex base URL for a request. `scope` replaces the configured project and location
+ * when the customer's own credential is used, so the request runs in their project; a
+ * model that Google serves in one location only keeps that location.
+ */
+export function resolveVertexApiBase(bindings: Record<string, any>, providerId?: string, family?: VertexModelRoute["family"], model?: string, scope?: VertexResourceScope): string {
+	const configuredBase = String(bindings.GOOGLE_VERTEX_BASE_URL || "").replace(/\/+$/, "");
+	// A Google host is regional, so a customer location needs its own host.
+	const rawBase = scope?.location && isGoogleVertexHost(configuredBase) ? "" : configuredBase;
+	const project = scope?.project || String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
+	const configuredLocation = scope?.location || String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
+	const requiredLocation = vertexRequiredLocation(providerId, family, model);
 	const location = requiredLocation || configuredLocation || "global";
+	const scoped = Boolean(scope?.project || scope?.location);
 	if (providerId === "google-vertex-eu" && !requiredLocation && !/^europe-/.test(location)) {
 		throw vertexError("google-vertex_eu_location_required");
 	}
@@ -433,20 +540,19 @@ export function resolveVertexApiBase(bindings: Record<string, any>, providerId?:
 		const expectedHost = location === "global" ? "aiplatform.googleapis.com"
 			: location === "eu" ? "aiplatform.eu.rep.googleapis.com" : `${location}-aiplatform.googleapis.com`;
 		const pathLocation = url.pathname.match(/\/locations\/([^/]+)/)?.[1];
-		if (url.protocol !== "https:" || url.hostname !== expectedHost || (pathLocation && pathLocation !== location)) {
+		if (url.protocol !== "https:" || url.hostname !== expectedHost || (!scoped && pathLocation && pathLocation !== location)) {
 			throw vertexError("google-vertex_endpoint_region_mismatch");
 		}
 	}
 
 	if (rawBase) {
-		if (/\/v\d+(?:beta\d+)?\/projects\/[^/]+\/locations\/[^/]+$/i.test(rawBase)) {
+		const fullBase = /^(.*\/v\d+(?:beta\d+)?)\/projects\/[^/]+\/locations\/[^/]+$/i.exec(rawBase);
+		if (fullBase && !scoped) {
 			return rawBase;
 		}
 		if (!project) throw vertexError("google-vertex_project_missing");
-		if (/\/v\d+(?:beta\d+)?$/i.test(rawBase)) {
-			return `${rawBase}/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
-		}
-		return `${rawBase}/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
+		const versionedBase = fullBase ? fullBase[1] : /\/v\d+(?:beta\d+)?$/i.test(rawBase) ? rawBase : `${rawBase}/v1`;
+		return `${versionedBase}/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 	}
 
 	if (!project) throw vertexError("google-vertex_project_missing");

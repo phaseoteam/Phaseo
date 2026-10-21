@@ -208,7 +208,7 @@ O Gemini armazena em cache implicitamente a partir do Gemini 2.5, sem que você 
 ```
 
 - No Google AI Studio, `cached_content` funciona apenas com a sua própria chave de API do Google (BYOK). Com a chave do Phaseo, a solicitação retorna 400, porque o cache pertence à conta que o criou.
-- Na Vertex AI, o cache precisa pertencer ao projeto do Google Cloud da credencial que atende a solicitação, então use a sua própria credencial da Vertex AI. Com a credencial do Phaseo, a solicitação retorna 400.
+- Na Vertex AI, `cached_content` só funciona com a sua própria credencial da Vertex AI; com a credencial do Phaseo, a solicitação retorna 400. Envie o nome completo do cache, `projects/{project}/locations/{location}/cachedContents/{id}`, e o Phaseo envia a solicitação para esse projeto e esse local. Um nome curto como `cachedContents/abc123` usa o `project_id` e a `region` do JSON da sua conta de serviço e retorna 400 se algum dos dois estiver faltando.
 - O Google não oferece suporte a caches explícitos a partir do Gemini 4 Argon.
 
 `provider_options.google.cache_control` e `provider_options.google.cache_ttl` são aceitos, mas não são enviados ao Google.

@@ -208,7 +208,7 @@ Gemini 2.5 और बाद के मॉडल अपने-आप अंतर
 ```
 
 - Google AI Studio पर `cached_content` केवल आपकी अपनी Google API कुंजी (BYOK) के साथ काम करता है। Phaseo की कुंजी के साथ अनुरोध 400 लौटाता है, क्योंकि कैश उसी खाते का होता है जिसने उसे बनाया।
-- Vertex AI पर कैश उस Google Cloud प्रोजेक्ट का होना चाहिए जिसकी क्रेडेंशियल अनुरोध को पूरा करती है, इसलिए अपनी Vertex AI क्रेडेंशियल उपयोग करें। Phaseo की क्रेडेंशियल के साथ अनुरोध 400 लौटाता है।
+- Vertex AI पर `cached_content` केवल आपकी अपनी Vertex AI क्रेडेंशियल के साथ काम करता है; Phaseo की क्रेडेंशियल के साथ अनुरोध 400 लौटाता है। कैश का पूरा नाम, `projects/{project}/locations/{location}/cachedContents/{id}`, भेजें, तो Phaseo अनुरोध उसी प्रोजेक्ट और लोकेशन पर भेजता है। `cachedContents/abc123` जैसा छोटा नाम आपके सर्विस अकाउंट JSON के `project_id` और `region` का उपयोग करता है, और इनमें से कोई एक न हो तो 400 लौटाता है।
 - Google, Gemini 4 Argon और बाद के मॉडलों पर स्पष्ट कैश का समर्थन नहीं करता।
 
 `provider_options.google.cache_control` और `provider_options.google.cache_ttl` स्वीकार किए जाते हैं, लेकिन Google को नहीं भेजे जाते।

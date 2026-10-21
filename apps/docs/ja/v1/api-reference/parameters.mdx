@@ -576,7 +576,7 @@ PhaseoはこのフィールドをGPT-5.6より前のOpenAIとAzure OpenAIのモ�
 
 プロバイダー固有の機能を使いつつ、リクエストの残りをゲートウェイ共通スキーマで扱いたい場合に使用します。Claudeのキャッシュポリシーにはトップレベルの`cache_control`、OpenAIの保持設定にはGPT-5.6以降ではトップレベルの`prompt_cache_options`、それより前のモデルではトップレベルの`prompt_cache_retention`を使用してください。
 
-`google.cached_content`はGeminiの明示的キャッシュを指定します。自分の認証情報を使う場合にだけ機能します。Google AI StudioではGoogle APIキー、Vertex AIではVertex AIの認証情報で、そのプロジェクトがキャッシュを所有している必要があります。Phaseoの認証情報では、リクエストは400を返します。`google.cache_control`と`google.cache_ttl`は受け付けますが、Googleには送りません。
+`google.cached_content`はGeminiの明示的キャッシュを指定します。自分の認証情報を使う場合にだけ機能します。Google AI StudioではGoogle APIキー、Vertex AIではVertex AIの認証情報です。Vertex AIでは、Phaseoはキャッシュの完全な名前（`projects/{project}/locations/{location}/cachedContents/{id}`）にあるプロジェクトとロケーションにリクエストを送ります。短い名前では、サービスアカウントJSONの`project_id`と`region`を使います。Phaseoの認証情報では、リクエストは400を返します。`google.cache_control`と`google.cache_ttl`は受け付けますが、Googleには送りません。
 
 Chat Completions、Responses、Anthropic Messagesでのプロバイダー別プロンプトキャッシュ例は、[プロンプトキャッシュ](../guides/prompt-caching.mdx)を参照してください。
 

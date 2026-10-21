@@ -18,4 +18,5 @@ Send more providers the prompt-cache controls they document:
 - Inference.net's Claude and Gemini 2.5 models receive block `cache_control`, without a `ttl`, so they can write and read a prompt cache.
 - Baseten receives the cache key in `x-session-affinity`, and Morph in `x-session-id`.
 - xAI receives the cache key derived from `session_id` in the request body.
-- On Vertex AI, `provider_options.google.cached_content` now requires your own Vertex AI credential and returns 400 with Phaseo's, as on Google AI Studio.
+- On Vertex AI, `provider_options.google.cached_content` now requires your own Vertex AI credential and returns 400 with Phaseo's, as on Google AI Studio. The request goes to the project and location in the cache's full name (`projects/{project}/locations/{location}/cachedContents/{id}`); a short name uses the `project_id` and `region` of your service-account JSON, and returns 400 without them.
+- Vertex AI requests made with your own service-account JSON now run in its `project_id`, and in its `region` when it has one (unless Google serves the model in one location only), instead of Phaseo's project.

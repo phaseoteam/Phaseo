@@ -208,7 +208,7 @@ GeminiはGemini 2.5以降で暗黙的にキャッシュするため、何も送�
 ```
 
 - Google AI Studioでは、`cached_content`は自分のGoogle APIキー（BYOK）を使う場合にだけ機能します。キャッシュは作成したアカウントに属するため、Phaseoのキーでは400が返ります。
-- Vertex AIでは、キャッシュはリクエストを処理する認証情報のGoogle Cloudプロジェクトに属している必要があります。自分のVertex AI認証情報を使ってください。Phaseoの認証情報では、リクエストは400を返します。
+- Vertex AIでは、`cached_content`は自分のVertex AI認証情報でのみ機能します。Phaseoの認証情報では、リクエストは400を返します。キャッシュの完全な名前`projects/{project}/locations/{location}/cachedContents/{id}`を送ると、Phaseoはそのプロジェクトとロケーションにリクエストを送ります。`cachedContents/abc123`のような短い名前では、サービスアカウントJSONの`project_id`と`region`を使い、どちらかがない場合は400を返します。
 - GoogleはGemini 4 Argon以降で明示的キャッシュをサポートしていません。
 
 `provider_options.google.cache_control`と`provider_options.google.cache_ttl`は受け付けますが、Googleには送りません。

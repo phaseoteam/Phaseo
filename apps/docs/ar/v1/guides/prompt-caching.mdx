@@ -208,7 +208,7 @@ icon: "database-zap"
 ```
 
 - على Google AI Studio، لا يعمل `cached_content` إلا بمفتاح Google API الخاص بك (BYOK). عند استخدام مفتاح Phaseo يعيد الطلب 400، لأن ذاكرة التخزين المؤقت تخص الحساب الذي أنشأها.
-- على Vertex AI، يجب أن تنتمي ذاكرة التخزين المؤقت إلى مشروع Google Cloud الخاص ببيانات الاعتماد التي تخدم الطلب، لذا استخدم بيانات اعتماد Vertex AI الخاصة بك. ومع بيانات اعتماد Phaseo يعيد الطلب الخطأ 400.
+- على Vertex AI، لا يعمل `cached_content` إلا ببيانات اعتماد Vertex AI الخاصة بك؛ ومع بيانات اعتماد Phaseo يعيد الطلب الخطأ 400. أرسل الاسم الكامل لذاكرة التخزين المؤقت، `projects/{project}/locations/{location}/cachedContents/{id}`، وسترسل Phaseo الطلب إلى ذلك المشروع وذلك الموقع. أما الاسم المختصر مثل `cachedContents/abc123` فيستخدم `project_id` و`region` الموجودين في ملف JSON لحساب الخدمة، ويعيد الخطأ 400 إذا غاب أيٌّ منهما.
 - لا تدعم Google ذاكرات التخزين المؤقت الصريحة بدءًا من Gemini 4 Argon.
 
 يُقبل `provider_options.google.cache_control` و`provider_options.google.cache_ttl`، لكنهما لا يُرسلان إلى Google.

@@ -576,7 +576,7 @@ Algunos ejemplos:
 
 Úsalo cuando necesites una función nativa del proveedor y quieras mantener el resto de la solicitud en el esquema común del gateway. Para las políticas de caché de Claude, prefiere `cache_control` en el nivel superior; para la retención de OpenAI, usa `prompt_cache_options` en el nivel superior con GPT-5.6 y posteriores, o `prompt_cache_retention` en el nivel superior con modelos anteriores.
 
-`google.cached_content` indica un caché explícito de Gemini. Solo funciona con tu propia credencial: una clave de API de Google en Google AI Studio o una credencial de Vertex AI en Vertex AI, cuyo proyecto debe ser el dueño del caché. Con las credenciales de Phaseo, la solicitud devuelve 400. `google.cache_control` y `google.cache_ttl` se aceptan, pero no se envían a Google.
+`google.cached_content` indica un caché explícito de Gemini. Solo funciona con tu propia credencial: una clave de API de Google en Google AI Studio o una credencial de Vertex AI en Vertex AI. En Vertex AI, Phaseo envía la solicitud al proyecto y la ubicación del nombre completo del caché (`projects/{project}/locations/{location}/cachedContents/{id}`); un nombre corto usa el `project_id` y la `region` del JSON de tu cuenta de servicio. Con las credenciales de Phaseo, la solicitud devuelve 400. `google.cache_control` y `google.cache_ttl` se aceptan, pero no se envían a Google.
 
 Para ver ejemplos de caché de prompts por proveedor en Chat Completions, Responses y Anthropic Messages, consulta [Caché de prompts](../guides/prompt-caching.mdx).
 

@@ -208,7 +208,7 @@ Gemini 2.5 及以后版本会隐式缓存，你无需发送任何内容。如需
 ```
 
 - 在 Google AI Studio 上，`cached_content` 仅在使用你自己的 Google API 密钥（BYOK）时有效。使用 Phaseo 的密钥时，请求会返回 400，因为缓存属于创建它的账号。
-- 在 Vertex AI 上，缓存必须属于处理请求的凭据所在的 Google Cloud 项目，因此请使用你自己的 Vertex AI 凭据。使用 Phaseo 的凭据时，请求会返回 400。
+- 在 Vertex AI 上，`cached_content` 仅在使用你自己的 Vertex AI 凭据时有效；使用 Phaseo 的凭据时，请求会返回 400。发送缓存的完整名称 `projects/{project}/locations/{location}/cachedContents/{id}`，Phaseo 就会把请求发送到该项目和位置。`cachedContents/abc123` 这样的短名称会使用你的服务账号 JSON 中的 `project_id` 和 `region`，缺少其中任一项时返回 400。
 - 从 Gemini 4 Argon 开始，Google 不再支持显式缓存。
 
 `provider_options.google.cache_control` 和 `provider_options.google.cache_ttl` 会被接受，但不会发送给 Google。
