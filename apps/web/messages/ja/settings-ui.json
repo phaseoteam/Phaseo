@@ -5167,19 +5167,18 @@
 		"total": "合計",
 		"multiValueNote": "複数の値を持つリクエストは、それぞれの値で 1 回ずつ数えます。",
 		"notFilteredByLabel": "この表には上のラベルの絞り込みは適用されません。",
-		"classificationsTitle": "分類",
 		"labelsTitle": "ラベル",
 		"thisIsClassifierCall": "このリクエストは分類器「{name}」の呼び出しです。",
-		"statusClassified": "分類済み",
 		"statusSessionCache": "セッションから再利用",
 		"statusBudgetReached": "予算の上限に到達",
 		"statusFailed": "失敗",
 		"confidence": "信頼度 {value}",
 		"noAnswer": "該当する値なし",
-		"model": "モデル",
-		"cost": "費用",
-		"openClassifierCall": "分類器の呼び出しを開く",
-		"callerLabels": "リクエストと一緒に送信"
+		"callerLabels": "リクエストと一緒に送信",
+		"showLabelled": "{key} が {value} のリクエストを表示",
+		"viewCall": "呼び出しを表示",
+		"classifierCallBadge": "分類器の呼び出し",
+		"moreLabels": "+{count}"
 	},
 	"providerCatalogCopy": {
 		"serviceTier": "サービス階層",
@@ -5838,7 +5837,6 @@
 		"noFinalTextResponseWasCaptured": "最終テキスト応答は記録されていません。",
 		"copyModelOutput": "モデル出力をコピー",
 		"logCapture": "ログの保存",
-		"requestAndResponsePayloadRetainedInCloudflareR2": "リクエストと応答データをCloudflare R2に保持。",
 		"iOPayloadStorageStatusAndRetentionDetails": "入出力データの保存状態と保持期間。",
 		"storage": "ストレージ",
 		"cloudflareR2": "Cloudflare R2",
@@ -5872,7 +5870,9 @@
 		"toolApplypatch": "パッチ適用",
 		"toolSubagent": "サブエージェント",
 		"toolFusion": "融合",
-		"toolModelsearch": "モデル検索"
+		"toolModelsearch": "モデル検索",
+		"payloadStatus": "ペイロード: {status}",
+		"payloadStored": "リクエストとレスポンスのペイロードを保存しました。"
 	},
 	"keyDetail": {
 		"back": "APIキーに戻る",

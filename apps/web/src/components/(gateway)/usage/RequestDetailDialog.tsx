@@ -4,7 +4,6 @@ import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
 import dynamic from "next/dynamic";
-import { useTraceViewEnabled } from "./TraceViewGate";
 import { useLocale, useTranslations } from "next-intl";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
@@ -826,7 +825,6 @@ export default function RequestDetailDialog({
 		t(settingsStringKey(key) as never, values as never);
 	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
-	const traceEnabled = useTraceViewEnabled();
 
 	if (!request) return null;
 	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
@@ -853,7 +851,7 @@ export default function RequestDetailDialog({
 					onOpenChange={onOpenChange}
 					disablePointerDismissal={disablePointerDismissal}
 				>
-					<ProviderInspectorSheetContent className={traceEnabled ? "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none" : "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"}>
+					<ProviderInspectorSheetContent className={"!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none"}>
 						{loadingContent}
 					</ProviderInspectorSheetContent>
 				</ProviderInspectorSheet>
@@ -1587,23 +1585,23 @@ export default function RequestDetailDialog({
 				) : null}
 
 				<Tabs
-					key={`${request.request_id}:${traceEnabled}`}
+					key={request.request_id}
 					defaultValue="overview"
 					className="min-h-0 flex-1 gap-0"
 				>
-					{traceEnabled ? <TabsList
+					<TabsList
 						variant="line"
 						className="w-full shrink-0 justify-start rounded-none border-b border-border/70 px-5 sm:px-6"
 					>
 						<TabsTrigger value="overview">{t("strings.Overview" as never)}</TabsTrigger>
 						<TabsTrigger value="trace">{t("trace.trace" as never)}</TabsTrigger>
-					</TabsList> : null}
+					</TabsList>
 					<TabsContent value="overview" className="flex min-h-0 flex-1 flex-col overflow-hidden">
 						<ScrollArea
 							className={cn(
 								presentation === "sheet"
 									? "min-h-0 flex-1"
-									: traceEnabled ? "max-h-[calc(90vh-150px)]" : "max-h-[calc(90vh-110px)]",
+									: "max-h-[calc(90vh-150px)]",
 							)}
 							viewportClassName="px-5 py-3 sm:px-6"
 						>
@@ -2700,6 +2698,8 @@ export default function RequestDetailDialog({
 							</div>
 						) : null}
 
+						<RequestClassificationsSection detailMetadata={request.detail_metadata} classifiers={classifiers} modelName={(id) => getModelDisplayName(id, metadata)} />
+
 						<GenerationSection title={s("Routing details")}>
 							<DetailRows items={routingDetailItems} />
 						</GenerationSection>
@@ -2717,8 +2717,6 @@ export default function RequestDetailDialog({
 								]}
 							/>
 						</GenerationSection>
-
-						<RequestClassificationsSection detailMetadata={request.detail_metadata} classifiers={classifiers} />
 
 						<GenerationSection title={s("Response timeline")}>
 							<DetailTimingBar items={responseTimelineItems} />
@@ -2787,7 +2785,7 @@ export default function RequestDetailDialog({
 						</div>
 						</ScrollArea>
 					</TabsContent>
-					{traceEnabled ? <TabsContent value="trace" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+					<TabsContent value="trace" className="flex min-h-0 flex-1 flex-col overflow-hidden">
 						<ScrollArea
 							className="h-full min-h-0"
 							viewportClassName="px-5 py-3 sm:px-6"
@@ -2799,7 +2797,7 @@ export default function RequestDetailDialog({
 								providerNames={providerNames}
 							/>
 						</ScrollArea>
-					</TabsContent> : null}
+					</TabsContent>
 				</Tabs>
 		</>
 	);
@@ -2812,7 +2810,7 @@ export default function RequestDetailDialog({
 				disablePointerDismissal={disablePointerDismissal}
 			>
 				<ProviderInspectorSheetContent
-					className={traceEnabled ? "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none" : "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"}
+					className={"!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none"}
 				>
 					{detailContent}
 				</ProviderInspectorSheetContent>

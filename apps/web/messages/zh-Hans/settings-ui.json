@@ -5167,19 +5167,18 @@
 		"total": "合计",
 		"multiValueNote": "带有多个值的请求会在每个值下各计一次。",
 		"notFilteredByLabel": "此表不受上方标签筛选的影响。",
-		"classificationsTitle": "分类结果",
 		"labelsTitle": "标签",
 		"thisIsClassifierCall": "这个请求是分类器“{name}”的调用。",
-		"statusClassified": "已分类",
 		"statusSessionCache": "沿用会话结果",
 		"statusBudgetReached": "已达预算上限",
 		"statusFailed": "失败",
 		"confidence": "置信度 {value}",
 		"noAnswer": "没有合适的值",
-		"model": "模型",
-		"cost": "费用",
-		"openClassifierCall": "打开分类器调用",
-		"callerLabels": "随请求发送"
+		"callerLabels": "随请求发送",
+		"showLabelled": "显示 {key} 为 {value} 的请求",
+		"viewCall": "查看调用",
+		"classifierCallBadge": "分类器调用",
+		"moreLabels": "+{count}"
 	},
 	"providerCatalogCopy": {
 		"serviceTier": "服务等级",
@@ -5838,7 +5837,6 @@
 		"noFinalTextResponseWasCaptured": "未捕获最终文本响应。",
 		"copyModelOutput": "复制模型输出",
 		"logCapture": "日志捕获",
-		"requestAndResponsePayloadRetainedInCloudflareR2": "请求和响应数据保留在Cloudflare R2中。",
 		"iOPayloadStorageStatusAndRetentionDetails": "输入输出数据的存储状态和保留详情。",
 		"storage": "存储",
 		"cloudflareR2": "Cloudflare R2",
@@ -5872,7 +5870,9 @@
 		"toolApplypatch": "应用补丁",
 		"toolSubagent": "子代理",
 		"toolFusion": "融合",
-		"toolModelsearch": "模型搜索"
+		"toolModelsearch": "模型搜索",
+		"payloadStatus": "载荷：{status}",
+		"payloadStored": "已存储请求和响应载荷。"
 	},
 	"keyDetail": {
 		"back": "返回 API 密钥",

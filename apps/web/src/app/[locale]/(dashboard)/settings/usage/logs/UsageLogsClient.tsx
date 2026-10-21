@@ -423,6 +423,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 					initialNextCursor={data.initialRequestsPage.nextCursor}
 					initialPageSize={data.initialRequestsPage.pageSize ?? 50}
 					detailBasePath="/settings/usage/logs/requests"
+					requestClassifiers={data.requestClassifiers ?? []}
 				/>
 			</>
 		);

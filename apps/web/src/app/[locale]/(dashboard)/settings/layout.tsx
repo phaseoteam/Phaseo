@@ -10,8 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Suspense } from "react";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
-import { autoRoutingFlag, enterpriseSelfServePreviewEnabled, gatewayTraceViewFlag, requestClassifiersFlag, webhookSettingsEnabled } from "@/lib/flags";
-import { TraceViewGateProvider } from "@/components/(gateway)/usage/TraceViewGate";
+import { autoRoutingFlag, enterpriseSelfServePreviewEnabled, requestClassifiersFlag, webhookSettingsEnabled } from "@/lib/flags";
 import { connection } from "next/server";
 import { getSettingsMessages } from "@/i18n/settings";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
@@ -51,12 +50,11 @@ export default async function SettingsLayout({
 	}
 	const showBroadcast = initialData.showBroadcast;
 	let showWebhooks = false;
-	const [webhooksEnabled, showEnterprise, showAutoRouting, showClassifiers, showTraceView] = await Promise.all([
+	const [webhooksEnabled, showEnterprise, showAutoRouting, showClassifiers] = await Promise.all([
 		webhookSettingsEnabled(),
 		enterpriseSelfServePreviewEnabled(),
 		autoRoutingFlag(),
 		requestClassifiersFlag().catch(() => false),
-		gatewayTraceViewFlag().catch(() => false),
 	]);
 	showWebhooks = webhooksEnabled;
 
@@ -78,7 +76,7 @@ export default async function SettingsLayout({
 						<div className="w-full flex-1 pb-4 pt-5">
 							<Suspense fallback={<SettingsPageSkeleton />}>
 								<PrivateSettingsProvider key={`${account.userId}:${initialData.workspaceId}`} scope={{ userId: account.userId ?? null, workspaceId: initialData.workspaceId }}>
-									<TraceViewGateProvider enabled={showTraceView}>{children}</TraceViewGateProvider>
+									{children}
 								</PrivateSettingsProvider>
 							</Suspense>
 						</div>

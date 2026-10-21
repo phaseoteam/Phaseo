@@ -87,3 +87,15 @@ export function formatUsd(nanos: number): string {
 		: { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 },
 	).format(dollars);
 }
+
+/** Params that pick one request or page; a label link drops them and keeps the rest (time range, other filters). */
+const LABEL_LINK_DROPPED_PARAMS = ["label_key", "label_value", "label_op", "req", "cursor", "page"];
+
+/** The request logs filtered to one label value, keeping the reader's other filters. */
+export function labelFilterHref(key: string, value: string, searchParams?: URLSearchParams | null): string {
+	const next = new URLSearchParams(searchParams?.toString() ?? "");
+	for (const param of LABEL_LINK_DROPPED_PARAMS) next.delete(param);
+	next.set("label_key", key);
+	next.set("label_value", value);
+	return `/settings/usage/logs/requests?${next}`;
+}
