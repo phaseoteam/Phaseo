@@ -742,6 +742,9 @@ function SessionDetailSheet({
 										<TableHead className="text-right">{t("strings.Out" as never)}</TableHead>
 										<TableHead className="text-right">{t("strings.Cost" as never)}</TableHead>
 										<TableHead>{t("strings.Status" as never)}</TableHead>
+										<TableHead className="w-10">
+											<span className="sr-only">{tUi("actions.openInChat")}</span>
+										</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
@@ -867,6 +870,20 @@ function SessionDetailSheet({
 																</div>
 															) : null}
 														</div>
+													</TableCell>
+													<TableCell className="py-2">
+														{/* Opens the conversation as it stood at this turn. */}
+														{normalizeLogReplayEndpoint(request.endpoint) ? (
+															<Link
+																href={buildOpenRequestInChatHref(request.request_id, searchParams.get("workspaceId"))}
+																className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+																aria-label={tUi("actions.openInChat")}
+																title={tUi("actions.openInChat")}
+																onClick={stopRowClick}
+															>
+																<MessageSquare />
+															</Link>
+														) : null}
 													</TableCell>
 												</TableRow>
 											);

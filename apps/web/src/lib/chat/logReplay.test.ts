@@ -150,3 +150,23 @@ test("keeps Responses custom tool calls and definitions as custom", () => {
 		{ name: "apply_patch", kind: "custom", description: "Edit files", format: { type: "grammar", syntax: "lark", definition: "start: /.+/" } },
 	]);
 });
+
+test("keeps the logged response in its own turn after an assistant prefill", () => {
+	const replay = readLogReplay({
+		endpoint: "messages",
+		model: "anthropic/claude-sonnet-5-5",
+		requestPayload: {
+			model: "anthropic/claude-sonnet-5-5",
+			max_tokens: 100,
+			messages: [
+				{ role: "user", content: "Name a colour." },
+				{ role: "assistant", content: "The colour is" },
+			],
+		},
+		gatewayResponse: { type: "message", role: "assistant", content: [{ type: "text", text: " blue." }], stop_reason: "end_turn" },
+	});
+
+	expect(replay?.requestTurnCount).toBe(2);
+	expect(replay?.turns.map((turn) => turn.role === "assistant" ? turn.text : turn.role)).toEqual(["user", "The colour is", " blue."]);
+	expect(replay?.warnings).not.toContain("no_response");
+});

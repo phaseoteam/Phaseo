@@ -5,6 +5,7 @@ import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
+import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
 import { monthUsageStartDate, parseMonthUsageDays } from "./monthUsage";
@@ -450,6 +451,13 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 				.limit(500);
 			if (legacyResult.error && v2Result.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 			upstreamRequests = legacyResult.data ?? [];
+			// Legacy rows can hold captured payloads; apply the workspace's contents setting to them.
+			if (upstreamRequests.some((row) => row.request_payload != null || row.response_payload != null)) {
+				const access = await readIoLogContentsAccess(context.client, workspaceId);
+				if (!canReadIoLogContents(access, context.role)) {
+					upstreamRequests = upstreamRequests.map((row) => ({ ...row, request_payload: null, response_payload: null }));
+				}
+			}
 			const requestIds = Array.from(new Set(upstreamRequests.map((row) => row.request_id)));
 			if (requestIds.length) {
 				const latencyResult = await context.client.from("gateway_requests").select("request_id,created_at,gateway_ttft_ms").eq("workspace_id", workspaceId).in("request_id", requestIds);
