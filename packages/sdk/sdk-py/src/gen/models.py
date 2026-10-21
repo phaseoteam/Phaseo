@@ -2967,6 +2967,7 @@ SpendRulePeriod = Literal["day", "week", "month", "rolling"]
 
 class SpendRulePreview(TypedDict):
 	alert: Optional[Dict[str, Any]]
+	balance: Optional[Dict[str, Any]]
 	base_kind: Optional[Literal["amount", "workspace_budget", "key_limit", "previous_period"]]
 	base_nanos: Optional[int]
 	base_ref: Optional[Literal["daily", "weekly", "monthly"]]

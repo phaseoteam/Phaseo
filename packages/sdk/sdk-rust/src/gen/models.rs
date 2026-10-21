@@ -3319,6 +3319,7 @@ pub type SpendRulePeriod = JsonValue;
 
 pub struct SpendRulePreview {
 	pub alert: Option<HashMap<String, String>>,
+	pub balance: Option<HashMap<String, String>>,
 	pub base_kind: Option<String>,
 	pub base_nanos: Option<i64>,
 	pub base_ref: Option<String>,

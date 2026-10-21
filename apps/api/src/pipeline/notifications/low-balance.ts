@@ -1,31 +1,17 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 
-type LowBalanceSettings = {
-	enabled: boolean;
-	thresholdNanos: number;
-	lastSentAt: string | null;
-	lastSentBalanceNanos: number | string | null;
-};
+// Low-balance emails, off the request path. Every five minutes the scheduled job runs
+// public.sweep_low_balance_emails, which compares each wallet with the workspace's
+// low_balance_email_threshold_nanos and queues one low_balance email_outbox row per drop (at most
+// every six hours, never while auto top-up is working), with the same recipient, subject and
+// payload the gateway used to write after a charge. The armed/unarmed rules are those of the
+// low-balance push (sweep_low_balance_pushes), and the two share the auto top-up test.
+// With Resend automations on, the sweep writes the rows as sent and this job sends the
+// workspace.low_balance event for each one; otherwise the email outbox drain sends them.
 
 const RESEND_LOW_BALANCE_EVENT_NAME = "workspace.low_balance";
 
-function deriveFirstNameFromMetadata(metadata: Record<string, unknown> | null | undefined): string {
-	if (!metadata) return "";
-	const candidates = [
-		metadata.first_name,
-		metadata.given_name,
-		metadata.full_name,
-		metadata.name,
-	];
-	for (const candidate of candidates) {
-		const normalized = String(candidate ?? "").trim();
-		if (!normalized) continue;
-		return normalized.split(/\s+/)[0] ?? "";
-	}
-	return "";
-}
-
-function isResendOnboardingAutomationsEnabled(): boolean {
+export function isResendOnboardingAutomationsEnabled(): boolean {
 	const bindings = getBindings();
 	const apiKey = String(bindings.RESEND_API_KEY ?? "").trim();
 	if (!apiKey) return false;
@@ -45,6 +31,7 @@ async function sendLowBalanceAutomationEvent(args: {
 	balanceUsd: number;
 	thresholdNanos: number;
 	thresholdUsd: number;
+	triggeredAt: Date;
 }): Promise<void> {
 	const bindings = getBindings();
 	const apiKey = String(bindings.RESEND_API_KEY ?? "").trim();
@@ -60,7 +47,7 @@ async function sendLowBalanceAutomationEvent(args: {
 		balanceUsd: args.balanceUsd,
 		thresholdNanos: args.thresholdNanos,
 		thresholdUsd: args.thresholdUsd,
-		triggeredAtIso: new Date().toISOString(),
+		triggeredAtIso: args.triggeredAt.toISOString(),
 	};
 
 	let attempt = 0;
@@ -99,113 +86,102 @@ async function sendLowBalanceAutomationEvent(args: {
 	}
 }
 
-export async function enqueueLowBalanceEmail(args: {
+export type LowBalanceEmail = {
+	id: string;
 	workspaceId: string;
+	toEmail: string;
+	firstName: string;
+	teamName: string;
 	balanceNanos: number;
-	settings: LowBalanceSettings;
-}): Promise<void> {
-	const { workspaceId, balanceNanos, settings } = args;
-	if (!settings.enabled) return;
-	if (!Number.isFinite(settings.thresholdNanos) || settings.thresholdNanos < 0) {
-		return;
-	}
-	if (!Number.isFinite(balanceNanos)) return;
-	if (balanceNanos > settings.thresholdNanos) return;
+	balanceUsd: number;
+	thresholdNanos: number;
+	thresholdUsd: number;
+};
 
-	// Cooldown: avoid email spam.
-	const now = Date.now();
-	const lastSentAtMs = settings.lastSentAt ? Date.parse(settings.lastSentAt) : NaN;
-	const withinCooldown =
-		Number.isFinite(lastSentAtMs) && now - lastSentAtMs < 6 * 60 * 60 * 1000;
-	const lastSentBalanceNanos =
-		typeof settings.lastSentBalanceNanos === "string"
-			? Number(settings.lastSentBalanceNanos)
-			: settings.lastSentBalanceNanos;
-	const wasPreviouslyAbove =
-		typeof lastSentBalanceNanos === "number" &&
-		Number.isFinite(lastSentBalanceNanos) &&
-		lastSentBalanceNanos > settings.thresholdNanos;
-	if (withinCooldown && !wasPreviouslyAbove) {
-		return;
-	}
+export type LowBalanceEmailSweepSummary = {
+	skipped: boolean;
+	watched: number;
+	firstSeen: number;
+	dropped: number;
+	rearmed: number;
+	coveredByTopUp: number;
+	waiting: number;
+	emailed: number;
+	emails: LowBalanceEmail[];
+	/** Resend automation events sent / failed (only when the sweep marked the rows sent). */
+	automationSent: number;
+	automationFailed: number;
+};
 
-	const supabase = getSupabaseAdmin();
+const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
+const text = (value: unknown, fallback: string) => (typeof value === "string" && value.trim() ? value : fallback);
 
-	// Resolve team name + owner email.
-	const { data: teamRow } = await supabase
-		.from("workspaces")
-		.select("id,name,owner_user_id")
-		.eq("id", workspaceId)
-		.maybeSingle();
-
-	const teamName = (teamRow as any)?.name ?? "your team";
-	const ownerUserId = (teamRow as any)?.owner_user_id ?? null;
-	if (!ownerUserId) return;
-
-	let ownerEmail: string | null = null;
-	let ownerMetadata: Record<string, unknown> | null = null;
-	try {
-		const userRes = await (supabase as any).auth.admin.getUserById(ownerUserId);
-		ownerEmail = userRes?.data?.user?.email ?? null;
-		ownerMetadata = (userRes?.data?.user?.user_metadata ?? null) as
-			| Record<string, unknown>
-			| null;
-	} catch {
-		ownerEmail = null;
-		ownerMetadata = null;
-	}
-	if (!ownerEmail) return;
-
-	const balanceUsd = Math.max(0, balanceNanos) / 1_000_000_000;
-	const thresholdUsd = settings.thresholdNanos / 1_000_000_000;
-
-	const ownerFirstName = deriveFirstNameFromMetadata(ownerMetadata) || "there";
-	const roundedBalanceUsd = Number(balanceUsd.toFixed(2));
-	const roundedThresholdUsd = Number(thresholdUsd.toFixed(2));
-
-	const useAutomation = isResendOnboardingAutomationsEnabled();
-	const outboxPayload = {
-		kind: "low_balance",
-		template: "low_balance",
-		to_email: ownerEmail,
-		subject: "Low balance alert",
-		workspace_id: workspaceId,
-		user_id: ownerUserId,
-		payload: {
-			user_first_name: ownerFirstName,
-			workspace_id: workspaceId,
-			team_name: teamName,
-			balance_nanos: balanceNanos,
-			balance_usd: roundedBalanceUsd,
-			threshold_nanos: settings.thresholdNanos,
-			threshold_usd: roundedThresholdUsd,
-		},
-		// The row remains the canonical workspace-notification event, while the
-		// owner email is handled by Resend Automations instead of the outbox drain.
-		...(useAutomation ? { sent_at: new Date().toISOString() } : {}),
+export function parseLowBalanceEmailSweep(data: unknown): LowBalanceEmailSweepSummary {
+	const result = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
+	const emails = (Array.isArray(result.emails) ? result.emails : []) as Array<Record<string, unknown>>;
+	return {
+		skipped: result.skipped === true,
+		watched: count(result.watched),
+		firstSeen: count(result.firstSeen),
+		dropped: count(result.dropped),
+		rearmed: count(result.rearmed),
+		coveredByTopUp: count(result.coveredByTopUp),
+		waiting: count(result.waiting),
+		emailed: count(result.emailed),
+		emails: emails.map((email) => ({
+			id: String(email.id ?? ""),
+			workspaceId: String(email.workspace_id ?? ""),
+			toEmail: String(email.to_email ?? ""),
+			firstName: text(email.user_first_name, "there"),
+			teamName: text(email.team_name, "your team"),
+			balanceNanos: count(email.balance_nanos),
+			balanceUsd: count(email.balance_usd),
+			thresholdNanos: count(email.threshold_nanos),
+			thresholdUsd: count(email.threshold_usd),
+		})),
+		automationSent: 0,
+		automationFailed: 0,
 	};
-	const { error: outboxError } = await supabase.from("email_outbox").insert(outboxPayload as any);
-	if (outboxError) throw new Error(`low_balance_event_insert_failed:${outboxError.message ?? "unknown"}`);
+}
 
-	if (useAutomation) {
-		await sendLowBalanceAutomationEvent({
-			email: ownerEmail,
-			firstName: ownerFirstName,
-			workspaceId,
-			workspaceName: teamName,
-			balanceNanos,
-			balanceUsd: roundedBalanceUsd,
-			thresholdNanos: settings.thresholdNanos,
-			thresholdUsd: roundedThresholdUsd,
-		});
+/** True when a sweep did anything worth a log line. */
+export function hasLowBalanceEmailActivity(summary: LowBalanceEmailSweepSummary): boolean {
+	return summary.emailed > 0 || summary.dropped > 0 || summary.rearmed > 0 || summary.automationFailed > 0 || summary.skipped;
+}
+
+export async function runLowBalanceEmailSweep(options: { now?: Date } = {}): Promise<LowBalanceEmailSweepSummary> {
+	const now = options.now ?? new Date();
+	const automation = isResendOnboardingAutomationsEnabled();
+	const { data, error } = await getSupabaseAdmin().rpc("sweep_low_balance_emails", {
+		p_now: now.toISOString(),
+		p_mark_sent: automation,
+	});
+	if (error) throw new Error(`low_balance_email_sweep_failed:${error.message}`);
+	const summary = parseLowBalanceEmailSweep(data);
+	if (!automation) return summary;
+	// The rows are already marked sent: the Resend automation delivers the email.
+	for (const email of summary.emails) {
+		try {
+			await sendLowBalanceAutomationEvent({
+				email: email.toEmail,
+				firstName: email.firstName,
+				workspaceId: email.workspaceId,
+				workspaceName: email.teamName,
+				balanceNanos: email.balanceNanos,
+				balanceUsd: email.balanceUsd,
+				thresholdNanos: email.thresholdNanos,
+				thresholdUsd: email.thresholdUsd,
+				triggeredAt: now,
+			});
+			summary.automationSent += 1;
+		} catch (error) {
+			summary.automationFailed += 1;
+			console.error("[low-balance] automation event failed", {
+				workspaceId: email.workspaceId,
+				outboxId: email.id,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
 	}
-
-	await supabase
-		.from("workspace_settings")
-		.update({
-			low_balance_email_last_sent_at: new Date().toISOString(),
-			low_balance_email_last_sent_balance_nanos: balanceNanos,
-			updated_at: new Date().toISOString(),
-		})
-		.eq("workspace_id", workspaceId);
+	return summary;
 }

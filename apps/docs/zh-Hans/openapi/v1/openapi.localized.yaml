@@ -21421,7 +21421,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: 对于评估尚未支持的规则（forecast、spike 和 balance 指标、rolling 周期以及 previous_period 基数）为 false。这些规则会被保存，并将在后续版本中开始触发。
+          description: 对于评估尚未支持的规则（forecast 和 spike 指标、支出的 rolling 周期以及 previous_period 基数）为 false。这些规则会被保存，并将在后续版本中开始触发。balance 规则会被评估。
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -21700,7 +21700,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: 支出规则的当前状态。没有日历周期的规则，其 period、value 和 alert 为 null。
+      description: 支出规则当前的状态。balance 规则以消耗速率窗口作为 period，以可用余额作为值，并包含 balance 对象。其他没有日历周期的规则，其 period、value 和 alert 为 null。
       required:
         - rule_id
         - metric
@@ -21722,6 +21722,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -21732,7 +21733,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: 对于评估尚未支持的规则（forecast、spike 和 balance 指标、rolling 周期以及 previous_period 基数）为 false。这些规则会被保存，并将在后续版本中开始触发。
+          description: 对于评估尚未支持的规则（forecast 和 spike 指标、支出的 rolling 周期以及 previous_period 基数）为 false。这些规则会被保存，并将在后续版本中开始触发。balance 规则会被评估。
         computed_at:
           type: string
           format: date-time
@@ -21847,6 +21848,56 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: balance 规则：发出警报后为 false，直到余额重新高于阈值。
+        balance:
+          type: object
+          nullable: true
+          description: 仅限 balance 规则：评估所看到的余额状态。其他规则为 null。
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: 余额减去预留额度：请求按此金额准入。
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: 按当前消耗速率，可用余额可维持的天数。窗口内无支出时为 null。
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: 自动充值已开启且运行正常，因此余额下降只会被记录，不会发出警报。
         alert:
           type: object
           nullable: true

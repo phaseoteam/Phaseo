@@ -33,6 +33,8 @@ export const SPEND_RULE_ACTIONS = ["notify", "block"] as const;
 export const EVALUATED_METRICS = ["spend", "budget_percent"] as const;
 export const EVALUATED_PERIODS = ["day", "week", "month"] as const;
 export const EVALUATED_BASE_KINDS = ["amount", "workspace_budget", "key_limit"] as const;
+/** Metrics evaluated over a rolling window with no base (balance: window_hours is the burn-rate lookback). */
+export const EVALUATED_ROLLING_METRICS = ["balance"] as const;
 
 export type SpendRuleMetric = (typeof SPEND_RULE_METRICS)[number];
 export type SpendRuleScope = (typeof SPEND_RULE_SCOPES)[number];
@@ -154,6 +156,7 @@ function nanosOrNull(value: unknown): number | null {
 
 /** True for rules the evaluator fires on today (private.spend_rule_evaluable). */
 export function isSpendRuleEvaluated(rule: { metric: string; period: string; base_kind: string | null }): boolean {
+	if (oneOf(EVALUATED_ROLLING_METRICS, rule.metric)) return rule.period === "rolling" && rule.base_kind === null;
 	return oneOf(EVALUATED_METRICS, rule.metric)
 		&& oneOf(EVALUATED_PERIODS, rule.period)
 		&& (rule.base_kind === null || oneOf(EVALUATED_BASE_KINDS, rule.base_kind));
@@ -605,9 +608,48 @@ export type SpendRulePreview = {
 	next_threshold: { percent: number | null; amount_nanos: number; amount_usd: number } | null;
 	block_at_nanos: number | null;
 	block_at_usd: number | null;
-	state: { highest_percent_fired: number | null; amount_fired_at: string | null; last_fired_at: string | null; fire_count: number } | null;
+	/** Balance rules only: where the balance stands, as the evaluator sees it. */
+	balance: SpendRuleBalancePreview | null;
+	/** armed: balance rules only (false after an alert until the balance recovers). */
+	state: { highest_percent_fired: number | null; amount_fired_at: string | null; last_fired_at: string | null; fire_count: number; armed?: boolean } | null;
 	alert: { scope_label: string; title: string; message: string } | null;
 };
+
+export type SpendRuleBalancePreview = {
+	balance_usd: number;
+	reserved_usd: number;
+	/** balance - reserved: what requests are admitted against. */
+	available_nanos: number;
+	available_usd: number;
+	window_hours: number;
+	burn_usd: number;
+	burn_per_day_usd: number;
+	/** null without spend in the window. */
+	runway_days_left: number | null;
+	low_balance: boolean;
+	low_runway: boolean;
+	armed: boolean;
+	/** Auto top-up is on and working, so a drop is recorded without an alert. */
+	auto_top_up_covers: boolean;
+};
+
+function formatBalancePreview(raw: Json | null | undefined): SpendRuleBalancePreview | null {
+	if (!raw || typeof raw !== "object") return null;
+	return {
+		balance_usd: spendNanosToUsd(raw.balance_nanos) ?? 0,
+		reserved_usd: spendNanosToUsd(raw.reserved_nanos) ?? 0,
+		available_nanos: nanosOrNull(raw.available_nanos) ?? 0,
+		available_usd: spendNanosToUsd(raw.available_nanos) ?? 0,
+		window_hours: Number(raw.window_hours ?? 0),
+		burn_usd: spendNanosToUsd(raw.burn_nanos) ?? 0,
+		burn_per_day_usd: spendNanosToUsd(raw.burn_per_day_nanos) ?? 0,
+		runway_days_left: raw.runway_days_left === null || raw.runway_days_left === undefined ? null : Number(raw.runway_days_left),
+		low_balance: raw.low_balance === true,
+		low_runway: raw.low_runway === true,
+		armed: raw.armed !== false,
+		auto_top_up_covers: raw.auto_top_up_covers === true,
+	};
+}
 
 /** public.preview_workspace_spend_rule's result with *_usd alongside each amount. */
 export function formatSpendRulePreview(raw: Json): SpendRulePreview {
@@ -639,11 +681,13 @@ export function formatSpendRulePreview(raw: Json): SpendRulePreview {
 			: null,
 		block_at_nanos: nanosOrNull(raw.block_at_nanos),
 		block_at_usd: spendNanosToUsd(raw.block_at_nanos),
+		balance: formatBalancePreview(raw.balance as Json | null | undefined),
 		state: state ? {
 			highest_percent_fired: state.highest_percent_fired === null || state.highest_percent_fired === undefined ? null : Number(state.highest_percent_fired),
 			amount_fired_at: (state.amount_fired_at ?? null) as string | null,
 			last_fired_at: (state.last_fired_at ?? null) as string | null,
 			fire_count: Number(state.fire_count ?? 0),
+			...(typeof state.armed === "boolean" ? { armed: state.armed } : {}),
 		} : null,
 		alert: alert ? { scope_label: String(alert.scope_label ?? ""), title: String(alert.title ?? ""), message: String(alert.message ?? "") } : null,
 	};

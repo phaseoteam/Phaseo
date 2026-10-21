@@ -3438,7 +3438,7 @@
 		"lowBalanceDescription": "Avise quando o saldo de créditos do espaço de trabalho atingir o limite configurado.",
 		"enableLowBalance": "Ativar alertas de saldo baixo",
 		"creditThreshold": "Limite de créditos",
-		"thresholdDescription": "Avise quando o saldo chegar a este valor ou ficar abaixo dele. Enviaremos no máximo um email a cada seis horas.",
+		"thresholdDescription": "Avise quando o saldo chegar a este valor ou ficar abaixo dele: um email cada vez que o saldo cair até aqui, no máximo um a cada seis horas, e nenhum enquanto a recarga automática estiver repondo o saldo.",
 		"thresholdInvalid": "Use um valor não negativo com até duas casas decimais.",
 		"autoTopUpFailed": "Falha na recarga automática",
 		"autoTopUpDescription": "Avise quando uma cobrança automática de créditos falhar.",
@@ -6301,7 +6301,8 @@
 			"view": "Ver",
 			"history": "Histórico",
 			"sendTest": "Enviar teste",
-			"delete": "Excluir"
+			"delete": "Excluir",
+			"runway": "restam cerca de {days} dias"
 		},
 		"preview": {
 			"ofBase": "Atualmente {value} de {base} ({percent})",
@@ -6310,7 +6311,9 @@
 			"disabled": "Ative o alerta para ver o valor atual.",
 			"unavailable": "O valor atual não está disponível agora.",
 			"afterSave": "O valor atual aparece depois que você salvar.",
-			"savedRuleNote": "Com base no alerta salvo. Salve as alterações para atualizar."
+			"savedRuleNote": "Com base no alerta salvo. Salve as alterações para atualizar.",
+			"balance": "Saldo {balance}, gastando {burn} por dia: restam cerca de {days} dias",
+			"balanceNoSpend": "Saldo {balance}, sem gastos nas últimas {hours} horas"
 		},
 		"editor": {
 			"createTitle": "Adicionar alerta de gastos",
@@ -6404,7 +6407,8 @@
 			"save": "Salvar",
 			"create": "Adicionar alerta",
 			"saving": "Salvando…",
-			"blockingOff": "O bloqueio ainda não está ativado. Até lá, este alerta só notifica."
+			"blockingOff": "O bloqueio ainda não está ativado. Até lá, este alerta só notifica.",
+			"balanceEmailNote": "Isso é separado do email de saldo baixo acima. Um alerta de saldo também pode acompanhar os dias de crédito restantes e usa os próprios destinos e intervalo de espera. Nenhum dos dois avisa enquanto a recarga automática estiver repondo o saldo."
 		},
 		"issues": {
 			"nameRequired": "Digite um nome de até 100 caracteres.",

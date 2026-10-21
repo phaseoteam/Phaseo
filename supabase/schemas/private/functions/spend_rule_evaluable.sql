@@ -10,15 +10,16 @@ CREATE OR REPLACE FUNCTION private.spend_rule_evaluable (
   AS $function$
   -- Which spend rules private.evaluate_workspace_spend_rules handles so far: spend and
   -- budget_percent over a calendar day, week or month, with an amount, workspace budget or key
-  -- limit base. Forecast, spike, balance, rolling windows and previous_period bases are added
-  -- by later changes, which widen this test so that the sweep's rollover pass and the
-  -- evaluator stay in step.
-  select p_metric in ('spend', 'budget_percent')
-    and p_period in ('day', 'week', 'month')
-    and (p_base_kind is null or p_base_kind in ('amount', 'workspace_budget', 'key_limit'));
+  -- limit base; and balance rules (workspace scope, rolling: window_hours is the burn-rate
+  -- lookback). Forecast, spike, other rolling windows and previous_period bases are added by
+  -- later changes, which widen this test so that the sweep's passes and the evaluator stay in step.
+  select (p_metric in ('spend', 'budget_percent')
+      and p_period in ('day', 'week', 'month')
+      and (p_base_kind is null or p_base_kind in ('amount', 'workspace_budget', 'key_limit')))
+    or (p_metric in ('balance') and p_period = 'rolling' and p_base_kind is null);
 $function$;
 
-COMMENT ON FUNCTION "private"."spend_rule_evaluable"(text, text, text) IS 'True for the spend rules the evaluator handles: spend and budget_percent (amount, workspace_budget or key_limit base) over a calendar day, week or month.';
+COMMENT ON FUNCTION "private"."spend_rule_evaluable"(text, text, text) IS 'True for the spend rules the evaluator handles: spend and budget_percent (amount, workspace_budget or key_limit base) over a calendar day, week or month, and balance rules (rolling burn-rate window).';
 
 REVOKE ALL ON FUNCTION "private"."spend_rule_evaluable"(text, text, text) FROM PUBLIC;
 

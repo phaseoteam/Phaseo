@@ -233,6 +233,7 @@ describe("evaluation and bases", () => {
 		expect(draftEvaluated(draft({ period: "rolling" }))).toBe(false);
 		expect(draftEvaluated(withMetric(draft(), "spike"))).toBe(false);
 		expect(draftEvaluated(withBaseKind(draft(), "previous_period"))).toBe(false);
+		expect(draftEvaluated({ ...withMetric(draft(), "balance"), runwayDays: "7" })).toBe(true);
 	});
 
 	it("finds the base from the budgets and key limits it was given", () => {
@@ -251,13 +252,22 @@ describe("previewSummary", () => {
 		rule_id: "r1", metric: "budget_percent", evaluated: true, computed_at: "", time_zone: "UTC", period: null,
 		value_nanos: 42.1e9, value_usd: 42.1, base_kind: "amount", base_ref: null, base_nanos: 100e9, base_usd: 100, percent: 42.1,
 		threshold_percents: [50], threshold_amount_nanos: null, threshold_amount_usd: null, reached_threshold_percent: null,
-		next_threshold: null, block_at_nanos: null, block_at_usd: null, state: null, alert: null, ...overrides,
+		next_threshold: null, block_at_nanos: null, block_at_usd: null, balance: null, state: null, alert: null, ...overrides,
 	});
 
 	it("shows the value against the base or the spend amount", () => {
 		expect(previewSummary(preview({}), null)).toEqual({ kind: "ofBase", valueUsd: 42.1, baseUsd: 100, percent: 42.1 });
 		expect(previewSummary(preview({ base_usd: null, base_nanos: null, percent: null, threshold_amount_usd: 200 }), null)).toEqual({ kind: "ofBase", valueUsd: 42.1, baseUsd: 200, percent: 21.05 });
 		expect(previewSummary(preview({ base_usd: null, percent: null }), null)).toEqual({ kind: "value", valueUsd: 42.1 });
+	});
+
+	it("shows a balance rule's balance, burn per day and runway", () => {
+		const balance = { balance_usd: 12, reserved_usd: 2, available_nanos: 10e9, available_usd: 10, window_hours: 24, burn_usd: 5, burn_per_day_usd: 5,
+			runway_days_left: 2, low_balance: false, low_runway: true, armed: true, auto_top_up_covers: false };
+		expect(previewSummary(preview({ metric: "balance", value_usd: 10, base_usd: null, percent: null, balance }), null))
+			.toEqual({ kind: "balance", availableUsd: 10, burnPerDayUsd: 5, runwayDays: 2, windowHours: 24 });
+		expect(previewSummary(preview({ metric: "balance", value_usd: null, base_usd: null, balance: { ...balance, burn_per_day_usd: 0, runway_days_left: null } }), null))
+			.toEqual({ kind: "balance", availableUsd: 10, burnPerDayUsd: 0, runwayDays: null, windowHours: 24 });
 	});
 
 	it("has nothing to show for rules that are not evaluated", () => {

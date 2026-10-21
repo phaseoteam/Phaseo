@@ -5847,6 +5847,8 @@ class SpendRulePreview
 {
 	/** @var array<string, mixed>|null */
 	public $alert;
+	/** @var array<string, mixed>|null */
+	public $balance;
 	/** @var string|null */
 	public $base_kind;
 	/** @var int|null */

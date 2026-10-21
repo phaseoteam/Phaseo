@@ -22366,9 +22366,10 @@ components:
         evaluated:
           type: boolean
           description: >-
-            False for rules the evaluator does not handle yet (forecast, spike
-            and balance metrics, rolling periods and previous_period bases).
-            They are saved and fire from a later release.
+            False for rules the evaluator does not handle yet (forecast and
+            spike metrics, rolling spend periods and previous_period bases).
+            They are saved and fire from a later release. Balance rules are
+            evaluated.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -22680,8 +22681,9 @@ components:
     SpendRulePreview:
       type: object
       description: >-
-        Where a spend rule stands now. Rules without a calendar period have
-        period, value and alert null.
+        Where a spend rule stands now. Balance rules have the burn-rate window
+        as period, the available balance as value and a balance object. Other
+        rules without a calendar period have period, value and alert null.
       required:
         - rule_id
         - metric
@@ -22703,6 +22705,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -22714,9 +22717,10 @@ components:
         evaluated:
           type: boolean
           description: >-
-            False for rules the evaluator does not handle yet (forecast, spike
-            and balance metrics, rolling periods and previous_period bases).
-            They are saved and fire from a later release.
+            False for rules the evaluator does not handle yet (forecast and
+            spike metrics, rolling spend periods and previous_period bases).
+            They are saved and fire from a later release. Balance rules are
+            evaluated.
         computed_at:
           type: string
           format: date-time
@@ -22833,6 +22837,66 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: >-
+                Balance rules: false after an alert until the balance is back
+                above the threshold.
+        balance:
+          type: object
+          nullable: true
+          description: >-
+            Balance rules only: where the balance stands, as the evaluator sees
+            it. Null for other rules.
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: >-
+                Balance minus reserved credit: what requests are admitted
+                against.
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: >-
+                Days the available balance lasts at the burn rate. Null without
+                spend in the window.
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: >-
+                Auto Top-Up is on and working, so a drop is recorded without an
+                alert.
         alert:
           type: object
           nullable: true

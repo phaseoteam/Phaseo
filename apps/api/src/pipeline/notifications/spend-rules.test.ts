@@ -22,16 +22,22 @@ describe("spend rules sweep", () => {
 	it("calls sweep_spend_rules with the time and limit and reads its summary", async () => {
 		state.rpc.mockResolvedValue({
 			data: {
-				dirty: 3, rollover: 1, periodic: 2, evaluated: 5, rules: 12, fired: 1, state_rows: 4, blocks: [],
-				events: [{ workspace_id: "ws_1", rule_id: "rule_1", event_id: "ev_1", dedupe_key: "spend_alert:rule_1:2026-10-01T04:00:00Z:80", threshold: 80 }],
+				dirty: 3, rollover: 1, periodic: 2, balance: 1, evaluated: 6, rules: 13, fired: 2, state_rows: 5, blocks: [],
+				events: [
+					{ workspace_id: "ws_1", rule_id: "rule_1", event_id: "ev_1", dedupe_key: "spend_alert:rule_1:2026-10-01T04:00:00Z:80", threshold: 80 },
+					{ workspace_id: "ws_2", rule_id: "rule_2", event_id: "ev_2", dedupe_key: "spend_alert:rule_2:cooldown:4900000:runway", threshold: 3, trigger: "runway" },
+				],
 			},
 			error: null,
 		});
 		const summary = await runSpendRulesSweep({ now });
 		expect(state.rpc).toHaveBeenCalledWith("sweep_spend_rules", { p_now: "2026-10-20T15:05:00.000Z", p_limit: SPEND_RULES_SWEEP_LIMIT, p_blocks: false });
 		expect(summary).toEqual({
-			dirty: 3, rollover: 1, periodic: 2, evaluated: 5, rules: 12, fired: 1, stateRows: 4, skippedLocked: false,
-			events: [{ workspaceId: "ws_1", ruleId: "rule_1", eventId: "ev_1", dedupeKey: "spend_alert:rule_1:2026-10-01T04:00:00Z:80", threshold: 80 }],
+			dirty: 3, rollover: 1, periodic: 2, balance: 1, evaluated: 6, rules: 13, fired: 2, stateRows: 5, skippedLocked: false,
+			events: [
+				{ workspaceId: "ws_1", ruleId: "rule_1", eventId: "ev_1", dedupeKey: "spend_alert:rule_1:2026-10-01T04:00:00Z:80", threshold: 80 },
+				{ workspaceId: "ws_2", ruleId: "rule_2", eventId: "ev_2", dedupeKey: "spend_alert:rule_2:cooldown:4900000:runway", threshold: 3, trigger: "runway" },
+			],
 			blocks: [], publish: [],
 		});
 		expect(hasSpendRuleSweepActivity(summary)).toBe(true);
@@ -49,7 +55,7 @@ describe("spend rules sweep", () => {
 		const idle = parseSpendRuleSweepSummary({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, state_rows: 0, events: [], blocks: [] });
 		expect(hasSpendRuleSweepActivity(idle)).toBe(false);
 		const junk = parseSpendRuleSweepSummary("nope");
-		expect(junk).toEqual({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: [], publish: [] });
+		expect(junk).toEqual({ dirty: 0, rollover: 0, periodic: 0, balance: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: [], publish: [] });
 		expect(parseSpendRuleSweepSummary({ events: [{ threshold: "amount" }] }).events[0].threshold).toBeNull();
 	});
 

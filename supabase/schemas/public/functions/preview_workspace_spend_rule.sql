@@ -14,8 +14,11 @@ CREATE OR REPLACE FUNCTION public.preview_workspace_spend_rule (
 -- the base and percent, the highest threshold reached, the next threshold, the block point,
 -- this period's state row, and the text an alert would carry now (private.spend_rule_alert_text,
 -- naming the highest threshold reached, else the first). Used by the control API and web-api
--- preview and by test sends. Rules without a calendar period (rolling, spike, balance) get
--- period, value and alert null. evaluated is false for rules the evaluator does not handle yet
+-- preview and by test sends. Balance rules get the rolling burn window as period, the available
+-- balance as value, a "balance" object (balance, reserved, available, burn and burn per day,
+-- runway, which threshold holds, armed, whether auto top-up covers a drop) and the alert text
+-- (private.spend_balance_rule_values / spend_balance_alert_text). Other rules without a calendar
+-- period (rolling, spike) get period, value and alert null. evaluated is false for rules the evaluator does not handle yet
 -- (private.spend_rule_evaluable). Errors: spend_rule_not_found (deleted, or another workspace).
 declare
   v_rule public.workspace_spend_rules;
@@ -31,6 +34,8 @@ declare
   v_alert record;
   v_has_alert boolean := false;
   v_has_state boolean := false;
+  v_balance record;
+  v_has_balance boolean := false;
 begin
   if p_workspace_id is null or p_rule_id is null or p_now is null then
     raise exception 'invalid_spend_rule_preview' using errcode = '22023';
@@ -50,6 +55,79 @@ begin
   where w.id = p_workspace_id;
 
   v_evaluated := private.spend_rule_evaluable(v_rule.metric, v_rule.period, v_rule.base_kind);
+
+  if v_rule.metric = 'balance' then
+    -- Balance rules: the available balance, the burn over the lookback window and the runway, as
+    -- the evaluator sees them (private.spend_balance_rule_values), the armed state and the text.
+    select computed.* into v_balance from private.spend_balance_rule_values(p_workspace_id, p_now, p_rule_id) computed;
+    v_has_balance := found;
+    select state.armed, state.amount_fired_at, state.last_fired_at, state.fire_count
+      into v_state
+    from public.workspace_spend_rule_state state
+    where state.rule_id = v_rule.id and state.period_start = '-infinity'::timestamptz;
+    v_has_state := found;
+    if v_has_balance then
+      -- The text an alert would carry now: the threshold that holds, else the balance amount if
+      -- the rule has one, else the runway.
+      select alert.* into v_alert
+      from private.spend_balance_alert_text(
+        v_rule.name, v_balance.available_nanos, v_rule.threshold_amount_nanos, v_rule.runway_days, v_balance.burn_per_day_nanos,
+        v_balance.runway_days_left, v_rule.window_hours,
+        case
+          when v_balance.low_balance then 'balance'
+          when v_balance.low_runway then 'runway'
+          when v_rule.threshold_amount_nanos is not null then 'balance'
+          else 'runway'
+        end
+      ) alert;
+      v_has_alert := found;
+    end if;
+    return jsonb_build_object(
+      'rule_id', v_rule.id,
+      'metric', v_rule.metric,
+      'evaluated', v_evaluated,
+      'computed_at', p_now,
+      'time_zone', v_time_zone,
+      'period', case when v_rule.window_hours is not null then jsonb_build_object(
+        'kind', 'rolling', 'start', p_now - make_interval(hours => v_rule.window_hours), 'end', p_now) end,
+      'value_nanos', case when v_has_balance then v_balance.available_nanos end,
+      'base_kind', null,
+      'base_ref', null,
+      'base_nanos', null,
+      'percent', null,
+      'threshold_percents', null,
+      'threshold_amount_nanos', v_rule.threshold_amount_nanos,
+      'reached_threshold_percent', null,
+      'next_threshold', null,
+      'block_at_nanos', null,
+      'balance', case when v_has_balance then jsonb_build_object(
+        'balance_nanos', v_balance.balance_nanos,
+        'reserved_nanos', v_balance.reserved_nanos,
+        'available_nanos', v_balance.available_nanos,
+        'window_hours', v_rule.window_hours,
+        'burn_nanos', round(v_balance.burn_nanos),
+        'burn_per_day_nanos', round(v_balance.burn_per_day_nanos),
+        'runway_days_left', v_balance.runway_days_left,
+        'runway_days', v_rule.runway_days,
+        'low_balance', v_balance.low_balance,
+        'low_runway', v_balance.low_runway,
+        'armed', coalesce(v_state.armed, true),
+        'auto_top_up_covers', private.workspace_auto_top_up_covers(p_workspace_id)
+      ) end,
+      'state', case when v_has_state then jsonb_build_object(
+        'highest_percent_fired', null,
+        'amount_fired_at', v_state.amount_fired_at,
+        'last_fired_at', v_state.last_fired_at,
+        'fire_count', v_state.fire_count,
+        'armed', v_state.armed
+      ) end,
+      'alert', case when v_has_alert then jsonb_build_object(
+        'scope_label', coalesce(nullif(btrim(v_workspace_name), ''), 'Workspace'),
+        'title', v_alert.title,
+        'message', v_alert.message
+      ) end
+    );
+  end if;
 
   select computed.* into v_value from private.spend_rule_values(p_workspace_id, p_now, p_rule_id) computed;
   if not found then

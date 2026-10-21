@@ -77,7 +77,13 @@ try {
     // The migration carries every schema file it added or changed, and the manifest lists the new ones.
     const v5 = await read(v5File);
     const captureMigration = await newestDefinition('CREATE OR REPLACE FUNCTION private.capture_workspace_notification_events');
-    for (const file of schemaFiles) assert.ok((file === schemaFiles[2] ? captureMigration : v5).includes((await read(file)).trim()), `${file} is in the migration`);
+    const sweepMigration = await newestDefinition('CREATE OR REPLACE FUNCTION public.sweep_low_balance_pushes');
+    for (const file of schemaFiles) {
+        const migration = file === schemaFiles[2] ? captureMigration : file === schemaFiles[3] ? sweepMigration : v5;
+        assert.ok(migration.replace(/\r\n/g, '\n').includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the newest migration that defines it`);
+    }
+    assert.ok((await newestDefinition('CREATE OR REPLACE FUNCTION private.workspace_auto_top_up_covers'))
+        .includes((await read('../schemas/private/functions/workspace_auto_top_up_covers.sql')).replace(/\r\n/g, '\n').trim()), 'the shared auto top-up test is migrated');
     const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
     for (const file of newFiles) {
         const path = file.replace('../schemas/', '');
@@ -225,6 +231,10 @@ try {
     await db.exec(await read('../schemas/public/functions/get_workspace_recent_credit_spend.sql'));
     for (const file of migrations) await db.exec(await read(file));
     await db.exec(v5);
+    // The spend rules balance migration moved the auto top-up test into a shared helper and
+    // re-created the sweep around it; run the current definitions.
+    await db.exec(await read('../schemas/private/functions/workspace_auto_top_up_covers.sql'));
+    await db.exec(await read(schemaFiles[3]));
 
     // u1 owns Acme and a personal workspace (Solo, $0); u2 is an Acme admin and u3 a member. u4 owns
     // Zero, which never bought credits. u5 has money pushes off, u6 no active device and u9 push off.

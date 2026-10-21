@@ -19,6 +19,7 @@ import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/billing-alerts";
 import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-request";
+import { hasLowBalanceEmailActivity, runLowBalanceEmailSweep } from "@/pipeline/notifications/low-balance";
 import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
 import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
 import { runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
@@ -559,6 +560,22 @@ async function handleSpendRulesScheduledEvent(env: GatewayBindings): Promise<voi
 	}
 }
 
+// Low-balance emails: the sweep that replaced the check after every charged request. It runs on
+// every 5-minute tick whatever SPEND_RULES_ENABLED says, because it is the existing email, before
+// the email outbox drain and routed delivery so a queued email goes out in the same tick.
+async function handleLowBalanceEmailScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const summary = await runLowBalanceEmailSweep();
+		if (hasLowBalanceEmailActivity(summary)) {
+			const { emails, ...counts } = summary;
+			console.log("low_balance_emails_swept", { ...counts, emails: emails.length });
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
 // Backfills and repairs the KV entries the gateway enforces spend blocks from.
 async function handleSpendBlockReconcileScheduledEvent(env: GatewayBindings): Promise<void> {
 	if (env.SPEND_RULES_ENABLED !== "true" || env.SPEND_RULE_BLOCKS_ENABLED !== "true") return;
@@ -802,6 +819,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleSpendRulesScheduledEvent(env);
 		} catch (error) {
 			console.error("spend_rules_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleLowBalanceEmailScheduledEvent(env);
+		} catch (error) {
+			console.error("low_balance_emails_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleOAuthCleanupScheduledEvent(env);
