@@ -691,7 +691,7 @@ describe("irToOpenAIResponses", () => {
 		expect(request.input[0].content).toEqual([
 			{ type: "input_text", text: "Compare these inputs." },
 			{ type: "input_image", image_url: "https://example.com/chart.png" },
-			{ type: "input_video", video_url: { url: "https://example.com/demo.mp4" } },
+			{ type: "input_video", video_url: "https://example.com/demo.mp4" },
 			{ type: "input_audio", input_audio: { url: "https://example.com/note.mp3", format: "mp3" } },
 			{ type: "input_file", file_url: "https://example.com/report.pdf" },
 		]);

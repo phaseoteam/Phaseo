@@ -15,6 +15,8 @@ import { isSealedReasoningValue } from "@core/reasoning-state";
 import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/shared/reasoning";
 import { toIRAnnotations } from "@protocols/shared/citations";
 import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
+import { imageDetailForProvider, unsupportedImageFileIdError } from "./media-parts";
+import { mapFilePartToMistral } from "./providers/mistral/quirks";
 
 /**
  * Transform IR request to OpenAI Chat Completions format
@@ -44,7 +46,7 @@ export function irToOpenAIChat(
 		} else if (msg.role === "user") {
 			messages.push({
 				role: "user",
-				content: mapIRContentToOpenAI(msg.content),
+				content: mapIRContentToOpenAI(msg.content, providerId),
 				...messageNameField(msg.name, providerId),
 			});
 		} else if (msg.role === "assistant") {
@@ -453,7 +455,7 @@ export function mapFilePartToOpenAIChat(part: Extract<IRContentPart, { type: "fi
 	return null;
 }
 
-function mapIRContentToOpenAI(content: IRContentPart[]): any {
+function mapIRContentToOpenAI(content: IRContentPart[], providerId?: string): any {
 	if (content.length === 1 && content[0].type === "text" && !content[0].cacheControl) {
 		return content[0].text;
 	}
@@ -464,6 +466,7 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 		}
 
 		if (part.type === "file") {
+			if (providerId === "mistral" || providerId === "mistral-eu") return [mapFilePartToMistral(part)];
 			const mapped = mapFilePartToOpenAIChat(part);
 			// Chat Completions has no file-by-URL field. Dropping the document would let the model
 			// answer without it, so fail this attempt instead: routing then tries a provider that can
@@ -478,19 +481,16 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 		}
 
 		if (part.type === "image") {
-			if (part.source === "url") {
-				return {
-					type: "image_url",
-					image_url: { url: part.data, detail: part.detail },
-					...cacheMarkFields(part.cacheControl),
-				};
-			} else {
-				return {
-					type: "image_url",
-					image_url: { url: `data:${part.mimeType || "image/jpeg"};base64,${part.data}` },
-					...cacheMarkFields(part.cacheControl),
-				};
-			}
+			// Chat Completions has no image file_id; OpenAI's executor sends such
+			// requests through Responses, and routing keeps them off other hosts.
+			if (part.source === "id") throw unsupportedImageFileIdError("Chat Completions");
+			const detail = imageDetailForProvider(part.detail, providerId);
+			const url = part.source === "url" ? part.data : `data:${part.mimeType || "image/jpeg"};base64,${part.data}`;
+			return {
+				type: "image_url",
+				image_url: { url, ...(detail ? { detail } : {}) },
+				...cacheMarkFields(part.cacheControl),
+			};
 		}
 
 		if (part.type === "audio") {
@@ -508,9 +508,11 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 
 		if (part.type === "provider_block") return { ...part.block };
 
+		// The Chat part for video is `video_url` on every host that documents
+		// one (DeepInfra, Novita, Z.ai, Venice, Friendli, io.net, SambaNova, ...).
 		if (part.type === "video") {
 			return {
-				type: "input_video",
+				type: "video_url",
 				video_url: { url: part.url },
 			};
 		}
