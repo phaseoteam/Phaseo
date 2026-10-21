@@ -10,7 +10,7 @@ import { readGatewayStop } from "@core/finish-reason";
 import { applyResponsesRequestQuirks, applyResponsesResponseQuirks } from "./responses-quirks";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
-import { applyPromptCacheFieldPolicy, cacheMarkFields } from "./prompt-cache-policy";
+import { applyPromptCacheFieldPolicy, cacheMarkFields, promptCacheBreakpointValue } from "./prompt-cache-policy";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
 import {
@@ -553,7 +553,7 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean, providerId
 function mapContentPart(part: IRContentPart): any {
 	if (part.type === "text") {
 		const promptCacheBreakpoint = part.cacheControl?.type === "prompt_cache_breakpoint"
-			? { mode: part.cacheControl.mode }
+			? promptCacheBreakpointValue(part.cacheControl)
 			: undefined;
 		return {
 			type: "input_text",
@@ -597,7 +597,7 @@ function mapContentPart(part: IRContentPart): any {
 			type: "input_audio",
 			input_audio: inputAudio,
 			...(part.cacheControl?.type === "prompt_cache_breakpoint"
-				? { prompt_cache_breakpoint: { mode: part.cacheControl.mode } }
+				? { prompt_cache_breakpoint: promptCacheBreakpointValue(part.cacheControl) }
 				: {}),
 		};
 	}

@@ -319,6 +319,55 @@ describe("openai text executor HTTP mode", () => {
 		expect(body.include).toContain("message.output_text.logprobs");
 	});
 
+	it.each([
+		["request level", { promptCacheOptions: { ttl: "12h" } }],
+		["a breakpoint", {
+			messages: [{ role: "user", content: [{ type: "text", text: "Shared manual", cacheControl: { type: "prompt_cache_breakpoint", mode: "explicit", ttl: "12h" } }] }],
+		}],
+	] as const)("routes a GPT-5.6 Chat request asking for a 12-hour cache at %s through Responses", async (_where, overrides) => {
+		// OpenAI documents the 12-hour lifetime on the Responses API only:
+		// https://developers.openai.com/api/docs/guides/prompt-caching
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_cache_12h",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.6-sol",
+				status: "completed",
+				output: [],
+				usage: { input_tokens: 4, output_tokens: 1, total_tokens: 5 },
+			}),
+		}]);
+
+		await executor({
+			...buildArgs({ model: "openai/gpt-5.6-sol", ...(overrides as any) }),
+			providerModelSlug: "gpt-5.6-sol",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/responses");
+		expect(JSON.stringify(mock.calls[0]?.bodyJson)).toContain("\"ttl\":\"12h\"");
+	});
+
+	it("keeps a 30-minute GPT-5.6 Chat request on Chat Completions", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/chat/completions",
+			response: new Response("data: [DONE]\n\n", { status: 200, headers: { "Content-Type": "text/event-stream" } }),
+		}]);
+		await executor({
+			...buildArgs({ model: "openai/gpt-5.6-sol", stream: true, promptCacheOptions: { ttl: "30m" } }),
+			providerModelSlug: "gpt-5.6-sol",
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+		});
+		mock.restore();
+		expect(mock.calls[0]?.url).toBe("https://api.openai.com/v1/chat/completions");
+		expect(mock.calls[0]?.bodyJson?.prompt_cache_options).toEqual({ ttl: "30m" });
+	});
+
 	it("sends OpenAI EU the documented service_tier name for standard", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/chat/completions"),

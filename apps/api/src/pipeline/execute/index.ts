@@ -101,6 +101,7 @@ import type { ExecutorExecuteArgs } from "@executors/types";
 import { createUpstreamTimingTracker } from "@executors/_shared/timing/upstream";
 import { getReasoningEffortAllowlist, normalizeIRForProvider } from "./normalize";
 import { clearDroppedParams, recordDroppedParams } from "./unsupportedParams";
+import { preferTwelveHourCacheRoutes } from "./prompt-cache-ttl";
 import { normalizeCapability } from "@/executors";
 import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
@@ -655,12 +656,19 @@ export async function doRequestWithIR(
 	}
 
 	// 2) Rank providers (health-aware)
-	const ranked = await timing.timer.span("execute_rank_providers", () =>
+	const routingHints = getEffectiveRoutingHints(ctx.body);
+	const rankedByHealth = await timing.timer.span("execute_rank_providers", () =>
 		rankProviders(candidates, ctx),
 	);
+	// A request for OpenAI's 12-hour cache tries the routes that can take it first.
+	const ranked = normalizedCapability === "text.generate"
+		? preferTwelveHourCacheRoutes(rankedByHealth, ir as IRChatRequest, baseModel, {
+			explicitOrder: Array.isArray((routingHints.merged as any)?.order) && (routingHints.merged as any).order.length > 0,
+		})
+		: rankedByHealth;
 
 	// 3) Try providers in order (failover up to 5)
-	const allowFallbacks = getEffectiveRoutingHints(ctx.body).allowFallbacks;
+	const allowFallbacks = routingHints.allowFallbacks;
 	const maxTries = calculateMaxTries(ranked.length, allowFallbacks);
 	const rankedProviders = ranked.slice(0, maxTries);
 	const credentialPlan = preferPinnedCredential(buildCredentialAttemptPlan(rankedProviders, {
@@ -982,6 +990,7 @@ async function attemptProviderWithIR(
 						providerMaxOutputTokens: candidate.maxOutputTokens,
 						modelForReasoning,
 						onDroppedParams: (dropped) => recordDroppedParams(ctx, candidate.providerId, dropped),
+						pricingCard: candidate.pricingCard,
 					},
 				)
 				: normalizedCapability === "video.generate"

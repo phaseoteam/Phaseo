@@ -373,6 +373,10 @@ describe("optimistic sticky routing", () => {
         ["OpenAI top-level wins over provider_options", "openai", { prompt_cache_key: "k", prompt_cache_retention: "in_memory", provider_options: { openai: { prompt_cache_retention: "24h" } } }, undefined, 90 * 60],
         ["OpenAI provider_options alias", "azure", { prompt_cache_key: "k", provider_options: { openai: { prompt_cache_retention: "24h" } } }, undefined, 24 * 60 * 60],
         ["GPT-5.6 prompt_cache_options 30m", "openai", { prompt_cache_key: "k", prompt_cache_options: { ttl: "30m" } }, undefined, 45 * 60],
+        ["GPT-5.6 prompt_cache_options 12h", "openai", { prompt_cache_key: "k", prompt_cache_options: { ttl: "12h" } }, undefined, 18 * 60 * 60],
+        ["GPT-5.6 12h breakpoint", "openai", { input: [{ role: "user", content: [{ type: "input_text", text: "a", prompt_cache_breakpoint: { mode: "explicit", ttl: "12h" } }] }] }, undefined, 18 * 60 * 60],
+        ["GPT-5.6 12h write reported", "openai", { prompt_cache_key: "k" }, { input_tokens_details: { cache_write_tokens: 10, cache_write_tokens_details: { ttl_30m_tokens: 0, ttl_12h_tokens: 10 } } }, 18 * 60 * 60],
+        ["12h on Azure, which sends the 30m default", "azure", { prompt_cache_key: "k", prompt_cache_options: { ttl: "12h" } }, undefined, 45 * 60],
         ["OpenAI retention ignored on other providers", "cerebras", { prompt_cache_key: "k", prompt_cache_retention: "24h" }, undefined, 15 * 60],
         ["session_id", "fireworks", { session_id: "s" }, undefined, 24 * 60 * 60],
     ])("derives the pin TTL from cache retention: %s", async (_label, providerId, extra, usage, expected) => {
