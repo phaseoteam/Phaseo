@@ -22,6 +22,7 @@ import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-
 import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
 import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
 import { runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
+import { hasSpendRuleSweepActivity, runSpendRulesSweep } from "@/pipeline/notifications/spend-rules";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
@@ -530,6 +531,22 @@ async function handleRateLimitThrottleRollupScheduledEvent(env: GatewayBindings)
 	}
 }
 
+// Spend rule alerts: evaluates rules after the outbox has rebuilt the usage rollups and queues
+// spend_alert events for the notification delivery and mobile push jobs later in the tick.
+async function handleSpendRulesScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.SPEND_RULES_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await runSpendRulesSweep();
+		if (hasSpendRuleSweepActivity(summary)) {
+			const { events, ...counts } = summary;
+			console.log("spend_rules_swept", { ...counts, events: events.length });
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleRoutingArchiveScheduledEvent(env: GatewayBindings): Promise<void> {
 	if (!env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF) return;
 	configureRuntime(env);
@@ -756,6 +773,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleRateLimitThrottleRollupScheduledEvent(env);
 		} catch (error) {
 			console.error("rate_limit_throttle_rollups_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleSpendRulesScheduledEvent(env);
+		} catch (error) {
+			console.error("spend_rules_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleOAuthCleanupScheduledEvent(env);
