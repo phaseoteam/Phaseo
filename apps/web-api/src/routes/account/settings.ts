@@ -402,7 +402,8 @@ accountSettingsRouter.get("/privacy", async (c) => {
 			providerId: row.provider_id,
 		})),
 		initialGlobal: settingsResult.data
-			? { ...settingsResult.data, io_logging_contents_access: ioLogContentsAccess ?? "members" }
+			// null when the setting couldn't be read, so the page doesn't save a guess.
+			? { ...settingsResult.data, io_logging_contents_access: ioLogContentsAccess }
 			: null,
 		accountPolicy: null,
 		policy: {

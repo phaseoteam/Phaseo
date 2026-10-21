@@ -46,7 +46,7 @@ const PrivacySettingsContent = withSettingsResource("privacy", function PrivacyS
 				enabled: initialData.initialGlobal?.io_logging_enabled === true,
 				retentionDays: Math.max(90, Math.min(365, Number(initialData.initialGlobal?.io_logging_retention_days ?? 90))),
 				includeProviderPayloads: initialData.initialGlobal?.io_logging_include_provider_payloads !== false,
-				contentsAccess: initialData.initialGlobal?.io_logging_contents_access === "admins" ? "admins" : "members",
+				contentsAccess: !initialData.initialGlobal ? "members" : initialData.initialGlobal.io_logging_contents_access ?? null,
 			}}
 		/>
 		{initialData.dataContribution.available ? (
