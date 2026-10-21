@@ -44,7 +44,7 @@
 - When creating/editing PR descriptions via CLI/API, use real multiline Markdown (or a body file). Do not submit escaped newline text like `\n` in the final PR body.
 
 ## Pull Request Descriptions
-Every PR opened by an agent must have these five sections, in this order, and end with a model line, with no exceptions. Human-authored PRs should follow them too; `.github/PULL_REQUEST_TEMPLATE.md` has a heading for each. A reviewer should be able to see what changed, why, and what it achieved without re-investigating.
+Every PR opened by an agent must have these five sections, in this order, and end with a model line, with no exceptions. The only thing allowed after it is a footer the harness adds automatically, such as `🤖 Generated with …`. Human-authored PRs should follow them too; `.github/PULL_REQUEST_TEMPLATE.md` has a heading for each. A reviewer should be able to see what changed, why, and what it achieved without re-investigating.
 
 ### What changed
 A short list of the behaviour, data, or files that changed.
@@ -88,7 +88,7 @@ Model: Claude Opus 5.5 (medium effort) · Harness: Claude Code in T3 Code
 
 - Use the model's display name and the effort the session actually ran at. If you cannot tell the effort, write `(effort unknown)` rather than guessing.
 - If more than one model did substantial work, such as a delegated implementation or a follow-up fix, give each one its own line in the same format and add what it did, for example `… · Harness: Codex in T3 Code (review fixes)`.
-- Put it after the five sections and before any footer the harness adds automatically.
+- Put it after the five sections. It is the last line you write; an automatic harness footer, if there is one, follows it and nothing else does.
 
 Across all sections, redact keys, tokens, emails, and customer data from output and screenshots. Do not write to production, create API keys, or spend credits to produce evidence unless the user asked for it.
 
