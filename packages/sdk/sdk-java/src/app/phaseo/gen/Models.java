@@ -58,6 +58,7 @@ public final class Models {
 
 	public static class AnthropicMessagesRequest {
 		public Object cache_control;
+		public Object context_management;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Integer max_tokens;
@@ -81,10 +82,12 @@ public final class Models {
 		public Integer top_k;
 		public Double top_p;
 		public Boolean usage;
+		public String user;
 	}
 
 	public static class AnthropicMessagesResponse {
 		public java.util.List<Object> content;
+		public Object context_management;
 		public String id;
 		public String model;
 		public Object role;
@@ -550,6 +553,7 @@ public final class Models {
 		public Boolean echo_upstream_request;
 		public Double frequency_penalty;
 		public Object image_config;
+		public Boolean include_reasoning;
 		public Object logit_bias;
 		public Boolean logprobs;
 		public Integer max_completion_tokens;
@@ -563,6 +567,7 @@ public final class Models {
 		public java.util.List<String> models;
 		public Boolean parallel_tool_calls;
 		public java.util.List<Object> plugins;
+		public Object prediction;
 		public Double presence_penalty;
 		public String prompt_cache_key;
 		public Object prompt_cache_options;

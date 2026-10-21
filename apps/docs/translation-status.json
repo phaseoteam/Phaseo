@@ -2,7 +2,7 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "0b4bdb9612c07c59ec6ae42a898d3e19843a5e0d12dfb208e5ee75130b0ebdbe",
+      "@openapi": "62926c39e43cee7aa6b6f16ac0c390adce7567f7b8323aff6b6ea951944563b2",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -349,7 +349,7 @@
       "guides/server-tools/search-models.mdx": "d0b97ec699bc8c9c0c284186699c1f610bed74750384d2f56d8a02aaca744e2d",
       "guides/server-tools/subagent.mdx": "03352168dd74401e99ac87a8204c05edf32d42a5a03125ec6377333435dd41ff",
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
-      "guides/server-tools/web-search.mdx": "327404a2a4b42e52f83d598e5117c545947a622b27c4b809e955440598fa3288",
+      "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
@@ -632,7 +632,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "de": {
-      "@openapi": "0b4bdb9612c07c59ec6ae42a898d3e19843a5e0d12dfb208e5ee75130b0ebdbe",
+      "@openapi": "62926c39e43cee7aa6b6f16ac0c390adce7567f7b8323aff6b6ea951944563b2",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -979,7 +979,7 @@
       "guides/server-tools/search-models.mdx": "d0b97ec699bc8c9c0c284186699c1f610bed74750384d2f56d8a02aaca744e2d",
       "guides/server-tools/subagent.mdx": "03352168dd74401e99ac87a8204c05edf32d42a5a03125ec6377333435dd41ff",
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
-      "guides/server-tools/web-search.mdx": "327404a2a4b42e52f83d598e5117c545947a622b27c4b809e955440598fa3288",
+      "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
@@ -1262,7 +1262,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "es": {
-      "@openapi": "0b4bdb9612c07c59ec6ae42a898d3e19843a5e0d12dfb208e5ee75130b0ebdbe",
+      "@openapi": "62926c39e43cee7aa6b6f16ac0c390adce7567f7b8323aff6b6ea951944563b2",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -1609,7 +1609,7 @@
       "guides/server-tools/search-models.mdx": "d0b97ec699bc8c9c0c284186699c1f610bed74750384d2f56d8a02aaca744e2d",
       "guides/server-tools/subagent.mdx": "03352168dd74401e99ac87a8204c05edf32d42a5a03125ec6377333435dd41ff",
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
-      "guides/server-tools/web-search.mdx": "327404a2a4b42e52f83d598e5117c545947a622b27c4b809e955440598fa3288",
+      "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
@@ -1892,7 +1892,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "fr": {
-      "@openapi": "0b4bdb9612c07c59ec6ae42a898d3e19843a5e0d12dfb208e5ee75130b0ebdbe",
+      "@openapi": "62926c39e43cee7aa6b6f16ac0c390adce7567f7b8323aff6b6ea951944563b2",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2239,7 +2239,7 @@
       "guides/server-tools/search-models.mdx": "d0b97ec699bc8c9c0c284186699c1f610bed74750384d2f56d8a02aaca744e2d",
       "guides/server-tools/subagent.mdx": "03352168dd74401e99ac87a8204c05edf32d42a5a03125ec6377333435dd41ff",
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
-      "guides/server-tools/web-search.mdx": "327404a2a4b42e52f83d598e5117c545947a622b27c4b809e955440598fa3288",
+      "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
@@ -2522,7 +2522,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "hi": {
-      "@openapi": "0b4bdb9612c07c59ec6ae42a898d3e19843a5e0d12dfb208e5ee75130b0ebdbe",
+      "@openapi": "62926c39e43cee7aa6b6f16ac0c390adce7567f7b8323aff6b6ea951944563b2",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2869,7 +2869,7 @@
       "guides/server-tools/search-models.mdx": "d0b97ec699bc8c9c0c284186699c1f610bed74750384d2f56d8a02aaca744e2d",
       "guides/server-tools/subagent.mdx": "03352168dd74401e99ac87a8204c05edf32d42a5a03125ec6377333435dd41ff",
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
-      "guides/server-tools/web-search.mdx": "327404a2a4b42e52f83d598e5117c545947a622b27c4b809e955440598fa3288",
+      "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
@@ -3152,7 +3152,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "ja": {
-      "@openapi": "0b4bdb9612c07c59ec6ae42a898d3e19843a5e0d12dfb208e5ee75130b0ebdbe",
+      "@openapi": "62926c39e43cee7aa6b6f16ac0c390adce7567f7b8323aff6b6ea951944563b2",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3499,7 +3499,7 @@
       "guides/server-tools/search-models.mdx": "d0b97ec699bc8c9c0c284186699c1f610bed74750384d2f56d8a02aaca744e2d",
       "guides/server-tools/subagent.mdx": "03352168dd74401e99ac87a8204c05edf32d42a5a03125ec6377333435dd41ff",
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
-      "guides/server-tools/web-search.mdx": "327404a2a4b42e52f83d598e5117c545947a622b27c4b809e955440598fa3288",
+      "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
@@ -3782,7 +3782,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "pt-BR": {
-      "@openapi": "0b4bdb9612c07c59ec6ae42a898d3e19843a5e0d12dfb208e5ee75130b0ebdbe",
+      "@openapi": "62926c39e43cee7aa6b6f16ac0c390adce7567f7b8323aff6b6ea951944563b2",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4129,7 +4129,7 @@
       "guides/server-tools/search-models.mdx": "d0b97ec699bc8c9c0c284186699c1f610bed74750384d2f56d8a02aaca744e2d",
       "guides/server-tools/subagent.mdx": "03352168dd74401e99ac87a8204c05edf32d42a5a03125ec6377333435dd41ff",
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
-      "guides/server-tools/web-search.mdx": "327404a2a4b42e52f83d598e5117c545947a622b27c4b809e955440598fa3288",
+      "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
@@ -4412,7 +4412,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "zh-Hans": {
-      "@openapi": "0b4bdb9612c07c59ec6ae42a898d3e19843a5e0d12dfb208e5ee75130b0ebdbe",
+      "@openapi": "62926c39e43cee7aa6b6f16ac0c390adce7567f7b8323aff6b6ea951944563b2",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4759,7 +4759,7 @@
       "guides/server-tools/search-models.mdx": "d0b97ec699bc8c9c0c284186699c1f610bed74750384d2f56d8a02aaca744e2d",
       "guides/server-tools/subagent.mdx": "03352168dd74401e99ac87a8204c05edf32d42a5a03125ec6377333435dd41ff",
       "guides/server-tools/web-fetch.mdx": "40bd40d925453cb6ac2be900f0417a4e56dcbd7683145ee3cd3158df0d23b3d5",
-      "guides/server-tools/web-search.mdx": "327404a2a4b42e52f83d598e5117c545947a622b27c4b809e955440598fa3288",
+      "guides/server-tools/web-search.mdx": "dc443e2f6dab9b3c4e242766215a6cae9ac7b05d3e4dd5388dc64d299b4ab6b5",
       "guides/service-tiers.mdx": "341e0646beebad7bb73fcf46ed0bb1bcd1e0afa3c8d0b34c02655e02c06aa586",
       "guides/streaming-production.mdx": "11feaf2a366ba06c35879827cf027253df04625503d05cace37d8255c87e2734",
       "guides/streaming-sse.mdx": "e7a157219942ccb197a644635adb6607a3d1a6952597166f880cf8a8a555b380",
