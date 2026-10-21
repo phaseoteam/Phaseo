@@ -12,14 +12,17 @@ const providerOrder: UsageProvider[] = ["codex", "claude", "cursor", "grok"];
 
 /**
  * The same account can be seen on this computer and through a hub; it counts once, keeping the first seen
- * (local logins come first).
+ * (local logins come first) among those that report limits. A login without limits (a Console sign-in) never hides
+ * a hub's reading of the same email.
  */
 export function uniqueAccounts(accounts: UsageAccount[]) {
+	const identity = (account: UsageAccount) => account.email ? `${account.provider}:${account.email.toLowerCase()}` : account.key;
+	const limited = new Set(accounts.filter(account => account.status.usage?.length).map(identity));
 	const seen = new Set<string>();
 	return accounts.filter(account => {
-		const identity = account.email ? `${account.provider}:${account.email.toLowerCase()}` : account.key;
-		if (seen.has(identity)) return false;
-		seen.add(identity); return true;
+		const key = identity(account);
+		if (seen.has(key) || (limited.has(key) && !account.status.usage?.length)) return false;
+		seen.add(key); return true;
 	});
 }
 
@@ -89,8 +92,12 @@ export function usageRings(pools: ProviderPool[], now = Date.now()): ProviderRin
 		return { label, remaining, resetsAt: resets[0] ?? null };
 	};
 	return pools.map(pool => {
-		const short = pool.windows.find(window => window.label === "5-hour") ?? pool.windows.find(window => window.label === "Daily");
-		const long = pool.windows.find(window => window.label === "Weekly") ?? pool.windows.find(window => window !== short);
+		// Per-model buckets (Fable weekly) cover only some accounts and models, so they never stand in for the plan's windows.
+		const main = pool.windows.filter(window => !window.label.endsWith(" weekly"));
+		const fiveHour = main.find(window => window.label === "5-hour") ?? main.find(window => window.label === "Daily");
+		const weekly = main.find(window => window.label === "Weekly") ?? main.find(window => window !== fiveHour);
+		// A plan with one window draws it as the outer ring, so its per-account arcs still show.
+		const [short, long] = weekly ? [fiveHour, weekly] : [undefined, fiveHour];
 		const shortColumns = short?.columns.map(current) ?? [], longColumns = long?.columns.map(current) ?? [];
 		const keys = [...new Set([...longColumns, ...shortColumns].map(column => column.account.key))];
 		const accounts = keys.map(key => {

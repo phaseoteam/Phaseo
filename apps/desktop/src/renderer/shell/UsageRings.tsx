@@ -22,15 +22,15 @@ const tone = (remaining: number) => remaining <= 10 ? "text-destructive" : remai
 function RingPair({ rings, size = 22 }: { rings: ProviderRings; size?: number }) {
 	const arc = (remaining: number, radius: number, key: string, part = 0, parts = 1) => {
 		const length = 2 * Math.PI * radius;
-		// Round caps reach past each end, so split arcs leave a gap wider than the stroke.
-		const gap = parts > 1 ? 5 : 0, span = length / parts - gap;
-		return remaining > 0 && <circle key={key} cx={11} cy={11} r={radius} fill="none" strokeWidth={2.5} strokeLinecap="round" stroke="currentColor"
+		// Split arcs have square ends and a thin gap, so six of them still read as a ring rather than dots.
+		const gap = parts > 1 ? 1.75 : 0, span = length / parts - gap;
+		return remaining > 0 && <circle key={key} cx={11} cy={11} r={radius} fill="none" strokeWidth={2.5} strokeLinecap={parts > 1 ? "butt" : "round"} stroke="currentColor"
 			transform={`rotate(${-90 + part * 360 / parts + gap / 2 / length * 360} 11 11)`} strokeDasharray={`${Math.max(0.01, span * remaining / 100)} ${length}`}
 			className={cn("transition-[stroke-dasharray] duration-500", tone(remaining))} />;
 	};
 	const track = (radius: number) => <circle cx={11} cy={11} r={radius} fill="none" strokeWidth={2.5} className="stroke-muted-foreground/15" />;
 	return <svg aria-hidden viewBox="0 0 22 22" width={size} height={size} className="shrink-0">
-		{track(9.25)}{track(4.75)}
+		{track(9.25)}{rings.inner && track(4.75)}
 		{rings.segments ? rings.segments.map((remaining, index) => arc(remaining, 9.25, `outer-${index}`, index, rings.segments!.length)) : rings.outer && arc(rings.outer.remaining, 9.25, "outer")}
 		{rings.inner && arc(rings.inner.remaining, 4.75, "inner")}
 	</svg>;
@@ -69,7 +69,9 @@ export function UsageRings() {
 	const [now, setNow] = useState(() => Date.now());
 	useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), minute); return () => window.clearInterval(timer); }, []);
 	const rings = useMemo(() => usageRings(usagePools(usageAccounts(locals, limits)), now), [locals, limits, now]);
-	const tracked = rings.length > 0 || limits.checkedAt === undefined;
+	// A check that failed (an agent timing out, a hub offline) is tried again; only finding no subscription stops checks.
+	const failed = Object.values(limits.statuses).some(status => typeof status === "object" && "error" in status) || Object.values(limits.snapshots).some(snapshot => typeof snapshot === "object" && Boolean(snapshot.error));
+	const tracked = rings.length > 0 || limits.checkedAt === undefined || failed;
 	const refresh = (maxAge: number) => { if (api && tracked) refreshUsageIfStale(api, locals, maxAge); };
 	useEffect(() => { refresh(5 * minute); }, [api]);
 	// A turn that ends has used some of the window, so the rings are read again then.

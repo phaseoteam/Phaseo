@@ -307,6 +307,8 @@ app.whenReady().then(async () => {
 	const run = code => window.webContents.executeJavaScript(code, true);
 	const settle = (ms = 900) => new Promise(resolve => setTimeout(resolve, ms));
 	if (demo) {
+		// The first page starts a limits check on load; once its quick writes land, clearing leaves nothing that says "just checked".
+		await settle(2000);
 		await run(`localStorage.clear(); localStorage.setItem("phaseo.desktop.workspaceMode", '"chat"');`);
 		window.webContents.reload();
 		window.webContents.setBackgroundThrottling(false);

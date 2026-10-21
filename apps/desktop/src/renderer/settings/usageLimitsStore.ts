@@ -14,6 +14,8 @@ export type UsageLimitsState = {
 	error: string;
 	/** When every source was last asked, in ms; the sidebar's rings use it to decide when to ask again. */
 	checkedAt?: number;
+	/** The last finished reading of each source, shown while it is checked again so the rings don't blink out. */
+	kept: { statuses: Record<string, Exclude<UsageResult, "checking">>; snapshots: Record<string, UsageHubSnapshot> };
 };
 
 const storageKey = "phaseo.desktop.usageLimits";
@@ -21,19 +23,21 @@ const listeners = new Set<() => void>();
 
 /** The last readings survive a restart, so the rings show something before the first check finishes. */
 function restore(): UsageLimitsState {
-	const empty: UsageLimitsState = { statuses: {}, hubs: [], snapshots: {}, t3Hubs: [], error: "" };
+	const empty: UsageLimitsState = { statuses: {}, hubs: [], snapshots: {}, t3Hubs: [], error: "", kept: { statuses: {}, snapshots: {} } };
 	try {
 		const saved = JSON.parse(window.localStorage.getItem(storageKey) ?? "null") as Partial<UsageLimitsState> | null;
-		return saved ? { ...empty, statuses: saved.statuses ?? {}, hubs: saved.hubs ?? [], snapshots: saved.snapshots ?? {}, ...saved.checkedAt ? { checkedAt: saved.checkedAt } : {} } : empty;
+		return saved ? { ...empty, statuses: saved.statuses ?? {}, hubs: saved.hubs ?? [], snapshots: saved.snapshots ?? {}, kept: { statuses: (saved.statuses ?? {}) as UsageLimitsState["kept"]["statuses"], snapshots: (saved.snapshots ?? {}) as Record<string, UsageHubSnapshot> }, ...saved.checkedAt ? { checkedAt: saved.checkedAt } : {} } : empty;
 	} catch { return empty; }
 }
-let state: UsageLimitsState = typeof window === "undefined" ? { statuses: {}, hubs: [], snapshots: {}, t3Hubs: [], error: "" } : restore();
+let state: UsageLimitsState = typeof window === "undefined" ? { statuses: {}, hubs: [], snapshots: {}, t3Hubs: [], error: "", kept: { statuses: {}, snapshots: {} } } : restore();
 
 function update(change: (current: UsageLimitsState) => Partial<UsageLimitsState>) {
-	state = { ...state, ...change(state) };
+	const next = { ...state, ...change(state) };
 	// Only finished readings are kept; a check cut short by quitting starts again next time.
-	const settled = <T,>(values: Record<string, T | "checking">) => Object.fromEntries(Object.entries(values).filter(([, value]) => value !== "checking"));
-	try { window.localStorage.setItem(storageKey, JSON.stringify({ statuses: settled(state.statuses), hubs: state.hubs, snapshots: settled(state.snapshots), checkedAt: state.checkedAt })); } catch { /* Readings are a convenience; storage failures leave the session as it is. */ }
+	const settled = <T,>(values: Record<string, T | "checking">) => Object.fromEntries(Object.entries(values).filter(([, value]) => value !== "checking")) as Record<string, T>;
+	const hubIds = new Set(next.hubs.map(hub => hub.id));
+	state = { ...next, kept: { statuses: { ...next.kept.statuses, ...settled(next.statuses) }, snapshots: Object.fromEntries(Object.entries({ ...next.kept.snapshots, ...settled(next.snapshots) }).filter(([id]) => hubIds.has(id))) } };
+	try { window.localStorage.setItem(storageKey, JSON.stringify({ statuses: state.kept.statuses, hubs: state.hubs, snapshots: state.kept.snapshots, checkedAt: state.checkedAt })); } catch { /* Readings are a convenience; storage failures leave the session as it is. */ }
 	for (const listener of listeners) listener();
 }
 
@@ -52,10 +56,10 @@ export function usageLocals(accounts: Account[]): UsageLocal[] {
 }
 
 /** Every signed-in account with readings, from this computer first, then from usage hubs. */
-export function usageAccounts(locals: UsageLocal[], { statuses, hubs, snapshots }: UsageLimitsState): UsageAccount[] {
+export function usageAccounts(locals: UsageLocal[], { hubs, kept: { statuses, snapshots } }: Pick<UsageLimitsState, "hubs" | "kept">): UsageAccount[] {
 	return [
-		...locals.flatMap(local => { const status = statuses[local.key]; return status && status !== "checking" && !("error" in status) && status.authenticated ? [{ key: local.key, provider: local.harness, email: status.identity, label: local.title, plan: status.plan, source: local.accountId ? "Phaseo account" : "This computer", status }] : []; }),
-		...hubs.flatMap(hub => { const snapshot = snapshots[hub.id]; return snapshot && snapshot !== "checking" ? snapshot.accounts.map(account => ({ key: `${hub.id}:${account.id}`, provider: account.provider, email: account.email, label: account.id.replace(/\.json$/, ""), plan: account.status.plan, source: hub.label, status: account.status })) : []; }),
+		...locals.flatMap(local => { const status = statuses[local.key]; return status && !("error" in status) && status.authenticated ? [{ key: local.key, provider: local.harness, email: status.identity, label: local.title, plan: status.plan, source: local.accountId ? "Phaseo account" : "This computer", status }] : []; }),
+		...hubs.flatMap(hub => { const snapshot = snapshots[hub.id]; return snapshot ? snapshot.accounts.map(account => ({ key: `${hub.id}:${account.id}`, provider: account.provider, email: account.email, label: account.id.replace(/\.json$/, ""), plan: account.status.plan, source: hub.label, status: account.status })) : []; }),
 	];
 }
 
