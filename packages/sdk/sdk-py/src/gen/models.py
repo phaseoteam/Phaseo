@@ -869,7 +869,7 @@ class DecisionsResponse(TypedDict):
 
 class DecisionsUsage(TypedDict):
 	input_tokens: NotRequired[int]
-	input_tokens_details: NotRequired[InputTokensDetails]
+	input_tokens_details: NotRequired[Dict[str, Any]]
 	output_tokens: NotRequired[int]
 	output_tokens_details: NotRequired[Dict[str, Any]]
 	total_tokens: NotRequired[int]
@@ -1665,6 +1665,7 @@ class ImagesGenerationResponse(TypedDict):
 
 class InputTokensDetails(TypedDict):
 	cache_write_tokens: NotRequired[int]
+	cache_write_tokens_details: NotRequired[Dict[str, Any]]
 	cached_tokens: NotRequired[int]
 
 class InvalidRequestResponse(TypedDict):
@@ -2487,6 +2488,7 @@ class PrivateModelUpdateRequest(TypedDict):
 
 class PromptCacheBreakpoint(TypedDict):
 	mode: NotRequired[Literal["explicit"]]
+	ttl: NotRequired[str]
 
 class PromptCacheOptions(TypedDict):
 	mode: NotRequired[Literal["implicit", "explicit"]]

@@ -1869,6 +1869,7 @@ pub struct ImagesGenerationResponse {
 
 pub struct InputTokensDetails {
 	pub cache_write_tokens: Option<i64>,
+	pub cache_write_tokens_details: Option<HashMap<String, String>>,
 	pub cached_tokens: Option<i64>,
 }
 
@@ -2786,6 +2787,7 @@ pub struct PrivateModelUpdateRequest {
 
 pub struct PromptCacheBreakpoint {
 	pub mode: Option<String>,
+	pub ttl: Option<String>,
 }
 
 pub struct PromptCacheOptions {

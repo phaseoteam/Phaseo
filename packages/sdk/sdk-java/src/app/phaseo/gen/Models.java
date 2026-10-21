@@ -1881,6 +1881,7 @@ public final class Models {
 
 	public static class InputTokensDetails {
 		public Integer cache_write_tokens;
+		public Object cache_write_tokens_details;
 		public Integer cached_tokens;
 	}
 
@@ -2809,6 +2810,7 @@ public final class Models {
 
 	public static class PromptCacheBreakpoint {
 		public Object mode;
+		public String ttl;
 	}
 
 	public static class PromptCacheOptions {

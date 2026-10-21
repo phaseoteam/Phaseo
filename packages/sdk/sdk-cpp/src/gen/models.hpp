@@ -1868,6 +1868,7 @@ struct ImagesGenerationResponse {
 
 struct InputTokensDetails {
 	std::optional<int> cache_write_tokens;
+	std::map<std::string, std::any> cache_write_tokens_details;
 	std::optional<int> cached_tokens;
 };
 
@@ -2785,6 +2786,7 @@ struct PrivateModelUpdateRequest {
 
 struct PromptCacheBreakpoint {
 	std::any mode;
+	std::string ttl;
 };
 
 struct PromptCacheOptions {

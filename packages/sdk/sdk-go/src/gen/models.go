@@ -2597,6 +2597,7 @@ type ImagesGenerationResponse struct {
 
 type InputTokensDetails struct {
 	CacheWriteTokens *int `json:"cache_write_tokens,omitempty"`
+	CacheWriteTokensDetails *map[string]interface{} `json:"cache_write_tokens_details,omitempty"`
 	CachedTokens *int `json:"cached_tokens,omitempty"`
 }
 
@@ -4342,6 +4343,7 @@ type PrivateModelUpdateRequest struct {
 
 type PromptCacheBreakpoint struct {
 	Mode *string `json:"mode,omitempty"`
+	Ttl *string `json:"ttl,omitempty"`
 }
 
 type PromptCacheOptions struct {

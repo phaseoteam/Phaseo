@@ -3289,6 +3289,8 @@ class InputTokensDetails
 {
 	/** @var int|null */
 	public $cache_write_tokens;
+	/** @var array<string, mixed>|null */
+	public $cache_write_tokens_details;
 	/** @var int|null */
 	public $cached_tokens;
 }
@@ -4903,6 +4905,8 @@ class PromptCacheBreakpoint
 {
 	/** @var string|null */
 	public $mode;
+	/** @var string|null */
+	public $ttl;
 }
 
 class PromptCacheOptions
