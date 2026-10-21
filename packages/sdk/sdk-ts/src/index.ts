@@ -1239,8 +1239,13 @@ export class Phaseo {
   }
 
   async *streamResponses(req: ResponsesRequest, options: PhaseoRequestOptions = {}): AsyncGenerator<ResponseStreamChunk> {
+    // An SSE event is named on its `event:` line; data that does not name itself takes that name.
+    let eventName: string | undefined;
     for await (const line of this.streamResponse(req, options)) {
-      const chunk = parseResponseStreamLine(line);
+      if (line.startsWith("event:")) eventName = line.slice(6).trim() || undefined;
+      const isData = line.startsWith("data:");
+      const chunk = parseResponseStreamLine(line, isData ? eventName : undefined);
+      if (isData) eventName = undefined;
       if (!chunk) continue;
       yield chunk;
     }
@@ -1721,7 +1726,7 @@ function parseChatStreamLine(line: string): ChatStreamChunk | null {
   };
 }
 
-function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
+function parseResponseStreamLine(line: string, eventName?: string): ResponseStreamChunk | null {
   const parsed = parseSseJson(line);
   if (parsed === null) return null;
   if (!isRecord(parsed)) {
@@ -1736,6 +1741,7 @@ function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
   const usage = extractUsage(parsed);
   return {
     ...parsed,
+    ...(eventName && typeof parsed.type !== "string" ? { type: eventName } : {}),
     text: extractResponseChunkText(parsed),
     usage,
     reasoningTokens: extractReasoningTokens(usage)
