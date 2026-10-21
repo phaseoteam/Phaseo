@@ -39,7 +39,9 @@ CREATE POLICY "workspace_department_budgets_select_member" ON "public"."workspac
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_department_budgets" TO "service_role";
+REVOKE ALL ON TABLE "public"."workspace_department_budgets" FROM "service_role";
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."workspace_department_budgets" TO "service_role";
 
 COMMENT ON TABLE "public"."workspace_department_budgets" IS 'Department spend budgets. A department''s spend is what its linked API keys cost, plus the keys and OAuth requests of its members when the key is not linked to a department. Budgets send alerts at about 80% and 100% (sweep_department_budget_alerts) and do not block requests.';
 
