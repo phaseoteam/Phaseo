@@ -8942,7 +8942,7 @@ components:
             - full
     CacheControl:
       type: object
-      description: प्रॉम्प्ट कैश नियंत्रण। type ephemeral के साथ वैकल्पिक ttl 5m या 1h उपयोग करें। scope केवल शीर्ष-स्तरीय Claude कैश नीति पर लागू होता है।
+      description: प्रॉम्प्ट कैश नियंत्रण। type ephemeral के साथ वैकल्पिक ttl 5m या 1h उपयोग करें। scope केवल शीर्ष-स्तरीय Claude कैश नीति पर लागू होता है। Amazon Bedrock और Google Vertex AI, Claude 3.7 Sonnet, 3.5 Sonnet और 3 Opus को केवल 5 मिनट के लिए कैश करते हैं; वहाँ ttl हटा दिया जाता है, और हटाया गया 1h X-Phaseo-Dropped-Params में cache_control.ttl के रूप में रिपोर्ट किया जाता है।
       properties:
         type:
           type: string

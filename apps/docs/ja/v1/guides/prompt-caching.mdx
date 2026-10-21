@@ -129,6 +129,8 @@ Chat CompletionsとResponsesでは、テキストと画像のパート、関数�
 
 ツール定義のマークが届くのは、Claudeのルート、Alibaba Model Studio、Veniceだけです。OpenAIはツールへのブレークポイントを受け付けません。マークを削除してもプロンプトの残りは変わらないため、キャッシュされるプレフィックスはマークのないリクエストと一致します。
 
+Amazon BedrockとGoogle Vertex AIは、Claude 3.7 Sonnet、3.5 Sonnet、3 Opusを5分間しかキャッシュせず、Bedrockはこれらのモデルで`ttl`を拒否することがあります。これらのルートでは、Phaseoはブレークポイントを`ttl`なしで送信するため、5分間キャッシュされます。削除した`1h`は、`X-Phaseo-Dropped-Params`ヘッダーと`meta.routing.dropped_params`に`cache_control.ttl`として報告します。
+
 <span id="openai-retention-and-options"></span>
 ### OpenAIの保持期間とオプション
 
@@ -350,6 +352,10 @@ Phaseoは各入力トークンを1回だけ、1つの料金で請求します。
 - キャッシュ読み取りは、そのルートの入力料金で請求します。
 - キャッシュ書き込みは、入力料金にプロバイダーが公表している書き込み倍率を掛けて請求します。倍率は、Claudeの5分の書き込みが1.25倍、1時間が2倍、OpenAI、Azure OpenAI、Alibabaが1.25倍、Kimi K3の5分の書き込みが1倍、1時間が2倍、その他のプロバイダーが1倍です。
 - 料金行には`pricing_fallback: "input_rate"`が付きます。
+
+キャッシュ書き込み料金がカタログに1つしかないClaudeのルートでは、その料金は5分の書き込み料金です。プロバイダーが1時間の書き込みとして報告した書き込みは、入力料金の2倍で、`pricing_fallback: "input_rate"`が付いた`cached_write_text_tokens_1h`の行として請求します。
+
+ストリーミングされたClaudeの応答の最後の`message_delta`は、TTL別の内訳なしでキャッシュ書き込みの累計を報告します。内訳を超える書き込みは5分の書き込みとして請求し、リクエストのデフォルトのキャッシュポリシーが`ttl: "1h"`を指定している場合は1時間の書き込みとして請求します。
 
 一部のモデルでキャッシュ済みトークンを割引しないプロバイダーもあります。そのモデルのページでは、入力とキャッシュ読み取りに同じ料金が表示されます。
 

@@ -129,6 +129,8 @@ Anthropic 每个请求最多接受四个缓存断点。默认策略会把你自�
 
 工具定义上的标记只会发送到 Claude 路由、Alibaba Model Studio 和 Venice；OpenAI 不接受工具上的断点。移除标记不会改变 prompt 的其余部分，因此缓存前缀与不带标记的请求一致。
 
+Amazon Bedrock 和 Google Vertex AI 对 Claude 3.7 Sonnet、3.5 Sonnet 和 3 Opus 只提供 5 分钟缓存，Bedrock 还可能拒绝这些模型上的 `ttl`。在这些路由上，Phaseo 发送不带 `ttl` 的断点，因此缓存时长为 5 分钟，并在 `X-Phaseo-Dropped-Params` 响应头和 `meta.routing.dropped_params` 中把被移除的 `1h` 报告为 `cache_control.ttl`。
+
 <span id="openai-retention-and-options"></span>
 ### OpenAI 的保留时间与选项
 
@@ -350,6 +352,10 @@ Phaseo 对每个输入 token 只计费一次，且只按一种价格计费：
 - 缓存读取按该路由的输入价格计费。
 - 缓存写入按输入价格乘以供应商公布的写入倍率计费：Claude 5 分钟写入为 1.25 倍，1 小时写入为 2 倍；OpenAI、Azure OpenAI 和 Alibaba 为 1.25 倍；Kimi K3 5 分钟写入为 1 倍，1 小时写入为 2 倍；其他供应商为 1 倍。
 - 对应的价格行会标记 `pricing_fallback: "input_rate"`。
+
+如果某个 Claude 路由在目录中只有一个缓存写入价格，该价格就是 5 分钟写入价格。供应商报告为 1 小时写入的部分按输入价格的 2 倍计费，记在标有 `pricing_fallback: "input_rate"` 的 `cached_write_text_tokens_1h` 行上。
+
+流式 Claude 响应的最后一个 `message_delta` 会报告缓存写入的累计总数，但不按 TTL 拆分。超出拆分部分的写入按 5 分钟写入计费；如果请求的默认缓存策略设置了 `ttl: "1h"`，则按 1 小时写入计费。
 
 有些供应商在部分模型上不对缓存 token 打折。这些模型的页面会显示相同的输入价格和缓存读取价格。
 

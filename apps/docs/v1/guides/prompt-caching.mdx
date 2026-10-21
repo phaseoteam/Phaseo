@@ -129,6 +129,8 @@ Each provider receives the mark in its own form:
 
 Marks on tool definitions reach only Claude routes, Alibaba Model Studio, and Venice; OpenAI does not accept breakpoints on tools. Removing a mark leaves the rest of the prompt unchanged, so the cached prefix matches an unmarked request.
 
+Amazon Bedrock and Google Vertex AI cache Claude 3.7 Sonnet, 3.5 Sonnet, and 3 Opus for 5 minutes only, and Bedrock can reject a `ttl` on those models. On those routes Phaseo sends your breakpoints without `ttl`, so they cache for 5 minutes, and reports a removed `1h` as `cache_control.ttl` in the `X-Phaseo-Dropped-Params` header and `meta.routing.dropped_params`.
+
 ### OpenAI retention and options
 
 OpenAI's cache controls depend on the model generation. Phaseo sends each one only where OpenAI accepts it:
@@ -348,6 +350,10 @@ If a provider reports cached tokens on a route that has no cache price in the ca
 - Cache reads are billed at the route's input rate.
 - Cache writes are billed at the input rate times the provider's documented write multiplier: 1.25× for Claude 5-minute writes and 2× for 1-hour writes; 1.25× for OpenAI, Azure OpenAI, and Alibaba; 1× for Kimi K3 5-minute writes and 2× for 1-hour writes; 1× for other providers.
 - The pricing line is marked `pricing_fallback: "input_rate"`.
+
+On a Claude route whose catalogue has one cache-write price, that price is the 5-minute rate. Writes the provider reports as 1-hour writes are billed at 2× the input rate, on a `cached_write_text_tokens_1h` line marked `pricing_fallback: "input_rate"`.
+
+The final `message_delta` of a streamed Claude response reports the cumulative cache-write total without the TTL split. Writes beyond the split are billed as 5-minute writes, or as 1-hour writes when the request's default cache policy sets `ttl: "1h"`.
 
 Some providers do not discount cached tokens on some models. Their model pages show the same price for input and cache reads.
 

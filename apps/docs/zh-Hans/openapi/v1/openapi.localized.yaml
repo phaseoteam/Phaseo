@@ -8942,7 +8942,7 @@ components:
             - full
     CacheControl:
       type: object
-      description: prompt 缓存控制。使用 type ephemeral，并可选设置 ttl 为 5m 或 1h。scope 仅适用于顶层 Claude 缓存策略。
+      description: prompt 缓存控制。使用 type ephemeral，并可选设置 ttl 为 5m 或 1h。scope 仅适用于顶层 Claude 缓存策略。Amazon Bedrock 和 Google Vertex AI 对 Claude 3.7 Sonnet、3.5 Sonnet 和 3 Opus 只提供 5 分钟缓存；在这些路由上 ttl 会被移除，被移除的 1h 会在 X-Phaseo-Dropped-Params 中报告为 cache_control.ttl。
       properties:
         type:
           type: string

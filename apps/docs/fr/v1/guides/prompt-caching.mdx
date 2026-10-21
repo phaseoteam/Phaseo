@@ -129,6 +129,8 @@ Chaque fournisseur reçoit la marque sous sa propre forme :
 
 Les marques sur les définitions d’outils n’atteignent que les routes Claude, Alibaba Model Studio et Venice ; OpenAI n’accepte pas de points d’arrêt sur les outils. Retirer une marque ne modifie pas le reste du prompt, si bien que le préfixe mis en cache correspond à celui d’une requête sans marque.
 
+Amazon Bedrock et Google Vertex AI ne mettent en cache Claude 3.7 Sonnet, 3.5 Sonnet et 3 Opus que pendant 5 minutes, et Bedrock peut rejeter un `ttl` sur ces modèles. Sur ces routes, Phaseo envoie vos points d’arrêt sans `ttl`, si bien qu’ils sont mis en cache pendant 5 minutes, et signale un `1h` retiré sous la forme `cache_control.ttl` dans l’en-tête `X-Phaseo-Dropped-Params` et dans `meta.routing.dropped_params`.
+
 <span id="openai-retention-and-options"></span>
 ### Rétention et options OpenAI
 
@@ -350,6 +352,10 @@ Si un fournisseur signale des jetons mis en cache sur une route qui n’a pas en
 - Les lectures du cache sont facturées au tarif d’entrée de la route.
 - Les écritures sont facturées au tarif d’entrée multiplié par le coefficient d’écriture documenté par le fournisseur : 1,25× pour les écritures Claude de 5 minutes et 2× pour celles d’une heure ; 1,25× pour OpenAI, Azure OpenAI et Alibaba ; 1× pour les écritures Kimi K3 de 5 minutes et 2× pour celles d’une heure ; 1× pour les autres fournisseurs.
 - La ligne tarifaire porte la mention `pricing_fallback: "input_rate"`.
+
+Sur une route Claude dont le catalogue n’a qu’un seul tarif d’écriture en cache, ce tarif est celui des écritures de 5 minutes. Les écritures que le fournisseur signale comme écritures d’une heure sont facturées au double du tarif d’entrée, sur une ligne `cached_write_text_tokens_1h` portant la mention `pricing_fallback: "input_rate"`.
+
+Le dernier `message_delta` d’une réponse Claude en streaming indique le total cumulé des écritures en cache, sans la répartition par TTL. Les écritures au-delà de cette répartition sont facturées comme des écritures de 5 minutes, ou comme des écritures d’une heure lorsque la politique de cache par défaut de la requête définit `ttl: "1h"`.
 
 Certains fournisseurs n’appliquent pas de réduction aux jetons mis en cache sur certains modèles. Les pages de ces modèles affichent le même tarif pour l’entrée et les lectures du cache.
 

@@ -8942,7 +8942,7 @@ components:
             - full
     CacheControl:
       type: object
-      description: プロンプトキャッシュの制御。type ephemeralと、任意で5mまたは1hのttlを指定します。scopeはトップレベルのClaudeキャッシュポリシーにだけ適用されます。
+      description: プロンプトキャッシュの制御。type ephemeralと、任意で5mまたは1hのttlを指定します。scopeはトップレベルのClaudeキャッシュポリシーにだけ適用されます。Amazon BedrockとGoogle Vertex AIは、Claude 3.7 Sonnet、3.5 Sonnet、3 Opusを5分間しかキャッシュしません。これらのルートではttlを削除し、削除した1hはX-Phaseo-Dropped-Paramsにcache_control.ttlとして報告します。
       properties:
         type:
           type: string

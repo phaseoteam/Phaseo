@@ -129,6 +129,8 @@ Jeder Provider erhält die Markierung in seiner eigenen Form:
 
 Markierungen auf Tool-Definitionen erreichen nur Claude-Routen, Alibaba Model Studio und Venice; OpenAI akzeptiert keine Breakpoints auf Tools. Das Entfernen einer Markierung lässt den Rest des Prompts unverändert, sodass das gecachte Präfix einer Anfrage ohne Markierung entspricht.
 
+Amazon Bedrock und Google Vertex AI cachen Claude 3.7 Sonnet, 3.5 Sonnet und 3 Opus nur für 5 Minuten, und Bedrock kann eine `ttl` bei diesen Modellen ablehnen. Auf diesen Routen sendet Phaseo deine Breakpoints ohne `ttl`, sodass sie 5 Minuten lang cachen, und meldet eine entfernte `1h` als `cache_control.ttl` im Header `X-Phaseo-Dropped-Params` und in `meta.routing.dropped_params`.
+
 <span id="openai-retention-and-options"></span>
 ### Aufbewahrung und Optionen bei OpenAI
 
@@ -350,6 +352,10 @@ Meldet ein Provider gecachte Token auf einer Route, für die der Katalog noch ke
 - Cache-Lesevorgänge werden zum Eingabepreis der Route abgerechnet.
 - Cache-Schreibvorgänge werden zum Eingabepreis mal dem dokumentierten Schreibfaktor des Providers abgerechnet: 1,25× für Claude-Schreibvorgänge mit 5 Minuten und 2× mit 1 Stunde; 1,25× für OpenAI, Azure OpenAI und Alibaba; 1× für Kimi-K3-Schreibvorgänge mit 5 Minuten und 2× mit 1 Stunde; 1× für andere Provider.
 - Die Preiszeile ist mit `pricing_fallback: "input_rate"` gekennzeichnet.
+
+Auf einer Claude-Route, deren Katalog nur einen Preis für Cache-Schreibvorgänge hat, ist dieser Preis der 5-Minuten-Preis. Schreibvorgänge, die der Provider als 1-Stunden-Schreibvorgänge meldet, werden zum doppelten Eingabepreis abgerechnet, in einer Zeile `cached_write_text_tokens_1h` mit der Kennzeichnung `pricing_fallback: "input_rate"`.
+
+Das letzte `message_delta` einer gestreamten Claude-Antwort meldet die kumulierte Summe der Cache-Schreibvorgänge ohne Aufteilung nach TTL. Schreibvorgänge über diese Aufteilung hinaus werden als 5-Minuten-Schreibvorgänge abgerechnet, oder als 1-Stunden-Schreibvorgänge, wenn die Standard-Cache-Richtlinie der Anfrage `ttl: "1h"` setzt.
 
 Manche Provider gewähren bei einigen Modellen keinen Rabatt auf gecachte Token. Deren Modellseiten zeigen denselben Preis für Eingabe und Cache-Lesevorgänge.
 
