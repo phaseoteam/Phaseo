@@ -45,10 +45,44 @@ export function tierRows(model: CompareViewModel, tier: string): CompareViewPric
 	return [...byMeter.values()].map((group) => group.find((row) => !row.conditional) ?? group[0]!);
 }
 
-/** Conditional bands left out of the base rows, for a "see the model page" note. */
-export function hiddenConditionalRows(model: CompareViewModel, tier: string): number {
-	const rows = model.pricing?.tiers[tier] ?? [];
-	return rows.length - (tierRows(model, tier)?.length ?? 0);
+/** The other bands of a meter, e.g. "input tokens > 200K" after the base band. */
+export function extraBands(model: CompareViewModel, tier: string, base: CompareViewPriceRow): CompareViewPriceRow[] {
+	return (model.pricing?.tiers[tier] ?? []).filter((row) => row.meter === base.meter && row !== base && row.conditional);
+}
+
+// Routes
+
+/** The route and tier a reader picked for a model. A null provider means the headline (cheapest) route. */
+export type RouteChoice = { provider: string | null; tier: string | null };
+
+/**
+ * The model priced on the chosen route. Older cached responses carry no
+ * per-route prices; then only the headline route can be priced.
+ */
+export function applyRoute(model: CompareViewModel, provider: string | null | undefined): CompareViewModel {
+	if (!provider || provider === model.pricing?.provider.id) return model;
+	const route = model.providers.find((entry) => entry.id === provider);
+	if (!route?.pricing) return model;
+	return { ...model, pricing: { provider: { id: route.id, name: route.name, routed: true }, tiers: route.pricing } };
+}
+
+/** Routes a reader can pick: those with their own prices, plus the headline route. */
+export function routeOptions(model: CompareViewModel): Array<{ id: string; name: string }> {
+	const headline = model.pricing?.provider;
+	const routes = model.providers.filter((route) => route.pricing || route.id === headline?.id).map((route) => ({ id: route.id, name: route.name }));
+	if (headline && !routes.some((route) => route.id === headline.id)) routes.unshift({ id: headline.id, name: headline.name });
+	return routes;
+}
+
+export function routeTiers(model: CompareViewModel): string[] {
+	return sortTiers(Object.keys(model.pricing?.tiers ?? {}));
+}
+
+/** The chosen tier when the route offers it, else standard, else the route's first tier. */
+export function activeTier(model: CompareViewModel, chosen: string | null | undefined): string {
+	const tiers = routeTiers(model);
+	if (chosen && tiers.includes(chosen)) return chosen;
+	return tiers.includes("standard") ? "standard" : tiers[0] ?? "standard";
 }
 
 /**
@@ -75,11 +109,11 @@ export function tokenPrice(model: CompareViewModel, kind: ComparePriceKind, tier
 export type Workload = { inputTokens: number; outputTokens: number; cachedShare: number };
 
 /** USD for one request, with the cached share of input billed at the cache-read rate when there is one. */
-export function requestCost(model: CompareViewModel, workload: Workload): number | null {
-	const input = tokenPrice(model, "input");
-	const output = tokenPrice(model, "output");
+export function requestCost(model: CompareViewModel, workload: Workload, tier = "standard"): number | null {
+	const input = tokenPrice(model, "input", tier);
+	const output = tokenPrice(model, "output", tier);
 	if (input == null || output == null) return null;
-	const cacheRead = tokenPrice(model, "cacheRead") ?? input;
+	const cacheRead = tokenPrice(model, "cacheRead", tier) ?? input;
 	const share = Math.min(1, Math.max(0, workload.cachedShare));
 	return (
 		(workload.inputTokens * (1 - share) * input +
@@ -238,6 +272,8 @@ export function buildVerdicts(
 	models: CompareViewModel[],
 	usage: CompareViewUsageByModel,
 	benchmarks: CompareViewBenchmark[],
+	/** The tier each model is priced at, aligned with `models`. */
+	tiers: string[] = [],
 ): Verdicts {
 	const byModel: Record<string, VerdictReason[]> = Object.fromEntries(models.map((model) => [model.id, []]));
 	if (models.length < 2) return { byModel, capabilityTie: false };
@@ -258,7 +294,7 @@ export function buildVerdicts(
 		sole(eciResults.map((picked) => (picked.kind === "result" ? picked.result.score : null)), "higher", (_, value) => ({ type: "topCapability", value }));
 	}
 	if (sameJob) {
-		sole(models.map((model) => requestCost(model, TYPICAL_REQUEST)), "lower", (_, value) => ({ type: "cheapest", value }));
+		sole(models.map((model, index) => requestCost(model, TYPICAL_REQUEST, tiers[index])), "lower", (_, value) => ({ type: "cheapest", value }));
 	}
 	sole(models.map((model) => model.contextWindow?.tokens), "higher", (_, value) => ({ type: "largestContext", value }));
 	sole(models.map((model) => usage[model.id]?.throughputP50TokPerSec30m), "higher", (_, value) => ({ type: "fastest", value }));
