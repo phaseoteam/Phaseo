@@ -388,7 +388,7 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		const deprecatedAt = timestamp(model.deprecated_at);
 		const shutdownAt = timestamp(model.shutdown_at);
 		for (const [key, rawValue, normalized] of [["available_from", model.available_from, availableFrom], ["deprecated_at", model.deprecated_at, deprecatedAt], ["shutdown_at", model.shutdown_at, shutdownAt]] as const) {
-			if (rawValue != null && normalized === null) issues.push({ path: `data[${index}].${key}`, message: "Expected an ISO 8601 timestamp with an explicit timezone (Z or Ã‚Â±HH:MM)." });
+			if (rawValue != null && normalized === null) issues.push({ path: `data[${index}].${key}`, message: "Expected an ISO 8601 timestamp with an explicit timezone (Z or ±HH:MM)." });
 		}
 		if ((availableFrom && deprecatedAt && deprecatedAt <= availableFrom) || (deprecatedAt && shutdownAt && shutdownAt <= deprecatedAt) || (availableFrom && shutdownAt && shutdownAt <= availableFrom)) { issues.push({ path: `data[${index}]`, message: "Lifecycle timestamps must be in chronological order." }); continue; }
 		if (issues.some((issue) => issue.path.startsWith(`data[${index}].`) && issue.message.includes("timestamp"))) continue;

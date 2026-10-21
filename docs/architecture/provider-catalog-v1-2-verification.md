@@ -1,6 +1,6 @@
 # Provider catalog v1.2 implementation verification
 
-Status: Local implementation, not deployable until schema generation/replay completes.
+Status: Draft PR #3107. Generated migration committed; schema equivalence and full replay are pending CI.
 
 ## Implemented
 
@@ -68,3 +68,18 @@ fixture did not load the new resolver dependency. The fixture now loads the real
 resolver and the two affected tests pass locally. Generation was retried using the
 existing credential-free disposable database workflow. Full migration equivalence,
 promotion/audit replay and browser/live gateway proof remain separate release gates.
+
+## Generated migration and CI follow-up
+
+Disposable generation run 39619249773 succeeded. Reviewed and committed
+`supabase/migrations/20261021144702_provider_catalog_v12_data_policy.sql` plus its
+generated dependency manifest. The earlier missing-migration gate above is resolved;
+schema equivalence and full replay still need to pass before deployment.
+
+The first full web API CI suite reported 1 failure and 1,126 passes: a garbled
+Unicode offset symbol in the existing lifecycle validation message. Restoring the
+original UTF-8 message from main fixes that regression:
+`pnpm --filter @phaseo/web-api test -- src/routes/account/provider-catalog.test.ts`
+returned **21 passed**. The local attempt to rerun the entire suite was cancelled
+before test execution; do not count it as a pass. The updated CI run must provide
+full-suite proof.
