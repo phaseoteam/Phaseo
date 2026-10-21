@@ -1,3 +1,4 @@
+import { requireOptionalNativeModule } from "expo";
 import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import { kv } from "@/lib/storage";
@@ -8,10 +9,13 @@ import { createStore } from "@/lib/store";
  * expo-haptics directly (src/lib/haptics.test.ts checks).
  *
  * Android plays the system's own effects (`View.performHapticFeedback`), the ones its keyboard, switches and launcher
- * use: tuned for each phone's motor, and off when the phone's touch vibration is off. Not expo-haptics' impact,
- * selection and notification calls, which on Android drive the vibration motor with fixed patterns, buzz rather than
- * tick, and ignore that setting. Effects Android added later (13 and 14) fall back to older ones on older phones.
- * iOS plays its feedback generators.
+ * use: tuned for each phone's motor, and off when the phone's touch vibration is off. Effects Android added later
+ * (11 and 14) fall back to older ones on older phones. But some motors can't play those effects at all, and Android
+ * then drops them silently (a Galaxy A53 reports no effects, so nearly every system haptic is ignored there, the
+ * system's own included). On those phones the app plays short pulses instead, as touch feedback, through its own module
+ * (modules/phaseo-haptics), which asks the motor what it can do. Not expo-haptics' impact, selection and notification
+ * calls: on Android they drive the motor with fixed patterns as media, so the phone's touch vibration settings don't
+ * apply. iOS plays its feedback generators.
  *
  * Haptics mark moments, not every tap: a choice made, a switch flipped, a long press caught, a message sent, an
  * outcome (done, copied, saved, failed), and a few physical ones in the version art. Plain buttons and navigation stay
@@ -65,6 +69,27 @@ export const ANDROID_HAPTICS: Record<HapticKind, readonly (readonly [Haptics.And
   thud: [[Haptics.AndroidHaptics.Virtual_Key, 0]],
 };
 
+/**
+ * Each kind as touch pulses, for phones whose motor can't play the system's effects: on and off times (ms, starting
+ * with the wait before the first pulse) and each segment's strength (0 to 255, used where the motor can vary it). The
+ * system's own long press on those phones is one 45 ms pulse; taps are shorter, but at least 12 ms, so a slow motor
+ * spins up enough to be felt.
+ */
+export const ANDROID_PULSES: Record<HapticKind, { timings: readonly number[]; amplitudes: readonly number[] }> = {
+  selection: { timings: [0, 16], amplitudes: [0, 100] },
+  tick: { timings: [0, 12], amplitudes: [0, 70] },
+  toggleOn: { timings: [0, 22], amplitudes: [0, 170] },
+  toggleOff: { timings: [0, 16], amplitudes: [0, 110] },
+  longPress: { timings: [0, 45], amplitudes: [0, 200] },
+  press: { timings: [0, 20], amplitudes: [0, 150] },
+  success: { timings: [0, 18, 90, 30], amplitudes: [0, 140, 0, 230] },
+  error: { timings: [0, 40, 70, 40], amplitudes: [0, 230, 0, 230] },
+  lift: { timings: [0, 32], amplitudes: [0, 180] },
+  drop: { timings: [0, 16], amplitudes: [0, 120] },
+  bump: { timings: [0, 14], amplitudes: [0, 120] },
+  thud: { timings: [0, 40], amplitudes: [0, 255] },
+};
+
 type IosHaptic =
   | { kind: "selection" }
   | { kind: "impact"; style: Haptics.ImpactFeedbackStyle }
@@ -86,10 +111,46 @@ export const IOS_HAPTICS: Record<HapticKind, IosHaptic> = {
   thud: { kind: "impact", style: Haptics.ImpactFeedbackStyle.Heavy },
 };
 
-/** The Android effect for a kind on a given Android version (API level). */
-export function androidHaptic(kind: HapticKind, sdk: number): Haptics.AndroidHaptics {
+/**
+ * The Android effect for a kind on a given Android version (API level). Android 14's effects are composed from
+ * primitives, so they're skipped when the motor has none (`primitives` false).
+ */
+export function androidHaptic(kind: HapticKind, sdk: number, primitives: boolean): Haptics.AndroidHaptics {
   const options = ANDROID_HAPTICS[kind];
-  return (options.find(([, since]) => sdk >= since) ?? options[options.length - 1]!)[0];
+  return (options.find(([, since]) => sdk >= since && (since < U || primitives)) ?? options[options.length - 1]!)[0];
+}
+
+/**
+ * What the phone's motor reports (modules/phaseo-haptics): `effects` and `primitives` are null when Android can't
+ * tell (before Android 11, or a motor that doesn't say), and then the system's effects are tried as usual.
+ */
+export type MotorCapabilities = { vibrator: boolean; amplitude: boolean; effects: boolean | null; primitives: boolean | null };
+
+/**
+ * How Android plays haptics on a phone: the system's effects, touch pulses when the motor says it can't play them,
+ * or nothing without a motor. Without the module (an older build), the system's effects.
+ */
+export function androidRoute(motor: MotorCapabilities | null): "system" | "pulse" | "none" {
+  if (!motor) return "system";
+  if (!motor.vibrator) return "none";
+  return motor.effects === false ? "pulse" : "system";
+}
+
+type PhaseoHapticsModule = { capabilities(): MotorCapabilities; pulse(timings: number[], amplitudes: number[]): Promise<void> };
+/** The app's own module; Android only, so null elsewhere (and in builds made before it). */
+const native = requireOptionalNativeModule<PhaseoHapticsModule>("PhaseoHaptics");
+let motorCache: MotorCapabilities | null | undefined;
+
+/** The motor's capabilities, asked once. */
+export function motorCapabilities(): MotorCapabilities | null {
+  if (motorCache === undefined) {
+    try {
+      motorCache = native?.capabilities() ?? null;
+    } catch {
+      motorCache = null;
+    }
+  }
+  return motorCache;
 }
 
 /** No two haptics closer than this (ms): faster than any one gesture needs, slow enough that bursts stay ticks. */
@@ -120,10 +181,19 @@ export function setHapticsEnabled(enabled: boolean) {
   if (enabled) haptic("toggleOn");
 }
 
-/** Plays a kind's effect on a platform (`os` and Android's API level), with no setting or gap. Never throws. */
-export function play(kind: HapticKind, os: string, version: number) {
+/**
+ * Plays a kind's effect on a platform (`os`, Android's API level and its motor), with no setting or gap. Never
+ * throws.
+ */
+export function play(kind: HapticKind, os: string, version: number, motor: MotorCapabilities | null) {
   if (os === "android") {
-    void Haptics.performAndroidHapticsAsync(androidHaptic(kind, version)).catch(() => undefined);
+    const route = androidRoute(motor);
+    if (route === "pulse" && native) {
+      const pulse = ANDROID_PULSES[kind];
+      void native.pulse([...pulse.timings], [...pulse.amplitudes]).catch(() => undefined);
+    } else if (route !== "none") {
+      void Haptics.performAndroidHapticsAsync(androidHaptic(kind, version, motor?.primitives !== false)).catch(() => undefined);
+    }
     return;
   }
   if (os !== "ios") return;
@@ -142,5 +212,5 @@ export function haptic(kind: HapticKind) {
   const now = Date.now();
   if (!shouldPlay(lastPlayed, now)) return;
   lastPlayed = now;
-  play(kind, Platform.OS, Number(Platform.Version) || 0);
+  play(kind, Platform.OS, Number(Platform.Version) || 0, Platform.OS === "android" ? motorCapabilities() : null);
 }
