@@ -4,7 +4,7 @@
 // set PGLITE_MODULE to its dist/index.js file URL.
 // Run: node supabase/tests/spend-attribution.test.mjs
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const migration = await read('../migrations/20261021100616_spend_attribution.sql');
@@ -90,9 +90,17 @@ await db.exec('truncate public.v2_private_usage_15m');
 // ---- The rest of the migration: view, processor and helpers, as the schema files define them.
 await db.exec(migration.slice(migration.indexOf('-- Appends actor_user_id')));
 await db.exec(await read('../schemas/public/functions/get_private_usage_overview.sql'));
-for (const name of ['private/views/v2_usage_overview_requests', 'public/functions/process_v2_analytics_outbox', 'private/functions/spend_scope_departments', 'private/functions/spend_department_totals']) {
+for (const name of ['private/views/v2_usage_overview_requests', 'private/functions/spend_scope_departments', 'private/functions/spend_department_totals']) {
   const file = (await read(`../schemas/${name}.sql`)).replace(/^CREATE VIEW/, 'CREATE OR REPLACE VIEW').trim();
   assert(migration.includes(file), `the migration ships ${name} exactly`);
+}
+// The spend rules evaluator redefines the processor later (it marks workspace_spend_rule_dirty);
+// the schema file must match the newest migration that defines it.
+{
+  const names = (await readdir(new URL('../migrations/', import.meta.url))).filter((name) => name.endsWith('.sql')).sort();
+  let newest = '';
+  for (const name of names) { const sql = await read(`../migrations/${name}`); if (sql.includes('CREATE OR REPLACE FUNCTION public.process_v2_analytics_outbox')) newest = sql; }
+  assert(newest.includes((await read('../schemas/public/functions/process_v2_analytics_outbox.sql')).trim()), 'the newest processor migration ships the schema file exactly');
 }
 for (const text of [tableSql.match(/CREATE UNIQUE INDEX[^;]*;/)[0], tableSql.match(/COMMENT ON TABLE[^\r\n]*/)[0], tableSql.match(/COMMENT ON COLUMN[^\r\n]*/)[0]]) {
   assert(migration.includes(text), 'the migration matches the table definition');
