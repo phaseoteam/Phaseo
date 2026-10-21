@@ -5,6 +5,7 @@
 
 import { passthroughWithPricing, passthrough } from "./streaming";
 import { createToolCallKeyResolver, type UnifiedStreamEvent } from "./stream-events";
+import { createChatChunkAccumulator, resolveChatStreamAuditResponse } from "./chat-stream-log-snapshot";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
@@ -49,6 +50,8 @@ import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
+import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
+import { alertUnexpectedZeroCostMedia } from "./media-zero-cost";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -198,6 +201,11 @@ export async function handleStreamResponse(
     let cachedFinishReason: string | null = null;
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
+    const chatChunkAccumulator = ctx.endpoint === "chat.completions" ? createChatChunkAccumulator() : null;
+    const auditGatewayResponse = () =>
+        chatChunkAccumulator
+            ? resolveChatStreamAuditResponse(latestGatewaySnapshot, chatChunkAccumulator)
+            : latestGatewaySnapshot;
 	let streamFailed = false;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
@@ -360,6 +368,7 @@ export async function handleStreamResponse(
         priceCard: card,
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
+            chatChunkAccumulator?.add(frame);
             const includeMeta = ctx.meta.returnMeta ?? false;
             const next: any = withServedModel({ ...frame }, ctx);
             delete next.provider;
@@ -667,6 +676,7 @@ export async function handleStreamResponse(
 					usage: shapedUsage,
 					reservation: result.providerRateLimitReservation,
 				});
+				chargeRateLimitPolicyTokens(ctx, shapedUsage);
 				suppressFailedResponseBilling({ ctx, result, usage: shapedUsage, reason });
 				await handleFailureAudit(
 					ctx,
@@ -750,6 +760,7 @@ export async function handleStreamResponse(
                     totalNanosOverride = repriced.totalNanos;
                     currencyHint = repriced.currency ?? currencyHint;
                 }
+                alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos: totalNanosOverride });
 
                 const pricedWithByokSubtotal = await applyByokServiceFee({
                     workspaceId: ctx.workspaceId,
@@ -793,6 +804,7 @@ export async function handleStreamResponse(
                 }
 
 				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
+				chargeRateLimitPolicyTokens(ctx, result.bill.usage);
                 await recordUsageAndChargeOnce({
                     ctx,
                     costNanos: pricedWithByok.totalNanos,
@@ -811,7 +823,7 @@ export async function handleStreamResponse(
                     normalizedFinishReason,
                     upstreamStatus,
                     result.bill.upstream_id ?? null,
-                    latestGatewaySnapshot,
+                    auditGatewayResponse(),
                 );
 
                 return true;
@@ -869,6 +881,7 @@ export async function handleStreamResponse(
 				};
                 await maybeWriteStickyForUsage(pricedWithByok.pricedUsage);
 				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: pricedWithByok.pricedUsage, reservation: result.providerRateLimitReservation });
+				chargeRateLimitPolicyTokens(ctx, pricedWithByok.pricedUsage);
                 await recordUsageAndChargeOnce({
                     ctx,
                     costNanos: pricedWithByok.totalNanos,
@@ -886,7 +899,7 @@ export async function handleStreamResponse(
                     cachedFinishReason,
                     upstreamStatus,
                     result.bill.upstream_id ?? null,
-                    latestGatewaySnapshot,
+                    auditGatewayResponse(),
                 );
                 return;
             }
@@ -899,6 +912,7 @@ export async function handleStreamResponse(
                 tier,
                 ctx.meta
             );
+            alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final priced usage", {
                     requestId: ctx.requestId,
@@ -947,6 +961,7 @@ export async function handleStreamResponse(
             await maybeWriteStickyForUsage(result.bill.usage);
 
 			await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
+			chargeRateLimitPolicyTokens(ctx, result.bill.usage);
             await recordUsageAndChargeOnce({
                 ctx,
                 costNanos: pricedWithByok.totalNanos,
@@ -965,7 +980,7 @@ export async function handleStreamResponse(
                 cachedFinishReason,
                 upstreamStatus,
                 result.bill.upstream_id ?? null,
-                latestGatewaySnapshot,
+                auditGatewayResponse(),
             );
 
             } catch (error) {
@@ -990,7 +1005,7 @@ export async function handleStreamResponse(
                     },
                     null,
                     {
-                        gatewayResponse: latestGatewaySnapshot,
+                        gatewayResponse: auditGatewayResponse(),
                         rawUsage: usageRaw ?? latestStreamUsageRaw ?? result.bill.usage,
                         pricingCard: card,
                     },

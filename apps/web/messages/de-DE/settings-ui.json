@@ -2924,6 +2924,7 @@
 		"phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible": "Wenn diese Option deaktiviert ist, sind kostenlose Endpunkte, die Prompts veröffentlichen, nicht verfügbar.",
 		"Store Gateway I/O logs": "Gateway-I/O-Protokolle speichern",
 		"phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView": "Prompts und Antworten von Anfragen für die Detailansicht „Protokolle“ in privatem R2-Speicher ablegen.",
+		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "Aus, solange keine Datenaufbewahrung verlangt wird. Prompts und Antworten werden nicht gespeichert.",
 		"90 days": "90 Tage",
 		"180 days": "180 Tage",
 		"365 days": "365 Tage",
@@ -5167,19 +5168,18 @@
 		"total": "Gesamt",
 		"multiValueNote": "Eine Anfrage mit mehreren Werten zählt unter jedem Wert einmal.",
 		"notFilteredByLabel": "Diese Tabelle ignoriert den Label-Filter oben.",
-		"classificationsTitle": "Klassifizierungen",
 		"labelsTitle": "Labels",
 		"thisIsClassifierCall": "Diese Anfrage ist ein Klassifikator-Aufruf für {name}.",
-		"statusClassified": "Klassifiziert",
 		"statusSessionCache": "Aus der Sitzung übernommen",
 		"statusBudgetReached": "Budget erreicht",
 		"statusFailed": "Fehlgeschlagen",
 		"confidence": "{value} Konfidenz",
 		"noAnswer": "Kein Wert passte",
-		"model": "Modell",
-		"cost": "Kosten",
-		"openClassifierCall": "Klassifikator-Aufruf öffnen",
-		"callerLabels": "Mit der Anfrage gesendet"
+		"callerLabels": "Mit der Anfrage gesendet",
+		"showLabelled": "Anfragen anzeigen, bei denen {key} {value} ist",
+		"viewCall": "Aufruf ansehen",
+		"classifierCallBadge": "Klassifikator-Aufruf",
+		"moreLabels": "+{count}"
 	},
 	"providerCatalogCopy": {
 		"serviceTier": "Servicestufe",
@@ -5838,7 +5838,6 @@
 		"noFinalTextResponseWasCaptured": "Keine endgültige Textantwort erfasst.",
 		"copyModelOutput": "Modellausgabe kopieren",
 		"logCapture": "Protokollerfassung",
-		"requestAndResponsePayloadRetainedInCloudflareR2": "Anfrage- und Antwortdaten in Cloudflare R2 aufbewahrt.",
 		"iOPayloadStorageStatusAndRetentionDetails": "Speicherstatus und Aufbewahrung der E/A-Daten.",
 		"storage": "Speicher",
 		"cloudflareR2": "Cloudflare R2",
@@ -5872,7 +5871,9 @@
 		"toolApplypatch": "Patch anwenden",
 		"toolSubagent": "Unteragent",
 		"toolFusion": "Fusion",
-		"toolModelsearch": "Modellsuche"
+		"toolModelsearch": "Modellsuche",
+		"payloadStatus": "Payload {status}",
+		"payloadStored": "Anfrage- und Antwort-Payload gespeichert."
 	},
 	"keyDetail": {
 		"back": "Zurück zu API-Schlüsseln",

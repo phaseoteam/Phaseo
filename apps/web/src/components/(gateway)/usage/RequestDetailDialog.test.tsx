@@ -9,9 +9,6 @@ import React from "react";
 import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 import RequestDetailDialog from "./RequestDetailDialog";
 import { RouteRequestDetailErrorDialog } from "./RouteRequestDetailDialog";
-import { TraceViewGateProvider } from "./TraceViewGate";
-
-let mockTraceEnabled = false;
 
 const router = {
 	push: jest.fn(),
@@ -57,7 +54,6 @@ const historicalRequestWithoutCollections = {
 } as RequestRow;
 
 describe("RequestDetailDialog", () => {
-	beforeEach(() => { mockTraceEnabled = false; });
 	it("shows a server tool between model calls without payload logging", () => {
 		const events = [
 			{ type: "provider.started", span_id: "first", provider: "openai", call_kind: "initial", elapsed_ms: 10 },
@@ -75,15 +71,16 @@ describe("RequestDetailDialog", () => {
 	});
 	it("shows a request's classifications by classifier name", () => {
 		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} classifiers={[{ id: "c1", name: "Department", enabled: true, dimensions: [{ key: "department", name: "Department", multiple: false, values: ["legal"] }] }]} request={{ ...historicalRequestWithoutCollections, detail_metadata: { labels: [{ key: "department", value: "legal" }], classifications: [{ classifier_id: "c1", status: "classified", model: "m", labels: [{ key: "department", value: "legal", confidence: 0.5 }], response_id: "req_c", cost_nanos: 1000 }] } }} />);
-		expect(markup).toContain("Classifications");
+		expect(markup).toContain(">Labels<");
 		expect(markup).toContain("50% confidence");
+		// Labels come before the routing details.
+		expect(markup.indexOf(">Labels<")).toBeLessThan(markup.indexOf("Routing details"));
 		expect(markup).toContain("/settings/usage/logs/requests/req_c");
 	});
-	it("shows the Trace tab only when its rollout gate passes", () => {
-		const render = () => renderToStaticMarkup(<TraceViewGateProvider enabled={mockTraceEnabled}><RequestDetailDialog open onOpenChange={() => {}} request={historicalRequestWithoutCollections} /></TraceViewGateProvider>);
-		expect(render()).not.toContain('value="trace"');
-		mockTraceEnabled = true;
-		expect(render()).toContain("Trace");
+	it("always offers the Trace tab beside the overview", () => {
+		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={historicalRequestWithoutCollections} />);
+		expect(markup).toContain("Overview");
+		expect(markup).toContain("Trace");
 	});
 	it("shows routing first and non-overlapping streaming intervals", () => {
 		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={{

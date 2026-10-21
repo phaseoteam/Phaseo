@@ -2924,6 +2924,7 @@
 		"phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible": "बंद होने पर, प्रॉम्प्ट प्रकाशित करने के लिए चिह्नित मुफ़्त एंडपॉइंट अयोग्य हो जाते हैं।",
 		"Store Gateway I/O logs": "Gateway I/O लॉग स्टोर करें",
 		"phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView": "लॉग विवरण दृश्य के लिए अनुरोध प्रॉम्प्ट और जवाब निजी R2 स्टोरेज में रखें।",
+		"phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn": "शून्य डेटा प्रतिधारण आवश्यक होने पर यह बंद रहता है। प्रॉम्प्ट और जवाब सहेजे नहीं जाते।",
 		"90 days": "90 दिन",
 		"180 days": "180 दिन",
 		"365 days": "365 दिन",
@@ -5167,19 +5168,18 @@
 		"total": "कुल",
 		"multiValueNote": "कई मानों वाला अनुरोध हर मान में एक बार गिना जाता है।",
 		"notFilteredByLabel": "यह तालिका ऊपर के लेबल फ़िल्टर को नहीं मानती।",
-		"classificationsTitle": "वर्गीकरण",
 		"labelsTitle": "लेबल",
 		"thisIsClassifierCall": "यह अनुरोध {name} क्लासिफ़ायर की कॉल है।",
-		"statusClassified": "वर्गीकृत",
 		"statusSessionCache": "सेशन से दोबारा इस्तेमाल",
 		"statusBudgetReached": "बजट पूरा हुआ",
 		"statusFailed": "विफल",
 		"confidence": "{value} भरोसा",
 		"noAnswer": "कोई मान फ़िट नहीं हुआ",
-		"model": "मॉडल",
-		"cost": "लागत",
-		"openClassifierCall": "क्लासिफ़ायर कॉल खोलें",
-		"callerLabels": "अनुरोध के साथ भेजे गए"
+		"callerLabels": "अनुरोध के साथ भेजे गए",
+		"showLabelled": "वे अनुरोध दिखाएँ जिनमें {key} {value} है",
+		"viewCall": "कॉल देखें",
+		"classifierCallBadge": "क्लासिफ़ायर कॉल",
+		"moreLabels": "+{count}"
 	},
 	"providerCatalogCopy": {
 		"serviceTier": "सेवा स्तर",
@@ -5838,7 +5838,6 @@
 		"noFinalTextResponseWasCaptured": "अंतिम टेक्स्ट उत्तर दर्ज नहीं है।",
 		"copyModelOutput": "मॉडल आउटपुट कॉपी करें",
 		"logCapture": "लॉग संग्रह",
-		"requestAndResponsePayloadRetainedInCloudflareR2": "अनुरोध और उत्तर का डेटा Cloudflare R2 में सुरक्षित है।",
 		"iOPayloadStorageStatusAndRetentionDetails": "इनपुट/आउटपुट डेटा के संग्रह और संरक्षण का विवरण।",
 		"storage": "संग्रह",
 		"cloudflareR2": "Cloudflare R2",
@@ -5872,7 +5871,9 @@
 		"toolApplypatch": "पैच लागू करें",
 		"toolSubagent": "उप-एजेंट",
 		"toolFusion": "फ्यूज़न",
-		"toolModelsearch": "मॉडल खोज"
+		"toolModelsearch": "मॉडल खोज",
+		"payloadStatus": "पेलोड: {status}",
+		"payloadStored": "अनुरोध और प्रतिक्रिया पेलोड संग्रहीत किया गया।"
 	},
 	"keyDetail": {
 		"back": "API कुंजियों पर वापस जाएँ",

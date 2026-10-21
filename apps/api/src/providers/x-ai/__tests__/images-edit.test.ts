@@ -206,3 +206,25 @@ describe("xAI image editing", () => {
 		expect(result.bill.cost_cents).toBe(7);
 	});
 });
+
+describe("xAI image edit billing without a resolution", () => {
+	it("bills the 1k output row instead of throwing after xAI has charged", async () => {
+		const imageRule = (meter: string, price: string, match: unknown[] = []) => ({
+			meter, unit: "image", unit_size: 1, price_per_unit: price, currency: "USD",
+			pricing_plan: "standard", note: null, match, priority: 100,
+		});
+		const resolution = (value: string) => [{ path: "image_params.resolution", op: "eq", value, or_group: 1, and_index: 1 }];
+		// Production card for spacex-ai grok-imagine-image image.edit.
+		const pricingCard = {
+			provider: "spacex-ai", model: "x-ai/grok-imagine-image", endpoint: "image.edit",
+			effective_from: null, effective_to: null, currency: "USD", version: null,
+			rules: [imageRule("input_image", "0.002"), imageRule("output_image", "0.02", resolution("1k")), imageRule("output_image", "0.02", resolution("2k"))],
+		};
+		const mock = installFetchMock([{ match: (url) => url === "https://api.x.ai/v1/images/edits", response: jsonResponse({ data: [{ url: "https://imgen.x.ai/output.jpeg" }] }) }]);
+		const result = await exec({ endpoint: "images.edits", model: "spacex-ai/grok-imagine-image", body: { model: "spacex-ai/grok-imagine-image", prompt: "Pencil sketch", image: "https://example.com/input.png" }, meta: { requestId: "req_xai_edit_bill", apiKeyId: "key", apiKeyRef: "kid", apiKeyKid: "kid" }, workspaceId: "team_test", providerId: "x-ai", byokMeta: [], pricingCard, providerModelSlug: "grok-imagine-image", stream: false } as any);
+		mock.restore();
+		// Before: pricing_rule_missing:output_image (input priced, output unmatched).
+		expect(result.bill.usage.pricing.total_nanos).toBe(22_000_000);
+		expect(result.bill.usage.pricing.lines.map((line: any) => line.dimension).sort()).toEqual(["input_image", "output_image"]);
+	});
+});

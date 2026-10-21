@@ -18,6 +18,7 @@ import { applyDataContributionDiscount } from "../pricing/data-contribution-disc
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
+import { alertUnexpectedZeroCostMedia } from "./media-zero-cost";
 
 export type SpeechStreamOutcome = "completed" | "cancelled" | "errored";
 
@@ -95,6 +96,7 @@ async function settleSpeechStream(
 			ctx.teamEnrichment?.tier ?? "basic",
 			ctx.meta,
 		);
+		alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos: priced.totalNanos });
 		const isByok = (result.keySource ?? ctx.meta.keySource) === "byok";
 		const withByok = await applyByokServiceFee({
 			workspaceId: ctx.workspaceId,

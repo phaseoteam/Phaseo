@@ -12,6 +12,7 @@ import { loadProviderPricing, calculatePricing } from "./pricing";
 import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "./payload";
 import { handleStreamResponse, handlePassthroughFallback } from "./stream";
 import { handleSpeechStreamResponse } from "./speech-stream";
+import { alertUnexpectedZeroCostMedia } from "./media-zero-cost";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { withServedModel } from "./served-model";
@@ -35,6 +36,7 @@ import { buildCachedResponseRecord } from "@/core/response-cache";
 import { applyResponsePlugins } from "@/plugins/registry";
 import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
+import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
@@ -255,6 +257,7 @@ function dispatchNonStreamSuccessSideEffects(args: {
 				usage: usageForBilling,
 				reservation: result.providerRateLimitReservation,
 			});
+			chargeRateLimitPolicyTokens(ctx, usageForBilling);
 
             await handleSuccessAudit(
                 ctx,
@@ -498,6 +501,7 @@ async function handleNonStreamResponse(
         tier,
         ctx.meta
     ));
+    alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
     const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const pricedWithByokSubtotal = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFee({
         workspaceId: ctx.workspaceId,

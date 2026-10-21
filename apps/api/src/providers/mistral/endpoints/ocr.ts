@@ -7,7 +7,7 @@ import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { OcrSchema, type OcrRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 
 function normalizeImageUrl(image: string): string {
     const trimmed = image.trim();
@@ -95,7 +95,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const usageMeters = buildUsageMeters(json, hasAnnotations);
 
     if (args.pricingCard) {
-        const pricedUsage = computeBill(usageMeters, args.pricingCard);
+        const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard);
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;
         bill.usage = pricedUsage;
