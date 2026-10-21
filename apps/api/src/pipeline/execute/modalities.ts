@@ -93,11 +93,16 @@ function normalizeModalities(
 	return normalized;
 }
 
+/** Content parts of a message, including the parts of its tool results. */
+function messageParts(message: IRMessage): IRContentPart[] {
+	if (message.role === "tool") return (message.toolResults ?? []).flatMap((result) => result.parts ?? []);
+	return Array.isArray(message.content) ? message.content : [];
+}
+
 function collectInputModalities(messages: IRMessage[]): Set<Modality> {
 	const required = new Set<Modality>(["text"]);
 	for (const message of messages) {
-		if (!("content" in message)) continue;
-		for (const part of message.content) {
+		for (const part of messageParts(message)) {
 			switch ((part as IRContentPart).type) {
 				case "image":
 					required.add("image");
@@ -114,6 +119,98 @@ function collectInputModalities(messages: IRMessage[]): Set<Modality> {
 		}
 	}
 	return required;
+}
+
+type FileRequirements = {
+	/** A document or other file is sent (file part or Anthropic document block). */
+	files: boolean;
+	/** Uploaded file references (file or image parts sent by id). */
+	fileIds: string[];
+};
+
+function collectFileRequirements(messages: IRMessage[]): FileRequirements {
+	const requirements: FileRequirements = { files: false, fileIds: [] };
+	for (const message of messages) {
+		for (const part of messageParts(message)) {
+			if (part.type === "file") {
+				requirements.files = true;
+				if (part.source === "id") requirements.fileIds.push(part.data);
+			} else if (part.type === "image" && part.source === "id") {
+				requirements.fileIds.push(part.data);
+			} else if (part.type === "provider_block" && part.block?.type === "document") {
+				requirements.files = true;
+				if (part.block.source?.type === "file") requirements.fileIds.push(String(part.block.source.file_id ?? ""));
+			}
+		}
+	}
+	return requirements;
+}
+
+// Providers whose executors send documents in a shape the provider documents:
+// OpenAI, Azure and xAI (`file` / `input_file`), Claude (`document`), Gemini
+// (`inline_data` / `file_data`), Mistral (`document_url`), and the hosts whose
+// published Chat schema defines OpenAI's `file` part.
+const FILE_INPUT_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure",
+	"anthropic", "anthropic-us", "anthropic-aws", "anthropic-aws-us",
+	"google-ai-studio", "google-vertex", "google-vertex-eu", "amazon-bedrock",
+	"spacex-ai", "x-ai", "xai",
+	"mistral", "mistral-eu",
+	"deepinfra", "ambient", "io-net", "morpheus", "nebius-token-factory",
+	"nebius-token-factory-eu-north-1", "nebius-token-factory-us-central-1",
+	"ovhcloud", "sail-research", "scaleway", "venice", "z-ai", "zai",
+]);
+
+// Providers that resolve uploaded file ids: OpenAI, Azure and xAI file ids
+// and Anthropic Files API ids. Gemini (Files API names) and Mistral (UUIDs)
+// read only their own ids.
+const FILE_ID_PROVIDERS = new Set([
+	"openai", "openai-eu", "azure",
+	"anthropic", "anthropic-us", "anthropic-aws", "anthropic-aws-us",
+	"spacex-ai", "x-ai", "xai",
+]);
+// Anthropic Files API ids, as sent by /v1/messages clients, resolve only on
+// the Claude API, Claude Platform on AWS and Microsoft Foundry.
+// https://platform.claude.com/docs/en/build-with-claude/files
+const ANTHROPIC_FILE_ID_PROVIDERS = new Set([
+	"anthropic", "anthropic-us", "anthropic-aws", "anthropic-aws-us", "azure",
+]);
+
+const GEMINI_FILE_ID = /^(files\/[^/]+|https:\/\/generativelanguage\.googleapis\.com\/.+)$/i;
+const MISTRAL_FILE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function declaresFileInput(values: string[] | null | undefined): boolean {
+	return (values ?? []).some((value) => {
+		const normalized = String(value).trim().toLowerCase();
+		return normalized === "file" || normalized === "document" || normalized === "pdf"
+			|| normalized.startsWith("file_") || normalized.startsWith("document_");
+	});
+}
+
+/**
+ * A route takes documents when its catalogue entry says so, or when its
+ * provider's executor sends files in a documented shape and the model reads
+ * images (PDF input is a vision feature on OpenAI, Claude and Gemini). Vertex
+ * AI and Bedrock carry files only for their Claude and Gemini models.
+ */
+function candidateAcceptsFiles(candidate: ProviderCandidate, modelId: string, input: Set<Modality>): boolean {
+	if (declaresFileInput(candidate.inputModalities)) return true;
+	if (!FILE_INPUT_PROVIDERS.has(candidate.providerId)) return false;
+	const haystack = `${modelId} ${candidate.providerModelSlug ?? ""}`.toLowerCase();
+	if (candidate.providerId === "amazon-bedrock" && !haystack.includes("claude")) return false;
+	if (candidate.providerId.startsWith("google-vertex") && !haystack.includes("claude") && !haystack.includes("gemini")) return false;
+	return input.has("image");
+}
+
+function candidateResolvesFileIds(candidate: ProviderCandidate, fileIds: string[], protocol: string | undefined): boolean {
+	if (fileIds.length === 0) return true;
+	if (protocol === "anthropic.messages") return ANTHROPIC_FILE_ID_PROVIDERS.has(candidate.providerId);
+	if (FILE_ID_PROVIDERS.has(candidate.providerId)) return true;
+	if (candidate.providerId === "google-ai-studio") return fileIds.every((id) => GEMINI_FILE_ID.test(id));
+	if (candidate.providerId === "mistral" || candidate.providerId === "mistral-eu") {
+		return fileIds.every((id) => MISTRAL_FILE_ID.test(id));
+	}
+	return false;
 }
 
 function collectOutputModalities(ir: IRChatRequest): Set<Modality> {
@@ -228,8 +325,10 @@ function supportsRequiredModalities(
 export function filterCandidatesByModalities(
 	candidates: ProviderCandidate[],
 	ir: IRChatRequest,
+	options: { protocol?: string } = {},
 ): ProviderCandidate[] {
 	const requirements = detectModalityRequirements(ir);
+	const fileRequirements = collectFileRequirements(ir.messages);
 	const needsNonTextInput = Array.from(requirements.input).some((m) => m !== "text");
 	const needsNonTextOutput = Array.from(requirements.output).some((m) => m !== "text");
 
@@ -255,6 +354,8 @@ export function filterCandidatesByModalities(
 			!needsNonTextInput,
 		);
 		if (!inputOk) return false;
+		if (fileRequirements.files && !candidateAcceptsFiles(candidate, ir.model, input)) return false;
+		if (!candidateResolvesFileIds(candidate, fileRequirements.fileIds, options.protocol)) return false;
 
 		const outputOk = supportsRequiredModalities(
 			requirements.output,

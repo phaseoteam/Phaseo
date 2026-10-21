@@ -584,7 +584,7 @@ export async function doRequestWithIR(
 	}
 	if (normalizedCapability === "text.generate") {
 		const filtered = await timing.timer.span("execute_filter_modalities", () =>
-			filterCandidatesByModalities(candidates, ir as IRChatRequest),
+			filterCandidatesByModalities(candidates, ir as IRChatRequest, { protocol: ctx.protocol }),
 		);
 		if (!filtered.length) {
 			return err("unsupported_modalities", {
