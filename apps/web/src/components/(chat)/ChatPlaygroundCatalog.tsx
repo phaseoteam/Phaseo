@@ -11,12 +11,13 @@ import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySup
 import { applyChatEffectivePolicy, type ChatEffectivePolicy } from "@/lib/chat/effectivePolicy";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 
-export default function ChatPlaygroundCatalog({ previewModels, internalModels, effectivePolicy, modelParam, promptParam }: {
+export default function ChatPlaygroundCatalog({ previewModels, internalModels, effectivePolicy, modelParam, promptParam, activeWorkspaceId }: {
 	previewModels: GatewaySupportedModel[];
 	internalModels: GatewaySupportedModel[];
 	effectivePolicy: ChatEffectivePolicy | null;
 	modelParam?: string | null;
 	promptParam?: string | null;
+	activeWorkspaceId?: string | null;
 }) {
 	const t = useTranslations("Common.errors");
 	const catalogue = useQuery({ queryKey: webQueryKeys.public.chatGatewayModels(), queryFn: () => fetchFrontendGatewayModels({ credentials: "same-origin" }) });
@@ -29,5 +30,5 @@ export default function ChatPlaygroundCatalog({ previewModels, internalModels, e
 		if (catalogue.isError) return <div className="flex flex-col items-center gap-3 p-6" role="alert"><p>{t("unexpectedDescription")}</p><Button variant="outline" onClick={() => void catalogue.refetch()}>{t("tryAgain")}</Button></div>;
 		return <ChatPlaygroundShell />;
 	}
-	return <ChatPlayground models={models} modelParam={modelParam} promptParam={promptParam} />;
+	return <ChatPlayground models={models} modelParam={modelParam} promptParam={promptParam} activeWorkspaceId={activeWorkspaceId} />;
 }
