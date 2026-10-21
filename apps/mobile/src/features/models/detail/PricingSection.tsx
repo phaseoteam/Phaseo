@@ -168,7 +168,7 @@ function EffectiveTile({ label, value, last }: { label: string; value: number | 
   return (
     <View className={cn("px-4 py-3.5", !last && "border-b border-border")}>
       <Text variant="caption">{label}</Text>
-      <Text className="mt-1 text-[26px] font-bold leading-8 tracking-tight text-foreground">{price(value)}</Text>
+      <Text className="mt-1 text-[20px] font-bold leading-[26px] tracking-tight text-foreground">{price(value)}</Text>
       <Text variant="caption" className="mt-0.5">Per 1M tokens</Text>
     </View>
   );

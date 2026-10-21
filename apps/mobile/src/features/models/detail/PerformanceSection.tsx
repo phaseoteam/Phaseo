@@ -159,7 +159,7 @@ function UptimeCard({ metrics }: { metrics: ModelPerformance | null }) {
   const shown = inspected != null ? hours.find((hour) => Date.parse(hour.bucket) === inspected) : null;
   return (
     <View className="rounded-md border border-border px-4 py-4">
-      <Text className="text-[34px] font-bold leading-10 tracking-tight" style={{ color: success }}>{format(shown ? shown.overall : average)}</Text>
+      <Text className="text-[24px] font-bold leading-[30px] tracking-tight" style={{ color: success }}>{format(shown ? shown.overall : average)}</Text>
       <Text variant="caption" className="mt-0.5">{shown ? `${String(new Date(shown.bucket).getHours()).padStart(2, "0")}:00 · ${shown.requests.toLocaleString("en-GB")} requests` : "Last 24 hours · hourly average"}</Text>
       <LineChart
         className="mt-3"
