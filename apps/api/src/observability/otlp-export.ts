@@ -192,7 +192,7 @@ async function loadDestinations(workspaceId: string): Promise<Destination[]> {
 function metadataCategory(key: string): "generation" | "cost" | "identity" | "context" | null {
 	if (key.startsWith("phaseo.cost.")) return "cost";
 	if (key === "user.id" || key.startsWith("phaseo.api_key.") || key.startsWith("phaseo.app.") || key.startsWith("phaseo.client.") || key === "phaseo.request.id" || key === "phaseo.workspace.id") return "identity";
-	if (key.startsWith("http.") || key.startsWith("server.") || key.startsWith("phaseo.edge.") || key === "phaseo.endpoint" || key === "phaseo.requested_model" || key === "gen_ai.conversation.id" || key.startsWith("phaseo.label.")) return "context";
+	if (key.startsWith("http.") || key.startsWith("server.") || key.startsWith("phaseo.edge.") || key === "phaseo.endpoint" || key === "phaseo.requested_model" || key === "gen_ai.conversation.id" || key.startsWith("phaseo.label.") || key.startsWith("phaseo.metadata.")) return "context";
 	if (key.startsWith("gen_ai.") || key.startsWith("phaseo.generation.") || key.startsWith("phaseo.provider.")) return "generation";
 	return null;
 }
@@ -234,8 +234,12 @@ export async function destinationConfig(destination: Destination): Promise<Recor
 
 // The OTLP payload one destination receives for an event.
 export function renderBroadcastPayload(telemetry: BroadcastTelemetry, destination: Destination): unknown {
+	// Request metadata also renames spans, so the context toggle drops it whole.
 	const payload = telemetry.kind === "gateway"
-		? buildGatewayGenAiOtlpPayload(telemetry.args, buildOptions(destination))
+		? buildGatewayGenAiOtlpPayload(
+			destination.include_request_context === false ? { ...telemetry.args, metadata: null } : telemetry.args,
+			buildOptions(destination),
+		)
 		: buildAsyncGenAiOtlpPayload(telemetry.args, buildOptions(destination)).payload;
 	return filterMetadata(payload, destination);
 }

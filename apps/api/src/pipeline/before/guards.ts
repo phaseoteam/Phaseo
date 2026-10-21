@@ -24,7 +24,7 @@ import { readAttributionHeaders } from "../after/attribution";
 import type { ProviderCandidateBuildDiagnostics } from "./types";
 import { isFreePriceCard } from "../pricing/free";
 import type { PriceCard } from "../pricing";
-import { parseW3cTraceContext } from "@observability/trace-context";
+import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { detectClientAttribution } from "./clientAttribution";
 import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
 import { hasConfiguredKeyLimits } from "./context.shared";
@@ -676,10 +676,11 @@ export function makeMeta(input: {
             128,
         );
     const trace = normalizeTraceObject(rawBody?.trace);
+    const requestMetadata = readRequestMetadata(rawBody?.metadata);
     const otelTraceContext = parseW3cTraceContext(
         input.req.headers.get("traceparent"),
         input.req.headers.get("tracestate"),
-    );
+    ) ?? metadataTraceContext(requestMetadata);
     const nodeEnv = String(getBindings().NODE_ENV ?? "").trim().toLowerCase();
     const testId = nodeEnv === "test"
         ? normalizeBoundedString(input.req.headers.get("x-test-id"), 128)
@@ -745,6 +746,7 @@ export function makeMeta(input: {
         requestUserId,
         sessionId,
         trace,
+        requestMetadata,
         otelTraceContext,
         testId,
         requestMethod: input.req.method ?? null,

@@ -48,6 +48,11 @@ export type GatewayGenAiTelemetry = {
 	edgeColo?: string | null;
 	/** Request labels, from the x-phaseo-metadata header and request classifiers. */
 	labels?: Array<{ key: string; value: string }> | null;
+	/**
+	 * The request body's `metadata`. Exported as phaseo.metadata.<key>;
+	 * trace_name, span_name and generation_name also rename spans.
+	 */
+	metadata?: Record<string, string> | null;
 	/** Set when a workspace rate limit policy rejected the request. */
 	rateLimitPolicyId?: string | null;
 	rateLimitScope?: string | null;
@@ -394,7 +399,25 @@ function commonPhaseoAttributes(args: GatewayGenAiTelemetry): Array<OtlpAttribut
 		attr("phaseo.rate_limit.policy_id", args.rateLimitPolicyId),
 		attr("phaseo.rate_limit.scope", args.rateLimitScope),
 		...labelAttributes(args.labels),
+		...metadataAttributes(args.metadata),
 	];
+}
+
+function metadataAttributes(metadata: GatewayGenAiTelemetry["metadata"]): Array<OtlpAttribute | null> {
+	if (!metadata || typeof metadata !== "object") return [];
+	return Object.entries(metadata)
+		.slice(0, MAX_LABEL_ATTRIBUTES)
+		.map(([key, value]) => typeof value === "string" ? attr(`phaseo.metadata.${key}`, value) : null);
+}
+
+const MAX_SPAN_NAME_LENGTH = 256;
+
+function metadataName(metadata: GatewayGenAiTelemetry["metadata"], ...keys: string[]): string | null {
+	for (const key of keys) {
+		const value = metadata?.[key];
+		if (typeof value === "string" && value.trim()) return value.trim().slice(0, MAX_SPAN_NAME_LENGTH);
+	}
+	return null;
 }
 
 const MAX_LABEL_ATTRIBUTES = 64;
@@ -495,7 +518,7 @@ function attemptSpans(
 			spanId: randomHex(8),
 			parentSpanId,
 			flags: args.traceContext?.traceFlags ?? 1,
-			name: `${genAiOperation(args.endpoint)} ${attempt.provider_model_slug ?? args.requestedModel}`,
+			name: metadataName(args.metadata, "generation_name") ?? `${genAiOperation(args.endpoint)} ${attempt.provider_model_slug ?? args.requestedModel}`,
 			kind: 3,
 			startTimeUnixNano: nanos(start),
 			endTimeUnixNano: nanos(start + duration),
@@ -527,7 +550,7 @@ export function buildGatewayGenAiOtlpPayload(
 		...(args.traceContext?.parentSpanId ? { parentSpanId: args.traceContext.parentSpanId } : {}),
 		...(args.traceContext?.traceState ? { traceState: args.traceContext.traceState } : {}),
 		flags: args.traceContext?.traceFlags ?? 1,
-		name: `${args.requestMethod ?? "POST"} ${urlPath}`,
+		name: metadataName(args.metadata, "span_name", "trace_name") ?? `${args.requestMethod ?? "POST"} ${urlPath}`,
 		kind: 2,
 		startTimeUnixNano: nanos(args.startedAtMs),
 		endTimeUnixNano: nanos(args.completedAtMs),
@@ -540,7 +563,7 @@ export function buildGatewayGenAiOtlpPayload(
 			spanId: randomHex(8),
 			parentSpanId: serverSpanId,
 			flags: args.traceContext?.traceFlags ?? 1,
-			name: `${genAiOperation(args.endpoint)} ${args.providerModel ?? args.requestedModel}`,
+			name: metadataName(args.metadata, "generation_name") ?? `${genAiOperation(args.endpoint)} ${args.providerModel ?? args.requestedModel}`,
 			kind: 3,
 			startTimeUnixNano: nanos(args.startedAtMs),
 			endTimeUnixNano: nanos(args.completedAtMs),

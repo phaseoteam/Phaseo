@@ -1130,6 +1130,7 @@ export async function handleError({
                 requestPath: requestMeta.requestPath,
                 sessionId: auditArgs.sessionId,
                 edgeColo: requestMeta.edgeColo,
+                metadata: ctx?.meta?.requestMetadata ?? null,
                 rateLimitPolicyId: isPolicyRejection ? (errorPayload.policy_id as string | undefined) ?? null : null,
                 rateLimitScope: isPolicyRejection ? (errorPayload.limit_scope as string | undefined) ?? null : null,
             })
