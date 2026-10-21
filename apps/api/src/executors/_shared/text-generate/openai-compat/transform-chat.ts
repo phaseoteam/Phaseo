@@ -16,6 +16,16 @@ import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/
 import { toIRAnnotations } from "@protocols/shared/citations";
 import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
 
+// Chat routes whose API documents an assistant message's `audio: { id }`, the
+// reference to an earlier audio response: OpenAI
+// (https://platform.openai.com/docs/api-reference/chat/create) and Azure OpenAI
+// (ChatCompletionRequestAssistantMessageAudio in its v1 inference spec).
+const ASSISTANT_AUDIO_REFERENCE_PROVIDERS: ReadonlySet<string> = new Set(["openai", "openai-eu", "azure"]);
+
+export function sendsAssistantAudioReference(providerId: string | undefined): boolean {
+	return providerId != null && ASSISTANT_AUDIO_REFERENCE_PROVIDERS.has(providerId);
+}
+
 /**
  * Transform IR request to OpenAI Chat Completions format
  * Used when provider only supports /chat/completions (not /responses)
@@ -107,6 +117,10 @@ export function irToOpenAIChat(
 				} else {
 					message.reasoning_content = assistantReasoning;
 				}
+			}
+
+			if (msg.audio?.id && sendsAssistantAudioReference(providerId)) {
+				message.audio = { id: msg.audio.id };
 			}
 
 			if (msg.toolCalls && msg.toolCalls.length > 0) {

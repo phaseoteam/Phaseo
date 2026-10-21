@@ -174,6 +174,8 @@ export type IRMessage =
 		toolCalls?: IRToolCall[]; // Optional tool calls
 		name?: string;
 		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
+		// OpenAI Chat: an earlier audio response, sent back by id (`audio: { id }`).
+		audio?: { id: string };
 	}
 	| {
 		role: "tool";
