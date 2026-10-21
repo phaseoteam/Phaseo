@@ -308,7 +308,9 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 			if (run.status === "waiting_for_human" && run.pause?.pendingToolCalls?.length) {
 				const approved = asDecisionMap(options.approveToolCalls ?? options.approvals); const rejected = asDecisionMap(options.rejectToolCalls ?? options.rejections); const outputs = new Map((options.toolOutputs ?? []).map((entry) => [entry.toolCallId, entry.output]));
 				const pending = run.pause.pendingToolCalls;
-				const executions: Array<Promise<{ message: AgentMessage; result: AgentToolExecutionResult; nextTurnParams?: AgentNextTurnParams<TContext>; context?: TContext; call: AgentToolCall; input: unknown }>> = [];
+				// Started only once every pending call has passed its checks, so a refused resume runs no tool
+				// and leaves no execution rejecting with nothing awaiting it.
+				const executions: Array<() => Promise<{ message: AgentMessage; result: AgentToolExecutionResult; nextTurnParams?: AgentNextTurnParams<TContext>; context?: TContext; call: AgentToolCall; input: unknown }>> = [];
 				for (const entry of pending) {
 					const tool = tools.find((candidate) => candidate.id === entry.call.name);
 					if (!tool) throw new Error(`Tool not found: ${entry.call.name}`);
@@ -319,9 +321,9 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 					}
 					if (entry.kind === "approval" && !approved.has(entry.call.id)) throw new Error(`Missing approval decision for tool call ${entry.call.id}`);
 					if ((entry.kind === "manual" || entry.kind === "hitl") && !outputs.has(entry.call.id)) throw new Error(`Missing output for tool call ${entry.call.id}`);
-					executions.push(executeOneTool({ tool, call: entry.call, run, stepIndex: Math.max(0, run.stepCount - 1), context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, suppliedOutput: outputs.get(entry.call.id), useSuppliedOutput: outputs.has(entry.call.id), emitItems: options.streaming }).then((result) => ({ ...result, call: entry.call, input: entry.call.input })));
+					executions.push(() => executeOneTool({ tool, call: entry.call, run, stepIndex: Math.max(0, run.stepCount - 1), context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, suppliedOutput: outputs.get(entry.call.id), useSuppliedOutput: outputs.has(entry.call.id), emitItems: options.streaming }).then((result) => ({ ...result, call: entry.call, input: entry.call.input })));
 				}
-				for (const execution of await Promise.all(executions)) { run.messages.push(execution.message); currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
+				for (const execution of await Promise.all(executions.map((start) => start()))) { run.messages.push(execution.message); currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
 				run.pause = null;
 			} else if (run.status === "waiting_for_human" && !options.humanInput) throw new Error(`Run ${run.id} is waiting for human input`);
 			if (options.humanInput) run.messages.push({ role: "user", content: options.humanInput });

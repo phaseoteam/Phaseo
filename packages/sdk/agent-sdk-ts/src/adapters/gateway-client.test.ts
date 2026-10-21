@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createAgent } from "../agent";
 import { AgentGatewayError } from "../errors";
 import { createGatewayAgentClient } from "./gateway-client";
 
@@ -621,6 +622,111 @@ describe("createGatewayAgentClient", () => {
 		}
 
 		expect(deltas.join("")).toBe("Hello there");
+	});
+
+	it("wraps HTTP failures of a streamed request, which the SDK throws on the first read", async () => {
+		// @phaseo/sdk returns the stream before sending the request, so a 402 surfaces while iterating.
+		const client = createGatewayAgentClient({
+			clientOptions: {
+				apiKey: "test-key",
+				baseUrl: "https://gateway.test/v1",
+				fetchImpl: async (input) => String(input instanceof Request ? input.url : input).endsWith("/responses")
+					? Response.json({ error: "insufficient_funds", reason: "insufficient_credits", request_id: "req_stream_402" }, { status: 402, statusText: "Payment Required", headers: { "x-request-id": "req_stream_402" } })
+					: Response.json({ models: [] }),
+			},
+		});
+
+		const read = async () => { for await (const _event of client.stream!({ agentId: "stream-402", messages: [{ role: "user", content: "Hi" }], tools: [], context: undefined })) { /* drain */ } };
+
+		await expect(read()).rejects.toBeInstanceOf(AgentGatewayError);
+		await expect(read()).rejects.toMatchObject({ status: 402, statusText: "Payment Required", requestId: "req_stream_402", reason: "insufficient_credits" });
+	});
+
+	it("wraps HTTP-shaped errors thrown partway through a stream", async () => {
+		async function* frames() {
+			yield { type: "response.output_text.delta", delta: "Hel" };
+			throw Object.assign(new Error("Stream request failed: 503 Service Unavailable"), {
+				name: "PhaseoHttpError", status: 503, statusText: "Service Unavailable", headers: { "x-request-id": "req_stream_503" },
+				body: { message: "All providers failed", failed_providers: ["openai"] },
+			});
+		}
+		const client = createGatewayAgentClient({ client: { responses: { create: vi.fn(async () => frames()) } } as any });
+
+		const deltas: string[] = [];
+		const read = async () => { for await (const event of client.stream!({ agentId: "stream-503", messages: [{ role: "user", content: "Hi" }], tools: [], context: undefined })) if (event.type === "response.output_text.delta") deltas.push(event.delta); };
+
+		await expect(read()).rejects.toMatchObject({ name: "AgentGatewayError", status: 503, requestId: "req_stream_503", failedProviders: ["openai"] });
+		expect(deltas).toEqual(["Hel"]);
+	});
+});
+
+describe("gateway client in agent runs", () => {
+	it("sends string instructions once, in the instructions field, on every step", async () => {
+		const create = vi.fn()
+			.mockResolvedValueOnce({ id: "resp_1", output: [{ type: "function_call", call_id: "call_1", name: "lookup", arguments: "{}" }] })
+			.mockResolvedValueOnce({ id: "resp_2", output: [{ type: "message", content: [{ type: "output_text", text: "Done" }] }] });
+		const agent = createAgent({ id: "instructions-once", instructions: "Answer briefly.", tools: [{ id: "lookup", execute: async () => "found" }] });
+
+		const result = await agent.run({ input: "Hi", client: createGatewayAgentClient({ client: { responses: { create } } as any }) });
+
+		expect(result.output).toBe("Done");
+		expect(create).toHaveBeenCalledTimes(2);
+		for (const [payload] of create.mock.calls) {
+			expect(payload.instructions).toBe("Answer briefly.");
+			expect(payload.input.filter((item: any) => item.role === "system" || item.role === "developer")).toEqual([]);
+		}
+	});
+
+	it("streams with string instructions sent once", async () => {
+		async function* frames() {
+			yield { type: "response.output_text.delta", delta: "Hi" };
+			yield { type: "response.completed", response: { id: "resp_1", output: [{ type: "message", content: [{ type: "output_text", text: "Hi" }] }] } };
+		}
+		const create = vi.fn(async () => frames());
+		const agent = createAgent({ id: "instructions-once-stream", instructions: "Answer briefly." });
+
+		await agent.stream({ input: "Hi", client: createGatewayAgentClient({ client: { responses: { create } } as any }) }).getResult();
+
+		expect(create).toHaveBeenCalledTimes(1);
+		expect(create.mock.calls[0]?.[0]).toMatchObject({ instructions: "Answer briefly.", stream: true });
+	});
+
+	function countingFetch() {
+		const requests: string[] = [];
+		const fetchImpl: typeof fetch = async (input, init) => {
+			const url = String(input instanceof Request ? input.url : input);
+			requests.push(`${(input instanceof Request ? input.method : init?.method) ?? "GET"} ${new URL(url).pathname}`);
+			if (!url.endsWith("/responses")) return Response.json({ models: [{ model_id: "openai/gpt-5.4-nano", status: "active" }] });
+			const body = JSON.parse(String(init?.body ?? (input instanceof Request ? await input.text() : "{}")));
+			if (body.stream) return new Response("data: {\"type\":\"response.output_text.delta\",\"delta\":\"Done\"}\n\ndata: [DONE]\n\n", { headers: { "content-type": "text/event-stream" } });
+			const calledTool = body.input.some((item: any) => item.type === "function_call_output");
+			return Response.json({ id: `resp_${requests.length}`, model: body.model, output: calledTool
+				? [{ type: "message", content: [{ type: "output_text", text: "Done" }] }]
+				: [{ type: "function_call", call_id: "call_1", name: "lookup", arguments: "{}" }] });
+		};
+		return { requests, fetchImpl };
+	}
+
+	it("makes no GET /models lookup before model requests", async () => {
+		const { requests, fetchImpl } = countingFetch();
+		const client = createGatewayAgentClient({ clientOptions: { apiKey: "test-key", baseUrl: "https://gateway.test/v1", fetchImpl } });
+		const agent = createAgent({ id: "no-model-lookup", model: "openai/gpt-5.4-nano", tools: [{ id: "lookup", execute: async () => "found" }] });
+
+		await agent.run({ input: "Hi", client });
+		await agent.stream({ input: "Hi again", client }).getResult();
+
+		expect(requests).toEqual(["POST /v1/responses", "POST /v1/responses", "POST /v1/responses"]);
+	});
+
+	it("looks a model up once per client when lifecycle checks are turned on", async () => {
+		const { requests, fetchImpl } = countingFetch();
+		const client = createGatewayAgentClient({ clientOptions: { apiKey: "test-key", baseUrl: "https://gateway.test/v1", fetchImpl, modelLifecycleChecks: true } as any });
+		const agent = createAgent({ id: "one-model-lookup", model: "openai/gpt-5.4-nano", tools: [{ id: "lookup", execute: async () => "found" }] });
+
+		await agent.run({ input: "Hi", client });
+		await agent.stream({ input: "Hi again", client }).getResult();
+
+		expect(requests).toEqual(["GET /v1/models", "POST /v1/responses", "POST /v1/responses", "POST /v1/responses"]);
 	});
 });
 

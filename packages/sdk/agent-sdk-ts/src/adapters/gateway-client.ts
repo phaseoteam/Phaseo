@@ -1,7 +1,7 @@
 import Phaseo, { type PhaseoOptions, type ResponsesRequest, type ResponsesResponse } from "@phaseo/sdk";
 import { AgentGatewayError } from "../errors.js";
 import { isExecutedToolCallItem, normalizeAgentItems } from "../items.js";
-import type { AgentMessage, AgentModelClient, AgentModelRequest, AgentToolCall } from "../types.js";
+import type { AgentMessage, AgentModelClient, AgentModelRequest, AgentModelStreamEvent, AgentToolCall } from "../types.js";
 
 export type GatewayAgentClientOptions = {
 	client?: Phaseo;
@@ -74,10 +74,12 @@ function toResponsesInput(messages: AgentMessage[]) {
 }
 
 function toInstructions(messages: AgentMessage[], override?: string) {
+	// The runtime keeps string instructions as the run's first system message and also passes them as
+	// request.instructions, so a system message with the same text is already covered by the override.
 	const systemText = messages
 		.filter((message) => message.role === "system")
 		.map((message) => coerceTextContent(message.content))
-		.filter((value) => value.trim().length > 0)
+		.filter((value) => value.trim().length > 0 && value.trim() !== override?.trim())
 		.join("\n\n");
 
 	if (override && systemText) return `${override}\n\n${systemText}`;
@@ -225,10 +227,45 @@ function buildPayload(request: AgentModelRequest<any>, options: GatewayAgentClie
 	};
 }
 
+async function* streamEvents(client: Phaseo, request: AgentModelRequest<any>, options: GatewayAgentClientOptions): AsyncGenerator<AgentModelStreamEvent> {
+	const payload = buildPayload(request, options, true);
+	const response: ResponsesResponse | AsyncGenerator<any> = request.signal
+		? await client.responses.create(payload, { signal: request.signal })
+		: await client.responses.create(payload);
+	if (!isAsyncIterableResponse(response as any)) {
+		yield { type: "response.completed" as const, response: toAgentModelResponse(response as ResponsesResponse) };
+		return;
+	}
+	let text = "";
+	for await (const chunk of response as AsyncGenerator<Record<string, unknown>>) {
+		const eventType = String(chunk.type ?? "");
+		// Only text and reasoning deltas are answer text. Tool-call argument deltas are not, and
+		// `.done` events repeat what their deltas already sent. Untyped chunks keep the old fallback.
+		const delta = typeof chunk.delta === "string" ? chunk.delta : !eventType && typeof chunk.text === "string" ? chunk.text : "";
+		if (delta && eventType.includes("reasoning") && eventType.endsWith(".delta")) yield { type: "response.reasoning.delta" as const, delta, raw: chunk };
+		else if (delta && (!eventType || eventType.endsWith("output_text.delta"))) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
+		// An added item is still empty (a call has no arguments yet); its done event carries it whole.
+		if (chunk.item && eventType !== "response.output_item.added") {
+			for (const item of normalizeAgentItems(chunk.item)) {
+				yield { type: "response.item" as const, item, raw: chunk };
+			}
+		}
+		if (eventType === "response.completed") {
+			const rawResponse = (chunk.response ?? chunk) as ResponsesResponse;
+			yield { type: "response.completed" as const, response: toAgentModelResponse(rawResponse), raw: chunk };
+			return;
+		}
+	}
+	yield { type: "response.completed" as const, response: { message: { role: "assistant", content: text } } };
+}
+
 export function createGatewayAgentClient(
 	options: GatewayAgentClientOptions = {},
 ): AgentModelClient {
 	const client = options.client ?? new Phaseo({
+		// The gateway refuses retired models itself, with an error that keeps its status and reason, so
+		// agent turns skip @phaseo/sdk's GET /models lookup unless clientOptions turns it back on.
+		modelLifecycleChecks: false,
 		...(options.clientOptions ?? {}),
 		headers: {
 			...(options.clientOptions?.headers ?? {}),
@@ -256,39 +293,13 @@ export function createGatewayAgentClient(
 			return toAgentModelResponse(response);
 		},
 		async *stream(request) {
-			let response: ResponsesResponse | AsyncGenerator<any>;
+			// @phaseo/sdk sends a streamed request on the first read, so its HTTP errors surface while
+			// iterating, not from create(). Wrap them there too, as generate() does.
 			try {
-				const payload = buildPayload(request, options, true);
-				response = request.signal
-					? await client.responses.create(payload, { signal: request.signal })
-					: await client.responses.create(payload);
+				yield* streamEvents(client, request, options);
+			} catch (error) {
+				throw AgentGatewayError.fromUnknown(error) ?? error;
 			}
-			catch (error) { throw AgentGatewayError.fromUnknown(error) ?? error; }
-			if (!isAsyncIterableResponse(response as any)) {
-				yield { type: "response.completed" as const, response: toAgentModelResponse(response as ResponsesResponse) };
-				return;
-			}
-			let text = "";
-			for await (const chunk of response as AsyncGenerator<Record<string, unknown>>) {
-				const eventType = String(chunk.type ?? "");
-				// Only text and reasoning deltas are answer text. Tool-call argument deltas are not, and
-				// `.done` events repeat what their deltas already sent. Untyped chunks keep the old fallback.
-				const delta = typeof chunk.delta === "string" ? chunk.delta : !eventType && typeof chunk.text === "string" ? chunk.text : "";
-				if (delta && eventType.includes("reasoning") && eventType.endsWith(".delta")) yield { type: "response.reasoning.delta" as const, delta, raw: chunk };
-				else if (delta && (!eventType || eventType.endsWith("output_text.delta"))) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
-				// An added item is still empty (a call has no arguments yet); its done event carries it whole.
-				if (chunk.item && eventType !== "response.output_item.added") {
-					for (const item of normalizeAgentItems(chunk.item)) {
-						yield { type: "response.item" as const, item, raw: chunk };
-					}
-				}
-				if (eventType === "response.completed") {
-					const rawResponse = (chunk.response ?? chunk) as ResponsesResponse;
-					yield { type: "response.completed" as const, response: toAgentModelResponse(rawResponse), raw: chunk };
-					return;
-				}
-			}
-			yield { type: "response.completed" as const, response: { message: { role: "assistant", content: text } } };
 		},
 	};
 }
