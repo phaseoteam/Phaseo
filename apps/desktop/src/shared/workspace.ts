@@ -1,6 +1,6 @@
 import type { Delegation, Launch } from "./orchestration";
 import type { AutopilotDecision } from "./inbox";
-import type { UsagePeriod, UsageReport } from "./usageLedger";
+import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
 import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
 import type { ImportableHub, UsageHub, UsageHubRequest, UsageHubSnapshot } from "./usageHubs";
 import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
@@ -189,6 +189,10 @@ export type WorkspaceApi = {
 	onAutopilotLogChange: (listener: () => void) => () => void;
 	/** Spend through Phaseo today, over the last day and week, by hour, and where today's went (the Today page). */
 	usageReport: (period: UsagePeriod) => Promise<UsageReport>;
+	/** The Claude Code and Codex transcript folders the Usage page reads; "add" asks for a folder. */
+	usageFolders: (request: { type: "list" } | { type: "add"; harness: "claude" | "codex" } | { type: "remove"; directory: string }) => Promise<UsageFolder[]>;
+	/** New usage arrived from transcripts. */
+	onUsageChange: (listener: () => void) => () => void;
 	preferences: () => Promise<{ preferences: WorkspacePreferences; notificationsSupported: boolean }>;
 	savePreferences: (preferences: WorkspacePreferences) => Promise<WorkspacePreferences>;
 	globalInstructions: () => Promise<InstructionDocument>;

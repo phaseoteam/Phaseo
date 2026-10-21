@@ -43,9 +43,9 @@ export function reportTokens(value: Record<string, unknown>): UsageTokens | unde
 	if (input === undefined && output === undefined) return;
 	const separate = first(value, ["cache_read_input_tokens"]);
 	const inputDetails = { ...details("prompt_tokens_details"), ...details("input_tokens_details") }, outputDetails = { ...details("completion_tokens_details"), ...details("output_tokens_details") };
-	const cached = separate ?? first(inputDetails, ["cached_tokens"]) ?? first(value, ["cached_tokens", "cachedTokens", "cachedInputTokens"]) ?? 0;
+	const cached = separate ?? first(inputDetails, ["cached_tokens"]) ?? first(value, ["cached_tokens", "cachedTokens", "cachedInputTokens", "cached_input_tokens"]) ?? 0;
 	const cacheWrite = first(value, ["cache_creation_input_tokens", "cacheWriteInputTokens", "cache_write_input_tokens"]) ?? first(inputDetails, ["cache_write_tokens", "cache_creation_tokens"]) ?? 0;
-	const reasoning = first(outputDetails, ["reasoning_tokens"]) ?? first(value, ["reasoning_tokens", "reasoningOutputTokens", "reasoning_output_tokens"]) ?? 0;
+	const reasoning = first(outputDetails, ["reasoning_tokens", "thinking_tokens"]) ?? first(value, ["reasoning_tokens", "reasoningOutputTokens", "reasoning_output_tokens"]) ?? 0;
 	return { input: separate === undefined ? Math.max(0, (input ?? 0) - cached - cacheWrite) : input ?? 0, cached, cacheWrite, output: output ?? 0, reasoning };
 }
 

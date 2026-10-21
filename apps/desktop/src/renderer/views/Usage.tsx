@@ -39,6 +39,7 @@ function useUsageReport(period: UsagePeriod) {
 	const [tick, setTick] = useState(0);
 	const [loading, setLoading] = useState(false);
 	useEffect(() => { const timer = window.setInterval(() => setTick(value => value + 1), 60_000); return () => window.clearInterval(timer); }, []);
+	useEffect(() => api?.onUsageChange(() => setTick(value => value + 1)), [api]);
 	useEffect(() => {
 		if (!api) return;
 		let active = true;
@@ -77,6 +78,28 @@ function Figure({ label, value, detail }: { label: string; value: ReactNode; det
 	</div>;
 }
 
+/**
+ * A smooth path through points already in chart space: a monotone cubic (Fritsch–Carlson), so the curve never rises
+ * or dips beyond its points. Two points or fewer are a straight line.
+ */
+function smoothPath(points: number[][], start = "M") {
+	if (points.length < 3) return points.map(([px, py], index) => `${index ? "L" : start}${px},${py}`).join(" ");
+	const widths = points.slice(1).map((point, index) => point[0] - points[index][0]);
+	const slopes = points.slice(1).map((point, index) => widths[index] ? (point[1] - points[index][1]) / widths[index] : 0);
+	const tangents = points.map((_, index) => {
+		if (index === 0) return slopes[0];
+		if (index === points.length - 1) return slopes.at(-1)!;
+		const before = slopes[index - 1], after = slopes[index];
+		if (before * after <= 0) return 0;
+		const left = widths[index - 1], right = widths[index];
+		return 3 * (left + right) / ((2 * right + left) / before + (right + 2 * left) / after);
+	});
+	return points.slice(1).reduce((path, [px, py], index) => {
+		const [ox, oy] = points[index], third = widths[index] / 3;
+		return `${path} C${ox + third},${oy + tangents[index] * third} ${px - third},${py - tangents[index + 1] * third} ${px},${py}`;
+	}, `${start}${points[0][0]},${points[0][1]}`);
+}
+
 /** Two gridlines at round amounts ($0.50, $1; 50K, 100K), the upper one at or above the highest point. */
 function roundGrid(highest: number, floor: number) {
 	const top = Math.max(highest, floor), magnitude = 10 ** Math.floor(Math.log10(top / 2));
@@ -95,7 +118,7 @@ function PaceChart({ pace, now }: { pace: TodayPace; now: Date }) {
 	const usual = [[0, 0], ...pace.usual.map((value, hour) => [hour + 1, value])];
 	const { top, grid } = roundGrid(Math.max(...today.map(point => point[1]), ...usual.map(point => point[1])), 1e7);
 	const x = (hours: number) => hours / 24 * 100, y = (nanos: number) => 100 - nanos / top * 100;
-	const path = (points: number[][]) => points.map(([hours, nanos], index) => `${index ? "L" : "M"}${x(hours)},${y(nanos)}`).join(" ");
+	const path = (points: number[][]) => smoothPath(points.map(([hours, nanos]) => [x(hours), y(nanos)]));
 	const valueAt = (points: number[][], hours: number) => { const after = points.findIndex(point => point[0] >= hours); if (after <= 0) return points[Math.max(0, after)]?.[1] ?? 0; const [x0, y0] = points[after - 1], [x1, y1] = points[after]; return y0 + (y1 - y0) * ((hours - x0) / (x1 - x0 || 1)); };
 	const last = today.at(-1)!;
 	return <figure className="flex flex-col gap-2" aria-label="Cost today against your usual, by hour">
@@ -165,8 +188,8 @@ function HarnessChart({ report, metric, now }: { report: UsageReport; metric: "c
 			<svg aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
 				{[0, ...grid].map(amount => <line key={amount} x1={0} x2={100} y1={y(amount)} y2={y(amount)} vectorEffect="non-scaling-stroke" strokeWidth={1} className="stroke-border/70" />)}
 				{series.map(({ harness, points }) => <g key={harness}>
-					{points.length > 1 && <path d={`M${points[0][0]},100 ${points.map(([px, py]) => `L${px},${py}`).join(" ")} L${points.at(-1)![0]},100 Z`} style={{ fill: colour(harness) }} fillOpacity={0.08} />}
-					<path d={points.map(([px, py], index) => `${index ? "L" : "M"}${px},${py}`).join(" ")} fill="none" vectorEffect="non-scaling-stroke" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" style={{ stroke: colour(harness) }} />
+					{points.length > 1 && <path d={`M${points[0][0]},100 ${smoothPath(points, "L")} L${points.at(-1)![0]},100 Z`} style={{ fill: colour(harness) }} fillOpacity={0.08} />}
+					<path d={smoothPath(points)} fill="none" vectorEffect="non-scaling-stroke" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" style={{ stroke: colour(harness) }} />
 				</g>)}
 			</svg>
 			{[0, ...grid].map(amount => <span key={amount} aria-hidden className="absolute -left-11 w-9 -translate-y-1/2 text-right text-2xs text-muted-foreground tabular-nums" style={{ top: `${y(amount)}%` }}>{format(amount)}</span>)}
@@ -256,7 +279,7 @@ export function Usage() {
 								<span className="text-xs text-muted-foreground">{metric === "cost" ? "Cost" : "Tokens"} {periodLabel}</span>
 								<span className="text-4xl font-semibold tracking-tight tabular-nums">{metric === "cost" ? money(shown.total.costNanos) : tokens(shown.total.tokens)}</span>
 								{metric === "cost" ? <span className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums">{money(shown.total.chargedNanos)} charged · {money(shown.total.estimateNanos)} API estimate
-									<Tip label={`Phaseo's charges are what you paid. Claude Code and Codex aren't billed per request, so their tokens are priced at Phaseo's catalogue rates to show what they'd cost through the API.${shown.total.unpricedTokens ? ` ${percent(shown.total.unpricedTokens, shown.total.tokens)} of tokens have no price and aren't counted.` : ""}`}><Info aria-label="About the estimate" className="size-3 shrink-0" /></Tip></span>
+									<Tip label={`Phaseo's charges are what you paid. Claude Code and Codex aren't billed per request: their history is read from their transcripts on this computer and priced at Phaseo's catalogue rates, to show what it would cost through the API.${shown.total.unpricedTokens ? ` ${percent(shown.total.unpricedTokens, shown.total.tokens)} of tokens have no price and aren't counted.` : ""}`}><Info aria-label="About the estimate" className="size-3 shrink-0" /></Tip></span>
 									: <span className="text-xs text-muted-foreground tabular-nums">{shown.total.chats === 1 ? "1 chat" : `${shown.total.chats} chats`} · {money(shown.total.costNanos)}</span>}
 								{metric === "cost" && pace && <p className="mt-1 text-sm">{paceText(pace.cumulative.at(-1) ?? 0, pace)}</p>}
 								{metric === "cost" && pace && pace.basedOn > 0 && <p className="text-xs text-muted-foreground tabular-nums">About {money(pace.forecast)} by midnight at your usual pace · usual by now {money(pace.usualByNow)}</p>}
@@ -322,11 +345,14 @@ export function Usage() {
 					</Group>}
 
 					<p className="flex items-start gap-2 px-3 text-2xs leading-relaxed text-muted-foreground"><ChartLine aria-hidden className="mt-px size-3.5 shrink-0" />
-						<span>Phaseo's figures are what the gateway charged. Claude Code and Codex are counted from the chats they run here and priced at Phaseo's catalogue rates; their plan limits are under Limits.{recordedFrom ? ` Usage is recorded from ${recordedFrom}.` : ""}</span></p>
+						<span>Phaseo's figures are what the gateway charged. Claude Code and Codex are read from their transcripts on this computer, wherever they ran, and priced at Phaseo's catalogue rates; their plan limits are under Limits. Transcript folders are in Settings, under Usage sources.{recordedFrom ? ` Usage is recorded from ${recordedFrom}.` : ""}</span></p>
 				</div>}
 		</ScrollArea>
 	</div>;
 }
+
+/** The harness of a Claude Code or Codex session run outside Phaseo (`session:<harness>:<id>`). */
+const sessionHarness = (taskId: string) => taskId.startsWith("session:") ? taskId.split(":")[1] : undefined;
 
 /** The breakdown list: models, chats, projects, or each day (hour today), largest first; days newest first. */
 function BreakdownRows({ report, breakdown, metric, amount, other, sortKey, chatName, projectName, onChat }: {
@@ -342,11 +368,11 @@ function BreakdownRows({ report, breakdown, metric, amount, other, sortKey, chat
 		</Group>;
 	}
 	if (breakdown === "chats") return <Group Icon={MessageSquare} label="Chats" count={report.chats.length || undefined}>
-		{report.chats.map(chat => <Share key={chat.taskId} name={chatName(chat.taskId) ?? "A deleted chat"} amount={amount(chat)} detail={other(chat)} largest={sortKey(report.chats[0])} onOpen={onChat(chat.taskId)} parts={[{ harness: "", amount: sortKey(chat) }]} />)}
+		{report.chats.map(chat => <Share key={chat.taskId} harness={sessionHarness(chat.taskId)} name={chatName(chat.taskId) ?? (sessionHarness(chat.taskId) ? `${harnessName(sessionHarness(chat.taskId)!)} session${chat.label ? ` in ${chat.label}` : ""}` : "A deleted chat")} amount={amount(chat)} detail={other(chat)} largest={sortKey(report.chats[0])} onOpen={onChat(chat.taskId)} parts={[{ harness: "", amount: sortKey(chat) }]} />)}
 		{!report.chats.length && <p className="px-3 py-2 text-xs text-muted-foreground">No chat used anything in this period.</p>}
 	</Group>;
 	if (breakdown === "projects") return <Group Icon={FolderOpen} label="Projects" count={report.projects.length || undefined}>
-		{report.projects.map(project => <Share key={project.projectId ?? "none"} name={project.projectId ? projectName(project.projectId) ?? "A removed project" : "No project"} amount={amount(project)} detail={other(project)} largest={sortKey(report.projects[0])} parts={[{ harness: "", amount: sortKey(project) }]} />)}
+		{report.projects.map(project => <Share key={project.projectId ?? `folder:${project.folder ?? ""}`} name={project.projectId ? projectName(project.projectId) ?? "A removed project" : project.folder ? `${project.folder} (not a project)` : "No project"} amount={amount(project)} detail={other(project)} largest={sortKey(report.projects[0])} parts={[{ harness: "", amount: sortKey(project) }]} />)}
 		{!report.projects.length && <p className="px-3 py-2 text-xs text-muted-foreground">No project used anything in this period.</p>}
 	</Group>;
 	const labels = bucketLabels(report);

@@ -8,7 +8,8 @@ import { DatabaseSync, type StatementSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
 import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, UsageTotals, Workspace, WorkspaceCommand } from "../shared/workspace";
-import { reportTokens, usageAmounts, usageTokens, usageTotalsOf } from "../shared/usageAmounts";
+import { usageAmounts, usageTokens, usageTotalsOf } from "../shared/usageAmounts";
+import type { TranscriptFile, TranscriptFolder, TranscriptUsage } from "./usageTranscripts";
 import { estimateNanos, localDay, noCost, noTokens, tokenTotal, usageIdTime, usageKind, usagePeriods, type HarnessUsage, type TokenPrices, type UsageCost, type UsagePeriod, type UsageReport, type UsageTokens } from "../shared/usageLedger";
 import type { AutopilotDecision } from "../shared/inbox";
 import { publicMcpConnection, type McpConnection } from "../shared/mcp";
@@ -69,6 +70,15 @@ function conversationSummary(messages: Task["messages"]) {
 	return { lastUserId: messages.findLast(value => value.role === "user")?.id, lastUserAt: messages.findLast(value => value.role === "user" && !value.delivery)?.createdAt, lastCompletedAt: messages.findLast(value => value.role === "user" && value.completedAt)?.completedAt };
 }
 
+/**
+ * Merges a harness response reported again (as it grows, or both live and from its transcript): the larger count of
+ * each type, a Phaseo chat's id over a transcript's session, and the first project and folder known.
+ */
+const harnessMerge = `input = max(input, excluded.input), cached = max(cached, excluded.cached), cache_write = max(cache_write, excluded.cache_write), output = max(output, excluded.output), reasoning = max(reasoning, excluded.reasoning),
+	tokens = max(input, excluded.input) + max(cached, excluded.cached) + max(cache_write, excluded.cache_write) + max(output, excluded.output),
+	task_id = CASE WHEN usage_ledger.task_id LIKE 'session:%' THEN excluded.task_id ELSE usage_ledger.task_id END,
+	project_id = coalesce(usage_ledger.project_id, excluded.project_id), label = coalesce(usage_ledger.label, excluded.label)`;
+
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
 	/** Prepared once per connection: with many chats streaming, compiling the same SQL on every save was a fifth of the work. */
@@ -85,9 +95,9 @@ export class WorkspaceStore {
 		this.db.function("history_lower", { deterministic: true }, value => typeof value === "string" ? value.toLowerCase() : "");
 		// A second connection waits for a lock rather than failing; with WAL, NORMAL syncs at checkpoints, not every commit,
 		// and a power cut can lose only the last commits, never corrupt the file. The WAL file shrinks back after checkpoints.
-		// The ledger first kept Phaseo spend alone; one without harnesses and token types is rebuilt from the chats.
+		// The ledger first kept Phaseo spend alone; one without harnesses, token types and folders is rebuilt from the chats and transcripts.
 		const ledger = this.db.prepare("SELECT name FROM pragma_table_info('usage_ledger')").all() as { name: string }[];
-		if (ledger.length && !ledger.some(column => column.name === "harness")) this.db.exec("DROP TABLE usage_ledger; DELETE FROM preferences WHERE id = 'usage-ledger-backfilled';");
+		if (ledger.length && !ledger.some(column => column.name === "label")) this.db.exec("DROP TABLE usage_ledger; DELETE FROM preferences WHERE id = 'usage-ledger-backfilled'; DROP TABLE IF EXISTS usage_files;");
 		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL; PRAGMA journal_size_limit=4194304;
 			CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			-- key is what entry rows refer to. data is the chat without its messages and activities (see TaskEntries) or
@@ -128,7 +138,9 @@ export class WorkspaceStore {
 			-- Every model response any harness reported, with when it happened and its tokens by type, for the Usage page. cost_nanos is
 			-- what Phaseo charged; it is NULL for harnesses Phaseo doesn't bill. Rows outlive deleted chats: the usage happened.
 			CREATE TABLE IF NOT EXISTS usage_ledger (key TEXT PRIMARY KEY, task_id TEXT NOT NULL, at TEXT NOT NULL, kind TEXT NOT NULL, autopilot INTEGER NOT NULL, harness TEXT NOT NULL, model TEXT NOT NULL, project_id TEXT,
-				input INTEGER NOT NULL, cached INTEGER NOT NULL, cache_write INTEGER NOT NULL, output INTEGER NOT NULL, reasoning INTEGER NOT NULL, tokens INTEGER NOT NULL, cost_nanos INTEGER);
+				input INTEGER NOT NULL, cached INTEGER NOT NULL, cache_write INTEGER NOT NULL, output INTEGER NOT NULL, reasoning INTEGER NOT NULL, tokens INTEGER NOT NULL, cost_nanos INTEGER, label TEXT);
+			-- How far each Claude Code and Codex transcript has been read into the ledger, so only new lines are read again.
+			CREATE TABLE IF NOT EXISTS usage_files (path TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE INDEX IF NOT EXISTS usage_ledger_at ON usage_ledger (at);
 			${taskEntriesSchema}
 			PRAGMA user_version=${schemaVersion};`);
@@ -414,14 +426,49 @@ export class WorkspaceStore {
 		const total = tokenTotal(usage);
 		if (!total) return;
 		this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, harness, model, project_id, input, cached, cache_write, output, reasoning, tokens, cost_nanos) VALUES (?, ?, ?, 'turn', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
-			ON CONFLICT(key) DO UPDATE SET input = max(input, excluded.input), cached = max(cached, excluded.cached), cache_write = max(cache_write, excluded.cache_write), output = max(output, excluded.output), reasoning = max(reasoning, excluded.reasoning),
-				tokens = max(input, excluded.input) + max(cached, excluded.cached) + max(cache_write, excluded.cache_write) + max(output, excluded.output)`)
+			ON CONFLICT(key) DO UPDATE SET ${harnessMerge}`)
 			.run(usage.key, task.id, at, autopilot ? 1 : 0, task.harness, usage.model || task.model, task.projectId ?? null, usage.input, usage.cached, usage.cacheWrite, usage.output, usage.reasoning, total);
 	}
+	/** Each chat's Claude Code session or Codex thread, so transcript lines from Phaseo's own chats count under them. */
+	sessionOwners(): Map<string, { id: string; projectId?: string }> {
+		const rows = this.statement("SELECT id, json_extract(data, '$.harness') AS harness, json_extract(data, '$.nativeSessionId') AS session, json_extract(data, '$.projectId') AS projectId FROM tasks WHERE json_extract(data, '$.nativeSessionId') IS NOT NULL").all() as { id: string; harness: string; session: string; projectId: string | null }[];
+		return new Map(rows.map(row => [`${row.harness}:${row.session}`, { id: row.id, ...row.projectId ? { projectId: row.projectId } : {} }]));
+	}
 	/**
-	 * Fills the ledger once from chats used in the last `days`, timing each report by its turn, so the Usage page has
-	 * history from the first launch: Phaseo's reports, and Codex's running totals turn by turn. Claude Code's usage
-	 * wasn't kept before the ledger. Reports already recorded are left alone.
+	 * Keeps responses read from Claude Code and Codex transcripts. One from a Phaseo chat's session counts under that chat;
+	 * others count under their session, labelled by folder, and under the project whose folder they ran in.
+	 */
+	recordTranscriptUsage(rows: readonly TranscriptUsage[], owners: Map<string, { id: string; projectId?: string }>, projects: readonly Pick<Project, "id" | "directory">[], cutoff: string) {
+		const folder = (value: string) => value.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+		const homes = projects.map(project => ({ id: project.id, directory: folder(project.directory) })).sort((a, b) => b.directory.length - a.directory.length);
+		const insert = this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, harness, model, project_id, input, cached, cache_write, output, reasoning, tokens, cost_nanos, label) VALUES (?, ?, ?, 'turn', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)
+			ON CONFLICT(key) DO UPDATE SET ${harnessMerge}`);
+		this.batch(() => {
+			for (const row of rows) {
+				const total = tokenTotal(row);
+				if (row.at < cutoff || !total) continue;
+				const owner = owners.get(`${row.harness}:${row.sessionId}`), cwd = row.cwd ? folder(row.cwd) : undefined;
+				const projectId = owner?.projectId ?? (cwd ? homes.find(home => cwd === home.directory || cwd.startsWith(`${home.directory}/`))?.id : undefined);
+				insert.run(row.key, owner?.id ?? `session:${row.harness}:${row.sessionId}`, row.at, row.harness, row.model ?? "unknown", projectId ?? null, row.input, row.cached, row.cacheWrite, row.output, row.reasoning, total, row.cwd ? row.cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? null : null);
+			}
+		});
+	}
+	/** Transcript folders the person added in Settings, beyond the ones found on their own. */
+	addedTranscriptFolders(): TranscriptFolder[] {
+		const row = this.statement("SELECT data FROM preferences WHERE id = 'usage-transcript-folders'").get() as { data: string } | undefined;
+		return row ? JSON.parse(row.data) as TranscriptFolder[] : [];
+	}
+	saveAddedTranscriptFolders(folders: readonly TranscriptFolder[]) { this.statement("INSERT OR REPLACE INTO preferences (id, data) VALUES ('usage-transcript-folders', ?)").run(JSON.stringify(folders.map(({ harness, directory }) => ({ harness, directory })))); }
+	/** How far a transcript has been read, or nothing for one not read yet. */
+	transcriptFile(file: string): TranscriptFile | undefined {
+		const row = this.statement("SELECT data FROM usage_files WHERE path = ?").get(file) as { data: string } | undefined;
+		return row ? JSON.parse(row.data) as TranscriptFile : undefined;
+	}
+	saveTranscriptFile(file: string, value: TranscriptFile) { this.statement("INSERT OR REPLACE INTO usage_files (path, data) VALUES (?, ?)").run(file, JSON.stringify(value)); }
+	/**
+	 * Fills the ledger once with Phaseo's reports from chats used in the last `days`, timing each by its turn, so the
+	 * Usage page has history from the first launch. Claude Code and Codex history comes from their own transcripts.
+	 * Reports already recorded are left alone.
 	 */
 	backfillUsageLedger(days = 90, now = new Date()) {
 		if (this.statement("SELECT 1 FROM preferences WHERE id='usage-ledger-backfilled'").get()) return 0;
@@ -438,24 +485,6 @@ export class WorkspaceStore {
 					if (!at || at < cutoff || (amounts.costNanos === undefined && amounts.total === undefined)) continue;
 					const kind = usageKind(entry.id);
 					insert.run(entry.id, id, at, kind, kind === "autopilot" || turn?.autopilot ? 1 : 0, "phaseo", task.model, task.projectId ?? null, tokens.input, tokens.cached, tokens.cacheWrite, tokens.output, tokens.reasoning, amounts.total ?? tokenTotal(tokens), amounts.costNanos ?? null);
-					recorded++;
-				}
-				if (task.harness !== "codex") continue;
-				// Codex reports the thread's running total; each turn used the difference from the turn before.
-				let previous = noTokens();
-				const reports = this.entries.turnUsageReports(key);
-				for (const turn of turns) {
-					const text = reports.get(`${turn.id}:usage`), at = turn.startedAt ?? turn.createdAt;
-					let parsed: Record<string, unknown> | undefined;
-					try { parsed = text ? JSON.parse(text) as Record<string, unknown> : undefined; } catch { parsed = undefined; }
-					const totals = parsed?.total && typeof parsed.total === "object" ? reportTokens(parsed.total as Record<string, unknown>) : undefined;
-					if (!totals) continue;
-					const fields = Object.keys(totals) as (keyof UsageTokens)[];
-					// A total that went down means a new thread (a fork or a restart), which starts counting again.
-					const used = fields.some(field => totals[field] < previous[field]) ? totals : Object.fromEntries(fields.map(field => [field, totals[field] - previous[field]])) as UsageTokens;
-					previous = totals;
-					if (at < cutoff || !tokenTotal(used)) continue;
-					insert.run(`codex:backfill:${turn.id}`, id, at, "turn", turn.autopilot ? 1 : 0, "codex", task.model, task.projectId ?? null, used.input, used.cached, used.cacheWrite, used.output, used.reasoning, tokenTotal(used), null);
 					recorded++;
 				}
 			}
@@ -516,6 +545,7 @@ export class WorkspaceStore {
 		const autopilot = noCost();
 		for (const row of grouped("", from, "AND autopilot = 1")) add(autopilot, row);
 		const since = (this.statement("SELECT MIN(at) AS since FROM usage_ledger").get() as { since: string | null }).since;
+		const labels = new Map((this.statement("SELECT task_id, MAX(label) AS label FROM usage_ledger WHERE at >= ? AND task_id LIKE 'session:%' AND label IS NOT NULL GROUP BY task_id").all(from) as { task_id: string; label: string }[]).map(row => [row.task_id, row.label]));
 		const count = (sql: string) => (this.statement(`SELECT COUNT(*) AS count FROM tasks WHERE json_extract(data, '$.parentId') IS NULL AND ${sql} >= ?`).get(from) as { count: number }).count;
 		let pace: UsageReport["days"];
 		if (period === "today") {
@@ -533,8 +563,9 @@ export class WorkspaceStore {
 			harnesses: rollUp(byHarness, "harness").map(({ name, cost }) => ({ harness: name ?? "", chats: harnessChats.get(name ?? "") ?? 0, ...cost })),
 			buckets: starts.map(value => ({ start: value, harnesses: buckets.get(value) ?? {} })),
 			models: [...models.values()].sort((a, b) => b.costNanos - a.costNanos || b.tokens - a.tokens).slice(0, 12),
-			chats: rollUp(grouped<{ task_id: string }>("task_id"), "task_id").slice(0, 10).map(({ name, cost }) => ({ taskId: name ?? "", ...cost })),
-			projects: rollUp(grouped<{ project_id: string | null }>("project_id"), "project_id").slice(0, 8).map(({ name, cost }) => ({ projectId: name, ...cost })),
+			chats: rollUp(grouped<{ task_id: string }>("task_id"), "task_id").slice(0, 10).map(({ name, cost }) => ({ taskId: name ?? "", ...labels.get(name ?? "") ? { label: labels.get(name ?? "") } : {}, ...cost })),
+			projects: rollUp(grouped<{ place: string | null }>("coalesce(project_id, 'folder:' || label) AS place", from, "", "place"), "place").slice(0, 8)
+				.map(({ name, cost }) => name?.startsWith("folder:") ? { projectId: null, folder: name.slice(7), ...cost } : { projectId: name, ...cost }),
 			autopilot: { ...autopilot, chats: chats("AND autopilot = 1") },
 			activity: { chatsStarted: count("json_extract(data, '$.createdAt')"), chatsFinished: count("last_completed_at"), chatsSettled: count("json_extract(data, '$.settledAt')"), autopilotChats: chats("AND autopilot = 1") },
 			...pace ? { days: pace } : {},

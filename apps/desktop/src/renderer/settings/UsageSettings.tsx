@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Monitor, Plus, RotateCw, Server } from "lucide-react";
 import type { ImportableHub, UsageHub, UsageHubSnapshot } from "../../shared/usageHubs";
+import type { UsageFolder } from "../../shared/usageLedger";
+import { HarnessLogo } from "../components/HarnessLogo";
 import { errorText, useWorkspace } from "../app/workspace";
 import { SettingsButton, SettingsField, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 import { usagePools, type UsageProvider } from "./usagePools";
@@ -52,12 +54,33 @@ export function UsageSettings() {
 	const { statuses, hubs, snapshots, t3Hubs, error } = limits;
 	const { openUsage } = useWorkspace();
 	const checkHub = (hub: UsageHub) => { if (api) void checkUsageHub(api, hub); };
-	return <SettingsPageLayout title="Usage sources" description="Where your subscription limits are read from. The limits themselves are on the Usage page."
+	return <SettingsPageLayout title="Usage sources" description="Where the Usage page reads your subscription limits and your Claude Code and Codex history from."
 		actions={<><SettingsButton variant="ghost" onClick={() => openUsage("limits")}>Show limits</SettingsButton><SettingsButton variant="ghost" disabled={busy || !api} onClick={checkAll}><RotateCw className={busy ? "animate-spin" : undefined} />{busy ? "Checking…" : "Check again"}</SettingsButton></>}>
 		<Sources locals={locals} statuses={statuses} hubs={hubs} snapshots={snapshots} t3Hubs={t3Hubs} error={error}
 			onCheckHub={checkHub} onHubs={list => { const added = list.filter(hub => !hubs.some(existing => existing.id === hub.id)); setUsageHubs(list); for (const hub of added) checkHub(hub); }} onT3Hubs={setT3Hubs} onError={setUsageError} />
+		<Transcripts />
 		<p className="px-0.5 text-xs text-muted-foreground">Phaseo API usage and credits are on your dashboard at phaseo.app.</p>
 	</SettingsPageLayout>;
+}
+
+/**
+ * The Claude Code and Codex transcript folders the Usage page reads its history from: the ones found on their own and
+ * any added here, such as a config folder another app points Claude Code at.
+ */
+function Transcripts() {
+	const { api } = useWorkspace();
+	const [folders, setFolders] = useState<UsageFolder[]>();
+	const [error, setError] = useState("");
+	const ask = (request: Parameters<NonNullable<typeof api>["usageFolders"]>[0]) => { if (api) void api.usageFolders(request).then(value => { setFolders(value); setError(""); }, reason => setError(errorText(reason))); };
+	useEffect(() => { ask({ type: "list" }); }, [api]);
+	return <SettingsSection title="Transcripts" description="Claude Code and Codex history for the Usage page is read from these folders, wherever the sessions ran. Only files from the last 90 days are read."
+		action={<><SettingsButton onClick={() => ask({ type: "add", harness: "claude" })}><Plus />Claude Code folder</SettingsButton><SettingsButton onClick={() => ask({ type: "add", harness: "codex" })}><Plus />Codex folder</SettingsButton></>}>
+		{folders?.map(folder => <SettingsRow key={`${folder.harness}:${folder.directory}`} icon={<HarnessLogo harness={folder.harness} />} title={<span className="font-mono text-[12px]">{folder.directory}</span>}
+			description={`${names[folder.harness]} · ${folder.files ? `${folder.files === 1 ? "1 file" : `${folder.files.toLocaleString("en-US")} files`} from the last 90 days` : "No recent transcripts"}${folder.added ? " · added here" : ""}`}
+			control={folder.added ? <SettingsButton variant="danger" onClick={() => ask({ type: "remove", directory: folder.directory })}>Remove</SettingsButton> : undefined} />)}
+		{!folders && !error && <SettingsRow title="Looking for transcripts…" />}
+		{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}
+	</SettingsSection>;
 }
 
 /** Where limits come from: logins on this computer and usage hubs, with hub setup. One line each. */

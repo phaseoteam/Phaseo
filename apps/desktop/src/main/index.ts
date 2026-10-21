@@ -63,6 +63,7 @@ import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
 import { listPullRequestDirectory, pullRequestCounts } from "./pullRequestDirectory";
+import { TranscriptScanner, transcriptFiles, transcriptFolders, type TranscriptFolder } from "./usageTranscripts";
 import { localDay, modelMatchKey, type TokenPrices, type UsagePeriod } from "../shared/usageLedger";
 import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
 import { PullRequestGuides } from "./pullRequestGuides";
@@ -135,6 +136,8 @@ ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw 
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid scheduled task request."); return missionService.command(validateMissionCommand(value)); });
 ipcMain.handle("workspace:usage-report", async (event, period: unknown) => {
 	if (!senderWindow(event) || !["today", "7d", "30d", "90d"].includes(period as string)) throw new Error("Invalid usage request.");
+	// New Claude Code and Codex history is read in the background; the page hears when it lands.
+	void transcriptScanner?.scan();
 	const report = workspaceRuntime.store.usageReport(period as UsagePeriod, await usagePrices());
 	const pullRequests = await usagePullRequests(localDay(new Date(report.from)));
 	return pullRequests ? { ...report, activity: { ...report.activity, pullRequests } } : report;
@@ -206,10 +209,29 @@ async function usagePrices(): Promise<(model: string) => TokenPrices | undefined
 	for (const model of models) {
 		const facts = model.facts, key = modelMatchKey(model.id);
 		if (facts?.inputPrice === undefined || facts.outputPrice === undefined || prices.has(key)) continue;
-		prices.set(key, { input: facts.inputPrice, output: facts.outputPrice, ...facts.cacheReadPrice !== undefined ? { cacheRead: facts.cacheReadPrice } : {}, ...facts.cacheWritePrice !== undefined ? { cacheWrite: facts.cacheWritePrice } : {} });
+		// A catalogue without cache prices would price Claude Code's and Codex's cached input (most of it) as fresh input,
+		// several times over. Anthropic and OpenAI publish fixed cache rates against the input price, so those stand in.
+		const organisation = model.id.split("/")[0], ratios = organisation === "anthropic" ? { read: 0.1, write: 1.25 } : organisation === "openai" ? { read: 0.1, write: 1 } : undefined;
+		const cacheRead = facts.cacheReadPrice ?? (ratios ? facts.inputPrice * ratios.read : undefined), cacheWrite = facts.cacheWritePrice ?? (ratios ? facts.inputPrice * ratios.write : undefined);
+		prices.set(key, { input: facts.inputPrice, output: facts.outputPrice, ...cacheRead !== undefined ? { cacheRead } : {}, ...cacheWrite !== undefined ? { cacheWrite } : {} });
 	}
 	return model => prices.get(modelMatchKey(model));
 }
+let transcriptScanner: TranscriptScanner | undefined;
+/** The transcript folders read for the Usage page, with how many recent files each holds; add and remove change the person's own. */
+ipcMain.handle("workspace:usage-folders", async (event, request: unknown) => {
+	const window = senderWindow(event);
+	if (!window) throw new Error("Invalid usage request.");
+	const { type, harness, directory } = (request ?? {}) as { type?: unknown; harness?: unknown; directory?: unknown };
+	const store = workspaceRuntime.store, added = store.addedTranscriptFolders();
+	if (type === "add" && (harness === "claude" || harness === "codex")) {
+		const result = await dialog.showOpenDialog(window, { properties: ["openDirectory"], title: harness === "claude" ? "Choose a Claude Code config folder" : "Choose a Codex home folder" });
+		if (!result.canceled && result.filePaths[0]) { store.saveAddedTranscriptFolders([...added, { harness, directory: result.filePaths[0] }]); void transcriptScanner?.scan(true); }
+	} else if (type === "remove" && typeof directory === "string") store.saveAddedTranscriptFolders(added.filter(folder => folder.directory !== directory));
+	else if (type !== "list") throw new Error("Invalid usage request.");
+	const folders = transcriptFolders(store.getAccounts(), store.addedTranscriptFolders());
+	return Promise.all(folders.map(async (folder: TranscriptFolder) => ({ ...folder, files: (await transcriptFiles(folder)).length })));
+});
 /** Pull requests you opened and merged since a day, asked of GitHub at most every five minutes per day. */
 const pullRequestCountCache = new Map<string, { at: number; counts: Promise<{ opened: number; merged: number } | undefined> }>();
 function usagePullRequests(since: string) {
@@ -851,6 +873,9 @@ app.whenReady().then(() => {
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	workspaceRuntime.phaseo.background = backgroundCommands();
+	transcriptScanner = new TranscriptScanner(workspaceRuntime.store, () => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:usage-changed"); });
+	// After the ledger's own start-up work, so a first read of large transcripts doesn't compete with opening the app.
+	setTimeout(() => { if (!shutdownStarted) void transcriptScanner?.scan(true).catch(() => {}); }, 5000).unref?.();
 	// Phaseo turns size compaction and output limits from the cached catalogue; a model not in it gets safe defaults.
 	workspaceRuntime.phaseo.facts = async (account, model) => account.endpoint ? (await modelCatalogCache.read({ endpoint: account.endpoint, accountId: account.id }))?.models.find(value => value.id === model)?.facts : undefined;
 	pullRequestGuides = new PullRequestGuides(path.join(workspaceDirectory, "pull-request-guides"), input => workspaceRuntime.completeWithTitleModel(input), async (root, view) => {

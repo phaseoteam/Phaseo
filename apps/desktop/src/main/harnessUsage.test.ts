@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { claudeUsage, CodexTurnUsage } from "./harnessUsage";
+import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { claudeUsage, codexUsage } from "./harnessUsage";
+import { readTranscript, transcriptFolders, transcriptLine } from "./usageTranscripts";
 import { usageTokens } from "../shared/usageAmounts";
 import { estimateNanos, modelMatchKey } from "../shared/usageLedger";
 
@@ -13,13 +17,44 @@ describe("harness usage", () => {
 		expect(claudeUsage("msg_3", undefined, null)).toBeUndefined();
 	});
 
-	it("turns Codex's running thread totals into each turn's usage, even for a thread resumed with earlier history", () => {
-		const usage = new CodexTurnUsage(), breakdown = (input: number, cached: number, output: number) => ({ inputTokens: input, cachedInputTokens: cached, outputTokens: output, reasoningOutputTokens: 0, totalTokens: input + output });
-		// The thread already held 50,000 input tokens before this turn's first response, which read 40,000 more (30,000 cached).
-		expect(usage.update("thread", "turn-1", { total: breakdown(90_000, 30_000, 500), last: breakdown(40_000, 30_000, 200) })).toEqual({ key: "codex:thread:turn-1", input: 10_000, cached: 30_000, cacheWrite: 0, output: 200, reasoning: 0 });
-		expect(usage.update("thread", "turn-1", { total: breakdown(140_000, 70_000, 800), last: breakdown(50_000, 40_000, 300) })).toMatchObject({ input: 20_000, cached: 70_000, output: 500 });
-		expect(usage.update("thread", "turn-2", { total: breakdown(150_000, 75_000, 900), last: breakdown(10_000, 5_000, 100) })).toMatchObject({ key: "codex:thread:turn-2", input: 5_000, cached: 5_000, output: 100 });
-		expect(usage.update(undefined, "turn-3", { total: breakdown(1, 0, 1) })).toBeUndefined();
+	it("keys each Codex response by its thread's running total, live and in its session files alike", () => {
+		const live = { total: { inputTokens: 90_000, cachedInputTokens: 30_000, outputTokens: 500, reasoningOutputTokens: 0, totalTokens: 90_500 }, last: { inputTokens: 40_000, cachedInputTokens: 30_000, outputTokens: 200, reasoningOutputTokens: 50, totalTokens: 40_200 } };
+		expect(codexUsage("thread", live)).toEqual({ key: "codex:thread:90500", input: 10_000, cached: 30_000, cacheWrite: 0, output: 200, reasoning: 50 });
+		expect(codexUsage(undefined, live)).toBeUndefined();
+		const state = {};
+		expect(transcriptLine("codex", JSON.stringify({ timestamp: "2026-10-21T19:20:46Z", type: "session_meta", payload: { id: "thread", cwd: "E:\\phaseo" } }), state)).toBeUndefined();
+		transcriptLine("codex", JSON.stringify({ timestamp: "2026-10-21T19:21:46Z", type: "turn_context", payload: { model: "gpt-6.1-sol", cwd: "E:\\phaseo" } }), state);
+		const line = JSON.stringify({ timestamp: "2026-10-21T19:21:55Z", type: "event_msg", payload: { type: "token_count", info: { total_token_usage: { input_tokens: 90_000, cached_input_tokens: 30_000, output_tokens: 500, total_tokens: 90_500 }, last_token_usage: { input_tokens: 40_000, cached_input_tokens: 30_000, output_tokens: 200, reasoning_output_tokens: 50, total_tokens: 40_200 } } } });
+		expect(transcriptLine("codex", line, state)).toEqual({ key: "codex:thread:90500", model: "gpt-6.1-sol", input: 10_000, cached: 30_000, cacheWrite: 0, output: 200, reasoning: 50, at: "2026-10-21T19:21:55Z", harness: "codex", sessionId: "thread", cwd: "E:\\phaseo" });
+	});
+
+	it("reads Claude Code transcript lines by response, skipping its synthetic messages", () => {
+		const line = (model: string) => JSON.stringify({ type: "assistant", timestamp: "2026-10-12T20:30:58Z", sessionId: "session", cwd: "E:\\phaseo", message: { id: "msg_1", model, usage: { input_tokens: 2, cache_creation_input_tokens: 13_941, cache_read_input_tokens: 73_202, output_tokens: 237, output_tokens_details: { thinking_tokens: 72 } } } });
+		expect(transcriptLine("claude", line("claude-opus-5-5"), {})).toMatchObject({ key: "claude:msg_1", model: "claude-opus-5-5", input: 2, cached: 73_202, cacheWrite: 13_941, output: 237, reasoning: 72, sessionId: "session" });
+		expect(transcriptLine("claude", line("<synthetic>"), {})).toBeUndefined();
+		expect(transcriptLine("claude", JSON.stringify({ type: "user", message: { content: "usage" } }), {})).toBeUndefined();
+	});
+
+	it("reads only what a transcript gained, whole lines at a time, and starts again when it shrinks", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-transcripts-")), file = path.join(directory, "session.jsonl");
+		try {
+			const line = (id: string) => JSON.stringify({ type: "assistant", timestamp: "2026-10-12T20:30:58Z", sessionId: "s", message: { id, model: "claude-opus-5-5", usage: { input_tokens: 1, output_tokens: 1 } } });
+			writeFileSync(file, `${line("a")}\n${line("b").slice(0, 20)}`);
+			const read: string[] = [], collect = (rows: { key: string }[]) => read.push(...rows.map(row => row.key));
+			let state = await readTranscript(file, "claude", undefined, statSync(file).size, 1, collect);
+			expect([read, state.offset]).toEqual([["claude:a"], line("a").length + 1]);
+			writeFileSync(file, `${line("a")}\n${line("b")}\n`);
+			state = await readTranscript(file, "claude", state, statSync(file).size, 2, collect);
+			expect(read).toEqual(["claude:a", "claude:b"]);
+			writeFileSync(file, `${line("c")}\n`);
+			await readTranscript(file, "claude", state, statSync(file).size, 3, collect);
+			expect(read).toEqual(["claude:a", "claude:b", "claude:c"]);
+		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+
+	it("finds transcript folders once each: defaults, the environment's, accounts' and added ones", () => {
+		const folders = transcriptFolders([{ id: "a", name: "Work", harness: "claude", kind: "native", configured: true, configDirectory: "D:\\claude-work" }], [{ harness: "claude", directory: "D:\\Claude-Work" }, { harness: "codex", directory: "E:\\CodexHome" }], { CODEX_HOME: "E:\\CodexHome" }, "C:\\Users\\me");
+		expect(folders.map(folder => `${folder.harness} ${folder.directory}${folder.added ? " (added)" : ""}`)).toEqual(["claude C:\\Users\\me\\.claude", "codex C:\\Users\\me\\.codex", "codex E:\\CodexHome", "claude D:\\claude-work"]);
 	});
 
 	it("reads Phaseo reports' cached input either way providers count it", () => {

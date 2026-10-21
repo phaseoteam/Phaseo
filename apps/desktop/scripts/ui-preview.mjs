@@ -273,6 +273,9 @@ try {
 		["revoke", "Autopilot answered", "Scope: Revoke every key the grant issued\nSigning out should end every session the grant opened.", 9],
 		["revoke", "Autopilot: keep going", "Add a test that signs out with two active keys.\nThe revoke path has no test yet.", 5],
 	]) fixtureStore.recordAutopilotDecision(demoId(name), title, text, at(minutes));
+	// --claude-transcripts <folder> and --codex-transcripts <folder> add transcript folders, as Settings' Usage sources would.
+	const transcripts = ["claude", "codex"].flatMap(harness => { const directory = argument(`${harness}-transcripts`, ""); return directory ? [{ harness, directory }] : []; });
+	if (transcripts.length) fixtureStore.saveAddedTranscriptFolders(transcripts);
 	// A month of usage for the Usage page: Phaseo's charged requests, and Claude Code and Codex turns priced at API rates,
 	// in working hours on each earlier day and today up to now, a little ahead of the usual.
 	const spenders = [["usage-fix", "anthropic/claude-opus-5.5", "phaseo", false], ["revoke", "anthropic/claude-opus-5.5", "phaseo", true], ["ci", "anthropic/claude-opus-5.5", "phaseo", true], ["pricing", "anthropic/claude-opus-5.5", undefined, false], ["notes", "openai/gpt-6", undefined, false], ["french", "google/gemini-3.5-flash", undefined, false]];
@@ -287,7 +290,8 @@ try {
 		const [name, model, projectId, autopilot] = spenders[Math.floor(random() * (daysAgo ? spenders.length : 4))];
 		const nanos = Math.round((daysAgo ? 120_000_000 : 175_000_000) * (0.4 + random())), prompt = Math.round(nanos / 1100);
 		fixtureStore.recordUsage({ id: demoId(name), model, projectId }, `ledger-${daysAgo}-${hour}:usage:0`, JSON.stringify({ prompt_tokens: prompt, completion_tokens: Math.round(prompt / 12), prompt_tokens_details: { cached_tokens: Math.round(prompt * 0.6) }, completion_tokens_details: { reasoning_tokens: Math.round(prompt / 40) }, pricing: { total_nanos: nanos } }), autopilot, time.toISOString());
-		if (weekend || random() < 0.35) continue;
+		// The demo reads real Claude Code and Codex history from their transcripts instead.
+		if (demo || weekend || random() < 0.35) continue;
 		const [turn, harness, harnessModel, harnessProject] = harnessTurns[Math.floor(random() * harnessTurns.length)], size = 0.5 + random();
 		fixtureStore.recordHarnessUsage({ id: demoId(turn), harness, model: "default", projectId: harnessProject }, { key: `${harness}:demo-${daysAgo}-${hour}`, model: harnessModel, input: Math.round(2_000 * size), cached: Math.round(900_000 * size), cacheWrite: Math.round(40_000 * size), output: Math.round(16_000 * size), reasoning: Math.round(4_000 * size) }, false, time.toISOString());
 	}

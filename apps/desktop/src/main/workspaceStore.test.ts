@@ -276,7 +276,7 @@ describe("IPC validation", () => {
 		} finally { store.close(); }
 	});
 
-	it("fills the ledger once from recent chats: Phaseo's reports by their turn, Codex's running totals turn by turn", () => {
+	it("fills the ledger once with Phaseo's reports from recent chats, timing each by its turn", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {
 			const now = new Date(), started = (hoursAgo: number) => new Date(now.getTime() - hoursAgo * 3_600_000).toISOString();
@@ -288,17 +288,37 @@ describe("IPC validation", () => {
 				{ id: "turn:compaction:1600000000000:usage", type: "usage", title: "Compaction usage", text: JSON.stringify({ total_tokens: 60, pricing: { total_nanos: 100_000 } }) },
 			];
 			store.saveTask(saved);
-			const codex = store.apply({ type: "create-task", harness: "codex", model: "gpt-6.1", mode: "code" }), thread = store.getTask(codex.id);
-			const total = (input: number, output: number) => JSON.stringify({ total: { inputTokens: input, cachedInputTokens: 0, outputTokens: output, reasoningOutputTokens: 0, totalTokens: input + output }, last: {} });
-			thread.messages = [{ id: "one", role: "user", text: "First", startedAt: started(3), createdAt: started(3) }, { id: "two", role: "user", text: "Second", startedAt: started(2), createdAt: started(2) }];
-			thread.activities = [{ id: "one:usage", type: "usage", title: "Context usage", text: total(1000, 100) }, { id: "two:usage", type: "usage", title: "Context usage", text: total(2500, 300) }];
-			store.saveTask(thread);
-			expect(store.backfillUsageLedger(8, now)).toBe(3);
+			expect(store.backfillUsageLedger(8, now)).toBe(1);
 			expect(store.backfillUsageLedger(8, now)).toBe(0);
-			// The compaction's id says it ran in 2020, before the cutoff, so only the step is kept; Codex's second turn used 1,500 in and 200 out.
+			// The compaction's id says it ran in 2020, before the cutoff, so only the step is kept.
 			const report = store.usageReport("7d", () => ({ input: 1, output: 1 }), now);
-			expect(report.harnesses.find(value => value.harness === "phaseo")).toMatchObject({ chargedNanos: 1_500_000, tokens: 120 });
-			expect(report.harnesses.find(value => value.harness === "codex")).toMatchObject({ tokens: 1100 + 1700, estimateNanos: 2_800_000 });
+			expect(report.harnesses).toMatchObject([{ harness: "phaseo", chargedNanos: 1_500_000, tokens: 120 }]);
+		} finally { store.close(); }
+	});
+
+	it("counts transcript history under the chat that ran it, or its session and folder, never twice", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const now = new Date(), at = new Date(now.getTime() - 3_600_000).toISOString(), cutoff = new Date(now.getTime() - 91 * 86_400_000).toISOString();
+			const projectId = store.addProject("E:\\phaseo").id;
+			const chat = store.apply({ type: "create-task", harness: "claude", model: "default", mode: "code" }), saved = store.getTask(chat.id);
+			saved.nativeSessionId = "ours"; store.saveTask(saved);
+			const tokens = { input: 10, cached: 1000, cacheWrite: 0, output: 50, reasoning: 0 };
+			// The app recorded this response live; its transcript line adds nothing more.
+			store.recordHarnessUsage(chat, { key: "claude:msg_live", model: "claude-opus-5-5", ...tokens }, false, at);
+			store.recordTranscriptUsage([
+				{ key: "claude:msg_live", model: "claude-opus-5-5", ...tokens, at, harness: "claude", sessionId: "ours" },
+				{ key: "claude:msg_ours", model: "claude-opus-5-5", ...tokens, at, harness: "claude", sessionId: "ours" },
+				{ key: "claude:msg_cli", model: "claude-opus-5-5", ...tokens, at, harness: "claude", sessionId: "cli", cwd: "E:\\phaseo\\apps" },
+				{ key: "codex:t:1060", model: "gpt-6.1-sol", ...tokens, at, harness: "codex", sessionId: "t", cwd: "D:\\scratch" },
+				{ key: "claude:old", model: "claude-opus-5-5", ...tokens, at: "2020-01-01T00:00:00.000Z", harness: "claude", sessionId: "cli" },
+			], store.sessionOwners(), store.getProjects(), cutoff);
+			const report = store.usageReport("today", () => undefined, now);
+			expect(report.total.tokens).toBe(4 * 1060);
+			expect(report.chats.map(value => [value.taskId, value.tokens, value.label])).toEqual([[chat.id, 2120, undefined], ["session:claude:cli", 1060, "apps"], ["session:codex:t", 1060, "scratch"]]);
+			// The chat has no project; the CLI session ran inside the project's folder; the Codex one outside any.
+			expect(report.projects.map(value => [value.projectId, value.folder, value.tokens])).toEqual(expect.arrayContaining([[null, undefined, 2120], [projectId, undefined, 1060], [null, "scratch", 1060]]));
+			expect(report.projects).toHaveLength(3);
 		} finally { store.close(); }
 	});
 

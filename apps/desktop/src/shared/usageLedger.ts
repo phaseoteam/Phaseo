@@ -34,6 +34,9 @@ export type UsageCost = {
 };
 export const noCost = (): UsageCost => ({ tokens: 0, costNanos: 0, chargedNanos: 0, estimateNanos: 0, unpricedTokens: 0 });
 
+/** A transcript folder the Usage page reads, with how many files from the last 90 days it holds. */
+export type UsageFolder = { harness: "claude" | "codex"; directory: string; added?: boolean; files: number };
+
 /** Today, or the last 7, 30 or 90 days counting today. */
 export type UsagePeriod = "today" | "7d" | "30d" | "90d";
 export const usagePeriods: { id: UsagePeriod; label: string; days: number }[] = [
@@ -58,8 +61,10 @@ export type UsageReport = {
 	harnesses: (UsageCost & { harness: string; chats: number })[];
 	buckets: { start: string; harnesses: Record<string, UsageCost> }[];
 	models: (UsageCost & { harness: string; model: string })[];
-	chats: (UsageCost & { taskId: string })[];
-	projects: (UsageCost & { projectId: string | null })[];
+	/** Chats by id; a Claude Code or Codex session run outside Phaseo is `session:<harness>:<id>`, with its folder as `label`. */
+	chats: (UsageCost & { taskId: string; label?: string })[];
+	/** Projects; usage outside any project is grouped by its folder. */
+	projects: (UsageCost & { projectId: string | null; folder?: string })[];
 	/** Spend in chats Autopilot was driving, and in its own calls. */
 	autopilot: UsageCost & { chats: number };
 	activity: UsageActivity;
