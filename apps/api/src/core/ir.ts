@@ -41,8 +41,11 @@ export type IRContentPart =
 	}
 	| {
 		type: "image";
-		source: "url" | "data";
-		data: string; // URL or base64
+		// "id" is an uploaded file: an OpenAI Responses `input_image` `file_id`
+		// or an Anthropic Files API `file_id`. Only the provider that issued it
+		// can resolve it.
+		source: "url" | "data" | "id";
+		data: string; // URL, base64 or file id
 		mimeType?: string;
 		detail?: "auto" | "low" | "high" | "original"; // OpenAI detail level
 		cacheControl?: IRCacheControl;
@@ -68,14 +71,18 @@ export type IRContentPart =
 	}
 	| {
 		// A document or other file input: an OpenAI Chat `file` part or a
-		// Responses `input_file` part. Executors map it to the provider's own
-		// file block, or leave it out where the provider has none.
+		// Responses `input_file` part, or an Anthropic `document` block.
+		// Executors map it to the provider's own file block.
 		type: "file";
 		source: "data" | "url" | "id";
 		data: string; // base64 (no data: prefix), URL, or provider file id
 		mimeType?: string;
 		filename?: string;
 		cacheControl?: IRCacheControl;
+		// The Anthropic `document` block the file was decoded from. Claude
+		// routes send it unchanged so its citations, context and title
+		// survive; other providers get the file in their own shape.
+		nativeBlock?: Record<string, any>;
 	}
 	| {
 		type: "provider_block";

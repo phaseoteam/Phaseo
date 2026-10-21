@@ -18,6 +18,8 @@ import {
 	createAnthropicPassthroughStreamTransformer,
 	createAnthropicToResponsesStreamTransformer,
 } from "@executors/anthropic/text-generate/stream-transformer";
+import { inlineClaudeMediaForBase64OnlyPlatform } from "@executors/anthropic/text-generate/inline-media";
+import { inlineAudioUrlsForProvider } from "@executors/_shared/text-generate/openai-compat/inline-audio";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { ProviderExecutor } from "../../types";
@@ -79,8 +81,11 @@ async function executeBedrockMessages(
 	const irRequest = args.ir as IRChatRequest;
 	const unsupportedMedia = anthropicUnsupportedMediaResult(irRequest, args.requestId);
 	if (unsupportedMedia) return unsupportedMedia;
+	// Claude on Bedrock reads base64 sources only.
+	const inlined = await inlineClaudeMediaForBase64OnlyPlatform(irRequest, args);
+	if (inlined.ok === false) return inlined.result;
 	const requestPayload = {
-		...irToAnthropicMessages(irRequest, args.maxOutputTokens, model, { providerId: args.providerId || "amazon-bedrock" }),
+		...irToAnthropicMessages(inlined.ir, args.maxOutputTokens, model, { providerId: args.providerId || "amazon-bedrock" }),
 		model,
 		stream: Boolean(irRequest.stream),
 	};
@@ -201,11 +206,14 @@ async function executeMantleOpenAI(
 	preferredRoute: "chat" | "responses",
 ): Promise<ExecutorResult> {
 	const irRequest = args.ir as IRChatRequest;
+	// Audio given by URL is downloaded and sent as base64 input_audio.
+	const inlinedAudio = await inlineAudioUrlsForProvider(irRequest, args);
+	if (inlinedAudio.ok === false) return inlinedAudio.result;
 	const buildPayload = (route: "chat" | "responses"): Record<string, any> => {
 		const providerId = args.providerId || "amazon-bedrock";
 		const payload = route === "responses"
-			? irToOpenAIResponses(irRequest, model, providerId, args.capabilityParams)
-			: irToOpenAIChat(irRequest, model, providerId, args.capabilityParams);
+			? irToOpenAIResponses(inlinedAudio.ir, model, providerId, args.capabilityParams)
+			: irToOpenAIChat(inlinedAudio.ir, model, providerId, args.capabilityParams);
 
 		payload.stream = true;
 		if (route === "chat" && payload.stream) {

@@ -997,11 +997,14 @@ const AnthropicTextContentSchema = lazySchema(() => z.object({
 const AnthropicImageContentSchema = lazySchema(() => z.object({
     type: z.literal("image"),
     cache_control: CacheControlSchema.optional(),
+    // `file` references an upload made through the Files API.
+    // https://platform.claude.com/docs/en/build-with-claude/files
     source: z.object({
-        type: z.enum(["base64", "url"]),
+        type: z.enum(["base64", "url", "file"]),
         media_type: z.string().optional(),
         data: z.string().optional(),
         url: z.string().optional(),
+        file_id: z.string().optional(),
     }),
 }));
 
