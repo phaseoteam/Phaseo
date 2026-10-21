@@ -26,9 +26,29 @@ describe("composeCompareUsage", () => {
 				requests30m: 7,
 				latencyP50Ms30m: 95,
 				throughputP50TokPerSec30m: 90,
+				latencyWindow: "30m",
+				throughputWindow: "30m",
 				cumulativeTokens: 1_000_000,
 				requestPoints24h: [{ date: "2026-07-17T12:00:00Z", value: 5 }],
 			},
 		});
+	});
+
+	it("names the window each fallback value comes from", () => {
+		const usage = composeCompareUsage([
+			{
+				model_id: "a/day",
+				performance: { last_24h: { avg_latency_ms: 120 }, hourly_24h: [{ avg_throughput: 60 }] },
+			},
+			{
+				model_id: "b/five-days",
+				performance: { time_of_day_5d: [{ avg_latency_ms: 3_000, avg_throughput: 70 }, { avg_latency_ms: 3_200, avg_throughput: 76 }] },
+			},
+			{ model_id: "c/none", performance: {} },
+		]);
+
+		expect(usage["a/day"]).toMatchObject({ latencyP50Ms30m: 120, latencyWindow: "24h", throughputP50TokPerSec30m: 60, throughputWindow: "24h" });
+		expect(usage["b/five-days"]).toMatchObject({ latencyP50Ms30m: 3_100, latencyWindow: "5d", throughputP50TokPerSec30m: 73, throughputWindow: "5d" });
+		expect(usage["c/none"]).toMatchObject({ latencyP50Ms30m: null, latencyWindow: null, throughputWindow: null });
 	});
 });
