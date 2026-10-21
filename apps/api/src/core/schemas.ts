@@ -865,6 +865,11 @@ export const ChatCompletionsSchema = lazySchema(() => z.object({
                 // Reasoning blocks with signatures or encrypted reasoning, sent
                 // back unchanged from an earlier response.
                 reasoning_details: z.array(z.record(z.string(), z.unknown())).optional(),
+                // An earlier audio response, referenced by its id
+                // (https://platform.openai.com/docs/api-reference/chat/create).
+                // The rest of a returned message.audio (data, expires_at,
+                // transcript) is not part of the request and is stripped.
+                audio: z.object({ id: z.string().min(1) }).nullable().optional(),
             }),
             z.object({
                 role: z.literal("tool"),

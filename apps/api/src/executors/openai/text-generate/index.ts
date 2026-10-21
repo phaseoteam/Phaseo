@@ -804,6 +804,10 @@ function historyCarriesReplayableReasoning(ir: IRChatRequest, providerId: string
 			)));
 }
 
+function requestsChatAudioOutput(ir: IRChatRequest): boolean {
+	return ir.audioConfig != null || (Array.isArray(ir.modalities) && ir.modalities.includes("audio"));
+}
+
 async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const requestBuildStartMs = Date.now();
 	const keyInfo = resolveOpenAICompatKey({
@@ -864,7 +868,12 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		delete requestPayload.logprobs;
 	}
 
-	requestPayload.stream = true;
+	// Chat audio output streams only as pcm16, and some audio models do not stream at all
+	// (https://developers.openai.com/api/docs/guides/audio-chat-completions), so a
+	// non-streaming audio request is sent as one: its JSON body is read by bufferStreamToIR.
+	const chatAudioOutput = route === "chat" && requestsChatAudioOutput(irWithRequestMetadata);
+	const upstreamStreams = !(chatAudioOutput && !irWithRequestMetadata.stream);
+	requestPayload.stream = upstreamStreams;
 	// Responses requests always go upstream with store: false (documented on the
 	// Responses endpoint page). Chat Completions does not store by default, so
 	// store is only sent there when the client set it, and then as false.
@@ -876,7 +885,9 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	) {
 		ensureEncryptedReasoningInclude(requestPayload);
 	}
-	if (route === "chat") {
+	if (route === "chat" && !upstreamStreams) {
+		delete requestPayload.stream_options;
+	} else if (route === "chat") {
 		requestPayload.stream_options = {
 			...(requestPayload.stream_options ?? {}),
 			include_usage: true,
