@@ -44,7 +44,7 @@ icon: "database-zap"
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | تلقائي (ضمني)؛ والتخزين المؤقت الصريح بالتفعيل | `cache_control` على مستوى الكتل |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | تلقائي؛ وتضيف Venice نقاط توقف Claude بنفسها | `cache_control` على مستوى الكتل |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | تلقائي؛ ونافذة الاحتفاظ بالتفعيل | `prompt_cache_key` و`prompt_cache_breakpoint` و`prompt_cache_options` |
-| [Inference.net](https://inference.net/models/claude-opus-5/) | تلقائي؛ وتخزين مؤقت صريح على نماذج Claude وGemini | `cache_control` على مستوى الكتلة في نماذج Claude وGemini، بدون `ttl` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | تلقائي؛ وتخزين مؤقت صريح على نماذج Claude وGemini 2.5 | `cache_control` على مستوى الكتلة في نماذج Claude وGemini 2.5، بدون `ttl` |
 | [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | تلقائي | `prompt_cache_key` والترويسة `x-session-affinity` |
 | [Morph](https://docs.morphllm.com/sdk/components/caching) | تلقائي | `prompt_cache_key` والترويسة `x-session-id` |
 
@@ -129,10 +129,10 @@ icon: "database-zap"
 | OpenAI وAzure OpenAI، النماذج الأقدم | تُحذف | تُحذف |
 | DeepInfra | تُحذف | تُرسل |
 | Alibaba Model Studio وVenice | تُرسل | تُحذف |
-| Inference.net، نماذج Claude وGemini | تُرسل بدون `ttl` | تُحذف |
+| Inference.net، نماذج Claude وGemini 2.5 | تُرسل بدون `ttl` | تُحذف |
 | المزوّدون الآخرون | تُحذف | تُحذف |
 
-لا تصل العلامات الموضوعة على تعريفات الأدوات إلا إلى مسارات Claude وAlibaba Model Studio وVenice ونماذج Claude وGemini على Inference.net؛ إذ لا يقبل OpenAI نقاط توقف على الأدوات. ولا يغيّر حذف العلامة بقية المطالبة، فتطابق البادئة المخزنة مؤقتًا بادئة طلب بلا علامات.
+لا تصل العلامات الموضوعة على تعريفات الأدوات إلا إلى مسارات Claude وAlibaba Model Studio وVenice ونماذج Claude وGemini 2.5 على Inference.net؛ إذ لا يقبل OpenAI نقاط توقف على الأدوات. ولا يغيّر حذف العلامة بقية المطالبة، فتطابق البادئة المخزنة مؤقتًا بادئة طلب بلا علامات.
 
 لا تخزّن Amazon Bedrock وGoogle Vertex AI نماذج Claude 3.7 Sonnet و3.5 Sonnet و3 Opus مؤقتًا إلا لمدة 5 دقائق، وقد يرفض Bedrock قيمة `ttl` في هذه النماذج. على هذه المسارات، ترسل Phaseo نقاط التوقف بدون `ttl`، فتُخزَّن مؤقتًا لمدة 5 دقائق، وتُبلغ عن قيمة `1h` المحذوفة باسم `cache_control.ttl` في ترويسة `X-Phaseo-Dropped-Params` وفي `meta.routing.dropped_params`. ويوثّق Inference.net نقاط التوقف بدون `ttl`، لذا تحذف Phaseo قيمة `ttl` هناك وتُبلغ عنها بالطريقة نفسها، وتُحتسب عمليات الكتابة على أنها كتابة لمدة 5 دقائق.
 

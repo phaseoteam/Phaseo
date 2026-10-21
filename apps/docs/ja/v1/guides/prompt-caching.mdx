@@ -44,7 +44,7 @@ icon: "database-zap"
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | 自動（暗黙的）。明示的キャッシュはオプトイン | ブロックの`cache_control` |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | 自動。VeniceがClaudeのブレークポイントを自ら追加 | ブロックの`cache_control` |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | 自動。保持期間の指定はオプトイン | `prompt_cache_key`、`prompt_cache_breakpoint`、`prompt_cache_options` |
-| [Inference.net](https://inference.net/models/claude-opus-5/) | 自動。ClaudeとGeminiのモデルでは明示的キャッシュも可 | ClaudeとGeminiのモデルでブロックの`cache_control`（`ttl`なし） |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | 自動。ClaudeとGemini 2.5のモデルでは明示的キャッシュも可 | ClaudeとGemini 2.5のモデルでブロックの`cache_control`（`ttl`なし） |
 | [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | 自動 | `prompt_cache_key`と`x-session-affinity`ヘッダー |
 | [Morph](https://docs.morphllm.com/sdk/components/caching) | 自動 | `prompt_cache_key`と`x-session-id`ヘッダー |
 
@@ -129,10 +129,10 @@ Chat CompletionsとResponsesでは、テキストと画像のパート、関数�
 | OpenAIとAzure OpenAIのそれより前のモデル | 削除 | 削除 |
 | DeepInfra | 削除 | 送信 |
 | Alibaba Model StudioとVenice | 送信 | 削除 |
-| Inference.net（ClaudeとGeminiのモデル） | `ttl`なしで送信 | 削除 |
+| Inference.net（ClaudeとGemini 2.5のモデル） | `ttl`なしで送信 | 削除 |
 | その他のプロバイダー | 削除 | 削除 |
 
-ツール定義のマークが届くのは、Claudeのルート、Alibaba Model Studio、Venice、Inference.netのClaudeとGeminiのモデルだけです。OpenAIはツールへのブレークポイントを受け付けません。マークを削除してもプロンプトの残りは変わらないため、キャッシュされるプレフィックスはマークのないリクエストと一致します。
+ツール定義のマークが届くのは、Claudeのルート、Alibaba Model Studio、Venice、Inference.netのClaudeとGemini 2.5のモデルだけです。OpenAIはツールへのブレークポイントを受け付けません。マークを削除してもプロンプトの残りは変わらないため、キャッシュされるプレフィックスはマークのないリクエストと一致します。
 
 Amazon BedrockとGoogle Vertex AIは、Claude 3.7 Sonnet、3.5 Sonnet、3 Opusを5分間しかキャッシュせず、Bedrockはこれらのモデルで`ttl`を拒否することがあります。これらのルートでは、Phaseoはブレークポイントを`ttl`なしで送信するため、5分間キャッシュされます。削除した`1h`は、`X-Phaseo-Dropped-Params`ヘッダーと`meta.routing.dropped_params`に`cache_control.ttl`として報告します。Inference.netは`ttl`なしのブレークポイントを案内しているため、Phaseoはそこでも同じように`ttl`を削除して報告し、書き込みは5分の書き込みとして課金されます。
 

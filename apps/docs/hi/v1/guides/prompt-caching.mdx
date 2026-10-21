@@ -44,7 +44,7 @@ icon: "database-zap"
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | स्वचालित (अंतर्निहित); स्पष्ट कैश ऑप्ट-इन हैं | ब्लॉक-स्तरीय `cache_control` |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | स्वचालित; Venice Claude ब्रेकपॉइंट ख़ुद जोड़ता है | ब्लॉक-स्तरीय `cache_control` |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | स्वचालित; प्रतिधारण अवधि ऑप्ट-इन है | `prompt_cache_key`, `prompt_cache_breakpoint` और `prompt_cache_options` |
-| [Inference.net](https://inference.net/models/claude-opus-5/) | स्वचालित; Claude और Gemini मॉडलों पर स्पष्ट कैशिंग | Claude और Gemini मॉडलों पर ब्लॉक `cache_control`, बिना `ttl` के |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | स्वचालित; Claude और Gemini 2.5 मॉडलों पर स्पष्ट कैशिंग | Claude और Gemini 2.5 मॉडलों पर ब्लॉक `cache_control`, बिना `ttl` के |
 | [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | स्वचालित | `prompt_cache_key` और `x-session-affinity` हेडर |
 | [Morph](https://docs.morphllm.com/sdk/components/caching) | स्वचालित | `prompt_cache_key` और `x-session-id` हेडर |
 
@@ -129,10 +129,10 @@ Chat Completions और Responses में टेक्स्ट और इम�
 | OpenAI और Azure OpenAI, पुराने मॉडल | हटाया जाता है | हटाया जाता है |
 | DeepInfra | हटाया जाता है | भेजा जाता है |
 | Alibaba Model Studio और Venice | भेजा जाता है | हटाया जाता है |
-| Inference.net, Claude और Gemini मॉडल | बिना `ttl` के भेजा जाता है | हटाया जाता है |
+| Inference.net, Claude और Gemini 2.5 मॉडल | बिना `ttl` के भेजा जाता है | हटाया जाता है |
 | अन्य प्रदाता | हटाया जाता है | हटाया जाता है |
 
-टूल परिभाषाओं पर लगे चिह्न केवल Claude रूट, Alibaba Model Studio, Venice और Inference.net के Claude और Gemini मॉडलों तक पहुँचते हैं; OpenAI टूल पर ब्रेकपॉइंट स्वीकार नहीं करता। चिह्न हटाने से प्रॉम्प्ट का बाकी हिस्सा नहीं बदलता, इसलिए कैश किया गया प्रीफ़िक्स बिना चिह्न वाले अनुरोध जैसा ही रहता है।
+टूल परिभाषाओं पर लगे चिह्न केवल Claude रूट, Alibaba Model Studio, Venice और Inference.net के Claude और Gemini 2.5 मॉडलों तक पहुँचते हैं; OpenAI टूल पर ब्रेकपॉइंट स्वीकार नहीं करता। चिह्न हटाने से प्रॉम्प्ट का बाकी हिस्सा नहीं बदलता, इसलिए कैश किया गया प्रीफ़िक्स बिना चिह्न वाले अनुरोध जैसा ही रहता है।
 
 Amazon Bedrock और Google Vertex AI, Claude 3.7 Sonnet, 3.5 Sonnet और 3 Opus को केवल 5 मिनट के लिए कैश करते हैं, और Bedrock इन मॉडलों पर `ttl` अस्वीकार कर सकता है। इन रूट पर Phaseo आपके ब्रेकपॉइंट बिना `ttl` के भेजता है, इसलिए वे 5 मिनट के लिए कैश होते हैं, और हटाए गए `1h` को `X-Phaseo-Dropped-Params` हेडर और `meta.routing.dropped_params` में `cache_control.ttl` के रूप में रिपोर्ट करता है। Inference.net ब्रेकपॉइंट को बिना `ttl` के दस्तावेज़ करता है, इसलिए Phaseo वहाँ भी `ttl` को इसी तरह हटाता और रिपोर्ट करता है, और लिखे गए टोकन का बिल 5 मिनट वाले लेखन के रूप में बनता है।
 

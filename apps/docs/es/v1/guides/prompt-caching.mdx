@@ -44,7 +44,7 @@ La mayoría de los proveedores almacenan en caché automáticamente los prefijos
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | Automático (implícito); los cachés explícitos son por activación | `cache_control` en bloques |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | Automático; Venice añade por sí mismo los puntos de corte de Claude | `cache_control` en bloques |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | Automático; una ventana de retención es por activación | `prompt_cache_key`, `prompt_cache_breakpoint` y `prompt_cache_options` |
-| [Inference.net](https://inference.net/models/claude-opus-5/) | Automático; caché explícito en los modelos Claude y Gemini | `cache_control` de bloque en los modelos Claude y Gemini, sin `ttl` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | Automático; caché explícito en los modelos Claude y Gemini 2.5 | `cache_control` de bloque en los modelos Claude y Gemini 2.5, sin `ttl` |
 | [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | Automático | `prompt_cache_key` y el encabezado `x-session-affinity` |
 | [Morph](https://docs.morphllm.com/sdk/components/caching) | Automático | `prompt_cache_key` y el encabezado `x-session-id` |
 
@@ -129,10 +129,10 @@ Cada proveedor recibe la marca en su propio formato:
 | OpenAI y Azure OpenAI, modelos anteriores | Se elimina | Se elimina |
 | DeepInfra | Se elimina | Se envía |
 | Alibaba Model Studio y Venice | Se envía | Se elimina |
-| Inference.net, modelos Claude y Gemini | Se envía sin `ttl` | Se elimina |
+| Inference.net, modelos Claude y Gemini 2.5 | Se envía sin `ttl` | Se elimina |
 | Otros proveedores | Se elimina | Se elimina |
 
-Las marcas en definiciones de herramientas solo llegan a las rutas de Claude, Alibaba Model Studio, Venice y los modelos Claude y Gemini de Inference.net; OpenAI no acepta puntos de corte en herramientas. Eliminar una marca no cambia el resto del prompt, así que el prefijo en caché coincide con el de una solicitud sin marcas.
+Las marcas en definiciones de herramientas solo llegan a las rutas de Claude, Alibaba Model Studio, Venice y los modelos Claude y Gemini 2.5 de Inference.net; OpenAI no acepta puntos de corte en herramientas. Eliminar una marca no cambia el resto del prompt, así que el prefijo en caché coincide con el de una solicitud sin marcas.
 
 Amazon Bedrock y Google Vertex AI almacenan en caché Claude 3.7 Sonnet, 3.5 Sonnet y 3 Opus solo durante 5 minutos, y Bedrock puede rechazar un `ttl` en esos modelos. En esas rutas, Phaseo envía tus puntos de corte sin `ttl`, así que se almacenan en caché durante 5 minutos, e informa de un `1h` eliminado como `cache_control.ttl` en el encabezado `X-Phaseo-Dropped-Params` y en `meta.routing.dropped_params`. Inference.net documenta los puntos de corte sin `ttl`, así que Phaseo también elimina e informa allí un `ttl` del mismo modo, y las escrituras se facturan como escrituras de 5 minutos.
 

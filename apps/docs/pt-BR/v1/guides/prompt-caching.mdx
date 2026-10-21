@@ -44,7 +44,7 @@ A maioria dos provedores armazena em cache automaticamente os prefixos de prompt
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | Automático (implícito); caches explícitos são por ativação | `cache_control` em blocos |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | Automático; a Venice adiciona os pontos de interrupção do Claude por conta própria | `cache_control` em blocos |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | Automático; uma janela de retenção é por ativação | `prompt_cache_key`, `prompt_cache_breakpoint` e `prompt_cache_options` |
-| [Inference.net](https://inference.net/models/claude-opus-5/) | Automático; cache explícito nos modelos Claude e Gemini | `cache_control` no bloco nos modelos Claude e Gemini, sem `ttl` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | Automático; cache explícito nos modelos Claude e Gemini 2.5 | `cache_control` no bloco nos modelos Claude e Gemini 2.5, sem `ttl` |
 | [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | Automático | `prompt_cache_key` e o cabeçalho `x-session-affinity` |
 | [Morph](https://docs.morphllm.com/sdk/components/caching) | Automático | `prompt_cache_key` e o cabeçalho `x-session-id` |
 
@@ -129,10 +129,10 @@ Cada provedor recebe a marcação no próprio formato:
 | OpenAI e Azure OpenAI, modelos anteriores | Removido | Removido |
 | DeepInfra | Removido | Enviado |
 | Alibaba Model Studio e Venice | Enviado | Removido |
-| Inference.net, modelos Claude e Gemini | Enviado sem `ttl` | Removido |
+| Inference.net, modelos Claude e Gemini 2.5 | Enviado sem `ttl` | Removido |
 | Outros provedores | Removido | Removido |
 
-Marcações em definições de ferramentas chegam apenas às rotas do Claude, ao Alibaba Model Studio, à Venice e aos modelos Claude e Gemini da Inference.net; a OpenAI não aceita pontos de interrupção em ferramentas. Remover uma marcação não altera o restante do prompt, então o prefixo em cache corresponde ao de uma solicitação sem marcações.
+Marcações em definições de ferramentas chegam apenas às rotas do Claude, ao Alibaba Model Studio, à Venice e aos modelos Claude e Gemini 2.5 da Inference.net; a OpenAI não aceita pontos de interrupção em ferramentas. Remover uma marcação não altera o restante do prompt, então o prefixo em cache corresponde ao de uma solicitação sem marcações.
 
 A Amazon Bedrock e o Google Vertex AI armazenam em cache o Claude 3.7 Sonnet, o 3.5 Sonnet e o 3 Opus por apenas 5 minutos, e a Bedrock pode rejeitar um `ttl` nesses modelos. Nessas rotas, o Phaseo envia seus pontos de interrupção sem `ttl`, então eles ficam em cache por 5 minutos, e informa um `1h` removido como `cache_control.ttl` no cabeçalho `X-Phaseo-Dropped-Params` e em `meta.routing.dropped_params`. A Inference.net documenta pontos de interrupção sem `ttl`, então o Phaseo também remove e informa um `ttl` ali da mesma forma, e as gravações são cobradas como gravações de 5 minutos.
 

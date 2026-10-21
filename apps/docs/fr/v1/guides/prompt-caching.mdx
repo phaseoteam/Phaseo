@@ -44,7 +44,7 @@ La plupart des fournisseurs mettent automatiquement en cache les préfixes de pr
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | Automatique (implicite) ; les caches explicites sont sur activation | `cache_control` au niveau des blocs |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | Automatique ; Venice ajoute lui-même les points d’arrêt de Claude | `cache_control` au niveau des blocs |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | Automatique ; une fenêtre de rétention est sur activation | `prompt_cache_key`, `prompt_cache_breakpoint` et `prompt_cache_options` |
-| [Inference.net](https://inference.net/models/claude-opus-5/) | Automatique ; cache explicite sur les modèles Claude et Gemini | `cache_control` sur les blocs des modèles Claude et Gemini, sans `ttl` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | Automatique ; cache explicite sur les modèles Claude et Gemini 2.5 | `cache_control` sur les blocs des modèles Claude et Gemini 2.5, sans `ttl` |
 | [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | Automatique | `prompt_cache_key` et l’en-tête `x-session-affinity` |
 | [Morph](https://docs.morphllm.com/sdk/components/caching) | Automatique | `prompt_cache_key` et l’en-tête `x-session-id` |
 
@@ -129,10 +129,10 @@ Chaque fournisseur reçoit la marque sous sa propre forme :
 | OpenAI et Azure OpenAI, modèles antérieurs | Retiré | Retiré |
 | DeepInfra | Retiré | Envoyé |
 | Alibaba Model Studio et Venice | Envoyé | Retiré |
-| Inference.net, modèles Claude et Gemini | Envoyé sans `ttl` | Retiré |
+| Inference.net, modèles Claude et Gemini 2.5 | Envoyé sans `ttl` | Retiré |
 | Autres fournisseurs | Retiré | Retiré |
 
-Les marques sur les définitions d’outils n’atteignent que les routes Claude, Alibaba Model Studio, Venice et les modèles Claude et Gemini d’Inference.net ; OpenAI n’accepte pas de points d’arrêt sur les outils. Retirer une marque ne modifie pas le reste du prompt, si bien que le préfixe mis en cache correspond à celui d’une requête sans marque.
+Les marques sur les définitions d’outils n’atteignent que les routes Claude, Alibaba Model Studio, Venice et les modèles Claude et Gemini 2.5 d’Inference.net ; OpenAI n’accepte pas de points d’arrêt sur les outils. Retirer une marque ne modifie pas le reste du prompt, si bien que le préfixe mis en cache correspond à celui d’une requête sans marque.
 
 Amazon Bedrock et Google Vertex AI ne mettent en cache Claude 3.7 Sonnet, 3.5 Sonnet et 3 Opus que pendant 5 minutes, et Bedrock peut rejeter un `ttl` sur ces modèles. Sur ces routes, Phaseo envoie vos points d’arrêt sans `ttl`, si bien qu’ils sont mis en cache pendant 5 minutes, et signale un `1h` retiré sous la forme `cache_control.ttl` dans l’en-tête `X-Phaseo-Dropped-Params` et dans `meta.routing.dropped_params`. Inference.net documente les points d’arrêt sans `ttl` : Phaseo y retire et signale donc un `ttl` de la même façon, et les écritures sont facturées comme des écritures de 5 minutes.
 

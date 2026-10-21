@@ -18,12 +18,14 @@ const OPENAI_CACHE_PROVIDERS = new Set(["openai", "openai-eu", "azure"]);
 // - OpenRouter: https://openrouter.ai/docs/guides/best-practices/prompt-caching
 const CACHE_CONTROL_PROVIDERS = new Set(["alibaba", "alibaba-cloud", "qwen", "venice", "openrouter"]);
 
-// Inference.net documents block cache_control on its Claude and Gemini model pages: "Mark
-// it with cache_control: { "type": "ephemeral" } to set a cache point"
+// Inference.net documents block cache_control on its Claude and Gemini 2.5 model pages:
+// "Mark it with cache_control: { "type": "ephemeral" } to set a cache point"
 // (https://inference.net/models/claude-opus-5/, https://inference.net/models/gemini-2.5-pro/).
+// Its newer Gemini pages describe automatic caching with no request field
+// (https://inference.net/models/gemini-3.6-flash/), so their marks are stripped.
 // The pages name no ttl, so a ttl is removed before the request is built (see
 // pipeline/execute/cacheTtl.ts) and writes are billed as 5-minute writes.
-const INFERENCE_NET_CACHE_CONTROL_MODEL = /claude|gemini/i;
+const INFERENCE_NET_CACHE_CONTROL_MODEL = /claude|gemini-2\.5/i;
 
 /** Whether this upstream takes Anthropic-style block cache_control for the model. */
 export function acceptsBlockCacheControl(providerId: string, models: Array<string | null | undefined>): boolean {

@@ -45,7 +45,7 @@ Most providers cache repeated prompt prefixes automatically. Claude needs an exp
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | Automatic (implicit); explicit caches are opt-in | Block `cache_control` |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | Automatic; Venice adds Claude breakpoints itself | Block `cache_control` |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | Automatic; a retention window is opt-in | `prompt_cache_key`, `prompt_cache_breakpoint`, and `prompt_cache_options` |
-| [Inference.net](https://inference.net/models/claude-opus-5/) | Automatic; explicit caching on Claude and Gemini models | Block `cache_control` on Claude and Gemini models, without a `ttl` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | Automatic; explicit caching on Claude and Gemini 2.5 models | Block `cache_control` on Claude and Gemini 2.5 models, without a `ttl` |
 | [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | Automatic | `prompt_cache_key` and the `x-session-affinity` header |
 | [Morph](https://docs.morphllm.com/sdk/components/caching) | Automatic | `prompt_cache_key` and the `x-session-id` header |
 
@@ -129,10 +129,10 @@ Each provider receives the mark in its own form:
 | OpenAI and Azure OpenAI, earlier models | Removed | Removed |
 | DeepInfra | Removed | Sent |
 | Alibaba Model Studio and Venice | Sent | Removed |
-| Inference.net, Claude and Gemini models | Sent without a `ttl` | Removed |
+| Inference.net, Claude and Gemini 2.5 models | Sent without a `ttl` | Removed |
 | Other providers | Removed | Removed |
 
-Marks on tool definitions reach only Claude routes, Alibaba Model Studio, Venice, and Inference.net's Claude and Gemini models; OpenAI does not accept breakpoints on tools. Removing a mark leaves the rest of the prompt unchanged, so the cached prefix matches an unmarked request.
+Marks on tool definitions reach only Claude routes, Alibaba Model Studio, Venice, and Inference.net's Claude and Gemini 2.5 models; OpenAI does not accept breakpoints on tools. Removing a mark leaves the rest of the prompt unchanged, so the cached prefix matches an unmarked request.
 
 Amazon Bedrock and Google Vertex AI cache Claude 3.7 Sonnet, 3.5 Sonnet, and 3 Opus for 5 minutes only, and Bedrock can reject a `ttl` on those models. On those routes Phaseo sends your breakpoints without `ttl`, so they cache for 5 minutes, and reports a removed `1h` as `cache_control.ttl` in the `X-Phaseo-Dropped-Params` header and `meta.routing.dropped_params`. Inference.net documents breakpoints without a `ttl`, so Phaseo removes and reports a `ttl` there in the same way, and the writes are billed as 5-minute writes.
 

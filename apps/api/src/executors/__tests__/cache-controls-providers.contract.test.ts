@@ -166,6 +166,12 @@ describe("Inference.net block cache_control", () => {
 		}
 	});
 
+	it("strips cache_control on newer Gemini routes, whose pages describe automatic caching only", () => {
+		const { ir } = normalise(marked("google/gemini-3.6-flash"), "inference-net", "gemini-3.6-flash");
+		const body = irToOpenAIChat(ir, "gemini-3.6-flash", "inference-net");
+		expect(JSON.stringify(body.messages)).not.toContain("cache_control");
+	});
+
 	it("removes a ttl the pages do not document, and reports it", () => {
 		const { ir, dropped } = normalise(marked("anthropic/claude-opus-5", "1h"), "inference-net", "claude-opus-5");
 		expect(dropped).toEqual([

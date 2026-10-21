@@ -56,6 +56,14 @@ describe("Moonshot prompt_cache_options.ttl", () => {
         expect(bill.cost_usd_str).toBe("0.058800000");
     });
 
+    it("bills writes on the 5-minute meter for ttl spellings that are not forwarded", () => {
+        for (const ttl of ["60m", "3600"]) {
+            const meters = nanosBy(computeBillSummary(usage, kimiK3, deriveCachePricingContext(body(ttl))));
+            expect(meters.cached_write_text_tokens_1h).toBeUndefined();
+            expect(meters.cached_write_text_tokens_5m).toBe(24_000_000);
+        }
+    });
+
     it("bills writes on the 5-minute meter when the request names 5m or no ttl", () => {
         for (const ttl of ["5m", undefined]) {
             const bill = computeBillSummary(usage, kimiK3, deriveCachePricingContext(body(ttl)));

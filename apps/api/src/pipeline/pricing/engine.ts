@@ -293,10 +293,13 @@ function splitUsage(
     // one cache_write_tokens count, "Billed according to the TTL at write time"
     // (https://platform.kimi.ai/docs/api/chat).
     const undividedWriteMeter = (): "cached_write_text_tokens_5m" | "cached_write_text_tokens_1h" => {
+        // Only an exact "1h" is forwarded (see pipeline/execute/cacheTtl.ts); any other value is
+        // removed before sending, so the provider wrote with its 5-minute default.
         const promptCacheOptionsTtl =
             PROMPT_CACHE_OPTIONS_TTL_PROVIDERS.has(String(card.provider ?? "").toLowerCase()) &&
-            card.rules.some((rule) => rule.meter === "cached_write_text_tokens_1h")
-                ? requestOptions?.prompt_cache_options_ttl
+            card.rules.some((rule) => rule.meter === "cached_write_text_tokens_1h") &&
+            String(requestOptions?.prompt_cache_options_ttl ?? "").trim().toLowerCase() === "1h"
+                ? "1h"
                 : undefined;
         const ttlHint = String(
             usageRaw?.cache_ttl ??
