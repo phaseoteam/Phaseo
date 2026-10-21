@@ -140,6 +140,55 @@ accountSettingsSpendRulesRouter.get("/spend-rules", async (c) => {
 	});
 });
 
+const SCOPE_OPTION_LIMIT = 1000;
+const usdOrNull = (nanos: unknown) => {
+	const value = Number(nanos ?? 0);
+	return Number.isFinite(value) && value > 0 ? value / 1_000_000_000 : null;
+};
+
+/**
+ * What the rule editor offers: keys (with their cost limits, for a key_limit base), members,
+ * departments, routable providers and the workspace budgets (for a workspace_budget base).
+ * Registered before /spend-rules/:ruleId so "options" is not read as a rule id.
+ */
+accountSettingsSpendRulesRouter.get("/spend-rules/options", async (c) => {
+	const access = await memberContext(c, c.req.query("workspaceId")?.trim());
+	if ("response" in access) return access.response;
+	const { context } = access;
+	const [keys, members, departments, providers, budgets] = await Promise.all([
+		context.client.from("keys").select("id,name,prefix,status,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos")
+			.eq("workspace_id", context.workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__")
+			.order("name", { ascending: true }).limit(SCOPE_OPTION_LIMIT),
+		context.client.from("workspace_members").select("user_id,role,users(display_name)")
+			.eq("workspace_id", context.workspaceId).limit(SCOPE_OPTION_LIMIT),
+		context.client.from("workspace_departments").select("id,name")
+			.eq("workspace_id", context.workspaceId).order("name", { ascending: true }).limit(SCOPE_OPTION_LIMIT),
+		context.client.from("v2_providers").select("provider_slug,name")
+			.eq("routable", true).eq("routing_enabled", true).in("status", ["active", "degraded"])
+			.order("name", { ascending: true }).limit(SCOPE_OPTION_LIMIT),
+		context.client.from("workspace_budgets").select("interval,limit_nanos").eq("workspace_id", context.workspaceId),
+	]);
+	if ([keys, members, departments, providers, budgets].some((result) => result.error)) return json(c, { error: "settings_unavailable" }, 503);
+	return json(c, {
+		workspaceId: context.workspaceId,
+		keys: (keys.data ?? []).map((key: any) => ({
+			id: String(key.id),
+			name: String(key.name ?? ""),
+			prefix: String(key.prefix ?? ""),
+			status: String(key.status ?? ""),
+			limitsUsd: { daily: usdOrNull(key.daily_limit_cost_nanos), weekly: usdOrNull(key.weekly_limit_cost_nanos), monthly: usdOrNull(key.monthly_limit_cost_nanos) },
+		})),
+		members: (members.data ?? []).map((member: any) => ({
+			id: String(member.user_id),
+			name: String((Array.isArray(member.users) ? member.users[0] : member.users)?.display_name ?? "").trim() || null,
+			role: String(member.role ?? "member"),
+		})),
+		departments: (departments.data ?? []).map((department: any) => ({ id: String(department.id), name: String(department.name ?? "") })),
+		providers: (providers.data ?? []).map((provider: any) => ({ id: String(provider.provider_slug), name: String(provider.name ?? provider.provider_slug) })),
+		budgetsUsd: Object.fromEntries((budgets.data ?? []).map((budget: any) => [String(budget.interval), usdOrNull(budget.limit_nanos)])),
+	});
+});
+
 accountSettingsSpendRulesRouter.post("/spend-rules", async (c) => {
 	const body = await readBody(c);
 	const access = await managerContext(c, body.workspaceId);
