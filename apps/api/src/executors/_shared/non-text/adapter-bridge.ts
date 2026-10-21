@@ -43,6 +43,7 @@ import * as openaiAudioTranslation from "@providers/openai/endpoints/audio-trans
 import * as openaiVideo from "@providers/openai/endpoints/video";
 import * as mistralOcr from "@providers/mistral/endpoints/ocr";
 import * as cohereParse from "@providers/cohere/endpoints/parse";
+import * as mistralAudioSpeech from "@providers/mistral/endpoints/audio-speech";
 import * as mistralAudioTranscription from "@providers/mistral/endpoints/audio-transcription";
 import * as elevenLabsAudioSpeech from "@providers/elevenlabs/endpoints/audio-speech";
 import * as elevenLabsAudioTranscription from "@providers/elevenlabs/endpoints/audio-transcription";
@@ -668,6 +669,9 @@ async function executeProviderEndpoint(
 			}
 			if (providerId === "elevenlabs") {
 				return elevenLabsAudioSpeech.exec(providerArgs);
+			}
+			if (providerId === "mistral") {
+				return mistralAudioSpeech.exec(providerArgs);
 			}
 			if (providerId === "xiaomi") {
 				return xiaomiAudioSpeech.exec(providerArgs);
