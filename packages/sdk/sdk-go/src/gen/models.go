@@ -3871,9 +3871,13 @@ type ObservabilityDestinationType string
 const (
 	ObservabilityDestinationTypeBraintrust ObservabilityDestinationType = "braintrust"
 	ObservabilityDestinationTypeDatadog ObservabilityDestinationType = "datadog"
+	ObservabilityDestinationTypeGrafanaCloud ObservabilityDestinationType = "grafana_cloud"
 	ObservabilityDestinationTypeLangfuse ObservabilityDestinationType = "langfuse"
 	ObservabilityDestinationTypeLangsmith ObservabilityDestinationType = "langsmith"
+	ObservabilityDestinationTypeNewRelic ObservabilityDestinationType = "new_relic"
 	ObservabilityDestinationTypeOtelCollector ObservabilityDestinationType = "otel_collector"
+	ObservabilityDestinationTypePosthog ObservabilityDestinationType = "posthog"
+	ObservabilityDestinationTypeSentry ObservabilityDestinationType = "sentry"
 	ObservabilityDestinationTypeWebhook ObservabilityDestinationType = "webhook"
 )
 

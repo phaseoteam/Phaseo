@@ -310,11 +310,11 @@ describe("deliverGatewayOtlpPayload over protobuf", () => {
 
 describe("deliverGatewayOtlpPayload with a vendor preset", () => {
 	afterEach(() => {
-		delete OTLP_PRESETS.posthog;
+		delete OTLP_PRESETS.wandb_weave;
 	});
 
 	it("sends a gzipped request to the vendor's endpoint with its credentials and attributes", async () => {
-		OTLP_PRESETS.posthog = {
+		OTLP_PRESETS.wandb_weave = {
 			endpoint: "{base_url}/api/public/otel/v1/traces",
 			defaults: { base_url: "https://cloud.example.com" },
 			headers: { Authorization: "{basic:public_key:secret_key}" },
@@ -325,7 +325,7 @@ describe("deliverGatewayOtlpPayload with a vendor preset", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const payload = { resourceSpans: [{ scopeSpans: [{ spans: [{ name: "chat" }] }] }] };
 
-		const result = await deliverGatewayOtlpPayload(payload, { public_key: "pk", secret_key: "sk", environment: "prod" }, 1, "posthog");
+		const result = await deliverGatewayOtlpPayload(payload, { public_key: "pk", secret_key: "sk", environment: "prod" }, 1, "wandb_weave");
 
 		expect(result).toMatchObject({ delivered: true });
 		const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
@@ -339,10 +339,10 @@ describe("deliverGatewayOtlpPayload with a vendor preset", () => {
 	});
 
 	it("fails without sending when a required field is missing", async () => {
-		OTLP_PRESETS.posthog = { endpoint: "{base_url}/v1/traces", headers: { Authorization: "{basic:public_key:secret_key}" } };
+		OTLP_PRESETS.wandb_weave = { endpoint: "{base_url}/v1/traces", headers: { Authorization: "{basic:public_key:secret_key}" } };
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
-		const result = await deliverGatewayOtlpPayload({ resourceSpans: [] }, { base_url: "https://cloud.example.com", public_key: "pk" }, 1, "posthog");
+		const result = await deliverGatewayOtlpPayload({ resourceSpans: [] }, { base_url: "https://cloud.example.com", public_key: "pk" }, 1, "wandb_weave");
 		expect(result).toMatchObject({ delivered: false, retryable: false, error: "secret_key is required" });
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
