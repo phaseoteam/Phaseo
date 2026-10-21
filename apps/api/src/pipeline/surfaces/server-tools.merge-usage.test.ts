@@ -25,3 +25,17 @@ describe("mergeIRUsageTotals cache semantics", () => {
 		expect(merged.cachedWriteTokensAreSubsetOfInput).toBe(false);
 	});
 });
+
+describe("mergeIRUsageTotals OpenAI write lifetimes", () => {
+	it("sums the 30-minute and 12-hour writes across server-tool turns", () => {
+		const turn = (write30m: number, write12h: number) => ({
+			inputTokens: 1_000,
+			outputTokens: 10,
+			totalTokens: 1_010,
+			cachedWriteTokensAreSubsetOfInput: true,
+			_ext: { cachedWriteTokens: write30m + write12h, cachedWriteTokens30m: write30m, cachedWriteTokens12h: write12h },
+		});
+		const merged = mergeIRUsageTotals(turn(100, 400), turn(50, 0))!;
+		expect(merged._ext).toMatchObject({ cachedWriteTokens: 550, cachedWriteTokens30m: 150, cachedWriteTokens12h: 400 });
+	});
+});
