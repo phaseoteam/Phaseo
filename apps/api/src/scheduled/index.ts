@@ -24,6 +24,7 @@ import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notification
 import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
 import { runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
 import { hasSpendRuleSweepActivity, publishSweepSpendBlockEntries, runSpendRulesSweep } from "@/pipeline/notifications/spend-rules";
+import { hasSpendReportActivity, runSpendReportsQueue } from "@/pipeline/notifications/spend-reports";
 import { reconcileSpendBlockEntries } from "@core/spend-blocks";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
@@ -560,6 +561,24 @@ async function handleSpendRulesScheduledEvent(env: GatewayBindings): Promise<voi
 	}
 }
 
+// Spend reports: queues the daily, weekly and monthly reports that are due (09:00 in each
+// workspace's billing time zone) after the spend rule sweep, so the report counts its alerts, and
+// before the email outbox drain and routed delivery, which send it in the same tick. Off unless
+// SPEND_REPORTS_ENABLED is "true": nothing is queued, so no report email can go out.
+async function handleSpendReportsScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.SPEND_REPORTS_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await runSpendReportsQueue();
+		if (hasSpendReportActivity(summary)) {
+			const { reports, ...counts } = summary;
+			console.log("spend_reports_queued", { ...counts, workspaces: reports.map((report) => report.workspaceId) });
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
 // Low-balance emails: the sweep that replaced the check after every charged request. It runs on
 // every 5-minute tick whatever SPEND_RULES_ENABLED says, because it is the existing email, before
 // the email outbox drain and routed delivery so a queued email goes out in the same tick.
@@ -819,6 +838,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleSpendRulesScheduledEvent(env);
 		} catch (error) {
 			console.error("spend_rules_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleSpendReportsScheduledEvent(env);
+		} catch (error) {
+			console.error("spend_reports_scheduled_failed", serializeError(error));
 		}
 		try {
 			await handleLowBalanceEmailScheduledEvent(env);

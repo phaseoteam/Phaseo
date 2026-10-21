@@ -22585,16 +22585,33 @@ components:
       maxLength: 64
       description: Zona horaria IANA para los periodos naturales de las reglas de gasto que no tienen zona horaria propia y para los informes de gasto. El valor predeterminado es UTC. Los límites de clave y los presupuestos del espacio de trabajo que se aplican siempre usan UTC.
       example: Europe/London
+    WorkspaceSpendReportCadence:
+      type: string
+      description: 'Con qué frecuencia reciben los propietarios del espacio de trabajo un correo con el informe de gasto, y también los administradores cuando report_include_admins está activado: off, daily (a las 09:00 para el día anterior), weekly (el lunes a las 09:00 para la semana anterior, de lunes a domingo) o monthly (el día 1 a las 09:00 para el mes anterior), en la zona horaria de facturación. Los periodos sin gasto se omiten. Las rutas spend_report del espacio de trabajo reciben un resumen por informe. El valor predeterminado es weekly.'
+      enum:
+        - 'off'
+        - daily
+        - weekly
+        - monthly
+    WorkspaceSpendReportIncludeAdmins:
+      type: boolean
+      description: Envía también el informe de gasto por correo a los administradores del espacio de trabajo, no solo a los propietarios. El valor predeterminado es false. Cualquiera puede darse de baja desde el enlace del correo.
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
         - billing_time_zone
+        - report_cadence
+        - report_include_admins
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -22686,6 +22703,10 @@ components:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
         billing_time_zone:
           $ref: '#/components/schemas/WorkspaceBillingTimeZone'
+        report_cadence:
+          $ref: '#/components/schemas/WorkspaceSpendReportCadence'
+        report_include_admins:
+          $ref: '#/components/schemas/WorkspaceSpendReportIncludeAdmins'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string

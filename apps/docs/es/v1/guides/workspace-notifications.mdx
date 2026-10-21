@@ -36,6 +36,16 @@ Los **Avisos de modelo sustituto** se envían cuando el [enrutamiento de modelos
 
 Además de los destinatarios integrados que se muestren en el panel, las alertas se envían a los destinos configurados.
 
+## Informes de gasto
+
+Los propietarios del espacio de trabajo reciben cada lunes a las 09:00, en la zona horaria de facturación del espacio de trabajo, un correo con el informe de gasto de la semana anterior, de lunes a domingo. Cámbialo en **Alertas de gasto → Ajustes de gasto del espacio de trabajo** en la página de notificaciones: diario (a las 09:00, del día anterior), semanal, mensual (el día 1, del mes anterior) o desactivado, y si también lo reciben los administradores. Los periodos sin gasto se omiten.
+
+Cada informe muestra el gasto y el cambio respecto al periodo anterior, las claves, modelos, miembros y departamentos principales, la previsión de este mes, la autonomía del saldo y los avisos y bloqueos de gasto del periodo. Quien lo recibe puede darse de baja desde el enlace del correo; eso solo detiene su copia del informe de ese espacio de trabajo. Los destinos asignados a **Spend Reports** reciben un resumen por informe.
+
+Los mismos ajustes son `spend.report_cadence` y `spend.report_include_admins` en la [API de ajustes de notificaciones](../api-reference/endpoint/notifications-settings-update.mdx).
+
+<Note>Los correos con informes de gasto se están activando poco a poco. Hasta que se activen, tu elección se guarda, pero no se envía ningún informe.</Note>
+
 ## Menciones
 
 Los campos de mención opcionales permiten que una alerta avise a destinatarios específicos:

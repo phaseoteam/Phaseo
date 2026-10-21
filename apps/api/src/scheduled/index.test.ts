@@ -20,6 +20,7 @@ const runMobilePushJobMock = vi.fn();
 const runMobilePushDigestJobMock = vi.fn();
 const runSpendLimitWarningSweepMock = vi.fn();
 const runSpendRulesSweepMock = vi.fn();
+const runSpendReportsQueueMock = vi.fn();
 const runLowBalanceEmailSweepMock = vi.fn();
 const publishSweepSpendBlockEntriesMock = vi.fn();
 const reconcileSpendBlockEntriesMock = vi.fn();
@@ -108,6 +109,11 @@ vi.mock("@/pipeline/notifications/spend-rules", () => ({
 	publishSweepSpendBlockEntries: (...args: unknown[]) => publishSweepSpendBlockEntriesMock(...args),
 }));
 
+vi.mock("@/pipeline/notifications/spend-reports", () => ({
+	runSpendReportsQueue: (...args: unknown[]) => runSpendReportsQueueMock(...args),
+	hasSpendReportActivity: (summary: Record<string, unknown>) => Number(summary.due) > 0 || Number(summary.queued) > 0 || summary.skippedLocked === true,
+}));
+
 vi.mock("@/pipeline/notifications/low-balance", () => ({
 	runLowBalanceEmailSweep: (...args: unknown[]) => runLowBalanceEmailSweepMock(...args),
 	hasLowBalanceEmailActivity: (summary: Record<string, unknown>) => Number(summary.emailed) > 0 || Number(summary.dropped) > 0,
@@ -184,6 +190,7 @@ describe("handleScheduledEvent", () => {
 		runSpendLimitWarningSweepMock.mockReset().mockResolvedValue({ budgets: 0, limitedKeys: 0, warned: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
 		runSpendRulesSweepMock.mockReset().mockResolvedValue({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: [], publish: [] });
+		runSpendReportsQueueMock.mockReset().mockResolvedValue({ skippedLocked: false, due: 0, quiet: 0, zeroSpend: 0, queued: 0, emails: 0, reports: [] });
 		runLowBalanceEmailSweepMock.mockReset().mockResolvedValue({ skipped: false, watched: 0, firstSeen: 0, dropped: 0, rearmed: 0, coveredByTopUp: 0, waiting: 0, emailed: 0, emails: [], automationSent: 0, automationFailed: 0 });
 		publishSweepSpendBlockEntriesMock.mockReset().mockResolvedValue({ published: 0, failed: 0 });
 		reconcileSpendBlockEntriesMock.mockReset().mockResolvedValue({ workspaces: 0, published: 0, failed: 0, truncated: false });
@@ -539,6 +546,45 @@ describe("handleScheduledEvent", () => {
 			const error = vi.spyOn(console, "error").mockImplementation(() => {});
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:20:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
 			expect(error).toHaveBeenCalledWith("spend_rules_scheduled_failed", expect.anything());
+			expect(runNotificationDeliveryJobMock).toHaveBeenCalledTimes(1);
+			error.mockRestore();
+		} finally {
+			log.mockRestore();
+		}
+	});
+
+	it("queues spend reports every five minutes only with SPEND_REPORTS_ENABLED, after spend rules and before the outbox drain", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			// Off unless the flag is exactly "true": nothing is queued, so no report email can go out.
+			for (const env of [{}, { SPEND_REPORTS_ENABLED: "false" }, { SPEND_REPORTS_ENABLED: "1" }, { SPEND_RULES_ENABLED: "true" }]) {
+				await handleScheduledEvent(scheduledEventAt("2026-10-19T08:30:00.000Z"), env as any);
+			}
+			expect(runSpendReportsQueueMock).not.toHaveBeenCalled();
+
+			await handleScheduledEvent(scheduledEventAt("2026-10-19T08:31:00.000Z"), { SPEND_REPORTS_ENABLED: "true" } as any);
+			expect(runSpendReportsQueueMock).not.toHaveBeenCalled();
+
+			drainEmailOutboxMock.mockReset().mockResolvedValue({ processed: 0, failed: 0 });
+			runNotificationDeliveryJobMock.mockClear();
+			runSpendReportsQueueMock.mockResolvedValueOnce({ skippedLocked: false, due: 3, quiet: 1, zeroSpend: 1, queued: 1, emails: 2, reports: [{ workspaceId: "ws_1" }] });
+			await handleScheduledEvent(scheduledEventAt("2026-10-19T08:35:00.000Z"), { SPEND_REPORTS_ENABLED: "true", SPEND_RULES_ENABLED: "true", RESEND_API_KEY: "re_test" } as any);
+			expect(runSpendReportsQueueMock).toHaveBeenCalledTimes(1);
+			expect(runSpendReportsQueueMock).toHaveBeenCalledWith();
+			expect(runSpendRulesSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runSpendReportsQueueMock.mock.invocationCallOrder[0]);
+			expect(runSpendReportsQueueMock.mock.invocationCallOrder[0]).toBeLessThan(drainEmailOutboxMock.mock.invocationCallOrder[0]);
+			expect(runSpendReportsQueueMock.mock.invocationCallOrder[0]).toBeLessThan(runNotificationDeliveryJobMock.mock.invocationCallOrder[0]);
+			expect(log).toHaveBeenCalledWith("spend_reports_queued", { skippedLocked: false, due: 3, quiet: 1, zeroSpend: 1, queued: 1, emails: 2, workspaces: ["ws_1"] });
+
+			// An idle run logs nothing; a failed one is logged and does not stop the deliveries.
+			log.mockClear();
+			await handleScheduledEvent(scheduledEventAt("2026-10-19T08:40:00.000Z"), { SPEND_REPORTS_ENABLED: "true" } as any);
+			expect(log).not.toHaveBeenCalledWith("spend_reports_queued", expect.anything());
+			runNotificationDeliveryJobMock.mockClear();
+			runSpendReportsQueueMock.mockRejectedValueOnce(new Error("timeout"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => {});
+			await handleScheduledEvent(scheduledEventAt("2026-10-19T08:45:00.000Z"), { SPEND_REPORTS_ENABLED: "true" } as any);
+			expect(error).toHaveBeenCalledWith("spend_reports_scheduled_failed", expect.anything());
 			expect(runNotificationDeliveryJobMock).toHaveBeenCalledTimes(1);
 			error.mockRestore();
 		} finally {

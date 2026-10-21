@@ -6142,16 +6142,26 @@ module Phaseo
     #   @return [String, nil]
     WorkspaceSettingsUpdateRequest = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :model_successor_max_price_increase_percent, :model_successor_price_policy, :model_successor_redirect_enabled, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, keyword_init: true)
     WorkspaceSpendAttribution = Object
+    WorkspaceSpendReportCadence = Object
+    WorkspaceSpendReportIncludeAdmins = Object
     # @!attribute [rw] billing_time_zone
     #   @return [String]
     # @!attribute [rw] department_attribution
     #   @return [String]
-    WorkspaceSpendSettings = Struct.new(:billing_time_zone, :department_attribution, keyword_init: true)
+    # @!attribute [rw] report_cadence
+    #   @return [String]
+    # @!attribute [rw] report_include_admins
+    #   @return [Boolean]
+    WorkspaceSpendSettings = Struct.new(:billing_time_zone, :department_attribution, :report_cadence, :report_include_admins, keyword_init: true)
     # @!attribute [rw] billing_time_zone
     #   @return [String, nil]
     # @!attribute [rw] department_attribution
     #   @return [String, nil]
-    WorkspaceSpendSettingsUpdate = Struct.new(:billing_time_zone, :department_attribution, keyword_init: true)
+    # @!attribute [rw] report_cadence
+    #   @return [String, nil]
+    # @!attribute [rw] report_include_admins
+    #   @return [Boolean, nil]
+    WorkspaceSpendSettingsUpdate = Struct.new(:billing_time_zone, :department_attribution, :report_cadence, :report_include_admins, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceSsoResponse = Struct.new(:data, keyword_init: true)

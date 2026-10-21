@@ -185,6 +185,31 @@ export async function setBillingTimeZone(timeZone: string) {
 	return { ok: true };
 }
 
+/** Spend report emails: how often they go out and whether admins get them too (owners always do unless they unsubscribe). */
+export async function setSpendReportSettings(settings: { cadence?: import("@/lib/fetchers/internal/settingsTypes").SpendReportCadence; includeAdmins?: boolean }) {
+	const body: Record<string, unknown> = {};
+	if (settings.cadence !== undefined) {
+		if (!["off", "daily", "weekly", "monthly"].includes(settings.cadence)) throw new Error("Invalid spend report cadence");
+		body.spendReportCadence = settings.cadence;
+	}
+	if (settings.includeAdmins !== undefined) {
+		if (typeof settings.includeAdmins !== "boolean") throw new Error("Invalid spend report setting");
+		body.spendReportIncludeAdmins = settings.includeAdmins;
+	}
+	if (!Object.keys(body).length) throw new Error("Nothing to update");
+	const context = await getServerAccountContext();
+	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
+	if (!context.accessToken) throw new Error("Unauthorized");
+
+	await fetchAccountWebApi("/api/account/credits/notification-preferences", context.accessToken, {
+		method: "PUT",
+		body: JSON.stringify({ workspaceId, ...body }),
+	});
+
+	revalidatePath("/settings/notifications");
+	return { ok: true };
+}
+
 export async function createNotificationDestination(destination: { name: string; type: import("@/lib/fetchers/internal/settingsTypes").NotificationDestination["type"]; target: string }) {
 	const context = await getServerAccountContext();
 	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();

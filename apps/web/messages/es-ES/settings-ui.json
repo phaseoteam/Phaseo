@@ -6506,7 +6506,21 @@
 			"attributionNote": "Con todos los departamentos, la suma de los departamentos puede superar el gasto del espacio de trabajo. La pertenencia se lee al comprobar las alertas, así que mover a alguien mueve su gasto del periodo actual.",
 			"saving": "Guardando…",
 			"saved": "Guardado",
-			"saveFailed": "No se ha podido guardar el ajuste"
+			"saveFailed": "No se ha podido guardar el ajuste",
+			"report": "Correo con el informe de gasto",
+			"reportHelp": "Un resumen del gasto y del cambio respecto al periodo anterior, las claves, modelos, miembros y departamentos principales, la previsión de este mes, la autonomía y los avisos. Los propietarios lo reciben de forma predeterminada. Se envía a las 09:00 en la zona horaria de facturación y se omite cuando no hubo gasto.",
+			"reportOff": "Desactivado",
+			"reportOffHelp": "Sin correos de informe.",
+			"reportDaily": "Diario",
+			"reportDailyHelp": "Cada mañana, del día anterior.",
+			"reportWeekly": "Semanal",
+			"reportWeeklyHelp": "Los lunes por la mañana, de la semana anterior.",
+			"reportMonthly": "Mensual",
+			"reportMonthlyHelp": "El día 1, del mes anterior.",
+			"reportIncludeAdmins": "Enviarlo también a los administradores",
+			"reportIncludeAdminsHelp": "Los propietarios siempre lo reciben. Los administradores, solo si esta opción está activada.",
+			"reportNote": "Cualquiera puede darse de baja desde el enlace del correo. Las rutas de notificación de los informes de gasto reciben un resumen por informe.",
+			"reportsOff": "Los correos de informe aún no se envían. Tu elección se ha guardado y se aplicará cuando empiecen."
 		},
 		"shortcuts": {
 			"keyLimit": "Avisarme al {percent} % del límite de esta clave",

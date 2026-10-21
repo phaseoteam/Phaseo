@@ -35,6 +35,16 @@ The notifications page lists the alert types available to your workspace. Enable
 
 Alerts are delivered to the configured destinations in addition to any built-in recipient behavior shown in the dashboard.
 
+## Spend reports
+
+Workspace owners get a spend report email every Monday at 09:00 in the workspace billing time zone, covering the previous Monday-to-Sunday week. Change it under **Spend alerts → Workspace spend settings** on the notifications page: daily (09:00, for the day before), weekly, monthly (on the 1st, for the month before) or off, and whether admins get it too. Periods without spend are skipped.
+
+Each report shows spend and the change from the period before, the top keys, models, members and departments, this month's forecast, the balance runway, and the period's spend alerts and blocks. Anyone who gets it can unsubscribe from the link in the email; that stops only their copy of that workspace's report. Destinations routed to **Spend Reports** get one summary per report.
+
+The same settings are `spend.report_cadence` and `spend.report_include_admins` in the [notification settings API](../api-reference/endpoint/notifications-settings-update.mdx).
+
+<Note>Spend report emails are being rolled out. Until they are switched on, your choice is saved but no report is sent.</Note>
+
 ## Mentions
 
 Optional mention fields let an alert notify specific recipients:

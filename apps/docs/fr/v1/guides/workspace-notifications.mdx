@@ -36,6 +36,16 @@ Les **Avis de modèle remplaçant** sont envoyés lorsque le [routage des modèl
 
 Les alertes sont envoyées aux destinations configurées, en plus des destinataires intégrés éventuellement affichés dans le tableau de bord.
 
+## Rapports de dépenses
+
+Les propriétaires de l’espace de travail reçoivent chaque lundi à 09:00, dans le fuseau horaire de facturation de l’espace de travail, un e-mail de rapport de dépenses pour la semaine précédente, du lundi au dimanche. Modifiez-le dans **Alertes de dépenses → Réglages des dépenses de l'espace de travail** sur la page des notifications : quotidien (à 09:00, pour la veille), hebdomadaire, mensuel (le 1er, pour le mois précédent) ou désactivé, et si les administrateurs le reçoivent aussi. Les périodes sans dépense sont ignorées.
+
+Chaque rapport présente les dépenses et l’évolution par rapport à la période précédente, les principales clés, modèles, membres et départements, la prévision du mois, l’autonomie du solde, ainsi que les alertes et blocages de dépenses de la période. Chaque destinataire peut se désabonner depuis le lien de l’e-mail ; cela n’arrête que sa copie du rapport de cet espace de travail. Les destinations associées à **Spend Reports** reçoivent un résumé par rapport.
+
+Les mêmes réglages sont `spend.report_cadence` et `spend.report_include_admins` dans l’[API des réglages de notification](../api-reference/endpoint/notifications-settings-update.mdx).
+
+<Note>Les e-mails de rapport de dépenses sont en cours de déploiement. Tant qu’ils ne sont pas activés, votre choix est enregistré mais aucun rapport n’est envoyé.</Note>
+
 ## Mentions
 
 Les champs de mention facultatifs permettent à une alerte de prévenir des destinataires précis :

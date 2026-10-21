@@ -2,7 +2,7 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "ee0d89507f757aadc4de9d909054ab3c15c8c8b0528b993330791854e91e82f7",
+      "@openapi": "40bbedd6f1941d5ef7a5f988a0386084e3fa80ea1e1dd1e3d364f18d26c82935",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -361,7 +361,7 @@
       "guides/tool-calling-safety.mdx": "7b4672b274e029c08c3ee1329ca5fcd278f9e30a769589f5ba5035de89384093",
       "guides/tool-calling.mdx": "e7a89aa9bf70f7059779508aa8fdbe45368f7d9b77930cb1cd3c5fda08e398ed",
       "guides/workspace-audit-log.mdx": "7cb17962cf593be690aaff19980118888d8940f2178f548007103ee88d482e0d",
-      "guides/workspace-notifications.mdx": "21b2e7d5e7514c6866c3e9503314ff1fcde4ec90cd56e9b2b48bec5805e9d176",
+      "guides/workspace-notifications.mdx": "62bc7fee531dc96adc1ae02539701bae25ed1c0092874553bbe4e38dc3283c43",
       "guides/workspaces.mdx": "2db32789cec5d9998e8bdef0a30868559980d966f9de1873263900327f91f580",
       "index.mdx": "60ae8f7847797c8d7cd195028f2b879134067ccf51d01a73d7d2d0b25364769a",
       "migration-guides/assistant.mdx": "596ef35ae51c2ea577a2930c29c35a743a1c7ce15bab1b53d1d254610248319a",
@@ -632,7 +632,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "de": {
-      "@openapi": "ee0d89507f757aadc4de9d909054ab3c15c8c8b0528b993330791854e91e82f7",
+      "@openapi": "40bbedd6f1941d5ef7a5f988a0386084e3fa80ea1e1dd1e3d364f18d26c82935",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -991,7 +991,7 @@
       "guides/tool-calling-safety.mdx": "7b4672b274e029c08c3ee1329ca5fcd278f9e30a769589f5ba5035de89384093",
       "guides/tool-calling.mdx": "e7a89aa9bf70f7059779508aa8fdbe45368f7d9b77930cb1cd3c5fda08e398ed",
       "guides/workspace-audit-log.mdx": "7cb17962cf593be690aaff19980118888d8940f2178f548007103ee88d482e0d",
-      "guides/workspace-notifications.mdx": "21b2e7d5e7514c6866c3e9503314ff1fcde4ec90cd56e9b2b48bec5805e9d176",
+      "guides/workspace-notifications.mdx": "62bc7fee531dc96adc1ae02539701bae25ed1c0092874553bbe4e38dc3283c43",
       "guides/workspaces.mdx": "2db32789cec5d9998e8bdef0a30868559980d966f9de1873263900327f91f580",
       "index.mdx": "60ae8f7847797c8d7cd195028f2b879134067ccf51d01a73d7d2d0b25364769a",
       "migration-guides/assistant.mdx": "596ef35ae51c2ea577a2930c29c35a743a1c7ce15bab1b53d1d254610248319a",
@@ -1262,7 +1262,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "es": {
-      "@openapi": "ee0d89507f757aadc4de9d909054ab3c15c8c8b0528b993330791854e91e82f7",
+      "@openapi": "40bbedd6f1941d5ef7a5f988a0386084e3fa80ea1e1dd1e3d364f18d26c82935",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -1621,7 +1621,7 @@
       "guides/tool-calling-safety.mdx": "7b4672b274e029c08c3ee1329ca5fcd278f9e30a769589f5ba5035de89384093",
       "guides/tool-calling.mdx": "e7a89aa9bf70f7059779508aa8fdbe45368f7d9b77930cb1cd3c5fda08e398ed",
       "guides/workspace-audit-log.mdx": "7cb17962cf593be690aaff19980118888d8940f2178f548007103ee88d482e0d",
-      "guides/workspace-notifications.mdx": "21b2e7d5e7514c6866c3e9503314ff1fcde4ec90cd56e9b2b48bec5805e9d176",
+      "guides/workspace-notifications.mdx": "62bc7fee531dc96adc1ae02539701bae25ed1c0092874553bbe4e38dc3283c43",
       "guides/workspaces.mdx": "2db32789cec5d9998e8bdef0a30868559980d966f9de1873263900327f91f580",
       "index.mdx": "60ae8f7847797c8d7cd195028f2b879134067ccf51d01a73d7d2d0b25364769a",
       "migration-guides/assistant.mdx": "596ef35ae51c2ea577a2930c29c35a743a1c7ce15bab1b53d1d254610248319a",
@@ -1892,7 +1892,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "fr": {
-      "@openapi": "ee0d89507f757aadc4de9d909054ab3c15c8c8b0528b993330791854e91e82f7",
+      "@openapi": "40bbedd6f1941d5ef7a5f988a0386084e3fa80ea1e1dd1e3d364f18d26c82935",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2251,7 +2251,7 @@
       "guides/tool-calling-safety.mdx": "7b4672b274e029c08c3ee1329ca5fcd278f9e30a769589f5ba5035de89384093",
       "guides/tool-calling.mdx": "e7a89aa9bf70f7059779508aa8fdbe45368f7d9b77930cb1cd3c5fda08e398ed",
       "guides/workspace-audit-log.mdx": "7cb17962cf593be690aaff19980118888d8940f2178f548007103ee88d482e0d",
-      "guides/workspace-notifications.mdx": "21b2e7d5e7514c6866c3e9503314ff1fcde4ec90cd56e9b2b48bec5805e9d176",
+      "guides/workspace-notifications.mdx": "62bc7fee531dc96adc1ae02539701bae25ed1c0092874553bbe4e38dc3283c43",
       "guides/workspaces.mdx": "2db32789cec5d9998e8bdef0a30868559980d966f9de1873263900327f91f580",
       "index.mdx": "60ae8f7847797c8d7cd195028f2b879134067ccf51d01a73d7d2d0b25364769a",
       "migration-guides/assistant.mdx": "596ef35ae51c2ea577a2930c29c35a743a1c7ce15bab1b53d1d254610248319a",
@@ -2522,7 +2522,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "hi": {
-      "@openapi": "ee0d89507f757aadc4de9d909054ab3c15c8c8b0528b993330791854e91e82f7",
+      "@openapi": "40bbedd6f1941d5ef7a5f988a0386084e3fa80ea1e1dd1e3d364f18d26c82935",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -2881,7 +2881,7 @@
       "guides/tool-calling-safety.mdx": "7b4672b274e029c08c3ee1329ca5fcd278f9e30a769589f5ba5035de89384093",
       "guides/tool-calling.mdx": "e7a89aa9bf70f7059779508aa8fdbe45368f7d9b77930cb1cd3c5fda08e398ed",
       "guides/workspace-audit-log.mdx": "7cb17962cf593be690aaff19980118888d8940f2178f548007103ee88d482e0d",
-      "guides/workspace-notifications.mdx": "21b2e7d5e7514c6866c3e9503314ff1fcde4ec90cd56e9b2b48bec5805e9d176",
+      "guides/workspace-notifications.mdx": "62bc7fee531dc96adc1ae02539701bae25ed1c0092874553bbe4e38dc3283c43",
       "guides/workspaces.mdx": "2db32789cec5d9998e8bdef0a30868559980d966f9de1873263900327f91f580",
       "index.mdx": "60ae8f7847797c8d7cd195028f2b879134067ccf51d01a73d7d2d0b25364769a",
       "migration-guides/assistant.mdx": "596ef35ae51c2ea577a2930c29c35a743a1c7ce15bab1b53d1d254610248319a",
@@ -3152,7 +3152,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "ja": {
-      "@openapi": "ee0d89507f757aadc4de9d909054ab3c15c8c8b0528b993330791854e91e82f7",
+      "@openapi": "40bbedd6f1941d5ef7a5f988a0386084e3fa80ea1e1dd1e3d364f18d26c82935",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -3511,7 +3511,7 @@
       "guides/tool-calling-safety.mdx": "7b4672b274e029c08c3ee1329ca5fcd278f9e30a769589f5ba5035de89384093",
       "guides/tool-calling.mdx": "e7a89aa9bf70f7059779508aa8fdbe45368f7d9b77930cb1cd3c5fda08e398ed",
       "guides/workspace-audit-log.mdx": "7cb17962cf593be690aaff19980118888d8940f2178f548007103ee88d482e0d",
-      "guides/workspace-notifications.mdx": "21b2e7d5e7514c6866c3e9503314ff1fcde4ec90cd56e9b2b48bec5805e9d176",
+      "guides/workspace-notifications.mdx": "62bc7fee531dc96adc1ae02539701bae25ed1c0092874553bbe4e38dc3283c43",
       "guides/workspaces.mdx": "2db32789cec5d9998e8bdef0a30868559980d966f9de1873263900327f91f580",
       "index.mdx": "60ae8f7847797c8d7cd195028f2b879134067ccf51d01a73d7d2d0b25364769a",
       "migration-guides/assistant.mdx": "596ef35ae51c2ea577a2930c29c35a743a1c7ce15bab1b53d1d254610248319a",
@@ -3782,7 +3782,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "pt-BR": {
-      "@openapi": "ee0d89507f757aadc4de9d909054ab3c15c8c8b0528b993330791854e91e82f7",
+      "@openapi": "40bbedd6f1941d5ef7a5f988a0386084e3fa80ea1e1dd1e3d364f18d26c82935",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4141,7 +4141,7 @@
       "guides/tool-calling-safety.mdx": "7b4672b274e029c08c3ee1329ca5fcd278f9e30a769589f5ba5035de89384093",
       "guides/tool-calling.mdx": "e7a89aa9bf70f7059779508aa8fdbe45368f7d9b77930cb1cd3c5fda08e398ed",
       "guides/workspace-audit-log.mdx": "7cb17962cf593be690aaff19980118888d8940f2178f548007103ee88d482e0d",
-      "guides/workspace-notifications.mdx": "21b2e7d5e7514c6866c3e9503314ff1fcde4ec90cd56e9b2b48bec5805e9d176",
+      "guides/workspace-notifications.mdx": "62bc7fee531dc96adc1ae02539701bae25ed1c0092874553bbe4e38dc3283c43",
       "guides/workspaces.mdx": "2db32789cec5d9998e8bdef0a30868559980d966f9de1873263900327f91f580",
       "index.mdx": "60ae8f7847797c8d7cd195028f2b879134067ccf51d01a73d7d2d0b25364769a",
       "migration-guides/assistant.mdx": "596ef35ae51c2ea577a2930c29c35a743a1c7ce15bab1b53d1d254610248319a",
@@ -4412,7 +4412,7 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "zh-Hans": {
-      "@openapi": "ee0d89507f757aadc4de9d909054ab3c15c8c8b0528b993330791854e91e82f7",
+      "@openapi": "40bbedd6f1941d5ef7a5f988a0386084e3fa80ea1e1dd1e3d364f18d26c82935",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
@@ -4771,7 +4771,7 @@
       "guides/tool-calling-safety.mdx": "7b4672b274e029c08c3ee1329ca5fcd278f9e30a769589f5ba5035de89384093",
       "guides/tool-calling.mdx": "e7a89aa9bf70f7059779508aa8fdbe45368f7d9b77930cb1cd3c5fda08e398ed",
       "guides/workspace-audit-log.mdx": "7cb17962cf593be690aaff19980118888d8940f2178f548007103ee88d482e0d",
-      "guides/workspace-notifications.mdx": "21b2e7d5e7514c6866c3e9503314ff1fcde4ec90cd56e9b2b48bec5805e9d176",
+      "guides/workspace-notifications.mdx": "62bc7fee531dc96adc1ae02539701bae25ed1c0092874553bbe4e38dc3283c43",
       "guides/workspaces.mdx": "2db32789cec5d9998e8bdef0a30868559980d966f9de1873263900327f91f580",
       "index.mdx": "60ae8f7847797c8d7cd195028f2b879134067ccf51d01a73d7d2d0b25364769a",
       "migration-guides/assistant.mdx": "596ef35ae51c2ea577a2930c29c35a743a1c7ce15bab1b53d1d254610248319a",
