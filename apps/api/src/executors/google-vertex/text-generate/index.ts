@@ -10,6 +10,7 @@ import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/t
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, anthropicUnsupportedMediaResult, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
 import { ANTHROPIC_CACHE_USAGE_SEMANTICS, createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
+import { inlineClaudeMediaForBase64OnlyPlatform } from "@executors/anthropic/text-generate/inline-media";
 import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
@@ -106,7 +107,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	if (route.family === "anthropic") {
 		const unsupportedMedia = anthropicUnsupportedMediaResult(irRequest, args.requestId);
 		if (unsupportedMedia) return unsupportedMedia;
-		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens, route.modelForPath, { providerId: args.providerId || "google-vertex" });
+		// Claude on Vertex AI reads base64 sources only.
+		const inlined = await inlineClaudeMediaForBase64OnlyPlatform(irRequest, args);
+		if (inlined.ok === false) return inlined.result;
+		payload = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, route.modelForPath, { providerId: args.providerId || "google-vertex" });
 		delete payload.model;
 		payload.anthropic_version = "vertex-2023-10-16";
 		payload.stream = true;

@@ -104,7 +104,7 @@ import { clearDroppedParams, recordDroppedParams } from "./unsupportedParams";
 import { preferTwelveHourCacheRoutes } from "./prompt-cache-ttl";
 import { normalizeCapability } from "@/executors";
 import { isSynchronousMediaCapability } from "@core/synchronous-media";
-import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities } from "./modalities";
+import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities, routeUploadedFileIds } from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
@@ -591,7 +591,7 @@ export async function doRequestWithIR(
 	}
 	if (normalizedCapability === "text.generate") {
 		const filtered = await timing.timer.span("execute_filter_modalities", () =>
-			filterCandidatesByModalities(candidates, ir as IRChatRequest),
+			filterCandidatesByModalities(candidates, ir as IRChatRequest, { protocol: ctx.protocol }),
 		);
 		if (!filtered.length) {
 			return err("unsupported_modalities", {
@@ -601,7 +601,18 @@ export async function doRequestWithIR(
 				reason: "unsupported_modalities",
 			});
 		}
-		candidates = filtered;
+		const fileIdRouting = routeUploadedFileIds(filtered, ir as IRChatRequest);
+		if (fileIdRouting.ok === false) {
+			return err("unsupported_modalities", {
+				model: ctx.model,
+				endpoint: ctx.endpoint,
+				request_id: ctx.requestId,
+				reason: "file_id_provider_required",
+				description: `An uploaded file_id can be read only by the provider account that issued it, and this request could go to ${fileIdRouting.providers.join(", ")}. Pin the provider that holds the file with provider.only, or send the file as data or a URL.`,
+				providers: fileIdRouting.providers,
+			});
+		}
+		candidates = fileIdRouting.candidates;
 
 		// `instant` is a valid public Responses value, but only providers whose
 		// capability metadata (or explicit provider profile) advertises it may
