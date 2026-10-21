@@ -122,7 +122,8 @@ describe("validateProviderDocsCompliance", () => {
 			if (!result.ok) {
 				expect(result.response.status).toBe(400);
 				const payload = await result.response.json();
-				expect(payload.error).toBe("validation_error");
+				expect(payload.code).toBe("validation_error");
+				expect(payload.error.code).toBe("validation_error");
 				expect(payload.description).toContain("\"missing\"");
 			}
 		});
