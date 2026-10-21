@@ -8,7 +8,7 @@ import { RedactedText } from "../components/RedactedText";
 import { AccountChip, providerNames } from "../settings/UsageLimits";
 import { resetText } from "../settings/UsageMeters";
 import { checkAllUsage, refreshUsageIfStale, usageAccounts, usageChecking, usageLocals, useUsageLimits } from "../settings/usageLimitsStore";
-import { usagePools, usageRings, type ProviderRings, type RingAccount, type UsageRing } from "../settings/usagePools";
+import { tierTag, usagePools, usageRings, type ProviderRings, type RingAccount, type UsageRing } from "../settings/usagePools";
 import { relativeTime } from "../views/pullRequests/pullRequestLogic";
 
 const minute = 60_000;
@@ -40,7 +40,7 @@ const Logo = ({ provider }: { provider: ProviderRings["provider"] }) => <span cl
 
 function RingLine({ ring, pooled }: { ring: UsageRing; pooled?: boolean }) {
 	return <div className="contents">
-		<span className="text-muted-foreground">{ring.label}</span>
+		<span className="whitespace-nowrap text-muted-foreground">{ring.label}</span>
 		<span className={cn("font-medium tabular-nums", ring.remaining <= 25 && tone(ring.remaining))}>{ring.remaining}% left{pooled ? " overall" : ""}</span>
 		<span className="text-right whitespace-nowrap text-muted-foreground">{resetText(ring.resetsAt)}</span>
 	</div>;
@@ -49,7 +49,7 @@ function RingLine({ ring, pooled }: { ring: UsageRing; pooled?: boolean }) {
 /** One account of several: who it is, then what it has left in each window. */
 function AccountLine({ value }: { value: RingAccount }) {
 	const { account, inner, outer } = value;
-	const figure = (ring: UsageRing | null) => ring && <span title={`${ring.label}: ${resetText(ring.resetsAt) || "no reset reported"}`} className={cn("tabular-nums", ring.remaining <= 25 ? tone(ring.remaining) : "text-muted-foreground")}>{ring.label === "5-hour" ? "5h" : ring.label === "Weekly" ? "wk" : ring.label} {ring.remaining}%</span>;
+	const figure = (ring: UsageRing | null) => ring && <span title={`${ring.label}: ${resetText(ring.resetsAt) || "no reset reported"}`} className={cn("tabular-nums", ring.remaining <= 25 ? tone(ring.remaining) : "text-muted-foreground")}>{ring.label === "5-hour" ? "5h" : ring.label === "Weekly" ? "wk" : ring.label.replace(/ weekly$/, "")} {ring.remaining}%</span>;
 	return <div className="flex min-w-0 items-center gap-2">
 		<AccountChip account={account} className="size-4.5 text-[8px]" />
 		<span className="min-w-0 flex-1 truncate">{account.email ? <RedactedText text={account.email} /> : account.label}</span>
@@ -79,15 +79,15 @@ export function UsageRings() {
 	useEffect(() => { if (running < previous.current) refresh(5 * minute); previous.current = running; }, [running]);
 	if (!rings.length) return null;
 	const busy = usageChecking(limits);
-	const summary = rings.map(pair => [providerNames[pair.provider], pair.inner && `${pair.inner.label} ${pair.inner.remaining}% left`, pair.outer && `${pair.outer.label} ${pair.outer.remaining}% left`].filter(Boolean).join(", ")).join("; ");
+	const summary = rings.map(pair => [pair.tier ? `${providerNames[pair.provider]} ${pair.tier}` : providerNames[pair.provider], pair.inner && `${pair.inner.label} ${pair.inner.remaining}% left`, pair.outer && `${pair.outer.label} ${pair.outer.remaining}% left`].filter(Boolean).join(", ")).join("; ");
 	return <div className="px-2.5 pt-2"><Popover onOpenChange={open => { if (open) refresh(minute); }}>
 		<PopoverTrigger openOnHover delay={200} render={<button type="button" aria-label={`Usage limits: ${summary}`} className="flex h-8 w-full items-center gap-3 rounded-md px-2 outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:bg-sidebar-accent" />}>
-			{rings.map(pair => <span key={pair.provider} className="flex items-center gap-1"><Logo provider={pair.provider} /><RingPair rings={pair} /></span>)}
+			{rings.map(pair => <span key={pair.key} className="flex items-center gap-1"><Logo provider={pair.provider} />{pair.tier && <span className="text-2xs font-medium text-muted-foreground">{tierTag(pair.tier)}</span>}<RingPair rings={pair} /></span>)}
 		</PopoverTrigger>
-		<PopoverContent side="top" align="start" sideOffset={6} className="w-80 gap-3 p-3 text-xs">
-			{rings.map(pair => <section key={pair.provider} aria-label={`${providerNames[pair.provider]} limits`} className="flex flex-col gap-1.5">
-				<h3 className="flex items-center gap-2 text-[13px] font-semibold"><Logo provider={pair.provider} />{providerNames[pair.provider]}{pair.accounts.length > 1 && <span className="font-normal text-muted-foreground">· {pair.accounts.length} accounts</span>}<span className="ml-auto"><RingPair rings={pair} size={18} /></span></h3>
-				<div className="grid grid-cols-[4.5rem_auto_minmax(0,1fr)] gap-x-3 gap-y-1">
+		<PopoverContent side="top" align="start" sideOffset={6} className="w-[22rem] gap-3 p-3 text-xs">
+			{rings.map(pair => <section key={pair.key} aria-label={`${providerNames[pair.provider]}${pair.tier ? ` ${pair.tier}` : ""} limits`} className="flex flex-col gap-1.5">
+				<h3 className="flex min-w-0 items-center gap-2 text-[13px] font-semibold"><Logo provider={pair.provider} /><span className="shrink-0">{providerNames[pair.provider]}</span>{(pair.tier || pair.accounts.length > 1) && <span className="min-w-0 truncate font-normal text-muted-foreground">{[pair.tier, pair.accounts.length > 1 && `${pair.accounts.length} accounts`].filter(Boolean).join(" · ")}</span>}<span className="ml-auto"><RingPair rings={pair} size={18} /></span></h3>
+				<div className="grid grid-cols-[5.5rem_auto_minmax(0,1fr)] gap-x-3 gap-y-1">
 					{pair.inner && <RingLine ring={pair.inner} pooled={pair.accounts.length > 1} />}
 					{pair.outer && <RingLine ring={pair.outer} pooled={pair.accounts.length > 1} />}
 				</div>

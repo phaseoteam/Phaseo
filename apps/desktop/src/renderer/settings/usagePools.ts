@@ -73,15 +73,18 @@ export function accountHue(text: string) {
 export type UsageRing = { label: string; remaining: number; resetsAt: number | null };
 export type RingAccount = { account: UsageAccount; inner: UsageRing | null; outer: UsageRing | null };
 /**
- * A provider's two rings: the short window inside (5-hour), the long one outside (weekly). With two to
- * `maxSegments` accounts the outer ring is split into one arc per account, so a spent account shows.
+ * A pair of rings: the short window inside (5-hour), the long one outside (weekly). With two to `maxSegments`
+ * accounts the outer ring is split into one arc per account, so a spent account shows. When a provider's accounts are
+ * on different plans, each plan gets its own pair, named by `tier`.
  */
-export type ProviderRings = { provider: UsageProvider; inner: UsageRing | null; outer: UsageRing | null; accounts: RingAccount[]; segments?: number[] };
+export type ProviderRings = { key: string; provider: UsageProvider; tier?: string; inner: UsageRing | null; outer: UsageRing | null; accounts: RingAccount[]; segments?: number[] };
 export const maxSegments = 6;
+/** Per-model buckets are named after their model ("Fable weekly"); the plan's own windows aren't. */
+const perModel = (window: PoolWindow) => window.label.endsWith(" weekly");
 
 /**
- * The sidebar's rings, one pair per provider. Readings are kept between checks, so an account whose window has
- * reset since it was read counts as full again rather than showing the old figure.
+ * The sidebar's rings. Readings are kept between checks, so an account whose window has reset since it was read
+ * counts as full again rather than showing the old figure.
  */
 export function usageRings(pools: ProviderPool[], now = Date.now()): ProviderRings[] {
 	const current = (column: PoolColumn): PoolColumn => column.resetsAt !== null && column.resetsAt * 1000 <= now ? { ...column, remaining: 100, resetsAt: null } : column;
@@ -91,20 +94,37 @@ export function usageRings(pools: ProviderPool[], now = Date.now()): ProviderRin
 		const resets = columns.filter(column => column.resetsAt !== null && column.remaining < 100).map(column => column.resetsAt!).sort((a, b) => a - b);
 		return { label, remaining, resetsAt: resets[0] ?? null };
 	};
-	return pools.map(pool => {
-		// Per-model buckets (Fable weekly) cover only some accounts and models, so they never stand in for the plan's windows.
-		const main = pool.windows.filter(window => !window.label.endsWith(" weekly"));
-		const fiveHour = main.find(window => window.label === "5-hour") ?? main.find(window => window.label === "Daily");
-		const weekly = main.find(window => window.label === "Weekly") ?? main.find(window => window !== fiveHour);
+	const pair = (provider: UsageProvider, all: PoolWindow[], tier?: string): ProviderRings => {
+		const windows = all.map(window => ({ ...window, columns: window.columns.map(current) })).filter(window => window.columns.length);
+		const own = windows.filter(window => !perModel(window));
+		const fiveHour = own.find(window => window.label === "5-hour") ?? own.find(window => window.label === "Daily");
+		// Without a plan-wide weekly window, the tightest per-model one (Fable weekly) is the week's limit.
+		const tightest = windows.filter(perModel).map(window => ({ window, left: ring(window.label, window.columns)!.remaining })).sort((a, b) => a.left - b.left)[0]?.window;
+		const weekly = own.find(window => window.label === "Weekly") ?? own.find(window => window !== fiveHour) ?? tightest;
 		// A plan with one window draws it as the outer ring, so its per-account arcs still show.
 		const [short, long] = weekly ? [fiveHour, weekly] : [undefined, fiveHour];
-		const shortColumns = short?.columns.map(current) ?? [], longColumns = long?.columns.map(current) ?? [];
+		const shortColumns = short?.columns ?? [], longColumns = long?.columns ?? [];
 		const keys = [...new Set([...longColumns, ...shortColumns].map(column => column.account.key))];
 		const accounts = keys.map(key => {
 			const inner = shortColumns.find(column => column.account.key === key), outer = longColumns.find(column => column.account.key === key);
 			return { account: (outer ?? inner)!.account, inner: inner && short ? ring(short.label, [inner]) : null, outer: outer && long ? ring(long.label, [outer]) : null };
 		});
 		const segments = longColumns.length > 1 && longColumns.length <= maxSegments ? longColumns.map(column => column.remaining) : undefined;
-		return { provider: pool.provider, inner: short ? ring(short.label, shortColumns) : null, outer: long ? ring(long.label, longColumns) : null, accounts, ...segments ? { segments } : {} };
+		return { key: tier === undefined ? provider : `${provider}:${tier}`, provider, ...tier ? { tier } : {}, inner: short ? ring(short.label, shortColumns) : null, outer: long ? ring(long.label, longColumns) : null, accounts, ...segments ? { segments } : {} };
+	};
+	return pools.flatMap(pool => {
+		// Plans differ in size (a premium seat holds several times a standard one), so averaging across them would mislead.
+		const plans = [...new Set(pool.windows.flatMap(window => window.columns.map(column => column.account.plan ?? "")))];
+		if (plans.length < 2) return [pair(pool.provider, pool.windows)];
+		return plans.map(plan => pair(pool.provider, pool.windows.map(window => ({ ...window, columns: window.columns.filter(column => (column.account.plan ?? "") === plan) })), plan));
 	}).filter(rings => rings.inner || rings.outer);
+}
+
+/** A short name for a plan beside its rings: its multiplier (Max 5x, Team premium 5x), "Std" for a standard seat, otherwise the plan's last word. */
+export function tierTag(plan: string) {
+	const multiplier = plan.match(/\b\d+x\b/)?.[0];
+	if (multiplier) return multiplier;
+	if (/\bstandard$/i.test(plan)) return "Std";
+	const word = plan.trim().split(/\s+/).at(-1) ?? plan;
+	return word.charAt(0).toUpperCase() + word.slice(1);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountHue, initials, uniqueAccounts, usagePools, usageRings, type UsageAccount } from "./usagePools";
+import { accountHue, initials, tierTag, uniqueAccounts, usagePools, usageRings, type UsageAccount } from "./usagePools";
 
 const account = (key: string, provider: UsageAccount["provider"], email: string | undefined, usage: NonNullable<UsageAccount["status"]["usage"]>, source = "Hub"): UsageAccount =>
 	({ key, provider, email, label: email ?? key, source, status: { checkedAt: "2026-10-15T12:00:00Z", authenticated: true, usage } });
@@ -45,14 +45,28 @@ describe("usage pools", () => {
 		]);
 		expect(rings[1].accounts.map(({ account, inner, outer }) => [account.key, inner?.remaining, outer?.remaining])).toEqual([["a", 100, 30], ["b", 20, 70]]);
 	});
-	it("draws a plan with only a 5-hour window as the outer ring, split per account, ignoring per-model buckets", () => {
-		const fable = { id: "claude:Fable", name: "Fable weekly", primary: window(0, 10080), secondary: null, spendControlReached: null };
+	it("draws a plan with only a 5-hour window as the outer ring, split per account", () => {
 		const [claude] = usageRings(usagePools([
-			account("a", "claude", "a@x.io", [{ id: "claude", name: "Claude", primary: window(10, 300, 9000), secondary: null, spendControlReached: null }, fable]),
+			account("a", "claude", "a@x.io", [{ id: "claude", name: "Claude", primary: window(10, 300, 9000), secondary: null, spendControlReached: null }]),
 			account("b", "claude", "b@x.io", [{ id: "claude", name: "Claude", primary: window(50, 300, 8000), secondary: null, spendControlReached: null }]),
 		]), 0);
 		expect(claude).toMatchObject({ inner: null, outer: { label: "5-hour", remaining: 70, resetsAt: 8000 }, segments: [90, 50] });
 		expect(claude.accounts.map(({ account, inner, outer }) => [account.key, inner, outer?.remaining])).toEqual([["a", null, 90], ["b", null, 50]]);
+	});
+	it("gives each plan its own pair, with the Fable weekly limit outside when there's no plan-wide weekly one", () => {
+		const fiveHour = (used: number) => ({ id: "claude", name: "Claude", primary: window(used, 300, 9000), secondary: null, spendControlReached: null });
+		const fable = (used: number) => ({ id: "claude:Fable", name: "Fable weekly", primary: window(used, 10080, 9500), secondary: null, spendControlReached: null });
+		const seat = (key: string, plan: string, usage: NonNullable<UsageAccount["status"]["usage"]>) => ({ ...account(key, "claude", `${key}@x.io`, usage), plan });
+		const rings = usageRings(usagePools([
+			seat("p1", "Team premium", [fiveHour(10), fable(0)]), seat("p2", "Team premium", [fiveHour(30), fable(40)]),
+			seat("s1", "Team standard", [fiveHour(50)]), seat("s2", "Team standard", [fiveHour(70)]),
+		]), 0);
+		expect(rings.map(({ key, tier, inner, outer, segments }) => ({ key, tier, inner: inner?.label, outer: outer && [outer.label, outer.remaining], segments }))).toEqual([
+			{ key: "claude:Team premium", tier: "Team premium", inner: "5-hour", outer: ["Fable weekly", 80], segments: [100, 60] },
+			{ key: "claude:Team standard", tier: "Team standard", inner: undefined, outer: ["5-hour", 40], segments: [50, 30] },
+		]);
+		expect(rings[0].accounts.map(({ account, inner, outer }) => [account.key, inner?.remaining, outer?.remaining])).toEqual([["p1", 90, 100], ["p2", 70, 60]]);
+		expect(["Claude Max 20x", "Team premium 5x", "Team premium", "Team standard", "ChatGPT Pro"].map(tierTag)).toEqual(["20x", "5x", "Premium", "Std", "Pro"]);
 	});
 	it("pools the weekly ring instead of splitting it when a provider has more than six accounts", () => {
 		const many = Array.from({ length: 7 }, (_, index) => account(`h${index}`, "claude", `h${index}@x.io`, [{ id: "claude", name: "Claude", primary: null, secondary: window(index * 10, 10080), spendControlReached: null }]));

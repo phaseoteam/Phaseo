@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { UsageHubs, claudeHubUsage, codexHubUsage, t3CodeHubs, usageHubFile } from "./usageHubs";
+import { UsageHubs, claudeHubUsage, claudeProfilePlan, codexHubUsage, t3CodeHubs, usageHubFile } from "./usageHubs";
 import type { UsageHub, UsageHubSnapshot } from "../shared/usageHubs";
 
 /** A CLIProxyAPI stand-in: auth-files lists accounts, api-call answers with the provider's usage. */
@@ -43,6 +43,14 @@ describe("usage hub responses", () => {
 		// Accounts that only list their windows in limits[]: the session window stands in for five_hour.
 		expect(claudeHubUsage({ five_hour: null, seven_day: null, limits: [{ kind: "session", group: "session", percent: 7, resets_at: "2026-10-15T18:00:00Z", scope: null }, { kind: "weekly_scoped", group: "weekly", percent: 0, scope: { model: { display_name: "Fable" } } }] }).usage?.map(bucket => [bucket.name, bucket.primary?.usedPercent, bucket.secondary])).toEqual([["Claude", 7, null], ["Fable weekly", 0, null]]);
 	});
+	it("names Claude plans from the OAuth profile: Team seats by tier, Max by multiplier", () => {
+		const profile = (organization: Record<string, unknown>) => claudeProfilePlan({ organization });
+		expect(profile({ organization_type: "claude_team", seat_tier: "team_tier_1", rate_limit_tier: "default_claude_max_5x" })).toBe("Team premium 5x");
+		expect(profile({ organization_type: "claude_team", seat_tier: "team_standard", rate_limit_tier: "default_raven" })).toBe("Team standard");
+		expect(profile({ organization_type: "claude_max", rate_limit_tier: "default_claude_max_20x" })).toBe("Claude Max 20x");
+		expect(profile({ organization_type: "claude_pro" })).toBe("Claude Pro");
+		expect(claudeProfilePlan({})).toBeUndefined();
+	});
 });
 
 describe("UsageHubs", () => {
@@ -68,14 +76,14 @@ describe("UsageHubs", () => {
 			{ id: "off.json", auth_index: "5", provider: "codex", disabled: true },
 		];
 		const { vault } = store();
-		const { fetcher, calls } = hubFixture({ files, upstream: (url, authIndex) => authIndex === "3" ? { status_code: 401, body: "{}" } : url.includes("chatgpt") ? { status_code: 200, body: JSON.stringify({ rate_limit: { primary_window: { used_percent: 40, limit_window_seconds: 18_000 } } }) } : { status_code: 200, body: JSON.stringify({ five_hour: { utilization: 20, resets_at: null } }) } });
+		const { fetcher, calls } = hubFixture({ files, upstream: (url, authIndex) => authIndex === "3" ? { status_code: 401, body: "{}" } : url.includes("chatgpt") ? { status_code: 200, body: JSON.stringify({ rate_limit: { primary_window: { used_percent: 40, limit_window_seconds: 18_000 } } }) } : url.endsWith("/profile") ? { status_code: 200, body: JSON.stringify({ organization: { organization_type: "claude_max", rate_limit_tier: "default_claude_max_5x" } }) } : { status_code: 200, body: JSON.stringify({ five_hour: { utilization: 20, resets_at: null } }) } });
 		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher);
 		const [hub] = await hubs.request({ type: "add", url: "http://hub.local:8317", key: "secret" }) as UsageHub[];
 		const snapshot = await hubs.request({ type: "check", id: hub.id }) as UsageHubSnapshot;
 		expect(snapshot.skipped).toBe(1);
 		expect(snapshot.accounts.map(account => [account.id, account.provider, account.email])).toEqual([["codex.json", "codex", "a@example.invalid"], ["claude.json", "claude", "b@example.invalid"], ["broken.json", "claude", undefined]]);
 		expect(snapshot.accounts[0].status).toMatchObject({ plan: "ChatGPT Plus", identity: "a@example.invalid", usage: [{ primary: { usedPercent: 40, windowDurationMins: 300 } }] });
-		expect(snapshot.accounts[1].status.usage?.[0].primary?.usedPercent).toBe(20);
+		expect(snapshot.accounts[1].status).toMatchObject({ plan: "Claude Max 5x", usage: [{ primary: { usedPercent: 20 } }] });
 		expect(snapshot.accounts[2].status.usageError).toBe("The provider refused the hub's request (HTTP 401).");
 		const codexCall = calls.find(call => call.url.endsWith("api-call") && (call.body as { auth_index: string }).auth_index === "1")!.body as { header: Record<string, string>; method: string };
 		expect(codexCall).toMatchObject({ method: "GET", header: { Authorization: "Bearer $TOKEN$", "Chatgpt-Account-Id": "acct", "OpenAI-Beta": "codex-1" } });
