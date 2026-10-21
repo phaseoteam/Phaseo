@@ -156,6 +156,14 @@ function usesAnthropicNativeAdvisor(requestBody: any): boolean {
 		requestBody.tools.some((tool: any) => tool?.type === "advisor_20260301");
 }
 
+// Context editing (clear_tool_uses_*, clear_thinking_*) is a beta:
+// https://platform.claude.com/docs/en/build-with-claude/context-editing
+const ANTHROPIC_CONTEXT_MANAGEMENT_BETA = "context-management-2025-06-27";
+
+function anthropicContextManagementBetas(requestBody: any): string[] {
+	return requestBody?.context_management ? [ANTHROPIC_CONTEXT_MANAGEMENT_BETA] : [];
+}
+
 function usesAnthropicFileReference(value: unknown): boolean {
 	if (Array.isArray(value)) return value.some(usesAnthropicFileReference);
 	if (!value || typeof value !== "object") return false;
@@ -220,6 +228,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 		usesAnthropicNativeWebFetch(requestBody) ? "web-fetch-2026-02-09" : null,
 		usesAnthropicNativeAdvisor(requestBody) ? ANTHROPIC_ADVISOR_BETA : null,
 		usesAnthropicFileReference(requestBody) ? "files-api-2025-04-14" : null,
+		...anthropicContextManagementBetas(requestBody),
 	].filter((entry): entry is string => Boolean(entry));
 
 		// Execute upstream call
@@ -278,7 +287,11 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 
                         const model = args.providerModelSlug || args.ir.model;
 						const responsesStream = res.body.pipeThrough(
-                                createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
+                                createAnthropicToResponsesStreamTransformer(args.requestId, model, {
+									accounting,
+									providerId: args.providerId,
+									keepContextManagement: args.protocol === "anthropic.messages",
+								}),
                         );
                         const normalized = resolveStreamForProtocol(
                                 new Response(responsesStream, {
@@ -509,6 +522,10 @@ export async function bufferAnthropicStreamToMessage(res: Response, upstreamStar
 				if (typeof delta?.stop_sequence === "string" || delta?.stop_sequence === null) {
 					message.stop_sequence = delta.stop_sequence;
 				}
+				// Context editing reports the edits it applied on the final message_delta.
+				if (isPlainObject(payload?.context_management)) {
+					message.context_management = payload.context_management;
+				}
 				applyUsage(payload?.usage);
 				continue;
 			}
@@ -692,6 +709,11 @@ export function irToAnthropicMessages(
 	// is still sent, so a US-only request fails rather than running outside the US.
 	if (options?.inferenceGeo && (options.inferenceGeo === "us" || supportsAnthropicInferenceGeo(resolvedModel))) {
 		request.inference_geo = options.inferenceGeo;
+	}
+	// Context editing from /v1/messages. Routes that cannot send its beta header
+	// never see it: the execute stage drops it for them (unsupportedParams.ts).
+	if (ir.anthropicContextManagement) {
+		request.context_management = ir.anthropicContextManagement;
 	}
 
 	// Adaptive-thinking Claude models reject non-default sampling params, so omit them.
@@ -1245,6 +1267,9 @@ export function anthropicMessagesToIR(
 		console.warn(`[ID-VALIDATION] Provider ${provider} (Anthropic Messages) did not return response ID`);
 	}
 	const serviceTier = resolveAnthropicServiceTierFromResponse(json);
+	// Edits applied by context editing, for Messages clients
+	// (https://platform.claude.com/docs/en/build-with-claude/context-editing).
+	const contextManagement = isPlainObject(json.context_management) ? json.context_management : undefined;
 
 	return {
 		id: requestId,
@@ -1271,7 +1296,12 @@ export function anthropicMessagesToIR(
 			}
 			: undefined,
 		serviceTier,
+		...(contextManagement ? { anthropicContextManagement: contextManagement } : {}),
 	};
+}
+
+function isPlainObject(value: unknown): value is Record<string, any> {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 export function anthropicThinkingBlockToIR(

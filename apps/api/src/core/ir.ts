@@ -321,6 +321,8 @@ export type IRChatRequest = {
 		type: "compaction";
 		compact_threshold?: number;
 	}>;
+	/** Anthropic Messages `context_management` ({ edits: [...] }), sent unchanged to Anthropic. */
+	anthropicContextManagement?: Record<string, any>;
 	anthropicCacheControl?: IRCacheControl & {
 		scope?: "all_text" | "last_user_message" | "agent" | "conversation" | "none" | string;
 	};
@@ -1016,6 +1018,11 @@ export type IRChatResponse = {
 	images?: Array<Record<string, any>>;
 	relatedQuestions?: string[];
 	reasoningSteps?: Array<Record<string, any>>;
+	/**
+	 * Anthropic's response `context_management` ({ applied_edits: [...] }), returned
+	 * only to Messages clients.
+	 */
+	anthropicContextManagement?: Record<string, any>;
 
 	// Debug-only fields (never logged)
 	rawResponse?: any;

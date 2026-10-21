@@ -436,14 +436,14 @@ Je nach Route kann dies ein Anfrage-Regler, ein Limit oder ein Abrechnungsfeld d
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-Fordert nach Möglichkeit Reasoning-Inhalte oder Zusammenfassungen in Antworten an.
+Wird auf Chat Completions aus Kompatibilitätsgründen akzeptiert. Reasoning-Inhalte und -Zusammenfassungen werden immer zurückgegeben, wenn das Modell sie erzeugt, unabhängig vom Wert dieses Felds.
 
 | Feld | Wert |
 | --- | --- |
 | Typ | `boolean` |
-| Standard | `false` |
+| Standard | `true` |
 
-Verwende den Parameter mit Bedacht. Reasoning-Payloads können größer sein, sind möglicherweise nicht für jedes Modell verfügbar und eignen sich oft nicht für Produktionsantworten ohne zusätzlichen Diagnosebedarf.
+Reasoning-Payloads können groß sein und sind nicht für jedes Modell verfügbar. Um das Reasoning zu reduzieren, senke `reasoning.effort` oder setze `reasoning.enabled` auf `false`.
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -464,6 +464,7 @@ Hinweise:
 
 - `Batch` ist ein separater API-Ablauf und kein Wert für die Service-Stufe.
 - Die Unterstützung variiert je nach Endpunkt und Anbieter.
+- Die Werte von OpenAI werden ebenfalls akzeptiert: `auto` (oder `null`) fordert keine bestimmte Stufe an und wird wie ein weggelassenes Feld behandelt, und `scale` wird als `default` behandelt, die Standardstufe.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

@@ -436,14 +436,14 @@ Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場�
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-対応時にレスポンスへ推論内容または要約を含めるよう要求します。
+互換性のためにChat Completionsで受け付けます。この値にかかわらず、モデルが推論内容や要約を生成した場合は常に返されます。
 
 | 項目 | 値 |
 | --- | --- |
 | 型 | `boolean` |
-| デフォルト | `false` |
+| デフォルト | `true` |
 
-慎重に使用してください。推論ペイロードは大きくなる場合があり、すべてのモデルで使えるとは限りません。追加の診断情報が不要な本番レスポンスには適さないことがあります。
+推論ペイロードは大きくなる場合があり、すべてのモデルで使えるとは限りません。推論を減らすには、`reasoning.effort`を下げるか、`reasoning.enabled`を`false`に設定します。
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -464,6 +464,7 @@ Phaseoは、ゲートウェイで正規化されたティア値を内部でプ�
 
 - `Batch`は独立したAPIフローであり、サービスティアの値ではありません。
 - 対応状況はエンドポイントとプロバイダーによって異なります。
+- OpenAIの値も受け付けます。`auto`（または`null`）は特定の階層を指定せず、フィールドを省略した場合と同じように扱われます。`scale`は標準階層である`default`として扱われます。
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

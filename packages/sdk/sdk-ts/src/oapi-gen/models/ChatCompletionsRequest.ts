@@ -1,3 +1,6 @@
+/**
+ * An optional top-level field sent as `null` is treated as unset, the same as leaving it out.
+ */
 export interface ChatCompletionsRequest {
   cache_control?: {
     scope?: string;
@@ -28,6 +31,7 @@ export interface ChatCompletionsRequest {
     super_resolution_references?: string[];
     [key: string]: unknown;
   };
+  include_reasoning?: boolean;
   logit_bias?: {
     [key: string]: number;
   };
@@ -143,6 +147,14 @@ export interface ChatCompletionsRequest {
   model: string;
   models?: string[];
   parallel_tool_calls?: boolean;
+  prediction?: {
+    content:
+      | string
+      | {
+          [key: string]: unknown;
+        }[];
+    type: "content";
+  };
   presence_penalty?: number;
   prompt_cache_key?: string | null;
   prompt_cache_options?: {
@@ -242,7 +254,8 @@ export interface ChatCompletionsRequest {
       | "medium"
       | "high"
       | "xhigh"
-      | "max";
+      | "max"
+      | null;
     enabled?: boolean;
     max_tokens?: number;
     mode?: "standard" | "pro";
@@ -272,7 +285,10 @@ export interface ChatCompletionsRequest {
     | "ultrafast"
     | "priority"
     | "flex"
-    | "batch";
+    | "batch"
+    | "auto"
+    | "scale"
+    | null;
   session_id?: string;
   stop?: string | string[];
   store?: boolean;

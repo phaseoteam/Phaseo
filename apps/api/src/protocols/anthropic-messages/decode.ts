@@ -57,11 +57,13 @@ export type AnthropicMessagesRequest = {
 	webSearchOptions?: Record<string, any>;
 	stop_sequences?: string[];
 	reasoning?: {
-		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
-		enabled?: boolean;
-		summary?: "auto" | "concise" | "detailed";
-		max_tokens?: number;
+		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
+		enabled?: boolean | null;
+		summary?: "auto" | "concise" | "detailed" | null;
+		max_tokens?: number | null;
 	};
+	context_management?: Record<string, any>;
+	user?: string;
 	image_config?: {
 		aspect_ratio?: string;
 		image_size?: "0.5K" | "1K" | "2K" | "4K";
@@ -315,6 +317,12 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// Advanced parameters
 		stop: req.stop_sequences,
 		metadata: req.metadata,
+		// As on Chat; Claude routes send it as metadata.user_id unless metadata sets one.
+		userId: typeof req.user === "string" && req.user.length > 0 ? req.user : undefined,
+		anthropicContextManagement:
+			req.context_management && typeof req.context_management === "object" && !Array.isArray(req.context_management)
+				? { ...req.context_management }
+				: undefined,
 		// Anthropic's "auto" picks no gateway tier (routing and pricing read the
 		// body and ignore it) but is kept so the Anthropic executor sends it.
 		serviceTier: isAutoServiceTier(req.service_tier)

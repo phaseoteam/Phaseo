@@ -8866,6 +8866,7 @@ components:
         data_collection:
           type: string
           nullable: true
+          description: '`allow`（既定値）は何も除外しません。`deny` はまだサポートされておらず、400 unsupported_routing_filter を返します。'
           enum:
             - allow
             - deny
@@ -8875,6 +8876,7 @@ components:
         enforce_distillable_text:
           type: boolean
           nullable: true
+          description: '`false`（既定値）は何も除外しません。`true` はまだサポートされておらず、400 unsupported_routing_filter を返します。'
         quantizations:
           type: array
           nullable: true
@@ -9558,6 +9560,7 @@ components:
         - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
+      description: '`null` として送信された省略可能なトップレベルのフィールドは、省略した場合と同じく未設定として扱われます。'
       required:
         - model
         - messages
@@ -9699,8 +9702,31 @@ components:
           type: string
         user:
           type: string
+        include_reasoning:
+          type: boolean
+          description: 互換性のために受け付けます。この値にかかわらず、モデルが推論を生成した場合は常に返されます（`reasoning_content` と `reasoning_details`）。
+        prediction:
+          type: object
+          description: 予測出力。返答の大部分が事前にわかっている場合に、レスポンスを高速化します。OpenAI、Mistral、Moonshot のモデルに転送され、その他のプロバイダーでは無視されます。
+          required:
+            - type
+            - content
+          properties:
+            type:
+              type: string
+              enum:
+                - content
+            content:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: object
+                    additionalProperties: true
         service_tier:
           type: string
+          nullable: true
+          description: サポートされるルーティングまたは料金のティアを選択します。`auto`（または null）は特定のティアを指定せず、このフィールドが未設定の場合と同じようにルーティングおよび課金されます。`scale` は標準ティアである `default` として扱われます。
           enum:
             - standard
             - default
@@ -9709,6 +9735,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         prompt_cache_key:
           type: string
           nullable: true
@@ -10264,7 +10292,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: 推論の度合い。省略または null の場合、モデルがどれだけ推論するかは `max_tokens`、`enabled`、またはモデル自身の既定値によって決まります。
         mode:
           type: string
           enum:
@@ -10296,7 +10325,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: 推論の度合い。省略または null の場合、モデルがどれだけ推論するかは `max_tokens`、`enabled`、またはモデル自身の既定値によって決まります。
         mode:
           type: string
           enum:
@@ -10417,6 +10447,7 @@ components:
           description: プロバイダーのプロンプトキャッシュに書き込まれた入力トークン。
     AnthropicMessagesRequest:
       type: object
+      description: '`null` として送信された省略可能なトップレベルのフィールドは、省略した場合と同じく未設定として扱われます。'
       required:
         - model
         - messages
@@ -10501,6 +10532,24 @@ components:
           description: 関連するリクエスト（会話やエージェントのワークフローなど）を可観測性のためにまとめる一意の識別子です。
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
+        context_management:
+          type: object
+          description: Anthropic のコンテキスト編集。`edits` には `clear_tool_uses_*` と `clear_thinking_*` の戦略を指定でき、対応するベータヘッダーとともに Anthropic に送信されます。その他のプロバイダーではこのフィールドなしでリクエストが実行され、`X-Phaseo-Dropped-Params` に `context_management` が記載されます。圧縮の編集（`compact_*`）は 400 を返します。
+          properties:
+            edits:
+              type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                additionalProperties: true
+          additionalProperties: true
+        user:
+          type: string
+          description: エンドユーザー識別子。Chat Completions と同じです。`metadata.user_id` が設定されていない場合、Claude モデルはこれを `metadata.user_id` として受け取ります。
         stop_sequences:
           type: array
           items:
@@ -10542,6 +10591,15 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AnthropicUsage'
+        context_management:
+          type: object
+          description: リクエストで `context_management` を使用し、Anthropic が編集を適用した場合に含まれます。`applied_edits` には各編集と、それによって消去された内容が記載されます。ストリームでは最後の `message_delta` イベントに含まれます。
+          properties:
+            applied_edits:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     AnthropicMessage:
       type: object
       required:
@@ -10634,6 +10692,7 @@ components:
           type: integer
     ResponsesRequest:
       type: object
+      description: '`null` として送信された省略可能なトップレベルのフィールドは、省略した場合と同じく未設定として扱われます。'
       required:
         - model
         - input
@@ -10677,6 +10736,8 @@ components:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
+          nullable: true
+          description: サポートされるルーティングまたは料金のティアを選択します。`auto`（または null）は特定のティアを指定せず、このフィールドが未設定の場合と同じようにルーティングおよび課金されます。`scale` は標準ティアである `default` として扱われます。
           enum:
             - standard
             - default
@@ -10685,6 +10746,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         store:
           type: boolean
         stream:

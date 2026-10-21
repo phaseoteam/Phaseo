@@ -8563,6 +8563,106 @@
 			"ja": "プロバイダーが報告する、全パスの合計入力トークン数。",
 			"zh-Hans": "提供商报告的所有处理轮次的输入令牌总数。",
 			"ar": "إجمالي رموز الإدخال عبر جميع التمريرات، كما أبلغ عنه المزوّد."
+		},
+		"`allow` (the default) filters nothing. `deny` is not supported yet and returns 400 unsupported_routing_filter.": {
+			"es": "`allow` (el valor predeterminado) no filtra nada. `deny` aún no es compatible y devuelve 400 unsupported_routing_filter.",
+			"fr": "`allow` (la valeur par défaut) ne filtre rien. `deny` n’est pas encore pris en charge et renvoie 400 unsupported_routing_filter.",
+			"de": "`allow` (der Standardwert) filtert nichts. `deny` wird noch nicht unterstützt und liefert 400 unsupported_routing_filter.",
+			"pt-BR": "`allow` (o padrão) não filtra nada. `deny` ainda não é suportado e retorna 400 unsupported_routing_filter.",
+			"hi": "`allow` (डिफ़ॉल्ट) कुछ भी फ़िल्टर नहीं करता। `deny` अभी समर्थित नहीं है और 400 unsupported_routing_filter लौटाता है।",
+			"ja": "`allow`（既定値）は何も除外しません。`deny` はまだサポートされておらず、400 unsupported_routing_filter を返します。",
+			"zh-Hans": "`allow`（默认值）不进行任何筛选。`deny` 尚不支持，会返回 400 unsupported_routing_filter。",
+			"ar": "القيمة `allow` (الافتراضية) لا تُصفّي شيئًا. القيمة `deny` غير مدعومة بعد وتعيد الخطأ 400 unsupported_routing_filter."
+		},
+		"`false` (the default) filters nothing. `true` is not supported yet and returns 400 unsupported_routing_filter.": {
+			"es": "`false` (el valor predeterminado) no filtra nada. `true` aún no es compatible y devuelve 400 unsupported_routing_filter.",
+			"fr": "`false` (la valeur par défaut) ne filtre rien. `true` n’est pas encore pris en charge et renvoie 400 unsupported_routing_filter.",
+			"de": "`false` (der Standardwert) filtert nichts. `true` wird noch nicht unterstützt und liefert 400 unsupported_routing_filter.",
+			"pt-BR": "`false` (o padrão) não filtra nada. `true` ainda não é suportado e retorna 400 unsupported_routing_filter.",
+			"hi": "`false` (डिफ़ॉल्ट) कुछ भी फ़िल्टर नहीं करता। `true` अभी समर्थित नहीं है और 400 unsupported_routing_filter लौटाता है।",
+			"ja": "`false`（既定値）は何も除外しません。`true` はまだサポートされておらず、400 unsupported_routing_filter を返します。",
+			"zh-Hans": "`false`（默认值）不进行任何筛选。`true` 尚不支持，会返回 400 unsupported_routing_filter。",
+			"ar": "القيمة `false` (الافتراضية) لا تُصفّي شيئًا. القيمة `true` غير مدعومة بعد وتعيد الخطأ 400 unsupported_routing_filter."
+		},
+		"An optional top-level field sent as `null` is treated as unset, the same as leaving it out.": {
+			"es": "Un campo opcional de nivel superior enviado como `null` se trata como no definido, igual que si se omitiera.",
+			"fr": "Un champ facultatif de premier niveau envoyé avec la valeur `null` est traité comme non défini, comme s’il était omis.",
+			"de": "Ein optionales Feld der obersten Ebene, das als `null` gesendet wird, gilt als nicht gesetzt, genau wie ein weggelassenes Feld.",
+			"pt-BR": "Um campo opcional de nível superior enviado como `null` é tratado como não definido, como se tivesse sido omitido.",
+			"hi": "`null` के रूप में भेजे गए किसी वैकल्पिक शीर्ष-स्तरीय फ़ील्ड को सेट न किया गया माना जाता है, ठीक वैसे ही जैसे उसे छोड़ दिया गया हो।",
+			"ja": "`null` として送信された省略可能なトップレベルのフィールドは、省略した場合と同じく未設定として扱われます。",
+			"zh-Hans": "以 `null` 发送的可选顶层字段会被视为未设置，与省略该字段相同。",
+			"ar": "يُعامَل أي حقل اختياري في المستوى الأعلى يُرسَل بالقيمة `null` على أنه غير مضبوط، تمامًا كما لو حُذف."
+		},
+		"Accepted for compatibility. Reasoning is returned whenever the model produces it (`reasoning_content` and `reasoning_details`), whatever this is set to.": {
+			"es": "Se acepta por compatibilidad. El razonamiento se devuelve siempre que el modelo lo genera (`reasoning_content` y `reasoning_details`), sea cual sea el valor de este campo.",
+			"fr": "Accepté pour des raisons de compatibilité. Le raisonnement est renvoyé chaque fois que le modèle en produit (`reasoning_content` et `reasoning_details`), quelle que soit la valeur de ce champ.",
+			"de": "Wird aus Kompatibilitätsgründen akzeptiert. Reasoning wird immer zurückgegeben, wenn das Modell es erzeugt (`reasoning_content` und `reasoning_details`), unabhängig vom Wert dieses Felds.",
+			"pt-BR": "Aceito por compatibilidade. O raciocínio é retornado sempre que o modelo o produz (`reasoning_content` e `reasoning_details`), qualquer que seja o valor deste campo.",
+			"hi": "संगतता के लिए स्वीकार किया जाता है। मॉडल जब भी रीज़निंग देता है, वह लौटाई जाती है (`reasoning_content` और `reasoning_details`), चाहे इसका मान कुछ भी हो।",
+			"ja": "互換性のために受け付けます。この値にかかわらず、モデルが推論を生成した場合は常に返されます（`reasoning_content` と `reasoning_details`）。",
+			"zh-Hans": "为保持兼容性而接受。无论此字段如何设置，只要模型生成了推理内容就会返回（`reasoning_content` 和 `reasoning_details`）。",
+			"ar": "يُقبل للتوافق. يُعاد الاستدلال كلما أنتجه النموذج (`reasoning_content` و`reasoning_details`)، أيًّا كانت قيمة هذا الحقل."
+		},
+		"Predicted output, for faster responses when most of the reply is known in advance. Forwarded to OpenAI, Mistral and Moonshot models; other providers ignore it.": {
+			"es": "Salida prevista, para obtener respuestas más rápidas cuando se conoce de antemano la mayor parte de la respuesta. Se reenvía a los modelos de OpenAI, Mistral y Moonshot; los demás proveedores la ignoran.",
+			"fr": "Sortie prédite, pour des réponses plus rapides lorsque l’essentiel de la réponse est connu à l’avance. Transmise aux modèles OpenAI, Mistral et Moonshot ; les autres fournisseurs l’ignorent.",
+			"de": "Vorhergesagte Ausgabe für schnellere Antworten, wenn der Großteil der Antwort im Voraus bekannt ist. Wird an Modelle von OpenAI, Mistral und Moonshot weitergeleitet; andere Anbieter ignorieren sie.",
+			"pt-BR": "Saída prevista, para respostas mais rápidas quando a maior parte da resposta já é conhecida de antemão. Encaminhada aos modelos da OpenAI, Mistral e Moonshot; os demais provedores a ignoram.",
+			"hi": "पूर्वानुमानित आउटपुट, ताकि जवाब का ज़्यादातर हिस्सा पहले से पता होने पर प्रतिक्रियाएँ तेज़ी से मिलें। इसे OpenAI, Mistral और Moonshot मॉडलों को भेजा जाता है; अन्य प्रदाता इसे अनदेखा करते हैं।",
+			"ja": "予測出力。返答の大部分が事前にわかっている場合に、レスポンスを高速化します。OpenAI、Mistral、Moonshot のモデルに転送され、その他のプロバイダーでは無視されます。",
+			"zh-Hans": "预测输出，在事先已知大部分回复内容时加快响应速度。会转发给 OpenAI、Mistral 和 Moonshot 模型；其他提供商会忽略它。",
+			"ar": "المخرجات المتوقعة، للحصول على استجابات أسرع عندما يكون معظم الرد معروفًا مسبقًا. تُمرَّر إلى نماذج OpenAI وMistral وMoonshot، ويتجاهلها المزوّدون الآخرون."
+		},
+		"Selects a supported routing or pricing tier. `auto` (or null) asks for no particular tier and is routed and billed as if the field were unset; `scale` is treated as `default`, the standard tier.": {
+			"es": "Selecciona un nivel de enrutamiento o precios compatible. `auto` (o null) no pide ningún nivel concreto y se enruta y factura como si el campo no estuviera definido; `scale` se trata como `default`, el nivel estándar.",
+			"fr": "Sélectionne un niveau de routage ou de tarification pris en charge. `auto` (ou null) ne demande aucun niveau particulier : la requête est routée et facturée comme si le champ n’était pas défini ; `scale` est traité comme `default`, le niveau standard.",
+			"de": "Wählt eine unterstützte Routing- oder Preisstufe. `auto` (oder null) fordert keine bestimmte Stufe an und wird so geroutet und abgerechnet, als wäre das Feld nicht gesetzt; `scale` wird als `default` behandelt, die Standardstufe.",
+			"pt-BR": "Seleciona um nível de roteamento ou preço suportado. `auto` (ou null) não pede nenhum nível específico e é roteado e cobrado como se o campo não estivesse definido; `scale` é tratado como `default`, o nível padrão.",
+			"hi": "समर्थित रूटिंग या मूल्य स्तर चुनता है। `auto` (या null) कोई खास स्तर नहीं माँगता और उसे ऐसे रूट और बिल किया जाता है मानो फ़ील्ड सेट ही न हो; `scale` को `default`, यानी मानक स्तर, माना जाता है।",
+			"ja": "サポートされるルーティングまたは料金のティアを選択します。`auto`（または null）は特定のティアを指定せず、このフィールドが未設定の場合と同じようにルーティングおよび課金されます。`scale` は標準ティアである `default` として扱われます。",
+			"zh-Hans": "选择受支持的路由或定价等级。`auto`（或 null）表示不指定特定等级，路由和计费方式与未设置此字段时相同；`scale` 按标准等级 `default` 处理。",
+			"ar": "يحدد مستوى توجيه أو تسعير مدعومًا. القيمة `auto` (أو null) لا تطلب مستوى بعينه، ويُوجَّه الطلب ويُفوتر كما لو لم يُضبط الحقل؛ وتُعامَل `scale` على أنها `default`، أي المستوى القياسي."
+		},
+		"Reasoning effort. When omitted or null, `max_tokens`, `enabled` or the model's own default decides how much the model reasons.": {
+			"es": "Esfuerzo de razonamiento. Si se omite o es null, `max_tokens`, `enabled` o el valor predeterminado del propio modelo determinan cuánto razona el modelo.",
+			"fr": "Effort de raisonnement. S’il est omis ou null, `max_tokens`, `enabled` ou la valeur par défaut du modèle détermine dans quelle mesure le modèle raisonne.",
+			"de": "Reasoning-Aufwand. Fehlt er oder ist er null, bestimmen `max_tokens`, `enabled` oder der eigene Standardwert des Modells, wie viel Reasoning das Modell betreibt.",
+			"pt-BR": "Esforço de raciocínio. Quando omitido ou null, `max_tokens`, `enabled` ou o padrão do próprio modelo determina quanto o modelo raciocina.",
+			"hi": "रीज़निंग प्रयास। छोड़े जाने या null होने पर, `max_tokens`, `enabled` या मॉडल का अपना डिफ़ॉल्ट तय करता है कि मॉडल कितनी रीज़निंग करे।",
+			"ja": "推論の度合い。省略または null の場合、モデルがどれだけ推論するかは `max_tokens`、`enabled`、またはモデル自身の既定値によって決まります。",
+			"zh-Hans": "推理强度。省略或为 null 时，由 `max_tokens`、`enabled` 或模型自身的默认值决定模型的推理量。",
+			"ar": "مستوى جهد الاستدلال. عند حذفه أو ضبطه على null، يحدد `max_tokens` أو `enabled` أو الإعداد الافتراضي للنموذج نفسه مقدار استدلال النموذج."
+		},
+		"Anthropic context editing. `edits` takes `clear_tool_uses_*` and `clear_thinking_*` strategies and is sent to Anthropic with its beta header. Other providers run the request without it and list `context_management` in `X-Phaseo-Dropped-Params`. Compaction edits (`compact_*`) return 400.": {
+			"es": "Edición de contexto de Anthropic. `edits` admite las estrategias `clear_tool_uses_*` y `clear_thinking_*` y se envía a Anthropic con su cabecera beta. Los demás proveedores ejecutan la solicitud sin este campo e incluyen `context_management` en `X-Phaseo-Dropped-Params`. Las ediciones de compactación (`compact_*`) devuelven 400.",
+			"fr": "Édition du contexte d’Anthropic. `edits` accepte les stratégies `clear_tool_uses_*` et `clear_thinking_*` et est envoyé à Anthropic avec son en-tête bêta. Les autres fournisseurs exécutent la requête sans ce champ et indiquent `context_management` dans `X-Phaseo-Dropped-Params`. Les modifications de compactage (`compact_*`) renvoient 400.",
+			"de": "Kontextbearbeitung von Anthropic. `edits` akzeptiert die Strategien `clear_tool_uses_*` und `clear_thinking_*` und wird mit dem zugehörigen Beta-Header an Anthropic gesendet. Andere Anbieter führen die Anfrage ohne dieses Feld aus und nennen `context_management` in `X-Phaseo-Dropped-Params`. Bearbeitungen zur Komprimierung (`compact_*`) liefern 400.",
+			"pt-BR": "Edição de contexto da Anthropic. `edits` aceita as estratégias `clear_tool_uses_*` e `clear_thinking_*` e é enviado à Anthropic com o cabeçalho beta correspondente. Os demais provedores executam a solicitação sem esse campo e listam `context_management` em `X-Phaseo-Dropped-Params`. Edições de compactação (`compact_*`) retornam 400.",
+			"hi": "Anthropic का कॉन्टेक्स्ट एडिटिंग। `edits` में `clear_tool_uses_*` और `clear_thinking_*` रणनीतियाँ दी जा सकती हैं, और इसे उसके beta हेडर के साथ Anthropic को भेजा जाता है। अन्य प्रदाता इसके बिना अनुरोध चलाते हैं और `context_management` को `X-Phaseo-Dropped-Params` में सूचीबद्ध करते हैं। कॉम्पैक्शन एडिट (`compact_*`) पर 400 लौटता है।",
+			"ja": "Anthropic のコンテキスト編集。`edits` には `clear_tool_uses_*` と `clear_thinking_*` の戦略を指定でき、対応するベータヘッダーとともに Anthropic に送信されます。その他のプロバイダーではこのフィールドなしでリクエストが実行され、`X-Phaseo-Dropped-Params` に `context_management` が記載されます。圧縮の編集（`compact_*`）は 400 を返します。",
+			"zh-Hans": "Anthropic 上下文编辑。`edits` 接受 `clear_tool_uses_*` 和 `clear_thinking_*` 策略，并附带相应的 beta 请求头发送给 Anthropic。其他提供商会在不含此字段的情况下运行请求，并在 `X-Phaseo-Dropped-Params` 中列出 `context_management`。压缩编辑（`compact_*`）返回 400。",
+			"ar": "تحرير السياق من Anthropic. يقبل `edits` استراتيجيات `clear_tool_uses_*` و`clear_thinking_*`، ويُرسَل إلى Anthropic مع ترويسة beta الخاصة بها. يشغّل المزوّدون الآخرون الطلب من دونه ويُدرجون `context_management` في `X-Phaseo-Dropped-Params`. تعيد تعديلات الضغط (`compact_*`) الخطأ 400."
+		},
+		"End-user identifier, as on Chat Completions. Claude models receive it as `metadata.user_id` unless `metadata.user_id` is set.": {
+			"es": "Identificador del usuario final, igual que en Chat Completions. Los modelos Claude lo reciben como `metadata.user_id`, salvo que `metadata.user_id` ya esté definido.",
+			"fr": "Identifiant de l’utilisateur final, comme dans Chat Completions. Les modèles Claude le reçoivent sous la forme `metadata.user_id`, sauf si `metadata.user_id` est défini.",
+			"de": "Endbenutzerkennung, wie bei Chat Completions. Claude-Modelle erhalten sie als `metadata.user_id`, sofern `metadata.user_id` nicht gesetzt ist.",
+			"pt-BR": "Identificador do usuário final, como em Chat Completions. Os modelos Claude o recebem como `metadata.user_id`, a menos que `metadata.user_id` esteja definido.",
+			"hi": "अंतिम-उपयोगकर्ता पहचानकर्ता, जैसा Chat Completions में होता है। Claude मॉडल इसे `metadata.user_id` के रूप में पाते हैं, जब तक कि `metadata.user_id` सेट न हो।",
+			"ja": "エンドユーザー識別子。Chat Completions と同じです。`metadata.user_id` が設定されていない場合、Claude モデルはこれを `metadata.user_id` として受け取ります。",
+			"zh-Hans": "最终用户标识符，与 Chat Completions 中相同。除非已设置 `metadata.user_id`，否则 Claude 模型会以 `metadata.user_id` 的形式接收它。",
+			"ar": "معرّف المستخدم النهائي، كما في Chat Completions. تستلمه نماذج Claude بوصفه `metadata.user_id` ما لم يُضبط `metadata.user_id`."
+		},
+		"Present when the request used `context_management` and Anthropic applied an edit. `applied_edits` lists each edit with what it cleared. Streams carry it on the final `message_delta` event.": {
+			"es": "Aparece cuando la solicitud usó `context_management` y Anthropic aplicó una edición. `applied_edits` enumera cada edición con lo que eliminó. En streaming, llega en el evento `message_delta` final.",
+			"fr": "Présent lorsque la requête utilisait `context_management` et qu’Anthropic a appliqué une modification. `applied_edits` liste chaque modification avec ce qu’elle a effacé. En streaming, il figure dans l’événement `message_delta` final.",
+			"de": "Vorhanden, wenn die Anfrage `context_management` verwendet und Anthropic eine Bearbeitung angewendet hat. `applied_edits` listet jede Bearbeitung mit den entfernten Inhalten auf. Bei Streams steht es im abschließenden `message_delta`-Ereignis.",
+			"pt-BR": "Presente quando a solicitação usou `context_management` e a Anthropic aplicou uma edição. `applied_edits` lista cada edição com o que ela removeu. Em streams, vem no evento `message_delta` final.",
+			"hi": "तब मौजूद होता है जब अनुरोध में `context_management` का उपयोग हुआ हो और Anthropic ने कोई एडिट लागू किया हो। `applied_edits` हर एडिट को इस जानकारी के साथ सूचीबद्ध करता है कि उसने क्या हटाया। स्ट्रीम में यह अंतिम `message_delta` इवेंट में आता है।",
+			"ja": "リクエストで `context_management` を使用し、Anthropic が編集を適用した場合に含まれます。`applied_edits` には各編集と、それによって消去された内容が記載されます。ストリームでは最後の `message_delta` イベントに含まれます。",
+			"zh-Hans": "当请求使用了 `context_management` 且 Anthropic 应用了编辑时出现。`applied_edits` 列出每项编辑及其清除的内容。流式响应中，它位于最后的 `message_delta` 事件里。",
+			"ar": "يظهر عندما يستخدم الطلب `context_management` وتطبّق Anthropic تعديلًا. يسرد `applied_edits` كل تعديل مع ما أزاله. وفي التدفقات، يرد في حدث `message_delta` الأخير."
 		}
 	},
 	"GET /apps": {

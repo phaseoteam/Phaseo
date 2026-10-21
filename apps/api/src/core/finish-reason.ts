@@ -32,6 +32,13 @@ export type AnthropicStopReason =
  */
 export const GATEWAY_STOP_KEY = "_phaseo_stop";
 
+/**
+ * Gateway-internal key on a Responses `response` object carrying Anthropic's
+ * `context_management` result (the edits context editing applied) to the Messages
+ * adapter. Responses has no such field, so it is removed with the stop carrier.
+ */
+export const GATEWAY_CONTEXT_MANAGEMENT_KEY = "_phaseo_context_management";
+
 export type GatewayStop = {
 	reason: IRFinishDetail;
 	sequence?: string | null;
@@ -146,22 +153,37 @@ export function gatewayStopEntry(
 	};
 }
 
+/** The internal context-management entry to spread onto a Responses `response` object. */
+export function gatewayContextManagementEntry(value: unknown): Record<string, Record<string, any>> {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+	return { [GATEWAY_CONTEXT_MANAGEMENT_KEY]: value as Record<string, any> };
+}
+
+/** The Anthropic `context_management` result carried on a Responses `response` object, if any. */
+export function readGatewayContextManagement(response: any): Record<string, any> | null {
+	const value = response && typeof response === "object" ? response[GATEWAY_CONTEXT_MANAGEMENT_KEY] : null;
+	return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
+function withoutGatewayKeys(record: Record<string, any>): Record<string, any> | null {
+	if (!(GATEWAY_STOP_KEY in record) && !(GATEWAY_CONTEXT_MANAGEMENT_KEY in record)) return null;
+	const { [GATEWAY_STOP_KEY]: _stop, [GATEWAY_CONTEXT_MANAGEMENT_KEY]: _context, ...rest } = record;
+	return rest;
+}
+
 /**
- * Remove the internal stop from a client-bound frame (a Responses event with a
- * `response`, or a bare `response` object). Returns the frame unchanged when it has none.
+ * Remove the internal stop and context-management carriers from a client-bound frame (a
+ * Responses event with a `response`, or a bare `response` object). Returns the frame
+ * unchanged when it has neither.
  */
 export function stripGatewayStop<T>(frame: T): T {
 	if (!frame || typeof frame !== "object") return frame;
 	const record = frame as Record<string, any>;
-	if (GATEWAY_STOP_KEY in record) {
-		const { [GATEWAY_STOP_KEY]: _omit, ...rest } = record;
-		return rest as T;
-	}
+	const stripped = withoutGatewayKeys(record);
+	if (stripped) return stripped as T;
 	const response = record.response;
-	if (response && typeof response === "object" && GATEWAY_STOP_KEY in response) {
-		const { [GATEWAY_STOP_KEY]: _omit, ...rest } = response;
-		return { ...record, response: rest } as T;
-	}
+	const strippedResponse = response && typeof response === "object" ? withoutGatewayKeys(response) : null;
+	if (strippedResponse) return { ...record, response: strippedResponse } as T;
 	return frame;
 }
 

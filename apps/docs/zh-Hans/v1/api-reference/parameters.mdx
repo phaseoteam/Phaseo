@@ -436,14 +436,14 @@ token 一旦出现过，就会降低其再次使用的倾向，从而帮助模�
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-在支持时请求在响应中返回推理内容或摘要。
+为保持兼容性，在 Chat Completions 上接受此参数。无论此值如何设置，只要模型生成了推理内容和摘要，就会返回。
 
 | 字段 | 值 |
 | --- | --- |
 | 类型 | `boolean` |
-| 默认值 | `false` |
+| 默认值 | `true` |
 
-请谨慎使用。推理负载可能更大，并非所有模型都支持；对于不需要额外诊断信息的生产响应也可能不合适。
+推理负载可能很大，并非所有模型都支持。要减少推理，请降低 `reasoning.effort` 或将 `reasoning.enabled` 设为 `false`。
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -464,6 +464,7 @@ Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制�
 
 - `Batch` 是独立的 API 流程，并非服务级别的取值。
 - 支持情况因端点和提供商而异。
+- 也接受 OpenAI 的取值：`auto`（或 `null`）表示不指定特定层级，按省略该字段处理；`scale` 按标准层级 `default` 处理。
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

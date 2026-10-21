@@ -1,8 +1,18 @@
+/**
+ * An optional top-level field sent as `null` is treated as unset, the same as leaving it out.
+ */
 export interface AnthropicMessagesRequest {
   cache_control?: {
     scope?: string;
     ttl?: string;
     type?: string;
+    [key: string]: unknown;
+  };
+  context_management?: {
+    edits?: {
+      type: string;
+      [key: string]: unknown;
+    }[];
     [key: string]: unknown;
   };
   debug?: {
@@ -119,7 +129,8 @@ export interface AnthropicMessagesRequest {
     };
   };
   reasoning?: {
-    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+    effort?:
+      "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | null;
     enabled?: boolean;
     max_tokens?: number;
     mode?: "standard" | "pro";
@@ -228,4 +239,5 @@ export interface AnthropicMessagesRequest {
   top_k?: number;
   top_p?: number;
   usage?: boolean;
+  user?: string;
 }

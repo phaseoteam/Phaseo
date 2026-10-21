@@ -292,7 +292,8 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	// Transform reasoning
 	const reasoningCandidate: IRReasoning | undefined = req.reasoning
 		? {
-			effort: req.reasoning.effort,
+			// null means "not set": it must not reach executors as an effort.
+			effort: req.reasoning.effort ?? undefined,
 			mode: req.reasoning.mode ?? undefined,
 			summary: req.reasoning.summary || undefined,
 			context: req.reasoning.context ?? undefined,

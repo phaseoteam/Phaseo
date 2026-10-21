@@ -437,14 +437,14 @@ Depending on the route, this may be a request knob, a limit, or a response accou
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-Requests reasoning content or reasoning summaries in responses where supported.
+Accepted on Chat Completions for compatibility. Reasoning content and summaries are returned whenever the model produces them, whatever this is set to.
 
 | Field | Value |
 | --- | --- |
 | Type | `boolean` |
-| Default | `false` |
+| Default | `true` |
 
-Use this carefully. Reasoning payloads can be larger, may not be available on every model, and may be a poor fit for production responses that do not need extra diagnostic detail.
+Reasoning payloads can be large and are not available on every model. To reduce reasoning, lower `reasoning.effort` or set `reasoning.enabled` to `false`.
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -465,6 +465,7 @@ Notes:
 
 - `Batch` is a separate API flow, not a service-tier value.
 - Support varies by endpoint and provider.
+- OpenAI's values are also accepted: `auto` (or `null`) asks for no particular tier and is treated like omitting the field, and `scale` is treated as `default`, the standard tier.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

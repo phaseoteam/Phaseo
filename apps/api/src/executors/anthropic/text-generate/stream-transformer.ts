@@ -5,7 +5,7 @@
 import { toResponsesAnnotations } from "@protocols/shared/citations";
 import { SseParser } from "@core/sse-parser";
 import { ANTHROPIC_REASONING_FORMAT, sealReasoningState } from "@core/reasoning-state";
-import { gatewayStopEntry, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
+import { gatewayContextManagementEntry, gatewayStopEntry, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
 
 /**
  * Transform Anthropic Messages API streaming to OpenAI Responses API streaming format
@@ -112,10 +112,19 @@ export function anthropicUsageToResponsesUsage(usage: any): Record<string, unkno
 export function createAnthropicToResponsesStreamTransformer(
 	requestId: string,
 	model: string,
-	options?: { accounting?: AnthropicStreamAccounting; providerId?: string },
+	options?: {
+		accounting?: AnthropicStreamAccounting;
+		providerId?: string;
+		/**
+		 * Carry the `context_management` result from the final message_delta on the
+		 * terminal response, for the Messages adapter. Only Messages clients get it.
+		 */
+		keepContextManagement?: boolean;
+	},
 ): TransformStream<Uint8Array, Uint8Array> {
 	const accounting = options?.accounting;
 	const providerId = options?.providerId;
+	const keepContextManagement = options?.keepContextManagement === true;
 	const parser = new SseParser();
 	const encoder = new TextEncoder();
 
@@ -125,6 +134,7 @@ export function createAnthropicToResponsesStreamTransformer(
 	let usage: any = null;
 	let stopReason: string | null = null;
 	let stopSequence: string | null = null;
+	let contextManagement: unknown = null;
 
 	// Track content blocks by index
 	const contentBlocks: Map<number, {
@@ -393,6 +403,7 @@ export function createAnthropicToResponsesStreamTransformer(
 					// Update usage and stop reason
 					if (payload.delta?.stop_reason) stopReason = payload.delta.stop_reason;
 					if (typeof payload.delta?.stop_sequence === "string") stopSequence = payload.delta.stop_sequence;
+					if (keepContextManagement && payload.context_management) contextManagement = payload.context_management;
 					if (payload.usage) {
 						usage = { ...usage, ...payload.usage };
 					}
@@ -490,6 +501,7 @@ export function createAnthropicToResponsesStreamTransformer(
 							status,
 							...(incompleteDetails ? { incomplete_details: incompleteDetails } : {}),
 							...gatewayStopEntry(finish.finishDetail, stopSequence),
+							...gatewayContextManagementEntry(contextManagement),
 							output: outputItems,
 							usage: responseUsage,
 							nativeResponseId: messageId,

@@ -436,14 +436,14 @@ Según la ruta, puede ser un control de solicitud, un límite o un campo de cont
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-Solicita contenido o resúmenes del razonamiento en las respuestas cuando están disponibles.
+Se acepta en Chat Completions por compatibilidad. El contenido y los resúmenes del razonamiento se devuelven siempre que el modelo los genera, sea cual sea el valor de este campo.
 
 | Campo | Valor |
 | --- | --- |
 | Tipo | `boolean` |
-| Predeterminado | `false` |
+| Predeterminado | `true` |
 
-Úsalo con cuidado. Los datos de razonamiento pueden ser más grandes, no estar disponibles en todos los modelos y no ser adecuados para respuestas de producción que no necesiten detalles de diagnóstico adicionales.
+Los datos de razonamiento pueden ser grandes y no están disponibles en todos los modelos. Para reducir el razonamiento, baja `reasoning.effort` o establece `reasoning.enabled` en `false`.
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
@@ -464,6 +464,7 @@ Notas:
 
 - `Batch` es un flujo de API independiente, no un valor del nivel de servicio.
 - La compatibilidad varía según el endpoint y el proveedor.
+- También se aceptan los valores de OpenAI: `auto` (o `null`) no pide ningún nivel concreto y se trata como si se omitiera el campo, y `scale` se trata como `default`, el nivel estándar.
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>

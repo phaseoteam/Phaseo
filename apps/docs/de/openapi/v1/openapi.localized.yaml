@@ -8866,6 +8866,7 @@ components:
         data_collection:
           type: string
           nullable: true
+          description: '`allow` (der Standardwert) filtert nichts. `deny` wird noch nicht unterstützt und liefert 400 unsupported_routing_filter.'
           enum:
             - allow
             - deny
@@ -8875,6 +8876,7 @@ components:
         enforce_distillable_text:
           type: boolean
           nullable: true
+          description: '`false` (der Standardwert) filtert nichts. `true` wird noch nicht unterstützt und liefert 400 unsupported_routing_filter.'
         quantizations:
           type: array
           nullable: true
@@ -9558,6 +9560,7 @@ components:
         - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
+      description: Ein optionales Feld der obersten Ebene, das als `null` gesendet wird, gilt als nicht gesetzt, genau wie ein weggelassenes Feld.
       required:
         - model
         - messages
@@ -9699,8 +9702,31 @@ components:
           type: string
         user:
           type: string
+        include_reasoning:
+          type: boolean
+          description: Wird aus Kompatibilitätsgründen akzeptiert. Reasoning wird immer zurückgegeben, wenn das Modell es erzeugt (`reasoning_content` und `reasoning_details`), unabhängig vom Wert dieses Felds.
+        prediction:
+          type: object
+          description: Vorhergesagte Ausgabe für schnellere Antworten, wenn der Großteil der Antwort im Voraus bekannt ist. Wird an Modelle von OpenAI, Mistral und Moonshot weitergeleitet; andere Anbieter ignorieren sie.
+          required:
+            - type
+            - content
+          properties:
+            type:
+              type: string
+              enum:
+                - content
+            content:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: object
+                    additionalProperties: true
         service_tier:
           type: string
+          nullable: true
+          description: Wählt eine unterstützte Routing- oder Preisstufe. `auto` (oder null) fordert keine bestimmte Stufe an und wird so geroutet und abgerechnet, als wäre das Feld nicht gesetzt; `scale` wird als `default` behandelt, die Standardstufe.
           enum:
             - standard
             - default
@@ -9709,6 +9735,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         prompt_cache_key:
           type: string
           nullable: true
@@ -10264,7 +10292,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: Reasoning-Aufwand. Fehlt er oder ist er null, bestimmen `max_tokens`, `enabled` oder der eigene Standardwert des Modells, wie viel Reasoning das Modell betreibt.
         mode:
           type: string
           enum:
@@ -10296,7 +10325,8 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: Reasoning-Aufwand. Fehlt er oder ist er null, bestimmen `max_tokens`, `enabled` oder der eigene Standardwert des Modells, wie viel Reasoning das Modell betreibt.
         mode:
           type: string
           enum:
@@ -10417,6 +10447,7 @@ components:
           description: In den Prompt-Cache des Anbieters geschriebene Eingabetoken.
     AnthropicMessagesRequest:
       type: object
+      description: Ein optionales Feld der obersten Ebene, das als `null` gesendet wird, gilt als nicht gesetzt, genau wie ein weggelassenes Feld.
       required:
         - model
         - messages
@@ -10501,6 +10532,24 @@ components:
           description: Eindeutige Kennung, um zusammengehörige Anfragen (zum Beispiel eine Unterhaltung oder einen Agenten-Workflow) für die Beobachtbarkeit zu gruppieren.
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
+        context_management:
+          type: object
+          description: Kontextbearbeitung von Anthropic. `edits` akzeptiert die Strategien `clear_tool_uses_*` und `clear_thinking_*` und wird mit dem zugehörigen Beta-Header an Anthropic gesendet. Andere Anbieter führen die Anfrage ohne dieses Feld aus und nennen `context_management` in `X-Phaseo-Dropped-Params`. Bearbeitungen zur Komprimierung (`compact_*`) liefern 400.
+          properties:
+            edits:
+              type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                additionalProperties: true
+          additionalProperties: true
+        user:
+          type: string
+          description: Endbenutzerkennung, wie bei Chat Completions. Claude-Modelle erhalten sie als `metadata.user_id`, sofern `metadata.user_id` nicht gesetzt ist.
         stop_sequences:
           type: array
           items:
@@ -10542,6 +10591,15 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AnthropicUsage'
+        context_management:
+          type: object
+          description: Vorhanden, wenn die Anfrage `context_management` verwendet und Anthropic eine Bearbeitung angewendet hat. `applied_edits` listet jede Bearbeitung mit den entfernten Inhalten auf. Bei Streams steht es im abschließenden `message_delta`-Ereignis.
+          properties:
+            applied_edits:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     AnthropicMessage:
       type: object
       required:
@@ -10634,6 +10692,7 @@ components:
           type: integer
     ResponsesRequest:
       type: object
+      description: Ein optionales Feld der obersten Ebene, das als `null` gesendet wird, gilt als nicht gesetzt, genau wie ein weggelassenes Feld.
       required:
         - model
         - input
@@ -10677,6 +10736,8 @@ components:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
+          nullable: true
+          description: Wählt eine unterstützte Routing- oder Preisstufe. `auto` (oder null) fordert keine bestimmte Stufe an und wird so geroutet und abgerechnet, als wäre das Feld nicht gesetzt; `scale` wird als `default` behandelt, die Standardstufe.
           enum:
             - standard
             - default
@@ -10685,6 +10746,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         store:
           type: boolean
         stream:

@@ -9288,6 +9288,9 @@ components:
         data_collection:
           type: string
           nullable: true
+          description: >-
+            `allow` (the default) filters nothing. `deny` is not supported yet
+            and returns 400 unsupported_routing_filter.
           enum:
             - allow
             - deny
@@ -9297,6 +9300,9 @@ components:
         enforce_distillable_text:
           type: boolean
           nullable: true
+          description: >-
+            `false` (the default) filters nothing. `true` is not supported yet
+            and returns 400 unsupported_routing_filter.
         quantizations:
           type: array
           nullable: true
@@ -10006,6 +10012,9 @@ components:
         - google/gemini-2.5-flash
     ChatCompletionsRequest:
       type: object
+      description: >-
+        An optional top-level field sent as `null` is treated as unset, the same
+        as leaving it out.
       required:
         - model
         - messages
@@ -10155,8 +10164,40 @@ components:
           type: string
         user:
           type: string
+        include_reasoning:
+          type: boolean
+          description: >-
+            Accepted for compatibility. Reasoning is returned whenever the model
+            produces it (`reasoning_content` and `reasoning_details`), whatever
+            this is set to.
+        prediction:
+          type: object
+          description: >-
+            Predicted output, for faster responses when most of the reply is
+            known in advance. Forwarded to OpenAI, Mistral and Moonshot models;
+            other providers ignore it.
+          required:
+            - type
+            - content
+          properties:
+            type:
+              type: string
+              enum:
+                - content
+            content:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: object
+                    additionalProperties: true
         service_tier:
           type: string
+          nullable: true
+          description: >-
+            Selects a supported routing or pricing tier. `auto` (or null) asks
+            for no particular tier and is routed and billed as if the field were
+            unset; `scale` is treated as `default`, the standard tier.
           enum:
             - standard
             - default
@@ -10165,6 +10206,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         prompt_cache_key:
           type: string
           nullable: true
@@ -10744,7 +10787,10 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: >-
+            Reasoning effort. When omitted or null, `max_tokens`, `enabled` or
+            the model's own default decides how much the model reasons.
         mode:
           type: string
           enum:
@@ -10776,7 +10822,10 @@ components:
             - high
             - xhigh
             - max
-          default: medium
+          nullable: true
+          description: >-
+            Reasoning effort. When omitted or null, `max_tokens`, `enabled` or
+            the model's own default decides how much the model reasons.
         mode:
           type: string
           enum:
@@ -10897,6 +10946,9 @@ components:
           description: Input tokens written to the provider's prompt cache.
     AnthropicMessagesRequest:
       type: object
+      description: >-
+        An optional top-level field sent as `null` is treated as unset, the same
+        as leaving it out.
       required:
         - model
         - messages
@@ -10986,6 +11038,31 @@ components:
             conversation or agent workflow) for observability.
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
+        context_management:
+          type: object
+          description: >-
+            Anthropic context editing. `edits` takes `clear_tool_uses_*` and
+            `clear_thinking_*` strategies and is sent to Anthropic with its beta
+            header. Other providers run the request without it and list
+            `context_management` in `X-Phaseo-Dropped-Params`. Compaction edits
+            (`compact_*`) return 400.
+          properties:
+            edits:
+              type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                additionalProperties: true
+          additionalProperties: true
+        user:
+          type: string
+          description: >-
+            End-user identifier, as on Chat Completions. Claude models receive
+            it as `metadata.user_id` unless `metadata.user_id` is set.
         stop_sequences:
           type: array
           items:
@@ -11027,6 +11104,18 @@ components:
           type: string
         usage:
           $ref: '#/components/schemas/AnthropicUsage'
+        context_management:
+          type: object
+          description: >-
+            Present when the request used `context_management` and Anthropic
+            applied an edit. `applied_edits` lists each edit with what it
+            cleared. Streams carry it on the final `message_delta` event.
+          properties:
+            applied_edits:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
     AnthropicMessage:
       type: object
       required:
@@ -11123,6 +11212,9 @@ components:
           type: integer
     ResponsesRequest:
       type: object
+      description: >-
+        An optional top-level field sent as `null` is treated as unset, the same
+        as leaving it out.
       required:
         - model
         - input
@@ -11171,6 +11263,11 @@ components:
           $ref: '#/components/schemas/OpenAIReasoningConfig'
         service_tier:
           type: string
+          nullable: true
+          description: >-
+            Selects a supported routing or pricing tier. `auto` (or null) asks
+            for no particular tier and is routed and billed as if the field were
+            unset; `scale` is treated as `default`, the standard tier.
           enum:
             - standard
             - default
@@ -11179,6 +11276,8 @@ components:
             - priority
             - flex
             - batch
+            - auto
+            - scale
         store:
           type: boolean
         stream:
