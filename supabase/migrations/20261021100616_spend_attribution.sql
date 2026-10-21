@@ -8,6 +8,7 @@
 -- Backfill: rows already rolled up get their actor from keys for the current and previous calendar
 -- month (what calendar, previous-period and 30-day rolling rules read). OAuth-token rows there, and
 -- every older row, keep a null actor until their hour is rebuilt; older periods attribute by key.
+-- phaseo:allow-destructive-migration reason: the replaced outbox processor deletes and rebuilds only derived rollup rows and truncates its temporary batch tables, as before; this migration deletes no rows, only drops and rebuilds the rollup's unique index and fills the new actor column.
 -- Hand-written: the declarative sync needs a local Postgres runtime (Docker), which is not
 -- available where this was authored. It matches the definitions in schemas/.
 SET local check_function_bodies = off;
