@@ -480,22 +480,22 @@ icon: "sliders-horizontal"
 
 استخدمه عندما تشترك سلسلة من الطلبات في بادئات prompt ثابتة، مثل خطوات حلقة الوكيل. تثبّت Phaseo المفتاح على المزوّد والمسار (النشر أو المنطقة) اللذين خدما أول طلب ناجح، وتُبقي الطلبات اللاحقة التي تحمل المفتاح نفسه هناك حتى يتعطل ذلك المزوّد، أو تنفد الحصة المُدارة من Phaseo لديه، أو لا تعود سياسة التوجيه لديك تسمح به. تُحفظ التثبيتات لكل مساحة عمل على حدة، وتتبع مدتها مدة احتفاظ المزوّد بالتخزين المؤقت. راجع [ارتباط بالمزوّد](../guides/prompt-caching.mdx#provider-affinity).
 
-ترسل Phaseo إلى المزوّد تجزئة لمعرّف مساحة العمل والمفتاح، وليس المفتاح الخام أبدًا، لذا لا تتشارك مساحات العمل التي تختار المفتاح نفسه ذاكرة مزوّد مؤقتة. وتعيد الردود المفتاح الذي أرسلته. لا يتلقى المزوّدون الذين ترفض واجهتهم البرمجية هذا الحقل، ولا يؤدي إرساله أبدًا إلى استبعاد مزوّد من التوجيه. يمكن لـ Phaseo أيضًا اشتقاق الارتباط من سياق الطلب، لكن المفتاح الصريح أفضل للمحادثات الطويلة وجلسات الوكلاء وسير العمل المتكرر.
+تقبله Chat Completions وResponses وAnthropic Messages. ترسل Phaseo إلى المزوّد تجزئة لمعرّف مساحة العمل والمفتاح، وليس المفتاح الخام أبدًا، لذا لا تتشارك مساحات العمل التي تختار المفتاح نفسه ذاكرة مزوّد مؤقتة. وتعيد الردود المفتاح الذي أرسلته. لا يتلقى المزوّدون الذين ترفض واجهتهم البرمجية هذا الحقل، ولا يؤدي إرساله أبدًا إلى استبعاد مزوّد من التوجيه. يمكن لـ Phaseo أيضًا اشتقاق الارتباط من سياق الطلب، لكن المفتاح الصريح أفضل للمحادثات الطويلة وجلسات الوكلاء وسير العمل المتكرر.
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
 
-يمرّر عناصر التحكم في ذاكرة prompt المؤقتة إلى OpenAI وAzure OpenAI بدءًا من GPT-5.6، بما في ذلك GPT-6 Astra، وإلى DeepInfra.
+يمرّر عناصر التحكم في ذاكرة prompt المؤقتة إلى OpenAI وAzure OpenAI بدءًا من GPT-5.6، بما في ذلك GPT-6 Astra، وإلى DeepInfra وMoonshot AI.
 
 | الحقل | القيمة |
 | --- | --- |
 | النوع | `object` |
 | الحقول الشائعة | `mode` (`implicit` أو `explicit`)، `ttl` |
-| TTL في OpenAI | `30m` |
+| TTL في OpenAI | `30m`، أو `12h` على Responses API من OpenAI |
 
-استخدم `{"mode":"explicit","ttl":"30m"}` عندما تريد أن يخزّن OpenAI مؤقتًا نقاط التوقف التي تضعها فقط. `30m` هي قيمة `ttl` الوحيدة التي يقبلها OpenAI. ويقبل DeepInfra القيمة `5m` أو `1h`، ويتطلب `prompt_cache_key` في كل طلب ضمن الجلسة.
+استخدم `{"mode":"explicit","ttl":"30m"}` عندما تريد أن يخزّن OpenAI مؤقتًا نقاط التوقف التي تضعها فقط. يقبل OpenAI قيمة `ttl` هي `30m` (الافتراضية) أو `12h`، بينما لا يقبل Azure OpenAI سوى `30m`؛ راجع [ذاكرة التخزين المؤقت لمدة 12 ساعة في OpenAI](../guides/prompt-caching.mdx#12-hour-cache-on-openai). ويقبل DeepInfra القيمة `5m` أو `1h`، ويتطلب `prompt_cache_key` في كل طلب ضمن الجلسة. ويقبل Moonshot AI القيمة `mode: "implicit"` وقيمة `ttl` هي `5m`، أو `1h` على Kimi K3.
 
-ترسل Phaseo الكائن دون تغيير إلى هذه المسارات. وتحذفه لكل المزوّدين الآخرين ولنماذج OpenAI السابقة لـ GPT-5.6، التي تستخدم [`prompt_cache_retention`](#prompt_cache_retention) بدلًا منه. يُقبل أيضًا `provider_options.openai.prompt_cache_options`؛ وتُعتمد قيمة المستوى الأعلى.
+ترسل Phaseo الكائن إلى هذه المسارات. وتُحذف مدة الصلاحية التي لا يقبلها المسار، مثل `12h` على Azure OpenAI أو `1h` على نموذج من Moonshot AI بلا سعر لكتابة الساعة الواحدة، ويُبلَّغ عنها في ترويسة `X-Phaseo-Dropped-Params`. وتحذف Phaseo الكائن لكل المزوّدين الآخرين ولنماذج OpenAI السابقة لـ GPT-5.6، التي تستخدم [`prompt_cache_retention`](#prompt_cache_retention) بدلًا منه. يُقبل أيضًا `provider_options.openai.prompt_cache_options`؛ وتُعتمد قيمة المستوى الأعلى.
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
@@ -576,7 +576,7 @@ icon: "sliders-horizontal"
 
 استخدمه عند الحاجة إلى ميزة أصلية للمزوّد مع إبقاء بقية الطلب ضمن المخطط المشترك للبوابة. فضّل `cache_control` في المستوى الأعلى لسياسات التخزين المؤقت في Claude، وللاحتفاظ في OpenAI استخدم `prompt_cache_options` في المستوى الأعلى مع GPT-5.6 وما بعده، أو `prompt_cache_retention` في المستوى الأعلى مع النماذج الأقدم.
 
-يحدد `google.cached_content` ذاكرة تخزين مؤقت صريحة في Gemini. على Google AI Studio لا يعمل إلا بمفتاح Google API الخاص بك، وعلى Vertex AI يجب أن تنتمي ذاكرة التخزين المؤقت إلى مشروع بيانات الاعتماد التي تخدم الطلب. يُقبل `google.cache_control` و`google.cache_ttl`، لكنهما لا يُرسلان إلى Google.
+يحدد `google.cached_content` ذاكرة تخزين مؤقت صريحة في Gemini. لا يعمل إلا ببيانات الاعتماد الخاصة بك: مفتاح Google API على Google AI Studio، أو بيانات اعتماد Vertex AI على Vertex AI. على Vertex AI، ترسل Phaseo الطلب إلى المشروع والموقع الواردين في الاسم الكامل لذاكرة التخزين المؤقت (`projects/{project}/locations/{location}/cachedContents/{id}`)؛ أما الاسم المختصر فيستخدم `project_id` و`region` الموجودين في ملف JSON لحساب الخدمة. مع بيانات اعتماد Phaseo يعيد الطلب الخطأ 400. يُقبل `google.cache_control` و`google.cache_ttl`، لكنهما لا يُرسلان إلى Google.
 
 للاطلاع على أمثلة تخزين prompt مؤقتًا حسب المزوّد عبر Chat Completions وResponses وAnthropic Messages، راجع [تخزين prompt مؤقتًا](../guides/prompt-caching.mdx).
 

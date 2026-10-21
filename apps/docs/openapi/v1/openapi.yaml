@@ -11415,6 +11415,13 @@ components:
           description: >-
             End-user identifier, as on Chat Completions. Claude models receive
             it as `metadata.user_id` unless `metadata.user_id` is set.
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: >-
+            Groups related requests so they stay on the provider that holds
+            their prompt cache. Phaseo sends a hash of your workspace and this
+            key upstream, never the raw key.
         stop_sequences:
           type: array
           items:

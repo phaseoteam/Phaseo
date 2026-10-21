@@ -62,6 +62,7 @@ class AnthropicMessagesRequest(TypedDict):
 	models: NotRequired[List[str]]
 	plugins: NotRequired[List[Union[WebSearchPlugin, WebFetchPlugin, ResponseHealingPlugin]]]
 	prompt: NotRequired[PromptTemplateReference]
+	prompt_cache_key: NotRequired[Optional[str]]
 	provider: NotRequired[ProviderRoutingOptions]
 	provider_options: NotRequired[ProviderOptions]
 	reasoning: NotRequired[ReasoningConfig]

@@ -96,6 +96,7 @@ export interface AnthropicMessagesRequest {
       [key: string]: unknown;
     };
   };
+  prompt_cache_key?: string | null;
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;

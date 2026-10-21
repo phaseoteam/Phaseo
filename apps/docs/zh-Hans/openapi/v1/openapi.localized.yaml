@@ -10811,6 +10811,10 @@ components:
         user:
           type: string
           description: 最终用户标识符，与 Chat Completions 中相同。除非已设置 `metadata.user_id`，否则 Claude 模型会以 `metadata.user_id` 的形式接收它。
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: 将相关请求归为一组，使其保留在持有其 prompt 缓存的提供商上。Phaseo 向上游发送的是你的工作区与该键的哈希值，绝不发送原始键。
         stop_sequences:
           type: array
           items:

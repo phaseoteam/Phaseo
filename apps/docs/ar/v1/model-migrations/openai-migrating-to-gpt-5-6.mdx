@@ -126,7 +126,7 @@ GPT-5.6 هي عائلة GPT الحالية من OpenAI لسير العمل ال�
 }
 ```
 
-يخزّن `prompt_cache_breakpoint` مؤقتًا كل ما يسبقه حتى كتلته، بما فيها الكتلة نفسها. ويعمل أيضًا `cache_control` على مستوى الكتلة مثل `{"type": "ephemeral"}`، وترسله Phaseo إلى GPT-5.6 بصيغة `prompt_cache_breakpoint`. وتصل أيٌّ من العلامتين إلى Claude كنقطة توقف للتخزين المؤقت، لذا يستمر التخزين المؤقت عند التحويل إلى Claude. في الوضع `explicit` لا يخزّن OpenAI إلا نقاط التوقف التي تضعها، و`30m` هي قيمة `ttl` الوحيدة التي يقبلها. لا ترسل Phaseo `prompt_cache_retention` إلى GPT-5.6. راجع [تخزين المطالبات مؤقتًا](../guides/prompt-caching.mdx#openai-retention-and-options).
+يخزّن `prompt_cache_breakpoint` مؤقتًا كل ما يسبقه حتى كتلته، بما فيها الكتلة نفسها. ويعمل أيضًا `cache_control` على مستوى الكتلة مثل `{"type": "ephemeral"}`، وترسله Phaseo إلى GPT-5.6 بصيغة `prompt_cache_breakpoint`. وتصل أيٌّ من العلامتين إلى Claude كنقطة توقف للتخزين المؤقت، لذا يستمر التخزين المؤقت عند التحويل إلى Claude. في الوضع `explicit` لا يخزّن OpenAI إلا نقاط التوقف التي تضعها. وقيمة `ttl` هي `30m` (الافتراضية) أو `12h`، ولا يقبل OpenAI القيمة `12h` إلا على Responses API الخاصة به؛ راجع [ذاكرة التخزين المؤقت لمدة 12 ساعة في OpenAI](../guides/prompt-caching.mdx#12-hour-cache-on-openai). لا ترسل Phaseo `prompt_cache_retention` إلى GPT-5.6. راجع [تخزين المطالبات مؤقتًا](../guides/prompt-caching.mdx#openai-retention-and-options).
 
 ## ما الذي ينبغي اختباره
 

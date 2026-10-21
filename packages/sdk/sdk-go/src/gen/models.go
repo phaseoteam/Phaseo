@@ -66,6 +66,7 @@ type AnthropicMessagesRequest struct {
 	Models *[]string `json:"models,omitempty"`
 	Plugins *[]interface{} `json:"plugins,omitempty"`
 	Prompt *map[string]interface{} `json:"prompt,omitempty"`
+	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`

@@ -1148,6 +1148,8 @@ export const AnthropicMessagesSchema = lazySchema(() => z.object({
 	}).passthrough().optional(),
 	// Same end-user identifier as Chat's `user`; sent to Anthropic as metadata.user_id.
 	user: z.string().optional(),
+	// Same cache affinity key as Chat and Responses.
+	prompt_cache_key: z.string().nullable().optional(),
 
     stop_sequences: z.array(z.string()).optional(),
     web_search_options: z.record(z.string(), z.any()).optional(),

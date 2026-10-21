@@ -95,6 +95,8 @@ module Phaseo
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] prompt
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] prompt_cache_key
+    #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider_options
@@ -125,7 +127,7 @@ module Phaseo
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    AnthropicMessagesRequest = Struct.new(:cache_control, :context_management, :debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :plugins, :prompt, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, :user, keyword_init: true)
+    AnthropicMessagesRequest = Struct.new(:cache_control, :context_management, :debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :models, :plugins, :prompt, :prompt_cache_key, :provider, :provider_options, :reasoning, :service_tier, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, :user, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] context_management

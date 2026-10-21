@@ -85,17 +85,27 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Providers that keep prompt caches per replica and route on an x-session-affinity
-// header. The value is the workspace-namespaced cache key, never the raw client key.
-// https://docs.fireworks.ai/guides/prompt-caching
-// https://developers.cloudflare.com/workers-ai/features/prompt-caching
-const SESSION_AFFINITY_HEADER_PROVIDERS = new Set(["fireworks", "cloudflare"]);
+// Providers that keep prompt caches per replica and route on a session header, by the
+// header each one documents. The value is the workspace-namespaced cache key, never the
+// raw client key.
+// - Fireworks: https://docs.fireworks.ai/guides/prompt-caching
+// - Cloudflare: https://developers.cloudflare.com/workers-ai/features/prompt-caching
+// - Baseten: "Reuse the same x-session-affinity value for related requests to improve
+//   cached input tokens reuse" (https://docs.baseten.co/inference/model-apis/pricing-and-limits)
+// - Morph: "x-session-id ... Use this one: it reaches both region and worker placement"
+//   (https://docs.morphllm.com/sdk/components/caching)
+const SESSION_AFFINITY_HEADERS: ReadonlyMap<string, string> = new Map([
+	["fireworks", "x-session-affinity"],
+	["cloudflare", "x-session-affinity"],
+	["baseten", "x-session-affinity"],
+	["morph", "x-session-id"],
+]);
 
 export function sessionAffinityHeaders(args: Pick<ExecutorExecuteArgs, "providerId" | "meta">): Record<string, string> {
 	const key = args.meta?.cacheAffinityKey;
 	if (typeof key !== "string" || key.length === 0) return {};
-	if (!SESSION_AFFINITY_HEADER_PROVIDERS.has(String(args.providerId ?? "").trim().toLowerCase())) return {};
-	return { "x-session-affinity": key };
+	const header = SESSION_AFFINITY_HEADERS.get(String(args.providerId ?? "").trim().toLowerCase());
+	return header ? { [header]: key } : {};
 }
 
 export type OpenAIWirePolicy = {

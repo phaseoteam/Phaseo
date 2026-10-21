@@ -10811,6 +10811,10 @@ components:
         user:
           type: string
           description: अंतिम-उपयोगकर्ता पहचानकर्ता, जैसा Chat Completions में होता है। Claude मॉडल इसे `metadata.user_id` के रूप में पाते हैं, जब तक कि `metadata.user_id` सेट न हो।
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: संबंधित अनुरोधों को समूहित करता है, ताकि वे उसी प्रदाता पर रहें जिसके पास उनका प्रॉम्प्ट कैश है। Phaseo प्रदाता को आपके वर्कस्पेस और इस कुंजी का हैश भेजता है, कच्ची कुंजी कभी नहीं।
         stop_sequences:
           type: array
           items:

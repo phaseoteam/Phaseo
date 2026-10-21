@@ -166,6 +166,9 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("prompt")]
 	public Dictionary<string, object>? Prompt { get; set; }
 
+	[JsonPropertyName("prompt_cache_key")]
+	public string? PromptCacheKey { get; set; }
+
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
