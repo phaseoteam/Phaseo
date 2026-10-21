@@ -165,6 +165,8 @@ export interface NormalizedRequestUsageColumns {
 
 export interface RequestRow extends NormalizedRequestUsageColumns {
 	response_timeline?: RequestDetailMetadata["response_timeline"];
+	/** detail_metadata.labels, selected on its own for list rows. */
+	labels?: Array<{ key: string; value: string }> | null;
 	id?: string;
 	request_id: string;
 	created_at: string;
@@ -650,6 +652,7 @@ export async function fetchPaginatedRequests(
 			generation_ms,
 			latency_ms,
 			response_timeline:detail_metadata->response_timeline,
+			labels:detail_metadata->labels,
 			finish_reason,
                         success,
                         status_code,
@@ -760,6 +763,7 @@ export async function fetchPaginatedRequests(
 				generation_ms,
 				latency_ms,
 				response_timeline:detail_metadata->response_timeline,
+				labels:detail_metadata->labels,
 				finish_reason,
                                 success,
                                 status_code,
@@ -826,6 +830,7 @@ export async function fetchPaginatedRequests(
 					generation_ms,
 					latency_ms,
 					response_timeline:detail_metadata->response_timeline,
+					labels:detail_metadata->labels,
 					finish_reason,
                                         success,
                                         status_code,
@@ -889,6 +894,7 @@ export async function fetchPaginatedRequests(
 						generation_ms,
 						latency_ms,
 						response_timeline:detail_metadata->response_timeline,
+						labels:detail_metadata->labels,
 						finish_reason,
 						success,
 						key_id

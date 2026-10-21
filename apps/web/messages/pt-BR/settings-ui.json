@@ -5167,19 +5167,18 @@
 		"total": "Total",
 		"multiValueNote": "Uma solicitação com vários valores conta uma vez em cada um.",
 		"notFilteredByLabel": "Esta tabela ignora o filtro de rótulo acima.",
-		"classificationsTitle": "Classificações",
 		"labelsTitle": "Rótulos",
 		"thisIsClassifierCall": "Esta solicitação é uma chamada do classificador {name}.",
-		"statusClassified": "Classificada",
 		"statusSessionCache": "Reaproveitada da sessão",
 		"statusBudgetReached": "Orçamento atingido",
 		"statusFailed": "Falhou",
 		"confidence": "{value} de confiança",
 		"noAnswer": "Nenhum valor se encaixou",
-		"model": "Modelo",
-		"cost": "Custo",
-		"openClassifierCall": "Abrir a chamada do classificador",
-		"callerLabels": "Enviados com a solicitação"
+		"callerLabels": "Enviados com a solicitação",
+		"showLabelled": "Mostrar solicitações em que {key} é {value}",
+		"viewCall": "Ver chamada",
+		"classifierCallBadge": "Chamada do classificador",
+		"moreLabels": "+{count}"
 	},
 	"providerCatalogCopy": {
 		"serviceTier": "Nível de serviço",
@@ -5838,7 +5837,6 @@
 		"noFinalTextResponseWasCaptured": "Nenhuma resposta de texto final foi capturada.",
 		"copyModelOutput": "Copiar saída do modelo",
 		"logCapture": "Captura de logs",
-		"requestAndResponsePayloadRetainedInCloudflareR2": "Dados de solicitação e resposta retidos no Cloudflare R2.",
 		"iOPayloadStorageStatusAndRetentionDetails": "Status de armazenamento e retenção dos dados de E/S.",
 		"storage": "Armazenamento",
 		"cloudflareR2": "Cloudflare R2",
@@ -5872,7 +5870,9 @@
 		"toolApplypatch": "Aplicar patch",
 		"toolSubagent": "Subagente",
 		"toolFusion": "Fusão",
-		"toolModelsearch": "Pesquisa de modelos"
+		"toolModelsearch": "Pesquisa de modelos",
+		"payloadStatus": "Payload {status}",
+		"payloadStored": "Payload de solicitação e resposta armazenado."
 	},
 	"keyDetail": {
 		"back": "Voltar às chaves de API",
