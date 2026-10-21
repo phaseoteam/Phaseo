@@ -100,7 +100,7 @@ export function AppearanceScreen() {
             </View>
           </Section>
 
-          <Section title="Touch" description="Small vibrations when you flip a switch, make a choice, long press, send a message, and when an answer finishes. Your phone's touch vibration setting applies too.">
+          <Section title="Touch" description="Small vibrations when you flip a switch, make a choice, long press or send a message, light ticks while an answer comes in, and one when it finishes. Your phone's touch vibration setting applies too.">
             <Row
               title="Haptic feedback"
               chevron={false}

@@ -50,6 +50,15 @@ export function onChatSettled(listener: SettledListener) {
   return () => { settledListeners.delete(listener); };
 }
 
+type TextListener = (chatId: string) => void;
+const textListeners = new Set<TextListener>();
+
+/** Hears when more of an answer's text reaches the screen, at most once a frame (the chat screen ticks). */
+export function onAnswerText(listener: TextListener) {
+  textListeners.add(listener);
+  return () => { textListeners.delete(listener); };
+}
+
 // ---- Streaming writes (desktop's workspaceRuntime flushes) ----
 // Streamed text goes to the database in small appended rows. Flushes from every running answer share one
 // clock on a 20 ms grid and commit together, and an answer whose flushes cost more waits longer (4× the
@@ -119,18 +128,24 @@ function streamWriter(messageId: string) {
 
 /**
  * What the screen shows while an answer streams, published at most once a frame (and every 200 ms while the
- * unfinished part is long), with the boundaries of its finished chunks worked out from the last one onwards.
+ * unfinished part is long), with the boundaries of its finished chunks worked out from the last one onwards. New answer
+ * text (not reasoning) is reported to `onAnswerText` as it's published.
  */
-function liveWriter(messageId: string) {
+function liveWriter(messageId: string, chatId: string) {
   let value: LiveAnswer = { content: "", reasoning: "", phase: "waiting", boundaries: [] };
   let scheduled = false;
   let closed = false;
+  let shown = 0;
   const publish = () => {
     scheduled = false;
     if (closed) return;
     const added = streamingBoundaries(value.content, value.boundaries.at(-1) ?? 0);
     if (added.length) value = { ...value, boundaries: [...value.boundaries, ...added] };
     setLive(messageId, value);
+    if (value.content.length > shown) {
+      shown = value.content.length;
+      for (const listener of textListeners) listener(chatId);
+    }
   };
   const schedule = () => {
     if (scheduled || closed) return;
@@ -221,7 +236,7 @@ async function answer(chatId: string, parent: ChatMessage, model: string, worksp
   const controller = new AbortController();
   running.set(message.id, { controller, chatId });
   setRunning(chatId, 1);
-  const live = liveWriter(message.id);
+  const live = liveWriter(message.id, chatId);
   const writer = streamWriter(message.id);
   let prepared: PreparedThread | null = null;
   perf?.streamStarted(message.id);

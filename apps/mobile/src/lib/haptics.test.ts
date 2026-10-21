@@ -32,7 +32,8 @@ const storage = jest.requireMock<{ kv: { setItem: jest.Mock } }>("@/lib/storage"
 const motorModule = jest.requireMock<{ module: { capabilities: jest.Mock; pulse: jest.Mock } }>("expo").module;
 // Loaded after the mocks.
 const {
-  ANDROID_HAPTICS, ANDROID_PULSES, IOS_HAPTICS, MIN_GAP_MS, androidHaptic, androidRoute, haptic, hapticsStore, motorCapabilities, play, setHapticsEnabled, shouldPlay,
+  ANDROID_HAPTICS, ANDROID_PULSES, IOS_HAPTICS, MIN_GAP_MS, STREAM_TICK_MS, androidHaptic, androidRoute, haptic, hapticsStore, motorCapabilities, play,
+  setHapticsEnabled, shouldPlay, streamTick,
 } = jest.requireActual<typeof import("./haptics")>("./haptics");
 type Motor = NonNullable<ReturnType<typeof motorCapabilities>>;
 /** A Pixel-like motor with every effect, and the Galaxy A53's, which reports none. */
@@ -100,7 +101,7 @@ describe("touch pulses", () => {
       expect(timings.length % 2).toBe(0);
       // On segments are long enough for a slow motor to be felt, and the whole thing is over in a fifth of a second.
       for (let index = 1; index < timings.length; index += 2) {
-        expect(timings[index]).toBeGreaterThanOrEqual(12);
+        expect(timings[index]).toBeGreaterThanOrEqual(20);
         expect(amplitudes[index]).toBeGreaterThan(0);
         expect(amplitudes[index]).toBeLessThanOrEqual(255);
       }
@@ -136,7 +137,7 @@ describe("play", () => {
 
   it("plays touch pulses on a motor without effects, like the Galaxy A53's", () => {
     play("toggleOn", "android", 36, BARE);
-    expect(motorModule.pulse).toHaveBeenCalledWith([0, 22], [0, 170]);
+    expect(motorModule.pulse).toHaveBeenCalledWith([0, 32], [0, 200]);
     play("success", "android", 36, BARE);
     expect(motorModule.pulse).toHaveBeenLastCalledWith([...ANDROID_PULSES.success.timings], [...ANDROID_PULSES.success.amplitudes]);
     expect(native.performAndroidHapticsAsync).not.toHaveBeenCalled();
@@ -205,6 +206,45 @@ describe("haptic", () => {
     setHapticsEnabled(true);
     expect(storage.kv.setItem).toHaveBeenLastCalledWith("phaseo.haptics", "on");
     expect(playedCount()).toBe(1);
+  });
+});
+
+describe("streamTick", () => {
+  let now = 5_000_000;
+  beforeEach(() => {
+    now += 10_000;
+    jest.spyOn(Date, "now").mockImplementation(() => now);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it("ticks at most once every STREAM_TICK_MS while text keeps arriving", () => {
+    // Text every frame for a second: 60 reports, and a tick on the first frame after each STREAM_TICK_MS.
+    for (let frame = 0; frame < 60; frame += 1) {
+      streamTick();
+      now += 1000 / 60;
+    }
+    expect(playedCount()).toBeLessThanOrEqual(Math.ceil(1000 / STREAM_TICK_MS));
+    expect(playedCount()).toBeGreaterThanOrEqual(Math.floor(1000 / (STREAM_TICK_MS + 1000 / 60)));
+    expect(STREAM_TICK_MS).toBeGreaterThanOrEqual(100);
+  });
+
+  it("never holds up another haptic, but waits for one that just played", () => {
+    streamTick();
+    now += 5;
+    // The answer finishing straight after a tick is still felt.
+    haptic("success");
+    expect(playedCount()).toBe(2);
+    now += STREAM_TICK_MS;
+    haptic("press");
+    now += MIN_GAP_MS - 1;
+    streamTick();
+    expect(playedCount()).toBe(3);
+  });
+
+  it("is off with the rest", () => {
+    setHapticsEnabled(false);
+    streamTick();
+    expect(playedCount()).toBe(0);
   });
 });
 

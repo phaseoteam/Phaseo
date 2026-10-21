@@ -17,10 +17,11 @@ import { createStore } from "@/lib/store";
  * calls: on Android they drive the motor with fixed patterns as media, so the phone's touch vibration settings don't
  * apply. iOS plays its feedback generators.
  *
- * Haptics mark moments, not every tap: a choice made, a switch flipped, a long press caught, a message sent, an
- * outcome (done, copied, saved, failed), and a few physical ones in the version art. Plain buttons and navigation stay
- * quiet, as they do in the system's own apps. Two haptics never play within MIN_GAP_MS of each other, so a burst of
- * events (a scrub across a chart, logos colliding, a toast after a copy) can't turn into a buzz.
+ * Haptics mark moments, not every tap: a choice made, a switch flipped, a long press caught, a message sent, its answer
+ * streaming in (`streamTick`), an outcome (done, copied, saved, failed), and a few physical ones in the version art.
+ * Plain buttons and navigation stay quiet, as they do in the system's own apps and popular chat apps. Two haptics never
+ * play within MIN_GAP_MS of each other, so a burst of events (a scrub across a chart, logos colliding, a toast after a
+ * copy) can't turn into a buzz.
  */
 
 export type HapticKind =
@@ -72,22 +73,22 @@ export const ANDROID_HAPTICS: Record<HapticKind, readonly (readonly [Haptics.And
 /**
  * Each kind as touch pulses, for phones whose motor can't play the system's effects: on and off times (ms, starting
  * with the wait before the first pulse) and each segment's strength (0 to 255, used where the motor can vary it). The
- * system's own long press on those phones is one 45 ms pulse; taps are shorter, but at least 12 ms, so a slow motor
- * spins up enough to be felt.
+ * system's own long press on those phones is one 45 ms pulse; taps are shorter, but at least 20 ms: a slow motor
+ * barely spins up in less, so shorter taps were hard to feel.
  */
 export const ANDROID_PULSES: Record<HapticKind, { timings: readonly number[]; amplitudes: readonly number[] }> = {
-  selection: { timings: [0, 16], amplitudes: [0, 100] },
-  tick: { timings: [0, 12], amplitudes: [0, 70] },
-  toggleOn: { timings: [0, 22], amplitudes: [0, 170] },
-  toggleOff: { timings: [0, 16], amplitudes: [0, 110] },
-  longPress: { timings: [0, 45], amplitudes: [0, 200] },
-  press: { timings: [0, 20], amplitudes: [0, 150] },
-  success: { timings: [0, 18, 90, 30], amplitudes: [0, 140, 0, 230] },
-  error: { timings: [0, 40, 70, 40], amplitudes: [0, 230, 0, 230] },
-  lift: { timings: [0, 32], amplitudes: [0, 180] },
-  drop: { timings: [0, 16], amplitudes: [0, 120] },
-  bump: { timings: [0, 14], amplitudes: [0, 120] },
-  thud: { timings: [0, 40], amplitudes: [0, 255] },
+  selection: { timings: [0, 26], amplitudes: [0, 140] },
+  tick: { timings: [0, 20], amplitudes: [0, 110] },
+  toggleOn: { timings: [0, 32], amplitudes: [0, 200] },
+  toggleOff: { timings: [0, 26], amplitudes: [0, 150] },
+  longPress: { timings: [0, 45], amplitudes: [0, 210] },
+  press: { timings: [0, 30], amplitudes: [0, 180] },
+  success: { timings: [0, 24, 90, 36], amplitudes: [0, 170, 0, 240] },
+  error: { timings: [0, 45, 70, 45], amplitudes: [0, 240, 0, 240] },
+  lift: { timings: [0, 40], amplitudes: [0, 200] },
+  drop: { timings: [0, 26], amplitudes: [0, 150] },
+  bump: { timings: [0, 22], amplitudes: [0, 150] },
+  thud: { timings: [0, 50], amplitudes: [0, 255] },
 };
 
 type IosHaptic =
@@ -204,6 +205,9 @@ export function play(kind: HapticKind, os: string, version: number, motor: Motor
   void played.catch(() => undefined);
 }
 
+const playHere = (kind: HapticKind) =>
+  play(kind, Platform.OS, Number(Platform.Version) || 0, Platform.OS === "android" ? motorCapabilities() : null);
+
 let lastPlayed: number | null = null;
 
 /** Plays the haptic for a moment, unless haptics are off here or one has just played. Never throws. */
@@ -212,5 +216,23 @@ export function haptic(kind: HapticKind) {
   const now = Date.now();
   if (!shouldPlay(lastPlayed, now)) return;
   lastPlayed = now;
-  play(kind, Platform.OS, Number(Platform.Version) || 0, Platform.OS === "android" ? motorCapabilities() : null);
+  playHere(kind);
+}
+
+/** Streaming ticks come at most this often (ms): a light patter while text arrives, not a buzz. */
+export const STREAM_TICK_MS = 120;
+let lastStreamed: number | null = null;
+
+/**
+ * A light tick as an answer's text streams in on screen, as popular chat apps do. Ticks never hold up the other
+ * haptics (an answer's success plays even straight after one), and the haptics setting turns them off with the rest.
+ * Never throws.
+ */
+export function streamTick() {
+  if (!hapticsStore.get().enabled) return;
+  const now = Date.now();
+  if (lastStreamed != null && now - lastStreamed < STREAM_TICK_MS) return;
+  if (!shouldPlay(lastPlayed, now)) return;
+  lastStreamed = now;
+  playHere("tick");
 }
