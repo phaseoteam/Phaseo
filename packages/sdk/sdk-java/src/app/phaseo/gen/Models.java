@@ -537,6 +537,11 @@ public final class Models {
 		public String type;
 	}
 
+	public static class CacheWriteTokensDetails {
+		public Integer ttl_12h_tokens;
+		public Integer ttl_30m_tokens;
+	}
+
 	public static class ChatAudioOutputPart {
 		public Object audio_url;
 		public Object format;

@@ -538,6 +538,11 @@ struct CacheControl {
 	std::string type;
 };
 
+struct CacheWriteTokensDetails {
+	std::optional<int> ttl_12h_tokens;
+	std::optional<int> ttl_30m_tokens;
+};
+
 struct ChatAudioOutputPart {
 	std::map<std::string, std::any> audio_url;
 	std::any format;

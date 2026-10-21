@@ -10607,6 +10607,16 @@ components:
           nullable: true
           description: En una solicitud BYOK, lo que el proveedor cobra a tu propia clave por la inferencia, en dólares estadounidenses, según los precios publicados del modelo. Es null cuando la solicitud se paga con créditos de Phaseo, en cuyo caso `cost` es el cargo completo.
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: Escrituras en caché desglosadas por duración, en el uso de Responses de OpenAI GPT-5.6 y posteriores. Las dos cifras suman cache_write_tokens. No se devuelve en prompt_tokens_details de Chat Completions.
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: Tokens de entrada escritos en la caché con una duración de 30 minutos, cobrados a 1,25x la tarifa de entrada.
+        ttl_12h_tokens:
+          type: integer
+          description: Tokens de entrada escritos en la caché con una duración de 12 horas, cobrados a 2,5x la tarifa de entrada.
     InputTokensDetails:
       type: object
       description: Desglose de los tokens de entrada.
@@ -10618,15 +10628,7 @@ components:
           type: integer
           description: Tokens de entrada escritos en la caché de prompts del proveedor.
         cache_write_tokens_details:
-          type: object
-          description: Escrituras en caché desglosadas por duración, en el uso de Responses de OpenAI GPT-5.6 y posteriores. Las dos cifras suman cache_write_tokens. No se devuelve en prompt_tokens_details de Chat Completions.
-          properties:
-            ttl_30m_tokens:
-              type: integer
-              description: Tokens de entrada escritos en la caché con una duración de 30 minutos, cobrados a 1,25x la tarifa de entrada.
-            ttl_12h_tokens:
-              type: integer
-              description: Tokens de entrada escritos en la caché con una duración de 12 horas, cobrados a 2,5x la tarifa de entrada.
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: Un campo opcional de nivel superior enviado como `null` se trata como no definido, igual que si se omitiera.

@@ -23,7 +23,7 @@ import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
 import { getBaseModel } from "../execute/utils";
-import { cachedDroppedParams, droppedParamsForClient } from "../execute/unsupportedParams";
+import { cachedDroppedParams, droppedParamsForClient, twelveHourCacheDroppedFor } from "../execute/unsupportedParams";
 import { dispatchBackground, ensureRuntimeForBackground, getResponseCache } from "@/runtime/env";
 import { resolveNonStreamLatencyMs } from "./timing";
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
@@ -232,6 +232,7 @@ function dispatchNonStreamSuccessSideEffects(args: {
                     byokKeyId: result.byokKeyId ?? null,
                     usage: usageForSticky,
                     enabled: cacheAwareRoutingEnabled,
+                    twelveHourCacheDropped: twelveHourCacheDroppedFor(ctx, result.provider),
                 });
             } catch (error) {
                 console.warn("[gateway] sticky routing write failed", {

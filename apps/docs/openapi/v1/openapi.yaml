@@ -11170,6 +11170,23 @@ components:
             the request runs on Phaseo credits, where `cost` is the whole
             charge.
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: >-
+        Cache writes split by lifetime, on Responses usage from OpenAI GPT-5.6
+        and later. The two counts sum to cache_write_tokens. Not returned in
+        Chat Completions prompt_tokens_details.
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: >-
+            Input tokens written to the cache with a 30-minute lifetime, billed
+            at 1.25x the input rate.
+        ttl_12h_tokens:
+          type: integer
+          description: >-
+            Input tokens written to the cache with a 12-hour lifetime, billed at
+            2.5x the input rate.
     InputTokensDetails:
       type: object
       description: Breakdown of the input tokens.
@@ -11181,22 +11198,7 @@ components:
           type: integer
           description: Input tokens written to the provider's prompt cache.
         cache_write_tokens_details:
-          type: object
-          description: >-
-            Cache writes split by lifetime, on Responses usage from OpenAI
-            GPT-5.6 and later. The two counts sum to cache_write_tokens. Not
-            returned in Chat Completions prompt_tokens_details.
-          properties:
-            ttl_30m_tokens:
-              type: integer
-              description: >-
-                Input tokens written to the cache with a 30-minute lifetime,
-                billed at 1.25x the input rate.
-            ttl_12h_tokens:
-              type: integer
-              description: >-
-                Input tokens written to the cache with a 12-hour lifetime,
-                billed at 2.5x the input rate.
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: >-

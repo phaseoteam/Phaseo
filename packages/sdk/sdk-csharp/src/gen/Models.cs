@@ -1342,6 +1342,16 @@ public sealed class CacheControl
 
 }
 
+public sealed class CacheWriteTokensDetails
+{
+	[JsonPropertyName("ttl_12h_tokens")]
+	public long? Ttl12hTokens { get; set; }
+
+	[JsonPropertyName("ttl_30m_tokens")]
+	public long? Ttl30mTokens { get; set; }
+
+}
+
 public sealed class ChatAudioOutputPart
 {
 	[JsonPropertyName("audio_url")]

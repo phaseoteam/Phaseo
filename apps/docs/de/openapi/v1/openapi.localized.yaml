@@ -10607,6 +10607,16 @@ components:
           nullable: true
           description: Bei einer BYOK-Anfrage der Betrag, den der Anbieter deinem eigenen Schlüssel für die Inferenz berechnet, in US-Dollar zu den gelisteten Preisen des Modells. Null, wenn die Anfrage über Phaseo-Guthaben läuft; dann ist `cost` die gesamte Belastung.
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: Cache-Schreibvorgänge nach Lebensdauer aufgeteilt, in der Responses-Nutzung von OpenAI ab GPT-5.6. Die beiden Werte ergeben zusammen cache_write_tokens. Wird in prompt_tokens_details von Chat Completions nicht zurückgegeben.
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: Mit einer Lebensdauer von 30 Minuten in den Cache geschriebene Eingabetoken, berechnet mit dem 1,25-Fachen des Eingabepreises.
+        ttl_12h_tokens:
+          type: integer
+          description: Mit einer Lebensdauer von 12 Stunden in den Cache geschriebene Eingabetoken, berechnet mit dem 2,5-Fachen des Eingabepreises.
     InputTokensDetails:
       type: object
       description: Aufschlüsselung der Eingabetoken.
@@ -10618,15 +10628,7 @@ components:
           type: integer
           description: In den Prompt-Cache des Anbieters geschriebene Eingabetoken.
         cache_write_tokens_details:
-          type: object
-          description: Cache-Schreibvorgänge nach Lebensdauer aufgeteilt, in der Responses-Nutzung von OpenAI ab GPT-5.6. Die beiden Werte ergeben zusammen cache_write_tokens. Wird in prompt_tokens_details von Chat Completions nicht zurückgegeben.
-          properties:
-            ttl_30m_tokens:
-              type: integer
-              description: Mit einer Lebensdauer von 30 Minuten in den Cache geschriebene Eingabetoken, berechnet mit dem 1,25-Fachen des Eingabepreises.
-            ttl_12h_tokens:
-              type: integer
-              description: Mit einer Lebensdauer von 12 Stunden in den Cache geschriebene Eingabetoken, berechnet mit dem 2,5-Fachen des Eingabepreises.
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: Ein optionales Feld der obersten Ebene, das als `null` gesendet wird, gilt als nicht gesetzt, genau wie ein weggelassenes Feld.

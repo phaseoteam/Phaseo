@@ -377,9 +377,11 @@ describe("optimistic sticky routing", () => {
         ["GPT-5.6 12h breakpoint", "openai", { input: [{ role: "user", content: [{ type: "input_text", text: "a", prompt_cache_breakpoint: { mode: "explicit", ttl: "12h" } }] }] }, undefined, 18 * 60 * 60],
         ["GPT-5.6 12h write reported", "openai", { prompt_cache_key: "k" }, { input_tokens_details: { cache_write_tokens: 10, cache_write_tokens_details: { ttl_30m_tokens: 0, ttl_12h_tokens: 10 } } }, 18 * 60 * 60],
         ["12h on Azure, which sends the 30m default", "azure", { prompt_cache_key: "k", prompt_cache_options: { ttl: "12h" } }, undefined, 45 * 60],
+        ["12h removed before sending (openai-eu with no 12-hour price, or a model before GPT-5.6)", "openai-eu", { prompt_cache_key: "k", prompt_cache_options: { ttl: "12h" } }, undefined, 45 * 60, true],
+        ["12h breakpoint removed before sending", "openai", { input: [{ role: "user", content: [{ type: "input_text", text: "a", prompt_cache_breakpoint: { mode: "explicit", ttl: "12h" } }] }] }, undefined, 45 * 60, true],
         ["OpenAI retention ignored on other providers", "cerebras", { prompt_cache_key: "k", prompt_cache_retention: "24h" }, undefined, 15 * 60],
         ["session_id", "fireworks", { session_id: "s" }, undefined, 24 * 60 * 60],
-    ])("derives the pin TTL from cache retention: %s", async (_label, providerId, extra, usage, expected) => {
+    ])("derives the pin TTL from cache retention: %s", async (_label, providerId, extra, usage, expected, twelveHourCacheDropped?: boolean) => {
         runtime.putJson.mockResolvedValue(undefined);
         await sticky.maybeWriteStickyRoutingFromUsage({
             workspaceId: "workspace",
@@ -388,6 +390,7 @@ describe("optimistic sticky routing", () => {
             body: { messages: [{ role: "user", content: "hi" }], ...extra },
             providerId,
             usage: usage ?? {},
+            twelveHourCacheDropped,
         });
         expect(runtime.putJson.mock.calls[0]?.[2]).toBe(expected);
     });

@@ -808,6 +808,11 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String, nil]
     CacheControl = Struct.new(:scope, :ttl, :type, keyword_init: true)
+    # @!attribute [rw] ttl_12h_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] ttl_30m_tokens
+    #   @return [Integer, nil]
+    CacheWriteTokensDetails = Struct.new(:ttl_12h_tokens, :ttl_30m_tokens, keyword_init: true)
     # @!attribute [rw] audio_url
     #   @return [Hash{String => Object}]
     # @!attribute [rw] format

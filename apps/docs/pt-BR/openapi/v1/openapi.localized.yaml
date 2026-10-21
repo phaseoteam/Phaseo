@@ -10607,6 +10607,16 @@ components:
           nullable: true
           description: Em uma solicitação BYOK, o que o provedor cobra da sua própria chave pela inferência, em dólares americanos, pelos preços listados do modelo. Null quando a solicitação usa créditos do Phaseo, caso em que `cost` é a cobrança total.
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: Gravações no cache divididas por duração, no uso de Responses da OpenAI GPT-5.6 e posteriores. Os dois valores somam cache_write_tokens. Não é retornado em prompt_tokens_details de Chat Completions.
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: Tokens de entrada gravados no cache com duração de 30 minutos, cobrados a 1,25x a tarifa de entrada.
+        ttl_12h_tokens:
+          type: integer
+          description: Tokens de entrada gravados no cache com duração de 12 horas, cobrados a 2,5x a tarifa de entrada.
     InputTokensDetails:
       type: object
       description: Detalhamento dos tokens de entrada.
@@ -10618,15 +10628,7 @@ components:
           type: integer
           description: Tokens de entrada gravados no cache de prompts do provedor.
         cache_write_tokens_details:
-          type: object
-          description: Gravações no cache divididas por duração, no uso de Responses da OpenAI GPT-5.6 e posteriores. Os dois valores somam cache_write_tokens. Não é retornado em prompt_tokens_details de Chat Completions.
-          properties:
-            ttl_30m_tokens:
-              type: integer
-              description: Tokens de entrada gravados no cache com duração de 30 minutos, cobrados a 1,25x a tarifa de entrada.
-            ttl_12h_tokens:
-              type: integer
-              description: Tokens de entrada gravados no cache com duração de 12 horas, cobrados a 2,5x a tarifa de entrada.
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: Um campo opcional de nível superior enviado como `null` é tratado como não definido, como se tivesse sido omitido.

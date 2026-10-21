@@ -10607,6 +10607,16 @@ components:
           nullable: true
           description: في طلب BYOK، ما يفرضه المزوّد على مفتاحك الخاص مقابل الاستدلال، بالدولار الأمريكي، وفق أسعار النموذج المعلنة. يكون null عندما يعمل الطلب بأرصدة Phaseo، إذ يمثل `cost` الرسوم كاملة.
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: كتابات التخزين المؤقت مقسّمة حسب المدة، في استخدام Responses من OpenAI بدءًا من GPT-5.6. ومجموع القيمتين يساوي cache_write_tokens. لا يُعاد في prompt_tokens_details الخاص بـ Chat Completions.
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: رموز الإدخال المكتوبة في التخزين المؤقت لمدة 30 دقيقة، وتُحتسب بـ 1.25x سعر الإدخال.
+        ttl_12h_tokens:
+          type: integer
+          description: رموز الإدخال المكتوبة في التخزين المؤقت لمدة 12 ساعة، وتُحتسب بـ 2.5x سعر الإدخال.
     InputTokensDetails:
       type: object
       description: تفصيل رموز الإدخال.
@@ -10618,15 +10628,7 @@ components:
           type: integer
           description: رموز الإدخال المكتوبة في ذاكرة المطالبات المؤقتة لدى المزوّد.
         cache_write_tokens_details:
-          type: object
-          description: كتابات التخزين المؤقت مقسّمة حسب المدة، في استخدام Responses من OpenAI بدءًا من GPT-5.6. ومجموع القيمتين يساوي cache_write_tokens. لا يُعاد في prompt_tokens_details الخاص بـ Chat Completions.
-          properties:
-            ttl_30m_tokens:
-              type: integer
-              description: رموز الإدخال المكتوبة في التخزين المؤقت لمدة 30 دقيقة، وتُحتسب بـ 1.25x سعر الإدخال.
-            ttl_12h_tokens:
-              type: integer
-              description: رموز الإدخال المكتوبة في التخزين المؤقت لمدة 12 ساعة، وتُحتسب بـ 2.5x سعر الإدخال.
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: يُعامَل أي حقل اختياري في المستوى الأعلى يُرسَل بالقيمة `null` على أنه غير مضبوط، تمامًا كما لو حُذف.

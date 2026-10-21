@@ -963,6 +963,14 @@ class CacheControl
 	public $type;
 }
 
+class CacheWriteTokensDetails
+{
+	/** @var int|null */
+	public $ttl_12h_tokens;
+	/** @var int|null */
+	public $ttl_30m_tokens;
+}
+
 class ChatAudioOutputPart
 {
 	/** @var array<string, mixed> */

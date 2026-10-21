@@ -1210,6 +1210,11 @@ type CacheControl struct {
 	Type *string `json:"type,omitempty"`
 }
 
+type CacheWriteTokensDetails struct {
+	Ttl12hTokens *int `json:"ttl_12h_tokens,omitempty"`
+	Ttl30mTokens *int `json:"ttl_30m_tokens,omitempty"`
+}
+
 type ChatAudioOutputPart struct {
 	AudioUrl map[string]interface{} `json:"audio_url"`
 	Format *string `json:"format,omitempty"`

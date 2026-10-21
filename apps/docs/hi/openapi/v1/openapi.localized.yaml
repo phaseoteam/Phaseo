@@ -10607,6 +10607,16 @@ components:
           nullable: true
           description: BYOK अनुरोध पर, प्रदाता इनफ़रेंस के लिए आपकी अपनी कुंजी से जितना शुल्क लेता है, US डॉलर में, मॉडल की सूचीबद्ध कीमतों पर। जब अनुरोध Phaseo क्रेडिट पर चलता है तब null होता है, क्योंकि तब `cost` ही पूरा शुल्क है।
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: GPT-5.6 और बाद के OpenAI मॉडलों के Responses उपयोग में अवधि के अनुसार बँटे कैश लेखन। दोनों संख्याओं का योग cache_write_tokens होता है। Chat Completions के prompt_tokens_details में नहीं लौटाया जाता।
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: 30 मिनट की अवधि के साथ कैश में लिखे गए इनपुट टोकन, जिन पर इनपुट दर का 1.25x शुल्क लगता है।
+        ttl_12h_tokens:
+          type: integer
+          description: 12 घंटे की अवधि के साथ कैश में लिखे गए इनपुट टोकन, जिन पर इनपुट दर का 2.5x शुल्क लगता है।
     InputTokensDetails:
       type: object
       description: इनपुट टोकन का विवरण।
@@ -10618,15 +10628,7 @@ components:
           type: integer
           description: प्रदाता के प्रॉम्प्ट कैश में लिखे गए इनपुट टोकन।
         cache_write_tokens_details:
-          type: object
-          description: GPT-5.6 और बाद के OpenAI मॉडलों के Responses उपयोग में अवधि के अनुसार बँटे कैश लेखन। दोनों संख्याओं का योग cache_write_tokens होता है। Chat Completions के prompt_tokens_details में नहीं लौटाया जाता।
-          properties:
-            ttl_30m_tokens:
-              type: integer
-              description: 30 मिनट की अवधि के साथ कैश में लिखे गए इनपुट टोकन, जिन पर इनपुट दर का 1.25x शुल्क लगता है।
-            ttl_12h_tokens:
-              type: integer
-              description: 12 घंटे की अवधि के साथ कैश में लिखे गए इनपुट टोकन, जिन पर इनपुट दर का 2.5x शुल्क लगता है।
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: '`null` के रूप में भेजे गए किसी वैकल्पिक शीर्ष-स्तरीय फ़ील्ड को सेट न किया गया माना जाता है, ठीक वैसे ही जैसे उसे छोड़ दिया गया हो।'

@@ -587,6 +587,8 @@ export function resolveProviderCacheRetentionSeconds(args: {
     body: any;
     providerId: string;
     usage?: any;
+    /** The 12-hour lifetime was removed before the request was sent (see ./prompt-cache-ttl.ts). */
+    twelveHourCacheDropped?: boolean;
 }): number | null {
     const body = args.body;
     const usage = args.usage;
@@ -617,7 +619,9 @@ export function resolveProviderCacheRetentionSeconds(args: {
 
     const providerId = String(args.providerId ?? "").trim().toLowerCase();
     if (OPENAI_RETENTION_PROVIDERS.has(providerId)) {
-        const takesTwelveHours = OPENAI_TWELVE_HOUR_PROVIDERS.has(providerId);
+        // Only a 12-hour lifetime the provider actually received pins for 12 hours; one removed
+        // before sending (an older model, or a route with no 12-hour price) leaves the default.
+        const takesTwelveHours = OPENAI_TWELVE_HOUR_PROVIDERS.has(providerId) && !args.twelveHourCacheDropped;
         const capTtl = (seconds: number | null) =>
             seconds !== null && seconds > OPENAI_DEFAULT_TTL_SECONDS && !takesTwelveHours ? OPENAI_DEFAULT_TTL_SECONDS : seconds;
         const optionsTtl = capTtl(parseRetentionSeconds((body?.prompt_cache_options ?? openaiOptions?.prompt_cache_options)?.ttl));
@@ -638,6 +642,7 @@ export function resolveStickyPinTtlSeconds(args: {
     body: any;
     providerId: string;
     usage?: any;
+    twelveHourCacheDropped?: boolean;
 }): number {
     const retention = resolveProviderCacheRetentionSeconds(args);
     const fromRetention = retention ? Math.ceil(retention * RETENTION_TTL_MULTIPLIER) : 0;
@@ -772,6 +777,7 @@ export async function maybeWriteStickyRoutingFromUsage(args: {
     byokKeyId?: string | null;
     usage: any;
     enabled?: boolean;
+    twelveHourCacheDropped?: boolean;
 }): Promise<void> {
     if (!isCacheAwareRoutingEndpoint(args.endpoint)) return;
     if (args.enabled === false) return;
@@ -804,6 +810,7 @@ export async function maybeWriteStickyRoutingFromUsage(args: {
                 body: args.body,
                 providerId: args.providerId,
                 usage: args.usage,
+                twelveHourCacheDropped: args.twelveHourCacheDropped,
             }),
         },
     );

@@ -10607,6 +10607,16 @@ components:
           nullable: true
           description: BYOK リクエストで、持ち込んだキーに対してプロバイダーが推論分として請求する額（米ドル、モデルの掲載価格で算出）。リクエストが Phaseo クレジットで実行される場合は null で、`cost` が請求額のすべてです。
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: GPT-5.6以降のOpenAIのResponses使用量における、保持期間別のキャッシュ書き込み。2つの値の合計がcache_write_tokensです。Chat Completionsのprompt_tokens_detailsには返されません。
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: 保持期間30分でキャッシュに書き込まれた入力トークン。入力料金の1.25倍で請求されます。
+        ttl_12h_tokens:
+          type: integer
+          description: 保持期間12時間でキャッシュに書き込まれた入力トークン。入力料金の2.5倍で請求されます。
     InputTokensDetails:
       type: object
       description: 入力トークンの内訳。
@@ -10618,15 +10628,7 @@ components:
           type: integer
           description: プロバイダーのプロンプトキャッシュに書き込まれた入力トークン。
         cache_write_tokens_details:
-          type: object
-          description: GPT-5.6以降のOpenAIのResponses使用量における、保持期間別のキャッシュ書き込み。2つの値の合計がcache_write_tokensです。Chat Completionsのprompt_tokens_detailsには返されません。
-          properties:
-            ttl_30m_tokens:
-              type: integer
-              description: 保持期間30分でキャッシュに書き込まれた入力トークン。入力料金の1.25倍で請求されます。
-            ttl_12h_tokens:
-              type: integer
-              description: 保持期間12時間でキャッシュに書き込まれた入力トークン。入力料金の2.5倍で請求されます。
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: '`null` として送信された省略可能なトップレベルのフィールドは、省略した場合と同じく未設定として扱われます。'

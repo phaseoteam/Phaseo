@@ -539,6 +539,11 @@ pub struct CacheControl {
 	pub r#type: Option<String>,
 }
 
+pub struct CacheWriteTokensDetails {
+	pub ttl_12h_tokens: Option<i64>,
+	pub ttl_30m_tokens: Option<i64>,
+}
+
 pub struct ChatAudioOutputPart {
 	pub audio_url: HashMap<String, String>,
 	pub format: Option<String>,

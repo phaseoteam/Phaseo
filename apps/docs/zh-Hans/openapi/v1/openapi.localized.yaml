@@ -10607,6 +10607,16 @@ components:
           nullable: true
           description: 在 BYOK 请求中，提供商按模型的公布价格向你自己的密钥收取的推理费用（美元）。请求使用 Phaseo 额度时为 null，此时 `cost` 即为全部费用。
           example: null
+    CacheWriteTokensDetails:
+      type: object
+      description: GPT-5.6 及以后版本的 OpenAI 在 Responses 用量中按保留时长拆分的缓存写入。两个数值之和等于 cache_write_tokens。Chat Completions 的 prompt_tokens_details 中不返回。
+      properties:
+        ttl_30m_tokens:
+          type: integer
+          description: 以 30 分钟保留时长写入缓存的输入 token，按输入价格的 1.25 倍计费。
+        ttl_12h_tokens:
+          type: integer
+          description: 以 12 小时保留时长写入缓存的输入 token，按输入价格的 2.5 倍计费。
     InputTokensDetails:
       type: object
       description: 输入 token 的明细。
@@ -10618,15 +10628,7 @@ components:
           type: integer
           description: 写入提供商 prompt 缓存的输入 token。
         cache_write_tokens_details:
-          type: object
-          description: GPT-5.6 及以后版本的 OpenAI 在 Responses 用量中按保留时长拆分的缓存写入。两个数值之和等于 cache_write_tokens。Chat Completions 的 prompt_tokens_details 中不返回。
-          properties:
-            ttl_30m_tokens:
-              type: integer
-              description: 以 30 分钟保留时长写入缓存的输入 token，按输入价格的 1.25 倍计费。
-            ttl_12h_tokens:
-              type: integer
-              description: 以 12 小时保留时长写入缓存的输入 token，按输入价格的 2.5 倍计费。
+          $ref: '#/components/schemas/CacheWriteTokensDetails'
     AnthropicMessagesRequest:
       type: object
       description: 以 `null` 发送的可选顶层字段会被视为未设置，与省略该字段相同。
