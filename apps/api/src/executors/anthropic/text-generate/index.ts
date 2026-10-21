@@ -1116,6 +1116,14 @@ function mapIRContentToAnthropic(part: any): any {
 				source: { type: "url", url: part.data },
 				...(cacheControl ? { cache_control: cacheControl } : {}),
 			};
+		} else if (part.source === "id") {
+			// Files API upload; the executor adds the files beta header.
+			// https://platform.claude.com/docs/en/build-with-claude/files
+			return {
+				type: "image",
+				source: { type: "file", file_id: part.data },
+				...(cacheControl ? { cache_control: cacheControl } : {}),
+			};
 		} else {
 			return {
 				type: "image",
@@ -1160,8 +1168,16 @@ function decodeBase64Utf8(data: string): string | null {
  * https://platform.claude.com/docs/en/build-with-claude/pdf-support
  */
 function mapIRFileToAnthropicDocument(part: Extract<IRContentPart, { type: "file" }>, cacheControl: any): any {
-	const title = part.filename ? { title: part.filename } : {};
 	const cache = cacheControl ? { cache_control: cacheControl } : {};
+	if (part.nativeBlock) {
+		// The client's own document block. The IR's cache mark decides whether
+		// it is marked, since the execute stage may have removed or changed it.
+		const { cache_control: original, ...block } = part.nativeBlock;
+		if (!cacheControl) return block;
+		const unchanged = original && typeof original === "object" && original.ttl === part.cacheControl?.ttl;
+		return { ...block, cache_control: unchanged ? original : cacheControl };
+	}
+	const title = part.filename ? { title: part.filename } : {};
 	if (part.source === "url") {
 		return { type: "document", source: { type: "url", url: part.data }, ...title, ...cache };
 	}

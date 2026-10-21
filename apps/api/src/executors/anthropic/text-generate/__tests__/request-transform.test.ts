@@ -687,9 +687,16 @@ describe("irToAnthropicMessages service controls", () => {
 
 		expect(request.reasoning).toMatchObject({ enabled: true, effort: "high" });
 		expect(request.responseFormat).toMatchObject({ type: "json_schema", strict: true });
+		// Documents decode to IR files that keep the block itself for Claude.
 		expect(request.messages[0]?.content.slice(0, 2)).toEqual([
-			{ type: "provider_block", block: { type: "document", source: { type: "url", url: "https://example.com/report.pdf" } } },
-			{ type: "provider_block", block: { type: "document", source: { type: "file", file_id: "file_123" } } },
+			{
+				type: "file", source: "url", data: "https://example.com/report.pdf", mimeType: "application/pdf",
+				nativeBlock: { type: "document", source: { type: "url", url: "https://example.com/report.pdf" } },
+			},
+			{
+				type: "file", source: "id", data: "file_123",
+				nativeBlock: { type: "document", source: { type: "file", file_id: "file_123" } },
+			},
 		]);
 		const payload = irToAnthropicMessages(request);
 		expect(payload.messages[0].content.slice(0, 2)).toEqual([

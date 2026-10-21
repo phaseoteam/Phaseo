@@ -181,7 +181,14 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 					continue;
 				}
 				// Input parts (Responses API)
-				if (item?.type === "input_text" || item?.type === "input_image" || item?.type === "input_audio" || item?.type === "input_video") {
+				// Top-level `input_file` parts and Gemini-shaped parts (no `type`,
+				// no `role`) are user content too.
+				if (
+					item?.type === "input_text" || item?.type === "input_image" || item?.type === "input_audio"
+					|| item?.type === "input_video" || item?.type === "input_file"
+					|| (item && typeof item === "object" && item.type === undefined && item.role === undefined
+						&& (item.inlineData || item.inline_data || item.fileData || item.file_data))
+				) {
 					const parts = normalizeOpenAIContent([item]);
 					if (parts.length > 0) {
 						pendingUserParts.push(...parts);
