@@ -67,9 +67,9 @@ function PaceChart({ pace, now }: { pace: TodayPace; now: Date }) {
 	return <figure className="flex flex-col gap-2" aria-label="Spend today against your usual, by hour">
 		<figcaption className="flex items-center gap-4 text-2xs text-muted-foreground">
 			<span className="flex items-center gap-1.5"><span aria-hidden className="h-0.5 w-3 rounded-sm bg-foreground" />Today</span>
-			{pace.basedOn > 0 && <span className="flex items-center gap-1.5"><span aria-hidden className="h-0.5 w-3 rounded-sm bg-muted-foreground/50" />Usual, averaged over {pace.basedOn === 1 ? "1 day" : `${pace.basedOn} days`}</span>}
+			{pace.basedOn > 0 && <span className="flex items-center gap-1.5"><span aria-hidden className="h-0.5 w-3 rounded-sm bg-muted-foreground/50" />Usual, averaged over {pace.basedOn === 1 ? "1 day" : `${pace.basedOn} days`}<span className="tabular-nums">· {money(usual.at(-1)![1])} a day</span></span>}
 		</figcaption>
-		<div className="relative h-36" onMouseLeave={() => setHover(undefined)}
+		<div className="relative mt-3 h-36" onMouseLeave={() => setHover(undefined)}
 			onMouseMove={event => { const box = event.currentTarget.getBoundingClientRect(); setHover(Math.min(24, Math.max(0, (event.clientX - box.left) / box.width * 24))); }}>
 			<svg aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
 				{[0, ...grid].map(value => <line key={value} x1={0} x2={100} y1={y(value)} y2={y(value)} vectorEffect="non-scaling-stroke" strokeWidth={1} className="stroke-border/70" />)}
@@ -78,8 +78,8 @@ function PaceChart({ pace, now }: { pace: TodayPace; now: Date }) {
 			</svg>
 			{grid.map(value => <span key={value} aria-hidden className="absolute left-0 -translate-y-full pb-0.5 text-2xs text-muted-foreground tabular-nums" style={{ top: `${y(value)}%` }}>{money(value)}</span>)}
 			<span aria-hidden className="absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-foreground ring-2 ring-background" style={{ left: `${x(last[0])}%`, top: `${y(last[1])}%` }} />
-			<span className="absolute text-2xs font-medium whitespace-nowrap tabular-nums" style={{ left: `${x(last[0])}%`, top: `${y(last[1])}%`, transform: `translate(${last[0] > 18 ? "calc(-100% - 8px)" : "-50%"}, ${last[0] > 18 ? "-50%" : "calc(-100% - 6px)"})` }}>{money(last[1])}</span>
-			{pace.basedOn > 0 && <span className="absolute right-0 -translate-y-full pb-1 text-2xs whitespace-nowrap text-muted-foreground tabular-nums" style={{ top: `${y(usual.at(-1)![1])}%` }}>Usual day {money(usual.at(-1)![1])}</span>}
+			{/* Above the dot: a running total never falls, so today's line is always at or below it there. The background hides the usual line if it passes. */}
+			<span className="absolute rounded-sm bg-background px-1 text-2xs font-medium whitespace-nowrap tabular-nums" style={{ left: `${x(last[0])}%`, top: `${y(last[1])}%`, transform: `translate(${last[0] > 12 ? "calc(-100% + 6px)" : "-6px"}, calc(-100% - 7px))` }}>{money(last[1])}</span>
 			{hover !== undefined && <>
 				<span aria-hidden className="pointer-events-none absolute inset-y-0 w-px bg-border" style={{ left: `${x(hover)}%` }} />
 				<span role="status" className="pointer-events-none absolute top-0 z-10 flex flex-col gap-0.5 rounded-md border border-border bg-popover px-2 py-1.5 text-2xs whitespace-nowrap text-popover-foreground shadow-md tabular-nums"
