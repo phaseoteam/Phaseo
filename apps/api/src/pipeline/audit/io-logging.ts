@@ -1,5 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { isGatewayIoLoggingFeatureEnabled } from "@/core/feature-flags";
+import { fetchWorkspacePolicy } from "@/pipeline/before/workspacePolicy";
 
 export type GatewayIoLogStatus = "not_enabled" | "stored" | "missing_bucket" | "too_large" | "error" | "deleted";
 
@@ -176,8 +177,12 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     const bindings = getBindings();
     // Settings are cached per isolate; the feature gate is an external HTTP
     // call, so only evaluate it for workspaces that have logging switched on.
-    const settings = await getWorkspaceIoLoggingSettings(input.workspaceId);
-    const featureEnabled = settings.enabled && !settings.zeroDataRetention
+    const workspaceSettings = await getWorkspaceIoLoggingSettings(input.workspaceId);
+    const zeroDataRetention = workspaceSettings.enabled
+        ? workspaceSettings.zeroDataRetention || await keyRequiresZeroDataRetention(input)
+        : workspaceSettings.zeroDataRetention;
+    const settings = { ...workspaceSettings, zeroDataRetention };
+    const featureEnabled = settings.enabled && !zeroDataRetention
         ? await isGatewayIoLoggingFeatureEnabled({
             workspaceId: input.workspaceId,
             apiKeyId: input.keyId ?? null,
@@ -186,19 +191,41 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     return {
         ...settings,
         featureEnabled,
-        captureEnabled: featureEnabled && settings.enabled && !settings.zeroDataRetention,
+        captureEnabled: featureEnabled && settings.enabled && !zeroDataRetention,
     };
 }
 
 /**
- * A guardrail on the calling key can require zero data retention even when the
- * workspace does not. The effective setting is recorded in the routing
- * diagnostics that every audit path copies into the log metadata.
+ * The effective ZDR setting for the calling key: the workspace setting or any of
+ * the key's guardrails. This is the policy routing enforces, read through the
+ * same cache, which is invalidated when settings or guardrails change. Requests
+ * rejected before routing never carry it in their diagnostics, so it is read
+ * here rather than from the log. A failed read keeps bodies out of storage.
  */
-export function requestRequiresZeroDataRetention(metadata: unknown): boolean {
-    if (!metadata || typeof metadata !== "object") return false;
-    const diagnostics = (metadata as Record<string, any>).routing_diagnostics;
-    return diagnostics?.workspacePolicy?.privacyZdrOnly === true;
+async function keyRequiresZeroDataRetention(input: { workspaceId: string; keyId?: string | null }): Promise<boolean> {
+    if (!input.keyId) return false;
+    try {
+        const policy = await fetchWorkspacePolicy({ workspaceId: input.workspaceId, apiKeyId: input.keyId });
+        return policy.privacyZdrOnly === true;
+    } catch (error) {
+        console.error("[io-logging] could not read the key's data policy", {
+            workspaceId: input.workspaceId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return true;
+    }
+}
+
+/**
+ * A second check on what the request itself recorded: the routing diagnostics in
+ * the log metadata, or in the error body of a request rejected by a guardrail.
+ */
+export function requestRequiresZeroDataRetention(...sources: unknown[]): boolean {
+    return sources.some((source) => {
+        if (!source || typeof source !== "object") return false;
+        const diagnostics = (source as Record<string, any>).routing_diagnostics;
+        return diagnostics?.workspacePolicy?.privacyZdrOnly === true;
+    });
 }
 
 async function persistGatewayIoLogMetadata(
@@ -251,7 +278,7 @@ export async function persistGatewayIoLog(
     if (!policy.captureEnabled) {
         return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
     }
-    if (requestRequiresZeroDataRetention(input.metadata)) {
+    if (requestRequiresZeroDataRetention(input.metadata, input.gatewayResponse, input.providerResponse)) {
         return finalizeGatewayIoLog(input, {
             io_log_status: "not_enabled",
             io_log_error: "Skipped: zero data retention is required for this request",

@@ -11,6 +11,14 @@ const state = vi.hoisted(() => ({
 		put: vi.fn(async () => null),
 	},
 	metadataRows: [] as Array<Record<string, unknown>>,
+	keyPolicy: { privacyZdrOnly: false } as { privacyZdrOnly: boolean } | Error,
+}));
+
+vi.mock("@/pipeline/before/workspacePolicy", () => ({
+	fetchWorkspacePolicy: async () => {
+		if (state.keyPolicy instanceof Error) throw state.keyPolicy;
+		return state.keyPolicy;
+	},
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -53,6 +61,7 @@ describe("persistGatewayIoLog", () => {
 		};
 		state.bucket.put.mockClear();
 		state.metadataRows = [];
+		state.keyPolicy = { privacyZdrOnly: false };
 		vi.resetModules();
 	});
 
@@ -199,6 +208,41 @@ describe("persistGatewayIoLog", () => {
 			io_log_status: "not_enabled",
 			io_log_error: "Skipped: zero data retention is required for this request",
 		});
+		expect(state.bucket.put).not.toHaveBeenCalled();
+	});
+
+	it("never stores bodies when the key's guardrail requires ZDR, even without diagnostics", async () => {
+		state.keyPolicy = { privacyZdrOnly: true };
+		const { persistGatewayIoLog, resolveGatewayIoLoggingPolicy } = await import("./io-logging");
+
+		const policy = await resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1", keyId: "key_1" });
+		const result = await persistGatewayIoLog({ requestId: "req_key_zdr", workspaceId: "workspace_1", keyId: "key_1", success: false });
+
+		expect(policy).toMatchObject({ zeroDataRetention: true, captureEnabled: false });
+		expect(result).toEqual({ io_log_status: "not_enabled" });
+		expect(state.bucket.put).not.toHaveBeenCalled();
+	});
+
+	it("keeps bodies out of storage when the key's policy can't be read", async () => {
+		state.keyPolicy = new Error("kv down");
+		const { resolveGatewayIoLoggingPolicy } = await import("./io-logging");
+
+		await expect(resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1", keyId: "key_1" }))
+			.resolves.toMatchObject({ captureEnabled: false });
+	});
+
+	it("reads ZDR diagnostics from a guardrail rejection's error body", async () => {
+		const { persistGatewayIoLog } = await import("./io-logging");
+
+		const result = await persistGatewayIoLog({
+			requestId: "req_rejected",
+			workspaceId: "workspace_1",
+			success: false,
+			metadata: { routing_diagnostics: null },
+			gatewayResponse: { error: "guardrail_blocked", routing_diagnostics: { workspacePolicy: { privacyZdrOnly: true } } },
+		});
+
+		expect(result.io_log_status).toBe("not_enabled");
 		expect(state.bucket.put).not.toHaveBeenCalled();
 	});
 });
