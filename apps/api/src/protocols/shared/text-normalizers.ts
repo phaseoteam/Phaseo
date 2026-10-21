@@ -182,12 +182,16 @@ export function normalizeOpenAIToolChoice(
 			typeof value.type === "string" && value.type !== "function" && value.type !== "tool"
 				? value.type
 				: undefined;
+		// Responses names the tool at the top level; Chat nests it under `function`
+		// or, for a custom tool, under `custom`.
 		const functionName =
 			typeof value.name === "string"
 				? value.name
 				: typeof value.function?.name === "string"
 					? value.function.name
-					: undefined;
+					: value.type === "custom" && typeof value.custom?.name === "string"
+						? value.custom.name
+						: undefined;
 		if (
 			(value.type === "function" || value.type === "tool" || value.type === "custom") &&
 			functionName

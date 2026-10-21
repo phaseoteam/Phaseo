@@ -182,7 +182,10 @@ describe("normalizeOpenAIToolChoice", () => {
 	});
 
 	it("maps a custom tool choice to the named tool", () => {
+		// Responses form.
 		expect(normalizeOpenAIToolChoice({ type: "custom", name: "grammar" })).toEqual({ name: "grammar" });
+		// Chat form, with the name nested under `custom`.
+		expect(normalizeOpenAIToolChoice({ type: "custom", custom: { name: "grammar" } })).toEqual({ name: "grammar" });
 	});
 
 	it("applies unknown string fallback when configured", () => {
