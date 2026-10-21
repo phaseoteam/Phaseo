@@ -3438,7 +3438,7 @@
 		"lowBalanceDescription": "Benachrichtigen, wenn das Arbeitsbereichsguthaben den festgelegten Schwellenwert erreicht.",
 		"enableLowBalance": "Warnungen bei niedrigem Guthaben aktivieren",
 		"creditThreshold": "Guthabenschwellenwert",
-		"thresholdDescription": "Bei diesem Kontostand oder darunter warnen. Auf eine E-Mail alle sechs Stunden begrenzt.",
+		"thresholdDescription": "Bei diesem Kontostand oder darunter warnen: eine E-Mail, sobald das Guthaben so weit sinkt, höchstens alle sechs Stunden und keine, solange die automatische Aufladung es wieder auffüllt.",
 		"thresholdInvalid": "Verwende einen nicht negativen Betrag mit höchstens zwei Dezimalstellen.",
 		"autoTopUpFailed": "Automatische Aufladung fehlgeschlagen",
 		"autoTopUpDescription": "Benachrichtigen, wenn eine automatische Guthabenabbuchung fehlschlägt.",
@@ -6301,7 +6301,8 @@
 			"view": "Ansehen",
 			"history": "Verlauf",
 			"sendTest": "Test senden",
-			"delete": "Löschen"
+			"delete": "Löschen",
+			"runway": "reicht etwa {days} Tage"
 		},
 		"preview": {
 			"ofBase": "Aktuell {value} von {base} ({percent})",
@@ -6310,7 +6311,9 @@
 			"disabled": "Schalte die Warnung ein, um ihren aktuellen Wert zu sehen.",
 			"unavailable": "Der aktuelle Wert ist gerade nicht verfügbar.",
 			"afterSave": "Der aktuelle Wert erscheint nach dem Speichern.",
-			"savedRuleNote": "Basiert auf der gespeicherten Warnung. Speichere deine Änderungen, um ihn zu aktualisieren."
+			"savedRuleNote": "Basiert auf der gespeicherten Warnung. Speichere deine Änderungen, um ihn zu aktualisieren.",
+			"balance": "Guthaben {balance}, Ausgaben {burn} pro Tag: reicht noch etwa {days} Tage",
+			"balanceNoSpend": "Guthaben {balance}, keine Ausgaben in den letzten {hours} Stunden"
 		},
 		"editor": {
 			"createTitle": "Ausgabenwarnung hinzufügen",
@@ -6404,7 +6407,8 @@
 			"save": "Speichern",
 			"create": "Warnung hinzufügen",
 			"saving": "Wird gespeichert…",
-			"blockingOff": "Blockieren ist noch nicht eingeschaltet. Bis dahin benachrichtigt diese Warnung nur."
+			"blockingOff": "Blockieren ist noch nicht eingeschaltet. Bis dahin benachrichtigt diese Warnung nur.",
+			"balanceEmailNote": "Unabhängig von der E-Mail bei niedrigem Guthaben oben. Eine Guthabenwarnung kann auch die verbleibenden Tage beobachten und hat eigene Ziele und eine eigene Pause. Keine von beiden warnt, solange die automatische Aufladung das Guthaben auffüllt."
 		},
 		"issues": {
 			"nameRequired": "Gib einen Namen mit bis zu 100 Zeichen ein.",

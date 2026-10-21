@@ -21421,7 +21421,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: É false para regras que a avaliação ainda não suporta (métricas forecast, spike e balance, períodos rolling e bases previous_period). Elas são salvas e passarão a disparar em uma versão futura.
+          description: É false para regras que a avaliação ainda não suporta (métricas forecast e spike, períodos rolling de gastos e bases previous_period). Elas são salvas e passarão a disparar em uma versão futura. Regras balance são avaliadas.
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -21700,7 +21700,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: A situação atual de uma regra de gastos. Regras sem período de calendário têm period, value e alert como null.
+      description: A situação atual de uma regra de gastos. Regras balance têm a janela de consumo como period, o saldo disponível como valor e um objeto balance. As demais regras sem período de calendário têm period, value e alert nulos.
       required:
         - rule_id
         - metric
@@ -21722,6 +21722,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -21732,7 +21733,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: É false para regras que a avaliação ainda não suporta (métricas forecast, spike e balance, períodos rolling e bases previous_period). Elas são salvas e passarão a disparar em uma versão futura.
+          description: É false para regras que a avaliação ainda não suporta (métricas forecast e spike, períodos rolling de gastos e bases previous_period). Elas são salvas e passarão a disparar em uma versão futura. Regras balance são avaliadas.
         computed_at:
           type: string
           format: date-time
@@ -21847,6 +21848,56 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: 'Regras balance: false após um alerta até o saldo voltar a ficar acima do limite.'
+        balance:
+          type: object
+          nullable: true
+          description: 'Somente regras balance: a situação do saldo, como a avaliação o vê. Nulo para as demais regras.'
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: 'Saldo menos o crédito reservado: o valor usado para admitir as solicitações.'
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: Dias que o saldo disponível dura no ritmo de consumo. Nulo sem gastos na janela.
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: A recarga automática está ativada e funcionando, então uma queda é registrada sem alerta.
         alert:
           type: object
           nullable: true

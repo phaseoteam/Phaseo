@@ -29,18 +29,21 @@ const added = [
   'public/functions/save_workspace_spend_rule.sql',
   'public/functions/consume_spend_rule_test_send.sql',
 ];
-for (const file of added) {
-  assert(normalize(migration).includes(normalize(await read(`../schemas/${file}`))), `${file} is in the migration`);
+// Functions redefined by later migrations (spend rule blocks, balance rules) must match the
+// newest migration that defines them.
+const newestDefining = async (file) => {
+  if (!file.includes('/functions/')) return migration;
+  const signature = `FUNCTION ${file.split('/')[0]}.${file.split('/').pop().replace(/\.sql$/, '')}`;
+  let newest = migration;
+  for (const name of migrations.filter((name) => name > migrationName)) {
+    const sql = await read(`../migrations/${name}`);
+    if (sql.includes(signature)) newest = sql;
+  }
+  return newest;
+};
+for (const file of [...added, 'private/functions/evaluate_workspace_spend_rules.sql']) {
+  assert(normalize(await newestDefining(file)).includes(normalize(await read(`../schemas/${file}`))), `${file} is in the newest migration that defines it`);
 }
-// The evaluator is redefined again by later migrations (spend rule blocks): the schema file must
-// match the newest migration that defines it.
-let evaluatorMigration = migration;
-for (const name of migrations.filter((name) => name > migrationName)) {
-  const sql = await read(`../migrations/${name}`);
-  if (sql.includes('FUNCTION private.evaluate_workspace_spend_rules')) evaluatorMigration = sql;
-}
-assert(normalize(evaluatorMigration).includes(normalize(await read('../schemas/private/functions/evaluate_workspace_spend_rules.sql'))),
-  'private/functions/evaluate_workspace_spend_rules.sql is in the newest migration that defines it');
 const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
 for (const file of added) for (const list of ['loadOrder', 'files']) assert(manifest[list].includes(file), `${file} is in the manifest's ${list}`);
 const outboxIndex = (await read('../schemas/public/tables/email_outbox.sql')).match(/CREATE INDEX email_outbox_spend_rule_events_idx[^;]*;/)?.[0];

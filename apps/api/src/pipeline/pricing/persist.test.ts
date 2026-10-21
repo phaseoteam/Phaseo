@@ -4,6 +4,7 @@ const rpcMock = vi.fn();
 const invalidateGatewayCreditCacheMock = vi.fn();
 const releaseRuntimeMock = vi.fn();
 const enqueueAutoTopUpFailedEmailMock = vi.fn();
+const fromMock = vi.fn(() => makeTableQuery());
 
 vi.mock("stripe", () => ({
 	default: class StripeMock {
@@ -25,7 +26,7 @@ vi.mock("../../runtime/env", () => ({
 	ensureRuntimeForBackground: vi.fn(() => releaseRuntimeMock),
 	getSupabaseAdmin: vi.fn(() => ({
 		rpc: rpcMock,
-		from: vi.fn(() => makeTableQuery()),
+		from: (...args: unknown[]) => fromMock(...(args as [])),
 	})),
 }));
 
@@ -39,10 +40,6 @@ vi.mock("../../core/gateway-credit-cache", () => ({
 	creditWriteBackEnabled: () => creditWriteBack.enabled,
 }));
 
-vi.mock("../notifications/low-balance", () => ({
-	enqueueLowBalanceEmail: vi.fn(),
-}));
-
 vi.mock("../notifications/billing-alerts", () => ({
 	enqueueAutoTopUpFailedEmail: (...args: unknown[]) => enqueueAutoTopUpFailedEmailMock(...args),
 }));
@@ -50,6 +47,7 @@ vi.mock("../notifications/billing-alerts", () => ({
 describe("recordUsageAndCharge", () => {
 	beforeEach(() => {
 		rpcMock.mockReset();
+		fromMock.mockClear();
 		invalidateGatewayCreditCacheMock.mockReset();
 		writeBackGatewayCreditCacheMock.mockReset();
 		creditWriteBack.enabled = false;
@@ -88,6 +86,21 @@ describe("recordUsageAndCharge", () => {
 
 		expect(writeBackGatewayCreditCacheMock).not.toHaveBeenCalled();
 		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123");
+	});
+
+	it("reads nothing but the charge RPC for a charged request (the low-balance email is swept on a schedule)", async () => {
+		rpcMock.mockResolvedValue({
+			data: { status: "top_up_not_required", applied: true, already_applied: false, invalidate_credit_cache: true, available_nanos: 1 },
+			error: null,
+		});
+		const { recordUsageAndCharge } = await import("./persist");
+
+		await recordUsageAndCharge({ requestId: "req_low", workspaceId: "workspace_low", cost_nanos: 999 });
+		await recordUsageAndCharge({ requestId: "req_low_2", workspaceId: "workspace_low", cost_nanos: 999 });
+
+		expect(rpcMock).toHaveBeenCalledTimes(2);
+		expect(rpcMock.mock.calls.map(([name]) => name)).toEqual(["gateway_charge_with_credit_cache", "gateway_charge_with_credit_cache"]);
+		expect(fromMock).not.toHaveBeenCalled();
 	});
 
 	it("invalidates the workspace credit cache after a successful new charge", async () => {

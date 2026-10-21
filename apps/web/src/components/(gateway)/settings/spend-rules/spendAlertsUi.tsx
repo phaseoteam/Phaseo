@@ -24,6 +24,20 @@ export function useSpendPercent() {
 	return (percent: number) => format.number(percent / 100, { style: "percent", maximumFractionDigits: percent < 10 ? 1 : 0 });
 }
 
+/** A balance rule's preview: "Balance $42.10, spending $6.00 a day: about 7 days left". */
+export function useBalanceSummary() {
+	const t = useTranslations("SettingsUI.spendAlerts");
+	const usd = useSpendUsd();
+	const format = useDisplayFormatters();
+	const days = (value: number) => format.number(value, { maximumFractionDigits: value < 10 ? 1 : 0 });
+	return {
+		text: (summary: { availableUsd: number; burnPerDayUsd: number; runwayDays: number | null; windowHours: number }) => summary.runwayDays === null
+			? t("preview.balanceNoSpend", { balance: usd(summary.availableUsd), hours: summary.windowHours })
+			: t("preview.balance", { balance: usd(summary.availableUsd), burn: usd(summary.burnPerDayUsd), days: days(summary.runwayDays) }),
+		runway: (runwayDays: number | null) => (runwayDays === null ? null : t("row.runway", { days: days(runwayDays) })),
+	};
+}
+
 /** The name of what a rule covers: the key, member, department, provider or model it is scoped to. */
 export function useScopeLabel(options: Pick<SettingsSpendRuleOptions, "keys" | "members" | "departments" | "providers">) {
 	const t = useTranslations("SettingsUI.spendAlerts");

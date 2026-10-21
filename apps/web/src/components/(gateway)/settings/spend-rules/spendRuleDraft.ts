@@ -439,11 +439,18 @@ export function thresholdAmountsUsd(thresholds: readonly number[], baseUsd: numb
 
 export type PreviewSummary =
 	| { kind: "ofBase"; valueUsd: number; baseUsd: number; percent: number }
-	| { kind: "value"; valueUsd: number };
+	| { kind: "value"; valueUsd: number }
+	/** Balance rules: the available balance, the burn per day over the window and the runway (null without spend). */
+	| { kind: "balance"; availableUsd: number; burnPerDayUsd: number; runwayDays: number | null; windowHours: number };
 
 /** "Currently $42.10 of $100 (42%)": the value against the base, or a spend rule's amount. */
 export function previewSummary(preview: SpendRulePreview | null | undefined, rule: Pick<SpendRule, "metric" | "threshold_amount_usd"> | null): PreviewSummary | null {
-	if (!preview || !preview.evaluated || preview.value_usd === null) return null;
+	if (!preview || !preview.evaluated) return null;
+	if (preview.balance) {
+		const balance = preview.balance;
+		return { kind: "balance", availableUsd: balance.available_usd, burnPerDayUsd: balance.burn_per_day_usd, runwayDays: balance.runway_days_left, windowHours: balance.window_hours };
+	}
+	if (preview.value_usd === null) return null;
 	const valueUsd = preview.value_usd;
 	if (preview.base_usd !== null && preview.base_usd > 0) {
 		return { kind: "ofBase", valueUsd, baseUsd: preview.base_usd, percent: preview.percent ?? (valueUsd / preview.base_usd) * 100 };

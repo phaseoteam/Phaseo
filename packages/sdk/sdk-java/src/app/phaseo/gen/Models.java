@@ -3350,6 +3350,7 @@ public final class Models {
 
 	public static class SpendRulePreview {
 		public Object alert;
+		public Object balance;
 		public Object base_kind;
 		public Integer base_nanos;
 		public Object base_ref;

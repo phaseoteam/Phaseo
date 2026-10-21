@@ -3438,7 +3438,7 @@
 		"lowBalanceDescription": "Alert when workspace credit reaches the configured threshold.",
 		"enableLowBalance": "Enable low balance alerts",
 		"creditThreshold": "Credit threshold",
-		"thresholdDescription": "Alert at or below this balance. Limited to one email every six hours.",
+		"thresholdDescription": "Alert at or below this balance: one email each time the balance falls this low, at most every six hours, and none while Auto Top-Up is refilling it.",
 		"thresholdInvalid": "Use a non-negative amount with up to two decimal places.",
 		"autoTopUpFailed": "Auto Top-Up Failed",
 		"autoTopUpDescription": "Alert when an automatic credit charge fails.",
@@ -6301,7 +6301,8 @@
 			"view": "View",
 			"history": "History",
 			"sendTest": "Send test",
-			"delete": "Delete"
+			"delete": "Delete",
+			"runway": "about {days} days left"
 		},
 		"preview": {
 			"ofBase": "Currently {value} of {base} ({percent})",
@@ -6310,7 +6311,9 @@
 			"disabled": "Turn the alert on to see its current value.",
 			"unavailable": "The current value is not available right now.",
 			"afterSave": "The current value appears after you save.",
-			"savedRuleNote": "Based on the saved alert. Save your changes to update it."
+			"savedRuleNote": "Based on the saved alert. Save your changes to update it.",
+			"balance": "Balance {balance}, spending {burn} a day: about {days} days left",
+			"balanceNoSpend": "Balance {balance}, with no spend in the last {hours} hours"
 		},
 		"editor": {
 			"createTitle": "Add spend alert",
@@ -6404,7 +6407,8 @@
 			"save": "Save",
 			"create": "Add alert",
 			"saving": "Saving…",
-			"blockingOff": "Blocking isn't switched on yet. Until it is, this alert only notifies."
+			"blockingOff": "Blocking isn't switched on yet. Until it is, this alert only notifies.",
+			"balanceEmailNote": "This is separate from the low-balance email above. A balance alert can also watch days of credit left, and uses its own destinations and cooldown. Neither alerts while Auto Top-Up is refilling the balance."
 		},
 		"issues": {
 			"nameRequired": "Enter a name of up to 100 characters.",

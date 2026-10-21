@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.sweep_spend_rules (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
--- Evaluates spend rules (private.evaluate_workspace_spend_rules) for three sets of workspaces,
+-- Evaluates spend rules (private.evaluate_workspace_spend_rules) for four sets of workspaces,
 -- each up to p_limit, every workspace at most once per call:
 --   1. dirty:    workspace_spend_rule_dirty rows, which process_v2_analytics_outbox writes when
 --                it rebuilds a workspace's usage. They are claimed with SKIP LOCKED and deleted
@@ -22,6 +22,9 @@ CREATE OR REPLACE FUNCTION public.sweep_spend_rules (
 --                and the 5-minute slot of p_now, so each is evaluated about once an hour when
 --                called every 5 minutes. This catches changes no usage marks: a budget or key
 --                limit lowered, a rule edited, rollup hours rebuilt late.
+--   4. balance:  workspaces with balance rules, in one of three slices by the same hash (each
+--                every 15 minutes): a balance falls or recovers without new usage (reservations,
+--                refunds, top-ups, credits), so balance rules cannot wait for the dirty mark.
 -- Workspaces that no longer exist are skipped. One sweep runs at a time; a concurrent call
 -- returns skipped_locked. p_blocks (SPEND_RULE_BLOCKS_ENABLED) lets block rules start blocks;
 -- blocks are lifted either way. Returns the counts, the events queued, the block changes
@@ -33,6 +36,8 @@ declare
   v_dirty uuid[];
   v_rollover uuid[];
   v_periodic uuid[];
+  v_balance_slots constant integer := 3;
+  v_balance uuid[];
   v_workspace uuid;
   v_result jsonb;
   v_events jsonb := '[]'::jsonb;
@@ -50,7 +55,7 @@ begin
     raise exception 'invalid_spend_rule_sweep_limit';
   end if;
   if not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('public.sweep_spend_rules', 0)) then
-    return jsonb_build_object('skipped_locked', true, 'dirty', 0, 'rollover', 0, 'periodic', 0, 'evaluated', 0,
+    return jsonb_build_object('skipped_locked', true, 'dirty', 0, 'rollover', 0, 'periodic', 0, 'balance', 0, 'evaluated', 0,
       'rules', 0, 'fired', 0, 'state_rows', 0, 'events', '[]'::jsonb, 'blocks', '[]'::jsonb, 'publish', '[]'::jsonb);
   end if;
 
@@ -107,7 +112,27 @@ begin
     limit p_limit
   ) due;
 
-  foreach v_workspace in array v_dirty || v_rollover || v_periodic loop
+  -- Balance rules: a balance moves without usage (reservations, refunds, top-ups, credits), so
+  -- workspaces with balance rules are also taken in one of three slices by the same hash, that
+  -- is every 15 minutes when called every 5 minutes.
+  select coalesce(array_agg(due.workspace_id), '{}') into v_balance
+  from (
+    select distinct rule.workspace_id
+    from public.workspace_spend_rules rule
+    where rule.metric = 'balance'
+      and rule.enabled
+      and rule.deleted_at is null
+      and private.spend_rule_evaluable(rule.metric, rule.period, rule.base_kind)
+      and (pg_catalog.hashtextextended(rule.workspace_id::text, 0) % v_balance_slots + v_balance_slots) % v_balance_slots
+        = v_slot % v_balance_slots
+      and rule.workspace_id <> all (v_dirty)
+      and rule.workspace_id <> all (v_rollover)
+      and rule.workspace_id <> all (v_periodic)
+    order by rule.workspace_id
+    limit p_limit
+  ) due;
+
+  foreach v_workspace in array v_dirty || v_rollover || v_periodic || v_balance loop
     v_result := private.evaluate_workspace_spend_rules(v_workspace, p_now, coalesce(p_blocks, false));
     if coalesce((v_result ->> 'missing')::boolean, false) then
       continue;
@@ -137,6 +162,7 @@ begin
     'dirty', cardinality(v_dirty),
     'rollover', cardinality(v_rollover),
     'periodic', cardinality(v_periodic),
+    'balance', cardinality(v_balance),
     'evaluated', v_evaluated,
     'rules', v_rules,
     'fired', v_fired,
@@ -148,7 +174,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) IS 'Evaluates spend rules for dirty workspaces (claimed with SKIP LOCKED), workspaces whose rule periods rolled over or whose blocks reached their reset, and an hourly slice of all workspaces with enabled rules. Queues alerts, lifts blocks and, with p_blocks, starts them. Called every 5 minutes by the API scheduled job when SPEND_RULES_ENABLED is true (p_blocks = SPEND_RULE_BLOCKS_ENABLED).';
+COMMENT ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) IS 'Evaluates spend rules for dirty workspaces (claimed with SKIP LOCKED), workspaces whose rule periods rolled over or whose blocks reached their reset, an hourly slice of all workspaces with enabled rules, and a 15-minute slice of workspaces with balance rules. Queues alerts, lifts blocks and, with p_blocks, starts them. Called every 5 minutes by the API scheduled job when SPEND_RULES_ENABLED is true (p_blocks = SPEND_RULE_BLOCKS_ENABLED).';
 
 GRANT EXECUTE ON FUNCTION "public"."sweep_spend_rules"(timestamp with time zone, integer, boolean) TO "service_role";
 

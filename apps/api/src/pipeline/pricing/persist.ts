@@ -10,7 +10,6 @@ import {
     writeBackGatewayCreditCache,
 } from "../../core/gateway-credit-cache";
 import { getSupabaseAdmin, ensureRuntimeForBackground } from "../../runtime/env";
-import { enqueueLowBalanceEmail } from "../notifications/low-balance";
 import { enqueueAutoTopUpFailedEmail } from "../notifications/billing-alerts";
 
 export type ChargeRpcResult = {
@@ -24,15 +23,6 @@ export type ChargeRpcResult = {
     /** Exact post-charge available balance, present only for newly applied charges. */
     available_nanos?: number | null;
 };
-
-type WorkspaceLowBalanceSettingsRow = {
-    low_balance_email_enabled: boolean | null;
-    low_balance_email_threshold_nanos: number | string | null;
-    low_balance_email_last_sent_at: string | null;
-    low_balance_email_last_sent_balance_nanos: number | string | null;
-};
-
-let workspaceSettingsSupportsLowBalanceEmailColumns: boolean | null = null;
 
 async function getStripe(): Promise<Stripe> {
     const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
@@ -97,121 +87,6 @@ export function buildAutoTopUpFailureDedupeId(args: {
     return `${args.failure}:${normalizedWorkspaceId}:${bucket}`;
 }
 
-function toFiniteNumber(value: unknown, fallback: number): number {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : fallback;
-}
-
-function isMissingColumnError(error: unknown, column: string, table?: string): boolean {
-    const candidate = error && typeof error === "object" ? error as Record<string, unknown> : null;
-    const code = String(candidate?.code ?? "");
-    const message = String(candidate?.message ?? "");
-    if (code !== "PGRST204" && code !== "42703") return false;
-    if (!message.toLowerCase().includes(column.toLowerCase())) return false;
-    if (!table) return true;
-    return message.toLowerCase().includes(table.toLowerCase());
-}
-
-async function loadWorkspaceLowBalanceSettings(
-    supabase: ReturnType<typeof getSupabaseAdmin>,
-    workspaceId: string,
-): Promise<WorkspaceLowBalanceSettingsRow | null> {
-    const selectLegacyCompatible = async () => {
-        const { data, error } = await supabase
-            .from("workspace_settings")
-            .select(
-                "low_balance_email_enabled,low_balance_email_threshold_nanos,low_balance_email_last_sent_at,low_balance_email_last_sent_balance_nanos",
-            )
-            .eq("workspace_id", workspaceId)
-            .maybeSingle();
-        return { data, error };
-    };
-
-    if (workspaceSettingsSupportsLowBalanceEmailColumns === false) {
-        return null;
-    }
-
-    const { data, error } = await selectLegacyCompatible();
-    if (!error) {
-        workspaceSettingsSupportsLowBalanceEmailColumns = true;
-        return (data ?? null) as WorkspaceLowBalanceSettingsRow | null;
-    }
-
-    if (isMissingColumnError(error, "low_balance_email_enabled", "workspace_settings")) {
-        workspaceSettingsSupportsLowBalanceEmailColumns = false;
-        return null;
-    }
-
-    console.error("[low-balance] failed to load workspace settings", {
-        workspaceId,
-        code: error.code ?? null,
-        message: error.message ?? String(error),
-    });
-    return null;
-}
-
-// Runs after every applied charge. Most workspaces have alerts off, so remember
-// that answer briefly; enabled workspaces always read fresh cooldown state.
-const LOW_BALANCE_DISABLED_CACHE_TTL_MS = 60_000;
-const LOW_BALANCE_DISABLED_CACHE_MAX_ENTRIES = 20_000;
-const lowBalanceAlertsDisabledUntil = new Map<string, number>();
-
-export function __resetLowBalanceSettingsCacheForTests(): void {
-    lowBalanceAlertsDisabledUntil.clear();
-}
-
-function rememberLowBalanceAlertsDisabled(workspaceId: string): void {
-    lowBalanceAlertsDisabledUntil.delete(workspaceId);
-    lowBalanceAlertsDisabledUntil.set(workspaceId, Date.now() + LOW_BALANCE_DISABLED_CACHE_TTL_MS);
-    while (lowBalanceAlertsDisabledUntil.size > LOW_BALANCE_DISABLED_CACHE_MAX_ENTRIES) {
-        const oldest = lowBalanceAlertsDisabledUntil.keys().next();
-        if (oldest.done) break;
-        lowBalanceAlertsDisabledUntil.delete(oldest.value);
-    }
-}
-
-async function maybeEnqueueLowBalanceAlert(workspaceId: string): Promise<void> {
-    if ((lowBalanceAlertsDisabledUntil.get(workspaceId) ?? 0) > Date.now()) return;
-    const supabase = getSupabaseAdmin();
-    const typedSettings = await loadWorkspaceLowBalanceSettings(supabase, workspaceId);
-    if (!typedSettings?.low_balance_email_enabled) {
-        if (typedSettings) rememberLowBalanceAlertsDisabled(workspaceId);
-        return;
-    }
-
-    const thresholdNanos = toFiniteNumber(typedSettings.low_balance_email_threshold_nanos, 0);
-    if (thresholdNanos < 0) return;
-
-    const { data: walletRow, error: walletError } = await supabase
-        .from("wallets")
-        .select("balance_nanos")
-        .eq("workspace_id", workspaceId)
-        .maybeSingle();
-
-    if (walletError) {
-        console.error("[low-balance] failed to load wallet balance", {
-            workspaceId,
-            code: walletError.code ?? null,
-            message: walletError.message ?? String(walletError),
-        });
-        return;
-    }
-
-    const balanceNanos = toFiniteNumber((walletRow as any)?.balance_nanos, NaN);
-    if (!Number.isFinite(balanceNanos)) return;
-
-    await enqueueLowBalanceEmail({
-        workspaceId,
-        balanceNanos,
-        settings: {
-            enabled: true,
-            thresholdNanos,
-            lastSentAt: typedSettings.low_balance_email_last_sent_at ?? null,
-            lastSentBalanceNanos: typedSettings.low_balance_email_last_sent_balance_nanos ?? null,
-        },
-    });
-}
-
 // src/lib/gateway/pricing/persist.ts
 export async function recordUsageAndCharge(args: {
     requestId: string;
@@ -258,14 +133,9 @@ export async function recordUsageAndCharge(args: {
         }
         if (chargeResult.already_applied) return chargeResult;
 
-        try {
-            await maybeEnqueueLowBalanceAlert(args.workspaceId);
-        } catch (lowBalanceError) {
-            console.error("[low-balance] enqueue failed", {
-                workspaceId: args.workspaceId,
-                error: lowBalanceError instanceof Error ? lowBalanceError.message : String(lowBalanceError),
-            });
-        }
+        // The low-balance email is not checked here: a scheduled sweep compares wallets with the
+        // workspace threshold every five minutes (pipeline/notifications/low-balance.ts), so a
+        // charge reads nothing beyond the charge RPC.
 
         if (chargeResult.status === "top_up_required") {
             // Trigger auto-recharge

@@ -20,6 +20,7 @@ const runMobilePushJobMock = vi.fn();
 const runMobilePushDigestJobMock = vi.fn();
 const runSpendLimitWarningSweepMock = vi.fn();
 const runSpendRulesSweepMock = vi.fn();
+const runLowBalanceEmailSweepMock = vi.fn();
 const publishSweepSpendBlockEntriesMock = vi.fn();
 const reconcileSpendBlockEntriesMock = vi.fn();
 const runNotificationDeliveryJobMock = vi.fn();
@@ -107,6 +108,11 @@ vi.mock("@/pipeline/notifications/spend-rules", () => ({
 	publishSweepSpendBlockEntries: (...args: unknown[]) => publishSweepSpendBlockEntriesMock(...args),
 }));
 
+vi.mock("@/pipeline/notifications/low-balance", () => ({
+	runLowBalanceEmailSweep: (...args: unknown[]) => runLowBalanceEmailSweepMock(...args),
+	hasLowBalanceEmailActivity: (summary: Record<string, unknown>) => Number(summary.emailed) > 0 || Number(summary.dropped) > 0,
+}));
+
 vi.mock("@core/spend-blocks", () => ({
 	reconcileSpendBlockEntries: (...args: unknown[]) => reconcileSpendBlockEntriesMock(...args),
 }));
@@ -178,6 +184,7 @@ describe("handleScheduledEvent", () => {
 		runSpendLimitWarningSweepMock.mockReset().mockResolvedValue({ budgets: 0, limitedKeys: 0, warned: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
 		runSpendRulesSweepMock.mockReset().mockResolvedValue({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: [], publish: [] });
+		runLowBalanceEmailSweepMock.mockReset().mockResolvedValue({ skipped: false, watched: 0, firstSeen: 0, dropped: 0, rearmed: 0, coveredByTopUp: 0, waiting: 0, emailed: 0, emails: [], automationSent: 0, automationFailed: 0 });
 		publishSweepSpendBlockEntriesMock.mockReset().mockResolvedValue({ published: 0, failed: 0 });
 		reconcileSpendBlockEntriesMock.mockReset().mockResolvedValue({ workspaces: 0, published: 0, failed: 0, truncated: false });
 		enqueueModelDeprecationNotificationsMock.mockReset().mockResolvedValue({ workspaces: 0, enqueued: 0 });
@@ -532,6 +539,40 @@ describe("handleScheduledEvent", () => {
 			const error = vi.spyOn(console, "error").mockImplementation(() => {});
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:20:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
 			expect(error).toHaveBeenCalledWith("spend_rules_scheduled_failed", expect.anything());
+			expect(runNotificationDeliveryJobMock).toHaveBeenCalledTimes(1);
+			error.mockRestore();
+		} finally {
+			log.mockRestore();
+		}
+	});
+
+	it("sweeps low-balance emails every five minutes whatever SPEND_RULES_ENABLED says, before the outbox drain", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:06:00.000Z"), {} as any);
+			expect(runLowBalanceEmailSweepMock).not.toHaveBeenCalled();
+
+			drainEmailOutboxMock.mockReset().mockResolvedValue({ processed: 0, failed: 0 });
+			runNotificationDeliveryJobMock.mockClear();
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { SPEND_RULES_ENABLED: "false", RESEND_API_KEY: "re_test" } as any);
+			expect(runLowBalanceEmailSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendRulesSweepMock).not.toHaveBeenCalled();
+			expect(runLowBalanceEmailSweepMock.mock.invocationCallOrder[0]).toBeLessThan(drainEmailOutboxMock.mock.invocationCallOrder[0]);
+			expect(runLowBalanceEmailSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runNotificationDeliveryJobMock.mock.invocationCallOrder[0]);
+			expect(log).not.toHaveBeenCalledWith("low_balance_emails_swept", expect.anything());
+
+			runLowBalanceEmailSweepMock.mockResolvedValueOnce({ skipped: false, watched: 4, firstSeen: 0, dropped: 1, rearmed: 0, coveredByTopUp: 0, waiting: 0, emailed: 1, emails: [{ id: "e1" }], automationSent: 1, automationFailed: 0 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:10:00.000Z"), {} as any);
+			expect(log).toHaveBeenCalledWith("low_balance_emails_swept", {
+				skipped: false, watched: 4, firstSeen: 0, dropped: 1, rearmed: 0, coveredByTopUp: 0, waiting: 0, emailed: 1, emails: 1, automationSent: 1, automationFailed: 0,
+			});
+
+			// A failed sweep does not stop the deliveries.
+			runNotificationDeliveryJobMock.mockClear();
+			runLowBalanceEmailSweepMock.mockRejectedValueOnce(new Error("timeout"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => {});
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), {} as any);
+			expect(error).toHaveBeenCalledWith("low_balance_emails_scheduled_failed", expect.anything());
 			expect(runNotificationDeliveryJobMock).toHaveBeenCalledTimes(1);
 			error.mockRestore();
 		} finally {

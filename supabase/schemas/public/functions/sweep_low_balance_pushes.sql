@@ -19,7 +19,8 @@ CREATE OR REPLACE FUNCTION public.sweep_low_balance_pushes (
 --     the wallet, and a failed top-up has its own push. Working means enabled with at least $1 to
 --     add (smaller amounts are skipped without an alert) and a trigger above $0 (a $0 trigger never
 --     fires), failure alerts on (the failure push comes from that email), and no failed top-up
---     since the last card payment.
+--     since the last card payment (private.workspace_auto_top_up_covers, shared with the
+--     low-balance email sweep and balance spend rules).
 --   * The forecast for the push text, credits charged over the last seven days
 --     (get_workspace_recent_credit_spend), is worked out only for a drop that is pushed.
 --   * State lives in workspace_low_balance_push_state, written only when it changes, so an idle
@@ -50,29 +51,7 @@ begin
       w.balance_nanos,
       case when s.low_balance_email_threshold_nanos > 0 then s.low_balance_email_threshold_nanos else v_default_threshold end as threshold_nanos,
       coalesce(s.low_balance_email_threshold_nanos > 0, false) as own_threshold,
-      case
-        when w.auto_top_up_enabled and w.auto_top_up_amount >= 1000000000 and w.low_balance_threshold > 0
-          and s.auto_top_up_failure_email_enabled is distinct from false
-          then not exists (
-            select 1
-            from (
-              select f.occurred_at
-              from public.workspace_notification_events f
-              where f.workspace_id = w.workspace_id and f.kind = 'auto_top_up_failed'
-              order by f.occurred_at desc
-              limit 1
-            ) failed
-            where not exists (
-              select 1
-              from public.credit_ledger l
-              where l.workspace_id = w.workspace_id
-                and l.ref_type = 'Stripe_Payment_Intent'
-                and l.amount_nanos > 0
-                and l.created_at > failed.occurred_at
-            )
-          )
-        else false
-      end as top_up_covers,
+      private.workspace_auto_top_up_covers(w.workspace_id) as top_up_covers,
       st.workspace_id is not null as seen
     from watched x
     join public.wallets w on w.workspace_id = x.workspace_id

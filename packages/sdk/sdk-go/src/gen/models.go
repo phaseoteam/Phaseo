@@ -4923,6 +4923,7 @@ const (
 
 type SpendRulePreview struct {
 	Alert *map[string]interface{} `json:"alert"`
+	Balance *map[string]interface{} `json:"balance"`
 	BaseKind *string `json:"base_kind"`
 	BaseNanos *int `json:"base_nanos"`
 	BaseRef *string `json:"base_ref"`

@@ -77,6 +77,10 @@ for (const [name, parameter] of [["EVALUATED_METRICS", "p_metric"], ["EVALUATED_
 	const sql = list ? [...list.matchAll(/'([^']+)'/g)].map((match) => match[1]) : null;
 	if (!same(values(name), sql)) problems.push(`${name} does not match ${parameter} in ${EVALUABLE}`);
 }
+const rolling = evaluable.match(/p_metric in \(([^)]*)\) and p_period = 'rolling' and p_base_kind is null/)?.[1];
+if (!same(values("EVALUATED_ROLLING_METRICS"), rolling ? [...rolling.matchAll(/'([^']+)'/g)].map((match) => match[1]) : null)) {
+	problems.push(`EVALUATED_ROLLING_METRICS does not match the rolling branch in ${EVALUABLE}`);
+}
 
 const destinations = (await read(SAVE)).match(/cardinality\(p_destination_ids\) > (\d+)/)?.[1];
 if (!destinations || destinations !== constant("MAX_SPEND_RULE_DESTINATIONS")) problems.push(`${SAVE} destination cap does not match MAX_SPEND_RULE_DESTINATIONS`);

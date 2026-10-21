@@ -21421,7 +21421,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: 評価がまだ対応していないルール（forecast・spike・balance の指標、rolling 期間、previous_period の基準）では false です。保存され、今後のリリースから発火します。
+          description: 評価がまだ対応していないルール（forecast・spike の指標、支出の rolling 期間、previous_period の基準）では false です。保存され、今後のリリースから発火します。balance ルールは評価されます。
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -21700,7 +21700,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: 支出ルールの現在の状況。暦期間のないルールでは period、value、alert が null になります。
+      description: 支出ルールの現在の状況です。balance ルールでは period が消費ペースの期間、値が利用可能残高となり、balance オブジェクトが含まれます。暦の期間を持たないその他のルールでは period、value、alert は null です。
       required:
         - rule_id
         - metric
@@ -21722,6 +21722,7 @@ components:
         - next_threshold
         - block_at_nanos
         - block_at_usd
+        - balance
         - state
         - alert
       properties:
@@ -21732,7 +21733,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: 評価がまだ対応していないルール（forecast・spike・balance の指標、rolling 期間、previous_period の基準）では false です。保存され、今後のリリースから発火します。
+          description: 評価がまだ対応していないルール（forecast・spike の指標、支出の rolling 期間、previous_period の基準）では false です。保存され、今後のリリースから発火します。balance ルールは評価されます。
         computed_at:
           type: string
           format: date-time
@@ -21847,6 +21848,56 @@ components:
               nullable: true
             fire_count:
               type: integer
+            armed:
+              type: boolean
+              description: balance ルール：アラート後、残高がしきい値を再び上回るまで false です。
+        balance:
+          type: object
+          nullable: true
+          description: balance ルールのみ：評価から見た残高の状況です。その他のルールでは null です。
+          required:
+            - balance_usd
+            - reserved_usd
+            - available_nanos
+            - available_usd
+            - window_hours
+            - burn_usd
+            - burn_per_day_usd
+            - runway_days_left
+            - low_balance
+            - low_runway
+            - armed
+            - auto_top_up_covers
+          properties:
+            balance_usd:
+              type: number
+            reserved_usd:
+              type: number
+            available_nanos:
+              type: integer
+              format: int64
+              description: 残高から予約済みクレジットを引いた額です。リクエストはこの額に基づいて受け付けられます。
+            available_usd:
+              type: number
+            window_hours:
+              type: integer
+            burn_usd:
+              type: number
+            burn_per_day_usd:
+              type: number
+            runway_days_left:
+              type: number
+              nullable: true
+              description: 現在の消費ペースで利用可能残高が持つ日数です。期間内に支出がない場合は null です。
+            low_balance:
+              type: boolean
+            low_runway:
+              type: boolean
+            armed:
+              type: boolean
+            auto_top_up_covers:
+              type: boolean
+              description: 自動チャージが有効で正常に機能しているため、残高の低下はアラートなしで記録されます。
         alert:
           type: object
           nullable: true
