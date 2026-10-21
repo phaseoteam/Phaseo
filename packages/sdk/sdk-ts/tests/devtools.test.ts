@@ -1366,4 +1366,19 @@ describe("DevTools Integration", () => {
     expect(disabledClient).toBeDefined();
     expect(fs.existsSync(disabledDir)).toBe(false);
   });
+
+  test("constructs a client and sends a request without a process global", async () => {
+    // Cloudflare Workers and browsers may have no `process`; devtools stay off there.
+    const savedProcess = Object.getOwnPropertyDescriptor(globalThis, "process")!;
+    const fetchImpl: typeof fetch = async (input) => String(input).endsWith("/responses")
+      ? Response.json({ id: "resp_workers_1", object: "response", model: "openai/gpt-5-nano", output: [] })
+      : Response.json({ data: [] });
+    Reflect.deleteProperty(globalThis, "process");
+    try {
+      const workersClient = new Phaseo({ apiKey: "test-key", baseUrl: "https://example.test", fetchImpl });
+      await expect(workersClient.generateResponse({ model: "openai/gpt-5-nano", input: "Hello" })).resolves.toMatchObject({ id: "resp_workers_1" });
+    } finally {
+      Object.defineProperty(globalThis, "process", savedProcess);
+    }
+  });
 });

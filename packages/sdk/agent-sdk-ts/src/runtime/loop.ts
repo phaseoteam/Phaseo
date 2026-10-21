@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { captureAgentRunDevtools } from "../devtools.js";
 import { AgentGatewayError, toAgentGatewayErrorDetails } from "../errors.js";
 import { agentItemKey, isGatewayServerToolName, responseItems, toolResultItem } from "../items.js";
@@ -459,7 +458,7 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 }
 
 export async function runAgent<TInput, TOutput, TContext>(definition: AgentDefinition<TInput, TOutput, TContext>, options: AgentRunOptions<TInput, TContext, TOutput> & { streaming?: boolean }): Promise<AgentRunResult<TOutput, TInput, TContext>> {
-	const startedAt = Date.now(); const createdAt = nowIso(); const runId = randomUUID();
+	const startedAt = Date.now(); const createdAt = nowIso(); const runId = globalThis.crypto.randomUUID();
 	const run: AgentRunRecord<TInput, TContext, TOutput> = { id: runId, agentId: definition.id, status: "queued", input: options.input, context: options.context, messages: [], pause: null, stopReason: null, usage: { ...EMPTY_USAGE }, createdAt, updatedAt: createdAt, stepCount: 0 };
 	const staticInstructions = typeof definition.instructions === "string" ? definition.instructions : undefined;
 	if (staticInstructions) run.messages.push({ role: "system", content: staticInstructions });
@@ -469,10 +468,10 @@ export async function runAgent<TInput, TOutput, TContext>(definition: AgentDefin
 	await emit(options.onEvent, { type: "run.started", runId, agentId: definition.id, timestamp: nowIso(), status: run.status });
 	try {
 		const result = await executeLoop(definition, initial, options, false);
-		captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, result, runId });
+		await captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, result, runId });
 		return result;
 	} catch (error) {
-		captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, error, runId });
+		await captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, error, runId });
 		throw error;
 	}
 }
@@ -484,10 +483,10 @@ export async function continueAgent<TInput, TOutput, TContext>(definition: Agent
 	if (source.run.agentId !== definition.id) throw new Error(`Cannot continue run ${source.run.id} with agent ${definition.id}; it belongs to ${source.run.agentId}`);
 	try {
 		const result = await executeLoop(definition, structuredClone(source), options, true);
-		captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, result, runId: source.run.id });
+		await captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, result, runId: source.run.id });
 		return result;
 	} catch (error) {
-		captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, error, runId: source.run.id });
+		await captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, error, runId: source.run.id });
 		throw error;
 	}
 }
