@@ -42,6 +42,8 @@ try {
     insert into public.v2_providers values ('host');
     insert into public.v2_models(model_slug, status, replacement_model_slug, input_modalities, variant_kind, retired_at) values
       ('lab/new', 'active', null, '{text,image}', 'standard', null),
+      ('lab/long', 'retired', 'lab/new', '{text}', 'standard', now() - interval '1 day'),
+      ('lab/painter', 'retired', 'lab/new', '{text}', 'standard', now() - interval '1 day'),
       ('lab/new-text', 'active', null, '{text}', 'standard', null),
       ('lab/unserved', 'active', null, '{text,image}', 'standard', null),
       ('lab/earlier', 'retired', 'lab/new', '{text}', 'standard', now() - interval '30 days'),
@@ -52,10 +54,12 @@ try {
       ('lab/hidden-old', 'retired', 'lab/new', '{text}', 'standard', now() - interval '1 day'),
       ('lab/current', 'active', 'lab/new', '{text}', 'standard', null);
     update public.v2_models set hidden=true where model_slug='lab/hidden-old';
+    update public.v2_models set output_modalities='{image}' where model_slug='lab/painter';
     insert into public.v2_model_provider_routes(provider_model_id, model_slug, provider_slug, context_length) values
       ('new-host', 'lab/new', 'host', 200000), ('new-text-host', 'lab/new-text', 'host', 200000),
       ('old-host', 'lab/old', 'host', 128000), ('vision-host', 'lab/vision', 'host', 128000),
-      ('earlier-host', 'lab/earlier', 'host', 128000), ('dead-end-host', 'lab/dead-end', 'host', 128000);
+      ('earlier-host', 'lab/earlier', 'host', 128000), ('dead-end-host', 'lab/dead-end', 'host', 128000),
+      ('long-host', 'lab/long', 'host', 400000);
     insert into public.v2_route_capabilities(provider_model_id, capability_id) values
       ('new-host', 'text.generate'), ('new-text-host', 'text.generate'), ('old-host', 'text.generate'),
       ('vision-host', 'text.generate'), ('earlier-host', 'text.generate'), ('dead-end-host', 'text.generate');
@@ -64,14 +68,19 @@ try {
   await db.exec(await read('../migrations/20261021105000_auto_approve_model_successors.sql'));
   assert.equal(await value(`select approval_source as value from public.v2_model_successor_routing where model_slug='lab/earlier'`), 'admin');
 
-  // Only clean replacements of deprecated or retired visible models are approved.
+  // Replacements of deprecated or retired visible models are approved, with a
+  // smaller context or a missing input type accepted as warnings.
   let run = await refresh();
-  assert.equal(run.auto_approved, 1);
+  assert.equal(run.auto_approved, 3);
   let current = await state('lab/old');
   assert.deepEqual([current.approval_current, current.approved_successor_slug, current.approval_source, current.approved_by],
     [true, 'lab/new', 'auto', null]);
   assert.equal(current.approved_compatibility.accepted_warnings, false);
-  assert.equal(await approvedTo('lab/vision'), null, 'missing input types needs an admin');
+  current = await state('lab/vision');
+  assert.deepEqual([current.approved_successor_slug, current.approval_source, current.approved_compatibility.accepted_warnings],
+    ['lab/new-text', 'auto', true]);
+  assert.deepEqual((await state('lab/long')).approved_compatibility.warnings, ['smaller_context']);
+  assert.equal(await approvedTo('lab/painter'), null, 'a missing output type needs an admin');
   assert.equal(await approvedTo('lab/dead-end'), null, 'an unserved replacement needs an admin');
   assert.equal(await approvedTo('lab/old:free'), null, 'free to paid is never approved');
   assert.equal(await approvedTo('lab/hidden-old'), null, 'hidden models are skipped');

@@ -30,10 +30,13 @@ begin
   )
   select (select count(*) from marked), (select count(*) from cleared) into v_marked, v_cleared;
 
-  -- Approves the suggested replacement of a deprecated or retired model when
-  -- it has no compatibility issues at all, so setting a replacement is enough.
-  -- Replacements with warnings still need an admin; models an admin revoked
-  -- are left alone. Only models without a current approval are checked.
+  -- Approves the suggested replacement of a deprecated or retired model, so
+  -- setting a replacement is enough. A smaller context or a missing input
+  -- type is accepted: a redirect only happens once nothing serves the old
+  -- model, so most requests still succeed. A replacement that is not served
+  -- or cannot produce the old model's output still needs an admin; models an
+  -- admin revoked are left alone. Only models without a current approval are
+  -- checked.
   for v_slug in
     select m.model_slug
     from public.v2_models m
@@ -56,10 +59,12 @@ begin
     v_before := public.get_model_successor_routing(v_slug);
     v_compatibility := v_before->'compatibility';
     continue when v_compatibility is null or jsonb_typeof(v_compatibility) <> 'object'
-      or jsonb_array_length(v_compatibility->'blocking') > 0 or jsonb_array_length(v_compatibility->'warnings') > 0;
+      or jsonb_array_length(v_compatibility->'blocking') > 0
+      or v_compatibility->'warnings' ?| array['successor_not_served','missing_output_modalities'];
 
     insert into public.v2_model_successor_routing as s (model_slug, auto_route_enabled, approved_successor_slug, approved_by, approved_at, compatibility, approval_source)
-    values (v_slug, true, v_compatibility->>'successor', null, v_now, v_compatibility || jsonb_build_object('accepted_warnings', false), 'auto')
+    values (v_slug, true, v_compatibility->>'successor', null, v_now,
+      v_compatibility || jsonb_build_object('accepted_warnings', jsonb_array_length(v_compatibility->'warnings') > 0), 'auto')
     on conflict (model_slug) do update set auto_route_enabled=true, approved_successor_slug=excluded.approved_successor_slug,
       approved_by=null, approved_at=v_now, compatibility=excluded.compatibility, approval_source='auto', updated_at=v_now
       where not s.auto_approval_blocked;

@@ -2000,7 +2000,7 @@
 			"cacheFailure": "Não foi possível revalidar o cache do modelo.",
 			"successorRouting": {
 				"title": "Roteamento para o sucessor",
-				"description": "Aprove o envio das solicitações deste modelo para o substituto quando nenhum provedor o tiver servido por 72 horas. Substitutos sem problemas de compatibilidade são aprovados automaticamente. Os espaços de trabalho também precisam ativar isso.",
+				"description": "Aprove o envio das solicitações deste modelo para o substituto quando nenhum provedor o tiver servido por 72 horas. Os substitutos são aprovados automaticamente, a menos que não tenham provedor ou não ofereçam os tipos de saída deste modelo. Os espaços de trabalho também precisam ativar isso.",
 				"replacement": "Substituto",
 				"noReplacement": "Não definido",
 				"serving": "Atendimento",

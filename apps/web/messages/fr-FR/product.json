@@ -2000,7 +2000,7 @@
 			"cacheFailure": "Impossible de revalider le cache du modèle.",
 			"successorRouting": {
 				"title": "Routage vers le successeur",
-				"description": "Approuvez l’envoi des requêtes de ce modèle vers son remplaçant lorsqu’aucun fournisseur ne l’a servi pendant 72 heures. Les remplaçants sans problème de compatibilité sont approuvés automatiquement. Les espaces de travail doivent aussi activer cette option.",
+				"description": "Approuvez l’envoi des requêtes de ce modèle vers son remplaçant lorsqu’aucun fournisseur ne l’a servi pendant 72 heures. Les remplaçants sont approuvés automatiquement, sauf s’ils n’ont aucun fournisseur ou ne prennent pas en charge les types de sortie de ce modèle. Les espaces de travail doivent aussi activer cette option.",
 				"replacement": "Remplaçant",
 				"noReplacement": "Non défini",
 				"serving": "Service",

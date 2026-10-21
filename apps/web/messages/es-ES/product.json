@@ -2000,7 +2000,7 @@
 			"cacheFailure": "No se pudo volver a validar la caché del modelo.",
 			"successorRouting": {
 				"title": "Enrutamiento al sucesor",
-				"description": "Aprueba enviar las solicitudes de este modelo a su sustituto cuando ningún proveedor lo haya servido durante 72 horas. Los sustitutos sin problemas de compatibilidad se aprueban automáticamente. Los espacios de trabajo también deben activarlo.",
+				"description": "Aprueba enviar las solicitudes de este modelo a su sustituto cuando ningún proveedor lo haya servido durante 72 horas. Los sustitutos se aprueban automáticamente, salvo que no tengan proveedor o no admitan los tipos de salida de este modelo. Los espacios de trabajo también deben activarlo.",
 				"replacement": "Sustituto",
 				"noReplacement": "Sin definir",
 				"serving": "Servicio",
