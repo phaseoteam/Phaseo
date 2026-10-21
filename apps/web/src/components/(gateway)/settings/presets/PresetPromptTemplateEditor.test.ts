@@ -16,9 +16,9 @@ const saved = {
 describe("preset prompt template editor", () => {
 	it("round-trips a saved template and drops declarations the messages no longer use", () => {
 		const draft = draftFromTemplate(saved);
-		expect(draft.messages.map((message) => [message.role, message.text, message.imageVariable])).toEqual([
-			["system", "You triage tickets for {{company}}.", ""],
-			["user", "Ticket: {{ticket}}", "screenshot"],
+		expect(draft.messages.map((message) => [message.role, message.parts.map((part) => (part.type === "text" ? part.text : `image:${part.name}`))])).toEqual([
+			["system", ["You triage tickets for {{company}}."]],
+			["user", ["Ticket: {{ticket}}", "image:screenshot"]],
 		]);
 		const build = buildPromptTemplate(draft);
 		expect(build.issues).toEqual([]);
@@ -46,7 +46,7 @@ describe("preset prompt template editor", () => {
 		const keywords = buildPromptTemplate(draft).issues.map((issue) => issue.keyword);
 		expect(keywords).toEqual(expect.arrayContaining(["template_syntax", "template_invalid"]));
 
-		const fixed = { ...draft, tools: "", messages: draft.messages.map((message) => ({ ...message, text: "{{count}}" })) };
+		const fixed = { ...draft, tools: "", messages: draft.messages.map((message) => ({ ...message, parts: [{ key: "p", type: "text" as const, text: "{{count}}" }] })) };
 		expect(buildPromptTemplate(fixed).issues.map((issue) => issue.message)).toEqual(['Default for "count" is not a valid number']);
 	});
 
@@ -61,5 +61,36 @@ describe("preset prompt template editor", () => {
 			{ role: "system", content: "You triage tickets for Acme." },
 			{ role: "user", content: [{ type: "text", text: "Ticket: Login fails" }, { type: "image_url", image_url: { url: "https://example.com/a.png" } }] },
 		]);
+	});
+
+	it("keeps interleaved parts, every image and fields the editor does not show", () => {
+		const template = {
+			messages: [{ role: "user", content: [
+				{ type: "variable", name: "before" },
+				{ type: "text", text: "Compare these:" },
+				{ type: "variable", name: "after" },
+				{ type: "text", text: "Which changed?" },
+			] }],
+			variables: { before: { type: "image", required: true }, after: { type: "image", required: true } },
+			tool_choice: { type: "function", function: { name: "assign" } },
+		};
+		expect(buildPromptTemplate(draftFromTemplate(template)).template).toEqual(template);
+	});
+
+	it("keeps string defaults of JSON-typed variables valid", () => {
+		const template = { messages: [{ role: "user", content: "{{#extra}}{{extra}}{{/extra}}" }], variables: { extra: { type: "any", default: "hello" } } };
+		const draft = draftFromTemplate(template);
+		expect(draft.defaults.extra).toBe('"hello"');
+		const build = buildPromptTemplate(draft);
+		expect(build.issues).toEqual([]);
+		expect(build.template).toEqual(template);
+	});
+
+	it("keeps enum values with commas and spaces, ignoring blank lines", () => {
+		const template = { messages: [{ role: "user", content: "{{city}}" }], variables: { city: { type: "enum", enum: ["New York, NY", " Paris "] } } };
+		const draft = draftFromTemplate(template);
+		expect(buildPromptTemplate(draft).template).toEqual(template);
+		draft.variables.city = { ...draft.variables.city, enum: ["New York, NY", "", " Paris "] };
+		expect(buildPromptTemplate(draft).template).toEqual(template);
 	});
 });

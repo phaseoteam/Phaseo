@@ -23,13 +23,16 @@ import {
 	resolvePromptVariables,
 	type PromptTemplate,
 	type PromptTemplateIssue,
+	type PromptTemplatePart,
 	type PromptTemplateRole,
 	type PromptVariableSpec,
 	type PromptVariableType,
 	type RenderedPromptMessage,
 } from "./promptTemplates";
 
-type DraftMessage = { key: string; role: PromptTemplateRole; text: string; imageVariable: string };
+type DraftPart = { key: string; type: "text"; text: string } | { key: string; type: "variable"; name: string };
+/** Parts stay in their saved order, so text and image variables can interleave. */
+type DraftMessage = { key: string; role: PromptTemplateRole; parts: DraftPart[] };
 
 /** Editor state. Raw strings are kept for inputs whose value is typed per variable. */
 export type PromptTemplateDraft = {
@@ -39,10 +42,22 @@ export type PromptTemplateDraft = {
 	testValues: Record<string, string>;
 	tools: string;
 	responseFormat: string;
+	/** Template fields the editor does not show, such as tool_choice, saved back unchanged. */
+	preserved: Record<string, unknown>;
 };
 
-let messageKey = 0;
-const nextKey = () => `message-${(messageKey += 1)}`;
+let draftKey = 0;
+const nextKey = () => `draft-${(draftKey += 1)}`;
+const textPart = (text = ""): DraftPart => ({ key: nextKey(), type: "text", text });
+const variablePart = (name = ""): DraftPart => ({ key: nextKey(), type: "variable", name });
+/** Only user messages take images. */
+function textOnly(parts: DraftPart[]): DraftPart[] {
+	const text = parts.filter((part) => part.type === "text");
+	return text.length ? text : [textPart()];
+}
+
+/** Types whose raw input is the value itself; the rest are typed as JSON. */
+const TEXT_VALUE_TYPES: PromptVariableType[] = ["string", "enum", "image"];
 
 function isPlainObject(value: unknown): value is Record<string, any> {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -53,40 +68,46 @@ function formatJson(value: unknown): string {
 }
 
 export function draftFromTemplate(template: unknown): PromptTemplateDraft {
-	const source = isPlainObject(template) ? template : {};
-	const messages: DraftMessage[] = Array.isArray(source.messages)
-		? source.messages.map((message: any) => {
-			const parts = Array.isArray(message?.content) ? message.content : null;
+	const { messages: sourceMessages, variables: sourceVariables, tools, response_format, ...preserved } = isPlainObject(template) ? template : {};
+	const messages: DraftMessage[] = Array.isArray(sourceMessages)
+		? sourceMessages.map((message: any) => {
+			const parts: DraftPart[] = Array.isArray(message?.content)
+				? message.content.flatMap((part: any): DraftPart[] => {
+					if (part?.type === "text") return [textPart(String(part.text ?? ""))];
+					if (part?.type === "variable") return [variablePart(String(part.name ?? ""))];
+					return [];
+				})
+				: [textPart(String(message?.content ?? ""))];
 			return {
 				key: nextKey(),
 				role: PROMPT_TEMPLATE_ROLES.includes(message?.role) ? message.role : "user",
-				text: parts
-					? parts.filter((part: any) => part?.type === "text").map((part: any) => String(part.text ?? "")).join("")
-					: String(message?.content ?? ""),
-				imageVariable: parts?.find((part: any) => part?.type === "variable")?.name ?? "",
+				parts: parts.length ? parts : [textPart()],
 			};
 		})
 		: [];
-	const variables: Record<string, PromptVariableSpec> = isPlainObject(source.variables) ? { ...source.variables } : {};
+	const variables: Record<string, PromptVariableSpec> = isPlainObject(sourceVariables) ? { ...sourceVariables } : {};
 	const defaults: Record<string, string> = {};
 	for (const [name, spec] of Object.entries(variables)) {
 		if (spec?.default === undefined) continue;
-		defaults[name] = typeof spec.default === "string" ? spec.default : JSON.stringify(spec.default);
+		defaults[name] = typeof spec.default === "string" && TEXT_VALUE_TYPES.includes(spec.type)
+			? spec.default
+			: JSON.stringify(spec.default);
 	}
 	return {
 		messages,
 		variables,
 		defaults,
 		testValues: {},
-		tools: formatJson(source.tools),
-		responseFormat: formatJson(source.response_format),
+		tools: formatJson(tools),
+		responseFormat: formatJson(response_format),
+		preserved,
 	};
 }
 
 /** Parse a raw input into the variable's type; undefined when blank, an error when it does not fit. */
 function parseTypedValue(type: PromptVariableType, raw: string): { value?: unknown; error?: true } {
 	if (raw === "") return {};
-	if (type === "string" || type === "enum" || type === "image") return { value: raw };
+	if (TEXT_VALUE_TYPES.includes(type)) return { value: raw };
 	if (type === "number") {
 		const value = Number(raw);
 		return Number.isFinite(value) ? { value } : { error: true };
@@ -109,21 +130,18 @@ function parseJsonField(raw: string): { value?: unknown; error?: true } {
 }
 
 function messagesOnlyTemplate(draft: PromptTemplateDraft): PromptTemplate {
-	return {
-		messages: draft.messages
-			.filter((message) => message.text.trim() || message.imageVariable.trim())
-			.map((message) => {
-				const image = message.imageVariable.trim();
-				if (!image) return { role: message.role, content: message.text };
-				return {
-					role: message.role,
-					content: [
-						...(message.text ? [{ type: "text" as const, text: message.text }] : []),
-						{ type: "variable" as const, name: image },
-					],
-				};
-			}),
-	};
+	const messages: PromptTemplate["messages"] = [];
+	for (const message of draft.messages) {
+		const parts = message.parts.flatMap((part): PromptTemplatePart[] => {
+			if (part.type === "text") return part.text ? [{ type: "text", text: part.text }] : [];
+			const name = part.name.trim();
+			return name ? [{ type: "variable", name }] : [];
+		});
+		if (!parts.some((part) => part.type === "variable" || part.text.trim())) continue;
+		const [only] = parts;
+		messages.push({ role: message.role, content: parts.length === 1 && only.type === "text" ? only.text : parts });
+	}
+	return { messages };
 }
 
 export type PromptTemplateBuild = {
@@ -149,6 +167,8 @@ export function buildPromptTemplate(draft: PromptTemplateDraft): PromptTemplateB
 		if (!declared) continue;
 		const spec: PromptVariableSpec = { ...declared };
 		delete spec.default;
+		// Blank lines are kept while editing so a new value can be typed.
+		if (spec.enum) spec.enum = spec.enum.filter((value) => value !== "");
 		const parsed = spec.required ? {} : parseTypedValue(spec.type, draft.defaults[name] ?? "");
 		if (parsed.error) {
 			issues.push({ path: ["prompt", "variables", name, "default"], keyword: "template_variable_spec", message: `Default for "${name}" is not a valid ${spec.type}` });
@@ -158,7 +178,7 @@ export function buildPromptTemplate(draft: PromptTemplateDraft): PromptTemplateB
 		variables[name] = spec;
 	}
 
-	const template: PromptTemplate = { ...base, ...(Object.keys(variables).length ? { variables } : {}) };
+	const template: PromptTemplate = { ...draft.preserved, ...base, ...(Object.keys(variables).length ? { variables } : {}) };
 	const tools = parseJsonField(draft.tools);
 	if (tools.error) issues.push({ path: ["prompt", "tools"], keyword: "template_invalid", message: "Tools is not valid JSON" });
 	else if (tools.value !== undefined) template.tools = tools.value as unknown[];
@@ -232,6 +252,8 @@ export function PresetPromptTemplateEditor({
 
 	const updateMessage = (key: string, patch: Partial<DraftMessage>) =>
 		onChange({ ...draft, messages: draft.messages.map((message) => (message.key === key ? { ...message, ...patch } : message)) });
+	const updatePart = (message: DraftMessage, partKey: string, patch: { text: string } | { name: string }) =>
+		updateMessage(message.key, { parts: message.parts.map((part) => (part.key === partKey ? ({ ...part, ...patch } as DraftPart) : part)) });
 	const updateVariable = (name: string, current: PromptVariableSpec, patch: Partial<PromptVariableSpec>) => {
 		const next: PromptVariableSpec = { ...current, ...patch };
 		if (next.type !== "enum") delete next.enum;
@@ -267,7 +289,7 @@ export function PresetPromptTemplateEditor({
 						variant="outline"
 						size="sm"
 						className="rounded-md"
-						onClick={() => onChange({ ...draft, messages: [...draft.messages, { key: nextKey(), role: draft.messages.length ? "user" : "system", text: "", imageVariable: "" }] })}
+						onClick={() => onChange({ ...draft, messages: [...draft.messages, { key: nextKey(), role: draft.messages.length ? "user" : "system", parts: [textPart()] }] })}
 					>
 						<Plus className="mr-2 h-4 w-4" />
 						{t("presetTemplate.addMessage")}
@@ -276,10 +298,10 @@ export function PresetPromptTemplateEditor({
 				{draft.messages.length === 0 ? (
 					<p className="text-sm text-muted-foreground">{t("presetTemplate.messagesEmpty")}</p>
 				) : null}
-				{draft.messages.map((message) => (
+				{draft.messages.map((message, messageIndex) => (
 					<div key={message.key} className="space-y-2 rounded-md border border-border/70 p-3">
 						<div className="flex items-center gap-2">
-							<Select value={message.role} onValueChange={(role: PromptTemplateRole) => updateMessage(message.key, { role, ...(role === "user" ? {} : { imageVariable: "" }) })}>
+							<Select value={message.role} onValueChange={(role: PromptTemplateRole) => updateMessage(message.key, { role, ...(role === "user" ? {} : { parts: textOnly(message.parts) }) })}>
 								<SelectTrigger className="w-40 rounded-md"><SelectValue>{message.role}</SelectValue></SelectTrigger>
 								<SelectContent className="rounded-md">
 									{PROMPT_TEMPLATE_ROLES.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}
@@ -290,22 +312,46 @@ export function PresetPromptTemplateEditor({
 								<Trash2 className="h-4 w-4" />
 							</Button>
 						</div>
-						<Textarea
-							value={message.text}
-							onChange={(event) => updateMessage(message.key, { text: event.target.value })}
-							placeholder={t("presetTemplate.messagePlaceholder")}
-							rows={4}
-							className="font-mono text-sm"
-						/>
+						{message.parts.map((part) => (
+							<div key={part.key} className="flex items-start gap-2">
+								{part.type === "text" ? (
+									<Textarea
+										value={part.text}
+										onChange={(event) => updatePart(message, part.key, { text: event.target.value })}
+										placeholder={t("presetTemplate.messagePlaceholder")}
+										aria-label={t("presetTemplate.messageLabel", { number: messageIndex + 1, role: message.role })}
+										rows={4}
+										className="font-mono text-sm"
+									/>
+								) : (
+									<div className="flex flex-1 items-center gap-2">
+										<Label htmlFor={part.key} className="shrink-0 text-xs text-muted-foreground">{t("presetTemplate.imageVariableLabel")}</Label>
+										<Input
+											id={part.key}
+											value={part.name}
+											onChange={(event) => updatePart(message, part.key, { name: event.target.value.trim() })}
+											placeholder={t("presetTemplate.imageVariablePlaceholder")}
+											className="h-8 rounded-md font-mono text-xs"
+										/>
+									</div>
+								)}
+								{message.parts.length > 1 ? (
+									<Button type="button" variant="ghost" size="sm" aria-label={t("presetTemplate.removePart")} onClick={() => updateMessage(message.key, { parts: message.parts.filter((item) => item.key !== part.key) })}>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								) : null}
+							</div>
+						))}
 						{message.role === "user" ? (
-							<div className="flex items-center gap-2">
-								<Label className="shrink-0 text-xs text-muted-foreground">{t("presetTemplate.imageVariableLabel")}</Label>
-								<Input
-									value={message.imageVariable}
-									onChange={(event) => updateMessage(message.key, { imageVariable: event.target.value.trim() })}
-									placeholder={t("presetTemplate.imageVariablePlaceholder")}
-									className="h-8 rounded-md font-mono text-xs"
-								/>
+							<div className="flex gap-2">
+								<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => updateMessage(message.key, { parts: [...message.parts, textPart()] })}>
+									<Plus className="mr-2 h-4 w-4" />
+									{t("presetTemplate.addText")}
+								</Button>
+								<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => updateMessage(message.key, { parts: [...message.parts, variablePart()] })}>
+									<Plus className="mr-2 h-4 w-4" />
+									{t("presetTemplate.addImage")}
+								</Button>
 							</div>
 						) : null}
 					</div>
@@ -332,11 +378,13 @@ export function PresetPromptTemplateEditor({
 										className="h-8 rounded-md text-xs"
 									/>
 									{spec.type === "enum" ? (
-										<Input
-											value={(spec.enum ?? []).join(", ")}
-											onChange={(event) => updateVariable(name, spec, { enum: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })}
+										<Textarea
+											value={(draft.variables[name]?.enum ?? spec.enum ?? []).join("\n")}
+											onChange={(event) => updateVariable(name, spec, { enum: event.target.value.split("\n") })}
 											placeholder={t("presetTemplate.enumPlaceholder")}
-											className="h-8 rounded-md font-mono text-xs"
+											aria-label={t("presetTemplate.enumPlaceholder")}
+											rows={3}
+											className="rounded-md font-mono text-xs"
 										/>
 									) : null}
 									{spec.required ? null : (
