@@ -1,8 +1,8 @@
 // Copies packages/shared/spend-rules into each app that validates or shows spend
 // rules, and checks its lists and caps against the database: the table's CHECK
 // constraints, the per-workspace cap trigger, the evaluator's switch
-// (private.spend_rule_evaluable), the forecast start (private.spend_rule_values), the
-// destination cap and the test-send limit.
+// (private.spend_rule_evaluable), the forecast start (private.spend_rule_values), the spike
+// history minimum (private.spend_spike_rule_values), the destination cap and the test-send limit.
 // Run with --check in CI to fail on drift instead of writing.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -20,7 +20,8 @@ const TABLE = "supabase/schemas/public/tables/workspace_spend_rules.sql";
 const LIMIT_TRIGGER = "supabase/schemas/public/functions/enforce_workspace_spend_rule_limit.sql";
 const EVALUABLE = "supabase/schemas/private/functions/spend_rule_evaluable.sql";
 const VALUES = "supabase/schemas/private/functions/spend_rule_values.sql";
-const SAVE = "supabase/schemas/public/functions/save_workspace_spend_rule.sql";
+const SPIKE_VALUES = "supabase/schemas/private/functions/spend_spike_rule_values.sql";
+const SAVE ="supabase/schemas/public/functions/save_workspace_spend_rule.sql";
 const TEST_SENDS = "supabase/schemas/public/functions/consume_spend_rule_test_send.sql";
 const BLOCKS_TABLE = "supabase/schemas/public/tables/workspace_spend_blocks.sql";
 
@@ -90,6 +91,11 @@ const rolling = evaluable.match(/p_metric in \(([^)]*)\) and p_period = 'rolling
 if (!same(values("EVALUATED_ROLLING_METRICS"), rolling ? [...rolling.matchAll(/'([^']+)'/g)].map((match) => match[1]) : null)) {
 	problems.push(`EVALUATED_ROLLING_METRICS does not match the rolling branch in ${EVALUABLE}`);
 }
+
+const spikeWindows = (await read(SPIKE_VALUES)).match(/rules\.baseline_windows >= (\d+) and summary\.active_windows >= (\d+)/)?.slice(1);
+const minWindows = constant("SPIKE_MIN_BASELINE_WINDOWS");
+if (!spikeWindows || spikeWindows.some((value) => value !== minWindows)) problems.push(`SPIKE_MIN_BASELINE_WINDOWS does not match the history check in ${SPIKE_VALUES}`);
+if (constant("MAX_SPIKE_WINDOW_HOURS") !== String(Math.floor(168 / Number(minWindows)))) problems.push("MAX_SPIKE_WINDOW_HOURS must be 168 hours (7 days) / SPIKE_MIN_BASELINE_WINDOWS");
 
 const destinations = (await read(SAVE)).match(/cardinality\(p_destination_ids\) > (\d+)/)?.[1];
 if (!destinations || destinations !== constant("MAX_SPEND_RULE_DESTINATIONS")) problems.push(`${SAVE} destination cap does not match MAX_SPEND_RULE_DESTINATIONS`);

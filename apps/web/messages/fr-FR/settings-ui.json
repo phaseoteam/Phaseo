@@ -6223,8 +6223,8 @@
 			"body": "Ajoutez une alerte pour être prévenu avant que les dépenses ne surprennent, par exemple à 50 %, 80 % et 100 % d'un montant mensuel."
 		},
 		"badges": {
-			"notEvaluated": "Pas encore évaluée",
-			"notEvaluatedHelp": "Ce type d'alerte est enregistré mais pas encore vérifié. Il commencera à envoyer dans une version ultérieure.",
+			"notEvaluated": "Non évaluée",
+			"notEvaluatedHelp": "Ces paramètres ne sont pas vérifiés, cette alerte n'est donc pas envoyée. Modifiez sa période ou sa base.",
 			"blocks": "Notifie, puis bloque",
 			"disabled": "Désactivée",
 			"blockingNow": "Bloque en ce moment",
@@ -6304,12 +6304,15 @@
 			"delete": "Supprimer",
 			"runway": "environ {days} jours restants",
 			"projectedBy": "prévu d'ici le {date}",
-			"forecastFrom": "prévision à partir du {date}"
+			"forecastFrom": "prévision à partir du {date}",
+			"spikeUsual": "{multiple}× l'habituel ({baseline})",
+			"spikeNoBaseline": "pas encore de dépense habituelle",
+			"spikeLearning": "apprentissage de l'habituel"
 		},
 		"preview": {
 			"ofBase": "Actuellement {value} sur {base} ({percent})",
 			"value": "Actuellement {value} sur cette période",
-			"notEvaluated": "Pas encore d'aperçu : ce type d'alerte n'est pas encore évalué.",
+			"notEvaluated": "Pas d'aperçu : ces paramètres ne sont pas évalués.",
 			"disabled": "Activez l'alerte pour voir sa valeur actuelle.",
 			"unavailable": "La valeur actuelle n'est pas disponible pour le moment.",
 			"afterSave": "La valeur actuelle s'affiche après l'enregistrement.",
@@ -6318,7 +6321,10 @@
 			"balanceNoSpend": "Solde {balance}, aucune dépense au cours des {hours} dernières heures",
 			"forecast": "{value} dépensés jusqu'ici, {projected} prévus d'ici le {date}",
 			"forecastReaches": "{value} dépensés jusqu'ici, {projected} prévus d'ici le {date}. À ce rythme, {limit} sera atteint le {reachDate}.",
-			"forecastPending": "{value} dépensés jusqu'ici. La prévision commence le {date}, une fois qu'une part suffisante de la période est écoulée."
+			"forecastPending": "{value} dépensés jusqu'ici. La prévision commence le {date}, une fois qu'une part suffisante de la période est écoulée.",
+			"spike": "{current} dépensés sur les {hours} dernières heures, soit {multiple}× l'habituel ({baseline}) pour cette fenêtre. Alerte à partir de {firesAt}.",
+			"spikeNoBaseline": "{current} dépensés sur les {hours} dernières heures, sans dépense dans cette fenêtre sur les 7 derniers jours. Alerte à partir de {firesAt}.",
+			"spikePending": "{current} dépensés sur les {hours} dernières heures. Les alertes de pic commencent une fois que l'espace de travail a dépensé dans {needed} des mêmes fenêtres sur les 7 derniers jours ({active} jusqu'ici)."
 		},
 		"editor": {
 			"createTitle": "Ajouter une alerte de dépenses",
@@ -6329,7 +6335,7 @@
 			"name": "Nom",
 			"namePlaceholder": "Dépenses mensuelles",
 			"type": "Type d'alerte",
-			"notEvaluatedNote": "Ce type d'alerte est enregistré dès maintenant et commencera à envoyer dans une version ultérieure.",
+			"notEvaluatedNote": "Ces paramètres ne sont pas vérifiés, cette alerte ne serait donc pas envoyée. Changez sa période ou sa base.",
 			"sectionScope": "Quoi surveiller",
 			"scopeType": "Portée",
 			"balanceWorkspaceOnly": "Les alertes de solde bas couvrent toujours tout l'espace de travail.",
@@ -6413,7 +6419,8 @@
 			"create": "Ajouter l'alerte",
 			"saving": "Enregistrement…",
 			"blockingOff": "Le blocage n'est pas encore activé. D'ici là, cette alerte se contente de notifier.",
-			"balanceEmailNote": "Indépendant de l'e-mail de solde bas ci-dessus. Une alerte de solde peut aussi surveiller le nombre de jours de crédit restants, avec ses propres destinations et son propre délai. Aucune des deux n'alerte tant que la recharge automatique réapprovisionne le solde."
+			"balanceEmailNote": "Indépendant de l'e-mail de solde bas ci-dessus. Une alerte de solde peut aussi surveiller le nombre de jours de crédit restants, avec ses propres destinations et son propre délai. Aucune des deux n'alerte tant que la recharge automatique réapprovisionne le solde.",
+			"spikeWindowHelp": "De 1 à 56 heures. Comparé aux mêmes heures de chacun des 7 derniers jours, ou à partir de 24 heures aux fenêtres précédentes."
 		},
 		"issues": {
 			"nameRequired": "Saisissez un nom de 100 caractères maximum.",
@@ -6432,7 +6439,8 @@
 			"blockPercentRange": "Saisissez un pourcentage entier entre 100 et 1000.",
 			"blockPercentBelowThreshold": "Bloquez au pourcentage d'alerte le plus élevé ou au-dessus.",
 			"blockAmountBelowThreshold": "Bloquez au montant de l'alerte ou au-dessus.",
-			"thresholdChip": "Utilisez des pourcentages entiers de 1 à 1000, {max} au maximum."
+			"thresholdChip": "Utilisez des pourcentages entiers de 1 à 1000, {max} au maximum.",
+			"spikeWindowRange": "Saisissez un nombre entier d'heures entre 1 et 56 : l'habituel nécessite 3 fenêtres sur les 7 derniers jours."
 		},
 		"errors": {
 			"limit": "Un espace de travail peut avoir jusqu'à {max} alertes de dépenses.",

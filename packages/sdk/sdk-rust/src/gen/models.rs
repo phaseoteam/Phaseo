@@ -3336,6 +3336,7 @@ pub struct SpendRulePreview {
 	pub previous_period: Option<HashMap<String, String>>,
 	pub reached_threshold_percent: Option<i64>,
 	pub rule_id: String,
+	pub spike: Option<HashMap<String, String>>,
 	pub state: Option<HashMap<String, String>>,
 	pub threshold_amount_nanos: Option<i64>,
 	pub threshold_amount_usd: Option<f64>,

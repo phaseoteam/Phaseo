@@ -5,8 +5,8 @@
 // Validation is the shared module also used by the settings page (@/core/spend-rules, a
 // generated copy of packages/shared/spend-rules); the table's trigger and constraints still
 // decide, and their errors are mapped to 400/404/409. Every metric the table allows is
-// accepted. Rules the evaluator does not handle yet (forecast, spike, balance, rolling
-// periods, previous_period bases) are saved and returned with evaluated: false.
+// accepted. Rules the evaluator does not handle (a metric with a period or base it does not
+// support, see private.spend_rule_evaluable) are saved and returned with evaluated: false.
 // Preview and history are SQL functions (public.preview_workspace_spend_rule,
 // public.list_workspace_spend_rule_history) that reuse the evaluator's value query.
 import { Hono } from "hono";

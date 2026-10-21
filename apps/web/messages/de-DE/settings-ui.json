@@ -6223,8 +6223,8 @@
 			"body": "Füge eine Warnung hinzu, damit dich Ausgaben nicht überraschen, zum Beispiel bei 50 %, 80 % und 100 % eines Monatsbetrags."
 		},
 		"badges": {
-			"notEvaluated": "Noch nicht ausgewertet",
-			"notEvaluatedHelp": "Dieser Warnungstyp ist gespeichert, wird aber noch nicht geprüft. Er sendet ab einer späteren Version.",
+			"notEvaluated": "Nicht ausgewertet",
+			"notEvaluatedHelp": "Diese Einstellungen werden nicht geprüft, daher wird diese Warnung nicht gesendet. Ändere ihren Zeitraum oder ihre Basis.",
 			"blocks": "Benachrichtigt, dann blockiert",
 			"disabled": "Aus",
 			"blockingNow": "Blockiert gerade",
@@ -6304,12 +6304,15 @@
 			"delete": "Löschen",
 			"runway": "reicht etwa {days} Tage",
 			"projectedBy": "Prognose bis {date}",
-			"forecastFrom": "Prognose ab {date}"
+			"forecastFrom": "Prognose ab {date}",
+			"spikeUsual": "{multiple}× üblich ({baseline})",
+			"spikeNoBaseline": "noch keine üblichen Ausgaben",
+			"spikeLearning": "lernt das Übliche"
 		},
 		"preview": {
 			"ofBase": "Aktuell {value} von {base} ({percent})",
 			"value": "Aktuell {value} in diesem Zeitraum",
-			"notEvaluated": "Noch keine Vorschau: Dieser Warnungstyp wird noch nicht ausgewertet.",
+			"notEvaluated": "Keine Vorschau: Diese Einstellungen werden nicht ausgewertet.",
 			"disabled": "Schalte die Warnung ein, um ihren aktuellen Wert zu sehen.",
 			"unavailable": "Der aktuelle Wert ist gerade nicht verfügbar.",
 			"afterSave": "Der aktuelle Wert erscheint nach dem Speichern.",
@@ -6318,7 +6321,10 @@
 			"balanceNoSpend": "Guthaben {balance}, keine Ausgaben in den letzten {hours} Stunden",
 			"forecast": "Bisher {value} ausgegeben, Prognose {projected} bis {date}",
 			"forecastReaches": "Bisher {value} ausgegeben, Prognose {projected} bis {date}. Bei diesem Tempo wird {limit} am {reachDate} erreicht.",
-			"forecastPending": "Bisher {value} ausgegeben. Die Prognose beginnt am {date}, sobald genug vom Zeitraum vergangen ist."
+			"forecastPending": "Bisher {value} ausgegeben. Die Prognose beginnt am {date}, sobald genug vom Zeitraum vergangen ist.",
+			"spike": "{current} in den letzten {hours} Std. ausgegeben, das {multiple}-Fache der üblichen {baseline} für dieses Fenster. Warnung ab {firesAt}.",
+			"spikeNoBaseline": "{current} in den letzten {hours} Std. ausgegeben, ohne Ausgaben in diesem Fenster in den letzten 7 Tagen. Warnung ab {firesAt}.",
+			"spikePending": "{current} in den letzten {hours} Std. ausgegeben. Spitzenwarnungen beginnen, sobald der Workspace in {needed} derselben Fenster der letzten 7 Tage Ausgaben hatte (bisher {active})."
 		},
 		"editor": {
 			"createTitle": "Ausgabenwarnung hinzufügen",
@@ -6329,7 +6335,7 @@
 			"name": "Name",
 			"namePlaceholder": "Monatliche Ausgaben",
 			"type": "Warnungstyp",
-			"notEvaluatedNote": "Dieser Warnungstyp wird jetzt gespeichert und sendet ab einer späteren Version.",
+			"notEvaluatedNote": "Diese Einstellungen werden nicht geprüft, daher würde diese Warnung nicht gesendet. Ändere ihren Zeitraum oder ihre Basis.",
 			"sectionScope": "Was überwacht wird",
 			"scopeType": "Geltungsbereich",
 			"balanceWorkspaceOnly": "Warnungen bei niedrigem Guthaben gelten immer für den ganzen Arbeitsbereich.",
@@ -6413,7 +6419,8 @@
 			"create": "Warnung hinzufügen",
 			"saving": "Wird gespeichert…",
 			"blockingOff": "Blockieren ist noch nicht eingeschaltet. Bis dahin benachrichtigt diese Warnung nur.",
-			"balanceEmailNote": "Unabhängig von der E-Mail bei niedrigem Guthaben oben. Eine Guthabenwarnung kann auch die verbleibenden Tage beobachten und hat eigene Ziele und eine eigene Pause. Keine von beiden warnt, solange die automatische Aufladung das Guthaben auffüllt."
+			"balanceEmailNote": "Unabhängig von der E-Mail bei niedrigem Guthaben oben. Eine Guthabenwarnung kann auch die verbleibenden Tage beobachten und hat eigene Ziele und eine eigene Pause. Keine von beiden warnt, solange die automatische Aufladung das Guthaben auffüllt.",
+			"spikeWindowHelp": "1 bis 56 Stunden. Verglichen mit denselben Stunden an jedem der letzten 7 Tage, ab 24 Stunden mit den Fenstern davor."
 		},
 		"issues": {
 			"nameRequired": "Gib einen Namen mit bis zu 100 Zeichen ein.",
@@ -6432,7 +6439,8 @@
 			"blockPercentRange": "Gib einen ganzen Prozentsatz zwischen 100 und 1000 ein.",
 			"blockPercentBelowThreshold": "Blockiere bei oder über dem höchsten Warnprozentsatz.",
 			"blockAmountBelowThreshold": "Blockiere bei oder über dem Warnbetrag.",
-			"thresholdChip": "Verwende ganze Prozentsätze von 1 bis 1000, höchstens {max}."
+			"thresholdChip": "Verwende ganze Prozentsätze von 1 bis 1000, höchstens {max}.",
+			"spikeWindowRange": "Gib eine ganze Zahl von Stunden zwischen 1 und 56 ein: Für das Übliche braucht es 3 Fenster in den letzten 7 Tagen."
 		},
 		"errors": {
 			"limit": "Ein Arbeitsbereich kann bis zu {max} Ausgabenwarnungen haben.",

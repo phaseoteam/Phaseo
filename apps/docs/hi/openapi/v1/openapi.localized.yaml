@@ -21338,7 +21338,7 @@ components:
       additionalProperties: false
     SpendRuleMetric:
       type: string
-      description: 'spend: खर्च threshold_amount तक पहुँचा। budget_percent: खर्च आधार के threshold_percents तक पहुँचा। forecast: अवधि के अंत तक अनुमानित खर्च सीमा तक पहुँचता है। spike: पिछले window_hours का खर्च सामान्य स्तर के कम से कम spike_multiplier गुना और कम से कम spike_floor है। balance: वर्कस्पेस का बैलेंस या रनवे सीमा से नीचे जाता है।'
+      description: 'spend: खर्च threshold_amount तक पहुँचा। budget_percent: खर्च आधार के threshold_percents तक पहुँचा। forecast: अवधि के अंत तक अनुमानित खर्च सीमा तक पहुँचता है। spike: पिछले window_hours का खर्च पिछले 7 दिनों में उसी विंडो के माध्यिका (median) का कम से कम spike_multiplier गुना है, और कम से कम spike_floor। balance: वर्कस्पेस का बैलेंस या रनवे सीमा से नीचे जाता है।'
       enum:
         - spend
         - budget_percent
@@ -21421,7 +21421,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (spike नियम)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
+          description: क्या मूल्यांकन नियम के मेट्रिक, अवधि और आधार को संभालता है। API जिन नियमों को स्वीकार करता है, उन सभी का मूल्यांकन होता है।
         scope_type:
           $ref: '#/components/schemas/SpendRuleScope'
         scope_id:
@@ -21436,7 +21436,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'रोलिंग विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो और balance नियमों के लिए खपत दर देखने की अवधि। कैलेंडर अवधियों के लिए null।'
+          description: 'rolling विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो (अधिकतम 56, ताकि पिछले 7 दिनों में 3 विंडो आ सकें) और balance नियमों के लिए खर्च दर की अवधि। कैलेंडर अवधियों के लिए null।'
         time_zone:
           type: string
           maxLength: 64
@@ -21563,7 +21563,7 @@ components:
           minimum: 1
           maximum: 720
           nullable: true
-          description: 'रोलिंग विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो और balance नियमों के लिए खपत दर देखने की अवधि। कैलेंडर अवधियों के लिए null।'
+          description: 'rolling विंडो के घंटे: spike नियमों के लिए स्पाइक विंडो (अधिकतम 56, ताकि पिछले 7 दिनों में 3 विंडो आ सकें) और balance नियमों के लिए खर्च दर की अवधि। कैलेंडर अवधियों के लिए null।'
         time_zone:
           type: string
           maxLength: 64
@@ -21700,7 +21700,7 @@ components:
               type: boolean
     SpendRulePreview:
       type: object
-      description: खर्च नियम अभी कहाँ है। rolling नियमों में उनकी विंडो period होती है। forecast नियमों में एक forecast ऑब्जेक्ट होता है, और उनकी सीमाएँ अनुमान के आधार पर मापी जाती हैं। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। spike नियमों में period, value और alert null होते हैं।
+      description: खर्च नियम अभी कहाँ है। rolling नियमों में उनकी विंडो period होती है। forecast नियमों में एक forecast ऑब्जेक्ट होता है, और उनकी सीमाएँ अनुमान के आधार पर मापी जाती हैं। balance नियमों में period के रूप में खर्च दर की विंडो, मान के रूप में उपलब्ध बैलेंस और एक balance ऑब्जेक्ट होता है। spike नियमों में उनकी विंडो period, उसमें हुआ खर्च मान, पिछले 7 दिनों में उसी विंडो का माध्यिका आधार, ट्रिगर होने का बिंदु next_threshold और एक spike ऑब्जेक्ट होता है।
       required:
         - rule_id
         - metric
@@ -21725,6 +21725,7 @@ components:
         - block_at_nanos
         - block_at_usd
         - balance
+        - spike
         - state
         - alert
       properties:
@@ -21735,7 +21736,7 @@ components:
           $ref: '#/components/schemas/SpendRuleMetric'
         evaluated:
           type: boolean
-          description: उन नियमों के लिए false जिन्हें मूल्यांकन अभी नहीं संभालता (spike नियम)। वे सहेजे जाते हैं और किसी बाद की रिलीज़ से ट्रिगर होंगे।
+          description: क्या मूल्यांकन नियम के मेट्रिक, अवधि और आधार को संभालता है। API जिन नियमों को स्वीकार करता है, उन सभी का मूल्यांकन होता है।
         computed_at:
           type: string
           format: date-time
@@ -21968,6 +21969,71 @@ components:
             auto_top_up_covers:
               type: boolean
               description: ऑटो टॉप-अप चालू है और काम कर रहा है, इसलिए गिरावट बिना अलर्ट के दर्ज की जाती है।
+        spike:
+          type: object
+          nullable: true
+          description: 'केवल spike नियम: पिछले window_hours का खर्च, पिछले 7 दिनों में उसी विंडो की माध्यिका की तुलना में, जैसा मूल्यांकन इसे देखता है। अन्य नियमों के लिए null।'
+          required:
+            - window_hours
+            - current_nanos
+            - current_usd
+            - baseline_nanos
+            - baseline_usd
+            - multiple
+            - multiplier
+            - floor_usd
+            - fires_at_nanos
+            - fires_at_usd
+            - baseline_windows
+            - active_windows
+            - history_ready
+            - spiking
+            - cooldown_until
+          properties:
+            window_hours:
+              type: integer
+            current_nanos:
+              type: integer
+              format: int64
+            current_usd:
+              type: number
+            baseline_nanos:
+              type: integer
+              format: int64
+              description: 'पिछले 7 दिनों में उसी विंडो की माध्यिका: 24 घंटे से छोटी विंडो के लिए पिछले 7 दिनों में से हर दिन के वही घंटे, अन्यथा उससे पहले की बिना ओवरलैप वाली विंडो जो 7 दिनों में आ जाएँ।'
+            baseline_usd:
+              type: number
+            multiple:
+              type: number
+              nullable: true
+              description: विंडो का खर्च आधार से भाग। आधार 0 होने पर null, तब केवल न्यूनतम सीमा (floor) लागू होती है।
+            multiplier:
+              type: number
+            floor_usd:
+              type: number
+            fires_at_nanos:
+              type: integer
+              format: int64
+              description: 'ट्रिगर होने के लिए विंडो के खर्च को कहाँ तक पहुँचना होगा: आधार का spike_multiplier गुना और न्यूनतम सीमा में से जो बड़ा हो।'
+            fires_at_usd:
+              type: number
+            baseline_windows:
+              type: integer
+              description: आधार में कितनी विंडो हैं। किसी नियम को कम से कम 3 चाहिए।
+            active_windows:
+              type: integer
+              description: आधार की वे विंडो जिनमें वर्कस्पेस ने कुछ खर्च किया।
+            history_ready:
+              type: boolean
+              description: जब तक वर्कस्पेस ने आधार की कम से कम 3 विंडो में खर्च न किया हो, तब तक false। उससे पहले नियम ट्रिगर नहीं होता।
+            spiking:
+              type: boolean
+              description: क्या नियम अभी ट्रिगर होगा, कूलडाउन से पहले।
+            cooldown_until:
+              type: string
+              format: date-time
+              nullable: true
+              description: पिछले अलर्ट के बाद का कूलडाउन कब खत्म होगा, अगर अभी खत्म नहीं हुआ है।
         alert:
           type: object
           nullable: true

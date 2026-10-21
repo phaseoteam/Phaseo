@@ -4940,6 +4940,7 @@ type SpendRulePreview struct {
 	PreviousPeriod *map[string]interface{} `json:"previous_period"`
 	ReachedThresholdPercent *int `json:"reached_threshold_percent"`
 	RuleId string `json:"rule_id"`
+	Spike *map[string]interface{} `json:"spike"`
 	State *map[string]interface{} `json:"state"`
 	ThresholdAmountNanos *int `json:"threshold_amount_nanos"`
 	ThresholdAmountUsd *float64 `json:"threshold_amount_usd"`

@@ -11,6 +11,8 @@ import {
 	DEFAULT_SPIKE_FLOOR_NANOS,
 	DEFAULT_SPIKE_MULTIPLIER,
 	MAX_SPEND_RULE_THRESHOLDS,
+	MAX_SPIKE_WINDOW_HOURS,
+	SPIKE_MIN_BASELINE_WINDOWS,
 	SPEND_RULE_BASE_KINDS,
 	SPEND_RULE_METRICS,
 	SPEND_RULE_PERIODS,
@@ -73,6 +75,7 @@ export type DraftIssueCode =
 	| "nameRequired"
 	| "scopeRequired"
 	| "windowHoursRange"
+	| "spikeWindowRange"
 	| "timeZoneInvalid"
 	| "amountInvalid"
 	| "thresholdsRequired"
@@ -324,6 +327,7 @@ export function draftIssues(draft: SpendRuleDraft): DraftIssue[] {
 		if (!id || id.length > 200 || (needsUuid && !UUID.test(id))) add("scopeId", "scopeRequired");
 	}
 	if (draft.period === "rolling" && wholeNumber(draft.windowHours, 1, 720) === null) add("windowHours", "windowHoursRange");
+	else if (draft.metric === "spike" && wholeNumber(draft.windowHours, 1, MAX_SPIKE_WINDOW_HOURS) === null) add("windowHours", "spikeWindowRange");
 	if (draft.timeZone && !isValidTimeZone(draft.timeZone)) add("timeZone", "timeZoneInvalid");
 	if (percentBase) {
 		if (draft.baseKind === "amount" && parseUsd(draft.baseAmountUsd) === null) add("baseAmountUsd", "amountInvalid");
@@ -449,7 +453,14 @@ export type PreviewSummary =
 	 */
 	| { kind: "forecast"; valueUsd: number; projectedUsd: number; by: string; reachesAt: string | null; limitUsd: number | null; timeZone: string }
 	/** Forecast rules early in the period: spend so far and when the projection starts. */
-	| { kind: "forecastPending"; valueUsd: number; from: string | null; timeZone: string };
+	| { kind: "forecastPending"; valueUsd: number; from: string | null; timeZone: string }
+	/**
+	 * Spike rules: spend over the window against the median of the same window over the past 7
+	 * days (multiple null when that median is 0), and what the window must reach to fire.
+	 */
+	| { kind: "spike"; currentUsd: number; baselineUsd: number; multiple: number | null; firesAtUsd: number; windowHours: number; spiking: boolean }
+	/** Spike rules without enough history yet: the workspace must spend in at least `needed` baseline windows. */
+	| { kind: "spikePending"; currentUsd: number; windowHours: number; activeWindows: number; baselineWindows: number; needed: number };
 
 /** "Currently $42.10 of $100 (42%)": the value against the base, or a spend rule's amount. */
 export function previewSummary(preview: SpendRulePreview | null | undefined, rule: Pick<SpendRule, "metric" | "threshold_amount_usd"> | null): PreviewSummary | null {
@@ -457,6 +468,13 @@ export function previewSummary(preview: SpendRulePreview | null | undefined, rul
 	if (preview.balance) {
 		const balance = preview.balance;
 		return { kind: "balance", availableUsd: balance.available_usd, burnPerDayUsd: balance.burn_per_day_usd, runwayDays: balance.runway_days_left, windowHours: balance.window_hours };
+	}
+	if (preview.spike) {
+		const spike = preview.spike;
+		if (!spike.history_ready) {
+			return { kind: "spikePending", currentUsd: spike.current_usd, windowHours: spike.window_hours, activeWindows: spike.active_windows, baselineWindows: spike.baseline_windows, needed: SPIKE_MIN_BASELINE_WINDOWS };
+		}
+		return { kind: "spike", currentUsd: spike.current_usd, baselineUsd: spike.baseline_usd, multiple: spike.multiple, firesAtUsd: spike.fires_at_usd, windowHours: spike.window_hours, spiking: spike.spiking };
 	}
 	if (preview.value_usd === null) return null;
 	const valueUsd = preview.value_usd;
