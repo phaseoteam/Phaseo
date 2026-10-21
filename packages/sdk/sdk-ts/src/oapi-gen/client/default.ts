@@ -2115,11 +2115,8 @@ export type CreateChatCompletionParams = {
     max_tool_calls?: number;
     messages: {
       audio?: {
-        data?: string;
-        expires_at?: number;
-        id?: string;
-        transcript?: string;
-      };
+        id: string;
+      } | null;
       audios?: {
         audio_url: {
           url: string;

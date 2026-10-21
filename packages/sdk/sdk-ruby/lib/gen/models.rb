@@ -984,6 +984,29 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     ChatReasoningDetail = Struct.new(:data, :format, :id, :index, :signature, :summary, :text, :type, keyword_init: true)
+    # @!attribute [rw] audio
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] audios
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] content
+    #   @return [String, nil, Array<Hash{String => Object}>]
+    # @!attribute [rw] images
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] reasoning
+    #   @return [String, nil]
+    # @!attribute [rw] reasoning_content
+    #   @return [String, nil]
+    # @!attribute [rw] reasoning_details
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] role
+    #   @return [String]
+    # @!attribute [rw] tool_call_id
+    #   @return [String, nil]
+    # @!attribute [rw] tool_calls
+    #   @return [Array<Hash{String => Object}>, nil]
+    ChatResponseMessage = Struct.new(:audio, :audios, :content, :images, :name, :reasoning, :reasoning_content, :reasoning_details, :role, :tool_call_id, :tool_calls, keyword_init: true)
     # @!attribute [rw] created_at
     #   @return [String]
     # @!attribute [rw] created_by

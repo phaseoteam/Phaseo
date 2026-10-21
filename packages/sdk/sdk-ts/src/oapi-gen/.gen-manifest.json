@@ -63,6 +63,7 @@
     "models/ChatImageOutputPart.ts",
     "models/ChatMessage.ts",
     "models/ChatReasoningDetail.ts",
+    "models/ChatResponseMessage.ts",
     "models/Classifier.ts",
     "models/ClassifierCreateInput.ts",
     "models/ClassifierDeleteResponse.ts",

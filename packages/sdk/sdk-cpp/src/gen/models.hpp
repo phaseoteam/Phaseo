@@ -622,7 +622,7 @@ struct ChatImageOutputPart {
 };
 
 struct ChatMessage {
-	std::map<std::string, std::any> audio;
+	std::optional<std::map<std::string, std::any>> audio;
 	std::vector<std::map<std::string, std::any>> audios;
 	std::any content;
 	std::vector<std::map<std::string, std::any>> images;
@@ -644,6 +644,20 @@ struct ChatReasoningDetail {
 	std::string summary;
 	std::string text;
 	std::any type;
+};
+
+struct ChatResponseMessage {
+	std::map<std::string, std::any> audio;
+	std::vector<std::map<std::string, std::any>> audios;
+	std::any content;
+	std::vector<std::map<std::string, std::any>> images;
+	std::string name;
+	std::string reasoning;
+	std::string reasoning_content;
+	std::vector<std::map<std::string, std::any>> reasoning_details;
+	std::any role;
+	std::string tool_call_id;
+	std::vector<std::map<std::string, std::any>> tool_calls;
 };
 
 struct Classifier {

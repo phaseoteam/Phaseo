@@ -8953,6 +8953,16 @@
 			"ja": "リクエストが音声出力を求めたときのアシスタントメッセージの音声です。音声 ID、要求された形式の base64 音声、音声の有効期限 (Unix 秒)、その文字起こしを含みます。delta.audio の断片としてストリーミングされます。",
 			"zh-Hans": "当请求要求音频输出时，助手消息上的语音：音频 id、请求格式的 base64 音频、音频的过期时间（Unix 秒）及其转写文本。以 delta.audio 片段流式传输。",
 			"ar": "الصوت المنطوق في رسالة المساعد عندما يطلب الطلب إخراجًا صوتيًا: معرّف الصوت، والصوت بترميز base64 بالتنسيق المطلوب، وموعد انتهاء صلاحية الصوت (بثوانٍ Unix) ونصه المكتوب. يُبث على شكل أجزاء delta.audio."
+		},
+		"An earlier audio response, sent back on an assistant message by its id (message.audio.id) to continue an audio conversation. OpenAI and Azure OpenAI routes take it; other providers drop it and report messages.audio as a dropped parameter.": {
+			"es": "Una respuesta de audio anterior, enviada de vuelta en un mensaje del asistente mediante su id (message.audio.id) para continuar una conversación de audio. Las rutas de OpenAI y Azure OpenAI la aceptan; los demás proveedores la descartan e informan messages.audio como parámetro descartado.",
+			"fr": "Une réponse audio précédente, renvoyée dans un message de l'assistant par son identifiant (message.audio.id) pour poursuivre une conversation audio. Les routes OpenAI et Azure OpenAI l'acceptent ; les autres fournisseurs l'ignorent et signalent messages.audio comme paramètre ignoré.",
+			"de": "Eine frühere Audioantwort, die in einer Assistentennachricht über ihre ID (message.audio.id) zurückgesendet wird, um eine Audiounterhaltung fortzusetzen. OpenAI- und Azure-OpenAI-Routen übernehmen sie; andere Anbieter verwerfen sie und melden messages.audio als verworfenen Parameter.",
+			"pt-BR": "Uma resposta de áudio anterior, enviada de volta em uma mensagem do assistente pelo seu id (message.audio.id) para continuar uma conversa de áudio. As rotas da OpenAI e do Azure OpenAI a aceitam; os demais provedores a descartam e informam messages.audio como parâmetro descartado.",
+			"hi": "पिछला ऑडियो जवाब, जिसे ऑडियो बातचीत जारी रखने के लिए असिस्टेंट संदेश पर उसकी id (message.audio.id) से वापस भेजा जाता है। OpenAI और Azure OpenAI रूट इसे लेते हैं; दूसरे प्रोवाइडर इसे हटा देते हैं और messages.audio को हटाए गए पैरामीटर के रूप में रिपोर्ट करते हैं।",
+			"ja": "以前の音声レスポンスです。音声での会話を続けるために、アシスタントメッセージでその ID (message.audio.id) を指定して送り返します。OpenAI と Azure OpenAI のルートはこれを受け付けます。その他のプロバイダーはこれを破棄し、messages.audio を破棄されたパラメーターとして報告します。",
+			"zh-Hans": "之前的音频响应，在助手消息中通过其 id（message.audio.id）发回，以继续音频对话。OpenAI 和 Azure OpenAI 路由会接受它；其他提供商会丢弃它，并将 messages.audio 报告为已丢弃的参数。",
+			"ar": "استجابة صوتية سابقة تُعاد في رسالة المساعد عبر معرّفها (message.audio.id) لمتابعة محادثة صوتية. تقبلها مسارات OpenAI وAzure OpenAI؛ أما المزوّدون الآخرون فيتجاهلونها ويُبلغون عن messages.audio كمعامل متجاهَل."
 		}
 	},
 	"GET /apps": {

@@ -9807,6 +9807,64 @@ components:
             $ref: '#/components/schemas/ChatAudioOutputPart'
         audio:
           type: object
+          nullable: true
+          description: Uma resposta de áudio anterior, enviada de volta em uma mensagem do assistente pelo seu id (message.audio.id) para continuar uma conversa de áudio. As rotas da OpenAI e do Azure OpenAI a aceitam; os demais provedores a descartam e informam messages.audio como parâmetro descartado.
+          required:
+            - id
+          properties:
+            id:
+              type: string
+        tool_call_id:
+          type: string
+        reasoning_content:
+          type: string
+          description: O texto de raciocínio do modelo, quando o provedor o retorna. Transmitido em streaming como delta.reasoning_content.
+        reasoning:
+          type: string
+          description: O mesmo texto de raciocínio de reasoning_content, com o nome que alguns clientes leem. Transmitido em streaming como delta.reasoning. Aceito na entrada como alias de reasoning_content.
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
+      discriminator:
+        propertyName: role
+    ChatResponseMessage:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+            - tool
+        content:
+          description: 'Conteúdo da mensagem: uma string ou um array de partes de conteúdo. Somente mensagens do assistente que chamam ferramentas (com tool_calls) podem defini-lo como null; o gateway rejeita conteúdo null em outros papéis com um erro 400.'
+          anyOf:
+            - type: string
+              nullable: true
+            - type: array
+              items:
+                $ref: '#/components/schemas/MessageContentPart'
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
           description: 'Áudio falado em uma mensagem do assistente quando a solicitação pede saída de áudio: o id do áudio, o áudio em base64 no formato solicitado, quando o áudio expira (segundos Unix) e sua transcrição. Transmitido em partes delta.audio.'
           properties:
             id:
@@ -9829,8 +9887,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatReasoningDetail'
-      discriminator:
-        propertyName: role
     ChatReasoningDetail:
       type: object
       required:
@@ -10573,7 +10629,7 @@ components:
         index:
           type: integer
         message:
-          $ref: '#/components/schemas/ChatMessage'
+          $ref: '#/components/schemas/ChatResponseMessage'
         finish_reason:
           type: string
           enum:

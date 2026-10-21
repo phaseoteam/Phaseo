@@ -1,10 +1,7 @@
 export interface ChatMessage {
   audio?: {
-    data?: string;
-    expires_at?: number;
-    id?: string;
-    transcript?: string;
-  };
+    id: string;
+  } | null;
   audios?: {
     audio_url: {
       url: string;

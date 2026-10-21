@@ -10310,6 +10310,77 @@ components:
             $ref: '#/components/schemas/ChatAudioOutputPart'
         audio:
           type: object
+          nullable: true
+          description: >-
+            An earlier audio response, sent back on an assistant message by its
+            id (message.audio.id) to continue an audio conversation. OpenAI and
+            Azure OpenAI routes take it; other providers drop it and report
+            messages.audio as a dropped parameter.
+          required:
+            - id
+          properties:
+            id:
+              type: string
+        tool_call_id:
+          type: string
+        reasoning_content:
+          type: string
+          description: >-
+            The model's reasoning text, when the provider returns it. Streamed
+            as delta.reasoning_content.
+        reasoning:
+          type: string
+          description: >-
+            The same reasoning text as reasoning_content, under the name some
+            clients read. Streamed as delta.reasoning. Accepted on input as an
+            alias for reasoning_content.
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
+      discriminator:
+        propertyName: role
+    ChatResponseMessage:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+            - tool
+        content:
+          description: >-
+            Message content: a string or an array of content parts. Only
+            assistant messages that call tools (with tool_calls) may set it to
+            null; the gateway rejects null content for other roles with a 400
+            error.
+          anyOf:
+            - type: string
+              nullable: true
+            - type: array
+              items:
+                $ref: '#/components/schemas/MessageContentPart'
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
           description: >-
             Spoken audio on an assistant message when the request asks for audio
             output: the audio id, base64 audio in the requested format, when the
@@ -10341,8 +10412,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatReasoningDetail'
-      discriminator:
-        propertyName: role
     ChatReasoningDetail:
       type: object
       required:
@@ -11127,7 +11196,7 @@ components:
         index:
           type: integer
         message:
-          $ref: '#/components/schemas/ChatMessage'
+          $ref: '#/components/schemas/ChatResponseMessage'
         finish_reason:
           type: string
           enum:

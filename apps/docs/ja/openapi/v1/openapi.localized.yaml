@@ -9807,6 +9807,64 @@ components:
             $ref: '#/components/schemas/ChatAudioOutputPart'
         audio:
           type: object
+          nullable: true
+          description: 以前の音声レスポンスです。音声での会話を続けるために、アシスタントメッセージでその ID (message.audio.id) を指定して送り返します。OpenAI と Azure OpenAI のルートはこれを受け付けます。その他のプロバイダーはこれを破棄し、messages.audio を破棄されたパラメーターとして報告します。
+          required:
+            - id
+          properties:
+            id:
+              type: string
+        tool_call_id:
+          type: string
+        reasoning_content:
+          type: string
+          description: プロバイダーが返す場合の、モデルの推論テキストです。ストリーミングでは delta.reasoning_content として送られます。
+        reasoning:
+          type: string
+          description: reasoning_content と同じ推論テキストを、一部のクライアントが読み取る名前で返します。ストリーミングでは delta.reasoning として送られます。入力では reasoning_content のエイリアスとして受け付けます。
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
+      discriminator:
+        propertyName: role
+    ChatResponseMessage:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+            - tool
+        content:
+          description: メッセージの内容です。文字列またはコンテンツパーツの配列を指定します。null に設定できるのは、ツールを呼び出す（tool_calls を含む）アシスタントメッセージだけです。その他のロールで null を送ると、ゲートウェイは 400 エラーで拒否します。
+          anyOf:
+            - type: string
+              nullable: true
+            - type: array
+              items:
+                $ref: '#/components/schemas/MessageContentPart'
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
           description: リクエストが音声出力を求めたときのアシスタントメッセージの音声です。音声 ID、要求された形式の base64 音声、音声の有効期限 (Unix 秒)、その文字起こしを含みます。delta.audio の断片としてストリーミングされます。
           properties:
             id:
@@ -9829,8 +9887,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatReasoningDetail'
-      discriminator:
-        propertyName: role
     ChatReasoningDetail:
       type: object
       required:
@@ -10573,7 +10629,7 @@ components:
         index:
           type: integer
         message:
-          $ref: '#/components/schemas/ChatMessage'
+          $ref: '#/components/schemas/ChatResponseMessage'
         finish_reason:
           type: string
           enum:

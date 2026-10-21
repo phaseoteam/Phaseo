@@ -9807,6 +9807,64 @@ components:
             $ref: '#/components/schemas/ChatAudioOutputPart'
         audio:
           type: object
+          nullable: true
+          description: 之前的音频响应，在助手消息中通过其 id（message.audio.id）发回，以继续音频对话。OpenAI 和 Azure OpenAI 路由会接受它；其他提供商会丢弃它，并将 messages.audio 报告为已丢弃的参数。
+          required:
+            - id
+          properties:
+            id:
+              type: string
+        tool_call_id:
+          type: string
+        reasoning_content:
+          type: string
+          description: 模型的推理文本（在提供商返回时提供）。流式传输时以 delta.reasoning_content 发送。
+        reasoning:
+          type: string
+          description: 与 reasoning_content 相同的推理文本，使用部分客户端读取的字段名。流式传输时以 delta.reasoning 发送。在输入中可作为 reasoning_content 的别名。
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
+      discriminator:
+        propertyName: role
+    ChatResponseMessage:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+            - tool
+        content:
+          description: 消息内容：字符串或内容部件数组。只有调用工具（带 tool_calls）的助手消息可以将其设为 null；其他角色的 null 内容会被网关以 400 错误拒绝。
+          anyOf:
+            - type: string
+              nullable: true
+            - type: array
+              items:
+                $ref: '#/components/schemas/MessageContentPart'
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
           description: 当请求要求音频输出时，助手消息上的语音：音频 id、请求格式的 base64 音频、音频的过期时间（Unix 秒）及其转写文本。以 delta.audio 片段流式传输。
           properties:
             id:
@@ -9829,8 +9887,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatReasoningDetail'
-      discriminator:
-        propertyName: role
     ChatReasoningDetail:
       type: object
       required:
@@ -10573,7 +10629,7 @@ components:
         index:
           type: integer
         message:
-          $ref: '#/components/schemas/ChatMessage'
+          $ref: '#/components/schemas/ChatResponseMessage'
         finish_reason:
           type: string
           enum:
