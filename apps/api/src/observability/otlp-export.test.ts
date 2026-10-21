@@ -22,6 +22,7 @@ vi.mock("@core/webhook-endpoints", async (importOriginal) => {
 const supabase = vi.hoisted(() => ({
 	claimed: [] as Array<{ id: string; destination_id: string; payload: unknown; attempts: number }>,
 	updates: [] as Array<{ id: string; patch: Record<string, unknown> }>,
+	health: [] as Array<Record<string, unknown>>,
 }));
 
 vi.mock("@/runtime/env", async (importOriginal) => {
@@ -29,7 +30,11 @@ vi.mock("@/runtime/env", async (importOriginal) => {
 	return {
 		...actual,
 		getSupabaseAdmin: () => ({
-			rpc: async () => ({ data: supabase.claimed, error: null }),
+			rpc: async (name: string, args: { p_results?: Array<Record<string, unknown>> }) => {
+				if (name !== "record_broadcast_destination_health") return { data: supabase.claimed, error: null };
+				supabase.health.push(...args.p_results!);
+				return { data: args.p_results!.length, error: null };
+			},
 			from: (table: string) => table === "workspace_broadcast_destinations"
 				? {
 					select: () => ({
@@ -254,6 +259,7 @@ describe("drainGatewayOtlpOutbox", () => {
 			{ id: "rejected", destination_id: "destination-1", payload, attempts: 1 },
 		];
 		supabase.updates = [];
+		supabase.health = [];
 		vi.stubGlobal("fetch", vi.fn()
 			.mockResolvedValueOnce(new Response(null, { status: 200 }))
 			.mockResolvedValueOnce(new Response(null, { status: 503 }))
@@ -267,6 +273,15 @@ describe("drainGatewayOtlpOutbox", () => {
 		expect(patches.rejected).toMatchObject({ status: "failed", payload: {} });
 		expect(patches.retry).toMatchObject({ status: "pending" });
 		expect(patches.retry).not.toHaveProperty("payload");
+		// The retried row's 503 counts toward the failure streak but is not a failed event yet.
+		expect(supabase.health).toEqual([expect.objectContaining({
+			destination_id: "destination-1",
+			delivered: 1,
+			failed: 1,
+			failures: 2,
+			last_http_status: 400,
+			last_error: "OTLP endpoint returned 400",
+		})]);
 	});
 });
 

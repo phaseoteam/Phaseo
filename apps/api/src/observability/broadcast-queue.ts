@@ -2,6 +2,7 @@ import { clearRuntime, configureRuntime, getBindings, getSupabaseAdmin } from "@
 import type { GatewayBindings } from "@/runtime/env.types";
 import { mapWithConcurrency } from "@/pipeline/model-discovery/concurrency";
 import { broadcastDelivery } from "./broadcast-destinations";
+import { BroadcastHealthRecorder } from "./broadcast-health";
 import { broadcastMessageBytes, gunzipJson, type BroadcastQueueMessage, type BroadcastTelemetry } from "./broadcast-event";
 import {
 	MAX_ATTEMPTS,
@@ -139,11 +140,15 @@ async function deliverEvents(
 	destinations: Map<string, QueuedDestination>,
 	configs: Map<string, Promise<Record<string, unknown>>>,
 	summary: BroadcastQueueSummary,
+	health: BroadcastHealthRecorder,
 ): Promise<Map<Event, Pending>> {
 	const remaining = new Map<Event, Pending>(events.map((event) => [event, { ids: [], delayMs: 0 }]));
-	const record = (event: Event, destinationId: string, outcome: Outcome) => {
+	// Unattempted events, for a destination since disabled or deleted, are not
+	// counted against its health.
+	const record = (event: Event, destinationId: string, outcome: Outcome, attempted = true) => {
 		if (outcome.delivered) {
 			summary.delivered += 1;
+			health.event(destinationId, true);
 			return;
 		}
 		if (outcome.retryable && event.body.attempt < MAX_ATTEMPTS) {
@@ -154,6 +159,7 @@ async function deliverEvents(
 			return;
 		}
 		summary.failed += 1;
+		if (attempted) health.event(destinationId, false);
 	};
 
 	const deliveries: Delivery[] = [];
@@ -169,7 +175,7 @@ async function deliverEvents(
 		const destination = destinations.get(destinationId);
 		const delivery = destination?.enabled ? broadcastDelivery(destination.destination_id) : null;
 		if (!destination || !delivery) {
-			for (const event of destinationEvents) record(event, destinationId, { delivered: false, retryable: false, status: null, delayMs: 0, error: "Broadcast destination unavailable or disabled" });
+			for (const event of destinationEvents) record(event, destinationId, { delivered: false, retryable: false, status: null, delayMs: 0, error: "Broadcast destination unavailable or disabled" }, false);
 			continue;
 		}
 		let config: Record<string, unknown>;
@@ -178,6 +184,7 @@ async function deliverEvents(
 			config = await configs.get(destinationId)!;
 		} catch (error) {
 			console.error("broadcast_destination_config_failed", { destinationId, error: errorMessage(error) });
+			health.request(destinationId, { delivered: false, status: null, error: errorMessage(error) });
 			for (const event of destinationEvents) record(event, destinationId, { delivered: false, retryable: false, status: null, delayMs: 0, error: errorMessage(error) });
 			continue;
 		}
@@ -192,6 +199,7 @@ async function deliverEvents(
 	summary.requests += deliveries.length;
 	await mapWithConcurrency(deliveries, DELIVERY_CONCURRENCY, async (delivery) => {
 		const outcome = await deliver(delivery);
+		health.request(delivery.destination.id, outcome);
 		if (!outcome.delivered) {
 			console.warn("broadcast_delivery_failed", {
 				destinationId: delivery.destination.id,
@@ -293,6 +301,7 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 	const configs = new Map<string, Promise<Record<string, unknown>>>();
 	const retries: Array<{ event: Event } & Pending> = [];
 	const finished: Event[] = [];
+	const health = new BroadcastHealthRecorder();
 	for (const round of rounds) {
 		const events: Event[] = [];
 		for (const message of round) {
@@ -315,7 +324,7 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 			}
 		}
 		if (!events.length) continue;
-		const remaining = await deliverEvents(events, destinations, configs, summary);
+		const remaining = await deliverEvents(events, destinations, configs, summary, health);
 		for (const event of events) {
 			const pending = remaining.get(event)!;
 			if (pending.ids.length) retries.push({ event, ...pending });
@@ -330,6 +339,7 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 		else retry.event.message.ack();
 	}
 	for (const event of finished) event.message.ack();
+	await health.flush();
 	const finishedSpills = finished.flatMap((event) => event.body.spillKey ? [event.body.spillKey] : []);
 	if (finishedSpills.length) {
 		try {

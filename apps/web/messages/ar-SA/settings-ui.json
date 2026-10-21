@@ -1095,7 +1095,13 @@
 		"totalTokens": "إجمالي الرموز",
 		"userId": "معرّف المستخدم",
 		"connectionStatusRefreshed": "تم تحديث حالة الاتصال",
-		"connectionStatusRefreshFailed": "تعذّر تحديث حالة الاتصال"
+		"connectionStatusRefreshFailed": "تعذّر تحديث حالة الاتصال",
+		"healthHealthy": "سليم",
+		"healthFailing": "يفشل",
+		"healthIdle": "لا توجد عمليات تسليم بعد",
+		"healthDisabled": "معطّل",
+		"healthLastDay": "آخر 24 ساعة: {delivered, number} مُرسَلة، {failed, number} فاشلة",
+		"healthLastError": "{count, plural, one {فشل الطلب الأخير} other {فشلت آخر # طلبات}}: {error}"
 	},
 	"oauthDetail": {
 		"never": "أبدًا",
