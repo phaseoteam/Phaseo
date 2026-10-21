@@ -88,8 +88,8 @@ export function formatUsd(nanos: number): string {
 	).format(dollars);
 }
 
-/** Params that pick one request or page; a label link drops them and keeps the rest (time range, other filters). */
-const LABEL_LINK_DROPPED_PARAMS = ["label_key", "label_value", "label_op", "req", "cursor", "page"];
+/** Params that pick one request, an open request sheet or a page; a label link drops them and keeps the rest (time range, other filters). */
+const LABEL_LINK_DROPPED_PARAMS = ["label_key", "label_value", "label_op", "req", "request", "cursor", "page"];
 
 /** The request logs filtered to one label value, keeping the reader's other filters. */
 export function labelFilterHref(key: string, value: string, searchParams?: URLSearchParams | null): string {

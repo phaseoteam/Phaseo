@@ -6,7 +6,7 @@ import RequestLabelBadges from "./RequestLabelBadges";
 import type { RequestClassifierSummary } from "./requestClassifierLabels";
 
 jest.mock("next/navigation", () => ({
-	useSearchParams: () => new URLSearchParams("usage_preset=last_7d&req=G-1&label_op=is_not"),
+	useSearchParams: () => new URLSearchParams("usage_preset=last_7d&req=G-1&request=G-2&label_op=is_not"),
 }));
 
 const classifiers: RequestClassifierSummary[] = [
