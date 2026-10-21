@@ -119,6 +119,8 @@ class AnthropicMessagesRequest
 	public $models;
 	/** @var array|null */
 	public $plugins;
+	/** @var string|null */
+	public $prompt_cache_key;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */

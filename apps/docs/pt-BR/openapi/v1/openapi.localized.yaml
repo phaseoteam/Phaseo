@@ -10739,6 +10739,10 @@ components:
         user:
           type: string
           description: Identificador do usuário final, como em Chat Completions. Os modelos Claude o recebem como `metadata.user_id`, a menos que `metadata.user_id` esteja definido.
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: Agrupa solicitações relacionadas para que permaneçam no provedor que tem o cache de prompts delas. O Phaseo envia ao provedor um hash do seu workspace e desta chave, nunca a chave original.
         stop_sequences:
           type: array
           items:

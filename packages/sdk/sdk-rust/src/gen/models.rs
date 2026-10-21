@@ -72,6 +72,7 @@ pub struct AnthropicMessagesRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub plugins: Option<Vec<String>>,
+	pub prompt_cache_key: Option<Option<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,

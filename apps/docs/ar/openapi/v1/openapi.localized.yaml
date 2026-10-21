@@ -10739,6 +10739,10 @@ components:
         user:
           type: string
           description: معرّف المستخدم النهائي، كما في Chat Completions. تستلمه نماذج Claude بوصفه `metadata.user_id` ما لم يُضبط `metadata.user_id`.
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: يجمع الطلبات المرتبطة لتبقى لدى المزوّد الذي يحتفظ بذاكرة المطالبات المؤقتة الخاصة بها. ترسل Phaseo إلى المزوّد تجزئة لمساحة العمل وهذا المفتاح، وليس المفتاح الخام أبدًا.
         stop_sequences:
           type: array
           items:

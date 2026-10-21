@@ -35,7 +35,7 @@ icon: "database-zap"
 | Google AI Studioと[Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview)上の[Google Gemini](https://ai.google.dev/gemini-api/docs/caching) | Gemini 2.5以降で自動 | 自分で作成した明示的キャッシュを指す`cached_content` |
 | [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | 自動 | `prompt_cache_key`と`x-grok-conv-id`ヘッダー |
 | [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | 自動 | 追加なし |
-| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | 自動（5分のTTL） | 追加なし |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | 自動（5分のTTL）。Kimi K3では1時間のTTLをオプトインで指定可能 | `prompt_cache_key`と`prompt_cache_options` |
 | [Groq](https://console.groq.com/docs/prompt-caching) | Groqが挙げるモデルで自動 | 追加なし |
 | [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | 自動 | `prompt_cache_key`に加え、`x-session-affinity`ヘッダーと`user` |
 | [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | 自動 | `prompt_cache_key` |
@@ -44,6 +44,9 @@ icon: "database-zap"
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | 自動（暗黙的）。明示的キャッシュはオプトイン | ブロックの`cache_control` |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | 自動。VeniceがClaudeのブレークポイントを自ら追加 | ブロックの`cache_control` |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | 自動。保持期間の指定はオプトイン | `prompt_cache_key`、`prompt_cache_breakpoint`、`prompt_cache_options` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | 自動。ClaudeとGeminiのモデルでは明示的キャッシュも可 | ClaudeとGeminiのモデルでブロックの`cache_control`（`ttl`なし） |
+| [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | 自動 | `prompt_cache_key`と`x-session-affinity`ヘッダー |
+| [Morph](https://docs.morphllm.com/sdk/components/caching) | 自動 | `prompt_cache_key`と`x-session-id`ヘッダー |
 
 その他のOpenAI互換プロバイダーには、APIが受け付ける場合に`prompt_cache_key`だけを送り、それ以外のキャッシュ制御は送りません。Phaseoは常に、キーそのものではなく、ワークスペースとキーのハッシュを送ります。[プロバイダーとの親和性](#provider-affinity)を参照してください。
 
@@ -126,11 +129,12 @@ Chat CompletionsとResponsesでは、テキストと画像のパート、関数�
 | OpenAIとAzure OpenAIのそれより前のモデル | 削除 | 削除 |
 | DeepInfra | 削除 | 送信 |
 | Alibaba Model StudioとVenice | 送信 | 削除 |
+| Inference.net（ClaudeとGeminiのモデル） | `ttl`なしで送信 | 削除 |
 | その他のプロバイダー | 削除 | 削除 |
 
-ツール定義のマークが届くのは、Claudeのルート、Alibaba Model Studio、Veniceだけです。OpenAIはツールへのブレークポイントを受け付けません。マークを削除してもプロンプトの残りは変わらないため、キャッシュされるプレフィックスはマークのないリクエストと一致します。
+ツール定義のマークが届くのは、Claudeのルート、Alibaba Model Studio、Venice、Inference.netのClaudeとGeminiのモデルだけです。OpenAIはツールへのブレークポイントを受け付けません。マークを削除してもプロンプトの残りは変わらないため、キャッシュされるプレフィックスはマークのないリクエストと一致します。
 
-Amazon BedrockとGoogle Vertex AIは、Claude 3.7 Sonnet、3.5 Sonnet、3 Opusを5分間しかキャッシュせず、Bedrockはこれらのモデルで`ttl`を拒否することがあります。これらのルートでは、Phaseoはブレークポイントを`ttl`なしで送信するため、5分間キャッシュされます。削除した`1h`は、`X-Phaseo-Dropped-Params`ヘッダーと`meta.routing.dropped_params`に`cache_control.ttl`として報告します。
+Amazon BedrockとGoogle Vertex AIは、Claude 3.7 Sonnet、3.5 Sonnet、3 Opusを5分間しかキャッシュせず、Bedrockはこれらのモデルで`ttl`を拒否することがあります。これらのルートでは、Phaseoはブレークポイントを`ttl`なしで送信するため、5分間キャッシュされます。削除した`1h`は、`X-Phaseo-Dropped-Params`ヘッダーと`meta.routing.dropped_params`に`cache_control.ttl`として報告します。Inference.netは`ttl`なしのブレークポイントを案内しているため、Phaseoはそこでも同じように`ttl`を削除して報告し、書き込みは5分の書き込みとして課金されます。
 
 <span id="openai-retention-and-options"></span>
 ### OpenAIの保持期間とオプション
@@ -139,10 +143,10 @@ OpenAIのキャッシュ制御はモデルの世代によって異なります�
 
 | フィールド | 値 | 送信先 |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit`または`explicit`、`ttl`: `30m`（OpenAIでは`12h`も可） | OpenAIとAzure OpenAIのGPT-5.6以降、およびDeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`または`explicit`、`ttl`: `30m`（OpenAIでは`12h`も可） | OpenAIとAzure OpenAIのGPT-5.6以降、DeepInfra、Moonshot AI |
 | `prompt_cache_retention` | `in_memory`または`24h` | GPT-5.6より前のOpenAIとAzure OpenAIのモデル |
 
-GPT-5.6以降でOpenAIが受け付ける`ttl`は`30m`（デフォルト）と`12h`で、Azure OpenAIは`30m`だけです。`explicit`モードでは自分で配置したブレークポイントだけがキャッシュされます。DeepInfraは同じオブジェクトを`5m`または`1h`の`ttl`で使い、セッション内のすべてのリクエストで`prompt_cache_key`が必要です。ほかのプロバイダーにはどちらのフィールドも送りません。
+GPT-5.6以降でOpenAIが受け付ける`ttl`は`30m`（デフォルト）と`12h`で、Azure OpenAIは`30m`だけです。`explicit`モードでは自分で配置したブレークポイントだけがキャッシュされます。DeepInfraは同じオブジェクトを`5m`または`1h`の`ttl`で使い、セッション内のすべてのリクエストで`prompt_cache_key`が必要です。Moonshot AIは`mode: "implicit"`と、`5m`（デフォルト）または`1h`の`ttl`を受け付けます。Phaseoが`1h`を送るのは1時間の書き込み価格があるKimi K3のルートだけなので、その書き込みはその価格で課金されます。それ以外のルートでは`ttl`を削除し、`X-Phaseo-Dropped-Params`ヘッダーで`prompt_cache_options.ttl`として報告します。ほかのプロバイダーにはどちらのフィールドも送りません。
 
 どちらのフィールドも、トップレベルまたは`provider_options.openai`の下で送れます。両方ある場合はトップレベルの値が優先されます。
 
@@ -204,7 +208,7 @@ GeminiはGemini 2.5以降で暗黙的にキャッシュするため、何も送�
 ```
 
 - Google AI Studioでは、`cached_content`は自分のGoogle APIキー（BYOK）を使う場合にだけ機能します。キャッシュは作成したアカウントに属するため、Phaseoのキーでは400が返ります。
-- Vertex AIでは、キャッシュはリクエストを処理する認証情報のGoogle Cloudプロジェクトに属している必要があります。自分のVertex AI認証情報を使ってください。
+- Vertex AIでは、キャッシュはリクエストを処理する認証情報のGoogle Cloudプロジェクトに属している必要があります。自分のVertex AI認証情報を使ってください。Phaseoの認証情報では、リクエストは400を返します。
 - GoogleはGemini 4 Argon以降で明示的キャッシュをサポートしていません。
 
 `provider_options.google.cache_control`と`provider_options.google.cache_ttl`は受け付けますが、Googleには送りません。
@@ -423,7 +427,7 @@ Phaseoは各入力トークンを1回だけ、1つの料金で請求します。
 
 キー、`session_id`、キャッシュマークのいずれもない場合でも、Phaseoは冒頭コンテキストについてキャッシュの読み取りまたは書き込みを報告したプロバイダーに、そのプロバイダーのキャッシュ入力が通常の入力より安い限り、15分間固定します。
 
-Phaseoは生のキーではなく、ワークスペースと`prompt_cache_key`のハッシュをプロバイダーに送ります。そのため、2つのワークスペースで同じキーを使ってもプロバイダーのキャッシュを共有することはありません。`session_id`だけがある場合、PhaseoはOpenAI、xAI、Fireworks、Cerebras向けにセッションからこのハッシュを導出します。FireworksとCloudflare Workers AIは`x-session-affinity`ヘッダーでもこれを受け取り、xAIは`provider_options.xai.conversation_id`を指定しない限り`x-grok-conv-id`として受け取ります。レスポンスには、送信した`prompt_cache_key`がそのまま返ります。
+Phaseoは生のキーではなく、ワークスペースと`prompt_cache_key`のハッシュをプロバイダーに送ります。そのため、2つのワークスペースで同じキーを使ってもプロバイダーのキャッシュを共有することはありません。`session_id`だけがある場合、PhaseoはOpenAI、xAI、Fireworks、Cerebras向けにセッションからこのハッシュを導出します。Fireworks、Cloudflare Workers AI、Basetenは`x-session-affinity`ヘッダーでも、Morphは`x-session-id`ヘッダーでもこれを受け取り、xAIは`provider_options.xai.conversation_id`を指定しない限り`x-grok-conv-id`として受け取ります。レスポンスには、送信した`prompt_cache_key`がそのまま返ります。
 
 1つのリクエストで無効にするには`provider.cache_aware_routing`を`false`に設定します。続けて、
 リクエストに`session_id`が含まれていても、通常のコンテキストベースのルーティングだけを使う場合は、

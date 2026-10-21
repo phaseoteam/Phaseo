@@ -68,6 +68,7 @@ public final class Models {
 		public String model;
 		public java.util.List<String> models;
 		public java.util.List<Object> plugins;
+		public String prompt_cache_key;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;

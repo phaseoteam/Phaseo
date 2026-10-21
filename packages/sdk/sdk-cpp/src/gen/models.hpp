@@ -71,6 +71,7 @@ struct AnthropicMessagesRequest {
 	std::string model;
 	std::vector<std::string> models;
 	std::vector<std::any> plugins;
+	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;

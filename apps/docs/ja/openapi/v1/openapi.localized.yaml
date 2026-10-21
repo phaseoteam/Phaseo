@@ -10739,6 +10739,10 @@ components:
         user:
           type: string
           description: エンドユーザー識別子。Chat Completions と同じです。`metadata.user_id` が設定されていない場合、Claude モデルはこれを `metadata.user_id` として受け取ります。
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: 関連するリクエストをまとめ、そのプロンプトキャッシュを持つプロバイダーにとどめます。Phaseoは生のキーではなく、ワークスペースとこのキーのハッシュを上流に送ります。
         stop_sequences:
           type: array
           items:

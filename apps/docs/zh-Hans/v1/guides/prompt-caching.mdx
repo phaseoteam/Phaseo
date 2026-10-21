@@ -35,7 +35,7 @@ prompt 缓存因供应商和模型而异。Phaseo 只向每个供应商发送其
 | Google AI Studio 和 [Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) 上的 [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) | Gemini 2.5 及以后版本自动缓存 | 指向你创建的显式缓存的 `cached_content` |
 | [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | 自动 | `prompt_cache_key` 和 `x-grok-conv-id` 请求头 |
 | [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | 自动 | 无需额外内容 |
-| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | 自动，使用 5 分钟 TTL | 无需额外内容 |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | 自动，使用 5 分钟 TTL；Kimi K3 上可选择启用 1 小时 TTL | `prompt_cache_key` 和 `prompt_cache_options` |
 | [Groq](https://console.groq.com/docs/prompt-caching) | Groq 列出的模型自动缓存 | 无需额外内容 |
 | [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | 自动 | `prompt_cache_key`，以及 `x-session-affinity` 请求头和 `user` |
 | [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | 自动 | `prompt_cache_key` |
@@ -44,6 +44,9 @@ prompt 缓存因供应商和模型而异。Phaseo 只向每个供应商发送其
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | 自动（隐式）；显式缓存需启用 | 块级 `cache_control` |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | 自动；Venice 会自行添加 Claude 断点 | 块级 `cache_control` |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | 自动；保留时间窗口需启用 | `prompt_cache_key`、`prompt_cache_breakpoint` 和 `prompt_cache_options` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | 自动；Claude 和 Gemini 模型支持显式缓存 | Claude 和 Gemini 模型上的块级 `cache_control`，不带 `ttl` |
+| [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | 自动 | `prompt_cache_key` 和 `x-session-affinity` 请求头 |
+| [Morph](https://docs.morphllm.com/sdk/components/caching) | 自动 | `prompt_cache_key` 和 `x-session-id` 请求头 |
 
 其他 OpenAI 兼容供应商在其 API 接受该字段时会收到 `prompt_cache_key`，不会收到其他缓存控制。Phaseo 始终发送你的工作区与该键的哈希值，而不是键本身。请参阅[供应商亲和性](#provider-affinity)。
 
@@ -126,11 +129,12 @@ Anthropic 每个请求最多接受四个缓存断点。默认策略会把你自�
 | OpenAI 和 Azure OpenAI，更早的模型 | 移除 | 移除 |
 | DeepInfra | 移除 | 发送 |
 | Alibaba Model Studio 和 Venice | 发送 | 移除 |
+| Inference.net 的 Claude 和 Gemini 模型 | 不带 `ttl` 发送 | 移除 |
 | 其他供应商 | 移除 | 移除 |
 
-工具定义上的标记只会发送到 Claude 路由、Alibaba Model Studio 和 Venice；OpenAI 不接受工具上的断点。移除标记不会改变 prompt 的其余部分，因此缓存前缀与不带标记的请求一致。
+工具定义上的标记只会发送到 Claude 路由、Alibaba Model Studio、Venice 以及 Inference.net 的 Claude 和 Gemini 模型；OpenAI 不接受工具上的断点。移除标记不会改变 prompt 的其余部分，因此缓存前缀与不带标记的请求一致。
 
-Amazon Bedrock 和 Google Vertex AI 对 Claude 3.7 Sonnet、3.5 Sonnet 和 3 Opus 只提供 5 分钟缓存，Bedrock 还可能拒绝这些模型上的 `ttl`。在这些路由上，Phaseo 发送不带 `ttl` 的断点，因此缓存时长为 5 分钟，并在 `X-Phaseo-Dropped-Params` 响应头和 `meta.routing.dropped_params` 中把被移除的 `1h` 报告为 `cache_control.ttl`。
+Amazon Bedrock 和 Google Vertex AI 对 Claude 3.7 Sonnet、3.5 Sonnet 和 3 Opus 只提供 5 分钟缓存，Bedrock 还可能拒绝这些模型上的 `ttl`。在这些路由上，Phaseo 发送不带 `ttl` 的断点，因此缓存时长为 5 分钟，并在 `X-Phaseo-Dropped-Params` 响应头和 `meta.routing.dropped_params` 中把被移除的 `1h` 报告为 `cache_control.ttl`。Inference.net 的文档中断点不带 `ttl`，因此 Phaseo 在那里也以同样方式移除并报告 `ttl`，写入按 5 分钟写入计费。
 
 <span id="openai-retention-and-options"></span>
 ### OpenAI 的保留时间与选项
@@ -139,10 +143,10 @@ OpenAI 的缓存控制取决于模型代际。Phaseo 只在 OpenAI 接受时发�
 
 | 字段 | 取值 | 发送给 |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`：`implicit` 或 `explicit`；`ttl`：`30m`，OpenAI 上也可为 `12h` | GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI，以及 DeepInfra |
+| `prompt_cache_options` | `mode`：`implicit` 或 `explicit`；`ttl`：`30m`，OpenAI 上也可为 `12h` | GPT-5.6 及以后版本的 OpenAI 和 Azure OpenAI、DeepInfra 以及 Moonshot AI |
 | `prompt_cache_retention` | `in_memory` 或 `24h` | GPT-5.6 之前的 OpenAI 和 Azure OpenAI 模型 |
 
-从 GPT-5.6 开始，OpenAI 接受 `30m`（默认）或 `12h` 的 `ttl`，Azure OpenAI 只接受 `30m`。`explicit` 模式只缓存你放置的断点。DeepInfra 使用同一对象，`ttl` 为 `5m` 或 `1h`，并要求会话中的每个请求都带上 `prompt_cache_key`。其他供应商不会收到这两个字段。
+从 GPT-5.6 开始，OpenAI 接受 `30m`（默认）或 `12h` 的 `ttl`，Azure OpenAI 只接受 `30m`。`explicit` 模式只缓存你放置的断点。DeepInfra 使用同一对象，`ttl` 为 `5m` 或 `1h`，并要求会话中的每个请求都带上 `prompt_cache_key`。Moonshot AI 接受 `mode: "implicit"` 以及 `5m`（默认）或 `1h` 的 `ttl`。Phaseo 只把 `1h` 发送到有 1 小时写入价格的 Kimi K3 路由，因此这些写入按该价格计费；在其他路由上，Phaseo 会移除 `ttl`，并在 `X-Phaseo-Dropped-Params` 响应头中将其报告为 `prompt_cache_options.ttl`。其他供应商不会收到这两个字段。
 
 这两个字段都可以放在顶层或 `provider_options.openai` 下。两者同时存在时，以顶层值为准：
 
@@ -204,7 +208,7 @@ Gemini 2.5 及以后版本会隐式缓存，你无需发送任何内容。如需
 ```
 
 - 在 Google AI Studio 上，`cached_content` 仅在使用你自己的 Google API 密钥（BYOK）时有效。使用 Phaseo 的密钥时，请求会返回 400，因为缓存属于创建它的账号。
-- 在 Vertex AI 上，缓存必须属于处理请求的凭据所在的 Google Cloud 项目，因此请使用你自己的 Vertex AI 凭据。
+- 在 Vertex AI 上，缓存必须属于处理请求的凭据所在的 Google Cloud 项目，因此请使用你自己的 Vertex AI 凭据。使用 Phaseo 的凭据时，请求会返回 400。
 - 从 Gemini 4 Argon 开始，Google 不再支持显式缓存。
 
 `provider_options.google.cache_control` 和 `provider_options.google.cache_ttl` 会被接受，但不会发送给 Google。
@@ -423,7 +427,7 @@ prompt 缓存位于某个供应商，通常还位于该供应商的某个区域�
 
 如果没有键、`session_id` 或缓存标记，Phaseo 仍会把开头上下文固定到曾为其报告缓存读取或写入的供应商 15 分钟，前提是该供应商的缓存输入比标准输入便宜。
 
-Phaseo 向供应商发送的是你的工作区与 `prompt_cache_key` 的哈希值，绝不发送原始键，因此两个工作区中的相同键永远不会共享供应商缓存。只有 `session_id` 时，Phaseo 会为 OpenAI、xAI、Fireworks 和 Cerebras 从会话派生该哈希值。Fireworks 和 Cloudflare Workers AI 还会在 `x-session-affinity` 请求头中收到它；除非你设置了 `provider_options.xai.conversation_id`，xAI 会以 `x-grok-conv-id` 的形式收到它。响应中仍会返回你自己的 `prompt_cache_key`。
+Phaseo 向供应商发送的是你的工作区与 `prompt_cache_key` 的哈希值，绝不发送原始键，因此两个工作区中的相同键永远不会共享供应商缓存。只有 `session_id` 时，Phaseo 会为 OpenAI、xAI、Fireworks 和 Cerebras 从会话派生该哈希值。Fireworks、Cloudflare Workers AI 和 Baseten 还会在 `x-session-affinity` 请求头中收到它，Morph 会在 `x-session-id` 请求头中收到它；除非你设置了 `provider_options.xai.conversation_id`，xAI 会以 `x-grok-conv-id` 的形式收到它。响应中仍会返回你自己的 `prompt_cache_key`。
 
 如需对单个请求停用此功能，请将 `provider.cache_aware_routing` 设为 `false`。如果请求中
 包含 `session_id`，但你只想使用常规的上下文路由，请将 `routing.session_affinity`
