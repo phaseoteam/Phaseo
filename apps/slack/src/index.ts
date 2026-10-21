@@ -1,15 +1,15 @@
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type { Env } from "./env";
-import { isRemovalEvent, processEvent, type Deps, type SlackEnvelope } from "./events";
+import { defaultDeps, isRemovalEvent, processEvent, type Deps, type SlackEnvelope } from "./events";
 import { companyApp, hostedApp, SLACK_APP_ID_PATTERN, type SlackAppContext } from "./installations";
 import { handleInteraction, type InteractionPayload } from "./interactions";
 import { verifySlackSignature } from "./signature";
-import { createSlackClient } from "./slack-api";
-import { createDb } from "./supabase";
 
 export { ThreadCoordinator } from "./coordinator";
 export { WorkspaceMeter } from "./meter";
+export { AgentTurnWorkflow } from "./workflow";
+export { defaultDeps };
 
 // The Phaseo Slack agent's Worker (slack.phaseo.app).
 //
@@ -28,10 +28,6 @@ export { WorkspaceMeter } from "./meter";
 const MAX_BODY_BYTES = 512 * 1024;
 
 type AppEnv = { Bindings: Env };
-
-export function defaultDeps(env: Env): Deps {
-	return { env, db: createDb(env), slack: (token) => createSlackClient(token), now: () => Date.now() };
-}
 
 async function resolveApp(deps: Deps, appId: string | undefined): Promise<SlackAppContext | null> {
 	if (appId === undefined) return hostedApp(deps.env);

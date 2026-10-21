@@ -77,7 +77,7 @@ describe("events: who gets an answer", () => {
 		thread.runner = runner;
 		await expect(run(mention({ thread_ts: "1792600000.000050" }))).resolves.toBe("started");
 		await expect(run(mention({ thread_ts: "1792600000.000050", ts: "1792600000.000300" }))).resolves.toBe("queued");
-		expect(thread.turnInput(1)).toEqual({ text: "<@U0BOT00001> what did we spend this week?" });
+		expect(thread.turnInput(1)).toMatchObject({ text: "<@U0BOT00001> what did we spend this week?" });
 		expect(world.meters.get(world.meters.idFromName(INSTALLATION_ID)).usage(NOW)).toMatchObject({ people: 1, pending: 2 });
 	});
 
@@ -137,8 +137,8 @@ describe("events: who gets an answer", () => {
 
 	it("says which plan is full, in dollars", async () => {
 		await install({ plan_people: 3 });
-		for (const user of ["U0PERSON01", "U0PERSON02", "U0PERSON03"]) await expect(run(directMessage({ user }))).resolves.toBe("started");
-		await expect(run(directMessage({ user: "U0PERSON04" }))).resolves.toBe("refused_plan_full");
+		for (const [index, user] of ["U0PERSON01", "U0PERSON02", "U0PERSON03"].entries()) await expect(run(directMessage({ user, ts: `1792600010.00000${index}` }))).resolves.toBe("started");
+		await expect(run(directMessage({ user: "U0PERSON04", ts: "1792600010.000009" }))).resolves.toBe("refused_plan_full");
 		expect(world.slack.ephemerals().at(-1)?.args.text).toBe(
 			"The Phaseo agent has answered as many people this month as this workspace's plan covers (3 people, $0.99 a month). An admin can move to a bigger plan in Phaseo settings.",
 		);

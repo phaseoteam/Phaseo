@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TURN_TIMEOUT_MS, type ThreadCoordinator, type TurnRequest } from "../src/coordinator";
-import type { TurnRef, TurnRunner, TurnStart } from "../src/turns";
+import { createWorkflowTurnRunner, type TurnRef, type TurnRunner, type TurnStart } from "../src/turns";
 import { INSTALLATION_ID, storageOf, testWorld, WORKSPACE_ID, type TestWorld } from "./fakes";
 
 const NOW = Date.UTC(2026, 9, 21, 12, 0, 0);
@@ -87,7 +87,7 @@ describe("ThreadCoordinator", () => {
 
 	it("keeps a message only while its turn is open", async () => {
 		await coordinator.enqueue(request("Ev0TEST0001"), NOW);
-		expect(coordinator.turnInput(1)).toEqual({ text: "message for Ev0TEST0001" });
+		expect(coordinator.turnInput(1)).toEqual({ text: "message for Ev0TEST0001", context: null, replyTs: null, stagedReply: null, stagedTools: [], memory: [] });
 		await coordinator.finishTurn(1, { status: "done", reply: "Answer" }, NOW);
 		expect(coordinator.turnInput(1)).toBeNull();
 		const storage = storageOf(coordinator);
@@ -161,12 +161,23 @@ describe("ThreadCoordinator", () => {
 		expect(world.meters.get(world.meters.idFromName(INSTALLATION_ID)).usage(NOW).pending).toBe(0);
 	});
 
-	it("the stub runner acknowledges a turn and releases its place in the meter", async () => {
-		const stubbed = world.threads.get(world.threads.idFromName(`${KEY}:stub`));
-		const meter = admitInMeter("Ev0TEST0001");
-		await expect(stubbed.enqueue(request("Ev0TEST0001", { threadKey: `${KEY}:stub` }), NOW)).resolves.toMatchObject({ status: "started" });
-		expect(stubbed.status()).toMatchObject({ running: null, queued: 0 });
-		expect(meter.usage(NOW)).toMatchObject({ people: 1, answers: 0, pending: 0 });
+	it("starts each turn as one Workflow instance kept a day, with ids only", async () => {
+		const real = world.threads.get(world.threads.idFromName(`${KEY}:workflow`));
+		await expect(real.enqueue(request("Ev0TEST0001", { threadKey: `${KEY}:workflow` }), NOW)).resolves.toMatchObject({ status: "started" });
+		expect(world.turns.created).toEqual([{
+			id: "turn-Ev0TEST0001",
+			params: {
+				turnId: 1, threadKey: `${KEY}:workflow`, eventId: "Ev0TEST0001", installationId: INSTALLATION_ID, teamId: "T0TEST0001",
+				channel: "C0CHANNEL1", threadTs: "1792600000.000100", messageTs: "1792600000.000100", slackUserId: "U0PERSON01", kind: "mention",
+			},
+			retention: { successRetention: "1 day", errorRetention: "1 day" },
+		}]);
+		expect(JSON.stringify(world.turns.created)).not.toContain("message for");
+		// The turn runs until the instance reports back.
+		expect(real.status()).toMatchObject({ running: 1, queued: 0 });
+		// Starting the same turn again is a no-op.
+		await expect(createWorkflowTurnRunner(world.env).start({ ...(world.turns.created[0].params as TurnRef) })).resolves.toEqual({ started: true });
+		expect(world.turns.created).toHaveLength(1);
 	});
 
 	it("fails a turn that never reports back after 20 minutes, and starts the next", async () => {

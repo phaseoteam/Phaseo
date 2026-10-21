@@ -8,3 +8,12 @@ export class DurableObject<Env = unknown> {
 		this.env = env;
 	}
 }
+
+export class WorkflowEntrypoint<Env = unknown> {
+	protected ctx: ExecutionContext;
+	protected env: Env;
+	constructor(ctx: ExecutionContext, env: Env) {
+		this.ctx = ctx;
+		this.env = env;
+	}
+}

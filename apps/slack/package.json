@@ -7,10 +7,12 @@
 		"dev": "wrangler dev --port 8789",
 		"build": "wrangler deploy --dry-run --env=",
 		"build:production": "wrangler deploy --dry-run --env production",
+		"pretypecheck": "pnpm --filter @phaseo/sdk build && pnpm --filter @phaseo/agent-sdk build",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"@phaseo/agent-sdk": "workspace:*",
 		"hono": "^4.13.11"
 	},
 	"devDependencies": {
