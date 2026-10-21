@@ -71,6 +71,33 @@ describe("image-request-options", () => {
 		});
 	});
 
+	it("defaults every Grok Imagine image model to xAI's 1k resolution", () => {
+		expect(buildImagePricingRequestOptions({ model: "x-ai/grok-imagine-image" })).toMatchObject({
+			size: "1k",
+			image_params: { resolution: "1k" },
+		});
+		expect(buildImagePricingRequestOptions({ model: "grok-imagine-image", resolution: "2K" })).toMatchObject({
+			image_params: { resolution: "2k" },
+		});
+		// Only Grok Imagine Image 2.0 has quality tiers.
+		expect(buildImagePricingRequestOptions({ model: "grok-imagine-image" })).not.toHaveProperty("quality");
+	});
+
+	it("reads Gemini image sizes from quality, image_config and Google's 1K default", () => {
+		expect(buildImagePricingRequestOptions({ model: "google/gemini-3-pro-image" }).image_params).toEqual({ resolution: "1K" });
+		expect(buildImagePricingRequestOptions({ model: "google/gemini-3-pro-image", quality: "2k" }).image_params).toMatchObject({ resolution: "2K" });
+		expect(buildImagePricingRequestOptions({ model: "google/gemini-3-pro-image", image_config: { image_size: "4K" } }).image_params)
+			.toEqual({ resolution: "4K" });
+		expect(buildImagePricingRequestOptions({ model: "google/gemini-3.1-flash-image", imageConfig: { imageSize: "0.5K" } }).image_params)
+			.toEqual({ resolution: "512" });
+		// The Images API maps `size` to Gemini's aspect ratio, so the image size stays 1K.
+		expect(buildImagePricingRequestOptions({ model: "gemini-3-pro-image-preview", size: "1536x1024" }).image_params)
+			.toMatchObject({ resolution: "1K" });
+		expect(buildImagePricingRequestOptions({ model: "google/nano-banana-2.1" }).image_params).toEqual({ resolution: "1K" });
+		// Other models are unchanged.
+		expect(buildImagePricingRequestOptions({ model: "openai/gpt-image-1" })).toEqual({});
+	});
+
 	it("infers pricing quality and resolution from image output tokens when request used auto defaults", () => {
 		const options = buildImagePricingRequestOptions(
 			{

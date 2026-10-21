@@ -163,6 +163,9 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("plugins")]
 	public List<object>? Plugins { get; set; }
 
+	[JsonPropertyName("prompt")]
+	public Dictionary<string, object>? Prompt { get; set; }
+
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
@@ -1445,6 +1448,9 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("presence_penalty")]
 	public double? PresencePenalty { get; set; }
+
+	[JsonPropertyName("prompt")]
+	public Dictionary<string, object>? Prompt { get; set; }
 
 	[JsonPropertyName("prompt_cache_key")]
 	public string? PromptCacheKey { get; set; }
@@ -6220,6 +6226,9 @@ public sealed class Preset
 
 public sealed class PresetConfig
 {
+	[JsonPropertyName("prompt")]
+	public Dictionary<string, object>? Prompt { get; set; }
+
 }
 
 public sealed class PresetCreateRequest
@@ -6268,6 +6277,60 @@ public sealed class PresetListResponse
 
 	[JsonPropertyName("total_count")]
 	public long TotalCount { get; set; }
+
+}
+
+public sealed class PresetPromptTemplate
+{
+	[JsonPropertyName("messages")]
+	public List<Dictionary<string, object>> Messages { get; set; }
+
+	[JsonPropertyName("response_format")]
+	public Dictionary<string, object>? ResponseFormat { get; set; }
+
+	[JsonPropertyName("syntax")]
+	public string? Syntax { get; set; }
+
+	[JsonPropertyName("tool_choice")]
+	public object? ToolChoice { get; set; }
+
+	[JsonPropertyName("tools")]
+	public List<Dictionary<string, object>>? Tools { get; set; }
+
+	[JsonPropertyName("variables")]
+	public Dictionary<string, object>? Variables { get; set; }
+
+}
+
+public sealed class PresetPromptTemplateMessage
+{
+	[JsonPropertyName("content")]
+	public object Content { get; set; }
+
+	[JsonPropertyName("role")]
+	public string Role { get; set; }
+
+}
+
+public sealed class PresetPromptVariable
+{
+	[JsonPropertyName("default")]
+	public object? Default { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("enum")]
+	public List<string>? Enum { get; set; }
+
+	[JsonPropertyName("max_length")]
+	public long? MaxLength { get; set; }
+
+	[JsonPropertyName("required")]
+	public bool? Required { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
 
 }
 
@@ -6747,6 +6810,16 @@ public sealed class PromptCacheOptions
 
 	[JsonPropertyName("ttl")]
 	public string? Ttl { get; set; }
+
+}
+
+public sealed class PromptTemplateReference
+{
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("variables")]
+	public Dictionary<string, object>? Variables { get; set; }
 
 }
 
@@ -7549,6 +7622,9 @@ public sealed class ResponsesRequest
 
 	[JsonPropertyName("previous_response_id")]
 	public string? PreviousResponseId { get; set; }
+
+	[JsonPropertyName("prompt")]
+	public Dictionary<string, object>? Prompt { get; set; }
 
 	[JsonPropertyName("prompt_cache_key")]
 	public string? PromptCacheKey { get; set; }
