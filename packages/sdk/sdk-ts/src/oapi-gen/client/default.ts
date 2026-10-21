@@ -20174,6 +20174,17 @@ export async function previewSpendRule(
     block_at_usd: number | null;
     computed_at: string;
     evaluated: boolean;
+    forecast: {
+      by: string;
+      from: string | null;
+      limit_nanos: number | null;
+      limit_usd: number | null;
+      projected_nanos: number | null;
+      projected_percent: number | null;
+      projected_usd: number | null;
+      reaches_at: string | null;
+      ready: boolean;
+    } | null;
     metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
     next_threshold: {
       amount_nanos: number;
@@ -20184,6 +20195,11 @@ export async function previewSpendRule(
     period: {
       end: string;
       kind: "day" | "week" | "month" | "rolling";
+      start: string;
+      window_hours?: number;
+    } | null;
+    previous_period: {
+      end: string;
       start: string;
     } | null;
     reached_threshold_percent: number | null;
@@ -20237,6 +20253,17 @@ export async function previewSpendRule(
       block_at_usd: number | null;
       computed_at: string;
       evaluated: boolean;
+      forecast: {
+        by: string;
+        from: string | null;
+        limit_nanos: number | null;
+        limit_usd: number | null;
+        projected_nanos: number | null;
+        projected_percent: number | null;
+        projected_usd: number | null;
+        reaches_at: string | null;
+        ready: boolean;
+      } | null;
       metric: "spend" | "budget_percent" | "forecast" | "spike" | "balance";
       next_threshold: {
         amount_nanos: number;
@@ -20247,6 +20274,11 @@ export async function previewSpendRule(
       period: {
         end: string;
         kind: "day" | "week" | "month" | "rolling";
+        start: string;
+        window_hours?: number;
+      } | null;
+      previous_period: {
+        end: string;
         start: string;
       } | null;
       reached_threshold_percent: number | null;

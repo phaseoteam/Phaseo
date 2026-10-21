@@ -32,7 +32,7 @@ import { Link } from "@/i18n/navigation";
 import type { NotificationDestination, SettingsSpendAlertsData } from "@/lib/fetchers/internal/settingsTypes";
 import { createSpendRule, testSpendRule, updateSpendRule, type SpendRuleActionError } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
-import { OptionTiles, useBalanceSummary, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
+import { OptionTiles, useBalanceSummary, useForecastSummary, useSpendPercent, useSpendUsd } from "./spendAlertsUi";
 import { SpendRuleDestinationPicker } from "./SpendRuleDestinationPicker";
 import {
 	PRESET_THRESHOLDS,
@@ -140,6 +140,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 	const usd = useSpendUsd();
 	const percentText = useSpendPercent();
 	const balanceSummary = useBalanceSummary();
+	const forecastSummary = useForecastSummary();
 	const actionError = useSpendActionError();
 	const canManage = data.canManageSpendRules;
 	const rule = target.mode === "edit" ? target.rule : null;
@@ -504,6 +505,8 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 									? t("preview.value", { value: usd(summary.valueUsd) })
 									: summary?.kind === "balance"
 										? balanceSummary.text(summary)
+									: summary?.kind === "forecast" || summary?.kind === "forecastPending"
+										? forecastSummary.text(summary)
 									: rule && !rule.evaluated
 										? t("preview.notEvaluated")
 										: rule && !rule.enabled

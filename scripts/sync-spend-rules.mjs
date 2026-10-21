@@ -1,7 +1,8 @@
 // Copies packages/shared/spend-rules into each app that validates or shows spend
 // rules, and checks its lists and caps against the database: the table's CHECK
 // constraints, the per-workspace cap trigger, the evaluator's switch
-// (private.spend_rule_evaluable), the destination cap and the test-send limit.
+// (private.spend_rule_evaluable), the forecast start (private.spend_rule_values), the
+// destination cap and the test-send limit.
 // Run with --check in CI to fail on drift instead of writing.
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -18,6 +19,7 @@ const TARGETS = [
 const TABLE = "supabase/schemas/public/tables/workspace_spend_rules.sql";
 const LIMIT_TRIGGER = "supabase/schemas/public/functions/enforce_workspace_spend_rule_limit.sql";
 const EVALUABLE = "supabase/schemas/private/functions/spend_rule_evaluable.sql";
+const VALUES = "supabase/schemas/private/functions/spend_rule_values.sql";
 const SAVE = "supabase/schemas/public/functions/save_workspace_spend_rule.sql";
 const TEST_SENDS = "supabase/schemas/public/functions/consume_spend_rule_test_send.sql";
 const BLOCKS_TABLE = "supabase/schemas/public/tables/workspace_spend_blocks.sql";
@@ -77,6 +79,13 @@ for (const [name, parameter] of [["EVALUATED_METRICS", "p_metric"], ["EVALUATED_
 	const sql = list ? [...list.matchAll(/'([^']+)'/g)].map((match) => match[1]) : null;
 	if (!same(values(name), sql)) problems.push(`${name} does not match ${parameter} in ${EVALUABLE}`);
 }
+const quoted = (text) => (text ? [...text.matchAll(/'([^']+)'/g)].map((match) => match[1]) : null);
+const windowBranch = evaluable.match(/p_metric in \(([^)]*)\) and p_period = 'rolling' and \(p_base_kind is null or p_base_kind in \(([^)]*)\)\)/);
+if (!same(values("EVALUATED_WINDOW_METRICS"), quoted(windowBranch?.[1]))) problems.push(`EVALUATED_WINDOW_METRICS does not match the rolling-window branch in ${EVALUABLE}`);
+if (!same(values("EVALUATED_WINDOW_BASE_KINDS"), quoted(windowBranch?.[2]))) problems.push(`EVALUATED_WINDOW_BASE_KINDS does not match the rolling-window branch in ${EVALUABLE}`);
+const forecastHours = source.match(/FORECAST_MIN_ELAPSED_HOURS = \{ day: (\d+), week: (\d+), month: (\d+) \}/)?.slice(1);
+const forecastSql = (await read(VALUES)).match(/when 'day' then interval '(\d+) hours' when 'week' then interval '(\d+) hours' else interval '(\d+) hours'/)?.slice(1);
+if (!forecastHours || JSON.stringify(forecastHours) !== JSON.stringify(forecastSql)) problems.push(`FORECAST_MIN_ELAPSED_HOURS does not match the forecast start in ${VALUES}`);
 const rolling = evaluable.match(/p_metric in \(([^)]*)\) and p_period = 'rolling' and p_base_kind is null/)?.[1];
 if (!same(values("EVALUATED_ROLLING_METRICS"), rolling ? [...rolling.matchAll(/'([^']+)'/g)].map((match) => match[1]) : null)) {
 	problems.push(`EVALUATED_ROLLING_METRICS does not match the rolling branch in ${EVALUABLE}`);

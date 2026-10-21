@@ -230,9 +230,10 @@ describe("draftFromRule", () => {
 describe("evaluation and bases", () => {
 	it("knows which drafts the evaluator sends today", () => {
 		expect(draftEvaluated(draft())).toBe(true);
-		expect(draftEvaluated(draft({ period: "rolling" }))).toBe(false);
+		expect(draftEvaluated(draft({ period: "rolling" }))).toBe(true);
 		expect(draftEvaluated(withMetric(draft(), "spike"))).toBe(false);
-		expect(draftEvaluated(withBaseKind(draft(), "previous_period"))).toBe(false);
+		expect(draftEvaluated(withBaseKind(draft(), "previous_period"))).toBe(true);
+		expect(draftEvaluated(withMetric(draft(), "forecast"))).toBe(true);
 		expect(draftEvaluated({ ...withMetric(draft(), "balance"), runwayDays: "7" })).toBe(true);
 	});
 
@@ -252,7 +253,8 @@ describe("previewSummary", () => {
 		rule_id: "r1", metric: "budget_percent", evaluated: true, computed_at: "", time_zone: "UTC", period: null,
 		value_nanos: 42.1e9, value_usd: 42.1, base_kind: "amount", base_ref: null, base_nanos: 100e9, base_usd: 100, percent: 42.1,
 		threshold_percents: [50], threshold_amount_nanos: null, threshold_amount_usd: null, reached_threshold_percent: null,
-		next_threshold: null, block_at_nanos: null, block_at_usd: null, balance: null, state: null, alert: null, ...overrides,
+		next_threshold: null, block_at_nanos: null, block_at_usd: null, balance: null, previous_period: null, forecast: null,
+		state: null, alert: null, ...overrides,
 	});
 
 	it("shows the value against the base or the spend amount", () => {
@@ -268,6 +270,17 @@ describe("previewSummary", () => {
 			.toEqual({ kind: "balance", availableUsd: 10, burnPerDayUsd: 5, runwayDays: 2, windowHours: 24 });
 		expect(previewSummary(preview({ metric: "balance", value_usd: null, base_usd: null, balance: { ...balance, burn_per_day_usd: 0, runway_days_left: null } }), null))
 			.toEqual({ kind: "balance", availableUsd: 10, burnPerDayUsd: 0, runwayDays: null, windowHours: 24 });
+	});
+
+	it("shows a forecast's projection and date, or when it starts", () => {
+		const forecast = { ready: true, from: "2026-10-04T04:00:00Z", projected_nanos: 620e9, projected_usd: 620, projected_percent: null,
+			by: "2026-11-01T04:00:00Z", limit_nanos: 500e9, limit_usd: 500, reaches_at: "2026-10-26T04:00:00Z" };
+		const base = { metric: "forecast" as const, value_usd: 200, base_usd: null, base_nanos: null, percent: null, time_zone: "America/New_York" };
+		expect(previewSummary(preview({ ...base, forecast }), null)).toEqual({
+			kind: "forecast", valueUsd: 200, projectedUsd: 620, by: "2026-11-01T04:00:00Z", reachesAt: "2026-10-26T04:00:00Z", limitUsd: 500, timeZone: "America/New_York",
+		});
+		expect(previewSummary(preview({ ...base, forecast: { ...forecast, ready: false, projected_nanos: null, projected_usd: null, reaches_at: null } }), null))
+			.toEqual({ kind: "forecastPending", valueUsd: 200, from: "2026-10-04T04:00:00Z", timeZone: "America/New_York" });
 	});
 
 	it("has nothing to show for rules that are not evaluated", () => {

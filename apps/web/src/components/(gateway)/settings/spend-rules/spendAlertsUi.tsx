@@ -38,6 +38,37 @@ export function useBalanceSummary() {
 	};
 }
 
+type ForecastSummary =
+	| { kind: "forecast"; valueUsd: number; projectedUsd: number; by: string; reachesAt: string | null; limitUsd: number | null; timeZone: string }
+	| { kind: "forecastPending"; valueUsd: number; from: string | null; timeZone: string };
+
+/**
+ * A forecast rule's preview: "Spent $200 so far, projected $620 by 1 Nov, 00:00; at this pace
+ * it reaches $500 on 26 Oct, 00:00", with times in the rule's zone (the period is the rule's).
+ */
+export function useForecastSummary() {
+	const t = useTranslations("SettingsUI.spendAlerts");
+	const usd = useSpendUsd();
+	const format = useDisplayFormatters();
+	const when = (iso: string, timeZone: string) => format.dateParts(iso, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone });
+	return {
+		text: (summary: ForecastSummary) => {
+			if (summary.kind === "forecastPending") {
+				return summary.from
+					? t("preview.forecastPending", { value: usd(summary.valueUsd), date: when(summary.from, summary.timeZone) })
+					: t("preview.value", { value: usd(summary.valueUsd) });
+			}
+			const values = { value: usd(summary.valueUsd), projected: usd(summary.projectedUsd), date: when(summary.by, summary.timeZone) };
+			return summary.reachesAt && summary.limitUsd !== null
+				? t("preview.forecastReaches", { ...values, limit: usd(summary.limitUsd), reachDate: when(summary.reachesAt, summary.timeZone) })
+				: t("preview.forecast", values);
+		},
+		short: (summary: ForecastSummary) => summary.kind === "forecastPending"
+			? (summary.from ? t("row.forecastFrom", { date: when(summary.from, summary.timeZone) }) : null)
+			: t("row.projectedBy", { date: when(summary.by, summary.timeZone) }),
+	};
+}
+
 /** The name of what a rule covers: the key, member, department, provider or model it is scoped to. */
 export function useScopeLabel(options: Pick<SettingsSpendRuleOptions, "keys" | "members" | "departments" | "providers">) {
 	const t = useTranslations("SettingsUI.spendAlerts");
