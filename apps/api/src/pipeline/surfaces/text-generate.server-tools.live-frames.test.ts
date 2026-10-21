@@ -162,10 +162,13 @@ function pipelineArgs(surface: Surface) {
 }
 
 /** Run the two-turn request and return the client's frames (event name and parsed data). */
-async function clientFrames(surface: Surface) {
+async function clientFrames(
+	surface: Surface,
+	secondTurn = providerTurn(surface, { n: 2, reasoning: "Now the weather.", callId: "call_weather", name: "get_weather", argumentChunks: ["{\"city\":", "\"London\"}"] }),
+) {
 	doRequestWithIRMock
 		.mockResolvedValueOnce(streamResult(providerTurn(surface, { n: 1, reasoning: "Need the time first.", callId: "call_dt", name: "gateway_datetime", argumentChunks: [DATETIME_ARGUMENTS] })))
-		.mockResolvedValueOnce(streamResult(providerTurn(surface, { n: 2, reasoning: "Now the weather.", callId: "call_weather", name: "get_weather", argumentChunks: ["{\"city\":", "\"London\"}"] })));
+		.mockResolvedValueOnce(streamResult(secondTurn));
 	const response = await runTextGeneratePipeline(pipelineArgs(surface) as any);
 	expect(response.status).toBe(200);
 	const text = await response.text();
@@ -308,5 +311,30 @@ describe("streaming client frames after a gateway server tool", () => {
 		expect(blocks.filter((block) => block.type === "thinking").map((block) => block.thinking).join("")).toBe("Need the time first.Now the weather.");
 		expect(blocks[2]).toMatchObject({ id: "call_weather", name: "get_weather", partial: WEATHER_ARGUMENTS });
 		expect(stopReason).toBe("tool_use");
+	});
+
+	it("Messages: text the model writes after the client's call stays after its tool_use block", async () => {
+		const secondTurn = providerTurn("messages", { n: 2, reasoning: "Now the weather.", callId: "call_weather", name: "get_weather", argumentChunks: [WEATHER_ARGUMENTS] });
+		secondTurn.splice(-2, 0,
+			sse("content_block_start", { type: "content_block_start", index: 2, content_block: { type: "text", text: "" } }),
+			sse("content_block_delta", { type: "content_block_delta", index: 2, delta: { type: "text_delta", text: "I'll report back." } }),
+			sse("content_block_stop", { type: "content_block_stop", index: 2 }),
+		);
+		const frames = await clientFrames("messages", secondTurn);
+		expect(frames.filter((frame) => String(frame.event).startsWith("content_block_")).map((frame) => frame.data)).toEqual([
+			{ type: "content_block_start", index: 0, content_block: { type: "thinking", thinking: "" } },
+			{ type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "Need the time first." } },
+			{ type: "content_block_stop", index: 0 },
+			{ type: "content_block_start", index: 1, content_block: { type: "thinking", thinking: "" } },
+			{ type: "content_block_delta", index: 1, delta: { type: "thinking_delta", thinking: "Now the weather." } },
+			{ type: "content_block_stop", index: 1 },
+			{ type: "content_block_start", index: 2, content_block: { type: "tool_use", id: "call_weather", name: "get_weather", input: {} } },
+			{ type: "content_block_delta", index: 2, delta: { type: "input_json_delta", partial_json: WEATHER_ARGUMENTS } },
+			{ type: "content_block_stop", index: 2 },
+			{ type: "content_block_start", index: 3, content_block: { type: "text", text: "" } },
+			{ type: "content_block_delta", index: 3, delta: { type: "text_delta", text: "I'll report back." } },
+			{ type: "content_block_stop", index: 3 },
+		]);
+		expect(frames.at(-1)!.event).toBe("message_stop");
 	});
 });

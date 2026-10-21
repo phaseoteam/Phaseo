@@ -146,6 +146,54 @@ describe("managed tool live stream", () => {
 		expect(chunks.at(-1)!.choices.map((choice: any) => [choice.index, choice.finish_reason])).toEqual([[0, "tool_calls"], [1, "tool_calls"]]);
 	});
 
+	it("keeps Messages blocks that follow a held tool call after it, and drops only the calls the gateway ran", async () => {
+		const response = await createManagedToolLiveResponse({
+			protocol: "anthropic.messages",
+			requestId: "req_messages_order",
+			model: "test-model",
+			async run(sink) {
+				const first = sink.beginRound();
+				first({ type: "delta_text", channel: "reasoning_text", text: "Need the time.", choiceIndex: 0 });
+				first({ type: "delta_tool", toolCallId: "call_dt", toolName: "gateway_datetime", choiceIndex: 0, toolIndex: 1 });
+				first({ type: "delta_tool", argumentsDelta: "{}", choiceIndex: 0, toolIndex: 1 });
+				first({ type: "delta_text", channel: "output_text", text: "One moment.", choiceIndex: 0 });
+				sink.toolResult({ id: "call_dt", name: "gateway_datetime", arguments: "{}", output: "10:35" });
+				const second = sink.beginRound();
+				second({ type: "delta_text", channel: "output_text", text: "Checking London.", choiceIndex: 0 });
+				second({ type: "delta_tool", toolCallId: "call_weather", toolName: "get_weather", choiceIndex: 0, toolIndex: 1 });
+				second({ type: "delta_tool", argumentsDelta: "{\"city\":\"London\"}", choiceIndex: 0, toolIndex: 1 });
+				second({ type: "delta_text", channel: "output_text", text: "I'll report back.", choiceIndex: 0 });
+				second({ type: "delta_text", channel: "reasoning_text", text: "Then summarise.", choiceIndex: 0 });
+				return new Response('event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"tool_use","stop_sequence":null},"usage":{"output_tokens":9}}\n\n', { headers: { "content-type": "text/event-stream" } });
+			},
+		});
+		const frames = framesOf(await response.text());
+		expect(frames.map((frame) => frame.data)).toEqual([
+			{ type: "message_start", message: { id: "req_messages_order", type: "message", role: "assistant", model: "test-model", content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 0, output_tokens: 0 } } },
+			{ type: "content_block_start", index: 0, content_block: { type: "thinking", thinking: "" } },
+			{ type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "Need the time." } },
+			{ type: "content_block_stop", index: 0 },
+			{ type: "content_block_start", index: 1, content_block: { type: "text", text: "" } },
+			{ type: "content_block_delta", index: 1, delta: { type: "text_delta", text: "One moment." } },
+			{ type: "content_block_stop", index: 1 },
+			{ type: "content_block_start", index: 2, content_block: { type: "text", text: "" } },
+			{ type: "content_block_delta", index: 2, delta: { type: "text_delta", text: "Checking London." } },
+			{ type: "content_block_stop", index: 2 },
+			{ type: "content_block_start", index: 3, content_block: { type: "tool_use", id: "call_weather", name: "get_weather", input: {} } },
+			{ type: "content_block_delta", index: 3, delta: { type: "input_json_delta", partial_json: "{\"city\":\"London\"}" } },
+			{ type: "content_block_stop", index: 3 },
+			{ type: "content_block_start", index: 4, content_block: { type: "text", text: "" } },
+			{ type: "content_block_delta", index: 4, delta: { type: "text_delta", text: "I'll report back." } },
+			{ type: "content_block_stop", index: 4 },
+			{ type: "content_block_start", index: 5, content_block: { type: "thinking", thinking: "" } },
+			{ type: "content_block_delta", index: 5, delta: { type: "thinking_delta", thinking: "Then summarise." } },
+			{ type: "content_block_stop", index: 5 },
+			{ type: "message_delta", delta: { stop_reason: "tool_use", stop_sequence: null }, usage: { output_tokens: 9 } },
+			{ type: "message_stop" },
+		]);
+		for (const frame of frames) expect(frame.event).toBe(frame.data.type);
+	});
+
 	it("emits buffered Chat Completions text before the final chunk", async () => {
 		const response = await createManagedToolLiveResponse({
 			protocol: "openai.chat.completions",

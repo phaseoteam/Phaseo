@@ -45,6 +45,8 @@ type LiveRound = {
 	callOrder: LiveCall[];
 	toolKey: ReturnType<typeof createToolCallKeyResolver>;
 	channels: Set<TextChannel>;
+	/** Messages blocks from the first held call on, sent in order when the turn ends. */
+	held: Array<LiveText | LiveCall>;
 };
 
 type ParsedFrame = { eventName: string; payload: any };
@@ -65,7 +67,7 @@ function parseFrame(raw: string): ParsedFrame | null {
 }
 
 function newRound(): LiveRound {
-	return { texts: [], openText: null, calls: new Map(), callOrder: [], toolKey: createToolCallKeyResolver(), channels: new Set() };
+	return { texts: [], openText: null, calls: new Map(), callOrder: [], toolKey: createToolCallKeyResolver(), channels: new Set(), held: [] };
 }
 
 /**
@@ -75,7 +77,8 @@ function newRound(): LiveRound {
  * deltas and are done (a server tool's call is done with its result); Messages blocks
  * start, receive their deltas and stop. Chat and Messages have no form for a call the
  * gateway already ran, so their clients get only the calls left for them to run, as the
- * buffered body returns them. The last turn's body (the pipeline's synthetic stream)
+ * buffered body returns them; a Messages block after a held call waits with it, so
+ * blocks keep the model's order. The last turn's body (the pipeline's synthetic stream)
  * supplies what that turn did not stream live and the terminal event.
  */
 export async function createManagedToolLiveResponse(args: {
@@ -136,6 +139,11 @@ export async function createManagedToolLiveResponse(args: {
 				? { ...serverToolTraceOutputItem(call.result), id: call.id }
 				: { id: call.id, type: "function_call", call_id: call.callId ?? call.upstreamKey ?? call.id, name: call.name, arguments: call.args, status: "completed" };
 
+			const blockStart = (text: LiveText) => ({
+				type: "content_block_start",
+				index: text.index,
+				content_block: text.channel === "reasoning_text" ? { type: "thinking", thinking: "" } : { type: "text", text: "" },
+			});
 			const closeText = (round: LiveRound) => {
 				const text = round.openText;
 				if (!text) return;
@@ -151,7 +159,9 @@ export async function createManagedToolLiveResponse(args: {
 				const key = `${channel}:${upstreamId ?? (event as any).choiceIndex ?? 0}`;
 				if (round.openText?.key === key) return round.openText;
 				closeText(round);
-				const index = nextIndex++;
+				// A Messages block after a held call waits with it, and is numbered when sent.
+				const held = round.held.length > 0;
+				const index = held ? -1 : nextIndex++;
 				const reasoning = channel === "reasoning_text";
 				const text: LiveText = { channel, key, index, id: `${reasoning ? "rs" : "msg"}_${args.requestId}_${index}`, text: "" };
 				round.texts.push(text);
@@ -164,13 +174,11 @@ export async function createManagedToolLiveResponse(args: {
 							? { id: text.id, type: "reasoning", summary: [], content: [] }
 							: { id: text.id, type: "message", role: "assistant", status: "in_progress", content: [] },
 					});
+				} else if (held) {
+					round.held.push(text);
 				} else {
 					openBlock = text;
-					write("content_block_start", {
-						type: "content_block_start",
-						index,
-						content_block: reasoning ? { type: "thinking", thinking: "" } : { type: "text", text: "" },
-					});
+					write("content_block_start", blockStart(text));
 				}
 				return text;
 			};
@@ -190,7 +198,7 @@ export async function createManagedToolLiveResponse(args: {
 						content_index: 0,
 						delta: event.text,
 					});
-				} else {
+				} else if (text.index >= 0) {
 					emit({ ...event, choiceIndex: text.index });
 				}
 			};
@@ -228,6 +236,11 @@ export async function createManagedToolLiveResponse(args: {
 							output_index: index,
 							item: { id: call.id, type: "function_call", call_id: call.callId ?? call.id, name, arguments: "", status: "in_progress" },
 						});
+					} else if (!chat) {
+						// Messages blocks keep the model's order: the text before the call stops,
+						// and what follows waits with the call until the turn ends.
+						closeText(round);
+						round.held.push(call);
 					}
 				}
 				call.callId ??= event.toolCallId;
@@ -275,10 +288,22 @@ export async function createManagedToolLiveResponse(args: {
 				if (call.args) write("content_block_delta", { type: "content_block_delta", index, delta: { type: "input_json_delta", partial_json: call.args } });
 				write("content_block_stop", { type: "content_block_stop", index });
 			};
+			/** A Messages block that waited for a held call, sent whole. */
+			const sendHeldText = (text: LiveText) => {
+				text.index = nextIndex++;
+				write("content_block_start", blockStart(text));
+				emit({ type: "delta_text", channel: text.channel, text: text.text, choiceIndex: text.index });
+				write("content_block_stop", { type: "content_block_stop", index: text.index });
+			};
 			/** A finished turn: its items are done; calls the gateway did not run are sent. */
 			const closeRound = (round: LiveRound) => {
 				closeText(round);
 				finishArguments(round);
+				// Messages: held calls the gateway did not run and the blocks after them, in order.
+				for (const entry of round.held.splice(0)) {
+					if ("channel" in entry) sendHeldText(entry);
+					else finishCall(entry);
+				}
 				for (const call of round.callOrder) finishCall(call);
 			};
 			const handleRoundEvent = (round: LiveRound, event: UnifiedStreamEvent) => {
