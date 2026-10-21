@@ -1003,6 +1003,47 @@ struct DeletedResponse {
 	std::any deleted;
 };
 
+struct DepartmentBudget {
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::string department_id;
+	std::optional<std::string> department_name;
+	bool exceeded;
+	std::string id;
+	std::any interval;
+	double limit;
+	int limit_nanos;
+	double remaining;
+	int remaining_nanos;
+	std::optional<std::string> reset_at;
+	std::string updated_at;
+	double usage;
+	int usage_nanos;
+	std::optional<std::string> window_start;
+	std::string workspace_id;
+};
+
+struct DepartmentBudgetInput {
+	std::string department_id;
+	std::any interval;
+	double limit;
+};
+
+using DepartmentBudgetInterval = std::any;
+
+struct DepartmentBudgetListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct DepartmentBudgetResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct DepartmentBudgetUpdateInput {
+	std::any interval;
+	std::optional<double> limit;
+};
+
 struct DynamicRoute {
 	std::map<std::string, std::any> config;
 	std::optional<std::string> created_at;

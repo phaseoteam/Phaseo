@@ -1004,6 +1004,47 @@ pub struct DeletedResponse {
 	pub deleted: bool,
 }
 
+pub struct DepartmentBudget {
+	pub created_at: String,
+	pub created_by: Option<Option<String>>,
+	pub department_id: String,
+	pub department_name: Option<String>,
+	pub exceeded: bool,
+	pub id: String,
+	pub interval: String,
+	pub limit: f64,
+	pub limit_nanos: i64,
+	pub remaining: f64,
+	pub remaining_nanos: i64,
+	pub reset_at: Option<Option<String>>,
+	pub updated_at: String,
+	pub usage: f64,
+	pub usage_nanos: i64,
+	pub window_start: Option<Option<String>>,
+	pub workspace_id: String,
+}
+
+pub struct DepartmentBudgetInput {
+	pub department_id: String,
+	pub interval: String,
+	pub limit: f64,
+}
+
+pub type DepartmentBudgetInterval = JsonValue;
+
+pub struct DepartmentBudgetListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct DepartmentBudgetResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct DepartmentBudgetUpdateInput {
+	pub interval: Option<String>,
+	pub limit: Option<f64>,
+}
+
 pub struct DynamicRoute {
 	pub config: HashMap<String, String>,
 	pub created_at: Option<Option<String>>,

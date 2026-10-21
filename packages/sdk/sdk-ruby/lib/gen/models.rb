@@ -1450,6 +1450,60 @@ module Phaseo
     # @!attribute [rw] deleted
     #   @return [String]
     DeletedResponse = Struct.new(:deleted, keyword_init: true)
+    # @!attribute [rw] created_at
+    #   @return [String]
+    # @!attribute [rw] created_by
+    #   @return [String, nil]
+    # @!attribute [rw] department_id
+    #   @return [String]
+    # @!attribute [rw] department_name
+    #   @return [String, nil]
+    # @!attribute [rw] exceeded
+    #   @return [Boolean]
+    # @!attribute [rw] id
+    #   @return [String]
+    # @!attribute [rw] interval
+    #   @return [String]
+    # @!attribute [rw] limit
+    #   @return [Float]
+    # @!attribute [rw] limit_nanos
+    #   @return [Integer]
+    # @!attribute [rw] remaining
+    #   @return [Float]
+    # @!attribute [rw] remaining_nanos
+    #   @return [Integer]
+    # @!attribute [rw] reset_at
+    #   @return [String, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String]
+    # @!attribute [rw] usage
+    #   @return [Float]
+    # @!attribute [rw] usage_nanos
+    #   @return [Integer]
+    # @!attribute [rw] window_start
+    #   @return [String, nil]
+    # @!attribute [rw] workspace_id
+    #   @return [String]
+    DepartmentBudget = Struct.new(:created_at, :created_by, :department_id, :department_name, :exceeded, :id, :interval, :limit, :limit_nanos, :remaining, :remaining_nanos, :reset_at, :updated_at, :usage, :usage_nanos, :window_start, :workspace_id, keyword_init: true)
+    # @!attribute [rw] department_id
+    #   @return [String]
+    # @!attribute [rw] interval
+    #   @return [String]
+    # @!attribute [rw] limit
+    #   @return [Float]
+    DepartmentBudgetInput = Struct.new(:department_id, :interval, :limit, keyword_init: true)
+    DepartmentBudgetInterval = Object
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>]
+    DepartmentBudgetListResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}]
+    DepartmentBudgetResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] interval
+    #   @return [String, nil]
+    # @!attribute [rw] limit
+    #   @return [Float, nil]
+    DepartmentBudgetUpdateInput = Struct.new(:interval, :limit, keyword_init: true)
     # @!attribute [rw] config
     #   @return [Hash{String => Object}]
     # @!attribute [rw] created_at

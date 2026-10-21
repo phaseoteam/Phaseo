@@ -2443,6 +2443,100 @@ public sealed class DeletedResponse
 
 }
 
+public sealed class DepartmentBudget
+{
+	[JsonPropertyName("created_at")]
+	public string CreatedAt { get; set; }
+
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("department_id")]
+	public string DepartmentId { get; set; }
+
+	[JsonPropertyName("department_name")]
+	public string? DepartmentName { get; set; }
+
+	[JsonPropertyName("exceeded")]
+	public bool Exceeded { get; set; }
+
+	[JsonPropertyName("id")]
+	public string Id { get; set; }
+
+	[JsonPropertyName("interval")]
+	public string Interval { get; set; }
+
+	[JsonPropertyName("limit")]
+	public double Limit { get; set; }
+
+	[JsonPropertyName("limit_nanos")]
+	public long LimitNanos { get; set; }
+
+	[JsonPropertyName("remaining")]
+	public double Remaining { get; set; }
+
+	[JsonPropertyName("remaining_nanos")]
+	public long RemainingNanos { get; set; }
+
+	[JsonPropertyName("reset_at")]
+	public string? ResetAt { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string UpdatedAt { get; set; }
+
+	[JsonPropertyName("usage")]
+	public double Usage { get; set; }
+
+	[JsonPropertyName("usage_nanos")]
+	public long UsageNanos { get; set; }
+
+	[JsonPropertyName("window_start")]
+	public string? WindowStart { get; set; }
+
+	[JsonPropertyName("workspace_id")]
+	public string WorkspaceId { get; set; }
+
+}
+
+public sealed class DepartmentBudgetInput
+{
+	[JsonPropertyName("department_id")]
+	public string DepartmentId { get; set; }
+
+	[JsonPropertyName("interval")]
+	public string Interval { get; set; }
+
+	[JsonPropertyName("limit")]
+	public double Limit { get; set; }
+
+}
+
+public sealed class DepartmentBudgetInterval { }
+
+public sealed class DepartmentBudgetListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>> Data { get; set; }
+
+}
+
+public sealed class DepartmentBudgetResponse
+{
+	[JsonPropertyName("data")]
+	public Dictionary<string, object> Data { get; set; }
+
+}
+
+public sealed class DepartmentBudgetUpdateInput
+{
+	[JsonPropertyName("interval")]
+	public string? Interval { get; set; }
+
+	[JsonPropertyName("limit")]
+	public double? Limit { get; set; }
+
+}
+
 public sealed class DynamicRoute
 {
 	[JsonPropertyName("config")]

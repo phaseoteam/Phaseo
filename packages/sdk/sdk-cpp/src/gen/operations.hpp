@@ -100,6 +100,11 @@ inline Response CreateDataContributionClassifier(Client& client, const std::map<
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateDepartmentBudget(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/department-budgets";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateDynamicRoute(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/routing/dynamic-routes";
 	return client.request("POST", resolved_path, body);
@@ -305,6 +310,11 @@ inline Response DeleteDataContributionClassifier(Client& client, const std::map<
 	return client.request("DELETE", resolved_path, body);
 }
 
+inline Response DeleteDepartmentBudget(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/department-budgets/" + path_segment(path.count("id") ? path.at("id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
 inline Response DeleteDynamicRoute(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/routing/dynamic-routes/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
@@ -467,6 +477,11 @@ inline Response GetCurrentApiKey(Client& client, const std::map<std::string, std
 
 inline Response GetDataContributionSettings(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data-contribution";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetDepartmentBudget(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/department-budgets/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 
@@ -692,6 +707,11 @@ inline Response ListClassifiers(Client& client, const std::map<std::string, std:
 
 inline Response ListDataModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data/models";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListDepartmentBudgets(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/department-budgets";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -1067,6 +1087,11 @@ inline Response UpdateDataContributionClassifier(Client& client, const std::map<
 
 inline Response UpdateDataContributionConsent(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/data-contribution/consent";
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateDepartmentBudget(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/department-budgets/" + path_segment(path.count("id") ? path.at("id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 

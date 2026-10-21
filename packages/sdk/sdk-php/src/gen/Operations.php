@@ -132,6 +132,13 @@ function createDataContributionClassifier(Client $client, ?array $path = null, ?
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createDepartmentBudget(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/department-budgets";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createDynamicRoute(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -425,6 +432,14 @@ function deleteDataContributionClassifier(Client $client, ?array $path = null, ?
 	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
 }
 
+function deleteDepartmentBudget(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/department-budgets/" . rawurlencode((string)($path["id"] ?? ""));
+	return $client->request("DELETE", $resolvedPath, $query, $headers, $body);
+}
+
 function deleteDynamicRoute(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -681,6 +696,14 @@ function getDataContributionSettings(Client $client, ?array $path = null, ?array
 {
 	$path = $path ?? [];
 	$resolvedPath = "/data-contribution";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getDepartmentBudget(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/department-budgets/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1021,6 +1044,13 @@ function listDataModels(Client $client, ?array $path = null, ?array $query = nul
 {
 	$path = $path ?? [];
 	$resolvedPath = "/data/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listDepartmentBudgets(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/department-budgets";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -1584,6 +1614,14 @@ function updateDataContributionConsent(Client $client, ?array $path = null, ?arr
 {
 	$path = $path ?? [];
 	$resolvedPath = "/data-contribution/consent";
+	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
+}
+
+function updateDepartmentBudget(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/department-budgets/" . rawurlencode((string)($path["id"] ?? ""));
 	return $client->request("PATCH", $resolvedPath, $query, $headers, $body);
 }
 
