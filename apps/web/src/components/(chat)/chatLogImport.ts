@@ -218,6 +218,10 @@ export function buildThreadFromLogReplay(args: {
 	// declared. Those go as text, ahead of the remaining calls so each result
 	// still directly follows its call.
 	const declareTools = options.keepFunctionTools && replay.functionTools.length > 0;
+	const declaredNames = new Set(declareTools ? replay.functionTools.map((tool) => tool.name) : []);
+	const structuredCalls = new Set(
+		[...answeredCalls].filter((callId) => declaredNames.has(callNames.get(callId) ?? "")),
+	);
 	for (const entry of Object.values(replayMessages)) {
 		const text: unknown[] = [];
 		const calls: unknown[] = [];
@@ -228,10 +232,10 @@ export function buildThreadFromLogReplay(args: {
 			const isOutput = record.type === "function_call_output" || record.type === "custom_tool_call_output";
 			const callId = String(record.call_id);
 			if (isOutput) {
-				if (declareTools) outputs.push(item);
+				if (structuredCalls.has(callId)) outputs.push(item);
 				else outputs.push({ role: "user", content: `Result of ${callNames.get(callId) ?? "tool"}: ${String(record.output)}` });
 			} else if (!isCall) text.push(item);
-			else if (declareTools && answeredCalls.has(callId)) calls.push(item);
+			else if (structuredCalls.has(callId)) calls.push(item);
 			else text.push({ role: "assistant", content: `Called ${String(record.name)} with ${String(record.arguments ?? record.input)}` });
 		}
 		entry.items = [...text, ...calls, ...outputs];

@@ -146,3 +146,25 @@ test("keeps custom tool calls, results and definitions in their custom form", ()
 	]);
 	expect(thread.replay?.functionTools).toEqual([{ type: "custom", name: "apply_patch", format: { type: "text" } }]);
 });
+
+test("sends answered calls to undeclared tools as text even when tools are declared", () => {
+	const mixed: LogReplay = {
+		...replay,
+		turns: [
+			{ role: "user", parts: [{ type: "text", text: "Go" }] },
+			{ role: "assistant", text: "", reasoning: "", toolCalls: [{ id: "call_a", name: "lookup", arguments: "{}" }, { id: "call_b", name: "provider_run", arguments: "{}" }] },
+			{ role: "tool", callId: "call_a", output: "a" },
+			{ role: "tool", callId: "call_b", output: "b" },
+		],
+		requestTurnCount: 4,
+		warnings: [],
+	};
+	const options = defaultChatLogImportOptions(mixed, "openai/gpt-5-mini");
+	const thread = buildThreadFromLogReplay({ replay: mixed, options, source, emptyTitle: "New chat", now: "2026-10-21T00:00:00Z" });
+	const items = Object.values(thread.replay?.messages ?? {}).flatMap((entry) => entry.items) as Array<Record<string, unknown>>;
+
+	expect(items.filter((item) => item.type === "function_call").map((item) => item.name)).toEqual(["lookup"]);
+	expect(items.filter((item) => item.type === "function_call_output").map((item) => item.call_id)).toEqual(["call_a"]);
+	expect(items).toContainEqual({ role: "assistant", content: "Called provider_run with {}" });
+	expect(items).toContainEqual({ role: "user", content: "Result of provider_run: b" });
+});
