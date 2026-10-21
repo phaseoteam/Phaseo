@@ -45,6 +45,14 @@ begin
       and not (coalesce(s.auto_route_enabled, false) and s.approved_successor_slug is not distinct from m.replacement_model_slug)
     order by m.model_slug
   loop
+    -- Take the same model lock as set_model_successor_routing, then re-read
+    -- the state, so an admin revoking at the same moment always wins. A model
+    -- being edited right now is left for the next run.
+    perform 1 from public.v2_models where model_slug=v_slug for update skip locked;
+    continue when not found;
+    continue when exists (select 1 from public.v2_model_successor_routing s join public.v2_models m on m.model_slug=s.model_slug
+      where s.model_slug=v_slug and (s.auto_approval_blocked
+        or (s.auto_route_enabled and s.approved_successor_slug is not distinct from m.replacement_model_slug)));
     v_before := public.get_model_successor_routing(v_slug);
     v_compatibility := v_before->'compatibility';
     continue when v_compatibility is null or jsonb_typeof(v_compatibility) <> 'object'
@@ -53,7 +61,9 @@ begin
     insert into public.v2_model_successor_routing as s (model_slug, auto_route_enabled, approved_successor_slug, approved_by, approved_at, compatibility, approval_source)
     values (v_slug, true, v_compatibility->>'successor', null, v_now, v_compatibility || jsonb_build_object('accepted_warnings', false), 'auto')
     on conflict (model_slug) do update set auto_route_enabled=true, approved_successor_slug=excluded.approved_successor_slug,
-      approved_by=null, approved_at=v_now, compatibility=excluded.compatibility, approval_source='auto', updated_at=v_now;
+      approved_by=null, approved_at=v_now, compatibility=excluded.compatibility, approval_source='auto', updated_at=v_now
+      where not s.auto_approval_blocked;
+    continue when not found;
 
     v_after := public.get_model_successor_routing(v_slug);
     insert into public.v2_catalogue_admin_changes (actor_user_id, resource_type, resource_id, action, before_state, after_state)
