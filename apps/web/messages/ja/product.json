@@ -482,7 +482,7 @@
 				"keepSystemPrompt": "システムプロンプト",
 				"keepServerTools": "サーバーツール",
 				"keepFunctionTools": "{count, plural, other {# 個の関数ツール}}",
-				"keepFunctionToolsHint": "チャットでは実行できません。以前のツール呼び出しを有効に保つために宣言されます。",
+				"keepFunctionToolsHint": "チャットでは実行できません。宣言すると以前のツール呼び出しは呼び出しとして、宣言しないとテキストとして送信されます。",
 				"includeResponse": "記録された応答"
 			},
 			"workspaceMismatch": "チャットはアクティブなワークスペースから送信されますが、このリクエストのワークスペースとは異なります。",

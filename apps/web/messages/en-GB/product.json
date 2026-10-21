@@ -482,7 +482,7 @@
 				"keepSystemPrompt": "System prompt",
 				"keepServerTools": "Server tools",
 				"keepFunctionTools": "{count, plural, one {# function tool} other {# function tools}}",
-				"keepFunctionToolsHint": "Chat can't run them. They're declared so the earlier tool calls stay valid.",
+				"keepFunctionToolsHint": "Chat can't run them. Declared, earlier tool calls are sent as calls; left out, they're sent as text.",
 				"includeResponse": "The logged response"
 			},
 			"workspaceMismatch": "Chat sends from your active workspace, which isn't the workspace this request came from.",

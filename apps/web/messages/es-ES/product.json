@@ -482,7 +482,7 @@
 				"keepSystemPrompt": "Prompt del sistema",
 				"keepServerTools": "Herramientas del servidor",
 				"keepFunctionTools": "{count, plural, one {# herramienta de función} other {# herramientas de función}}",
-				"keepFunctionToolsHint": "Chat no puede ejecutarlas. Se declaran para que las llamadas a herramientas anteriores sigan siendo válidas.",
+				"keepFunctionToolsHint": "Chat no puede ejecutarlas. Si se declaran, las llamadas anteriores se envían como llamadas; si no, como texto.",
 				"includeResponse": "La respuesta registrada"
 			},
 			"workspaceMismatch": "Chat envía desde tu espacio de trabajo activo, que no es el espacio de trabajo de esta solicitud.",

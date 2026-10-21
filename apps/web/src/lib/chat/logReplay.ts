@@ -17,7 +17,10 @@ export type LogReplayPart =
 export type LogReplayToolCall = {
 	id: string;
 	name: string;
+	/** JSON arguments for a function; free-form input for a custom tool. */
 	arguments: string;
+	/** Responses custom tools take free-form input rather than JSON arguments. */
+	kind?: "custom";
 };
 
 export type LogReplayTurn =
@@ -39,6 +42,9 @@ export type LogReplayFunctionTool = {
 	description?: string;
 	parameters?: unknown;
 	strict?: boolean;
+	/** A Responses custom tool, defined by its input `format` instead of parameters. */
+	kind?: "custom";
+	format?: unknown;
 };
 
 export type LogReplayParams = {
@@ -266,11 +272,7 @@ function readResponsesItems(input: unknown, builder: ReplayBuilder) {
 				builder.user(builder.userParts(item.content));
 			}
 		} else if (type === "function_call" || type === "custom_tool_call") {
-			builder.assistant("", "", [{
-				id: asString(item.call_id) || asString(item.id) || "call",
-				name: asString(item.name) || "tool",
-				arguments: stringifyArguments(item.arguments ?? item.input),
-			}]);
+			builder.assistant("", "", [readResponsesToolCall(item)]);
 		} else if (type === "function_call_output" || type === "custom_tool_call_output") {
 			builder.tool(asString(item.call_id), stringifyOutput(item.output));
 		} else if (type === "reasoning") {
@@ -279,6 +281,16 @@ function readResponsesItems(input: unknown, builder: ReplayBuilder) {
 			builder.warn("unsupported_content");
 		}
 	}
+}
+
+function readResponsesToolCall(item: Json): LogReplayToolCall {
+	const custom = item.type === "custom_tool_call";
+	return {
+		id: asString(item.call_id) || asString(item.id) || "call",
+		name: asString(item.name) || "tool",
+		arguments: custom ? asString(item.input) : stringifyArguments(item.arguments),
+		...(custom ? { kind: "custom" as const } : {}),
+	};
 }
 
 function readReasoningSummary(item: Json): string {
@@ -356,11 +368,7 @@ function readResponse(response: unknown, builder: ReplayBuilder) {
 			if (item.type === "message") builder.assistant(builder.text(item.content));
 			else if (item.type === "reasoning") builder.assistant("", readReasoningSummary(item));
 			else if (item.type === "function_call" || item.type === "custom_tool_call") {
-				builder.assistant("", "", [{
-					id: asString(item.call_id) || asString(item.id) || "call",
-					name: asString(item.name) || "tool",
-					arguments: stringifyArguments(item.arguments ?? item.input),
-				}]);
+				builder.assistant("", "", [readResponsesToolCall(item)]);
 			}
 		}
 		if (builder.turns.length === before) builder.warn("no_response");
@@ -419,6 +427,15 @@ function readTools(body: Json): { functionTools: LogReplayFunctionTool[]; server
 		// Provider-run tools (web search, code execution, ...) are not functions.
 		const fn = isObject(tool.function) ? tool.function : tool;
 		const name = asString(fn.name);
+		if (name && type === "custom" && !isObject(tool.input_schema)) {
+			functionTools.push({
+				name,
+				kind: "custom",
+				...(asString(tool.description) ? { description: asString(tool.description) } : {}),
+				...(tool.format !== undefined ? { format: tool.format } : {}),
+			});
+			continue;
+		}
 		const isFunction = type === "function" || ((!type || type === "custom") && isObject(tool.input_schema));
 		if (!name || !isFunction) continue;
 		functionTools.push({

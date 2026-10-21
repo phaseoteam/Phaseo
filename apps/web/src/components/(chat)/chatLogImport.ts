@@ -142,6 +142,8 @@ export function buildThreadFromLogReplay(args: {
 	const messages: ChatMessage[] = [];
 	const replayMessages: ChatThreadReplay["messages"] = {};
 	const callOwners = new Map<string, ChatMessage>();
+	const callKinds = new Map<string, "custom" | undefined>();
+	const callNames = new Map<string, string>();
 	const answeredCalls = new Set<string>();
 
 	for (const turn of turns) {
@@ -151,7 +153,11 @@ export function buildThreadFromLogReplay(args: {
 				const calls = (owner.meta?.tool_calls ?? []) as ChatToolCall[];
 				const call = calls.find((entry) => entry.id === turn.callId);
 				if (call) call.output = turn.output;
-				replayMessages[owner.id].items.push({ type: "function_call_output", call_id: turn.callId, output: turn.output });
+				replayMessages[owner.id].items.push({
+					type: callKinds.get(turn.callId) === "custom" ? "custom_tool_call_output" : "function_call_output",
+					call_id: turn.callId,
+					output: turn.output,
+				});
 				answeredCalls.add(turn.callId);
 				continue;
 			}
@@ -177,10 +183,10 @@ export function buildThreadFromLogReplay(args: {
 		}
 		const toolCalls: ChatToolCall[] = turn.toolCalls.map((call) => ({
 			id: call.id,
-			type: "function",
+			type: call.kind ?? "function",
 			name: call.name,
 			status: "completed",
-			input: parseArguments(call.arguments),
+			input: call.kind === "custom" ? call.arguments : parseArguments(call.arguments),
 			inputText: call.arguments,
 		}));
 		const meta: Record<string, unknown> = {};
@@ -199,23 +205,34 @@ export function buildThreadFromLogReplay(args: {
 		const items: unknown[] = turn.text ? [{ role: "assistant", content: turn.text }] : [];
 		for (const call of turn.toolCalls) {
 			callOwners.set(call.id, message);
-			items.push({ type: "function_call", call_id: call.id, name: call.name, arguments: call.arguments });
+			callKinds.set(call.id, call.kind);
+			callNames.set(call.id, call.name);
+			items.push(call.kind === "custom"
+				? { type: "custom_tool_call", call_id: call.id, name: call.name, input: call.arguments }
+				: { type: "function_call", call_id: call.id, name: call.name, arguments: call.arguments });
 		}
 		replayMessages[message.id] = { content: message.content, items };
 	}
 
-	// A call without a result would be rejected when sent again, so it goes as text,
-	// ahead of the remaining calls so each result still directly follows its call.
+	// Providers reject a call that has no result, or any call whose tool isn't
+	// declared. Those go as text, ahead of the remaining calls so each result
+	// still directly follows its call.
+	const declareTools = options.keepFunctionTools && replay.functionTools.length > 0;
 	for (const entry of Object.values(replayMessages)) {
 		const text: unknown[] = [];
 		const calls: unknown[] = [];
 		const outputs: unknown[] = [];
 		for (const item of entry.items) {
 			const record = item as Record<string, unknown>;
-			if (record.type === "function_call_output") outputs.push(item);
-			else if (record.type !== "function_call") text.push(item);
-			else if (answeredCalls.has(String(record.call_id))) calls.push(item);
-			else text.push({ role: "assistant", content: `Called ${String(record.name)} with ${String(record.arguments)}` });
+			const isCall = record.type === "function_call" || record.type === "custom_tool_call";
+			const isOutput = record.type === "function_call_output" || record.type === "custom_tool_call_output";
+			const callId = String(record.call_id);
+			if (isOutput) {
+				if (declareTools) outputs.push(item);
+				else outputs.push({ role: "user", content: `Result of ${callNames.get(callId) ?? "tool"}: ${String(record.output)}` });
+			} else if (!isCall) text.push(item);
+			else if (declareTools && answeredCalls.has(callId)) calls.push(item);
+			else text.push({ role: "assistant", content: `Called ${String(record.name)} with ${String(record.arguments ?? record.input)}` });
 		}
 		entry.items = [...text, ...calls, ...outputs];
 	}
@@ -228,23 +245,30 @@ export function buildThreadFromLogReplay(args: {
 			loggedAt: source.loggedAt,
 		},
 		messages: replayMessages,
-		...(options.keepFunctionTools && replay.functionTools.length > 0
+		...(declareTools
 			? {
-					functionTools: replay.functionTools.map((tool) => ({
-						type: "function",
-						name: tool.name,
-						...(tool.description ? { description: tool.description } : {}),
-						parameters: tool.parameters ?? { type: "object", properties: {} },
-						...(typeof tool.strict === "boolean" ? { strict: tool.strict } : {}),
-					})),
+					functionTools: replay.functionTools.map((tool) => tool.kind === "custom"
+						? {
+								type: "custom",
+								name: tool.name,
+								...(tool.description ? { description: tool.description } : {}),
+								...(tool.format !== undefined ? { format: tool.format } : {}),
+							}
+						: {
+								type: "function",
+								name: tool.name,
+								...(tool.description ? { description: tool.description } : {}),
+								parameters: tool.parameters ?? { type: "object", properties: {} },
+								...(typeof tool.strict === "boolean" ? { strict: tool.strict } : {}),
+							}),
 				}
 			: {}),
 	};
 
 	return {
-		id: generateId(),
+		id: crypto.randomUUID(),
 		// A new session, so continued turns don't join the original session's logs.
-		sessionId: generateId(),
+		sessionId: crypto.randomUUID(),
 		title: buildTitle(messages, args.emptyTitle),
 		titleLocked: false,
 		pinned: false,

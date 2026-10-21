@@ -110,3 +110,39 @@ test("sends structured input only for unedited imported messages at the start", 
 
 	expect(replayInputPrefix(undefined, [user])).toEqual({ count: 0, items: [] });
 });
+
+test("sends earlier tool calls and results as text when tools are left out", () => {
+	const options = { ...defaultChatLogImportOptions(replay, "m"), keepFunctionTools: false };
+	const thread = buildThreadFromLogReplay({ replay, options, source, emptyTitle: "New chat" });
+	const toolTurn = thread.messages[1];
+
+	expect(thread.replay?.functionTools).toBeUndefined();
+	expect(thread.replay?.messages[toolTurn.id].items).toEqual([
+		{ role: "assistant", content: "Called lookup with {\"q\":1}" },
+		{ role: "assistant", content: "Called lookup with {\"q\":2}" },
+		{ role: "user", content: "Result of lookup: found" },
+	]);
+});
+
+test("keeps custom tool calls, results and definitions in their custom form", () => {
+	const customReplay: LogReplay = {
+		...replay,
+		endpoint: "responses",
+		turns: [
+			{ role: "user", parts: [{ type: "text", text: "Patch it" }] },
+			{ role: "assistant", text: "", reasoning: "", toolCalls: [{ id: "ct_1", name: "apply_patch", arguments: "*** Begin Patch", kind: "custom" }] },
+			{ role: "tool", callId: "ct_1", output: "ok" },
+		],
+		requestTurnCount: 3,
+		functionTools: [{ name: "apply_patch", kind: "custom", format: { type: "text" } }],
+	};
+	const thread = buildThreadFromLogReplay({ replay: customReplay, options: defaultChatLogImportOptions(customReplay, "m"), source, emptyTitle: "New chat" });
+	const toolTurn = thread.messages[1];
+
+	expect(toolTurn.meta?.tool_calls).toEqual([expect.objectContaining({ type: "custom", input: "*** Begin Patch", output: "ok" })]);
+	expect(thread.replay?.messages[toolTurn.id].items).toEqual([
+		{ type: "custom_tool_call", call_id: "ct_1", name: "apply_patch", input: "*** Begin Patch" },
+		{ type: "custom_tool_call_output", call_id: "ct_1", output: "ok" },
+	]);
+	expect(thread.replay?.functionTools).toEqual([{ type: "custom", name: "apply_patch", format: { type: "text" } }]);
+});

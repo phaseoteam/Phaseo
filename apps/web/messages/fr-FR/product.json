@@ -482,7 +482,7 @@
 				"keepSystemPrompt": "Prompt système",
 				"keepServerTools": "Outils serveur",
 				"keepFunctionTools": "{count, plural, one {# outil de fonction} other {# outils de fonction}}",
-				"keepFunctionToolsHint": "Chat ne peut pas les exécuter. Ils sont déclarés pour que les appels d'outils précédents restent valides.",
+				"keepFunctionToolsHint": "Chat ne peut pas les exécuter. Déclarés, les appels d'outils précédents sont envoyés comme appels ; sinon, comme texte.",
 				"includeResponse": "La réponse journalisée"
 			},
 			"workspaceMismatch": "Chat envoie depuis votre espace de travail actif, qui n'est pas celui de cette requête.",

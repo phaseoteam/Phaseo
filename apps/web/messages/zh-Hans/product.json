@@ -482,7 +482,7 @@
 				"keepSystemPrompt": "系统提示",
 				"keepServerTools": "服务器工具",
 				"keepFunctionTools": "{count, plural, other {# 个函数工具}}",
-				"keepFunctionToolsHint": "聊天无法运行它们。声明它们是为了让之前的工具调用保持有效。",
+				"keepFunctionToolsHint": "聊天无法运行它们。声明后，之前的工具调用会以调用形式发送；不声明则以文本形式发送。",
 				"includeResponse": "已记录的回复"
 			},
 			"workspaceMismatch": "聊天从你当前的工作区发送，而它并非此请求所属的工作区。",

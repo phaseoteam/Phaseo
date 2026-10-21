@@ -482,7 +482,7 @@
 				"keepSystemPrompt": "System-Prompt",
 				"keepServerTools": "Server-Tools",
 				"keepFunctionTools": "{count, plural, one {# Funktions-Tool} other {# Funktions-Tools}}",
-				"keepFunctionToolsHint": "Der Chat kann sie nicht ausführen. Sie werden deklariert, damit die früheren Tool-Aufrufe gültig bleiben.",
+				"keepFunctionToolsHint": "Der Chat kann sie nicht ausführen. Deklariert werden frühere Tool-Aufrufe als Aufrufe gesendet, sonst als Text.",
 				"includeResponse": "Die protokollierte Antwort"
 			},
 			"workspaceMismatch": "Der Chat sendet aus deinem aktiven Workspace, der nicht der Workspace dieser Anfrage ist.",

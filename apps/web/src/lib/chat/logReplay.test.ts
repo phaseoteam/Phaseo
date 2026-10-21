@@ -131,3 +131,22 @@ test("returns null for endpoints Chat can't continue", () => {
 	expect(readLogReplay({ endpoint: "embeddings", requestPayload: { input: "x" } })).toBeNull();
 	expect(readLogReplay({ endpoint: "responses", requestPayload: null })).toBeNull();
 });
+
+test("keeps Responses custom tool calls and definitions as custom", () => {
+	const replay = readLogReplay({
+		endpoint: "responses",
+		requestPayload: {
+			input: [
+				{ role: "user", content: "Patch it" },
+				{ type: "custom_tool_call", call_id: "ct_1", name: "apply_patch", input: "*** Begin Patch" },
+				{ type: "custom_tool_call_output", call_id: "ct_1", output: "ok" },
+			],
+			tools: [{ type: "custom", name: "apply_patch", description: "Edit files", format: { type: "grammar", syntax: "lark", definition: "start: /.+/" } }],
+		},
+	});
+
+	expect(replay?.turns[1]).toEqual({ role: "assistant", text: "", reasoning: "", toolCalls: [{ id: "ct_1", name: "apply_patch", arguments: "*** Begin Patch", kind: "custom" }] });
+	expect(replay?.functionTools).toEqual([
+		{ name: "apply_patch", kind: "custom", description: "Edit files", format: { type: "grammar", syntax: "lark", definition: "start: /.+/" } },
+	]);
+});
