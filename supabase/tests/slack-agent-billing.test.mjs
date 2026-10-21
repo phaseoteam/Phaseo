@@ -7,7 +7,7 @@ const id = (prefix, n) => `${prefix}0000000-0000-4000-8000-00000000000${n}`;
 const ws = (n) => id('1', n);
 const user = (n) => id('2', n);
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
-const migration = await readFile(new URL('../migrations/20261021142418_slack_agent_billing.sql', import.meta.url), 'utf8');
+const migration = await readFile(new URL('../migrations/20261021203244_slack_agent_billing.sql', import.meta.url), 'utf8');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const TABLES = ['slack_apps', 'slack_installations', 'slack_user_links', 'slack_agent_monthly_people', 'slack_agent_charges'];
 const FUNCTIONS = ['record_slack_agent_people', 'list_slack_agent_due_charges', 'charge_slack_agent_month', 'protect_slack_agent_guardrail'];
