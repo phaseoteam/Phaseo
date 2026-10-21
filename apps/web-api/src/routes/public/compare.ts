@@ -109,7 +109,7 @@ async function loadCompareSources(env: Env, modelIds: string[]): Promise<Compari
 			model_id: row.model_slug, name: row.name, organisation_id: row.lab_slug, description: row.description,
 			status: row.status, previous_model_id: row.previous_model_slug, announcement_date: row.announced_at,
 			release_date: row.released_at, deprecation_date: row.deprecated_at, retirement_date: row.retired_at,
-			license: row.license, input_types: row.input_modalities, output_types: row.output_modalities,
+			license: row.license, input_types: row.input_modalities, output_types: row.output_modalities, metadata: row.metadata,
 			organisation: lab ? { organisation_id: lab.lab_slug, name: lab.name, country_code: lab.country_code } : null,
 			model_links: linksByModel.get(row.model_slug) ?? [], model_details: detailsByModel.get(row.model_slug) ?? [],
 			benchmark_results: benchmarksByModel.get(row.model_slug) ?? [],
@@ -221,32 +221,64 @@ async function loadCompareCatalogue(env: Env) {
 
 const ROUTE_PAGE_SIZE = 1000;
 
-/** Models with at least one route Phaseo serves now, so the picker can badge them. */
+/** Rows of a large table in pages, since PostgREST returns at most 1,000 per request. */
+async function readPaged<T>(query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[]> {
+	const all: T[] = [];
+	for (let offset = 0; ; offset += ROUTE_PAGE_SIZE) {
+		const { data, error } = await query(offset, offset + ROUTE_PAGE_SIZE - 1);
+		if (error) throw error;
+		all.push(...(data ?? []));
+		if ((data ?? []).length < ROUTE_PAGE_SIZE) return all;
+	}
+}
+
+function inWindow(from: unknown, to: unknown, now: number): boolean {
+	const start = from ? Date.parse(String(from)) : Number.NaN;
+	const end = to ? Date.parse(String(to)) : Number.NaN;
+	return !(Number.isFinite(start) && now < start) && !(Number.isFinite(end) && now >= end);
+}
+
+/**
+ * Models the public gateway can call now, so the picker can badge them: an
+ * enabled route in its window, an active provider with routing on, and an
+ * enabled capability in its own window.
+ */
 async function loadRoutedModelIds(env: Env): Promise<Set<string>> {
 	const client = getDataClient(env);
 	const now = Date.now();
-	const routed = new Set<string>();
-	for (let offset = 0; ; offset += ROUTE_PAGE_SIZE) {
-		const { data, error } = await client
+	const [providers, routes, capabilities] = await Promise.all([
+		client.from("v2_providers").select("provider_slug").eq("routing_enabled", true).eq("status", "active"),
+		readPaged<Record<string, unknown>>((from, to) => client
 			.from("v2_model_provider_routes")
-			.select("provider_model_id,model_slug,effective_from,effective_to")
+			.select("provider_model_id,provider_slug,model_slug,effective_from,effective_to")
 			.eq("routing_enabled", true)
 			.in("status", ["active", "degraded"])
 			// neq alone would drop rows whose scope is null.
 			.or("access_scope.is.null,access_scope.neq.internal")
 			.order("provider_model_id", { ascending: true })
-			.range(offset, offset + ROUTE_PAGE_SIZE - 1);
-		if (error) throw error;
-		for (const row of data ?? []) {
-			const from = row.effective_from ? Date.parse(String(row.effective_from)) : Number.NaN;
-			const to = row.effective_to ? Date.parse(String(row.effective_to)) : Number.NaN;
-			if (Number.isFinite(from) && now < from) continue;
-			if (Number.isFinite(to) && now >= to) continue;
-			const modelId = String(row.model_slug ?? "").trim();
-			if (modelId) routed.add(modelId);
-		}
-		if ((data ?? []).length < ROUTE_PAGE_SIZE) return routed;
+			.range(from, to)),
+		readPaged<Record<string, unknown>>((from, to) => client
+			.from("v2_route_capabilities")
+			.select("provider_model_id,capability_id,effective_from,effective_to")
+			.in("status", ["active", "degraded"])
+			.order("provider_model_id", { ascending: true })
+			.order("capability_id", { ascending: true })
+			.range(from, to)),
+	]);
+	if (providers.error) throw providers.error;
+	const activeProviders = new Set((providers.data ?? []).map((row) => String(row.provider_slug ?? "").trim()));
+	const callableRoutes = new Set(capabilities
+		.filter((row) => inWindow(row.effective_from, row.effective_to, now))
+		.map((row) => String(row.provider_model_id ?? "").trim()));
+	const routed = new Set<string>();
+	for (const row of routes) {
+		if (!activeProviders.has(String(row.provider_slug ?? "").trim())) continue;
+		if (!callableRoutes.has(String(row.provider_model_id ?? "").trim())) continue;
+		if (!inWindow(row.effective_from, row.effective_to, now)) continue;
+		const modelId = String(row.model_slug ?? "").trim();
+		if (modelId) routed.add(modelId);
 	}
+	return routed;
 }
 
 publicCompareRouter.get("/compare/models", async (c) => {

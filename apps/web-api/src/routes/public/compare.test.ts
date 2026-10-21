@@ -141,9 +141,11 @@ describe("public compare routes", () => {
 			output_modalities: ["text", "image"],
 			lab: { lab_slug: "lab", name: "Lab" },
 		});
-		// Model 0 has an expired route, model 1 a future one; models 2-1,101 have current routes.
+		// Model 0 has an expired route, model 1 a future one, model 2 a paused provider and
+		// model 3 no callable capability; models 4-1,101 are served now.
 		const route = (index: number) => ({
 			provider_model_id: `route-${String(index).padStart(4, "0")}`,
+			provider_slug: index === 2 ? "paused" : "live",
 			model_slug: row(index).model_slug,
 			effective_from: index === 1 ? "2999-01-01T00:00:00Z" : null,
 			effective_to: index === 0 ? "2020-01-01T00:00:00Z" : null,
@@ -153,9 +155,12 @@ describe("public compare routes", () => {
 			const offset = Number(url.searchParams.get("offset") ?? 0);
 			// PostgREST caps every response at 1,000 rows.
 			const limit = Math.min(Number(url.searchParams.get("limit") ?? 1_000), 1_000);
+			if (url.pathname.endsWith("/v2_providers")) return new Response(JSON.stringify([{ provider_slug: "live" }]), { status: 200 });
 			const source = url.pathname.endsWith("/v2_model_provider_routes")
 				? Array.from({ length: 1_102 }, (_, index) => route(index))
-				: Array.from({ length: 1_250 }, (_, index) => row(index));
+				: url.pathname.endsWith("/v2_route_capabilities")
+					? Array.from({ length: 1_102 }, (_, index) => index).filter((index) => index !== 3).map((index) => ({ provider_model_id: route(index).provider_model_id, capability_id: "text.generate" }))
+					: Array.from({ length: 1_250 }, (_, index) => row(index));
 			return new Response(JSON.stringify(source.slice(offset, offset + limit)), { status: 200 });
 		});
 		vi.stubGlobal("fetch", fetchMock);
@@ -180,13 +185,17 @@ describe("public compare routes", () => {
 			output_types: ["text", "image"],
 			provider: { provider_id: "lab", name: "Lab" },
 		});
-		expect(picker.slice(0, 3).map((option) => option.routed)).toEqual([false, false, true]);
+		expect(picker.slice(0, 5).map((option) => option.routed)).toEqual([false, false, false, false, true]);
 		expect(picker[1_101].routed).toBe(true);
 		expect(picker[1_102].routed).toBe(false);
 		const urls = fetchMock.mock.calls.map(([input]) => decodeURIComponent(String(input)));
 		const routeUrls = urls.filter((url) => url.includes("/v2_model_provider_routes"));
 		expect(routeUrls).toHaveLength(2);
 		expect(routeUrls.every((url) => url.includes("routing_enabled=eq.true") && url.includes("status=in.(active,degraded)") && url.includes("or=(access_scope.is.null,access_scope.neq.internal)") && url.includes("order=provider_model_id.asc"))).toBe(true);
+		const capabilityUrls = urls.filter((url) => url.includes("/v2_route_capabilities"));
+		expect(capabilityUrls).toHaveLength(2);
+		expect(capabilityUrls.every((url) => url.includes("status=in.(active,degraded)") && url.includes("order=provider_model_id.asc,capability_id.asc"))).toBe(true);
+		expect(urls.some((url) => url.includes("/v2_providers") && url.includes("routing_enabled=eq.true") && url.includes("status=eq.active"))).toBe(true);
 		expect(urls.filter((url) => url.includes("/v2_models")).every((url) => url.includes("order=name.asc,model_slug.asc"))).toBe(true);
 	});
 });

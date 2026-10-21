@@ -105,6 +105,78 @@ describe("composeCompareView providers and limits", () => {
 	});
 });
 
+describe("composeCompareView current routes and prices", () => {
+	const route = (providerId: string, overrides: Record<string, unknown> = {}, capability: Record<string, unknown> = {}) => ({
+		provider_api_model_id: `${providerId}:lab/model`,
+		provider_id: providerId,
+		api_model_id: "lab/model",
+		is_active_gateway: true,
+		data_api_providers: { api_provider_name: providerId.toUpperCase(), status: "active", routing_status: "active" },
+		data_api_provider_model_capabilities: [{ capability_id: "text.generate", status: "active", ...capability }],
+		...overrides,
+	});
+	const price = (providerId: string, amount: number, overrides: Record<string, unknown> = {}) => ({
+		rule_id: `${providerId}-${amount}-${JSON.stringify(overrides)}`,
+		provider_model_id: `${providerId}:lab/model`,
+		model_key: `${providerId}:lab/model:text.generate`,
+		sku_status: "active",
+		pricing_plan: "standard",
+		meter: "input_text_tokens",
+		unit: "token",
+		unit_size: 1_000_000,
+		price_per_unit: amount,
+		...overrides,
+	});
+	const compose = (providerRows: Array<Record<string, unknown>>, pricingRows: Array<Record<string, unknown>>, metadata?: Record<string, unknown>) => composeCompareView(["lab/model"], {
+		models: [{ model_id: "lab/model", name: "Model", organisation_id: "lab", metadata, model_details: [{ detail_name: "input_context_length", detail_value: 100_000 }] }],
+		providerRows,
+		pricingRows,
+		modelPlans: [],
+		plans: [],
+	}, NOW).models[0];
+
+	it("needs an active provider with routing on and a capability in its window", () => {
+		const view = compose([
+			route("live"),
+			route("paused", { data_api_providers: { api_provider_name: "PAUSED", status: "active", routing_status: "disabled" } }),
+			route("external", { data_api_providers: { api_provider_name: "EXTERNAL", status: "external", routing_status: "active" } }),
+			route("future", {}, { effective_from: "2026-11-01T00:00:00Z" }),
+			route("expired", {}, { effective_to: "2026-10-01T00:00:00Z" }),
+		], ["live", "paused", "external", "future", "expired"].map((id) => price(id, 1)));
+		expect(view.providers.map((provider) => provider.id)).toEqual(["live"]);
+		expect(view.otherListings.map((listing) => listing.id).sort()).toEqual(["expired", "external", "future", "paused"]);
+	});
+
+	it("ignores draft, scheduled, expired and variant SKUs when picking the headline price", () => {
+		const view = compose([route("live")], [
+			price("live", 3),
+			price("live", 0.5, { sku_status: "draft" }),
+			price("live", 0.6, { effective_from: "2026-11-01T00:00:00Z" }),
+			price("live", 0.7, { effective_to: "2026-10-01T00:00:00Z" }),
+			price("live", 0.8, { model_key: "live:lab/model-fast:text.generate" }),
+		]);
+		expect(view.pricing?.tiers.standard.map((row) => row.price)).toEqual([3]);
+		expect(view.providers[0].input).toBe(3);
+	});
+
+	it("prices a provider from its current route, not a disabled one", () => {
+		const view = compose([
+			route("live"),
+			route("live", { provider_api_model_id: "live:lab/model:old", is_active_gateway: false }),
+		], [price("live", 3), price("live", 1, { provider_model_id: "live:lab/model:old" })]);
+		expect(view.providers[0].input).toBe(3);
+	});
+
+	it("reads canonical metadata limits before legacy details and providers", () => {
+		const view = compose([route("live", { context_length: 2_000_000, max_output_tokens: 99_000 })], [], { limits: { context: 1_048_576, output: 65_536 } });
+		expect(view.contextWindow).toEqual({ tokens: 1_048_576, source: "model" });
+		expect(view.maxOutput).toEqual({ tokens: 65_536, source: "model" });
+		const legacy = compose([route("live", { max_output_tokens: 99_000 })], []);
+		expect(legacy.contextWindow).toEqual({ tokens: 100_000, source: "model" });
+		expect(legacy.maxOutput).toEqual({ tokens: 99_000, source: "providers" });
+	});
+});
+
 describe("composeCompareView benchmarks", () => {
 	it("labels variants, parses effort and confidence intervals, and orders shared benchmarks first", () => {
 		const eci = view.benchmarks.find((benchmark) => benchmark.id === "epoch-capabilities-index")!;

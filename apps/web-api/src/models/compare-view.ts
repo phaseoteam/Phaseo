@@ -129,16 +129,61 @@ function time(value: unknown): number | null {
 	return Number.isFinite(parsed) ? parsed : null;
 }
 
-/** Same checks as the model page: routed, enabled, mapped and inside its effective window. */
-export function isCurrentRoute(model: ProviderModel, now: number): boolean {
-	if (!model.is_active_gateway) return false;
-	if (text(model.capability_status).toLowerCase() === "disabled") return false;
-	if (!model.endpoint || model.endpoint === "unmapped") return false;
-	const from = time(model.effective_from);
-	const to = time(model.effective_to);
-	if (from !== null && now < from) return false;
-	if (to !== null && now >= to) return false;
-	return true;
+function inWindow(from: unknown, to: unknown, now: number): boolean {
+	const start = time(from);
+	const end = time(to);
+	return (start === null || now >= start) && (end === null || now < end);
+}
+
+/**
+ * Route capabilities the public gateway can call now: the route is enabled and in
+ * its window, its provider is active with routing on (beta, alpha and external
+ * providers need opt-ins), and the capability is enabled and in its own window.
+ * Keys are "routeId|capabilityId".
+ */
+export function currentRouteCapabilities(providerRows: Row[], now: number): Set<string> {
+	const current = new Set<string>();
+	for (const row of providerRows) {
+		if (!row.is_active_gateway || !inWindow(row.effective_from, row.effective_to, now)) continue;
+		const provider = relation(row.data_api_providers);
+		// Rows without provider state (older fixtures) are judged on the route alone.
+		if (provider && "status" in provider && text(provider.status).toLowerCase() !== "active") continue;
+		if (provider && "routing_status" in provider && text(provider.routing_status).toLowerCase() !== "active") continue;
+		for (const capability of rows(row.data_api_provider_model_capabilities)) {
+			const status = text(capability.status).toLowerCase();
+			if (status === "disabled" || status === "internal_testing") continue;
+			if (!inWindow(capability.effective_from, capability.effective_to, now)) continue;
+			const capabilityId = text(capability.capability_id);
+			if (capabilityId) current.add(`${text(row.provider_api_model_id)}|${capabilityId}`);
+		}
+	}
+	return current;
+}
+
+function modelKeyModel(modelKey: unknown): string {
+	const key = text(modelKey);
+	const first = key.indexOf(":");
+	const last = key.lastIndexOf(":");
+	return first >= 0 && last > first ? key.slice(first + 1, last) : "";
+}
+
+/**
+ * Prices that apply now to this model: active SKUs inside their window, not a
+ * -fast/-flex variant's rows, and for providers with a current route, only that
+ * route's rows. Other listings keep their own current rows as a fallback.
+ */
+function currentPricingRows(modelId: string, pricingRows: Row[], providerRows: Row[], current: Set<string>, now: number): Row[] {
+	const currentRouteIds = new Set([...current].map((key) => key.slice(0, key.lastIndexOf("|"))));
+	const providersWithCurrentRoutes = new Set(providerRows.filter((row) => currentRouteIds.has(text(row.provider_api_model_id))).map((row) => text(row.provider_id)));
+	return pricingRows.filter((row) => {
+		if ("sku_status" in row && text(row.sku_status).toLowerCase() !== "active") return false;
+		if (!inWindow(row.effective_from, row.effective_to, now)) return false;
+		if (modelKeyModel(row.model_key) !== modelId) return false;
+		const provider = text(row.model_key).split(":")[0];
+		const routeId = text(row.provider_model_id);
+		if (routeId && providersWithCurrentRoutes.has(provider)) return currentRouteIds.has(routeId);
+		return true;
+	});
 }
 
 /** 0 for text-token meters, 1 for other token modalities, null when the meter isn't a headline price. */
@@ -324,9 +369,9 @@ type ProviderEntry = {
 	cacheRead: number | null;
 };
 
-function providerEntries(groups: PricingGroup[], now: number): ProviderEntry[] {
+function providerEntries(groups: PricingGroup[], current: Set<string>): ProviderEntry[] {
 	return groups.map((group) => {
-		const currentModels = group.provider_models.filter((model) => isCurrentRoute(model, now));
+		const currentModels = group.provider_models.filter((model) => current.has(`${model.id}|${model.endpoint}`));
 		const rules = group.pricing_rules as Row[];
 		return {
 			id: group.provider.api_provider_id,
@@ -524,8 +569,10 @@ function composeModel(model: Row, source: ComparisonSources, now: number): Compa
 		const kind = text(link.kind) || text(link.platform);
 		if (kind && !links.has(kind) && text(link.url)) links.set(kind, text(link.url));
 	}
-	const groups = composeModelPricing(providerRowsForModel(modelId, source.providerRows), source.pricingRows);
-	const entries = providerEntries(groups, now).sort(compareEntries(labId));
+	const providerRows = providerRowsForModel(modelId, source.providerRows);
+	const current = currentRouteCapabilities(providerRows, now);
+	const groups = composeModelPricing(providerRows, currentPricingRows(modelId, source.pricingRows, providerRows, current, now));
+	const entries = providerEntries(groups, current).sort(compareEntries(labId));
 	const routed = dedupeByName(entries.filter((entry) => entry.currentModels.length > 0));
 	const routedNames = new Set(routed.map((entry) => entry.name.toLowerCase()));
 	const otherListings = dedupeByName(entries.filter((entry) => entry.currentModels.length === 0 && !routedNames.has(entry.name.toLowerCase())))
@@ -542,8 +589,10 @@ function composeModel(model: Row, source: ComparisonSources, now: number): Compa
 
 	const providerContext = maxOf(routed.flatMap((entry) => entry.currentModels.map((item) => number(item.context_length) ?? number(item.max_input_tokens))));
 	const providerMaxOutput = maxOf(routed.flatMap((entry) => entry.currentModels.map((item) => number(item.max_output_tokens))));
-	const modelContext = number(details.get("input_context_length"));
-	const modelMaxOutput = number(details.get("output_context_length"));
+	// metadata.limits is canonical; the legacy details rows fill gaps.
+	const limits = asRow(asRow(model.metadata)?.limits);
+	const modelContext = number(limits?.context) ?? number(details.get("input_context_length"));
+	const modelMaxOutput = number(limits?.output) ?? number(details.get("output_context_length"));
 
 	return {
 		id: modelId,

@@ -651,7 +651,9 @@
 			"max_output_tokens": 128000,
 			"data_api_providers": {
 				"api_provider_name": "Listing Only",
-				"link": "https://listing.example/models"
+				"link": "https://listing.example/models",
+				"status": "external",
+				"routing_status": "disabled"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -677,7 +679,9 @@
 			"max_output_tokens": 128000,
 			"data_api_providers": {
 				"api_provider_name": "Reseller Gateway",
-				"link": "https://reseller.example/models"
+				"link": "https://reseller.example/models",
+				"status": "external",
+				"routing_status": "disabled"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -709,7 +713,9 @@
 			"max_output_tokens": 128000,
 			"data_api_providers": {
 				"api_provider_name": "OpenAI",
-				"link": "https://platform.openai.com/docs/overview"
+				"link": "https://platform.openai.com/docs/overview",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -783,7 +789,9 @@
 			"max_output_tokens": null,
 			"data_api_providers": {
 				"api_provider_name": "OpenAI",
-				"link": "https://platform.openai.com/docs/overview"
+				"link": "https://platform.openai.com/docs/overview",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -809,7 +817,9 @@
 			"max_output_tokens": null,
 			"data_api_providers": {
 				"api_provider_name": "OpenAI",
-				"link": "https://developers.openai.com/api/docs/guides/your-data"
+				"link": "https://developers.openai.com/api/docs/guides/your-data",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -835,7 +845,9 @@
 			"max_output_tokens": 64000,
 			"data_api_providers": {
 				"api_provider_name": "Listing Only",
-				"link": "https://listing.example/models"
+				"link": "https://listing.example/models",
+				"status": "external",
+				"routing_status": "disabled"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -861,7 +873,9 @@
 			"max_output_tokens": null,
 			"data_api_providers": {
 				"api_provider_name": "Amazon Bedrock",
-				"link": "https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html"
+				"link": "https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -887,7 +901,9 @@
 			"max_output_tokens": 64000,
 			"data_api_providers": {
 				"api_provider_name": "Anthropic",
-				"link": "https://docs.anthropic.com/en/home"
+				"link": "https://docs.anthropic.com/en/home",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -947,7 +963,9 @@
 			"max_output_tokens": 64000,
 			"data_api_providers": {
 				"api_provider_name": "Anthropic",
-				"link": "https://aws.amazon.com/claude-platform"
+				"link": "https://aws.amazon.com/claude-platform",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -1007,7 +1025,9 @@
 			"max_output_tokens": 64000,
 			"data_api_providers": {
 				"api_provider_name": "Google Vertex",
-				"link": "https://cloud.google.com/vertex-ai?hl=en"
+				"link": "https://cloud.google.com/vertex-ai?hl=en",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -1067,7 +1087,9 @@
 			"max_output_tokens": 64000,
 			"data_api_providers": {
 				"api_provider_name": "Venice",
-				"link": "https://docs.venice.ai/"
+				"link": "https://docs.venice.ai/",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -1093,7 +1115,9 @@
 			"max_output_tokens": 128000,
 			"data_api_providers": {
 				"api_provider_name": "Amazon Bedrock",
-				"link": "https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html"
+				"link": "https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -1150,7 +1174,9 @@
 			"max_output_tokens": 128000,
 			"data_api_providers": {
 				"api_provider_name": "Anthropic",
-				"link": "https://docs.anthropic.com/en/home"
+				"link": "https://docs.anthropic.com/en/home",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -1210,7 +1236,9 @@
 			"max_output_tokens": 128000,
 			"data_api_providers": {
 				"api_provider_name": "Anthropic",
-				"link": "https://platform.claude.com/docs/en/manage-claude/data-residency"
+				"link": "https://platform.claude.com/docs/en/manage-claude/data-residency",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -1270,7 +1298,9 @@
 			"max_output_tokens": 128000,
 			"data_api_providers": {
 				"api_provider_name": "Azure",
-				"link": "https://learn.microsoft.com/en-us/azure/ai-services/openai/"
+				"link": "https://learn.microsoft.com/en-us/azure/ai-services/openai/",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -1327,7 +1357,9 @@
 			"max_output_tokens": 128000,
 			"data_api_providers": {
 				"api_provider_name": "Inference.net",
-				"link": "https://docs.inference.net/api/api-quickstart"
+				"link": "https://docs.inference.net/api/api-quickstart",
+				"status": "active",
+				"routing_status": "active"
 			},
 			"data_api_provider_model_capabilities": [
 				{
@@ -1372,7 +1404,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.125,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "22e4844e-897a-44e7-97bb-96edab1986c5",
@@ -1384,7 +1418,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 1.25,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "605b9e6b-7a11-438d-aa6f-5a51934bd08c",
@@ -1396,7 +1432,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 10,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "ffd17f0f-8801-4fc1-994d-e8d049367a50",
@@ -1408,7 +1446,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.125,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "4e0b502c-2a68-43ef-9d1d-d3c823181bd8",
@@ -1420,7 +1460,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "45396b5b-865d-4000-b7ce-77b01970bc09",
@@ -1432,7 +1474,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 1.25,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "162e7633-0730-4448-958a-335f7d29aecf",
@@ -1444,7 +1488,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "946a7ba8-b3fb-43ff-be09-4783c034cdb1",
@@ -1456,7 +1502,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 10,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "0f6bf647-81f3-4ffb-b9d4-6dab7860457c",
@@ -1468,7 +1516,9 @@
 			"unit_size": 1,
 			"price_per_unit": 0.01,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-08-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "ba4b3577-8160-4bca-a285-1769806d2319",
@@ -1480,7 +1530,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.25,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "2377e900-9b5c-460d-874a-79ac2d37b38c",
@@ -1492,7 +1544,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 2.5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "31086078-196a-4518-b40d-fb616e150a6f",
@@ -1504,7 +1558,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 20,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "19e5aba0-fa42-4dcd-90a5-4288b18b6d7d",
@@ -1516,7 +1572,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.0625,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "560ca8f0-70b3-4eea-b84b-1ab193f88221",
@@ -1528,7 +1586,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.625,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "7d350817-145c-4e87-9e02-c21a95e4cd23",
@@ -1540,7 +1600,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "c0a30715-507f-463b-b1c3-6d8194968558",
@@ -1552,7 +1614,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.0625,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "894be992-2736-4e7d-8845-081de3ede0a3",
@@ -1564,7 +1628,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.625,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "db213407-6169-48f0-a690-b457958a6f5c",
@@ -1576,7 +1642,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "1ecbdf34-e894-439c-aea9-fd2cb582c11f",
@@ -1588,7 +1656,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.125,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T16:49:03.448084+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "e6c3ca80-7a4b-43ca-a999-12dc3982437d",
@@ -1600,7 +1670,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 1.25,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T16:49:03.448084+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "36d01ed8-d07e-4d0e-bf35-fc3732423649",
@@ -1612,7 +1684,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 10,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T16:49:03.448084+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "63285288-d4b3-4674-b985-9e0b470b62ef",
@@ -1624,7 +1698,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.125,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "3e1f1aa7-eed2-454e-936c-18035c04cd7b",
@@ -1636,7 +1712,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 1.25,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "9cb1b1e8-6138-42f4-9bdb-e9581c03573f",
@@ -1648,7 +1726,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 10,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "5b61bcbf-50d2-4c00-bf61-e1f9751067f3",
@@ -1660,7 +1740,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 3,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "4bfc4dbc-9194-49db-9431-b5f76f1b84bc",
@@ -1672,7 +1754,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 15,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "0e78b974-134d-47cd-b32a-e1be32095f06",
@@ -1692,7 +1776,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "81c7c7c9-250f-4f0f-a286-d56c81652492",
@@ -1712,7 +1798,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "9fccbc00-cf42-4613-bee3-aa164b3a61ae",
@@ -1732,7 +1820,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "2c95947d-1692-4cf7-8fe0-e822a0db92ef",
@@ -1752,7 +1842,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "480c93aa-38b9-40a6-97af-3038e953e98b",
@@ -1772,7 +1864,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "909b3941-db85-408e-a381-13f15a490510",
@@ -1799,7 +1893,9 @@
 					"or_group": 1,
 					"and_index": 2
 				}
-			]
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "2f8b8b6f-22de-47ab-b78d-9d9b1a92503b",
@@ -1819,7 +1915,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "26e2d190-0ddd-4cac-9a71-2a84bd117af9",
@@ -1839,7 +1937,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "924026e6-7e3c-4646-aebc-905a87f2f256",
@@ -1859,7 +1959,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "41c4c3be-52e2-4988-beac-67a2f2a4047a",
@@ -1879,7 +1981,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "4d652e6d-5071-471c-8dd0-bb3ef4a35955",
@@ -1891,7 +1995,9 @@
 			"unit_size": 1,
 			"price_per_unit": 0.01,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-08-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "22135895-d054-4d97-86d4-7d6e5511373d",
@@ -1903,7 +2009,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 1.5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "184b5fbd-6172-4991-875a-009dc29c64b2",
@@ -1915,7 +2023,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 7.5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "f3c781c3-8d99-4771-93c2-8db6f41462fe",
@@ -1927,7 +2037,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.3,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "5561a890-394d-4a4a-8a9a-9421c7a9f37d",
@@ -1939,7 +2051,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 6,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "33b01d1e-281c-4a93-a403-7162b1b8bc2f",
@@ -1951,7 +2065,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 3.75,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "b29e8255-d3ac-4b24-8819-534fb241753a",
@@ -1963,7 +2079,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 3,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "5f65b29a-50e4-4a05-855a-3311a88eb7ae",
@@ -1975,7 +2093,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 15,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "09173a5d-67d5-44ce-87b2-520a872c5efd",
@@ -1987,7 +2107,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.3,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "8e5b409e-957a-42e4-a438-11b02d894dc0",
@@ -1999,7 +2121,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 6,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "d09a0599-30bf-46fb-9087-6252e062f045",
@@ -2011,7 +2135,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 3.75,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "cf93b99d-b8ea-4792-af9d-c35616ab2f21",
@@ -2023,7 +2149,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 3,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "c1ce42af-b199-4a67-b79e-39343926779d",
@@ -2035,7 +2163,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 15,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "fad7f785-e2a8-491d-a5f9-bffb203ffd48",
@@ -2047,7 +2177,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 1.5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "e3c6aa03-e351-4e4b-8ed2-0f1268e5a1b0",
@@ -2059,7 +2191,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 7.5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "cd9bc3e4-7a1f-4178-908b-71c9ddf60e9c",
@@ -2079,7 +2213,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "b201346c-af1a-4f40-8288-b7f8dc043f6e",
@@ -2099,7 +2235,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "02d38753-f849-42e1-8d6e-cd62fe306391",
@@ -2119,7 +2257,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "67c1395d-3144-4b03-bf34-2c012718501a",
@@ -2139,7 +2279,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "54792622-e50c-4f6f-9690-6d32e27270a8",
@@ -2159,7 +2301,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "2c264288-e614-443c-9272-87b467d20a30",
@@ -2179,7 +2323,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "83f239a4-1ddf-4db9-8599-5805a1060cbf",
@@ -2199,7 +2345,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "b9f19ca5-321a-40c2-857f-013589ea98a6",
@@ -2219,7 +2367,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "2995d652-e340-4670-8438-cddb4fd1efa9",
@@ -2239,7 +2389,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "f36f475e-d35e-4352-85e7-2ff44609f634",
@@ -2259,7 +2411,9 @@
 					"or_group": 1,
 					"and_index": 1
 				}
-			]
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "9767aed5-4190-4a3a-a32a-b7c2867d7464",
@@ -2271,7 +2425,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 3,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-15T11:11:31.666303+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "91a25800-2b2d-438e-888d-fdc034b84227",
@@ -2283,7 +2439,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.3,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-15T11:11:31.666303+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "3a105ff6-0a50-4ea9-83e8-0f858872ba09",
@@ -2295,7 +2453,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 15,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-15T11:11:31.666303+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "d661a8d7-ebba-46d8-8987-62aea7b85c24",
@@ -2307,7 +2467,9 @@
 			"unit_size": 1,
 			"price_per_unit": 0.01,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-15T11:11:31.666303+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "62dbf1c1-0078-4013-b727-eb7a783bfb3d",
@@ -2319,7 +2481,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 3.75,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-15T11:11:31.666303+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "494eb33f-45f6-48b4-b7e3-c8777a638212",
@@ -2331,7 +2495,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "3ae9c722-d406-476f-a992-7d002e507dc3",
@@ -2343,7 +2509,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "42bbc5f1-7c57-4faa-b771-d36448911d99",
@@ -2355,7 +2523,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 25,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "0cdb0044-9020-479d-bf1a-3d4ebf1fff8d",
@@ -2367,7 +2537,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 6.25,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "9155d682-6d53-4506-879f-2920516ee149",
@@ -2379,7 +2551,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 10,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "4aa7719b-807b-4318-980f-5a0bcdb37de2",
@@ -2391,7 +2565,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 8,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "db384f79-b117-49ea-a320-c81deaecb5ae",
@@ -2403,7 +2579,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.4,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "3df8a683-e89a-491c-8465-937138de1293",
@@ -2415,7 +2593,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 40,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "d6172380-9ddf-4869-b137-802ed2476359",
@@ -2427,7 +2607,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 10,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "4fe981fc-7d13-49e6-9f2f-b9872bb31c3f",
@@ -2439,7 +2621,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 16,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "994c7da2-4c77-41f6-82cb-f444165cf8e1",
@@ -2451,7 +2635,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 2,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "d0b77dd8-bde4-47fa-bd5d-51b562b94614",
@@ -2463,7 +2649,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 10,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "9aa12f0a-8091-4ec4-b67d-0ea21af6ef6e",
@@ -2475,7 +2663,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 4,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "18cd48f8-3812-4fe9-9f1d-6210b342b70f",
@@ -2487,7 +2677,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.2,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "97d5c6ff-700c-4762-a1b6-13f8e7064894",
@@ -2499,7 +2691,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 20,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "4963fc6d-4ddd-402f-aaeb-228d9783068c",
@@ -2511,7 +2705,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "2e93b7eb-dce0-4c78-86ff-d7ca731c5c6b",
@@ -2523,7 +2719,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 8,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "96f983ea-9d20-4c99-b306-e9dcdced3c3e",
@@ -2535,7 +2733,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 8.8,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "39114d29-8b74-40bf-befb-a65ff09576df",
@@ -2547,7 +2747,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.44,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "20ff97c2-20f8-452a-8608-5a277adda899",
@@ -2559,7 +2761,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 44,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "c603884f-8aed-47d2-aca9-10079303fd5a",
@@ -2571,7 +2775,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 11,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "4bcbd59a-f8c3-42fd-aa3d-3ca6487c2bcf",
@@ -2583,7 +2789,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 17.6,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "8581b2b0-3d82-4655-853a-b7bb2ba0f4c6",
@@ -2595,7 +2803,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 2.2,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "ca557ed6-f088-45a2-8295-e824b22ef2e0",
@@ -2607,7 +2817,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 11,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "ac86befd-143e-435c-882b-d45304f56d9a",
@@ -2619,7 +2831,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 4.4,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "423bfbb2-eaf1-46ef-b04f-2ba3d258f200",
@@ -2631,7 +2845,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.22,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "42e8fad1-4616-408d-bc3b-5dc8db61c427",
@@ -2643,7 +2859,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 22,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "970238b1-7ad9-46ac-bb5d-c8705521e0af",
@@ -2655,7 +2873,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 5.5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "04ed4346-1382-4c06-a07d-c5385d8c9aa6",
@@ -2667,7 +2887,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 8.8,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "1b1f3195-0a2d-4030-959d-cbca350ec022",
@@ -2679,7 +2901,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 4.4,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-11T23:56:42.061532+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "bed6b8a7-43f4-4619-96d3-459816f93ff2",
@@ -2691,7 +2915,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.22,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-11T23:56:42.061532+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "fa5021f8-0b05-46ee-853f-81a7fcf0a845",
@@ -2703,7 +2929,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 22,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-11T23:56:42.061532+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "9a022784-8d97-400e-afc8-4c37b56bb880",
@@ -2715,7 +2943,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 5.5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-11T23:56:42.061532+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "12cc617a-2c4f-45b5-adac-c03bc3f3bc5d",
@@ -2727,7 +2957,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 8.8,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-11T23:56:42.061532+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "7247f70a-9581-4b3d-87a7-2cce63977c77",
@@ -2739,7 +2971,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 4,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "1c83e77c-e610-4663-9302-4df896967c26",
@@ -2751,7 +2985,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.2,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "dc187510-2db1-480f-b4f7-e49c64c484dc",
@@ -2763,7 +2999,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 20,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "c31d8fe1-d15c-40dc-ae6a-df775bb3f6b3",
@@ -2775,7 +3013,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 5,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "1df25d5c-bc89-4886-96f2-15da50f765b4",
@@ -2787,7 +3027,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 8,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "71ebd8c8-325a-4dbf-885c-1a80118931fc",
@@ -2799,7 +3041,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 4,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-17T22:12:40.794209+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "90d3cb0f-2177-434b-880b-554978e1a665",
@@ -2811,7 +3055,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 0.2,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-17T22:12:40.794209+00:00",
+			"effective_to": null
 		},
 		{
 			"rule_id": "2907ae59-3805-4a2b-bb56-1ef59ee4e1aa",
@@ -2823,7 +3069,9 @@
 			"unit_size": 1000000,
 			"price_per_unit": 20,
 			"currency": "USD",
-			"match": []
+			"match": [],
+			"effective_from": "2026-10-17T22:12:40.794209+00:00",
+			"effective_to": null
 		}
 	],
 	"modelPlans": [],
