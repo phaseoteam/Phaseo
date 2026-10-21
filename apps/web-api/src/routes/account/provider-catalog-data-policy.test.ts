@@ -3,6 +3,7 @@ import Ajv from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import { normalizeProviderCatalog, providerCatalogV12JsonSchema } from "./provider-catalog";
 import { normalizedCatalogDocument } from "./provider-catalog-overrides";
+import internalProvider from "./__fixtures__/catalog-data-policy-provider.json";
 
 const declaration = () => ({ id: "text.generate", training_policy: "no_train", retention_mode: "none", retention_days: 0,
 	zero_data_retention: true, zdr_eligibility: "eligible", requirements: { contract_mode: "none", account_settings: [] },
@@ -13,6 +14,19 @@ const feed = () => ({ schema_version: "1.2", data: [{ id: "acme/model", capabili
 }] }] });
 
 describe("catalog v1.2 privacy declarations", () => {
+	it("validates the internal provider's native, retained, batch and agreement controls", () => {
+		const ajv = new Ajv({ strict: false }); addFormats(ajv);
+		expect(ajv.compile(providerCatalogV12JsonSchema)(internalProvider)).toBe(true);
+		const parsed = normalizeProviderCatalog(internalProvider);
+		expect(parsed.issues).toEqual([]);
+		expect(parsed.allModels).toHaveLength(3);
+		const native = parsed.allModels[0].serviceTiers!;
+		expect(native[0].dataPolicy?.capabilities[0].zero_data_retention).toBe(true);
+		expect(native[1].dataPolicy?.capabilities[0].zero_data_retention).toBe(false);
+		expect(parsed.allModels[1].serviceTiers![0].dataPolicy?.capabilities[0].retention_days).toBe(30);
+		expect(parsed.allModels[2].serviceTiers![0].dataPolicy?.capabilities[0].zdr_eligibility).toBe("conditional");
+		expect(normalizeProviderCatalog(normalizedCatalogDocument(parsed.allModels))).toEqual(parsed);
+	});
 	it("publishes the schema and preserves policy through the draft round trip", () => {
 		const ajv = new Ajv({ strict: false }); addFormats(ajv);
 		expect(ajv.compile(providerCatalogV12JsonSchema)(feed())).toBe(true);
