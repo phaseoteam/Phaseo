@@ -4,18 +4,18 @@ import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { LegendItem, LineChart } from "@/components/charts";
 import { Logo } from "@/components/Logo";
-import { Badge, Icon, Segmented, Select, Text, useToneColor } from "@/components/ui";
+import { Icon, Segmented, Select, Text, useToneColor } from "@/components/ui";
 import { getModelEffectivePricing, getModelPricingHistory, type ProviderPricing } from "@/lib/api/models";
 import { cn } from "@/lib/cn";
 import { formatPrice, formatShortDate } from "@/lib/format";
-import { isRoutable, plansFor, priceLines } from "../pricing";
 import { meterName } from "./faq";
 import { EmptyBox, ServiceTierBadge, SubHeading, TinyBadge } from "./parts";
 import {
   buildPriceHistory, defaultRowPlan, effectiveRows, isEffectiveMeter, isSeriesVisibleByDefault, meterOptions, observedUsageByProviderPlan, RANGE_OPTIONS, summaryCutoffMs,
   tierDashArray, weightedEffectivePrice, type EffectiveRow, type PricingRange, type PricingView,
 } from "./pricingInsights";
-import { providerDisplayName, providerLogoId, tierLabel } from "./providers";
+import { ProviderSheet, useProviderStats, type ProviderSheetTarget } from "./ProviderSheet";
+import { tierLabel } from "./providers";
 import { serviceTierLabel } from "./tiers";
 
 /** Small prices keep their precision ("$0.0042"); the website rounds axis labels the same way. */
@@ -24,7 +24,8 @@ const price = (value: number | null | undefined) => (value == null || !Number.is
 
 /**
  * "Weighted provider pricing over the last 30 days, with recent route pricing history below": effective
- * prices from what requests actually cost, a price history chart, and every provider's list prices.
+ * prices from what requests actually cost, a price history chart, and a table of providers. A provider in the table
+ * opens its sheet, with every list price.
  */
 export function PricingSection({ modelId, providers }: { modelId: string; providers: ProviderPricing[] }) {
   const history = useQuery({ queryKey: ["model-page", modelId, "pricing-history"], queryFn: () => getModelPricingHistory(modelId), staleTime: 30 * 60_000 });
@@ -61,7 +62,14 @@ export function PricingSection({ modelId, providers }: { modelId: string; provid
     const primary = derived.rows.filter((row) => row.plan === defaultRowPlan(row));
     return [...primary].sort((a, b) => Number(a.isExternal) - Number(b.isExternal) || (b.tokenSharePct ?? -1) - (a.tokenSharePct ?? -1) || a.providerName.localeCompare(b.providerName));
   }, [derived.rows]);
-  const pricedProviders = providers.filter((provider) => provider.pricing_rules.length > 0);
+  // The sheet steps through the table's providers in its order; median health, as the Providers section starts with.
+  const sheetProviders = useMemo(() => providerRows.map((row) => providers.find((provider) => provider.provider.api_provider_id === row.providerId)).filter((provider): provider is ProviderPricing => Boolean(provider)), [providerRows, providers]);
+  const { stats } = useProviderStats(modelId, providers, 50);
+  const [sheet, setSheet] = useState<ProviderSheetTarget | null>(null);
+  const openSheet = (row: EffectiveRow) => {
+    const index = sheetProviders.findIndex((provider) => provider.provider.api_provider_id === row.providerId);
+    if (index >= 0) setSheet({ index, plan: row.plan });
+  };
 
   if (!providers.length) {
     return <EmptyBox icon={CircleAlert} title="No pricing data yet" body="No provider pricing is recorded for this model yet." />;
@@ -141,25 +149,17 @@ export function PricingSection({ modelId, providers }: { modelId: string; provid
             };
             return (
               <View key={row.seriesKey} className={cn(index < providerRows.length - 1 && "border-b border-border")}>
-                <SeriesRow row={row} values={values(row)} visible={visible(row)} onToggle={() => setVisibility((current) => ({ ...current, [row.seriesKey]: !visible(row) }))} expandable={tiers.length > 0} open={open} onExpand={() => setExpanded((current) => { const next = new Set(current); if (next.has(row.providerId)) next.delete(row.providerId); else next.add(row.providerId); return next; })} />
+                <SeriesRow row={row} values={values(row)} visible={visible(row)} onToggle={() => setVisibility((current) => ({ ...current, [row.seriesKey]: !visible(row) }))} onOpen={() => openSheet(row)} expandable={tiers.length > 0} open={open} onExpand={() => setExpanded((current) => { const next = new Set(current); if (next.has(row.providerId)) next.delete(row.providerId); else next.add(row.providerId); return next; })} />
                 {open ? tiers.map((tier) => (
-                  <SeriesRow key={tier.seriesKey} row={tier} values={values(tier)} visible={visible(tier)} onToggle={() => setVisibility((current) => ({ ...current, [tier.seriesKey]: !visible(tier) }))} tier />
+                  <SeriesRow key={tier.seriesKey} row={tier} values={values(tier)} visible={visible(tier)} onToggle={() => setVisibility((current) => ({ ...current, [tier.seriesKey]: !visible(tier) }))} onOpen={() => openSheet(tier)} tier />
                 )) : null}
               </View>
             );
           })}
         </View>
+        <Text variant="caption" className="mt-1.5">Tap a provider for every list price, its performance, routing and data policy.</Text>
       </View>
-
-      {pricedProviders.length ? (
-        <View>
-          <SubHeading>Provider list prices</SubHeading>
-          <Text variant="muted" className="mt-1">Per million tokens unless noted.</Text>
-          <View className="mt-3 overflow-hidden rounded-md border border-border">
-            {pricedProviders.map((provider, index) => <ListPrices key={provider.provider.api_provider_id ?? index} provider={provider} last={index === pricedProviders.length - 1} />)}
-          </View>
-        </View>
-      ) : null}
+      <ProviderSheet providers={sheetProviders} target={sheet} stats={stats} percentile={50} onChange={setSheet} onClose={() => setSheet(null)} />
     </View>
   );
 }
@@ -174,19 +174,24 @@ function EffectiveTile({ label, value, last }: { label: string; value: number | 
   );
 }
 
-function SeriesRow({ row, values, visible, onToggle, expandable, open, onExpand, tier }: { row: EffectiveRow; values: { input: number | null; output: number | null; inspected?: number | null }; visible: boolean; onToggle: () => void; expandable?: boolean; open?: boolean; onExpand?: () => void; tier?: boolean }) {
+function SeriesRow({ row, values, visible, onToggle, onOpen, expandable, open, onExpand, tier }: { row: EffectiveRow; values: { input: number | null; output: number | null; inspected?: number | null }; visible: boolean; onToggle: () => void; onOpen: () => void; expandable?: boolean; open?: boolean; onExpand?: () => void; tier?: boolean }) {
   return (
     <View className={cn("flex-row items-center gap-2 px-3 py-2.5", tier && "bg-muted/40 pl-8")}>
       <Pressable accessibilityRole="switch" accessibilityState={{ checked: visible }} accessibilityLabel={`${visible ? "Hide" : "Show"} ${row.providerName} ${tierLabel(row.plan)} price line`} hitSlop={8} onPress={onToggle} className={cn(!visible && "opacity-40")}>
         <LegendItem colour={row.colour} label="" dash={tierDashArray(row.plan)} />
       </Pressable>
-      <Pressable accessibilityRole={expandable ? "button" : undefined} disabled={!expandable} onPress={onExpand} className="flex-1 flex-row items-center gap-2">
+      <Pressable accessibilityRole="button" accessibilityHint="Opens every price and detail for this provider" onPress={onOpen} className="shrink flex-row items-center gap-2">
         {tier ? null : <Logo id={row.logoId} label={row.providerName} size={22} />}
-        <Text variant="small" numberOfLines={1} className="shrink font-medium">{row.providerName}</Text>
+        <Text variant="small" numberOfLines={1} className="shrink font-medium text-link">{row.providerName}</Text>
         {tier ? <ServiceTierBadge plan={row.plan} /> : null}
         {row.isExternal ? <TinyBadge label="External" /> : null}
-        {expandable ? <Icon icon={open ? ChevronDown : ChevronRight} tone="muted" size={14} /> : null}
       </Pressable>
+      {expandable ? (
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${open ? "Hide" : "Show"} ${row.providerName}'s other tiers`} hitSlop={10} onPress={onExpand}>
+          <Icon icon={open ? ChevronDown : ChevronRight} tone="muted" size={14} />
+        </Pressable>
+      ) : null}
+      <View className="flex-1" />
       {values.inspected !== undefined ? (
         <Text variant="small" className="w-32 text-right font-semibold">{price(values.inspected)}</Text>
       ) : (
@@ -199,41 +204,3 @@ function SeriesRow({ row, values, visible, onToggle, expandable, open, onExpand,
   );
 }
 
-/** Every priced meter per provider: long-context prices, cache writes and other tiers, as the app has always shown. */
-function ListPrices({ provider, last }: { provider: ProviderPricing; last: boolean }) {
-  const [open, setOpen] = useState(false);
-  const lines = priceLines(provider);
-  const otherPlans = plansFor(provider).filter((plan) => plan !== "standard");
-  const routable = isRoutable(provider);
-  const name = providerName(provider);
-  const longContext = lines.find((line) => line.longContext)?.longContext;
-  // Collapsed: the first two meters (input and output); open: every meter, long-context tier and cache write.
-  const shown = open ? lines : lines.slice(0, 2);
-  return (
-    <View className={cn(!last && "border-b border-border")}>
-      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${name} list prices`} onPress={() => setOpen(!open)} className="flex-row items-center gap-2 px-3 pt-3 active:bg-accent">
-        <Icon icon={open ? ChevronDown : ChevronRight} tone="muted" size={16} />
-        <Logo id={providerLogoId(provider.provider)} label={name} size={22} />
-        <Text variant="label" numberOfLines={1} className="flex-1">{name}</Text>
-        {routable ? (otherPlans.length ? (
-          <View className="flex-row items-center gap-1">
-            <Text variant="caption">Also</Text>
-            {otherPlans.map((plan) => <ServiceTierBadge key={plan} plan={plan} />)}
-          </View>
-        ) : null) : <Badge label="Not active" />}
-      </Pressable>
-      <View className={cn("flex-row flex-wrap gap-x-6 gap-y-2 px-3 pl-9 pt-2", open && longContext ? "pb-1" : "pb-3")}>
-        {shown.map((line) => (
-          <View key={line.meter}>
-            <Text variant="caption">{line.label}</Text>
-            <Text variant="small" className="font-semibold">{line.value}{line.unit !== "1M tokens" ? ` / ${line.unit}` : ""}</Text>
-            {line.longContext ? <Text variant="caption">{line.longContext.value} over {line.longContext.above}</Text> : null}
-          </View>
-        ))}
-      </View>
-      {open && longContext ? <Text variant="caption" className="px-3 pb-3 pl-9 pt-1">{`Higher prices apply when a request's input is over ${longContext.above} tokens.`}</Text> : null}
-    </View>
-  );
-}
-
-const providerName = (provider: ProviderPricing) => providerDisplayName(provider.provider);
