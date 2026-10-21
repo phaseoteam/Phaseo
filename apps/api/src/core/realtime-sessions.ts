@@ -19,8 +19,13 @@ export const REALTIME_INITIAL_HOLD_NANOS = 5_000_000_000;
 export const REALTIME_HOLD_INCREMENT_NANOS = 5_000_000_000;
 export const REALTIME_EXTEND_THRESHOLD = 0.8;
 export const REALTIME_GRACEFUL_STOP_THRESHOLD = 0.95;
+// OpenAI Realtime sessions run for up to 60 minutes. xAI and GPT Live keep the
+// shorter default until their provider limits are confirmed.
+export const OPENAI_REALTIME_MAX_DURATION_SECONDS = 60 * 60;
 export const REALTIME_MAX_DURATION_SECONDS = 25 * 60;
 export const GOOGLE_REALTIME_MAX_DURATION_SECONDS = 15 * 60;
+// The longest any relay session may run, whatever its provider.
+export const REALTIME_RELAY_MAX_DURATION_SECONDS = OPENAI_REALTIME_MAX_DURATION_SECONDS;
 export const REALTIME_IDLE_TIMEOUT_SECONDS = 5 * 60;
 // A session whose relay is never claimed is reaped after this long.
 export const REALTIME_UNCLAIMED_SESSION_TIMEOUT_SECONDS = 2 * 60;
@@ -71,10 +76,10 @@ export function realtimeOtelContext(
 	};
 }
 
-export function realtimeMaxDurationSeconds(provider: RealtimeProvider): number {
-	return provider === "google-ai-studio"
-		? GOOGLE_REALTIME_MAX_DURATION_SECONDS
-		: REALTIME_MAX_DURATION_SECONDS;
+export function realtimeMaxDurationSeconds(provider: RealtimeProvider, model?: string | null): number {
+	if (provider === "google-ai-studio") return GOOGLE_REALTIME_MAX_DURATION_SECONDS;
+	if (provider === "openai" && !(model && isLiveModel(model))) return OPENAI_REALTIME_MAX_DURATION_SECONDS;
+	return REALTIME_MAX_DURATION_SECONDS;
 }
 
 export type RealtimeAuthContext = {
@@ -880,7 +885,7 @@ export async function createRealtimeSession(args: {
 	const supabase = getSupabaseAdmin();
 	const sessionId = `rt_${ulid().toLowerCase()}`;
 	const reservationPrefix = `rt:${sessionId}:`;
-	const expiresAt = new Date(Date.now() + realtimeMaxDurationSeconds(provider) * 1000).toISOString();
+	const expiresAt = new Date(Date.now() + realtimeMaxDurationSeconds(provider, modelId) * 1000).toISOString();
 
 	const useRelay = args.relay !== false || !args.auth.internal;
 	const relaySecret = useRelay ? `rtsec_${ulid().toLowerCase()}${ulid().toLowerCase()}` : null;
@@ -1568,6 +1573,7 @@ export function publicRealtimeSessionPayload(args: {
 		? Math.max(0, Math.round((expiresAt - startedAt) / 1000))
 		: realtimeMaxDurationSeconds(
 			providerFromModel(args.session.model_id, args.session.provider) ?? "openai",
+			args.session.model_id,
 		);
 	return {
 		id: args.session.session_id,
