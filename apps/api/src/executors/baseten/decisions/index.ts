@@ -73,6 +73,7 @@ export const executor: ProviderExecutor = async args => {
 	if (validation.error_type !== "Validation" || typeof validation.error !== "string" ||
 		!(/^(?:State exceeds \d+ characters|OneJev prompt has \d+ tokens, exceeding max_len \d+; prompts are never truncated)$/.test(validation.error))) return restored;
 	return { ...result, terminal: true, localClientError: true,
+		rawResponse: { upstream_status: 422, body: payload },
 		upstream: Response.json({ error: "invalid_decision_request", message: validation.error,
 			request_id: args.requestId }, { status: 400 }) };
 };

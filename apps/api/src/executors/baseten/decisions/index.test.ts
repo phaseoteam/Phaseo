@@ -61,6 +61,7 @@ describe("Baseten Decisions", () => {
 			expect(result).toMatchObject({ terminal: true, localClientError: true });
 			expect(result.upstream.status).toBe(400);
 			expect(await result.upstream.json()).toMatchObject({ error: "invalid_decision_request", message: error });
+			expect(result.rawResponse).toEqual({ upstream_status: 422, body: { error, error_type: "Validation" } });
 			expect(result.bill.usage).toBeUndefined();
 		} finally { mock.restore(); }
 	});
