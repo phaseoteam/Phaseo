@@ -245,6 +245,15 @@ export default function PresetForm({
 	const [promptDraft, setPromptDraft] = useState(() => draftFromTemplate(initialConfig.prompt));
 	const promptBuild = useMemo(() => buildPromptTemplate(promptDraft), [promptDraft]);
 	const [visibility, setVisibility] = useState<PresetVisibility>(initialPreset?.visibility ?? "team");
+	// Running sends the saved preset, so it waits until template edits are saved.
+	const [savedTemplateJson] = useState(() => JSON.stringify(buildPromptTemplate(draftFromTemplate(initialConfig.prompt)).template));
+	const templateHasUnsavedChanges = JSON.stringify(promptBuild.template) !== savedTemplateJson;
+	const savedSlug = typeof initialPreset?.slug === "string" ? initialPreset.slug : "";
+	const savedReference = !savedSlug
+		? null
+		: initialPreset?.visibility === "public"
+			? workspacePublisher?.handle ? `@${workspacePublisher.handle}/${savedSlug}` : null
+			: `@${savedSlug}`;
 	const presetReference = visibility === "public"
 		? `@${workspacePublisher?.handle ?? "workspace"}/${buildPresetSlugPreview(slug || name) || "preset"}`
 		: `@${buildPresetSlugPreview(slug || name) || "preset"}`;
@@ -898,7 +907,13 @@ export default function PresetForm({
 						description={t("presetTemplate.description", { reference: presetReference })}
 						stacked
 					>
-						<PresetPromptTemplateEditor draft={promptDraft} onChange={setPromptDraft} presetReference={presetReference} />
+						<PresetPromptTemplateEditor
+							draft={promptDraft}
+							onChange={setPromptDraft}
+							presetReference={presetReference}
+							savedReference={savedReference}
+							hasUnsavedChanges={templateHasUnsavedChanges}
+						/>
 					</FormSection>
 				</div>
 			) : null}
