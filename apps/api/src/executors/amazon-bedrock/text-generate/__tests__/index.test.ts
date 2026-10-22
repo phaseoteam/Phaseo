@@ -387,6 +387,136 @@ describe("amazon-bedrock text executor", () => {
 		}
 	});
 
+	it("sends bedrock-runtime InvokeModel only the documented body fields, with betas in anthropic_beta", async () => {
+		// model-parameters-anthropic-claude-messages-request-response.html documents the
+		// body; compaction page: `anthropic_beta: ["compact-2026-01-12"]` with context_management.
+		const model = "global.anthropic.claude-sonnet-4-6";
+		const mock = installFetchMock([{
+			match: (url) => url.startsWith("https://bedrock-runtime.us-west-2.amazonaws.com/model/"),
+			response: () => jsonResponse({
+				id: "msg", type: "message", role: "assistant", model, content: [{ type: "text", text: "ok" }],
+				stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 },
+			}),
+		}]);
+		try {
+			const result = await execute(buildArgs({
+				model,
+				stream: false,
+				userId: "end-user-1",
+				metadata: { user_id: "end-user-1" },
+				serviceTier: "standard",
+				temperature: 0.2,
+				stop: ["END"],
+				anthropicContextManagement: { edits: [{ type: "compact_20260112" }, { type: "clear_tool_uses_20250919" }] },
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			} as any, { endpoint: "messages", protocol: "anthropic.messages", providerModelSlug: model }));
+			expect(result.kind).toBe("completed");
+			const body = mock.calls[0]?.bodyJson;
+			expect(Object.keys(body).sort()).toEqual([
+				"anthropic_beta",
+				"anthropic_version",
+				"context_management",
+				"max_tokens",
+				"messages",
+				"stop_sequences",
+				"temperature",
+			]);
+			expect(body.anthropic_beta).toEqual(["compact-2026-01-12", "context-management-2025-06-27"]);
+			expect(mock.calls[0]?.headers["anthropic-beta"]).toBeUndefined();
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it("adds the effort beta for Claude Opus 4.5 on bedrock-runtime", async () => {
+		// Request page: Opus 4.5 effort "you must pass the beta header effort-2025-11-24".
+		const model = "global.anthropic.claude-opus-4-5-20251101-v1:0";
+		const mock = installFetchMock([{
+			match: (url) => url.startsWith("https://bedrock-runtime.us-west-2.amazonaws.com/model/"),
+			response: () => jsonResponse({
+				id: "msg", type: "message", role: "assistant", model, content: [{ type: "text", text: "ok" }],
+				stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 },
+			}),
+		}]);
+		try {
+			await execute(buildArgs({
+				model,
+				stream: false,
+				reasoning: { effort: "medium" },
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			} as any, { endpoint: "messages", protocol: "anthropic.messages", providerModelSlug: model }));
+			const body = mock.calls[0]?.bodyJson;
+			expect(body.output_config?.effort).toBe("medium");
+			expect(body.anthropic_beta).toEqual(["effort-2025-11-24"]);
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it.each([
+		{ geo: { inferenceGeo: "us" }, label: "inference_geo us" },
+		{ geo: { requiredExecutionRegion: "us" }, label: "a US execution region" },
+	])("refuses $label on a global bedrock-runtime profile instead of running it globally", async ({ geo }) => {
+		const model = "global.anthropic.claude-sonnet-4-6";
+		const mock = installFetchMock([{ match: () => true, response: () => jsonResponse({}) }]);
+		try {
+			const result = await execute(buildArgs({
+				model,
+				stream: false,
+				geo,
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			} as any, { endpoint: "messages", protocol: "anthropic.messages", providerModelSlug: model }));
+			expect(mock.calls).toHaveLength(0);
+			expect(result.kind).toBe("completed");
+			expect(result.upstream.status).toBe(400);
+			expect(await result.upstream.json()).toMatchObject({ error: "inference_geo_unsupported" });
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it("keeps US-only requests on a us. bedrock-runtime profile, without sending inference_geo", async () => {
+		const model = "us.anthropic.claude-sonnet-4-6";
+		const mock = installFetchMock([{
+			match: (url) => url === `https://bedrock-runtime.us-west-2.amazonaws.com/model/${model}/invoke`,
+			response: () => jsonResponse({
+				id: "msg", type: "message", role: "assistant", model, content: [{ type: "text", text: "ok" }],
+				stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 },
+			}),
+		}]);
+		try {
+			const result = await execute(buildArgs({
+				model,
+				stream: false,
+				geo: { inferenceGeo: "us" },
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			} as any, { endpoint: "messages", protocol: "anthropic.messages", providerModelSlug: model }));
+			expect(result.kind).toBe("completed");
+			expect(mock.calls).toHaveLength(1);
+			expect(mock.calls[0]?.bodyJson).not.toHaveProperty("inference_geo");
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it("refuses fast mode on bedrock-runtime instead of dropping it", async () => {
+		const model = "global.anthropic.claude-opus-4-6-v1";
+		const mock = installFetchMock([{ match: () => true, response: () => jsonResponse({}) }]);
+		try {
+			const result = await execute(buildArgs({
+				model,
+				stream: false,
+				serviceTier: "priority",
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			} as any, { endpoint: "messages", protocol: "anthropic.messages", providerModelSlug: model }));
+			expect(mock.calls).toHaveLength(0);
+			expect(result.upstream.status).toBe(400);
+			expect(await result.upstream.json()).toMatchObject({ error: "service_tier_unsupported" });
+		} finally {
+			mock.restore();
+		}
+	});
+
 	it("decodes the bedrock-runtime event stream for streamed Claude requests", async () => {
 		const model = "global.anthropic.claude-sonnet-4-6";
 		const mock = installFetchMock([{

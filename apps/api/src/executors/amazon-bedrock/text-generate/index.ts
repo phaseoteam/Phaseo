@@ -14,7 +14,7 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
-import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, anthropicUnsupportedMediaResult, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, anthropicUnsupportedMediaResult, mapAnthropicStopReason, resolveAnthropicInferenceGeo } from "@executors/anthropic/text-generate";
 import {
 	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
@@ -100,8 +100,13 @@ async function executeBedrockMessages(
 	// bedrock-runtime: InvokeModel takes the model in the path and the version in
 	// the body; older Claude models there do not offer the /anthropic Messages route.
 	const runtime = isBedrockInferenceProfileId(model);
+	const geoRejection = bedrockInferenceGeoRejection(irRequest, args, auth, model, runtime);
+	if (geoRejection) return geoRejection;
+	if (runtime && anthropicRequest.speed === "fast") {
+		return bedrockClientError(args.requestId, "service_tier_unsupported", "Fast mode (service_tier \"priority\" or \"fast\") is not available for Claude on Amazon Bedrock. Remove service_tier, or choose another provider.");
+	}
 	const requestPayload = runtime
-		? { anthropic_version: "bedrock-2023-05-31", ...anthropicRequest }
+		? bedrockInvokeBody(anthropicRequest, model)
 		: { ...anthropicRequest, model, stream };
 	const requestBody = JSON.stringify(requestPayload);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
@@ -400,6 +405,94 @@ export function isBedrockClaudeModel(model: string | null | undefined): boolean 
 	const normalized = normalizeClaudeModelId(model);
 	if (!normalized) return false;
 	return isClaudeOpus55(normalized) || /(?:^|[./:])(?:anthropic[./])?claude-/.test(normalized);
+}
+
+/**
+ * Top-level fields the InvokeModel body for Claude documents: the request page
+ * (model-parameters-anthropic-claude-messages-request-response.html) plus the
+ * adaptive thinking, structured outputs, effort and compaction pages. Bedrock
+ * rejects anything else ("Extra inputs are not permitted"), so Anthropic-only
+ * fields such as `metadata`, `service_tier`, `speed` and `inference_geo` are dropped.
+ */
+const BEDROCK_INVOKE_BODY_FIELDS = [
+	"max_tokens",
+	"system",
+	"messages",
+	"temperature",
+	"top_p",
+	"top_k",
+	"tools",
+	"tool_choice",
+	"stop_sequences",
+	"thinking",
+	"output_config",
+	"context_management",
+] as const;
+
+export function bedrockInvokeBody(request: Record<string, any>, model: string): Record<string, any> {
+	const body: Record<string, any> = { anthropic_version: "bedrock-2023-05-31" };
+	// Beta opt-ins go in the body on InvokeModel, not in an anthropic-beta header.
+	const betas = bedrockInvokeBetas(request, model);
+	if (betas.length > 0) body.anthropic_beta = betas;
+	for (const field of BEDROCK_INVOKE_BODY_FIELDS) {
+		if (request[field] !== undefined) body[field] = request[field];
+	}
+	return body;
+}
+
+function bedrockInvokeBetas(request: Record<string, any>, model: string): string[] {
+	const betas = new Set<string>();
+	const contextManagement = request.context_management;
+	if (contextManagement) {
+		// compact_20260112 edits need compact-2026-01-12 (compaction page); the
+		// clearing edits need context-management-2025-06-27 (request page beta table).
+		const edits = Array.isArray(contextManagement.edits) ? contextManagement.edits : [];
+		const usesCompaction = edits.some((edit: any) => edit?.type === "compact_20260112");
+		if (usesCompaction) betas.add("compact-2026-01-12");
+		if (!usesCompaction || edits.some((edit: any) => edit?.type !== "compact_20260112")) {
+			betas.add("context-management-2025-06-27");
+		}
+	}
+	// Opus 4.5 takes output_config.effort only with the effort beta (request page).
+	if (request.output_config?.effort !== undefined && /claude-opus-4-5/.test(bareBedrockModelId(model))) {
+		betas.add("effort-2025-11-24");
+	}
+	return [...betas];
+}
+
+function bedrockClientError(requestId: string, error: string, message: string): ExecutorResult {
+	return {
+		kind: "completed",
+		terminal: true,
+		localClientError: true,
+		upstream: Response.json({ error, message, request_id: requestId }, { status: 400 }),
+		bill: { cost_cents: 0, currency: "USD" },
+	};
+}
+
+/**
+ * Bedrock has no `inference_geo`; where a request runs is set by the model ID
+ * (a `us.` profile stays in the US, a `global.` profile does not) or, on Mantle,
+ * by the endpoint's Region. A US-only request that this route cannot keep in the
+ * US is refused instead of being run elsewhere.
+ */
+function bedrockInferenceGeoRejection(
+	ir: IRChatRequest,
+	args: ExecutorExecuteArgs,
+	auth: MantleAuth,
+	model: string,
+	runtime: boolean,
+): ExecutorResult | null {
+	if (resolveAnthropicInferenceGeo(args.providerId || "amazon-bedrock", ir) !== "us") return null;
+	const staysInUs = runtime
+		? /^us(?:-gov)?\./i.test(model.trim())
+		: /^us-/i.test(auth.region);
+	if (staysInUs) return null;
+	return bedrockClientError(
+		args.requestId,
+		"inference_geo_unsupported",
+		`US-only inference (inference_geo "us") is not available for ${model} on Amazon Bedrock, which would run it outside the US. Remove inference_geo, or choose a provider that offers US-only inference.`,
+	);
 }
 
 function bareBedrockModelId(model: string | null | undefined): string {
