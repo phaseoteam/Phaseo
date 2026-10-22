@@ -116,21 +116,51 @@ function isUsageRecord(value: unknown): value is Record<string, any> {
 	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-/**
- * Stream usage is cumulative, but not every usage event repeats every count. A Messages
- * stream reports input and cache counts on message_start and often only the output on
- * message_delta, and some upstreams repeat the input there as 0. A later count replaces an
- * earlier one unless it is missing or a 0 that would erase a count already reported.
- */
-export function mergeStreamUsage(previous: unknown, next: unknown): any {
-	if (!isUsageRecord(next)) return previous ?? next;
-	if (!isUsageRecord(previous)) return next;
+// The counts a Messages stream reports on message_start, which message_delta may repeat as 0.
+const MESSAGES_START_COUNTS = new Set([
+	"input_tokens",
+	"cache_read_input_tokens",
+	"cache_creation_input_tokens",
+	"cache_creation",
+]);
+
+function mergeMessagesUsageRecord(
+	previous: Record<string, any>,
+	next: Record<string, any>,
+	startCounts: boolean,
+): Record<string, any> {
 	const merged: Record<string, any> = { ...previous };
 	for (const [key, value] of Object.entries(next)) {
-		const earlier = merged[key];
 		if (value == null) continue;
-		if (value === 0 && typeof earlier === "number" && earlier > 0) continue;
-		merged[key] = isUsageRecord(value) && isUsageRecord(earlier) ? mergeStreamUsage(earlier, value) : value;
+		const earlier = merged[key];
+		const startCount = startCounts || MESSAGES_START_COUNTS.has(key);
+		if (startCount && value === 0 && typeof earlier === "number" && earlier > 0) continue;
+		merged[key] = isUsageRecord(value) && isUsageRecord(earlier)
+			? mergeMessagesUsageRecord(earlier, value, startCount)
+			: value;
 	}
 	return merged;
+}
+
+/**
+ * Merges a Messages stream's usage events. message_start reports the input and cache counts
+ * and message_delta the cumulative output; message_delta often omits the input and cache
+ * counts, and some upstreams repeat them there as 0. A count an event omits is kept and a
+ * later count replaces an earlier one, except that a 0 for an input or cache count does not
+ * erase the count message_start reported.
+ */
+export function mergeMessagesStreamUsage(previous: unknown, next: unknown): any {
+	if (!isUsageRecord(next)) return previous ?? next;
+	if (!isUsageRecord(previous)) return next;
+	return mergeMessagesUsageRecord(previous, next, false);
+}
+
+/**
+ * Accumulates the usage events of a stream in `protocol`. Only Messages streams split usage
+ * across events. In every other protocol each usage event carries the stream's usage so far,
+ * so the latest wins whole, 0 counts included: a final usage can correct a provisional count
+ * (a cache-token estimate, say) to 0.
+ */
+export function accumulateStreamUsage(protocol: string | null | undefined, previous: unknown, next: unknown): any {
+	return protocol === "anthropic.messages" ? mergeMessagesStreamUsage(previous, next) : next;
 }

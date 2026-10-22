@@ -182,6 +182,28 @@ describe("passthroughWithPricing", () => {
 		expect(usageCalls).toEqual([{ input_tokens: 30, cache_read_input_tokens: 4, cache_creation_input_tokens: 2, output_tokens: 9 }]);
 	});
 
+	// Outside Messages each usage frame is the stream's whole usage so far: a final usage that
+	// corrects a provisional count to 0 is billed at 0.
+	it("settles a Chat stream with the final usage when it corrects a provisional count to 0", async () => {
+		const usageCalls: Array<any> = [];
+		const frames = makeSseResponse([
+			{ data: { id: "c", object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: "Hi" }, finish_reason: null }], usage: { prompt_tokens: 10, completion_tokens: 1, total_tokens: 11, prompt_tokens_details: { cached_tokens: 6 } } } },
+			{ data: { id: "c", object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14, prompt_tokens_details: { cached_tokens: 0 } } } },
+		]);
+		const upstream = new Response(`${await frames.text()}data: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream" } });
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx({ endpoint: "chat.completions", protocol: "openai.chat.completions" }),
+			provider: "groq",
+			priceCard: null,
+			onFinalUsage: (usage) => {
+				usageCalls.push(usage);
+			},
+		});
+		await drain(response);
+		expect(usageCalls).toEqual([{ prompt_tokens: 10, completion_tokens: 4, total_tokens: 14, prompt_tokens_details: { cached_tokens: 0 } }]);
+	});
+
 	it("finalizes usage from response.incomplete and strips the internal stop carrier", async () => {
 		const usageCalls: Array<any> = [];
 		const snapshots: Array<any> = [];

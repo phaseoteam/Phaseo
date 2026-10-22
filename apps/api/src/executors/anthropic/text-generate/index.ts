@@ -22,7 +22,7 @@ import {
 	createAnthropicToResponsesStreamTransformer,
 } from "./stream-transformer";
 import { SseParser } from "@core/sse-parser";
-import { mergeStreamUsage } from "@core/usage-normalization";
+import { mergeMessagesStreamUsage } from "@core/usage-normalization";
 import { toIRAnnotations } from "@protocols/shared/citations";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
@@ -458,7 +458,7 @@ export async function bufferAnthropicStreamToMessage(res: Response, upstreamStar
 
 	const applyUsage = (usage: any) => {
 		if (!usage || typeof usage !== "object") return;
-		message.usage = mergeStreamUsage(message.usage, usage);
+		message.usage = mergeMessagesStreamUsage(message.usage, usage);
 	};
 
 	const parsePartialJson = (value: string): any => {

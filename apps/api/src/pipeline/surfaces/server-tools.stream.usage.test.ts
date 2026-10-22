@@ -281,6 +281,47 @@ describe("native Messages streams through the materialised stream", () => {
 	});
 });
 
+// Outside Messages each usage event is the stream's whole usage so far, so a final usage that
+// corrects a provisional count to 0 ends at 0.
+describe("final usage corrections through the materialised stream", () => {
+	const provisional = { prompt_tokens: 10, completion_tokens: 1, total_tokens: 11, prompt_tokens_details: { cached_tokens: 6 } };
+	const final = { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14, prompt_tokens_details: { cached_tokens: 0 } };
+
+	it("takes a Chat stream's final usage when it corrects the cached count to 0", async () => {
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.chat.completions",
+			stream: sse([
+				{ data: { object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: "Hi" }, finish_reason: null }], usage: provisional } },
+				{ data: { object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "stop" }] } },
+				{ data: { object: "chat.completion.chunk", choices: [], usage: final } },
+			]),
+			requestId: "req_usage",
+			model: "m",
+			provider: "openai",
+		});
+		expect(consumed.usageRaw).toEqual(final);
+		expect(consumed.ir.usage?.cachedInputTokens ?? 0).toBe(0);
+	});
+
+	it("takes a Responses stream's final usage when it corrects the cached count to 0", async () => {
+		const response = (status: string, usage: Record<string, unknown>) => ({ id: "resp_1", object: "response", status, output: [], usage });
+		const finalUsage = { input_tokens: 10, output_tokens: 4, total_tokens: 14, input_tokens_details: { cached_tokens: 0 } };
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.responses",
+			stream: sse([
+				{ data: response("in_progress", { input_tokens: 10, output_tokens: 1, total_tokens: 11, input_tokens_details: { cached_tokens: 6 } }) },
+				{ event: "response.output_text.delta", data: { type: "response.output_text.delta", output_index: 0, delta: "Hi" } },
+				{ event: "response.completed", data: { type: "response.completed", response: { ...response("completed", finalUsage), output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Hi" }] }] } } },
+			]),
+			requestId: "req_usage",
+			model: "m",
+			provider: "openai",
+		});
+		expect(consumed.usageRaw).toEqual(finalUsage);
+		expect(consumed.ir.usage?.cachedInputTokens ?? 0).toBe(0);
+	});
+});
+
 describe("OpenAI 30-minute and 12-hour cache writes through the materialised stream", () => {
 	it("keeps the lifetime split from a Responses usage frame", async () => {
 		const usage = {
