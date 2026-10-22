@@ -256,6 +256,7 @@
 				"nav-settings-guardrails": "ガードレール",
 				"nav-settings-classifiers": "分類器",
 				"nav-settings-slack": "Slack",
+				"nav-settings-security": "キーのセキュリティ",
 				"nav-settings-oauth": "OAuthアプリ",
 				"nav-settings-broadcast": "イベント配信",
 				"nav-settings-webhooks": "Webhooks",

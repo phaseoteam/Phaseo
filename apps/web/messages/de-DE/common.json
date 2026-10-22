@@ -256,6 +256,7 @@
 				"nav-settings-guardrails": "Schutzregeln",
 				"nav-settings-classifiers": "Klassifikatoren",
 				"nav-settings-slack": "Slack",
+				"nav-settings-security": "Schlüsselsicherheit",
 				"nav-settings-oauth": "OAuth-Apps",
 				"nav-settings-broadcast": "Weiterleitung",
 				"nav-settings-webhooks": "Webhooks",

@@ -94,6 +94,7 @@ describe("settings sidebar navigation", () => {
 				"Enterprise",
 				"API Keys",
 				"Budgets",
+				"Key Security",
 				"Usage",
 				"Logs",
 				"Routing",
