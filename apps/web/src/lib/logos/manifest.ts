@@ -125,8 +125,8 @@ export const logoManifest = {
 		color: "/logos/baseten.svg",
 	},
 	baselabs: {
-		light: "/logos/baselabs_light.svg",
-		dark: "/logos/baselabs_dark.svg",
+		// Official site favicon: https://labs.baseten.co/favicon.ico (48px PNG frame).
+		color: "/logos/baselabs.png",
 	},
 	"black-forest-labs": {
 		light: "/logos/black-forest-labs_light.svg",
