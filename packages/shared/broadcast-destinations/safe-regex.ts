@@ -24,7 +24,10 @@ type Inst =
 	| { op: "assert"; kind: AssertKind }
 	| { op: "match" };
 
-export type SafeRegex = { test(input: string): boolean };
+/** Matcher steps left to spend; shared across several tests to cap their total work. */
+export type RegexBudget = { steps: number };
+/** `size` is the compiled program length, for weighing cached matchers. */
+export type SafeRegex = { size: number; test(input: string, budget?: RegexBudget): boolean };
 
 class PatternError extends Error {}
 
@@ -43,6 +46,7 @@ const CLASS_ESCAPES: Record<string, CharTest> = {
 const CONTROL_ESCAPES: Record<string, number> = { n: 10, r: 13, t: 9, v: 11, f: 12 };
 
 function parse(pattern: string): Node {
+	const groupNames = new Set<string>();
 	let index = 0;
 	const peek = () => pattern[index];
 	function fail(message: string): never {
@@ -130,6 +134,8 @@ function parse(pattern: string): Node {
 				else if (pattern.startsWith("?<", index) && !/^\?<[=!]/.test(pattern.slice(index))) {
 					const name = /^\?<([A-Za-z_$][\w$]*)>/.exec(pattern.slice(index));
 					if (!name) fail("Invalid capture group name");
+					if (groupNames.has(name![1])) fail("Duplicate capture group names are not supported");
+					groupNames.add(name![1]);
 					index += name![0].length;
 				} else if (peek() === "?") fail("Lookahead and lookbehind are not supported");
 				const node = alternation();
@@ -261,13 +267,31 @@ function assertion(kind: AssertKind, input: string, position: number): boolean {
 	return kind === "word" ? before !== after : before === after;
 }
 
-// Same result as `new RegExp(pattern).test(input)`, with no flags.
-function run(program: Inst[], input: string): boolean {
+class BudgetExhausted extends Error {}
+
+// Same result as `new RegExp(pattern).test(input)`, with no flags. Running out
+// of budget counts as no match.
+function run(program: Inst[], input: string, budget?: RegexBudget): boolean {
+	try {
+		return runProgram(program, input, budget);
+	} catch (error) {
+		if (error instanceof BudgetExhausted) return false;
+		throw error;
+	}
+}
+
+function runProgram(program: Inst[], input: string, budget?: RegexBudget): boolean {
 	const seen = new Int32Array(program.length).fill(-1);
 	let generation = 0;
+	const spend = (steps: number) => {
+		if (!budget) return;
+		budget.steps -= steps;
+		if (budget.steps < 0) throw new BudgetExhausted();
+	};
 	const add = (list: number[], start: number, position: number) => {
 		const stack = [start];
 		while (stack.length) {
+			spend(1);
 			const pc = stack.pop()!;
 			if (seen[pc] === generation) continue;
 			seen[pc] = generation;
@@ -287,6 +311,7 @@ function run(program: Inst[], input: string): boolean {
 		generation += 1;
 		const next: number[] = [];
 		const code = input.charCodeAt(position);
+		spend(current.length);
 		for (const pc of current) {
 			const inst = program[pc];
 			if (inst.op === "char" && inst.test(code)) add(next, pc + 1, position + 1);
@@ -301,7 +326,7 @@ export function compileSafeRegex(pattern: string): { ok: true; regex: SafeRegex 
 	if (pattern.length > MAX_RULE_REGEX_LENGTH) return { ok: false, error: `Regex must be at most ${MAX_RULE_REGEX_LENGTH} characters` };
 	try {
 		const program = compile(parse(pattern));
-		return { ok: true, regex: { test: (input) => run(program, input) } };
+		return { ok: true, regex: { size: program.length, test: (input, budget) => run(program, input, budget) } };
 	} catch (error) {
 		if (error instanceof PatternError) return { ok: false, error: `Invalid regex: ${error.message}` };
 		throw error;

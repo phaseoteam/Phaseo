@@ -89,5 +89,29 @@ describe("compileSafeRegex", () => {
 		expect(compileSafeRegex("*a")).toEqual({ ok: false, error: "Invalid regex: Nothing to repeat" });
 		expect(compileSafeRegex("a".repeat(129))).toEqual({ ok: false, error: "Regex must be at most 128 characters" });
 		expect(compileSafeRegex("(a{100}){100}")).toEqual({ ok: false, error: "Invalid regex: Pattern is too complex" });
+		// Native RegExp rejects these too; a matcher that accepted them would select destinations.
+		expect(() => new RegExp("(?<a>x)(?<a>y)")).toThrow();
+		expect(compileSafeRegex("(?<a>x)(?<a>y)")).toEqual({ ok: false, error: "Invalid regex: Duplicate capture group names are not supported" });
+		expect(compileSafeRegex("(?<a>x)(?<b>y)").ok).toBe(true);
+	});
+
+	it("stops at a shared step budget and treats it as no match", () => {
+		const compiled = compileSafeRegex("(a?){900}b");
+		if (!compiled.ok) throw new Error(compiled.error);
+		expect(compiled.regex.size).toBeGreaterThan(1_500);
+		const input = "a".repeat(2_000);
+		const budget = { steps: 1_000_000 };
+		const started = performance.now();
+		expect(compiled.regex.test(input, budget)).toBe(false);
+		expect(budget.steps).toBeLessThan(0);
+		// The budget is spent: later tests against it stop straight away.
+		expect(compiled.regex.test("ab", budget)).toBe(false);
+		expect(performance.now() - started).toBeLessThan(1_000);
+		// Small patterns finish well inside the same budget.
+		const small = compileSafeRegex("checkout|billing");
+		if (!small.ok) throw new Error(small.error);
+		const fresh = { steps: 1_000_000 };
+		expect(small.regex.test(`${"x".repeat(1_990)}billing`, fresh)).toBe(true);
+		expect(fresh.steps).toBeGreaterThan(900_000);
 	});
 });

@@ -170,6 +170,18 @@ describe("Broadcast destination selection and metadata", () => {
 		expect(selected(withRule("prompt(?=)"), long, "event_1")).toBe(false);
 	});
 
+	it("caps the regex work one destination can spend on an event", () => {
+		const heavy = Array.from({ length: 200 }, (_, index) => ({ field: "input", condition: "matches_regex", value: `(a?){900}b${index}` }));
+		const manyRules = {
+			...destination,
+			broadcast_destination_rule_groups: [{ match_operator: "or", broadcast_destination_rules: heavy }],
+		};
+		const long = { ...telemetry, requestPayload: { prompt: "a".repeat(1_900) } };
+		const started = performance.now();
+		expect(selected(manyRules, long, "event_1")).toBe(false);
+		expect(performance.now() - started).toBeLessThan(2_000);
+	});
+
 	it("removes disabled metadata families from OTLP attributes", () => {
 		const payload = { resourceSpans: [{ attributes: [
 			{ key: "gen_ai.request.model", value: { stringValue: "gpt-5" } },
