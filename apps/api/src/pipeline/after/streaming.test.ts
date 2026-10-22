@@ -154,6 +154,56 @@ describe("passthroughWithPricing client stream grammar", () => {
 });
 
 describe("passthroughWithPricing", () => {
+	// A native Messages stream (Claude Opus 5.5 on Bedrock and Vertex) reports input and cache
+	// counts on message_start; message_delta carries the output and may repeat the rest as 0.
+	it.each([
+		["omits them", { output_tokens: 9 }],
+		["repeats them as 0", { input_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0, output_tokens: 9 }],
+	])("settles a native Messages stream with message_start's input and cache counts when message_delta %s", async (_name, deltaUsage) => {
+		const usageCalls: Array<any> = [];
+		const upstream = makeSseResponse([
+			{ event: "message_start", data: { type: "message_start", message: { id: "msg_1", usage: { input_tokens: 30, cache_read_input_tokens: 4, cache_creation_input_tokens: 2, output_tokens: 1 } } } },
+			{ event: "content_block_start", data: { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } } },
+			{ event: "content_block_delta", data: { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "Hi" } } },
+			{ event: "content_block_stop", data: { type: "content_block_stop", index: 0 } },
+			{ event: "message_delta", data: { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: deltaUsage } },
+			{ event: "message_stop", data: { type: "message_stop" } },
+		]);
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx({ endpoint: "messages", protocol: "anthropic.messages" }),
+			provider: "amazon-bedrock",
+			priceCard: null,
+			onFinalUsage: (usage) => {
+				usageCalls.push(usage);
+			},
+		});
+		await drain(response);
+		expect(usageCalls).toEqual([{ input_tokens: 30, cache_read_input_tokens: 4, cache_creation_input_tokens: 2, output_tokens: 9 }]);
+	});
+
+	// Outside Messages each usage frame is the stream's whole usage so far: a final usage that
+	// corrects a provisional count to 0 is billed at 0.
+	it("settles a Chat stream with the final usage when it corrects a provisional count to 0", async () => {
+		const usageCalls: Array<any> = [];
+		const frames = makeSseResponse([
+			{ data: { id: "c", object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: "Hi" }, finish_reason: null }], usage: { prompt_tokens: 10, completion_tokens: 1, total_tokens: 11, prompt_tokens_details: { cached_tokens: 6 } } } },
+			{ data: { id: "c", object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14, prompt_tokens_details: { cached_tokens: 0 } } } },
+		]);
+		const upstream = new Response(`${await frames.text()}data: [DONE]\n\n`, { headers: { "Content-Type": "text/event-stream" } });
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx({ endpoint: "chat.completions", protocol: "openai.chat.completions" }),
+			provider: "groq",
+			priceCard: null,
+			onFinalUsage: (usage) => {
+				usageCalls.push(usage);
+			},
+		});
+		await drain(response);
+		expect(usageCalls).toEqual([{ prompt_tokens: 10, completion_tokens: 4, total_tokens: 14, prompt_tokens_details: { cached_tokens: 0 } }]);
+	});
+
 	it("finalizes usage from response.incomplete and strips the internal stop carrier", async () => {
 		const usageCalls: Array<any> = [];
 		const snapshots: Array<any> = [];

@@ -51,6 +51,7 @@ import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } f
 import { calculateOutputPerformanceMetrics } from "./performance-metrics";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import { chargeRateLimitPolicyTokens } from "@core/rate-limit-policies";
+import { mergeMessagesStreamUsage } from "@core/usage-normalization";
 import { alertUnexpectedZeroCostMedia } from "./media-zero-cost";
 
 function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
@@ -331,7 +332,7 @@ export async function handleStreamResponse(
     let messagesStreamUsage: Record<string, unknown> | null = null;
     const accumulateMessagesStreamUsage = (usage: any) => {
         if (!usage || typeof usage !== "object") return;
-        messagesStreamUsage = { ...(messagesStreamUsage ?? {}), ...usage };
+        messagesStreamUsage = mergeMessagesStreamUsage(messagesStreamUsage, usage);
     };
     // Messages usage frames are not otherwise priced for the client: add only the cost
     // fields, priced the same way as the Chat and Responses usage frames.
