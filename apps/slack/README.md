@@ -59,7 +59,7 @@ Set with `wrangler secret put <NAME> [--env production]`.
 | `SLACK_SECRETS_ENCRYPTION_KEY` | yes | Decrypts installation and company app secrets. The same value as web-api. |
 | `SLACK_STATE_SECRET` | yes | Signs account link tokens. The same value as web-api, which confirms them. |
 | `SUPABASE_URL` | yes | The Supabase project URL. |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes | The service role key. The Slack tables deny every other role. |
+| The Supabase service key (named in `src/env.ts`) | yes | The Slack tables deny every other role. |
 | `SLACK_APP_ID` | no | The hosted app's id. When set, `/events` refuses events for any other app. |
 | `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` | no | The hosted app's client credentials. They are only needed when token rotation is on, to refresh bot tokens. |
 | `SLACK_SECRETS_ENCRYPTION_KEY_VERSION` | no | Defaults to `v1`. It must match web-api. |
