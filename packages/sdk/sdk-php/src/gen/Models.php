@@ -1773,6 +1773,76 @@ class DeletedResponse
 	public $deleted;
 }
 
+class DepartmentBudget
+{
+	/** @var string */
+	public $created_at;
+	/** @var string|null */
+	public $created_by;
+	/** @var string */
+	public $department_id;
+	/** @var string|null */
+	public $department_name;
+	/** @var bool */
+	public $exceeded;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $interval;
+	/** @var float */
+	public $limit;
+	/** @var int */
+	public $limit_nanos;
+	/** @var float */
+	public $remaining;
+	/** @var int */
+	public $remaining_nanos;
+	/** @var string|null */
+	public $reset_at;
+	/** @var string */
+	public $updated_at;
+	/** @var float */
+	public $usage;
+	/** @var int */
+	public $usage_nanos;
+	/** @var string|null */
+	public $window_start;
+	/** @var string */
+	public $workspace_id;
+}
+
+class DepartmentBudgetInput
+{
+	/** @var string */
+	public $department_id;
+	/** @var string */
+	public $interval;
+	/** @var float */
+	public $limit;
+}
+
+class DepartmentBudgetInterval { }
+
+class DepartmentBudgetListResponse
+{
+	/** @var array */
+	public $data;
+}
+
+class DepartmentBudgetResponse
+{
+	/** @var array<string, mixed> */
+	public $data;
+}
+
+class DepartmentBudgetUpdateInput
+{
+	/** @var string|null */
+	public $interval;
+	/** @var float|null */
+	public $limit;
+}
+
 class DynamicRoute
 {
 	/** @var array<string, mixed> */

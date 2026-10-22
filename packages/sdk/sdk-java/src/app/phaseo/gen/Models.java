@@ -1008,6 +1008,48 @@ public final class Models {
 		public Object deleted;
 	}
 
+	public static class DepartmentBudget {
+		public String created_at;
+		public String created_by;
+		public String department_id;
+		public String department_name;
+		public Boolean exceeded;
+		public String id;
+		public Object interval;
+		public Double limit;
+		public Integer limit_nanos;
+		public Double remaining;
+		public Integer remaining_nanos;
+		public String reset_at;
+		public String updated_at;
+		public Double usage;
+		public Integer usage_nanos;
+		public String window_start;
+		public String workspace_id;
+	}
+
+	public static class DepartmentBudgetInput {
+		public String department_id;
+		public Object interval;
+		public Double limit;
+	}
+
+	public static class DepartmentBudgetInterval {
+	}
+
+	public static class DepartmentBudgetListResponse {
+		public java.util.List<Object> data;
+	}
+
+	public static class DepartmentBudgetResponse {
+		public Object data;
+	}
+
+	public static class DepartmentBudgetUpdateInput {
+		public Object interval;
+		public Double limit;
+	}
+
 	public static class DynamicRoute {
 		public Object config;
 		public String created_at;
