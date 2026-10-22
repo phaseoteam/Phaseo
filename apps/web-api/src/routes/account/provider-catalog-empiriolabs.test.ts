@@ -25,6 +25,15 @@ describe("EmpirioLabs legacy serving offers", () => {
 	});
 	const edit = (value: unknown) => ({ value, actor_id: "operator", actor_kind: "phaseo" as const, edited_at: "2026-10-10T00:00:00Z" });
 	const feed = () => normalizeProviderCatalog({ data: [model("minimax/minimax-m2.7", "base", 123), model("minimax/minimax-m2.7-highspeed", "speed", 456)] }).allModels;
+	it("preserves the standard upstream selector and rejects selectors on relabeled speed offers", () => {
+		const source = feed();
+		source[0].serviceTiers = [{ serviceTier: "standard", providerModelSlug: "base", upstreamServiceTier: "default", availability: "ready", pricing: source[0].pricing }];
+		expect(normalizeEmpirioLabsCatalog(source)[0].serviceTiers?.[0].upstreamServiceTier).toBe("default");
+		for (const selector of ["standard", "default"] as const) {
+			source[1].serviceTiers = [{ serviceTier: "standard", providerModelSlug: "speed", upstreamServiceTier: selector, availability: "ready", pricing: source[1].pricing }];
+			expect(() => normalizeEmpirioLabsCatalog(source)).toThrow("incompatible upstream tier selector");
+		}
+	});
 	it("preserves legacy speed-ID availability and price overrides across upstream refreshes", () => {
 		const overrides: CatalogOverrides = { "minimax/minimax-m2.7-highspeed": {
 			availability: edit("not_ready"), "/pricing/input_text_tokens/$rate": edit({ priceNanos: 789, unitQuantity: 1_000_000, unit: "token", displayUnit: "1M tokens" }),

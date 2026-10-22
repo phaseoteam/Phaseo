@@ -33,7 +33,7 @@ Vitest exercises real Hono request/response handling with mocked persistence. Fo
 `pnpm db:schema:sync -- -f provider_catalog_v12_data_policy` failed with:
 
 ```text
-docker: command not found (podman also not found) â€” install Docker Desktop or Podman and ensure it is on PATH
+docker: command not found (podman also not found) - install Docker Desktop or Podman and ensure it is on PATH
 ```
 
 This initial local attempt generated no migration. The CI generation run later produced the committed migration, and equivalence/replay checks passed. Do not repeat initial generation for that completed change. Review follow-up SQL changes still require their own generated forward migration and fresh checks; do not deploy application changes against an older schema.

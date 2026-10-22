@@ -36,6 +36,9 @@ export function normalizeEmpirioLabsCatalog(models: ProviderCatalogModelPreview[
 		if (!base || hasAmbiguousTiers(base) || hasAmbiguousTiers(speed)) {
 			throw new Error(`EmpirioLabs speed offer ${speedId} requires an unambiguous standard offer.`);
 		}
+		if (speed.serviceTiers?.[0].upstreamServiceTier != null) {
+			throw new Error(`EmpirioLabs speed offer ${speedId} has an incompatible upstream tier selector; review before grouping.`);
+		}
 		// V1.1 shares model limits/capabilities between tiers. Do not silently
 		// flatten an upstream change which no longer fits that contract.
 		for (const field of ["inputModalities", "outputModalities", "contextLength", "maxOutputTokens", "capabilities", "availableFrom", "deprecatedAt", "shutdownAt"] as const) {
@@ -54,7 +57,7 @@ export function normalizeEmpirioLabsCatalog(models: ProviderCatalogModelPreview[
 			...(tier?.dataPolicy !== undefined ? { dataPolicy: tier.dataPolicy } : {}),
 			serviceTier: index === 0 ? "standard" : "fast",
 			providerModelSlug: offer.providerModelSlug,
-			upstreamServiceTier: null,
+			upstreamServiceTier: tier?.upstreamServiceTier ?? null,
 			availability: offer.availability,
 			pricing: offer.pricing,
 		}); });

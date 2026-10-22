@@ -493,10 +493,9 @@ function getIgnoredPrivacyReasons(
 
     const trainingPolicy = getProviderPromptTrainingPolicy(provider, plan);
     if (trainingPolicy === "may_train") {
-        const defaultPlan = getProviderDefaultPlan(provider);
-        if (defaultPlan === "free" && !settings.privacyEnableFreeMayTrain) {
+        if (plan === "free" && !settings.privacyEnableFreeMayTrain) {
             reasons.push("Free training-on-inputs endpoints are disabled in workspace privacy settings");
-        } else if (defaultPlan !== "free" && !settings.privacyEnablePaidMayTrain) {
+        } else if (plan !== "free" && !settings.privacyEnablePaidMayTrain) {
             reasons.push("Paid training-on-inputs endpoints are disabled in workspace privacy settings");
         }
     }
@@ -645,7 +644,7 @@ function ProviderServiceTierInfoIcons({
 		contractNotes: provider.provider.data_policy_contract_notes ?? null,
 		notes: policy?.reason ?? provider.provider.prompt_training_notes ?? null,
 		sourceUrl: policy?.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
-		promptTrainingPolicy: policy?.trainingPolicy ?? provider.provider.prompt_training_policy ?? null,
+		promptTrainingPolicy: getProviderPromptTrainingPolicy(provider, plan),
 		zeroDataRetention: getPlanZdrEligibility(provider, plan),
 	}));
 

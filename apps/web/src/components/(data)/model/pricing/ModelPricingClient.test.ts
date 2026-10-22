@@ -128,6 +128,15 @@ describe("route retention in pricing table scopes", () => {
 		provider.provider.prompt_training_policy = "may_train";
 		expect(getProviderPromptTrainingPolicy(provider, "standard")).toBe("may_train");
 	});
+	it("uses the selected plan's workspace training permission", () => {
+		const provider = offer([{ trainingPolicy: "may_train" }]);
+		const settings = { isAuthenticated: true, privacyEnablePaidMayTrain: true, privacyEnableFreeMayTrain: false,
+			privacyZdrOnly: false, providerRestrictionMode: "none" as const, providerRestrictionProviderIds: [] };
+		expect(matchesPrivacyFilter(provider, "workspace", settings, "free")).toBe(false);
+		expect(matchesPrivacyFilter(provider, "workspace", settings, "standard")).toBe(true);
+		provider.provider.service_tier_data_policies = { standard: { trainingPolicy: "no_train" } };
+		expect(getProviderPromptTrainingPolicy(provider, "standard")).toBe("may_train");
+	});
 	it("uses verified route guarantees for table filters and retention hover", () => {
 		expect(getPlanZdrEligibility(offer([native]), "standard")).toBe(true);
 		expect(getPlanZdrEligibility(offer([{}]), "standard")).toBe(false);
