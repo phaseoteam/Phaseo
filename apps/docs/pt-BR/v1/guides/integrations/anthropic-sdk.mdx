@@ -16,7 +16,8 @@ npm install @anthropic-ai/sdk
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-	apiKey: process.env.PHASEO_API_KEY,
+	apiKey: null,
+	authToken: process.env.PHASEO_API_KEY,
 	baseURL: "https://api.phaseo.app",
 });
 
@@ -40,7 +41,7 @@ import os
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
+    auth_token=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app",
 )
 
@@ -56,6 +57,8 @@ print(message.content)
 ## Observações
 
 - Use o host raiz `https://api.phaseo.app`; os clientes Anthropic acrescentam `/v1/messages`.
+- Passe a chave como `authToken` (`auth_token` em Python), que envia `Authorization: Bearer` em todas as versões do SDK. O Phaseo não aceita `x-api-key`, que é o que `apiKey` envia antes de `@anthropic-ai/sdk` 1.0 e `anthropic` 2.0.
+- `apiKey: null` impede que SDKs TypeScript mais antigos também enviem sua `ANTHROPIC_API_KEY`. SDKs Python mais antigos a enviam sempre que ela está definida, então remova-a dos ambientes que chamam o Phaseo.
 - Consulte [Mensagens da Anthropic](../../api-reference/endpoint/anthropic-messages.mdx) para ver os detalhes do endpoint.
 - As estruturas nativas de ferramentas da Anthropic podem funcionar quando o Phaseo oferecer suporte; para ferramentas de servidor entre provedores, use os nomes de ferramentas do Phaseo.
 - Se um fluxo depender de loops de ferramentas transmitidos em streaming, teste-o antes de colocar em produção, pois clientes compatíveis com Anthropic são mais rigorosos quanto à ordem dos eventos de ferramentas.

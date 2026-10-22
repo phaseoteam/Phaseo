@@ -16,7 +16,8 @@ npm install @anthropic-ai/sdk
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-	apiKey: process.env.PHASEO_API_KEY,
+	apiKey: null,
+	authToken: process.env.PHASEO_API_KEY,
 	baseURL: "https://api.phaseo.app",
 });
 
@@ -40,7 +41,7 @@ import os
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
+    auth_token=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app",
 )
 
@@ -56,6 +57,8 @@ print(message.content)
 ## नोट्स
 
 - रूट होस्ट `https://api.phaseo.app` इस्तेमाल करें; Anthropic क्लाइंट अपने-आप `/v1/messages` जोड़ते हैं।
+- कुंजी को `authToken` (Python में `auth_token`) के रूप में दें; यह हर SDK संस्करण पर `Authorization: Bearer` भेजता है। Phaseo `x-api-key` स्वीकार नहीं करता, जिसे `@anthropic-ai/sdk` 1.0 और `anthropic` 2.0 से पहले `apiKey` भेजता है।
+- `apiKey: null` पुराने TypeScript SDK को आपकी `ANTHROPIC_API_KEY` भी भेजने से रोकता है। पुराने Python SDK इसे सेट होने पर हमेशा भेजते हैं, इसलिए Phaseo को कॉल करने वाले एनवायरनमेंट से इसे हटा दें।
 - एंडपॉइंट की जानकारी के लिए [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) देखें।
 - जहाँ Phaseo समर्थन करता है, वहाँ Anthropic के नेटिव टूल स्वरूप काम कर सकते हैं, लेकिन कई प्रदाताओं पर चलने वाले सर्वर टूल के लिए Phaseo के टूल नाम इस्तेमाल करें।
 - अगर कोई वर्कफ़्लो स्ट्रीम किए गए टूल लूप पर निर्भर है, तो प्रोडक्शन रोलआउट से पहले उसे जाँचें, क्योंकि Anthropic-संगत क्लाइंट टूल इवेंट के क्रम को लेकर ज़्यादा सख्त होते हैं।

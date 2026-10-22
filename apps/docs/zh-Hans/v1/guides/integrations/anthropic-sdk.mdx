@@ -16,7 +16,8 @@ npm install @anthropic-ai/sdk
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-	apiKey: process.env.PHASEO_API_KEY,
+	apiKey: null,
+	authToken: process.env.PHASEO_API_KEY,
 	baseURL: "https://api.phaseo.app",
 });
 
@@ -40,7 +41,7 @@ import os
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
+    auth_token=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app",
 )
 
@@ -56,6 +57,8 @@ print(message.content)
 ## 说明
 
 - 使用根主机 `https://api.phaseo.app`；Anthropic 客户端会追加 `/v1/messages`。
+- 通过 `authToken`（Python 中为 `auth_token`）传入密钥，所有 SDK 版本都会以 `Authorization: Bearer` 发送。Phaseo 不接受 `x-api-key`，而 `@anthropic-ai/sdk` 1.0 和 `anthropic` 2.0 之前的 `apiKey` 发送的正是这个请求头。
+- `apiKey: null` 可防止旧版 TypeScript SDK 同时发送你的 `ANTHROPIC_API_KEY`。旧版 Python SDK 只要设置了该变量就会发送它，因此请在调用 Phaseo 的环境中删除它。
 - 端点详情请参阅 [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)。
 - Phaseo 支持时可以使用 Anthropic 原生工具结构；跨供应商的服务器工具应使用 Phaseo 工具名称。
 - 如果工作流依赖流式工具循环，请在上线前进行测试，因为 Anthropic 兼容客户端对工具事件顺序的要求更严格。

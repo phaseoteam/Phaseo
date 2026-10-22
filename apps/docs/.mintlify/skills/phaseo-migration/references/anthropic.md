@@ -47,7 +47,7 @@ message = client.messages.create(
 )
 ```
 
-`authToken` / `auth_token` sends `Authorization: Bearer`, which the gateway authenticates on every SDK version. In TypeScript, `apiKey: null` stops the SDK from also reading `ANTHROPIC_API_KEY` and forwarding the Anthropic key; before `anthropic` 2.0 the Python SDK falls back to that variable when `api_key` is `None`, so remove `ANTHROPIC_API_KEY` from environments that now call Phaseo. Raw HTTP calls go to `https://api.phaseo.app/v1/messages` with `Authorization: Bearer $PHASEO_API_KEY` (or `x-api-key: $PHASEO_API_KEY`).
+`authToken` / `auth_token` sends `Authorization: Bearer` on every SDK version, which is the only header the gateway authenticates. In TypeScript, `apiKey: null` stops SDKs before 1.0 from also reading `ANTHROPIC_API_KEY` and forwarding the Anthropic key; before `anthropic` 2.0 the Python SDK falls back to that variable when `api_key` is `None`, so remove `ANTHROPIC_API_KEY` from environments that now call Phaseo. Raw HTTP calls go to `https://api.phaseo.app/v1/messages` with `Authorization: Bearer $PHASEO_API_KEY`.
 
 Then map model names to Phaseo IDs, for example `claude-sonnet-4-6` to `anthropic/claude-sonnet-4.6`, after `GET /v1/models` confirms the exact ID.
 
@@ -71,7 +71,7 @@ Tools that read environment variables (Claude Code and similar) use `ANTHROPIC_B
 ## Gotchas
 
 - `baseURL: "https://api.phaseo.app/v1"` produces `/v1/v1/messages`. Use the root host for the Anthropic SDK; OpenAI-compatible clients in the same repo still use `/v1`.
-- The gateway reads the key from `Authorization: Bearer`, or from `x-api-key` when there is no `Authorization` header. `apiKey` goes out as `Authorization: Bearer` from `@anthropic-ai/sdk` 1.0 and `anthropic` 2.0 onwards, and as `x-api-key` before that, so it works with both. If both headers are sent, `Authorization` wins, so an `ANTHROPIC_AUTH_TOKEN` left in the environment overrides `apiKey` on older SDKs.
-- Phaseo accepts any `anthropic-version` header, including `2026-10-21` from the current SDKs, and calls Claude with its own version. `temperature`, `top_p` and `top_k` are not rejected by version: Claude models that take adaptive thinking get them left out, older ones still receive them.
+- The gateway reads the key only from `Authorization: Bearer`; an `x-api-key` header gets `401 missing_or_invalid_authorization_header`. Pass the Phaseo key as `authToken` / `auth_token`. `apiKey` sends Bearer only from `@anthropic-ai/sdk` 1.0 and `anthropic` 2.0 onwards and `x-api-key` before that, so code that uses it breaks on older SDK versions.
+- Phaseo accepts any `anthropic-version` header, including `2026-10-21` from the current SDKs, and calls Claude with its own version. Whether `temperature`, `top_p` and `top_k` reach the model depends on the model and route: the gateway drops them where the provider doesn't support them and reports the drop in `X-Phaseo-Dropped-Params`.
 - Test thinking or reasoning options, structured output and streamed tool loops with the exact model IDs the app uses.
 - Switching the same code to the OpenAI SDK is optional and a larger diff; only do it if the user wants one client.

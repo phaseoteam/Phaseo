@@ -210,20 +210,6 @@ describe("authenticate hot-path caching", () => {
         expect((await authenticate(invalid)).ok).toBe(false);
     });
 
-    it("authenticates a key sent as x-api-key once it is mapped to the bearer header", async () => {
-        const secret = "x_api_key_secret";
-        runtime.dbRow.value = { id: "key_x_api_key", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };
-        const { authenticate } = await import("./auth");
-        const { withApiKeyHeaderAsBearer } = await import("@/pipeline/http/api-key-header");
-        const request = () => new Request("https://example.com/v1/messages", {
-            method: "POST",
-            headers: { "x-api-key": `phaseo_v1_sk_XAPIKEY_${secret}` },
-        });
-        expect(await authenticate(request())).toEqual({ ok: false, reason: "missing_or_invalid_authorization_header" });
-        await expect(authenticate(withApiKeyHeaderAsBearer(request()))).resolves.toMatchObject({ ok: true, workspaceId: "workspace" });
-        await flushBackground();
-    });
-
     it("does not reuse prepared authentication when a handler explicitly requires fresh checks", async () => {
         const secret = "fresh_admission_secret";
         runtime.dbRow.value = { id: "key_admission", workspace_id: "workspace", status: "active", hash: hashSecret(secret) };

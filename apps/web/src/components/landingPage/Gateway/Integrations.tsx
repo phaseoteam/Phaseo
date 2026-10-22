@@ -92,8 +92,9 @@ const response = await client.chat.completions.create({
 		code: `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY!,
-  baseURL: "https://api.phaseo.app/v1"
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY!,
+  baseURL: "https://api.phaseo.app"
 });
 
 const message = await client.messages.create({
