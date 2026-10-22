@@ -636,7 +636,9 @@
 			"managePermissions": "権限を管理",
 			"additionalPermissionsDescription": "このアプリは新しい権限を要求できるようになりました。現在のアクセス権に変更はありません。アプリから新しいリクエストを開始するには、上の「再承認」を選択してください。",
 			"updatePermissionsFailed": "権限を更新できませんでした。もう一度お試しください。",
-			"firstPartyDescription": "サインイン、チーム管理、キー作成に使用する Phaseo 公式 CLI です。"
+			"firstPartyDescription": "サインイン、チーム管理、キー作成に使用する Phaseo 公式 CLI です。",
+			"connectionsPermissionLabel": "接続した MCP サーバーを使用",
+			"connectionsPermissionDescription": "Phaseo で接続した MCP サーバーのツールを、各サービスのあなたのアカウントで一覧表示・実行することをアプリケーションに許可します。"
 		},
 		"callback": {
 			"redirecting": "リダイレクト中…",

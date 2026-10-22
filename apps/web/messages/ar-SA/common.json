@@ -636,7 +636,9 @@
 			"managePermissions": "إدارة الأذونات",
 			"additionalPermissionsDescription": "يمكن لهذا التطبيق الآن طلب أذونات إضافية. لم تتغير إمكانية وصولك الحالية. استخدم «إعادة التفويض» أعلاه لبدء طلب جديد من التطبيق.",
 			"updatePermissionsFailed": "تعذّر تحديث الأذونات. حاول مرة أخرى.",
-			"firstPartyDescription": "واجهة سطر الأوامر الرسمية من Phaseo لتسجيل الدخول وإدارة الفرق وإنشاء المفاتيح."
+			"firstPartyDescription": "واجهة سطر الأوامر الرسمية من Phaseo لتسجيل الدخول وإدارة الفرق وإنشاء المفاتيح.",
+			"connectionsPermissionLabel": "استخدام خوادم MCP المتصلة",
+			"connectionsPermissionDescription": "يسمح للتطبيق بعرض أدوات خوادم MCP التي ربطتها في Phaseo وتشغيلها، باستخدام حساباتك في تلك الخدمات."
 		},
 		"callback": {
 			"redirecting": "جارٍ إعادة التوجيه…",

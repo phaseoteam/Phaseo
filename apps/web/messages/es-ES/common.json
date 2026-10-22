@@ -636,7 +636,9 @@
 			"managePermissions": "Administrar permisos",
 			"additionalPermissionsDescription": "Esta aplicación ahora puede solicitar más permisos. El acceso actual no ha cambiado; usa «Volver a autorizar» arriba para iniciar una nueva solicitud desde la aplicación.",
 			"updatePermissionsFailed": "No se pudieron actualizar los permisos. Inténtalo de nuevo.",
-			"firstPartyDescription": "CLI oficial de Phaseo para iniciar sesión, administrar equipos y crear claves."
+			"firstPartyDescription": "CLI oficial de Phaseo para iniciar sesión, administrar equipos y crear claves.",
+			"connectionsPermissionLabel": "Usar tus servidores MCP conectados",
+			"connectionsPermissionDescription": "Permite que la aplicación muestre y ejecute herramientas de los servidores MCP que conectaste en Phaseo, con tus cuentas en esos servicios."
 		},
 		"callback": {
 			"redirecting": "Redirigiendo…",

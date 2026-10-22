@@ -7,6 +7,9 @@ export const IDENTITY_SCOPES = [
 
 export const GATEWAY_ACCESS_SCOPE = "gateway:access" as const;
 
+/** Use the MCP servers the person connected in Settings > Connections, through Phaseo's MCP server. */
+export const CONNECTIONS_USE_SCOPE = "connections:use" as const;
+
 export const CAPABILITIES = {
 	ME_READ: "me:read",
 	MODELS_READ: "models:read",
@@ -117,6 +120,7 @@ export const DEFAULT_MANAGEMENT_KEY_CAPABILITIES = Object.freeze([
 export const ALL_SUPPORTED_SCOPES = Object.freeze([
 	...IDENTITY_SCOPES,
 	GATEWAY_ACCESS_SCOPE,
+	CONNECTIONS_USE_SCOPE,
 	...CONTROL_CAPABILITIES,
 ]);
 

@@ -4,6 +4,7 @@ import * as z from "zod/v4";
 import { registerModelExplorer, modelExplorerToolMeta } from "./model-explorer";
 import { modelExplorerIcon } from "./generated/modelExplorerHtml";
 import { registerInference } from "./inference";
+import { fetchHubListing, hubAvailable, registerHubTools, type HubListing } from "./hub";
 export { InferenceRunReceipt } from "./inference";
 
 import {
@@ -33,6 +34,17 @@ const MCP_CORS_HEADERS = {
 	"Access-Control-Expose-Headers": "WWW-Authenticate, MCP-Session-Id, MCP-Protocol-Version",
 	"Access-Control-Max-Age": "86400",
 } as const;
+
+/** Only tool listing and calls need the person's connected tools, so other requests skip fetching them. */
+async function listsOrCallsTools(request: Request): Promise<boolean> {
+	if (request.method !== "POST") return false;
+	const body = await request.clone().json().catch(() => null) as unknown;
+	const messages = Array.isArray(body) ? body : [body];
+	return messages.some((message) => {
+		const method = (message as { method?: unknown } | null)?.method;
+		return method === "tools/list" || method === "tools/call";
+	});
+}
 
 async function boundedMcpRequest(request: Request): Promise<Request | Response> {
 	const contentLength = Number(request.headers.get("content-length"));
@@ -634,7 +646,7 @@ function registerControlPlaneReadTools(
 	}
 }
 
-export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser): McpServer {
+export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPhaseoUser, hubListing: HubListing | null = null): McpServer {
 	const server = new McpServer(
 		{
 			name: "Phaseo",
@@ -896,6 +908,7 @@ export function createServer(env: PhaseoEnv, authenticatedUser: AuthenticatedPha
 	if (authenticatedUser.scopes.includes("models:read") && authenticatedUser.scopes.includes("pricing:read")) {
 		registerModelExplorer(server);
 	}
+	if (hubListing) registerHubTools(server, env, authenticatedUser, hubListing);
 
 	return server;
 }
@@ -911,7 +924,7 @@ function resourceMetadata(request: Request, env: PhaseoEnv): Response {
 	return Response.json({
 		resource: `${origin}/mcp`,
 		authorization_servers: [`${removeTrailingSlashes(env.PHASEO_API_BASE_URL)}/oauth`],
-		scopes_supported: [...READ_ONLY_MCP_SCOPES, "gateway:access"],
+		scopes_supported: [...READ_ONLY_MCP_SCOPES, "gateway:access", "connections:use"],
 		bearer_methods_supported: ["header"],
 	}, { headers: { "Cache-Control": "public, max-age=300" } });
 }
@@ -1009,7 +1022,10 @@ export default {
 		if (boundedRequest instanceof Response) return secureResponse(boundedRequest);
 		const authenticatedUser = await authenticatePhaseoUser(boundedRequest, env);
 		if (!authenticatedUser) return secureResponse(unauthorised(request, env));
-		const response = await createMcpHandler(() => createServer(env, authenticatedUser), {
+		const hubListing = hubAvailable(env, authenticatedUser) && await listsOrCallsTools(boundedRequest)
+			? await fetchHubListing(env, authenticatedUser)
+			: null;
+		const response = await createMcpHandler(() => createServer(env, authenticatedUser, hubListing), {
 			route: "/mcp",
 			legacy: "stateless",
 			allowedHostnames: ["mcp.phaseo.app"],

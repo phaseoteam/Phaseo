@@ -216,3 +216,11 @@ class_name = "SpendLimitDurableObject"
 [[migrations]]
 tag = "v5-spend-limits"
 new_sqlite_classes = ["SpendLimitDurableObject"]
+
+[[durable_objects.bindings]]
+name = "MCP_CONNECTION_LOCKS"
+class_name = "McpConnectionLockDurableObject"
+
+[[migrations]]
+tag = "v6-mcp-connection-locks"
+new_sqlite_classes = ["McpConnectionLockDurableObject"]

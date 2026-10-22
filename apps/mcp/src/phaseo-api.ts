@@ -3,6 +3,8 @@ export type PhaseoEnv = Omit<Cloudflare.Env, "INFERENCE_RUNS"> & {
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: string;
 	OPENAI_APPS_CHALLENGE_TOKEN?: string;
 	PHASEO_WEB_BASE_URL: string;
+	/** "true" lists the tools of the person's connected MCP servers (Settings > Connections). */
+	MCP_HUB_ENABLED?: string;
 };
 
 export type GatewayMeter = {

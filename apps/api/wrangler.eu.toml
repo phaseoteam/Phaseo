@@ -83,3 +83,8 @@ script_name = "phaseo-gateway"
 name = "SPEND_LIMITS"
 class_name = "SpendLimitDurableObject"
 script_name = "phaseo-gateway"
+
+[[durable_objects.bindings]]
+name = "MCP_CONNECTION_LOCKS"
+class_name = "McpConnectionLockDurableObject"
+script_name = "phaseo-gateway"

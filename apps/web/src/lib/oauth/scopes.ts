@@ -20,6 +20,7 @@ export const OAUTH_SCOPE_OPTIONS: OAuthScopeOption[] = [
 	{ value: "profile", group: "Identity" },
 	{ value: "email", group: "Identity" },
 	{ value: "gateway:access", group: "Access" },
+	{ value: "connections:use", group: "Access" },
 	{ value: "me:read", group: "Read" },
 	{ value: "models:read", group: "Read" },
 	{ value: "providers:read", group: "Read" },
