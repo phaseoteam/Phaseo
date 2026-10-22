@@ -195,6 +195,92 @@ describe("buffered usage through the materialised stream", () => {
 	});
 });
 
+// A native Messages stream (Claude Opus 5.5 on Bedrock and Vertex is passed through to Messages
+// clients unchanged) reports input and cache counts on message_start and only the cumulative
+// output on message_delta. Some upstreams repeat input_tokens on message_delta as 0.
+function nativeMessagesStream(deltaUsage: Record<string, unknown>) {
+	return sse([
+		{
+			event: "message_start",
+			data: {
+				type: "message_start",
+				message: {
+					id: "msg_native",
+					type: "message",
+					role: "assistant",
+					content: [],
+					model: "claude-opus-5-5",
+					usage: {
+						input_tokens: UNCACHED,
+						cache_read_input_tokens: READ,
+						cache_creation_input_tokens: WRITE,
+						cache_creation: { ephemeral_5m_input_tokens: WRITE_5M, ephemeral_1h_input_tokens: WRITE_1H },
+						output_tokens: 1,
+					},
+				},
+			},
+		},
+		{ event: "content_block_start", data: { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } } },
+		{ event: "content_block_delta", data: { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "Hi" } } },
+		{ event: "content_block_stop", data: { type: "content_block_stop", index: 0 } },
+		{ event: "message_delta", data: { type: "message_delta", delta: { stop_reason: "end_turn", stop_sequence: null }, usage: deltaUsage } },
+		{ event: "message_stop", data: { type: "message_stop" } },
+	]);
+}
+
+describe("native Messages streams through the materialised stream", () => {
+	it.each([
+		["omits input_tokens", { output_tokens: OUTPUT }],
+		["repeats input and cache counts as 0", {
+			input_tokens: 0,
+			cache_read_input_tokens: 0,
+			cache_creation_input_tokens: 0,
+			cache_creation: { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 0 },
+			output_tokens: OUTPUT,
+		}],
+		["repeats the cumulative counts", {
+			input_tokens: UNCACHED,
+			cache_read_input_tokens: READ,
+			cache_creation_input_tokens: WRITE,
+			output_tokens: OUTPUT,
+		}],
+	])("keeps message_start input and cache counts when message_delta %s", async (_name, deltaUsage) => {
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "anthropic.messages",
+			stream: nativeMessagesStream(deltaUsage),
+			requestId: "req_usage",
+			model: "m",
+			provider: "amazon-bedrock",
+		});
+		expect(consumed.usageRaw).toMatchObject({
+			input_tokens: UNCACHED,
+			cache_read_input_tokens: READ,
+			cache_creation_input_tokens: WRITE,
+			cache_creation: { ephemeral_5m_input_tokens: WRITE_5M, ephemeral_1h_input_tokens: WRITE_1H },
+			output_tokens: OUTPUT,
+		});
+		// The IR keeps Messages semantics: input_tokens excludes the cache.
+		expect(consumed.ir.usage).toMatchObject({
+			inputTokens: UNCACHED,
+			outputTokens: OUTPUT,
+			cachedInputTokens: READ,
+			_ext: { cachedWriteTokens: WRITE, cachedWriteTokens5m: WRITE_5M, cachedWriteTokens1h: WRITE_1H },
+		});
+
+		const encoded = encodeProtocol("anthropic.messages", consumed.ir, "req_usage");
+		const shaped = shapeUsageForClient(
+			{ ...(consumed.usageRaw ?? {}), ...(encoded?.usage ?? {}) },
+			{ endpoint: "messages", includeInternalHints: true },
+		);
+		// Billing meters: OpenAI semantics, each token counted once.
+		expect(shaped.input_tokens).toBe(OPENAI_INPUT);
+		expect(shaped.output_tokens).toBe(OUTPUT);
+		expect(shaped.input_tokens_details).toMatchObject({ cached_tokens: READ, cache_write_tokens: WRITE });
+		expect(shaped.cached_write_text_tokens_5m).toBe(WRITE_5M);
+		expect(shaped.cached_write_text_tokens_1h).toBe(WRITE_1H);
+	});
+});
+
 describe("OpenAI 30-minute and 12-hour cache writes through the materialised stream", () => {
 	it("keeps the lifetime split from a Responses usage frame", async () => {
 		const usage = {

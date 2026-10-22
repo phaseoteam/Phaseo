@@ -111,3 +111,26 @@ export function resolveRequestCountUsage(usageRaw: any): number | undefined {
 
 	return undefined;
 }
+
+function isUsageRecord(value: unknown): value is Record<string, any> {
+	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+/**
+ * Stream usage is cumulative, but not every usage event repeats every count. A Messages
+ * stream reports input and cache counts on message_start and often only the output on
+ * message_delta, and some upstreams repeat the input there as 0. A later count replaces an
+ * earlier one unless it is missing or a 0 that would erase a count already reported.
+ */
+export function mergeStreamUsage(previous: unknown, next: unknown): any {
+	if (!isUsageRecord(next)) return previous ?? next;
+	if (!isUsageRecord(previous)) return next;
+	const merged: Record<string, any> = { ...previous };
+	for (const [key, value] of Object.entries(next)) {
+		const earlier = merged[key];
+		if (value == null) continue;
+		if (value === 0 && typeof earlier === "number" && earlier > 0) continue;
+		merged[key] = isUsageRecord(value) && isUsageRecord(earlier) ? mergeStreamUsage(earlier, value) : value;
+	}
+	return merged;
+}

@@ -8,6 +8,7 @@ import type { Protocol } from "@protocols/detect";
 import { createStreamCitationCollector } from "./stream-citations";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
+import { mergeStreamUsage } from "@core/usage-normalization";
 import { SseParser } from "@core/sse-parser";
 import { createStreamReasoningStateCollector } from "./stream-reasoning-state";
 import { UpstreamStreamError } from "@core/stream-errors";
@@ -1124,7 +1125,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 				}
 
 				if (event.type === "usage") {
-					usageRaw = event.usage;
+					usageRaw = mergeStreamUsage(usageRaw, event.usage);
 					continue;
 				}
 				applyUnifiedEventToAccumulators({
@@ -1171,7 +1172,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 						continue;
 					}
 					if (event.type === "usage") {
-						usageRaw = event.usage;
+						usageRaw = mergeStreamUsage(usageRaw, event.usage);
 						continue;
 					}
 					applyUnifiedEventToAccumulators({

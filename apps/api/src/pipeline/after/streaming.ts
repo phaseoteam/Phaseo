@@ -14,6 +14,7 @@ import type { StreamProtocol } from "@protocols/stream/encode";
 import { dispatchBackground } from "@/runtime/env";
 import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
 import { SseParser } from "@core/sse-parser";
+import { mergeStreamUsage } from "@core/usage-normalization";
 import { stripGatewayStop } from "@core/finish-reason";
 import { createChatStreamTerminal } from "./chat-stream-terminal";
 import { createStreamReencoder, encodeStreamInterruption, type StreamReencoder } from "./stream-reencode";
@@ -335,7 +336,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             .reverse()
                             .find((event) => event.type === "usage")?.usage ?? null;
                     if (usageFromEvents) {
-                        lastSeenUsage = usageFromEvents;
+                        lastSeenUsage = mergeStreamUsage(lastSeenUsage, usageFromEvents);
                     }
 
                     const finalSnapshotFromEvents =
@@ -346,7 +347,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             event.type === "stop" ||
                             (event.type === "snapshot" && event.isFinal),
                     );
-                    const usageCandidate = usageFromEvents ?? json?.usage ?? json?.response?.usage ?? null;
+                    // A usage event settles with the stream's merged usage, not only its own:
+                    // Messages input and cache counts arrive on message_start, before the terminal.
+                    const usageCandidate = usageFromEvents ? lastSeenUsage : (json?.usage ?? json?.response?.usage ?? null);
 
                     const fallbackTerminal =
                         !terminalByEvents &&

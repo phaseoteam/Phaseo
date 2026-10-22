@@ -154,6 +154,34 @@ describe("passthroughWithPricing client stream grammar", () => {
 });
 
 describe("passthroughWithPricing", () => {
+	// A native Messages stream (Claude Opus 5.5 on Bedrock and Vertex) reports input and cache
+	// counts on message_start; message_delta carries the output and may repeat the rest as 0.
+	it.each([
+		["omits them", { output_tokens: 9 }],
+		["repeats them as 0", { input_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0, output_tokens: 9 }],
+	])("settles a native Messages stream with message_start's input and cache counts when message_delta %s", async (_name, deltaUsage) => {
+		const usageCalls: Array<any> = [];
+		const upstream = makeSseResponse([
+			{ event: "message_start", data: { type: "message_start", message: { id: "msg_1", usage: { input_tokens: 30, cache_read_input_tokens: 4, cache_creation_input_tokens: 2, output_tokens: 1 } } } },
+			{ event: "content_block_start", data: { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } } },
+			{ event: "content_block_delta", data: { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "Hi" } } },
+			{ event: "content_block_stop", data: { type: "content_block_stop", index: 0 } },
+			{ event: "message_delta", data: { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: deltaUsage } },
+			{ event: "message_stop", data: { type: "message_stop" } },
+		]);
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx({ endpoint: "messages", protocol: "anthropic.messages" }),
+			provider: "amazon-bedrock",
+			priceCard: null,
+			onFinalUsage: (usage) => {
+				usageCalls.push(usage);
+			},
+		});
+		await drain(response);
+		expect(usageCalls).toEqual([{ input_tokens: 30, cache_read_input_tokens: 4, cache_creation_input_tokens: 2, output_tokens: 9 }]);
+	});
+
 	it("finalizes usage from response.incomplete and strips the internal stop carrier", async () => {
 		const usageCalls: Array<any> = [];
 		const snapshots: Array<any> = [];

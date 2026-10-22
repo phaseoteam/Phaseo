@@ -6,6 +6,7 @@ import { toResponsesAnnotations } from "@protocols/shared/citations";
 import { SseParser } from "@core/sse-parser";
 import { ANTHROPIC_REASONING_FORMAT, sealReasoningState } from "@core/reasoning-state";
 import { gatewayContextManagementEntry, gatewayStopEntry, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
+import { mergeStreamUsage } from "@core/usage-normalization";
 
 /**
  * Transform Anthropic Messages API streaming to OpenAI Responses API streaming format
@@ -42,7 +43,7 @@ export function createAnthropicStreamAccounting(): AnthropicStreamAccounting {
 	return {
 		observe(event: any) {
 			const eventUsage = event?.message?.usage ?? event?.usage;
-			if (eventUsage && typeof eventUsage === "object") usage = { ...usage, ...eventUsage };
+			if (eventUsage && typeof eventUsage === "object") usage = mergeStreamUsage(usage, eventUsage);
 			if (typeof event?.delta?.stop_reason === "string") stopReason = event.delta.stop_reason;
 			if (typeof event?.message?.stop_reason === "string") stopReason = event.message.stop_reason;
 		},
@@ -420,7 +421,7 @@ export function createAnthropicToResponsesStreamTransformer(
 					if (typeof payload.delta?.stop_sequence === "string") stopSequence = payload.delta.stop_sequence;
 					if (keepContextManagement && payload.context_management) contextManagement = payload.context_management;
 					if (payload.usage) {
-						usage = { ...usage, ...payload.usage };
+						usage = mergeStreamUsage(usage, payload.usage);
 					}
 
 				} else if (payload.type === "error") {
