@@ -6,6 +6,19 @@ export function isClaudeOpus55(model: string | null | undefined): boolean {
 	return /(?:^|[/.])claude-opus-5[.-]5$/.test(normalizeClaudeModelId(model));
 }
 
+/**
+ * Models that reject a forced `tool_choice` (`any` or `tool`) with a 400 on every platform:
+ * Opus 5.5, Sonnet 5.5, Fable 5.1 and Mythos 5.1. Returns the model name for messages, or null.
+ * https://platform.claude.com/docs/en/build-with-claude/thinking (tool choice limitation)
+ */
+export function claudeModelWithoutForcedToolChoice(model: string | null | undefined): string | null {
+	const normalized = normalizeClaudeModelId(model);
+	const match = /claude-(opus|sonnet)-5[.-]5(?:$|[^0-9])/.exec(normalized) ?? /claude-(fable|mythos)-5[.-]1(?:$|[^0-9])/.exec(normalized);
+	if (!match) return null;
+	const family = match[1].charAt(0).toUpperCase() + match[1].slice(1);
+	return `${family} ${family === "Opus" || family === "Sonnet" ? "5.5" : "5.1"}`;
+}
+
 export function usesClaudeAdaptiveThinkingControls(model: string | null | undefined): boolean {
 	const normalized = normalizeClaudeModelId(model);
 	if (!normalized) return false;
@@ -41,6 +54,16 @@ export function supportsAnthropicMidConversationSystemMessages(model: string | n
 		/claude-sonnet-5[.-]5(?:$|[^0-9])/.test(normalized) ||
 		/claude-haiku-5[.-]5(?:$|[^0-9])/.test(normalized)
 	);
+}
+
+/**
+ * Opus 4.6 and Sonnet 4.6 take adaptive thinking (manual `budget_tokens` is deprecated on
+ * them) but, unlike the adaptive set above, keep thinking off when `thinking` is omitted
+ * and accept sampling parameters while thinking is off.
+ * https://platform.claude.com/docs/en/build-with-claude/thinking
+ */
+export function isClaude46(model: string | null | undefined): boolean {
+	return /claude-(?:opus|sonnet)-4[.-]6(?:$|[^0-9])/.test(normalizeClaudeModelId(model));
 }
 
 /**

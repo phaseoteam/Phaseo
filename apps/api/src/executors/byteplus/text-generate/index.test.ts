@@ -46,6 +46,13 @@ describe("BytePlus current text contract", () => {
 		expect(wire.max_output_tokens).toBe(1024);
 	});
 
+	it("sends store: false on Responses unless the client asked to store", () => {
+		expect(irToOpenAIResponses(request(), "seed-2-0-lite-260228", "byteplus").store).toBe(false);
+		expect(irToOpenAIResponses({ ...request(), store: false }, "seed-2-0-lite-260228", "byteplus").store).toBe(false);
+		expect(irToOpenAIResponses({ ...request(), store: true }, "seed-2-0-lite-260228", "byteplus").store).toBe(true);
+		expect(irToOpenAIChat(request(), "seed-2-0-lite-260228", "byteplus").store).toBeUndefined();
+	});
+
 	it("uses max_completion_tokens and thinking on the supported Chat API", () => {
 		const wire = irToOpenAIChat(request(), "seed-2-0-lite-260228", "byteplus");
 		expect(wire.max_completion_tokens).toBe(1024);
