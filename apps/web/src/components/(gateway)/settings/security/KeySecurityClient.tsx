@@ -30,6 +30,8 @@ import {
 import type { KeySecurityKey, SettingsKeySecurityInitialData } from "@/lib/fetchers/internal/settingsTypes";
 
 const NANOS_PER_USD = 1_000_000_000;
+/** The word typed to confirm a bulk revoke. It isn't translated, so it is the same in every language. */
+const REVOKE_CONFIRMATION = "revoke";
 
 export type KeySecurityFilter =
 	| { kind: "all" }
@@ -174,7 +176,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 		set_expiry: (count: number) => t("keySecurity.confirm.set_expiry", { count }),
 		set_storage_locations: (count: number) => t("keySecurity.confirm.set_storage_locations", { count }),
 	};
-	const revokeConfirmed = pending?.action !== "revoke" || confirmText.trim().toLowerCase() === "revoke";
+	const revokeConfirmed = pending?.action !== "revoke" || confirmText.trim().toLowerCase() === REVOKE_CONFIRMATION;
 	const ready = Boolean(input()) && revokeConfirmed && !busy;
 	const selectedKeys = data.keys.filter((key) => selected.has(key.id));
 	const recommendations = [
@@ -379,7 +381,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 					{pending?.action === "revoke" ? (
 						<div className="space-y-2">
 							<label htmlFor="bulk-revoke-confirm" className="text-sm font-medium">{t("keySecurity.typeRevoke")}</label>
-							<Input id="bulk-revoke-confirm" value={confirmText} onChange={(event) => setConfirmText(event.target.value)} autoComplete="off" placeholder="revoke" />
+							<Input id="bulk-revoke-confirm" value={confirmText} onChange={(event) => setConfirmText(event.target.value)} autoComplete="off" placeholder={REVOKE_CONFIRMATION} />
 						</div>
 					) : null}
 					<DialogFooter>
