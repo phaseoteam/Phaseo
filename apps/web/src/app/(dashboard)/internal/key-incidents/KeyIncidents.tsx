@@ -108,7 +108,7 @@ export function KeyIncidents({ incidents }: { incidents: KeyIncident[] }) {
 				</div>
 				<div className="space-y-2">
 					<label htmlFor="incident-source" className="text-sm font-medium">{t("keyIncidents.source")}</label>
-					<Input id="incident-source" type="url" value={sourceUrl} maxLength={500} onChange={(event) => setSourceUrl(event.target.value)} placeholder="https://" />
+					<Input id="incident-source" type="url" value={sourceUrl} maxLength={500} onChange={(event) => setSourceUrl(event.target.value)} />
 				</div>
 
 				<div className="flex flex-wrap items-center gap-3">
