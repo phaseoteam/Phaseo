@@ -4477,7 +4477,8 @@
 		"workspaces": "वर्कस्पेस",
 		"classifiers": "क्लासिफ़ायर",
 		"newClassifier": "नया क्लासिफ़ायर",
-		"classifier": "क्लासिफ़ायर"
+		"classifier": "क्लासिफ़ायर",
+		"connections": "कनेक्शन"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4704,7 +4705,8 @@
 		"becomeProvider": "प्रदाता बनें",
 		"empty": "कोई सेटिंग नहीं मिली।",
 		"providerProfile": "प्रदाता प्रोफ़ाइल",
-		"classifiers": "क्लासिफ़ायर"
+		"classifiers": "क्लासिफ़ायर",
+		"connections": "कनेक्शन"
 	},
 	"settingsAvailability": {
 		"title": "सेटिंग अस्थायी रूप से उपलब्ध नहीं हैं",
@@ -6257,6 +6259,45 @@
 			"deleteFailed": "क्लासिफ़ायर हटाया नहीं जा सका।",
 			"samplePercent": "0.01% से 100% के बीच का हिस्सा दर्ज करें।",
 			"budgetUsd": "$0 से ज़्यादा बजट दर्ज करें, या इसे खाली छोड़ दें।"
+		}
+	},
+	"connections": {
+		"title": "कनेक्शन",
+		"description": "Linear या Notion जैसे MCP सर्वर एक बार कनेक्ट करें, फिर Phaseo के ज़रिए किसी भी MCP क्लाइंट से उनके टूल इस्तेमाल करें।",
+		"unavailable": "इस वर्कस्पेस के लिए कनेक्शन अभी उपलब्ध नहीं हैं।",
+		"connectedNotice": "कनेक्ट हो गया। इसके टूल अब आपके Phaseo MCP सर्वर पर दिखते हैं।",
+		"serverHeading": "आपका Phaseo MCP सर्वर",
+		"serverHelp": "इस सर्वर को Claude Code, Codex, Cursor या किसी दूसरे MCP क्लाइंट में जोड़ें। यह यहाँ कनेक्ट किए गए हर सर्वर के टूल दिखाता है।",
+		"personalNote": "कनेक्शन निजी होते हैं। सिर्फ़ आप इन्हें इस्तेमाल कर सकते हैं, और टूल हर सेवा पर आपके अपने खाते से चलते हैं।",
+		"connectedHeading": "कनेक्ट किए गए",
+		"empty": "अभी तक कुछ कनेक्ट नहीं है।",
+		"status": {
+			"active": "कनेक्ट है",
+			"needs_reauth": "फिर से साइन इन करें",
+			"revoked": "रद्द किया गया"
+		},
+		"catalogHeading": "सर्वर कनेक्ट करें",
+		"notes": {
+			"atlassianAdmin": "पहले किसी साइट एडमिन को Phaseo की अनुमति देनी होगी।"
+		},
+		"connect": "कनेक्ट करें",
+		"connecting": "कनेक्ट हो रहा है…",
+		"reconnect": "फिर से कनेक्ट करें",
+		"urlLabel": "सर्वर URL",
+		"nameLabel": "नाम",
+		"addByUrl": "URL से जोड़ें",
+		"disconnect": "डिस्कनेक्ट करें",
+		"disconnectTitle": "{name} डिस्कनेक्ट करें?",
+		"disconnectBody": "इसके टूल आपके MCP क्लाइंट से हट जाएँगे, और Phaseo सर्वर से इसकी पहुँच रद्द करने को कहेगा।",
+		"cancel": "रद्द करें",
+		"errors": {
+			"generic": "वह सर्वर कनेक्ट नहीं हो सका।",
+			"access_denied": "साइन इन रद्द कर दिया गया।",
+			"state_expired": "साइन इन में बहुत देर लगी। फिर से कोशिश करें।",
+			"state_invalid": "यह साइन-इन लिंक पहले ही इस्तेमाल हो चुका है। फिर से कोशिश करें।",
+			"session_mismatch": "Phaseo में उसी व्यक्ति के रूप में साइन इन करें जिसने कनेक्शन शुरू किया था।",
+			"sign_in_required": "Phaseo में साइन इन करें, फिर से कोशिश करें।",
+			"disconnect": "डिस्कनेक्ट नहीं हो सका। फिर से कोशिश करें।"
 		}
 	}
 }

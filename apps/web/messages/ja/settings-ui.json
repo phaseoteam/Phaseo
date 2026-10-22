@@ -4477,7 +4477,8 @@
 		"workspaces": "ワークスペース",
 		"classifiers": "分類器",
 		"newClassifier": "新しい分類器",
-		"classifier": "分類器"
+		"classifier": "分類器",
+		"connections": "接続"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4704,7 +4705,8 @@
 		"becomeProvider": "プロバイダーになる",
 		"empty": "設定が見つかりません。",
 		"providerProfile": "プロバイダープロフィール",
-		"classifiers": "分類器"
+		"classifiers": "分類器",
+		"connections": "接続"
 	},
 	"settingsAvailability": {
 		"title": "設定は一時的に利用できません",
@@ -6257,6 +6259,45 @@
 			"deleteFailed": "分類器を削除できませんでした。",
 			"samplePercent": "0.01% から 100% の割合を入力してください。",
 			"budgetUsd": "$0 より大きい予算を入力するか、空欄のままにしてください。"
+		}
+	},
+	"connections": {
+		"title": "接続",
+		"description": "Linear や Notion などの MCP サーバーを一度接続すれば、Phaseo を通じてどの MCP クライアントからでもツールを使えます。",
+		"unavailable": "このワークスペースではまだ接続を利用できません。",
+		"connectedNotice": "接続しました。ツールが Phaseo MCP サーバーに表示されるようになりました。",
+		"serverHeading": "あなたの Phaseo MCP サーバー",
+		"serverHelp": "このサーバーを Claude Code、Codex、Cursor などの MCP クライアントに追加してください。ここで接続したすべてのサーバーのツールが表示されます。",
+		"personalNote": "接続は個人用です。使えるのはあなただけで、ツールは各サービスのあなた自身のアカウントで実行されます。",
+		"connectedHeading": "接続済み",
+		"empty": "まだ何も接続されていません。",
+		"status": {
+			"active": "接続済み",
+			"needs_reauth": "再ログインが必要",
+			"revoked": "取り消し済み"
+		},
+		"catalogHeading": "サーバーを接続",
+		"notes": {
+			"atlassianAdmin": "先にサイト管理者が Phaseo を許可する必要があります。"
+		},
+		"connect": "接続",
+		"connecting": "接続中…",
+		"reconnect": "再接続",
+		"urlLabel": "サーバー URL",
+		"nameLabel": "名前",
+		"addByUrl": "URL で追加",
+		"disconnect": "接続を解除",
+		"disconnectTitle": "{name} の接続を解除しますか?",
+		"disconnectBody": "ツールは MCP クライアントから消え、Phaseo はサーバーにアクセスの取り消しを依頼します。",
+		"cancel": "キャンセル",
+		"errors": {
+			"generic": "そのサーバーに接続できませんでした。",
+			"access_denied": "ログインがキャンセルされました。",
+			"state_expired": "ログインに時間がかかりすぎました。もう一度お試しください。",
+			"state_invalid": "このログインリンクは使用済みです。もう一度お試しください。",
+			"session_mismatch": "接続を開始した本人として Phaseo にログインしてください。",
+			"sign_in_required": "Phaseo にログインしてから、もう一度お試しください。",
+			"disconnect": "接続を解除できませんでした。もう一度お試しください。"
 		}
 	}
 }

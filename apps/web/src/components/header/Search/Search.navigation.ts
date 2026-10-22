@@ -117,7 +117,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 ];
 
 // Derive settings pages from the sidebar so new subpages remain discoverable.
-const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true, showClassifiers: true }).flatMap((group) =>
+const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true, showClassifiers: true, showConnections: true }).flatMap((group) =>
 	group.items.filter((item) => !item.disabled && !item.external).flatMap((item) => [
 		{ id: `nav-${item.href.slice(1).replaceAll("/", "-")}`, title: item.label, href: item.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label] },
 		...(item.children ?? []).map((child) => ({ id: `nav-${child.href.slice(1).replaceAll("/", "-")}`, title: `${item.label}: ${child.label}`, href: child.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label, child.label] })),

@@ -268,11 +268,12 @@ accountSettingsConnectionsRouter.get("/connections", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: c.req.query("workspaceId") });
 	if (!context) return json(c, { error: "forbidden" }, 403);
 	const enabled = hubEnabled(c.env) && keyring(c.env) !== null;
-	if (!enabled) return json(c, { enabled: false, mcpUrl: DEFAULT_MCP_URL, connections: [] });
+	const identity = { workspaceId: context.workspaceId, currentUserId: context.user.id };
+	if (!enabled) return json(c, { ...identity, enabled: false, mcpUrl: DEFAULT_MCP_URL, connections: [] });
 	const result = await context.client.from("mcp_connections").select(CONNECTION_COLUMNS)
 		.eq("workspace_id", context.workspaceId).eq("user_id", context.user.id).order("created_at", { ascending: true });
 	if (result.error) return json(c, { error: "lookup_failed" }, 503);
-	return json(c, { enabled: true, mcpUrl: c.env.MCP_PUBLIC_URL?.trim() || DEFAULT_MCP_URL, connections: result.data ?? [] });
+	return json(c, { ...identity, enabled: true, mcpUrl: c.env.MCP_PUBLIC_URL?.trim() || DEFAULT_MCP_URL, connections: result.data ?? [] });
 });
 
 accountSettingsConnectionsRouter.post("/connections/start", async (c) => {

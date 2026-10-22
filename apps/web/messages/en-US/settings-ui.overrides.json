@@ -25,5 +25,10 @@
         "json": "This model has no structured outputs, so it is asked for JSON in the prompt. Replies outside your values are dropped, which can leave a dimension unlabeled."
       }
     }
+  },
+  "connections": {
+    "errors": {
+      "access_denied": "Sign-in was canceled."
+    }
   }
 }

@@ -4477,7 +4477,8 @@
 		"workspaces": "Espaces de travail",
 		"classifiers": "Classificateurs",
 		"newClassifier": "Nouveau classificateur",
-		"classifier": "Classificateur"
+		"classifier": "Classificateur",
+		"connections": "Connexions"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4704,7 +4705,8 @@
 		"becomeProvider": "Devenir fournisseur",
 		"empty": "Aucun paramètre trouvé.",
 		"providerProfile": "Profil du fournisseur",
-		"classifiers": "Classificateurs"
+		"classifiers": "Classificateurs",
+		"connections": "Connexions"
 	},
 	"settingsAvailability": {
 		"title": "Les paramètres sont temporairement indisponibles",
@@ -6257,6 +6259,45 @@
 			"deleteFailed": "Impossible de supprimer le classificateur.",
 			"samplePercent": "Saisissez une part de 0,01 % à 100 %.",
 			"budgetUsd": "Saisissez un budget supérieur à $0, ou laissez le champ vide."
+		}
+	},
+	"connections": {
+		"title": "Connexions",
+		"description": "Connectez une fois des serveurs MCP comme Linear ou Notion, puis utilisez leurs outils depuis n'importe quel client MCP via Phaseo.",
+		"unavailable": "Les connexions ne sont pas encore disponibles pour cet espace de travail.",
+		"connectedNotice": "Connecté. Ses outils apparaissent maintenant sur votre serveur MCP Phaseo.",
+		"serverHeading": "Votre serveur MCP Phaseo",
+		"serverHelp": "Ajoutez ce serveur à Claude Code, Codex, Cursor ou un autre client MCP. Il affiche les outils de tous les serveurs que vous connectez ici.",
+		"personalNote": "Les connexions sont personnelles. Vous seul pouvez les utiliser, et les outils s'exécutent avec votre propre compte sur chaque service.",
+		"connectedHeading": "Connectés",
+		"empty": "Rien n'est encore connecté.",
+		"status": {
+			"active": "Connecté",
+			"needs_reauth": "Reconnectez-vous",
+			"revoked": "Révoqué"
+		},
+		"catalogHeading": "Connecter un serveur",
+		"notes": {
+			"atlassianAdmin": "Un administrateur du site doit d'abord autoriser Phaseo."
+		},
+		"connect": "Connecter",
+		"connecting": "Connexion…",
+		"reconnect": "Reconnecter",
+		"urlLabel": "URL du serveur",
+		"nameLabel": "Nom",
+		"addByUrl": "Ajouter par URL",
+		"disconnect": "Déconnecter",
+		"disconnectTitle": "Déconnecter {name} ?",
+		"disconnectBody": "Ses outils disparaîtront de vos clients MCP, et Phaseo demandera au serveur de révoquer son accès.",
+		"cancel": "Annuler",
+		"errors": {
+			"generic": "Impossible de connecter ce serveur.",
+			"access_denied": "La connexion a été annulée.",
+			"state_expired": "La connexion a pris trop de temps. Réessayez.",
+			"state_invalid": "Ce lien de connexion a déjà été utilisé. Réessayez.",
+			"session_mismatch": "Connectez-vous à Phaseo avec le compte qui a lancé la connexion.",
+			"sign_in_required": "Connectez-vous à Phaseo, puis réessayez.",
+			"disconnect": "Impossible de déconnecter. Réessayez."
 		}
 	}
 }
