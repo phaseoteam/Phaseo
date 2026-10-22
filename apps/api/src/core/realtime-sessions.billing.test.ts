@@ -169,10 +169,12 @@ describe("realtime voice billing simulation", () => {
 		expect(realtimeMaxDurationSeconds("openai", "openai/gpt-live-1")).toBe(25 * 60);
 	});
 
-	it("caps Google sessions until upstream resumption is supported", () => {
+	it("caps each provider at its own session limit", () => {
+		// Google until upstream resumption is supported; xAI per its docs.
 		expect(realtimeMaxDurationSeconds("google-ai-studio")).toBe(15 * 60);
-		expect(realtimeMaxDurationSeconds("x-ai")).toBe(25 * 60);
-		expect(realtimeMaxDurationSeconds("spacex-ai")).toBe(25 * 60);
+		expect(realtimeMaxDurationSeconds("x-ai")).toBe(120 * 60);
+		expect(realtimeMaxDurationSeconds("spacex-ai")).toBe(120 * 60);
+		expect(realtimeMaxDurationSeconds("openai", "openai/gpt-live-1")).toBe(25 * 60);
 	});
 
 	it("calculates PCM16 audio duration from payload bytes, not client metadata", () => {

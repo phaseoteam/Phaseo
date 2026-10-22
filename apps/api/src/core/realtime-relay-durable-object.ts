@@ -5,6 +5,7 @@
 import { configureRuntime } from "@/runtime/env";
 import type { GatewayBindings } from "@/runtime/env.types";
 import {
+	REALTIME_DURATION_WARNING_SECONDS,
 	REALTIME_GRACEFUL_STOP_THRESHOLD,
 	REALTIME_IDLE_TIMEOUT_SECONDS,
 	REALTIME_RELAY_MAX_DURATION_SECONDS,
@@ -12,8 +13,13 @@ import {
 	claimRealtimeSessionForRelay,
 	decideRealtimeRelayBudget,
 	extendRealtimeSessionHold,
+	getRealtimeFundingPosition,
 	getRealtimeSessionForInternal,
+	isPlaygroundRealtimeSession,
 	isRealtimeRelaySecret,
+	isRealtimeSpendLimitReason,
+	realtimeAccessEndReason,
+	realtimeMaxDurationSeconds,
 	markRealtimeSessionBillingUnresolved,
 	markRealtimeSessionConnected,
 	normalizeRealtimeUsage,
@@ -32,6 +38,15 @@ import {
 } from "@core/realtime-sessions";
 import { enqueueAsyncGenAiOtlpExport } from "@observability/otlp-export";
 import { isLiveModel, liveConfig, liveStartEvent, ingestLiveUsage, assertLiveFinalUsage, priceLiveUsage, liveUsageMeters, type LiveUsage } from "./live-sessions";
+import {
+	buildSessionEndedEvent,
+	buildSessionWarningEvent,
+	classifyRealtimeEnd,
+	sanitizeClientEndReason,
+	type RealtimeBillingStatus,
+	type RealtimeEnd,
+	type RealtimeWarningCode,
+} from "./realtime-session-events";
 
 const GOOGLE_LIVE_URL =
 	"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
@@ -58,6 +73,15 @@ const OPENAI_VAD_PREFIX_PADDING_MS = 300;
 // After this many failed settlement attempts the session moves to billing
 // review instead of retrying forever.
 const RELAY_SETTLEMENT_MAX_ATTEMPTS = 20;
+// A quiet call still gets its key, workspace and funds rechecked this often
+// (xAI also accrues connected-time cost while nobody speaks).
+const RELAY_POLICY_RECHECK_INTERVAL_MS = 60_000;
+// After a hold extension fails, retry it at most this often.
+const RELAY_HOLD_RETRY_INTERVAL_MS = 15_000;
+// While running on free balance or overdraft, recheck the wallet at most this often.
+const RELAY_FUNDS_CHECK_INTERVAL_MS = 10_000;
+// A second overdraft_in_use warning once this little of the cap is left.
+const RELAY_OVERDRAFT_LAST_WARNING_NANOS = 250_000_000;
 // Documented audio token rates, confirmed against recorded sessions on
 // 2026-10-22 (OpenAI 10/s in and ~20/s out; Google 29-32/s out). Used only to
 // estimate a turn whose provider usage never arrived because the connection
@@ -120,6 +144,19 @@ type ClientAudioMessage = {
 	rms?: number;
 };
 
+type ClientEndMessage = {
+	type: "session.end" | "client.close";
+	reason?: unknown;
+	cancel_response?: unknown;
+};
+
+/** Google sends protobuf Duration JSON, for example "50s" or "49.5s". */
+function durationSeconds(value: unknown): number | null {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	const match = typeof value === "string" ? /^(\d+(?:\.\d+)?)s$/.exec(value.trim()) : null;
+	return match ? Number(match[1]) : null;
+}
+
 type PendingSettlement = {
 	status: "completed" | "failed" | "cancelled" | "expired";
 	reason: string;
@@ -133,6 +170,8 @@ const STORAGE_USAGE = "usage";
 const STORAGE_PENDING_SETTLEMENT = "pending_settlement";
 const STORAGE_PROVIDER_STATE = "provider_state";
 const STORAGE_SETTLEMENT_ATTEMPTS = "settlement_attempts";
+const STORAGE_CLAIMED_AT = "claimed_at_ms";
+const STORAGE_DEADLINE = "deadline_ms";
 const OPENAI_BILLING_EVENT_TYPES = new Set([
 	"input_audio_buffer.committed",
 	"response.created",
@@ -439,8 +478,25 @@ export class RealtimeRelayDurableObject {
 	// not played to nobody and billed.
 	private cancelResponsesOnDrain = false;
 	private lastActivityAt = 0;
+	// The provider cap runs from the claim, not from session creation.
+	private claimedAtMs = 0;
+	private deadlineMs = 0;
+	// The first end path wins: it decides session.ended's reason and initiator.
+	private end: RealtimeEnd | null = null;
+	private clientEndReason: string | null = null;
+	private providerCloseCode: number | null = null;
+	private endedSent = false;
+	private warningsSent = new Set<string>();
+	private warningTimers: number[] = [];
+	private policyTimer: number | null = null;
+	// API sessions keep running after a failed hold extension, up to the overdraft cap.
+	private holdShortfall = false;
+	private lastHoldAttemptAt = 0;
+	private lastFundsCheckAt = 0;
 
 	private get isLive() { return isLiveModel(this.session?.model_id); }
+	// Playground rules (idle timeout, hold and spend-limit closes) apply only to source "chat".
+	private get isPlayground() { return isPlaygroundRealtimeSession(this.session); }
 
 	constructor(state: DurableObjectState, env: GatewayBindings) {
 		this.state = state;
@@ -469,11 +525,14 @@ export class RealtimeRelayDurableObject {
 			return new Response("valid realtime relay token required", { status: 401 });
 		}
 		this.session = await claimRealtimeSessionForRelay({ sessionId, token });
+		this.startClock();
 		this.usage = (await this.state.storage.get<RelayUsageAggregate>(STORAGE_USAGE)) ?? {};
 		this.providerState = (await this.state.storage.get<RelayProviderState>(STORAGE_PROVIDER_STATE)) ?? this.providerState;
 		await this.state.storage.put({
 			[STORAGE_SESSION_ID]: this.session.session_id,
 			[STORAGE_PROVIDER_STATE]: this.providerState,
+			[STORAGE_CLAIMED_AT]: this.claimedAtMs,
+			[STORAGE_DEADLINE]: this.deadlineMs,
 		});
 		await this.scheduleExpiryAlarm();
 
@@ -510,6 +569,7 @@ export class RealtimeRelayDurableObject {
 				this.session = await markRealtimeSessionConnected({
 					auth: authForSession(this.session, `realtime_relay:${this.session.session_id}`),
 					sessionId: this.session.session_id,
+					expiresAt: new Date(this.deadlineMs).toISOString(),
 				});
 			}
 		} catch (error) {
@@ -521,8 +581,13 @@ export class RealtimeRelayDurableObject {
 				type: "relay.connected",
 				session_id: this.session.session_id,
 				provider: this.session.provider,
+				expires_at: new Date(this.deadlineMs).toISOString(),
+				max_duration_seconds: Math.round((this.deadlineMs - this.claimedAtMs) / 1000),
+				idle_timeout_seconds: this.isPlayground ? REALTIME_IDLE_TIMEOUT_SECONDS : null,
 			});
 			this.resetIdleTimer();
+			this.scheduleDurationWarnings();
+			this.schedulePolicyRecheck();
 		}
 
 		return new Response(null, {
@@ -530,6 +595,14 @@ export class RealtimeRelayDurableObject {
 			webSocket: client,
 			headers: responseProtocol ? { "Sec-WebSocket-Protocol": responseProtocol } : undefined,
 		});
+	}
+
+	/** The provider's session cap starts when the relay claims the session. */
+	private startClock() {
+		if (!this.session) return;
+		this.claimedAtMs = Date.now();
+		this.deadlineMs = this.claimedAtMs
+			+ realtimeMaxDurationSeconds(providerFromSession(this.session), this.session.model_id) * 1000;
 	}
 
 	private async connectProvider() {
@@ -679,6 +752,8 @@ export class RealtimeRelayDurableObject {
 		const reason = closedBeforeReady
 			? "provider_socket_closed_before_setup"
 			: "provider_socket_closed";
+		// Google closes idle sessions with 1008 and sessions past their limit after goAway.
+		if (!this.end && typeof event.code === "number") this.providerCloseCode = event.code;
 		this.sendClient({
 			type: "relay.upstream_closed",
 			provider: this.session?.provider,
@@ -715,8 +790,10 @@ export class RealtimeRelayDurableObject {
 		}
 		const message = parseJson(text) as ClientAudioMessage | null;
 		this.lastActivityAt = Date.now();
-		if (this.isLive && (message?.type as string) === "client.close") {
-			await this.requestLiveClose("completed", "client_requested_close");
+		const type = message?.type as string | undefined;
+		// client.close is the playground's older name for ending a GPT Live call.
+		if (type === "session.end" || (this.isLive && type === "client.close")) {
+			await this.handleClientEnd(message as unknown as ClientEndMessage);
 			return;
 		}
 		if (!message || message.type !== "client.audio" || !message.audio) return;
@@ -859,6 +936,7 @@ export class RealtimeRelayDurableObject {
 				this.session = await markRealtimeSessionConnected({
 					auth: authForSession(this.session, `live_started:${this.session.session_id}`), sessionId: this.session.session_id,
 					providerSessionId: getStringField(getRecordField(event, "session") ?? {}, "id"),
+					...(this.deadlineMs ? { expiresAt: new Date(this.deadlineMs).toISOString() } : {}),
 				});
 				if (this.liveClosing) this.sendUpstream({ type: "session.close" });
 			}
@@ -997,6 +1075,13 @@ export class RealtimeRelayDurableObject {
 
 		if (provider === "google-ai-studio") {
 			if (event.setupComplete) this.providerSetupComplete = true;
+			const goAway = getRecordField(event, "goAway");
+			if (goAway) {
+				const secondsRemaining = durationSeconds(goAway.timeLeft);
+				this.warnOnce("provider_closing", "goaway",
+					"The provider will close this connection soon; the call ends when it does.",
+					secondsRemaining != null ? { seconds_remaining: secondsRemaining } : undefined);
+			}
 			const serverContent = getRecordField(event, "serverContent");
 			if (serverContent) {
 				const interactionStatus =
@@ -1230,20 +1315,61 @@ export class RealtimeRelayDurableObject {
 	private async handleClientGone() {
 		this.acceptingAudio = false;
 		if (this.isLive) { await this.requestLiveClose("cancelled", "client_disconnected"); return; }
-		const provider = this.session ? providerFromSession(this.session) : null;
-		if (provider === "openai" && this.receivedAudioMs > 0 && this.upstream?.readyState === WebSocket.OPEN) {
-			// Uncommitted audio is not billed: discard it rather than committing it
-			// and creating a reply nobody will hear. The acknowledgement orders any
-			// commit the provider already made ahead of the settlement.
-			this.waitingForOpenAIInputClear = true;
-			this.usage.input_audio_clear_pending = true;
-			this.sendUpstream({ type: "input_audio_buffer.clear" });
-		}
+		this.clearUncommittedInput();
 		await this.forceAuthoritativeUsage(
 			this.providerCompletedResponseSeen ? "completed" : "cancelled",
 			"client_disconnected",
 			{ statusFromResponses: true },
 		);
+	}
+
+	/**
+	 * Discards microphone audio the provider has not committed to a turn, so
+	 * ending never commits it into a reply nobody will hear.
+	 */
+	private clearUncommittedInput() {
+		const provider = this.session ? providerFromSession(this.session) : null;
+		if (this.upstream?.readyState !== WebSocket.OPEN) return;
+		if (provider === "openai" && this.receivedAudioMs > 0) {
+			// The acknowledgement orders any commit the provider already made
+			// ahead of the settlement.
+			this.waitingForOpenAIInputClear = true;
+			this.usage.input_audio_clear_pending = true;
+			this.sendUpstream({ type: "input_audio_buffer.clear" });
+		} else if (provider === "spacex-ai" && this.receivedAudioMs > 0) {
+			this.sendUpstream({ type: "input_audio_buffer.clear" });
+		} else if (provider === "google-ai-studio" && this.googleAudioActive) {
+			this.googleAudioActive = false;
+			this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
+		}
+	}
+
+	/**
+	 * Client session.end: stop audio, drop uncommitted input, cancel (default)
+	 * or finish the in-flight response, wait boundedly for its usage, settle,
+	 * send session.ended and close with 1000.
+	 */
+	private async handleClientEnd(message: ClientEndMessage) {
+		if (!this.session || this.settled || this.settling || this.end) return;
+		this.end = { reason: "client_requested", initiatedBy: "client" };
+		this.clientEndReason = sanitizeClientEndReason(message.reason);
+		this.acceptingAudio = false;
+		if (this.idleTimer != null) {
+			clearTimeout(this.idleTimer);
+			this.idleTimer = null;
+		}
+		if (this.isLive) {
+			// GPT Live: session.close, then settle from session.closed.
+			await this.requestLiveClose("completed", "client_requested_end");
+			return;
+		}
+		this.clearUncommittedInput();
+		const options = { statusFromResponses: true };
+		if (message.cancel_response === false) {
+			await this.beginDrainClose("completed", "client_requested_end", options);
+		} else {
+			await this.forceAuthoritativeUsage("completed", "client_requested_end", options);
+		}
 	}
 
 	/**
@@ -1257,6 +1383,7 @@ export class RealtimeRelayDurableObject {
 		options?: { statusFromResponses?: boolean },
 	) {
 		if (!this.session || this.settled || this.settling) return;
+		this.noteEnd(reason);
 		this.acceptingAudio = false;
 		if (this.isLive) { await this.requestLiveClose(status, reason); return; }
 		if (this.pendingSettlement?.phase === "authoritative") return;
@@ -1356,19 +1483,32 @@ export class RealtimeRelayDurableObject {
 			return;
 		}
 		if (updated.status === "ending") {
-			await this.beginBudgetClose(updated.disconnect_reason ?? "realtime_policy_limit_reached");
+			const reason = updated.disconnect_reason ?? "realtime_policy_limit_reached";
+			const lostAccess = realtimeAccessEndReason(reason);
+			if (lostAccess) await this.endForLostAccess(lostAccess);
+			else await this.beginBudgetClose(reason);
 			return;
 		}
+		// API sessions only: a spend limit warns and the call continues.
+		for (const reason of updated.policy_warnings ?? []) this.warnSpendLimit(reason);
 		await this.enforceBudget(updated);
 	}
 
 	private async enforceBudget(session: RealtimeSessionRow) {
-		if (this.budgetClosing || this.settled) return;
+		if (this.budgetClosing || this.settled || this.end) return;
 		const decision = decideRealtimeRelayBudget({
 			reservedNanos: Number(session.reserved_nanos ?? 0) || 0,
 			estimatedCostNanos: Number(session.estimated_cost_nanos ?? 0) || 0,
 		});
-		if (decision.action !== "extend" || decision.targetReservedNanos == null) return;
+		if (decision.action !== "extend" || decision.targetReservedNanos == null) {
+			this.holdShortfall = false;
+			return;
+		}
+		if (this.holdShortfall && Date.now() - this.lastHoldAttemptAt < RELAY_HOLD_RETRY_INTERVAL_MS) {
+			await this.checkFunding(session);
+			return;
+		}
+		this.lastHoldAttemptAt = Date.now();
 		try {
 			this.session = await extendRealtimeSessionHold({
 				auth: authForSession(session, `realtime_relay_extend:${session.session_id}`),
@@ -1376,48 +1516,193 @@ export class RealtimeRelayDurableObject {
 				targetReservedNanos: decision.targetReservedNanos,
 				estimatedCostNanos: session.estimated_cost_nanos,
 			});
+			this.holdShortfall = false;
 			this.sendClient({
 				type: "relay.hold_extended",
 				reserved_nanos: this.session.reserved_nanos,
 				estimated_cost_nanos: this.session.estimated_cost_nanos,
 			});
 		} catch (error) {
-			console.error("realtime_relay_hold_extend_failed", error);
-			await this.beginBudgetClose(
-				decision.ratio >= REALTIME_GRACEFUL_STOP_THRESHOLD
-					? "realtime_budget_threshold"
-					: "realtime_credit_hold_extension_failed",
-			);
+			const message = error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? error);
+			const lostAccess = realtimeAccessEndReason(message);
+			if (lostAccess) {
+				await this.endForLostAccess(lostAccess);
+				return;
+			}
+			if (this.isPlayground) {
+				console.error("realtime_relay_hold_extend_failed", error);
+				await this.beginBudgetClose(
+					decision.ratio >= REALTIME_GRACEFUL_STOP_THRESHOLD
+						? "realtime_budget_threshold"
+						: "realtime_credit_hold_extension_failed",
+				);
+				return;
+			}
+			// API calls keep running on free balance, then up to the overdraft cap.
+			console.warn("realtime_relay_hold_extend_failed_continuing", { sessionId: session.session_id, message });
+			this.holdShortfall = true;
+			if (isRealtimeSpendLimitReason(message)) this.warnSpendLimit(message);
+			await this.checkFunding(this.session ?? session, true);
 		}
+	}
+
+	/**
+	 * Where an API call stands once its hold can no longer grow: warns as the
+	 * free balance and then the overdraft are used, and ends the call only
+	 * when the overdraft cap is reached.
+	 */
+	private async checkFunding(session: RealtimeSessionRow, force = false) {
+		if (this.end || this.settled) return;
+		if (!force && Date.now() - this.lastFundsCheckAt < RELAY_FUNDS_CHECK_INTERVAL_MS) return;
+		this.lastFundsCheckAt = Date.now();
+		let position: Awaited<ReturnType<typeof getRealtimeFundingPosition>>;
+		try {
+			position = await getRealtimeFundingPosition(session);
+		} catch (error) {
+			// Not knowing the balance is not a reason to hang up; settlement still caps the debt.
+			console.error("realtime_relay_funding_check_failed", error);
+			return;
+		}
+		const remainingUsd = Math.max(0, position.remainingNanos) / 1_000_000_000;
+		if (position.capReached) {
+			await this.endForInsufficientFunds();
+			return;
+		}
+		if (position.overdraftUsedNanos > 0) {
+			this.warnOnce("overdraft_in_use", "started",
+				"Your balance is used up. The call continues on overdraft and ends when the overdraft cap is reached.",
+				{ remaining_usd: remainingUsd, overdraft_used_usd: position.overdraftUsedNanos / 1_000_000_000 });
+			if (position.remainingNanos <= RELAY_OVERDRAFT_LAST_WARNING_NANOS) {
+				this.warnOnce("overdraft_in_use", "nearly_exhausted",
+					"The overdraft cap is nearly reached; add credit to keep the call going.",
+					{ remaining_usd: remainingUsd, overdraft_used_usd: position.overdraftUsedNanos / 1_000_000_000 });
+			}
+			return;
+		}
+		this.warnOnce("funds_low", "hold_not_extended",
+			"Funds are running low. The call continues on your remaining balance and then a limited overdraft.",
+			{ remaining_usd: remainingUsd });
+	}
+
+	private warnSpendLimit(reason: string) {
+		const workspace = /budget/.test(reason);
+		this.warnOnce("spend_limit_exceeded", workspace ? "workspace_budget" : "key_limit",
+			workspace
+				? "The workspace budget has been reached. This call continues; new sessions and requests will be refused."
+				: "This key's spend limit has been reached. This call continues; new sessions and requests will be refused.",
+			{ limit: workspace ? "workspace_budget" : "key" });
+	}
+
+	private warnOnce(code: RealtimeWarningCode, threshold: string, message: string, extra?: Record<string, unknown>) {
+		const key = `${code}:${threshold}`;
+		if (this.warningsSent.has(key)) return;
+		this.warningsSent.add(key);
+		this.sendClient(buildSessionWarningEvent(code, message, extra));
+	}
+
+	/** A revoked key, a removed workspace or a policy block ends the call now. */
+	private async endForLostAccess(reason: string) {
+		this.noteEnd(reason);
+		this.acceptingAudio = false;
+		await this.forceAuthoritativeUsage("cancelled", reason);
+	}
+
+	/** The overdraft cap is reached: cancel any reply instead of letting it run past the cap. */
+	private async endForInsufficientFunds() {
+		if (this.budgetClosing || this.settled) return;
+		this.budgetClosing = true;
+		this.noteEnd("realtime_overdraft_cap_reached");
+		this.sendClient({ type: "relay.budget_closing", reason: "realtime_overdraft_cap_reached" });
+		await this.forceAuthoritativeUsage("expired", "realtime_overdraft_cap_reached");
 	}
 
 	private async beginBudgetClose(reason: string) {
 		if (this.budgetClosing || this.settled) return;
 		this.budgetClosing = true;
-		this.acceptingAudio = false;
 		this.sendClient({ type: "relay.budget_closing", reason });
-		if (this.isLive) { await this.requestLiveClose("expired", reason); return; }
-		// Never start an extra billed closing response. A response already in
-		// progress may finish within the drain window; otherwise settle now.
-		if (!this.hasPendingBilling()) {
-			await this.settle("expired", reason);
+		await this.beginDrainClose("expired", reason);
+	}
+
+	/**
+	 * Ends after an in-flight response finishes (bounded by the drain window),
+	 * then falls back to cancelling it. Never starts an extra billed response.
+	 */
+	private async beginDrainClose(
+		status: PendingSettlement["status"],
+		reason: string,
+		options?: { statusFromResponses?: boolean },
+	) {
+		if (this.settled || this.settling) return;
+		this.noteEnd(reason);
+		this.acceptingAudio = false;
+		if (this.isLive) { await this.requestLiveClose(status, reason); return; }
+		if (!this.hasPendingBilling() && !this.waitingForOpenAIInputClear) {
+			await this.settle(options?.statusFromResponses ? (this.providerCompletedResponseSeen ? "completed" : "cancelled") : status, reason);
 			return;
 		}
 		if (this.drainTimer != null) clearTimeout(this.drainTimer);
-		await this.setPendingSettlement({ status: "expired", reason, phase: "drain" }, RELAY_DRAIN_TIMEOUT_MS);
+		await this.setPendingSettlement({
+			status,
+			reason,
+			phase: "drain",
+			...(options?.statusFromResponses ? { statusFromResponses: true } : {}),
+		}, RELAY_DRAIN_TIMEOUT_MS);
 		this.drainTimer = setTimeout(() => {
 			this.drainTimer = null;
-			void this.forceAuthoritativeUsage("expired", reason);
+			void this.forceAuthoritativeUsage(status, reason, options);
 		}, RELAY_DRAIN_TIMEOUT_MS) as unknown as number;
+	}
+
+	private noteEnd(reason: string) {
+		if (!this.end) this.end = classifyRealtimeEnd(reason);
 	}
 
 	private async scheduleExpiryAlarm() {
 		if (!this.session) return;
-		const expiresAt = this.session.expires_at ? Date.parse(this.session.expires_at) : 0;
+		// The provider cap counted from the claim; expires_at is only a fallback.
+		const parsedExpiry = this.session.expires_at ? Date.parse(this.session.expires_at) : 0;
+		const deadline = this.deadlineMs > 0 ? this.deadlineMs : parsedExpiry;
 		const fallbackAt = Date.now() + REALTIME_RELAY_MAX_DURATION_SECONDS * 1000;
 		await this.state.storage.setAlarm(
-			Number.isFinite(expiresAt) && expiresAt > 0 ? Math.min(Math.max(Date.now(), expiresAt), fallbackAt) : fallbackAt,
+			Number.isFinite(deadline) && deadline > 0 ? Math.min(Math.max(Date.now(), deadline), fallbackAt) : fallbackAt,
 		);
+	}
+
+	/** session.warning max_duration_approaching, 2 minutes and 30 seconds before the cap. */
+	private scheduleDurationWarnings() {
+		if (this.deadlineMs <= 0) return;
+		for (const seconds of REALTIME_DURATION_WARNING_SECONDS) {
+			const delay = this.deadlineMs - seconds * 1000 - Date.now();
+			if (delay < 0) continue;
+			const timer = setTimeout(() => {
+				if (this.end || this.settled) return;
+				this.warnOnce("max_duration_approaching", String(seconds),
+					"The call reaches the provider's maximum session length soon and will then end.",
+					{
+						seconds_remaining: Math.max(0, Math.round((this.deadlineMs - Date.now()) / 1000)),
+						expires_at: new Date(this.deadlineMs).toISOString(),
+					});
+			}, delay) as unknown as number;
+			this.warningTimers.push(timer);
+		}
+	}
+
+	/**
+	 * Rechecks key, workspace and funds on calls with no billing events, since
+	 * those checks otherwise run only when usage is persisted.
+	 */
+	private schedulePolicyRecheck() {
+		if (this.policyTimer != null) clearTimeout(this.policyTimer);
+		this.policyTimer = setTimeout(() => {
+			this.policyTimer = null;
+			if (this.settled || this.settling || this.pendingSettlement || this.end) return;
+			if (Date.now() - this.lastUsagePersistAt >= RELAY_POLICY_RECHECK_INTERVAL_MS) {
+				this.state.waitUntil(this.persistUsage().catch((error) => {
+					console.error("realtime_relay_policy_recheck_failed", error);
+				}));
+			}
+			this.schedulePolicyRecheck();
+		}, RELAY_POLICY_RECHECK_INTERVAL_MS) as unknown as number;
 	}
 
 	private clearTimers() {
@@ -1429,10 +1714,19 @@ export class RealtimeRelayDurableObject {
 			clearTimeout(this.idleTimer);
 			this.idleTimer = null;
 		}
+		if (this.policyTimer != null) {
+			clearTimeout(this.policyTimer);
+			this.policyTimer = null;
+		}
+		for (const timer of this.warningTimers) clearTimeout(timer);
+		this.warningTimers = [];
 	}
 
 	private resetIdleTimer() {
 		if (this.idleTimer != null) clearTimeout(this.idleTimer);
+		this.idleTimer = null;
+		// The API layer never ends a call for being idle; only the playground does.
+		if (!this.isPlayground) return;
 		this.idleTimer = setTimeout(() => {
 			this.idleTimer = null;
 			this.acceptingAudio = false;
@@ -1466,6 +1760,7 @@ export class RealtimeRelayDurableObject {
 	private async settle(status: "completed" | "failed" | "cancelled" | "expired", reason: string): Promise<boolean> {
 		if (!this.session || this.settled) return this.settled;
 		if (this.settling) return false;
+		this.noteEnd(reason);
 		if (this.isLive) {
 			try { assertLiveFinalUsage(this.usage); }
 			catch {
@@ -1504,7 +1799,7 @@ export class RealtimeRelayDurableObject {
 		// never lower it: server-VAD sessions are billed for their full duration.
 		const providerCostNanos = provider === "spacex-ai" ? toNumber(this.usage.provider_cost_nanos) : 0;
 		try {
-			await settleRealtimeSession({
+			const result = await settleRealtimeSession({
 				auth: authForSession(this.session, `realtime_relay_settle:${this.session.session_id}`),
 				sessionId: this.session.session_id,
 				status,
@@ -1525,6 +1820,12 @@ export class RealtimeRelayDurableObject {
 				reason,
 				estimated: this.usage.billing_estimated === true,
 			});
+			const settledSession = result?.session;
+			this.sendSessionEnded("settled", {
+				costNanos: Number(settledSession?.final_cost_nanos ?? result?.settlement?.final_cost_nanos ?? 0) || 0,
+				debtNanos: Number(result?.settlement?.debt_nanos ?? 0) || 0,
+				uncollectedNanos: Number(result?.settlement?.uncollected_nanos ?? 0) || 0,
+			});
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			if (message.includes("authoritative_usage") || message.includes("usage_missing_token_meters")) {
@@ -1539,6 +1840,12 @@ export class RealtimeRelayDurableObject {
 			}
 			await this.state.storage.put(STORAGE_SETTLEMENT_ATTEMPTS, attempts);
 			await this.state.storage.setAlarm(Date.now() + RELAY_SETTLEMENT_RETRY_MS);
+			// The call itself is over: tell the client now and let it fetch the
+			// final bill later instead of holding its socket open across retries.
+			if (!this.endedSent) {
+				this.sendSessionEnded("pending");
+				this.closeClient("realtime_billing_pending");
+			}
 			return false;
 		}
 		this.settling = false;
@@ -1573,6 +1880,8 @@ export class RealtimeRelayDurableObject {
 			// terminal session is not retried through the Durable Object.
 			await this.state.storage.deleteAll();
 			await this.state.storage.deleteAlarm();
+			this.noteEnd(reason);
+			this.sendSessionEnded("unresolved");
 			this.closeSockets("realtime_billing_unresolved");
 			console.error("realtime_relay_billing_unresolved", {
 				sessionId: this.session.session_id,
@@ -1604,6 +1913,8 @@ export class RealtimeRelayDurableObject {
 		this.inputSinceLastResponse = this.usage.input_audio_pending === true;
 		this.waitingForOpenAIInputClear = this.usage.input_audio_clear_pending === true;
 		this.pendingSettlement = (await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT)) ?? null;
+		this.claimedAtMs = (await this.state.storage.get<number>(STORAGE_CLAIMED_AT)) ?? this.claimedAtMs;
+		this.deadlineMs = (await this.state.storage.get<number>(STORAGE_DEADLINE)) ?? this.deadlineMs;
 	}
 
 	async alarm() {
@@ -1637,7 +1948,8 @@ export class RealtimeRelayDurableObject {
 			&& !this.pendingSettlement
 			&& this.client?.readyState === WebSocket.OPEN
 			&& this.upstream?.readyState === WebSocket.OPEN
-			&& Date.now() - this.lastActivityAt < REALTIME_IDLE_TIMEOUT_SECONDS * 1_000;
+			// An API call with both sockets open is healthy however quiet it is.
+			&& (!this.isPlayground || Date.now() - this.lastActivityAt < REALTIME_IDLE_TIMEOUT_SECONDS * 1_000);
 	}
 
 	private async reconcile(sessionId: string): Promise<Response> {
@@ -1688,6 +2000,7 @@ export class RealtimeRelayDurableObject {
 
 	private async requestLiveClose(status: PendingSettlement["status"], reason: string) {
 		if (this.settled || this.liveClosing) return;
+		this.noteEnd(reason);
 		if (!this.usage.live_started || (this.usage.live_final && !this.usage.live_pending_responses?.length && !this.usage.live_tool_calls?.some((call) => !call.done))) {
 			await this.settle(status, reason); return;
 		}
@@ -1708,12 +2021,46 @@ export class RealtimeRelayDurableObject {
 
 	private closeSockets(reason: string) {
 		this.closeUpstream(reason);
+		this.closeClient(reason);
+	}
+
+	private closeClient(reason: string) {
 		try {
 			this.client?.close(1000, reason);
 		} catch {
 			// The browser socket may already be closed.
 		}
 		this.client = null;
+	}
+
+	/**
+	 * The final event on every end path, sent best-effort while the client
+	 * socket is still open. Pending and unresolved bills point at the request
+	 * row that settlement completes later.
+	 */
+	private sendSessionEnded(
+		billingStatus: RealtimeBillingStatus,
+		bill?: { costNanos: number; debtNanos: number; uncollectedNanos: number },
+	) {
+		if (this.endedSent || !this.session) return;
+		this.endedSent = true;
+		const end = this.end ?? { reason: "gateway_error", initiatedBy: "gateway" } satisfies RealtimeEnd;
+		const usage = normalizeRealtimeUsage(this.usage as Record<string, unknown>);
+		const settled = billingStatus === "settled" && bill != null;
+		this.sendClient(buildSessionEndedEvent({
+			sessionId: this.session.session_id,
+			end,
+			durationSeconds: this.claimedAtMs > 0 ? (Date.now() - this.claimedAtMs) / 1000 : 0,
+			usage,
+			costNanos: settled ? bill.costNanos : Number(this.session.estimated_cost_nanos ?? 0) || 0,
+			estimated: settled ? this.usage.billing_estimated === true : true,
+			estimateBasis: settled ? this.usage.estimate_basis ?? "metered_audio" : "running_estimate",
+			debtNanos: bill?.debtNanos,
+			uncollectedNanos: bill?.uncollectedNanos,
+			billingStatus,
+			clientReason: this.clientEndReason,
+			providerCloseCode: end.reason === "provider_closed" || end.reason === "provider_error" ? this.providerCloseCode : null,
+		}));
 	}
 
 	private sendUpstream(payload: unknown) {

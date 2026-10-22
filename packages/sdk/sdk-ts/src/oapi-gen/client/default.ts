@@ -5828,11 +5828,49 @@ export async function createRealtimeSession(
   client: Client,
   args: CreateRealtimeSessionParams = {},
 ): Promise<{
+  billing?: {
+    [key: string]: unknown;
+  };
+  client_secret?: string;
+  connect?: {
+    transport?: string;
+    url?: string;
+    [key: string]: unknown;
+  };
+  expires_at?: string | null;
+  id?: string;
+  idle_timeout_seconds?: number | null;
+  max_duration_seconds?: number;
+  model?: string;
+  model_id?: string;
+  provider?: string;
+  session_id?: string;
+  status?: string;
+  voice?: string | null;
   [key: string]: unknown;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/audio/realtime/sessions";
   return client.request<{
+    billing?: {
+      [key: string]: unknown;
+    };
+    client_secret?: string;
+    connect?: {
+      transport?: string;
+      url?: string;
+      [key: string]: unknown;
+    };
+    expires_at?: string | null;
+    id?: string;
+    idle_timeout_seconds?: number | null;
+    max_duration_seconds?: number;
+    model?: string;
+    model_id?: string;
+    provider?: string;
+    session_id?: string;
+    status?: string;
+    voice?: string | null;
     [key: string]: unknown;
   }>({
     method: "POST",
