@@ -5,7 +5,7 @@ import commonMessages from "../../../../../messages/en-GB/common.json";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { DEFAULT_DISPLAY_PREFERENCES, formatDisplayDateParts, formatDisplayNumber } from "@/lib/displayPreferences";
 import type { SettingsBudgetsInitialData, SettingsWorkspaceBudget } from "@/lib/fetchers/internal/settingsTypes";
-import BudgetsSettingsClient from "./BudgetsSettingsClient";
+import BudgetsSettingsClient, { nextBudgetReset } from "./BudgetsSettingsClient";
 
 jest.mock("@/components/providers/DisplayPreferencesProvider", () => ({ useDisplayFormatters: jest.fn() }));
 jest.mock("@/app/(dashboard)/settings/budgets/actions", () => ({
@@ -13,7 +13,10 @@ jest.mock("@/app/(dashboard)/settings/budgets/actions", () => ({
 	updateWorkspaceBudget: jest.fn(),
 	deleteWorkspaceBudget: jest.fn(),
 }));
-jest.mock("../PrivateSettingsQuery", () => ({ useSettingsWrite: () => (operation: Promise<unknown>) => operation }));
+jest.mock("../PrivateSettingsQuery", () => ({
+	useSettingsWrite: () => (operation: Promise<unknown>) => operation,
+	useInvalidatePrivateSettings: () => async () => undefined,
+}));
 jest.mock("@/i18n/navigation", () => ({
 	Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a>,
 }));
@@ -95,6 +98,16 @@ describe("BudgetsSettingsClient", () => {
 	it("renders extra per-budget actions for managers", () => {
 		const html = render({ budgets: [budget({})] }, (row) => <button data-shortcut={row.id}>Alert</button>);
 		expect(html).toContain('data-shortcut="b-month"');
+	});
+
+	it("refreshes at the earliest reset and ignores lifetime budgets", () => {
+		expect(nextBudgetReset([])).toBeNull();
+		expect(nextBudgetReset([budget({ interval: "lifetime", reset_at: null })])).toBeNull();
+		expect(nextBudgetReset([
+			budget({}),
+			budget({ id: "b-day", interval: "daily", reset_at: "2026-10-22T00:00:00Z" }),
+			budget({ id: "b-life", interval: "lifetime", reset_at: null }),
+		])).toBe(Date.parse("2026-10-22T00:00:00Z"));
 	});
 
 	it("asks for a workspace first", () => {

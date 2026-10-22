@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -37,7 +37,7 @@ import {
 	updateWorkspaceBudget,
 	type BudgetActionResult,
 } from "@/app/(dashboard)/settings/budgets/actions";
-import { useSettingsWrite } from "../PrivateSettingsQuery";
+import { useInvalidatePrivateSettings, useSettingsWrite } from "../PrivateSettingsQuery";
 import { useLimitClock } from "../keys/useLimitClock";
 import { BUDGET_WINDOWS, budgetPercentFraction, budgetProjection, budgetSlots, budgetTone } from "./budgetForecast";
 import { parseBudgetLimitUsd, type BudgetInterval } from "./workspaceBudgets";
@@ -64,6 +64,7 @@ export default function BudgetsSettingsClient({
 	const t = useTranslations("SettingsUI.budgets");
 	const [editing, setEditing] = useState<Editing | null>(null);
 	const [deleting, setDeleting] = useState<SettingsWorkspaceBudget | null>(null);
+	useRefreshAtBudgetReset(data.budgets);
 	if (!data.workspaceId) return <Notice>{t("selectWorkspace")}</Notice>;
 	// The API always sends the database time; without it there is simply no projection.
 	const observedAt = Date.parse(data.observedAt) || 0;
@@ -98,6 +99,27 @@ export default function BudgetsSettingsClient({
 			<DeleteBudgetDialog budget={deleting} onClose={() => setDeleting(null)} />
 		</div>
 	);
+}
+
+/** The earliest reset time in ms, or null when no budget resets (lifetime only). */
+export function nextBudgetReset(budgets: SettingsWorkspaceBudget[]): number | null {
+	return budgets.reduce<number | null>((earliest, budget) => {
+		const resetAt = budget.reset_at ? Date.parse(budget.reset_at) : Number.NaN;
+		return Number.isFinite(resetAt) && (earliest === null || resetAt < earliest) ? resetAt : earliest;
+	}, null);
+}
+
+/** Refetch once the earliest budget window resets, so usage and reset times don't stay on the old window. */
+function useRefreshAtBudgetReset(budgets: SettingsWorkspaceBudget[]) {
+	const now = useLimitClock();
+	const invalidate = useInvalidatePrivateSettings();
+	const refreshedFor = useRef<number | null>(null);
+	const nextReset = nextBudgetReset(budgets);
+	useEffect(() => {
+		if (now === null || nextReset === null || now < nextReset || refreshedFor.current === nextReset) return;
+		refreshedFor.current = nextReset;
+		void invalidate();
+	}, [now, nextReset, invalidate]);
 }
 
 function useUsd() {
@@ -278,8 +300,8 @@ function BudgetForm({ editing, onDone }: { editing: Editing; onDone: () => void 
 					id={inputId}
 					type="number"
 					inputMode="decimal"
-					min="0.01"
-					step="0.01"
+					min="0"
+					step="any"
 					autoFocus
 					required
 					value={value}
