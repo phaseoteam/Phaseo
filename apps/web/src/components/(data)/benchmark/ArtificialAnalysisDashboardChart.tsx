@@ -14,7 +14,7 @@ import { DashboardInspectionCard, DashboardInspectionGuides, useDashboardInspect
 
 const effortAbbreviations: Record<string, string> = { default: "D", none: "N", minimal: "Min", low: "L", medium: "M", high: "H", xhigh: "X", max: "Mx" };
 
-export function dashboardColour(row: DashboardRow) {
+export function dashboardColour(row: Pick<DashboardRow, "modelId" | "colour">) {
 	const colour = /^#[\da-f]{6}$/i.test(row.colour ?? "") ? row.colour! : "#6b7280";
 	const channels = [1, 3, 5].map((offset) => Number.parseInt(colour.slice(offset, offset + 2), 16));
 	const hash = [...row.modelId].reduce((value, char) => (value * 31 + char.charCodeAt(0)) >>> 0, 0);
