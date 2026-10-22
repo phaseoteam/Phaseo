@@ -9,7 +9,7 @@ import { sendAxiomWideEvent } from "./axiom";
 import { reportedCacheTokens } from "@core/cache-usage";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "./privacy";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
-import { keyNeverStoresContent } from "@pipeline/audit/io-logging";
+import { keyKeepsContentOutOfTelemetry } from "@pipeline/audit/io-logging";
 
 type EventArgs = {
     ctx?: PipelineContext;
@@ -1183,16 +1183,19 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const containsParsedDocumentContent = (args.endpoint ?? args.ctx?.endpoint) === "parse";
         const includeDetailedPayloads =
             observabilityPlan.detailLevel === "full" && !containsParsedDocumentContent;
-        // A key created with never_store_content keeps the operational detail
-        // (routing, attempts, headers) but none of its requests or responses.
-        const neverStoreContent = includeDetailedPayloads || !args.success
-            ? await keyNeverStoresContent({
+        // A key created with never_store_content, or under zero data retention, keeps
+        // the operational detail (routing, attempts, headers) but none of its requests
+        // or responses. Both are set on the context when routing loads the policy.
+        const keepContentOut = includeDetailedPayloads || !args.success
+            ? await keyKeepsContentOutOfTelemetry({
                 workspaceId,
                 keyId: args.keyId ?? ctx?.meta?.apiKeyId ?? null,
-                known: ctx?.neverStoreContent,
+                known: typeof ctx?.neverStoreContent === "boolean"
+                    ? ctx.neverStoreContent || ctx.zeroDataRetention === true
+                    : null,
             })
             : false;
-        const includeContent = includeDetailedPayloads && !neverStoreContent;
+        const includeContent = includeDetailedPayloads && !keepContentOut;
 
         const sanitizedGatewayRequest = includeContent
             ? sanitizeForAxiom(args.requestPayload ?? ctx?.rawBody ?? ctx?.body ?? null)
@@ -1200,7 +1203,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const sanitizedUpstreamRequest = includeContent
             ? sanitizeJsonStringForAxiom(args.mappedRequest ?? args.result?.mappedRequest ?? null)
             : null;
-        const sanitizedErrorDetails = !neverStoreContent && (includeDetailedPayloads || (!args.success && !containsParsedDocumentContent))
+        const sanitizedErrorDetails = !keepContentOut && (includeDetailedPayloads || (!args.success && !containsParsedDocumentContent))
             ? sanitizeForAxiom(args.errorDetails ?? null)
             : null;
         const sanitizedProviderResponse = includeContent

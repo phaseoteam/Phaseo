@@ -1676,6 +1676,7 @@ export async function beforeRequest(
 		quotaUserId: userId ?? null,
 		activeGuardrailIds: workspacePolicy.activeGuardrailIds ?? [],
 		neverStoreContent: workspacePolicy.neverStoreContent === true,
+		zeroDataRetention: workspacePolicyResult.diagnostics.privacyZdrOnly === true,
         endpoint,
         capability,
         requestId,

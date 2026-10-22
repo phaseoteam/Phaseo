@@ -1085,4 +1085,101 @@ describe("emitGatewayRequestEvent", () => {
 		expect(event.routing_diagnostics_json).toBeDefined();
 		expect(JSON.stringify(event)).not.toContain("private");
 	});
+
+	it.each([
+		["a failed request", false, 502],
+		["a sampled successful request", true, 200],
+	])("keeps request and response content out of %s under zero data retention", async (_name, success, statusCode) => {
+		const ctx = {
+			endpoint: "responses",
+			capability: "responses",
+			requestId: `req_zdr_obs_${statusCode}`,
+			workspaceId: "ws_zdr_obs",
+			// ZDR from the workspace setting or one of the key's guardrails; the key itself stores content.
+			neverStoreContent: false,
+			zeroDataRetention: true,
+			meta: { apiKeyId: "key_zdr" },
+			rawBody: { model: "openai/gpt-5-mini", input: "private message under ZDR" },
+			body: { model: "openai/gpt-5-mini", input: "private message under ZDR" },
+			model: "openai/gpt-5-mini",
+			routingDiagnostics: { selectedProvider: "openai" },
+		} as unknown as PipelineContext;
+
+		await emitGatewayRequestEvent({
+			ctx,
+			statusCode,
+			success,
+			...(success ? {} : {
+				errorCode: "upstream_error",
+				errorMessage: "Upstream provider failed",
+				errorDetails: { error: { message: "Upstream rejected the request", input: "private echoed input" } },
+			}),
+			mappedRequest: JSON.stringify({ input: "private upstream request" }),
+			providerResponse: { output: "private provider output" },
+			gatewayResponse: { output: "private gateway output" },
+		});
+
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event).toMatchObject({ observability_detail_level: "full", key_id: "key_zdr", status_code: statusCode });
+		expect(event.request_payload_redacted_json).toBeUndefined();
+		expect(event.upstream_request_redacted_json).toBeUndefined();
+		expect(event.provider_response_redacted_json).toBeUndefined();
+		expect(event.gateway_response_redacted_json).toBeUndefined();
+		expect(event.upstream_error_json).toBeUndefined();
+		expect(event.error_details_redacted_json).toBeUndefined();
+		expect(event.routing_diagnostics_json).toBeDefined();
+		expect(JSON.stringify(event)).not.toContain("private");
+	});
+
+	it("reads zero data retention from the key's policy for a failure before the request context exists", async () => {
+		const policy = { privacyZdrOnly: true, neverStoreContent: false };
+		vi.resetModules();
+		vi.doMock("@/pipeline/before/workspacePolicy", () => ({ fetchWorkspacePolicy: async () => policy }));
+		try {
+			const env = await import("@/runtime/env");
+			env.configureRuntime({
+				SUPABASE_URL: "https://example.supabase.co",
+				SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+				GATEWAY_CACHE: {} as KVNamespace,
+				NODE_ENV: "test",
+				AXIOM_API_KEY: "axiom_test_key",
+				AXIOM_DATASET: "gateway-wide",
+				AXIOM_DETAIL_SAMPLE_RATE: "1",
+			} as any);
+			const { emitGatewayRequestEvent: emitFresh } = await import("./events");
+			// As core/error-handler.ts reports a before-stage failure: no context, the early snapshot's key.
+			const beforeStageFailure = (requestId: string) => emitFresh({
+				requestId,
+				workspaceId: "ws_zdr_before",
+				keyId: "key_zdr_guardrail",
+				endpoint: "responses",
+				statusCode: 400,
+				success: false,
+				errorStage: "before",
+				errorCode: "unsupported_model",
+				errorMessage: "Model not available",
+				requestPayload: { model: "openai/gpt-5-nano", input: "private prompt" },
+				gatewayResponse: { error: "unsupported_model", input: "private echoed prompt" },
+				errorDetails: { error: "unsupported_model", input: "private echoed prompt" },
+			});
+
+			await beforeStageFailure("req_zdr_before");
+			policy.privacyZdrOnly = false;
+			await beforeStageFailure("req_no_zdr_before");
+			env.clearRuntime();
+		} finally {
+			vi.doUnmock("@/pipeline/before/workspacePolicy");
+			vi.resetModules();
+		}
+
+		const [zdr, control] = sendAxiomWideEventMock.mock.calls.map((call) => call[0] as Record<string, unknown>);
+		expect(zdr).toMatchObject({ request_id: "req_zdr_before", observability_detail_level: "full", key_id: "key_zdr_guardrail" });
+		expect(zdr.request_payload_redacted_json).toBeUndefined();
+		expect(zdr.gateway_response_redacted_json).toBeUndefined();
+		expect(zdr.error_details_redacted_json).toBeUndefined();
+		expect(JSON.stringify(zdr)).not.toContain("private");
+		// The same failure without ZDR keeps its detailed payloads.
+		expect(control).toMatchObject({ request_id: "req_no_zdr_before" });
+		expect(control.request_payload_redacted_json).toBeDefined();
+	});
 });

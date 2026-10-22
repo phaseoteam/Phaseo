@@ -746,6 +746,66 @@ describe("handleError", () => {
 		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws_agent", keyId: "key_agent" }));
 	});
 
+	it("keeps content out of the telemetry for a failure before the request context exists when the key requires ZDR", async () => {
+		// The real telemetry event, with the key's guardrail requiring zero data retention.
+		const sendAxiomWideEvent = vi.fn(async (_event: Record<string, unknown>) => {});
+		vi.resetModules();
+		vi.doUnmock("@observability/events");
+		vi.doMock("@observability/axiom", () => ({
+			sendAxiomWideEvent,
+			emitGatewayTelemetryDeliveryFailure: async () => {},
+			emitGatewayOperationalFailure: async () => {},
+		}));
+		vi.doMock("@/pipeline/before/workspacePolicy", () => ({
+			fetchWorkspacePolicy: async () => ({ privacyZdrOnly: true, neverStoreContent: false }),
+		}));
+		// Broadcasts (the customer's own destination) are not under test and would hit the network.
+		vi.doMock("@observability/otlp-export", () => ({ enqueueGatewayOtlpExport: async () => {} }));
+		try {
+			const env = await import("@/runtime/env");
+			env.configureRuntime({
+				SUPABASE_URL: "https://example.supabase.co",
+				SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+				GATEWAY_CACHE: {} as KVNamespace,
+				NODE_ENV: "test",
+				AXIOM_API_KEY: "axiom_test_key",
+				AXIOM_DATASET: "gateway-wide",
+				AXIOM_DETAIL_SAMPLE_RATE: "1",
+			} as any);
+			const { handleError: handleWithTelemetry } = await import("./error-handler");
+			await handleWithTelemetry({
+				stage: "before",
+				res: new Response(JSON.stringify({ error: "no_zero_data_retention_provider", input: "private echoed prompt" }), {
+					status: 400,
+					headers: { "content-type": "application/json" },
+				}),
+				endpoint: "responses",
+				requestObservability: {
+					requestPayload: { model: "openai/gpt-5-nano", input: "private prompt" },
+					requestedModel: "openai/gpt-5-nano",
+					workspaceId: "ws_zdr",
+					apiKeyId: "key_zdr_guardrail",
+				},
+				auditFailure: async () => {},
+			});
+			await Promise.all(background.splice(0));
+			env.clearRuntime();
+		} finally {
+			vi.doUnmock("@observability/axiom");
+			vi.doUnmock("@/pipeline/before/workspacePolicy");
+			vi.doUnmock("@observability/otlp-export");
+			vi.resetModules();
+		}
+
+		const event = sendAxiomWideEvent.mock.calls.map((call) => call[0]).find((entry) => entry.event_type !== "gateway.telemetry_delivery");
+		expect(event).toMatchObject({ observability_detail_level: "full", key_id: "key_zdr_guardrail", workspace_id: "ws_zdr", status_code: 400 });
+		expect(event?.request_payload_redacted_json).toBeUndefined();
+		expect(event?.gateway_response_redacted_json).toBeUndefined();
+		expect(event?.provider_response_redacted_json).toBeUndefined();
+		expect(event?.error_details_redacted_json).toBeUndefined();
+		expect(JSON.stringify(event)).not.toContain("private");
+	});
+
 	it("captures malformed early request payloads for observability", async () => {
 		let capturedAuditArgs: any = null;
 		const upstream = new Response(

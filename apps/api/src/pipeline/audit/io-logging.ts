@@ -243,6 +243,24 @@ export async function keyNeverStoresContent(input: {
 }
 
 /**
+ * Whether Phaseo's own telemetry leaves request and response content out: the key
+ * was created with `never_store_content`, or zero data retention applies (the
+ * workspace setting or one of the key's guardrails). As for keyNeverStoresContent,
+ * the request context already knows once routing has loaded the policy (`known`),
+ * earlier failures read it through the same cache, and a failed read keeps content out.
+ */
+export async function keyKeepsContentOutOfTelemetry(input: {
+    workspaceId?: string | null;
+    keyId?: string | null;
+    known?: boolean | null;
+}): Promise<boolean> {
+    if (typeof input.known === "boolean") return input.known;
+    if (!input.workspaceId || input.workspaceId === "unknown" || !input.keyId) return false;
+    const policy = await keyDataPolicy({ workspaceId: input.workspaceId, keyId: input.keyId });
+    return policy.neverStoreContent || policy.zeroDataRetention;
+}
+
+/**
  * A second check on what the request itself recorded: the routing diagnostics in
  * the log metadata, or in the error body of a request rejected by a guardrail.
  */
