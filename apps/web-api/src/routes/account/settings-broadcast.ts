@@ -22,6 +22,7 @@ import {
 	resolveOtlpTarget,
 } from "./broadcast-destinations";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
+import { compileSafeRegex } from "./safe-regex";
 
 const RULE_FIELDS = new Set<string>(BROADCAST_RULE_FIELDS);
 const RULE_CONDITIONS = new Set<string>(BROADCAST_RULE_CONDITIONS);
@@ -74,6 +75,14 @@ function validateDestinationConfig(id: string, config: Record<string, any>) {
 		}
 	} else if (!otlpProtocol(config)) throw new Error(`Protocol must be ${OTLP_PROTOCOLS.join(" or ")}`);
 	return target;
+}
+function ruleRegexError(groups: Array<{ rules: Array<{ condition: string; value: string | null }> }>): string | null {
+	for (const rule of groups.flatMap((group) => group.rules)) {
+		if (rule.condition !== "matches_regex") continue;
+		const compiled = compileSafeRegex(rule.value ?? "");
+		if (compiled.ok === false) return compiled.error;
+	}
+	return null;
 }
 function sampleTrace(name: string, privateMode: boolean) {
 	const now = BigInt(Date.now()) * 1_000_000n;
@@ -141,6 +150,8 @@ accountSettingsBroadcastRouter.post("/broadcast", async (c) => {
 	const id = destinationId(body.destinationId); const name = String(body.name ?? "").trim(); const samplingRate = Number(body.samplingRate ?? 1); if (!EXECUTABLE_DESTINATIONS.has(id) || !name || !Number.isFinite(samplingRate) || samplingRate < 0 || samplingRate > 1) return c.json({ error: "This Broadcast destination is not available yet" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const config = Object.fromEntries(Object.entries(object(body.config)).filter((entry): entry is [string, string] => Boolean(entry[0].trim()) && typeof entry[1] === "string"));
 	const groups = (Array.isArray(body.ruleGroups) ? body.ruleGroups : []).map((group: any) => ({ match: group?.match === "and" ? "and" : "or", rules: (Array.isArray(group?.rules) ? group.rules : []).filter((rule: any) => RULE_FIELDS.has(String(rule?.field)) && RULE_CONDITIONS.has(String(rule?.condition))).map((rule: any) => ({ field: String(rule.field), condition: String(rule.condition), value: ["exists", "not_exists"].includes(rule.condition) ? null : String(rule.value ?? "").trim() || null })) })).filter((group: any) => group.rules.length);
+	const regexError = ruleRegexError(groups);
+	if (regexError) return c.json({ error: regexError }, 400, PRIVATE_NO_STORE_HEADERS);
 	let createdId: string | null = null;
 	try {
 		validateDestinationConfig(id, config);

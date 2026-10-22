@@ -2,6 +2,7 @@ import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
 import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, broadcastWebhookSignatureHeaders, gzipBytes, resolveOtlpTarget } from "./broadcast-destinations";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
+import { compileSafeRegex, type RegexBudget, type SafeRegex } from "./safe-regex";
 import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
 import { BroadcastHealthRecorder } from "./broadcast-health";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
@@ -103,7 +104,33 @@ function ruleValues(args: GatewayGenAiTelemetry): Record<string, unknown> {
 	};
 }
 
-function matchRule(rule: Rule, values: Record<string, unknown>): boolean {
+// Compiled rule regexes, shared across requests in this isolate. Null marks a
+// pattern saved before validation that the matcher can't run; it never matches.
+// Weighed by compiled instructions as well as count, so large patterns can't
+// hold much of the isolate's heap.
+const RULE_REGEX_CACHE = new Map<string, SafeRegex | null>();
+const RULE_REGEX_CACHE_LIMIT = 500;
+const RULE_REGEX_CACHE_MAX_INSTRUCTIONS = 50_000;
+let ruleRegexCacheInstructions = 0;
+// Matcher steps one destination's rules may spend on one event. Typical rules
+// use a few thousand; past this, the remaining regex rules don't match.
+const RULE_REGEX_STEP_BUDGET = 1_000_000;
+
+function ruleRegex(pattern: string): SafeRegex | null {
+	if (RULE_REGEX_CACHE.has(pattern)) return RULE_REGEX_CACHE.get(pattern)!;
+	const compiled = compileSafeRegex(pattern);
+	const regex = compiled.ok ? compiled.regex : null;
+	const size = regex?.size ?? 0;
+	if (RULE_REGEX_CACHE.size >= RULE_REGEX_CACHE_LIMIT || ruleRegexCacheInstructions + size > RULE_REGEX_CACHE_MAX_INSTRUCTIONS) {
+		RULE_REGEX_CACHE.clear();
+		ruleRegexCacheInstructions = 0;
+	}
+	RULE_REGEX_CACHE.set(pattern, regex);
+	ruleRegexCacheInstructions += size;
+	return regex;
+}
+
+function matchRule(rule: Rule, values: Record<string, unknown>, budget: RegexBudget): boolean {
 	const raw = values[rule.field];
 	const actual = raw === null || raw === undefined ? "" : String(raw);
 	const expected = rule.value ?? "";
@@ -117,12 +144,8 @@ function matchRule(rule: Rule, values: Record<string, unknown>): boolean {
 		case "exists": return actual !== "";
 		case "not_exists": return actual === "";
 		case "matches_regex":
-			if (expected.length > 128 || actual.length > 2_000) return false;
-			try {
-				return new RegExp(expected).test(actual);
-			} catch {
-				return false;
-			}
+			if (actual.length > 2_000) return false;
+			return ruleRegex(expected)?.test(actual, budget) ?? false;
 		default: return false;
 	}
 }
@@ -140,10 +163,11 @@ export function selected(destination: Destination, args: GatewayGenAiTelemetry, 
 	const groups = destination.broadcast_destination_rule_groups ?? [];
 	if (!groups.length) return true;
 	const values = ruleValues(args);
+	const budget: RegexBudget = { steps: RULE_REGEX_STEP_BUDGET };
 	const matches = groups.map((group) => {
 		const rules = group.broadcast_destination_rules ?? [];
 		if (!rules.length) return true;
-		const results = rules.map((rule) => matchRule(rule, values));
+		const results = rules.map((rule) => matchRule(rule, values, budget));
 		return group.match_operator === "or" ? results.some(Boolean) : results.every(Boolean);
 	});
 	return destination.group_join_operator === "and" ? matches.every(Boolean) : matches.some(Boolean);
