@@ -7,11 +7,9 @@ CREATE TABLE "public"."feedback_requests" (
   "recency"         text                     NOT NULL,
   "requested_at"    timestamp with time zone NOT NULL DEFAULT now(),
   "responded_at"    timestamp with time zone,
-  "answers"         jsonb,
   "reward_grant_id" uuid,
   "reward_code"     text,
   "opted_out_at"    timestamp with time zone,
-  CONSTRAINT "feedback_requests_answers_size_check" CHECK (((answers IS NULL) OR (octet_length((answers)::text) <= 20000))),
   CONSTRAINT "feedback_requests_campaign_check" CHECK ((campaign ~ '^[a-z0-9_-]{1,64}$'::text)),
   CONSTRAINT "feedback_requests_recency_check" CHECK ((recency = ANY (ARRAY['active'::text, 'lapsed'::text, 'dormant'::text]))),
   CONSTRAINT "feedback_requests_segment_check" CHECK ((segment = ANY (ARRAY['never_requested'::text, 'used_not_paid'::text, 'paid'::text]))),
@@ -34,7 +32,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."feedback_requests"
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."feedback_requests" IS 'One feedback email per user and campaign. The access token is the unguessable id in the emailed feedback and unsubscribe links; answers and the thank-you credit code are stored here. Rows go with the account.';
+COMMENT ON TABLE "public"."feedback_requests" IS 'One feedback email per user and campaign. The access token is the unguessable id in the emailed feedback and unsubscribe links. Records whether the user answered and the thank-you credit code; the answers themselves go to the PostHog survey, not here. Rows go with the account.';
 
 REVOKE ALL ON TABLE "public"."feedback_requests" FROM "service_role";
 

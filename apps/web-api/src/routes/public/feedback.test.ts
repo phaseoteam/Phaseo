@@ -1,17 +1,29 @@
 import { Hono } from "hono";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "@/env";
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), unsubscribeResendContact: vi.fn() }));
 vi.mock("@/data/supabase", () => ({ getDataClient: () => ({ rpc: mocks.rpc }) }));
 vi.mock("@/auth/resendContacts", () => ({ unsubscribeResendContact: mocks.unsubscribeResendContact }));
 
-const { parseFeedbackAnswers, publicFeedbackRouter } = await import("./feedback");
+const { FEEDBACK_SURVEY, parseFeedbackAnswers, publicFeedbackRouter } = await import("./feedback");
 
 const app = new Hono<{ Bindings: Env }>();
 app.route("/feedback", publicFeedbackRouter);
 const token = "0f8fad5b-d9cb-469f-a165-70867728950e";
-const env = { ENV: "production" } as Env;
+const env = { ENV: "production", POSTHOG_PROJECT_API_KEY: "phc_test" } as Env;
+const fetchMock = vi.fn();
+const openRequest = {
+	requestId: "6b1f3c2e-8d4a-4f5b-9c7e-1a2b3c4d5e6f",
+	userId: "00000000-0000-0000-0000-00000000000a",
+	campaign: "v1",
+	segment: "used_not_paid",
+	recency: "lapsed",
+	responded: false,
+	rewardCode: null,
+	optedOut: false,
+	rewardsIssued: 0,
+};
 const post = (path: string, body: unknown, bindings: Partial<Env> = {}) => app.request(
 	`https://phaseo.app/feedback/${path}`,
 	{ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
@@ -22,6 +34,12 @@ describe("public feedback routes", () => {
 	beforeEach(() => {
 		mocks.rpc.mockReset();
 		mocks.unsubscribeResendContact.mockReset().mockResolvedValue(undefined);
+		fetchMock.mockReset().mockImplementation(async () => new Response(JSON.stringify({ status: "Ok" }), { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
 	});
 
 	it("rejects malformed tokens without touching the database", async () => {
@@ -54,31 +72,123 @@ describe("public feedback routes", () => {
 		expect(await rewardAvailable(0, { FEEDBACK_REWARD_CAP: "0" })).toBe(false);
 	});
 
-	it("submits cleaned answers with the $1 reward and 100-response cap by default", async () => {
-		mocks.rpc.mockResolvedValueOnce({ data: { status: "submitted", rewardStatus: "issued", rewardCode: "THANKS-ABC" }, error: null });
-		const response = await post(token, { answers: { reason: " Pricing is unclear ", rating: 4, details: "  " } });
+	it("strips the PostHog ids from the page data", async () => {
+		mocks.rpc.mockResolvedValueOnce({ data: { ...openRequest, rewardsIssued: 0 }, error: null });
+		const body = await (await app.request(`https://phaseo.app/feedback/${token}`, {}, env)).json();
+		expect(body).not.toHaveProperty("requestId");
+		expect(body).not.toHaveProperty("userId");
+	});
+
+	it("sends the answers to the PostHog survey, then records the response with the $1 reward and 100-response cap", async () => {
+		mocks.rpc
+			.mockResolvedValueOnce({ data: openRequest, error: null })
+			.mockResolvedValueOnce({ data: { status: "submitted", rewardStatus: "issued", rewardCode: "THANKS-ABC" }, error: null });
+		const response = await post(token, { answers: { reason: "pricing_unclear", details: " Too many tiers ", likes: "  " } });
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({ status: "submitted", rewardStatus: "issued", rewardCode: "THANKS-ABC" });
-		expect(mocks.rpc).toHaveBeenCalledWith("submit_feedback_response", {
+
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+		expect(url).toBe("https://eu.i.posthog.com/i/v0/e/");
+		const event = JSON.parse(String(init.body));
+		expect(event).toMatchObject({
+			api_key: "phc_test",
+			event: "survey sent",
+			distinct_id: openRequest.userId,
+			uuid: openRequest.requestId,
+			properties: {
+				$survey_id: FEEDBACK_SURVEY.id,
+				$survey_submission_id: openRequest.requestId,
+				$survey_completed: true,
+				[`$survey_response_${FEEDBACK_SURVEY.questions[0].id}`]: "Pricing was unclear",
+				[`$survey_response_${FEEDBACK_SURVEY.questions[1].id}`]: "Too many tiers",
+				$survey_response: "Pricing was unclear",
+				$survey_response_1: "Too many tiers",
+				segment: "used_not_paid",
+				recency: "lapsed",
+				campaign: "v1",
+			},
+		});
+		expect(event.properties).not.toHaveProperty(`$survey_response_${FEEDBACK_SURVEY.questions[3].id}`);
+
+		expect(mocks.rpc).toHaveBeenNthCalledWith(1, "get_feedback_request", { p_token: token });
+		expect(mocks.rpc).toHaveBeenNthCalledWith(2, "submit_feedback_response", {
 			p_token: token,
-			p_answers: { reason: "Pricing is unclear", rating: 4 },
 			p_reward_nanos: 1_000_000_000,
 			p_reward_cap: 100,
 			p_reward_valid_days: 90,
 		});
 	});
 
-	it("turns the reward off when it is configured as zero", async () => {
-		mocks.rpc.mockResolvedValueOnce({ data: { status: "submitted", rewardStatus: "none" }, error: null });
-		await post(token, { answers: { reason: "x" } }, { FEEDBACK_REWARD_USD: "0" });
-		expect(mocks.rpc.mock.calls[0][1]).toMatchObject({ p_reward_nanos: 0 });
+	it("sends a 0-10 score as a number under the rating question", async () => {
+		mocks.rpc
+			.mockResolvedValueOnce({ data: { ...openRequest, segment: "paid" }, error: null })
+			.mockResolvedValueOnce({ data: { status: "submitted", rewardStatus: "issued", rewardCode: "THANKS-ABC" }, error: null });
+		await post(token, { answers: { nps: 0, improve: "Cheaper Opus" } });
+		const { properties } = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body));
+		expect(properties[`$survey_response_${FEEDBACK_SURVEY.questions[2].id}`]).toBe(0);
+		expect(properties.$survey_response_2).toBe(0);
+		expect(properties.$survey_response_4).toBe("Cheaper Opus");
 	});
 
-	it("rejects answers that are not a small flat object", async () => {
-		for (const answers of [undefined, [], {}, { reason: "" }, { "Bad Key": "x" }, { reason: { nested: true } }, { reason: "x".repeat(3_001) }]) {
+	it("records nothing when PostHog does not accept the answers, so the user can send again", async () => {
+		for (const failure of [
+			() => fetchMock.mockResolvedValueOnce(new Response("bad", { status: 500 })),
+			() => fetchMock.mockRejectedValueOnce(new Error("timeout")),
+		]) {
+			mocks.rpc.mockReset().mockResolvedValueOnce({ data: openRequest, error: null });
+			failure();
+			expect((await post(token, { answers: { reason: "other" } })).status).toBe(503);
+			expect(mocks.rpc).toHaveBeenCalledTimes(1);
+		}
+
+		mocks.rpc.mockReset().mockResolvedValueOnce({ data: openRequest, error: null });
+		fetchMock.mockClear();
+		expect((await post(token, { answers: { reason: "other" } }, { POSTHOG_PROJECT_API_KEY: "" })).status).toBe(503);
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(mocks.rpc).toHaveBeenCalledTimes(1);
+	});
+
+	it("returns the original code without resending answers that were already sent", async () => {
+		mocks.rpc.mockResolvedValueOnce({ data: { ...openRequest, responded: true, rewardCode: "THANKS-OLD" }, error: null });
+		const response = await post(token, { answers: { reason: "other" } });
+		expect(await response.json()).toEqual({ status: "already_submitted", rewardStatus: null, rewardCode: "THANKS-OLD" });
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(mocks.rpc).toHaveBeenCalledTimes(1);
+	});
+
+	it("returns 404 for an unknown token without contacting PostHog", async () => {
+		mocks.rpc.mockResolvedValueOnce({ data: null, error: null });
+		expect((await post(token, { answers: { reason: "other" } })).status).toBe(404);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("turns the reward off when it is configured as zero", async () => {
+		mocks.rpc
+			.mockResolvedValueOnce({ data: openRequest, error: null })
+			.mockResolvedValueOnce({ data: { status: "submitted", rewardStatus: "none" }, error: null });
+		await post(token, { answers: { reason: "other" } }, { FEEDBACK_REWARD_USD: "0" });
+		expect(mocks.rpc.mock.calls[1][1]).toMatchObject({ p_reward_nanos: 0 });
+	});
+
+	it("rejects answers the survey does not ask for", async () => {
+		for (const answers of [
+			undefined,
+			[],
+			{},
+			{ details: "only text" },
+			{ reason: "" },
+			{ reason: "not_a_reason" },
+			{ reason: "other", rating: 4 },
+			{ reason: { nested: true } },
+			{ reason: "other", details: "x".repeat(3_001) },
+			{ nps: 11 },
+			{ nps: 4.5 },
+		]) {
 			expect((await post(token, { answers })).status).toBe(400);
 		}
 		expect(mocks.rpc).not.toHaveBeenCalled();
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it("unsubscribes a known token, including one-click form posts from mail clients", async () => {
@@ -110,16 +220,15 @@ describe("public feedback routes", () => {
 });
 
 describe("parseFeedbackAnswers", () => {
-	it("keeps trimmed strings and finite numbers only", () => {
-		expect(parseFeedbackAnswers({ a: " x ", b: 3, c: "" })).toEqual({ a: "x", b: 3 });
-		expect(parseFeedbackAnswers({ a: Number.NaN })).toBeNull();
-		expect(parseFeedbackAnswers(Object.fromEntries(Array.from({ length: 11 }, (_, i) => [`k${i}`, "x"])))).toBeNull();
+	it("keeps a known reason or score and trimmed, non-empty text", () => {
+		expect(parseFeedbackAnswers({ reason: "model_missing", details: " Kimi " })).toEqual({ reason: "model_missing", details: "Kimi" });
+		expect(parseFeedbackAnswers({ nps: 10, likes: "", improve: "反".repeat(3_000) })).toEqual({ nps: 10, improve: "反".repeat(3_000) });
+		expect(parseFeedbackAnswers({ reason: "toString" })).toBeNull();
+		expect(parseFeedbackAnswers({ nps: Number.NaN })).toBeNull();
 	});
 
-	it("rejects answers the database would store as more than 20,000 bytes", () => {
-		// Two full-length answers fit in three-byte scripts such as Chinese, but not seven.
-		const answer = "反".repeat(3_000);
-		expect(parseFeedbackAnswers({ likes: answer, improve: answer })).not.toBeNull();
-		expect(parseFeedbackAnswers(Object.fromEntries(Array.from({ length: 7 }, (_, i) => [`k${i}`, answer])))).toBeNull();
+	it("knows every reason the feedback page offers", () => {
+		const reasons = ["setup_unclear", "pricing_unclear", "model_missing", "model_choice_unclear", "payment_issue", "chose_alternative", "just_exploring", "not_ready_yet", "other"];
+		for (const reason of reasons) expect(parseFeedbackAnswers({ reason })).toEqual({ reason });
 	});
 });
