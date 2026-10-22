@@ -118,8 +118,10 @@ describe("audit content storage under zero data retention", () => {
 		await audit(kind);
 
 		expect(state.put).toHaveBeenCalledOnce();
+		expect(new TextDecoder().decode(state.put.mock.calls[0]?.[1] as Uint8Array)).toContain(PROMPT);
+		// The detail row only ever holds metadata (index.request-details.test.ts).
 		expect(state.writes.gateway_request_details).toHaveLength(1);
-		expect(JSON.stringify(state.writes.gateway_request_details)).toContain(PROMPT);
+		expect(JSON.stringify(state.writes.gateway_request_details)).not.toContain(PROMPT);
 	});
 
 	it.each(kinds.flatMap((kind) => [

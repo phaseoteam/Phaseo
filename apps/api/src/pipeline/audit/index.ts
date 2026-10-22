@@ -534,17 +534,29 @@ function normalizeJsonValue(value: unknown): unknown {
     }
 }
 
-function extractReplayContent(value: unknown): unknown {
-    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-    const payload = value as Record<string, unknown>;
-    if (Array.isArray(payload.messages)) return payload.messages;
-    if (Array.isArray(payload.input)) return payload.input;
-    if (Array.isArray(payload.input_items)) return payload.input_items;
-    if (Array.isArray(payload.contents)) return payload.contents;
-    return null;
-}
+/**
+ * A gateway_request_details row holds request metadata only. Request and response
+ * content lives only in the I/O log object in R2 (persistGatewayIoLog), so the
+ * table's payload columns (request_payload, request_content, gateway_response,
+ * response_content, provider_request, provider_response) are never written; nothing
+ * reads them.
+ */
+type GatewayRequestDetailsRow = {
+    gateway_request_id: string;
+    gateway_request_created_at: string;
+    request_id: string;
+    workspace_id: string;
+    app_id: string | null;
+    key_id: string | null;
+    endpoint: Endpoint;
+    model_id: string;
+    provider: string | null;
+    status_code: number | null;
+    success: boolean;
+    metadata: unknown;
+};
 
-async function insertGatewayRequestDetails(row: any) {
+async function insertGatewayRequestDetails(row: GatewayRequestDetailsRow) {
     if (gatewayRequestDetailsTableAvailable === false) {
         return;
     }
@@ -577,7 +589,7 @@ async function insertGatewayRequestDetails(row: any) {
 }
 
 async function insertGatewayRequestDetailsNonBlocking(
-    row: Record<string, unknown>,
+    row: GatewayRequestDetailsRow,
     context: string,
 ) {
     try {
@@ -1020,12 +1032,6 @@ export async function auditSuccess(input: {
                     provider: args.provider ?? null,
                     status_code: args.statusCode,
                     success: true,
-                    request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                    request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                    gateway_response: normalizeJsonValue(args.gatewayResponse),
-                    response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                    provider_request: normalizeJsonValue(args.providerRequest),
-                    provider_response: normalizeJsonValue(args.providerResponse),
                     metadata: normalizeJsonValue(args.detailMetadata) ?? {},
                     },
                     "supabase_audit_success_details_insert",
@@ -1329,12 +1335,6 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                             provider: args.provider ?? null,
                             status_code: args.statusCode,
                             success: false,
-                            request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                            request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                            gateway_response: normalizeJsonValue(args.gatewayResponse),
-                            response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                            provider_request: null,
-                            provider_response: normalizeJsonValue(args.providerResponse),
                             metadata: normalizeJsonValue(args.detailMetadata) ?? {},
                             },
                             "supabase_audit_failure_before_details_insert",
@@ -1534,12 +1534,6 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         provider: args.provider ?? null,
                         status_code: args.statusCode,
                         success: false,
-                        request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                        request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                        gateway_response: normalizeJsonValue(args.gatewayResponse),
-                        response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                        provider_request: normalizeJsonValue(args.providerRequest),
-                        provider_response: normalizeJsonValue(args.providerResponse),
                         metadata: normalizeJsonValue(args.detailMetadata) ?? {},
                         },
                         "supabase_audit_failure_execute_details_insert",

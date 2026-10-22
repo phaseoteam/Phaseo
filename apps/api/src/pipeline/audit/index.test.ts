@@ -344,14 +344,12 @@ describe("audit request detail persistence", () => {
 			expect.objectContaining({
 				request_id: "req_success_1",
 				workspace_id: "ws_1",
-				request_payload: {
-					model: "openai/gpt-5-nano",
-					messages: [{ role: "user", content: "hello" }],
-				},
-				request_content: [{ role: "user", content: "hello" }],
 				metadata: expect.objectContaining({ replay_supported: true, response_timeline: { version: 1, routing_ms: 12 } }),
 			}),
 		);
+		// Content lives only in the I/O log in R2.
+		expect(detailRows[0]).not.toHaveProperty("request_payload");
+		expect(detailRows[0]).not.toHaveProperty("request_content");
 		expect(consoleErrorSpy).not.toHaveBeenCalledWith(
 			"[audit] ensureAppId returned null",
 			expect.anything(),
@@ -448,15 +446,13 @@ describe("audit request detail persistence", () => {
 		expect(detailRows[0]).toMatchObject({
 			model_id: "stealth/test-model-20260827",
 			provider: "stealth",
-			provider_request: null,
-			provider_response: null,
-			gateway_response: { model: "stealth/test-model-20260827", output_text: "ok" },
 		});
+		expect(detailRows[0]).not.toHaveProperty("gateway_response");
 		expect(JSON.stringify({ gatewayRequestRows, detailRows, v2Events, upstream: persistGatewayUpstreamRequestsMock.mock.calls }))
 			.not.toMatch(/openai|pam_openai_secret|oai-stealth-test-model-internal|api\.openai\.com/i);
 	});
 
-	it("stores replay-ready details for execute-stage failures", async () => {
+	it("stores request details without content for execute-stage failures", async () => {
 		const gatewayRequestRows: any[] = [];
 		const detailRows: any[] = [];
 
@@ -545,17 +541,13 @@ describe("audit request detail persistence", () => {
 				request_id: "req_failure_1",
 				workspace_id: "ws_2",
 				success: false,
-				request_payload: {
-					model: "openai/gpt-5.4-nano",
-					input: [{ role: "user", content: "retry me" }],
-				},
-				request_content: [{ role: "user", content: "retry me" }],
 				metadata: expect.objectContaining({
 					replay_supported: true,
 					stage: "execute",
 				}),
 			}),
 		);
+		expect(JSON.stringify(detailRows)).not.toContain("retry me");
 	});
 
 	it("persists pre-model failures with an explicit unknown model", async () => {
