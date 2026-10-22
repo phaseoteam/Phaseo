@@ -89,4 +89,16 @@ describe("Azure BYOK credentials", () => {
 			expect(mock.calls[0].bodyJson?.model).toBe("customer-mini");
 		} finally { mock.restore(); }
 	});
+
+	it.each([
+		"http://169.254.169.254/latest/meta-data",
+		"https://internal.example.com",
+		"https://customer.openai.azure.com:8443",
+	])("refuses a saved deployment whose endpoint is %s, without a request", async (endpointUrl) => {
+		const saved = JSON.stringify({ deployments: [{ modelSlug: "openai/gpt-4o-mini", endpointUrl, apiKey: "customer-key", modelId: "customer-mini" }] });
+		const args = { providerId: "azure", model: "openai/gpt-4o-mini", providerModelSlug: "gpt-4o-mini", byokMeta: byok(saved) } as any;
+		expect(() => resolveAzureCredential(args)).toThrow("azure_byok_endpoint_invalid");
+		expect(() => resolveAzureConfig(args)).toThrow("azure_byok_endpoint_invalid");
+		expect(() => resolveOpenAITransport(args, "/embeddings")).toThrow("azure_byok_endpoint_invalid");
+	});
 });

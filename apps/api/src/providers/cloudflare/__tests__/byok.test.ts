@@ -10,7 +10,7 @@ vi.mock("@supabase/supabase-js", () => ({
 	createClient: () => ({}),
 }));
 
-const CUSTOMER_KEY = JSON.stringify({ apiToken: "customer-token", accountId: "customer-account" });
+const CUSTOMER_KEY = JSON.stringify({ apiToken: "customer-token", accountId: "0123456789abcdef0123456789abcdef" });
 
 function buildArgs(byokKey?: string): ExecutorExecuteArgs {
 	return {
@@ -54,7 +54,7 @@ describe("Cloudflare BYOK credentials", () => {
 		try {
 			const result = await executeOpenAIWire(buildArgs(CUSTOMER_KEY));
 			expect(result).toMatchObject({ keySource: "byok", byokKeyId: "byok-cf" });
-			expect(mock.calls[0].url).toBe("https://api.cloudflare.com/client/v4/accounts/customer-account/ai/v1/chat/completions");
+			expect(mock.calls[0].url).toBe("https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1/chat/completions");
 			expect(mock.calls[0].headers.Authorization).toBe("Bearer customer-token");
 			expect(mock.calls[0].headers["cf-aig-gateway-id"]).toBeUndefined();
 		} finally { mock.restore(); }
@@ -79,9 +79,19 @@ describe("Cloudflare BYOK credentials", () => {
 				"application/json",
 			);
 			expect(result).toMatchObject({ keySource: "byok", byokKeyId: "byok-cf" });
-			expect(mock.calls[0].url).toBe("https://api.cloudflare.com/client/v4/accounts/customer-account/ai/run/@cf/cloudflare/clef");
+			expect(mock.calls[0].url).toBe("https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/run/@cf/cloudflare/clef");
 			expect(mock.calls[0].headers.Authorization).toBe("Bearer customer-token");
 			expect(mock.calls[0].headers["cf-aig-gateway-id"]).toBeUndefined();
+		} finally { mock.restore(); }
+	});
+
+	it("refuses a saved key whose account id is not a Cloudflare account id", async () => {
+		const mock = installFetchMock([{ match: () => true, response: chatStream }]);
+		try {
+			const injected = JSON.stringify({ apiToken: "customer-token", accountId: "../../../../internal" });
+			await expect(executeOpenAIWire(buildArgs(injected))).rejects.toThrow("cloudflare_byok_account_id_invalid");
+			await expect(runCloudflareModel(buildArgs(injected), "{}", "application/json")).rejects.toThrow("cloudflare_byok_account_id_invalid");
+			expect(mock.calls).toHaveLength(0);
 		} finally { mock.restore(); }
 	});
 });

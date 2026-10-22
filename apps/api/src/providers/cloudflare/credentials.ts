@@ -6,6 +6,7 @@
 //      https://developers.cloudflare.com/workers-ai/get-started/rest-api/
 // How: Parse the saved JSON so calls use the customer's token and account.
 
+import { isCloudflareAccountId } from "@core/provider-credentials";
 import type { ResolvedKey } from "../keys";
 
 export type CloudflareByokCredential = { apiToken: string; accountId: string };
@@ -15,14 +16,22 @@ export function cloudflareByokCredential(key: ResolvedKey): CloudflareByokCreden
 	if (key.source !== "byok") return null;
 	const value = key.key.trim();
 	if (!value.startsWith("{")) return null;
+	let parsed: Record<string, unknown>;
 	try {
-		const parsed = JSON.parse(value) as Record<string, unknown>;
-		const apiToken = typeof parsed.apiToken === "string" ? parsed.apiToken.trim() : "";
-		const accountId = typeof parsed.accountId === "string" ? parsed.accountId.trim() : "";
-		return apiToken && accountId ? { apiToken, accountId } : null;
+		parsed = JSON.parse(value) as Record<string, unknown>;
 	} catch {
 		return null;
 	}
+	const apiToken = typeof parsed.apiToken === "string" ? parsed.apiToken.trim() : "";
+	const accountId = typeof parsed.accountId === "string" ? parsed.accountId.trim() : "";
+	if (!apiToken || !accountId) return null;
+	// Checked again here so keys saved before the account id rule cannot change the path.
+	if (!isCloudflareAccountId(accountId)) {
+		const error = new Error("cloudflare_byok_account_id_invalid") as Error & { code: string };
+		error.code = "cloudflare_byok_account_id_invalid";
+		throw error;
+	}
+	return { apiToken, accountId };
 }
 
 /** Workers AI base for an account: `/ai/run/{model}` and `/ai/v1/...` sit under it. */

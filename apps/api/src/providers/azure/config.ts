@@ -3,6 +3,7 @@
 // How: Exposes provider-specific helpers for routing and execution.
 
 import { getBindings } from "@/runtime/env";
+import { normalizeAzureByokEndpoint } from "@core/provider-credentials";
 import type { ProviderExecuteArgs } from "../types";
 import { orderedByokMetas, resolveProviderKey, type ResolvedKey } from "../keys";
 
@@ -70,10 +71,13 @@ export function resolveAzureByokDeployment(args: AzureCredentialArgs): AzureByok
             if (!entry || typeof entry !== "object") continue;
             const record = entry as Record<string, unknown>;
             const modelSlug = firstString(record, ["modelSlug", "phaseoModelSlug", "aiStatsModelSlug"]);
-            const baseUrl = firstString(record, ["endpointUrl", "endpoint", "foundryEndpoint", "azureEndpoint"]);
+            const endpoint = firstString(record, ["endpointUrl", "endpoint", "foundryEndpoint", "azureEndpoint"]);
             const key = firstString(record, ["apiKey"]);
             const deployment = firstString(record, ["modelId", "providerModelId", "azureModelId"]);
-            if (!modelSlug || !baseUrl || !key || !deployment || !modelSlugMatches(modelSlug, slugs)) continue;
+            if (!modelSlug || !endpoint || !key || !deployment || !modelSlugMatches(modelSlug, slugs)) continue;
+            // Checked again here so keys saved before the endpoint rule cannot reach other hosts.
+            const baseUrl = normalizeAzureByokEndpoint(endpoint);
+            if (!baseUrl) throw azureConfigError("azure_byok_endpoint_invalid");
             return { key, byokId: meta.id ?? null, baseUrl, deployment, apiVersion: firstString(record, ["apiVersion"]) };
         }
     }
