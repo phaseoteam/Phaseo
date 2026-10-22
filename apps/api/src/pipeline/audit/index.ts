@@ -756,6 +756,8 @@ export async function auditSuccess(input: {
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
+    /** Zero data retention applies to the request, so no I/O log is captured. */
+    zeroDataRetention?: boolean;
     errorPayload?: Record<string, unknown> | null;
     requestPayload?: unknown;
     gatewayResponse?: unknown;
@@ -989,6 +991,7 @@ export async function auditSuccess(input: {
                 serverToolTrace: args.serverToolTrace,
 				lifecycleEvents: args.lifecycleEvents,
                 metadata: args.detailMetadata ?? {},
+                zeroDataRetention: args.zeroDataRetention === true,
                 }, ioLoggingPolicy);
                 await insertGatewayRequestDetailsNonBlocking(
                     {
@@ -1030,6 +1033,8 @@ type AuditFailureBefore = {
     stage: "before";
     requestId: string;
     workspaceId?: string | null;
+    /** Zero data retention applies to the request, so no I/O log is captured. */
+    zeroDataRetention?: boolean;
     endpoint: Endpoint;
     model?: string | null;
     requestedModel?: string | null;
@@ -1078,6 +1083,8 @@ type AuditFailureExecute = {
     stage: "execute";
     requestId: string;
     workspaceId: string;
+    /** Zero data retention applies to the request, so no I/O log is captured. */
+    zeroDataRetention?: boolean;
     endpoint: Endpoint;
     model: string;
     requestedModel?: string;
@@ -1284,6 +1291,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         providerRequest: null,
                         providerResponse: args.providerResponse,
                         metadata: args.detailMetadata ?? {},
+                        zeroDataRetention: args.zeroDataRetention === true,
                         }, ioLoggingPolicy);
                         await insertGatewayRequestDetailsNonBlocking(
                             {
@@ -1479,6 +1487,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     serverToolTrace: args.serverToolTrace,
 					lifecycleEvents: args.lifecycleEvents,
                     metadata: args.detailMetadata ?? {},
+                    zeroDataRetention: args.zeroDataRetention === true,
                     }, ioLoggingPolicy);
                     await insertGatewayRequestDetailsNonBlocking(
                         {

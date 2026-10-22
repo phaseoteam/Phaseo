@@ -9,7 +9,7 @@ import { sendAxiomWideEvent } from "./axiom";
 import { reportedCacheTokens } from "@core/cache-usage";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "./privacy";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
-import { keyKeepsContentOutOfTelemetry } from "@pipeline/audit/io-logging";
+import { keyKeepsContentOutOfTelemetry, requestAsksForZeroDataRetention } from "@pipeline/audit/io-logging";
 
 type EventArgs = {
     ctx?: PipelineContext;
@@ -1199,15 +1199,17 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             observabilityPlan.detailLevel === "full" && !containsParsedDocumentContent;
         // A key created with never_store_content, or under zero data retention, keeps
         // the operational detail (routing, attempts, headers) but none of its requests
-        // or responses. Both are set on the context when routing loads the policy.
+        // or responses. Both are set on the context when routing loads the policy; a
+        // request rejected before then may still ask for ZDR itself.
         const keepContentOut = includeDetailedPayloads || !args.success
-            ? await keyKeepsContentOutOfTelemetry({
-                workspaceId,
-                keyId: args.keyId ?? ctx?.meta?.apiKeyId ?? null,
-                known: typeof ctx?.neverStoreContent === "boolean"
-                    ? ctx.neverStoreContent || ctx.zeroDataRetention === true
-                    : null,
-            })
+            ? requestAsksForZeroDataRetention(args.requestPayload ?? ctx?.rawBody ?? null) ||
+                await keyKeepsContentOutOfTelemetry({
+                    workspaceId,
+                    keyId: args.keyId ?? ctx?.meta?.apiKeyId ?? null,
+                    known: typeof ctx?.neverStoreContent === "boolean"
+                        ? ctx.neverStoreContent || ctx.zeroDataRetention === true
+                        : null,
+                })
             : false;
         const includeContent = includeDetailedPayloads && !keepContentOut;
         // Attempts keep their operational detail but, like the event, not the raw upstream body.

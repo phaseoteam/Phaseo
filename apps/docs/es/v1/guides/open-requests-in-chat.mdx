@@ -9,7 +9,7 @@ Cuando los registros de I/O del Gateway están activados, Phaseo guarda el promp
 ## Antes de empezar
 
 - Activa **Almacenar cargas útiles de solicitud y respuesta** en **Configuración → Privacidad**. Solo se pueden abrir las solicitudes realizadas mientras está activado.
-- Si **Requerir retención cero de datos** está activado, el espacio de trabajo nunca guarda prompts ni respuestas. Tampoco se guardan las solicitudes realizadas con una clave API cuya guardrail exige retención cero de datos. Esas solicitudes no se pueden abrir.
+- Si **Requerir retención cero de datos** está activado, el espacio de trabajo nunca guarda prompts ni respuestas. Tampoco se guardan las solicitudes realizadas con una clave API cuya guardrail exige retención cero de datos, ni las que establecen `require_zero_data_retention` por sí mismas. Esas solicitudes no se pueden abrir.
 - Las solicitudes enviadas a los [endpoints regionales](./regional-routing.mdx) (`eu.api.phaseo.app` y `us.api.phaseo.app`) no se guardan, así que no se pueden abrir.
 - Debes ser miembro del espacio de trabajo al que pertenece la solicitud. Si **Quién puede ver el contenido** está en **Propietarios y administradores**, solo ellos pueden abrir sus solicitudes.
 

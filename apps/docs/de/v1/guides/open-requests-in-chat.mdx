@@ -9,7 +9,7 @@ Wenn Gateway-I/O-Protokolle aktiviert sind, speichert Phaseo Prompt und Antwort 
 ## Bevor du beginnst
 
 - Aktiviere **Anfrage- und Antwortdaten speichern** unter **Einstellungen → Datenschutz**. Nur Anfragen, die gestellt wurden, während die Option aktiv war, lassen sich öffnen.
-- Ist **Keine Datenaufbewahrung verlangen** aktiviert, speichert der Workspace nie Prompts oder Antworten. Dasselbe gilt für Anfragen mit einem API-Schlüssel, dessen Guardrail Zero Data Retention verlangt. Diese Anfragen lassen sich nicht öffnen.
+- Ist **Keine Datenaufbewahrung verlangen** aktiviert, speichert der Workspace nie Prompts oder Antworten. Dasselbe gilt für Anfragen mit einem API-Schlüssel, dessen Guardrail Zero Data Retention verlangt, und für Anfragen, die selbst `require_zero_data_retention` setzen. Diese Anfragen lassen sich nicht öffnen.
 - Anfragen an die [regionalen Endpunkte](./regional-routing.mdx) (`eu.api.phaseo.app` und `us.api.phaseo.app`) werden nicht gespeichert und lassen sich daher nicht öffnen.
 - Du musst Mitglied des Workspace sein, zu dem die Anfrage gehört. Ist **Wer Inhalte sehen darf** auf **Inhaber und Admins** gesetzt, können nur Inhaber und Admins seine Anfragen öffnen.
 

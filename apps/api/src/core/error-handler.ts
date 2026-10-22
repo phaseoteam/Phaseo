@@ -1005,6 +1005,8 @@ export async function handleError({
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
         workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? requestObservability?.workspaceId ?? null,
+        // Without a context, the I/O log reads ZDR from the key's policy and the request payload.
+        zeroDataRetention: ctx?.zeroDataRetention === true,
         endpoint,
         model: modelForObservability,
         requestedModel,

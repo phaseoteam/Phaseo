@@ -1676,7 +1676,11 @@ export async function beforeRequest(
 		quotaUserId: userId ?? null,
 		activeGuardrailIds: workspacePolicy.activeGuardrailIds ?? [],
 		neverStoreContent: workspacePolicy.neverStoreContent === true,
-		zeroDataRetention: workspacePolicyResult.diagnostics.privacyZdrOnly === true,
+		// The workspace setting or one of the key's guardrails, or the request's own (or its
+		// preset's) require_zero_data_retention.
+		zeroDataRetention:
+			workspacePolicyResult.diagnostics.privacyZdrOnly === true ||
+			getEffectiveRoutingHints(mergedBody).requireZeroDataRetention === true,
         endpoint,
         capability,
         requestId,

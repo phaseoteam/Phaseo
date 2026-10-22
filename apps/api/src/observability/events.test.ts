@@ -1262,4 +1262,36 @@ describe("emitGatewayRequestEvent", () => {
 			expect(JSON.parse(String(event.attempt_errors_json))[0].upstream_payload_preview).toContain("private echoed prompt");
 		});
 	});
+
+	it.each([
+		["provider.require_zero_data_retention", { provider: { require_zero_data_retention: true } }],
+		["routing.zdr", { routing: { zdr: true } }],
+	])("keeps content out of a failure before the request context exists when the request asks for ZDR (%s)", async (_name, routing) => {
+		const beforeStageFailure = (requestId: string, extra: Record<string, unknown>) => emitGatewayRequestEvent({
+			requestId,
+			workspaceId: "ws_request_zdr",
+			endpoint: "responses",
+			statusCode: 400,
+			success: false,
+			errorStage: "before",
+			errorCode: "unsupported_model",
+			errorMessage: "Model not available",
+			requestPayload: { model: "openai/gpt-5-nano", input: "private prompt", ...extra },
+			gatewayResponse: { error: "unsupported_model", input: "private echoed prompt" },
+			errorDetails: { error: "unsupported_model", input: "private echoed prompt" },
+		});
+
+		await beforeStageFailure("req_request_zdr", routing);
+		await beforeStageFailure("req_no_request_zdr", {});
+
+		const [zdr, control] = sendAxiomWideEventMock.mock.calls.map((call) => call[0] as Record<string, unknown>);
+		expect(zdr).toMatchObject({ request_id: "req_request_zdr", observability_detail_level: "full" });
+		expect(zdr.request_payload_redacted_json).toBeUndefined();
+		expect(zdr.gateway_response_redacted_json).toBeUndefined();
+		expect(zdr.error_details_redacted_json).toBeUndefined();
+		expect(JSON.stringify(zdr)).not.toContain("private");
+		// The same failure without the request's flag keeps its detailed payloads.
+		expect(control).toMatchObject({ request_id: "req_no_request_zdr" });
+		expect(control.request_payload_redacted_json).toBeDefined();
+	});
 });

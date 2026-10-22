@@ -1,6 +1,7 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { isGatewayIoLoggingFeatureEnabled } from "@/core/feature-flags";
 import { fetchWorkspacePolicy } from "@/pipeline/before/workspacePolicy";
+import { getEffectiveRoutingHints } from "@/pipeline/requestRouting";
 
 export type GatewayIoLogStatus = "not_enabled" | "stored" | "missing_bucket" | "too_large" | "error" | "deleted";
 
@@ -33,6 +34,8 @@ type GatewayIoLogInput = {
     serverToolTrace?: unknown;
 	lifecycleEvents?: unknown;
     metadata?: unknown;
+    /** Zero data retention applies to the request (the context's `zeroDataRetention`): nothing is captured. */
+    zeroDataRetention?: boolean;
 };
 
 type GatewayIoLogMetadataRow = GatewayIoLogColumns & {
@@ -245,7 +248,8 @@ export async function keyNeverStoresContent(input: {
 /**
  * Whether Phaseo's own telemetry leaves request and response content out: the key
  * was created with `never_store_content`, or zero data retention applies (the
- * workspace setting or one of the key's guardrails). As for keyNeverStoresContent,
+ * workspace setting or one of the key's guardrails; a request that asks for ZDR
+ * itself is checked by the caller). As for keyNeverStoresContent,
  * the request context already knows once routing has loaded the policy (`known`),
  * earlier failures read it through the same cache, and a failed read keeps content out.
  */
@@ -258,6 +262,17 @@ export async function keyKeepsContentOutOfTelemetry(input: {
     if (!input.workspaceId || input.workspaceId === "unknown" || !input.keyId) return false;
     const policy = await keyDataPolicy({ workspaceId: input.workspaceId, keyId: input.keyId });
     return policy.neverStoreContent || policy.zeroDataRetention;
+}
+
+/**
+ * Whether the request itself asks for zero data retention: `require_zero_data_retention`
+ * (or `zdr`) under `provider` or `routing`. Routing then only uses ZDR endpoints, and
+ * Phaseo keeps the request's content out of its own logs, cache, samples and telemetry
+ * just as for workspace or guardrail ZDR.
+ */
+export function requestAsksForZeroDataRetention(body: unknown): boolean {
+    if (!body || typeof body !== "object") return false;
+    return getEffectiveRoutingHints(body).requireZeroDataRetention === true;
 }
 
 /**
@@ -322,7 +337,11 @@ export async function persistGatewayIoLog(
     if (!policy.captureEnabled) {
         return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
     }
-    if (requestRequiresZeroDataRetention(input.metadata, input.gatewayResponse, input.providerResponse)) {
+    if (
+        input.zeroDataRetention === true ||
+        requestAsksForZeroDataRetention(input.requestPayload) ||
+        requestRequiresZeroDataRetention(input.metadata, input.gatewayResponse, input.providerResponse)
+    ) {
         return finalizeGatewayIoLog(input, {
             io_log_status: "not_enabled",
             io_log_error: "Skipped: zero data retention is required for this request",
