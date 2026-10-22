@@ -3,7 +3,7 @@ import type { ProviderExecutor } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
-import { resolveVertexApiBase } from "@executors/google-vertex/text-generate";
+import { resolveVertexApiBase, vertexCredentialScope } from "@executors/google-vertex/text-generate";
 import { fetchPublicMedia } from "@core/public-media-fetch";
 import { imageBytesToBase64 } from "@executors/_shared/image-results";
 
@@ -25,7 +25,10 @@ export const executor: ProviderExecutor = async args => {
 	if (mode !== undefined && !["smart", "verbatim"].includes(mode)) return fail("Unsupported transcription mode.");
 	if (mode === "smart" && (diarization || wordTimestamp)) return fail("Smart mode cannot include diarization or timestamps.");
 	const env = getBindings() as unknown as Record<string, string | undefined>;
-	const base = resolveVertexApiBase(env, args.providerId, "gemini", model);
+	const key = resolveProviderKey({ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey }, () => env.GOOGLE_VERTEX_ACCESS_TOKEN || env.GOOGLE_VERTEX_API_KEY);
+	// A customer credential runs in its own project; the model is served on global only.
+	const scope = key.source === "byok" ? vertexCredentialScope(key.key) : undefined;
+	const base = resolveVertexApiBase(env, args.providerId, "gemini", model, scope);
 	if (!base.endsWith("/locations/global")) return fail("Vertex Gemini transcription is available in the global location only.");
 	const maxBytes = 14 * 1024 * 1024;
 	let bytes: Uint8Array;
@@ -38,7 +41,6 @@ export const executor: ProviderExecutor = async args => {
 		bytes = media.bytes; mime = media.contentType?.split(";")[0] ?? "";
 	} else return fail("An audio file or URL is required.");
 	if (!/^audio\/(wav|mp3|aiff|aac|ogg|flac|mpeg|m4a|l16|opus|alaw|mulaw|webm)$/.test(mime)) return fail("A supported audio MIME type is required.");
-	const key = resolveProviderKey({ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey }, () => env.GOOGLE_VERTEX_ACCESS_TOKEN || env.GOOGLE_VERTEX_API_KEY);
 	const token = await resolveVertexAccessToken(key.key, args.upstreamTiming);
 	const body = { contents: [{ role: "user", parts: [{ inlineData: { data: imageBytesToBase64(bytes), mimeType: mime } }] }], generationConfig: { audioTranscriptionConfig: { languageCodes: ir.languages ?? (ir.language ? [ir.language] : undefined), customVocabulary: vocabulary, diarization, wordTimestamp, mode: mode?.toUpperCase() } } };
 	const upstream = await (args.upstreamTiming?.fetch ?? fetch)(`${base}/publishers/google/models/${model}:generateContent`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });

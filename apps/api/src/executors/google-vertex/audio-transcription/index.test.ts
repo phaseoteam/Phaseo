@@ -28,3 +28,13 @@ it.each(["us-central1", "europe-west4"])("serves transcription from global when 
 	const mock = installFetchMock([{ match: url => url === "https://aiplatform.googleapis.com/v1/projects/project/locations/global/publishers/google/models/gemini-3.5-transcribe-preview:generateContent", response: jsonResponse({ responseId: "native", candidates: [{ finishReason: "STOP", content: { parts: [{ text: "Hello" }] } }], usageMetadata: { promptTokenCount: 30, candidatesTokenCount: 2 } }) }]);
 	try { expect((await executor(args())).upstream.status).toBe(200); expect(mock.calls).toHaveLength(1); } finally { mock.restore(); }
 });
+
+it("runs a customer credential in its own project, on global whatever region it names", async () => {
+	const key = JSON.stringify({ access_token: "customer-token", project_id: "customer-project", region: "us-central1" });
+	const mock = installFetchMock([{ match: url => url === "https://aiplatform.googleapis.com/v1/projects/customer-project/locations/global/publishers/google/models/gemini-3.5-transcribe-preview:generateContent", response: jsonResponse({ responseId: "native", candidates: [{ finishReason: "STOP", content: { parts: [{ text: "Hello" }] } }], usageMetadata: { promptTokenCount: 30, candidatesTokenCount: 2 } }) }]);
+	try {
+		const result = await executor({ ...args(), byokMeta: [{ id: "byok_vertex", key, providerId: "google-vertex", alwaysUse: true }] } as any);
+		expect(result.upstream.status).toBe(200);
+		expect(mock.calls[0].headers.Authorization).toBe("Bearer customer-token");
+	} finally { mock.restore(); }
+});

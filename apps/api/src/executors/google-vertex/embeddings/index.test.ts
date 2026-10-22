@@ -78,3 +78,22 @@ describe("Vertex Gemini embeddings location", () => {
 		} finally { mock.restore(); }
 	});
 });
+
+describe("Vertex Gemini embeddings with a customer credential", () => {
+	const byok = (credential: Record<string, string>) => [{ id: "byok_vertex", key: JSON.stringify({ access_token: "customer-token", ...credential }), providerId: "google-vertex", alwaysUse: true }];
+	it.each([
+		[{ project_id: "customer-project", region: "us" }, "https://aiplatform.us.rep.googleapis.com/v1/projects/customer-project/locations/us"],
+		[{ project_id: "customer-project" }, "https://aiplatform.googleapis.com/v1/projects/customer-project/locations/global"],
+	])("runs in the credential's project and region (%j)", async (credential, base) => {
+		const mock = installFetchMock([{
+			match: (url) => url === `${base}/publishers/google/models/gemini-embedding-2:embedContent`,
+			response: jsonResponse({ embedding: { values: [0.5] }, usageMetadata: { promptTokenCount: 1, totalTokenCount: 1 } }),
+		}]);
+		try {
+			const result = await executor({ ...args(), byokMeta: byok(credential) } as any);
+			expect(result.upstream.status).toBe(200);
+			expect(result.kind === "completed" && result.keySource).toBe("byok");
+			expect(mock.calls[0].headers.Authorization).toBe("Bearer customer-token");
+		} finally { mock.restore(); }
+	});
+});
