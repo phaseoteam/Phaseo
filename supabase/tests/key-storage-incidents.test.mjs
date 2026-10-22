@@ -3,8 +3,8 @@ import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8').then((text) => text.replace(/\r\n/g, '\n').trimEnd());
-const storageMigration = await read('../migrations/20261022100000_key_storage_locations.sql');
-const migration = await read('../migrations/20261022123000_key_storage_incidents.sql');
+const storageMigration = await read('../migrations/20261022140400_key_storage_locations.sql');
+const migration = await read('../migrations/20261022140420_key_storage_incidents.sql');
 const files = [
   'tables/key_storage_incidents.sql',
   'tables/key_storage_incident_keys.sql',
