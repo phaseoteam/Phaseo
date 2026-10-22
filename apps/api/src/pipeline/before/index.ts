@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { getBindings } from "@/runtime/env";
-import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled } from "@core/feature-flags";
+import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled, isModelSuccessorRedirectAccessEnabled } from "@core/feature-flags";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
@@ -794,6 +794,8 @@ export async function beforeRequest(
             ? await timer.span("modelSuccessorRedirect", async () => {
                 const policy = await loadSuccessorRedirectPolicy(workspaceId);
                 if (!policy.enabled) return null;
+                // Checked only once the workspace turned redirects on, so other traffic never waits on Statsig.
+                if (!(await isModelSuccessorRedirectAccessEnabled({ workspaceId }))) return null;
                 const override = workspaceSuccessorOverride(policy, unservedModel!);
                 if (override === null) return null;
                 const resolution = override
