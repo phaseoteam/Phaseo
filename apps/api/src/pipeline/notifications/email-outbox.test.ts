@@ -248,6 +248,35 @@ describe("email outbox", () => {
 	}));
 	});
 
+	it("renders Slack agent refusals from the payload with their deduplication key", async () => {
+		state.rows.push({
+			id: "email_slack_agent_refused",
+			created_at: "2026-10-22T09:30:00Z",
+			kind: "slack_agent_refused",
+			template: "slack_agent_refused",
+			to_email: "admin@example.com",
+			subject: null,
+			workspace_id: "ws_1",
+			user_id: "user_2",
+			dedupe_key: "slack_agent_refused:inst_1:max_people:2026-10:user_2",
+			payload: { workspace_name: "Research", team_name: "Research Slack", reason: "max_people", people: 40, plan_people: 50, max_people: 40, monthly_cap_usd: 25 },
+			attempts: 0,
+			last_error: null,
+			sent_at: null,
+		});
+
+		const { drainEmailOutbox } = await import("./email-outbox");
+		expect(await drainEmailOutbox(10)).toEqual({ processed: 1, sent: 1, failed: 0 });
+
+		expect(state.sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+			to: "admin@example.com",
+			subject: "Slack agent: people limit reached",
+			html: expect.stringContaining("limit of 40 people a month"),
+			text: expect.stringContaining("Open Slack settings: https://phaseo.app/settings/slack"),
+			idempotencyKey: "slack_agent_refused:inst_1:max_people:2026-10:user_2",
+		}));
+	});
+
 	it("sends feedback requests from Daniel with a reply-to and one-click unsubscribe", async () => {
 		const token = "0f8fad5b-d9cb-469f-a165-70867728950e";
 		state.rows.push({

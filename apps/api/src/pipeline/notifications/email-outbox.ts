@@ -4,6 +4,7 @@ import { getBindings } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
 import { getModelDeprecationTemplateVariables, renderModelDeprecationEmail } from "@/pipeline/notifications/model-deprecation";
 import { renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
+import { renderSlackAgentRefusedEmail } from "@/pipeline/notifications/slack-agent-refused";
 import { renderFeedbackRequestEmail } from "@/pipeline/notifications/feedback-request";
 import { renderStorageIncidentEmail } from "@/pipeline/notifications/storage-incident";
 
@@ -324,6 +325,10 @@ function renderEmailForRow(row: OutboxRow): {
 			html: rendered.html,
 			text: rendered.text,
 		};
+	}
+	if (row.template === "slack_agent_refused" || row.kind === "slack_agent_refused") {
+		const rendered = renderSlackAgentRefusedEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
 	}
 	throw new Error(`unsupported_email_template:${row.template || row.kind}`);
 }

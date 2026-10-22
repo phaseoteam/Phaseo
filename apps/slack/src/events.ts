@@ -9,7 +9,7 @@ import {
 	type InstallationRef,
 	type SlackAppContext,
 } from "./installations";
-import type { AdmitResult, MeterSettings } from "./meter";
+import type { AdmitResult, MeterSettings, RefuseReason } from "./meter";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
 import { createDb, type Db } from "./supabase";
 
@@ -143,10 +143,10 @@ export async function botToken(deps: Deps, installation: Installation): Promise<
 }
 
 /**
- * A refusal admins can see in the workspace audit log (slack_agent.answer_refused),
- * the one existing record a service can write; nothing pushes or emails it yet. The
- * meter asks for each kind at most once a month (per person for guests, Slack
- * Connect users and the hourly limit).
+ * A refusal admins can see in the workspace audit log (slack_agent.answer_refused).
+ * The meter asks for each kind at most once a month (per person for guests, Slack
+ * Connect users and the hourly limit). The ones only an admin can fix are also
+ * emailed (emailAdminsAboutRefusal).
  */
 export async function recordRefusal(db: Db, installation: Installation, slackUserId: string, result: Extract<AdmitResult, { allowed: false }>): Promise<void> {
 	try {
@@ -169,6 +169,23 @@ export async function recordRefusal(db: Db, installation: Installation, slackUse
 		});
 	} catch {
 		console.error("[slack-agent] refusal not recorded in the audit log", { installationId: installation.id, reason: result.reason });
+	}
+}
+
+/** Refusals that stop the agent for everyone new until an owner or admin acts. */
+const EMAILED_REFUSALS: ReadonlySet<RefuseReason> = new Set(["plan_full", "max_people", "monthly_cap", "payment_due"]);
+
+/**
+ * Emails the workspace's owners and admins about a refusal only they can fix. The
+ * database queues at most one email per installation, reason and month, so calling
+ * it again (the next refusal, a retried event) sends nothing more.
+ */
+export async function emailAdminsAboutRefusal(db: Db, installation: Installation, reason: RefuseReason, people: number | null): Promise<void> {
+	if (!EMAILED_REFUSALS.has(reason)) return;
+	try {
+		await db.rpc<number>("queue_slack_agent_refusal_email", { p_installation_id: installation.id, p_reason: reason, p_people: people });
+	} catch {
+		console.error("[slack-agent] refusal email not queued", { installationId: installation.id, reason });
 	}
 }
 
@@ -228,7 +245,11 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 	// Ephemeral replies only show in a thread that already has replies.
 	const target: ReplyTarget = { channel, user, threadTs: event.thread_ts };
 
-	if (installation.status !== "active") return refuse(slack, target, installation.status === "paused" ? "paused" : "payment_due");
+	if (installation.status !== "active") {
+		const reason = installation.status === "paused" ? "paused" : "payment_due";
+		await emailAdminsAboutRefusal(deps.db, installation, reason, null);
+		return refuse(slack, target, reason);
+	}
 
 	const facts = await lookupUserFacts(slack, installation, user, now);
 	if (!facts) return refuse(slack, target, "user_unverified");
@@ -244,7 +265,13 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 	const admitted = await meter.admit({ settings: meterSettings(installation), slackUserId: user, facts, eventId, now });
 	if (admitted.allowed === false) {
 		console.log("[slack-agent] answer refused", { installationId: installation.id, reason: admitted.reason, people: admitted.people });
-		if (admitted.auditForAdmins) await recordRefusal(deps.db, installation, user, admitted);
+		// The email is asked for on every refusal it covers, not only the meter's monthly
+		// notice: if queueing it failed once, the next refusal tries again. The database
+		// queues at most one a month per reason.
+		await Promise.all([
+			admitted.auditForAdmins ? recordRefusal(deps.db, installation, user, admitted) : undefined,
+			emailAdminsAboutRefusal(deps.db, installation, admitted.reason, admitted.people),
+		]);
 		return refuse(slack, target, admitted.reason, { tier: admitted.tier, limit: installation.answers_per_person_hour });
 	}
 
