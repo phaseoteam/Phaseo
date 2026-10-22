@@ -30,6 +30,7 @@ import {
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
 import { resolveProviderKey } from "@providers/keys";
+import { cloudflareAccountAiBase, cloudflareByokCredential, cloudflareByokHeaders } from "@providers/cloudflare/credentials";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
@@ -131,6 +132,11 @@ export async function executeOpenAIWire(
 			byokMeta: args.byokMeta,
 		} as any);
 
+	// A Cloudflare BYOK key runs on the customer's own account with their token.
+	const cloudflareByok = args.providerId === "cloudflare" && !args.privateEndpoint
+		? cloudflareByokCredential(keyInfo)
+		: null;
+
 	// Choose endpoint based on provider capabilities
 	const modelForRouting = resolveOpenAICompatModel(
 		args.providerId,
@@ -207,11 +213,13 @@ export async function executeOpenAIWire(
 			&& sanitized.request.tools.some((tool: any) => tool?.type === "mcp");
 		const upstreamUrl = args.privateEndpoint
 			? `${args.privateEndpoint.baseUrl.replace(/\/+$/, "")}${endpointForRoute(targetRoute)}`
-			: openAICompatUrl(
-				policy.urlProviderId ?? args.providerId,
-				endpointForRoute(targetRoute),
-				modelForRouting,
-			);
+			: cloudflareByok
+				? `${cloudflareAccountAiBase(cloudflareByok.accountId)}/v1${endpointForRoute(targetRoute)}`
+				: openAICompatUrl(
+					policy.urlProviderId ?? args.providerId,
+					endpointForRoute(targetRoute),
+					modelForRouting,
+				);
 		const upstreamHeaders = args.privateEndpoint
 			? {
 				Authorization: `Bearer ${keyInfo.key}`,
@@ -226,7 +234,7 @@ export async function executeOpenAIWire(
 		const response = await fetchUpstream(args, upstreamUrl, {
 			method: "POST",
 			...(args.privateEndpoint ? { redirect: "manual" as const } : {}),
-			headers: upstreamHeaders,
+			headers: cloudflareByok ? cloudflareByokHeaders(cloudflareByok, upstreamHeaders) : upstreamHeaders,
 			body: requestBody,
 		});
 
