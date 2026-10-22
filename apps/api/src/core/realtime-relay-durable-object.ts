@@ -17,6 +17,7 @@ import {
 	getRealtimeSessionForInternal,
 	isPlaygroundRealtimeSession,
 	isRealtimeRelaySecret,
+	isRealtimePolicyGraceReason,
 	isRealtimeSpendLimitReason,
 	realtimeAccessEndReason,
 	realtimeMaxDurationSeconds,
@@ -76,6 +77,8 @@ const RELAY_SETTLEMENT_MAX_ATTEMPTS = 20;
 // A quiet call still gets its key, workspace and funds rechecked this often
 // (xAI also accrues connected-time cost while nobody speaks).
 const RELAY_POLICY_RECHECK_INTERVAL_MS = 60_000;
+// Notice given before a policy block or a removed provider ends the call.
+export const RELAY_POLICY_GRACE_MS = 30_000;
 // After a hold extension fails, retry it at most this often.
 const RELAY_HOLD_RETRY_INTERVAL_MS = 15_000;
 // While running on free balance or overdraft, recheck the wallet at most this often.
@@ -489,6 +492,10 @@ export class RealtimeRelayDurableObject {
 	private warningsSent = new Set<string>();
 	private warningTimers: number[] = [];
 	private policyTimer: number | null = null;
+	// A policy block waiting out its grace period, and whether that period is over.
+	private policyBlockReason: string | null = null;
+	private policyGraceTimer: number | null = null;
+	private policyGraceExpired = false;
 	// API sessions keep running after a failed hold extension, up to the overdraft cap.
 	private holdShortfall = false;
 	private lastHoldAttemptAt = 0;
@@ -1489,8 +1496,18 @@ export class RealtimeRelayDurableObject {
 			else await this.beginBudgetClose(reason);
 			return;
 		}
+		const warnings = updated.policy_warnings ?? [];
+		const policyBlock = warnings.find(isRealtimePolicyGraceReason);
+		if (policyBlock) {
+			await this.handlePolicyBlock(policyBlock);
+			if (this.end) return;
+		} else {
+			this.clearPolicyBlock();
+		}
 		// API sessions only: a spend limit warns and the call continues.
-		for (const reason of updated.policy_warnings ?? []) this.warnSpendLimit(reason);
+		for (const reason of warnings) {
+			if (!isRealtimePolicyGraceReason(reason)) this.warnSpendLimit(reason);
+		}
 		await this.enforceBudget(updated);
 	}
 
@@ -1525,6 +1542,12 @@ export class RealtimeRelayDurableObject {
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? error);
 			const lostAccess = realtimeAccessEndReason(message);
+			if (lostAccess && isRealtimePolicyGraceReason(lostAccess)) {
+				// The hold stays as it is during the grace period; the retry rechecks the policy.
+				await this.handlePolicyBlock(lostAccess);
+				this.holdShortfall = true;
+				return;
+			}
 			if (lostAccess) {
 				await this.endForLostAccess(lostAccess);
 				return;
@@ -1600,7 +1623,55 @@ export class RealtimeRelayDurableObject {
 		this.sendClient(buildSessionWarningEvent(code, message, extra));
 	}
 
-	/** A revoked key, a removed workspace or a policy block ends the call now. */
+	/**
+	 * A workspace policy block or a provider removed from the allowed list:
+	 * warn, recheck once the grace period is over and end only if the block
+	 * still applies.
+	 */
+	private async handlePolicyBlock(reason: string) {
+		if (this.end || this.settled) return;
+		if (this.policyGraceExpired) {
+			await this.endForLostAccess(reason);
+			return;
+		}
+		this.policyBlockReason = reason;
+		if (this.policyGraceTimer != null) return;
+		const endsAt = Date.now() + RELAY_POLICY_GRACE_MS;
+		this.sendClient(buildSessionWarningEvent("policy_blocked",
+			reason.includes("provider_not_available")
+				? "This provider is no longer allowed for the workspace. The call ends soon unless the change is undone."
+				: "A workspace policy now blocks this call. The call ends soon unless the change is undone.",
+			{ status: "ending", seconds_remaining: RELAY_POLICY_GRACE_MS / 1000, ends_at: new Date(endsAt).toISOString() }));
+		this.policyGraceTimer = setTimeout(() => {
+			this.policyGraceTimer = null;
+			this.policyGraceExpired = true;
+			this.state.waitUntil(this.recheckPolicyAfterGrace());
+		}, RELAY_POLICY_GRACE_MS) as unknown as number;
+	}
+
+	private async recheckPolicyAfterGrace() {
+		if (this.end || this.settled) return;
+		// A block that still applies ends the call inside persistUsage; a cleared one resets.
+		await this.persistUsage().catch((error) => {
+			console.error("realtime_relay_policy_grace_recheck_failed", error);
+		});
+		// The recheck failed: the last known state was blocked, so end.
+		if (this.policyGraceExpired && this.policyBlockReason && !this.end && !this.settled) {
+			await this.endForLostAccess(this.policyBlockReason);
+		}
+	}
+
+	private clearPolicyBlock() {
+		if (!this.policyBlockReason) return;
+		if (this.policyGraceTimer != null) clearTimeout(this.policyGraceTimer);
+		this.policyGraceTimer = null;
+		this.policyGraceExpired = false;
+		this.policyBlockReason = null;
+		this.sendClient(buildSessionWarningEvent("policy_blocked",
+			"The policy change was undone. The call continues.", { status: "cleared" }));
+	}
+
+	/** A revoked key, a removed workspace or a policy block after its grace period ends the call now. */
 	private async endForLostAccess(reason: string) {
 		this.noteEnd(reason);
 		this.acceptingAudio = false;
@@ -1717,6 +1788,10 @@ export class RealtimeRelayDurableObject {
 		if (this.policyTimer != null) {
 			clearTimeout(this.policyTimer);
 			this.policyTimer = null;
+		}
+		if (this.policyGraceTimer != null) {
+			clearTimeout(this.policyGraceTimer);
+			this.policyGraceTimer = null;
 		}
 		for (const timer of this.warningTimers) clearTimeout(timer);
 		this.warningTimers = [];
