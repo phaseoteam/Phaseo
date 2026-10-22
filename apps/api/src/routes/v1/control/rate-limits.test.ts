@@ -97,7 +97,8 @@ async function call(path: string, method = "GET", body?: unknown, headers: Recor
 	});
 }
 
-const DASHBOARD = { authorization: "Bearer supabase-session", "x-phaseo-workspace-id": WORKSPACE };
+const SESSION = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.signature";
+const DASHBOARD = { authorization: `Bearer ${SESSION}`, "x-phaseo-workspace-id": WORKSPACE };
 
 describe("rate limit policy management", () => {
 	beforeEach(() => {
@@ -277,7 +278,7 @@ describe("rate limit policy management", () => {
 		state.actor.mockResolvedValue({ userId: "admin-user" });
 		const response = await call("/policies", "POST", { name: "Dashboard", requests_per_minute: 30 }, DASHBOARD);
 		expect(response.status).toBe(201);
-		expect(state.actor).toHaveBeenCalledWith("supabase-session");
+		expect(state.actor).toHaveBeenCalledWith(SESSION);
 		expect(guardManagementAuth).not.toHaveBeenCalled();
 		expect(state.audit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ workspaceId: WORKSPACE, actorUserId: "admin-user", action: "rate_limit_policy.created" }));
 		expect(state.publish).toHaveBeenCalledWith(WORKSPACE);
@@ -288,14 +289,34 @@ describe("rate limit policy management", () => {
 		expect((await call("/policies", "GET", undefined, DASHBOARD)).status).toBe(200);
 	});
 
-	it("refuses dashboard members, outsiders and invalid sessions", async () => {
+	it("refuses dashboard members and outsiders", async () => {
 		state.actor.mockResolvedValue({ userId: "member-user" });
 		expect((await call("/policies", "POST", { name: "Member", requests_per_minute: 1 }, DASHBOARD)).status).toBe(403);
 		state.actor.mockResolvedValue({ userId: "stranger" });
 		expect((await call("/policies", "GET", undefined, DASHBOARD)).status).toBe(403);
-		state.actor.mockResolvedValue(null);
-		expect((await call("/policies", "GET", undefined, DASHBOARD)).status).toBe(401);
 		expect(state.tables.workspace_rate_limit_policies).toHaveLength(2);
 		expect(state.publish).not.toHaveBeenCalled();
+	});
+
+	it("keeps management keys working when they also send the workspace header", async () => {
+		const { guardManagementAuth } = await import("@/pipeline/before/guards");
+		vi.mocked(guardManagementAuth).mockClear();
+		const headers = { authorization: "Bearer phaseo_mk_test", "x-phaseo-workspace-id": WORKSPACE };
+		expect((await call("/policies", "GET", undefined, headers)).status).toBe(200);
+		expect(state.actor).not.toHaveBeenCalled();
+		expect(guardManagementAuth).toHaveBeenCalledTimes(1);
+	});
+
+	it("falls back to management authentication when Supabase rejects the token", async () => {
+		const { guardManagementAuth } = await import("@/pipeline/before/guards");
+		vi.mocked(guardManagementAuth).mockClear();
+		state.auth = { ok: false, response: new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }) };
+		try {
+			expect((await call("/policies", "GET", undefined, DASHBOARD)).status).toBe(401);
+			expect(state.actor).toHaveBeenCalledWith(SESSION);
+			expect(guardManagementAuth).toHaveBeenCalledTimes(1);
+		} finally {
+			state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", scopes: [...ALL_SCOPES] } };
+		}
 	});
 });
