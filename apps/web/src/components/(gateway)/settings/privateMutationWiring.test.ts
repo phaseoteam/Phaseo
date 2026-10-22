@@ -21,6 +21,7 @@ it.each([
 	["oauth-apps/RedirectUriManager.tsx", ["updateRedirectUrisAction"]],
 	["beta/BetaSettingsClient.tsx", ["updateBetaPreferences"]],
 	["classifiers/ClassifierEditor.tsx", ["createClassifier", "updateClassifier", "deleteClassifier"]],
+	["rate-limits/RateLimitsSettingsClient.tsx", ["createRateLimitPolicy", "updateRateLimitPolicy", "deleteRateLimitPolicy", "assignRateLimitPolicy", "changeRateLimitAssignment", "removeRateLimitAssignment"]],
 ] as const)("invalidates every settings write in %s after settlement", (file, actions) => {
 	const source = fs.readFileSync(path.join(__dirname, file), "utf8");
 	const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);

@@ -605,6 +605,37 @@ export type SettingsClassifiersInitialData = {
 	apps: Array<{ id: string; title: string }>;
 };
 
+export type SettingsRateLimitTargetType = "key" | "member" | "department" | "guardrail" | "end_user_default";
+
+export type SettingsRateLimitPolicy = {
+	id: string;
+	name: string;
+	description: string | null;
+	requestsPerMinute: number | null;
+	tokensPerMinute: number | null;
+	/** Set through the API; not enforced yet. */
+	concurrentRequests: number | null;
+	/** Set through the API; not enforced yet. */
+	failClosed: boolean;
+	updatedAt: string;
+};
+
+export type SettingsRateLimitsInitialData = {
+	workspaceId: string | null;
+	canManageRateLimits: boolean;
+	policies: SettingsRateLimitPolicy[];
+	assignments: Array<{ id: string; policyId: string; targetType: SettingsRateLimitTargetType; targetId: string | null }>;
+	targets: {
+		keys: Array<{ id: string; name: string; prefix: string; status: string }>;
+		members: Array<{ id: string; name: string | null; role: string }>;
+		departments: Array<{ id: string; name: string }>;
+		guardrails: Array<{ id: string; name: string }>;
+	};
+	/** Requests each policy rejected in the last throttleWindowHours. */
+	throttles: Array<{ policyId: string; throttledRequests: number; lastThrottledAt: string | null }>;
+	throttleWindowHours: number;
+};
+
 export type SettingsUsageAlertsInitialData = { signedIn: boolean; warnings: DeprecationWarning[]; workspaceId: string | null };
 
 export type WorkspacePrivacySettings = {

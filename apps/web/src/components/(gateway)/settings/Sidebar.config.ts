@@ -26,6 +26,7 @@ import {
 	Inbox,
 	SlidersHorizontal,
 	Tags,
+	Gauge,
 } from "lucide-react";
 
 export type NavItem = {
@@ -157,6 +158,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				icon: ShieldCheck,
 				badge: "Beta",
 				match: ["/settings/guardrails"],
+			},
+			{
+				href: "/settings/rate-limits",
+				label: "Rate limits",
+				icon: Gauge,
+				badge: "Beta",
+				match: ["/settings/rate-limits"],
 			},
 			{
 				href: "/settings/classifiers",
@@ -335,6 +343,7 @@ const WORKSPACE_NAV_ORDER = [
 	"/settings/usage/logs",
 	"/settings/routing",
 	"/settings/guardrails",
+	"/settings/rate-limits",
 	"/settings/classifiers",
 	"/settings/privacy",
 	"/settings/presets",

@@ -18,6 +18,7 @@ import {
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
+import { authenticateDashboardSession } from "./dashboard-session";
 
 const POLICY_COLUMNS = "id,workspace_id,name,description,requests_per_minute,tokens_per_minute,concurrent_requests,fail_closed,created_by,created_at,updated_at";
 const ASSIGNMENT_COLUMNS = "id,workspace_id,policy_id,target_type,key_id,user_id,department_id,guardrail_id,created_by,created_at,updated_at";
@@ -185,7 +186,19 @@ function formatAssignment(row: AssignmentRow) {
 	};
 }
 
+const DASHBOARD_SCOPES = [CAPABILITIES.RATE_LIMITS_READ, CAPABILITIES.RATE_LIMITS_WRITE, CAPABILITIES.RATE_LIMITS_DELETE];
+
 async function authorize(req: Request, capability: string) {
+	// Settings → Rate limits writes through web-api with the user's session, so
+	// the dashboard gets the same validation, audit and plan publish as the API.
+	const session = await authenticateDashboardSession(req, DASHBOARD_SCOPES);
+	if (session instanceof Response) return { response: session } as const;
+	if (session) {
+		if (!["owner", "admin"].includes(session.role)) {
+			return { response: json({ error: "forbidden", message: "Only workspace owners and admins can manage rate limits" }, 403, NO_STORE) } as const;
+		}
+		return { auth: session.auth } as const;
+	}
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return { response: (auth as GuardErr).response } as const;
 	const scopeError = requireCapability(auth.value, capability);

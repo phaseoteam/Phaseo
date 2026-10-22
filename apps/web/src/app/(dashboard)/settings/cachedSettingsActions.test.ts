@@ -4,7 +4,7 @@ const readers: Record<string, jest.Mock> = {};
 const readerNames = [
 	"fetchSettingsAppsInitialData", "fetchSettingsAuthorizedAppsInitialData", "fetchSettingsDynamicRoutesInitialData",
 	"fetchSettingsKeysInitialData", "fetchSettingsManagementApiKeysInitialData", "fetchSettingsRoutingInitialData",
-	"fetchSettingsGuardrailsInitialData", "fetchSettingsClassifiersInitialData", "fetchSettingsPrivacyInitialData", "fetchSettingsByokInitialData",
+	"fetchSettingsGuardrailsInitialData", "fetchSettingsClassifiersInitialData", "fetchSettingsRateLimitsInitialData", "fetchSettingsPrivacyInitialData", "fetchSettingsByokInitialData",
 	"fetchSettingsPresetsInitialData", "fetchSettingsPrivateModels", "fetchSettingsTeamsInitialData",
 	"fetchSettingsUsageAlertsInitialData", "fetchSettingsCreditsTransactionsInitialData", "fetchSettingsAccountDetailsInitialData",
 	"fetchSettingsProfileInitialData", "fetchSettingsProfileUsageSummary", "fetchSettingsProfileGames",

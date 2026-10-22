@@ -254,6 +254,7 @@
 				"nav-settings-presets": "Routing-Voreinstellungen",
 				"nav-settings-privacy": "Datenschutzeinstellungen",
 				"nav-settings-guardrails": "Schutzregeln",
+				"nav-settings-rate-limits": "Ratenlimits",
 				"nav-settings-classifiers": "Klassifikatoren",
 				"nav-settings-oauth": "OAuth-Apps",
 				"nav-settings-broadcast": "Weiterleitung",

@@ -68,6 +68,7 @@ jobs:
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/request-classifier-spend.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/slack-agent-billing.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/rate-limit-throttle-rollups.test.mjs
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/rate-limit-throttle-summary.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/rate-limit-throttle-alerts.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/broadcast-event-receipts.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/structured-subscriptions.test.mjs
