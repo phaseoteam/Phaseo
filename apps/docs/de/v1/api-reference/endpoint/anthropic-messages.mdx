@@ -10,6 +10,31 @@ description: "Anthropic-kompatibler Messages-Endpunkt unter `/v1/messages`."
 
 Setze `stream: true`, um Server-Sent Events im Anthropic-Format (`message_start`, `content_block_*`, `message_delta`, `message_stop`) zu erhalten.
 
+## Systemnachrichten mitten in der Unterhaltung
+
+Füge `messages` eine Nachricht mit `role: "system"` hinzu, wenn eine Anweisung ab dieser Stelle der Unterhaltung gelten soll. Das Feld `system` auf oberster Ebene bleibt unverändert, sodass ein zwischengespeichertes Präfix weiterhin getroffen wird.
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-5.5",
+    "max_tokens": 512,
+    "system": "You are a code review assistant.",
+    "messages": [
+      { "role": "user", "content": "Review process() in utils.py." },
+      { "role": "assistant", "content": "The loop is fine; the regex is compiled on every call." },
+      { "role": "user", "content": "Now review the code that calls it." },
+      { "role": "system", "content": "From now on, include type annotations in every suggestion." }
+    ]
+  }'
+```
+
+- Eine Systemnachricht akzeptiert einen String oder Textblöcke. Sie muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden. An anderen Positionen gibt die API 400 zurück.
+- Claude Fable 5 und 5.1, Mythos 5 und 5.1, Opus 4.8, Opus 5 und 5.5, Sonnet 5.5 und Haiku 5.5 erhalten sie an ihrer Stelle. Andere Claude-Modelle, darunter Sonnet 5, erhalten sie als Teil des System-Prompts auf oberster Ebene. Andere Anbieter erhalten sie als Systemnachricht, genauso wie eine an Chat Completions gesendete.
+- `clear_at`, `output_config` sowie `tool_addition`- und `tool_removal`-Blöcke werden nicht unterstützt.
+
 ## Hinweise
 
 - Anthropic-Felder zur Tool-Nutzung werden unterstützt.

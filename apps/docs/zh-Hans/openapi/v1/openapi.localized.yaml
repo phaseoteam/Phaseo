@@ -11030,9 +11030,11 @@ components:
       properties:
         role:
           type: string
+          description: 对于从对话此处开始生效的指令，请使用 `system`。系统消息接受字符串或文本块，必须紧跟在用户轮次（或以服务器工具结果结尾的助手轮次）之后，并且必须是最后一条消息，或者后面紧跟助手轮次。
           enum:
             - user
             - assistant
+            - system
         content:
           oneOf:
             - type: string

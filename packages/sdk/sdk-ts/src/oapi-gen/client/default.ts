@@ -896,7 +896,7 @@ export type CreateAnthropicMessageParams = {
             tool_use_id?: string;
             type?: "text" | "image" | "tool_use" | "tool_result";
           }[];
-      role: "user" | "assistant";
+      role: "user" | "assistant" | "system";
     }[];
     meta?: boolean;
     metadata?: {

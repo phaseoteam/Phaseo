@@ -11030,9 +11030,11 @@ components:
       properties:
         role:
           type: string
+          description: Use `system` para uma instrução que vale a partir deste ponto da conversa. Uma mensagem de sistema aceita uma string ou blocos de texto, deve vir logo após um turno do usuário (ou um turno do assistente que termine em um resultado de ferramenta do servidor) e deve ser a última mensagem ou ser seguida por um turno do assistente.
           enum:
             - user
             - assistant
+            - system
         content:
           oneOf:
             - type: string

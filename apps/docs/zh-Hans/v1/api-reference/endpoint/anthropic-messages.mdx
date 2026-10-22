@@ -10,6 +10,31 @@ description: "`/v1/messages` 上兼容 Anthropic 的 Messages 端点。"
 
 设置 `stream: true` 即可接收 Anthropic 格式的服务器发送事件（`message_start`、`content_block_*`、`message_delta`、`message_stop`）。
 
+## 对话中途的系统消息
+
+如果某条指令从对话的某个位置开始生效，请在 `messages` 中添加一条 `role: "system"` 消息。顶层 `system` 字段保持不变，因此缓存的前缀仍能命中。
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-5.5",
+    "max_tokens": 512,
+    "system": "You are a code review assistant.",
+    "messages": [
+      { "role": "user", "content": "Review process() in utils.py." },
+      { "role": "assistant", "content": "The loop is fine; the regex is compiled on every call." },
+      { "role": "user", "content": "Now review the code that calls it." },
+      { "role": "system", "content": "From now on, include type annotations in every suggestion." }
+    ]
+  }'
+```
+
+- 系统消息接受字符串或文本块。它必须紧跟在用户轮次（或以服务器工具结果结尾的助手轮次）之后，并且必须是最后一条消息，或者后面紧跟助手轮次。放在其他位置会返回 400。
+- Claude Fable 5 和 5.1、Mythos 5 和 5.1、Opus 4.8、Opus 5 和 5.5、Sonnet 5.5 以及 Haiku 5.5 会在原位置收到它。包括 Sonnet 5 在内的其他 Claude 模型会将它作为顶层系统提示的一部分接收。其他提供商会将它作为系统消息接收，与发送到 Chat Completions 的系统消息相同。
+- 不支持 `clear_at`、`output_config` 以及 `tool_addition` 或 `tool_removal` 块。
+
 ## 说明
 
 - 支持 Anthropic 工具调用字段。

@@ -11030,9 +11030,11 @@ components:
       properties:
         role:
           type: string
+          description: Verwende `system` für eine Anweisung, die ab dieser Stelle der Unterhaltung gilt. Eine Systemnachricht akzeptiert einen String oder Textblöcke, muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und muss die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden.
           enum:
             - user
             - assistant
+            - system
         content:
           oneOf:
             - type: string

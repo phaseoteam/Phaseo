@@ -11030,9 +11030,11 @@ components:
       properties:
         role:
           type: string
+          description: 会話のこの時点以降に適用する指示には `system` を使います。システムメッセージは文字列またはテキストブロックを受け付け、ユーザーターン（またはサーバーツールの結果で終わるアシスタントターン）の直後に置き、最後のメッセージにするか、直後にアシスタントターンを続ける必要があります。
           enum:
             - user
             - assistant
+            - system
         content:
           oneOf:
             - type: string

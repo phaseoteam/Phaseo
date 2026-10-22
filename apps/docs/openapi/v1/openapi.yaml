@@ -11650,9 +11650,16 @@ components:
       properties:
         role:
           type: string
+          description: >-
+            Use `system` for an instruction that applies from this point in the
+            conversation. A system message takes a string or text blocks, must
+            come straight after a user turn (or an assistant turn ending in a
+            server tool result), and must be the last message or be followed by
+            an assistant turn.
           enum:
             - user
             - assistant
+            - system
         content:
           oneOf:
             - type: string

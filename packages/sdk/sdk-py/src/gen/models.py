@@ -47,7 +47,7 @@ class AnthropicContentBlock(TypedDict):
 
 class AnthropicMessage(TypedDict):
 	content: Union[str, List[AnthropicContentBlock]]
-	role: Literal["user", "assistant"]
+	role: Literal["user", "assistant", "system"]
 
 class AnthropicMessagesRequest(TypedDict):
 	cache_control: NotRequired[CacheControl]

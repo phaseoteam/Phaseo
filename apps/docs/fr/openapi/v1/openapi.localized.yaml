@@ -11030,9 +11030,11 @@ components:
       properties:
         role:
           type: string
+          description: Utilisez `system` pour une instruction qui s’applique à partir de ce point de la conversation. Un message système accepte une chaîne ou des blocs de texte, doit suivre directement un tour utilisateur (ou un tour de l’assistant qui se termine par un résultat d’outil serveur) et doit être le dernier message ou être suivi d’un tour de l’assistant.
           enum:
             - user
             - assistant
+            - system
         content:
           oneOf:
             - type: string
