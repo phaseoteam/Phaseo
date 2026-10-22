@@ -4,9 +4,9 @@
 // Slack errors and tokens are never passed back to the browser.
 
 /**
- * The Slack agent's bot scopes. The app manifest uses the same list.
- * search:read.public is a bot scope for assistant.search.context (searching
- * public channels to answer a question).
+ * The Slack agent's bot scopes. The app manifest uses the same list. Only what
+ * the agent uses today: a scope for a new feature is added with that feature
+ * (installs keep the scopes they were granted until they are reinstalled).
  */
 export const SLACK_AGENT_BOT_SCOPES = [
 	"app_mentions:read",
@@ -16,8 +16,6 @@ export const SLACK_AGENT_BOT_SCOPES = [
 	"channels:history",
 	"groups:history",
 	"users:read",
-	"files:read",
-	"search:read.public",
 ] as const;
 
 export const SLACK_AUTHORIZE_URL = "https://slack.com/oauth/v2/authorize";

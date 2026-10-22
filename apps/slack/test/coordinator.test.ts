@@ -98,17 +98,62 @@ describe("ThreadCoordinator", () => {
 		await coordinator.enqueue(request("Ev0TEST0001"), NOW);
 		await coordinator.finishTurn(1, { status: "done", reply: "  Spend was $12.50.  ", tools: ["get_spend: 5 weeks by week", "", "x".repeat(500)] }, NOW);
 		expect(coordinator.workingMemory()).toEqual([
-			{ kind: "tool", text: "get_spend: 5 weeks by week", at: NOW },
-			{ kind: "tool", text: "x".repeat(200), at: NOW },
-			{ kind: "reply", text: "Spend was $12.50.", at: NOW },
+			{ kind: "tool", text: "get_spend: 5 weeks by week", at: NOW, ts: null },
+			{ kind: "tool", text: "x".repeat(200), at: NOW, ts: null },
+			{ kind: "reply", text: "Spend was $12.50.", at: NOW, ts: null },
 		]);
 		for (let index = 2; index <= 25; index += 1) {
 			await coordinator.enqueue(request(`Ev0TEST${String(index).padStart(4, "0")}`), NOW);
+			// The reply's Slack message goes with it, and joins the thread's known messages.
+			coordinator.setReplyTs(index, `1792600100.${String(index).padStart(6, "0")}`);
 			await coordinator.finishTurn(index, { status: "done", reply: `reply ${index}` }, NOW);
 		}
 		const memory = coordinator.workingMemory();
 		expect(memory).toHaveLength(20);
-		expect(memory.at(-1)).toEqual({ kind: "reply", text: "reply 25", at: NOW });
+		expect(memory.at(-1)).toEqual({ kind: "reply", text: "reply 25", at: NOW, ts: "1792600100.000025" });
+		// At most 20 timestamps, the newest.
+		expect(coordinator.knownMessages()).toHaveLength(20);
+		expect(coordinator.knownMessages()[0]).toBe("1792600100.000006");
+	});
+
+	it("knows which thread messages follow one another, from each turn's read", async () => {
+		const ts = (n: number) => `1792600000.${String(n).padStart(6, "0")}`;
+		let events = 0;
+		/** Starts a turn for a message, records its read, and ends it (with a reply message, if given). */
+		const turn = async (messageTs: string, read: Parameters<ThreadCoordinator["recordThreadRead"]>[1], replyTs?: string) => {
+			events += 1;
+			const started = await coordinator.enqueue(request(`Ev0TEST${String(events).padStart(4, "0")}`, { messageTs }), NOW);
+			if (started.status !== "started") throw new Error("turn did not start");
+			coordinator.recordThreadRead(started.turnId, read);
+			const known = coordinator.knownMessages();
+			if (replyTs) coordinator.setReplyTs(started.turnId, replyTs);
+			await coordinator.finishTurn(started.turnId, { status: "done", reply: "Answer" }, NOW);
+			return known;
+		};
+
+		await expect(turn(ts(500), { oldest: ts(100), ts: [ts(100), ts(200), ts(300), ts(500)], complete: true }, ts(600))).resolves.toEqual([ts(100), ts(200), ts(300), ts(500)]);
+		// The reply joins them when the turn ends.
+		expect(coordinator.knownMessages()).toEqual([ts(100), ts(200), ts(300), ts(500), ts(600)]);
+
+		// A complete read from a known message: what it returned replaces what was known there (400 was written meanwhile, 500 deleted).
+		await expect(turn(ts(800), { oldest: ts(300), ts: [ts(300), ts(400), ts(600), ts(700), ts(800)], complete: true }))
+			.resolves.toEqual([ts(100), ts(200), ts(300), ts(400), ts(600), ts(700), ts(800)]);
+
+		// A complete read that started at a time, not a known message: what came before it may have a gap.
+		await expect(turn(ts(820), { oldest: ts(750), ts: [ts(800), ts(810), ts(820)], complete: true })).resolves.toEqual([ts(800), ts(810), ts(820)]);
+
+		// A failed read: only the turn's own message, and anything known after it, stay.
+		await expect(turn(ts(650), null)).resolves.toEqual([ts(650), ts(800), ts(810), ts(820)]);
+		// A partial one: the same.
+		await expect(turn(ts(900), { oldest: ts(650), ts: [ts(650), ts(700), ts(800), ts(900)], complete: false })).resolves.toEqual([ts(900)]);
+	});
+
+	it("records the Connect button once per person in a thread, and gives it back when it wasn't delivered", () => {
+		expect(coordinator.claimLinkOffer("U0PERSON01", NOW)).toBe(true);
+		expect(coordinator.claimLinkOffer("U0PERSON01", NOW)).toBe(false);
+		expect(coordinator.claimLinkOffer("U0PERSON02", NOW)).toBe(true);
+		coordinator.releaseLinkOffer("U0PERSON01");
+		expect(coordinator.claimLinkOffer("U0PERSON01", NOW)).toBe(true);
 	});
 
 	it("refuses a duplicate turn and a full queue", async () => {
@@ -171,18 +216,28 @@ describe("ThreadCoordinator", () => {
 		)`);
 		storage.db.exec(`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, text, status, created_at, started_at)
 			VALUES ('${KEY}', 'Ev0OLD00001', '${INSTALLATION_ID}', 'T0TEST0001', 'C0CHANNEL1', '1792600000.000100', '1792600000.000100', 'U0PERSON01', 'mention', 'an older message', 'running', ${NOW}, ${NOW})`);
+		// Its working memory predates the reply timestamps.
+		storage.db.exec("CREATE TABLE memory (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, text TEXT NOT NULL, at INTEGER NOT NULL)");
+		storage.db.exec(`INSERT INTO memory (kind, text, at) VALUES ('reply', 'An older answer', ${NOW})`);
 		const upgraded = new ThreadCoordinator(fakeState(storage), world.env);
-		const columns = () => (storage.db.prepare("PRAGMA table_info(turns)").all() as Array<{ name: string }>).map((column) => column.name);
+		const columns = (table = "turns") => (storage.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((column) => column.name);
 		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs"]));
-		upgraded.setTurnContext(1, [{ role: "user", author: "U0PERSON02", text: "earlier" }]);
+		expect(columns("memory")).toContain("ts");
+		upgraded.setTurnContext(1, { root: null, messages: [{ role: "user", author: "U0PERSON02", text: "earlier", ts: "1792600000.000050" }], fromRoot: true, partial: false });
 		upgraded.setReplyTs(1, "1792600100.000001");
 		upgraded.stageTurnOutput(1, { attempt: 1, costNanos: 1_000, reply: "Answer", tools: [] });
 		expect(upgraded.turnInput(1)).toMatchObject({ text: "an older message", replyTs: "1792600100.000001", stagedReply: "Answer", attemptCosts: { 1: 1_000 } });
+		// A turn whose context was stored as a plain list of messages still reads.
+		storage.db.exec(`UPDATE turns SET context = '${JSON.stringify([{ role: "user", author: "U0PERSON02", text: "earlier" }])}' WHERE id = 1`);
+		expect(upgraded.turnInput(1)?.context).toEqual({ root: null, messages: [{ role: "user", author: "U0PERSON02", text: "earlier", ts: null }], fromRoot: true, partial: false });
 		// Running it again changes nothing.
 		new ThreadCoordinator(fakeState(storage), world.env);
 		expect(columns().filter((name) => name === "attempt_costs")).toHaveLength(1);
 		await expect(upgraded.finishTurn(1, { status: "done" }, NOW)).resolves.toEqual({ ok: true });
-		expect(upgraded.workingMemory().map((entry) => entry.text)).toEqual(["Answer"]);
+		expect(upgraded.workingMemory()).toEqual([
+			{ kind: "reply", text: "An older answer", at: NOW, ts: null },
+			{ kind: "reply", text: "Answer", at: NOW, ts: "1792600100.000001" },
+		]);
 	});
 
 	it("keeps each attempt's cost once, however often it is staged", async () => {
@@ -242,7 +297,7 @@ describe("ThreadCoordinator", () => {
 		vi.setSystemTime(NOW + 10 * DAY);
 		await coordinator.alarm();
 		expect(storage.alarm).toBeNull();
-		for (const table of ["events", "turns", "memory", "meta"]) expect(storage.count(table)).toBe(0);
+		for (const table of ["events", "turns", "memory", "meta", "known_messages", "link_offers"]) expect(storage.count(table)).toBe(0);
 		// A new message after that starts from nothing.
 		await expect(coordinator.claimEvent("Ev0TEST0001", NOW + 11 * DAY)).resolves.toBe(true);
 	});

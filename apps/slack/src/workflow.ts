@@ -11,23 +11,27 @@ import {
 	type AgentTurnOutput,
 	type TurnErrorKind,
 } from "./agent";
+import { connectAccountMessage, linkUrl } from "./access";
 import type { ContextEntry, ThreadCoordinator, TurnInput } from "./coordinator";
 import type { Env } from "./env";
 import { botToken, coordinatorFor, defaultDeps, type Deps } from "./events";
+import { REPLIES_LIMIT, readWindow, threadRead, type SlackReplies } from "./history";
 import { installationSecrets, loadInstallation, type Installation } from "./installations";
 import { finishReply, footerText, postReply, replaceReply, SlackReplyStream, type ReplyTarget } from "./reply-stream";
 import { postEphemeral, type SlackClient } from "./slack-api";
 import type { TurnRef } from "./turns";
-import { conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTools } from "./usage-tools";
+import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTools, type ConnectOffer } from "./usage-tools";
 
 // AgentTurnWorkflow: one answer, as a Cloudflare Workflow (billed on CPU, so
 // waiting on the model costs nothing). The thread's coordinator starts it and
 // never waits; it reports back with finishTurn.
 //
-//   load     the live installation, the access check, whether usage tools are
-//            allowed here; the Slack session goes to "processing"
-//   context  the thread's recent messages (conversations.replies); when Slack rate
-//            limits that, the coordinator's working memory is used instead
+//   load     the live installation, the access check, whether usage tools (or
+//            the Connect button, for someone not linked) are allowed here; the
+//            Slack session goes to "processing"
+//   context  one read of the thread (conversations.replies) that ends at the
+//            message answered (history.ts); when Slack rate limits it, the
+//            coordinator's working memory is used alone
 //   run      the agent through the gateway, streaming the answer into Slack and
 //            staging it, with what it has spent, in the coordinator after every
 //            agent step
@@ -47,8 +51,6 @@ import { conversationAllowsUsageData, isWorkspaceMember, linkedUserId, usageTool
 // attempts spent against the turn's cost limit, and the footer shows the total.
 
 export const DEFAULT_MODEL = "phaseo/auto";
-/** Slack caps non-Marketplace apps at 15 messages per conversations.replies call. */
-export const REPLIES_LIMIT = 15;
 const NANOS_PER_USD = 1_000_000_000;
 
 const LOAD_STEP = { retries: { limit: 2, delay: "2 seconds", backoff: "exponential" }, timeout: "30 seconds" } as const;
@@ -71,7 +73,9 @@ export type StepRunner = {
 
 export type TurnDeps = Deps & { agent: AgentRunner };
 
-type LoadResult = { status: "ok"; usageTools: boolean } | { status: "skip"; reason: string };
+/** connectOffer: not linked, where linking would bring the usage tools. */
+type LoadResult = { status: "ok"; usageTools: boolean; connectOffer?: boolean } | { status: "skip"; reason: string };
+type Offered = { usageTools: boolean; connectOffer?: boolean };
 type ContextResult = { source: "replies" | "memory" | "none"; messages: number };
 export type RunResult = {
 	status: "answered" | "cancelled" | "failed";
@@ -88,8 +92,6 @@ export type RunResult = {
 
 type ReplyResult = { shown: boolean; stopped: boolean };
 
-type SlackHistoryMessage = { ts?: string; user?: string; bot_id?: string; text?: string; subtype?: string };
-
 function replyTarget(turn: TurnRef): ReplyTarget {
 	return { channel: turn.channel, threadTs: turn.threadTs, recipientUserId: turn.slackUserId, recipientTeamId: turn.teamId };
 }
@@ -98,47 +100,52 @@ async function setSessionStatus(slack: SlackClient, turn: TurnRef, status: "proc
 	await slack.call("agents.sessions.setStatus", { channel_id: turn.channel, thread_ts: turn.threadTs, status });
 }
 
-/** The thread so far, without the message being answered. Bot posts are the agent's side. */
-export function historyEntries(messages: SlackHistoryMessage[], botUserId: string, messageTs: string): ContextEntry[] {
-	return messages
-		.filter((message) => message.ts !== messageTs && typeof message.text === "string" && message.text.trim())
-		.map((message) => ({
-			role: message.bot_id || message.user === botUserId ? "assistant" as const : "user" as const,
-			author: message.bot_id ? null : message.user ?? null,
-			text: message.text!,
-		}));
-}
-
 function withoutMention(text: string, botUserId: string): string {
 	return text.split(`<@${botUserId}>`).join("").trim();
 }
 
+function threadLine(entry: ContextEntry, botUserId: string): string {
+	const who = entry.role === "assistant" ? "You (Phaseo agent)" : entry.author ? `<@${entry.author}>` : "Someone";
+	return `${who}: ${withoutMention(entry.text, botUserId)}`;
+}
+
+/**
+ * The model's input: the thread's first message, the agent's earlier replies and
+ * lookups (working memory) that the read doesn't show, the messages read, and
+ * the new message.
+ */
 export function buildPrompt(input: TurnInput, turn: TurnRef, botUserId: string, source: ContextResult["source"]): string {
+	const context = source === "replies" ? input.context : null;
+	const shown = new Set((context?.messages ?? []).map((entry) => entry.ts).filter(Boolean));
+	const memory = input.memory.filter((entry) => !(entry.kind === "reply" && entry.ts && shown.has(entry.ts)));
 	const lines: string[] = [];
-	if (source === "replies" && input.context?.length) {
-		lines.push("Earlier messages in this Slack thread, oldest first:");
-		for (const entry of input.context) {
-			const who = entry.role === "assistant" ? "You (Phaseo agent)" : entry.author ? `<@${entry.author}>` : "Someone";
-			lines.push(`${who}: ${withoutMention(entry.text, botUserId)}`);
-		}
-	} else if (input.memory.length) {
-		lines.push("Your earlier replies and lookups in this thread, oldest first:");
-		for (const entry of input.memory) lines.push(entry.kind === "reply" ? `You (Phaseo agent): ${entry.text}` : `You looked up: ${entry.text}`);
+	const section = (heading: string, body: string[]) => {
+		if (body.length) lines.push(heading, ...body, "");
+	};
+	if (context?.root) section("The first message in this Slack thread:", [threadLine(context.root, botUserId)]);
+	section("Your earlier replies and lookups in this thread, oldest first:", memory.map((entry) => entry.kind === "reply" ? `You (Phaseo agent): ${entry.text}` : `You looked up: ${entry.text}`));
+	if (context?.messages.length) {
+		section(context.fromRoot ? "Earlier messages in this Slack thread, oldest first:" : "The latest messages in this Slack thread before the new one, oldest first:", [
+			...context.messages.map((entry) => threadLine(entry, botUserId)),
+			...(context.partial ? ["(Slack returned only part of this stretch of the thread, so some of its messages are missing.)"] : []),
+		]);
 	}
-	if (lines.length) lines.push("");
+	if (source === "memory") lines.push(`(You couldn't read this Slack thread's messages just now${memory.length ? ", so only your own earlier replies are shown" : ""}.)`, "");
 	lines.push(`New message from <@${turn.slackUserId}>:`, withoutMention(input.text, botUserId) || "(no text)");
 	return lines.join("\n");
 }
 
-export function buildInstructions(installation: Pick<Installation, "instructions" | "usage_data_mode">, usageToolsOffered: boolean, now: number): string {
+export function buildInstructions(installation: Pick<Installation, "instructions" | "usage_data_mode">, offered: Offered, now: number): string {
 	const lines = [
 		"You are the Phaseo agent, an assistant in Slack for a team that uses Phaseo, an AI gateway.",
 		`Today is ${new Date(now).toISOString().slice(0, 10)} (UTC).`,
 		"Write for Slack: be brief, use short paragraphs, and use Markdown lists or tables when they help. Show money in US dollars, like $12.50.",
 		"You can search the web and read web pages with your web search and web fetch tools.",
 	];
-	if (usageToolsOffered) {
+	if (offered.usageTools) {
 		lines.push("You can look up this Phaseo workspace's spend, credit balance, API key usage and models with your tools. Dates are UTC and weeks start on Monday. Use the tools instead of guessing numbers.");
+	} else if (offered.connectOffer) {
+		lines.push("You can't see this workspace's Phaseo usage or billing yet, because this person hasn't connected their Phaseo account. If they ask about this workspace's spend, credits, API key usage or models, call connect_phaseo_account to send them a private button to connect it, tell them they can ask again once it's connected, and answer whatever you can without it.");
 	} else if (installation.usage_data_mode === "off") {
 		lines.push("This workspace's Phaseo usage and billing are not available to you. If asked, say an admin has turned that off.");
 	} else {
@@ -170,7 +177,31 @@ function toNanos(usd: number): number {
 	return Math.round(usd * NANOS_PER_USD);
 }
 
-async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, load: { usageTools: boolean }, context: ContextResult, attempt: number): Promise<RunResult> {
+/**
+ * Sends the person the private Connect button, at most once in this thread. A
+ * button Slack didn't take is given back, so a later question can send it.
+ */
+async function offerConnect(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, slack: SlackClient): Promise<ConnectOffer> {
+	if (!(await coordinator.claimLinkOffer(turn.slackUserId, deps.now()))) return "already_sent";
+	const message = connectAccountMessage(await linkUrl(deps.env, turn.installationId, turn.slackUserId, deps.now()), "usage");
+	const sent = await postEphemeral(slack, {
+		channel: turn.channel,
+		user: turn.slackUserId,
+		text: message.text,
+		blocks: message.blocks,
+		...(turn.threadTs !== turn.messageTs ? { thread_ts: turn.threadTs } : {}),
+	});
+	if (!sent) await coordinator.releaseLinkOffer(turn.slackUserId);
+	return sent ? "sent" : "not_delivered";
+}
+
+function turnTools(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, slack: SlackClient, installation: Installation, offered: Offered, notes: string[]) {
+	if (offered.usageTools) return usageTools({ db: deps.db, workspaceId: installation.workspace_id, now: deps.now, notes });
+	if (offered.connectOffer) return [connectAccountTool(() => offerConnect(deps, turn, coordinator, slack))];
+	return [];
+}
+
+async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjectStub<ThreadCoordinator>, load: Offered, context: ContextResult, attempt: number): Promise<RunResult> {
 	const installation = await requireInstallation(deps, turn);
 	const secrets = await installationSecrets(deps.env, installation.secrets_ciphertext);
 	const slack = deps.slack(await requireToken(deps, installation));
@@ -219,11 +250,11 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		output = await deps.agent.run({
 			gatewayKey: secrets.gateway_key,
 			model: installation.model || DEFAULT_MODEL,
-			instructions: buildInstructions(installation, load.usageTools, deps.now()),
+			instructions: buildInstructions(installation, load, deps.now()),
 			prompt: buildPrompt(input, turn, installation.bot_user_id, context.source),
 			endUser: `slack:${team}:${turn.slackUserId}`,
 			labels: { slackTeam: team, slackChannel: turn.channel },
-			tools: load.usageTools ? usageTools({ db: deps.db, workspaceId: installation.workspace_id, now: deps.now, notes }) : [],
+			tools: turnTools(deps, turn, coordinator, slack, installation, load, notes),
 			maxCostUsd: budgetUsd,
 			signal: controller.signal,
 		}, {
@@ -315,9 +346,11 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 		if (installation.status !== "active") return { status: "skip", reason: installation.status };
 		const userId = await linkedUserId(deps.db, installation.id, turn.slackUserId);
 		if (installation.access_mode === "linked" && !userId) return { status: "skip", reason: "link_required" };
-		const usage = conversationAllowsUsageData(installation, turn) && userId !== null && await isWorkspaceMember(deps.db, installation.workspace_id, userId);
+		const allowed = conversationAllowsUsageData(installation, turn);
+		const usage = allowed && userId !== null && await isWorkspaceMember(deps.db, installation.workspace_id, userId);
 		await setSessionStatus(deps.slack(await requireToken(deps, installation)), turn, "processing");
-		return { status: "ok", usageTools: usage };
+		// Someone not linked, where linking would bring the usage tools: the agent can send them the Connect button.
+		return { status: "ok", usageTools: usage, connectOffer: allowed && userId === null };
 	}).catch((): LoadResult => ({ status: "skip", reason: "load_failed" }));
 
 	if (load.status === "skip") {
@@ -330,18 +363,33 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 	}
 
 	const context = await step.do<ContextResult>("context", CONTEXT_STEP, async () => {
-		// A message that starts a thread has no history yet.
-		if (turn.threadTs === turn.messageTs) return { source: "none", messages: 0 };
+		// A message that starts a thread has no history yet: it is the thread's first known message.
+		if (turn.threadTs === turn.messageTs) {
+			await coordinator.recordThreadRead(turn.turnId, { oldest: turn.messageTs, ts: [], complete: true });
+			return { source: "none", messages: 0 };
+		}
 		const installation = await requireInstallation(deps, turn);
 		const slack = deps.slack(await requireToken(deps, installation));
-		const replies = await slack.call<{ messages?: SlackHistoryMessage[] }>("conversations.replies", { channel: turn.channel, ts: turn.threadTs, limit: REPLIES_LIMIT }, { form: true });
+		// One read, ending at the message answered: Slack returns a range's earliest messages first.
+		const window = readWindow(await coordinator.knownMessages(), turn);
+		const replies = await slack.call<SlackReplies>("conversations.replies", {
+			channel: turn.channel,
+			ts: turn.threadTs,
+			oldest: window.oldest,
+			latest: turn.messageTs,
+			inclusive: true,
+			limit: REPLIES_LIMIT,
+		}, { form: true });
 		if (replies.ok === false) {
 			console.log("[slack-agent] thread history unavailable, using working memory", { turnId: turn.turnId, error: replies.error });
+			await coordinator.recordThreadRead(turn.turnId, null);
 			return { source: "memory", messages: 0 };
 		}
-		const entries = historyEntries(replies.data.messages ?? [], installation.bot_user_id, turn.messageTs);
-		await coordinator.setTurnContext(turn.turnId, entries);
-		return { source: "replies", messages: entries.length };
+		const read = threadRead(replies.data, window, turn, installation.bot_user_id);
+		await coordinator.setTurnContext(turn.turnId, read.context);
+		await coordinator.recordThreadRead(turn.turnId, { oldest: window.oldest, ts: read.ts, complete: !read.context.partial });
+		if (read.context.partial) console.log("[slack-agent] thread read was partial", { turnId: turn.turnId, messages: read.context.messages.length });
+		return { source: "replies", messages: read.context.messages.length };
 	}).catch((): ContextResult => ({ source: "memory", messages: 0 }));
 
 	const run = await step.do<RunResult>("run", RUN_STEP, async ({ attempt }) => runAgent(deps, turn, coordinator, load, context, attempt))

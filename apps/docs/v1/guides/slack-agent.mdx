@@ -55,7 +55,12 @@ A Slack workspace can have the agent from one Phaseo workspace at a time.
 
 While it answers:
 
-- It reads the thread's 15 most recent messages, so it can follow the conversation.
+- It reads the newest part of the thread, up to your message, so it can follow the conversation. Slack lets it read 15 messages at a time, and lets Phaseo's app read about once a minute in each Slack workspace.
+  - It always sees the thread's first message.
+  - In a direct message, it reads the latest messages of your conversation with it.
+  - In a channel, it reads the latest messages from the last 30 minutes at most.
+  - When more messages were written than it could read, it's told that some are missing.
+  - When Slack doesn't let it read the thread just then, it works from its own earlier replies in the thread.
 - It answers one message at a time in each thread. Up to 5 more messages wait their turn; after that it asks you to wait for the earlier answers.
 - Slack's stop button stops the answer it's working on.
 - Each answer ends with the model and what the answer cost in model tokens, such as `phaseo/auto · $0.0031`. With **Auto**, the model it picked follows an arrow.
@@ -73,17 +78,22 @@ Under **Limits**, **Allow guests** (on by default) lets guests in your Slack wor
 
 ### Link a Slack account
 
-When access is **Linked accounts only**, the agent replies privately to anyone who isn't linked with a **Connect your Phaseo account** button. The button works for 15 minutes.
+The agent sends people who aren't linked a private **Connect your Phaseo account** button:
+
+- With **Linked accounts only**, when they message it. It doesn't answer until they connect.
+- With **Everyone in Slack**, when they ask about usage where [usage data](#ask-about-usage) is allowed. It still answers what it can, and sends the button at most once per person in each thread. For a new button, ask in a new thread.
+
+The button works for 15 minutes.
 
 1. Select the button. Phaseo opens in your browser.
 2. Sign in with an account that is a member of the Phaseo workspace that installed the agent.
 3. Select **Connect account**.
 
-A linked account also lets people ask about usage. With **Everyone in Slack**, the agent doesn't send the button, so to let people link, switch to **Linked accounts only** while they connect.
+A linked account also lets people ask about usage.
 
 ## Ask about usage
 
-Linked members can ask the agent about this Phaseo workspace:
+Linked members can ask the agent about this Phaseo workspace (anyone else who asks gets the [button to link their account](#link-a-slack-account)):
 
 - requests and spend over a period, by day, week or month, and by model or provider;
 - the credit balance, credits held for requests in progress, and credits spent this month;
@@ -169,7 +179,7 @@ Slack's API terms don't allow training on Slack data or keeping it, so the agent
 - **No message content in Phaseo's logs.** The agent's API key never stores request or response content, in logs, caches or telemetry, whatever your workspace settings. Its requests still appear in your usage and logs without content, with the [request labels](/v1/guides/request-labels) `app=slack-agent`, `slack_team` and `slack_channel` and the [app title](/v1/guides/app-attribution) `Phaseo Slack agent`.
 - **No training or logging providers.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models, prompt publishing, and providers that log inputs and outputs.
 - **No data collection.** Every request asks for providers that don't collect data (`provider.data_collection: "deny"`).
-- **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used and messages waiting their turn. They're deleted 7 days after the thread's last activity.
+- **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, and who it has sent the Connect button. They're deleted 7 days after the thread's last activity.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
 
@@ -243,9 +253,7 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
         "im:history",
         "channels:history",
         "groups:history",
-        "users:read",
-        "files:read",
-        "search:read.public"
+        "users:read"
       ]
     }
   },
@@ -288,8 +296,6 @@ Phaseo asks Slack for exactly these bot token scopes when you install, so the ap
 | `im:history` | Read direct messages sent to the agent. |
 | `channels:history`, `groups:history` | Read the thread it was mentioned in, in public and private channels. |
 | `users:read` | Check whether someone is a guest, a bot or from another organisation. |
-| `files:read` | Read files shared in its conversations. |
-| `search:read.public` | Search public channels for context. |
 
 A few rules for your own app:
 

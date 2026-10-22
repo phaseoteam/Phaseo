@@ -9,6 +9,10 @@ import type { TurnRef } from "./turns";
 // installation's workspace. Each calls the database with the service role,
 // scoped to that workspace, and every sum is done in the database (PostgREST
 // returns at most 1,000 rows, so rows are never fetched to be added up here).
+//
+// Where the usage tools would be offered but the person hasn't linked an account
+// (only possible when the installation answers everyone), the agent gets
+// connect_phaseo_account instead, to send them the Connect button when they ask.
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const NANOS_PER_USD = 1_000_000_000;
@@ -79,6 +83,27 @@ export function modelSearchPattern(query: unknown): string | null {
 	if (typeof query !== "string") return null;
 	const cleaned = query.replace(QUERY_PATTERN, " ").trim().replace(/\s+/g, "*").slice(0, MAX_QUERY_CHARS);
 	return cleaned ? `*${cleaned}*` : null;
+}
+
+/** What sending the Connect button did: sent now, sent earlier in this thread, or Slack didn't take it. */
+export type ConnectOffer = "sent" | "already_sent" | "not_delivered";
+
+export const CONNECT_TOOL_ID = "connect_phaseo_account";
+
+/** Sends the person the private Connect button; `offer` does it at most once per person in a thread. */
+export function connectAccountTool(offer: () => Promise<ConnectOffer>): AgentTool<any, any> {
+	return {
+		id: CONNECT_TOOL_ID,
+		description: "Send the person a private Connect your Phaseo account button. Once they connect, you can look up this Phaseo workspace's spend, credits, API key usage and models for them. Use it when they ask about any of these.",
+		parameters: { type: "object", properties: {}, additionalProperties: false },
+		onError: "return-to-model",
+		execute: async () => {
+			const result = await offer();
+			if (result === "sent") return { sent: true, note: "They got a private button to connect their Phaseo account. It works for 15 minutes; once connected, they can ask again." };
+			if (result === "already_sent") return { sent: false, note: "They were sent the button earlier in this thread. It works for 15 minutes; after that, asking in a new thread sends a new one." };
+			return { sent: false, note: "Slack didn't deliver the button. They can ask again in a moment." };
+		},
+	};
 }
 
 export type UsageToolContext = {
