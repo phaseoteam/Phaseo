@@ -211,7 +211,7 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     /**
      * Zero data retention applies to this request itself (see requestZeroDataRetention).
      * Capture is then off, like for workspace or guardrail ZDR, so callers store no content
-     * anywhere: no I/O log and no request detail row.
+     * anywhere: no I/O log.
      */
     zeroDataRetention?: boolean;
 }): Promise<GatewayIoLoggingPolicy> {
