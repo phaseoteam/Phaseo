@@ -79,6 +79,14 @@ export type Env = {
 	SLACK_SECRETS_ENCRYPTION_KEY_VERSION?: string;
 	/** Public web origin for the Slack OAuth redirect and the settings page. Defaults to https://phaseo.app. */
 	PHASEO_WEB_ORIGIN?: string;
+	/** "true" turns on Connections (connected MCP servers). */
+	MCP_HUB_ENABLED?: string;
+	/** Encrypts connected MCP server tokens (shared with the gateway): base64 32-byte keys by version. */
+	MCP_CONNECTIONS_KEY_V1?: string;
+	MCP_CONNECTIONS_KEY_V2?: string;
+	MCP_CONNECTIONS_ACTIVE_KEY_VERSION?: string;
+	/** The MCP server address shown on the Connections page. Defaults to https://mcp.phaseo.app/mcp. */
+	MCP_PUBLIC_URL?: string;
 	PROVIDER_MODEL_REVIEW_SLACK_WEBHOOK?: string;
 	PROVIDER_MODEL_REVIEW_SLACK_USER_ID?: string;
 	STATUS_PAGE_URL?: string;
