@@ -1017,7 +1017,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: CLOUDFLARE_API_TOKEN
 
             - name: Load global Cloudflare account ID from Infisical
@@ -1028,7 +1028,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: CLOUDFLARE_ACCOUNT_ID
 
             - name: Load global OpenRouter key from Infisical
@@ -1039,7 +1039,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /provider-keys
                   secret-name: OPENROUTER_API_KEY
 
             - name: Load public model discovery webhook from Infisical
@@ -1050,7 +1050,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: DISCORD_WEBHOOK_NEW_MODELS_PUBLIC
 
             - name: Load model update Discord role from Infisical
@@ -1061,7 +1061,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: DISCORD_ROLE_ID
 
             - name: Deploy API app to Cloudflare
@@ -1081,7 +1081,9 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /gateway
+                  include-imports: false
+                  recursive: false
 
             - name: Deploy regional API Worker to Cloudflare
               if: matrix.target == 'api-eu' || matrix.target == 'api-us'
