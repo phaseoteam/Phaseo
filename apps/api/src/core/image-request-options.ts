@@ -16,6 +16,9 @@ type ImageOptionInput = {
 	// Chat, Responses and Messages requests for Gemini image models.
 	image_config?: { image_size?: unknown; imageSize?: unknown } | null;
 	imageConfig?: { image_size?: unknown; imageSize?: unknown } | null;
+	// Together sizes images with width and height only.
+	width?: unknown;
+	height?: unknown;
 };
 
 type ImagePricingUsage = {
@@ -142,6 +145,22 @@ function readGeminiImageSize(input: ImageOptionInput): string | undefined {
 	return normalizeProviderImageSize(toNonEmptyString(config.image_size) ?? toNonEmptyString(config.imageSize));
 }
 
+/**
+ * The Gemini image size tier (1K, 2K or 4K) for an output of width x height. Each tier's
+ * sizes are about 1, 4 and 16 megapixels (1024x1024, 2048x2048, 4096x4096 at 1:1; 5504x3072
+ * at 16:9), so the boundaries sit between them.
+ * https://docs.together.ai/docs/serverless/models
+ */
+function geminiImageSizeFromDimensions(input: ImageOptionInput): string | undefined {
+	const width = Number(input.width);
+	const height = Number(input.height);
+	if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return undefined;
+	const pixels = width * height;
+	if (pixels > 8_000_000) return "4K";
+	if (pixels > 2_000_000) return "2K";
+	return "1K";
+}
+
 function parsePixelDimensions(value: string | undefined): { width: number; height: number } | undefined {
 	if (!value) return undefined;
 	const match = /^(\d+)x(\d+)$/i.exec(value.trim());
@@ -199,8 +218,10 @@ export function buildImagePricingRequestOptions(
 	const size = isGrokImagineImage && /^\d+(?:\.\d+)?k$/i.test(rawSize ?? "") ? rawSize?.toLowerCase() : rawSize;
 	const quality = isGrokImagineImage2 ? rawQuality?.toLowerCase() : rawQuality;
 	// Gemini image models size their output with imageSize (1K by default), sent as `quality`
-	// on the Images API and as `image_config.image_size` on chat requests.
+	// on the Images API and as `image_config.image_size` on chat requests. Hosts that size
+	// by width and height (Together) bill the tier those dimensions fall in.
 	const providerImageSize =
+		(isGeminiImageModel(model) ? geminiImageSizeFromDimensions(input) : undefined) ??
 		normalizeProviderImageSize(quality) ??
 		readGeminiImageSize(input) ??
 		(isGeminiImageModel(model) ? "1K" : undefined);

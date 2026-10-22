@@ -98,6 +98,21 @@ describe("image-request-options", () => {
 		expect(buildImagePricingRequestOptions({ model: "openai/gpt-image-1" })).toEqual({});
 	});
 
+	it("reads the Gemini image size tier from width and height", () => {
+		const tier = (width: number, height: number, extra: Record<string, unknown> = {}) =>
+			(buildImagePricingRequestOptions({ model: "google/gemini-3-pro-image", width, height, ...extra }).image_params as any)?.resolution;
+		expect(tier(1024, 1024)).toBe("1K");
+		expect(tier(1584, 672)).toBe("1K");
+		expect(tier(2048, 2048)).toBe("2K");
+		expect(tier(3168, 1344)).toBe("2K");
+		expect(tier(4096, 4096)).toBe("4K");
+		expect(tier(3072, 5504)).toBe("4K");
+		// Dimensions decide over a quality value the host does not read.
+		expect(tier(1024, 1024, { quality: "4K" })).toBe("1K");
+		// Width and height do not set a tier for non-Gemini models.
+		expect(buildImagePricingRequestOptions({ model: "qwen/qwen-image", width: 4096, height: 4096 }).image_params).toBeUndefined();
+	});
+
 	it("infers pricing quality and resolution from image output tokens when request used auto defaults", () => {
 		const options = buildImagePricingRequestOptions(
 			{
