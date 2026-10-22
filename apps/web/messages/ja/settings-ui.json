@@ -4496,7 +4496,8 @@
 		"classifiers": "分類器",
 		"newClassifier": "新しい分類器",
 		"classifier": "分類器",
-		"budgets": "予算"
+		"budgets": "予算",
+		"security": "キーのセキュリティ"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4724,7 +4725,8 @@
 		"empty": "設定が見つかりません。",
 		"providerProfile": "プロバイダープロフィール",
 		"classifiers": "分類器",
-		"budgets": "予算"
+		"budgets": "予算",
+		"keySecurity": "キーのセキュリティ"
 	},
 	"settingsAvailability": {
 		"title": "設定は一時的に利用できません",
@@ -6009,6 +6011,105 @@
 			"own-server": "自社サーバー",
 			"other": "その他の場所"
 		}
+	},
+	"keySecurity": {
+		"title": "キーのセキュリティ",
+		"description": "漏えいした場合に被害が出るおそれのある API キーを見つけ、まとめて対処します。",
+		"overview": "概要",
+		"empty": "このワークスペースに有効な API キーはありません。",
+		"filters": {
+			"no_spend_limit": "支出上限なし",
+			"never_expires": "有効期限なし",
+			"idle": "90日以上未使用",
+			"safe_to_remove": "削除しても安全",
+			"no_ip_allowlist": "IP 許可リストなし",
+			"no_storage_location": "保管場所が未設定"
+		},
+		"help": {
+			"no_spend_limit": "漏えいしたキーが上限なく支出できます。",
+			"never_expires": "誰かが削除するまで有効なままのキーです。",
+			"idle": "過去90日間にリクエストがありません。",
+			"safe_to_remove": "一度も使われていない未使用のキー、または180日以上未使用のキーです。",
+			"no_ip_allowlist": "どの IP アドレスからでも使用できます。",
+			"no_storage_location": "プラットフォームで情報漏えいが起きても、これらのキーがそこにあったことがわかりません。"
+		},
+		"risks": {
+			"safe_to_remove": "削除しても安全",
+			"idle": "未使用",
+			"no_spend_limit": "支出上限なし",
+			"never_expires": "有効期限なし",
+			"no_ip_allowlist": "全 IP"
+		},
+		"recommendations": "推奨事項",
+		"recommend": {
+			"safe_to_remove": {
+				"title": "{count, plural, other {未使用のキー # 件を削除}}",
+				"body": "各オーナーに確認してから無効化します。オーナー一覧をコピーし、エージェントに各オーナーへの確認を任せましょう。"
+			},
+			"no_spend_limit": {
+				"title": "{count, plural, other {# 件のキーに支出上限を設定}}",
+				"body": "月間上限を設定すると、漏えいしたキーが支出できる額を抑えられます。"
+			},
+			"never_expires": {
+				"title": "{count, plural, other {有効期限のないキー # 件を確認}}",
+				"body": "各オーナーに、有効期限を設定するか不要になったキーを削除するよう依頼してください。"
+			},
+			"no_storage_location": {
+				"title": "{count, plural, other {# 件のキーの保管場所を記録}}",
+				"body": "記録しておけば、利用中のプラットフォームで情報漏えいが起きたときに、そこに保管されたすべてのキーを一度に無効化できます。"
+			}
+		},
+		"viewKeys": "キーを表示",
+		"copyOwners": "オーナー一覧をコピー",
+		"ownersCopied": "{count, plural, other {# 件のキーを CSV としてコピーしました}}",
+		"copyFailed": "クリップボードにコピーできませんでした",
+		"storedIn": "キーの保管場所",
+		"storedInHelp": "これらのプラットフォームで情報漏えいが報告された場合は、そこに保管されたすべてのキーを無効化してください。",
+		"keyCount": "{count, plural, other {# 件のキー}}",
+		"revokeAll": "すべて無効化",
+		"revokeAllIn": "{name} に保管されたすべてのキーを無効化",
+		"allKeys": "すべてのキー",
+		"keysIn": "{name} に保管されたキー",
+		"clearFilter": "すべてのキーを表示",
+		"selected": "{count} 件を選択中",
+		"selectAll": "表示中のすべてのキーを選択",
+		"selectKey": "{name} を選択",
+		"actions": {
+			"pause": "一時停止",
+			"revoke": "無効化",
+			"set_monthly_spend_limit": "月間支出上限を設定",
+			"set_expiry": "有効期限を設定",
+			"set_storage_locations": "保管場所を設定"
+		},
+		"confirm": {
+			"pause": "{count, plural, other {# 件のキーは、再開するまで使用できなくなります。}}",
+			"revoke": "{count, plural, other {# 件のキーは1分以内に使用できなくなり、二度と有効にできません。これらを使用しているものには新しいキーが必要です。}}",
+			"set_monthly_spend_limit": "{count, plural, other {# 件のキーの月間支出上限を設定します。}}",
+			"set_expiry": "{count, plural, other {# 件のキーは、この日の終わり（UTC）に使用できなくなります。}}",
+			"set_storage_locations": "{count, plural, other {# 件のキーの保管場所を置き換えます。}}"
+		},
+		"monthlyLimitUsd": "月間上限（USD）",
+		"expiresOn": "有効期限日",
+		"typeRevoke": "確認のため「revoke」と入力してください",
+		"working": "処理中…",
+		"changed": "{count, plural, other {# 件のキーを更新しました}}",
+		"actionFailed": "キーを更新できませんでした",
+		"tooMany": "一度に選択できるキーは {max} 件までです。",
+		"columns": {
+			"key": "キー",
+			"owner": "オーナー",
+			"lastUsed": "最終使用",
+			"expires": "有効期限",
+			"storedIn": "保管場所",
+			"risks": "リスク"
+		},
+		"paused": "一時停止中",
+		"unknownOwner": "不明",
+		"neverUsed": "未使用",
+		"never": "なし",
+		"notSet": "未設定",
+		"adminOnly": "キーを変更できるのは、ワークスペースの所有者と管理者のみです。",
+		"partial": "リスクの高い {shown} 件のキーを表示しています（全 {total} 件）。「すべて無効化」は保管場所のすべてのキーに適用されます。"
 	},
 	"providerDashboard": {
 		"profile": "プロバイダープロフィール",

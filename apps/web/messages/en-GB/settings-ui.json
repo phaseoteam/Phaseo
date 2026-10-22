@@ -4496,7 +4496,8 @@
 		"classifiers": "Classifiers",
 		"newClassifier": "New classifier",
 		"classifier": "Classifier",
-		"budgets": "Budgets"
+		"budgets": "Budgets",
+		"security": "Key Security"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4724,7 +4725,8 @@
 		"empty": "No settings found.",
 		"providerProfile": "Provider profile",
 		"classifiers": "Classifiers",
-		"budgets": "Budgets"
+		"budgets": "Budgets",
+		"keySecurity": "Key Security"
 	},
 	"settingsAvailability": {
 		"title": "Settings are temporarily unavailable",
@@ -6009,6 +6011,105 @@
 			"own-server": "My own servers",
 			"other": "Somewhere else"
 		}
+	},
+	"keySecurity": {
+		"title": "Key security",
+		"description": "Find API keys that could do damage if they leaked, and fix them in bulk.",
+		"overview": "Overview",
+		"empty": "This workspace has no active API keys.",
+		"filters": {
+			"no_spend_limit": "No spend limit",
+			"never_expires": "Never expires",
+			"idle": "Idle 90+ days",
+			"safe_to_remove": "Safe to remove",
+			"no_ip_allowlist": "No IP allowlist",
+			"no_storage_location": "Storage location not set"
+		},
+		"help": {
+			"no_spend_limit": "A leaked key could spend without a cap.",
+			"never_expires": "Keys that stay valid until someone removes them.",
+			"idle": "No requests in the last 90 days.",
+			"safe_to_remove": "Idle and never used, or idle for 180+ days.",
+			"no_ip_allowlist": "Usable from any IP address.",
+			"no_storage_location": "If a platform is breached, you won't know these keys were there."
+		},
+		"risks": {
+			"safe_to_remove": "Safe to remove",
+			"idle": "Idle",
+			"no_spend_limit": "No spend limit",
+			"never_expires": "No expiry",
+			"no_ip_allowlist": "Any IP"
+		},
+		"recommendations": "Recommendations",
+		"recommend": {
+			"safe_to_remove": {
+				"title": "{count, plural, one {Remove # unused key} other {Remove # unused keys}}",
+				"body": "Ask each owner to confirm, then revoke. Copy the owner list and have your agent check with each owner."
+			},
+			"no_spend_limit": {
+				"title": "{count, plural, one {Set a spend limit on # key} other {Set a spend limit on # keys}}",
+				"body": "A monthly limit caps what a leaked key can spend."
+			},
+			"never_expires": {
+				"title": "{count, plural, one {Review # key without an expiry} other {Review # keys without an expiry}}",
+				"body": "Ask each owner to set an expiry date or remove keys they no longer need."
+			},
+			"no_storage_location": {
+				"title": "{count, plural, one {Record where # key is stored} other {Record where # keys are stored}}",
+				"body": "Then, if a platform you use is breached, you can revoke every key kept there in one step."
+			}
+		},
+		"viewKeys": "View keys",
+		"copyOwners": "Copy owner list",
+		"ownersCopied": "{count, plural, one {Copied # key as CSV} other {Copied # keys as CSV}}",
+		"copyFailed": "Couldn't copy to the clipboard",
+		"storedIn": "Where keys are stored",
+		"storedInHelp": "If one of these platforms reports a breach, revoke every key stored there.",
+		"keyCount": "{count, plural, one {# key} other {# keys}}",
+		"revokeAll": "Revoke all",
+		"revokeAllIn": "Revoke all keys stored in {name}",
+		"allKeys": "All keys",
+		"keysIn": "Keys stored in {name}",
+		"clearFilter": "Show all keys",
+		"selected": "{count} selected",
+		"selectAll": "Select all keys shown",
+		"selectKey": "Select {name}",
+		"actions": {
+			"pause": "Pause",
+			"revoke": "Revoke",
+			"set_monthly_spend_limit": "Set monthly spend limit",
+			"set_expiry": "Set expiry",
+			"set_storage_locations": "Set storage location"
+		},
+		"confirm": {
+			"pause": "{count, plural, one {# key will stop working until it is resumed.} other {# keys will stop working until they are resumed.}}",
+			"revoke": "{count, plural, one {# key will stop working within a minute and can never be turned back on. Anything using it needs a new key.} other {# keys will stop working within a minute and can never be turned back on. Anything using them needs a new key.}}",
+			"set_monthly_spend_limit": "{count, plural, one {Sets the monthly spend limit of # key.} other {Sets the monthly spend limit of # keys.}}",
+			"set_expiry": "{count, plural, one {# key will stop working at the end of this day (UTC).} other {# keys will stop working at the end of this day (UTC).}}",
+			"set_storage_locations": "{count, plural, one {Replaces the storage locations of # key.} other {Replaces the storage locations of # keys.}}"
+		},
+		"monthlyLimitUsd": "Monthly limit (USD)",
+		"expiresOn": "Expires on",
+		"typeRevoke": "Type revoke to confirm",
+		"working": "Working…",
+		"changed": "{count, plural, one {Updated # key} other {Updated # keys}}",
+		"actionFailed": "Couldn't update the keys",
+		"tooMany": "Select at most {max} keys at once.",
+		"columns": {
+			"key": "Key",
+			"owner": "Owner",
+			"lastUsed": "Last used",
+			"expires": "Expires",
+			"storedIn": "Stored in",
+			"risks": "Risks"
+		},
+		"paused": "Paused",
+		"unknownOwner": "Unknown",
+		"neverUsed": "Never used",
+		"never": "Never",
+		"notSet": "Not set",
+		"adminOnly": "Only workspace owners and admins can change keys.",
+		"partial": "Showing the {shown} riskiest of {total} keys. Revoke all still covers every key stored in a location."
 	},
 	"providerDashboard": {
 		"profile": "Provider profile",

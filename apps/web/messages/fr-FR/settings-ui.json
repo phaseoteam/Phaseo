@@ -4496,7 +4496,8 @@
 		"classifiers": "Classificateurs",
 		"newClassifier": "Nouveau classificateur",
 		"classifier": "Classificateur",
-		"budgets": "Budgets"
+		"budgets": "Budgets",
+		"security": "Sécurité des clés"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4724,7 +4725,8 @@
 		"empty": "Aucun paramètre trouvé.",
 		"providerProfile": "Profil du fournisseur",
 		"classifiers": "Classificateurs",
-		"budgets": "Budgets"
+		"budgets": "Budgets",
+		"keySecurity": "Sécurité des clés"
 	},
 	"settingsAvailability": {
 		"title": "Les paramètres sont temporairement indisponibles",
@@ -6009,6 +6011,105 @@
 			"own-server": "Mes propres serveurs",
 			"other": "Ailleurs"
 		}
+	},
+	"keySecurity": {
+		"title": "Sécurité des clés",
+		"description": "Repérez les clés API qui pourraient causer des dégâts en cas de fuite et corrigez-les en masse.",
+		"overview": "Vue d’ensemble",
+		"empty": "Cet espace de travail n’a aucune clé API active.",
+		"filters": {
+			"no_spend_limit": "Aucune limite de dépenses",
+			"never_expires": "N’expire jamais",
+			"idle": "Inactive depuis 90+ jours",
+			"safe_to_remove": "Peut être supprimée",
+			"no_ip_allowlist": "Aucune liste d’autorisation IP",
+			"no_storage_location": "Emplacement de stockage non défini"
+		},
+		"help": {
+			"no_spend_limit": "Une clé divulguée pourrait dépenser sans plafond.",
+			"never_expires": "Clés qui restent valides jusqu’à ce que quelqu’un les supprime.",
+			"idle": "Aucune requête au cours des 90 derniers jours.",
+			"safe_to_remove": "Inactives et jamais utilisées, ou inactives depuis 180+ jours.",
+			"no_ip_allowlist": "Utilisables depuis n’importe quelle adresse IP.",
+			"no_storage_location": "Si une plateforme subit une fuite, vous ne saurez pas que ces clés s’y trouvaient."
+		},
+		"risks": {
+			"safe_to_remove": "Peut être supprimée",
+			"idle": "Inactive",
+			"no_spend_limit": "Aucune limite de dépenses",
+			"never_expires": "Aucune expiration",
+			"no_ip_allowlist": "Toute IP"
+		},
+		"recommendations": "Recommandations",
+		"recommend": {
+			"safe_to_remove": {
+				"title": "{count, plural, one {Supprimer # clé inutilisée} other {Supprimer # clés inutilisées}}",
+				"body": "Demandez confirmation à chaque propriétaire, puis révoquez. Copiez la liste des propriétaires et laissez votre agent vérifier auprès de chacun."
+			},
+			"no_spend_limit": {
+				"title": "{count, plural, one {Définir une limite de dépenses sur # clé} other {Définir une limite de dépenses sur # clés}}",
+				"body": "Une limite mensuelle plafonne ce qu’une clé divulguée peut dépenser."
+			},
+			"never_expires": {
+				"title": "{count, plural, one {Vérifier # clé sans expiration} other {Vérifier # clés sans expiration}}",
+				"body": "Demandez à chaque propriétaire de définir une date d’expiration ou de supprimer les clés dont il n’a plus besoin."
+			},
+			"no_storage_location": {
+				"title": "{count, plural, one {Indiquer où # clé est stockée} other {Indiquer où # clés sont stockées}}",
+				"body": "Ainsi, si une plateforme que vous utilisez subit une fuite, vous pourrez révoquer en une seule étape toutes les clés qui y sont stockées."
+			}
+		},
+		"viewKeys": "Voir les clés",
+		"copyOwners": "Copier la liste des propriétaires",
+		"ownersCopied": "{count, plural, one {# clé copiée au format CSV} other {# clés copiées au format CSV}}",
+		"copyFailed": "Impossible de copier dans le presse-papiers",
+		"storedIn": "Où les clés sont stockées",
+		"storedInHelp": "Si l’une de ces plateformes signale une fuite, révoquez toutes les clés qui y sont stockées.",
+		"keyCount": "{count, plural, one {# clé} other {# clés}}",
+		"revokeAll": "Tout révoquer",
+		"revokeAllIn": "Révoquer toutes les clés stockées dans {name}",
+		"allKeys": "Toutes les clés",
+		"keysIn": "Clés stockées dans {name}",
+		"clearFilter": "Afficher toutes les clés",
+		"selected": "{count} sélectionnée(s)",
+		"selectAll": "Sélectionner toutes les clés affichées",
+		"selectKey": "Sélectionner {name}",
+		"actions": {
+			"pause": "Suspendre",
+			"revoke": "Révoquer",
+			"set_monthly_spend_limit": "Définir la limite de dépenses mensuelle",
+			"set_expiry": "Définir l’expiration",
+			"set_storage_locations": "Définir l’emplacement de stockage"
+		},
+		"confirm": {
+			"pause": "{count, plural, one {# clé cessera de fonctionner jusqu’à sa réactivation.} other {# clés cesseront de fonctionner jusqu’à leur réactivation.}}",
+			"revoke": "{count, plural, one {# clé cessera de fonctionner d’ici une minute et ne pourra jamais être réactivée. Tout ce qui l’utilise aura besoin d’une nouvelle clé.} other {# clés cesseront de fonctionner d’ici une minute et ne pourront jamais être réactivées. Tout ce qui les utilise aura besoin d’une nouvelle clé.}}",
+			"set_monthly_spend_limit": "{count, plural, one {Définit la limite de dépenses mensuelle de # clé.} other {Définit la limite de dépenses mensuelle de # clés.}}",
+			"set_expiry": "{count, plural, one {# clé cessera de fonctionner à la fin de cette journée (UTC).} other {# clés cesseront de fonctionner à la fin de cette journée (UTC).}}",
+			"set_storage_locations": "{count, plural, one {Remplace les emplacements de stockage de # clé.} other {Remplace les emplacements de stockage de # clés.}}"
+		},
+		"monthlyLimitUsd": "Limite mensuelle (USD)",
+		"expiresOn": "Expire le",
+		"typeRevoke": "Saisissez « revoke » pour confirmer",
+		"working": "En cours…",
+		"changed": "{count, plural, one {# clé mise à jour} other {# clés mises à jour}}",
+		"actionFailed": "Impossible de mettre à jour les clés",
+		"tooMany": "Sélectionnez au maximum {max} clés à la fois.",
+		"columns": {
+			"key": "Clé",
+			"owner": "Propriétaire",
+			"lastUsed": "Dernière utilisation",
+			"expires": "Expire",
+			"storedIn": "Stockée dans",
+			"risks": "Risques"
+		},
+		"paused": "En pause",
+		"unknownOwner": "Inconnu",
+		"neverUsed": "Jamais utilisée",
+		"never": "Jamais",
+		"notSet": "Non défini",
+		"adminOnly": "Seuls les propriétaires et administrateurs de l’espace peuvent modifier les clés.",
+		"partial": "Affichage des {shown} clés les plus à risque sur {total}. « Tout révoquer » couvre quand même toutes les clés stockées à un emplacement."
 	},
 	"providerDashboard": {
 		"profile": "Profil du fournisseur",

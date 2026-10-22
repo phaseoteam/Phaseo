@@ -4496,7 +4496,8 @@
 		"classifiers": "分类器",
 		"newClassifier": "新建分类器",
 		"classifier": "分类器",
-		"budgets": "预算"
+		"budgets": "预算",
+		"security": "密钥安全"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4724,7 +4725,8 @@
 		"empty": "未找到设置。",
 		"providerProfile": "提供商资料",
 		"classifiers": "分类器",
-		"budgets": "预算"
+		"budgets": "预算",
+		"keySecurity": "密钥安全"
 	},
 	"settingsAvailability": {
 		"title": "设置暂时不可用",
@@ -6009,6 +6011,105 @@
 			"own-server": "自有服务器",
 			"other": "其他地方"
 		}
+	},
+	"keySecurity": {
+		"title": "密钥安全",
+		"description": "找出一旦泄露可能造成损失的 API 密钥，并批量修复。",
+		"overview": "概览",
+		"empty": "此工作区没有有效的 API 密钥。",
+		"filters": {
+			"no_spend_limit": "无支出限额",
+			"never_expires": "永不过期",
+			"idle": "闲置 90 天以上",
+			"safe_to_remove": "可安全移除",
+			"no_ip_allowlist": "无 IP 允许列表",
+			"no_storage_location": "未设置存储位置"
+		},
+		"help": {
+			"no_spend_limit": "泄露的密钥可能无上限地产生支出。",
+			"never_expires": "在有人移除之前一直有效的密钥。",
+			"idle": "过去 90 天内没有请求。",
+			"safe_to_remove": "闲置且从未使用过，或闲置 180 天以上。",
+			"no_ip_allowlist": "可从任意 IP 地址使用。",
+			"no_storage_location": "如果某个平台发生数据泄露，你将无法得知这些密钥曾存储在那里。"
+		},
+		"risks": {
+			"safe_to_remove": "可安全移除",
+			"idle": "闲置",
+			"no_spend_limit": "无支出限额",
+			"never_expires": "无到期日",
+			"no_ip_allowlist": "任意 IP"
+		},
+		"recommendations": "建议",
+		"recommend": {
+			"safe_to_remove": {
+				"title": "{count, plural, other {移除 # 个未使用的密钥}}",
+				"body": "先请每位所有者确认，然后撤销。复制所有者列表，让你的智能体逐一向所有者确认。"
+			},
+			"no_spend_limit": {
+				"title": "{count, plural, other {为 # 个密钥设置支出限额}}",
+				"body": "每月限额可以限制泄露的密钥能产生的支出。"
+			},
+			"never_expires": {
+				"title": "{count, plural, other {检查 # 个没有到期日的密钥}}",
+				"body": "请每位所有者设置到期日，或移除不再需要的密钥。"
+			},
+			"no_storage_location": {
+				"title": "{count, plural, other {记录 # 个密钥的存储位置}}",
+				"body": "这样，如果你使用的某个平台发生数据泄露，你可以一步撤销存储在那里的所有密钥。"
+			}
+		},
+		"viewKeys": "查看密钥",
+		"copyOwners": "复制所有者列表",
+		"ownersCopied": "{count, plural, other {已将 # 个密钥复制为 CSV}}",
+		"copyFailed": "无法复制到剪贴板",
+		"storedIn": "密钥存储位置",
+		"storedInHelp": "如果其中某个平台报告数据泄露，请撤销存储在那里的所有密钥。",
+		"keyCount": "{count, plural, other {# 个密钥}}",
+		"revokeAll": "全部撤销",
+		"revokeAllIn": "撤销存储在 {name} 中的所有密钥",
+		"allKeys": "所有密钥",
+		"keysIn": "存储在 {name} 中的密钥",
+		"clearFilter": "显示所有密钥",
+		"selected": "已选择 {count} 个",
+		"selectAll": "选择显示的所有密钥",
+		"selectKey": "选择 {name}",
+		"actions": {
+			"pause": "暂停",
+			"revoke": "撤销",
+			"set_monthly_spend_limit": "设置每月支出限额",
+			"set_expiry": "设置到期日",
+			"set_storage_locations": "设置存储位置"
+		},
+		"confirm": {
+			"pause": "{count, plural, other {# 个密钥将停止工作，直到恢复为止。}}",
+			"revoke": "{count, plural, other {# 个密钥将在一分钟内停止工作，且永远无法重新启用。任何使用这些密钥的地方都需要新密钥。}}",
+			"set_monthly_spend_limit": "{count, plural, other {为 # 个密钥设置每月支出限额。}}",
+			"set_expiry": "{count, plural, other {# 个密钥将在当天结束时（UTC）停止工作。}}",
+			"set_storage_locations": "{count, plural, other {替换 # 个密钥的存储位置。}}"
+		},
+		"monthlyLimitUsd": "每月限额（USD）",
+		"expiresOn": "到期日",
+		"typeRevoke": "输入“revoke”以确认",
+		"working": "处理中…",
+		"changed": "{count, plural, other {已更新 # 个密钥}}",
+		"actionFailed": "无法更新密钥",
+		"tooMany": "一次最多选择 {max} 个密钥。",
+		"columns": {
+			"key": "密钥",
+			"owner": "所有者",
+			"lastUsed": "上次使用",
+			"expires": "到期",
+			"storedIn": "存储位置",
+			"risks": "风险"
+		},
+		"paused": "已暂停",
+		"unknownOwner": "未知",
+		"neverUsed": "从未使用过",
+		"never": "从不",
+		"notSet": "未设置",
+		"adminOnly": "只有工作区所有者和管理员可以更改密钥。",
+		"partial": "显示 {total} 个密钥中风险最高的 {shown} 个。“全部撤销”仍会覆盖存储在某个位置的所有密钥。"
 	},
 	"providerDashboard": {
 		"profile": "提供商资料",

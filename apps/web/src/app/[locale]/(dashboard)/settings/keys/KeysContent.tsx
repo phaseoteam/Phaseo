@@ -2,7 +2,7 @@
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { getLocalizedDocsHref } from "@/lib/docs";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ShieldAlert } from "lucide-react";
 import CreateKeyDialog from "@/components/(gateway)/settings/keys/CreateKeyDialog";
 import KeysPanel from "@/components/(gateway)/settings/keys/KeysPanel";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
@@ -29,6 +29,12 @@ export default withSettingsResource("keys", function KeysContent({ initialData }
 				title={t("headers.apiKeys")}
 				actions={
 					<div className="flex flex-wrap items-center gap-2">
+						<Button asChild variant="outline" size="sm">
+							<Link href="/settings/security">
+								<ShieldAlert className="h-4 w-4" />
+								{t("keySecurity.title")}
+							</Link>
+						</Button>
 						<Button asChild variant="outline" size="sm">
 							<Link
 								href={getLocalizedDocsHref(locale, QUICKSTART_DOCS_HREF)}

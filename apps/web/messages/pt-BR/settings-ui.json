@@ -4496,7 +4496,8 @@
 		"classifiers": "Classificadores",
 		"newClassifier": "Novo classificador",
 		"classifier": "Classificador",
-		"budgets": "Orçamentos"
+		"budgets": "Orçamentos",
+		"security": "Segurança das chaves"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4724,7 +4725,8 @@
 		"empty": "Nenhuma configuração encontrada.",
 		"providerProfile": "Perfil do provedor",
 		"classifiers": "Classificadores",
-		"budgets": "Orçamentos"
+		"budgets": "Orçamentos",
+		"keySecurity": "Segurança das chaves"
 	},
 	"settingsAvailability": {
 		"title": "As configurações estão temporariamente indisponíveis",
@@ -6009,6 +6011,105 @@
 			"own-server": "Meus próprios servidores",
 			"other": "Outro lugar"
 		}
+	},
+	"keySecurity": {
+		"title": "Segurança das chaves",
+		"description": "Encontre chaves de API que poderiam causar danos se vazassem e corrija-as em massa.",
+		"overview": "Visão geral",
+		"empty": "Este espaço de trabalho não tem chaves de API ativas.",
+		"filters": {
+			"no_spend_limit": "Sem limite de gastos",
+			"never_expires": "Nunca expira",
+			"idle": "Inativa há 90+ dias",
+			"safe_to_remove": "Pode ser removida",
+			"no_ip_allowlist": "Sem lista de IPs permitidos",
+			"no_storage_location": "Local de armazenamento não definido"
+		},
+		"help": {
+			"no_spend_limit": "Uma chave vazada poderia gastar sem teto.",
+			"never_expires": "Chaves que continuam válidas até alguém removê-las.",
+			"idle": "Nenhuma solicitação nos últimos 90 dias.",
+			"safe_to_remove": "Inativas e nunca usadas, ou inativas há 180+ dias.",
+			"no_ip_allowlist": "Podem ser usadas de qualquer endereço IP.",
+			"no_storage_location": "Se uma plataforma sofrer um vazamento, você não saberá que essas chaves estavam lá."
+		},
+		"risks": {
+			"safe_to_remove": "Pode ser removida",
+			"idle": "Inativa",
+			"no_spend_limit": "Sem limite de gastos",
+			"never_expires": "Sem expiração",
+			"no_ip_allowlist": "Qualquer IP"
+		},
+		"recommendations": "Recomendações",
+		"recommend": {
+			"safe_to_remove": {
+				"title": "{count, plural, one {Remover # chave não usada} other {Remover # chaves não usadas}}",
+				"body": "Peça a cada proprietário que confirme e depois revogue. Copie a lista de proprietários e peça ao seu agente para verificar com cada um."
+			},
+			"no_spend_limit": {
+				"title": "{count, plural, one {Definir um limite de gastos em # chave} other {Definir um limite de gastos em # chaves}}",
+				"body": "Um limite mensal restringe quanto uma chave vazada pode gastar."
+			},
+			"never_expires": {
+				"title": "{count, plural, one {Revisar # chave sem expiração} other {Revisar # chaves sem expiração}}",
+				"body": "Peça a cada proprietário que defina uma data de expiração ou remova as chaves de que não precisa mais."
+			},
+			"no_storage_location": {
+				"title": "{count, plural, one {Registrar onde # chave está armazenada} other {Registrar onde # chaves estão armazenadas}}",
+				"body": "Assim, se uma plataforma que você usa sofrer um vazamento, você poderá revogar em uma só etapa todas as chaves guardadas lá."
+			}
+		},
+		"viewKeys": "Ver chaves",
+		"copyOwners": "Copiar lista de proprietários",
+		"ownersCopied": "{count, plural, one {# chave copiada como CSV} other {# chaves copiadas como CSV}}",
+		"copyFailed": "Não foi possível copiar para a área de transferência",
+		"storedIn": "Onde as chaves estão armazenadas",
+		"storedInHelp": "Se uma dessas plataformas relatar um vazamento, revogue todas as chaves armazenadas lá.",
+		"keyCount": "{count, plural, one {# chave} other {# chaves}}",
+		"revokeAll": "Revogar todas",
+		"revokeAllIn": "Revogar todas as chaves armazenadas em {name}",
+		"allKeys": "Todas as chaves",
+		"keysIn": "Chaves armazenadas em {name}",
+		"clearFilter": "Mostrar todas as chaves",
+		"selected": "{count} selecionada(s)",
+		"selectAll": "Selecionar todas as chaves exibidas",
+		"selectKey": "Selecionar {name}",
+		"actions": {
+			"pause": "Pausar",
+			"revoke": "Revogar",
+			"set_monthly_spend_limit": "Definir limite de gastos mensal",
+			"set_expiry": "Definir expiração",
+			"set_storage_locations": "Definir local de armazenamento"
+		},
+		"confirm": {
+			"pause": "{count, plural, one {# chave deixará de funcionar até ser reativada.} other {# chaves deixarão de funcionar até serem reativadas.}}",
+			"revoke": "{count, plural, one {# chave deixará de funcionar em até um minuto e nunca poderá ser reativada. Tudo o que a usa precisará de uma nova chave.} other {# chaves deixarão de funcionar em até um minuto e nunca poderão ser reativadas. Tudo o que as usa precisará de uma nova chave.}}",
+			"set_monthly_spend_limit": "{count, plural, one {Define o limite de gastos mensal de # chave.} other {Define o limite de gastos mensal de # chaves.}}",
+			"set_expiry": "{count, plural, one {# chave deixará de funcionar ao fim deste dia (UTC).} other {# chaves deixarão de funcionar ao fim deste dia (UTC).}}",
+			"set_storage_locations": "{count, plural, one {Substitui os locais de armazenamento de # chave.} other {Substitui os locais de armazenamento de # chaves.}}"
+		},
+		"monthlyLimitUsd": "Limite mensal (USD)",
+		"expiresOn": "Expira em",
+		"typeRevoke": "Digite \"revoke\" para confirmar",
+		"working": "Processando…",
+		"changed": "{count, plural, one {# chave atualizada} other {# chaves atualizadas}}",
+		"actionFailed": "Não foi possível atualizar as chaves",
+		"tooMany": "Selecione no máximo {max} chaves por vez.",
+		"columns": {
+			"key": "Chave",
+			"owner": "Proprietário",
+			"lastUsed": "Último uso",
+			"expires": "Expira",
+			"storedIn": "Armazenada em",
+			"risks": "Riscos"
+		},
+		"paused": "Pausada",
+		"unknownOwner": "Desconhecido",
+		"neverUsed": "Nunca usada",
+		"never": "Nunca",
+		"notSet": "Não definido",
+		"adminOnly": "Somente proprietários e administradores do espaço podem alterar as chaves.",
+		"partial": "Mostrando as {shown} chaves de maior risco de {total}. \"Revogar todas\" ainda abrange todas as chaves armazenadas em um local."
 	},
 	"providerDashboard": {
 		"profile": "Perfil do provedor",
