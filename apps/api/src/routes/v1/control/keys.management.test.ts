@@ -653,6 +653,50 @@ describe("management key routes", () => {
 		});
 	});
 
+	describe("storage locations", () => {
+		const keyRow = (overrides: Record<string, unknown> = {}) => ({
+			id: "key_1", hash: "hash_1", workspace_id: "ws_1", kid: "kid_1", name: "Primary Key", prefix: "phaseo_v1_sk_abc",
+			status: "active", scopes: "[]", created_by: "user_1", created_at: "2026-04-28T10:00:00Z", updated_at: "2026-04-28T10:30:00Z",
+			soft_blocked: false, expires_at: null, storage_locations: [], ...overrides,
+		});
+		const patch = async (body: Record<string, unknown>) => {
+			const { keysRoutes } = await import("./keys");
+			return keysRoutes.request("https://example.com/hash_1", {
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(body),
+			});
+		};
+
+		it("sets, returns and clears where a key is stored", async () => {
+			state.keyRows.push(keyRow(), keyRow({ storage_locations: ["railway", "github"] }));
+			const response = await patch({ storage_locations: ["github", "railway"] });
+			expect(response.status).toBe(200);
+			expect(state.updatePayloads[0]).toEqual({ storage_locations: ["railway", "github"] });
+			await expect(response.json()).resolves.toMatchObject({ data: { storage_locations: ["railway", "github"] } });
+
+			state.keyRows.push(keyRow({ storage_locations: ["railway"] }), keyRow());
+			expect((await patch({ storage_locations: null })).status).toBe(200);
+			expect(state.updatePayloads[1]).toEqual({ storage_locations: [] });
+		});
+
+		it("rejects unknown locations", async () => {
+			state.keyRows.push(keyRow());
+			const response = await patch({ storage_locations: ["my-laptop"] });
+			expect(response.status).toBe(400);
+			await expect(response.json()).resolves.toMatchObject({ error: "bad_request", message: expect.stringContaining("my-laptop") });
+			expect(state.updatePayloads).toHaveLength(0);
+		});
+
+		it("never turns a revoked key back on", async () => {
+			state.keyRows.push(keyRow({ status: "revoked" }));
+			const response = await patch({ disabled: false });
+			expect(response.status).toBe(409);
+			await expect(response.json()).resolves.toMatchObject({ error: "key_revoked" });
+			expect(state.updatePayloads).toHaveLength(0);
+		});
+	});
+
 	it("never reads, changes, rotates or deletes keys Phaseo manages for Chat and the Slack agent", async () => {
 		const { keysRoutes } = await import("./keys");
 		const { MANAGED_KEY_NAMES_FILTER } = await import("./management-helpers");

@@ -16246,6 +16246,8 @@ components:
           format: uuid
           nullable: true
           description: Abteilung, zu der dieser Schlüssel für Ratenlimits und Budgets der Abteilung gehört. Null bedeutet, dass der Schlüssel nur auf die Limits des gesamten Workspace angerechnet wird.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: Gibt an, ob Anbieter-Anmeldedaten auf das Ausgabenlimit des Schlüssels angerechnet werden. Derzeit immer false.
@@ -16455,6 +16457,8 @@ components:
           format: uuid
           nullable: true
           description: Abteilung, zu der dieser Schlüssel für Ratenlimits und Budgets der Abteilung gehört. Null bedeutet, dass der Schlüssel nur auf die Limits des gesamten Workspace angerechnet wird.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -16494,7 +16498,20 @@ components:
           format: uuid
           nullable: true
           description: Abteilung, zu der dieser Schlüssel für Ratenlimits und Budgets der Abteilung gehört. Null bedeutet, dass der Schlüssel nur auf die Limits des gesamten Workspace angerechnet wird.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: 'Wo du diesen Schlüssel aufbewahrst, zum Beispiel die Hosting-Plattform, in deren Umgebungsvariablen er liegt. Optional. Wenn einer dieser Orte ein Datenleck meldet, kannst du alle dort gespeicherten Schlüssel finden und widerrufen. Bekannte IDs: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.'
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:

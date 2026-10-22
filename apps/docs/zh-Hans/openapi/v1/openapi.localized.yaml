@@ -16246,6 +16246,8 @@ components:
           format: uuid
           nullable: true
           description: 此密钥所属的部门，用于部门速率限制和预算。Null 表示该密钥仅计入整个工作区的限制。
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: 指定提供商凭据是否计入密钥支出上限。目前始终为 false。
@@ -16455,6 +16457,8 @@ components:
           format: uuid
           nullable: true
           description: 此密钥所属的部门，用于部门速率限制和预算。Null 表示该密钥仅计入整个工作区的限制。
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -16494,7 +16498,20 @@ components:
           format: uuid
           nullable: true
           description: 此密钥所属的部门，用于部门速率限制和预算。Null 表示该密钥仅计入整个工作区的限制。
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: 你存放此密钥的位置，例如在环境变量中保存它的托管平台。可选。如果其中某个位置报告数据泄露，你可以找到并撤销存储在那里的所有密钥。已知 ID：railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other。
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:
