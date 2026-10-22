@@ -82,6 +82,11 @@ CREATE TRIGGER guard_replacement_cycle
   WHEN ((new.replacement_model_slug IS NOT NULL))
   EXECUTE FUNCTION private.guard_model_replacement_cycle();
 
+CREATE TRIGGER public_catalogue_changed
+  AFTER INSERT OR DELETE OR UPDATE ON public.v2_models
+  FOR EACH ROW
+  EXECUTE FUNCTION private.bump_public_catalogue_revision();
+
 CREATE TRIGGER routing_catalogue_changed
   AFTER INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.v2_models
   FOR EACH STATEMENT

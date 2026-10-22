@@ -56,6 +56,11 @@ CREATE TRIGGER guard_conditional_provider_catalog_pricing
   FOR EACH ROW
   EXECUTE FUNCTION public.guard_conditional_provider_catalog_pricing();
 
+CREATE TRIGGER public_catalogue_changed
+  AFTER INSERT OR DELETE OR UPDATE ON public.v2_pricing_skus
+  FOR EACH ROW
+  EXECUTE FUNCTION private.bump_public_catalogue_revision();
+
 CREATE TRIGGER routing_catalogue_changed
   AFTER INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.v2_pricing_skus
   FOR EACH STATEMENT

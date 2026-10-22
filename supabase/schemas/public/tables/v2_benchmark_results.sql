@@ -36,6 +36,11 @@ CREATE TRIGGER catalogue_row_history
   FOR EACH ROW
   EXECUTE FUNCTION catalogue_private.record_row_history();
 
+CREATE TRIGGER public_catalogue_changed
+  AFTER INSERT OR DELETE OR UPDATE ON public.v2_benchmark_results
+  FOR EACH ROW
+  EXECUTE FUNCTION private.bump_public_catalogue_revision();
+
 CREATE TRIGGER routing_catalogue_changed
   AFTER INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.v2_benchmark_results
   FOR EACH STATEMENT

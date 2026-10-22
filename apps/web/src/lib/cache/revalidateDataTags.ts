@@ -1,4 +1,4 @@
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
 
 type RevalidateModelDataTagOptions = {
 	modelId?: string | null;
@@ -161,9 +161,15 @@ const PUBLIC_MODEL_CATALOGUE_GLOBAL_TAGS = [
 	"frontend:og-payload",
 ] as const;
 
-function expireTagList(tags: readonly string[]) {
+/** How a tag is expired: `updateTag` in Server Actions; Route Handlers can't use it. */
+export type TagExpirer = (tag: string) => void;
+
+/** Expire immediately from a Route Handler, so the next visitor gets fresh data. */
+export const expireTagNow: TagExpirer = (tag) => revalidateTag(tag, { expire: 0 });
+
+function expireTagList(tags: readonly string[], expire: TagExpirer = updateTag) {
 	for (const tag of new Set(tags)) {
-		updateTag(tag);
+		expire(tag);
 	}
 }
 
@@ -199,9 +205,10 @@ function revalidatePublicCataloguePaths(options: RevalidateModelDataTagOptions) 
 }
 
 export function expirePublicModelCatalogueCache(
-	options: RevalidateModelDataTagOptions = {}
+	options: RevalidateModelDataTagOptions = {},
+	expire: TagExpirer = updateTag
 ) {
-	expireTagList(PUBLIC_MODEL_CATALOGUE_GLOBAL_TAGS);
+	expireTagList(PUBLIC_MODEL_CATALOGUE_GLOBAL_TAGS, expire);
 
 	if (options.modelId) {
 		expireTagList([
@@ -219,7 +226,7 @@ export function expirePublicModelCatalogueCache(
 			`model:benchmarks:highlights:${options.modelId}`,
 			`model:benchmarks:table:${options.modelId}`,
 			`model:benchmarks:comparisons:${options.modelId}`,
-		]);
+		], expire);
 	}
 
 	for (const organisationId of options.organisationIds ?? []) {
@@ -227,7 +234,7 @@ export function expirePublicModelCatalogueCache(
 		expireTagList([
 			`organisation:header:${organisationId}`,
 			`data:organisations:${organisationId}`,
-		]);
+		], expire);
 	}
 
 	revalidatePublicCataloguePaths(options);

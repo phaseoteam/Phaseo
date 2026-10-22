@@ -76,6 +76,11 @@ CREATE TRIGGER enforce_self_serve_provider_approval
   FOR EACH ROW
   EXECUTE FUNCTION public.enforce_self_serve_provider_approval();
 
+CREATE TRIGGER public_catalogue_changed
+  AFTER INSERT OR DELETE OR UPDATE ON public.v2_model_provider_routes
+  FOR EACH ROW
+  EXECUTE FUNCTION private.bump_public_catalogue_revision();
+
 CREATE TRIGGER routing_catalogue_changed
   AFTER INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.v2_model_provider_routes
   FOR EACH STATEMENT

@@ -40,6 +40,11 @@ CREATE TRIGGER catalogue_row_history
   FOR EACH ROW
   EXECUTE FUNCTION catalogue_private.record_row_history();
 
+CREATE TRIGGER public_catalogue_changed
+  AFTER INSERT OR DELETE OR UPDATE ON public.v2_labs
+  FOR EACH ROW
+  EXECUTE FUNCTION private.bump_public_catalogue_revision();
+
 CREATE TRIGGER sync_v2_lab_colour_from_metadata
   BEFORE INSERT OR UPDATE OF metadata ON public.v2_labs
   FOR EACH ROW
