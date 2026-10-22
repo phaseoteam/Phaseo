@@ -16246,6 +16246,8 @@ components:
           format: uuid
           nullable: true
           description: القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: يحدد ما إذا كانت بيانات اعتماد المزوّد تُحتسب ضمن حد إنفاق المفتاح. القيمة حاليًا false دائمًا.
@@ -16455,6 +16457,8 @@ components:
           format: uuid
           nullable: true
           description: القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -16494,7 +16498,22 @@ components:
           format: uuid
           nullable: true
           description: القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها.
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: 'المكان الذي تحتفظ فيه بهذا المفتاح، مثل منصة الاستضافة التي تحتفظ به في متغيرات البيئة. اختياري. إذا أبلغ أحد هذه الأماكن عن اختراق، يمكنك العثور على كل المفاتيح المخزنة فيه وإبطالها. المعرّفات المعروفة: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.'
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:

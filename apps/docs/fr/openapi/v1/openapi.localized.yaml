@@ -16246,6 +16246,8 @@ components:
           format: uuid
           nullable: true
           description: Service auquel cette clé appartient pour les limites de débit et les budgets du service. Null signifie que la clé ne compte que pour les limites de l’ensemble de l’espace de travail.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: Indique si les identifiants du fournisseur sont pris en compte dans la limite de dépenses de la clé. Actuellement, la valeur est toujours false.
@@ -16455,6 +16457,8 @@ components:
           format: uuid
           nullable: true
           description: Service auquel cette clé appartient pour les limites de débit et les budgets du service. Null signifie que la clé ne compte que pour les limites de l’ensemble de l’espace de travail.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -16494,7 +16498,22 @@ components:
           format: uuid
           nullable: true
           description: Service auquel cette clé appartient pour les limites de débit et les budgets du service. Null signifie que la clé ne compte que pour les limites de l’ensemble de l’espace de travail.
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: 'Où vous stockez cette clé, par exemple la plateforme d’hébergement dont les variables d’environnement la contiennent. Facultatif. Si l’un de ces services signale une fuite, vous pouvez retrouver et révoquer toutes les clés qui y sont stockées. Identifiants connus : railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.'
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:

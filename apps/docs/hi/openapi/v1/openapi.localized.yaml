@@ -16246,6 +16246,8 @@ components:
           format: uuid
           nullable: true
           description: विभाग की दर सीमाओं और बजट के लिए यह कुंजी जिस विभाग से संबंधित है। Null का अर्थ है कि कुंजी केवल पूरे वर्कस्पेस की सीमाओं में गिनी जाती है।
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: बताता है कि प्रदाता क्रेडेंशियल कुंजी की खर्च सीमा में गिने जाते हैं या नहीं। वर्तमान में यह हमेशा false होता है।
@@ -16455,6 +16457,8 @@ components:
           format: uuid
           nullable: true
           description: विभाग की दर सीमाओं और बजट के लिए यह कुंजी जिस विभाग से संबंधित है। Null का अर्थ है कि कुंजी केवल पूरे वर्कस्पेस की सीमाओं में गिनी जाती है।
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -16494,7 +16498,22 @@ components:
           format: uuid
           nullable: true
           description: विभाग की दर सीमाओं और बजट के लिए यह कुंजी जिस विभाग से संबंधित है। Null का अर्थ है कि कुंजी केवल पूरे वर्कस्पेस की सीमाओं में गिनी जाती है।
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: 'आप यह कुंजी कहाँ रखते हैं, जैसे वह होस्टिंग प्लेटफ़ॉर्म जिसके environment variables में यह है। वैकल्पिक। अगर इनमें से कोई जगह डेटा उल्लंघन की सूचना देती है, तो आप वहाँ रखी हर कुंजी ढूँढकर रद्द कर सकते हैं। ज्ञात ID: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other।'
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:

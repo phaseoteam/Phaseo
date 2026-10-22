@@ -22,6 +22,7 @@ export type { ApiKeyResponse } from "./ApiKeyResponse.js";
 export type { ApiKeyRotateRequest } from "./ApiKeyRotateRequest.js";
 export type { ApiKeyRotateResponse } from "./ApiKeyRotateResponse.js";
 export type { ApiKeyScopeValue } from "./ApiKeyScopeValue.js";
+export type { ApiKeyStorageLocations } from "./ApiKeyStorageLocations.js";
 export type { ApiKeyUpdateRequest } from "./ApiKeyUpdateRequest.js";
 export type { ApiKeyUsageBucket } from "./ApiKeyUsageBucket.js";
 export type { ApiKeyUsageWindows } from "./ApiKeyUsageWindows.js";

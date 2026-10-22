@@ -16246,6 +16246,8 @@ components:
           format: uuid
           nullable: true
           description: 部門のレート制限と予算の対象として、このキーが属する部門。Null の場合、キーはワークスペース全体の制限にのみ計上されます。
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: プロバイダーの認証情報をキーの支出上限に含めるかどうかを示します。現在は常に false です。
@@ -16455,6 +16457,8 @@ components:
           format: uuid
           nullable: true
           description: 部門のレート制限と予算の対象として、このキーが属する部門。Null の場合、キーはワークスペース全体の制限にのみ計上されます。
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -16494,7 +16498,22 @@ components:
           format: uuid
           nullable: true
           description: 部門のレート制限と予算の対象として、このキーが属する部門。Null の場合、キーはワークスペース全体の制限にのみ計上されます。
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: 'このキーの保管場所（キーを環境変数に保持しているホスティングプラットフォームなど）。任意です。保管場所で情報漏えいが報告された場合、そこに保管されているすべてのキーを見つけて無効化できます。既知の ID: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other。'
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:

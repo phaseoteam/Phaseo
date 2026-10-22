@@ -17098,6 +17098,8 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: >-
@@ -17316,6 +17318,8 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -17360,7 +17364,31 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: >-
+        Where you keep this key, such as the hosting platform whose environment
+        variables hold it. Optional. If one of these places reports a breach,
+        you can find and revoke every key stored there. Known ids: railway,
+        vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase,
+        digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo,
+        deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud,
+        scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password,
+        bitwarden, hashicorp-vault, doppler, infisical, local-machine,
+        own-server, other.
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:

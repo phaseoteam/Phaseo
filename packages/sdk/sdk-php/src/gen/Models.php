@@ -267,6 +267,8 @@ class ApiKey
 	public $soft_blocked;
 	/** @var string|null */
 	public $status;
+	/** @var array|null */
+	public $storage_locations;
 	/** @var string|null */
 	public $updated_at;
 	/** @var float */
@@ -305,6 +307,8 @@ class ApiKeyCreateRequest
 	public $scopes;
 	/** @var bool|null */
 	public $soft_blocked;
+	/** @var array|null */
+	public $storage_locations;
 	/** @var string|null */
 	public $workspace_id;
 }
@@ -377,6 +381,8 @@ class ApiKeyRotateResponse
 
 class ApiKeyScopeValue { }
 
+class ApiKeyStorageLocations { }
+
 class ApiKeyUpdateRequest
 {
 	/** @var string|null */
@@ -399,6 +405,8 @@ class ApiKeyUpdateRequest
 	public $scopes;
 	/** @var bool|null */
 	public $soft_blocked;
+	/** @var mixed|null */
+	public $storage_locations;
 }
 
 class ApiKeyUsageBucket
@@ -465,6 +473,8 @@ class ApiKeyWithValue
 	public $soft_blocked;
 	/** @var string|null */
 	public $status;
+	/** @var array|null */
+	public $storage_locations;
 	/** @var string|null */
 	public $updated_at;
 	/** @var float */
