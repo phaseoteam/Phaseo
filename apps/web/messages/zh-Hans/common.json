@@ -255,6 +255,7 @@
 				"nav-settings-privacy": "隐私设置",
 				"nav-settings-guardrails": "防护规则",
 				"nav-settings-classifiers": "分类器",
+				"nav-settings-slack": "Slack",
 				"nav-settings-oauth": "OAuth 应用",
 				"nav-settings-broadcast": "事件转发",
 				"nav-settings-webhooks": "Webhooks",

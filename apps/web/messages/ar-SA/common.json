@@ -255,6 +255,7 @@
 				"nav-settings-privacy": "إعدادات الخصوصية",
 				"nav-settings-guardrails": "ضوابط الحماية",
 				"nav-settings-classifiers": "المصنِّفات",
+				"nav-settings-slack": "Slack",
 				"nav-settings-oauth": "تطبيقات OAuth",
 				"nav-settings-broadcast": "البث",
 				"nav-settings-webhooks": "Webhooks",

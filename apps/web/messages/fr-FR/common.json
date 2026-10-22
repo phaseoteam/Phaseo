@@ -255,6 +255,7 @@
 				"nav-settings-privacy": "Paramètres de confidentialité",
 				"nav-settings-guardrails": "Garde-fous",
 				"nav-settings-classifiers": "Classificateurs",
+				"nav-settings-slack": "Slack",
 				"nav-settings-oauth": "Applications OAuth",
 				"nav-settings-broadcast": "Diffusion",
 				"nav-settings-webhooks": "Webhooks",

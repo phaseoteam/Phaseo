@@ -98,11 +98,12 @@ export function persistAnalyticsConsent(consent: AnalyticsConsent) {
   )
 }
 
-// Emailed feedback links carry their only credential in the path. Analytics stays off
-// for the whole page load when it starts on one, even after navigating on, so the
-// token never reaches GA, Vercel or PostHog through page URLs, history page views or
-// replay. The navigation entry is the URL the document was first loaded from.
-const CREDENTIAL_PATH_PATTERN = /^(?:\/[^/]+)?\/feedback\/[^/]+/
+// Emailed feedback links carry their only credential in the path, and the Slack agent's
+// account links (/slack/link?token=…) in the query. Analytics stays off for the whole
+// page load when it starts on one, even after navigating on, so the token never reaches
+// GA, Vercel or PostHog through page URLs, history page views or replay. The navigation
+// entry is the URL the document was first loaded from.
+const CREDENTIAL_PATH_PATTERN = /^(?:\/[^/]+)?\/(?:feedback\/[^/]+|slack\/link(?:\/|$))/
 
 export function isAnalyticsBlockedPath(pathname: string): boolean {
   return CREDENTIAL_PATH_PATTERN.test(pathname)

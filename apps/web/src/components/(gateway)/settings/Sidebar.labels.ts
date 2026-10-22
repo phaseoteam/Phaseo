@@ -17,7 +17,7 @@ export const SETTINGS_LABEL_KEYS = {
 export const SETTINGS_NEW_LABEL_KEYS = {
     Preferences: "preferences", "Billing & Credits": "billingCredits", Activity: "activity", "Realtime Sessions": "realtimeSessions",
     "Private Models": "privateModels", "Discovery queue": "discoveryQueue", "Your Models": "yourModels",
-    "Provider Profile": "providerProfile", Integrations: "integrations", Classifiers: "classifiers", Budgets: "budgets", "Key Security": "keySecurity", Provider: "provider", "Become a Provider": "becomeProvider",
+    "Provider Profile": "providerProfile", Integrations: "integrations", Classifiers: "classifiers", Budgets: "budgets", "Key Security": "keySecurity", Slack: "slack", Provider: "provider", "Become a Provider": "becomeProvider",
 } as const;
 
 export type SettingsNavigationCopy = {

@@ -11,6 +11,7 @@ const SOURCE = "packages/shared/slack-agent-pricing/index.ts";
 const TARGETS = [
 	"apps/web-api/src/billing/slackAgentPricing.ts",
 	"apps/slack/src/lib/slackAgentPricing.ts",
+	"apps/web/src/lib/slack-agent/pricing.ts",
 ];
 
 const check = process.argv.includes("--check");

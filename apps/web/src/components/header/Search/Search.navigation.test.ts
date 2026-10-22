@@ -19,6 +19,9 @@ describe("global search navigation", () => {
 		const createClassifier = GLOBAL_ACTION_ITEMS.find((item) => item.id === "action-create-classifier");
 		expect(isSearchDestinationEnabled(createClassifier?.href, DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
 		expect(isSearchDestinationEnabled(createClassifier?.href, { ...DEFAULT_SEARCH_CAPABILITIES, classifiers: true })).toBe(true);
+		expect(disabled).not.toContain("/settings/slack");
+		expect(isSearchDestinationEnabled("/settings/slack?installed=1", DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
+		expect(getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, slackAgent: true }).map((item) => item.href)).toContain("/settings/slack");
 		expect(disabled).toContain("/settings/routing");
 		const enabled = getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, autoRouting: true });
 		expect(enabled.map((item) => item.href)).toContain("/settings/routing/auto");

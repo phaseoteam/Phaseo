@@ -4060,7 +4060,8 @@
 				"autoTopUp": "Recarga automática",
 				"refund": "Reembolso",
 				"adjustment": "Ajuste",
-				"usage": "Uso"
+				"usage": "Uso",
+				"slackAgent": "Agente do Slack"
 			},
 			"refundEligibility": {
 				"refundInProgress": "Já há um reembolso em andamento ou concluído para esta compra.",
@@ -4726,7 +4727,8 @@
 		"providerProfile": "Perfil do provedor",
 		"classifiers": "Classificadores",
 		"budgets": "Orçamentos",
-		"keySecurity": "Segurança das chaves"
+		"keySecurity": "Segurança das chaves",
+		"slack": "Slack"
 	},
 	"settingsAvailability": {
 		"title": "As configurações estão temporariamente indisponíveis",
@@ -6476,5 +6478,247 @@
 		"errorNotFound": "Este orçamento não existe mais. Atualize a página.",
 		"errorInvalid": "Insira um valor maior que zero.",
 		"errorFailed": "Não foi possível salvar o orçamento. Tente novamente em instantes."
+	},
+	"slack": {
+		"title": "Slack",
+		"description": "Adicione o agente da Phaseo ao Slack para que sua equipe possa fazer perguntas a ele, respondidas pelo modelo que você escolher.",
+		"teamFallback": "seu workspace do Slack",
+		"notAvailable": "O agente do Slack ainda não está disponível. Ele aparecerá aqui assim que estiver pronto.",
+		"fixFirst": "Corrija primeiro os campos destacados.",
+		"saving": "Salvando…",
+		"cancel": "Cancelar",
+		"openChat": "Abrir Chat",
+		"addCredits": "Adicionar créditos",
+		"notices": {
+			"installed": "O agente da Phaseo agora está em {team}."
+		},
+		"member": {
+			"installed": "O agente da Phaseo está instalado em {team}.",
+			"notInstalled": "O agente da Phaseo não está instalado neste workspace.",
+			"askAdmin": "Proprietários e administradores do workspace podem adicioná-lo e alterar as configurações dele.",
+			"linkHint": "Se o agente pedir que você conecte sua conta da Phaseo, use o link que ele enviar para você no Slack."
+		},
+		"install": {
+			"title": "Adicionar ao Slack",
+			"description": "Escolha como o agente funciona e depois aprove-o no Slack. Você pode mudar tudo isso depois.",
+			"submit": "Adicionar ao Slack",
+			"redirecting": "Abrindo o Slack…",
+			"hostedUnavailable": "O app do Slack da Phaseo ainda não está disponível. Para instalar agora, salve seu próprio app do Slack em Avançado.",
+			"customAppOnly": "Isso instala seu próprio app do Slack, {appId}.",
+			"appChoice": "App do Slack",
+			"hostedApp": "App do Slack da Phaseo",
+			"customApp": "Seu app do Slack ({appId})"
+		},
+		"sections": {
+			"agent": "Agente",
+			"access": "Quem pode usar",
+			"usageData": "Dados de uso",
+			"limits": "Limites",
+			"month": "Este mês",
+			"charges": "Cobranças anteriores",
+			"customApp": "Avançado: usar seu próprio app do Slack",
+			"uninstall": "Desinstalar"
+		},
+		"model": {
+			"label": "Modelo",
+			"auto": "Automático",
+			"specific": "Um modelo específico",
+			"autoHelp": "A Phaseo escolhe um modelo adequado para cada pergunta.",
+			"help": "Os tokens do modelo são cobrados como outras requisições do gateway, pela própria chave de API do agente."
+		},
+		"instructions": {
+			"label": "Instruções",
+			"help": "Orientações extras que o agente segue em todas as respostas, como o tom ou o foco.",
+			"placeholder": "Responda de forma breve. Indique nosso manual quando ajudar."
+		},
+		"access": {
+			"everyone": "Todos no Slack",
+			"linked": "Somente contas vinculadas",
+			"everyoneHelp": "Qualquer pessoa do seu workspace do Slack pode perguntar ao agente, dentro dos limites abaixo.",
+			"linkedHelp": "Somente pessoas que vinculam a conta do Slack a um membro deste workspace da Phaseo. O agente envia aos demais um link para fazer isso."
+		},
+		"usageData": {
+			"help": "Membros vinculados podem perguntar ao agente sobre o uso e os gastos da Phaseo neste workspace.",
+			"off": "Desativado",
+			"dm": "Mensagens diretas",
+			"dmAndChannels": "Mensagens diretas e canais escolhidos",
+			"offHelp": "O agente nunca compartilha dados de uso.",
+			"dmHelp": "Somente em uma mensagem direta com o agente.",
+			"dmAndChannelsHelp": "Em mensagens diretas e nos canais listados abaixo.",
+			"channels": "IDs de canais",
+			"channelsHelp": "Separe os IDs com vírgulas. O ID de um canal fica no fim dos detalhes dele no Slack. Deixe vazio para usar somente mensagens diretas."
+		},
+		"limits": {
+			"pricing": "Você paga o preço do plano pelo número de pessoas que usaram o agente naquele mês. Cada pessoa inclui {included} respostas por mês, compartilhadas em todo o workspace; respostas extras custam {extra} a cada 1.000.",
+			"plan": "Plano",
+			"planOption": "Até {people} pessoas · {price} por mês",
+			"planCustom": "Mais de {people} pessoas",
+			"customPeople": "Pessoas no plano",
+			"customPrice": "{price} por mês",
+			"overPlan": "Quando uma nova pessoa ultrapassaria o plano",
+			"refuse": "Recusar",
+			"moveUp": "Subir de plano automaticamente",
+			"refuseHelp": "O agente avisa que o plano está cheio, e a recusa aparece no registro de atividades do workspace.",
+			"moveUpHelp": "O plano cresce com as pessoas que usam o agente, até o máximo de pessoas por mês.",
+			"maxPeople": "Máximo de pessoas por mês",
+			"maxPeopleHelp": "Deixe vazio para não ter limite.",
+			"noLimit": "Sem limite",
+			"monthlyCap": "Teto de gastos mensal",
+			"monthlyCapHelp": "A cobrança mensal do agente nunca passa deste valor. Quando ele é atingido, o agente para de responder até o mês seguinte.",
+			"answersPerHour": "Respostas por pessoa por hora",
+			"answersPerHourHelp": "Impede que uma única pessoa esgote o mês. O padrão é {default}.",
+			"tokenLimit": "Limite mensal de gastos com modelos",
+			"tokenLimitHelp": "Limita o que a chave de API do agente gasta com tokens de modelo a cada mês. Deixe vazio para não ter limite.",
+			"allowGuests": "Permitir convidados",
+			"allowGuestsHelp": "Convidados do seu workspace do Slack podem usar o agente.",
+			"allowExternal": "Permitir pessoas de outras empresas",
+			"allowExternalHelp": "Pessoas de outras empresas em canais compartilhados do Slack Connect podem usar o agente."
+		},
+		"status": {
+			"active": "Ativo",
+			"paused": "Pausado",
+			"payment_due": "Pagamento pendente"
+		},
+		"installed": {
+			"team": "Instalado em {team}",
+			"since": "Adicionado em {date}",
+			"customApp": "Usa seu próprio app do Slack",
+			"pause": "Pausar respostas",
+			"resume": "Retomar respostas",
+			"pausedNote": "As respostas estão pausadas até você retomá-las.",
+			"pausedToast": "Respostas pausadas.",
+			"resumedToast": "Respostas retomadas.",
+			"save": "Salvar alterações",
+			"saved": "Configurações salvas.",
+			"discard": "Descartar alterações"
+		},
+		"month": {
+			"note": "{date} até agora, em UTC. A cobrança é feita nos créditos quando o mês termina.",
+			"people": "Pessoas",
+			"peopleDetail": "Receberam uma resposta este mês",
+			"answers": "Respostas",
+			"included": "{count} incluídas",
+			"estimate": "Cobrança estimada",
+			"cap": "Teto {cap}",
+			"plan": "Plano",
+			"planValue": "Até {people} pessoas",
+			"planPrice": "{price} por mês"
+		},
+		"charges": {
+			"month": "Mês",
+			"people": "Pessoas",
+			"answers": "Respostas",
+			"amount": "Valor",
+			"status": "Status",
+			"charged": "Pago",
+			"pending": "Aguardando créditos",
+			"empty": "Nenhuma cobrança ainda. A primeira é feita quando este mês terminar.",
+			"note": "Cada cobrança também aparece nas suas transações como Agente do Slack.",
+			"transactions": "Ver transações"
+		},
+		"customApp": {
+			"description": "Instale um app do Slack da sua empresa em vez do app da Phaseo, por exemplo para usar seu próprio nome e ícone. Cadastre nele esta URL de redirecionamento e estes escopos de bot.",
+			"manifest": "O guia do agente do Slack na documentação tem um manifesto de app pronto com essas configurações.",
+			"redirectUrl": "URL de redirecionamento",
+			"copyRedirectUrl": "Copiar URL de redirecionamento",
+			"scopes": "Escopos do token de bot",
+			"copyScopes": "Copiar escopos",
+			"appId": "ID do app",
+			"clientId": "ID do cliente",
+			"clientSecret": "Segredo do cliente",
+			"signingSecret": "Segredo de assinatura",
+			"secretsHelp": "Você os encontra na página Basic Information do seu app no Slack. A Phaseo guarda os segredos criptografados e nunca os mostra de novo.",
+			"save": "Salvar app do Slack",
+			"savedToast": "App do Slack salvo.",
+			"saved": "App {appId}, ID do cliente {clientId}",
+			"secretsSaved": "Os segredos estão salvos. Digite-os de novo apenas para substituí-los.",
+			"inUse": "O agente está instalado com este app, então só os segredos podem mudar. Desinstale para trocar de app.",
+			"replace": "Substituir dados",
+			"remove": "Remover",
+			"removed": "App do Slack removido.",
+			"removeTitle": "Remover seu app do Slack?",
+			"removeDescription": "A Phaseo exclui os dados salvos. As próximas instalações usarão o app do Slack da Phaseo.",
+			"notAvailable": "Usar seu próprio app do Slack ainda não está disponível."
+		},
+		"uninstall": {
+			"description": "Remove o agente do Slack e exclui a chave de API dele. As cobranças anteriores continuam no seu histórico de faturamento.",
+			"button": "Desinstalar",
+			"working": "Desinstalando…",
+			"title": "Desinstalar o agente da Phaseo de {team}?",
+			"confirmDescription": "Ele para de responder na hora, a chave de API é excluída e o app é removido do Slack. Você pode adicioná-lo de novo depois.",
+			"done": "O agente da Phaseo foi desinstalado.",
+			"slackNotConfirmed": "Desinstalado na Phaseo, mas o Slack não confirmou. Remova o app no Slack também."
+		},
+		"problems": {
+			"planPeople": "Digite um número inteiro de pessoas de {min} a {max}.",
+			"maxPeople": "Digite um número inteiro de pessoas ou deixe vazio para não ter limite.",
+			"maxPeopleBelowPlan": "Não pode ser menor que as {people} pessoas do plano.",
+			"monthlyCap": "Digite um valor acima de $0 e até {max}, como 25 ou 12.50.",
+			"capBelowPlan": "O teto precisa cobrir o preço do plano, {price}.",
+			"answersPerHour": "Digite um número inteiro de 1 a {max}.",
+			"tokenLimit": "Digite um valor de até {max} ou deixe vazio para não ter limite.",
+			"model": "Escolha um modelo.",
+			"instructions": "Mantenha as instruções com no máximo {max} caracteres.",
+			"channelIds": "Digite IDs de canais do Slack como C0123ABCD, separados por vírgulas.",
+			"tooManyChannels": "Liste no máximo {max} canais.",
+			"customApp": {
+				"slackAppId": "Digite o ID do app, como A0123ABCDEF.",
+				"clientId": "Digite o ID do cliente, como 1234567890.1234567890.",
+				"clientSecret": "Cole o segredo do cliente.",
+				"signingSecret": "Cole o segredo de assinatura."
+			}
+		},
+		"errors": {
+			"notAvailable": "O agente do Slack ainda não está disponível.",
+			"forbidden": "Somente proprietários e administradores do workspace podem alterar o agente do Slack.",
+			"privacyReview": "Abra o Chat uma vez e revise as configurações de privacidade do seu workspace; depois tente de novo.",
+			"paymentDue": "As respostas voltam quando a cobrança do agente do Slack do mês passado for paga. Adicione créditos para pagá-la.",
+			"appConflict": "Outro administrador salvou um app do Slack para este workspace ao mesmo tempo. Recarregue e tente de novo.",
+			"appTaken": "Este app do Slack já está conectado a outro workspace da Phaseo.",
+			"appInUse": "Desinstale o agente do Slack antes de trocar para outro app do Slack ou removê-lo.",
+			"appNotFound": "Salve seu app do Slack primeiro.",
+			"appMissing": "Nenhum app do Slack está salvo para este workspace. Recarregue a página.",
+			"appUnavailable": "A Phaseo não conseguiu ler os dados salvos do seu app do Slack. Salve-os de novo e tente outra vez.",
+			"alreadyInstalled": "O agente do Slack já está instalado neste workspace.",
+			"teamInUse": "Este workspace do Slack já tem o agente de outro workspace da Phaseo. Desinstale-o lá primeiro.",
+			"notInstalled": "O agente do Slack não está mais instalado neste workspace. Recarregue a página.",
+			"conflict": "O agente do Slack mudou nesse meio-tempo. Recarregue e tente de novo.",
+			"keyMissing": "A chave de API do agente está faltando. Desinstale o agente e adicione-o de novo.",
+			"slackDenied": "A instalação não foi aprovada no Slack.",
+			"slackError": "O Slack não conseguiu concluir a instalação. Tente de novo.",
+			"slackResponseInvalid": "A resposta do Slack não correspondeu a esta instalação. Confira os dados do seu app do Slack e tente de novo.",
+			"stateExpired": "A instalação demorou demais. Comece de novo.",
+			"stateInvalid": "O link de instalação não era válido. Comece de novo.",
+			"signInRequired": "Entre na Phaseo neste navegador e depois comece a instalação de novo.",
+			"sessionMismatch": "Conclua a instalação conectado como o administrador que a começou.",
+			"installFailed": "A instalação não foi concluída e nada foi configurado. Tente de novo.",
+			"invalid": "Confira as configurações e tente de novo.",
+			"invalidWithMessage": "Confira as configurações e tente de novo: {message}",
+			"unavailable": "A Phaseo não conseguiu fazer isso agora. Tente de novo daqui a pouco.",
+			"generic": "Algo deu errado. Tente de novo."
+		},
+		"link": {
+			"metaTitle": "Conectar Slack",
+			"title": "Conecte sua conta do Slack",
+			"description": "Isso vincula a conta do Slack que abriu esta página à sua conta da Phaseo, para que o agente da Phaseo saiba quem você é.",
+			"warning": "Continue somente se você abriu este link pela mensagem do agente da Phaseo no Slack.",
+			"confirm": "Conectar conta",
+			"confirming": "Conectando…",
+			"missingToken": "Falta o código deste link. Abra-o de novo pela mensagem do agente da Phaseo no Slack.",
+			"failedTitle": "Sua conta não está conectada",
+			"linkedTitle": "Sua conta do Slack está conectada",
+			"linked": "Agora você pode usar o agente da Phaseo em {team} como membro de {workspace}.",
+			"linkedGeneric": "Agora você pode usar o agente da Phaseo no Slack.",
+			"close": "Você pode fechar esta página e voltar ao Slack.",
+			"errors": {
+				"expired": "Este link expirou. Peça um novo ao agente da Phaseo no Slack.",
+				"invalid": "Este link não é válido. Peça um novo ao agente da Phaseo no Slack.",
+				"notInstalled": "O agente da Phaseo não está mais instalado nesse workspace do Slack.",
+				"wrongWorkspace": "Entre com uma conta do workspace da Phaseo que adicionou o agente ao Slack.",
+				"notAvailable": "O agente do Slack ainda não está disponível.",
+				"signIn": "Entre na Phaseo e depois abra o link de novo.",
+				"failed": "Algo deu errado. Abra o link de novo."
+			}
+		}
 	}
 }
