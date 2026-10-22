@@ -4477,7 +4477,8 @@
 		"workspaces": "工作区",
 		"classifiers": "分类器",
 		"newClassifier": "新建分类器",
-		"classifier": "分类器"
+		"classifier": "分类器",
+		"connections": "连接"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4704,7 +4705,8 @@
 		"becomeProvider": "成为提供商",
 		"empty": "未找到设置。",
 		"providerProfile": "提供商资料",
-		"classifiers": "分类器"
+		"classifiers": "分类器",
+		"connections": "连接"
 	},
 	"settingsAvailability": {
 		"title": "设置暂时不可用",
@@ -6257,6 +6259,45 @@
 			"deleteFailed": "无法删除分类器。",
 			"samplePercent": "请输入 0.01% 到 100% 之间的比例。",
 			"budgetUsd": "请输入大于 $0 的预算，或留空。"
+		}
+	},
+	"connections": {
+		"title": "连接",
+		"description": "只需连接一次 Linear 或 Notion 等 MCP 服务器，即可通过 Phaseo 在任意 MCP 客户端中使用它们的工具。",
+		"unavailable": "此工作区暂时无法使用连接功能。",
+		"connectedNotice": "已连接。它的工具现在会显示在你的 Phaseo MCP 服务器上。",
+		"serverHeading": "你的 Phaseo MCP 服务器",
+		"serverHelp": "将此服务器添加到 Claude Code、Codex、Cursor 或其他 MCP 客户端。它会显示你在这里连接的所有服务器的工具。",
+		"personalNote": "连接仅供个人使用。只有你可以使用，工具会以你在各服务上的账户运行。",
+		"connectedHeading": "已连接",
+		"empty": "尚未连接任何服务器。",
+		"status": {
+			"active": "已连接",
+			"needs_reauth": "需要重新登录",
+			"revoked": "已撤销"
+		},
+		"catalogHeading": "连接服务器",
+		"notes": {
+			"atlassianAdmin": "需要站点管理员先允许 Phaseo。"
+		},
+		"connect": "连接",
+		"connecting": "正在连接…",
+		"reconnect": "重新连接",
+		"urlLabel": "服务器 URL",
+		"nameLabel": "名称",
+		"addByUrl": "通过 URL 添加",
+		"disconnect": "断开连接",
+		"disconnectTitle": "断开 {name} 的连接？",
+		"disconnectBody": "它的工具将从你的 MCP 客户端中消失，Phaseo 会请求服务器撤销其访问权限。",
+		"cancel": "取消",
+		"errors": {
+			"generic": "无法连接该服务器。",
+			"access_denied": "登录已取消。",
+			"state_expired": "登录耗时过长，请重试。",
+			"state_invalid": "该登录链接已被使用，请重试。",
+			"session_mismatch": "请以发起连接的账户登录 Phaseo。",
+			"sign_in_required": "请先登录 Phaseo，然后重试。",
+			"disconnect": "无法断开连接，请重试。"
 		}
 	}
 }

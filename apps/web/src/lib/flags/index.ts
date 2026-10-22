@@ -11,6 +11,7 @@ import {
 	GATEWAY_IO_LOGGING_GATE,
 	AUTO_ROUTING_GATE,
 	REQUEST_CLASSIFIERS_GATE,
+	MCP_CONNECTIONS_GATE,
 	PRESET_EXPERIMENTS_GATE,
 	SAML_SSO_GATE,
 	CATALOGUE_GAMES_PREVIEW_GATE,
@@ -102,6 +103,17 @@ export const requestClassifiersFlag = statsigAdapter
 		})
 	: flag<boolean>({
 			key: REQUEST_CLASSIFIERS_GATE,
+			decide: () => false,
+		});
+
+export const mcpConnectionsFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: MCP_CONNECTIONS_GATE,
+			identify,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: MCP_CONNECTIONS_GATE,
 			decide: () => false,
 		});
 

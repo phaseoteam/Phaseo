@@ -4477,7 +4477,8 @@
 		"workspaces": "مساحات العمل",
 		"classifiers": "المصنِّفات",
 		"newClassifier": "مصنِّف جديد",
-		"classifier": "مصنِّف"
+		"classifier": "مصنِّف",
+		"connections": "الاتصالات"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4704,7 +4705,8 @@
 		"becomeProvider": "كن مزوّدًا",
 		"empty": "لم يتم العثور على إعدادات.",
 		"providerProfile": "ملف المزوّد",
-		"classifiers": "المصنِّفات"
+		"classifiers": "المصنِّفات",
+		"connections": "الاتصالات"
 	},
 	"settingsAvailability": {
 		"title": "الإعدادات غير متاحة مؤقتًا",
@@ -6257,6 +6259,45 @@
 			"deleteFailed": "تعذّر حذف المصنِّف.",
 			"samplePercent": "أدخل نسبة من 0.01% إلى 100%.",
 			"budgetUsd": "أدخل ميزانية أكبر من $0، أو اترك الحقل فارغًا."
+		}
+	},
+	"connections": {
+		"title": "الاتصالات",
+		"description": "اربط خوادم MCP مثل Linear أو Notion مرة واحدة، ثم استخدم أدواتها من أي عميل MCP عبر Phaseo.",
+		"unavailable": "الاتصالات غير متاحة بعد لمساحة العمل هذه.",
+		"connectedNotice": "تم الاتصال. تظهر أدواته الآن على خادم Phaseo MCP الخاص بك.",
+		"serverHeading": "خادم Phaseo MCP الخاص بك",
+		"serverHelp": "أضف هذا الخادم إلى Claude Code أو Codex أو Cursor أو أي عميل MCP آخر. يعرض أدوات كل خادم تربطه هنا.",
+		"personalNote": "الاتصالات شخصية. أنت وحدك من يمكنه استخدامها، وتعمل الأدوات بحسابك الخاص في كل خدمة.",
+		"connectedHeading": "المتصلة",
+		"empty": "لا يوجد شيء متصل بعد.",
+		"status": {
+			"active": "متصل",
+			"needs_reauth": "سجّل الدخول مجددًا",
+			"revoked": "تم الإلغاء"
+		},
+		"catalogHeading": "ربط خادم",
+		"notes": {
+			"atlassianAdmin": "يجب أن يسمح مسؤول الموقع لـ Phaseo أولًا."
+		},
+		"connect": "ربط",
+		"connecting": "جارٍ الربط…",
+		"reconnect": "إعادة الربط",
+		"urlLabel": "عنوان URL للخادم",
+		"nameLabel": "الاسم",
+		"addByUrl": "إضافة عبر URL",
+		"disconnect": "قطع الاتصال",
+		"disconnectTitle": "قطع الاتصال بـ {name}؟",
+		"disconnectBody": "ستختفي أدواته من عملاء MCP لديك، وسيطلب Phaseo من الخادم إلغاء وصوله.",
+		"cancel": "إلغاء",
+		"errors": {
+			"generic": "تعذّر ربط هذا الخادم.",
+			"access_denied": "تم إلغاء تسجيل الدخول.",
+			"state_expired": "استغرق تسجيل الدخول وقتًا طويلًا. حاول مرة أخرى.",
+			"state_invalid": "تم استخدام رابط تسجيل الدخول هذا بالفعل. حاول مرة أخرى.",
+			"session_mismatch": "سجّل الدخول إلى Phaseo بالحساب الذي بدأ الاتصال.",
+			"sign_in_required": "سجّل الدخول إلى Phaseo ثم حاول مرة أخرى.",
+			"disconnect": "تعذّر قطع الاتصال. حاول مرة أخرى."
 		}
 	}
 }

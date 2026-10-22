@@ -4477,7 +4477,8 @@
 		"workspaces": "Workspaces",
 		"classifiers": "Classifiers",
 		"newClassifier": "New classifier",
-		"classifier": "Classifier"
+		"classifier": "Classifier",
+		"connections": "Connections"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4704,7 +4705,8 @@
 		"becomeProvider": "Become a provider",
 		"empty": "No settings found.",
 		"providerProfile": "Provider profile",
-		"classifiers": "Classifiers"
+		"classifiers": "Classifiers",
+		"connections": "Connections"
 	},
 	"settingsAvailability": {
 		"title": "Settings are temporarily unavailable",
@@ -6257,6 +6259,45 @@
 			"deleteFailed": "The classifier could not be deleted.",
 			"samplePercent": "Enter a share from 0.01% to 100%.",
 			"budgetUsd": "Enter a budget greater than $0, or leave it empty."
+		}
+	},
+	"connections": {
+		"title": "Connections",
+		"description": "Connect MCP servers such as Linear or Notion once, then use their tools from any MCP client through Phaseo.",
+		"unavailable": "Connections aren't available for this workspace yet.",
+		"connectedNotice": "Connected. Its tools now appear on your Phaseo MCP server.",
+		"serverHeading": "Your Phaseo MCP server",
+		"serverHelp": "Add this server to Claude Code, Codex, Cursor or another MCP client. It shows the tools from every server you connect here.",
+		"personalNote": "Connections are personal. Only you can use them, and tools run with your own account on each service.",
+		"connectedHeading": "Connected",
+		"empty": "Nothing connected yet.",
+		"status": {
+			"active": "Connected",
+			"needs_reauth": "Sign in again",
+			"revoked": "Revoked"
+		},
+		"catalogHeading": "Connect a server",
+		"notes": {
+			"atlassianAdmin": "A site admin must allow Phaseo first."
+		},
+		"connect": "Connect",
+		"connecting": "Connecting…",
+		"reconnect": "Reconnect",
+		"urlLabel": "Server URL",
+		"nameLabel": "Name",
+		"addByUrl": "Add by URL",
+		"disconnect": "Disconnect",
+		"disconnectTitle": "Disconnect {name}?",
+		"disconnectBody": "Its tools will disappear from your MCP clients, and Phaseo will ask the server to revoke its access.",
+		"cancel": "Cancel",
+		"errors": {
+			"generic": "Could not connect that server.",
+			"access_denied": "Sign-in was cancelled.",
+			"state_expired": "The sign-in took too long. Try again.",
+			"state_invalid": "That sign-in link has already been used. Try again.",
+			"session_mismatch": "Sign in to Phaseo as the person who started the connection.",
+			"sign_in_required": "Sign in to Phaseo, then try again.",
+			"disconnect": "Could not disconnect. Try again."
 		}
 	}
 }

@@ -4477,7 +4477,8 @@
 		"workspaces": "Arbeitsbereiche",
 		"classifiers": "Klassifikatoren",
 		"newClassifier": "Neuer Klassifikator",
-		"classifier": "Klassifikator"
+		"classifier": "Klassifikator",
+		"connections": "Verbindungen"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4704,7 +4705,8 @@
 		"becomeProvider": "Anbieter werden",
 		"empty": "Keine Einstellungen gefunden.",
 		"providerProfile": "Anbieterprofil",
-		"classifiers": "Klassifikatoren"
+		"classifiers": "Klassifikatoren",
+		"connections": "Verbindungen"
 	},
 	"settingsAvailability": {
 		"title": "Die Einstellungen sind vorübergehend nicht verfügbar",
@@ -6257,6 +6259,45 @@
 			"deleteFailed": "Der Klassifikator konnte nicht gelöscht werden.",
 			"samplePercent": "Gib einen Anteil von 0,01% bis 100% ein.",
 			"budgetUsd": "Gib ein Budget über $0 ein oder lass das Feld leer."
+		}
+	},
+	"connections": {
+		"title": "Verbindungen",
+		"description": "Verbinde MCP-Server wie Linear oder Notion einmal und nutze ihre Tools dann über Phaseo in jedem MCP-Client.",
+		"unavailable": "Verbindungen sind für diesen Workspace noch nicht verfügbar.",
+		"connectedNotice": "Verbunden. Die Tools erscheinen jetzt auf deinem Phaseo-MCP-Server.",
+		"serverHeading": "Dein Phaseo-MCP-Server",
+		"serverHelp": "Füge diesen Server zu Claude Code, Codex, Cursor oder einem anderen MCP-Client hinzu. Er zeigt die Tools aller Server, die du hier verbindest.",
+		"personalNote": "Verbindungen sind persönlich. Nur du kannst sie nutzen, und Tools laufen mit deinem eigenen Konto beim jeweiligen Dienst.",
+		"connectedHeading": "Verbunden",
+		"empty": "Noch nichts verbunden.",
+		"status": {
+			"active": "Verbunden",
+			"needs_reauth": "Erneut anmelden",
+			"revoked": "Widerrufen"
+		},
+		"catalogHeading": "Server verbinden",
+		"notes": {
+			"atlassianAdmin": "Ein Site-Admin muss Phaseo zuerst zulassen."
+		},
+		"connect": "Verbinden",
+		"connecting": "Verbinde…",
+		"reconnect": "Neu verbinden",
+		"urlLabel": "Server-URL",
+		"nameLabel": "Name",
+		"addByUrl": "Per URL hinzufügen",
+		"disconnect": "Trennen",
+		"disconnectTitle": "{name} trennen?",
+		"disconnectBody": "Die Tools verschwinden aus deinen MCP-Clients, und Phaseo bittet den Server, den Zugriff zu widerrufen.",
+		"cancel": "Abbrechen",
+		"errors": {
+			"generic": "Dieser Server konnte nicht verbunden werden.",
+			"access_denied": "Die Anmeldung wurde abgebrochen.",
+			"state_expired": "Die Anmeldung hat zu lange gedauert. Versuche es erneut.",
+			"state_invalid": "Dieser Anmeldelink wurde bereits verwendet. Versuche es erneut.",
+			"session_mismatch": "Melde dich bei Phaseo als die Person an, die die Verbindung gestartet hat.",
+			"sign_in_required": "Melde dich bei Phaseo an und versuche es erneut.",
+			"disconnect": "Trennen fehlgeschlagen. Versuche es erneut."
 		}
 	}
 }
