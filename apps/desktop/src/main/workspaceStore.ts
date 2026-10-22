@@ -72,12 +72,23 @@ function conversationSummary(messages: Task["messages"]) {
 
 /**
  * Merges a harness response reported again (as it grows, or both live and from its transcript): the larger count of
- * each type, a Phaseo chat's id over a transcript's session, and the first project and folder known.
+ * each type, a Phaseo chat's id over a transcript's session, and the first project and folder known. A report that
+ * changes nothing (most are: Claude Code repeats a response per content block, a Codex fork copies its parent's) writes nothing.
  */
 const harnessMerge = `input = max(input, excluded.input), cached = max(cached, excluded.cached), cache_write = max(cache_write, excluded.cache_write), output = max(output, excluded.output), reasoning = max(reasoning, excluded.reasoning),
 	tokens = max(input, excluded.input) + max(cached, excluded.cached) + max(cache_write, excluded.cache_write) + max(output, excluded.output),
 	task_id = CASE WHEN usage_ledger.task_id LIKE 'session:%' THEN excluded.task_id ELSE usage_ledger.task_id END,
-	project_id = coalesce(usage_ledger.project_id, excluded.project_id), label = coalesce(usage_ledger.label, excluded.label)`;
+	project_id = coalesce(usage_ledger.project_id, excluded.project_id), label = coalesce(usage_ledger.label, excluded.label)
+	WHERE excluded.input > usage_ledger.input OR excluded.cached > usage_ledger.cached OR excluded.cache_write > usage_ledger.cache_write OR excluded.output > usage_ledger.output OR excluded.reasoning > usage_ledger.reasoning
+		OR (usage_ledger.task_id LIKE 'session:%' AND excluded.task_id IS NOT usage_ledger.task_id)
+		OR (usage_ledger.project_id IS NULL AND excluded.project_id IS NOT NULL) OR (usage_ledger.label IS NULL AND excluded.label IS NOT NULL)`;
+/** A ledger time's quarter hour in UTC, as `YYYY-MM-DDTHH:MM`: every time zone's hours and days start on one. */
+const usageQuarter = (at: string) => `substr(${at}, 1, 14) || printf('%02d', CAST(substr(${at}, 15, 2) AS INTEGER) / 15 * 15)`;
+/**
+ * Marks a ledger time's hour for summing into quarters again: an hour, as a prefix costs next to nothing on every write
+ * where working out the quarter doubled it. NOT EXISTS, not OR IGNORE: an upsert's conflict policy would apply here.
+ */
+const staleHour = (at: string) => `INSERT INTO usage_stale (at) SELECT substr(${at}, 1, 13) WHERE NOT EXISTS (SELECT 1 FROM usage_stale WHERE at = substr(${at}, 1, 13));`;
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
@@ -98,6 +109,7 @@ export class WorkspaceStore {
 		// The ledger first kept Phaseo spend alone; one without harnesses, token types and folders is rebuilt from the chats and transcripts.
 		const ledger = this.db.prepare("SELECT name FROM pragma_table_info('usage_ledger')").all() as { name: string }[];
 		if (ledger.length && !ledger.some(column => column.name === "label")) this.db.exec("DROP TABLE usage_ledger; DELETE FROM preferences WHERE id = 'usage-ledger-backfilled'; DROP TABLE IF EXISTS usage_files; DROP TABLE IF EXISTS usage_threads;");
+		const quartersMissing = !(this.db.prepare("SELECT name FROM pragma_table_info('usage_quarters')").all() as unknown[]).length;
 		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA synchronous=NORMAL; PRAGMA journal_size_limit=4194304;
 			CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			-- key is what entry rows refer to. data is the chat without its messages and activities (see TaskEntries) or
@@ -144,8 +156,20 @@ export class WorkspaceStore {
 			-- Each Codex session's root: forks copy their parent's usage lines, which count once under the root.
 			CREATE TABLE IF NOT EXISTS usage_threads (id TEXT PRIMARY KEY, root TEXT NOT NULL);
 			CREATE INDEX IF NOT EXISTS usage_ledger_at ON usage_ledger (at);
+			-- The ledger summed by quarter hour and by everything the Usage page groups by, so a report reads thousands of rows
+			-- rather than every response (a 90-day report over 600,000 took fifteen seconds). Each write to the ledger marks
+			-- its hour stale, whoever writes it; the scanner and each report first sum stale hours again.
+			CREATE TABLE IF NOT EXISTS usage_quarters (at TEXT NOT NULL, harness TEXT NOT NULL, model TEXT NOT NULL, uncharged INTEGER NOT NULL, task_id TEXT NOT NULL, project_id TEXT, label TEXT, autopilot INTEGER NOT NULL,
+				input INTEGER NOT NULL, cached INTEGER NOT NULL, cache_write INTEGER NOT NULL, output INTEGER NOT NULL, reasoning INTEGER NOT NULL, tokens INTEGER NOT NULL, cost_nanos INTEGER);
+			CREATE INDEX IF NOT EXISTS usage_quarters_at ON usage_quarters (at);
+			CREATE TABLE IF NOT EXISTS usage_stale (at TEXT PRIMARY KEY) WITHOUT ROWID;
+			CREATE TRIGGER IF NOT EXISTS usage_ledger_added AFTER INSERT ON usage_ledger BEGIN ${staleHour("new.at")} END;
+			CREATE TRIGGER IF NOT EXISTS usage_ledger_changed AFTER UPDATE ON usage_ledger BEGIN ${staleHour("old.at")} ${staleHour("new.at")} END;
+			CREATE TRIGGER IF NOT EXISTS usage_ledger_removed AFTER DELETE ON usage_ledger BEGIN ${staleHour("old.at")} END;
 			${taskEntriesSchema}
 			PRAGMA user_version=${schemaVersion};`);
+		// A ledger kept before the quarters is summed into them on the first report.
+		if (quartersMissing) this.db.exec(`INSERT OR IGNORE INTO usage_stale (at) SELECT DISTINCT substr(at, 1, 13) FROM usage_ledger`);
 		this.missions = new MissionStore(this.db);
 		this.browserDownloads = new BrowserDownloadStore(this.db);
 		this.entries = new TaskEntries(this.db);
@@ -445,13 +469,22 @@ export class WorkspaceStore {
 		const homes = projects.map(project => ({ id: project.id, directory: folder(project.directory) })).sort((a, b) => b.directory.length - a.directory.length);
 		const insert = this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, harness, model, project_id, input, cached, cache_write, output, reasoning, tokens, cost_nanos, label) VALUES (?, ?, ?, 'turn', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)
 			ON CONFLICT(key) DO UPDATE SET ${harnessMerge}`);
+		// Rows come a session at a time, so each folder's project and label are worked out once.
+		const places = new Map<string, { projectId?: string; label: string | null }>();
+		const place = (cwd: string) => {
+			let known = places.get(cwd);
+			if (!known) {
+				const directory = folder(cwd);
+				places.set(cwd, known = { projectId: homes.find(home => directory === home.directory || directory.startsWith(`${home.directory}/`))?.id, label: cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? null });
+			}
+			return known;
+		};
 		this.batch(() => {
 			for (const row of rows) {
 				const total = tokenTotal(row);
 				if (row.at < cutoff || !total) continue;
-				const owner = owners.get(`${row.harness}:${row.sessionId}`), cwd = row.cwd ? folder(row.cwd) : undefined;
-				const projectId = owner?.projectId ?? (cwd ? homes.find(home => cwd === home.directory || cwd.startsWith(`${home.directory}/`))?.id : undefined);
-				insert.run(row.key, owner?.id ?? `session:${row.harness}:${row.sessionId}`, row.at, row.harness, row.model ?? "unknown", projectId ?? null, row.input, row.cached, row.cacheWrite, row.output, row.reasoning, total, row.cwd ? row.cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? null : null);
+				const owner = owners.get(`${row.harness}:${row.sessionId}`), where = row.cwd ? place(row.cwd) : undefined;
+				insert.run(row.key, owner?.id ?? `session:${row.harness}:${row.sessionId}`, row.at, row.harness, row.model ?? "unknown", owner?.projectId ?? where?.projectId ?? null, row.input, row.cached, row.cacheWrite, row.output, row.reasoning, total, where?.label ?? null);
 			}
 		});
 	}
@@ -504,17 +537,36 @@ export class WorkspaceStore {
 		this.statement("DELETE FROM usage_ledger WHERE at < ?").run(new Date(now.getTime() - days * 86_400_000).toISOString());
 	}
 	/**
-	 * One period's usage for the Usage page. The database sums the ledger by harness and model for every view (totals,
-	 * buckets, chats, projects, the pace); `priceOf` then prices each sum Phaseo didn't charge, so no row is read on its own.
+	 * Sums the ledger's stale hours into quarters again (see usage_quarters), newest first, through the time indexes: up
+	 * to `limit` hours in one transaction, so a long first read can sum as it goes without holding up the app. Whether
+	 * any are left. An hour `YYYY-MM-DDTHH` holds every time from it up to, not including, `YYYY-MM-DDTHHZ`.
+	 */
+	sumStaleQuarters(limit = -1): boolean {
+		const stale = "SELECT at FROM usage_stale ORDER BY at DESC LIMIT ?";
+		this.batch(() => {
+			this.statement(`DELETE FROM usage_quarters WHERE rowid IN (SELECT usage_quarters.rowid FROM (${stale}) AS stale JOIN usage_quarters ON usage_quarters.at >= stale.at AND usage_quarters.at < stale.at || 'Z')`).run(limit);
+			this.statement(`INSERT INTO usage_quarters SELECT ${usageQuarter("usage_ledger.at")} AS quarter, harness, model, cost_nanos IS NULL, task_id, project_id, label, autopilot, SUM(input), SUM(cached), SUM(cache_write), SUM(output), SUM(reasoning), SUM(tokens), SUM(cost_nanos)
+				FROM (${stale}) AS stale JOIN usage_ledger ON usage_ledger.at >= stale.at AND usage_ledger.at < stale.at || 'Z'
+				GROUP BY quarter, harness, model, cost_nanos IS NULL, task_id, project_id, label, autopilot`).run(limit);
+			this.statement(`DELETE FROM usage_stale WHERE at IN (${stale})`).run(limit);
+		});
+		return Boolean(this.statement("SELECT 1 FROM usage_stale LIMIT 1").get());
+	}
+	/**
+	 * One period's usage for the Usage page. The database sums the ledger's quarter hours by harness and model for every
+	 * view (totals, buckets, chats, projects, the pace); `priceOf` then prices each sum Phaseo didn't charge, so no row is
+	 * read on its own.
 	 */
 	usageReport(period: UsagePeriod, priceOf: (model: string) => TokenPrices | undefined, now = new Date()): UsageReport {
+		this.sumStaleQuarters();
 		const days = usagePeriods.find(value => value.id === period)?.days ?? 1;
 		const start = new Date(now); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (days - 1));
-		const from = start.toISOString();
+		// Quarters are named to the minute; a local midnight is always on one.
+		const from = start.toISOString(), quarter = (at: string) => at.slice(0, 16);
 		type Sum = UsageTokens & { model: string; uncharged: number; tokens: number; charged: number | null };
-		const sums = "model, cost_nanos IS NULL AS uncharged, SUM(input) AS input, SUM(cached) AS cached, SUM(cache_write) AS cacheWrite, SUM(output) AS output, SUM(reasoning) AS reasoning, SUM(tokens) AS tokens, SUM(cost_nanos) AS charged";
+		const sums = "model, uncharged, SUM(input) AS input, SUM(cached) AS cached, SUM(cache_write) AS cacheWrite, SUM(output) AS output, SUM(reasoning) AS reasoning, SUM(tokens) AS tokens, SUM(cost_nanos) AS charged";
 		const grouped = <Extra extends object = object>(dimensions: string, since = from, where = "", groupBy = dimensions) =>
-			this.statement(`SELECT ${dimensions ? `${dimensions}, ` : ""}${sums} FROM usage_ledger WHERE at >= ? ${where} GROUP BY ${groupBy ? `${groupBy}, ` : ""}model, uncharged`).all(since) as (Sum & Extra)[];
+			this.statement(`SELECT ${dimensions ? `${dimensions}, ` : ""}${sums} FROM usage_quarters WHERE at >= ? ${where} GROUP BY ${groupBy ? `${groupBy}, ` : ""}model, uncharged`).all(quarter(since)) as (Sum & Extra)[];
 		const types = noTokens();
 		let cacheSavingsNanos = 0;
 		/** Adds one sum to a cost: Phaseo's charge, or its estimate at catalogue prices, or its tokens as unpriced. */
@@ -540,8 +592,8 @@ export class WorkspaceStore {
 		for (const row of byHarness) add(total, row, true);
 		const models = new Map<string, UsageCost & { harness: string; model: string }>();
 		for (const row of byHarness) { const key = `${row.harness}\0${row.model}`; if (!models.has(key)) models.set(key, { harness: row.harness, model: row.model, ...noCost() }); add(models.get(key)!, row); }
-		const chats = (where = "") => (this.statement(`SELECT COUNT(DISTINCT task_id) AS chats FROM usage_ledger WHERE at >= ? ${where}`).get(from) as { chats: number }).chats;
-		const harnessChats = new Map((this.statement("SELECT harness, COUNT(DISTINCT task_id) AS chats FROM usage_ledger WHERE at >= ? GROUP BY harness").all(from) as { harness: string; chats: number }[]).map(row => [row.harness, row.chats]));
+		const chats = (where = "") => (this.statement(`SELECT COUNT(DISTINCT task_id) AS chats FROM usage_quarters WHERE at >= ? ${where}`).get(quarter(from)) as { chats: number }).chats;
+		const harnessChats = new Map((this.statement("SELECT harness, COUNT(DISTINCT task_id) AS chats FROM usage_quarters WHERE at >= ? GROUP BY harness").all(quarter(from)) as { harness: string; chats: number }[]).map(row => [row.harness, row.chats]));
 		const bucket = period === "today" ? "strftime('%H', at, 'localtime')" : "strftime('%Y-%m-%d', at, 'localtime')";
 		const buckets = new Map<string, Record<string, UsageCost>>();
 		for (const row of grouped<{ bucket: string; harness: string }>(`${bucket} AS bucket, harness`, from, "", "bucket, harness")) {
@@ -552,7 +604,7 @@ export class WorkspaceStore {
 		const autopilot = noCost();
 		for (const row of grouped("", from, "AND autopilot = 1")) add(autopilot, row);
 		const since = (this.statement("SELECT MIN(at) AS since FROM usage_ledger").get() as { since: string | null }).since;
-		const labels = new Map((this.statement("SELECT task_id, MAX(label) AS label FROM usage_ledger WHERE at >= ? AND task_id LIKE 'session:%' AND label IS NOT NULL GROUP BY task_id").all(from) as { task_id: string; label: string }[]).map(row => [row.task_id, row.label]));
+		const labels = new Map((this.statement("SELECT task_id, MAX(label) AS label FROM usage_quarters WHERE at >= ? AND task_id LIKE 'session:%' AND label IS NOT NULL GROUP BY task_id").all(quarter(from)) as { task_id: string; label: string }[]).map(row => [row.task_id, row.label]));
 		const count = (sql: string) => (this.statement(`SELECT COUNT(*) AS count FROM tasks WHERE json_extract(data, '$.parentId') IS NULL AND ${sql} >= ?`).get(from) as { count: number }).count;
 		let pace: UsageReport["days"];
 		if (period === "today") {

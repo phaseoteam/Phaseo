@@ -322,6 +322,33 @@ describe("IPC validation", () => {
 		} finally { store.close(); }
 	});
 
+	it("reports from quarter-hour sums that follow every change to the ledger, and builds them for a ledger kept before", () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-quarters-")), filename = path.join(directory, "workspace.db");
+		let store = new WorkspaceStore(filename);
+		try {
+			const now = new Date(), at = new Date(now.getTime() - 3_600_000).toISOString(), cutoff = new Date(now.getTime() - 91 * 86_400_000).toISOString();
+			const row = (key: string, output: number, when = at) => ({ key, model: "gpt-6.1-sol", input: 10, cached: 0, cacheWrite: 0, output, reasoning: 0, at: when, harness: "codex" as const, sessionId: "t" });
+			const tokens = () => store.usageReport("7d", () => undefined, now).total.tokens;
+			store.recordTranscriptUsage([row("codex:t:1", 90), row("codex:t:2", 40)], new Map(), [], cutoff);
+			expect(tokens()).toBe(150);
+			// A response read again with more output keeps the larger count; the next report sees it.
+			store.recordTranscriptUsage([row("codex:t:1", 190)], new Map(), [], cutoff);
+			expect(tokens()).toBe(250);
+			store.recordTranscriptUsage([row("codex:t:3", 0, new Date(now.getTime() - 30 * 86_400_000).toISOString())], new Map(), [], cutoff);
+			expect([tokens(), store.usageReport("90d", () => undefined, now).total.tokens]).toEqual([250, 260]);
+			store.close();
+			// A ledger from before the quarters existed is summed into them on opening.
+			const db = new DatabaseSync(filename);
+			db.exec("DROP TABLE usage_quarters; DELETE FROM usage_stale;");
+			db.close();
+			store = new WorkspaceStore(filename);
+			expect([tokens(), store.usageReport("90d", () => undefined, now).total.tokens]).toEqual([250, 260]);
+			// Pruned rows leave their quarters.
+			store.pruneUsageLedger(10, now);
+			expect([tokens(), store.usageReport("90d", () => undefined, now).total.tokens]).toEqual([250, 250]);
+		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+
 	it("keeps the latest 500 Autopilot decisions, newest first, and drops a deleted chat's", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {

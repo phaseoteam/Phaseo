@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { zstdCompressSync } from "node:zlib";
 import path from "node:path";
 import { claudeUsage, codexResponseUsage } from "./harnessUsage";
-import { readTranscript, transcriptFolders, transcriptLine } from "./usageTranscripts";
+import { codexSession, readTranscript, TranscriptScanner, transcriptFolders, transcriptLine, type TranscriptFile, type TranscriptUsage } from "./usageTranscripts";
 import { usageTokens } from "../shared/usageAmounts";
 import { estimateNanos, modelMatchKey } from "../shared/usageLedger";
 
@@ -78,6 +78,53 @@ describe("harness usage", () => {
 			expect(read).toEqual(["codex:old:100 gpt-6-sol", "codex:old:250 gpt-6-sol"]);
 			expect(state.offset).toBe(statSync(file).size);
 		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+
+	it("skips Codex lines that aren't usage unread, and reads lines longer than a chunk", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-transcripts-"));
+		try {
+			const codex = path.join(directory, "rollout.jsonl"), claude = path.join(directory, "session.jsonl"), output = "x".repeat(5 * 1024 * 1024);
+			writeFileSync(codex, [{ timestamp: "2026-10-01T10:00:00Z", type: "session_meta", payload: { id: "s" } },
+				// A tool's output that mentions token_count, megabytes long: not a usage line.
+				{ timestamp: "2026-10-01T10:00:01Z", type: "response_item", payload: { type: "function_call_output", output: `"type":"token_count" ${output}` } },
+				{ timestamp: "2026-10-01T10:00:02Z", type: "event_msg", payload: { type: "token_count", info: { total_token_usage: { total_tokens: 100 }, last_token_usage: { input_tokens: 80, output_tokens: 20 } } } }].map(line => JSON.stringify(line)).join("\n") + "\n");
+			writeFileSync(claude, `${JSON.stringify({ type: "assistant", timestamp: "2026-10-12T20:30:58Z", sessionId: "c", message: { id: "long", model: "claude-opus-5-5", content: [{ type: "text", text: output }], usage: { input_tokens: 1, output_tokens: 7 } } })}\n`);
+			const read: string[] = [], collect = (rows: { key: string }[]) => read.push(...rows.map(row => row.key));
+			const codexRead = await readTranscript(codex, "codex", undefined, statSync(codex).size, 1, collect);
+			const claudeRead = await readTranscript(claude, "claude", undefined, statSync(claude).size, 1, collect);
+			expect(read).toEqual(["codex:s:100", "claude:long"]);
+			expect([codexRead.offset, claudeRead.offset]).toEqual([statSync(codex).size, statSync(claude).size]);
+			expect(codexSession(codex)).toEqual({ id: "s" });
+		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+
+	it("roots a Codex fork's chain before reading, so a fork read before its parent still keys by the root", async () => {
+		const home = mkdtempSync(path.join(tmpdir(), "phaseo-codex-")), sessions = path.join(home, "sessions");
+		try {
+			mkdirSync(sessions);
+			const meta = (id: string, parent?: string) => ({ timestamp: "2026-10-02T08:18:20Z", type: "session_meta", payload: { id, ...parent ? { forked_from_id: parent } : {} } });
+			const count = (total: number) => ({ timestamp: new Date().toISOString(), type: "event_msg", payload: { type: "token_count", info: { total_token_usage: { total_tokens: total }, last_token_usage: { input_tokens: 90, output_tokens: 10 } } } });
+			const files = { "grandchild.jsonl.zst": [meta("grandchild", "fork"), meta("fork", "parent"), count(100), count(300)], "fork.jsonl": [meta("fork", "parent"), meta("parent"), count(100), count(200)], "parent.jsonl.zst": [meta("parent"), count(100)] };
+			// Newest first is the order files are read in: here the grandchild, then the fork, then the parent.
+			Object.entries(files).forEach(([name, lines], index) => {
+				const file = path.join(sessions, name), text = lines.map(line => JSON.stringify(line)).join("\n") + "\n", at = new Date(Date.now() - (index + 1) * 60_000);
+				writeFileSync(file, name.endsWith(".zst") ? zstdCompressSync(Buffer.from(text)) : text);
+				utimesSync(file, at, at);
+			});
+			const roots = new Map<string, string>(), saved = new Map<string, TranscriptFile>(), keys: string[] = [];
+			const store = {
+				getAccounts: () => [], getProjects: () => [], addedTranscriptFolders: () => [], sessionOwners: () => new Map(),
+				transcriptFile: (file: string) => saved.get(file), saveTranscriptFile: (file: string, value: TranscriptFile) => { saved.set(file, value); },
+				recordTranscriptUsage: (rows: readonly TranscriptUsage[]) => { keys.push(...rows.map(row => row.key)); }, sumStaleQuarters: () => false,
+				threadRoots: { rootOf: (id: string) => roots.get(id), remember: (id: string, root: string) => { roots.set(id, root); } },
+			};
+			const scanner = new TranscriptScanner(store, () => {}, { folders: () => [{ harness: "codex", directory: home }] });
+			expect(await scanner.scan(true)).toBe(5);
+			expect(new Set(keys)).toEqual(new Set(["codex:parent:100", "codex:parent:200", "codex:parent:300"]));
+			expect(Object.fromEntries(roots)).toEqual({ grandchild: "parent", fork: "parent", parent: "parent" });
+			// Nothing changed, so another scan reads nothing.
+			expect(await scanner.scan(true)).toBe(0);
+		} finally { rmSync(home, { recursive: true, force: true }); }
 	});
 
 	it("finds transcript folders once each: defaults, the environment's, accounts' and added ones", () => {
