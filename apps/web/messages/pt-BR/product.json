@@ -2428,7 +2428,9 @@
 			"rule": "Regra: {keyword}"
 		},
 		"realtimeBillingTitle": "Faturamento em tempo real",
-		"realtimeBillingDescription": "Revise o uso ausente, os fundos retidos e as decisões de faturamento auditadas."
+		"realtimeBillingDescription": "Revise o uso ausente, os fundos retidos e as decisões de faturamento auditadas.",
+		"keyIncidentsTitle": "Incidentes de armazenamento de chaves",
+		"keyIncidentsDescription": "Revogar ou pausar todas as chaves de API armazenadas em uma plataforma que sofreu vazamento."
 	},
 	"webhookPage": {
 		"description": "Envie à sua aplicação atualizações assinadas, com novas tentativas, dos seus trabalhos assíncronos de vídeo e lote.",

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ClipboardCopy, Hourglass, Network, PauseCircle, ShieldOff, Trash2, Wallet, MapPin } from "lucide-react";
+import { ClipboardCopy, Hourglass, Network, PauseCircle, ShieldAlert, ShieldOff, Trash2, Wallet, MapPin } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -186,12 +186,45 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 		{ id: "no_storage_location" as const, icon: MapPin, count: summary.no_storage_location, owners: true },
 	].filter((item) => item.count > 0);
 
+	const notices = data.incidents?.length ? (
+		<section className="space-y-3" aria-label={t("keySecurity.incident.label")}>
+			{data.incidents.map((incident) => (
+				<div key={incident.id} role="alert" className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm">
+					<div className="flex items-center gap-2 font-medium">
+						<ShieldAlert className="size-4 text-destructive" />
+						<KeyStorageLogo id={incident.location_id} />
+						{incident.action === "revoke"
+							? t("keySecurity.incident.revoked", { count: incident.keys, name: nameOf(incident.location_id) })
+							: t("keySecurity.incident.paused", { count: incident.keys, name: nameOf(incident.location_id) })}
+					</div>
+					<p className="text-muted-foreground"><DisplayDate value={incident.applied_at} /> · {incident.title}</p>
+					<p>{incident.customer_message}</p>
+					<p>{incident.action === "revoke" ? t("keySecurity.incident.revokedNext") : t("keySecurity.incident.pausedNext")}</p>
+					<div className="flex flex-wrap gap-2 pt-1">
+						<Button asChild size="sm" className="rounded-md"><Link href="/settings/keys">{t("keySecurity.incident.replace")}</Link></Button>
+						{incident.source_url ? (
+							<Button asChild size="sm" variant="outline" className="rounded-md">
+								<a href={incident.source_url} target="_blank" rel="noreferrer">{t("keySecurity.incident.source", { name: nameOf(incident.location_id) })}</a>
+							</Button>
+						) : null}
+					</div>
+				</div>
+			))}
+		</section>
+	) : null;
+
 	if (summary.total === 0) {
-		return <p className="rounded-md border p-6 text-sm text-muted-foreground">{t("keySecurity.empty")}</p>;
+		return (
+			<div className="space-y-8">
+				{notices}
+				<p className="rounded-md border p-6 text-sm text-muted-foreground">{t("keySecurity.empty")}</p>
+			</div>
+		);
 	}
 
 	return (
 		<div className="space-y-8">
+			{notices}
 			<section className="space-y-3" aria-label={t("keySecurity.overview")}>
 				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 					<Stat icon={Wallet} label={t("keySecurity.filters.no_spend_limit")} value={summary.no_spend_limit} help={t("keySecurity.help.no_spend_limit")} active={filter.kind === "no_spend_limit"} onClick={() => choose({ kind: "no_spend_limit" })} />

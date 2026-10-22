@@ -760,6 +760,18 @@ export type KeySecuritySummary = {
 	locations: Array<{ id: string; keys: number }>;
 };
 
+export type KeyStorageIncidentNotice = {
+	id: string;
+	location_id: string;
+	action: "revoke" | "pause";
+	title: string;
+	customer_message: string;
+	source_url: string | null;
+	applied_at: string;
+	keys: number;
+	key_ids: string[];
+};
+
 export type SettingsKeySecurityInitialData = {
 	workspaceId: string;
 	canManage: boolean;
@@ -767,4 +779,6 @@ export type SettingsKeySecurityInitialData = {
 	observedAt: number;
 	summary: KeySecuritySummary;
 	keys: KeySecurityKey[];
+	/** Platform breaches in the last 90 days where Phaseo revoked or paused this workspace's keys. */
+	incidents: KeyStorageIncidentNotice[];
 };

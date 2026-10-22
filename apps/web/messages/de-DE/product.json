@@ -2428,7 +2428,9 @@
 			"rule": "Regel: {keyword}"
 		},
 		"realtimeBillingTitle": "Echtzeitabrechnung",
-		"realtimeBillingDescription": "Prüfe fehlende Nutzungsdaten, zurückgehaltene Mittel und protokollierte Abrechnungsentscheidungen."
+		"realtimeBillingDescription": "Prüfe fehlende Nutzungsdaten, zurückgehaltene Mittel und protokollierte Abrechnungsentscheidungen.",
+		"keyIncidentsTitle": "Vorfälle bei Schlüsselspeicherorten",
+		"keyIncidentsDescription": "Alle API-Schlüssel widerrufen oder pausieren, die auf einer Plattform mit Datenleck gespeichert sind."
 	},
 	"webhookPage": {
 		"description": "Sende signierte Updates mit Wiederholungsversuchen aus asynchronen Video- und Stapelaufträgen an deine Anwendung.",
