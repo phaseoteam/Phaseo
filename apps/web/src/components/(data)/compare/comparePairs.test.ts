@@ -13,8 +13,8 @@ describe("compare pair URLs", () => {
 	});
 
 	it("leaves gateway pages and malformed slugs alone", () => {
-		expect(parsePairSlug("openrouter")).toBeNull();
-		expect(parsePairSlug("vercel-ai-gateway")).toBeNull();
+		expect(parsePairSlug("some-gateway")).toBeNull();
+		expect(parsePairSlug("another-ai-gateway")).toBeNull();
 		expect(parsePairSlug("openai_gpt-5-vs-openai_gpt-5")).toBeNull();
 		expect(parsePairSlug("gpt-5-vs-claude")).toBeNull();
 		expect(parsePairSlug("a-vs-b-vs-c")).toBeNull();
