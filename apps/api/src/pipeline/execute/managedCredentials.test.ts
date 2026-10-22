@@ -37,6 +37,23 @@ describe("managed credential availability", () => {
 		expect(managedCredentialState("meta", "text.generate")).toBe("available");
 	});
 
+	it("reports a provider whose base URL binding is missing as missing, whatever its key", () => {
+		// Cloudflare builds its base URL from CLOUDFLARE_ACCOUNT_ID (or a gateway URL) before
+		// it reads CLOUDFLARE_API_TOKEN; the executor fails either way without them.
+		const stateWith = (env: Record<string, string>) => {
+			setupRuntimeFromEnv(env as any);
+			try {
+				return managedCredentialState("cloudflare", "text.generate");
+			} finally {
+				teardownTestRuntime();
+			}
+		};
+		expect(stateWith({})).toBe("missing");
+		expect(stateWith({ CLOUDFLARE_API_TOKEN: "cf-token" })).toBe("missing");
+		expect(stateWith({ CLOUDFLARE_ACCOUNT_ID: "acct" })).toBe("missing");
+		expect(stateWith({ CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "cf-token" })).toBe("available");
+	});
+
 	it("never judges providers whose credentials this check cannot see", () => {
 		setupRuntimeFromEnv({});
 		// Own executors: SDK keys, SigV4, Google OAuth, Azure deployments.

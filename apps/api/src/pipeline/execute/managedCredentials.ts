@@ -31,8 +31,11 @@ function managedKeyMissing(providerId: string, capability: string): boolean {
 		resolveOpenAICompatKey({ providerId, byokMeta: [], forceGatewayKey: true } as any);
 		return false;
 	} catch (error) {
+		// The resolver reads the base URL before the key for some providers (Cloudflare needs
+		// CLOUDFLARE_ACCOUNT_ID or a gateway URL), so a missing base URL hides whether the key
+		// is set. Either way the executor throws the same error on every managed attempt.
 		const code = (error as { code?: unknown } | null)?.code;
-		return typeof code === "string" && code.endsWith("_key_missing");
+		return typeof code === "string" && (code.endsWith("_key_missing") || code.endsWith("_base_url_missing"));
 	}
 }
 
