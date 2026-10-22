@@ -1,4 +1,5 @@
 import type { Env } from "./env";
+import { withoutTrailingSlashes } from "./url";
 
 // The few PostgREST calls the Worker makes, with the service role. Kept to plain
 // fetch so the Worker stays small and tests can hand in a fake fetch. Errors
@@ -22,7 +23,7 @@ export class DbError extends Error {
 }
 
 export function createDb(env: Pick<Env, "SUPABASE_URL" | "SUPABASE_SERVICE_ROLE_KEY">, fetchImpl: typeof fetch = fetch): Db {
-	const base = env.SUPABASE_URL?.trim().replace(/\/+$/, "");
+	const base = withoutTrailingSlashes(env.SUPABASE_URL?.trim() ?? "");
 	const key = env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 	const request = async (path: string, init: RequestInit & { prefer?: string }): Promise<Response> => {
 		if (!base || !key) throw new DbError(0, "unconfigured");

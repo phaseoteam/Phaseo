@@ -2,6 +2,7 @@ SET local check_function_bodies = off;
 
 -- Phaseo Slack agent: when the app is removed inside Slack, the Worker deletes the
 -- installation's key, marks it uninstalled and removes its guardrail in one call.
+-- phaseo:allow-destructive-migration reason: The only DELETEs are inside the function body. They run when Slack reports the app was removed, and remove that installation's own key_guardrails link and its guardrail when nothing else uses it. Creating the function deletes nothing.
 
 CREATE OR REPLACE FUNCTION public.uninstall_slack_agent_from_slack (
   p_installation_id uuid,
