@@ -93,7 +93,6 @@ export default function CreateKeyDialog({
 			captureProductEvent("api_key_created", {
 				preset: selectedPresetId,
 				surface: "settings",
-				storage_locations: storageLocations.length,
 			});
 		} catch (err: unknown) {
 			toast.error(localizedSettingsError(err, t, "Action failed"));
