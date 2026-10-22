@@ -63,3 +63,18 @@ describe("Vertex Gemini embeddings", () => {
 		} finally { mock.restore(); }
 	});
 });
+
+describe("Vertex Gemini embeddings location", () => {
+	it("uses global even when the configured region is us-central1, which does not serve Gemini Embedding 2", async () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const mock = installFetchMock([{
+			match: (url) => url === "https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/publishers/google/models/gemini-embedding-2:embedContent",
+			response: jsonResponse({ embedding: { values: [0.5] }, usageMetadata: { promptTokenCount: 1, totalTokenCount: 1 } }),
+		}]);
+		try {
+			expect((await executor(args())).upstream.status).toBe(200);
+			expect(mock.calls).toHaveLength(1);
+		} finally { mock.restore(); }
+	});
+});

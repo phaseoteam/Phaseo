@@ -3,7 +3,8 @@ import type { ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
-import { resolveVertexAccessToken, resolveVertexApiBase } from "@providers/google-vertex/auth";
+import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
+import { resolveVertexApiBase } from "@executors/google-vertex/text-generate";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { resolveGoogleModelCandidates } from "../../google/shared/model";
 import {
@@ -48,7 +49,7 @@ export const executor: ProviderExecutor = async (args) => {
 	const bindings = getBindings();
 	const keyInfo = resolveProviderKey(args, () => bindings.GOOGLE_VERTEX_ACCESS_TOKEN || bindings.GOOGLE_VERTEX_API_KEY);
 	const token = await resolveVertexAccessToken(keyInfo.key, args.upstreamTiming);
-	const url = `${resolveVertexApiBase(bindings)}/publishers/google/models/${encodeURIComponent(model)}:embedContent`;
+	const url = `${resolveVertexApiBase(bindings, args.providerId, "gemini", model)}/publishers/google/models/${encodeURIComponent(model)}:embedContent`;
 	const body = JSON.stringify(payload);
 	const upstream = await fetchUpstream(args, url, {
 		method: "POST",

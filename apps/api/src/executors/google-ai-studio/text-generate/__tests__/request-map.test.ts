@@ -298,3 +298,41 @@ describe("google-ai-studio irToGemini", () => {
 		}
 	});
 });
+
+// https://ai.google.dev/gemini-api/docs/thinking: the lowest level differs by model.
+describe("google-ai-studio Interactions disabled thinking", () => {
+	const disabled = (model: string) => irToGemini({
+		model,
+		stream: false,
+		reasoning: { enabled: false },
+		messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+	} as any);
+
+	it.each([
+		["gemini-3.7-flash", "low"],
+		["gemini-3.1-pro-preview", "low"],
+		["gemini-2.5-flash", "low"],
+		["gemini-3.6-flash", "minimal"],
+	])("sends the lowest supported level for %s", async (model, level) => {
+		const request = await disabled(model);
+		expect(request.generation_config?.thinking_level).toBe(level);
+		expect(request.generation_config?.thinking_summaries).toBe("none");
+	});
+
+	it("leaves Gemini 2.5 Flash-Lite at its default of no thinking", async () => {
+		const request = await disabled("gemini-2.5-flash-lite");
+		expect(request.generation_config).not.toHaveProperty("thinking_level");
+	});
+
+	it("maps minimal effort to low where minimal is not offered", async () => {
+		for (const model of ["gemini-2.5-flash", "gemini-3.7-flash"]) {
+			const request = await irToGemini({
+				model,
+				stream: false,
+				reasoning: { enabled: true, effort: "minimal" },
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			} as any);
+			expect(request.generation_config?.thinking_level).toBe("low");
+		}
+	});
+});

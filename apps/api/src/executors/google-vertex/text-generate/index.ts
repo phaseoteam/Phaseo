@@ -37,6 +37,8 @@ import {
 	withoutEmptyGeminiTextParts,
 } from "@executors/google/shared/function-history";
 import {
+	getLowestGoogleThinkingLevel,
+	modelRejectsGoogleThinkingBudget,
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
 } from "@executors/google/shared/thinking";
@@ -441,6 +443,18 @@ export function vertexRequiredLocation(providerId?: string, family?: VertexModel
 			? model === "openai/gpt-oss-20b-maas" ? "us-central1" : "global" : undefined;
 }
 
+/**
+ * The location Phaseo's own google-vertex credential uses for a model family, in place of
+ * GOOGLE_VERTEX_LOCATION. Gemini 3 and later, Gemini Embedding 2 and Gemini Transcribe are
+ * served on global and the us/eu multi-regions, not in single US regions such as us-central1
+ * (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-flash), and
+ * the google-vertex prices are Google's global prices. A customer credential that names a
+ * region keeps it; google-vertex-eu never uses this.
+ */
+export function vertexDefaultLocation(providerId?: string, family?: VertexModelRoute["family"]): string | undefined {
+	return providerId === "google-vertex" && family === "gemini" ? "global" : undefined;
+}
+
 /** A Google Cloud project and location taken from the customer's request or credential. */
 export type VertexResourceScope = { project?: string; location?: string };
 
@@ -530,10 +544,11 @@ export function isGoogleVertexHost(rawBase: string): boolean {
  */
 export function resolveVertexApiBase(bindings: Record<string, any>, providerId?: string, family?: VertexModelRoute["family"], model?: string, scope?: VertexResourceScope): string {
 	const configuredBase = String(bindings.GOOGLE_VERTEX_BASE_URL || "").replace(/\/+$/, "");
+	const defaultLocation = vertexDefaultLocation(providerId, family);
 	// A Google host is regional, so a customer location needs its own host.
-	const rawBase = scope?.location && isGoogleVertexHost(configuredBase) ? "" : configuredBase;
+	const rawBase = (scope?.location || defaultLocation) && isGoogleVertexHost(configuredBase) ? "" : configuredBase;
 	const project = scope?.project || String(bindings.GOOGLE_VERTEX_PROJECT || "").trim();
-	const configuredLocation = scope?.location || String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
+	const configuredLocation = scope?.location || defaultLocation || String(bindings.GOOGLE_VERTEX_LOCATION || "").trim().toLowerCase();
 	const requiredLocation = vertexRequiredLocation(providerId, family, model);
 	const location = requiredLocation || configuredLocation || "global";
 	const scoped = Boolean(scope?.project || scope?.location);
@@ -638,18 +653,30 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	// GenerationConfig.seed (https://docs.cloud.google.com/vertex-ai/generative-ai/docs/reference/rest/v1/GenerationConfig).
 	if (ir.seed !== undefined) generationConfig.seed = ir.seed;
 
-	if (
+	const thinkingModelName = modelOverride ?? ir.model ?? "";
+	if (ir.reasoning?.enabled === false && modelSupportsGoogleThinkingLevels(thinkingModelName)) {
+		// Gemini 3 and later cannot switch thinking off; the least they accept is their
+		// lowest level (MINIMAL, or LOW where MINIMAL is a validation error).
+		generationConfig.thinkingConfig = {
+			includeThoughts: false,
+			thinkingLevel: getLowestGoogleThinkingLevel(thinkingModelName),
+		};
+	} else if (
 		ir.reasoning?.enabled ||
 		ir.reasoning?.effort ||
 		(ir.reasoning?.maxTokens !== undefined) ||
 		(ir.reasoning?.includeThoughts !== undefined)
 	) {
 		const thinkingConfig: any = { includeThoughts: ir.reasoning?.includeThoughts ?? true };
-		const modelName = modelOverride ?? ir.model;
+		const modelName = thinkingModelName;
 		const supportsThinkingLevel = modelSupportsGoogleThinkingLevels(modelName ?? "");
 		if (ir.reasoning?.effort && supportsThinkingLevel) {
 			const level = resolveGoogleThinkingLevelForEffort(modelName ?? "", ir.reasoning.effort);
 			if (level) thinkingConfig.thinkingLevel = level;
+		} else if (ir.reasoning?.maxTokens !== undefined && modelRejectsGoogleThinkingBudget(modelName ?? "")) {
+			// Gemini 4 Argon returns 400 for any thinkingBudget; a budget becomes a level,
+			// as on Google AI Studio.
+			thinkingConfig.thinkingLevel = ir.reasoning.maxTokens > 0 ? "HIGH" : getLowestGoogleThinkingLevel(modelName ?? "");
 		} else if (ir.reasoning?.maxTokens !== undefined) {
 			thinkingConfig.thinkingBudget = ir.reasoning.maxTokens;
 		} else if (ir.reasoning?.enabled) {

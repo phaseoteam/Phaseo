@@ -46,7 +46,7 @@ import {
 	managedCredentialUnavailableResponse,
 	recordManagedPaymentRequired,
 } from "./managedCredentials";
-import { getBaseModel, calculateMaxTries, googleFlexMinimumHeadersTimeoutMs } from "./utils";
+import { getBaseModel, calculateMaxTries, googleFlexMinimumHeadersTimeoutMs, longThinkingMinimumHeadersTimeoutMs } from "./utils";
 import { rankProviders } from "./providers";
 import { resolveProviderExecutor } from "../../executors";
 import {
@@ -968,9 +968,13 @@ async function attemptProviderWithIR(
 	// The headers deadline is only safe when the provider streams (see the tracker).
 	// Google Flex queues work before returning headers; give it the documented
 	// ten-minute wait while retaining caller cancellation and a bounded deadline.
+	// Long-thinking models get the longer wait their provider documents.
 	const upstreamTracker = createUpstreamTimingTracker(ctx.gatewayTimingTrace, {
 		applyHeadersDeadline: ctx.stream === true,
-		minimumHeadersTimeoutMs: googleFlexMinimumHeadersTimeoutMs(candidate.providerId, candidate.capabilityParams, ctx.body),
+		minimumHeadersTimeoutMs: Math.max(
+			googleFlexMinimumHeadersTimeoutMs(candidate.providerId, candidate.capabilityParams, ctx.body) ?? 0,
+			longThinkingMinimumHeadersTimeoutMs(candidate.providerId, providerModelSlug || baseModel) ?? 0,
+		) || undefined,
 	});
 	let providerRateLimitReservation: ProviderQuotaCharge | null = null;
 	try {

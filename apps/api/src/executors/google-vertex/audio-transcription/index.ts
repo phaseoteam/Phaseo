@@ -2,7 +2,8 @@ import type { IRAudioTranscriptionRequest, IRAudioTranscriptionResponse } from "
 import type { ProviderExecutor } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
-import { resolveVertexAccessToken, resolveVertexApiBase } from "@providers/google-vertex/auth";
+import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
+import { resolveVertexApiBase } from "@executors/google-vertex/text-generate";
 import { fetchPublicMedia } from "@core/public-media-fetch";
 import { imageBytesToBase64 } from "@executors/_shared/image-results";
 
@@ -24,7 +25,7 @@ export const executor: ProviderExecutor = async args => {
 	if (mode !== undefined && !["smart", "verbatim"].includes(mode)) return fail("Unsupported transcription mode.");
 	if (mode === "smart" && (diarization || wordTimestamp)) return fail("Smart mode cannot include diarization or timestamps.");
 	const env = getBindings() as unknown as Record<string, string | undefined>;
-	const base = resolveVertexApiBase(env);
+	const base = resolveVertexApiBase(env, args.providerId, "gemini", model);
 	if (!base.endsWith("/locations/global")) return fail("Vertex Gemini transcription is available in the global location only.");
 	const maxBytes = 14 * 1024 * 1024;
 	let bytes: Uint8Array;
