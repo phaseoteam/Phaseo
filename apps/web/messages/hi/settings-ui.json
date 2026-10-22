@@ -5898,6 +5898,7 @@
 		"toolCalls": "टूल कॉल",
 		"retainedUntil": "इस समय तक सुरक्षित",
 		"notStored": "संग्रहित नहीं",
+		"skippedZeroDataRetention": "छोड़ा गया: शून्य डेटा प्रतिधारण आवश्यक है",
 		"selectedRoute": "चुना गया रूट",
 		"routingDurationNotRecorded": "रूटिंग अवधि दर्ज नहीं",
 		"requestInput": "अनुरोध इनपुट",

@@ -1,5 +1,6 @@
 // Purpose: Zero data retention keeps a request's content out of everything the audit stores:
-//          the I/O log object in R2 and the gateway_request_details row in Supabase.
+//          the I/O log object in R2 and the gateway_request_details row in Supabase. The I/O
+//          log metadata row still records, without content, that ZDR was why nothing was kept.
 // Why: The request's own (or its preset's) require_zero_data_retention only skipped the R2
 //      object, so with workspace I/O logging on the detail row still kept the full request,
 //      response and provider payloads, on success and on both failure paths.
@@ -62,7 +63,7 @@ const PROMPT = "private prompt";
 const ANSWER = "private answer";
 
 type Kind = "success" | "before failure" | "execute failure";
-type Zdr = { requestPayload?: Record<string, unknown>; zeroDataRetention?: boolean; detailMetadata?: Record<string, unknown> };
+type Zdr = { requestPayload?: Record<string, unknown>; zeroDataRetention?: boolean; detailMetadata?: Record<string, unknown>; keyZdr?: boolean };
 
 async function audit(kind: Kind, zdr: Zdr = {}) {
 	const shared = {
@@ -127,14 +128,23 @@ describe("audit content storage under zero data retention", () => {
 		// A preset's flag is only in the merged body, so it arrives as the context's flag.
 		[kind, "the preset (context flag only)", { zeroDataRetention: true }],
 		[kind, "the routing diagnostics", { detailMetadata: { routing_diagnostics: { workspacePolicy: { privacyZdrOnly: true } } } }],
+		[kind, "a key guardrail", { keyZdr: true }],
 	] as Array<[Kind, string, Zdr]>))("stores no content on %s when ZDR comes from %s", async (kind, _source, zdr) => {
+		if (zdr.keyZdr) state.keyPolicy = { privacyZdrOnly: true, neverStoreContent: false };
+
 		await audit(kind, zdr);
 
 		// The request itself is still logged, without its content.
 		expect(state.writes.gateway_requests).toHaveLength(1);
 		expect(state.put).not.toHaveBeenCalled();
 		expect(state.writes.gateway_request_details).toBeUndefined();
-		expect(state.writes.gateway_io_logs).toBeUndefined();
+		// The I/O log records why, so the request log says "Skipped: zero data retention is required".
+		expect(state.writes.gateway_io_logs).toEqual([{
+			workspace_id: "ws_zdr",
+			request_id: "req_zdr",
+			io_log_status: "not_enabled",
+			io_log_error: "Skipped: zero data retention is required for this request",
+		}]);
 	});
 
 	it.each(kinds)("still stores no content for a key that never stores content (%s)", async (kind) => {

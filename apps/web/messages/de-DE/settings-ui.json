@@ -5898,6 +5898,7 @@
 		"toolCalls": "Werkzeugaufrufe",
 		"retainedUntil": "Aufbewahrt bis",
 		"notStored": "Nicht gespeichert",
+		"skippedZeroDataRetention": "Übersprungen: Es dürfen keine Daten aufbewahrt werden",
 		"selectedRoute": "Gewählte Route",
 		"routingDurationNotRecorded": "Routingdauer nicht aufgezeichnet",
 		"requestInput": "Anfrageeingabe",

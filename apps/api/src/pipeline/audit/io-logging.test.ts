@@ -188,8 +188,11 @@ describe("persistGatewayIoLog", () => {
 			requestPayload: { messages: [{ role: "user", content: "secret" }] },
 		});
 
-		expect(policy).toMatchObject({ zeroDataRetention: true, captureEnabled: false });
-		expect(result).toEqual({ io_log_status: "not_enabled" });
+		expect(policy).toMatchObject({ zeroDataRetention: true, captureEnabled: false, recordZeroDataRetentionSkip: true });
+		expect(result).toEqual({
+			io_log_status: "not_enabled",
+			io_log_error: "Skipped: zero data retention is required for this request",
+		});
 		expect(state.bucket.put).not.toHaveBeenCalled();
 	});
 
@@ -218,8 +221,11 @@ describe("persistGatewayIoLog", () => {
 		const policy = await resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1", keyId: "key_1" });
 		const result = await persistGatewayIoLog({ requestId: "req_key_zdr", workspaceId: "workspace_1", keyId: "key_1", success: false });
 
-		expect(policy).toMatchObject({ zeroDataRetention: true, captureEnabled: false });
-		expect(result).toEqual({ io_log_status: "not_enabled" });
+		expect(policy).toMatchObject({ zeroDataRetention: true, captureEnabled: false, recordZeroDataRetentionSkip: true });
+		expect(result).toEqual({
+			io_log_status: "not_enabled",
+			io_log_error: "Skipped: zero data retention is required for this request",
+		});
 		expect(state.bucket.put).not.toHaveBeenCalled();
 	});
 
@@ -318,6 +324,75 @@ describe("persistGatewayIoLog", () => {
 
 		await expect(resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1", keyId: "key_1" }))
 			.resolves.toMatchObject({ neverStoreContent: false, captureEnabled: true });
+	});
+});
+
+describe("zero data retention skip records", () => {
+	beforeEach(() => {
+		state.settings = {
+			io_logging_enabled: true,
+			io_logging_retention_days: 365,
+			io_logging_include_provider_payloads: true,
+			io_logging_billing_status: "active",
+		};
+		state.bucket.put.mockClear();
+		state.metadataRows = [];
+		state.keyPolicy = { privacyZdrOnly: false };
+		vi.resetModules();
+	});
+
+	it.each([
+		["the workspace setting", () => { state.settings.privacy_zdr_only = true; }, false],
+		["a key guardrail", () => { state.keyPolicy = { privacyZdrOnly: true }; }, false],
+		["the request, its preset or its routing", () => {}, true],
+		["the request, with a key that never stores content", () => { state.keyPolicy = { privacyZdrOnly: false, neverStoreContent: true }; }, true],
+	] as Array<[string, () => void, boolean]>)("are recorded when ZDR comes from %s", async (_source, arrange, requestZdr) => {
+		arrange();
+		const { resolveGatewayIoLoggingPolicy } = await import("./io-logging");
+
+		await expect(resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1", keyId: "key_1", zeroDataRetention: requestZdr }))
+			.resolves.toMatchObject({ captureEnabled: false, recordZeroDataRetentionSkip: true });
+	});
+
+	it.each([
+		["workspace I/O logging is off", () => { state.settings.io_logging_enabled = false; state.settings.privacy_zdr_only = true; }],
+		["only the key never stores content", () => { state.keyPolicy = { privacyZdrOnly: false, neverStoreContent: true }; }],
+		// The read failure keeps bodies out, but ZDR isn't known to be the reason.
+		["the key's policy can't be read", () => { state.keyPolicy = new Error("kv down"); }],
+	] as Array<[string, () => void]>)("aren't recorded when %s", async (_case, arrange) => {
+		arrange();
+		const { resolveGatewayIoLoggingPolicy } = await import("./io-logging");
+
+		await expect(resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1", keyId: "key_1" }))
+			.resolves.toMatchObject({ captureEnabled: false, recordZeroDataRetentionSkip: false });
+	});
+
+	it("are recorded for a request that asks for ZDR even when the key's policy can't be read", async () => {
+		state.keyPolicy = new Error("kv down");
+		const { resolveGatewayIoLoggingPolicy } = await import("./io-logging");
+
+		await expect(resolveGatewayIoLoggingPolicy({ workspaceId: "workspace_1", keyId: "key_1", zeroDataRetention: true }))
+			.resolves.toMatchObject({ captureEnabled: false, recordZeroDataRetentionSkip: true });
+	});
+
+	it("hold the reason and no content, and read back as the zero_data_retention reason code", async () => {
+		const { gatewayIoLogSkipReason, recordGatewayIoLogZeroDataRetentionSkip } = await import("./io-logging");
+
+		await recordGatewayIoLogZeroDataRetentionSkip({ requestId: "req_zdr", workspaceId: "workspace_1" });
+
+		expect(state.metadataRows).toEqual([{
+			workspace_id: "workspace_1",
+			request_id: "req_zdr",
+			io_log_status: "not_enabled",
+			io_log_error: "Skipped: zero data retention is required for this request",
+		}]);
+		expect(state.bucket.put).not.toHaveBeenCalled();
+		expect(gatewayIoLogSkipReason(state.metadataRows[0]!)).toBe("zero_data_retention");
+		expect(gatewayIoLogSkipReason({ io_log_status: "not_enabled", io_log_error: null })).toBeNull();
+		expect(gatewayIoLogSkipReason({
+			io_log_status: "missing_bucket",
+			io_log_error: "Not stored: request contents aren't kept for requests served by regional endpoints",
+		})).toBeNull();
 	});
 });
 

@@ -5898,6 +5898,7 @@
 		"toolCalls": "ツール呼び出し",
 		"retainedUntil": "保持期限",
 		"notStored": "未保存",
+		"skippedZeroDataRetention": "スキップしました：ゼロデータ保持が必須です",
 		"selectedRoute": "選択されたルート",
 		"routingDurationNotRecorded": "ルーティング時間は未記録",
 		"requestInput": "リクエスト入力",

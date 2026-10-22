@@ -5898,6 +5898,7 @@
 		"toolCalls": "استدعاءات الأدوات",
 		"retainedUntil": "محفوظ حتى",
 		"notStored": "غير مخزن",
+		"skippedZeroDataRetention": "تم التخطي: عدم الاحتفاظ بأي بيانات مشترط",
 		"selectedRoute": "المسار المحدد",
 		"routingDurationNotRecorded": "مدة التوجيه غير مسجلة",
 		"requestInput": "مدخلات الطلب",
