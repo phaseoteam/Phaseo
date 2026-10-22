@@ -23,6 +23,8 @@ import {
 export type StreamAdapterState = {
 	requestId: string;
 	providerId: string;
+	/** Gateway model id of the request, recorded on sealed reasoning state. */
+	model?: string | null;
 	choiceStates: Map<number, { reasoningChunks: string[] }>;
 	aionStates?: Map<number, any>;
 };

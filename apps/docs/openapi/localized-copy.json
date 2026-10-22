@@ -8534,6 +8534,16 @@
 			"zh-Hans": "模型报告的置信度，不保证正确。",
 			"ar": "ثقة يبلغ عنها النموذج؛ لا تضمن صحة النتيجة."
 		},
+		"Confidence in the box, from 0 to 1, or null when the model gives none.": {
+			"es": "Confianza en el recuadro, de 0 a 1, o null cuando el modelo no la indica.",
+			"fr": "Confiance dans le cadre, de 0 à 1, ou null quand le modèle n’en fournit pas.",
+			"de": "Konfidenz für den Rahmen, von 0 bis 1, oder null, wenn das Modell keine angibt.",
+			"pt-BR": "Confiança na caixa, de 0 a 1, ou null quando o modelo não a informa.",
+			"hi": "बॉक्स पर विश्वास, 0 से 1 तक, या null जब मॉडल इसे नहीं बताता।",
+			"ja": "ボックスの信頼度（0〜1）。モデルが返さない場合は null です。",
+			"zh-Hans": "对该框的置信度，取值 0 到 1；模型未提供时为 null。",
+			"ar": "الثقة في المربع، من 0 إلى 1، أو null عندما لا يقدّمها النموذج."
+		},
 		"Probability that the value is undetermined.": {
 			"es": "Probabilidad de que el valor no se pueda determinar.",
 			"fr": "Probabilité que la valeur soit indéterminée.",

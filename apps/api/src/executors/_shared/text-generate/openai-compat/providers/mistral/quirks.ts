@@ -3,6 +3,7 @@
 // How: Maps IR to OpenAI formats and normalizes streaming events.
 
 import type { IRContentPart } from "@core/ir";
+import { MISTRAL_REASONING_FORMAT, canReplayReasoning, sealReasoningState } from "@core/reasoning-state";
 import type { ProviderQuirks } from "../../quirks/types";
 
 const MISTRAL_UNSUPPORTED_CHAT_FIELDS = [
@@ -44,48 +45,143 @@ function readThinkingText(thinking: unknown): string {
 
 /**
  * Mistral reasoning replies carry `content` as a list of chunks instead of a
- * string: ThinkChunks (`{ type: "thinking", thinking: [{ type: "text", text }] }`)
- * and TextChunks (`{ type: "text", text }`). Streams send such lists while the
- * model thinks and at the transition, then plain strings; zai-glm models always
- * send lists. Returns null when `content` is not a list.
+ * string: ThinkChunks (`{ type: "thinking", thinking: [{ type: "text", text }],
+ * signature? }`) and TextChunks (`{ type: "text", text }`). Streams send such
+ * lists while the model thinks and at the transition, then plain strings;
+ * zai-glm models always send lists. A ThinkChunk `signature` lets Mistral
+ * replay reasoning across turns. Returns null when `content` is not a list.
  * https://docs.mistral.ai/capabilities/reasoning
  */
-export function splitContentChunks(content: unknown): { text: string; reasoning: string } | null {
+export function splitContentChunks(content: unknown): { text: string; reasoning: string; signatures: string[] } | null {
 	if (!Array.isArray(content)) return null;
 	let text = "";
 	let reasoning = "";
+	const signatures: string[] = [];
 	for (const chunk of content) {
 		if (typeof chunk === "string") {
 			text += chunk;
 		} else if (chunk?.type === "thinking") {
 			reasoning += readThinkingText(chunk.thinking);
+			if (typeof chunk.signature === "string" && chunk.signature) signatures.push(chunk.signature);
 		} else if ((chunk?.type === undefined || chunk?.type === "text") && typeof chunk?.text === "string") {
 			text += chunk.text;
 		}
 	}
-	return { text, reasoning };
+	return { text, reasoning, signatures };
+}
+
+export function isMistralProvider(providerId: string | null | undefined): boolean {
+	return providerId === "mistral" || providerId === "mistral-eu";
+}
+
+type ReasoningOrigin = { providerId?: string | null; model?: string | null };
+
+/**
+ * A Chat `reasoning_details` entry carrying a sealed ThinkChunk signature, so
+ * clients send it back and the gateway replays it only to Mistral.
+ */
+function signedReasoningDetail(signature: string, text: string, origin: ReasoningOrigin, id: string): Record<string, unknown> {
+	return {
+		id,
+		index: 0,
+		type: "reasoning.text",
+		text,
+		signature: sealReasoningState({
+			format: MISTRAL_REASONING_FORMAT,
+			kind: "signature",
+			value: signature,
+			...(origin.model ? { model: origin.model } : {}),
+			...(origin.providerId ? { provider: origin.providerId } : {}),
+		}),
+		format: MISTRAL_REASONING_FORMAT,
+	};
+}
+
+/**
+ * Rewrite a streamed chunk's chunk-list deltas into the string `content` and
+ * `reasoning_content` deltas every gateway stream reader and Chat client
+ * expects. A ThinkChunk signature becomes a sealed `reasoning_details` entry
+ * holding the reasoning streamed so far.
+ */
+export function normalizeMistralStreamChunk(
+	chunk: any,
+	state: { requestId?: string; providerId?: string | null; model?: string | null; choiceStates?: Map<number, { reasoningChunks: string[] }> },
+): void {
+	if (!Array.isArray(chunk?.choices)) return;
+	const choiceStates = (state.choiceStates ??= new Map());
+	for (const choice of chunk.choices) {
+		const delta = choice?.delta;
+		const split = splitContentChunks(delta?.content);
+		if (!split) continue;
+		const index = Number(choice.index ?? 0);
+		const choiceState = choiceStates.get(index) ?? { reasoningChunks: [] };
+		choiceStates.set(index, choiceState);
+		delta.content = split.text;
+		if (split.reasoning) {
+			delta.reasoning_content = (typeof delta.reasoning_content === "string" ? delta.reasoning_content : "") + split.reasoning;
+			choiceState.reasoningChunks.push(split.reasoning);
+		}
+		if (split.signatures.length > 0) {
+			const reasoningSoFar = choiceState.reasoningChunks.join("");
+			delta.reasoning_details = [
+				...(Array.isArray(delta.reasoning_details) ? delta.reasoning_details : []),
+				...split.signatures.map((signature, position) => signedReasoningDetail(
+					signature,
+					reasoningSoFar,
+					state,
+					`${state.requestId ?? "req"}-reasoning-${index}-${position + 1}`,
+				)),
+			];
+		}
+	}
+}
+
+/**
+ * Assistant history for Mistral: reasoning goes back as ThinkChunks ahead of
+ * the answer text, as Mistral asks ("always replay the full assistant message
+ * (including ThinkChunk)"). Mistral's own signature is kept when the reasoning
+ * came from the same model; reasoning carrying another provider family's state
+ * is not sent. Returns null when there is no reasoning to replay.
+ * https://docs.mistral.ai/capabilities/reasoning
+ */
+export function toMistralAssistantContent(
+	content: IRContentPart[],
+	target: { providerId: string; model?: string | null },
+): any[] | null {
+	const chunks: any[] = [];
+	for (const part of content) {
+		if (part.type !== "reasoning_text" || !part.text) continue;
+		if (part.reasoningFormat && part.reasoningFormat !== MISTRAL_REASONING_FORMAT) continue;
+		const signature = part.reasoningFormat === MISTRAL_REASONING_FORMAT && part.thoughtSignature && canReplayReasoning(
+			{ format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider },
+			target,
+		)
+			? part.thoughtSignature
+			: undefined;
+		chunks.push({ type: "thinking", thinking: [{ type: "text", text: part.text }], ...(signature ? { signature } : {}) });
+	}
+	if (chunks.length === 0) return null;
+	const text = content.filter((part) => part.type === "text").map((part) => part.text).join("");
+	if (text) chunks.push({ type: "text", text });
+	return chunks;
 }
 
 export const mistralQuirks: ProviderQuirks = {
-	extractReasoning: ({ choice, rawContent }) => {
+	extractReasoning: ({ choice, rawContent, providerId, model }) => {
 		const split = splitContentChunks(choice?.message?.content);
 		if (!split) return { main: rawContent, reasoning: [] };
+		if (split.signatures.length > 0 && choice?.message) {
+			// Read back by the shared sealed-reasoning step, which attaches the
+			// signature to the reasoning part.
+			choice.message.reasoning_details = [
+				...(Array.isArray(choice.message.reasoning_details) ? choice.message.reasoning_details : []),
+				...split.signatures.map((signature, position) =>
+					signedReasoningDetail(signature, split.reasoning, { providerId, model }, `mistral-reasoning-${position + 1}`)),
+			];
+		}
 		return { main: split.text, reasoning: split.reasoning ? [split.reasoning] : [] };
 	},
-	// Rewrite chunk-list deltas into the string `content` and `reasoning_content`
-	// deltas every gateway stream reader and Chat client expects.
-	transformStreamChunk: ({ chunk }) => {
-		if (!Array.isArray(chunk?.choices)) return;
-		for (const choice of chunk.choices) {
-			const delta = choice?.delta;
-			const split = splitContentChunks(delta?.content);
-			if (!split) continue;
-			delta.content = split.text;
-			if (split.reasoning) {
-				delta.reasoning_content = (typeof delta.reasoning_content === "string" ? delta.reasoning_content : "") + split.reasoning;
-			}
-		}
-	},
+	transformStreamChunk: ({ chunk, accumulated }) => normalizeMistralStreamChunk(chunk, accumulated ?? {}),
 
 	transformRequest: ({ request }) => {
 		if (!request || typeof request !== "object") return;

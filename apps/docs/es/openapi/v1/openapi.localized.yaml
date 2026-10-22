@@ -12746,6 +12746,8 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: Confianza en el recuadro, de 0 a 1, o null cuando el modelo no la indica.
     DecisionBox:
       type: object
       required:

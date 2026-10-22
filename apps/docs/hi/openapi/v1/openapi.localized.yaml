@@ -12746,6 +12746,8 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: बॉक्स पर विश्वास, 0 से 1 तक, या null जब मॉडल इसे नहीं बताता।
     DecisionBox:
       type: object
       required:

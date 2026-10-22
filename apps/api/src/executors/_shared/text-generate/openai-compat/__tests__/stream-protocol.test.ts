@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveStreamForProtocol } from "../index";
+import { openReasoningState } from "@core/reasoning-state";
 import { createAnthropicToResponsesStreamTransformer } from "../../../../anthropic/text-generate/stream-transformer";
 
 function makeSseResponse(frames: Array<{ event?: string; data: any } | "[DONE]">): Response {
@@ -1190,7 +1191,7 @@ function mistralReasoningUpstream(): Response {
 	return makeSseResponse([
 		chunk([{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }] }]),
 		chunk([
-			{ type: "thinking", thinking: [{ type: "text", text: " It is 8." }] },
+			{ type: "thinking", thinking: [{ type: "text", text: " It is 8." }], signature: "sig-abc" },
 			{ type: "text", text: "The answer " },
 		]),
 		chunk("is 8.", { finish_reason: "stop" }),
@@ -1221,6 +1222,13 @@ describe("Mistral reasoning chunk-list streams", () => {
 		expect(deltas.every((delta) => delta.content === undefined || typeof delta.content === "string")).toBe(true);
 		expect(deltas.map((delta) => delta.reasoning_content ?? "").join("")).toBe("Add 5 and 3. It is 8.");
 		expect(deltas.map((delta) => delta.content ?? "").join("")).toBe("The answer is 8.");
+
+		// The ThinkChunk signature reaches the client sealed, with the reasoning it signs.
+		const detail = deltas.flatMap((delta) => delta.reasoning_details ?? [])[0];
+		expect(detail).toMatchObject({ type: "reasoning.text", text: "Add 5 and 3. It is 8.", format: "mistral-v1" });
+		expect(openReasoningState(detail.signature)).toMatchObject({
+			format: "mistral-v1", kind: "signature", value: "sig-abc", provider: "mistral", model: "test-model",
+		});
 	});
 
 	it.each(["mistral", "mistral-eu"])("streams the reasoning and the whole answer to Responses clients (%s)", async (providerId) => {
@@ -1242,6 +1250,8 @@ describe("Mistral reasoning chunk-list streams", () => {
 		expect(text).toBe("The answer is 8.");
 		expect(JSON.stringify(completed)).not.toContain("[object Object]");
 		expect(completed.output.find((item: any) => item.type === "message").content[0].text).toBe("The answer is 8.");
+		const reasoningItem = completed.output.find((item: any) => item.type === "reasoning");
+		expect(openReasoningState(reasoningItem.encrypted_content)).toMatchObject({ format: "mistral-v1", value: "sig-abc", provider: providerId });
 	});
 });
 

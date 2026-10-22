@@ -190,7 +190,7 @@ describe("bufferStreamToIR with Mistral chunk-list deltas", () => {
 		const buffered = await bufferStreamToIR(
 			sseResponse([
 				frame([{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }] }]),
-				frame([{ type: "thinking", thinking: [{ type: "text", text: " It is 8." }] }, { type: "text", text: "The answer " }]),
+				frame([{ type: "thinking", thinking: [{ type: "text", text: " It is 8." }], signature: "sig-abc" }, { type: "text", text: "The answer " }]),
 				frame("is 8.", "stop"),
 				"data: [DONE]\n\n",
 			]),
@@ -200,7 +200,14 @@ describe("bufferStreamToIR with Mistral chunk-list deltas", () => {
 		);
 
 		expect(buffered.ir.choices[0].message.content).toEqual([
-			{ type: "reasoning_text", text: "Add 5 and 3. It is 8." },
+			{
+				type: "reasoning_text",
+				text: "Add 5 and 3. It is 8.",
+				thoughtSignature: "sig-abc",
+				reasoningFormat: "mistral-v1",
+				reasoningModel: "openai/gpt-5.4-nano",
+				reasoningProvider: "mistral",
+			},
 			{ type: "text", text: "The answer is 8." },
 		]);
 	});

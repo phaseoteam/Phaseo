@@ -1297,7 +1297,7 @@ module Phaseo
     # @!attribute [rw] box
     #   @return [Hash{String => Object}]
     # @!attribute [rw] confidence
-    #   @return [Float]
+    #   @return [Float, nil]
     # @!attribute [rw] name
     #   @return [String, nil]
     # @!attribute [rw] type

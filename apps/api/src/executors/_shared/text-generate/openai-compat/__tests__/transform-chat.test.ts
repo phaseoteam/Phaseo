@@ -5,6 +5,8 @@
 // Unit tests for Chat Completions transformations
 import { describe, expect, it } from "vitest";
 import { irToOpenAIChat, openAIChatToIR } from "../transform-chat";
+import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
+import { decodeChatReasoningDetails } from "@protocols/shared/reasoning";
 
 describe("openAIChatToIR", () => {
 	it("preserves Mistral's observed Priority Tier response", () => {
@@ -1321,6 +1323,73 @@ describe("Mistral reasoning chunk lists", () => {
 		const ir = openAIChatToIR(reply("Paris"), "req_mistral", "mistral/mistral-small-4", "mistral");
 
 		expect(ir.choices[0].message.content).toEqual([{ type: "text", text: "Paris" }]);
+	});
+
+	// ThinkChunk.signature: "Signature to replay some reasoning blocks across turns."
+	it("keeps the ThinkChunk signature and replays it to the same Mistral model", () => {
+		const ir = openAIChatToIR(reply([
+			{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }], signature: "sig-abc" },
+			{ type: "text", text: "8" },
+		]), "req_mistral", "mistral/mistral-large-4", "mistral");
+
+		expect(ir.choices[0].message.content[0]).toMatchObject({
+			type: "reasoning_text",
+			text: "Add 5 and 3.",
+			thoughtSignature: "sig-abc",
+			reasoningFormat: "mistral-v1",
+			reasoningModel: "mistral/mistral-large-4",
+		});
+
+		// Round trip through a Chat client: reasoning_details carry the sealed signature.
+		const encoded = encodeOpenAIChatResponse({ ...ir, model: "mistral/mistral-large-4", provider: "mistral" } as any, "req_mistral");
+		const details = (encoded.choices[0].message as any).reasoning_details;
+		expect(details[0].signature).toMatch(/^phx1\./);
+		const decoded = decodeChatReasoningDetails(details, new Set());
+		const history = {
+			model: "mistral/mistral-large-4",
+			stream: false,
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "5 + 3?" }] },
+				{ role: "assistant", content: [...decoded.parts, { type: "text", text: "8" }] },
+				{ role: "user", content: [{ type: "text", text: "Times 2?" }] },
+			],
+		} as any;
+
+		expect(irToOpenAIChat(history, "mistral-large-2610", "mistral").messages[1].content).toEqual([
+			{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }], signature: "sig-abc" },
+			{ type: "text", text: "8" },
+		]);
+		// Another model gets the reasoning text without the signature.
+		expect(irToOpenAIChat({ ...history, model: "mistral/mistral-small-4" }, "mistral-small-2603", "mistral").messages[1].content).toEqual([
+			{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }] },
+			{ type: "text", text: "8" },
+		]);
+		// Other providers never see the Mistral signature.
+		expect(JSON.stringify(irToOpenAIChat(history, "deepseek-chat", "deepseek").messages)).not.toContain("sig-abc");
+	});
+
+	it("replays plain reasoning as a ThinkChunk and drops signed reasoning from other families", () => {
+		const request = irToOpenAIChat({
+			model: "mistral/mistral-small-4",
+			stream: false,
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "Hi" }] },
+				{ role: "assistant", content: [{ type: "reasoning_text", text: "Greet back." }, { type: "text", text: "Hello" }] },
+				{
+					role: "assistant",
+					content: [
+						{ type: "reasoning_text", text: "signed", reasoningFormat: "anthropic-claude-v1", thoughtSignature: "claude-sig" },
+						{ type: "text", text: "Done" },
+					],
+				},
+			],
+		} as any, "mistral-small-2603", "mistral");
+
+		expect(request.messages[1].content).toEqual([
+			{ type: "thinking", thinking: [{ type: "text", text: "Greet back." }] },
+			{ type: "text", text: "Hello" },
+		]);
+		expect(request.messages[2].content).toBe("Done");
 	});
 });
 

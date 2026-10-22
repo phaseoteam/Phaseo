@@ -20063,7 +20063,7 @@ export async function makeDecision(
               right: number;
               top: number;
             };
-            confidence: number;
+            confidence: number | null;
             name: string | null;
             type: "box";
           }
@@ -20151,7 +20151,7 @@ export async function makeDecision(
                 right: number;
                 top: number;
               };
-              confidence: number;
+              confidence: number | null;
               name: string | null;
               type: "box";
             }

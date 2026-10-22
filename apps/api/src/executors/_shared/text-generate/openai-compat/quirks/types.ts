@@ -29,6 +29,8 @@ export interface ProviderQuirks {
 	extractReasoning?(args: {
 		choice: any; // Response choice object
 		rawContent: string; // Extracted text content
+		providerId?: string; // Gateway provider that returned the response
+		model?: string; // Gateway model id of the request
 	}): { main: string; reasoning: string[] };
 
 	/**

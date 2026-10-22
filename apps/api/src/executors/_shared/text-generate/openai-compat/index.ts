@@ -22,7 +22,7 @@ import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
 import { inlineAudioUrlsForProvider } from "./inline-audio";
-import { splitContentChunks } from "./providers/mistral/quirks";
+import { isMistralProvider, normalizeMistralStreamChunk, splitContentChunks } from "./providers/mistral/quirks";
 import {
 	openAICompatHeaders,
 	openAICompatUrl,
@@ -50,6 +50,7 @@ import { SseParser } from "@core/sse-parser";
 import { readUpstreamStreamError } from "@core/stream-errors";
 import {
 	ANTHROPIC_REASONING_FORMAT,
+	isSealedReasoningValue,
 	openReasoningState,
 	reasoningFormatForRoute,
 	sealReasoningState,
@@ -465,6 +466,8 @@ export async function executeOpenAIWire(
 type StreamAdapterState = {
 	requestId: string;
 	providerId: string;
+	/** Gateway model id of the request, recorded on sealed reasoning state. */
+	model?: string | null;
 	choiceStates: Map<number, { reasoningChunks: string[] }>;
 	aionStates?: Map<number, any>;
 };
@@ -473,6 +476,7 @@ function createStreamAdapterState(args: ExecutorExecuteArgs): StreamAdapterState
 	return {
 		requestId: args.requestId,
 		providerId: args.providerId,
+		model: args.ir.model,
 		choiceStates: new Map(),
 	};
 }
@@ -1161,7 +1165,9 @@ export async function bufferStreamToIR(
 	const parser = new SseParser();
 	let finalResponse: any = null;
 	let sawDone = false;
+	const mistralStreamState = isMistralProvider(args.providerId) ? createStreamAdapterState(args) : null;
 	const applyStreamPayload = (payload: any) => {
+		if (mistralStreamState) normalizeMistralStreamChunk(payload, mistralStreamState);
 		// Responses API sends response in payload.response
 		if (route === "responses" && payload?.response) {
 			finalResponse = payload.response;
@@ -1514,6 +1520,15 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 		if (chunk.delta?.reasoning) {
 			choice.message.reasoning =
 				(choice.message.reasoning || "") + chunk.delta.reasoning;
+		}
+		// Keep reasoning state the gateway sealed into stream deltas (Mistral
+		// ThinkChunk signatures) for the final response.
+		if (Array.isArray(chunk.delta?.reasoning_details)) {
+			const sealedDetails = chunk.delta.reasoning_details.filter((entry: any) =>
+				isSealedReasoningValue(entry?.signature) || isSealedReasoningValue(entry?.data));
+			if (sealedDetails.length > 0) {
+				choice.message.reasoning_details = [...(choice.message.reasoning_details ?? []), ...sealedDetails];
+			}
 		}
 		if (chunk.delta?.tool_calls) {
 			if (!choice.message.tool_calls) choice.message.tool_calls = [];
