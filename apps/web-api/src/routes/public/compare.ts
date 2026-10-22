@@ -9,6 +9,7 @@ import { composeCompareView } from "@/models/compare-view";
 import { fetchModelPricingSources } from "@/models/pricing";
 import { composeCompareActivity, composeCompareUsage } from "@/models/compare-usage";
 import { composeComparePeers, type PeerBoardSource } from "@/models/compare-peers";
+import { composeComparePairs } from "@/models/compare-pairs";
 import { sharedPayload } from "@/cache/sharedPayload";
 import { loadEpochLeaderboard } from "@/benchmarks/model-ranks";
 import { loadBenchmarkRankings } from "./rankings";
@@ -119,6 +120,16 @@ publicCompareRouter.get("/compare/peers", async (c) => {
 	} catch (error) {
 		console.error("[web-api/compare] peers failed", { modelIds, error });
 		return c.json({ error: "compare_peers_unavailable" }, 503);
+	}
+});
+
+/** The curated comparisons that get their own indexable pages. */
+publicCompareRouter.get("/compare/pairs", async (c) => {
+	try {
+		return withPublicCache(c.json({ pairs: composeComparePairs(await loadPeerBoards(c.env)) }), COMPARE_PEERS_CACHE);
+	} catch (error) {
+		console.error("[web-api/compare] pairs failed", error);
+		return c.json({ error: "compare_pairs_unavailable" }, 503);
 	}
 });
 

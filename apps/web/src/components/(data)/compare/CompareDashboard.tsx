@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import type { ComparePairLink } from "./ComparePairSummary";
 import { decodeModelIdFromUrl, encodeModelIdForUrl } from "./compareUrl";
 import type { CompareModelOption } from "./types";
 import { CompareEmptyState } from "./view/CompareEmptyState";
@@ -14,9 +15,13 @@ type CompareDashboardProps = {
 	selectedOptions: CompareModelOption[];
 	view: CompareViewData;
 	usage: CompareViewUsageByModel;
+	/** A pair page's models. Changing the selection there opens the general compare page. */
+	fixedIds?: string[];
+	/** Curated head-to-head pages, listed when nothing is selected. */
+	pairs?: ComparePairLink[];
 };
 
-export default function CompareDashboard({ selectedOptions, view, usage }: CompareDashboardProps) {
+export default function CompareDashboard({ selectedOptions, view, usage, fixedIds, pairs = [] }: CompareDashboardProps) {
 	const t = useTranslations("Catalogue.compareView");
 	const params = useSearchParams();
 	const searchParams = useMemo(() => params ?? new URLSearchParams(), [params]);
@@ -24,11 +29,17 @@ export default function CompareDashboard({ selectedOptions, view, usage }: Compa
 	const pathname = usePathname();
 	const selectedIds = useMemo(
 		// The page fetches at most four, so ids past that are neither shown nor reported missing.
-		() => [...new Set(searchParams.getAll("models").map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4),
-		[searchParams],
+		() => fixedIds ?? [...new Set(searchParams.getAll("models").map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4),
+		[fixedIds, searchParams],
 	);
 
 	const setSelected = (ids: string[]) => {
+		if (fixedIds) {
+			// "/de-DE/compare/a-vs-b" becomes "/de-DE/compare?models=…".
+			const base = pathname.replace(//[^/]+$/, "");
+			router.push(`${base}?${ids.map((id) => `models=${encodeURIComponent(encodeModelIdForUrl(id))}`).join("&")}`);
+			return;
+		}
 		const params = new URLSearchParams(searchParams.toString());
 		params.delete("models");
 		ids.forEach((id) => params.append("models", encodeModelIdForUrl(id)));
@@ -60,7 +71,7 @@ export default function CompareDashboard({ selectedOptions, view, usage }: Compa
 					onSelectedIdsChange={setSelected}
 				/>
 			) : (
-				<CompareEmptyState selectedOptions={selectedOptions} onSelect={setSelected} />
+				<CompareEmptyState selectedOptions={selectedOptions} onSelect={setSelected} pairs={pairs} />
 			)}
 		</div>
 	);

@@ -1140,6 +1140,11 @@ export async function fetchFrontendComparePeers(modelIds: string[]): Promise<Com
 	return (await fetchPublicWebApi<{ boards: ComparePeerBoard[] }>(`/api/_web/compare/peers?ids=${encodeURIComponent(ids.join(","))}`)).boards;
 }
 
+/** The curated comparisons that get their own pages. */
+export async function fetchFrontendComparePairs(): Promise<Array<{ models: [{ id: string; name: string }, { id: string; name: string }] }>> {
+	return (await fetchPublicWebApi<{ pairs: Array<{ models: [{ id: string; name: string }, { id: string; name: string }] }> }>("/api/_web/compare/pairs")).pairs;
+}
+
 export type FrontendCompareUsage = Record<string, {
 	periodDays: number;
 	tokens30d: number;
