@@ -5,6 +5,7 @@ import { requireUser } from "@/auth/requireUser";
 import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireAccountWorkspace } from "./context";
 import { readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import { isProviderAccount } from "./provider-account";
@@ -22,6 +23,7 @@ import { accountSettingsOAuthRouter } from "./settings-oauth";
 import { accountSettingsByokRouter } from "./settings-byok";
 import { accountSettingsGuardrailsRouter } from "./settings-guardrails";
 import { accountSettingsClassifiersRouter } from "./settings-classifiers";
+import { accountSettingsSlackRouter } from "./settings-slack";
 import { accountSettingsBroadcastRouter } from "./settings-broadcast";
 import { accountSettingsWebhooksRouter } from "./settings-webhooks";
 import { accountSettingsDataContributionRouter } from "./settings-data-contribution";
@@ -146,6 +148,7 @@ accountSettingsRouter.route("/", accountSettingsOAuthRouter);
 accountSettingsRouter.route("/", accountSettingsByokRouter);
 accountSettingsRouter.route("/", accountSettingsGuardrailsRouter);
 accountSettingsRouter.route("/", accountSettingsClassifiersRouter);
+accountSettingsRouter.route("/", accountSettingsSlackRouter);
 accountSettingsRouter.route("/", accountSettingsBroadcastRouter);
 accountSettingsRouter.route("/", accountSettingsWebhooksRouter);
 accountSettingsRouter.route("/", accountSettingsDataContributionRouter);
@@ -1112,7 +1115,7 @@ accountSettingsRouter.get("/keys", async (c) => {
 	if (initialWorkspaceId) {
 		const [keysResult, usageResult] = await Promise.all([
 			client.from("keys").select("*").eq("workspace_id", initialWorkspaceId)
-				.neq("status", "deleted").neq("name", "__chat_route_managed_key__"),
+				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME),
 			// get_workspace_key_usage only returns daily totals in production, which left
 			// weekly and monthly limits at zero. This service-only RPC uses the gateway's
 			// UTC day/week/month windows; membership in this workspace was checked above.
@@ -1423,7 +1426,7 @@ accountSettingsRouter.get("/observability/destinations/new/:provider", async (c)
 	const [teamResult, keysResult, providersResult, providerModelsResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", workspaceId).maybeSingle(),
 		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId)
-			.neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: false }),
+			.neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }),
 		context.client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name").order("name", { ascending: true }),
 		context.client.from("v2_model_provider_routes").select("provider_id:provider_slug,api_model_id:model_slug,model_id:model_slug,is_active_gateway:routing_enabled").eq("routing_enabled", true).in("status", ["active", "degraded"]),
 	]);

@@ -78,6 +78,8 @@ export type CompareViewProvider = {
 	contextWindow: number | null;
 	maxOutput: number | null;
 	tiers: string[];
+	/** This route's price rows by service tier. Absent from responses cached before routes carried them. */
+	pricing?: Record<string, CompareViewPriceRow[]>;
 	quantisation: string | null;
 };
 

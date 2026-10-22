@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { ensureChatGatewayKey, resolveGatewayBaseUrlForEnvironment } from "@/chat/proxy";
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
@@ -127,7 +128,7 @@ accountSettingsClassifiersRouter.get("/classifiers", async (c) => {
 			.limit(MAX_CLASSIFIERS_PER_WORKSPACE),
 		context.client.from("keys").select("id,name,prefix,status")
 			.eq("workspace_id", workspaceId).neq("status", "deleted")
-			.neq("name", "__chat_route_managed_key__").order("created_at", { ascending: false }),
+			.neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }),
 		context.client.from("api_apps").select("id,title")
 			.eq("workspace_id", workspaceId).order("last_seen", { ascending: false }),
 	]);

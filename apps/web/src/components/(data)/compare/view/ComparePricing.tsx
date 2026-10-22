@@ -1,10 +1,11 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CompareGrid, CompareRow, MODEL_COLOURS, type CompareCell } from "./CompareGrid";
-import { bestIndices, doSameJob, hiddenConditionalRows, requestCost, sortTiers, tierRows, type Workload } from "./compareViewMath";
+import { CompareGrid, CompareRow, CompareSection, GRID_CLASS, MODEL_COLOURS, useCompareGrid, type CompareCell } from "./CompareGrid";
+import { bestIndices, doSameJob, extraBands, requestCost, tierRows, TYPICAL_REQUEST, visibleOnPhone, type Workload } from "./compareViewMath";
 import type { ComparePriceKind, CompareViewModel, CompareViewPriceRow } from "./types";
 import { useCompareFormat } from "./useCompareFormat";
 
@@ -53,31 +54,57 @@ export function Segmented<T extends string>({
 
 type MeterLine = { key: string; label: string; kind: ComparePriceKind; meter?: string };
 
-/** Every price row a tier has across the models: the main token kinds first, then each other meter. */
-function meterLines(models: CompareViewModel[], tier: string, label: (row: CompareViewPriceRow) => string, kindLabel: (kind: Exclude<ComparePriceKind, "other">) => string): MeterLine[] {
-	const rows = models.flatMap((model) => tierRows(model, tier) ?? []);
-	const lines: MeterLine[] = KIND_ORDER.filter((kind) => rows.some((row) => row.kind === kind))
+/** Every price row the chosen tiers have across the models: the main token kinds, then each other meter. */
+function meterLines(
+	models: CompareViewModel[],
+	tiers: string[],
+	label: (row: CompareViewPriceRow) => string,
+	kindLabel: (kind: Exclude<ComparePriceKind, "other">) => string,
+): { main: MeterLine[]; other: MeterLine[] } {
+	const rows = models.flatMap((model, index) => tierRows(model, tiers[index]!) ?? []);
+	const main: MeterLine[] = KIND_ORDER.filter((kind) => rows.some((row) => row.kind === kind))
 		.map((kind) => ({ key: kind, label: kindLabel(kind as Exclude<ComparePriceKind, "other">), kind }));
-	const others = new Map<string, MeterLine>();
+	const other = new Map<string, MeterLine>();
 	for (const row of rows) {
-		if (row.kind === "other" && !others.has(row.meter)) others.set(row.meter, { key: row.meter, label: label(row), kind: "other", meter: row.meter });
+		if (row.kind === "other" && !other.has(row.meter)) other.set(row.meter, { key: row.meter, label: label(row), kind: "other", meter: row.meter });
 	}
-	return [...lines, ...others.values()];
+	return { main, other: [...other.values()] };
 }
 
-export function ComparePricing({ models }: { models: CompareViewModel[] }) {
+/** Which route and tier each column is priced on, under the sticky pickers' column. */
+function RouteCaptionRow({ models, tiers }: { models: CompareViewModel[]; tiers: string[] }) {
 	const t = useTranslations("Catalogue.compareView");
 	const format = useCompareFormat();
-	const tiers = useMemo(() => sortTiers(models.flatMap((model) => Object.keys(model.pricing?.tiers ?? {}))), [models]);
-	const [tier, setTier] = useState("standard");
-	const activeTier = tiers.includes(tier) ? tier : tiers[0] ?? "standard";
+	const { phonePage } = useCompareGrid();
+	return (
+		<div role="row" className={cn(GRID_CLASS, "border-b border-border/60 pb-2 text-xs text-muted-foreground")}>
+			<span role="columnheader" className="hidden sm:block sm:px-3">{t("pricedOn")}</span>
+			{models.map((model, index) => (
+				<span key={model.id} role="columnheader" className={cn("min-w-0 truncate sm:px-3", !visibleOnPhone(index, phonePage) && "hidden sm:block")}>
+					{model.pricing
+						? `${model.pricing.provider.routed ? model.pricing.provider.name : t("listedOnly", { provider: model.pricing.provider.name })} · ${format.tier(tiers[index]!)}`
+						: t("notPriced")}
+				</span>
+			))}
+		</div>
+	);
+}
+
+export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; tiers: string[] }) {
+	const t = useTranslations("Catalogue.compareView");
+	const format = useCompareFormat();
+	const [showAll, setShowAll] = useState(false);
 	const sameJob = doSameJob(models);
-	const lines = meterLines(models, activeTier, format.meter, (kind) => t(KIND_LABELS[kind]));
-	const conditional = models.reduce((sum, model) => sum + hiddenConditionalRows(model, activeTier), 0);
+	const { main, other } = meterLines(models, tiers, format.meter, (kind) => t(KIND_LABELS[kind]));
+	const perMillion = t("perMillionTokens");
+
+	const priceContent = (row: CompareViewPriceRow) => (row.unit === "token"
+		? <>{format.price(row)}<span className="ml-1 text-xs font-normal text-muted-foreground">{perMillion}</span></>
+		: format.price(row));
 
 	const cells = (line: MeterLine): CompareCell[] => {
-		const rows = models.map((model) => {
-			const tierPrices = tierRows(model, activeTier);
+		const rows = models.map((model, index) => {
+			const tierPrices = tierRows(model, tiers[index]!);
 			if (!tierPrices) return { state: "notOffered" as const };
 			const matches = tierPrices.filter((row) => (line.meter ? row.meter === line.meter : row.kind === line.kind));
 			if (!matches.length) return { state: "missing" as const };
@@ -90,51 +117,62 @@ export function ComparePricing({ models }: { models: CompareViewModel[] }) {
 			if (entry.state === "notOffered") return { content: t("notOffered"), text: "", muted: true };
 			if (entry.state === "missing") {
 				const automatic = line.kind === "cacheWrite5m" || line.kind === "cacheWrite1h" || line.kind === "cacheWrite";
-				return { content: automatic ? t("noWriteFee") : t("noPricePublished"), text: "", muted: true };
+				return { content: automatic ? t("noWriteFee") : "—", text: "", muted: true };
 			}
-			return { content: format.price(entry.row), text: `${entry.row.price}/${entry.row.per}`, best: best.has(index) };
+			const bands = extraBands(models[index]!, tiers[index]!, entry.row);
+			return {
+				content: priceContent(entry.row),
+				text: `${entry.row.price}/${entry.row.per}`,
+				best: best.has(index),
+				sub: bands.length ? (
+					<span className="mt-0.5 block space-y-0.5">
+						{entry.row.condition ? <span className="block">{t("bandPrice", { condition: entry.row.condition, price: format.price(entry.row) })}</span> : null}
+						{bands.map((band) => <span key={band.condition ?? band.price} className="block">{t("bandPrice", { condition: band.condition ?? "", price: format.price(band) })}</span>)}
+					</span>
+				) : undefined,
+			};
 		});
 	};
 
+	const typicalCells = (): CompareCell[] => {
+		const costs = models.map((model, index) => requestCost(model, TYPICAL_REQUEST, tiers[index]));
+		const best = bestIndices(costs, "lower");
+		return costs.map((cost, index) => (cost == null
+			? { content: t("notPriced"), text: "", muted: true }
+			: { content: format.usd(cost), text: String(cost), best: best.has(index) }));
+	};
+
+	const anyPriced = models.some((model) => model.pricing);
 	return (
-		<section id="pricing" aria-labelledby="compare-pricing" className="scroll-mt-32 space-y-3">
-			<div className="flex flex-wrap items-end justify-between gap-3">
-				<div>
-					<h2 id="compare-pricing" className="text-base font-semibold">{t("pricing")}</h2>
-					<p className="text-xs text-muted-foreground">{t("pricingSub")}</p>
-				</div>
-				{tiers.length > 1 ? (
-					<Segmented label={t("tier")} value={activeTier} onChange={setTier} options={tiers.map((value) => ({ value, label: format.tier(value) }))} />
-				) : null}
-			</div>
-			{lines.length ? (
+		<CompareSection id="pricing" title={t("pricing")} description={sameJob ? t("pricingSubRoute") : t("pricingGroupSourceUnits")}>
+			{anyPriced ? (
 				<CompareGrid label={t("pricing")}>
-					<div role="row" className="hidden border-b border-border/70 pb-1 text-xs text-muted-foreground sm:grid sm:[grid-template-columns:var(--compare-columns)] sm:gap-x-3">
-						<span role="columnheader" />
-						{models.map((model) => (
-							<span key={model.id} role="columnheader" className="px-3">
-								{model.pricing ? (model.pricing.provider.routed ? model.pricing.provider.name : t("listedOnly", { provider: model.pricing.provider.name })) : t("notPriced")}
-							</span>
-						))}
-						<span role="columnheader" />
-					</div>
-					{lines.map((line, index) => (
+					<RouteCaptionRow models={models} tiers={tiers} />
+					{main.map((line) => <CompareRow key={line.key} label={line.label} cells={cells(line)} />)}
+					{sameJob ? (
 						<CompareRow
-							key={line.key}
-							label={line.label}
-							cells={cells(line)}
-							note={index === 0 ? t("perMillionUnlessStated") : undefined}
+							label={t("typicalRequest")}
+							labelSub={t("typicalRequestSub")}
+							cells={typicalCells()}
 						/>
-					))}
+					) : null}
+					{showAll ? other.map((line) => <CompareRow key={line.key} label={line.label} cells={cells(line)} />) : null}
 				</CompareGrid>
 			) : (
 				<p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">{t("noPricing")}</p>
 			)}
-			<p className="rounded-md border-l-2 border-sky-500 bg-sky-500/5 px-3 py-2 text-xs text-muted-foreground">
-				{t(`tierNote.${["standard", "batch", "flex", "priority"].includes(activeTier) ? activeTier : "other"}` as never)}
-				{conditional ? ` ${t("conditionalPrices", { count: conditional })}` : ""}
-			</p>
-		</section>
+			{other.length ? (
+				<button
+					type="button"
+					onClick={() => setShowAll((value) => !value)}
+					aria-expanded={showAll}
+					className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+				>
+					<ChevronDown aria-hidden className={cn("size-3.5 transition-transform", showAll && "rotate-180")} />
+					{showAll ? t("fewerMeters") : t("moreMeters", { count: other.length })}
+				</button>
+			) : null}
+		</CompareSection>
 	);
 }
 
@@ -148,7 +186,7 @@ const PRESETS: Record<string, Workload & { requests: number }> = {
 function NumberField({ label, value, onChange, max }: { label: string; value: number; onChange: (value: number) => void; max?: number }) {
 	const id = useId();
 	return (
-		<div className="grid gap-1">
+		<div className="grid min-w-0 gap-1">
 			<label htmlFor={id} className="text-xs text-muted-foreground">{label}</label>
 			<input
 				id={id}
@@ -158,14 +196,14 @@ function NumberField({ label, value, onChange, max }: { label: string; value: nu
 				max={max}
 				value={value}
 				onChange={(event) => onChange(Math.max(0, Math.min(max ?? Number.MAX_SAFE_INTEGER, Number(event.target.value) || 0)))}
-				className="h-10 rounded-md border border-border bg-background px-3 text-sm tabular-nums sm:h-9"
+				className="h-10 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm tabular-nums sm:h-9"
 			/>
 		</div>
 	);
 }
 
 /** Runs in the browser from the prices already on the page, so it costs no server work. */
-export function CompareCalculator({ models }: { models: CompareViewModel[] }) {
+export function CompareCalculator({ models, tiers }: { models: CompareViewModel[]; tiers: string[] }) {
 	const t = useTranslations("Catalogue.compareView");
 	const format = useCompareFormat();
 	const [preset, setPreset] = useState<keyof typeof PRESETS | "custom">("chat");
@@ -174,8 +212,8 @@ export function CompareCalculator({ models }: { models: CompareViewModel[] }) {
 		setPreset("custom");
 		setWorkload((current) => ({ ...current, ...patch }));
 	};
-	const results = models.map((model) => {
-		const perRequest = requestCost(model, workload);
+	const results = models.map((model, index) => {
+		const perRequest = requestCost(model, workload, tiers[index]);
 		return { model, perRequest, perMonth: perRequest == null ? null : perRequest * workload.requests * 30 };
 	});
 	const monthly = results.map((result) => result.perMonth);
@@ -184,11 +222,7 @@ export function CompareCalculator({ models }: { models: CompareViewModel[] }) {
 	if (results.every((result) => result.perRequest == null)) return null;
 
 	return (
-		<section aria-labelledby="compare-calculator" className="space-y-3">
-			<div>
-				<h2 id="compare-calculator" className="text-base font-semibold">{t("calculator")}</h2>
-				<p className="text-xs text-muted-foreground">{t("calculatorSub")}</p>
-			</div>
+		<CompareSection id="calculator" title={t("calculator")} description={t("calculatorSub")}>
 			<div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
 				<div className="space-y-3">
 					<Segmented
@@ -213,22 +247,25 @@ export function CompareCalculator({ models }: { models: CompareViewModel[] }) {
 					</div>
 				</div>
 				<div role="table" aria-label={t("calculator")} className="min-w-0">
-					<div role="row" className="grid grid-cols-[minmax(0,1fr)_5.5rem_6.5rem] gap-3 border-b border-border/70 pb-1 text-xs text-muted-foreground sm:grid-cols-[minmax(8rem,12rem)_minmax(0,1fr)_6rem_7rem]">
+					<div role="row" className="grid grid-cols-[minmax(0,1fr)_5.5rem_6.5rem] gap-3 border-b border-border/60 pb-1 text-xs text-muted-foreground sm:grid-cols-[minmax(8rem,12rem)_minmax(0,1fr)_6rem_7rem]">
 						<span role="columnheader">{t("model")}</span>
 						<span role="columnheader" className="hidden sm:block">{t("monthlyCost")}</span>
 						<span role="columnheader" className="text-right">{t("perRequest")}</span>
 						<span role="columnheader" className="text-right">{t("perMonth")}</span>
 					</div>
 					{results.map((result, index) => (
-						<div key={result.model.id} role="row" className="grid grid-cols-[minmax(0,1fr)_5.5rem_6.5rem] items-center gap-3 border-b border-border/70 py-2.5 text-sm sm:grid-cols-[minmax(8rem,12rem)_minmax(0,1fr)_6rem_7rem]">
-							<span role="rowheader" className="truncate">{result.model.name}</span>
+						<div key={result.model.id} role="row" className="grid grid-cols-[minmax(0,1fr)_5.5rem_6.5rem] items-center gap-3 border-b border-border/60 py-2.5 text-sm sm:grid-cols-[minmax(8rem,12rem)_minmax(0,1fr)_6rem_7rem]">
+							<span role="rowheader" className="min-w-0">
+								<span className="block truncate">{result.model.name}</span>
+								{result.model.pricing ? <span className="block truncate text-xs text-muted-foreground">{result.model.pricing.provider.name} · {format.tier(tiers[index]!)}</span> : null}
+							</span>
 							<span role="cell" className="hidden h-2.5 overflow-hidden rounded-sm bg-muted sm:block">
 								{result.perMonth != null && max > 0 ? (
 									<span className="block h-full rounded-sm" style={{ width: `${(result.perMonth / max) * 100}%`, background: MODEL_COLOURS[index] }} />
 								) : null}
 							</span>
 							<span role="cell" className="text-right tabular-nums">{result.perRequest == null ? t("notPriced") : format.usd(result.perRequest)}</span>
-							<span role="cell" className={cn("text-right tabular-nums", best.has(index) && "font-semibold text-emerald-700 dark:text-emerald-300")}>
+							<span role="cell" className={cn("text-right tabular-nums", best.has(index) && "font-semibold text-emerald-600 dark:text-emerald-400")}>
 								{result.perMonth == null ? "–" : format.usd(result.perMonth)}
 							</span>
 						</div>
@@ -236,6 +273,6 @@ export function CompareCalculator({ models }: { models: CompareViewModel[] }) {
 					<p className="mt-2 text-xs text-muted-foreground">{t("calculatorNote")}</p>
 				</div>
 			</div>
-		</section>
+		</CompareSection>
 	);
 }

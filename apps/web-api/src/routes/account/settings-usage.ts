@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
 import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
@@ -262,7 +263,7 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 		const monthUsageQuery = scope.creatorId || keyId || labelFilter ? null : loadMonthUsage();
 		const [keysResult, current, previous, recent, labelFacetsResult, monthUsage, requestClassifiers] = await Promise.all([
 			context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId)
-				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
+				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: true }),
 			loadWindow(from!, to!, bucket),
 			loadWindow(previousFrom!, previousTo!, null),
 			loadWindow(recentFrom, new Date(observedAt).toISOString(), null),
@@ -468,7 +469,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		const models = Array.from(new Set(upstreamRequests.map((row) => String(row.model_id ?? "").trim()).filter(Boolean)));
 		const providers = Array.from(new Set(upstreamRequests.map((row) => String(row.provider ?? "").trim()).filter(Boolean)));
 		const metadata = await metadataForIds(context, { models, providers });
-		const keysResult = await context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true });
+		const keysResult = await context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: true });
 		return c.json({ data: { availableKeys: keysResult.data ?? [], modelMetadataEntries: metadata.modelMetadataEntries, providerMetadataEntries: metadata.providerMetadataEntries, providerNameEntries: metadata.providerNameEntries, upstreamRequests }, signedIn: true, view, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
 	}
 	if (view === "jobs") {
@@ -584,7 +585,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		: null;
 	const [rollupResult, keysResult, facetsResult, labelFacetsResult, labelTotalsResult, requestClassifiers] = await Promise.all([
 		context.client.rpc("get_private_usage_facets", { p_workspace_id: workspaceId, p_from: timeRange.from, p_to: timeRange.to }),
-		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: true }),
+		context.client.from("keys").select("id,name,prefix").eq("workspace_id", workspaceId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: true }),
 		context.client.rpc("get_gateway_request_facets", {
 			p_workspace_id: workspaceId,
 			p_from: timeRange.from,
