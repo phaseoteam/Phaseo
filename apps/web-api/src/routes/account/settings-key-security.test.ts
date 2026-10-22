@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => {
 		rpc: vi.fn(),
 	};
 	const updateChain: any = {};
-	for (const method of ["eq", "in", "not"]) updateChain[method] = (...args: unknown[]) => { state.filters.push([method, ...args]); return updateChain; };
+	for (const method of ["eq", "in", "not", "or", "contains"]) updateChain[method] = (...args: unknown[]) => { state.filters.push([method, ...args]); return updateChain; };
 	updateChain.select = async () => ({ data: state.changed, error: null });
 	const client = {
 		from: vi.fn((table: string) => table === "workspace_audit_events"
@@ -77,10 +77,29 @@ describe("key security", () => {
 			["eq", "key_kind", "standard"],
 			["in", "id", keyIds],
 			["in", "status", ["active", "paused"]],
+			["or", expect.stringMatching(/^expires_at\.is\.null,expires_at\.gt\.\d{4}-/)],
 			["not", "name", "in", "(\"__chat_route_managed_key__\",\"__slack_agent_managed_key__\")"],
 		]));
 		expect(mocks.state.audit).toEqual([expect.objectContaining({ action: "api_key.revoked", target_id: keyIds[0], metadata: expect.objectContaining({ bulkAction: "revoke" }) })]);
 		expect(invalidateGatewayKey).toHaveBeenCalledWith(expect.anything(), keyIds[0]);
+	});
+
+	it("revokes every live key stored in a location, chosen on the server", async () => {
+		mocks.state.changed = [{ id: ids(1)[0], name: "Prod", prefix: "abc123" }];
+		const response = await bulk({ action: "revoke", storageLocation: "railway" });
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ changed: [ids(1)[0]], skipped: 0 });
+		expect(mocks.state.filters).toContainEqual(["contains", "storage_locations", ["railway"]]);
+		expect(mocks.state.filters.some(([method, column]) => method === "in" && column === "id")).toBe(false);
+	});
+
+	it.each([
+		[{ action: "revoke", storageLocation: "nowhere" }],
+		[{ action: "revoke", storageLocation: "railway", keyIds: ids(1) }],
+		[{ action: "set_expiry", storageLocation: "railway", expiresAt: "2999-01-01" }],
+	])("rejects a bad location selection %j", async (body) => {
+		expect((await bulk(body)).status).toBe(400);
+		expect(mocks.state.update).toBeNull();
 	});
 
 	it("pauses only active keys", async () => {

@@ -15,13 +15,16 @@ export type BulkKeyActionResult =
 	| { ok: false; status: number | null; message: string | null };
 
 // Server action errors are masked in production, so failures are returned.
-export async function bulkUpdateKeysAction(workspaceId: string, keyIds: string[], input: BulkKeyActionInput): Promise<BulkKeyActionResult> {
+/** Chosen keys by id, or every live key stored in one place (pause and revoke only). */
+export type BulkKeySelection = { keyIds: string[] } | { storageLocation: string };
+
+export async function bulkUpdateKeysAction(workspaceId: string, selection: BulkKeySelection, input: BulkKeyActionInput): Promise<BulkKeyActionResult> {
 	try {
 		const { accessToken } = await getServerAccountContext();
 		if (!accessToken) return { ok: false, status: 401, message: null };
 		const result = await fetchAccountWebApi<{ changed: string[]; skipped: number }>("/api/account/settings/key-security/bulk", accessToken, {
 			method: "POST",
-			body: JSON.stringify({ ...input, workspaceId, keyIds }),
+			body: JSON.stringify({ ...input, ...selection, workspaceId }),
 		});
 		for (const path of ["/settings/security", "/settings/keys"]) revalidatePath(path);
 		return { ok: true, ...result };

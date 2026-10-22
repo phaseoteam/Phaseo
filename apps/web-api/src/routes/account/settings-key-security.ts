@@ -6,7 +6,7 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { sanitizeAuditMetadata } from "@/lib/audit/workspaceAudit";
 import { CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireAccountWorkspace } from "./context";
-import { parseKeyStorageLocations } from "./key-storage-locations";
+import { isKeyStorageLocationId, parseKeyStorageLocations } from "./key-storage-locations";
 import { invalidateGatewayKey } from "./settings-keys";
 
 /** Most keys one bulk action can change. */
@@ -96,20 +96,28 @@ accountSettingsKeySecurityRouter.post("/key-security/bulk", bodyLimit({ maxSize:
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: String(body.workspaceId ?? "").trim() });
 	if (!context || !isManager(context.role)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	// Keys are chosen by id (up to MAX_BULK_KEYS), or, to pause or revoke every
+	// key stored in one place, by storage location: the page may not have loaded
+	// every key, so that selection is made here.
+	const storageLocation = body.storageLocation === undefined ? null : body.storageLocation;
+	if (storageLocation !== null && (!isKeyStorageLocationId(storageLocation) || body.keyIds !== undefined)) return c.json({ error: "invalid_keys", message: "Send either keyIds or a known storageLocation." }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (storageLocation !== null && body.action !== "pause" && body.action !== "revoke") return c.json({ error: "invalid_action", message: "Only pause and revoke apply to a whole storage location." }, 400, PRIVATE_NO_STORE_HEADERS);
 	const keyIds = Array.isArray(body.keyIds) ? [...new Set(body.keyIds.filter((id): id is string => typeof id === "string" && UUID_PATTERN.test(id)))] : [];
-	if (keyIds.length === 0 || keyIds.length !== (body.keyIds as unknown[]).length) return c.json({ error: "invalid_keys", message: "keyIds must be a list of distinct key ids." }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (storageLocation === null && (keyIds.length === 0 || keyIds.length !== (body.keyIds as unknown[]).length)) return c.json({ error: "invalid_keys", message: "keyIds must be a list of distinct key ids." }, 400, PRIVATE_NO_STORE_HEADERS);
 	if (keyIds.length > MAX_BULK_KEYS) return c.json({ error: "too_many_keys", message: `Change at most ${MAX_BULK_KEYS} keys at once.` }, 400, PRIVATE_NO_STORE_HEADERS);
 	const plan = bulkKeyUpdate(body.action, body);
 	if (plan.ok === false) return c.json({ error: plan.error, message: plan.message }, 400, PRIVATE_NO_STORE_HEADERS);
 
-	// One statement, limited to this workspace's live dashboard keys.
-	const result = await context.client.from("keys").update(plan.update)
+	// One statement, limited to this workspace's live dashboard keys. Expired
+	// keys are left alone so a new expiry can't bring one back.
+	let query = context.client.from("keys").update(plan.update)
 		.eq("workspace_id", context.workspaceId)
 		.eq("key_kind", "standard")
-		.in("id", keyIds)
 		.in("status", plan.statuses)
-		.not("name", "in", `("${CHAT_MANAGED_KEY_NAME}","${SLACK_AGENT_MANAGED_KEY_NAME}")`)
-		.select("id,name,prefix");
+		.or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+		.not("name", "in", `("${CHAT_MANAGED_KEY_NAME}","${SLACK_AGENT_MANAGED_KEY_NAME}")`);
+	query = storageLocation !== null ? query.contains("storage_locations", [storageLocation]) : query.in("id", keyIds);
+	const result = await query.select("id,name,prefix");
 	if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const changed = (result.data ?? []) as Array<{ id: string; name: string | null; prefix: string | null }>;
 
@@ -122,11 +130,11 @@ accountSettingsKeySecurityRouter.post("/key-security/bulk", bodyLimit({ maxSize:
 			target_type: "api_key",
 			target_id: key.id,
 			target_name: key.name?.slice(0, 200) ?? null,
-			metadata: sanitizeAuditMetadata({ source: "security_review", bulkAction: body.action, changedFields: Object.keys(plan.update), prefix: key.prefix, ...plan.metadata }),
+			metadata: sanitizeAuditMetadata({ source: "security_review", bulkAction: body.action, ...(storageLocation !== null ? { storageLocation } : {}), changedFields: Object.keys(plan.update), prefix: key.prefix, ...plan.metadata }),
 			request_id: requestId(c)?.slice(0, 200) ?? null,
 		})));
 		if (audit.error) console.error("[key-security] failed to record bulk audit events", { workspaceId: context.workspaceId, count: changed.length });
 		if (plan.invalidate) c.executionCtx.waitUntil(invalidateAll(c.env, changed.map((key) => key.id)));
 	}
-	return c.json({ changed: changed.map((key) => key.id), skipped: keyIds.length - changed.length }, 200, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ changed: changed.map((key) => key.id), skipped: storageLocation !== null ? 0 : keyIds.length - changed.length }, 200, PRIVATE_NO_STORE_HEADERS);
 });

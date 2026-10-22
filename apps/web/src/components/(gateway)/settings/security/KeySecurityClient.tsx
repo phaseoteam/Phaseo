@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { DisplayDate } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
-import { bulkUpdateKeysAction, type BulkKeyActionInput } from "@/app/(dashboard)/settings/security/actions";
+import { bulkUpdateKeysAction, type BulkKeyActionInput, type BulkKeySelection } from "@/app/(dashboard)/settings/security/actions";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import { keyDetailHref } from "../keys/keyDetailHref";
 import {
@@ -60,7 +60,7 @@ export function keyOwnerCsv(keys: KeySecurityKey[]) {
 	return [["key", "prefix", "owner", "owner_email", "last_used", "expires", "stored_in"], ...rows].map((row) => row.map(cell).join(",")).join("\n");
 }
 
-type PendingAction = { action: BulkKeyActionInput["action"]; keyIds: string[]; label: string };
+type PendingAction = { action: BulkKeyActionInput["action"]; selection: BulkKeySelection; count: number; label: string };
 
 function Stat({ icon: Icon, label, value, help, active, onClick }: {
 	icon: typeof Wallet; label: string; value: number; help: string; active: boolean; onClick: () => void;
@@ -109,7 +109,13 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 	function open(action: PendingAction["action"], keyIds: string[], label: string) {
 		if (keyIds.length > maxBulkKeys) { toast.error(t("keySecurity.tooMany", { max: maxBulkKeys })); return; }
 		setConfirmText(""); setSpendLimitUsd(""); setExpiresOn(""); setLocations([]);
-		setPending({ action, keyIds, label });
+		setPending({ action, selection: { keyIds }, count: keyIds.length, label });
+	}
+
+	// Every live key in a location, including any this page didn't load.
+	function openLocation(locationId: string, count: number) {
+		setConfirmText("");
+		setPending({ action: "revoke", selection: { storageLocation: locationId }, count, label: t("keySecurity.revokeAllIn", { name: nameOf(locationId) }) });
 	}
 
 	function input(): BulkKeyActionInput | null {
@@ -134,7 +140,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 		if (!pending || !request) return;
 		setBusy(true);
 		try {
-			const result = await bulkUpdateKeysAction(data.workspaceId, pending.keyIds, request);
+			const result = await bulkUpdateKeysAction(data.workspaceId, pending.selection, request);
 			if (result.ok === false) { toast.error(result.message ?? t("keySecurity.actionFailed")); return; }
 			toast.success(t("keySecurity.changed", { count: result.changed.length }));
 			setPending(null);
@@ -233,7 +239,6 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 					</div>
 					<ul className="divide-y rounded-md border">
 						{summary.locations.map((location) => {
-							const keyIds = data.keys.filter((key) => key.storage_locations.includes(location.id)).map((key) => key.id);
 							return (
 								<li key={location.id} className="flex items-center justify-between gap-3 p-3">
 									<div className="flex min-w-0 items-center gap-2 text-sm">
@@ -244,7 +249,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 									<div className="flex shrink-0 gap-2">
 										<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => choose({ kind: "location", id: location.id })}>{t("keySecurity.viewKeys")}</Button>
 										{canManage ? (
-											<Button type="button" variant="destructive" size="sm" className="rounded-md" onClick={() => open("revoke", keyIds, t("keySecurity.revokeAllIn", { name: nameOf(location.id) }))}>
+											<Button type="button" variant="destructive" size="sm" className="rounded-md" onClick={() => openLocation(location.id, location.keys)}>
 												<ShieldOff className="size-4" />{t("keySecurity.revokeAll")}
 											</Button>
 										) : null}
@@ -262,6 +267,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 						{filter.kind === "all" ? t("keySecurity.allKeys") : filter.kind === "location" ? t("keySecurity.keysIn", { name: nameOf(filter.id) }) : t(`keySecurity.filters.${filter.kind}` as never)}
 						<span className="ml-2 font-normal text-muted-foreground">{visible.length}</span>
 					</h2>
+					{data.keys.length < summary.total ? <p className="w-full text-xs text-muted-foreground">{t("keySecurity.partial", { shown: data.keys.length, total: summary.total })}</p> : null}
 					{filter.kind !== "all" ? <Button type="button" variant="ghost" size="sm" className="rounded-md" onClick={() => choose({ kind: "all" })}>{t("keySecurity.clearFilter")}</Button> : null}
 				</div>
 
@@ -352,7 +358,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 					<DialogHeader className="gap-2">
 						<DialogTitle>{pending?.label}</DialogTitle>
 						<DialogDescription>
-							{pending ? confirmMessage[pending.action](pending.keyIds.length) : null}
+							{pending ? confirmMessage[pending.action](pending.count) : null}
 						</DialogDescription>
 					</DialogHeader>
 					{pending?.action === "set_monthly_spend_limit" ? (
