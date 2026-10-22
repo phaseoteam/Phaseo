@@ -10,6 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "packages/shared/slack-agent-pricing/index.ts";
 const TARGETS = [
 	"apps/web-api/src/billing/slackAgentPricing.ts",
+	"apps/slack/src/lib/slackAgentPricing.ts",
 ];
 
 const check = process.argv.includes("--check");

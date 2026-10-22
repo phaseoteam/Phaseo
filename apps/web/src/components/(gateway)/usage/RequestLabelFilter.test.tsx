@@ -42,15 +42,15 @@ describe("readActiveLabelFilter", () => {
 
 describe("RequestLabelFilter", () => {
 	it("shows classifier dimensions by name", () => {
-		expect(render({ label_key: "department", label_value: "legal" })).toContain("Department = legal");
-		expect(render({ label_key: "department", label_value: "legal", label_op: "is_not" })).toContain("Department ≠ legal");
+		expect(render({ label_key: "department", label_value: "legal" })).toContain("Department: legal");
+		expect(render({ label_key: "department", label_value: "legal", label_op: "is_not" })).toContain("Department: not legal");
 		expect(render({ label_key: "department" })).toContain("Department has any value");
 		expect(render({ label_key: "department", label_op: "is_not" })).toContain("Department is not set");
 	});
 
 	it("names classifier calls by classifier and keeps caller keys as sent", () => {
-		expect(render({ label_key: "phaseo.classifier", label_value: "c1" })).toContain("Classifier calls = Departments");
-		expect(render({ label_key: "team", label_value: "search" })).toContain("team = search");
+		expect(render({ label_key: "phaseo.classifier", label_value: "c1" })).toContain("Classifier calls: Departments");
+		expect(render({ label_key: "team", label_value: "search" })).toContain("team: search");
 	});
 
 	it("shows only exact filters as active on the usage overview", () => {

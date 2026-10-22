@@ -73,8 +73,9 @@ describe("RequestDetailDialog", () => {
 		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} classifiers={[{ id: "c1", name: "Department", enabled: true, dimensions: [{ key: "department", name: "Department", multiple: false, values: ["legal"] }] }]} request={{ ...historicalRequestWithoutCollections, detail_metadata: { labels: [{ key: "department", value: "legal" }], classifications: [{ classifier_id: "c1", status: "classified", model: "m", labels: [{ key: "department", value: "legal", confidence: 0.5 }], response_id: "req_c", cost_nanos: 1000 }] } }} />);
 		expect(markup).toContain(">Labels<");
 		expect(markup).toContain("50% confidence");
-		// Labels come before the routing details.
-		expect(markup.indexOf(">Labels<")).toBeLessThan(markup.indexOf("Routing details"));
+		// Labels sit after usage, below the routing and performance details.
+		expect(markup.indexOf("Routing details")).toBeLessThan(markup.indexOf(">Labels<"));
+		expect(markup.indexOf("Performance")).toBeLessThan(markup.indexOf(">Labels<"));
 		expect(markup).toContain("/settings/usage/logs/requests/req_c");
 	});
 	it("always offers the Trace tab beside the overview", () => {

@@ -1735,7 +1735,6 @@
 		"Out": "Saída",
 		"Refresh sessions": "Atualizar sessões",
 		"phraseLoadingSessionDetails": "Carregando os detalhes da sessão…",
-		"Filtered spend": "Gastos filtrados",
 		"phraseSpendIsCalculatedFromA5000RequestSample": "O gasto é calculado com base em uma amostra de 5.000 solicitações.",
 		"Req": "Solic.",
 		"Session": "Sessão",
@@ -3391,10 +3390,8 @@
 		"rollupAverage": "Agregação: média",
 		"guardrailBreakdown": "Detalhamento dos guardrails",
 		"guardrailEventsOverTime": "Eventos de guardrails ao longo do tempo",
-		"filteredSpend": "Gastos filtrados",
 		"requests": "Solicitações",
 		"spend": "Gasto",
-		"sampledSpend": "Gasto é calculated de um 5,000-solicitação exemplo.",
 		"topApiKeys": "Principais chaves de API",
 		"topApps": "Principais aplicativos",
 		"usageByModel": "Uso por modelo",
@@ -4497,7 +4494,8 @@
 		"workspaces": "Espaços de trabalho",
 		"classifiers": "Classificadores",
 		"newClassifier": "Novo classificador",
-		"classifier": "Classificador"
+		"classifier": "Classificador",
+		"budgets": "Orçamentos"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4724,7 +4722,8 @@
 		"becomeProvider": "Tornar-se um provedor",
 		"empty": "Nenhuma configuração encontrada.",
 		"providerProfile": "Perfil do provedor",
-		"classifiers": "Classificadores"
+		"classifiers": "Classificadores",
+		"budgets": "Orçamentos"
 	},
 	"settingsAvailability": {
 		"title": "As configurações estão temporariamente indisponíveis",
@@ -5219,10 +5218,12 @@
 		"classifierHint": "Definido pelo classificador {name}",
 		"anyValue": "qualquer valor",
 		"notSet": "não definido",
-		"filterIs": "{key} = {value}",
-		"filterIsNot": "{key} ≠ {value}",
+		"filterIs": "{key}: {value}",
+		"filterIsNot": "{key}: não {value}",
 		"filterAny": "{key} tem algum valor",
 		"filterNotSet": "{key} não está definido",
+		"filterSummary": "{count, plural, one {<strong>#</strong> solicitação} other {<strong>#</strong> solicitações}} · <strong>{spend}</strong> gastos",
+		"filterSummarySampled": "estimado a partir de uma amostra de 5.000 solicitações",
 		"breakdownTitle": "Uso por rótulo",
 		"breakdownDescription": "Solicitações, gasto e tokens de cada valor de um rótulo neste período.",
 		"classifierCallsNote": "Quanto as chamadas de classificador custaram neste período, por classificador.",
@@ -6278,5 +6279,74 @@
 			"samplePercent": "Insira uma parcela de 0,01% a 100%.",
 			"budgetUsd": "Insira um orçamento maior que $0 ou deixe o campo vazio."
 		}
+	},
+	"budgets": {
+		"title": "Orçamentos",
+		"description": "Limite quanto todo o workspace pode gastar por dia, semana ou mês, ou no total.",
+		"feedback": "Como os orçamentos poderiam funcionar melhor para você?",
+		"selectWorkspace": "Selecione um workspace para ver os orçamentos dele.",
+		"readOnly": "Somente proprietários e administradores do workspace podem alterar os orçamentos.",
+		"usageNote": "O uso inclui solicitações bem-sucedidas e trabalhos assíncronos enquanto os fundos deles estão reservados.",
+		"howItWorks": "Os orçamentos são aplicados com exatidão em todas as chaves do workspace. Quando um orçamento se esgota, o gateway rejeita as próximas solicitações com 429 até ele ser redefinido.",
+		"utcNote": "Orçamentos diários, semanais e mensais são redefinidos em limites UTC: à meia-noite, na segunda-feira às 00:00 e no dia 1º do mês. Orçamentos totais nunca são redefinidos.",
+		"keyLimitsHint": "Para limitar uma única chave, defina os limites dela em <link>Chaves de API</link>.",
+		"interval": {
+			"daily": "Diário",
+			"weekly": "Semanal",
+			"monthly": "Mensal",
+			"lifetime": "Total"
+		},
+		"period": {
+			"daily": "Hoje",
+			"weekly": "Esta semana",
+			"monthly": "Este mês",
+			"lifetime": "Desde o início"
+		},
+		"notSet": "Nenhum orçamento definido",
+		"add": "Definir orçamento",
+		"edit": "Editar",
+		"delete": "Excluir",
+		"deleting": "Excluindo…",
+		"cancel": "Cancelar",
+		"save": "Salvar",
+		"saving": "Salvando…",
+		"usedUp": "Esgotado",
+		"ofLimit": "de {limit}",
+		"percentUsed": "{percent} usado",
+		"remaining": "Restam {amount}",
+		"resets": "Redefine em {time} ({date})",
+		"neverResets": "Nunca é redefinido",
+		"onPaceFor": "No ritmo atual, {amount}",
+		"reachesLimit": "Atinge o limite ~{date}",
+		"meterLabel": "{period}: {used} de {limit}",
+		"createTitle": {
+			"daily": "Definir um orçamento diário",
+			"weekly": "Definir um orçamento semanal",
+			"monthly": "Definir um orçamento mensal",
+			"lifetime": "Definir um orçamento total"
+		},
+		"editTitle": {
+			"daily": "Editar o orçamento diário",
+			"weekly": "Editar o orçamento semanal",
+			"monthly": "Editar o orçamento mensal",
+			"lifetime": "Editar o orçamento total"
+		},
+		"deleteTitle": {
+			"daily": "Excluir o orçamento diário?",
+			"weekly": "Excluir o orçamento semanal?",
+			"monthly": "Excluir o orçamento mensal?",
+			"lifetime": "Excluir o orçamento total?"
+		},
+		"limitLabel": "Limite (USD)",
+		"limitHelp": "Quando o gasto do período atingir esse valor, as solicitações serão rejeitadas com 429 até o período ser redefinido ou você aumentar o limite.",
+		"deleteBody": "As solicitações deixarão de ser limitadas neste período. A mudança vale imediatamente.",
+		"saved": "Orçamento salvo",
+		"savedDelayed": "Orçamento salvo. Pode levar alguns minutos para valer nas solicitações.",
+		"deleted": "Orçamento excluído",
+		"errorConflict": "Este workspace já tem um orçamento para esse período. Atualize a página para editá-lo.",
+		"errorForbidden": "Somente proprietários e administradores do workspace podem alterar os orçamentos.",
+		"errorNotFound": "Este orçamento não existe mais. Atualize a página.",
+		"errorInvalid": "Insira um valor maior que zero.",
+		"errorFailed": "Não foi possível salvar o orçamento. Tente novamente em instantes."
 	}
 }
