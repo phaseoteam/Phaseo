@@ -2710,8 +2710,6 @@ export default function RequestDetailDialog({
 							</div>
 						) : null}
 
-						<RequestClassificationsSection detailMetadata={request.detail_metadata} classifiers={classifiers} modelName={(id) => getModelDisplayName(id, metadata)} />
-
 						<GenerationSection title={s("Routing details")}>
 							<DetailRows items={routingDetailItems} />
 						</GenerationSection>
@@ -2751,6 +2749,8 @@ export default function RequestDetailDialog({
 								</div>
 							)}
 						</GenerationSection>
+
+						<RequestClassificationsSection detailMetadata={request.detail_metadata} classifiers={classifiers} modelName={(id) => getModelDisplayName(id, metadata)} />
 
 						<GenerationSection title={s("Data Policy")}>
 							<DetailRows items={dataPolicyItems} />

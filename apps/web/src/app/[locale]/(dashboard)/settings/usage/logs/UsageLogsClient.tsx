@@ -18,7 +18,7 @@ import SessionsPanel from "@/components/(gateway)/usage/SessionsPanel";
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
 import UsageViewFilters from "@/components/(gateway)/usage/UsageViewFilters";
 import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
-import { buildLabelKeyOptions, labelValueDisplay } from "@/components/(gateway)/usage/requestClassifierLabels";
+import LabelFilterSummary from "@/components/(gateway)/usage/LabelFilterSummary";
 import InvestigateGeneration from "@/components/(gateway)/usage/UsageHeader/InvestigateGeneration";
 import UpstreamRequestsTable from "@/components/(gateway)/usage/UpstreamRequestsTable";
 import {
@@ -69,12 +69,6 @@ function firstSearchParam(
 	if (typeof value === "string") return value;
 	if (Array.isArray(value)) return value[0];
 	return undefined;
-}
-
-function formatLabelSpend(nanos: number, locale: string): string {
-	return new Intl.NumberFormat(locale, {
-		style: "currency", currency: "USD", minimumFractionDigits: 5, maximumFractionDigits: 5,
-	}).format(Number.isFinite(nanos) ? nanos / 1e9 : 0);
 }
 
 const SAMPLE_CLIENT_SOURCES = [
@@ -159,7 +153,6 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 	scope: AccountQueryScope;
 }) {
 	const t = useTranslations("SettingsUI");
-	const tLabels = useTranslations("SettingsUI.requestClassifierUsage");
 	const locale = useLocale();
 	const detailQuery = usePrivateUsageQuery(scope, "request-detail", { request: selectedRequestId ?? "" }, firstSearchParam(sp.usage_preset) === "live", (signal) => fetchPrivateUsageRequest(selectedRequestId!, scope, signal), Boolean(selectedRequestId));
 
@@ -351,12 +344,6 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 		const clientSources = showSampleSources
 			? Array.from(new Map([...SAMPLE_CLIENT_SOURCES.map((source) => [source.id, { id: source.id, name: source.name }] as const), ...data.clientSources.map((source) => [source.id, source] as const)]).values())
 			: data.clientSources;
-		const labelSummaryOption = data.labelSummary
-			? buildLabelKeyOptions(data.labelFacets, data.requestClassifiers ?? []).find((option) => option.key === data.labelSummary!.key)
-			: null;
-		const labelSummaryKeyName = labelSummaryOption?.kind === "classifier_calls"
-			? tLabels("classifierCalls")
-			: labelSummaryOption?.name ?? data.labelSummary?.key ?? "";
 		filters = (
 			<>
 				<UsageViewFilters
@@ -383,29 +370,11 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 		content = (
 			<>
 				{data.labelSummary ? (
-					<Card className="ring-1 ring-primary/15">
-						<CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
-							<div className="min-w-0">
-								<p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{t("strings.Filtered spend" as never)}</p>
-								<p className="mt-1 truncate text-sm font-medium">
-									<span className="font-mono">{labelSummaryKeyName}</span>
-									<span className="px-1.5 text-muted-foreground">=</span>
-									<span>{labelValueDisplay(data.labelSummary.key, data.labelSummary.value, data.requestClassifiers ?? [])}</span>
-								</p>
-							</div>
-							<div className="flex items-center gap-6 text-sm">
-								<div>
-									<p className="text-xs text-muted-foreground">{t("strings.Requests" as never)}</p>
-									<p className="mt-1 font-mono font-medium">{new Intl.NumberFormat(locale).format(data.labelSummary.requestCount)}</p>
-								</div>
-								<div>
-									<p className="text-xs text-muted-foreground">{t("strings.Spend" as never)}</p>
-									<p className="mt-1 font-mono font-medium">{formatLabelSpend(data.labelSummary.totalCostNanos, locale)}</p>
-								</div>
-							</div>
-							{data.labelSummary.isSampled ? <p className="basis-full text-xs text-muted-foreground">{t("strings.phraseSpendIsCalculatedFromA5000RequestSample" as never)}</p> : null}
-						</CardContent>
-					</Card>
+					<LabelFilterSummary
+						requestCount={data.labelSummary.requestCount}
+						totalCostNanos={data.labelSummary.totalCostNanos}
+						isSampled={data.labelSummary.isSampled}
+					/>
 				) : null}
 				<RequestsSection
 					columnSettingsTargetId="request-column-settings"
