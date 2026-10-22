@@ -268,7 +268,6 @@
     "public/tables/workspace_rate_limit_overrides.sql",
     "public/tables/workspace_rate_limit_policies.sql",
     "public/tables/workspace_rate_limit_policy_assignments.sql",
-<<<<<<< HEAD
     "public/tables/workspace_request_classifiers.sql",
     "public/tables/workspace_request_classifier_spend_monthly.sql",
     "public/tables/slack_apps.sql",
@@ -276,11 +275,7 @@
     "public/tables/slack_user_links.sql",
     "public/tables/slack_agent_monthly_people.sql",
     "public/tables/slack_agent_charges.sql",
-=======
->>>>>>> f39bc7462d (Add generated catalog data policy migration)
     "public/tables/workspace_rate_limit_throttles_minute.sql",
-    "public/tables/workspace_request_classifier_spend_monthly.sql",
-    "public/tables/workspace_request_classifiers.sql",
     "public/tables/workspace_settings.sql",
     "public/tables/workspace_sso_monthly_active_users.sql",
     "public/tables/workspace_top_up_fee_decisions.sql",
@@ -425,7 +420,6 @@
     "public/functions/deduct_and_check_top_up.sql",
     "public/functions/default_workspace_publisher_handle.sql",
     "public/functions/enforce_broadcast_destination_limit.sql",
-<<<<<<< HEAD
     "public/functions/enforce_request_classifier_limit.sql",
     "public/functions/record_request_classifier_spend.sql",
     "public/functions/protect_slack_agent_guardrail.sql",
@@ -433,13 +427,10 @@
     "public/functions/list_slack_agent_due_charges.sql",
     "public/functions/charge_slack_agent_month.sql",
     "public/functions/get_slack_agent_month_usage.sql",
-=======
->>>>>>> f39bc7462d (Add generated catalog data policy migration)
     "public/functions/enforce_byok_key_provider_limit.sql",
     "public/functions/enforce_canonical_routing_capability.sql",
     "public/functions/enforce_oauth_device_poll_interval.sql",
     "public/functions/enforce_provider_catalog_source_owner_limit.sql",
-    "public/functions/enforce_request_classifier_limit.sql",
     "public/functions/enforce_self_serve_provider_approval.sql",
     "public/functions/enforce_self_serve_provider_review_routing.sql",
     "public/functions/enforce_workspace_invite_role_policy.sql",
@@ -734,7 +725,6 @@
     "public/functions/record_model_discovery_payload_fingerprints.sql",
     "public/functions/record_model_discovery_review_decision.sql",
     "public/functions/record_model_substitution.sql",
-    "public/functions/record_request_classifier_spend.sql",
     "public/functions/record_spend_limit_reached.sql",
     "public/functions/record_workspace_sso_active_user.sql",
     "public/functions/redeem_credit_code.sql",
@@ -980,7 +970,6 @@
     "public/functions/deduct_and_check_top_up.sql",
     "public/functions/default_workspace_publisher_handle.sql",
     "public/functions/enforce_broadcast_destination_limit.sql",
-<<<<<<< HEAD
     "public/functions/enforce_request_classifier_limit.sql",
     "public/functions/record_request_classifier_spend.sql",
     "public/functions/protect_slack_agent_guardrail.sql",
@@ -988,13 +977,10 @@
     "public/functions/list_slack_agent_due_charges.sql",
     "public/functions/charge_slack_agent_month.sql",
     "public/functions/get_slack_agent_month_usage.sql",
-=======
->>>>>>> f39bc7462d (Add generated catalog data policy migration)
     "public/functions/enforce_byok_key_provider_limit.sql",
     "public/functions/enforce_canonical_routing_capability.sql",
     "public/functions/enforce_oauth_device_poll_interval.sql",
     "public/functions/enforce_provider_catalog_source_owner_limit.sql",
-    "public/functions/enforce_request_classifier_limit.sql",
     "public/functions/enforce_self_serve_provider_approval.sql",
     "public/functions/enforce_self_serve_provider_review_routing.sql",
     "public/functions/enforce_workspace_invite_role_policy.sql",
@@ -1289,7 +1275,6 @@
     "public/functions/record_model_discovery_payload_fingerprints.sql",
     "public/functions/record_model_discovery_review_decision.sql",
     "public/functions/record_model_substitution.sql",
-    "public/functions/record_request_classifier_spend.sql",
     "public/functions/record_spend_limit_reached.sql",
     "public/functions/record_workspace_sso_active_user.sql",
     "public/functions/redeem_credit_code.sql",
@@ -1623,7 +1608,6 @@
     "public/tables/workspace_rate_limit_overrides.sql",
     "public/tables/workspace_rate_limit_policies.sql",
     "public/tables/workspace_rate_limit_policy_assignments.sql",
-<<<<<<< HEAD
     "public/tables/workspace_request_classifiers.sql",
     "public/tables/workspace_request_classifier_spend_monthly.sql",
     "public/tables/slack_apps.sql",
@@ -1631,11 +1615,7 @@
     "public/tables/slack_user_links.sql",
     "public/tables/slack_agent_monthly_people.sql",
     "public/tables/slack_agent_charges.sql",
-=======
->>>>>>> f39bc7462d (Add generated catalog data policy migration)
     "public/tables/workspace_rate_limit_throttles_minute.sql",
-    "public/tables/workspace_request_classifier_spend_monthly.sql",
-    "public/tables/workspace_request_classifiers.sql",
     "public/tables/workspace_settings.sql",
     "public/tables/workspace_sso_monthly_active_users.sql",
     "public/tables/workspace_top_up_fee_decisions.sql",
