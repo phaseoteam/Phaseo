@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
@@ -10,15 +11,21 @@ const render = (props: React.ComponentProps<typeof LabelFilterSummary>) => rende
 	</NextIntlClientProvider>,
 );
 
+const textOf = (html: string) => {
+	const node = document.createElement("div");
+	node.innerHTML = html;
+	return node.textContent;
+};
+
 describe("LabelFilterSummary", () => {
 	it("is one plain line with the count and spend", () => {
 		const html = render({ requestCount: 1, totalCostNanos: 26_980 });
-		expect(html.replace(/<[^>]+>/g, "")).toBe("1 request · $0.000027 spent");
+		expect(textOf(html)).toBe("1 request · $0.000027 spent");
 		expect(html).not.toMatch(/uppercase|font-mono|rounded-(lg|xl|full)/);
 	});
 
 	it("pluralises and notes a sample", () => {
-		const text = render({ requestCount: 1234, totalCostNanos: 12.5e9, isSampled: true }).replace(/<[^>]+>/g, "");
+		const text = textOf(render({ requestCount: 1234, totalCostNanos: 12.5e9, isSampled: true }));
 		expect(text).toBe("1,234 requests · $12.50 spent · estimated from a 5,000-request sample");
 	});
 
