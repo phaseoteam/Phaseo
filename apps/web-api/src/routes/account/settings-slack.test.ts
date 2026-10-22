@@ -273,6 +273,9 @@ describe("Slack agent install", () => {
 			[{ monthly_cap_usd: 1 }, "at least the plan's price ($2.99)"],
 			[{ max_people: 5 }, "max_people must be at least plan_people"],
 			[{ token_monthly_limit_usd: -1 }, "token_monthly_limit_usd"],
+			[{ answers_per_person_hour: 0 }, "answers_per_person_hour must be a whole number from 1 to 10,000"],
+			[{ allow_guests: "yes" }, "allow_guests must be true or false"],
+			[{ allow_external_users: 1 }, "allow_external_users must be true or false"],
 			[{ model: "" }, "model must be a model id"],
 			[{ access_mode: "anyone" }, "access_mode"],
 			[{ usage_data_mode: "all" }, "usage_data_mode"],
@@ -305,7 +308,11 @@ describe("Slack agent install", () => {
 		if (verified.ok) {
 			expect(verified.payload).toMatchObject({
 				workspace_id: WORKSPACE, user_id: "user-a",
-				settings: { plan_people: 250, over_plan: "move_up", max_people: 400, monthly_cap_usd: 60, token_monthly_limit_usd: 40, model: "phaseo/auto", slack_app_id: null },
+				settings: {
+					plan_people: 250, over_plan: "move_up", max_people: 400, monthly_cap_usd: 60, token_monthly_limit_usd: 40, model: "phaseo/auto", slack_app_id: null,
+					// The table's defaults when the install doesn't choose them.
+					answers_per_person_hour: 60, allow_guests: true, allow_external_users: false,
+				},
 			});
 			expect(verified.payload.exp - before).toBeGreaterThanOrEqual(599);
 			expect(verified.payload.exp - before).toBeLessThanOrEqual(601);
@@ -396,6 +403,7 @@ describe("Slack OAuth callback", () => {
 			workspace_id: WORKSPACE, slack_app_id: null, team_id: "T0TEAM0001", team_name: "Acme", enterprise_id: null,
 			bot_user_id: "U0BOT0001", key_id: KEY_ID, guardrail_id: GUARDRAIL_ID, model: "phaseo/auto", access_mode: "everyone",
 			usage_data_mode: "dm", plan_people: 10, over_plan: "refuse", max_people: null, monthly_cap_nanos: 25_000_000_000, installed_by: "user-a",
+			answers_per_person_hour: 60, allow_guests: true, allow_external_users: false,
 		});
 		const secrets = await decryptSlackSecrets(env as never, installation.secrets_ciphertext);
 		expect(secrets).toEqual({ bot_token: BOT_TOKEN, gateway_key: expect.stringMatching(new RegExp(`^phaseo_v1_sk_${key.kid}_[A-Za-z0-9]{40}$`)) });
@@ -407,6 +415,14 @@ describe("Slack OAuth callback", () => {
 		const audit = find(requests, "POST", "/workspace_audit_events")[0].body;
 		expect(audit).toMatchObject({ workspace_id: WORKSPACE, actor_user_id: "user-a", action: "slack_agent.installed", target_id: INSTALLATION_ID, target_name: "Acme" });
 		expect(audit.metadata).toMatchObject({ team_id: "T0TEAM0001", plan_people: 10, monthly_cap_usd: 25, key_monthly_limit_usd: 40 });
+	});
+
+	it("installs with the hourly limit, guests and Slack Connect chosen before installing", async () => {
+		const requests = database({ role: "admin" });
+		const state = await installState({ answers_per_person_hour: 20, allow_guests: false, allow_external_users: true });
+		expect(location(await callback({ code: "123.456.abc", state })).searchParams.get("installed")).toBe("1");
+		expect(find(requests, "POST", "/slack_installations")[0].body).toMatchObject({ answers_per_person_hour: 20, allow_guests: false, allow_external_users: true });
+		expect(find(requests, "POST", "/workspace_audit_events")[0].body.metadata).toMatchObject({ answers_per_person_hour: 20, allow_guests: false, allow_external_users: true });
 	});
 
 	it("refuses a Slack team that is live in another Phaseo workspace, without creating anything", async () => {
