@@ -20,6 +20,9 @@ import { getProviderAvailablePlans } from "@/components/(data)/model/pricing/pro
 const PLAN_ORDER = ["free", "standard", "priority", "ultrafast", "flex", "batch"];
 const PRICING_HISTORY_DAYS = 3650;
 const INSIGHTS_WINDOW_DAYS = 365;
+// Matches the server's old per-series fallback: after this, show whatever has
+// arrived and let slow or offline series fill in when they load.
+const INSIGHTS_WAIT_MS = 2_500;
 
 function providerWindowQuery(providerIds: string[]) {
 	const query = new URLSearchParams();
@@ -60,8 +63,13 @@ function usePricingInsightsData(modelId: string, providerIds: string[], includeH
 			(await fetchPublicWebApi<{ rows: ModelEffectivePricingDailyRow[] }>(`/api/_web/models/${model}/effective-pricing-daily?${query}`, { signal })).rows,
 		...WEB_QUERY_POLICIES.publicNoPolling,
 	});
-	// A failed series renders as empty, as it did when the server timed it out.
-	const settled = (!history.isPending || includeHidden) && !usage.isPending && !effective.isPending;
+	const [waitedLongEnough, setWaitedLongEnough] = useState(false);
+	useEffect(() => {
+		const timer = setTimeout(() => setWaitedLongEnough(true), INSIGHTS_WAIT_MS);
+		return () => clearTimeout(timer);
+	}, []);
+	// A failed or late series renders as empty, as it did when the server timed it out.
+	const settled = waitedLongEnough || ((!history.isPending || includeHidden) && !usage.isPending && !effective.isPending);
 	return {
 		settled,
 		historyRules: history.data ?? [],
