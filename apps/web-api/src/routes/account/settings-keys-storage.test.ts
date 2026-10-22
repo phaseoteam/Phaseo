@@ -74,8 +74,10 @@ describe("key storage locations", () => {
             expect(response.status).toBe(409);
             expect(await response.json()).toMatchObject({ error: "key_revoked" });
             expect(mocks.update).not.toHaveBeenCalled();
-            // Other settings on a revoked key can still change.
+            // Other settings on a revoked key can still change, even when a client sends paused: true back.
             expect((await request("PUT", "/keys/key-1", { storageLocations: [] })).status).toBe(200);
+            expect((await request("PUT", "/keys/key-1", { paused: true, name: "Renamed" })).status).toBe(200);
+            expect(mocks.update).toHaveBeenLastCalledWith({ name: "Renamed" });
         } finally {
             mocks.key.status = "active";
         }

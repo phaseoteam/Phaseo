@@ -809,11 +809,13 @@ async function handleUpdateKey(req: Request) {
 			if (isManagedKeyName(nextName)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 			updatePayload.name = nextName;
 		}
-		if (typeof body.disabled === "boolean") {
-			// Revoked keys may be exposed; they stay revoked (protect_revoked_key_status).
-			if (["revoked", "compromised"].includes(String(existing.status ?? "").toLowerCase())) {
-				return json({ error: "key_revoked", message: "This key was revoked and cannot be turned back on. Rotate it or create a new key." }, 409, { "Cache-Control": "no-store" });
-			}
+		// Revoked keys may be exposed; they stay revoked (protect_revoked_key_status).
+		// disabled: true already holds for them, so only turning them on is refused.
+		const revoked = ["revoked", "compromised"].includes(String(existing.status ?? "").toLowerCase());
+		if (body.disabled === false && revoked) {
+			return json({ error: "key_revoked", message: "This key was revoked and cannot be turned back on. Rotate it or create a new key." }, 409, { "Cache-Control": "no-store" });
+		}
+		if (typeof body.disabled === "boolean" && !revoked) {
 			updatePayload.status = body.disabled ? "paused" : "active";
 		}
 		if (typeof body.soft_blocked === "boolean") {

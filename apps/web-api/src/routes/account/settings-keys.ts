@@ -203,8 +203,10 @@ accountSettingsKeysRouter.put("/keys/:keyId", async (c) => {
 	if (typeof body.name === "string") update.name = body.name;
 	if (typeof body.paused === "boolean") {
 		// Revoked keys may be exposed; they stay revoked (protect_revoked_key_status).
-		if (["revoked", "compromised"].includes(String(loaded.key.status).toLowerCase())) return c.json({ error: "key_revoked", message: "This key was revoked and cannot be turned back on. Rotate it or create a new key." }, 409, PRIVATE_NO_STORE_HEADERS);
-		update.status = body.paused ? "paused" : "active";
+		// paused: true already holds for them, so only resuming is refused.
+		const revoked = ["revoked", "compromised"].includes(String(loaded.key.status).toLowerCase());
+		if (revoked && !body.paused) return c.json({ error: "key_revoked", message: "This key was revoked and cannot be turned back on. Rotate it or create a new key." }, 409, PRIVATE_NO_STORE_HEADERS);
+		if (!revoked) update.status = body.paused ? "paused" : "active";
 	}
 	const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in update);
 	if (keyStateChanged && isUsableKey({ ...loaded.key, ...update })) {

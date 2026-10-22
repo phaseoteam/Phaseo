@@ -98,6 +98,10 @@ try {
   await db.exec(`update public.keys set name = 'renamed', storage_locations = '{}' where id = '${id}'`);
   await db.exec(`update public.keys set status = 'deleted' where id = '${id}'`);
   assert.equal((await status()).status, 'deleted');
+  // Revoked, then deleted, still can't come back.
+  for (const next of ['active', 'paused']) {
+    await assert.rejects(db.exec(`update public.keys set status = '${next}' where id = '${id}'`), /key_revoked_locked/, `deleted -> ${next}`);
+  }
 
   console.log('key-storage-locations: ok');
 } finally {
