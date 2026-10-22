@@ -32,6 +32,7 @@ import {
 	supportsAnthropicMidConversationSystemMessages,
 	anthropicThinkingOffType,
 	clampClaudeEffort,
+	isClaude46,
 	supportsAnthropicInferenceGeo,
 	usesClaudeAdaptiveThinkingControls,
 } from "@core/claudeModelCapabilities";
@@ -835,17 +836,34 @@ export function irToAnthropicMessages(
 			ir.reasoning.enabled === true ||
 			typeof ir.reasoning.maxTokens === "number";
 
+		const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number" && ir.reasoning.maxTokens > 0
+			? ir.reasoning.maxTokens
+			: undefined;
 		if (reasoningDisabled) {
 			request.thinking = { type: "disabled" };
+		} else if (
+			isClaude46(resolvedModel) &&
+			reasoningMaxTokens === undefined &&
+			(ir.reasoning.enabled === true || Boolean(ir.reasoning.effort))
+		) {
+			// Opus 4.6 and Sonnet 4.6 think only when `thinking` is set, and adaptive is their
+			// documented mode, so a reasoning request without a budget (effort alone, or
+			// Messages `adaptive`) turns adaptive thinking on, steered by effort.
+			// https://platform.claude.com/docs/en/build-with-claude/thinking
+			request.thinking = { type: "adaptive" };
 		} else if (hasThinkingControl) {
-			const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number"
-				? ir.reasoning.maxTokens
-				: undefined;
-			if (typeof reasoningMaxTokens === "number" && reasoningMaxTokens > 0) {
+			if (reasoningMaxTokens !== undefined) {
 				request.thinking = { type: "enabled", budget_tokens: reasoningMaxTokens };
 			} else if (ir.reasoning.enabled === true) {
 				request.thinking = { type: "enabled", budget_tokens: 1024 };
 			}
+		}
+		if (isClaude46(resolvedModel) && request.thinking && request.thinking.type !== "disabled") {
+			// With thinking on, these models reject temperature and top_k, and take top_p
+			// only from 0.95 to 1. Reasoning wins over the sampling settings.
+			delete request.temperature;
+			delete request.top_k;
+			if (typeof request.top_p === "number" && request.top_p < 0.95) delete request.top_p;
 		}
 
 		const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning.effort);
