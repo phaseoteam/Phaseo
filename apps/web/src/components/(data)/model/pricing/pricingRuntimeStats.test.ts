@@ -29,11 +29,11 @@ function stats(serviceTier = "standard"): ProviderRuntimeStats {
 	};
 }
 
-it("retains every metric, inspector point and unknown observation without mutating the full fetch result", () => {
+it("retains every metric, inspector point and unknown observation for internal pages without mutating the full fetch result", () => {
 	const source = stats();
 	const sourceJson = JSON.stringify(source);
 	const key = providerRuntimeStatsKey("example");
-	const projected = toPricingRuntimeStats({ [key]: source })[key];
+	const projected = toPricingRuntimeStats({ [key]: source }, { includeHourlyPerformance: true })[key];
 	expect(projected).not.toHaveProperty("uptimeHourly3d");
 	for (const key of Object.keys(source) as Array<keyof ProviderRuntimeStats>) {
 		if (key !== "uptimeHourly3d") expect(projected[key]).toEqual(source[key]);
@@ -57,11 +57,21 @@ it("preserves independent normalized service tier lookup and missing provider be
 	expect(toPricingRuntimeStats({})).toEqual({});
 });
 
-it("removes the duplicate 72-hour series from serialized props while retaining the full chart", () => {
+it("removes the duplicate 72-hour series from serialized props while retaining the full chart for internal pages", () => {
 	const full = { [providerRuntimeStatsKey("example")]: stats() };
-	const projected = toPricingRuntimeStats(full);
+	const projected = toPricingRuntimeStats(full, { includeHourlyPerformance: true });
 	const fullBytes = Buffer.byteLength(JSON.stringify(full));
 	const projectedBytes = Buffer.byteLength(JSON.stringify(projected));
 	expect(projectedBytes).toBeLessThan(fullBytes * 0.65);
 	expect(projected[providerRuntimeStatsKey("example")].performanceHourly3d).toHaveLength(72);
+});
+
+it("leaves the inspector series to the browser's refetch on public pages", () => {
+	const source = stats();
+	const key = providerRuntimeStatsKey("example");
+	const projected = toPricingRuntimeStats({ [key]: source })[key];
+	expect(projected.performanceHourly3d).toEqual([]);
+	expect(projected.uptimeDaily3d).toBe(source.uptimeDaily3d);
+	expect(projected.latencyMs30m).toBe(250);
+	expect(source.performanceHourly3d).toHaveLength(72);
 });
