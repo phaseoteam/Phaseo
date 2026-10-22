@@ -58,11 +58,13 @@ const OPENAI_VAD_PREFIX_PADDING_MS = 300;
 // After this many failed settlement attempts the session moves to billing
 // review instead of retrying forever.
 const RELAY_SETTLEMENT_MAX_ATTEMPTS = 20;
-// Documented audio token rates. Used only to estimate a turn whose provider
-// usage never arrived because the connection ended mid-turn.
+// Documented audio token rates, confirmed against recorded sessions on
+// 2026-10-22 (OpenAI 10/s in and ~20/s out; Google 29-32/s out). Used only to
+// estimate a turn whose provider usage never arrived because the connection
+// ended mid-turn.
 export const REALTIME_ESTIMATE_AUDIO_TOKENS_PER_SECOND: Record<"openai" | "google-ai-studio", { input: number; output: number }> = {
 	openai: { input: 10, output: 20 },
-	"google-ai-studio": { input: 25, output: 25 },
+	"google-ai-studio": { input: 32, output: 32 },
 };
 
 type RelayUsageAggregate = LiveUsage & {
