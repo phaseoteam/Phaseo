@@ -70,8 +70,8 @@ publicCompareRouter.get("/compare/usage", async (c) => {
 				trajectory: trajectory.data?.[0] ?? null,
 			};
 		}));
-		const activity = composeCompareActivity(daily.error ? [] : (daily.data ?? []) as Array<Record<string, unknown>>, modelIds, new Date());
-		const usage = Object.fromEntries(Object.entries(composeCompareUsage(sourceRows)).map(([modelId, entry]) => [modelId, { ...entry, activity30d: activity[modelId] ?? [] }]));
+		const activity = daily.error ? null : composeCompareActivity((daily.data ?? []) as Array<Record<string, unknown>>, modelIds, new Date());
+		const usage = Object.fromEntries(Object.entries(composeCompareUsage(sourceRows)).map(([modelId, entry]) => [modelId, activity ? { ...entry, activity30d: activity[modelId] ?? [] } : entry]));
 		return withPublicCache(c.json({ usage }), COMPARE_USAGE_CACHE);
 	} catch (error) {
 		console.error("[web-api/compare] usage failed", { modelIds, error });

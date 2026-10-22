@@ -42,6 +42,22 @@ describe("public compare routes", () => {
 		expect(fetchMock.mock.calls.some(([input]) => String(input).includes("get_public_compare_realtime"))).toBe(true);
 	});
 
+	it("leaves the daily series out until the activity function is deployed", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_compare_realtime")) return new Response(JSON.stringify([{ model_id: "openai/gpt-test" }]), { status: 200 });
+			if (url.includes("get_compare_usage_daily")) return new Response(JSON.stringify({ code: "PGRST202", message: "Could not find the function" }), { status: 404 });
+			return new Response(JSON.stringify([{}]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/_web/compare/usage?ids=openai%2Fgpt-test", {}, env);
+
+		expect(response.status).toBe(200);
+		const body = await response.json() as { usage: Record<string, Record<string, unknown>> };
+		expect(body.usage["openai/gpt-test"]).toBeDefined();
+		expect(body.usage["openai/gpt-test"]).not.toHaveProperty("activity30d");
+	});
+
 	it("rejects oversized detailed selections before querying the database", async () => {
 		const response = await app.request("https://phaseo.app/api/_web/compare/selection?ids=a,b,c,d,e", {}, env);
 		expect(response.status).toBe(400);

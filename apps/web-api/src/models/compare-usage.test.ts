@@ -65,7 +65,7 @@ describe("composeCompareActivity", () => {
 		expect(activity["a/one"]).toEqual([
 			{ date: "2026-10-19", requests: 1, input: 0, output: 8, reasoning: 0 },
 			{ date: "2026-10-20", requests: 0, input: 0, output: 0, reasoning: 0 },
-			{ date: "2026-10-21", requests: 5, input: 170, output: 30, reasoning: 5 },
+			{ date: "2026-10-21", requests: 5, input: 170, output: 25, reasoning: 5 },
 			{ date: "2026-10-22", requests: 0, input: 0, output: 0, reasoning: 0 },
 		]);
 		expect(activity["b/quiet"]!.every((day) => day.requests === 0 && day.input === 0)).toBe(true);

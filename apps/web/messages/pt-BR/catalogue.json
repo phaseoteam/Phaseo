@@ -2837,7 +2837,8 @@
 		"activityDay": "{date}: {tokens} tokens, {requests} solicitações",
 		"activityChart": "Tokens diários de {name} pelo Phaseo, últimos 30 dias",
 		"activityNone": "Sem tráfego pelo Phaseo nos últimos 30 dias",
-		"activityNoneAll": "Nenhum destes modelos teve tráfego pelo Phaseo nos últimos 30 dias."
+		"activityNoneAll": "Nenhum destes modelos teve tráfego pelo Phaseo nos últimos 30 dias.",
+		"activityRequestsTotal": "solicitações, últimos 30 dias"
 	},
 	"countries": {
 		"title": "IA por país",

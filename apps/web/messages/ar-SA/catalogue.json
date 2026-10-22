@@ -2837,7 +2837,8 @@
 		"activityDay": "{date}: {tokens} رمز، {requests} طلب",
 		"activityChart": "الرموز اليومية لـ {name} عبر Phaseo، آخر 30 يومًا",
 		"activityNone": "لا توجد حركة عبر Phaseo خلال آخر 30 يومًا",
-		"activityNoneAll": "لم تحصل أي من هذه النماذج على حركة عبر Phaseo خلال آخر 30 يومًا."
+		"activityNoneAll": "لم تحصل أي من هذه النماذج على حركة عبر Phaseo خلال آخر 30 يومًا.",
+		"activityRequestsTotal": "طلب، آخر 30 يومًا"
 	},
 	"countries": {
 		"title": "الذكاء الاصطناعي حسب الدولة",

@@ -63,11 +63,13 @@ export function CompareActivity({ models, usage }: { models: CompareViewModel[];
 	const { modelCount, phonePage } = useCompareGrid();
 	const activity = models.map((model) => usage[model.id]?.activity30d ?? []);
 	const totals = activity.map((days) => days.reduce((sum, day) => sum + dayTotal(day), 0));
+	// Image, audio and video models can have requests without token meters.
+	const requests = activity.map((days) => days.reduce((sum, day) => sum + day.requests, 0));
 	// An older web API sends no daily series; leave the section out rather than claim there was no traffic.
 	if (activity.every((days) => days.length === 0)) return null;
 	return (
 		<CompareSection id="activity" title={t("activity")} description={t("activitySub")}>
-			{totals.every((total) => total === 0) ? (
+			{totals.every((total, index) => total === 0 && requests[index] === 0) ? (
 				<p className="text-sm text-muted-foreground sm:px-3">{t("activityNoneAll")}</p>
 			) : (
 				<div style={gridStyle(modelCount)} className={cn(GRID_CLASS, "gap-y-4")}>
@@ -84,7 +86,12 @@ export function CompareActivity({ models, usage }: { models: CompareViewModel[];
 						const total = totals[index]!;
 						return (
 							<div key={model.id} className={cn("min-w-0 space-y-3 sm:px-3", !visibleOnPhone(index, phonePage) && "hidden sm:block")}>
-								{total > 0 && days.length > 0 ? (
+								{total === 0 && requests[index]! > 0 ? (
+									<p className="text-sm">
+										<span className="text-xl font-semibold tabular-nums">{format.tokens(requests[index]!)}</span>
+										<span className="ml-1.5 text-xs text-muted-foreground">{t("activityRequestsTotal")}</span>
+									</p>
+								) : total > 0 && days.length > 0 ? (
 									<>
 										<p className="text-sm">
 											<span className="text-xl font-semibold tabular-nums">{format.compactTokens(total)}</span>
@@ -103,7 +110,7 @@ export function CompareActivity({ models, usage }: { models: CompareViewModel[];
 											))}
 											<div className="flex items-center justify-between gap-2">
 												<dt className="pl-4 text-muted-foreground">{t("activityRequests")}</dt>
-												<dd className="font-medium tabular-nums">{format.tokens(days.reduce((sum, day) => sum + day.requests, 0))}</dd>
+												<dd className="font-medium tabular-nums">{format.tokens(requests[index]!)}</dd>
 											</div>
 										</dl>
 									</>

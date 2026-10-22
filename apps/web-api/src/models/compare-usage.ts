@@ -79,7 +79,9 @@ export type CompareActivityDay = { date: string; requests: number; input: number
 /**
  * Each model's last `days` days of Phaseo traffic, oldest first, with quiet
  * days filled in so every chart shares one axis. The database sums the rows
- * (`get_compare_usage_daily`); this only lays them out.
+ * (`get_compare_usage_daily`); this only lays them out. Reported output
+ * includes reasoning, so `output` here is the rest of it and the three kinds
+ * add up to the day's tokens, as on the model page's chart.
  */
 export function composeCompareActivity(dailyRows: Row[], modelIds: string[], today: Date, days = 30): Record<string, CompareActivityDay[]> {
 	const dates = Array.from({ length: days }, (_, index) => {
@@ -89,12 +91,13 @@ export function composeCompareActivity(dailyRows: Row[], modelIds: string[], tod
 	const byKey = new Map(dailyRows.map((source) => [`${source.model_id}|${String(source.day_bucket ?? "").slice(0, 10)}`, source]));
 	return Object.fromEntries(modelIds.map((modelId) => [modelId, dates.map((date) => {
 		const source = byKey.get(`${modelId}|${date}`);
+		const reasoning = Math.max(0, number(source?.reasoning_tokens) ?? 0);
 		return {
 			date,
 			requests: number(source?.requests) ?? 0,
 			input: number(source?.input_tokens) ?? 0,
-			output: number(source?.output_tokens) ?? 0,
-			reasoning: number(source?.reasoning_tokens) ?? 0,
+			output: Math.max(0, (number(source?.output_tokens) ?? 0) - reasoning),
+			reasoning,
 		};
 	})]));
 }
