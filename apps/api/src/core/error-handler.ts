@@ -676,6 +676,8 @@ export async function handleError({
         requestPayload: unknown;
         requestedModel: string | null;
         model?: string | null;
+        workspaceId?: string | null;
+        apiKeyId?: string | null;
     },
 }): Promise<Response> {
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
@@ -1002,7 +1004,7 @@ export async function handleError({
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
-        workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? null,
+        workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? requestObservability?.workspaceId ?? null,
         endpoint,
         model: modelForObservability,
         requestedModel,
@@ -1044,7 +1046,7 @@ export async function handleError({
         generationMs: ctx ? (executeAdapterMs ? Math.round(executeAdapterMs) : null) : null,
         internalLatencyMs,
         byok: ctx ? ((ctx as any)?.meta?.keySource === "byok") : false,
-        keyId: ctx?.meta?.apiKeyId ?? null,
+        keyId: ctx?.meta?.apiKeyId ?? requestObservability?.apiKeyId ?? null,
         requestMethod: requestMeta.requestMethod,
         requestPath: requestMeta.requestPath,
         requestUrl: requestMeta.requestUrl,
@@ -1149,7 +1151,7 @@ export async function handleError({
         edgeCountry: requestMeta.edgeCountry,
         edgeContinent: requestMeta.edgeContinent,
         edgeAsn: requestMeta.edgeAsn,
-        keyId: ctx?.meta?.apiKeyId ?? null,
+        keyId: ctx?.meta?.apiKeyId ?? requestObservability?.apiKeyId ?? null,
         statusCode,
         success: false,
         errorCode: loggedErrorCode,

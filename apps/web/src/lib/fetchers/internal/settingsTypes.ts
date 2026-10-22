@@ -38,6 +38,7 @@ export type PrivacyGlobalSettings = {
 	io_logging_enabled?: boolean | null;
 	io_logging_retention_days?: number | null;
 	io_logging_include_provider_payloads?: boolean | null;
+	io_logging_contents_access?: "members" | "admins" | null;
 	provider_restriction_mode?: string | null;
 	provider_restriction_provider_ids?: string[] | null;
 	provider_restriction_enforce_allowed?: boolean | null;

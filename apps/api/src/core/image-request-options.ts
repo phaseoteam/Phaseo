@@ -13,6 +13,9 @@ type ImageOptionInput = {
 		resolution?: unknown;
 		quality?: unknown;
 	} | null;
+	// Chat, Responses and Messages requests for Gemini image models.
+	image_config?: { image_size?: unknown; imageSize?: unknown } | null;
+	imageConfig?: { image_size?: unknown; imageSize?: unknown } | null;
 };
 
 type ImagePricingUsage = {
@@ -115,10 +118,28 @@ function normalizeAutoOption(value: string | undefined): string | undefined {
 function normalizeProviderImageSize(value: string | undefined): string | undefined {
 	if (!value) return undefined;
 	const normalized = value.trim().toUpperCase();
+	if (normalized === "0.5K") return "512";
 	if (IMAGE_SIZE_ALIAS_PIXELS.has(normalized)) {
 		return normalized;
 	}
 	return undefined;
+}
+
+/** Gemini image models (AI Studio and Vertex), which take `imageConfig.imageSize`. */
+function isGeminiImageModel(model: string | undefined): boolean {
+	if (!model) return false;
+	return /gemini-[^/]*image|nano-banana/i.test(model);
+}
+
+/** Grok Imagine image models, which take `resolution` (`1k`, `2k`). */
+function isGrokImagineImageModel(model: string | undefined): boolean {
+	return /grok-imagine-image/i.test(model ?? "");
+}
+
+function readGeminiImageSize(input: ImageOptionInput): string | undefined {
+	const config = input.image_config ?? input.imageConfig;
+	if (!config || typeof config !== "object") return undefined;
+	return normalizeProviderImageSize(toNonEmptyString(config.image_size) ?? toNonEmptyString(config.imageSize));
 }
 
 function parsePixelDimensions(value: string | undefined): { width: number; height: number } | undefined {
@@ -158,12 +179,15 @@ export function buildImagePricingRequestOptions(
 ): Record<string, unknown> {
 	const inferredVariant = inferImagePricingVariant(usage);
 	const responseInput = usage && typeof usage === "object" ? (usage as ImageOptionInput) : {};
-	const isGrokImagineImage2 = toNonEmptyString(input.model)?.toLowerCase().endsWith("grok-imagine-image-2.0") ?? false;
+	const model = toNonEmptyString(input.model);
+	const isGrokImagineImage2 = model?.toLowerCase().endsWith("grok-imagine-image-2.0") ?? false;
+	// xAI generates at 1k when `resolution` is omitted, for every Grok Imagine image model.
+	const isGrokImagineImage = isGrokImagineImageModel(model);
 	const rawSize =
 		normalizeAutoOption(resolveImageSize(input)) ??
 		normalizeAutoOption(resolveImageSize(responseInput)) ??
 		inferredVariant?.resolution ??
-		(isGrokImagineImage2 ? "1k" : undefined);
+		(isGrokImagineImage ? "1k" : undefined);
 	const defaultGrokImagineQuality = input.capability_id === "image.edit" ? "medium" : "low";
 	const rawQuality =
 		normalizeAutoOption(toNonEmptyString(input.quality) ?? toNonEmptyString(input.image_params?.quality)) ??
@@ -172,9 +196,14 @@ export function buildImagePricingRequestOptions(
 		) ??
 		inferredVariant?.quality ??
 		(isGrokImagineImage2 ? defaultGrokImagineQuality : undefined);
-	const size = isGrokImagineImage2 && /^\d+k$/i.test(rawSize ?? "") ? rawSize?.toLowerCase() : rawSize;
+	const size = isGrokImagineImage && /^\d+(?:\.\d+)?k$/i.test(rawSize ?? "") ? rawSize?.toLowerCase() : rawSize;
 	const quality = isGrokImagineImage2 ? rawQuality?.toLowerCase() : rawQuality;
-	const providerImageSize = normalizeProviderImageSize(quality);
+	// Gemini image models size their output with imageSize (1K by default), sent as `quality`
+	// on the Images API and as `image_config.image_size` on chat requests.
+	const providerImageSize =
+		normalizeProviderImageSize(quality) ??
+		readGeminiImageSize(input) ??
+		(isGeminiImageModel(model) ? "1K" : undefined);
 	const out: Record<string, unknown> = {};
 
 	if (size) {

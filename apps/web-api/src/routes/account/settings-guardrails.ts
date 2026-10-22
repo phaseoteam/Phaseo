@@ -36,7 +36,9 @@ function guardrailRow(payload: GuardrailPayload, includeName = true): Record<str
 	const ioLoggingUpdated =
 		typeof payload.ioLoggingEnabled === "boolean" ||
 		typeof payload.ioLoggingRetentionDays === "number" ||
-		typeof payload.ioLoggingIncludeProviderPayloads === "boolean";
+		typeof payload.ioLoggingIncludeProviderPayloads === "boolean" ||
+		payload.ioLoggingContentsAccess === "members" ||
+		payload.ioLoggingContentsAccess === "admins";
 	if (typeof payload.ioLoggingEnabled === "boolean") {
 		row.io_logging_enabled = payload.ioLoggingEnabled;
 	}
@@ -49,6 +51,9 @@ function guardrailRow(payload: GuardrailPayload, includeName = true): Record<str
 	if (typeof payload.ioLoggingIncludeProviderPayloads === "boolean") {
 		row.io_logging_include_provider_payloads =
 			payload.ioLoggingIncludeProviderPayloads;
+	}
+	if (payload.ioLoggingContentsAccess === "members" || payload.ioLoggingContentsAccess === "admins") {
+		row.io_logging_contents_access = payload.ioLoggingContentsAccess;
 	}
 	if (ioLoggingUpdated) row.io_logging_updated_at = row.updated_at;
 	if (includeName) {

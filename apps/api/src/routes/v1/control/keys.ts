@@ -15,7 +15,9 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { loadOAuthClient } from "@/lib/oauth/service";
 import { internalServerError, requireCapability, type ManagementRouteAuth } from "./route-helpers";
-import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit, isUsableWorkspaceKey } from "./management-helpers";
+import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isManagedKeyName, isUsableWorkspaceKey } from "./management-helpers";
+
+const RESERVED_KEY_NAME = { error: "bad_request", message: "This key name is reserved for keys Phaseo manages" } as const;
 import { copyKeyRateLimitAssignment, publishRateLimitPlan } from "@core/rate-limit-policies";
 
 type KeyRow = {
@@ -516,7 +518,7 @@ async function handleListKeys(req: Request) {
 			.from("keys")
 			.select(KEY_COLUMNS)
 			.eq("workspace_id", workspaceScope.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.order("created_at", { ascending: false })
 			.range(offset, offset + limit - 1);
 		if (!includeDisabled) {
@@ -532,7 +534,7 @@ async function handleListKeys(req: Request) {
 			.from("keys")
 			.select("id", { count: "exact", head: true })
 			.eq("workspace_id", workspaceScope.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME);
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER);
 		if (!includeDisabled) {
 			countQuery = countQuery.eq("status", "active").eq("soft_blocked", false);
 		}
@@ -595,6 +597,7 @@ async function handleCreateKey(req: Request) {
 	if (!name) {
 		return json({ error: "bad_request", message: "name is required" }, 400, { "Cache-Control": "no-store" });
 	}
+	if (isManagedKeyName(name)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 	const scopesError = rejectApiKeyScopes(body);
 	if (scopesError) return scopesError;
 	const limit = parseLimitNumber(body.limit);
@@ -674,6 +677,8 @@ async function handleCreateKey(req: Request) {
 			throw new Error(error.message || "Failed to create API key");
 		}
 		if (!data) throw new Error("Failed to create API key");
+		// A key linked to a department counts toward that department's rate limit.
+		if (departmentId.value) await publishRateLimitPlan(workspaceScope.workspaceId);
 		await auditApiKey(auth.value, "api_key.created", data as KeyRow);
 
 		// The secret is shown once. Return it at the top level, where key-creation clients
@@ -717,7 +722,7 @@ async function handleGetKey(req: Request) {
 			.from("keys")
 			.select(KEY_COLUMNS)
 			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (error) {
@@ -785,7 +790,7 @@ async function handleUpdateKey(req: Request) {
 			.from("keys")
 			.select(KEY_WITH_KID_COLUMNS)
 			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (fetchError) {
@@ -801,6 +806,7 @@ async function handleUpdateKey(req: Request) {
 			if (!nextName) {
 				return json({ error: "bad_request", message: "name cannot be empty" }, 400, { "Cache-Control": "no-store" });
 			}
+			if (isManagedKeyName(nextName)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 			updatePayload.name = nextName;
 		}
 		if (typeof body.disabled === "boolean") {
@@ -843,6 +849,9 @@ async function handleUpdateKey(req: Request) {
 			throw new Error(updateError.message || "Failed to update API key");
 		}
 		await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
+		if (departmentId.value !== undefined && departmentId.value !== (existing.department_id ?? null)) {
+			await publishRateLimitPlan(auth.value.workspaceId);
+		}
 
 		const { data: updated, error: refetchError } = await supabase
 			.from("keys")
@@ -894,7 +903,7 @@ async function handleDeleteKey(req: Request) {
 			.from("keys")
 			.select("id, workspace_id, kid, name, status")
 			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (fetchError) {
@@ -964,7 +973,7 @@ async function handleRotateKey(req: Request) {
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data: existing, error: fetchError } = await supabase.from("keys")
 			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos,department_id")
-			.eq("workspace_id", auth.value.workspaceId).neq("name", CHAT_MANAGED_KEY_NAME).eq(lookupColumn, keyId).maybeSingle();
+			.eq("workspace_id", auth.value.workspaceId).not("name", "in", MANAGED_KEY_NAMES_FILTER).eq(lookupColumn, keyId).maybeSingle();
 		if (fetchError) throw new Error(fetchError.message || "Failed to fetch API key");
 		if (!existing || String(existing.status ?? "").toLowerCase() === "deleted") return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
 		await enforceWorkspaceKeyLimit(auth.value.workspaceId, "api", existing.id);
@@ -972,6 +981,7 @@ async function handleRotateKey(req: Request) {
 		if (!pepper) return json({ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE is not configured" }, 503, { "Cache-Control": "no-store" });
 		const generated = generateGatewayKey();
 		const name = typeof body.name === "string" && body.name.trim() ? body.name.trim() : `${existing.name} (rotated)`;
+		if (isManagedKeyName(name)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 		const creatorUserId = auth.value.userId ?? await resolveWorkspaceOwnerUserId(auth.value.workspaceId);
 		const { data: replacement, error: insertError } = await supabase.from("keys").insert({
 			workspace_id: auth.value.workspaceId, name, kid: generated.kid,
@@ -1014,7 +1024,8 @@ async function handleRotateKey(req: Request) {
 				throw invalidationError;
 			}
 		}
-		if (rateLimitCopied) await publishRateLimitPlan(auth.value.workspaceId);
+		// The replacement also keeps the old key's department link.
+		if (rateLimitCopied || existing.department_id) await publishRateLimitPlan(auth.value.workspaceId);
 		await auditApiKey(auth.value, "api_key.rotated", existing as KeyRow, { replacement_key_id: replacement.id, replacement_key_name: name, previous_key_expires_at: previousExpiry.value ?? null });
 		return json({ data: { ...formatApiKey(replacement as KeyRow), key: generated.plaintext }, previous_key_expires_at: previousExpiry.value ?? null }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) { return internalServerError("keys.rotate", error); }

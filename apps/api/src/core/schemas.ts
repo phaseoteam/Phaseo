@@ -865,6 +865,11 @@ export const ChatCompletionsSchema = lazySchema(() => z.object({
                 // Reasoning blocks with signatures or encrypted reasoning, sent
                 // back unchanged from an earlier response.
                 reasoning_details: z.array(z.record(z.string(), z.unknown())).optional(),
+                // An earlier audio response, referenced by its id
+                // (https://platform.openai.com/docs/api-reference/chat/create).
+                // The rest of a returned message.audio (data, expires_at,
+                // transcript) is not part of the request and is stripped.
+                audio: z.object({ id: z.string().min(1) }).nullable().optional(),
             }),
             z.object({
                 role: z.literal("tool"),
@@ -992,11 +997,14 @@ const AnthropicTextContentSchema = lazySchema(() => z.object({
 const AnthropicImageContentSchema = lazySchema(() => z.object({
     type: z.literal("image"),
     cache_control: CacheControlSchema.optional(),
+    // `file` references an upload made through the Files API.
+    // https://platform.claude.com/docs/en/build-with-claude/files
     source: z.object({
-        type: z.enum(["base64", "url"]),
+        type: z.enum(["base64", "url", "file"]),
         media_type: z.string().optional(),
         data: z.string().optional(),
         url: z.string().optional(),
+        file_id: z.string().optional(),
     }),
 }));
 
@@ -1140,6 +1148,8 @@ export const AnthropicMessagesSchema = lazySchema(() => z.object({
 	}).passthrough().optional(),
 	// Same end-user identifier as Chat's `user`; sent to Anthropic as metadata.user_id.
 	user: z.string().optional(),
+	// Same cache affinity key as Chat and Responses.
+	prompt_cache_key: z.string().nullable().optional(),
 
     stop_sequences: z.array(z.string()).optional(),
     web_search_options: z.record(z.string(), z.any()).optional(),

@@ -1,212 +1,67 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Separator } from "@/components/ui/separator";
-import MainCard from "./MainCard";
-import ComparisonDisplay from "./ComparisonDisplay";
-import { ExtendedModel } from "@/data/types";
-import ModelCombobox from "./ModelCombobox";
-import type { CompareGatewayUsageByModel, CompareModelOption } from "./types";
+import { useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-
-const decodeModelIdFromUrl = (value: string): string => {
-	const trimmed = value?.trim();
-	if (!trimmed) return "";
-	if (trimmed.includes("/")) return trimmed;
-	if (!trimmed.includes("_")) return trimmed;
-	const [organisationId, ...rest] = trimmed.split("_");
-	if (!organisationId || rest.length === 0) return trimmed;
-	return `${organisationId}/${rest.join("_")}`;
-};
-
-const encodeModelIdForUrl = (value: string): string => {
-	if (!value) return "";
-	const [organisationId, ...rest] = value.split("/");
-	if (!organisationId || rest.length === 0) return value;
-	return `${organisationId}_${rest.join("/")}`;
-};
+import { decodeModelIdFromUrl, encodeModelIdForUrl } from "./compareUrl";
+import type { CompareModelOption } from "./types";
+import { CompareEmptyState } from "./view/CompareEmptyState";
+import { CompareView } from "./view/CompareView";
+import type { CompareView as CompareViewData, CompareViewUsageByModel } from "./view/types";
 
 type CompareDashboardProps = {
-	/** Options for the selected models, from their comparison data. Pickers load the full list when opened. */
+	/** Options for the selected models. Pickers load the full list from the web API when opened. */
 	selectedOptions: CompareModelOption[];
-	comparisonData: ExtendedModel[];
-	usageByModel: CompareGatewayUsageByModel;
+	view: CompareViewData;
+	usage: CompareViewUsageByModel;
 };
 
-function CompareFrame({
-	children,
-}: {
-	children: ReactNode;
-}) {
-	return (
-		<div className="w-full">
-			<div className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-8">
-				{children}
-			</div>
-		</div>
-	);
-}
-
-function EmptyComparisonState({
-	selectedOptions,
-	onSelect,
-}: {
-	selectedOptions: CompareModelOption[];
-	onSelect: (ids: string[]) => void;
-}) {
-	const t = useTranslations("Catalogue.compare");
-	return (
-		<CompareFrame>
-			<div className="max-w-2xl">
-				<h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-					{t("emptyTitle")}
-				</h1>
-				<p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-					{t("emptyDescription")}
-				</p>
-			</div>
-
-			<div className="mt-8 grid gap-3 sm:grid-cols-2">
-				{["first", "second"].map((slot) => (
-					<ModelCombobox
-						key={slot}
-						selectedOptions={selectedOptions}
-						selected={[]}
-						setSelected={onSelect}
-						labelWhenEmpty={t("selectModel")}
-						labelWhenSelected={t("selectModel")}
-						showSelectionCount={false}
-						className="h-14 w-full justify-center rounded-xl border border-dashed border-border/80 text-sm text-muted-foreground hover:border-sky-500/50 hover:bg-card hover:text-foreground"
-					/>
-				))}
-			</div>
-		</CompareFrame>
-	);
-}
-
-export default function CompareDashboard({
-	selectedOptions,
-	comparisonData,
-	usageByModel,
-}: CompareDashboardProps) {
-	const t = useTranslations("Catalogue.compare");
-	const searchParams = useSearchParams() ?? new URLSearchParams();
+export default function CompareDashboard({ selectedOptions, view, usage }: CompareDashboardProps) {
+	const t = useTranslations("Catalogue.compareView");
+	const params = useSearchParams();
+	const searchParams = useMemo(() => params ?? new URLSearchParams(), [params]);
 	const router = useRouter();
-	const selected = searchParams
-		.getAll("models")
-		.map((value) => decodeModelIdFromUrl(value))
-		.filter(Boolean);
-
-	const uniqueResolvedSelectionIds = useMemo(() => {
-		const uniqueIds: string[] = [];
-		const seen = new Set<string>();
-		for (const id of selected) {
-			if (!id || seen.has(id)) continue;
-			seen.add(id);
-			uniqueIds.push(id);
-		}
-		return uniqueIds;
-	}, [selected]);
-
-	const modelsById = useMemo(() => {
-		const map = new Map<string, CompareModelOption>();
-		for (const model of selectedOptions) {
-			if (!model.id) continue;
-			map.set(model.id, model);
-		}
-		return map;
-	}, [selectedOptions]);
+	const pathname = usePathname();
+	const selectedIds = useMemo(
+		// The page fetches at most four, so ids past that are neither shown nor reported missing.
+		() => [...new Set(searchParams.getAll("models").map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4),
+		[searchParams],
+	);
 
 	const setSelected = (ids: string[]) => {
 		const params = new URLSearchParams(searchParams.toString());
 		params.delete("models");
 		ids.forEach((id) => params.append("models", encodeModelIdForUrl(id)));
-		router.replace(`?${params.toString()}`);
+		const query = params.toString();
+		router.replace(query ? `?${query}` : pathname, { scroll: false });
 	};
 
-	const selectedModels = uniqueResolvedSelectionIds
-		.map((modelId) => modelsById.get(modelId))
-		.filter((model): model is CompareModelOption => Boolean(model));
-	const comparisonDataById = useMemo(() => {
-		const map = new Map<string, ExtendedModel>();
-		for (const model of comparisonData) {
-			if (!model.id) continue;
-			map.set(model.id, model);
-		}
-		return map;
-	}, [comparisonData]);
-	const orderedComparisonData = useMemo(() => {
-		if (!uniqueResolvedSelectionIds.length) return comparisonData;
-		const ordered = uniqueResolvedSelectionIds
-			.map((modelId) => comparisonDataById.get(modelId))
-			.filter((model): model is ExtendedModel => Boolean(model));
-		const orderedIds = new Set(ordered.map((model) => model.id));
-		const fallbackRemainder = comparisonData.filter(
-			(model) => !orderedIds.has(model.id)
-		);
-		return [...ordered, ...fallbackRemainder];
-	}, [comparisonData, comparisonDataById, uniqueResolvedSelectionIds]);
-
-	const notFound = uniqueResolvedSelectionIds.filter(
-		(id) => !selectedModels.some((m) => m.id === id)
-	);
-
-	if (selected.length === 0) {
-		return (
-			<EmptyComparisonState selectedOptions={selectedOptions} onSelect={setSelected} />
-		);
-	}
-
-	if (selected.length > 0 && selectedModels.length === 0) {
-		return (
-			<CompareFrame>
-				<div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-				<div className="max-w-2xl w-full bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-					<h2 className="text-xl font-semibold text-yellow-900 mb-2">
-						{t("notFoundTitle")}
-					</h2>
-					<p className="text-yellow-800 mb-4">
-					{t("notFoundBody")}
-					</p>
-					<ul className="list-disc list-inside text-yellow-700 mb-4">
-						{notFound.map((id) => (
-							<li key={id} className="font-mono text-sm">
-								{id}
-							</li>
-						))}
-					</ul>
-					<p className="text-sm text-yellow-700">
-						{t("notFoundSearch")}
-					</p>
-				</div>
-				<Separator className="my-8 w-full max-w-4xl" />
-				<MainCard
-					selectedOptions={selectedOptions}
-					selected={[]}
-					setSelected={setSelected}
-				/>
-				</div>
-			</CompareFrame>
-		);
-	}
-
-	if (notFound.length > 0 && selectedModels.length > 0) {
-		console.warn(
-			`[CompareDashboard] ${selectedModels.length} models found, but ${notFound.length} not found:`,
-			notFound
-		);
-	}
+	const modelsById = new Map(view.models.map((model) => [model.id, model]));
+	const ordered = selectedIds.flatMap((id) => {
+		const model = modelsById.get(id);
+		return model ? [model] : [];
+	});
+	const missing = selectedIds.filter((id) => !modelsById.has(id));
 
 	return (
-		<CompareFrame>
-			<ComparisonDisplay
-				selectedModels={orderedComparisonData}
-				usageByModel={usageByModel}
-				selectedOptions={selectedOptions}
-				selectedIds={uniqueResolvedSelectionIds}
-				onSelectedIdsChange={setSelected}
-			/>
-		</CompareFrame>
+		<div className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-8">
+			{missing.length ? (
+				<div role="status" className="mb-6 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+					<p className="font-medium">{t("notFound", { count: missing.length })}</p>
+					<p className="mt-1 font-mono text-xs text-muted-foreground">{missing.join(", ")}</p>
+				</div>
+			) : null}
+			{ordered.length ? (
+				<CompareView
+					view={{ ...view, models: ordered }}
+					usage={usage}
+					selectedOptions={selectedOptions}
+					selectedIds={ordered.map((model) => model.id)}
+					onSelectedIdsChange={setSelected}
+				/>
+			) : (
+				<CompareEmptyState selectedOptions={selectedOptions} onSelect={setSelected} />
+			)}
+		</div>
 	);
 }

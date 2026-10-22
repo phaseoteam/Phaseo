@@ -35,7 +35,7 @@ La mayoría de los proveedores almacenan en caché automáticamente los prefijos
 | [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) en Google AI Studio y [Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) | Automático desde Gemini 2.5 | `cached_content` para un caché explícito que hayas creado |
 | [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | Automático | `prompt_cache_key` y el encabezado `x-grok-conv-id` |
 | [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | Automático | Nada más |
-| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | Automático, con el TTL de 5 minutos | Nada más |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | Automático, con un TTL de 5 minutos; un TTL de 1 hora es por activación en Kimi K3 | `prompt_cache_key` y `prompt_cache_options` |
 | [Groq](https://console.groq.com/docs/prompt-caching) | Automático en los modelos que indica Groq | Nada más |
 | [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | Automático | `prompt_cache_key`, además del encabezado `x-session-affinity` y `user` |
 | [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | Automático | `prompt_cache_key` |
@@ -44,6 +44,9 @@ La mayoría de los proveedores almacenan en caché automáticamente los prefijos
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | Automático (implícito); los cachés explícitos son por activación | `cache_control` en bloques |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | Automático; Venice añade por sí mismo los puntos de corte de Claude | `cache_control` en bloques |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | Automático; una ventana de retención es por activación | `prompt_cache_key`, `prompt_cache_breakpoint` y `prompt_cache_options` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | Automático; caché explícito en los modelos Claude y Gemini 2.5 | `cache_control` de bloque en los modelos Claude y Gemini 2.5, sin `ttl` |
+| [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | Automático | `prompt_cache_key` y el encabezado `x-session-affinity` |
+| [Morph](https://docs.morphllm.com/sdk/components/caching) | Automático | `prompt_cache_key` y el encabezado `x-session-id` |
 
 Los demás proveedores compatibles con OpenAI reciben `prompt_cache_key` cuando su API lo acepta, y ningún otro control de caché. Phaseo siempre envía un hash de tu espacio de trabajo y la clave en lugar de la clave misma. Consulta [Afinidad con el proveedor](#provider-affinity).
 
@@ -101,7 +104,7 @@ Si tus propios bloques llevan más de cuatro marcas, Phaseo conserva la primera 
 Coloca una marca de caché en un bloque de contenido para almacenar en caché todo lo anterior, incluido ese bloque. Phaseo acepta dos formas:
 
 - `cache_control`: `{"type": "ephemeral"}`, con un `ttl` opcional de `5m` o `1h`.
-- `prompt_cache_breakpoint`: el `{"mode": "explicit"}` de OpenAI, con un `ttl` opcional de `30m` o `12h`. Cuando un bloque lleva ambos, prevalece `prompt_cache_breakpoint`.
+- `prompt_cache_breakpoint`: el `{"mode": "explicit"}` de OpenAI, con un `ttl` opcional de `30m` o `12h` (consulta [Caché de 12 horas en OpenAI](#12-hour-cache-on-openai)). Cuando un bloque lleva ambos, prevalece `prompt_cache_breakpoint`.
 
 ```json
 {
@@ -126,11 +129,12 @@ Cada proveedor recibe la marca en su propio formato:
 | OpenAI y Azure OpenAI, modelos anteriores | Se elimina | Se elimina |
 | DeepInfra | Se elimina | Se envía |
 | Alibaba Model Studio y Venice | Se envía | Se elimina |
+| Inference.net, modelos Claude y Gemini 2.5 | Se envía sin `ttl` | Se elimina |
 | Otros proveedores | Se elimina | Se elimina |
 
-Las marcas en definiciones de herramientas solo llegan a las rutas de Claude, Alibaba Model Studio y Venice; OpenAI no acepta puntos de corte en herramientas. Eliminar una marca no cambia el resto del prompt, así que el prefijo en caché coincide con el de una solicitud sin marcas.
+Las marcas en definiciones de herramientas solo llegan a las rutas de Claude, Alibaba Model Studio, Venice y los modelos Claude y Gemini 2.5 de Inference.net; OpenAI no acepta puntos de corte en herramientas. Eliminar una marca no cambia el resto del prompt, así que el prefijo en caché coincide con el de una solicitud sin marcas.
 
-Amazon Bedrock y Google Vertex AI almacenan en caché Claude 3.7 Sonnet, 3.5 Sonnet y 3 Opus solo durante 5 minutos, y Bedrock puede rechazar un `ttl` en esos modelos. En esas rutas, Phaseo envía tus puntos de corte sin `ttl`, así que se almacenan en caché durante 5 minutos, e informa de un `1h` eliminado como `cache_control.ttl` en el encabezado `X-Phaseo-Dropped-Params` y en `meta.routing.dropped_params`.
+Amazon Bedrock y Google Vertex AI almacenan en caché Claude 3.7 Sonnet, 3.5 Sonnet y 3 Opus solo durante 5 minutos, y Bedrock puede rechazar un `ttl` en esos modelos. En esas rutas, Phaseo envía tus puntos de corte sin `ttl`, así que se almacenan en caché durante 5 minutos, e informa de un `1h` eliminado como `cache_control.ttl` en el encabezado `X-Phaseo-Dropped-Params` y en `meta.routing.dropped_params`. Inference.net documenta los puntos de corte sin `ttl`, así que Phaseo también elimina e informa allí un `ttl` del mismo modo, y las escrituras se facturan como escrituras de 5 minutos.
 
 <span id="openai-retention-and-options"></span>
 ### Retención y opciones de OpenAI
@@ -139,10 +143,13 @@ Los controles de caché de OpenAI dependen de la generación del modelo. Phaseo 
 
 | Campo | Valores | Se envía a |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` o `explicit`; `ttl`: `30m`, o `12h` en OpenAI | OpenAI y Azure OpenAI desde GPT-5.6, y DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit` o `explicit`; `ttl`: `30m` o `12h` | OpenAI desde GPT-5.6 |
+| `prompt_cache_options` | `mode`: `implicit` o `explicit`; `ttl`: `30m` | Azure OpenAI desde GPT-5.6 |
+| `prompt_cache_options` | `mode`: `explicit`; `ttl`: `5m` o `1h` | DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`; `ttl`: `5m`, o `1h` en Kimi K3 | Moonshot AI |
 | `prompt_cache_retention` | `in_memory` o `24h` | Modelos de OpenAI y Azure OpenAI anteriores a GPT-5.6 |
 
-Desde GPT-5.6, OpenAI acepta un `ttl` de `30m` (el predeterminado) o `12h`, y Azure OpenAI solo `30m`. El modo `explicit` solo almacena en caché los puntos de corte que colocas. DeepInfra usa el mismo objeto con un `ttl` de `5m` o `1h`, y necesita `prompt_cache_key` en cada solicitud de la sesión. Los demás proveedores no reciben ninguno de los dos campos.
+Desde GPT-5.6, OpenAI acepta un `ttl` de `30m` (el predeterminado) o `12h`, y Azure OpenAI solo `30m`. El modo `explicit` solo almacena en caché los puntos de corte que colocas. DeepInfra usa el mismo objeto con un `ttl` de `5m` o `1h`, y necesita `prompt_cache_key` en cada solicitud de la sesión. Moonshot AI admite `mode: "implicit"` y un `ttl` de `5m` (el predeterminado) o `1h`. Phaseo solo envía `1h` a las rutas de Kimi K3 que tienen un precio de escritura de 1 hora, así que esas escrituras se facturan a ese precio; en otras rutas elimina el `ttl` y lo informa como `prompt_cache_options.ttl` en el encabezado `X-Phaseo-Dropped-Params`. Los demás proveedores no reciben ninguno de los dos campos.
 
 Envía cualquiera de los dos campos en el nivel superior o dentro de `provider_options.openai`. Si están ambos, prevalece el valor de nivel superior:
 
@@ -161,6 +168,8 @@ Envía cualquiera de los dos campos en el nivel superior o dentro de `provider_o
   }
 }
 ```
+
+<span id="12-hour-cache-on-openai"></span>
 
 ### Caché de 12 horas en OpenAI
 
@@ -204,7 +213,7 @@ Gemini almacena en caché de forma implícita desde Gemini 2.5, sin que tengas q
 ```
 
 - En Google AI Studio, `cached_content` solo funciona con tu propia clave de API de Google (BYOK). Con la clave de Phaseo, la solicitud devuelve 400, porque el caché pertenece a la cuenta que lo creó.
-- En Vertex AI, el caché debe pertenecer al proyecto de Google Cloud de la credencial que atiende la solicitud, así que usa tu propia credencial de Vertex AI.
+- En Vertex AI, `cached_content` solo funciona con tu propia credencial de Vertex AI; con la credencial de Phaseo, la solicitud devuelve 400. Envía el nombre completo del caché, `projects/{project}/locations/{location}/cachedContents/{id}`, y Phaseo envía la solicitud a ese proyecto y esa ubicación. Un nombre corto como `cachedContents/abc123` usa el `project_id` y la `region` del JSON de tu cuenta de servicio, y devuelve 400 si falta alguno de los dos.
 - Google no admite cachés explícitos a partir de Gemini 4 Argon.
 
 `provider_options.google.cache_control` y `provider_options.google.cache_ttl` se aceptan, pero no se envían a Google.
@@ -423,7 +432,7 @@ Una fijación solo cambia cuando su proveedor falla (un circuit breaker abierto 
 
 Sin clave, `session_id` ni marca de caché, Phaseo sigue fijando el contexto inicial durante 15 minutos a un proveedor que informó de una lectura o escritura de caché para él, siempre que la entrada en caché de ese proveedor sea más barata que su entrada normal.
 
-Phaseo envía a los proveedores un hash de tu espacio de trabajo y `prompt_cache_key`, nunca la clave sin procesar, así que la misma clave en dos espacios de trabajo nunca comparte un caché de proveedor. Con solo un `session_id`, Phaseo deriva ese hash de la sesión para OpenAI, xAI, Fireworks y Cerebras. Fireworks y Cloudflare Workers AI también lo reciben en el encabezado `x-session-affinity`, y xAI lo recibe como `x-grok-conv-id`, salvo que definas `provider_options.xai.conversation_id`. Las respuestas siguen devolviendo tu propio `prompt_cache_key`.
+Phaseo envía a los proveedores un hash de tu espacio de trabajo y `prompt_cache_key`, nunca la clave sin procesar, así que la misma clave en dos espacios de trabajo nunca comparte un caché de proveedor. Con solo un `session_id`, Phaseo deriva ese hash de la sesión para OpenAI, xAI, Fireworks y Cerebras. Fireworks, Cloudflare Workers AI y Baseten también lo reciben en el encabezado `x-session-affinity`, Morph en el encabezado `x-session-id`, y xAI lo recibe como `x-grok-conv-id`, salvo que definas `provider_options.xai.conversation_id`. Las respuestas siguen devolviendo tu propio `prompt_cache_key`.
 
 Establece `provider.cache_aware_routing` en `false` para excluir una solicitud. Establece
 `routing.session_affinity` en `false` cuando la solicitud incluya `session_id`

@@ -48,6 +48,7 @@ import { executor as respanDecisions } from "./respan/decisions";
 import { executor as canopyWaveText } from "./canopy-wave/text-generate";
 import { executor as tensorixText } from "./tensorix/text-generate";
 import { executor as basetenText } from "./baseten/text-generate";
+import { executor as basetenDecisions } from "./baseten/decisions";
 import { executor as baiduText } from "./baidu/text-generate";
 import { executor as baiduImage } from "./baidu/image-generate";
 import { executor as cerebrasText } from "./cerebras/text-generate";
@@ -337,6 +338,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	baseten: {
 		"text.generate": basetenText,
+		"decisions.make": basetenDecisions,
 	},
 	"bytedance-seed": {
 		"text.generate": bytedanceSeedText,

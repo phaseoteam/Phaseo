@@ -72,6 +72,8 @@ pub struct AnthropicMessagesRequest {
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub plugins: Option<Vec<String>>,
+	pub prompt: Option<HashMap<String, String>>,
+	pub prompt_cache_key: Option<Option<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -579,6 +581,7 @@ pub struct ChatCompletionsRequest {
 	pub plugins: Option<Vec<String>>,
 	pub prediction: Option<HashMap<String, String>>,
 	pub presence_penalty: Option<f64>,
+	pub prompt: Option<HashMap<String, String>>,
 	pub prompt_cache_key: Option<Option<String>>,
 	pub prompt_cache_options: Option<HashMap<String, String>>,
 	pub prompt_cache_retention: Option<String>,
@@ -623,6 +626,7 @@ pub struct ChatImageOutputPart {
 }
 
 pub struct ChatMessage {
+	pub audio: Option<Option<HashMap<String, String>>>,
 	pub audios: Option<Vec<HashMap<String, String>>>,
 	pub content: Option<String>,
 	pub images: Option<Vec<HashMap<String, String>>>,
@@ -644,6 +648,20 @@ pub struct ChatReasoningDetail {
 	pub summary: Option<String>,
 	pub text: Option<String>,
 	pub r#type: String,
+}
+
+pub struct ChatResponseMessage {
+	pub audio: Option<HashMap<String, String>>,
+	pub audios: Option<Vec<HashMap<String, String>>>,
+	pub content: Option<String>,
+	pub images: Option<Vec<HashMap<String, String>>>,
+	pub name: Option<String>,
+	pub reasoning: Option<String>,
+	pub reasoning_content: Option<String>,
+	pub reasoning_details: Option<Vec<HashMap<String, String>>>,
+	pub role: String,
+	pub tool_call_id: Option<String>,
+	pub tool_calls: Option<Vec<HashMap<String, String>>>,
 }
 
 pub struct Classifier {
@@ -984,6 +1002,47 @@ pub struct DecisionsUsage {
 
 pub struct DeletedResponse {
 	pub deleted: bool,
+}
+
+pub struct DepartmentBudget {
+	pub created_at: String,
+	pub created_by: Option<Option<String>>,
+	pub department_id: String,
+	pub department_name: Option<String>,
+	pub exceeded: bool,
+	pub id: String,
+	pub interval: String,
+	pub limit: f64,
+	pub limit_nanos: i64,
+	pub remaining: f64,
+	pub remaining_nanos: i64,
+	pub reset_at: Option<Option<String>>,
+	pub updated_at: String,
+	pub usage: f64,
+	pub usage_nanos: i64,
+	pub window_start: Option<Option<String>>,
+	pub workspace_id: String,
+}
+
+pub struct DepartmentBudgetInput {
+	pub department_id: String,
+	pub interval: String,
+	pub limit: f64,
+}
+
+pub type DepartmentBudgetInterval = JsonValue;
+
+pub struct DepartmentBudgetListResponse {
+	pub data: Vec<HashMap<String, String>>,
+}
+
+pub struct DepartmentBudgetResponse {
+	pub data: HashMap<String, String>,
+}
+
+pub struct DepartmentBudgetUpdateInput {
+	pub interval: Option<String>,
+	pub limit: Option<f64>,
 }
 
 pub struct DynamicRoute {
@@ -2571,6 +2630,7 @@ pub struct Preset {
 }
 
 pub struct PresetConfig {
+	pub prompt: Option<HashMap<String, String>>,
 }
 
 pub struct PresetCreateRequest {
@@ -2594,6 +2654,29 @@ pub struct PresetForkRequest {
 pub struct PresetListResponse {
 	pub data: Vec<HashMap<String, String>>,
 	pub total_count: i64,
+}
+
+pub struct PresetPromptTemplate {
+	pub messages: Vec<HashMap<String, String>>,
+	pub response_format: Option<HashMap<String, String>>,
+	pub syntax: Option<String>,
+	pub tool_choice: Option<String>,
+	pub tools: Option<Vec<HashMap<String, String>>>,
+	pub variables: Option<HashMap<String, String>>,
+}
+
+pub struct PresetPromptTemplateMessage {
+	pub content: String,
+	pub role: String,
+}
+
+pub struct PresetPromptVariable {
+	pub default: Option<String>,
+	pub description: Option<String>,
+	pub r#enum: Option<Vec<String>>,
+	pub max_length: Option<i64>,
+	pub required: Option<bool>,
+	pub r#type: String,
 }
 
 pub struct PresetPublisher {
@@ -2798,6 +2881,11 @@ pub struct PromptCacheBreakpoint {
 pub struct PromptCacheOptions {
 	pub mode: Option<String>,
 	pub ttl: Option<String>,
+}
+
+pub struct PromptTemplateReference {
+	pub id: String,
+	pub variables: Option<HashMap<String, String>>,
 }
 
 pub struct Provider {
@@ -3134,6 +3222,7 @@ pub struct ResponsesRequest {
 	pub parallel_tool_calls: Option<bool>,
 	pub plugins: Option<Vec<String>>,
 	pub previous_response_id: Option<String>,
+	pub prompt: Option<HashMap<String, String>>,
 	pub prompt_cache_key: Option<Option<String>>,
 	pub prompt_cache_options: Option<HashMap<String, String>>,
 	pub prompt_cache_retention: Option<String>,

@@ -7,7 +7,8 @@ import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import { ImagesGenerationSchema, type ImagesGenerationRequest } from "@core/schemas";
 import { sanitizePayload } from "../../utils";
 import { getBindings } from "@/runtime/env";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
+import { buildImagePricingRequestOptions } from "@core/image-request-options";
 import { resolveProviderKey, type ResolvedKey } from "../../keys";
 import { normalizeGoogleUsage } from "../usage";
 
@@ -255,10 +256,15 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     
     // Calculate pricing
     if (res.ok && args.pricingCard) {
-        const usageMeters = normalized?.usage && typeof normalized.usage === "object"
+        const usageMeters: Record<string, number> = normalized?.usage && typeof normalized.usage === "object"
             ? { ...(normalized.usage as Record<string, number>), requests: 1 }
             : { requests: 1, total_tokens: 0 };
-        const pricedUsage = computeBill(usageMeters, args.pricingCard);
+        // Google has charged by now: price with the request's image size and never throw.
+        const pricedUsage = computeBillAfterProviderCharge(
+            usageMeters,
+            args.pricingCard,
+            buildImagePricingRequestOptions({ ...modifiedBody, model: modelForUrl }, usageMeters),
+        );
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;
         bill.usage = pricedUsage;

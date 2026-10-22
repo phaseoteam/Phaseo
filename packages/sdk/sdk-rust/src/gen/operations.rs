@@ -100,6 +100,11 @@ pub fn createDataContributionClassifier<T: Transport>(client: &Client<T>, path: 
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createDepartmentBudget<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/department-budgets");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createDynamicRoute<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/routing/dynamic-routes");
 	client.request("POST", &resolved_path, body)
@@ -305,6 +310,11 @@ pub fn deleteDataContributionClassifier<T: Transport>(client: &Client<T>, path: 
 	client.request("DELETE", &resolved_path, body)
 }
 
+pub fn deleteDepartmentBudget<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/department-budgets/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
+	client.request("DELETE", &resolved_path, body)
+}
+
 pub fn deleteDynamicRoute<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/routing/dynamic-routes/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("DELETE", &resolved_path, body)
@@ -467,6 +477,11 @@ pub fn getCurrentApiKey<T: Transport>(client: &Client<T>, path: &HashMap<String,
 
 pub fn getDataContributionSettings<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/data-contribution");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getDepartmentBudget<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/department-budgets/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("GET", &resolved_path, body)
 }
 
@@ -692,6 +707,11 @@ pub fn listClassifiers<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 
 pub fn listDataModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/data/models");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listDepartmentBudgets<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/department-budgets");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -1072,6 +1092,11 @@ pub fn updateDataContributionClassifier<T: Transport>(client: &Client<T>, path: 
 
 pub fn updateDataContributionConsent<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/data-contribution/consent");
+	client.request("PATCH", &resolved_path, body)
+}
+
+pub fn updateDepartmentBudget<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/department-budgets/{}", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("PATCH", &resolved_path, body)
 }
 

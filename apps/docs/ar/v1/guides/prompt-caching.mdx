@@ -35,7 +35,7 @@ icon: "database-zap"
 | [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) على Google AI Studio و[Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) | تلقائي بدءًا من Gemini 2.5 | `cached_content` لذاكرة تخزين مؤقت صريحة أنشأتها |
 | [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | تلقائي | `prompt_cache_key` والترويسة `x-grok-conv-id` |
 | [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | تلقائي | لا شيء إضافي |
-| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | تلقائي، بمدة صلاحية 5 دقائق | لا شيء إضافي |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | تلقائي، بمدة صلاحية 5 دقائق؛ ومدة الساعة الواحدة بالتفعيل على Kimi K3 | `prompt_cache_key` و`prompt_cache_options` |
 | [Groq](https://console.groq.com/docs/prompt-caching) | تلقائي على النماذج التي تذكرها Groq | لا شيء إضافي |
 | [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | تلقائي | `prompt_cache_key`، إضافة إلى الترويسة `x-session-affinity` و`user` |
 | [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | تلقائي | `prompt_cache_key` |
@@ -44,6 +44,9 @@ icon: "database-zap"
 | [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | تلقائي (ضمني)؛ والتخزين المؤقت الصريح بالتفعيل | `cache_control` على مستوى الكتل |
 | [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | تلقائي؛ وتضيف Venice نقاط توقف Claude بنفسها | `cache_control` على مستوى الكتل |
 | [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | تلقائي؛ ونافذة الاحتفاظ بالتفعيل | `prompt_cache_key` و`prompt_cache_breakpoint` و`prompt_cache_options` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | تلقائي؛ وتخزين مؤقت صريح على نماذج Claude وGemini 2.5 | `cache_control` على مستوى الكتلة في نماذج Claude وGemini 2.5، بدون `ttl` |
+| [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | تلقائي | `prompt_cache_key` والترويسة `x-session-affinity` |
+| [Morph](https://docs.morphllm.com/sdk/components/caching) | تلقائي | `prompt_cache_key` والترويسة `x-session-id` |
 
 يتلقى المزوّدون الآخرون المتوافقون مع OpenAI الحقل `prompt_cache_key` عندما تقبله واجهتهم البرمجية، ولا يتلقون أي عناصر تحكم أخرى في التخزين المؤقت. ترسل Phaseo دائمًا تجزئة لمساحة العمل والمفتاح بدلًا من المفتاح نفسه. راجع [ارتباط بالمزوّد](#provider-affinity).
 
@@ -101,7 +104,7 @@ icon: "database-zap"
 ضع علامة تخزين مؤقت على كتلة محتوى لتخزين كل ما يسبقها مؤقتًا، بما فيها الكتلة نفسها. تقبل Phaseo صيغتين:
 
 - `cache_control`: `{"type": "ephemeral"}`، مع `ttl` اختياري قيمته `5m` أو `1h`.
-- `prompt_cache_breakpoint`: صيغة OpenAI `{"mode": "explicit"}`، مع `ttl` اختياري قيمته `30m` أو `12h`. عندما تحمل الكتلة الصيغتين، تُعتمد `prompt_cache_breakpoint`.
+- `prompt_cache_breakpoint`: صيغة OpenAI `{"mode": "explicit"}`، مع `ttl` اختياري قيمته `30m` أو `12h` (راجع [ذاكرة التخزين المؤقت لمدة 12 ساعة في OpenAI](#12-hour-cache-on-openai)). عندما تحمل الكتلة الصيغتين، تُعتمد `prompt_cache_breakpoint`.
 
 ```json
 {
@@ -126,11 +129,12 @@ icon: "database-zap"
 | OpenAI وAzure OpenAI، النماذج الأقدم | تُحذف | تُحذف |
 | DeepInfra | تُحذف | تُرسل |
 | Alibaba Model Studio وVenice | تُرسل | تُحذف |
+| Inference.net، نماذج Claude وGemini 2.5 | تُرسل بدون `ttl` | تُحذف |
 | المزوّدون الآخرون | تُحذف | تُحذف |
 
-لا تصل العلامات الموضوعة على تعريفات الأدوات إلا إلى مسارات Claude وAlibaba Model Studio وVenice؛ إذ لا يقبل OpenAI نقاط توقف على الأدوات. ولا يغيّر حذف العلامة بقية المطالبة، فتطابق البادئة المخزنة مؤقتًا بادئة طلب بلا علامات.
+لا تصل العلامات الموضوعة على تعريفات الأدوات إلا إلى مسارات Claude وAlibaba Model Studio وVenice ونماذج Claude وGemini 2.5 على Inference.net؛ إذ لا يقبل OpenAI نقاط توقف على الأدوات. ولا يغيّر حذف العلامة بقية المطالبة، فتطابق البادئة المخزنة مؤقتًا بادئة طلب بلا علامات.
 
-لا تخزّن Amazon Bedrock وGoogle Vertex AI نماذج Claude 3.7 Sonnet و3.5 Sonnet و3 Opus مؤقتًا إلا لمدة 5 دقائق، وقد يرفض Bedrock قيمة `ttl` في هذه النماذج. على هذه المسارات، ترسل Phaseo نقاط التوقف بدون `ttl`، فتُخزَّن مؤقتًا لمدة 5 دقائق، وتُبلغ عن قيمة `1h` المحذوفة باسم `cache_control.ttl` في ترويسة `X-Phaseo-Dropped-Params` وفي `meta.routing.dropped_params`.
+لا تخزّن Amazon Bedrock وGoogle Vertex AI نماذج Claude 3.7 Sonnet و3.5 Sonnet و3 Opus مؤقتًا إلا لمدة 5 دقائق، وقد يرفض Bedrock قيمة `ttl` في هذه النماذج. على هذه المسارات، ترسل Phaseo نقاط التوقف بدون `ttl`، فتُخزَّن مؤقتًا لمدة 5 دقائق، وتُبلغ عن قيمة `1h` المحذوفة باسم `cache_control.ttl` في ترويسة `X-Phaseo-Dropped-Params` وفي `meta.routing.dropped_params`. ويوثّق Inference.net نقاط التوقف بدون `ttl`، لذا تحذف Phaseo قيمة `ttl` هناك وتُبلغ عنها بالطريقة نفسها، وتُحتسب عمليات الكتابة على أنها كتابة لمدة 5 دقائق.
 
 <span id="openai-retention-and-options"></span>
 ### الاحتفاظ والخيارات في OpenAI
@@ -139,10 +143,13 @@ icon: "database-zap"
 
 | الحقل | القيم | يُرسل إلى |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m`، أو `12h` في OpenAI | OpenAI وAzure OpenAI بدءًا من GPT-5.6، وDeepInfra |
+| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m` أو `12h` | OpenAI بدءًا من GPT-5.6 |
+| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m` | Azure OpenAI بدءًا من GPT-5.6 |
+| `prompt_cache_options` | `mode`: `explicit`؛ `ttl`: `5m` أو `1h` | DeepInfra |
+| `prompt_cache_options` | `mode`: `implicit`؛ `ttl`: `5m`، أو `1h` في Kimi K3 | Moonshot AI |
 | `prompt_cache_retention` | `in_memory` أو `24h` | نماذج OpenAI وAzure OpenAI السابقة لـ GPT-5.6 |
 
-بدءًا من GPT-5.6، يقبل OpenAI قيمة `ttl` هي `30m` (الافتراضية) أو `12h`، بينما لا يقبل Azure OpenAI سوى `30m`. ولا يخزّن الوضع `explicit` إلا نقاط التوقف التي تضعها. ويستخدم DeepInfra الكائن نفسه مع `ttl` قيمته `5m` أو `1h`، ويتطلب `prompt_cache_key` في كل طلب ضمن الجلسة. ولا يتلقى المزوّدون الآخرون أيًّا من الحقلين.
+بدءًا من GPT-5.6، يقبل OpenAI قيمة `ttl` هي `30m` (الافتراضية) أو `12h`، بينما لا يقبل Azure OpenAI سوى `30m`. ولا يخزّن الوضع `explicit` إلا نقاط التوقف التي تضعها. ويستخدم DeepInfra الكائن نفسه مع `ttl` قيمته `5m` أو `1h`، ويتطلب `prompt_cache_key` في كل طلب ضمن الجلسة. ويقبل Moonshot AI القيمة `mode: "implicit"` وقيمة `ttl` هي `5m` (الافتراضية) أو `1h`. ولا ترسل Phaseo القيمة `1h` إلا إلى مسارات Kimi K3 التي لها سعر لكتابة الساعة الواحدة، فتُحتسب تلك الكتابات بذلك السعر؛ وفي غيرها تحذف `ttl` وتُبلغ عنها باسم `prompt_cache_options.ttl` في ترويسة `X-Phaseo-Dropped-Params`. ولا يتلقى المزوّدون الآخرون أيًّا من الحقلين.
 
 أرسل أيًّا من الحقلين على المستوى الأعلى أو ضمن `provider_options.openai`. عند وجود الاثنين، تُعتمد قيمة المستوى الأعلى:
 
@@ -161,6 +168,8 @@ icon: "database-zap"
   }
 }
 ```
+
+<span id="12-hour-cache-on-openai"></span>
 
 ### التخزين المؤقت لمدة 12 ساعة في OpenAI
 
@@ -204,7 +213,7 @@ icon: "database-zap"
 ```
 
 - على Google AI Studio، لا يعمل `cached_content` إلا بمفتاح Google API الخاص بك (BYOK). عند استخدام مفتاح Phaseo يعيد الطلب 400، لأن ذاكرة التخزين المؤقت تخص الحساب الذي أنشأها.
-- على Vertex AI، يجب أن تنتمي ذاكرة التخزين المؤقت إلى مشروع Google Cloud الخاص ببيانات الاعتماد التي تخدم الطلب، لذا استخدم بيانات اعتماد Vertex AI الخاصة بك.
+- على Vertex AI، لا يعمل `cached_content` إلا ببيانات اعتماد Vertex AI الخاصة بك؛ ومع بيانات اعتماد Phaseo يعيد الطلب الخطأ 400. أرسل الاسم الكامل لذاكرة التخزين المؤقت، `projects/{project}/locations/{location}/cachedContents/{id}`، وسترسل Phaseo الطلب إلى ذلك المشروع وذلك الموقع. أما الاسم المختصر مثل `cachedContents/abc123` فيستخدم `project_id` و`region` الموجودين في ملف JSON لحساب الخدمة، ويعيد الخطأ 400 إذا غاب أيٌّ منهما.
 - لا تدعم Google ذاكرات التخزين المؤقت الصريحة بدءًا من Gemini 4 Argon.
 
 يُقبل `provider_options.google.cache_control` و`provider_options.google.cache_ttl`، لكنهما لا يُرسلان إلى Google.
@@ -423,7 +432,7 @@ curl https://api.phaseo.app/v1/messages \
 
 من دون مفتاح أو `session_id` أو علامة تخزين مؤقت، تظل Phaseo تثبّت السياق الافتتاحي لمدة 15 دقيقة على المزوّد الذي أبلغ عن قراءة من ذاكرة التخزين المؤقت أو كتابة إليها لهذا السياق، بشرط أن تكون المدخلات المخزنة مؤقتًا لدى هذا المزوّد أرخص من مدخلاته العادية.
 
-ترسل Phaseo إلى المزوّدين تجزئة لمساحة العمل و`prompt_cache_key`، وليس المفتاح الخام أبدًا، لذا لا يتشارك المفتاح نفسه في مساحتي عمل ذاكرة مزوّد مؤقتة أبدًا. عند وجود `session_id` فقط، تشتق Phaseo هذه التجزئة من الجلسة لـ OpenAI وxAI وFireworks وCerebras. ويتلقاها Fireworks وCloudflare Workers AI أيضًا في الترويسة `x-session-affinity`، ويتلقاها xAI بوصفها `x-grok-conv-id` ما لم تحدد `provider_options.xai.conversation_id`. وتظل الردود تعيد `prompt_cache_key` الخاص بك.
+ترسل Phaseo إلى المزوّدين تجزئة لمساحة العمل و`prompt_cache_key`، وليس المفتاح الخام أبدًا، لذا لا يتشارك المفتاح نفسه في مساحتي عمل ذاكرة مزوّد مؤقتة أبدًا. عند وجود `session_id` فقط، تشتق Phaseo هذه التجزئة من الجلسة لـ OpenAI وxAI وFireworks وCerebras. ويتلقاها Fireworks وCloudflare Workers AI وBaseten أيضًا في الترويسة `x-session-affinity`، ويتلقاها Morph في الترويسة `x-session-id`، ويتلقاها xAI بوصفها `x-grok-conv-id` ما لم تحدد `provider_options.xai.conversation_id`. وتظل الردود تعيد `prompt_cache_key` الخاص بك.
 
 لإيقافه في طلب واحد، اضبط `provider.cache_aware_routing` على `false`. واضبط
 `routing.session_affinity` على `false` عندما يتضمن الطلب `session_id`

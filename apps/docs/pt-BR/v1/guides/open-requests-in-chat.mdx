@@ -1,0 +1,60 @@
+---
+title: "Abrir solicitações no Chat"
+description: "Abra uma solicitação registrada ou um turno de sessão no Chat, escolha o que levar junto e continue a conversa com qualquer modelo."
+icon: "message-square"
+---
+
+Quando os logs de E/S do Gateway estão ativados, o Phaseo armazena o prompt e a resposta de cada solicitação. Você pode abrir no Chat qualquer solicitação armazenada de Chat Completions, Responses ou Messages, verificar como ela foi exibida e continuar a conversa a partir dali com o mesmo modelo ou com outro.
+
+## Antes de começar
+
+- Ative **Armazenar os dados das solicitações e respostas** em **Configurações → Privacidade**. Só é possível abrir solicitações feitas enquanto a opção estava ativada.
+- Com **Exigir retenção zero de dados** ativado, o workspace nunca armazena prompts nem respostas. O mesmo vale para solicitações feitas com uma chave de API cujo guardrail exige retenção zero de dados. Essas solicitações não podem ser abertas.
+- Solicitações enviadas aos [endpoints regionais](./regional-routing.mdx) (`eu.api.phaseo.app` e `us.api.phaseo.app`) não são armazenadas, então não podem ser abertas.
+- Você precisa ser membro do workspace ao qual a solicitação pertence. Se **Quem pode ver o conteúdo** estiver em **Proprietários e administradores**, só eles podem abrir as solicitações.
+
+## Abrir uma solicitação
+
+| Onde | Como |
+| --- | --- |
+| Detalhes da solicitação | Selecione **Abrir no Chat** no topo dos detalhes. |
+| Logs de solicitações | Clique com o botão direito em uma solicitação e selecione **Abrir no Chat**. |
+| Detalhes da sessão | Selecione **Abrir no Chat** para continuar a partir do turno mais recente, ou o ícone de chat em uma linha para continuar a partir daquele turno. |
+
+Cada turno de uma sessão já contém a conversa até aquele ponto, então abrir um turno também abre tudo o que veio antes.
+
+O link que o Chat abre contém apenas o ID da solicitação, então você pode compartilhá-lo com outros membros do workspace. O Chat carrega a solicitação novamente para quem abrir o link, usando o acesso dessa pessoa.
+
+## Escolher o que levar junto
+
+Antes de criar o chat, o Chat mostra o que a solicitação contém e o que será mantido.
+
+| Opção | O que faz |
+| --- | --- |
+| Fixar o provedor | Envia os turnos seguintes ao provedor que atendeu a solicitação. Desativado por padrão, então o roteamento escolhe um provedor normalmente. |
+| Parâmetros | Mantém temperatura, máximo de tokens, top-p e top-k, seed, penalidades, raciocínio e nível de serviço. |
+| Prompt do sistema | Mantém as instruções de sistema ou de desenvolvedor da solicitação. |
+| Ferramentas do servidor | Mantém as ferramentas de servidor do Phaseo que a solicitação usou, como a pesquisa na web. |
+| Ferramentas de função | Declara as ferramentas de função da própria solicitação para que as chamadas de ferramenta anteriores continuem válidas. O Chat não pode executá-las. Quando são deixadas de fora, as chamadas de ferramenta e os resultados anteriores são enviados como texto. |
+| A resposta registrada | Inclui a resposta que a solicitação recebeu. Deixe-a de fora para gerar uma nova resposta para a mesma conversa. |
+
+Se o modelo da solicitação não estiver disponível no Chat, o chat usará seu modelo atual. Você pode trocar de modelo depois que o chat abrir.
+
+## Como o chat continua
+
+- A solicitação é aberta como um novo chat com seu próprio ID de sessão, salvo no seu navegador como qualquer outro chat. Os turnos seguintes não entram na sessão original em Logs.
+- Mensagens que você não editou são enviadas na forma original, então chamadas de ferramenta, resultados de ferramenta, imagens, áudio e arquivos são mantidos no próximo turno. Mensagens editadas e novas são enviadas como texto, como em qualquer chat.
+- Você pode trocar de modelo, comparar vários modelos lado a lado, ramificar ou editar, como em qualquer chat.
+- Os turnos seguintes são executados no seu workspace ativo e cobrados como qualquer outra solicitação do Chat.
+
+## O que não pode ser levado junto
+
+O Chat lista tudo o que não conseguiu levar junto antes de você continuar:
+
+- Turnos mantidos pelo provedor por meio de `previous_response_id` ou de um ID de conversa. Apenas os turnos da própria solicitação são armazenados.
+- Anexos enviados por ID de arquivo ou referência remota em vez de inline.
+- Respostas que falharam, foram interrompidas ou ofereceram várias opções (apenas a primeira é mantida).
+- Chamadas de ferramenta que nunca receberam um resultado. Elas são enviadas como texto.
+- Tipos de conteúdo que o Chat não consegue exibir, como blocos específicos de provedores.
+
+Solicitações grandes demais para serem armazenadas e solicitações cujo conteúdo armazenado expirou ou foi excluído não podem ser abertas. Só solicitações de texto podem ser abertas no Chat, não as de imagem, áudio, vídeo ou embeddings.

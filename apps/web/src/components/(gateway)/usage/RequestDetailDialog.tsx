@@ -4,13 +4,14 @@ import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
 import dynamic from "next/dynamic";
-import { useTraceViewEnabled } from "./TraceViewGate";
 import { useLocale, useTranslations } from "next-intl";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
+import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, MessageSquare, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { buildOpenRequestInChatHref, canOpenRequestInChat } from "@/components/(chat)/chatMessageMetadata";
 import {
 	Dialog,
 	DialogContent,
@@ -820,13 +821,13 @@ export default function RequestDetailDialog({
 	const t = useTranslations("SettingsUI");
 	const roomErrorT = useTranslations("Product.chatRooms");
 	const roomErrorTranslator = roomErrorT as unknown as RoomErrorTranslator;
+	const tUi = useTranslations("Common.ui");
 	const locale = useLocale();
 	const s = (key: string) => t(settingsStringKey(key) as never);
 	const m = (key: string, values: Record<string, string | number>) =>
 		t(settingsStringKey(key) as never, values as never);
 	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
-	const traceEnabled = useTraceViewEnabled();
 
 	if (!request) return null;
 	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
@@ -853,7 +854,7 @@ export default function RequestDetailDialog({
 					onOpenChange={onOpenChange}
 					disablePointerDismissal={disablePointerDismissal}
 				>
-					<ProviderInspectorSheetContent className={traceEnabled ? "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none" : "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"}>
+					<ProviderInspectorSheetContent className={"!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none"}>
 						{loadingContent}
 					</ProviderInspectorSheetContent>
 				</ProviderInspectorSheet>
@@ -1580,30 +1581,39 @@ export default function RequestDetailDialog({
 						{s("Fetching full generation log…")}
 					</div>
 				) : null}
-				{headerActions ? (
-					<div className="border-b bg-muted/20 px-5 py-2 sm:px-6">
+				{headerActions || canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
+					<div className="flex flex-wrap items-center gap-2 border-b bg-muted/20 px-5 py-2 sm:px-6">
 						{headerActions}
+						{canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
+							<Link
+								href={buildOpenRequestInChatHref(request.request_id, searchParams.get("workspaceId"))}
+								className={buttonVariants({ variant: "outline", size: "sm" })}
+							>
+								<MessageSquare />
+								{tUi("actions.openInChat")}
+							</Link>
+						) : null}
 					</div>
 				) : null}
 
 				<Tabs
-					key={`${request.request_id}:${traceEnabled}`}
+					key={request.request_id}
 					defaultValue="overview"
 					className="min-h-0 flex-1 gap-0"
 				>
-					{traceEnabled ? <TabsList
+					<TabsList
 						variant="line"
 						className="w-full shrink-0 justify-start rounded-none border-b border-border/70 px-5 sm:px-6"
 					>
 						<TabsTrigger value="overview">{t("strings.Overview" as never)}</TabsTrigger>
 						<TabsTrigger value="trace">{t("trace.trace" as never)}</TabsTrigger>
-					</TabsList> : null}
+					</TabsList>
 					<TabsContent value="overview" className="flex min-h-0 flex-1 flex-col overflow-hidden">
 						<ScrollArea
 							className={cn(
 								presentation === "sheet"
 									? "min-h-0 flex-1"
-									: traceEnabled ? "max-h-[calc(90vh-150px)]" : "max-h-[calc(90vh-110px)]",
+									: "max-h-[calc(90vh-150px)]",
 							)}
 							viewportClassName="px-5 py-3 sm:px-6"
 						>
@@ -2700,6 +2710,8 @@ export default function RequestDetailDialog({
 							</div>
 						) : null}
 
+						<RequestClassificationsSection detailMetadata={request.detail_metadata} classifiers={classifiers} modelName={(id) => getModelDisplayName(id, metadata)} />
+
 						<GenerationSection title={s("Routing details")}>
 							<DetailRows items={routingDetailItems} />
 						</GenerationSection>
@@ -2717,8 +2729,6 @@ export default function RequestDetailDialog({
 								]}
 							/>
 						</GenerationSection>
-
-						<RequestClassificationsSection detailMetadata={request.detail_metadata} classifiers={classifiers} />
 
 						<GenerationSection title={s("Response timeline")}>
 							<DetailTimingBar items={responseTimelineItems} />
@@ -2759,7 +2769,7 @@ export default function RequestDetailDialog({
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Prompt")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.request_payload ?? ioLog.payload.provider_request ?? null, null, 2)}</pre></div>
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Completion")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.gateway_response ?? ioLog.payload.provider_response ?? null, null, 2)}</pre></div>
 										</div>
-									) : <p className="text-muted-foreground">{ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
+									) : <p className="text-muted-foreground">{ioLog.status === "restricted" ? tUi("privacy.contentsRestricted") : ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
 								</div>
 							</GenerationSection>
 						) : null}
@@ -2787,7 +2797,7 @@ export default function RequestDetailDialog({
 						</div>
 						</ScrollArea>
 					</TabsContent>
-					{traceEnabled ? <TabsContent value="trace" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+					<TabsContent value="trace" className="flex min-h-0 flex-1 flex-col overflow-hidden">
 						<ScrollArea
 							className="h-full min-h-0"
 							viewportClassName="px-5 py-3 sm:px-6"
@@ -2799,7 +2809,7 @@ export default function RequestDetailDialog({
 								providerNames={providerNames}
 							/>
 						</ScrollArea>
-					</TabsContent> : null}
+					</TabsContent>
 				</Tabs>
 		</>
 	);
@@ -2812,7 +2822,7 @@ export default function RequestDetailDialog({
 				disablePointerDismissal={disablePointerDismissal}
 			>
 				<ProviderInspectorSheetContent
-					className={traceEnabled ? "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none" : "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"}
+					className={"!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none"}
 				>
 					{detailContent}
 				</ProviderInspectorSheetContent>

@@ -7,6 +7,8 @@ import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
 import { applyRequestClassifiers } from "../classification/request-classifiers";
+import { recordShadowSpend } from "@core/spend-limits";
+import { hasConfiguredKeyLimits } from "../before/context.shared";
 import type { PipelineContext } from "../before/types";
 import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
 import type { RequestResult } from "../execute";
@@ -31,6 +33,39 @@ import {
 	persistDataContribution,
 } from "../classification/data-contribution";
 import { currentDataContributionDiscountNanos } from "../pricing/data-contribution-discount";
+
+/**
+ * Search and fetch details for the request log. A key that never stores content
+ * keeps the counts and statuses, not the queries, results, citations, titles or
+ * URLs, which all come from what was asked.
+ */
+function searchObservabilityForLog(ctx: PipelineContext, value: unknown): unknown {
+	if (ctx.neverStoreContent !== true || !value || typeof value !== "object") return value;
+	const search = value as Record<string, unknown>;
+	return { ...search, results: [], citations: [], nativeSearches: [], managedSearches: [] };
+}
+
+function webFetchObservabilityForLog(ctx: PipelineContext, value: unknown): unknown {
+	if (ctx.neverStoreContent !== true || !value || typeof value !== "object") return value;
+	const fetches = (value as { fetches?: unknown }).fetches;
+	return {
+		...(value as Record<string, unknown>),
+		fetches: Array.isArray(fetches)
+			? fetches.map((entry) => ({ ...(entry as Record<string, unknown>), url: null, finalUrl: null, title: null }))
+			: fetches,
+	};
+}
+
+function promptTemplateMetadata(ctx: PipelineContext) {
+    const template = ctx.promptTemplate;
+    if (!template) return null;
+    return {
+        preset_id: template.presetId,
+        preset_slug: template.presetSlug,
+        variable_names: template.variableNames,
+        message_count: template.messageCount,
+    };
+}
 
 function getProviderAttempts(ctx: PipelineContext): Array<Record<string, unknown>> {
     return Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : [];
@@ -303,6 +338,7 @@ export async function handleFailureAudit(
                 } : {}),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
+                prompt_template: promptTemplateMetadata(ctx),
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
                 routing_diagnostics: sanitizeForAxiom((ctx as any).routingDiagnostics ?? null),
                 provider_enablement_diagnostics: sanitizeForAxiom(
@@ -311,9 +347,9 @@ export async function handleFailureAudit(
                 provider_candidate_diagnostics: sanitizeForAxiom(
                     ctx.providerCandidateBuildDiagnostics ?? null,
                 ),
-                web_fetch_observability: sanitizeForAxiom(
+                web_fetch_observability: webFetchObservabilityForLog(ctx, sanitizeForAxiom(
                     mergeWebFetchObservability(ctx.webFetchObservability ?? null),
-                ),
+                )),
                 replay_supported: true,
             },
             usage: (result.bill?.usage && typeof result.bill.usage === "object")
@@ -464,19 +500,19 @@ export async function handleSuccessAudit(
             guardrail_enforcement: ctx.guardrailEnforcement,
         })
         : null;
-    const searchObservability = sanitizeForAxiom(
+    const searchObservability = searchObservabilityForLog(ctx, sanitizeForAxiom(
         extractSearchObservability({
             body: ctx.body,
             gatewayResponse: gatewayResponse ?? null,
             providerResponse: result.rawResponse ?? null,
             managedSearch: ctx.searchObservability ?? null,
         }),
-    );
-    const webFetchObservability = sanitizeForAxiom(
+    ));
+    const webFetchObservability = webFetchObservabilityForLog(ctx, sanitizeForAxiom(
         mergeWebFetchObservability(ctx.webFetchObservability ?? null),
-    );
+    ));
 
-    await runGatewayTelemetryPipelines({
+    const deliveries = await runGatewayTelemetryPipelines({
         requestId: ctx.requestId,
         workspaceId: ctx.workspaceId,
         writeSupabase: shouldPersistGatewayAudit(ctx) ? () => auditSuccess({
@@ -552,6 +588,7 @@ export async function handleSuccessAudit(
                 labels: ctx.meta.labels ?? [],
                 classifications: ctx.requestClassifications ?? null,
                 client_source: ctx.meta.clientSource ?? null,
+                prompt_template: promptTemplateMetadata(ctx),
                 finish_reason: finishReason ?? null,
                 plugin_executions: sanitizeForAxiom(ctx.pluginExecutions ?? null),
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
@@ -633,7 +670,21 @@ export async function handleSuccessAudit(
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     });
 
-	if (!isStealthRequest(ctx) && !byok && ctx.teamSettings?.dataContributionEnabled === true) {
+	// Shadow mode only: once the success row is written, the spend-limit coordinator can count it.
+	const rowWritten = deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered);
+	if (rowWritten && ctx.meta.authMethod !== "oauth" && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
+		recordShadowSpend({
+			workspaceId: ctx.workspaceId,
+			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
+			billingRequestId: ctx.billingRequestId,
+			requestId: ctx.requestId,
+			costNanos: totalNanos,
+			internal: ctx.internal,
+		});
+	}
+
+	// A key that never stores content is never sampled for data contribution either.
+	if (!isStealthRequest(ctx) && !byok && ctx.teamSettings?.dataContributionEnabled === true && ctx.neverStoreContent !== true) {
 		const pricing = (usageWithMultimodal as any)?.pricing;
 		const currentDiscountNanos = currentDataContributionDiscountNanos(pricing, totalNanos);
 		const capture = await persistDataContribution({

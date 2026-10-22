@@ -5,6 +5,7 @@ import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
+import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
 import { monthUsageStartDate, parseMonthUsageDays } from "./monthUsage";
@@ -450,6 +451,13 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 				.limit(500);
 			if (legacyResult.error && v2Result.error) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 			upstreamRequests = legacyResult.data ?? [];
+			// Legacy rows can hold captured payloads; apply the workspace's contents setting to them.
+			if (upstreamRequests.some((row) => row.request_payload != null || row.response_payload != null)) {
+				const access = await readIoLogContentsAccess(context.client, workspaceId);
+				if (!canReadIoLogContents(access, context.role)) {
+					upstreamRequests = upstreamRequests.map((row) => ({ ...row, request_payload: null, response_payload: null }));
+				}
+			}
 			const requestIds = Array.from(new Set(upstreamRequests.map((row) => row.request_id)));
 			if (requestIds.length) {
 				const latencyResult = await context.client.from("gateway_requests").select("request_id,created_at,gateway_ttft_ms").eq("workspace_id", workspaceId).in("request_id", requestIds);
@@ -518,7 +526,7 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	const labelFilter = labelFilterResult && "key" in labelFilterResult ? labelFilterResult : null;
 	// Only an exact key and value has totals in the label rollup.
 	const exactLabelFilter = isExactLabelFilter(labelFilter) ? labelFilter : null;
-	let requestQuery = context.client.from("gateway_requests").select("id,request_id,created_at,endpoint,model_id,requested_model_id,routed_model_id,provider,native_response_id,stream,session_id,app_id,usage,usage_input_tokens,usage_output_tokens,usage_total_tokens,cost_nanos,generation_ms,latency_ms,finish_reason,success,status_code,error_code,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,key_id,throughput,response_timeline:detail_metadata->response_timeline").eq("workspace_id", workspaceId).gte("created_at", timeRange.from).lte("created_at", timeRange.to).not("endpoint", "in", '("video.generation","batch","music.generate")');
+	let requestQuery = context.client.from("gateway_requests").select("id,request_id,created_at,endpoint,model_id,requested_model_id,routed_model_id,provider,native_response_id,stream,session_id,app_id,usage,usage_input_tokens,usage_output_tokens,usage_total_tokens,cost_nanos,generation_ms,latency_ms,finish_reason,success,status_code,error_code,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,key_id,throughput,response_timeline:detail_metadata->response_timeline,labels:detail_metadata->labels").eq("workspace_id", workspaceId).gte("created_at", timeRange.from).lte("created_at", timeRange.to).not("endpoint", "in", '("video.generation","batch","music.generate")');
 	requestQuery = applyRequestLabelFilter(requestQuery, labelFilter);
 	for (const [param, column, operatorParam = `${param}_op`] of [
 		["model", "model_id"], ["provider", "provider"], ["app", "app_id"],

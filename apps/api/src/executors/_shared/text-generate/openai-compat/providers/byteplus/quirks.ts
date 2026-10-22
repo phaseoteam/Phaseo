@@ -16,7 +16,9 @@ export function applyBytePlusRequestQuirks(request: any, ir: any): void {
 	if (type) request.thinking = { type };
 	for (const item of request.input ?? request.input_items ?? request.messages ?? []) {
 		for (const part of Array.isArray(item?.content) ? item.content : []) {
-			if (part?.type === "input_video" && part.video_url && typeof part.video_url === "object") {
+			// ModelArk takes video as `input_video` with a string `video_url`.
+			if ((part?.type === "input_video" || part?.type === "video_url") && part.video_url && typeof part.video_url === "object") {
+				part.type = "input_video";
 				part.video_url = part.video_url.url;
 			}
 		}

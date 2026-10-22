@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 const table = await read('../schemas/public/tables/notification_destinations.sql');
-const migration = await read('../migrations/20261021095901_notification_destination_signing_secrets.sql');
+const migration = await read('../migrations/20261022090625_notification_destination_signing_secrets.sql');
 const prelude = `
   create role anon; create role authenticated; create role service_role;
   create schema auth; create table auth.users(id uuid primary key);

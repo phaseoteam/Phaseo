@@ -938,6 +938,13 @@ export type CreateAnthropicMessageParams = {
           mode?: "safe" | "strict";
         }
     )[];
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+    };
+    prompt_cache_key?: string | null;
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -2114,6 +2121,9 @@ export type CreateChatCompletionParams = {
     max_tokens?: number;
     max_tool_calls?: number;
     messages: {
+      audio?: {
+        id: string;
+      } | null;
       audios?: {
         audio_url: {
           url: string;
@@ -2266,6 +2276,12 @@ export type CreateChatCompletionParams = {
       type: "content";
     };
     presence_penalty?: number;
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+    };
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
       mode?: "implicit" | "explicit";
@@ -2536,6 +2552,12 @@ export async function createChatCompletion(
     finish_reason?: "stop" | "length" | "tool_calls" | "content_filter";
     index?: number;
     message?: {
+      audio?: {
+        data?: string;
+        expires_at?: number;
+        id?: string;
+        transcript?: string;
+      };
       audios?: {
         audio_url: {
           url: string;
@@ -2690,6 +2712,12 @@ export async function createChatCompletion(
       finish_reason?: "stop" | "length" | "tool_calls" | "content_filter";
       index?: number;
       message?: {
+        audio?: {
+          data?: string;
+          expires_at?: number;
+          id?: string;
+          transcript?: string;
+        };
         audios?: {
           audio_url: {
             url: string;
@@ -3033,6 +3061,75 @@ export async function createDataContributionClassifier(
       slug: string;
       updated_at?: string | null;
       [key: string]: unknown;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateDepartmentBudgetParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    department_id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+  };
+};
+
+/**
+ * Creates a daily, weekly, or monthly spend budget for one department. Owners and admins get a mobile push at about 80% and at 100%. Department budgets do not block requests.
+ */
+export async function createDepartmentBudget(
+  client: Client,
+  args: CreateDepartmentBudgetParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/department-budgets";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
     };
   }>({
     method: "POST",
@@ -5060,6 +5157,44 @@ export type CreatePresetParams = {
   headers?: Record<string, never>;
   body?: {
     config?: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     description?: string | null;
@@ -5081,6 +5216,44 @@ export async function createPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -5105,6 +5278,44 @@ export async function createPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -5400,7 +5611,7 @@ export type CreateRateLimitAssignmentParams = {
 };
 
 /**
- * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
  */
 export async function createRateLimitAssignment(
   client: Client,
@@ -5456,7 +5667,7 @@ export type CreateRateLimitPolicyParams = {
 };
 
 /**
- * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
  */
 export async function createRateLimitPolicy(
   client: Client,
@@ -5835,6 +6046,12 @@ export type CreateResponseParams = {
         }
     )[];
     previous_response_id?: string;
+    prompt?: {
+      id: string;
+      variables?: {
+        [key: string]: unknown;
+      };
+    };
     prompt_cache_key?: string | null;
     prompt_cache_options?: {
       mode?: "implicit" | "explicit";
@@ -7987,6 +8204,45 @@ export async function deleteDataContributionClassifier(
   });
 }
 
+export type DeleteDepartmentBudgetParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Removes a department budget and its alerts.
+ */
+export async function deleteDepartmentBudget(
+  client: Client,
+  args: DeleteDepartmentBudgetParams,
+): Promise<{
+  data: {
+    deleted: boolean;
+    id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/department-budgets/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      deleted: boolean;
+      id: string;
+    };
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type DeleteDynamicRouteParams = {
   path: {
     id: string;
@@ -8273,7 +8529,7 @@ export type DeleteRateLimitAssignmentParams = {
 };
 
 /**
- * Removes a policy from its target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Removes a policy from its target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
  */
 export async function deleteRateLimitAssignment(
   client: Client,
@@ -8312,7 +8568,7 @@ export type DeleteRateLimitPolicyParams = {
 };
 
 /**
- * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
  */
 export async function deleteRateLimitPolicy(
   client: Client,
@@ -8871,6 +9127,44 @@ export async function forkPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -8896,6 +9190,44 @@ export async function forkPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -9858,6 +10190,75 @@ export async function getDataContributionSettings(
       starterCategories: {
         [key: string]: string[];
       };
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetDepartmentBudgetParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns one department budget with the department's spend so far.
+ */
+export async function getDepartmentBudget(
+  client: Client,
+  args: GetDepartmentBudgetParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/department-budgets/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
     };
   }>({
     method: "GET",
@@ -10842,6 +11243,44 @@ export async function getPreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -10867,6 +11306,44 @@ export async function getPreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -11235,7 +11712,7 @@ export type GetRateLimitAssignmentParams = {
 };
 
 /**
- * Returns one rate limit assignment. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Returns one rate limit assignment. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
  */
 export async function getRateLimitAssignment(
   client: Client,
@@ -11288,7 +11765,7 @@ export type GetRateLimitPolicyParams = {
 };
 
 /**
- * Returns one rate limit policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Returns one rate limit policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
  */
 export async function getRateLimitPolicy(
   client: Client,
@@ -14213,6 +14690,73 @@ export async function listDataModels(
   });
 }
 
+export type ListDepartmentBudgetsParams = {
+  path?: Record<string, never>;
+  query?: {
+    department_id?: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+ */
+export async function listDepartmentBudgets(
+  client: Client,
+  args: ListDepartmentBudgetsParams = {},
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  }[];
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/department-budgets";
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
+    }[];
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListDynamicRoutesParams = {
   path?: Record<string, never>;
   query?: {
@@ -16212,6 +16756,44 @@ export async function listPresets(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -16236,6 +16818,44 @@ export async function listPresets(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -16353,6 +16973,44 @@ export async function listPresetVersions(
 ): Promise<{
   data: {
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at: string;
@@ -16376,6 +17034,44 @@ export async function listPresetVersions(
   return client.request<{
     data: {
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at: string;
@@ -16657,7 +17353,7 @@ export type ListRateLimitAssignmentsParams = {
 };
 
 /**
- * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
  */
 export async function listRateLimitAssignments(
   client: Client,
@@ -16711,7 +17407,7 @@ export type ListRateLimitPoliciesParams = {
 };
 
 /**
- * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
  */
 export async function listRateLimitPolicies(
   client: Client,
@@ -19486,6 +20182,44 @@ export async function publishPresetVersion(
 ): Promise<{
   data: {
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at: string;
@@ -19509,6 +20243,44 @@ export async function publishPresetVersion(
   return client.request<{
     data: {
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at: string;
@@ -21598,6 +22370,78 @@ export async function updateDataContributionConsent(
   });
 }
 
+export type UpdateDepartmentBudgetParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    interval?: "daily" | "weekly" | "monthly";
+    limit?: number;
+  };
+};
+
+/**
+ * Changes the period or USD amount of a department budget.
+ */
+export async function updateDepartmentBudget(
+  client: Client,
+  args: UpdateDepartmentBudgetParams,
+): Promise<{
+  data: {
+    created_at: string;
+    created_by?: string | null;
+    department_id: string;
+    department_name: string | null;
+    exceeded: boolean;
+    id: string;
+    interval: "daily" | "weekly" | "monthly";
+    limit: number;
+    limit_nanos: number;
+    remaining: number;
+    remaining_nanos: number;
+    reset_at?: string | null;
+    updated_at: string;
+    usage: number;
+    usage_nanos: number;
+    window_start?: string | null;
+    workspace_id: string;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/department-budgets/${encodeURIComponent(String(path["id"]))}`;
+  return client.request<{
+    data: {
+      created_at: string;
+      created_by?: string | null;
+      department_id: string;
+      department_name: string | null;
+      exceeded: boolean;
+      id: string;
+      interval: "daily" | "weekly" | "monthly";
+      limit: number;
+      limit_nanos: number;
+      remaining: number;
+      remaining_nanos: number;
+      reset_at?: string | null;
+      updated_at: string;
+      usage: number;
+      usage_nanos: number;
+      window_start?: string | null;
+      workspace_id: string;
+    };
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type UpdateDynamicRouteParams = {
   path: {
     id: string;
@@ -22380,6 +23224,44 @@ export type UpdatePresetParams = {
   headers?: Record<string, never>;
   body?: {
     config?: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     description?: string | null;
@@ -22401,6 +23283,44 @@ export async function updatePreset(
   data: {
     active_version_id?: string | null;
     config: {
+      prompt?: {
+        messages: {
+          content:
+            | string
+            | {
+                name?: string;
+                text?: string;
+                type: "text" | "variable";
+              }[];
+          role: "system" | "developer" | "user" | "assistant";
+        }[];
+        response_format?: {
+          [key: string]: unknown;
+        };
+        syntax?: "mustache-v1";
+        tool_choice?: unknown;
+        tools?: {
+          [key: string]: unknown;
+        }[];
+        variables?: {
+          [key: string]: {
+            default?: unknown;
+            description?: string;
+            enum?: string[];
+            max_length?: number;
+            required?: boolean;
+            type:
+              | "string"
+              | "number"
+              | "boolean"
+              | "enum"
+              | "array"
+              | "object"
+              | "any"
+              | "image";
+          };
+        };
+      };
       [key: string]: unknown;
     };
     created_at?: string | null;
@@ -22426,6 +23346,44 @@ export async function updatePreset(
     data: {
       active_version_id?: string | null;
       config: {
+        prompt?: {
+          messages: {
+            content:
+              | string
+              | {
+                  name?: string;
+                  text?: string;
+                  type: "text" | "variable";
+                }[];
+            role: "system" | "developer" | "user" | "assistant";
+          }[];
+          response_format?: {
+            [key: string]: unknown;
+          };
+          syntax?: "mustache-v1";
+          tool_choice?: unknown;
+          tools?: {
+            [key: string]: unknown;
+          }[];
+          variables?: {
+            [key: string]: {
+              default?: unknown;
+              description?: string;
+              enum?: string[];
+              max_length?: number;
+              required?: boolean;
+              type:
+                | "string"
+                | "number"
+                | "boolean"
+                | "enum"
+                | "array"
+                | "object"
+                | "any"
+                | "image";
+            };
+          };
+        };
         [key: string]: unknown;
       };
       created_at?: string | null;
@@ -22762,7 +23720,7 @@ export type UpdateRateLimitAssignmentParams = {
 };
 
 /**
- * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
  */
 export async function updateRateLimitAssignment(
   client: Client,
@@ -22822,7 +23780,7 @@ export type UpdateRateLimitPolicyParams = {
 };
 
 /**
- * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+ * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
  */
 export async function updateRateLimitPolicy(
   client: Client,

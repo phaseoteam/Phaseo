@@ -90,6 +90,13 @@ export interface AnthropicMessagesRequest {
         mode?: "safe" | "strict";
       }
   )[];
+  prompt?: {
+    id: string;
+    variables?: {
+      [key: string]: unknown;
+    };
+  };
+  prompt_cache_key?: string | null;
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;

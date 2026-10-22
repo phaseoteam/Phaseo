@@ -186,7 +186,7 @@ describe("workspace-namespaced prompt_cache_key", () => {
 		expect(aliasOnly.promptCacheRetention).toBe("in_memory");
 	});
 
-	it("sends x-session-affinity only to Fireworks and Cloudflare Workers AI", () => {
+	it("sends x-session-affinity to Fireworks and Cloudflare Workers AI, and to no undocumented provider", () => {
 		const meta = { cacheAffinityKey: "pck_abc" } as ExecutorExecuteArgs["meta"];
 		expect(sessionAffinityHeaders({ providerId: "cloudflare", meta })).toEqual({ "x-session-affinity": "pck_abc" });
 		expect(sessionAffinityHeaders({ providerId: "fireworks", meta })).toEqual({ "x-session-affinity": "pck_abc" });

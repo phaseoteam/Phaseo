@@ -1,0 +1,60 @@
+---
+title: "Ouvrir des requêtes dans Chat"
+description: "Ouvrez une requête journalisée ou un tour de session dans Chat, choisissez ce qui est repris et poursuivez la conversation avec n’importe quel modèle."
+icon: "message-square"
+---
+
+Lorsque les journaux d’E/S du Gateway sont activés, Phaseo stocke le prompt et la réponse de chaque requête. Vous pouvez ouvrir dans Chat toute requête Chat Completions, Responses ou Messages stockée, vérifier son rendu et poursuivre la conversation à partir de là avec le même modèle ou un autre.
+
+## Avant de commencer
+
+- Activez **Stocker les charges utiles de requête et de réponse** dans **Paramètres → Confidentialité**. Seules les requêtes effectuées pendant que cette option est activée peuvent être ouvertes.
+- Lorsque **Exiger une rétention de données nulle** est activé, l’espace de travail ne stocke jamais les prompts ni les réponses. Il en va de même pour les requêtes effectuées avec une clé API dont le garde-fou exige une rétention de données nulle. Ces requêtes ne peuvent pas être ouvertes.
+- Les requêtes envoyées aux [points de terminaison régionaux](./regional-routing.mdx) (`eu.api.phaseo.app` et `us.api.phaseo.app`) ne sont pas stockées et ne peuvent donc pas être ouvertes.
+- Vous devez être membre de l’espace de travail auquel appartient la requête. Si **Qui peut voir le contenu** est réglé sur **Propriétaires et administrateurs**, seuls eux peuvent ouvrir ses requêtes.
+
+## Ouvrir une requête
+
+| Où | Comment |
+| --- | --- |
+| Détails de la requête | Sélectionnez **Ouvrir dans Chat** en haut des détails. |
+| Journaux des requêtes | Faites un clic droit sur une requête et sélectionnez **Ouvrir dans Chat**. |
+| Détails de la session | Sélectionnez **Ouvrir dans Chat** pour reprendre à partir du dernier tour, ou l’icône de chat d’une ligne pour reprendre à partir de ce tour. |
+
+Chaque tour d’une session contient déjà la conversation jusqu’à ce point ; ouvrir un tour ouvre donc aussi tout ce qui le précède.
+
+Le lien ouvert par Chat ne contient que l’ID de la requête : vous pouvez donc le partager avec d’autres membres de l’espace de travail. Chat recharge la requête pour chaque personne qui l’ouvre, avec ses propres droits d’accès.
+
+## Choisir ce qui est repris
+
+Avant la création du chat, Chat indique ce que contient la requête et ce qui sera conservé.
+
+| Option | Effet |
+| --- | --- |
+| Épingler le fournisseur | Envoie les tours suivants au fournisseur qui a traité la requête. Désactivé par défaut, le routage choisit donc un fournisseur comme d’habitude. |
+| Paramètres | Conserve la température, le nombre maximal de tokens, top-p et top-k, le seed, les pénalités, le raisonnement et le niveau de service. |
+| Prompt système | Conserve les instructions système ou développeur de la requête. |
+| Outils serveur | Conserve les outils serveur Phaseo utilisés par la requête, comme la recherche web. |
+| Outils de fonction | Déclare les outils de fonction propres à la requête afin que les appels d’outils précédents restent valides. Chat ne peut pas les exécuter. S’ils sont exclus, les appels d’outils et résultats précédents sont envoyés sous forme de texte. |
+| La réponse journalisée | Inclut la réponse reçue par la requête. Excluez-la pour générer une nouvelle réponse à la même conversation. |
+
+Si le modèle de la requête n’est pas disponible dans Chat, le chat utilise votre modèle actuel. Vous pouvez changer de modèle après l’ouverture du chat.
+
+## Comment le chat se poursuit
+
+- La requête s’ouvre dans un nouveau chat avec son propre ID de session, enregistré dans votre navigateur comme tout autre chat. Les tours suivants ne rejoignent pas la session d’origine dans les Journaux.
+- Les messages que vous n’avez pas modifiés sont envoyés sous leur forme d’origine : les appels d’outils, les résultats d’outils, les images, l’audio et les fichiers sont donc conservés au tour suivant. Les messages modifiés et nouveaux sont envoyés sous forme de texte, comme dans tout chat.
+- Vous pouvez changer de modèle, comparer plusieurs modèles côte à côte, créer une branche ou modifier, comme dans tout chat.
+- Les tours suivants s’exécutent dans votre espace de travail actif et sont facturés comme toute autre requête Chat.
+
+## Ce qui ne peut pas être repris
+
+Chat liste tout ce qu’il n’a pas pu reprendre avant que vous ne poursuiviez :
+
+- Les tours conservés par le fournisseur via `previous_response_id` ou un ID de conversation. Seuls les tours contenus dans la requête elle-même sont stockés.
+- Les pièces jointes envoyées par ID de fichier ou référence distante plutôt qu’en ligne.
+- Les réponses qui ont échoué, ont été interrompues ou proposaient plusieurs choix (seul le premier est conservé).
+- Les appels d’outils qui n’ont jamais reçu de résultat. Ils sont envoyés sous forme de texte.
+- Les types de contenu que Chat ne peut pas afficher, comme les blocs propres à un fournisseur.
+
+Les requêtes trop volumineuses pour être stockées, ainsi que celles dont le contenu stocké a expiré ou a été supprimé, ne peuvent pas être ouvertes. Seules les requêtes textuelles peuvent être ouvertes dans Chat, pas les requêtes d’image, d’audio, de vidéo ni d’embeddings.

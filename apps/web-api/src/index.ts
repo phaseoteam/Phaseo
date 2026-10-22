@@ -9,6 +9,7 @@ import { frontendCreditAvailabilityRouter } from "@/routes/frontend-credit-avail
 import { frontendProfileAvatarsRouter } from "@/routes/frontend-profile-avatars";
 import { scimRouter } from "@/scim/router";
 import { handleProviderCatalogScheduledEvent } from "@/scheduled/provider-catalog";
+import { handleSlackAgentChargesScheduledEvent } from "@/scheduled/slack-agent-charges";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -24,5 +25,10 @@ app.route("/scim/v2", scimRouter);
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 
 export default Object.assign(app, {
-	scheduled: handleProviderCatalogScheduledEvent,
+	async scheduled(event: ScheduledController, env: Env): Promise<void> {
+		await Promise.all([
+			handleProviderCatalogScheduledEvent(event, env),
+			handleSlackAgentChargesScheduledEvent(event, env),
+		]);
+	},
 });
