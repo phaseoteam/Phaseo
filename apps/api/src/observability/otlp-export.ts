@@ -583,6 +583,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 			continue;
 		}
 		let outcome;
+		const startedAtMs = Date.now();
 		try {
 			const destination = destinationResult.data as Destination & { enabled: boolean };
 			const config = await destinationConfig(destination);
@@ -598,7 +599,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 				error: deliveryError instanceof Error ? deliveryError.message : "OTLP delivery failed",
 			};
 		}
-		health.request(row.destination_id, outcome);
+		health.request(row.destination_id, outcome, startedAtMs);
 		if (outcome.delivered) {
 			health.event(row.destination_id, true);
 			await updateOutboxRow(client, row.id, {

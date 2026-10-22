@@ -198,8 +198,9 @@ async function deliverEvents(
 
 	summary.requests += deliveries.length;
 	await mapWithConcurrency(deliveries, DELIVERY_CONCURRENCY, async (delivery) => {
+		const startedAtMs = Date.now();
 		const outcome = await deliver(delivery);
-		health.request(delivery.destination.id, outcome);
+		health.request(delivery.destination.id, outcome, startedAtMs);
 		if (!outcome.delivered) {
 			console.warn("broadcast_delivery_failed", {
 				destinationId: delivery.destination.id,
