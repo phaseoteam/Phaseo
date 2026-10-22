@@ -1,5 +1,5 @@
 -- Minimal pre-migration shape of the realtime billing objects touched by
--- 20261021105855_realtime_billing_hardening.sql. Only the columns, indexes and
+-- 20261022092218_realtime_billing_hardening.sql. Only the columns, indexes and
 -- function signatures the migration and its test use; no unrelated objects.
 do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
