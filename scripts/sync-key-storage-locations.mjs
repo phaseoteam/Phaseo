@@ -1,6 +1,7 @@
 // Copies packages/shared/key-storage-locations into each app that validates
 // or shows where a key is stored, and checks the per-key limit against the
-// database function that repeats it and the logos against the web app's files.
+// database function that repeats it, the logos against the web app's files
+// and the id list in the API reference.
 // Run with --check in CI to fail on drift instead of writing.
 
 import { readdir, readFile, writeFile } from "node:fs/promises";
@@ -17,6 +18,7 @@ const TARGETS = [
 const FUNCTION = "supabase/schemas/public/functions/valid_key_storage_locations.sql";
 const LOGO_DIR = "apps/web/public/logos/key-storage";
 const LOGO_LIST = "apps/web/src/components/(gateway)/settings/keys/keyStorageLogos.ts";
+const OPENAPI = "apps/docs/openapi/v1/openapi.yaml";
 
 const check = process.argv.includes("--check");
 const read = (file) => readFile(path.join(root, file), "utf8");
@@ -50,6 +52,12 @@ const logos = (await readdir(path.join(root, LOGO_DIR))).filter((file) => file.e
 for (const logo of logos) if (!ids.includes(logo)) problems.push(`${LOGO_DIR}/${logo}.svg has no location`);
 const listed = [...(await read(LOGO_LIST)).matchAll(/"([a-z0-9-]+)"/g)].map((match) => match[1]).sort();
 if (JSON.stringify(listed) !== JSON.stringify(logos)) problems.push(`${LOGO_LIST} does not list exactly the files in ${LOGO_DIR}`);
+
+// The API reference lists the ids that are offered.
+const spec = await read(OPENAPI);
+const known = spec.match(/\n {4}ApiKeyStorageLocations:\n[\s\S]*?Known ids: ([\s\S]*?)\.\n/)?.[1].replace(/\s+/g, " ").split(", ").map((id) => id.trim());
+const offered = [...source.matchAll(/\{ id: "([^"]+)"[^}]*\}/g)].filter((match) => !/retired: true/.test(match[0])).map((match) => match[1]);
+if (JSON.stringify(known) !== JSON.stringify(offered)) problems.push(`${OPENAPI} ApiKeyStorageLocations "Known ids" must list exactly: ${offered.join(", ")}`);
 
 if (problems.length) {
 	for (const problem of problems) console.error(problem);
