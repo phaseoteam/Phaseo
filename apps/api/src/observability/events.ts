@@ -9,7 +9,7 @@ import { sendAxiomWideEvent } from "./axiom";
 import { reportedCacheTokens } from "@core/cache-usage";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "./privacy";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
-import { keyNeverStoresContent } from "@pipeline/audit/io-logging";
+import { keyKeepsContentOutOfTelemetry } from "@pipeline/audit/io-logging";
 
 type EventArgs = {
     ctx?: PipelineContext;
@@ -620,6 +620,20 @@ function getProviderAttemptsFromArgs(args: EventArgs): Array<Record<string, unkn
     return getAttemptErrorsFromArgs(args);
 }
 
+/**
+ * Attempts without the provider's raw error body (`upstream_payload_preview`, a truncated
+ * copy that can echo the request or output), for requests whose content stays out of
+ * telemetry. Status codes, provider ids, error codes and messages stay, as on the event.
+ */
+function withoutAttemptPayloads(attempts: unknown): unknown {
+    if (!Array.isArray(attempts)) return attempts;
+    return attempts.map((attempt) => {
+        if (!attempt || typeof attempt !== "object" || !("upstream_payload_preview" in attempt)) return attempt;
+        const { upstream_payload_preview: _payload, ...kept } = attempt as Record<string, unknown>;
+        return kept;
+    });
+}
+
 function extractAttemptSignals(args: EventArgs): AttemptSignals {
     const attempts = getProviderAttemptsFromArgs(args);
     const providerSet = new Set<string>();
@@ -1183,16 +1197,22 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const containsParsedDocumentContent = (args.endpoint ?? args.ctx?.endpoint) === "parse";
         const includeDetailedPayloads =
             observabilityPlan.detailLevel === "full" && !containsParsedDocumentContent;
-        // A key created with never_store_content keeps the operational detail
-        // (routing, attempts, headers) but none of its requests or responses.
-        const neverStoreContent = includeDetailedPayloads || !args.success
-            ? await keyNeverStoresContent({
+        // A key created with never_store_content, or under zero data retention, keeps
+        // the operational detail (routing, attempts, headers) but none of its requests
+        // or responses. Both are set on the context when routing loads the policy.
+        const keepContentOut = includeDetailedPayloads || !args.success
+            ? await keyKeepsContentOutOfTelemetry({
                 workspaceId,
                 keyId: args.keyId ?? ctx?.meta?.apiKeyId ?? null,
-                known: ctx?.neverStoreContent,
+                known: typeof ctx?.neverStoreContent === "boolean"
+                    ? ctx.neverStoreContent || ctx.zeroDataRetention === true
+                    : null,
             })
             : false;
-        const includeContent = includeDetailedPayloads && !neverStoreContent;
+        const includeContent = includeDetailedPayloads && !keepContentOut;
+        // Attempts keep their operational detail but, like the event, not the raw upstream body.
+        const attemptsForTelemetry = (attempts: unknown) =>
+            keepContentOut ? withoutAttemptPayloads(attempts) : attempts;
 
         const sanitizedGatewayRequest = includeContent
             ? sanitizeForAxiom(args.requestPayload ?? ctx?.rawBody ?? ctx?.body ?? null)
@@ -1200,7 +1220,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const sanitizedUpstreamRequest = includeContent
             ? sanitizeJsonStringForAxiom(args.mappedRequest ?? args.result?.mappedRequest ?? null)
             : null;
-        const sanitizedErrorDetails = !neverStoreContent && (includeDetailedPayloads || (!args.success && !containsParsedDocumentContent))
+        const sanitizedErrorDetails = !keepContentOut && (includeDetailedPayloads || (!args.success && !containsParsedDocumentContent))
             ? sanitizeForAxiom(args.errorDetails ?? null)
             : null;
         const sanitizedProviderResponse = includeContent
@@ -1222,7 +1242,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             ? sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null)
             : null;
         const sanitizedAttemptErrors = includeDetailedPayloads
-            ? sanitizeForAxiom((ctx as any)?.attemptErrors ?? null)
+            ? sanitizeForAxiom(attemptsForTelemetry((ctx as any)?.attemptErrors ?? null))
             : null;
         const sanitizedProviderEnablement = includeDetailedPayloads
             ? sanitizeForAxiom((ctx as any)?.providerEnablementDiagnostics ?? null)
@@ -1246,7 +1266,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         })();
         const modelResolved = args.model ?? ctx?.model ?? modelRequested ?? null;
         const sanitizedProviderAttempts = includeDetailedPayloads
-            ? sanitizeForAxiom(getProviderAttemptsFromArgs(args))
+            ? sanitizeForAxiom(attemptsForTelemetry(getProviderAttemptsFromArgs(args)))
             : null;
         const providerFailure = extractProviderFailureSummary(args);
         const failureSample = extractFailureSampleSummary(args);

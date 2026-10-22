@@ -318,3 +318,42 @@ describe("keyNeverStoresContent", () => {
 		expect(state.bucket.put).not.toHaveBeenCalled();
 	});
 });
+
+describe("keyKeepsContentOutOfTelemetry", () => {
+	beforeEach(() => {
+		state.keyPolicy = { privacyZdrOnly: false };
+		vi.resetModules();
+	});
+
+	it("uses what the request context already knows", async () => {
+		state.keyPolicy = new Error("must not be read");
+		const { keyKeepsContentOutOfTelemetry } = await import("./io-logging");
+
+		await expect(keyKeepsContentOutOfTelemetry({ workspaceId: "workspace_1", keyId: "key_1", known: true })).resolves.toBe(true);
+		await expect(keyKeepsContentOutOfTelemetry({ workspaceId: "workspace_1", keyId: "key_1", known: false })).resolves.toBe(false);
+	});
+
+	it("keeps content out under zero data retention, which never_store_content alone does not cover", async () => {
+		const { keyKeepsContentOutOfTelemetry, keyNeverStoresContent } = await import("./io-logging");
+
+		// ZDR from the workspace setting or one of the key's guardrails (fetchWorkspacePolicy merges both).
+		state.keyPolicy = { privacyZdrOnly: true, neverStoreContent: false };
+		await expect(keyKeepsContentOutOfTelemetry({ workspaceId: "workspace_1", keyId: "key_zdr" })).resolves.toBe(true);
+		// Broadcasts to the customer's own destination still follow never_store_content only.
+		await expect(keyNeverStoresContent({ workspaceId: "workspace_1", keyId: "key_zdr" })).resolves.toBe(false);
+
+		state.keyPolicy = { privacyZdrOnly: false, neverStoreContent: true };
+		await expect(keyKeepsContentOutOfTelemetry({ workspaceId: "workspace_1", keyId: "key_agent" })).resolves.toBe(true);
+		state.keyPolicy = { privacyZdrOnly: false, neverStoreContent: false };
+		await expect(keyKeepsContentOutOfTelemetry({ workspaceId: "workspace_1", keyId: "key_2" })).resolves.toBe(false);
+	});
+
+	it("has nothing to look up without a key or a workspace, and counts an unreadable policy as keep out", async () => {
+		state.keyPolicy = new Error("must not be read");
+		const { keyKeepsContentOutOfTelemetry } = await import("./io-logging");
+
+		await expect(keyKeepsContentOutOfTelemetry({ workspaceId: "workspace_1", keyId: null })).resolves.toBe(false);
+		await expect(keyKeepsContentOutOfTelemetry({ workspaceId: "unknown", keyId: "key_1" })).resolves.toBe(false);
+		await expect(keyKeepsContentOutOfTelemetry({ workspaceId: "workspace_1", keyId: "key_1" })).resolves.toBe(true);
+	});
+});
