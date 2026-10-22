@@ -3399,6 +3399,9 @@
 		"faqSpeedA": "通过 Phaseo，{faster} 的中位生成速度为每秒 {fast} token，{slower} 为每秒 {slow} token。",
 		"faqApiQ": "我能通过同一个 API 使用 {a} 和 {b} 吗？",
 		"faqApiA": "可以。两者都通过 Phaseo API 提供，只需更换模型 ID 即可切换。",
-		"relatedTitle": "相关比较"
+		"relatedTitle": "相关比较",
+		"faqCheaperInputOnly": "{name} 的输入 token 更便宜；输出 token 价格相同。",
+		"faqCheaperOutputOnly": "{name} 的输出 token 更便宜；输入 token 价格相同。",
+		"faqScoreTie": "两者在 {index} 上得分相同。"
 	}
 }

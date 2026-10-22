@@ -3399,6 +3399,9 @@
 		"faqSpeedA": "{faster} generates a median {fast} tokens per second through Phaseo, compared with {slow} for {slower}.",
 		"faqApiQ": "Can I use {a} and {b} through one API?",
 		"faqApiA": "Yes. Both are served through the Phaseo API, so you can switch between them by changing the model id.",
-		"relatedTitle": "Related comparisons"
+		"relatedTitle": "Related comparisons",
+		"faqCheaperInputOnly": "{name} is cheaper for input tokens; output tokens cost the same.",
+		"faqCheaperOutputOnly": "{name} is cheaper for output tokens; input tokens cost the same.",
+		"faqScoreTie": "They score the same on the {index}."
 	}
 }

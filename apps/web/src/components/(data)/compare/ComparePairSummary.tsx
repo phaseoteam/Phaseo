@@ -49,14 +49,19 @@ export async function ComparePairSummary({ locale, baseUrl, models, usage, peers
 
 	const faqs: Faq[] = [];
 	if (input.every((value) => value != null) && output.every((value) => value != null)) {
-		const cheaperIn = input[0]! <= input[1]! ? 0 : 1;
-		const cheaperOut = output[0]! <= output[1]! ? 0 : 1;
+		// Each price is compared on its own, so a tie on one never names a winner for it.
+		const cheaperIn = input[0] === input[1] ? null : input[0]! < input[1]! ? 0 : 1;
+		const cheaperOut = output[0] === output[1] ? null : output[0]! < output[1]! ? 0 : 1;
 		const detail = t("faqCheaperDetail", { a: a.name, aIn: formatUsd(input[0]!), aOut: formatUsd(output[0]!), b: b.name, bIn: formatUsd(input[1]!), bOut: formatUsd(output[1]!) });
-		const lead = input[0] === input[1] && output[0] === output[1]
+		const lead = cheaperIn === null && cheaperOut === null
 			? t("faqCheaperSame")
-			: cheaperIn === cheaperOut
-				? t("faqCheaperBoth", { name: models[cheaperIn]!.name })
-				: t("faqCheaperSplit", { input: models[cheaperIn]!.name, output: models[cheaperOut]!.name });
+			: cheaperIn === null
+				? t("faqCheaperOutputOnly", { name: models[cheaperOut!]!.name })
+				: cheaperOut === null
+					? t("faqCheaperInputOnly", { name: models[cheaperIn]!.name })
+					: cheaperIn === cheaperOut
+						? t("faqCheaperBoth", { name: models[cheaperIn]!.name })
+						: t("faqCheaperSplit", { input: models[cheaperIn]!.name, output: models[cheaperOut]!.name });
 		faqs.push({ question: t("faqCheaperQ", { a: a.name, b: b.name }), answer: `${lead} ${detail}` });
 	}
 	if (context.every((value) => value != null)) {
@@ -76,13 +81,16 @@ export async function ComparePairSummary({ locale, baseUrl, models, usage, peers
 		faqs.push({
 			question: t("faqScoreQ", { a: a.name, b: b.name, index: index.name }),
 			answer: [
-				ordered.length === 2 ? t("faqScoreLead", { name: ordered[0]!.model.name, index: index.name }) : null,
+				ordered.length !== 2 ? null
+					: ordered[0]!.entry.score === ordered[1]!.entry.score ? t("faqScoreTie", { index: index.name })
+					: t("faqScoreLead", { name: ordered[0]!.model.name, index: index.name }),
 				ordered.map(describeScore).join(" "),
 				missing ? t("faqScoreMissing", { name: missing.name }) : null,
 			].filter(Boolean).join(" "),
 		});
 	}
-	if (throughput.every((value) => value != null)) {
+	// Equal medians have no faster model, so the question is left out.
+	if (throughput.every((value) => value != null) && Math.round(throughput[0]!) !== Math.round(throughput[1]!)) {
 		const faster = throughput[0]! >= throughput[1]! ? 0 : 1;
 		faqs.push({
 			question: t("faqSpeedQ", { a: a.name, b: b.name }),

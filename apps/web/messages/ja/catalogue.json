@@ -3399,6 +3399,9 @@
 		"faqSpeedA": "Phaseo 経由での中央値は、{faster} が毎秒 {fast} トークン、{slower} が毎秒 {slow} トークンです。",
 		"faqApiQ": "{a} と {b} を 1 つの API で使えますか？",
 		"faqApiA": "はい。どちらも Phaseo API で提供されているので、モデル ID を変えるだけで切り替えられます。",
-		"relatedTitle": "関連する比較"
+		"relatedTitle": "関連する比較",
+		"faqCheaperInputOnly": "入力トークンは {name} のほうが安価で、出力トークンの料金は同じです。",
+		"faqCheaperOutputOnly": "出力トークンは {name} のほうが安価で、入力トークンの料金は同じです。",
+		"faqScoreTie": "{index} ではどちらも同じスコアです。"
 	}
 }
