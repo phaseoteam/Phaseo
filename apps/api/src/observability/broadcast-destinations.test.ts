@@ -270,6 +270,14 @@ describe("Broadcast destination registry", () => {
 			expect(() => resolveOtlpTarget("dynatrace", { ...config, token_type: "oauth" })).toThrow("token_type must be one of: access, platform");
 		});
 
+		it("rejects a JSON override for Dynatrace, which only accepts protobuf", () => {
+			const config = { environment_url: "https://abc123.live.dynatrace.com", api_token: "dt0c01.token" };
+			expect(resolveOtlpTarget("dynatrace", config).protocol).toBe("http/protobuf");
+			expect(resolveOtlpTarget("dynatrace", { ...config, otlp_protocol: "http/protobuf" }).protocol).toBe("http/protobuf");
+			expect(() => resolveOtlpTarget("dynatrace", { ...config, otlp_protocol: "http/json" }))
+				.toThrow("Protocol must be http/protobuf for this destination");
+		});
+
 		it("sends Elastic traces to the managed OTLP endpoint with an API key", () => {
 			expect(resolveOtlpTarget("elastic", { otlp_endpoint: "https://d.ingest.us-east-1.aws.elastic.cloud:443", api_key: "k" })).toMatchObject({
 				endpoint: "https://d.ingest.us-east-1.aws.elastic.cloud:443/v1/traces",

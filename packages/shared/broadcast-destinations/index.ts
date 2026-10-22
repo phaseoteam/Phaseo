@@ -110,6 +110,9 @@ export type OtlpPreset = {
 	// A header or resource attribute whose template renders empty is left out.
 	headers?: Record<string, string>;
 	protocol?: OtlpProtocol;
+	// The only encodings the vendor accepts, when an otlp_protocol override to
+	// another one could never deliver.
+	protocols?: OtlpProtocol[];
 	compression?: OtlpCompression;
 	// Set on every resource, for vendors that read the project or service there.
 	resourceAttributes?: Record<string, string>;
@@ -184,6 +187,7 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 		choices: { token_type: { access: "Api-Token", platform: "Bearer" } },
 		headers: { Authorization: "{token_type} {api_token}" },
 		protocol: "http/protobuf",
+		protocols: ["http/protobuf"],
 	},
 	// https://www.elastic.co/docs/reference/opentelemetry/motlp
 	// The endpoint is the deployment's or project's managed OTLP endpoint.
@@ -364,6 +368,9 @@ export function resolveOtlpTarget(id: unknown, config: Record<string, unknown>):
 	const protocolValue = String(config.otlp_protocol ?? "").trim() ? config.otlp_protocol : preset?.protocol;
 	const protocol = otlpProtocol({ otlp_protocol: protocolValue });
 	if (!protocol) throw new Error(`Protocol must be ${OTLP_PROTOCOLS.join(" or ")}`);
+	if (preset?.protocols && !preset.protocols.includes(protocol)) {
+		throw new Error(`Protocol must be ${preset.protocols.join(" or ")} for this destination`);
+	}
 	const compressionValue = String(config.otlp_compression ?? "").trim().toLowerCase() || preset?.compression || "none";
 	if (!OTLP_COMPRESSIONS.includes(compressionValue as OtlpCompression)) {
 		throw new Error(`Compression must be ${OTLP_COMPRESSIONS.join(" or ")}`);
