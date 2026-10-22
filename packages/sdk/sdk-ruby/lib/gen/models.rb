@@ -5679,10 +5679,16 @@ module Phaseo
     WorkspaceModelSuccessorPricePolicy = Object
     # @!attribute [rw] created_at
     #   @return [String, nil]
+    # @!attribute [rw] has_signing_secret
+    #   @return [Boolean, nil]
     # @!attribute [rw] id
     #   @return [String]
     # @!attribute [rw] name
     #   @return [String]
+    # @!attribute [rw] signing_secret
+    #   @return [String, nil]
+    # @!attribute [rw] signing_secret_rotated_at
+    #   @return [String, nil]
     # @!attribute [rw] status
     #   @return [String]
     # @!attribute [rw] target_preview
@@ -5691,7 +5697,7 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] updated_at
     #   @return [String, nil]
-    WorkspaceNotificationDestination = Struct.new(:created_at, :id, :name, :status, :target_preview, :type, :updated_at, keyword_init: true)
+    WorkspaceNotificationDestination = Struct.new(:created_at, :has_signing_secret, :id, :name, :signing_secret, :signing_secret_rotated_at, :status, :target_preview, :type, :updated_at, keyword_init: true)
     # @!attribute [rw] name
     #   @return [String]
     # @!attribute [rw] target

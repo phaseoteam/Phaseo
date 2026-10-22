@@ -5665,8 +5665,11 @@ const (
 
 type WorkspaceNotificationDestination struct {
 	CreatedAt *string `json:"created_at,omitempty"`
+	HasSigningSecret *bool `json:"has_signing_secret,omitempty"`
 	Id string `json:"id"`
 	Name string `json:"name"`
+	SigningSecret *string `json:"signing_secret,omitempty"`
+	SigningSecretRotatedAt *string `json:"signing_secret_rotated_at,omitempty"`
 	Status string `json:"status"`
 	TargetPreview string `json:"target_preview"`
 	Type string `json:"type"`

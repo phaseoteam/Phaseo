@@ -5135,6 +5135,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: تدوير سر توقيع webhook الإشعارات
+      description: ينشئ سر توقيع جديدًا لوجهة webhook مخصصة ويعيده مرة واحدة فقط. تحصل الوجهات التي أُنشئت قبل التوقيع على سرها الأول بهذه الطريقة. تُوقَّع عمليات التسليم اللاحقة بالسر الجديد ويتوقف استخدام السر السابق.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: تم تدوير سر التوقيع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -21767,6 +21795,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: ما إذا كانت عمليات التسليم موقّعة باستخدام x-phaseo-signature. تُوقَّع وجهات webhook المخصصة فقط؛ وتبقى الوجهات التي أُنشئت قبل التوقيع غير موقّعة حتى يُنشأ سر.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: وقت إنشاء سر التوقيع الحالي.
+        signing_secret:
+          type: string
+          description: سر توقيع webhook. يُعاد فقط عند إنشاء وجهة webhook مخصصة أو تدوير سرها؛ احفظه بأمان.
         created_at:
           type: string
           format: date-time

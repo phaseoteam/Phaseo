@@ -657,18 +657,21 @@ function SessionDetailSheet({
 			>
 				<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none">
 					<div className="flex min-h-0 flex-1 flex-col">
-						<ProviderInspectorSheetHeader className="border-b border-border/70 px-5 py-4 pr-14 sm:px-6 sm:py-5">
-							<ProviderInspectorSheetTitle className="min-w-0 truncate text-lg font-semibold">
-								{m("Session title", { id: shortenIdentifier(session.session_id, 6) })}
-							</ProviderInspectorSheetTitle>
-							<ProviderInspectorSheetDescription>{subtitle}</ProviderInspectorSheetDescription>
+						<ProviderInspectorSheetHeader className="flex-row items-start gap-3 border-b border-border/70 px-5 py-4 pr-14 sm:px-6 sm:py-5">
+							<div className="min-w-0 flex-1">
+								<ProviderInspectorSheetTitle className="min-w-0 truncate text-lg font-semibold">
+									{m("Session title", { id: shortenIdentifier(session.session_id, 6) })}
+								</ProviderInspectorSheetTitle>
+								<ProviderInspectorSheetDescription>{subtitle}</ProviderInspectorSheetDescription>
+							</div>
 							{latestChatRequest ? (
 								<Link
 									href={buildOpenRequestInChatHref(latestChatRequest.request_id, searchParams.get("workspaceId"))}
-									className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-2 w-fit")}
+									className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}
+									title={tUi("actions.openInChat")}
 								>
 									<MessageSquare />
-									{tUi("actions.openInChat")}
+									<span className="sr-only sm:not-sr-only">{tUi("actions.openInChat")}</span>
 								</Link>
 							) : null}
 						</ProviderInspectorSheetHeader>

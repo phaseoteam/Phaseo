@@ -156,12 +156,28 @@ export async function createNotificationDestination(destination: { name: string;
 	const context = await getServerAccountContext();
 	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
 	if (!context.accessToken) throw new Error("Unauthorized");
-	const result = await fetchAccountWebApi<{ destination: import("@/lib/fetchers/internal/settingsTypes").NotificationDestination }>("/api/account/credits/notification-destinations", context.accessToken, {
+	const result = await fetchAccountWebApi<{ destination: import("@/lib/fetchers/internal/settingsTypes").NotificationDestination; signingSecret?: string }>("/api/account/credits/notification-destinations", context.accessToken, {
 		method: "POST",
 		body: JSON.stringify({ workspaceId, ...destination }),
 	});
 	revalidatePath("/settings/notifications");
-	return result.destination;
+	// Custom webhooks come back with their signing secret, shown to the user once.
+	return { destination: result.destination, signingSecret: result.signingSecret ?? null };
+}
+
+export async function rotateNotificationDestinationSecret(destinationId: string) {
+	const context = await getServerAccountContext();
+	const workspaceId = context.workspaceId ?? await resolveWorkspaceIdFromActiveCookie();
+	if (!context.accessToken) throw new Error("Unauthorized");
+	try {
+		const result = await fetchAccountWebApi<{ signingSecret: string; signingSecretRotatedAt: string | null }>(`/api/account/credits/notification-destinations/${encodeURIComponent(destinationId)}/signing-secret`, context.accessToken, { method: "POST", body: JSON.stringify({ workspaceId }) });
+		revalidatePath("/settings/notifications");
+		return { ok: true as const, signingSecret: result.signingSecret, signingSecretRotatedAt: result.signingSecretRotatedAt };
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Could not create a signing secret";
+		console.error("[notifications] signing secret rotation failed", { destinationId, workspaceId, error: message });
+		return { ok: false as const, error: message };
+	}
 }
 
 export async function deleteNotificationDestination(destinationId: string) {
