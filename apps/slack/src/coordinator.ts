@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
+import { compareTs, MAX_KNOWN_MESSAGES } from "./history";
 import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunner, type TurnStart } from "./turns";
 
 // ThreadCoordinator: one per Slack thread, named installation:channel:thread_ts.
@@ -11,6 +12,11 @@ import { createWorkflowTurnRunner, type TurnOutcome, type TurnRef, type TurnRunn
 // - Holds a cancel flag that the running turn checks between steps.
 // - Keeps working memory: the bot's earlier replies and short tool summaries, so a
 //   turn has context when Slack's history API is rate limited.
+// - Keeps the timestamps (never the text) of the thread's newest messages it
+//   knows follow one another, so the next turn's one read of the thread starts
+//   at the right place (history.ts).
+// - Remembers who was sent the Connect your Phaseo account button in this thread,
+//   so the agent offers it at most once per person here.
 // - Deletes everything 7 days after the last activity (an alarm). This is the only
 //   place Slack text is kept: an open turn's message, thread history and staged
 //   reply until the turn ends, and the working memory, all gone within 7 days, as
@@ -37,14 +43,30 @@ export type EnqueueResult =
 	| { status: "duplicate" }
 	| { status: "queue_full" };
 
-export type MemoryEntry = { kind: "reply" | "tool"; text: string; at: number };
+/** ts: a reply's Slack message, so a read of the thread that shows it isn't repeated from memory. */
+export type MemoryEntry = { kind: "reply" | "tool"; text: string; at: number; ts: string | null };
 
 /** A message from the thread's history (conversations.replies), for one turn only. */
-export type ContextEntry = { role: "user" | "assistant"; author: string | null; text: string };
+export type ContextEntry = { role: "user" | "assistant"; author: string | null; text: string; ts: string | null };
+
+/** What a turn's read of its thread returned (history.ts). Kept for that turn only. */
+export type ThreadContext = {
+	/** The thread's first message, when it falls before the messages read. */
+	root: ContextEntry | null;
+	/** The messages read, oldest first, without the one being answered. */
+	messages: ContextEntry[];
+	/** The read started at the thread's first message. */
+	fromRoot: boolean;
+	/** The stretch held more messages than Slack returned. */
+	partial: boolean;
+};
+
+/** What a turn's read covered: the timestamps it returned from oldest to the answered message, and whether that was all of them. */
+export type ThreadReadRecord = { oldest: string; ts: string[]; complete: boolean };
 
 export type TurnInput = {
 	text: string;
-	context: ContextEntry[] | null;
+	context: ThreadContext | null;
 	/** The reply message an earlier attempt of this turn started, if any. */
 	replyTs: string | null;
 	/** The reply text and tool notes, staged by the run until the turn ends. */
@@ -90,14 +112,22 @@ function turnRef(row: TurnRow): TurnRef {
 
 const TURN_COLUMNS = "id, thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, status, started_at";
 
-/** turns columns added after the first release, created on objects that predate them. */
-const ADDED_TURN_COLUMNS: Array<[name: string, type: string]> = [
-	["context", "TEXT"],
-	["reply_ts", "TEXT"],
-	["staged_reply", "TEXT"],
-	["staged_tools", "TEXT"],
-	["attempt_costs", "TEXT"],
+/** Columns added after the first release, created on objects that predate them. */
+const ADDED_COLUMNS: Array<[table: string, name: string, type: string]> = [
+	["turns", "context", "TEXT"],
+	["turns", "reply_ts", "TEXT"],
+	["turns", "staged_reply", "TEXT"],
+	["turns", "staged_tools", "TEXT"],
+	["turns", "attempt_costs", "TEXT"],
+	["memory", "ts", "TEXT"],
 ];
+
+/** A turn's context as stored. Turns read before ThreadContext stored the messages alone. */
+function storedContext(value: string): ThreadContext {
+	const parsed = JSON.parse(value) as ThreadContext | ContextEntry[];
+	if (!Array.isArray(parsed)) return parsed;
+	return { root: null, messages: parsed.map((entry) => ({ ...entry, ts: entry.ts ?? null })), fromRoot: true, partial: false };
+}
 
 export class ThreadCoordinator extends DurableObject<Env> {
 	/** Starts turns; replaced in tests. */
@@ -132,13 +162,16 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			created_at INTEGER NOT NULL,
 			started_at INTEGER
 		)`);
+		this.sql.exec("CREATE TABLE IF NOT EXISTS memory (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, text TEXT NOT NULL, at INTEGER NOT NULL)");
+		this.sql.exec("CREATE TABLE IF NOT EXISTS known_messages (ts TEXT PRIMARY KEY)");
+		this.sql.exec("CREATE TABLE IF NOT EXISTS link_offers (slack_user_id TEXT PRIMARY KEY, at INTEGER NOT NULL)");
 		// Columns added after the first release. CREATE TABLE IF NOT EXISTS leaves an
 		// existing object's table as it was, so add whichever are missing.
-		const columns = new Set(this.sql.exec<{ name: string }>("PRAGMA table_info(turns)").toArray().map((column) => column.name));
-		for (const [name, type] of ADDED_TURN_COLUMNS) {
-			if (!columns.has(name)) this.sql.exec(`ALTER TABLE turns ADD COLUMN ${name} ${type}`);
+		const columns = new Map<string, Set<string>>();
+		for (const [table, name, type] of ADDED_COLUMNS) {
+			if (!columns.has(table)) columns.set(table, new Set(this.sql.exec<{ name: string }>(`PRAGMA table_info(${table})`).toArray().map((column) => column.name)));
+			if (!columns.get(table)!.has(name)) this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`);
 		}
-		this.sql.exec("CREATE TABLE IF NOT EXISTS memory (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, text TEXT NOT NULL, at INTEGER NOT NULL)");
 	}
 
 	private meta(key: string): string | null {
@@ -231,8 +264,8 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	}
 
 	private async endTurn(turnId: number, outcome: TurnOutcome, now: number): Promise<boolean> {
-		const turn = this.sql.exec<TurnRow & { staged_reply: string | null; staged_tools: string | null }>(
-			`SELECT ${TURN_COLUMNS}, staged_reply, staged_tools FROM turns WHERE id = ? AND status = 'running'`, turnId,
+		const turn = this.sql.exec<TurnRow & { staged_reply: string | null; staged_tools: string | null; reply_ts: string | null }>(
+			`SELECT ${TURN_COLUMNS}, staged_reply, staged_tools, reply_ts FROM turns WHERE id = ? AND status = 'running'`, turnId,
 		).toArray()[0];
 		if (!turn) return false;
 		// A turn that staged its reply reports back with ids only.
@@ -245,8 +278,10 @@ export class ThreadCoordinator extends DurableObject<Env> {
 			for (const tool of tools.slice(0, MAX_TOOLS_PER_TURN)) {
 				if (tool.trim()) this.sql.exec("INSERT INTO memory (kind, text, at) VALUES ('tool', ?, ?)", tool.trim().slice(0, MAX_TOOL_CHARS), now);
 			}
-			if (reply?.trim()) this.sql.exec("INSERT INTO memory (kind, text, at) VALUES ('reply', ?, ?)", reply.trim().slice(0, MAX_REPLY_CHARS), now);
+			if (reply?.trim()) this.sql.exec("INSERT INTO memory (kind, text, at, ts) VALUES ('reply', ?, ?, ?)", reply.trim().slice(0, MAX_REPLY_CHARS), now, turn.reply_ts);
 			this.sql.exec("DELETE FROM memory WHERE id NOT IN (SELECT id FROM memory ORDER BY id DESC LIMIT ?)", MAX_MEMORY_ENTRIES);
+			// The reply is a message in the thread too.
+			if (turn.reply_ts) this.storeKnown([...this.knownMessages(), turn.reply_ts]);
 		});
 		if (outcome.status !== "done") await this.releaseMeter(turn);
 		await this.touch(now);
@@ -291,7 +326,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 		if (!row) return null;
 		return {
 			text: row.text,
-			context: row.context ? JSON.parse(row.context) as ContextEntry[] : null,
+			context: row.context ? storedContext(row.context) : null,
 			replyTs: row.reply_ts,
 			stagedReply: row.staged_reply,
 			stagedTools: row.staged_tools ? JSON.parse(row.staged_tools) as string[] : [],
@@ -301,9 +336,60 @@ export class ThreadCoordinator extends DurableObject<Env> {
 	}
 
 	/** The thread's recent messages for one turn; deleted with the turn. */
-	setTurnContext(turnId: number, entries: ContextEntry[]): void {
-		const kept = entries.slice(-MAX_CONTEXT_ENTRIES).map((entry) => ({ role: entry.role, author: entry.author, text: entry.text.slice(0, MAX_CONTEXT_CHARS) }));
+	setTurnContext(turnId: number, context: ThreadContext): void {
+		const trim = (entry: ContextEntry): ContextEntry => ({ role: entry.role, author: entry.author, text: entry.text.slice(0, MAX_CONTEXT_CHARS), ts: entry.ts });
+		const kept: ThreadContext = {
+			root: context.root ? trim(context.root) : null,
+			messages: context.messages.slice(-MAX_CONTEXT_ENTRIES).map(trim),
+			fromRoot: context.fromRoot,
+			partial: context.partial,
+		};
 		this.sql.exec("UPDATE turns SET context = ? WHERE id = ?", JSON.stringify(kept), turnId);
+	}
+
+	/** Timestamps of the thread's newest messages known to follow one another, oldest first. */
+	knownMessages(): string[] {
+		return this.sql.exec<{ ts: string }>("SELECT ts FROM known_messages").toArray().map((row) => row.ts).sort(compareTs);
+	}
+
+	private storeKnown(timestamps: string[]): void {
+		const kept = [...new Set(timestamps)].sort(compareTs).slice(-MAX_KNOWN_MESSAGES);
+		this.sql.exec("DELETE FROM known_messages");
+		for (const ts of kept) this.sql.exec("INSERT INTO known_messages (ts) VALUES (?)", ts);
+	}
+
+	/**
+	 * After a turn's read of the thread. A complete read keeps everything it
+	 * returned, and the known messages before it when it started at one of them
+	 * (a read that started at a time instead may have skipped some). After a
+	 * partial or failed read, nothing before the turn's own message is known to
+	 * follow on, so the next read starts there. Known messages after it (replies
+	 * to earlier turns) stay either way.
+	 */
+	recordThreadRead(turnId: number, read: ThreadReadRecord | null): void {
+		const turn = this.sql.exec<{ message_ts: string }>("SELECT message_ts FROM turns WHERE id = ?", turnId).toArray()[0];
+		if (!turn) return;
+		this.ctx.storage.transactionSync(() => {
+			const known = this.knownMessages();
+			const after = known.filter((ts) => compareTs(ts, turn.message_ts) > 0);
+			const joined = read?.complete === true && known.some((ts) => compareTs(ts, read.oldest) === 0);
+			const before = joined ? known.filter((ts) => compareTs(ts, read.oldest) < 0) : [];
+			this.storeKnown([...before, ...(read?.complete ? read.ts : []), turn.message_ts, ...after]);
+		});
+	}
+
+	/** True the first time a person is sent the Connect button in this thread. */
+	claimLinkOffer(slackUserId: string, now = Date.now()): boolean {
+		return this.ctx.storage.transactionSync(() => {
+			if (this.sql.exec("SELECT 1 FROM link_offers WHERE slack_user_id = ?", slackUserId).toArray().length) return false;
+			this.sql.exec("INSERT INTO link_offers (slack_user_id, at) VALUES (?, ?)", slackUserId, now);
+			return true;
+		});
+	}
+
+	/** The button never reached them, so a later question can send it. */
+	releaseLinkOffer(slackUserId: string): void {
+		this.sql.exec("DELETE FROM link_offers WHERE slack_user_id = ?", slackUserId);
 	}
 
 	/** Records the reply message as soon as Slack returns it, so a retried run updates it instead of posting again. */
@@ -332,7 +418,7 @@ export class ThreadCoordinator extends DurableObject<Env> {
 
 	/** The bot's earlier replies and tool summaries in this thread, oldest first. */
 	workingMemory(): MemoryEntry[] {
-		return this.sql.exec<MemoryEntry>("SELECT kind, text, at FROM memory ORDER BY id").toArray();
+		return this.sql.exec<MemoryEntry>("SELECT kind, text, at, ts FROM memory ORDER BY id").toArray();
 	}
 
 	/** What the thread holds, for tests and diagnostics. Never includes text. */

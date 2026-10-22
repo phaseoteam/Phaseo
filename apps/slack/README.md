@@ -62,6 +62,8 @@ Worker's production host and routes.
   - Runs one turn at a time and queues follow-ups.
   - Holds the cancel flag.
   - Keeps working memory: the bot's replies and short tool summaries.
+  - Keeps the timestamps (no text) of the thread's newest known messages, where the next read starts.
+  - Remembers who was sent the Connect button in the thread.
   - Deletes everything 7 days after the last activity.
 - `WorkspaceMeter` (`METERS`), one per installation.
   - Admits or refuses each answer: bots, Slack Connect users, guests, status, the plan's people, max people, the monthly spending cap and answers per person per hour.
@@ -78,7 +80,7 @@ Each answer is an `AgentTurnWorkflow` instance (`AGENT_TURNS`, Cloudflare
 Workflows), one per Slack event, kept for 1 day. It has five steps:
 
 1. `load`: re-checks the installation and access. It sets the Slack session to `processing` (`agents.sessions.setStatus`).
-2. `context`: reads up to 15 messages of the thread (`conversations.replies`). When Slack rate limits that, it uses the coordinator's working memory instead.
+2. `context`: one `conversations.replies` read of up to 15 messages, ending at the message answered (`src/history.ts`). Slack allows apps outside the Marketplace about one read a minute per workspace, 15 messages each, and returns a range's earliest messages first, so the read starts at the oldest of the 8 newest messages the coordinator knows (in a channel, never more than 30 minutes back; the first read in a thread goes 30 minutes back). Slack sends the thread's first message with every read. When the stretch held more, the prompt says messages are missing. When Slack rate limits the read, the coordinator's working memory is used alone.
 3. `run`: runs `@phaseo/agent-sdk` through the gateway (the `PHASEO_API` service binding) with the installation's managed key and model. Every request carries:
    - `user: slack:<team>:<user>`;
    - `x-phaseo-metadata` labels `app=slack-agent`, `slack_team` and `slack_channel`;
@@ -104,7 +106,10 @@ The usage tools are `get_spend`, `get_credit_balance`, `get_key_usage` and
 `find_models`. They are offered only when the installation's `usage_data_mode`
 allows them in the conversation and the person is linked to a member of the
 workspace. They sum in the database (`get_workspace_spend_buckets`,
-`get_workspace_key_spend`).
+`get_workspace_key_spend`). Where they would be offered but the person hasn't
+linked an account (an installation open to everyone), the agent gets
+`connect_phaseo_account` instead: it sends the Connect button privately when
+they ask about usage, at most once per person in a thread.
 
 ## Secrets
 

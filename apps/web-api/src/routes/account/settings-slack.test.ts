@@ -299,7 +299,7 @@ describe("Slack agent install", () => {
 		const url = new URL(((await response.json()) as any).url);
 		expect(`${url.origin}${url.pathname}`).toBe("https://slack.com/oauth/v2/authorize");
 		expect(url.searchParams.get("client_id")).toBe("1111.2222");
-		expect(url.searchParams.get("scope")).toBe("app_mentions:read,assistant:write,chat:write,im:history,channels:history,groups:history,users:read,files:read,search:read.public");
+		expect(url.searchParams.get("scope")).toBe("app_mentions:read,assistant:write,chat:write,im:history,channels:history,groups:history,users:read");
 		expect(url.searchParams.get("redirect_uri")).toBe("https://phaseo.app/api/account/settings/slack/oauth/callback");
 		const state = url.searchParams.get("state")!;
 		expect(state.length).toBeLessThan(1_000);

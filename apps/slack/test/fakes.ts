@@ -1,5 +1,6 @@
 import type { Env } from "../src/env";
 import type { Deps } from "../src/events";
+import { compareTs } from "../src/history";
 import type { Installation } from "../src/installations";
 import { encryptSlackSecrets } from "../src/lib/slack-secrets";
 import type { SlackClient, SlackResult, SlackUser } from "../src/slack-api";
@@ -270,9 +271,35 @@ export class FakeSlack {
 	failUsersInfo = false;
 	/** Errors the next calls of a method return, in order. */
 	failures = new Map<string, string[]>();
-	/** What conversations.replies answers. */
+	/** The whole thread conversations.replies reads from, parent first. */
 	replies: Array<Record<string, unknown>> = [];
+	/** Most replies one conversations.replies call returns: Slack's cap for apps outside the Marketplace. */
+	repliesCap = 15;
+	/** The ts of the next posted or streamed message; by default 1792600100.000001, .000002 and so on. */
+	nextTs: (() => string) | null = null;
 	private streams = 0;
+
+	/**
+	 * conversations.replies as Slack serves it: the parent on every call (not
+	 * counted in the limit), then the earliest replies between oldest and latest,
+	 * at most the limit, with has_more when the range holds more.
+	 */
+	private repliesPage(args: Record<string, unknown>): { messages: Array<Record<string, unknown>>; has_more: boolean } {
+		const thread = [...this.replies].sort((a, b) => compareTs(String(a.ts), String(b.ts)));
+		const parent = thread.find((message) => message.ts === args.ts);
+		const inclusive = args.inclusive === true || args.inclusive === "true";
+		const oldest = args.oldest === undefined ? null : String(args.oldest);
+		const latest = args.latest === undefined ? null : String(args.latest);
+		const inRange = thread.filter((message) => {
+			if (message === parent) return false;
+			const ts = String(message.ts);
+			if (oldest !== null && (inclusive ? compareTs(ts, oldest) < 0 : compareTs(ts, oldest) <= 0)) return false;
+			if (latest !== null && (inclusive ? compareTs(ts, latest) > 0 : compareTs(ts, latest) >= 0)) return false;
+			return true;
+		});
+		const limit = Math.min(Number(args.limit ?? 1_000), this.repliesCap);
+		return { messages: [...(parent ? [parent] : []), ...inRange.slice(0, limit)], has_more: inRange.length > limit };
+	}
 
 	client(token: string): SlackClient {
 		return {
@@ -283,9 +310,9 @@ export class FakeSlack {
 				if (failure) return { ok: false, error: failure };
 				if (method === "chat.startStream" || method === "chat.postMessage") {
 					this.streams += 1;
-					return { ok: true, data: { ok: true, channel: args.channel, ts: `1792600100.${String(this.streams).padStart(6, "0")}` } as T };
+					return { ok: true, data: { ok: true, channel: args.channel, ts: this.nextTs?.() ?? `1792600100.${String(this.streams).padStart(6, "0")}` } as T };
 				}
-				if (method === "conversations.replies") return { ok: true, data: { ok: true, messages: this.replies } as T };
+				if (method === "conversations.replies") return { ok: true, data: { ok: true, ...this.repliesPage(args) } as T };
 				if (method === "users.info") {
 					if (this.failUsersInfo) return { ok: false, error: "ratelimited", retryAfterSeconds: 30 };
 					const user = this.users.get(String(args.user)) ?? { id: String(args.user), team_id: TEAM_ID };

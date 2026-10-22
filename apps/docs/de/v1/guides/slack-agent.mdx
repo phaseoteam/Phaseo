@@ -54,7 +54,12 @@ Ein Slack-Workspace kann den Agenten immer nur aus einem Phaseo-Workspace haben.
 
 Während er antwortet:
 
-- Er liest die 15 neuesten Nachrichten des Threads, damit er dem Gespräch folgen kann.
+- Er liest den neuesten Teil des Threads bis zu deiner Nachricht, damit er dem Gespräch folgen kann. Slack lässt ihn 15 Nachrichten auf einmal lesen und die App von Phaseo etwa einmal pro Minute in jedem Slack-Workspace.
+  - Die erste Nachricht des Threads sieht er immer.
+  - In einer Direktnachricht liest er die neuesten Nachrichten eures Gesprächs.
+  - In einem Channel liest er die neuesten Nachrichten aus höchstens den letzten 30 Minuten.
+  - Wurden mehr Nachrichten geschrieben, als er lesen konnte, erfährt er, dass einige fehlen.
+  - Lässt Slack ihn den Thread gerade nicht lesen, arbeitet er mit seinen eigenen früheren Antworten im Thread.
 - Er beantwortet in jedem Thread eine Nachricht nach der anderen. Bis zu 5 weitere Nachrichten warten, bis sie an der Reihe sind; danach bittet er dich, auf die früheren Antworten zu warten.
 - Die Stopp-Schaltfläche von Slack beendet die Antwort, an der er gerade arbeitet.
 - Jede Antwort endet mit dem Modell und den Kosten der Antwort in Modell-Tokens, etwa `phaseo/auto · $0.0031`. Mit **Automatisch** folgt das gewählte Modell nach einem Pfeil.
@@ -72,17 +77,22 @@ Unter **Limits** erlaubt **Gäste zulassen** (standardmäßig an) Gästen in dei
 
 ### Ein Slack-Konto verknüpfen
 
-Wenn der Zugriff auf **Nur verknüpfte Konten** steht, antwortet der Agent allen, die nicht verknüpft sind, privat mit einer Schaltfläche **Connect your Phaseo account**. Die Schaltfläche funktioniert 15 Minuten lang.
+Der Agent schickt allen, die nicht verknüpft sind, privat eine Schaltfläche **Connect your Phaseo account**:
+
+- Bei **Nur verknüpfte Konten**, wenn sie ihm schreiben. Er antwortet erst, wenn sie sich verbunden haben.
+- Bei **Alle in Slack**, wenn sie nach der Nutzung fragen, wo die **Nutzungsdaten** das erlauben (siehe unten, „Fragen zur Nutzung“). Er beantwortet trotzdem, was er kann, und schickt die Schaltfläche höchstens einmal pro Person in jedem Thread. Für eine neue Schaltfläche frag in einem neuen Thread.
+
+Die Schaltfläche funktioniert 15 Minuten lang.
 
 1. Wähle die Schaltfläche. Phaseo öffnet sich in deinem Browser.
 2. Melde dich mit einem Konto an, das Mitglied des Phaseo-Workspace ist, der den Agenten installiert hat.
 3. Wähle **Konto verbinden**.
 
-Mit einem verknüpften Konto kann man auch Fragen zur Nutzung stellen. Bei **Alle in Slack** schickt der Agent die Schaltfläche nicht. Damit Personen ihr Konto verknüpfen können, stell den Zugriff also auf **Nur verknüpfte Konten**, solange sie sich verbinden.
+Mit einem verknüpften Konto kann man auch Fragen zur Nutzung stellen.
 
 ## Fragen zur Nutzung
 
-Verknüpfte Mitglieder können den Agenten zu diesem Phaseo-Workspace fragen:
+Verknüpfte Mitglieder können den Agenten zu diesem Phaseo-Workspace fragen (alle anderen, die fragen, bekommen die Schaltfläche, um ihr Konto zu verknüpfen; siehe oben, „Ein Slack-Konto verknüpfen“):
 
 - Anfragen und Ausgaben in einem Zeitraum, pro Tag, Woche oder Monat und nach Modell oder Anbieter;
 - das Guthaben, für laufende Anfragen reserviertes Guthaben und das in diesem Monat ausgegebene Guthaben;
@@ -168,7 +178,7 @@ Die API-Bedingungen von Slack erlauben weder Training mit Slack-Daten noch deren
 - **Keine Nachrichteninhalte in den Logs von Phaseo.** Der API-Schlüssel des Agenten speichert nie Inhalte von Anfragen oder Antworten, weder in Logs noch in Caches oder Telemetrie, unabhängig von den Einstellungen deines Workspace. Seine Anfragen erscheinen trotzdem ohne Inhalt in deiner Nutzung und deinen Logs, mit den [Anfragekennzeichnungen](./request-labels.mdx) `app=slack-agent`, `slack_team` und `slack_channel` und dem [App-Titel](./app-attribution.mdx) `Phaseo Slack agent`.
 - **Kein Training und keine protokollierenden Anbieter.** Die [Guardrail](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** schaltet Training mit bezahlten und kostenlosen Modellen, das Veröffentlichen von Prompts und Anbieter ab, die Ein- und Ausgaben protokollieren.
 - **Keine Datenerhebung.** Jede Anfrage verlangt Anbieter, die keine Daten erheben (`provider.data_collection: "deny"`).
-- **Kurzes Arbeitsgedächtnis.** Für jeden Thread behält der Agent seine letzten Antworten, kurze Notizen zu den genutzten Tools und Nachrichten, die auf ihre Antwort warten. Sie werden 7 Tage nach der letzten Aktivität im Thread gelöscht.
+- **Kurzes Arbeitsgedächtnis.** Für jeden Thread behält der Agent seine letzten Antworten, kurze Notizen zu den genutzten Tools, Nachrichten, die auf ihre Antwort warten, die IDs (nicht den Text) der neuesten Nachrichten des Threads, damit er weiß, ab wo er liest, und wem er die Schaltfläche zum Verbinden geschickt hat. Sie werden 7 Tage nach der letzten Aktivität im Thread gelöscht.
 - **Nichts archiviert.** Phaseo archiviert nichts aus Slack. Die eigenen Logs des Agenten enthalten nur Slack-IDs und Status.
 - **Verschlüsselte Secrets.** Bot-Tokens und die Secrets deiner Slack-App werden verschlüsselt gespeichert und nie wieder angezeigt.
 
@@ -242,9 +252,7 @@ Wähle unter **Einstellungen → Slack** bei **Slack-App** die Option **Deine Sl
         "im:history",
         "channels:history",
         "groups:history",
-        "users:read",
-        "files:read",
-        "search:read.public"
+        "users:read"
       ]
     }
   },
@@ -287,9 +295,6 @@ Phaseo fordert bei der Installation genau diese Bot-Token-Scopes bei Slack an, d
 | `im:history` | Direktnachrichten an den Agenten lesen. |
 | `channels:history`, `groups:history` | Den Thread lesen, in dem er erwähnt wurde, in öffentlichen und privaten Channels. |
 | `users:read` | Prüfen, ob jemand Gast, Bot oder aus einer anderen Organisation ist. |
-| `files:read` | Dateien lesen, die in seinen Unterhaltungen geteilt werden. |
-| `search:read.public` | Öffentliche Channels nach Kontext durchsuchen. |
-
 Ein paar Regeln für deine eigene App:
 
 - Lass die Token-Rotation aus, wie im Manifest. Slack kann sie nicht wieder abschalten, sobald sie an ist.

@@ -118,7 +118,9 @@ describe("AgentTurnWorkflow", () => {
 		expect(new Set(world.slack.calls.map((call) => call.token))).toEqual(new Set([BOT_TOKEN]));
 		expect(meter().usage(NOW)).toMatchObject({ people: 1, answers: 1, pending: 0 });
 		expect(coordinatorOf(turn).status()).toMatchObject({ running: null, queued: 0 });
-		expect(coordinatorOf(turn).workingMemory()).toEqual([{ kind: "reply", text: "You spent $12.50 this week.", at: world.clock.now }]);
+		expect(coordinatorOf(turn).workingMemory()).toEqual([{ kind: "reply", text: "You spent $12.50 this week.", at: world.clock.now, ts: "1792600100.000001" }]);
+		// A new thread: its message and the reply are the messages the next read starts from.
+		expect(coordinatorOf(turn).knownMessages()).toEqual([turn.messageTs, "1792600100.000001"]);
 
 		// Step outputs are kept with the instance: ids and statuses only.
 		expect(step.outputs.map((entry) => entry.name)).toEqual(["load", "context", "run", "reply", "finish"]);
@@ -150,9 +152,9 @@ describe("AgentTurnWorkflow", () => {
 	it("offers usage tools only where usage_data_mode allows and to a linked member", async () => {
 		const agent = new ScriptedAgent(async () => answer());
 		const toolIds = () => agent.requests.at(-1)!.tools.map((tool) => tool.id);
-		// A DM from someone who hasn't linked their account.
+		// A DM from someone who hasn't linked their account: only the Connect button.
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
-		expect(toolIds()).toEqual([]);
+		expect(toolIds()).toEqual(["connect_phaseo_account"]);
 		// Linked, but no longer a member of the workspace.
 		world.db.tables.slack_user_links.push({ installation_id: INSTALLATION_ID, slack_user_id: "U0PERSON01", user_id: USER });
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
@@ -185,8 +187,10 @@ describe("AgentTurnWorkflow", () => {
 			{ ts: "1792600000.000060", bot_id: "B0BOT00001", user: BOT_USER_ID, text: "Last week was $30.00." },
 			{ ts: "1792600000.000070", user: "U0PERSON01", text: "and this week?" },
 		];
-		await runTurn(deps(agent), await startTurn({ threadTs, messageTs: "1792600000.000070", text: "and this week?" }), step);
-		expect(world.slack.of("conversations.replies")[0].args).toEqual({ channel: "C0CHANNEL1", ts: threadTs, limit: 15 });
+		const first = await startTurn({ threadTs, messageTs: "1792600000.000070", text: "and this week?" });
+		await runTurn(deps(agent), first, step);
+		// A young thread is read from its first message, up to the one answered.
+		expect(world.slack.of("conversations.replies")[0].args).toEqual({ channel: "C0CHANNEL1", ts: threadTs, oldest: threadTs, latest: "1792600000.000070", inclusive: true, limit: 15 });
 		expect(agent.requests[0].prompt).toBe([
 			"Earlier messages in this Slack thread, oldest first:",
 			"<@U0PERSON02>: how much last week?",
@@ -196,16 +200,207 @@ describe("AgentTurnWorkflow", () => {
 			"and this week?",
 		].join("\n"));
 		expect(step.outputs.find((entry) => entry.name === "context")?.output).toEqual({ source: "replies", messages: 2 });
+		expect(coordinatorOf(first).knownMessages()).toEqual([threadTs, "1792600000.000060", "1792600000.000070", "1792600100.000001"]);
 
+		// Rate limited: the agent's own earlier replies, and it knows it couldn't read the thread.
 		world.slack.failures.set("conversations.replies", ["ratelimited"]);
-		await runTurn(deps(agent), await startTurn({ threadTs, messageTs: "1792600000.000080", text: "thanks, and now?" }), step);
+		const second = await startTurn({ threadTs, messageTs: "1792600000.000080", text: "thanks, and now?" });
+		await runTurn(deps(agent), second, step);
 		expect(agent.requests[1].prompt).toBe([
 			"Your earlier replies and lookups in this thread, oldest first:",
 			"You (Phaseo agent): Spend was $40.00.",
 			"",
+			"(You couldn't read this Slack thread's messages just now, so only your own earlier replies are shown.)",
+			"",
 			"New message from <@U0PERSON01>:",
 			"thanks, and now?",
 		].join("\n"));
+		expect(step.outputs.filter((entry) => entry.name === "context").at(-1)?.output).toEqual({ source: "memory", messages: 0 });
+		// What came between is unknown now, so the next read starts at this message; replies after it stay known.
+		expect(coordinatorOf(second).knownMessages()).toEqual(["1792600000.000080", "1792600100.000001", "1792600100.000002"]);
+	});
+
+	describe("a 40-message thread", () => {
+		const START = 1_792_599_215;
+		/** Message i, `gap` seconds apart, from U0PERSON03 (even) and U0PERSON02 (odd); the `mentions` are U0PERSON01's, to the agent. */
+		function thread(gapSeconds: number, mentions: number[]) {
+			return Array.from({ length: 40 }, (_, index) => {
+				const mentioned = mentions.includes(index);
+				return {
+					ts: `${START + index * gapSeconds}.000100`,
+					user: mentioned ? "U0PERSON01" : index % 2 ? "U0PERSON02" : "U0PERSON03",
+					text: mentioned ? `<@${BOT_USER_ID}> message ${index}: what do you make of this?` : `message ${index}`,
+				};
+			});
+		}
+
+		function turnAt(messages: ReturnType<typeof thread>, index: number) {
+			return startTurn({ threadTs: messages[0].ts, messageTs: messages[index].ts, text: messages[index].text });
+		}
+
+		const shown = (prompt: string) => [...prompt.matchAll(/message (\d+)/g)].map((match) => Number(match[1]));
+
+		it("puts the message answered and the ones right before it in the prompt, not the thread's first 15", async () => {
+			// 3 minutes apart: the thread is two hours long, so its first 15 messages are long gone from the conversation.
+			const messages = thread(180, [39]);
+			world.slack.replies = messages;
+			const agent = new ScriptedAgent(async () => answer());
+			await runTurn(deps(agent), await turnAt(messages, 39), step);
+
+			const [read] = world.slack.of("conversations.replies");
+			expect(read.args).toEqual({ channel: "C0CHANNEL1", ts: messages[0].ts, oldest: `${START + 39 * 180 - 30 * 60}.000100`, latest: messages[39].ts, inclusive: true, limit: 15 });
+			const prompt = agent.requests[0].prompt;
+			expect(prompt.split("\n").slice(0, 3)).toEqual([
+				"The first message in this Slack thread:",
+				"<@U0PERSON03>: message 0",
+				"",
+			]);
+			expect(prompt).toContain("The latest messages in this Slack thread before the new one, oldest first:\n<@U0PERSON02>: message 29\n");
+			// The thread's first message, the 10 messages before the one answered, and that message.
+			expect(shown(prompt)).toEqual([0, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]);
+			expect(prompt).toContain("<@U0PERSON03>: message 38\n\nNew message from <@U0PERSON01>:\nmessage 39: what do you make of this?");
+			expect(prompt).not.toContain("missing");
+		});
+
+		it("in a busy thread, says what it couldn't read, then reads on from its last answer", async () => {
+			// 30 seconds apart: the half hour before the 30th message holds the whole thread, more than Slack returns.
+			const messages = thread(30, [29, 39]);
+			world.slack.replies = messages.slice(0, 30);
+			const agent = new ScriptedAgent(async (_request, hooks) => {
+				await hooks.onText("Here is what I make of it.");
+				return answer();
+			});
+			const first = await turnAt(messages, 29);
+			await runTurn(deps(agent), first, step);
+			expect(shown(agent.requests[0].prompt)).toEqual([0, ...Array.from({ length: 15 }, (_, index) => index + 1), 29]);
+			expect(agent.requests[0].prompt).toContain("<@U0PERSON02>: message 15\n(Slack returned only part of this stretch of the thread, so some of its messages are missing.)\n");
+			// Nothing before the answered message is known to follow on, so the next read starts there.
+			expect(coordinatorOf(first).knownMessages()).toEqual([messages[29].ts, "1792600100.000001"]);
+
+			// The answer lands between the 30th and 31st messages, and ten more are written.
+			world.slack.replies = [...messages.slice(0, 30), { ts: "1792600100.000001", bot_id: "B0BOT00001", user: BOT_USER_ID, text: "Here is what I make of it." }, ...messages.slice(30)];
+			await runTurn(deps(agent), await turnAt(messages, 39), step);
+			expect(world.slack.of("conversations.replies")[1].args).toMatchObject({ oldest: messages[29].ts, latest: messages[39].ts });
+			const prompt = agent.requests[1].prompt;
+			expect(shown(prompt)).toEqual([0, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]);
+			expect(prompt).toContain("<@U0PERSON01>: message 29: what do you make of this?\nYou (Phaseo agent): Here is what I make of it.\n<@U0PERSON03>: message 30\n");
+			// The reply is shown once: Slack returned it, so it isn't repeated from working memory.
+			expect(prompt).not.toContain("Your earlier replies");
+			expect(prompt).not.toContain("missing");
+		});
+	});
+
+	it("in a direct message, reads its newest exchanges with the person and keeps earlier replies from memory", async () => {
+		const channel = "D0DIRECT01";
+		const threadTs = "1792590000.000100";
+		const agent = new ScriptedAgent(async (_request, hooks, call) => {
+			await hooks.onText(`answer ${call - 1}`);
+			return answer();
+		});
+		// Twelve questions ten minutes apart, each answered 30 seconds later. Every message in a DM is a turn, so the coordinator knows them all.
+		const questionTs = (index: number) => `${1_792_590_000 + index * 600}.000100`;
+		const answerTs = (index: number) => `${1_792_590_000 + index * 600 + 30}.000100`;
+		world.slack.replies = [];
+		for (let index = 0; index < 12; index += 1) {
+			world.slack.nextTs = () => answerTs(index);
+			world.slack.replies.push({ ts: questionTs(index), user: "U0PERSON01", text: `question ${index}` });
+			await runTurn(deps(agent), await startTurn({ channel, threadTs, messageTs: questionTs(index), text: `question ${index}` }), step);
+			world.slack.replies.push({ ts: answerTs(index), bot_id: "B0BOT00001", user: BOT_USER_ID, text: `answer ${index}` });
+		}
+		const reads = world.slack.of("conversations.replies");
+		expect(reads).toHaveLength(11);
+		// The read starts at the oldest of the 8 newest messages known before the question (no 30-minute limit in a DM).
+		expect(reads.at(-1)!.args).toMatchObject({ oldest: questionTs(7), latest: questionTs(11) });
+		expect(agent.requests.at(-1)!.prompt).toBe([
+			"The first message in this Slack thread:",
+			"<@U0PERSON01>: question 0",
+			"",
+			"Your earlier replies and lookups in this thread, oldest first:",
+			...[0, 1, 2, 3, 4, 5, 6].map((index) => `You (Phaseo agent): answer ${index}`),
+			"",
+			"The latest messages in this Slack thread before the new one, oldest first:",
+			...[7, 8, 9, 10].flatMap((index) => [`<@U0PERSON01>: question ${index}`, `You (Phaseo agent): answer ${index}`]),
+			"",
+			"New message from <@U0PERSON01>:",
+			"question 11",
+		].join("\n"));
+	});
+
+	describe("the Connect button when everyone can use the agent", () => {
+		/** An agent that, like a model asked about spend, calls connect_phaseo_account and reports what it said. */
+		function askingAboutSpend(results: unknown[]) {
+			return new ScriptedAgent(async (request) => {
+				const tool = request.tools.find((entry) => entry.id === "connect_phaseo_account");
+				if (tool) results.push(await (tool.execute as (input: unknown, context: unknown) => Promise<unknown>)({}, {}));
+				return answer();
+			});
+		}
+
+		const buttons = () => world.slack.ephemerals().filter((call) => JSON.stringify(call.args.blocks ?? []).includes("connect_account"));
+
+		it("sends someone who isn't linked the button privately when they ask about usage, once per thread, and still answers", async () => {
+			const results: unknown[] = [];
+			const agent = askingAboutSpend(results);
+			const threadTs = "1792600000.000300";
+			await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01", threadTs, messageTs: threadTs }), step);
+			expect(agent.requests[0].instructions).toContain("call connect_phaseo_account to send them a private button");
+			expect(results[0]).toMatchObject({ sent: true });
+			const [button] = buttons();
+			// The thread's first message: Slack only shows a thread_ts ephemeral in a thread that has replies.
+			expect(button.args).toMatchObject({ channel: "D0DIRECT01", user: "U0PERSON01", text: "Connect your Phaseo account so the Phaseo agent can answer questions about this workspace's Phaseo usage. The button works for 15 minutes." });
+			expect(button.args.thread_ts).toBeUndefined();
+			const url = new URL(JSON.stringify(button.args.blocks).match(/"url":"([^"]+)"/)![1]);
+			expect(`${url.origin}${url.pathname}`).toBe("https://phaseo.app/slack/link");
+			expect(url.searchParams.get("token")).toBeTruthy();
+			// It still answered.
+			expect(step.outputs.filter((entry) => entry.name === "run").at(-1)?.output).toMatchObject({ status: "answered" });
+
+			// A follow-up in the same thread: no second button.
+			await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01", threadTs, messageTs: "1792600000.000400" }), step);
+			expect(results[1]).toMatchObject({ sent: false });
+			expect(buttons()).toHaveLength(1);
+
+			// A new thread is a new question: it gets a fresh button.
+			await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
+			expect(results[2]).toMatchObject({ sent: true });
+			expect(buttons()).toHaveLength(2);
+		});
+
+		it("offers it again in the thread when Slack didn't deliver it", async () => {
+			const results: unknown[] = [];
+			const agent = askingAboutSpend(results);
+			const threadTs = "1792600000.000500";
+			world.slack.failures.set("chat.postEphemeral", ["channel_not_found"]);
+			await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01", threadTs, messageTs: threadTs }), step);
+			expect(results[0]).toMatchObject({ sent: false, note: expect.stringContaining("didn't deliver") });
+			await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01", threadTs, messageTs: "1792600000.000600" }), step);
+			expect(results[1]).toMatchObject({ sent: true });
+			// In a thread with replies, the button goes in the thread.
+			expect(buttons().at(-1)?.args.thread_ts).toBe(threadTs);
+		});
+
+		it("isn't offered where linking wouldn't bring the usage tools, nor to someone already linked", async () => {
+			const agent = new ScriptedAgent(async () => answer());
+			const toolIds = () => agent.requests.at(-1)!.tools.map((tool) => tool.id);
+			// A channel that usage_data_mode doesn't cover.
+			await runTurn(deps(agent), await startTurn({ channel: "C0CHANNEL1" }), step);
+			expect(toolIds()).toEqual([]);
+			expect(agent.requests.at(-1)!.instructions).toContain("can ask in a direct message");
+			// A channel it covers.
+			await install({ usage_data_mode: "dm_and_channels", usage_data_channel_ids: ["C0FINANCE1"] });
+			await runTurn(deps(agent), await startTurn({ channel: "C0FINANCE1" }), step);
+			expect(toolIds()).toEqual(["connect_phaseo_account"]);
+			// Usage data off.
+			await install({ usage_data_mode: "off" });
+			await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
+			expect(toolIds()).toEqual([]);
+			// Linked, but not a member of the workspace: connecting again wouldn't help.
+			await install();
+			world.db.tables.slack_user_links.push({ installation_id: INSTALLATION_ID, slack_user_id: "U0PERSON01", user_id: USER });
+			await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
+			expect(toolIds()).toEqual([]);
+			expect(buttons()).toHaveLength(0);
+		});
 	});
 
 	it("never runs the model again when a Slack write fails: the reply step delivers the whole answer", async () => {
@@ -232,7 +427,7 @@ describe("AgentTurnWorkflow", () => {
 		// Stopping the stream also set the session back to active.
 		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing"]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
-		expect(coordinatorOf(turn).workingMemory()).toEqual([{ kind: "reply", text: "Part one, part two, part three.", at: world.clock.now }]);
+		expect(coordinatorOf(turn).workingMemory()).toEqual([{ kind: "reply", text: "Part one, part two, part three.", at: world.clock.now, ts: "1792600100.000001" }]);
 	});
 
 	it("posts the whole answer when the stream never started, and doesn't run the model again", async () => {

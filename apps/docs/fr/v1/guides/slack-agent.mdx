@@ -54,7 +54,12 @@ Un espace de travail Slack ne peut avoir l’agent que d’un seul espace de tra
 
 Pendant qu’il répond :
 
-- Il lit les 15 messages les plus récents du fil pour suivre la conversation.
+- Il lit la partie la plus récente du fil, jusqu’à votre message, pour suivre la conversation. Slack lui permet de lire 15 messages à la fois, et permet à l’application de Phaseo de lire environ une fois par minute dans chaque espace de travail Slack.
+  - Il voit toujours le premier message du fil.
+  - Dans un message direct, il lit les derniers messages de votre conversation avec lui.
+  - Dans un canal, il lit les derniers messages des 30 dernières minutes au plus.
+  - Quand plus de messages ont été écrits qu’il n’a pu en lire, il est averti qu’il en manque.
+  - Quand Slack ne le laisse pas lire le fil à ce moment-là, il s’appuie sur ses propres réponses précédentes dans le fil.
 - Il répond à un message à la fois dans chaque fil. Jusqu’à 5 messages supplémentaires attendent leur tour ; au-delà, il vous demande d’attendre les réponses précédentes.
 - Le bouton d’arrêt de Slack arrête la réponse en cours.
 - Chaque réponse se termine par le modèle et le coût de la réponse en tokens de modèle, par exemple `phaseo/auto · $0.0031`. Avec **Automatique**, le modèle choisi suit une flèche.
@@ -72,17 +77,22 @@ Sous **Limites**, **Autoriser les invités** (activé par défaut) permet aux in
 
 ### Associer un compte Slack
 
-Quand l’accès est **Comptes associés uniquement**, l’agent répond en privé à toute personne non associée avec un bouton **Connect your Phaseo account**. Le bouton fonctionne pendant 15 minutes.
+L’agent envoie en privé un bouton **Connect your Phaseo account** aux personnes non associées :
+
+- Avec **Comptes associés uniquement**, quand elles lui écrivent. Il ne répond pas tant qu’elles ne se sont pas connectées.
+- Avec **Tout le monde dans Slack**, quand elles posent une question sur l’utilisation là où les **Données d’utilisation** le permettent (voir « Questions sur l’utilisation » plus bas). Il répond quand même à ce qu’il peut, et envoie le bouton au plus une fois par personne dans chaque fil. Pour obtenir un nouveau bouton, posez la question dans un nouveau fil.
+
+Le bouton fonctionne pendant 15 minutes.
 
 1. Sélectionnez le bouton. Phaseo s’ouvre dans votre navigateur.
 2. Connectez-vous avec un compte membre de l’espace de travail Phaseo qui a installé l’agent.
 3. Sélectionnez **Connecter le compte**.
 
-Un compte associé permet aussi de poser des questions sur l’utilisation. Avec **Tout le monde dans Slack**, l’agent n’envoie pas le bouton : pour permettre aux personnes de s’associer, passez à **Comptes associés uniquement** le temps qu’elles se connectent.
+Un compte associé permet aussi de poser des questions sur l’utilisation.
 
 ## Questions sur l’utilisation
 
-Les membres associés peuvent interroger l’agent sur cet espace de travail Phaseo :
+Les membres associés peuvent interroger l’agent sur cet espace de travail Phaseo (toute autre personne qui pose la question reçoit le bouton pour associer son compte ; voir « Associer un compte Slack » plus haut) :
 
 - les requêtes et les dépenses sur une période, par jour, semaine ou mois, et par modèle ou fournisseur ;
 - le solde de crédits, les crédits réservés pour les requêtes en cours et les crédits dépensés ce mois-ci ;
@@ -168,7 +178,7 @@ Les conditions de l’API de Slack n’autorisent ni l’entraînement sur les d
 - **Aucun contenu de message dans les journaux de Phaseo.** La clé d’API de l’agent ne stocke jamais le contenu des requêtes ni des réponses, ni dans les journaux, ni dans les caches, ni dans la télémétrie, quels que soient les réglages de votre espace de travail. Ses requêtes apparaissent tout de même dans votre utilisation et vos journaux, sans contenu, avec les [libellés de requête](./request-labels.mdx) `app=slack-agent`, `slack_team` et `slack_channel` et le [titre d’application](./app-attribution.mdx) `Phaseo Slack agent`.
 - **Ni entraînement ni fournisseurs qui journalisent.** Le [garde-fou](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** désactive l’entraînement sur les modèles payants et gratuits, la publication des prompts et les fournisseurs qui journalisent les entrées et les sorties.
 - **Aucune collecte de données.** Chaque requête demande des fournisseurs qui ne collectent pas de données (`provider.data_collection: "deny"`).
-- **Mémoire de travail courte.** Pour chaque fil, l’agent conserve ses réponses récentes, de brèves notes sur les outils utilisés et les messages qui attendent leur tour. Ils sont supprimés 7 jours après la dernière activité du fil.
+- **Mémoire de travail courte.** Pour chaque fil, l’agent conserve ses réponses récentes, de brèves notes sur les outils utilisés, les messages qui attendent leur tour, les ID (pas le texte) des messages récents du fil pour savoir où reprendre sa lecture, et les personnes à qui il a envoyé le bouton de connexion. Ils sont supprimés 7 jours après la dernière activité du fil.
 - **Rien n’est archivé.** Phaseo n’archive rien de Slack. Les journaux propres à l’agent ne conservent que des ID et des statuts Slack.
 - **Secrets chiffrés.** Les tokens de bot et les secrets de votre application Slack sont stockés chiffrés et ne sont plus jamais affichés.
 
@@ -242,9 +252,7 @@ Dans **Paramètres → Slack**, choisissez **Votre application Slack** sous **Ap
         "im:history",
         "channels:history",
         "groups:history",
-        "users:read",
-        "files:read",
-        "search:read.public"
+        "users:read"
       ]
     }
   },
@@ -287,9 +295,6 @@ Phaseo demande à Slack exactement ces scopes du token de bot lors de l’instal
 | `im:history` | Lire les messages directs envoyés à l’agent. |
 | `channels:history`, `groups:history` | Lire le fil dans lequel il a été mentionné, dans les canaux publics et privés. |
 | `users:read` | Vérifier si une personne est invitée, un bot ou d’une autre organisation. |
-| `files:read` | Lire les fichiers partagés dans ses conversations. |
-| `search:read.public` | Chercher du contexte dans les canaux publics. |
-
 Quelques règles pour votre propre application :
 
 - Laissez la rotation des tokens désactivée, comme dans le manifeste. Slack ne peut plus la désactiver une fois activée.
