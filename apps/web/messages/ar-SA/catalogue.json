@@ -2826,7 +2826,18 @@
 		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, zero {لا عدّادات إضافية} one {عرض عدّاد إضافي واحد} two {عرض عدّادين إضافيين} few {عرض # عدّادات إضافية} many {عرض # عدّادًا إضافيًا} other {عرض # عدّاد إضافي}}",
 		"fewerMeters": "عرض عدّادات أقل",
-		"otherCategory": "أخرى"
+		"otherCategory": "أخرى",
+		"activity": "النشاط",
+		"activitySub": "الرموز المرسلة عبر Phaseo يوميًا خلال آخر 30 يومًا",
+		"activityTotal": "رمز، آخر 30 يومًا",
+		"activityInput": "الإدخال",
+		"activityOutput": "الإخراج",
+		"activityReasoning": "الاستدلال",
+		"activityRequests": "الطلبات",
+		"activityDay": "{date}: {tokens} رمز، {requests} طلب",
+		"activityChart": "الرموز اليومية لـ {name} عبر Phaseo، آخر 30 يومًا",
+		"activityNone": "لا توجد حركة عبر Phaseo خلال آخر 30 يومًا",
+		"activityNoneAll": "لم تحصل أي من هذه النماذج على حركة عبر Phaseo خلال آخر 30 يومًا."
 	},
 	"countries": {
 		"title": "الذكاء الاصطناعي حسب الدولة",

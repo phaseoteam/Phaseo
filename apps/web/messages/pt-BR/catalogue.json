@@ -2826,7 +2826,18 @@
 		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, one {Mostrar mais # medidor} other {Mostrar mais # medidores}}",
 		"fewerMeters": "Mostrar menos medidores",
-		"otherCategory": "Outros"
+		"otherCategory": "Outros",
+		"activity": "Atividade",
+		"activitySub": "Tokens enviados por dia pelo Phaseo nos últimos 30 dias",
+		"activityTotal": "tokens, últimos 30 dias",
+		"activityInput": "Entrada",
+		"activityOutput": "Saída",
+		"activityReasoning": "Raciocínio",
+		"activityRequests": "Solicitações",
+		"activityDay": "{date}: {tokens} tokens, {requests} solicitações",
+		"activityChart": "Tokens diários de {name} pelo Phaseo, últimos 30 dias",
+		"activityNone": "Sem tráfego pelo Phaseo nos últimos 30 dias",
+		"activityNoneAll": "Nenhum destes modelos teve tráfego pelo Phaseo nos últimos 30 dias."
 	},
 	"countries": {
 		"title": "IA por país",

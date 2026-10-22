@@ -1146,6 +1146,7 @@ export type FrontendCompareUsage = Record<string, {
 	requestPoints24h: Array<{ date: string; value: number }>;
 	latencyWindow?: "30m" | "24h" | "5d" | null;
 	throughputWindow?: "30m" | "24h" | "5d" | null;
+	activity30d?: Array<{ date: string; requests: number; input: number; output: number; reasoning: number }>;
 }>;
 
 export async function fetchFrontendCompareUsage(modelIds: string[]): Promise<FrontendCompareUsage> {

@@ -2826,7 +2826,18 @@
 		"bandPrice": "{condition}：{price}",
 		"moreMeters": "{count, plural, other {再显示 # 个计费项}}",
 		"fewerMeters": "收起计费项",
-		"otherCategory": "其他"
+		"otherCategory": "其他",
+		"activity": "活动",
+		"activitySub": "过去 30 天每天通过 Phaseo 发送的 token",
+		"activityTotal": "token，过去 30 天",
+		"activityInput": "输入",
+		"activityOutput": "输出",
+		"activityReasoning": "推理",
+		"activityRequests": "请求",
+		"activityDay": "{date}：{tokens} token，{requests} 个请求",
+		"activityChart": "{name} 通过 Phaseo 的每日 token，过去 30 天",
+		"activityNone": "过去 30 天没有通过 Phaseo 的流量",
+		"activityNoneAll": "过去 30 天，这些模型都没有通过 Phaseo 的流量。"
 	},
 	"countries": {
 		"title": "各国 AI",

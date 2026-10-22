@@ -7,7 +7,7 @@ import { withPublicCache } from "@/http/cache";
 import { composeComparisonModels, type ComparisonSources } from "@/models/compare";
 import { composeCompareView } from "@/models/compare-view";
 import { fetchModelPricingSources } from "@/models/pricing";
-import { composeCompareUsage } from "@/models/compare-usage";
+import { composeCompareActivity, composeCompareUsage } from "@/models/compare-usage";
 
 const COMPARE_CACHE = {
 	edgeTtlSeconds: 60 * 60,
@@ -49,11 +49,13 @@ publicCompareRouter.get("/compare/usage", async (c) => {
 	if (modelIds.length === 0) return withPublicCache(c.json({ usage: {} }), COMPARE_USAGE_CACHE);
 	try {
 		const client = getDataClient(c.env);
-		const realtime = await client.rpc("get_public_compare_realtime", {
-			p_model_ids: modelIds,
-			p_window_minutes: 30,
-		});
+		const [realtime, daily] = await Promise.all([
+			client.rpc("get_public_compare_realtime", { p_model_ids: modelIds, p_window_minutes: 30 }),
+			client.rpc("get_compare_usage_daily", { p_model_ids: modelIds, p_days: 30 }),
+		]);
 		if (realtime.error) throw realtime.error;
+		// Until the function's migration is live, the charts are empty rather than the page failing.
+		if (daily.error && daily.error.code !== "PGRST202") throw daily.error;
 		const sourceRows = await Promise.all(((realtime.data ?? []) as Array<Record<string, unknown>>).map(async (row) => {
 			const modelId = String(row.model_id ?? "").trim();
 			const [performance, trajectory] = await Promise.all([
@@ -68,7 +70,8 @@ publicCompareRouter.get("/compare/usage", async (c) => {
 				trajectory: trajectory.data?.[0] ?? null,
 			};
 		}));
-		const usage = composeCompareUsage(sourceRows);
+		const activity = composeCompareActivity(daily.error ? [] : (daily.data ?? []) as Array<Record<string, unknown>>, modelIds, new Date());
+		const usage = Object.fromEntries(Object.entries(composeCompareUsage(sourceRows)).map(([modelId, entry]) => [modelId, { ...entry, activity30d: activity[modelId] ?? [] }]));
 		return withPublicCache(c.json({ usage }), COMPARE_USAGE_CACHE);
 	} catch (error) {
 		console.error("[web-api/compare] usage failed", { modelIds, error });

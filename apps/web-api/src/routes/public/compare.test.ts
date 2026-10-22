@@ -20,6 +20,9 @@ describe("public compare routes", () => {
 				last_24h: { total_requests: 5 }, hourly_24h: [],
 			}]), { status: 200 });
 			if (url.includes("get_model_token_trajectory")) return new Response(JSON.stringify([{ points: [] }]), { status: 200 });
+			if (url.includes("get_compare_usage_daily")) return new Response(JSON.stringify([{
+				day_bucket: new Date().toISOString().slice(0, 10), model_id: "openai/gpt-test", requests: 4, input_tokens: 900, output_tokens: 100, reasoning_tokens: 0,
+			}]), { status: 200 });
 			return new Response("[]", { status: 200 });
 		});
 		vi.stubGlobal("fetch", fetchMock);
@@ -28,10 +31,14 @@ describe("public compare routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
-		await expect(response.json()).resolves.toMatchObject({ usage: {
+		const body = await response.json() as { usage: Record<string, { activity30d: Array<Record<string, unknown>> }> };
+		expect(body).toMatchObject({ usage: {
 			"openai/gpt-test": { totalRequests: 5, requests30m: 2, latencyP50Ms30m: 75, throughputP50TokPerSec30m: 100 },
 		} });
-		expect(fetchMock).toHaveBeenCalledTimes(3);
+		const activity = body.usage["openai/gpt-test"]!.activity30d;
+		expect(activity).toHaveLength(30);
+		expect(activity.at(-1)).toMatchObject({ requests: 4, input: 900, output: 100, reasoning: 0 });
+		expect(fetchMock).toHaveBeenCalledTimes(4);
 		expect(fetchMock.mock.calls.some(([input]) => String(input).includes("get_public_compare_realtime"))).toBe(true);
 	});
 

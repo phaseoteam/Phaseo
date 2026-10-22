@@ -73,3 +73,28 @@ export function composeCompareUsage(sourceRows: Row[]) {
 		}]];
 	}));
 }
+
+export type CompareActivityDay = { date: string; requests: number; input: number; output: number; reasoning: number };
+
+/**
+ * Each model's last `days` days of Phaseo traffic, oldest first, with quiet
+ * days filled in so every chart shares one axis. The database sums the rows
+ * (`get_compare_usage_daily`); this only lays them out.
+ */
+export function composeCompareActivity(dailyRows: Row[], modelIds: string[], today: Date, days = 30): Record<string, CompareActivityDay[]> {
+	const dates = Array.from({ length: days }, (_, index) => {
+		const date = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - (days - 1 - index)));
+		return date.toISOString().slice(0, 10);
+	});
+	const byKey = new Map(dailyRows.map((source) => [`${source.model_id}|${String(source.day_bucket ?? "").slice(0, 10)}`, source]));
+	return Object.fromEntries(modelIds.map((modelId) => [modelId, dates.map((date) => {
+		const source = byKey.get(`${modelId}|${date}`);
+		return {
+			date,
+			requests: number(source?.requests) ?? 0,
+			input: number(source?.input_tokens) ?? 0,
+			output: number(source?.output_tokens) ?? 0,
+			reasoning: number(source?.reasoning_tokens) ?? 0,
+		};
+	})]));
+}
