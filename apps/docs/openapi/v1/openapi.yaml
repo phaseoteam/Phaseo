@@ -5424,6 +5424,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: Rotate a notification webhook signing secret
+      description: >-
+        Generates a new signing secret for a custom webhook destination and
+        returns it once. Destinations created before signing get their first
+        secret this way. Later deliveries are signed with the new secret and the
+        previous secret stops being used.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Signing secret rotated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -22695,6 +22727,22 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: >-
+            Whether deliveries are signed with x-phaseo-signature. Only custom
+            webhook destinations are signed; ones created before signing stay
+            unsigned until a secret is generated.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the current signing secret was generated.
+        signing_secret:
+          type: string
+          description: >-
+            The webhook signing secret. Returned only when a custom webhook
+            destination is created or its secret is rotated; store it securely.
         created_at:
           type: string
           format: date-time

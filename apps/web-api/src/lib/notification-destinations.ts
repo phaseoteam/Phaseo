@@ -92,6 +92,37 @@ export function targetPreview(type: NotificationDestinationType, target: string)
 	return `${url.hostname}/••••${url.pathname.slice(-4)}`;
 }
 
+/** Destination types whose deliveries are signed with a per-destination secret. */
+export function isSignedNotificationDestinationType(type: string): boolean { return type === "custom_webhook"; }
+
+async function encryptValue(env: Env, value: string) {
+	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(material(env)));
+	const key = await crypto.subtle.importKey("raw", digest, "AES-GCM", false, ["encrypt"]);
+	const iv = crypto.getRandomValues(new Uint8Array(12));
+	const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: bytes(iv) }, key, new TextEncoder().encode(value));
+	return { ciphertext: base64(new Uint8Array(ciphertext)), iv: base64(iv), keyVersion: env.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION?.trim() || "v1" };
+}
+
+/**
+ * A new webhook signing secret (`whsec_…`, the format the gateway uses for batch and
+ * video webhooks) and its encrypted columns. The gateway decrypts it with the same key
+ * material and signs each delivery with x-phaseo-timestamp and x-phaseo-signature.
+ */
+export async function issueNotificationSigningSecret(env: Env, now: Date = new Date()) {
+	const random = crypto.getRandomValues(new Uint8Array(32));
+	const secret = `whsec_${base64(random).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")}`;
+	const encrypted = await encryptValue(env, secret);
+	return {
+		secret,
+		columns: {
+			signing_secret_ciphertext: encrypted.ciphertext,
+			signing_secret_iv: encrypted.iv,
+			signing_secret_key_version: encrypted.keyVersion,
+			signing_secret_rotated_at: now.toISOString(),
+		},
+	};
+}
+
 export async function encryptNotificationTarget(env: Env, target: string) {
 	const secret = material(env);
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret));

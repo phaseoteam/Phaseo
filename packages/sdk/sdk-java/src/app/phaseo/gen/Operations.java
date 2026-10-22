@@ -1040,6 +1040,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object rotateWorkspaceNotificationDestinationSecret(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/notifications/destinations/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/rotate-secret";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object setWorkspaceDepartmentMember(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/identity/departments/" + pathSegment(path != null && path.containsKey("departmentId") ? path.get("departmentId") : "") + "/members/" + pathSegment(path != null && path.containsKey("userId") ? path.get("userId") : "");
 		return client.request("PUT", resolvedPath, query, headers, body);

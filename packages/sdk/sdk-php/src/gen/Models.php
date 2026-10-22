@@ -7075,10 +7075,16 @@ class WorkspaceNotificationDestination
 {
 	/** @var string|null */
 	public $created_at;
+	/** @var bool|null */
+	public $has_signing_secret;
 	/** @var string */
 	public $id;
 	/** @var string */
 	public $name;
+	/** @var string|null */
+	public $signing_secret;
+	/** @var string|null */
+	public $signing_secret_rotated_at;
 	/** @var string */
 	public $status;
 	/** @var string */

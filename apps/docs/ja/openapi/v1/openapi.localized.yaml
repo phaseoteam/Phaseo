@@ -5135,6 +5135,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: 通知 Webhook の署名シークレットをローテーション
+      description: カスタム Webhook 通知先の新しい署名シークレットを生成し、一度だけ返します。署名導入前に作成された通知先は、この方法で最初のシークレットを取得します。以降の配信は新しいシークレットで署名され、以前のシークレットは使われなくなります。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 署名シークレットをローテーションしました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -21767,6 +21795,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: 配信が x-phaseo-signature で署名されるかどうか。署名されるのはカスタム Webhook 通知先のみです。署名導入前に作成された通知先は、シークレットを生成するまで署名されません。
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 現在の署名シークレットが生成された日時。
+        signing_secret:
+          type: string
+          description: Webhook の署名シークレット。カスタム Webhook 通知先の作成時またはシークレットのローテーション時にのみ返されます。安全に保管してください。
         created_at:
           type: string
           format: date-time

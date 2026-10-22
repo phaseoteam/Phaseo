@@ -7998,8 +7998,11 @@ export async function createWorkspaceNotificationDestination(
 ): Promise<{
   data: {
     created_at?: string | null;
+    has_signing_secret?: boolean;
     id: string;
     name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
     status: "active" | "disabled";
     target_preview: string;
     type:
@@ -8017,8 +8020,11 @@ export async function createWorkspaceNotificationDestination(
   return client.request<{
     data: {
       created_at?: string | null;
+      has_signing_secret?: boolean;
       id: string;
       name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
       status: "active" | "disabled";
       target_preview: string;
       type:
@@ -19402,8 +19408,11 @@ export async function listWorkspaceNotificationDestinations(
 ): Promise<{
   data: {
     created_at?: string | null;
+    has_signing_secret?: boolean;
     id: string;
     name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
     status: "active" | "disabled";
     target_preview: string;
     type:
@@ -19421,8 +19430,11 @@ export async function listWorkspaceNotificationDestinations(
   return client.request<{
     data: {
       created_at?: string | null;
+      has_signing_secret?: boolean;
       id: string;
       name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
       status: "active" | "disabled";
       target_preview: string;
       type:
@@ -21627,6 +21639,73 @@ export async function rotateWebhookEndpointSecret(
     updatedAt?: string | null;
     url: string;
     workspaceId: string;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RotateWorkspaceNotificationDestinationSecretParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Generates a new signing secret for a custom webhook destination and returns it once. Destinations created before signing get their first secret this way. Later deliveries are signed with the new secret and the previous secret stops being used.
+ */
+export async function rotateWorkspaceNotificationDestinationSecret(
+  client: Client,
+  args: RotateWorkspaceNotificationDestinationSecretParams,
+): Promise<{
+  data: {
+    created_at?: string | null;
+    has_signing_secret?: boolean;
+    id: string;
+    name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
+    status: "active" | "disabled";
+    target_preview: string;
+    type:
+      | "email"
+      | "discord"
+      | "discord_webhook"
+      | "slack"
+      | "microsoft_teams"
+      | "custom_webhook";
+    updated_at?: string | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/notifications/destinations/${encodeURIComponent(String(path["id"]))}/rotate-secret`;
+  return client.request<{
+    data: {
+      created_at?: string | null;
+      has_signing_secret?: boolean;
+      id: string;
+      name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
+      status: "active" | "disabled";
+      target_preview: string;
+      type:
+        | "email"
+        | "discord"
+        | "discord_webhook"
+        | "slack"
+        | "microsoft_teams"
+        | "custom_webhook";
+      updated_at?: string | null;
+    };
   }>({
     method: "POST",
     path: resolvedPath,

@@ -5135,6 +5135,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: सूचना वेबहुक का साइनिंग सीक्रेट बदलें
+      description: कस्टम वेबहुक गंतव्य के लिए नया साइनिंग सीक्रेट बनाता है और उसे केवल एक बार लौटाता है। साइनिंग से पहले बने गंतव्यों को इसी तरह पहला सीक्रेट मिलता है। आगे की डिलीवरी नए सीक्रेट से साइन होती हैं और पिछला सीक्रेट उपयोग में नहीं रहता।
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: साइनिंग सीक्रेट बदल दिया गया
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: अनुरोध विफल हुआ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -21767,6 +21795,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: क्या डिलीवरी x-phaseo-signature से साइन होती हैं। केवल कस्टम वेबहुक गंतव्य साइन होते हैं; साइनिंग से पहले बने गंतव्य सीक्रेट बनने तक बिना साइन के रहते हैं।
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: मौजूदा साइनिंग सीक्रेट कब बनाया गया था।
+        signing_secret:
+          type: string
+          description: वेबहुक साइनिंग सीक्रेट। यह केवल कस्टम वेबहुक गंतव्य बनाते समय या उसका सीक्रेट बदलते समय लौटाया जाता है; इसे सुरक्षित रखें।
         created_at:
           type: string
           format: date-time

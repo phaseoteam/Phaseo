@@ -1324,7 +1324,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const observedAt = Date.now();
-	const [walletResult, initialSettingsResult, latestPaymentResult, userResult, destinationsResult, routesResult, creditSpendResult] = await Promise.all([
+	const [walletResult, initialSettingsResult, latestPaymentResult, userResult, initialDestinationsResult, routesResult, creditSpendResult] = await Promise.all([
 		context.client.from("wallets")
 			.select("workspace_id,stripe_customer_id,balance_nanos,reserved_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id")
 			.eq("workspace_id", workspaceId).maybeSingle(),
@@ -1336,13 +1336,19 @@ accountSettingsRouter.get("/credits", async (c) => {
 			.or("status.ilike.paid,status.ilike.succeeded").gt("amount_nanos", 0)
 			.order("event_time", { ascending: false }).limit(1).maybeSingle(),
 		context.client.from("users").select("obfuscate_info,declared_country_code").eq("user_id", context.user.id).maybeSingle(),
-		context.client.from("notification_destinations").select("id,name,type,status,target_preview,created_at").eq("workspace_id", workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }),
+		context.client.from("notification_destinations").select("id,name,type,status,target_preview,created_at,signing_secret_ciphertext,signing_secret_rotated_at").eq("workspace_id", workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }),
 		context.client.from("notification_event_destinations").select("event_kind,destination_id").eq("workspace_id", workspaceId),
 		// Sums every wallet charge in the database (request charges plus async and realtime ledger
 		// charges), so this is what actually drains credits. BYOK requests only count when charged.
 		context.client.rpc("get_workspace_recent_credit_spend", { p_workspace_id: workspaceId, p_since: creditSpendWindowStart(observedAt) }),
 	]);
 	let settingsResult = initialSettingsResult;
+	let destinationsResult = initialDestinationsResult;
+	if (destinationsResult.error?.code === "42703") {
+		// Signing secret columns roll out with the notification webhook signing migration.
+		// Until then every destination reads as unsigned.
+		destinationsResult = await context.client.from("notification_destinations").select("id,name,type,status,target_preview,created_at").eq("workspace_id", workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }) as typeof initialDestinationsResult;
+	}
 	if (settingsResult.error?.code === "42703") {
 		// Low-balance settings were introduced after some existing deployments.
 		// Treat their absence as the default disabled state while the schema rolls out.
@@ -1364,7 +1370,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 		paymentMethodExpiringEmailEnabled: settingsResult.data?.payment_method_expiring_email_enabled !== false,
 		modelDeprecationAlertsEnabled: Boolean(settingsResult.data?.model_deprecation_alerts_enabled),
 		modelDeprecationAlertsIncludeAdmins: Boolean(settingsResult.data?.model_deprecation_alerts_include_admins),
-		notificationDestinations: (destinationsResult.data ?? []).map((row) => ({ id: String(row.id), name: String(row.name), type: String(row.type), status: String(row.status), targetPreview: String(row.target_preview), createdAt: row.created_at ?? null })),
+		notificationDestinations: (destinationsResult.data ?? []).map((row) => ({ id: String(row.id), name: String(row.name), type: String(row.type), status: String(row.status), targetPreview: String(row.target_preview), createdAt: row.created_at ?? null, hasSigningSecret: Boolean(row.signing_secret_ciphertext), signingSecretRotatedAt: row.signing_secret_rotated_at ?? null })),
 		notificationRoutes: (routesResult.data ?? []).reduce<Record<string, string[]>>((routes, row) => {
 			const kind = String(row.event_kind); (routes[kind] ??= []).push(String(row.destination_id)); return routes;
 		}, {}),

@@ -1547,6 +1547,14 @@ function rotateWebhookEndpointSecret(Client $client, ?array $path = null, ?array
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function rotateWorkspaceNotificationDestinationSecret(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/notifications/destinations/" . rawurlencode((string)($path["id"] ?? "")) . "/rotate-secret";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function setWorkspaceDepartmentMember(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];

@@ -5135,6 +5135,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: Rotacionar o segredo de assinatura de um webhook de notificação
+      description: Gera um novo segredo de assinatura para um destino de webhook personalizado e o retorna uma única vez. Destinos criados antes da assinatura recebem assim o primeiro segredo. As entregas seguintes são assinadas com o novo segredo e o anterior deixa de ser usado.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Segredo de assinatura rotacionado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -21767,6 +21795,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: Indica se as entregas são assinadas com x-phaseo-signature. Somente destinos de webhook personalizados são assinados; os criados antes da assinatura continuam sem assinatura até que um segredo seja gerado.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Quando o segredo de assinatura atual foi gerado.
+        signing_secret:
+          type: string
+          description: O segredo de assinatura do webhook. Retornado somente quando um destino de webhook personalizado é criado ou seu segredo é rotacionado; guarde-o com segurança.
         created_at:
           type: string
           format: date-time

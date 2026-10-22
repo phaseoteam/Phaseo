@@ -4071,8 +4071,11 @@ public final class Models {
 
 	public static class WorkspaceNotificationDestination {
 		public String created_at;
+		public Boolean has_signing_secret;
 		public String id;
 		public String name;
+		public String signing_secret;
+		public String signing_secret_rotated_at;
 		public Object status;
 		public String target_preview;
 		public Object type;
