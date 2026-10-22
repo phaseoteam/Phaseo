@@ -114,6 +114,17 @@ export async function findInstallation(db: Db, app: SlackAppContext, ref: Instal
 	return byEnterprise();
 }
 
+/** A live installation by id (turns re-read it, so a pause or uninstall applies at once). */
+export async function loadInstallation(db: Db, installationId: string): Promise<Installation | null> {
+	if (!UUID_PATTERN.test(installationId)) return null;
+	return (await db.select<Installation>("slack_installations", {
+		select: INSTALLATION_COLUMNS,
+		id: `eq.${installationId}`,
+		status: "neq.uninstalled",
+		limit: "1",
+	}))[0] ?? null;
+}
+
 export async function installationSecrets(env: Env, ciphertext: string): Promise<InstallationSecrets> {
 	const secrets = await decryptSlackSecrets(env, ciphertext);
 	if (!secrets.bot_token || !secrets.gateway_key) throw new Error("slack_installation_secrets_incomplete");

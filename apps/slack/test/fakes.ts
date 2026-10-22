@@ -122,7 +122,18 @@ export type TestWorld = {
 	slack: FakeSlack;
 	clock: { now: number };
 	deps: Deps;
+	turns: FakeWorkflow;
 };
+
+/** Records AGENT_TURNS.create calls; refuses a second instance with the same id, as Workflows does. */
+export class FakeWorkflow {
+	created: Array<{ id?: string; params?: unknown; retention?: unknown }> = [];
+	async create(options: { id?: string; params?: unknown; retention?: unknown }) {
+		if (this.created.some((entry) => entry.id === options.id)) throw new Error(`instance.already_exists: ${options.id} already exists`);
+		this.created.push(options);
+		return { id: options.id };
+	}
+}
 
 export function testWorld(options: { now?: number; envOverrides?: Partial<Env> } = {}): TestWorld {
 	const clock = { now: options.now ?? Date.UTC(2026, 9, 21, 12, 0, 0) };
@@ -150,8 +161,10 @@ export function testWorld(options: { now?: number; envOverrides?: Partial<Env> }
 	const threads = new FakeNamespace<ThreadCoordinator>(() => new ThreadCoordinator(fakeState(), env));
 	env.METERS = meters as unknown as Env["METERS"];
 	env.THREADS = threads as unknown as Env["THREADS"];
+	const turns = new FakeWorkflow();
+	env.AGENT_TURNS = turns as unknown as Env["AGENT_TURNS"];
 	const deps: Deps = { env, db, slack: (token) => slack.client(token), now: () => clock.now };
-	return { env, meters, threads, db, slack, clock, deps };
+	return { env, meters, threads, db, slack, clock, deps, turns };
 }
 
 export async function installationRow(overrides: Partial<Installation> = {}, secrets: Record<string, string> = {}): Promise<Installation> {
@@ -188,16 +201,23 @@ type Row = Record<string, unknown>;
 
 function matches(value: unknown, filter: string): boolean {
 	if (filter === "is.null") return value === null || value === undefined;
+	if (filter === "is.false") return value === false;
+	if (filter === "is.true") return value === true;
 	if (filter.startsWith("eq.")) return value !== null && value !== undefined && String(value) === filter.slice(3);
 	if (filter.startsWith("neq.")) return String(value) !== filter.slice(4);
 	throw new Error(`fake db: unsupported filter ${filter}`);
 }
 
-const RESERVED = new Set(["select", "limit", "order"]);
+const RESERVED = new Set(["select", "limit", "order", "or"]);
 
 /** An in-memory PostgREST with eq, neq and is.null filters. */
 export class FakeDb implements Db {
-	tables: Record<string, Row[]> = { slack_installations: [], slack_apps: [], slack_user_links: [], workspace_audit_events: [] };
+	tables: Record<string, Row[]> = {
+		slack_installations: [], slack_apps: [], slack_user_links: [], workspace_audit_events: [],
+		workspace_members: [], workspaces: [], wallets: [], v2_models: [],
+	};
+	/** What rpc() answers, by function name. */
+	rpcResults: Record<string, unknown> = {};
 	queries: Array<{ table: string; query: Record<string, string> }> = [];
 	flushes: Array<{ installationId: string; period: string; people: Array<{ slack_user_id: string; first_answer_at: string; answers: number }> }> = [];
 	rpcs: Array<{ fn: string; args: Record<string, unknown> }> = [];
@@ -237,7 +257,7 @@ export class FakeDb implements Db {
 			this.tables.workspace_audit_events.push({ action: "slack_agent.uninstalled_in_slack", target_id: row.id, metadata: { event: args.p_event } });
 			return true as T;
 		}
-		return null as T;
+		return (this.rpcResults[fn] ?? null) as T;
 	}
 }
 
@@ -248,11 +268,24 @@ export class FakeSlack {
 	calls: SlackCall[] = [];
 	users = new Map<string, SlackUser>();
 	failUsersInfo = false;
+	/** Errors the next calls of a method return, in order. */
+	failures = new Map<string, string[]>();
+	/** What conversations.replies answers. */
+	replies: Array<Record<string, unknown>> = [];
+	private streams = 0;
 
 	client(token: string): SlackClient {
 		return {
 			call: async <T>(method: string, args: Record<string, unknown>): Promise<SlackResult<T>> => {
 				this.calls.push({ token, method, args });
+				const failure = this.failures.get(method)?.shift();
+				if (failure === "ratelimited") return { ok: false, error: "ratelimited", retryAfterSeconds: 60 };
+				if (failure) return { ok: false, error: failure };
+				if (method === "chat.startStream" || method === "chat.postMessage") {
+					this.streams += 1;
+					return { ok: true, data: { ok: true, channel: args.channel, ts: `1792600100.${String(this.streams).padStart(6, "0")}` } as T };
+				}
+				if (method === "conversations.replies") return { ok: true, data: { ok: true, messages: this.replies } as T };
 				if (method === "users.info") {
 					if (this.failUsersInfo) return { ok: false, error: "ratelimited", retryAfterSeconds: 30 };
 					const user = this.users.get(String(args.user)) ?? { id: String(args.user), team_id: TEAM_ID };
@@ -265,6 +298,10 @@ export class FakeSlack {
 
 	ephemerals(): SlackCall[] {
 		return this.calls.filter((call) => call.method === "chat.postEphemeral");
+	}
+
+	of(method: string): SlackCall[] {
+		return this.calls.filter((call) => call.method === method);
 	}
 }
 

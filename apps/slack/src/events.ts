@@ -10,8 +10,8 @@ import {
 	type SlackAppContext,
 } from "./installations";
 import type { AdmitResult, MeterSettings } from "./meter";
-import { postEphemeral, type SlackClient } from "./slack-api";
-import type { Db } from "./supabase";
+import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
+import { createDb, type Db } from "./supabase";
 
 // What the Worker does with a verified Slack event, after it has acknowledged it:
 // ignore bots and edits, find the installation, dedupe the event in its thread's
@@ -28,6 +28,10 @@ export type Deps = {
 	slack: (token: string) => SlackClient;
 	now: () => number;
 };
+
+export function defaultDeps(env: Env): Deps {
+	return { env, db: createDb(env), slack: (token) => createSlackClient(token), now: () => Date.now() };
+}
 
 type Authorization = {
 	enterprise_id?: string | null;

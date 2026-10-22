@@ -1,9 +1,10 @@
 # Phaseo Slack agent Worker
 
 The Cloudflare Worker behind the Phaseo Slack agent (`slack.phaseo.app`). It
-receives Slack events and button clicks, decides who may get an answer, and runs
-one turn at a time per Slack thread. Installing, settings and the month-end
-charge live in `apps/web-api`; this Worker reads the same tables.
+receives Slack events and button clicks, decides who may get an answer, runs
+one turn at a time per Slack thread, and answers through the Phaseo gateway.
+Installing, settings and the month-end charge live in `apps/web-api`; this
+Worker reads the same tables.
 
 ## Routes
 
@@ -49,6 +50,40 @@ Nothing pushes or emails them yet, so replies never say an admin has been told.
 Both use SQLite storage. Neither keeps Slack text longer than 7 days, and logs
 carry ids and statuses only, as Slack's API terms require.
 
+## Agent turns
+
+Each answer is an `AgentTurnWorkflow` instance (`AGENT_TURNS`, Cloudflare
+Workflows), one per Slack event, kept for 1 day. It has five steps:
+
+1. `load`: re-checks the installation and access. It sets the Slack session to `processing` (`agents.sessions.setStatus`).
+2. `context`: reads up to 15 messages of the thread (`conversations.replies`). When Slack rate limits that, it uses the coordinator's working memory instead.
+3. `run`: runs `@phaseo/agent-sdk` through the gateway (the `PHASEO_API` service binding) with the installation's managed key and model. Every request carries:
+   - `user: slack:<team>:<user>`;
+   - `x-phaseo-metadata` labels `app=slack-agent`, `slack_team` and `slack_channel`;
+   - `x-title: Phaseo Slack agent`;
+   - `provider.data_collection: "deny"`;
+   - the gateway's web search and fetch tools.
+
+   It stops after 12 steps or $0.50 of model spend. The answer streams into Slack with `chat.startStream` and `chat.appendStream`, batched about every 400 ms. After every agent step the answer so far and what it cost are staged in the coordinator, and the cancel flag is checked.
+4. `reply`: finishes the Slack message with a footer (model and cost). It stops the stream, or, when the live stream failed or the run was retried, writes the staged answer with `chat.update` (or `chat.postMessage` if the stream never started).
+5. `finish`: counts the answer in the meter, if the person could see it, and tells the coordinator.
+
+Step outputs hold ids and statuses only. A retried step never posts twice: the
+reply's `ts` is stored as soon as Slack returns it, and a retry updates that
+message.
+
+A failed Slack write never runs the model again. The live stream stops, the
+model finishes, and the `reply` step (retried up to 3 times on its own) delivers
+the staged answer. The `run` step is retried once for other failures; the retry
+counts what earlier attempts spent against the $0.50 limit, and the footer shows
+the total.
+
+The usage tools are `get_spend`, `get_credit_balance`, `get_key_usage` and
+`find_models`. They are offered only when the installation's `usage_data_mode`
+allows them in the conversation and the person is linked to a member of the
+workspace. They sum in the database (`get_workspace_spend_buckets`,
+`get_workspace_key_spend`).
+
 ## Secrets
 
 Set with `wrangler secret put <NAME> [--env production]`.
@@ -64,9 +99,13 @@ Set with `wrangler secret put <NAME> [--env production]`.
 | `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` | no | The hosted app's client credentials. They are only needed when token rotation is on, to refresh bot tokens. |
 | `SLACK_SECRETS_ENCRYPTION_KEY_VERSION` | no | Defaults to `v1`. It must match web-api. |
 
-Vars: `ENV` and `PHASEO_WEB_ORIGIN` (where `/slack/link` lives, default
-`https://phaseo.app`). The production env also binds `PHASEO_API` to the
-`phaseo-gateway` Worker for agent turns.
+Vars:
+- `ENV`.
+- `PHASEO_WEB_ORIGIN`: where `/slack/link` lives (default `https://phaseo.app`).
+- `PHASEO_API_BASE_URL`: the gateway (default `https://api.phaseo.app/v1`).
+
+The production env also binds `PHASEO_API` to the `phaseo-gateway` Worker,
+which agent turns use instead of the public URL.
 
 ## Local development
 

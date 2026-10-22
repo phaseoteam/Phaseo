@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TURN_TIMEOUT_MS, type ThreadCoordinator, type TurnRequest } from "../src/coordinator";
-import type { TurnRef, TurnRunner, TurnStart } from "../src/turns";
-import { INSTALLATION_ID, storageOf, testWorld, WORKSPACE_ID, type TestWorld } from "./fakes";
+import { ThreadCoordinator, TURN_TIMEOUT_MS, type TurnRequest } from "../src/coordinator";
+import { createWorkflowTurnRunner, type TurnRef, type TurnRunner, type TurnStart } from "../src/turns";
+import { fakeState, FakeStorage, INSTALLATION_ID, storageOf, testWorld, WORKSPACE_ID, type TestWorld } from "./fakes";
 
 const NOW = Date.UTC(2026, 9, 21, 12, 0, 0);
 const DAY = 24 * 60 * 60_000;
@@ -87,7 +87,7 @@ describe("ThreadCoordinator", () => {
 
 	it("keeps a message only while its turn is open", async () => {
 		await coordinator.enqueue(request("Ev0TEST0001"), NOW);
-		expect(coordinator.turnInput(1)).toEqual({ text: "message for Ev0TEST0001" });
+		expect(coordinator.turnInput(1)).toEqual({ text: "message for Ev0TEST0001", context: null, replyTs: null, stagedReply: null, stagedTools: [], attemptCosts: {}, memory: [] });
 		await coordinator.finishTurn(1, { status: "done", reply: "Answer" }, NOW);
 		expect(coordinator.turnInput(1)).toBeNull();
 		const storage = storageOf(coordinator);
@@ -161,12 +161,55 @@ describe("ThreadCoordinator", () => {
 		expect(world.meters.get(world.meters.idFromName(INSTALLATION_ID)).usage(NOW).pending).toBe(0);
 	});
 
-	it("the stub runner acknowledges a turn and releases its place in the meter", async () => {
-		const stubbed = world.threads.get(world.threads.idFromName(`${KEY}:stub`));
-		const meter = admitInMeter("Ev0TEST0001");
-		await expect(stubbed.enqueue(request("Ev0TEST0001", { threadKey: `${KEY}:stub` }), NOW)).resolves.toMatchObject({ status: "started" });
-		expect(stubbed.status()).toMatchObject({ running: null, queued: 0 });
-		expect(meter.usage(NOW)).toMatchObject({ people: 1, answers: 0, pending: 0 });
+	it("adds the columns turns gained since its table was created, keeping what an existing object holds", async () => {
+		// An object created by the first release (before the agent run): its turns table has none of the run's columns.
+		const storage = new FakeStorage();
+		storage.db.exec(`CREATE TABLE turns (
+			id INTEGER PRIMARY KEY AUTOINCREMENT, thread_key TEXT NOT NULL, event_id TEXT NOT NULL UNIQUE, installation_id TEXT NOT NULL,
+			team_id TEXT, channel TEXT NOT NULL, thread_ts TEXT NOT NULL, message_ts TEXT NOT NULL, slack_user_id TEXT NOT NULL,
+			kind TEXT NOT NULL, text TEXT NOT NULL, status TEXT NOT NULL, created_at INTEGER NOT NULL, started_at INTEGER
+		)`);
+		storage.db.exec(`INSERT INTO turns (thread_key, event_id, installation_id, team_id, channel, thread_ts, message_ts, slack_user_id, kind, text, status, created_at, started_at)
+			VALUES ('${KEY}', 'Ev0OLD00001', '${INSTALLATION_ID}', 'T0TEST0001', 'C0CHANNEL1', '1792600000.000100', '1792600000.000100', 'U0PERSON01', 'mention', 'an older message', 'running', ${NOW}, ${NOW})`);
+		const upgraded = new ThreadCoordinator(fakeState(storage), world.env);
+		const columns = () => (storage.db.prepare("PRAGMA table_info(turns)").all() as Array<{ name: string }>).map((column) => column.name);
+		expect(columns()).toEqual(expect.arrayContaining(["context", "reply_ts", "staged_reply", "staged_tools", "attempt_costs"]));
+		upgraded.setTurnContext(1, [{ role: "user", author: "U0PERSON02", text: "earlier" }]);
+		upgraded.setReplyTs(1, "1792600100.000001");
+		upgraded.stageTurnOutput(1, { attempt: 1, costNanos: 1_000, reply: "Answer", tools: [] });
+		expect(upgraded.turnInput(1)).toMatchObject({ text: "an older message", replyTs: "1792600100.000001", stagedReply: "Answer", attemptCosts: { 1: 1_000 } });
+		// Running it again changes nothing.
+		new ThreadCoordinator(fakeState(storage), world.env);
+		expect(columns().filter((name) => name === "attempt_costs")).toHaveLength(1);
+		await expect(upgraded.finishTurn(1, { status: "done" }, NOW)).resolves.toEqual({ ok: true });
+		expect(upgraded.workingMemory().map((entry) => entry.text)).toEqual(["Answer"]);
+	});
+
+	it("keeps each attempt's cost once, however often it is staged", async () => {
+		await coordinator.enqueue(request("Ev0TEST0001"), NOW);
+		coordinator.stageTurnOutput(1, { attempt: 1, costNanos: 100, reply: "a", tools: [] });
+		coordinator.stageTurnOutput(1, { attempt: 1, costNanos: 300, reply: "ab", tools: [] });
+		coordinator.stageTurnOutput(1, { attempt: 2, costNanos: 50, reply: "b", tools: [] });
+		expect(coordinator.turnInput(1)).toMatchObject({ stagedReply: "b", attemptCosts: { 1: 300, 2: 50 } });
+	});
+
+	it("starts each turn as one Workflow instance kept a day, with ids only", async () => {
+		const real = world.threads.get(world.threads.idFromName(`${KEY}:workflow`));
+		await expect(real.enqueue(request("Ev0TEST0001", { threadKey: `${KEY}:workflow` }), NOW)).resolves.toMatchObject({ status: "started" });
+		expect(world.turns.created).toEqual([{
+			id: "turn-Ev0TEST0001",
+			params: {
+				turnId: 1, threadKey: `${KEY}:workflow`, eventId: "Ev0TEST0001", installationId: INSTALLATION_ID, teamId: "T0TEST0001",
+				channel: "C0CHANNEL1", threadTs: "1792600000.000100", messageTs: "1792600000.000100", slackUserId: "U0PERSON01", kind: "mention",
+			},
+			retention: { successRetention: "1 day", errorRetention: "1 day" },
+		}]);
+		expect(JSON.stringify(world.turns.created)).not.toContain("message for");
+		// The turn runs until the instance reports back.
+		expect(real.status()).toMatchObject({ running: 1, queued: 0 });
+		// Starting the same turn again is a no-op.
+		await expect(createWorkflowTurnRunner(world.env).start({ ...(world.turns.created[0].params as TurnRef) })).resolves.toEqual({ started: true });
+		expect(world.turns.created).toHaveLength(1);
 	});
 
 	it("fails a turn that never reports back after 20 minutes, and starts the next", async () => {

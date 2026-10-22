@@ -525,6 +525,9 @@ importers:
 
   apps/slack:
     dependencies:
+      '@phaseo/agent-sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk/agent-sdk-ts
       hono:
         specifier: ^4.13.11
         version: 4.13.12
