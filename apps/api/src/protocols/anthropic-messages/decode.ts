@@ -73,10 +73,16 @@ export type AnthropicMessagesRequest = {
 	};
 };
 
-export type AnthropicMessage = {
-	role: "user" | "assistant";
-	content: string | AnthropicContentBlock[];
-};
+export type AnthropicMessage =
+	| {
+		role: "user" | "assistant";
+		content: string | AnthropicContentBlock[];
+	}
+	| {
+		// Mid-conversation system message: a string or text blocks.
+		role: "system";
+		content: string | Array<Extract<AnthropicContentBlock, { type: "text" }>>;
+	};
 
 export type AnthropicCacheControl = {
 	type?: string;
@@ -140,7 +146,9 @@ export type AnthropicToolChoice = (
  * Decode Anthropic Messages request to IR format
  *
  * Anthropic differences:
- * - System message is a separate field (not in messages array)
+ * - System prompt is a separate field; a `role: "system"` entry in messages is
+ *   a mid-conversation instruction and stays where it was sent
+ *   (the executors decide whether the target model can take it in place)
  * - Tools use input_schema instead of parameters
  * - Tool calls are content blocks with type="tool_use"
  * - Tool results are in user messages as content blocks with type="tool_result"
@@ -166,6 +174,14 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 
 	// Transform messages
 	for (const msg of req.messages) {
+		if (msg.role === "system") {
+			const content =
+				typeof msg.content === "string"
+					? [{ type: "text" as const, text: msg.content }]
+					: msg.content.map(normalizeAnthropicContent).filter((part): part is IRContentPart => Boolean(part));
+			messages.push({ role: "system", content });
+			continue;
+		}
 		if (msg.role === "user") {
 			if (typeof msg.content === "string") {
 				messages.push({

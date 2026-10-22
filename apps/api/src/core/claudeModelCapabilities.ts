@@ -43,6 +43,26 @@ export function supportsAnthropicMidConversationSystemMessages(model: string | n
 	);
 }
 
+type AnthropicTurn = { role?: unknown; content?: unknown } | null | undefined;
+
+/**
+ * Anthropic's placement rule for a run of consecutive `role: "system"`
+ * messages that carry content: straight after a `user` turn (or an assistant
+ * turn ending in a server tool result), and either last or followed by an
+ * `assistant` turn. Anything else is a 400 from Claude.
+ */
+export function isAnthropicSystemMessagePlacementValid(previous: AnthropicTurn, next: AnthropicTurn): boolean {
+	const followsTurn = previous?.role === "user" || (previous?.role === "assistant" && endsWithServerToolResult(previous.content));
+	return followsTurn && (!next || next.role === "assistant");
+}
+
+function endsWithServerToolResult(content: unknown): boolean {
+	if (!Array.isArray(content) || content.length === 0) return false;
+	const type = (content[content.length - 1] as { type?: unknown } | null)?.type;
+	// Server tool results are `<tool>_tool_result` blocks, such as `web_search_tool_result`.
+	return typeof type === "string" && type.endsWith("_tool_result") && type !== "tool_result";
+}
+
 /**
  * `output_config.effort` support for models outside the adaptive-thinking set, from
  * https://platform.claude.com/docs/en/build-with-claude/effort: Opus 4.6 and Sonnet 4.6

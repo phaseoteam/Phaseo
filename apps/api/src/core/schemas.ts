@@ -13,6 +13,7 @@ import {
 	ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES,
 	OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES,
 } from "./nativeTools";
+import { isAnthropicSystemMessagePlacementValid } from "./claudeModelCapabilities";
 
 const ProviderRoutingSchema = lazySchema(() => z.object({
     // Existing gateway routing hints
@@ -1073,15 +1074,42 @@ const AnthropicToolChoiceSchema = lazySchema(() => z.union([
     z.object({ type: z.literal("tool"), name: z.string() }),
 ]).and(z.object({ disable_parallel_tool_use: z.boolean().optional() }).passthrough()));
 
+// Mid-conversation system message
+// (https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages).
+// Strict, so the beta-only `clear_at` and `output_config` are refused rather
+// than dropped; `tool_addition` and `tool_removal` blocks fail the text schema.
+const AnthropicSystemMessageSchema = lazySchema(() => z.object({
+    role: z.literal("system"),
+    content: z.union([z.string(), z.array(AnthropicTextContentSchema).min(1)]),
+}).strict());
+
+const AnthropicMessagesListSchema = lazySchema(() => z.array(z.discriminatedUnion("role", [
+    z.object({
+        role: z.enum(["user", "assistant"]),
+        content: AnthropicMessageContentSchema,
+    }),
+    AnthropicSystemMessageSchema,
+])).min(1).max(100000).superRefine((messages, ctx) => {
+    // Consecutive system messages are judged together, as Claude does.
+    for (let start = 0; start < messages.length; start += 1) {
+        if (messages[start].role !== "system") continue;
+        let end = start;
+        while (messages[end + 1]?.role === "system") end += 1;
+        if (!isAnthropicSystemMessagePlacementValid(messages[start - 1], messages[end + 1])) {
+            ctx.addIssue({
+                code: "custom",
+                path: [start],
+                message: "A system message must immediately follow a user turn (or an assistant turn ending in a server tool result) and be the last message or be followed by an assistant turn. Use the top-level `system` field for instructions that apply from the start.",
+            });
+        }
+        start = end;
+    }
+}));
+
 export const AnthropicMessagesSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     session_id: z.string().trim().min(1).max(256).optional(),
-    messages: z.array(
-        z.object({
-            role: z.enum(["user", "assistant"]),
-            content: AnthropicMessageContentSchema,
-        })
-    ).min(1).max(100000),
+    messages: AnthropicMessagesListSchema,
     system: z.union([z.string(), z.array(AnthropicTextContentSchema)]).optional(),
     max_tokens: z.number().int().nonnegative(),
     temperature: z.number().min(0).max(1).optional(),
