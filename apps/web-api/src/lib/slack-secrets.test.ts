@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "@/env";
+import { SLACK_SECRETS_TEST_VECTORS as VECTORS } from "../../../../packages/shared/slack-secrets/test-vectors";
 import {
 	base64UrlDecode,
 	base64UrlEncode,
@@ -9,18 +10,17 @@ import {
 	verifySlackToken,
 } from "./slack-secrets";
 
-// Fixed vectors, computed independently with node:crypto (AES-256-GCM with key
-// SHA-256(secret); HMAC-SHA256). The Slack Worker's tests assert the same strings,
+// Fixed vectors shared with the Slack Worker's tests (packages/shared/slack-secrets),
 // so both sides read and write one format.
-const ENCRYPTION_KEY = "phaseo-slack-test-key-v1";
-const STATE_SECRET = "phaseo-slack-test-state-secret";
-const FIXED_IV = Uint8Array.from({ length: 12 }, (_, index) => index);
-const FIXED_NONCE = Uint8Array.from({ length: 16 }, (_, index) => 16 + index);
-const SECRETS = { gateway_key: "phaseo_v1_sk_testkid00000_testsecret", bot_token: "xoxb-1-test-token" };
-const SECRETS_VECTOR = "v1.AAECAwQFBgcICQoL.YN62pqsypNBE-yEz2RfD-J2TO1mtdRTt1xAT7nHMk3HmI0t4pUHm4kwcX4rzseMY4KY390GaoSkUdqS6tmxNzVrQ55Ft3QHFauex_4liCj6ZWrvs2RVZO_8hbk3EJagKXp2r9wi7";
-const TOKEN_NOW = 1_800_000_000_000;
-const LINK_PAYLOAD = { installation_id: "00000000-0000-4000-8000-0000000000a1", slack_user_id: "U0TEST0001" };
-const TOKEN_VECTOR = "eyJpbnN0YWxsYXRpb25faWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwYTEiLCJzbGFja191c2VyX2lkIjoiVTBURVNUMDAwMSIsInB1cnBvc2UiOiJsaW5rIiwiZXhwIjoxODAwMDAwOTAwLCJub25jZSI6IkVCRVNFeFFWRmhjWUdSb2JIQjBlSHcifQ.4mFmjm_-sgno88ChcHRU7Kp77RRndhBsQQ_GO3YLfNU";
+const ENCRYPTION_KEY = VECTORS.encryptionKey;
+const STATE_SECRET = VECTORS.stateSecret;
+const FIXED_IV = VECTORS.fixedIv;
+const FIXED_NONCE = VECTORS.fixedNonce;
+const SECRETS = VECTORS.secrets;
+const SECRETS_VECTOR = VECTORS.secretsVector;
+const TOKEN_NOW = VECTORS.tokenNow;
+const LINK_PAYLOAD = VECTORS.linkPayload;
+const TOKEN_VECTOR = VECTORS.tokenVector;
 
 const env = { ENV: "development", SLACK_SECRETS_ENCRYPTION_KEY: ENCRYPTION_KEY, SLACK_STATE_SECRET: STATE_SECRET } as Env;
 

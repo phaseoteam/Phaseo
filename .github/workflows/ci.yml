@@ -187,6 +187,9 @@ jobs:
             - name: Validate shared Slack agent pricing
               run: pnpm run validate:slack-agent-pricing
 
+            - name: Validate shared Slack agent secrets format
+              run: pnpm run validate:slack-secrets
+
             - name: Validate unique Supabase migration versions
               shell: bash
               run: |
@@ -431,7 +434,7 @@ jobs:
         needs: openapi-lint
         strategy:
             matrix:
-                app: [api, docs, web, web-api, mcp]
+                app: [api, docs, web, web-api, mcp, slack]
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
@@ -487,6 +490,15 @@ jobs:
                   pnpm --filter @phaseo/mcp typecheck
                   pnpm --filter @phaseo/mcp test
                   pnpm --filter @phaseo/mcp build:production
+
+            # Built and tested only: the hosted Slack app and its secrets don't
+            # exist yet, so the Worker is not in the deploy matrix.
+            - name: Slack agent typecheck, test & production build
+              if: matrix.app == 'slack'
+              run: |
+                  pnpm --filter @phaseo/slack-agent typecheck
+                  pnpm --filter @phaseo/slack-agent test
+                  pnpm --filter @phaseo/slack-agent build:production
 
     api-aimock:
         name: API AIMock matrix
