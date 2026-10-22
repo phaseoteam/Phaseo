@@ -156,7 +156,8 @@ export function LimitsFields({ draft, disabled, problem, set }: {
 	draft: SlackLimitsDraft;
 	disabled?: boolean;
 	problem: SlackDraftProblem | null;
-	set: <K extends keyof SlackLimitsDraft>(field: K, value: SlackLimitsDraft[K]) => void;
+	/** The install and settings forms' setters, which cover these fields and more. */
+	set: (field: keyof SlackLimitsDraft, value: SlackLimitsDraft[keyof SlackLimitsDraft]) => void;
 }) {
 	const t = useTranslations("SettingsUI.slack.limits");
 	const largest = PLAN_TIERS[PLAN_TIERS.length - 1].people;

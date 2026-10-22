@@ -125,9 +125,13 @@ export function parseAmount(text: string): number | null {
 	return /^\d+(?:\.\d{1,2})?$/.test(plain) ? Number(plain) : null;
 }
 
-/** Slack channel IDs separated by commas, spaces or new lines; null if any is not one. */
+/**
+ * Slack channel IDs separated by commas, spaces or new lines; null if any is not one.
+ * IDs are not upper-cased: that would turn a channel name such as "general" into
+ * the valid-looking "GENERAL".
+ */
 export function parseChannelIds(text: string): string[] | null {
-	const ids = [...new Set(text.split(/[\s,]+/).map((entry) => entry.trim().toUpperCase()).filter(Boolean))];
+	const ids = [...new Set(text.split(/[\s,]+/).map((entry) => entry.trim()).filter(Boolean))];
 	return ids.every((id) => CHANNEL_PATTERN.test(id)) ? ids : null;
 }
 

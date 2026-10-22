@@ -148,7 +148,7 @@ describe("Slack agent settings patch", () => {
 			...base,
 			instructions: "  Be brief.  ",
 			usageDataMode: "dm_and_channels",
-			channelIds: "c0123abcd, G0456EFGH\nC0123ABCD",
+			channelIds: "C0123ABCD, G0456EFGH\nC0123ABCD",
 			allowGuests: false,
 			monthlyCapUsd: "40",
 		}, base);
@@ -179,7 +179,10 @@ describe("Slack agent settings patch", () => {
 
 	it("rejects bad channel ids and long instructions", () => {
 		const base = settingsDraftFrom(saved);
-		expect(settingsPatch({ ...base, channelIds: "general" }, base)).toEqual({ ok: false, problem: { field: "channelIds", code: "channelIds" } });
+		// Channel names are not IDs, even when upper-casing would make them look like one.
+		for (const channelIds of ["general", "growth", "#general", "c0123abcd"]) {
+			expect(settingsPatch({ ...base, channelIds }, base)).toEqual({ ok: false, problem: { field: "channelIds", code: "channelIds" } });
+		}
 		expect(settingsPatch({ ...base, instructions: "x".repeat(8_001) }, base)).toMatchObject({ ok: false, problem: { field: "instructions" } });
 		expect(parseChannelIds("")).toEqual([]);
 	});
