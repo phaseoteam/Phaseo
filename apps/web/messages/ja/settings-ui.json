@@ -237,7 +237,8 @@
 		"noWorkspaceSelected": "ワークスペースが選択されていません",
 		"viewDetails": "詳細を表示",
 		"testConnection": "接続をテスト",
-		"tryAgain": "再試行"
+		"tryAgain": "再試行",
+		"revoked": "無効化済み"
 	},
 	"keys": {
 		"keyName": "キー名",
@@ -5981,7 +5982,33 @@
 		"clearUserFilter": "ユーザーフィルターを解除",
 		"nameConflict": "同じ名前のキーが複数あります。",
 		"openFromTable": "APIキーの一覧からキーを開いてください。",
-		"limitInvalid": "上限は0または正の数にしてください。"
+		"limitInvalid": "上限は0または正の数にしてください。",
+		"revokedNote": "このキーは漏えいの可能性があるため無効化されました。再度有効にはできません。ローテーションして新しいキーを取得してください。"
+	},
+	"keyStorage": {
+		"storedIn": "保管場所",
+		"notSet": "未設定",
+		"title": "このキーの保管場所",
+		"optional": "（任意）",
+		"help": "保管場所で情報漏えいが報告された場合、そこに保管されているすべてのキーを一度に見つけて無効化できます。",
+		"choose": "保管場所を選択",
+		"search": "プラットフォームを検索",
+		"noResults": "一致するプラットフォームはありません",
+		"selectedCount": "{count, plural, other {# か所}}",
+		"limit": "1 つのキーにつき最大 {max} か所です。",
+		"remove": "{name} を削除",
+		"categories": {
+			"hosting": "ホスティング",
+			"cloud": "クラウドプロバイダー",
+			"ci": "コードと CI",
+			"secrets": "シークレット管理",
+			"other": "その他"
+		},
+		"locations": {
+			"local-machine": "自分のコンピューター",
+			"own-server": "自社サーバー",
+			"other": "その他の場所"
+		}
 	},
 	"providerDashboard": {
 		"profile": "プロバイダープロフィール",
