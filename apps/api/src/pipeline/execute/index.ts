@@ -4,7 +4,7 @@
 // How: Ranks candidates, attempts providers with failover, and records timing/usage.
 
 import type { GatewayResponsePayload } from "@core/types";
-import type { ByokKeyMeta, PipelineContext, ProviderAttemptLog } from "../before/types";
+import type { ByokKeyMeta, PipelineContext, ProviderAttemptLog, ProviderCandidate } from "../before/types";
 import { recordLifecycleEvent, recordProviderResult } from "../lifecycle";
 import { Timer } from "../telemetry/timer";
 import { dispatchBackground, ensureRuntimeForBackground, getSupabaseAdmin } from "@/runtime/env";
@@ -40,6 +40,12 @@ function dispatchProviderHealthBackground(task: () => Promise<unknown>): void {
 
 import { guardCandidates, guardPricingFound, guardAllFailed } from "./guards";
 import { err, json } from "./http";
+import {
+	canUseManagedCredential,
+	filterCandidatesByCredential,
+	managedCredentialUnavailableResponse,
+	recordManagedPaymentRequired,
+} from "./managedCredentials";
 import { getBaseModel, calculateMaxTries, googleFlexMinimumHeadersTimeoutMs } from "./utils";
 import { rankProviders } from "./providers";
 import { resolveProviderExecutor } from "../../executors";
@@ -171,7 +177,12 @@ export type CredentialAttemptPhase = "priority_byok" | "balanced_byok" | "gatewa
 
 export function buildCredentialAttemptPlan(
 	rankedProviders: any[],
-	options: { includeFallbackByok?: boolean; allowManagedFallback?: boolean } = {},
+	options: {
+		includeFallbackByok?: boolean;
+		allowManagedFallback?: boolean;
+		/** False for a candidate whose managed key is missing or whose account is out of credit. */
+		canUseManagedCredential?: (candidate: ProviderCandidate) => boolean;
+	} = {},
 ): Array<{
 	routed: any;
 	phase: CredentialAttemptPhase;
@@ -204,7 +215,10 @@ export function buildCredentialAttemptPlan(
 
 	const balancedAttempts = rankedProviders.flatMap((routed) => {
 		const keys = keysForMode(routed, "balanced");
-		return keys.length ? keys : routed.candidate.credentialMode === "byok_only" ? [] : [{
+		if (keys.length) return keys;
+		if (routed.candidate.credentialMode === "byok_only") return [];
+		if (options.canUseManagedCredential && !options.canUseManagedCredential(routed.candidate)) return [];
+		return [{
 			routed,
 			phase: "gateway" as const,
 			credential: { kind: "gateway" as const },
@@ -553,9 +567,23 @@ export async function doRequestWithIR(
 	);
 	if (!candidatesGuard.ok) return (candidatesGuard as { ok: false; response: Response }).response;
 	let candidates = candidatesGuard.value;
+	const normalizedCapability = normalizeCapability(ctx.capability);
+
+	// 1.1) Drop providers this request cannot authenticate to: no managed key in the
+	// Worker (or a managed account out of credit) and no BYOK key of the customer's.
+	const credentialFilter = filterCandidatesByCredential(candidates, normalizedCapability);
+	if (credentialFilter.skipped.length > 0) {
+		(ctx as any).routingDiagnostics = {
+			...((ctx as any).routingDiagnostics ?? {}),
+			managedCredentialSkipped: credentialFilter.skipped,
+		};
+		if (!credentialFilter.candidates.length) {
+			return managedCredentialUnavailableResponse(ctx, credentialFilter.skipped);
+		}
+		candidates = credentialFilter.candidates;
+	}
 
 	// 1.5) Filter providers by requested input/output modalities
-	const normalizedCapability = normalizeCapability(ctx.capability);
 	if (normalizedCapability === "extraction.extract" && (ir as IRExtractionRequest).images?.length) {
 		candidates = candidates.filter(candidate => candidate.inputModalities?.includes("image") && candidate.capabilityParams?.images === true);
 		if (!candidates.length) return Response.json({ error: "unsupported_parameter", message: "No extraction route supports image input.", request_id: ctx.requestId }, { status: 400 });
@@ -692,6 +720,7 @@ export async function doRequestWithIR(
 	const credentialPlan = preferPinnedCredential(buildCredentialAttemptPlan(rankedProviders, {
 		includeFallbackByok: true,
 		allowManagedFallback: ctx.teamSettings?.byokFallbackEnabled === true,
+		canUseManagedCredential: (candidate) => canUseManagedCredential(candidate, normalizedCapability),
 	}), (ctx as any).routingDiagnostics?.stickyRouting);
 	if (credentialPlan.length === 0 && rankedProviders.some((entry) => entry.candidate.credentialMode === "byok_only")) {
 		return err("byok_credentials_required", {
@@ -714,6 +743,10 @@ export async function doRequestWithIR(
 
 	for (let attempt = 0; attempt < credentialPlan.length; attempt++) {
 		const choice = credentialPlan[attempt];
+		// An earlier attempt in this request may have found the managed account unpaid.
+		if (choice.credential.kind === "gateway" && !canUseManagedCredential(choice.routed.candidate, normalizedCapability)) {
+			continue;
+		}
 
 		// Use IR-aware attempt function
 		const result = await attemptProviderWithIR(
@@ -1330,6 +1363,11 @@ async function attemptProviderWithIR(
 				executorResult.upstream.headers,
 			);
 			const effectiveKeySource = executorResult.keySource ?? credentialLog.key_source;
+			// 402 on the gateway's own key: the provider account is out of credit, so later
+			// managed requests skip the provider for a while. A BYOK 402 is the customer's own.
+			if (executorResult.upstream.status === 402 && effectiveKeySource === "gateway" && !candidate.privateEndpoint) {
+				recordManagedPaymentRequired(candidate.providerId);
+			}
 			const upstreamRateLimitHeaders = extractDownstreamRateLimitHeaders(
 				executorResult.upstream.headers,
 				{

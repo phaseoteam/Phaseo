@@ -95,7 +95,11 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const usageMeters = buildUsageMeters(json, hasAnnotations);
 
     if (args.pricingCard) {
-        const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard);
+        // Annotated pages have their own price (OCR 3: $3 rather than $2 per 1,000 pages),
+        // matched on ocr_params.annotations. https://docs.mistral.ai/models/ocr-3-25-12
+        const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard, {
+            ocr_params: { annotations: hasAnnotations },
+        });
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;
         bill.usage = pricedUsage;

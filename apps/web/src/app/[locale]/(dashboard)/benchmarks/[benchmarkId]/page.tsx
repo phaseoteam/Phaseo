@@ -1,8 +1,7 @@
 import BenchmarkDetailShell from "@/components/(data)/benchmark/BenchmarkDetailShell";
 import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
 import { applyArtificialAnalysisOrganisationColours, artificialAnalysisMetricsForBenchmark, buildArtificialAnalysisRanking, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
-import { isEpochCapabilitiesIndex, isEpochConfidenceIntervalForScore } from "@/lib/benchmarks/epoch";
-import { epochModelKey, fetchEpochConfidenceIntervals } from "@/lib/benchmarks/epochData";
+import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
 import { fetchFrontendBenchmark, fetchFrontendOrganisations } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -92,16 +91,7 @@ export default async function Page({
 	}
 	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmark.id);
 	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmark.id);
-	const epochConfidenceIntervals = epochCapabilitiesIndex ? await fetchEpochConfidenceIntervals() : {};
-	const displayBenchmark = epochCapabilitiesIndex ? {
-		...benchmark,
-		results: benchmark.results.map((result) => {
-			const interval = epochConfidenceIntervals[epochModelKey(result.model?.name ?? result.model_id)];
-			if (!isEpochConfidenceIntervalForScore(interval, result.score)) return result;
-			const withoutInterval = typeof result.other_info === "string" ? result.other_info.replace(/;?\s*95% CI\s+[\d.]+[–-][\d.]+/i, "") : "";
-			return { ...result, other_info: `${withoutInterval ? `${withoutInterval}; ` : ""}95% CI ${interval.low.toFixed(2)}–${interval.high.toFixed(2)}` };
-		}),
-	} : benchmark;
+	const displayBenchmark = benchmark;
 	const artificialAnalysisRankings = artificialAnalysis
 		? (async () => {
 			const metricDefinitions = artificialAnalysisMetricsForBenchmark(benchmark.id);
@@ -178,7 +168,7 @@ export default async function Page({
 			)}
 			<BenchmarkDetailShell benchmark={displayBenchmark} tocItems={artificialAnalysis
 				? []
-				: epochCapabilitiesIndex ? [{ id: "summary", label: t("tocSummary") }, { id: "comparisons", label: t("tocIndexLeaderboard") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]
+				: epochCapabilitiesIndex ? []
 				: [{ id: "summary", label: t("tocSummary") }, { id: "progress", label: t("tocProgress") }, { id: "model-results", label: t("tocModelResults") }]}>
 				<BenchmarkOverview benchmark={displayBenchmark} artificialAnalysisRankings={artificialAnalysisRankings} />
 			</BenchmarkDetailShell>

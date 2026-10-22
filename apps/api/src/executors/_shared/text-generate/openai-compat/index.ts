@@ -30,6 +30,7 @@ import {
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
 import { resolveProviderKey } from "@providers/keys";
+import { cloudflareAccountAiBase, cloudflareByokCredential, cloudflareByokHeaders } from "@providers/cloudflare/credentials";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
@@ -38,6 +39,7 @@ import {
 	transformChatStream,
 	transformChatStreamToResponses,
 	transformResponsesStreamToChat,
+	normalizeTerminalResponsesFrames,
 } from "./stream-transforms";
 import {
 	adaptRequestFromUpstreamError,
@@ -131,6 +133,11 @@ export async function executeOpenAIWire(
 			byokMeta: args.byokMeta,
 		} as any);
 
+	// A Cloudflare BYOK key runs on the customer's own account with their token.
+	const cloudflareByok = args.providerId === "cloudflare" && !args.privateEndpoint
+		? cloudflareByokCredential(keyInfo)
+		: null;
+
 	// Choose endpoint based on provider capabilities
 	const modelForRouting = resolveOpenAICompatModel(
 		args.providerId,
@@ -207,11 +214,13 @@ export async function executeOpenAIWire(
 			&& sanitized.request.tools.some((tool: any) => tool?.type === "mcp");
 		const upstreamUrl = args.privateEndpoint
 			? `${args.privateEndpoint.baseUrl.replace(/\/+$/, "")}${endpointForRoute(targetRoute)}`
-			: openAICompatUrl(
-				policy.urlProviderId ?? args.providerId,
-				endpointForRoute(targetRoute),
-				modelForRouting,
-			);
+			: cloudflareByok
+				? `${cloudflareAccountAiBase(cloudflareByok.accountId)}/v1${endpointForRoute(targetRoute)}`
+				: openAICompatUrl(
+					policy.urlProviderId ?? args.providerId,
+					endpointForRoute(targetRoute),
+					modelForRouting,
+				);
 		const upstreamHeaders = args.privateEndpoint
 			? {
 				Authorization: `Bearer ${keyInfo.key}`,
@@ -226,7 +235,7 @@ export async function executeOpenAIWire(
 		const response = await fetchUpstream(args, upstreamUrl, {
 			method: "POST",
 			...(args.privateEndpoint ? { redirect: "manual" as const } : {}),
-			headers: upstreamHeaders,
+			headers: cloudflareByok ? cloudflareByokHeaders(cloudflareByok, upstreamHeaders) : upstreamHeaders,
 			body: requestBody,
 		});
 
@@ -518,17 +527,22 @@ export function resolveStreamForProtocol(
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	const state = createStreamAdapterState(args);
 	const canonicalResponses = route === "responses" && options?.canonicalResponsesEvents === true;
+	// A native Responses upstream reaches clients unparsed; provider quirks fix its terminal
+	// response (usage) so streamed clients and billing match a buffered response.
+	const body = route === "responses" && !canonicalResponses
+		? normalizeTerminalResponsesFrames(res.body, args.providerId)
+		: res.body;
 
 	if (protocol === "openai.chat.completions") {
 		if (route === "responses") {
-			return transformResponsesStreamToChat(res.body, args, state);
+			return transformResponsesStreamToChat(body, args, state);
 		}
-		return transformChatStream(res.body, args, state);
+		return transformChatStream(body, args, state);
 	}
 
 	if (protocol === "openai.responses") {
-		if (canonicalResponses) return res.body;
-		return transformChatStreamToResponses(res.body, args, state);
+		if (canonicalResponses) return body;
+		return transformChatStreamToResponses(body, args, state);
 	}
 
 	if (protocol === "anthropic.messages") {
@@ -536,13 +550,13 @@ export function resolveStreamForProtocol(
 		// This keeps /messages streaming compatible whether upstream emits responses events
 		// or chat-completion chunks on a responses route.
 		const responsesStream = canonicalResponses
-			? res.body
-			: transformChatStreamToResponses(res.body, args, state);
+			? body
+			: transformChatStreamToResponses(body, args, state);
 		return transformResponsesStreamToAnthropic(responsesStream, args);
 	}
 
 	// Default: passthrough (responses protocol or unknown)
-	return res.body;
+	return body;
 }
 
 function transformResponsesStreamToAnthropic(
@@ -1042,6 +1056,7 @@ function normalizeUsageToAnthropic(usage: any): {
 	cache_creation?: { ephemeral_5m_input_tokens: number; ephemeral_1h_input_tokens: number };
 	cached_write_text_tokens_30m?: number;
 	cached_write_text_tokens_12h?: number;
+	server_tool_use?: Record<string, number>;
 } {
 	const inputTokens = Number(
 		usage?.input_tokens ??
@@ -1078,6 +1093,8 @@ function normalizeUsageToAnthropic(usage: any): {
 		// split to billing and are not part of the client usage.
 		...(typeof cache.write30mTokens === "number" ? { cached_write_text_tokens_30m: cache.write30mTokens } : {}),
 		...(typeof cache.write12hTokens === "number" ? { cached_write_text_tokens_12h: cache.write12hTokens } : {}),
+		// Messages usage has its own server_tool_use counts; billing reads web searches from it.
+		...(usage?.server_tool_use && typeof usage.server_tool_use === "object" ? { server_tool_use: usage.server_tool_use } : {}),
 	};
 }
 

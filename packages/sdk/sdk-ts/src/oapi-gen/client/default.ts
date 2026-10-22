@@ -4668,7 +4668,13 @@ export type CreateObservabilityDestinationParams = {
       }[];
     }[];
     sampling_rate?: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "braintrust"
+      | "datadog"
+      | "langfuse"
+      | "langsmith"
+      | "otel_collector"
+      | "webhook";
   };
 };
 
@@ -4726,7 +4732,13 @@ export async function createObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "braintrust"
+      | "datadog"
+      | "langfuse"
+      | "langsmith"
+      | "otel_collector"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -4781,7 +4793,13 @@ export async function createObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "braintrust"
+        | "datadog"
+        | "langfuse"
+        | "langsmith"
+        | "otel_collector"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -11124,7 +11142,13 @@ export async function getObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "braintrust"
+      | "datadog"
+      | "langfuse"
+      | "langsmith"
+      | "otel_collector"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -11181,7 +11205,13 @@ export async function getObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "braintrust"
+        | "datadog"
+        | "langfuse"
+        | "langsmith"
+        | "otel_collector"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -16630,7 +16660,13 @@ export async function listObservabilityDestinations(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "braintrust"
+      | "datadog"
+      | "langfuse"
+      | "langsmith"
+      | "otel_collector"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   }[];
@@ -16686,7 +16722,13 @@ export async function listObservabilityDestinations(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "braintrust"
+        | "datadog"
+        | "langfuse"
+        | "langsmith"
+        | "otel_collector"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     }[];
@@ -23112,7 +23154,13 @@ export async function updateObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "braintrust"
+      | "datadog"
+      | "langfuse"
+      | "langsmith"
+      | "otel_collector"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -23169,7 +23217,13 @@ export async function updateObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "braintrust"
+        | "datadog"
+        | "langfuse"
+        | "langsmith"
+        | "otel_collector"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };

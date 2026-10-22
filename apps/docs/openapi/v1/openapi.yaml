@@ -18788,6 +18788,10 @@ components:
     ObservabilityDestinationType:
       type: string
       enum:
+        - braintrust
+        - datadog
+        - langfuse
+        - langsmith
         - otel_collector
         - webhook
     ObservabilityKeyFilter:

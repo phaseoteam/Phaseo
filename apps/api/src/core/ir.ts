@@ -1003,6 +1003,8 @@ export type IRUsage = {
 		cachedWriteTokens30m?: number;
 		cachedWriteTokens12h?: number;
 		spentCredits?: number;
+		// Claude `usage.inference_geo`: where inference ran ("global" or "us"). Pricing only.
+		inferenceGeo?: string;
 		serverToolUse?: {
 			datetime_requests?: number;
 			web_search_requests?: number;

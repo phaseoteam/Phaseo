@@ -84,10 +84,12 @@ const OPENAI_CHAT_AUDIO_TOKEN_PATHS = [
  * Client shaping keeps modality counts only inside input_tokens_details, where they can also
  * be counts of media parts. Carry the executor's token meters to pricing as meters, and the
  * audio token counts of raw OpenAI Chat usage (a passed-through stream has no executor meters).
+ * Claude's `inference_geo` is carried too: price rows for US-only inference match on it.
  */
 function withInputModalityTokenMeters(shaped: any, raw: any): any {
     if (!shaped || typeof shaped !== "object" || !raw || typeof raw !== "object") return shaped;
-    const meters: Record<string, number> = {};
+    const meters: Record<string, number | string> = {};
+    if (typeof raw.inference_geo === "string" && shaped.inference_geo == null) meters.inference_geo = raw.inference_geo;
     for (const key of INPUT_MODALITY_TOKEN_METERS) {
         const value = raw[key];
         if (typeof value === "number" && Number.isFinite(value) && value > 0 && shaped[key] == null) meters[key] = value;
