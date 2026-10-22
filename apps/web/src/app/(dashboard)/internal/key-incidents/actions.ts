@@ -22,7 +22,7 @@ export async function previewKeyIncident(scope: KeyIncidentScope) {
 	}
 }
 
-export async function applyKeyIncident(input: KeyIncidentScope & { title: string; customerMessage: string; sourceUrl: string | null; confirmLocationId: string }) {
+export async function applyKeyIncident(input: KeyIncidentScope & { title: string; customerMessage: string; sourceUrl: string | null; confirmLocationId: string; requestId: string }) {
 	await requireInternalAdmin();
 	try {
 		const { accessToken } = await getServerAccountContext();

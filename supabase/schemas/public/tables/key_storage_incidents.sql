@@ -1,5 +1,6 @@
 CREATE TABLE "public"."key_storage_incidents" (
   "id"                  uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "client_request_id"   uuid                     NOT NULL,
   "location_id"         text                     NOT NULL,
   "action"              text                     NOT NULL,
   "keys_created_before" timestamp with time zone NOT NULL,
@@ -12,6 +13,7 @@ CREATE TABLE "public"."key_storage_incidents" (
   "affected_keys"       integer,
   "affected_workspaces" integer,
   CONSTRAINT "key_storage_incidents_pkey" PRIMARY KEY (id),
+  CONSTRAINT "key_storage_incidents_client_request_id_key" UNIQUE (client_request_id),
   CONSTRAINT "key_storage_incidents_action_check" CHECK ((action = ANY (ARRAY['revoke'::text, 'pause'::text]))),
   CONSTRAINT "key_storage_incidents_location_check" CHECK (public.valid_key_storage_locations(ARRAY[location_id])),
   CONSTRAINT "key_storage_incidents_title_check" CHECK (((length(btrim(title)) >= 1) AND (length(title) <= 200))),

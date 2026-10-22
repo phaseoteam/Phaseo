@@ -33,6 +33,8 @@ export function KeyIncidents({ incidents }: { incidents: KeyIncident[] }) {
 	const [sourceUrl, setSourceUrl] = useState("");
 	const [confirm, setConfirm] = useState("");
 	const [preview, setPreview] = useState<{ keys: number; workspaces: number; scope: string } | null>(null);
+	// One id per incident: a retry after a failure can't declare it twice.
+	const [requestId, setRequestId] = useState(() => crypto.randomUUID());
 
 	const keysCreatedBefore = cutoff ? new Date(cutoff).toISOString() : "";
 	const scope = { locationId, action, keysCreatedBefore };
@@ -51,8 +53,9 @@ export function KeyIncidents({ incidents }: { incidents: KeyIncident[] }) {
 
 	function apply() {
 		startTransition(async () => {
-			const result = await applyKeyIncident({ ...scope, title: title.trim(), customerMessage: message.trim(), sourceUrl: sourceUrl.trim() || null, confirmLocationId: confirm });
+			const result = await applyKeyIncident({ ...scope, title: title.trim(), customerMessage: message.trim(), sourceUrl: sourceUrl.trim() || null, confirmLocationId: confirm, requestId });
 			if (result.ok === false) { toast.error(result.message ?? t("keyIncidents.failed")); return; }
+			setRequestId(crypto.randomUUID());
 			toast.success(t("keyIncidents.applied", { keys: result.keys, workspaces: result.workspaces, emails: result.emails }));
 			setPreview(null); setConfirm(""); setTitle(""); setMessage(""); setSourceUrl("");
 			router.refresh();

@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => {
 		inserted: [] as Array<{ table: string; values: unknown }>,
 		rpc: vi.fn(),
 		applyError: null as { message: string } | null,
+		outboxError: null as { message: string } | null,
+		upsertOptions: null as unknown,
 	};
 	const client = {
 		from: (table: string) => ({
@@ -15,18 +17,18 @@ const mocks = vi.hoisted(() => {
 				eq: () => ({ maybeSingle: async () => ({ data: state.role ? { role: state.role } : null, error: null }) }),
 				order: () => ({ limit: async () => ({ data: [{ id: "incident-0" }], error: null }) }),
 			}),
-			insert: (values: unknown) => {
+			upsert: async (values: unknown, options: unknown) => {
 				state.inserted.push({ table, values });
-				const result = { data: { id: "incident-1" }, error: null };
-				return Object.assign(Promise.resolve({ error: null }), { select: () => ({ single: async () => result }) });
+				state.upsertOptions = options;
+				return { error: state.outboxError };
 			},
 		}),
 		rpc: async (name: string, args: unknown) => {
 			state.rpc(name, args);
 			if (name === "preview_key_storage_incident") return { data: [{ keys: 12, workspaces: 3 }], error: null };
-			if (name === "apply_key_storage_incident") return state.applyError
+			if (name === "declare_key_storage_incident") return state.applyError
 				? { data: null, error: state.applyError }
-				: { data: [{ key_id: "k1", kid: "kid1", workspace_id: "w1" }, { key_id: "k2", kid: "kid2", workspace_id: "w1" }, { key_id: "k3", kid: "kid3", workspace_id: "w2" }], error: null };
+				: { data: { incident_id: "incident-1", created: true, keys: [{ key_id: "k1", workspace_id: "w1" }, { key_id: "k2", workspace_id: "w1" }, { key_id: "k3", workspace_id: "w2" }] }, error: null };
 			if (name === "key_storage_incident_recipients") return { data: [
 				{ workspace_id: "w1", workspace_name: "Acme", user_id: "u1", email: "owner@acme.test", keys: 2 },
 				{ workspace_id: "w2", workspace_name: "Beta", user_id: "u2", email: "owner@beta.test", keys: 1 },
@@ -46,7 +48,7 @@ import { invalidateGatewayKey } from "@/routes/account/settings-keys";
 
 const app = new Hono<{ Bindings: Env }>().route("/", internalKeyIncidentsRouter);
 const scope = { locationId: "railway", action: "revoke", keysCreatedBefore: "2026-10-21T12:00:00Z" };
-const incident = { ...scope, title: "Railway breach", customerMessage: "Railway reported exposed environment variables.", sourceUrl: "https://blog.railway.com/p/security", confirmLocationId: "railway" };
+const incident = { ...scope, requestId: "00000000-0000-4000-8000-00000000e001", title: "Railway breach", customerMessage: "Railway reported exposed environment variables.", sourceUrl: "https://blog.railway.com/p/security", confirmLocationId: "railway" };
 
 async function post(path: string, body: unknown) {
 	const background: Promise<unknown>[] = [];
@@ -60,7 +62,7 @@ async function post(path: string, body: unknown) {
 describe("key storage incidents (staff)", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		Object.assign(mocks.state, { role: "admin", inserted: [], applyError: null });
+		Object.assign(mocks.state, { role: "admin", inserted: [], applyError: null, outboxError: null, upsertOptions: null });
 	});
 
 	it("is for Phaseo admins only", async () => {
@@ -89,6 +91,7 @@ describe("key storage incidents (staff)", () => {
 		expect((await post("apply", { ...incident, confirmLocationId: "vercel" })).status).toBe(409);
 		expect((await post("apply", { ...incident, keysCreatedBefore: "2999-01-01T00:00:00Z" })).status).toBe(400);
 		expect((await post("apply", { ...incident, sourceUrl: "http://insecure.test" })).status).toBe(400);
+		expect((await post("apply", { ...incident, requestId: undefined })).status).toBe(400);
 		expect(mocks.state.inserted).toEqual([]);
 	});
 
@@ -96,8 +99,11 @@ describe("key storage incidents (staff)", () => {
 		const response = await post("apply", incident);
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({ incidentId: "incident-1", keys: 3, workspaces: 2, emails: 2 });
-		expect(mocks.state.inserted[0]).toEqual({ table: "key_storage_incidents", values: expect.objectContaining({ location_id: "railway", action: "revoke", declared_by: "staff-1" }) });
-		expect(mocks.state.rpc).toHaveBeenCalledWith("apply_key_storage_incident", { p_incident_id: "incident-1" });
+		expect(mocks.state.rpc).toHaveBeenCalledWith("declare_key_storage_incident", expect.objectContaining({
+			p_client_request_id: incident.requestId, p_location_id: "railway", p_action: "revoke", p_declared_by: "staff-1",
+		}));
+		// Retries can't send the same email twice.
+		expect(mocks.state.upsertOptions).toEqual({ onConflict: "dedupe_key", ignoreDuplicates: true });
 		const outbox = mocks.state.inserted.find((entry) => entry.table === "email_outbox")?.values as Array<Record<string, any>>;
 		expect(outbox).toHaveLength(2);
 		expect(outbox[0]).toMatchObject({
@@ -109,12 +115,23 @@ describe("key storage incidents (staff)", () => {
 		expect(vi.mocked(invalidateGatewayKey).mock.calls.map(([, keyId]) => keyId).sort()).toEqual(["k1", "k2", "k3"]);
 	});
 
+	it("reports a failed email step as retryable after the keys were changed", async () => {
+		mocks.state.outboxError = { message: "timeout" };
+		const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const response = await post("apply", incident);
+		expect(response.status).toBe(503);
+		expect(await response.json()).toMatchObject({ error: "notification_enqueue_failed", incidentId: "incident-1", keys: 3 });
+		// The gateway cache is still cleared.
+		expect(invalidateGatewayKey).toHaveBeenCalledTimes(3);
+		log.mockRestore();
+	});
+
 	it("reports a failed apply without emailing anyone", async () => {
 		mocks.state.applyError = { message: "boom" };
 		const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
 		const response = await post("apply", incident);
 		expect(response.status).toBe(503);
-		expect(await response.json()).toMatchObject({ error: "incident_apply_failed", incidentId: "incident-1" });
+		expect(await response.json()).toMatchObject({ error: "incident_apply_failed" });
 		expect(mocks.state.inserted.some((entry) => entry.table === "email_outbox")).toBe(false);
 		log.mockRestore();
 	});

@@ -10,6 +10,7 @@ const files = [
   'tables/key_storage_incident_keys.sql',
   'functions/preview_key_storage_incident.sql',
   'functions/apply_key_storage_incident.sql',
+  'functions/declare_key_storage_incident.sql',
   'functions/key_storage_incident_recipients.sql',
   'functions/workspace_key_storage_incidents.sql',
 ];
@@ -77,19 +78,28 @@ try {
   // Bad incidents are refused.
   for (const [column, value] of [['location_id', 'Railway'], ['action', 'delete'], ['source_url', 'http://example.com'], ['title', ' ']]) {
     await assert.rejects(db.query(
-      `insert into public.key_storage_incidents (location_id, action, keys_created_before, title, customer_message, source_url) values ($1, $2, now(), $3, 'msg', $4)`,
+      `insert into public.key_storage_incidents (client_request_id, location_id, action, keys_created_before, title, customer_message, source_url) values (gen_random_uuid(), $1, $2, now(), $3, 'msg', $4)`,
       [column === 'location_id' ? value : 'railway', column === 'action' ? value : 'revoke', column === 'title' ? value : 'Railway breach', column === 'source_url' ? value : null],
     ), /check constraint/, column);
   }
 
-  const incident = (await db.query(
-    `insert into public.key_storage_incidents (location_id, action, keys_created_before, title, customer_message, source_url, declared_by)
-     values ('railway', 'revoke', $1, 'Railway breach', 'Railway reported that environment variables were exposed.', 'https://blog.railway.com/p/security', $2) returning id`,
-    [cutoff, staff],
-  )).rows[0].id;
+  const requestId = '00000000-0000-4000-8000-00000000e001';
+  const declare = async () => (await db.query(
+    `select public.declare_key_storage_incident($1, 'railway', 'revoke', $2, 'Railway breach', 'Railway reported that environment variables were exposed.', 'https://blog.railway.com/p/security', $3) as result`,
+    [requestId, cutoff, staff],
+  )).rows[0].result;
+  const declared = await declare();
+  const incident = declared.incident_id;
+  assert.equal(declared.created, true);
+  assert.equal(declared.keys.length, 3);
+  const kids = (await db.query(`select kid from public.keys where id = any($1::uuid[]) order by kid`, [declared.keys.map((key) => key.key_id)])).rows.map((row) => row.kid);
+  assert.deepEqual(kids, ['kid-a1', 'kid-a2', 'kid-b1']);
 
-  const changed = (await db.query(`select * from public.apply_key_storage_incident($1)`, [incident])).rows;
-  assert.deepEqual(changed.map((row) => row.kid).sort(), ['kid-a1', 'kid-a2', 'kid-b1']);
+  // Retrying the same request returns the same incident and keys and declares nothing new.
+  const retried = await declare();
+  assert.deepEqual({ ...retried, created: true }, declared);
+  assert.equal(retried.created, false);
+  assert.equal((await db.query(`select count(*)::int as n from public.key_storage_incidents`)).rows[0].n, 1);
 
   const keys = Object.fromEntries((await db.query(`select name, status, revoked_reason, revoked_at from public.keys`)).rows.map((row) => [row.name, row]));
   for (const name of ['a railway', 'a railway paused', 'b railway']) {
@@ -136,7 +146,7 @@ try {
 
   // A pause incident pauses only active keys and records their status.
   const pause = (await db.query(
-    `insert into public.key_storage_incidents (location_id, action, keys_created_before, title, customer_message) values ('vercel', 'pause', now(), 'Vercel check', 'Precaution.') returning id`,
+    `insert into public.key_storage_incidents (client_request_id, location_id, action, keys_created_before, title, customer_message) values (gen_random_uuid(), 'vercel', 'pause', now(), 'Vercel check', 'Precaution.') returning id`,
   )).rows[0].id;
   assert.equal((await db.query(`select * from public.apply_key_storage_incident($1)`, [pause])).rows.length, 1);
   const vercel = (await db.query(`select status, revoked_reason from public.keys where name = 'a vercel'`)).rows[0];
@@ -147,6 +157,7 @@ try {
     await db.exec(`set role ${role}`);
     await assert.rejects(db.query(`select * from public.preview_key_storage_incident('railway', now())`), /permission denied/, role);
     await assert.rejects(db.query(`select * from public.apply_key_storage_incident($1)`, [incident]), /permission denied/, role);
+    await assert.rejects(db.query(`select public.declare_key_storage_incident(gen_random_uuid(), 'railway', 'revoke', now(), 't', 'm', null, null)`), /permission denied/, role);
     await assert.rejects(db.query(`select * from public.key_storage_incidents`), /permission denied/, role);
     await db.exec('reset role');
   }
