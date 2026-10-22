@@ -19623,6 +19623,7 @@ export async function listWorkspaceNotificationRoutes(
 ): Promise<{
   data: {
     auto_top_up_failed: string[];
+    broadcast_destination_failing: string[];
     low_balance: string[];
     model_deprecation: string[];
     model_substitution: string[];
@@ -19635,6 +19636,7 @@ export async function listWorkspaceNotificationRoutes(
   return client.request<{
     data: {
       auto_top_up_failed: string[];
+      broadcast_destination_failing: string[];
       low_balance: string[];
       model_deprecation: string[];
       model_substitution: string[];
@@ -24579,7 +24581,8 @@ export type UpdateWorkspaceNotificationRouteParams = {
       | "payment_method_expiring"
       | "model_deprecation"
       | "model_substitution"
-      | "rate_limit_throttled";
+      | "rate_limit_throttled"
+      | "broadcast_destination_failing";
   };
   query?: Record<string, never>;
   headers?: Record<string, never>;
@@ -24603,7 +24606,8 @@ export async function updateWorkspaceNotificationRoute(
       | "payment_method_expiring"
       | "model_deprecation"
       | "model_substitution"
-      | "rate_limit_throttled";
+      | "rate_limit_throttled"
+      | "broadcast_destination_failing";
   };
 }> {
   const { path, query, headers, body } = args;
@@ -24619,7 +24623,8 @@ export async function updateWorkspaceNotificationRoute(
         | "payment_method_expiring"
         | "model_deprecation"
         | "model_substitution"
-        | "rate_limit_throttled";
+        | "rate_limit_throttled"
+        | "broadcast_destination_failing";
     };
   }>({
     method: "PUT",

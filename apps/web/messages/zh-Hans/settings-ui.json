@@ -1439,7 +1439,9 @@
 		"secretCreated": "签名密钥已创建",
 		"secretCreateFailed": "无法创建签名密钥",
 		"configurationTestUnsigned": "保存前发送的测试不会签名。请先保存目标，再从该目标发送测试以检查签名验证。",
-		"verifySignaturesLink": "如何验证签名"
+		"verifySignaturesLink": "如何验证签名",
+		"broadcastAlertsTitle": "广播警报",
+		"broadcastAlertsDescription": "当广播目标持续失败时收到警报，每次开始失败时通知一次。"
 	},
 	"contributionCopy": {
 		"summary": "每笔符合条件且未使用 BYOK 的请求均可享受 {discount}% 折扣。Phaseo 会在删除机密信息和个人信息后，将最多 100% 的成功提示和回复保存在专用私密存储区中，最长不超过 30 天。目前有 {sampleRate}% 的数据被选中用于上游分类。此处仅显示任务汇总统计，不会发布原始内容。",

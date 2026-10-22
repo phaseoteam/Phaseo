@@ -5760,6 +5760,8 @@ module Phaseo
     WorkspaceNotificationRoute = Struct.new(:destination_ids, :event_kind, keyword_init: true)
     # @!attribute [rw] auto_top_up_failed
     #   @return [Array<String>]
+    # @!attribute [rw] broadcast_destination_failing
+    #   @return [Array<String>]
     # @!attribute [rw] low_balance
     #   @return [Array<String>]
     # @!attribute [rw] model_deprecation
@@ -5770,7 +5772,7 @@ module Phaseo
     #   @return [Array<String>]
     # @!attribute [rw] rate_limit_throttled
     #   @return [Array<String>]
-    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :low_balance, :model_deprecation, :model_substitution, :payment_method_expiring, :rate_limit_throttled, keyword_init: true)
+    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :broadcast_destination_failing, :low_balance, :model_deprecation, :model_substitution, :payment_method_expiring, :rate_limit_throttled, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceNotificationRouteResponse = Struct.new(:data, keyword_init: true)

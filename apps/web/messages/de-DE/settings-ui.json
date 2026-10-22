@@ -1439,7 +1439,9 @@
 		"secretCreated": "Signaturgeheimnis erzeugt",
 		"secretCreateFailed": "Signaturgeheimnis konnte nicht erzeugt werden",
 		"configurationTestUnsigned": "Tests vor dem Speichern werden nicht signiert. Speichere das Ziel und sende dann von dort einen Test, um die Signaturprüfung zu testen.",
-		"verifySignaturesLink": "Signaturen prüfen"
+		"verifySignaturesLink": "Signaturen prüfen",
+		"broadcastAlertsTitle": "Broadcast-Warnungen",
+		"broadcastAlertsDescription": "Erhalte eine Warnung, wenn ein Broadcast-Ziel wiederholt fehlschlägt, einmal pro Fehlerphase."
 	},
 	"contributionCopy": {
 		"summary": "Jede berechtigte Anfrage ohne BYOK erhält einen Rabatt von {discount} %. Phaseo speichert bis zu 100 % der erfolgreichen Prompts und Antworten nach dem Entfernen von Geheimnissen und personenbezogenen Daten höchstens 30 Tage lang in einem eigenen privaten Speicherbereich. Aktuell werden {sampleRate} % für die vorgelagerte Klassifizierung ausgewählt. Hier werden nur aggregierte Aufgabenstatistiken angezeigt; Rohinhalte werden nie veröffentlicht.",

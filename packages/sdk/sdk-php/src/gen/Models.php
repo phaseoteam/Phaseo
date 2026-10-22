@@ -7190,6 +7190,8 @@ class WorkspaceNotificationRouteMap
 	/** @var array */
 	public $auto_top_up_failed;
 	/** @var array */
+	public $broadcast_destination_failing;
+	/** @var array */
 	public $low_balance;
 	/** @var array */
 	public $model_deprecation;

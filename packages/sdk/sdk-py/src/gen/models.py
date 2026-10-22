@@ -3639,14 +3639,15 @@ class WorkspaceNotificationEmailPreferencesUpdate(TypedDict):
 	model_deprecation: NotRequired[bool]
 	payment_method_expiring: NotRequired[bool]
 
-WorkspaceNotificationEventKind = Literal["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled"]
+WorkspaceNotificationEventKind = Literal["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing"]
 
 class WorkspaceNotificationRoute(TypedDict):
 	destination_ids: List[str]
-	event_kind: Literal["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled"]
+	event_kind: Literal["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing"]
 
 class WorkspaceNotificationRouteMap(TypedDict):
 	auto_top_up_failed: List[str]
+	broadcast_destination_failing: List[str]
 	low_balance: List[str]
 	model_deprecation: List[str]
 	model_substitution: List[str]

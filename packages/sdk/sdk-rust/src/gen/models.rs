@@ -4104,6 +4104,7 @@ pub struct WorkspaceNotificationRoute {
 
 pub struct WorkspaceNotificationRouteMap {
 	pub auto_top_up_failed: Vec<String>,
+	pub broadcast_destination_failing: Vec<String>,
 	pub low_balance: Vec<String>,
 	pub model_deprecation: Vec<String>,
 	pub model_substitution: Vec<String>,
