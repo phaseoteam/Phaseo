@@ -66,7 +66,7 @@ pub struct AnthropicMessagesRequest {
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub max_tokens: i64,
-	pub messages: Vec<HashMap<String, String>>,
+	pub messages: Vec<String>,
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
@@ -101,6 +101,17 @@ pub struct AnthropicMessagesResponse {
 	pub stop_sequence: Option<String>,
 	pub r#type: Option<String>,
 	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct AnthropicSystemMessage {
+	pub content: String,
+	pub role: String,
+}
+
+pub struct AnthropicSystemTextBlock {
+	pub cache_control: Option<HashMap<String, String>>,
+	pub text: String,
+	pub r#type: String,
 }
 
 pub struct AnthropicTool {

@@ -2,12 +2,12 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "07846d846acac3a0429291cd0625031e9f64db8b9fe7d947daa8a19790774a6d",
+      "@openapi": "02161b80ba28452308df528c81ea625b968bb8bd07e8621f8b57e9ef3577a8f1",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
       "api-reference/endpoint/analytics-get.mdx": "b651c58a268870d34a065d64339cfdab1c3dc74be07812b9d9303b68ee5446e7",
-      "api-reference/endpoint/anthropic-messages.mdx": "28002f68ddbb4bf847c920b321f2b76d0f86636b679a31082cf1abe6c997ed7d",
+      "api-reference/endpoint/anthropic-messages.mdx": "bd141a4961170f1a2e5359b7e1b4cb9dc641593ac0b9fe81c78559b80bd3f86f",
       "api-reference/endpoint/app-merge.mdx": "091f2f7ff47f679db05a3fc008ddfcd9f45aeaa3b618ce556fb77b7b1afb67b8",
       "api-reference/endpoint/app-update.mdx": "2db004c37c6653b68df7e353301f170bee700175f13cad7977dcd1a0e13f6fa0",
       "api-reference/endpoint/apps-list.mdx": "bff31413efb61c7bdded492171bbda0476354f4a83688f2f201e397ac38d3df8",
@@ -635,12 +635,12 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "de": {
-      "@openapi": "07846d846acac3a0429291cd0625031e9f64db8b9fe7d947daa8a19790774a6d",
+      "@openapi": "02161b80ba28452308df528c81ea625b968bb8bd07e8621f8b57e9ef3577a8f1",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
       "api-reference/endpoint/analytics-get.mdx": "b651c58a268870d34a065d64339cfdab1c3dc74be07812b9d9303b68ee5446e7",
-      "api-reference/endpoint/anthropic-messages.mdx": "28002f68ddbb4bf847c920b321f2b76d0f86636b679a31082cf1abe6c997ed7d",
+      "api-reference/endpoint/anthropic-messages.mdx": "bd141a4961170f1a2e5359b7e1b4cb9dc641593ac0b9fe81c78559b80bd3f86f",
       "api-reference/endpoint/app-merge.mdx": "091f2f7ff47f679db05a3fc008ddfcd9f45aeaa3b618ce556fb77b7b1afb67b8",
       "api-reference/endpoint/app-update.mdx": "2db004c37c6653b68df7e353301f170bee700175f13cad7977dcd1a0e13f6fa0",
       "api-reference/endpoint/apps-list.mdx": "bff31413efb61c7bdded492171bbda0476354f4a83688f2f201e397ac38d3df8",
@@ -1268,12 +1268,12 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "es": {
-      "@openapi": "07846d846acac3a0429291cd0625031e9f64db8b9fe7d947daa8a19790774a6d",
+      "@openapi": "02161b80ba28452308df528c81ea625b968bb8bd07e8621f8b57e9ef3577a8f1",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
       "api-reference/endpoint/analytics-get.mdx": "b651c58a268870d34a065d64339cfdab1c3dc74be07812b9d9303b68ee5446e7",
-      "api-reference/endpoint/anthropic-messages.mdx": "28002f68ddbb4bf847c920b321f2b76d0f86636b679a31082cf1abe6c997ed7d",
+      "api-reference/endpoint/anthropic-messages.mdx": "bd141a4961170f1a2e5359b7e1b4cb9dc641593ac0b9fe81c78559b80bd3f86f",
       "api-reference/endpoint/app-merge.mdx": "091f2f7ff47f679db05a3fc008ddfcd9f45aeaa3b618ce556fb77b7b1afb67b8",
       "api-reference/endpoint/app-update.mdx": "2db004c37c6653b68df7e353301f170bee700175f13cad7977dcd1a0e13f6fa0",
       "api-reference/endpoint/apps-list.mdx": "bff31413efb61c7bdded492171bbda0476354f4a83688f2f201e397ac38d3df8",
@@ -1901,12 +1901,12 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "fr": {
-      "@openapi": "07846d846acac3a0429291cd0625031e9f64db8b9fe7d947daa8a19790774a6d",
+      "@openapi": "02161b80ba28452308df528c81ea625b968bb8bd07e8621f8b57e9ef3577a8f1",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
       "api-reference/endpoint/analytics-get.mdx": "b651c58a268870d34a065d64339cfdab1c3dc74be07812b9d9303b68ee5446e7",
-      "api-reference/endpoint/anthropic-messages.mdx": "28002f68ddbb4bf847c920b321f2b76d0f86636b679a31082cf1abe6c997ed7d",
+      "api-reference/endpoint/anthropic-messages.mdx": "bd141a4961170f1a2e5359b7e1b4cb9dc641593ac0b9fe81c78559b80bd3f86f",
       "api-reference/endpoint/app-merge.mdx": "091f2f7ff47f679db05a3fc008ddfcd9f45aeaa3b618ce556fb77b7b1afb67b8",
       "api-reference/endpoint/app-update.mdx": "2db004c37c6653b68df7e353301f170bee700175f13cad7977dcd1a0e13f6fa0",
       "api-reference/endpoint/apps-list.mdx": "bff31413efb61c7bdded492171bbda0476354f4a83688f2f201e397ac38d3df8",
@@ -2534,12 +2534,12 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "hi": {
-      "@openapi": "07846d846acac3a0429291cd0625031e9f64db8b9fe7d947daa8a19790774a6d",
+      "@openapi": "02161b80ba28452308df528c81ea625b968bb8bd07e8621f8b57e9ef3577a8f1",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
       "api-reference/endpoint/analytics-get.mdx": "b651c58a268870d34a065d64339cfdab1c3dc74be07812b9d9303b68ee5446e7",
-      "api-reference/endpoint/anthropic-messages.mdx": "28002f68ddbb4bf847c920b321f2b76d0f86636b679a31082cf1abe6c997ed7d",
+      "api-reference/endpoint/anthropic-messages.mdx": "bd141a4961170f1a2e5359b7e1b4cb9dc641593ac0b9fe81c78559b80bd3f86f",
       "api-reference/endpoint/app-merge.mdx": "091f2f7ff47f679db05a3fc008ddfcd9f45aeaa3b618ce556fb77b7b1afb67b8",
       "api-reference/endpoint/app-update.mdx": "2db004c37c6653b68df7e353301f170bee700175f13cad7977dcd1a0e13f6fa0",
       "api-reference/endpoint/apps-list.mdx": "bff31413efb61c7bdded492171bbda0476354f4a83688f2f201e397ac38d3df8",
@@ -3167,12 +3167,12 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "ja": {
-      "@openapi": "07846d846acac3a0429291cd0625031e9f64db8b9fe7d947daa8a19790774a6d",
+      "@openapi": "02161b80ba28452308df528c81ea625b968bb8bd07e8621f8b57e9ef3577a8f1",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
       "api-reference/endpoint/analytics-get.mdx": "b651c58a268870d34a065d64339cfdab1c3dc74be07812b9d9303b68ee5446e7",
-      "api-reference/endpoint/anthropic-messages.mdx": "28002f68ddbb4bf847c920b321f2b76d0f86636b679a31082cf1abe6c997ed7d",
+      "api-reference/endpoint/anthropic-messages.mdx": "bd141a4961170f1a2e5359b7e1b4cb9dc641593ac0b9fe81c78559b80bd3f86f",
       "api-reference/endpoint/app-merge.mdx": "091f2f7ff47f679db05a3fc008ddfcd9f45aeaa3b618ce556fb77b7b1afb67b8",
       "api-reference/endpoint/app-update.mdx": "2db004c37c6653b68df7e353301f170bee700175f13cad7977dcd1a0e13f6fa0",
       "api-reference/endpoint/apps-list.mdx": "bff31413efb61c7bdded492171bbda0476354f4a83688f2f201e397ac38d3df8",
@@ -3800,12 +3800,12 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "pt-BR": {
-      "@openapi": "07846d846acac3a0429291cd0625031e9f64db8b9fe7d947daa8a19790774a6d",
+      "@openapi": "02161b80ba28452308df528c81ea625b968bb8bd07e8621f8b57e9ef3577a8f1",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
       "api-reference/endpoint/analytics-get.mdx": "b651c58a268870d34a065d64339cfdab1c3dc74be07812b9d9303b68ee5446e7",
-      "api-reference/endpoint/anthropic-messages.mdx": "28002f68ddbb4bf847c920b321f2b76d0f86636b679a31082cf1abe6c997ed7d",
+      "api-reference/endpoint/anthropic-messages.mdx": "bd141a4961170f1a2e5359b7e1b4cb9dc641593ac0b9fe81c78559b80bd3f86f",
       "api-reference/endpoint/app-merge.mdx": "091f2f7ff47f679db05a3fc008ddfcd9f45aeaa3b618ce556fb77b7b1afb67b8",
       "api-reference/endpoint/app-update.mdx": "2db004c37c6653b68df7e353301f170bee700175f13cad7977dcd1a0e13f6fa0",
       "api-reference/endpoint/apps-list.mdx": "bff31413efb61c7bdded492171bbda0476354f4a83688f2f201e397ac38d3df8",
@@ -4433,12 +4433,12 @@
       "sdk-reference/typescript/usage.mdx": "e499afda011f6fe7df6b6c0994e2d44f19e76e87da912b9110cf3fcda83bf866"
     },
     "zh-Hans": {
-      "@openapi": "07846d846acac3a0429291cd0625031e9f64db8b9fe7d947daa8a19790774a6d",
+      "@openapi": "02161b80ba28452308df528c81ea625b968bb8bd07e8621f8b57e9ef3577a8f1",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "ed3a3934ab5d8c987ef45653c929b94ea40764d2d1528d1788734be5953cb362",
       "api-reference/endpoint/analytics-export.mdx": "5059c724149d962c5c5463256311617d2cc976ce47b191df3180395ba68641a2",
       "api-reference/endpoint/analytics-get.mdx": "b651c58a268870d34a065d64339cfdab1c3dc74be07812b9d9303b68ee5446e7",
-      "api-reference/endpoint/anthropic-messages.mdx": "28002f68ddbb4bf847c920b321f2b76d0f86636b679a31082cf1abe6c997ed7d",
+      "api-reference/endpoint/anthropic-messages.mdx": "bd141a4961170f1a2e5359b7e1b4cb9dc641593ac0b9fe81c78559b80bd3f86f",
       "api-reference/endpoint/app-merge.mdx": "091f2f7ff47f679db05a3fc008ddfcd9f45aeaa3b618ce556fb77b7b1afb67b8",
       "api-reference/endpoint/app-update.mdx": "2db004c37c6653b68df7e353301f170bee700175f13cad7977dcd1a0e13f6fa0",
       "api-reference/endpoint/apps-list.mdx": "bff31413efb61c7bdded492171bbda0476354f4a83688f2f201e397ac38d3df8",

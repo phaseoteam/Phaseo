@@ -30,6 +30,7 @@ import { ANTHROPIC_REASONING_FORMAT, canReplayReasoning } from "@core/reasoning-
 import { applyAnthropicCacheControlDefaults, normalizeAnthropicCacheControlValue } from "./cache-control";
 import {
 	supportsAnthropicMidConversationSystemMessages,
+	isAnthropicSystemMessagePlacementValid,
 	anthropicThinkingOffType,
 	clampClaudeEffort,
 	isClaude46,
@@ -728,7 +729,13 @@ export function irToAnthropicMessages(
 		}
 	}
 
-	placeLateSystemMessages(messages, systemSegments, supportsAnthropicMidConversationSystemMessages(resolvedModel));
+	// Microsoft Foundry (`azure`) is not among the platforms Anthropic lists for
+	// mid-conversation system messages, so those requests always hoist.
+	placeLateSystemMessages(
+		messages,
+		systemSegments,
+		options?.providerId !== "azure" && supportsAnthropicMidConversationSystemMessages(resolvedModel),
+	);
 	let system = joinAnthropicSystemSegments(systemSegments);
 
 	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens
@@ -975,10 +982,11 @@ function resolveAnthropicMetadataUserId(ir: IRChatRequest): string | undefined {
 /**
  * Place system or developer messages that arrive after the conversation has
  * started. Models that support mid-conversation system messages keep them in
- * place when Anthropic's placement rule holds (straight after a user turn, and
- * either last or followed by an assistant turn), which leaves the cached
- * prefix untouched. Anything else is hoisted into the top-level system prompt,
- * which is how Anthropic's own OpenAI compatibility layer treats them.
+ * place when Anthropic's placement rule holds (straight after a user turn or
+ * an assistant turn ending in a server tool result, and either last or
+ * followed by an assistant turn), which leaves the cached prefix untouched.
+ * Anything else is hoisted into the top-level system prompt, which is how
+ * Anthropic's own OpenAI compatibility layer treats them.
  */
 function placeLateSystemMessages(
 	messages: any[],
@@ -994,10 +1002,7 @@ function placeLateSystemMessages(
 			parts.push(messages[index + 1].content);
 			messages.splice(index + 1, 1);
 		}
-		const previous = messages[index - 1];
-		const next = messages[index + 1];
-		const validPlacement = previous?.role === "user" && (!next || next.role === "assistant");
-		if (supportsMidConversation && validPlacement) {
+		if (supportsMidConversation && isAnthropicSystemMessagePlacementValid(messages[index - 1], messages[index + 1])) {
 			messages[index] = { role: "system", content: joinAnthropicSystemSegments(parts) };
 			continue;
 		}

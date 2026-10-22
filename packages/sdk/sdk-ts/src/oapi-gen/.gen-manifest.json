@@ -12,6 +12,8 @@
     "models/AnthropicMessage.ts",
     "models/AnthropicMessagesRequest.ts",
     "models/AnthropicMessagesResponse.ts",
+    "models/AnthropicSystemMessage.ts",
+    "models/AnthropicSystemTextBlock.ts",
     "models/AnthropicTool.ts",
     "models/AnthropicUsage.ts",
     "models/ApiKey.ts",

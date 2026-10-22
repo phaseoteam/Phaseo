@@ -177,6 +177,24 @@ class AnthropicMessagesResponse
 	public $usage;
 }
 
+class AnthropicSystemMessage
+{
+	/** @var string|array */
+	public $content;
+	/** @var string */
+	public $role;
+}
+
+class AnthropicSystemTextBlock
+{
+	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var string */
+	public $text;
+	/** @var string */
+	public $type;
+}
+
 class AnthropicTool
 {
 	/** @var bool|null */

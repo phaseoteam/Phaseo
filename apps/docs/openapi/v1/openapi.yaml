@@ -11486,7 +11486,15 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/AnthropicMessage'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicMessage'
+              - $ref: '#/components/schemas/AnthropicSystemMessage'
+            discriminator:
+              propertyName: role
+              mapping:
+                user: '#/components/schemas/AnthropicMessage'
+                assistant: '#/components/schemas/AnthropicMessage'
+                system: '#/components/schemas/AnthropicSystemMessage'
         max_tokens:
           type: integer
           minimum: 1
@@ -11659,6 +11667,44 @@ components:
             - type: array
               items:
                 $ref: '#/components/schemas/AnthropicContentBlock'
+    AnthropicSystemMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          description: >-
+            Use `system` for an instruction that applies from this point in the
+            conversation. A system message takes a string or text blocks, must
+            come straight after a user turn (or an assistant turn ending in a
+            server tool result), and must be the last message or be followed by
+            an assistant turn.
+          enum:
+            - system
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/AnthropicSystemTextBlock'
+      additionalProperties: false
+    AnthropicSystemTextBlock:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     AnthropicContentBlock:
       type: object
       properties:

@@ -10889,7 +10889,15 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/AnthropicMessage'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicMessage'
+              - $ref: '#/components/schemas/AnthropicSystemMessage'
+            discriminator:
+              propertyName: role
+              mapping:
+                user: '#/components/schemas/AnthropicMessage'
+                assistant: '#/components/schemas/AnthropicMessage'
+                system: '#/components/schemas/AnthropicSystemMessage'
         max_tokens:
           type: integer
           minimum: 1
@@ -11039,6 +11047,39 @@ components:
             - type: array
               items:
                 $ref: '#/components/schemas/AnthropicContentBlock'
+    AnthropicSystemMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          description: 对于从对话此处开始生效的指令，请使用 `system`。系统消息接受字符串或文本块，必须紧跟在用户轮次（或以服务器工具结果结尾的助手轮次）之后，并且必须是最后一条消息，或者后面紧跟助手轮次。
+          enum:
+            - system
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/AnthropicSystemTextBlock'
+      additionalProperties: false
+    AnthropicSystemTextBlock:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     AnthropicContentBlock:
       type: object
       properties:

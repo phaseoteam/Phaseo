@@ -7,6 +7,8 @@ export type { AnthropicContentBlock } from "./AnthropicContentBlock.js";
 export type { AnthropicMessage } from "./AnthropicMessage.js";
 export type { AnthropicMessagesRequest } from "./AnthropicMessagesRequest.js";
 export type { AnthropicMessagesResponse } from "./AnthropicMessagesResponse.js";
+export type { AnthropicSystemMessage } from "./AnthropicSystemMessage.js";
+export type { AnthropicSystemTextBlock } from "./AnthropicSystemTextBlock.js";
 export type { AnthropicTool } from "./AnthropicTool.js";
 export type { AnthropicUsage } from "./AnthropicUsage.js";
 export type { ApiKey } from "./ApiKey.js";
