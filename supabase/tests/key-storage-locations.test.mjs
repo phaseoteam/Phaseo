@@ -90,6 +90,10 @@ try {
     }
     await db.exec('reset role');
   }
+  // A key reported as leaked is locked the same way, and can still be revoked.
+  await db.exec(`insert into public.keys (id, workspace_id, name, status) values ('00000000-0000-4000-8000-000000000009', '00000000-0000-4000-8000-0000000000aa', 'leaked', 'compromised')`);
+  await assert.rejects(db.exec(`update public.keys set status = 'active' where id = '00000000-0000-4000-8000-000000000009'`), /key_revoked_locked/);
+  await db.exec(`update public.keys set status = 'revoked' where id = '00000000-0000-4000-8000-000000000009'`);
   // Other edits and deletion still work.
   await db.exec(`update public.keys set name = 'renamed', storage_locations = '{}' where id = '${id}'`);
   await db.exec(`update public.keys set status = 'deleted' where id = '${id}'`);

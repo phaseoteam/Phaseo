@@ -48,9 +48,10 @@ CREATE OR REPLACE FUNCTION public.protect_revoked_key_status()
   AS $function$
 begin
   -- A revoked key was taken out of service because it may be exposed (for
-  -- example, a platform it was stored in was breached). It can be deleted but
-  -- never made usable again; rotate it to get a new key.
-  if old.status = 'revoked' and new.status not in ('revoked', 'deleted') then
+  -- example, a platform it was stored in was breached); a compromised key was
+  -- reported as publicly leaked. Either can be revoked or deleted but never
+  -- made usable again; rotate it to get a new key.
+  if old.status in ('revoked', 'compromised') and new.status not in ('revoked', 'compromised', 'deleted') then
     raise exception 'key_revoked_locked'
       using errcode = '23514',
         detail = 'This key was revoked and cannot be turned back on. Rotate it or create a new key.';
@@ -62,7 +63,7 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "public"."protect_revoked_key_status"() IS 'Stops a revoked API key from being resumed, and stamps revoked_at when a key is revoked.';
+COMMENT ON FUNCTION "public"."protect_revoked_key_status"() IS 'Stops a revoked or compromised API key from being resumed, and stamps revoked_at when a key is revoked.';
 
 REVOKE ALL ON FUNCTION "public"."protect_revoked_key_status"() FROM "postgres";
 

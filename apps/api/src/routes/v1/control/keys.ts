@@ -811,7 +811,7 @@ async function handleUpdateKey(req: Request) {
 		}
 		if (typeof body.disabled === "boolean") {
 			// Revoked keys may be exposed; they stay revoked (protect_revoked_key_status).
-			if (String(existing.status ?? "").toLowerCase() === "revoked") {
+			if (["revoked", "compromised"].includes(String(existing.status ?? "").toLowerCase())) {
 				return json({ error: "key_revoked", message: "This key was revoked and cannot be turned back on. Rotate it or create a new key." }, 409, { "Cache-Control": "no-store" });
 			}
 			updatePayload.status = body.disabled ? "paused" : "active";

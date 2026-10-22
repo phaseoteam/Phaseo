@@ -89,7 +89,7 @@ function buildLimitPayload(form: LimitsForm): KeyLimitPayload | null {
 }
 
 function isKeyEnabled(key: any) {
-	return !["paused", "disabled", "revoked"].includes(
+	return !["paused", "disabled", "revoked", "compromised"].includes(
 		String(key?.status ?? "").toLowerCase(),
 	);
 }
@@ -143,7 +143,7 @@ export default function KeySettingsForm({ k }: { k: any }) {
 	const [ipAllowlist, setIpAllowlist] = useState<KeyIpEntry[]>(() => k.ip_allowlist ?? []);
 	const [storageLocations, setStorageLocations] = useState<string[]>(() => k.storage_locations ?? []);
 	const [saving, setSaving] = useState(false);
-	const revoked = String(k?.status ?? "").toLowerCase() === "revoked";
+	const revoked = ["revoked", "compromised"].includes(String(k?.status ?? "").toLowerCase());
 	const dirty = useMemo(
 		() =>
 			enabled !== isKeyEnabled(k) ||
