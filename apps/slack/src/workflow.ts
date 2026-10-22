@@ -14,9 +14,9 @@ import {
 import { connectAccountMessage, linkUrl } from "./access";
 import type { ContextEntry, ThreadCoordinator, TurnInput } from "./coordinator";
 import type { Env } from "./env";
-import { botToken, coordinatorFor, defaultDeps, type Deps } from "./events";
+import { botToken, coordinatorFor, defaultDeps, meterFor, type Deps } from "./events";
 import { REPLIES_LIMIT, readWindow, threadRead, type SlackReplies } from "./history";
-import { installationSecrets, loadInstallation, type Installation } from "./installations";
+import { installationSecrets, installationSlackAppId, loadInstallation, type Installation } from "./installations";
 import { finishReply, footerText, postReply, replaceReply, SlackReplyStream, type ReplyTarget } from "./reply-stream";
 import { postEphemeral, type SlackClient } from "./slack-api";
 import type { TurnRef } from "./turns";
@@ -31,7 +31,8 @@ import { connectAccountTool, conversationAllowsUsageData, isWorkspaceMember, lin
 //            Slack session goes to "processing"
 //   context  one read of the thread (conversations.replies) that ends at the
 //            message answered (history.ts); when Slack rate limits it, the
-//            coordinator's working memory is used alone
+//            coordinator's working memory is used alone, and the installation's
+//            meter keeps Slack's Retry-After so no other thread reads until then
 //   run      the agent through the gateway, streaming the answer into Slack and
 //            staging it, with what it has spent, in the coordinator after every
 //            agent step
@@ -104,9 +105,14 @@ function withoutMention(text: string, botUserId: string): string {
 	return text.split(`<@${botUserId}>`).join("").trim();
 }
 
+function speakerLabel(entry: ContextEntry): string {
+	if (entry.role === "assistant") return "You (Phaseo agent)";
+	if (entry.role === "app") return entry.name ? `Another app (${entry.name})` : "Another app";
+	return entry.author ? `<@${entry.author}>` : "Someone";
+}
+
 function threadLine(entry: ContextEntry, botUserId: string): string {
-	const who = entry.role === "assistant" ? "You (Phaseo agent)" : entry.author ? `<@${entry.author}>` : "Someone";
-	return `${who}: ${withoutMention(entry.text, botUserId)}`;
+	return `${speakerLabel(entry)}: ${withoutMention(entry.text, botUserId)}`;
 }
 
 /**
@@ -336,6 +342,26 @@ async function deliverReply(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 	return { shown: false, stopped: false };
 }
 
+/** Until when Slack asked the installation not to read threads, or null. A meter that can't answer doesn't stop the read. */
+async function historyReadsPausedUntil(deps: TurnDeps, turn: TurnRef): Promise<number | null> {
+	try {
+		return await meterFor(deps.env, turn.installationId).historyReadsPausedUntil(deps.now());
+	} catch {
+		console.error("[slack-agent] thread read pause not checked", { turnId: turn.turnId, installationId: turn.installationId });
+		return null;
+	}
+}
+
+/** Keeps Slack's Retry-After in the installation's meter, so its other threads wait too. */
+async function pauseHistoryReads(deps: TurnDeps, turn: TurnRef, retryAfterSeconds: number | undefined): Promise<void> {
+	try {
+		const { until } = await meterFor(deps.env, turn.installationId).pauseHistoryReads({ retryAfterSeconds, now: deps.now() });
+		console.log("[slack-agent] thread reads paused for Slack's Retry-After", { turnId: turn.turnId, installationId: turn.installationId, until: new Date(until).toISOString() });
+	} catch {
+		console.error("[slack-agent] thread read pause not recorded", { turnId: turn.turnId, installationId: turn.installationId });
+	}
+}
+
 /** Runs one turn. Each step is safe to repeat. */
 export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): Promise<{ status: RunResult["status"] | "skipped" }> {
 	const coordinator = coordinatorFor(deps.env, turn.threadKey);
@@ -368,6 +394,13 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 			await coordinator.recordThreadRead(turn.turnId, { oldest: turn.messageTs, ts: [], complete: true });
 			return { source: "none", messages: 0 };
 		}
+		// Slack asked this installation to wait (a 429 here or in another thread): no read until then.
+		const pausedUntil = await historyReadsPausedUntil(deps, turn);
+		if (pausedUntil !== null) {
+			console.log("[slack-agent] thread reads paused for Slack's Retry-After, using working memory", { turnId: turn.turnId, installationId: turn.installationId, until: new Date(pausedUntil).toISOString() });
+			await coordinator.recordThreadRead(turn.turnId, null);
+			return { source: "memory", messages: 0 };
+		}
 		const installation = await requireInstallation(deps, turn);
 		const slack = deps.slack(await requireToken(deps, installation));
 		// One read, ending at the message answered: Slack returns a range's earliest messages first.
@@ -381,11 +414,14 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 			limit: REPLIES_LIMIT,
 		}, { form: true });
 		if (replies.ok === false) {
+			if (replies.error === "ratelimited") await pauseHistoryReads(deps, turn, replies.retryAfterSeconds);
 			console.log("[slack-agent] thread history unavailable, using working memory", { turnId: turn.turnId, error: replies.error });
 			await coordinator.recordThreadRead(turn.turnId, null);
 			return { source: "memory", messages: 0 };
 		}
-		const read = threadRead(replies.data, window, turn, installation.bot_user_id);
+		// The agent's own posts carry its bot user; the app id also catches any posted without one.
+		const appId = await installationSlackAppId(deps.env, deps.db, installation).catch(() => null);
+		const read = threadRead(replies.data, window, turn, { botUserId: installation.bot_user_id, appId });
 		await coordinator.setTurnContext(turn.turnId, read.context);
 		await coordinator.recordThreadRead(turn.turnId, { oldest: window.oldest, ts: read.ts, complete: !read.context.partial });
 		if (read.context.partial) console.log("[slack-agent] thread read was partial", { turnId: turn.turnId, messages: read.context.messages.length });
@@ -414,7 +450,7 @@ export async function runTurn(deps: TurnDeps, turn: TurnRef, step: StepRunner): 
 		// Only an answer the person could see is counted; otherwise its meter place is given back.
 		const answered = run.status === "answered" && delivered.shown;
 		if (answered) {
-			await deps.env.METERS.get(deps.env.METERS.idFromName(turn.installationId)).recordAnswer({ eventId: turn.eventId, slackUserId: turn.slackUserId, now: deps.now() });
+			await meterFor(deps.env, turn.installationId).recordAnswer({ eventId: turn.eventId, slackUserId: turn.slackUserId, now: deps.now() });
 		}
 		await coordinator.finishTurn(turn.turnId, { status: answered ? "done" : run.status === "cancelled" ? "cancelled" : "failed" }, deps.now());
 		console.log("[slack-agent] turn finished", { turnId: turn.turnId, installationId: turn.installationId, status: run.status, costNanos: run.costNanos });

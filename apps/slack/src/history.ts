@@ -20,6 +20,8 @@ import type { TurnRef } from "./turns";
 //   the read, it is kept apart, so the topic is never lost.
 // - When the stretch held more than Slack returned, the prompt says messages are
 //   missing, and the coordinator starts again from the message answered.
+// - Only the installation's own bot user (or its app) is the agent's side of the
+//   thread; other bots and apps are labelled as such.
 
 /** Slack caps non-Marketplace apps at 15 messages per conversations.replies call. */
 export const REPLIES_LIMIT = 15;
@@ -29,9 +31,23 @@ export const KNOWN_IN_READ = 8;
 export const LOOKBACK_SECONDS = 30 * 60;
 /** Message timestamps a thread's coordinator keeps (never text). */
 export const MAX_KNOWN_MESSAGES = 20;
+const MAX_APP_NAME_CHARS = 80;
 
-export type SlackHistoryMessage = { ts?: string; user?: string; bot_id?: string; text?: string; subtype?: string };
+export type SlackHistoryMessage = {
+	ts?: string;
+	user?: string;
+	bot_id?: string;
+	app_id?: string;
+	/** The name a bot message was posted under (incoming webhooks, workflows). */
+	username?: string;
+	bot_profile?: { app_id?: string; name?: string } | null;
+	text?: string;
+	subtype?: string;
+};
 export type SlackReplies = { messages?: SlackHistoryMessage[]; has_more?: boolean };
+
+/** The agent in Slack: the installation's bot user, and its Slack app's id (A...) when known. */
+export type AgentIdentity = { botUserId: string; appId: string | null };
 
 /** Orders Slack timestamps ("1792600000.000100"): seconds, then the fraction. */
 export function compareTs(a: string, b: string): number {
@@ -69,22 +85,38 @@ export function readWindow(known: string[], turn: Pick<TurnRef, "threadTs" | "me
 	return compareTs(oldest, turn.threadTs) <= 0 ? { oldest: turn.threadTs, fromRoot: true } : { oldest, fromRoot: false };
 }
 
-function entry(message: SlackHistoryMessage, botUserId: string): ContextEntry {
-	return {
-		role: message.bot_id || message.user === botUserId ? "assistant" : "user",
-		author: message.bot_id ? null : message.user ?? null,
-		text: message.text!,
-		ts: message.ts ?? null,
-	};
+/** The name Slack shows for an app's message, on one line. */
+function appName(message: SlackHistoryMessage): string | undefined {
+	const name = message.bot_profile?.name ?? message.username;
+	const line = typeof name === "string" ? name.replace(/[\s\p{Cc}]+/gu, " ").trim().slice(0, MAX_APP_NAME_CHARS).trim() : "";
+	return line || undefined;
+}
+
+/**
+ * Who wrote a message: the agent (its bot user, or its app), another bot or app,
+ * or a person. Only the agent's own posts are its side of the thread.
+ */
+function speaker(message: SlackHistoryMessage, self: AgentIdentity): Pick<ContextEntry, "role" | "author" | "name"> {
+	const appId = message.app_id ?? message.bot_profile?.app_id;
+	if (message.user === self.botUserId || (self.appId !== null && appId === self.appId)) return { role: "assistant", author: null };
+	if (message.bot_id || appId || message.bot_profile || message.subtype === "bot_message") {
+		const name = appName(message);
+		return { role: "app", author: null, ...(name ? { name } : {}) };
+	}
+	return { role: "user", author: message.user ?? null };
+}
+
+function entry(message: SlackHistoryMessage, self: AgentIdentity): ContextEntry {
+	return { ...speaker(message, self), text: message.text!, ts: message.ts ?? null };
 }
 
 function hasText(message: SlackHistoryMessage): boolean {
 	return typeof message.text === "string" && message.text.trim() !== "";
 }
 
-/** The thread so far, without the message being answered. Bot posts are the agent's side. */
-export function historyEntries(messages: SlackHistoryMessage[], botUserId: string, messageTs: string): ContextEntry[] {
-	return messages.filter((message) => message.ts !== messageTs && hasText(message)).map((message) => entry(message, botUserId));
+/** The thread so far, without the message being answered. */
+export function historyEntries(messages: SlackHistoryMessage[], self: AgentIdentity, messageTs: string): ContextEntry[] {
+	return messages.filter((message) => message.ts !== messageTs && hasText(message)).map((message) => entry(message, self));
 }
 
 export type ThreadRead = {
@@ -94,7 +126,7 @@ export type ThreadRead = {
 };
 
 /** What one conversations.replies call returned, as the turn's context. */
-export function threadRead(response: SlackReplies, window: ReadWindow, turn: Pick<TurnRef, "threadTs" | "messageTs">, botUserId: string): ThreadRead {
+export function threadRead(response: SlackReplies, window: ReadWindow, turn: Pick<TurnRef, "threadTs" | "messageTs">, self: AgentIdentity): ThreadRead {
 	const messages = (response.messages ?? [])
 		.filter((message): message is SlackHistoryMessage & { ts: string } => typeof message.ts === "string")
 		.sort((a, b) => compareTs(a.ts, b.ts));
@@ -105,8 +137,8 @@ export function threadRead(response: SlackReplies, window: ReadWindow, turn: Pic
 	const root = window.fromRoot ? undefined : messages.find((message) => message.ts === turn.threadTs);
 	return {
 		context: {
-			root: root && hasText(root) ? entry(root, botUserId) : null,
-			messages: historyEntries(inRead, botUserId, turn.messageTs),
+			root: root && hasText(root) ? entry(root, self) : null,
+			messages: historyEntries(inRead, self, turn.messageTs),
 			fromRoot: window.fromRoot,
 			partial,
 		},

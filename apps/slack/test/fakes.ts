@@ -269,7 +269,7 @@ export class FakeSlack {
 	calls: SlackCall[] = [];
 	users = new Map<string, SlackUser>();
 	failUsersInfo = false;
-	/** Errors the next calls of a method return, in order. */
+	/** Errors the next calls of a method return, in order. "ratelimited" is a 429 with Retry-After 60; "ratelimited:30" sets it. */
 	failures = new Map<string, string[]>();
 	/** The whole thread conversations.replies reads from, parent first. */
 	replies: Array<Record<string, unknown>> = [];
@@ -306,7 +306,7 @@ export class FakeSlack {
 			call: async <T>(method: string, args: Record<string, unknown>): Promise<SlackResult<T>> => {
 				this.calls.push({ token, method, args });
 				const failure = this.failures.get(method)?.shift();
-				if (failure === "ratelimited") return { ok: false, error: "ratelimited", retryAfterSeconds: 60 };
+				if (failure?.startsWith("ratelimited")) return { ok: false, error: "ratelimited", retryAfterSeconds: Number(failure.split(":")[1] ?? 60) };
 				if (failure) return { ok: false, error: failure };
 				if (method === "chat.startStream" || method === "chat.postMessage") {
 					this.streams += 1;

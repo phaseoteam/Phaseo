@@ -322,3 +322,29 @@ describe("WorkspaceMeter: uninstalled in Slack", () => {
 		expect(world.db.flushes).toEqual([{ installationId: INSTALLATION_ID, period: "2026-10-01", people: [expect.objectContaining({ slack_user_id: "U0PERSON01", answers: 1 })] }]);
 	});
 });
+
+describe("WorkspaceMeter: Slack's Retry-After for thread reads", () => {
+	it("pauses the installation's thread reads until Retry-After has passed, keeping the longer of two pauses", () => {
+		expect(meter.historyReadsPausedUntil(OCT_21)).toBeNull();
+		expect(meter.pauseHistoryReads({ retryAfterSeconds: 30, now: OCT_21 })).toEqual({ until: OCT_21 + 30_000 });
+		expect(meter.historyReadsPausedUntil(OCT_21 + 29_999)).toBe(OCT_21 + 30_000);
+		expect(meter.historyReadsPausedUntil(OCT_21 + 30_000)).toBeNull();
+		// Another thread's longer pause stays when a shorter one arrives after it.
+		meter.pauseHistoryReads({ retryAfterSeconds: 60, now: OCT_21 + 40_000 });
+		expect(meter.pauseHistoryReads({ retryAfterSeconds: 5, now: OCT_21 + 41_000 })).toEqual({ until: OCT_21 + 100_000 });
+		// Another installation's meter isn't paused.
+		const other = world.meters.get(world.meters.idFromName("00000000-0000-4000-8000-0000000000a2"));
+		expect(other.historyReadsPausedUntil(OCT_21 + 41_000)).toBeNull();
+	});
+
+	it("waits a minute without a usable Retry-After, an hour at most, and keeps one value in storage", () => {
+		const tables = storageOf(meter).tables();
+		const metaRows = storageOf(meter).count("meta");
+		expect(meter.pauseHistoryReads({ now: OCT_21 })).toEqual({ until: OCT_21 + 60_000 });
+		expect(meter.pauseHistoryReads({ retryAfterSeconds: Number.NaN, now: OCT_21 + 60_000 })).toEqual({ until: OCT_21 + 120_000 });
+		expect(meter.pauseHistoryReads({ retryAfterSeconds: 86_400, now: OCT_21 + 120_000 })).toEqual({ until: OCT_21 + 120_000 + 60 * 60_000 });
+		// No new tables: the pause is one row in meta, rewritten each time.
+		expect(storageOf(meter).tables()).toEqual(tables);
+		expect(storageOf(meter).count("meta")).toBe(metaRows + 1);
+	});
+});

@@ -125,6 +125,21 @@ export async function loadInstallation(db: Db, installationId: string): Promise<
 	}))[0] ?? null;
 }
 
+/**
+ * The Slack app id (A...) the installation's messages carry: the hosted app's
+ * when it is configured, or the company app's. Null when it isn't known.
+ */
+export async function installationSlackAppId(env: Env, db: Db, installation: Pick<Installation, "slack_app_id">): Promise<string | null> {
+	if (installation.slack_app_id === null) return hostedApp(env)?.slackAppId ?? null;
+	if (!UUID_PATTERN.test(installation.slack_app_id)) return null;
+	const row = (await db.select<{ slack_app_id: string }>("slack_apps", {
+		select: "slack_app_id",
+		id: `eq.${installation.slack_app_id}`,
+		limit: "1",
+	}))[0];
+	return row && SLACK_APP_ID_PATTERN.test(row.slack_app_id) ? row.slack_app_id : null;
+}
+
 export async function installationSecrets(env: Env, ciphertext: string): Promise<InstallationSecrets> {
 	const secrets = await decryptSlackSecrets(env, ciphertext);
 	if (!secrets.bot_token || !secrets.gateway_key) throw new Error("slack_installation_secrets_incomplete");

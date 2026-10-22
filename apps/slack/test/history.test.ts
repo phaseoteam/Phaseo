@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { compareTs, KNOWN_IN_READ, LOOKBACK_SECONDS, readWindow, REPLIES_LIMIT, threadRead } from "../src/history";
-import { BOT_USER_ID } from "./fakes";
+import { BOT_USER_ID, HOSTED_APP_ID } from "./fakes";
 
 const ts = (seconds: number) => `${seconds}.000100`;
 const ROOT = ts(1_792_590_000);
+const SELF = { botUserId: BOT_USER_ID, appId: HOSTED_APP_ID };
 
 describe("compareTs", () => {
 	it("orders by seconds, then by the fraction, whatever its length", () => {
@@ -50,7 +51,7 @@ describe("threadRead", () => {
 		const read = threadRead({
 			messages: [message(1_792_590_000), message(1_792_590_700), message(1_792_590_600, { bot_id: "B0BOT00001", user: BOT_USER_ID }), message(1_792_590_900, { user: "U0PERSON01" })],
 			has_more: false,
-		}, window, turn, BOT_USER_ID);
+		}, window, turn, SELF);
 		expect(read).toEqual({
 			context: {
 				root: { role: "user", author: "U0PERSON02", text: "at 1792590000", ts: ROOT },
@@ -68,10 +69,42 @@ describe("threadRead", () => {
 	it("is partial when Slack says more is left, or sends a full page without saying", () => {
 		const window = { oldest: ROOT, fromRoot: true };
 		const page = Array.from({ length: REPLIES_LIMIT }, (_, index) => message(1_792_590_001 + index));
-		expect(threadRead({ messages: [message(1_792_590_000), ...page], has_more: true }, window, turn, BOT_USER_ID).context.partial).toBe(true);
-		expect(threadRead({ messages: [message(1_792_590_000), ...page] }, window, turn, BOT_USER_ID).context.partial).toBe(true);
-		expect(threadRead({ messages: [message(1_792_590_000), ...page.slice(1)] }, window, turn, BOT_USER_ID).context.partial).toBe(false);
+		expect(threadRead({ messages: [message(1_792_590_000), ...page], has_more: true }, window, turn, SELF).context.partial).toBe(true);
+		expect(threadRead({ messages: [message(1_792_590_000), ...page] }, window, turn, SELF).context.partial).toBe(true);
+		expect(threadRead({ messages: [message(1_792_590_000), ...page.slice(1)] }, window, turn, SELF).context.partial).toBe(false);
 		// From the root, the first message is one of the messages read.
-		expect(threadRead({ messages: [message(1_792_590_000)], has_more: false }, window, turn, BOT_USER_ID).context).toMatchObject({ root: null, messages: [{ ts: ROOT }] });
+		expect(threadRead({ messages: [message(1_792_590_000)], has_more: false }, window, turn, SELF).context).toMatchObject({ root: null, messages: [{ ts: ROOT }] });
+	});
+
+	it("takes only the agent's own bot user or app as itself, and labels other bots and apps", () => {
+		const window = { oldest: ROOT, fromRoot: true };
+		const read = threadRead({
+			messages: [
+				message(1_792_590_000, { user: "U0PERSON01" }),
+				// The agent's reply, posted with its bot token.
+				message(1_792_590_100, { user: BOT_USER_ID, bot_id: "B0BOT00001", app_id: HOSTED_APP_ID, bot_profile: { app_id: HOSTED_APP_ID, name: "Phaseo" } }),
+				// Another app's bot user.
+				message(1_792_590_200, { user: "U0OTHERBOT", bot_id: "B0OTHER001", app_id: "A0OTHER001", bot_profile: { app_id: "A0OTHER001", name: "Deploy\n  Bot" } }),
+				// An incoming webhook: no user, only the name it posted under.
+				message(1_792_590_300, { user: undefined, subtype: "bot_message", bot_id: "B0HOOK0001", username: "CI alerts" }),
+				// A workflow with no name, and a message from the agent's own app without its bot user.
+				message(1_792_590_400, { user: undefined, subtype: "bot_message", bot_id: "B0FLOW0001" }),
+				message(1_792_590_500, { user: undefined, bot_id: "B0BOT00001", bot_profile: { app_id: HOSTED_APP_ID, name: "Phaseo" } }),
+				message(1_792_590_600, { user: "U0PERSON02" }),
+			],
+			has_more: false,
+		}, window, turn, SELF);
+		expect(read.context.messages.map(({ role, author, name }) => ({ role, author, name }))).toEqual([
+			{ role: "user", author: "U0PERSON01", name: undefined },
+			{ role: "assistant", author: null, name: undefined },
+			{ role: "app", author: null, name: "Deploy Bot" },
+			{ role: "app", author: null, name: "CI alerts" },
+			{ role: "app", author: null, name: undefined },
+			{ role: "assistant", author: null, name: undefined },
+			{ role: "user", author: "U0PERSON02", name: undefined },
+		]);
+		// When the agent's app id isn't known, only its bot user is itself.
+		const unknownApp = threadRead({ messages: [message(1_792_590_500, { user: undefined, bot_id: "B0BOT00001", bot_profile: { app_id: HOSTED_APP_ID } })], has_more: false }, window, turn, { botUserId: BOT_USER_ID, appId: null });
+		expect(unknownApp.context.messages[0]).toMatchObject({ role: "app" });
 	});
 });
