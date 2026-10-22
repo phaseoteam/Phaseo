@@ -1,11 +1,12 @@
 # ECI dashboard proof
 
-Updated on 21 October 2026. Before images show production. After images show the AA-consistent workspace in a temporary local demo using saved public Epoch source files from 20 October. The demo rendered the actual dashboard component and was removed after verification. Desktop captures are 1920px; phone width is 390px. Public source values can change between captures.
+Updated on 22 October 2026. Before images show production. The desktop, phone and range-comparison images show the local production build loading live public Epoch data on 22 October. Desktop captures are 1920px; phone width is 390px. The older domain-comparison image was captured on 21 October using saved public source files. Public source values can change between captures.
 
 | View | Before | After |
 | --- | --- | --- |
 | Desktop | [Before](before-desktop.png) | [After](after-desktop.png) |
 | Phone | [Before](before-phone.png) | [After](after-phone.png) |
+| Pinned range comparison | — | [Comparison](range-comparison.png) |
 | Pinned domain comparison | — | [Comparison](domain-comparison.png) |
 
 ## Data contract
@@ -19,7 +20,9 @@ Updated on 21 October 2026. Before images show production. After images show the
 ## Verification
 
 - ECI and shared AA regression tests cover CSV identity/precision, missing/zero/negative values, logistic recovery, domain membership and observation aggregation, frontier ties, stable SVG focus, keyboard pinning, point differences, domain switching, empty selection and upstream fallback.
-- Browser checks verified the shared right-hand picker, three chart sections, direct labels, pinned domain comparison, mobile model drawer with search and Done, and no document overflow at desktop and 390px.
-- The production build passed. The first local development run loaded live Epoch scores and domains. The local production run initially demonstrated general-only fallback after an Epoch connection timeout; a later request failed earlier while fetching catalogue benchmark metadata. Final screenshots therefore use saved real public source files, not a claim of successful production data loading. No production writes, schema changes, imports or migrations were performed.
+- The default view compares estimates and published 90% intervals on a shared score axis. Missing intervals remain unavailable. The general timeline keeps its uncertainty bars visible. Coding and maths remain point estimates, and comparison cards do not infer statistical significance from overlapping marginal intervals.
+- Thirteen ECI tests passed, including default range rendering, missing intervals, zero/negative estimates, timeline focus/pinning, interval comparison, source parsing and fallback. Full web typechecking, localization validation and the production build passed. The UI audit found 0 unreviewed candidates across 1610 modules.
+- Browser checks loaded live data with 10 selected models and 10 published ranges, verified pinned comparison with both intervals, timeline uncertainty, mobile model drawer with search and Done, and no document overflow at desktop and 390px. The comparison card stayed inside the phone viewport. CSV export produced 10 rows with a confidence-interval field containing numeric low/high bounds.
+- Earlier local requests on 21 October had upstream timeouts; the 22 October production-build verification succeeded with live scores and domain data. This is local verification, not a claim of production deployment. No production writes, schema changes, imports or migrations were performed.
 
 See the PR's Proof section for command results and build warnings.
