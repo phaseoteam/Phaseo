@@ -6,7 +6,7 @@ const db = new PGlite();
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const billing = await read('../migrations/20261021203244_slack_agent_billing.sql');
-const migration = await read('../migrations/20261021230250_slack_agent_uninstall_from_slack.sql');
+const migration = await read('../migrations/20261022113514_slack_agent_uninstall_from_slack.sql');
 const schemaFile = await read('../schemas/public/functions/uninstall_slack_agent_from_slack.sql');
 const WORKSPACE = '10000000-0000-4000-8000-000000000001';
 const SHARED_WORKSPACE = '10000000-0000-4000-8000-000000000002';
