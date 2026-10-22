@@ -59,7 +59,7 @@ print(message.content)
 
 - Use the root host `https://api.phaseo.app`; Anthropic clients append `/v1/messages`.
 - Pass the key as `authToken` (`auth_token` in Python), which sends `Authorization: Bearer` on every SDK version. Phaseo doesn't accept `x-api-key`, which `apiKey` sends before `@anthropic-ai/sdk` 1.0 and `anthropic` 2.0.
-- `apiKey: null` stops older TypeScript SDKs from also sending your `ANTHROPIC_API_KEY`. Older Python SDKs send it whenever it is set, so remove it from environments that call Phaseo.
+- `apiKey: null` stops older TypeScript SDKs from also sending your `ANTHROPIC_API_KEY`. Python SDKs before 0.98 send it whenever it is set, so upgrade or remove it from environments that call Phaseo.
 - Use [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) for endpoint details.
 - Native Anthropic tool shapes can work where Phaseo supports them, but cross-provider server tools should use Phaseo tool names.
 - If a workflow depends on streamed tool loops, test it before production rollout because Anthropic-compatible clients are stricter about tool event ordering.

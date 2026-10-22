@@ -58,7 +58,7 @@ print(message.content)
 
 - استخدم المضيف الجذر `https://api.phaseo.app`؛ إذ تضيف عملاء Anthropic المسار `/v1/messages`.
 - مرّر المفتاح بوصفه `authToken` (`auth_token` في Python)، إذ يرسله في `Authorization: Bearer` في كل إصدارات SDK. لا يقبل Phaseo الترويسة `x-api-key` التي يرسلها `apiKey` في الإصدارات السابقة لـ `@anthropic-ai/sdk` 1.0 و`anthropic` 2.0.
-- يمنع `apiKey: null` إصدارات TypeScript SDK الأقدم من إرسال `ANTHROPIC_API_KEY` أيضًا. أما إصدارات Python SDK الأقدم فترسله متى كان معيّنًا، لذا احذفه من البيئات التي تتصل بـ Phaseo.
+- يمنع `apiKey: null` إصدارات TypeScript SDK الأقدم من إرسال `ANTHROPIC_API_KEY` أيضًا. أما إصدارات Python SDK السابقة لـ 0.98 فترسله متى كان معيّنًا، لذا حدّث SDK أو احذفه من البيئات التي تتصل بـ Phaseo.
 - راجع [رسائل Anthropic](../../api-reference/endpoint/anthropic-messages.mdx) لمعرفة تفاصيل نقطة النهاية.
 - قد تعمل بنى الأدوات الأصلية في Anthropic حيثما يدعمها Phaseo، لكن استخدم أسماء أدوات Phaseo لأدوات الخادم العابرة للمزوّدين.
 - إذا كان سير العمل يعتمد على حلقات أدوات متدفقة، فاختبره قبل النشر للإنتاج لأن العملاء المتوافقين مع Anthropic أكثر تشددًا بشأن ترتيب أحداث الأدوات.

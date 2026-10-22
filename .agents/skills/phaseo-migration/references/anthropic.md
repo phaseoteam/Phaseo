@@ -47,7 +47,7 @@ message = client.messages.create(
 )
 ```
 
-`authToken` / `auth_token` sends `Authorization: Bearer` on every SDK version, which is the only header the gateway authenticates. In TypeScript, `apiKey: null` stops SDKs before 1.0 from also reading `ANTHROPIC_API_KEY` and forwarding the Anthropic key; before `anthropic` 2.0 the Python SDK falls back to that variable when `api_key` is `None`, so remove `ANTHROPIC_API_KEY` from environments that now call Phaseo. Raw HTTP calls go to `https://api.phaseo.app/v1/messages` with `Authorization: Bearer $PHASEO_API_KEY`.
+`authToken` / `auth_token` sends `Authorization: Bearer` on every SDK version, which is the only header the gateway authenticates. In TypeScript, `apiKey: null` stops older SDKs from also reading `ANTHROPIC_API_KEY` and forwarding the Anthropic key; Python SDKs before 0.98 fall back to that variable even when `auth_token` is passed, so upgrade them or remove `ANTHROPIC_API_KEY` from environments that now call Phaseo. Raw HTTP calls go to `https://api.phaseo.app/v1/messages` with `Authorization: Bearer $PHASEO_API_KEY`.
 
 Then map model names to Phaseo IDs, for example `claude-sonnet-4-6` to `anthropic/claude-sonnet-4.6`, after `GET /v1/models` confirms the exact ID.
 
