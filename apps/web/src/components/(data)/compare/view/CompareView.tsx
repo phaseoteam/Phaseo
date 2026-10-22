@@ -72,16 +72,17 @@ export function CompareView({
 							<h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
 							<p className="mt-1.5 text-sm text-muted-foreground">{t("headerSub")}</p>
 						</div>
-						<div className="flex gap-2">
+						{/* Wraps on phones: the chat button carries the model name, which can be long. */}
+						<div className="flex min-w-0 max-w-full flex-wrap gap-2">
 							<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={copyLink}>
 								{copied ? <Check className="size-4" /> : <Link2 className="size-4" />}
 								{copied ? t("copied") : t("copyLink")}
 							</Button>
 							{chatModel ? (
-								<Button asChild size="sm" className="rounded-md">
+								<Button asChild size="sm" className="min-w-0 max-w-full shrink rounded-md">
 									<Link href={`/chat?model=${encodeURIComponent(chatModel.id)}`}>
 										<MessageSquare className="size-4" />
-										{t("tryInChat", { name: chatModel.name })}
+										<span className="truncate">{t("tryInChat", { name: chatModel.name })}</span>
 									</Link>
 								</Button>
 							) : null}
