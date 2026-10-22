@@ -13465,6 +13465,10 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: >-
+            Confidence in the box, from 0 to 1, or null when the model gives
+            none.
     DecisionBox:
       type: object
       required:

@@ -12746,6 +12746,8 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: ボックスの信頼度（0〜1）。モデルが返さない場合は null です。
     DecisionBox:
       type: object
       required:

@@ -789,7 +789,7 @@ class DecisionBox(TypedDict):
 
 class DecisionBoxAnswer(TypedDict):
 	box: DecisionBox
-	confidence: float
+	confidence: Optional[float]
 	name: Optional[str]
 	type: Literal["box"]
 

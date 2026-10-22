@@ -16,7 +16,7 @@ import { applyToolCallSignatures, decodeChatReasoningDetails } from "@protocols/
 import { toIRAnnotations } from "@protocols/shared/citations";
 import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
 import { imageDetailForProvider, unsupportedImageFileIdError } from "./media-parts";
-import { mapFilePartToMistral } from "./providers/mistral/quirks";
+import { isMistralProvider, mapFilePartToMistral, toMistralAssistantContent } from "./providers/mistral/quirks";
 
 // Chat routes whose API documents an assistant message's `audio: { id }`, the
 // reference to an earlier audio response: OpenAI
@@ -119,6 +119,11 @@ export function irToOpenAIChat(
 				} else {
 					message.reasoning_content = assistantReasoning;
 				}
+			}
+
+			if (providerId && isMistralProvider(providerId)) {
+				const mistralContent = toMistralAssistantContent(msg.content, { providerId, model: ir.model });
+				if (mistralContent) message.content = mistralContent;
 			}
 
 			if (msg.audio?.id && sendsAssistantAudioReference(providerId)) {
@@ -764,7 +769,7 @@ export function openAIChatToIR(
 		} else {
 			// Regular content processing
 			const rawContent = extractChoiceContent(choice.message?.content);
-			const { main, reasoning } = applyChatResponseQuirks({ providerId: provider, choice, rawContent });
+			const { main, reasoning } = applyChatResponseQuirks({ providerId: provider, choice, rawContent, model });
 
 			// Add reasoning as reasoning_text parts. Without a provider quirk, the
 			// plain reasoning_content (or reasoning) field carries it.

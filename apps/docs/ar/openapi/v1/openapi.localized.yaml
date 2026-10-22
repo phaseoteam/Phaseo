@@ -12746,6 +12746,8 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: الثقة في المربع، من 0 إلى 1، أو null عندما لا يقدّمها النموذج.
     DecisionBox:
       type: object
       required:

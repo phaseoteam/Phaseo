@@ -12746,6 +12746,8 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: Konfidenz für den Rahmen, von 0 bis 1, oder null, wenn das Modell keine angibt.
     DecisionBox:
       type: object
       required:

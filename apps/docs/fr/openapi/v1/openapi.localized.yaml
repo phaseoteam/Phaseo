@@ -12746,6 +12746,8 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: Confiance dans le cadre, de 0 à 1, ou null quand le modèle n’en fournit pas.
     DecisionBox:
       type: object
       required:

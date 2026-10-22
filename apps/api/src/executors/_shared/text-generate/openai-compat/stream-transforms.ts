@@ -23,6 +23,8 @@ import {
 export type StreamAdapterState = {
 	requestId: string;
 	providerId: string;
+	/** Gateway model id of the request, recorded on sealed reasoning state. */
+	model?: string | null;
 	choiceStates: Map<number, { reasoningChunks: string[] }>;
 	aionStates?: Map<number, any>;
 };
@@ -46,6 +48,17 @@ function normalizeResponsesEvent(event: string | null): string | null {
 	if (event === "response.output.delta") return "response.output_text.delta";
 	if (event === "response.text.delta") return "response.output_text.delta";
 	return event;
+}
+
+/**
+ * Responses SSE frames name their event twice: on the `event:` line and in the
+ * payload's `type`. Nebius Token Factory sends data-only frames, so fall back
+ * to `type` when the line is missing.
+ * https://docs.tokenfactory.nebius.com/api-reference/inference/create-a-response
+ */
+function responsesFrameEvent(event: string | null, payload: any): string | null {
+	if (event) return event;
+	return typeof payload?.type === "string" && payload.type ? payload.type : null;
 }
 
 function parseChatMediaParts(value: any): Array<Extract<IRContentPart, { type: "image" | "audio" }>> {
@@ -344,7 +357,7 @@ export function transformResponsesStreamToChat(
 					if (done) break;
 
 					for (const frame of parser.pushBytes(value)) {
-						const { event, data } = frame;
+						const { data } = frame;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -352,6 +365,7 @@ export function transformResponsesStreamToChat(
 						} catch {
 							continue;
 						}
+						const event = responsesFrameEvent(frame.event, payload);
 
 						// Some providers stream chat chunks even on /responses
 						if (payload?.object === "chat.completion.chunk" || payload?.object === "chat.completion") {
@@ -816,7 +830,7 @@ export function transformChatStreamToResponses(
 					if (done) break;
 
 					for (const frame of parser.pushBytes(value)) {
-						const { event, data } = frame;
+						const { data } = frame;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -824,6 +838,7 @@ export function transformChatStreamToResponses(
 						} catch {
 							continue;
 						}
+						const event = responsesFrameEvent(frame.event, payload);
 
 						const isChatPayload =
 							payload?.object === "chat.completion.chunk" ||

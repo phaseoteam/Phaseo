@@ -12746,6 +12746,8 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: Confiança na caixa, de 0 a 1, ou null quando o modelo não a informa.
     DecisionBox:
       type: object
       required:
