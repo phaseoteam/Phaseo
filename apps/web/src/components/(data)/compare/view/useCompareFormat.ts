@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { asUtc, formatUsd } from "./compareViewMath";
 import type { CompareUsageWindow, CompareViewPriceRow } from "./types";
@@ -44,11 +44,14 @@ export function useCompareFormat() {
 	const tCompare = useTranslations("Catalogue.compare");
 	const t = useTranslations("Catalogue.compareView");
 	const format = useDisplayFormatters();
+	const locale = useLocale();
 	return useMemo(() => {
 		const known = (key: string | undefined, fallback: string) => (key ? tCompare(key as never) : fallback);
 		return {
 			usd: formatUsd,
 			tokens: (value: number) => format.number(value, { maximumFractionDigits: 0 }),
+			/** "400K", "1.05M": exact counts read slowly side by side. English uses the US capitals ("1.05M", not en-GB's "1.05m"). */
+			compactTokens: (value: number) => new Intl.NumberFormat(locale.startsWith("en") ? "en-US" : locale, { notation: "compact", maximumSignificantDigits: 3 }).format(value),
 			latency: (ms: number) => ms >= 1000
 				? t("seconds", { value: format.number(ms / 1000, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) })
 				: t("milliseconds", { value: format.number(ms, { maximumFractionDigits: 0 }) }),
@@ -76,7 +79,7 @@ export function useCompareFormat() {
 				}).replace(/\s+/g, " ");
 			},
 		};
-	}, [format, t, tCompare]);
+	}, [format, locale, t, tCompare]);
 }
 
 export type CompareFormat = ReturnType<typeof useCompareFormat>;

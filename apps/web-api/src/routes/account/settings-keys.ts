@@ -5,6 +5,7 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
+import { CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME, isManagedKeyName } from "@/lib/managed-keys";
 import { requireAccountWorkspace } from "./context";
 import { keyIpAllowlistSchema } from "./keyIpAllowlist";
 import { workspaceUserProfile } from "./workspaceUserProfile";
@@ -23,12 +24,14 @@ function randomBase62(length: number) {
 	return value;
 }
 
-function generateKey(kind: "sk" | "mk") {
+/** A new random key: the plaintext is shown once; only hmac(secret) is stored. */
+export function generateKey(kind: "sk" | "mk") {
 	const kid = randomBase62(12); const secret = randomBase62(40);
 	return { kid, secret, plaintext: `phaseo_v1_${kind}_${kid}_${secret}`, prefix: kid.slice(0, 6) };
 }
 function buffer(value: Uint8Array) { return new Uint8Array(value).buffer; }
-async function hmac(env: Env, secret: string) {
+/** The stored hash of a key secret, with the active pepper. */
+export async function hmac(env: Env, secret: string) {
 	const pepper = String(env.KEY_PEPPER_ACTIVE ?? "").trim(); if (!pepper) throw new Error("key_pepper_unavailable");
 	const key = await crypto.subtle.importKey("raw", buffer(new TextEncoder().encode(pepper)), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
 	return [...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(secret)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -83,7 +86,7 @@ async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof re
 	const limit = Math.max(1, Number.parseInt(env.NON_ENTERPRISE_KEY_LIMIT ?? "100", 10) || 100);
 	const notExpiredFilter = `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`;
 	const countQuery = keyType === "api"
-		? context.client.from("keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter).neq("name", "__chat_route_managed_key__")
+		? context.client.from("keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter).neq("name", CHAT_MANAGED_KEY_NAME).neq("name", SLACK_AGENT_MANAGED_KEY_NAME)
 		: context.client.from("management_keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter);
 	if (excludeKeyId) countQuery.neq("id", excludeKeyId);
 	const countResult = await countQuery;
@@ -114,7 +117,7 @@ accountSettingsKeysRouter.get("/keys/:keyId", async (c) => {
 		.eq("id", c.req.param("keyId")).maybeSingle();
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const key = result.data;
-	if (!key || key.status === "deleted" || key.name === "__chat_route_managed_key__") return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	if (!key || key.status === "deleted" || isManagedKeyName(key.name)) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: key.workspace_id });
 	if (!context) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const dayStart = new Date();

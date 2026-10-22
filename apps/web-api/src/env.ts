@@ -69,6 +69,16 @@ export type Env = {
 	NEXT_PUBLIC_VIDEO_CHAT_API_ENABLED?: string;
 	STATSIG_SERVER_KEY?: string;
 	DISCORD_SIGNUP_WEBHOOK_URL?: string;
+	/** The hosted Phaseo Slack app's OAuth credentials. Without them, installing the hosted app returns 503 slack_not_configured. */
+	SLACK_CLIENT_ID?: string;
+	SLACK_CLIENT_SECRET?: string;
+	/** Signs the Slack OAuth state and account-link tokens (shared with the Slack Worker). */
+	SLACK_STATE_SECRET?: string;
+	/** Encrypts Slack bot tokens, gateway keys and custom app secrets (shared with the Slack Worker). */
+	SLACK_SECRETS_ENCRYPTION_KEY?: string;
+	SLACK_SECRETS_ENCRYPTION_KEY_VERSION?: string;
+	/** Public web origin for the Slack OAuth redirect and the settings page. Defaults to https://phaseo.app. */
+	PHASEO_WEB_ORIGIN?: string;
 	PROVIDER_MODEL_REVIEW_SLACK_WEBHOOK?: string;
 	PROVIDER_MODEL_REVIEW_SLACK_USER_ID?: string;
 	STATUS_PAGE_URL?: string;
