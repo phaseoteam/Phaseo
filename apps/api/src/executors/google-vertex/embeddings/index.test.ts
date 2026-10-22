@@ -63,3 +63,37 @@ describe("Vertex Gemini embeddings", () => {
 		} finally { mock.restore(); }
 	});
 });
+
+describe("Vertex Gemini embeddings location", () => {
+	it("uses global even when the configured region is us-central1, which does not serve Gemini Embedding 2", async () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const mock = installFetchMock([{
+			match: (url) => url === "https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/publishers/google/models/gemini-embedding-2:embedContent",
+			response: jsonResponse({ embedding: { values: [0.5] }, usageMetadata: { promptTokenCount: 1, totalTokenCount: 1 } }),
+		}]);
+		try {
+			expect((await executor(args())).upstream.status).toBe(200);
+			expect(mock.calls).toHaveLength(1);
+		} finally { mock.restore(); }
+	});
+});
+
+describe("Vertex Gemini embeddings with a customer credential", () => {
+	const byok = (credential: Record<string, string>) => [{ id: "byok_vertex", key: JSON.stringify({ access_token: "customer-token", ...credential }), providerId: "google-vertex", alwaysUse: true }];
+	it.each([
+		[{ project_id: "customer-project", region: "us" }, "https://aiplatform.us.rep.googleapis.com/v1/projects/customer-project/locations/us"],
+		[{ project_id: "customer-project" }, "https://aiplatform.googleapis.com/v1/projects/customer-project/locations/global"],
+	])("runs in the credential's project and region (%j)", async (credential, base) => {
+		const mock = installFetchMock([{
+			match: (url) => url === `${base}/publishers/google/models/gemini-embedding-2:embedContent`,
+			response: jsonResponse({ embedding: { values: [0.5] }, usageMetadata: { promptTokenCount: 1, totalTokenCount: 1 } }),
+		}]);
+		try {
+			const result = await executor({ ...args(), byokMeta: byok(credential) } as any);
+			expect(result.upstream.status).toBe(200);
+			expect(result.kind === "completed" && result.keySource).toBe("byok");
+			expect(mock.calls[0].headers.Authorization).toBe("Bearer customer-token");
+		} finally { mock.restore(); }
+	});
+});

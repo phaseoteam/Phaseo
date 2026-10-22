@@ -177,7 +177,8 @@ describe("google-vertex cachedContent", () => {
 			"gemini-3.6-flash",
 			{ project: "customer-project", location: "global" },
 		)).toBe("https://aiplatform.googleapis.com/v1/projects/customer-project/locations/global");
+		// Phaseo's own credential serves Gemini from global, where 3.6 Flash is offered.
 		expect(resolveVertexApiBase(bindings, "google-vertex", "gemini", "gemini-3.6-flash"))
-			.toBe("https://us-east5-aiplatform.googleapis.com/v1/projects/phaseo-project/locations/us-east5");
+			.toBe("https://aiplatform.googleapis.com/v1/projects/phaseo-project/locations/global");
 	});
 });

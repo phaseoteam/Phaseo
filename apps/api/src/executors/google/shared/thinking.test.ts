@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
 	getDefaultGoogleThinkingLevel,
+	getLowestGoogleThinkingLevel,
+	modelRejectsGoogleThinkingBudget,
 	getSupportedGoogleThinkingLevels,
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
@@ -14,8 +16,8 @@ describe("google thinking level support", () => {
 			"MEDIUM",
 			"HIGH",
 		]);
+		// https://ai.google.dev/gemini-api/docs/thinking: 3.1 Pro has no minimal level.
 		expect(getSupportedGoogleThinkingLevels("gemini-3.1-pro-preview")).toEqual([
-			"MINIMAL",
 			"LOW",
 			"MEDIUM",
 			"HIGH",
@@ -62,5 +64,24 @@ describe("google thinking level support", () => {
 	it("does not use thinking levels for unsupported models", () => {
 		expect(modelSupportsGoogleThinkingLevels("gemini-2.5-flash")).toBe(false);
 		expect(resolveGoogleThinkingLevelForEffort("gemini-2.5-flash", "medium")).toBeUndefined();
+	});
+
+	it("gives Gemini 4 Argon low, medium and high only, and no thinking budget", () => {
+		for (const model of ["gemini-4-argon", "google/gemini-4-argon", "gemini-4-argon-cyber-permissive"]) {
+			expect(getSupportedGoogleThinkingLevels(model)).toEqual(["LOW", "MEDIUM", "HIGH"]);
+			expect(modelRejectsGoogleThinkingBudget(model)).toBe(true);
+			expect(getLowestGoogleThinkingLevel(model)).toBe("LOW");
+		}
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-argon", "minimal")).toBe("LOW");
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-argon", "medium")).toBe("MEDIUM");
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-argon", "max")).toBe("HIGH");
+		expect(modelRejectsGoogleThinkingBudget("gemini-3.6-flash")).toBe(false);
+	});
+
+	it("gives Gemini 3.7 Flash no minimal level", () => {
+		expect(getSupportedGoogleThinkingLevels("gemini-3.7-flash")).toEqual(["LOW", "MEDIUM", "HIGH"]);
+		expect(resolveGoogleThinkingLevelForEffort("gemini-3.7-flash", "minimal")).toBe("LOW");
+		expect(getLowestGoogleThinkingLevel("gemini-3.6-flash")).toBe("MINIMAL");
+		expect(getLowestGoogleThinkingLevel("gemini-2.5-flash")).toBeUndefined();
 	});
 });

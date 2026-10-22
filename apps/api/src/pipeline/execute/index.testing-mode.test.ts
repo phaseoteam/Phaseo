@@ -541,6 +541,40 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		}
 	});
 
+	it.each([
+		["gemini-4-argon", ["google-vertex"]],
+		["gemini-3.6-flash", ["google-vertex", "google-ai-studio"]],
+	])("gives streaming %s the long-thinking headers deadline only where documented", async (model, expectedProviders) => {
+		runtimeBindings.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "25" };
+		try {
+			const candidates = ["google-vertex", "google-ai-studio"].map((providerId) => ({
+				providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+				providerModelSlug: model, capabilityParams: {},
+			}));
+			guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+			rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+			// The first chunk, and so the headers, arrives after the model has thought.
+			vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => new Promise<Response>((resolve, reject) => {
+				const timer = setTimeout(() => resolve(new Response("{}", { status: 200 })), String(input).includes("google-vertex") ? 80 : 0);
+				init?.signal?.addEventListener("abort", () => { clearTimeout(timer); reject(init.signal!.reason); });
+			}));
+			const executor = vi.fn(async (args: any) => {
+				const upstream = await args.upstreamTiming.fetch(`https://${args.providerId}.test/models/${model}:streamGenerateContent?alt=sse`, { method: "POST" });
+				return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+			});
+			resolveProviderExecutorMock.mockReturnValue(executor);
+			const ctx = createCtx({ testingMode: true, stream: true });
+
+			const result = await doRequestWithIR(ctx, { model: `google/${model}`, prompt: "test" } as any, createTiming());
+
+			expect((result as any).ok).toBe(true);
+			expect(executor.mock.calls.map(([args]) => args.providerId)).toEqual(expectedProviders);
+		} finally {
+			runtimeBindings.value = null;
+			vi.restoreAllMocks();
+		}
+	});
+
 	it.each([false, true])("retains first dispatch through a transport failure (fallback succeeds: %s)", async (recover) => {
 		const candidates = (recover ? ["openai", "other"] : ["openai"]).map((providerId) => ({
 			providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
