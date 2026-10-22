@@ -5983,6 +5983,31 @@
 		"openFromTable": "Open a key from the API keys table.",
 		"limitInvalid": "Limits must be zero or a positive number."
 	},
+	"keyStorage": {
+		"storedIn": "Stored in",
+		"notSet": "Not set",
+		"title": "Where is this key stored?",
+		"optional": "(optional)",
+		"help": "If one of these places reports a breach, you can find and revoke every key kept there in one step.",
+		"choose": "Choose where it's stored",
+		"search": "Search platforms",
+		"noResults": "No matching platforms",
+		"selectedCount": "{count, plural, one {# location} other {# locations}}",
+		"limit": "Up to {max} locations per key.",
+		"remove": "Remove {name}",
+		"categories": {
+			"hosting": "Hosting platforms",
+			"cloud": "Cloud providers",
+			"ci": "Code and CI",
+			"secrets": "Secret managers",
+			"other": "Other"
+		},
+		"locations": {
+			"local-machine": "My computer",
+			"own-server": "My own servers",
+			"other": "Somewhere else"
+		}
+	},
 	"providerDashboard": {
 		"profile": "Provider profile",
 		"overrides": "Manual overrides",

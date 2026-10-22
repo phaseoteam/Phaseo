@@ -5983,6 +5983,31 @@
 		"openFromTable": "Öffne einen Schlüssel aus der API-Schlüsseltabelle.",
 		"limitInvalid": "Limits müssen null oder positiv sein."
 	},
+	"keyStorage": {
+		"storedIn": "Gespeichert in",
+		"notSet": "Nicht angegeben",
+		"title": "Wo wird dieser Schlüssel gespeichert?",
+		"optional": "(optional)",
+		"help": "Wenn einer dieser Orte ein Datenleck meldet, kannst du alle dort gespeicherten Schlüssel in einem Schritt finden und widerrufen.",
+		"choose": "Speicherort auswählen",
+		"search": "Plattformen suchen",
+		"noResults": "Keine passenden Plattformen",
+		"selectedCount": "{count, plural, one {# Ort} other {# Orte}}",
+		"limit": "Bis zu {max} Orte pro Schlüssel.",
+		"remove": "{name} entfernen",
+		"categories": {
+			"hosting": "Hosting-Plattformen",
+			"cloud": "Cloud-Anbieter",
+			"ci": "Code und CI",
+			"secrets": "Secret-Manager",
+			"other": "Sonstiges"
+		},
+		"locations": {
+			"local-machine": "Mein Computer",
+			"own-server": "Eigene Server",
+			"other": "Woanders"
+		}
+	},
 	"providerDashboard": {
 		"profile": "Anbieterprofil",
 		"overrides": "Manuelle Anpassungen",

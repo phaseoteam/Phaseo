@@ -5983,6 +5983,31 @@
 		"openFromTable": "Abrir una clave desde la tabla de claves API.",
 		"limitInvalid": "Los límites deben ser cero o un número positivo."
 	},
+	"keyStorage": {
+		"storedIn": "Guardada en",
+		"notSet": "Sin indicar",
+		"title": "¿Dónde se guarda esta clave?",
+		"optional": "(opcional)",
+		"help": "Si uno de estos lugares informa de una brecha, podrás encontrar y revocar en un solo paso todas las claves guardadas allí.",
+		"choose": "Elige dónde se guarda",
+		"search": "Buscar plataformas",
+		"noResults": "No hay plataformas que coincidan",
+		"selectedCount": "{count, plural, one {# ubicación} other {# ubicaciones}}",
+		"limit": "Hasta {max} ubicaciones por clave.",
+		"remove": "Quitar {name}",
+		"categories": {
+			"hosting": "Plataformas de alojamiento",
+			"cloud": "Proveedores de nube",
+			"ci": "Código y CI",
+			"secrets": "Gestores de secretos",
+			"other": "Otros"
+		},
+		"locations": {
+			"local-machine": "Mi ordenador",
+			"own-server": "Mis propios servidores",
+			"other": "En otro sitio"
+		}
+	},
 	"providerDashboard": {
 		"profile": "Perfil del proveedor",
 		"overrides": "Cambios manuales",

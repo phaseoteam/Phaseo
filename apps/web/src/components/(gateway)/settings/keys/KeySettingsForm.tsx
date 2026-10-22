@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { KeyIpAllowlistEditor, type KeyIpEntry } from "./KeyIpAllowlistEditor";
+import { KeyStorageLocationPicker } from "./KeyStorageLocationPicker";
 
 const NANOS_PER_USD = 1_000_000_000;
 
@@ -140,13 +141,15 @@ export default function KeySettingsForm({ k }: { k: any }) {
 	const [enabled, setEnabled] = useState(() => isKeyEnabled(k));
 	const [limits, setLimits] = useState<LimitsForm>(() => initialLimits(k));
 	const [ipAllowlist, setIpAllowlist] = useState<KeyIpEntry[]>(() => k.ip_allowlist ?? []);
+	const [storageLocations, setStorageLocations] = useState<string[]>(() => k.storage_locations ?? []);
 	const [saving, setSaving] = useState(false);
 	const dirty = useMemo(
 		() =>
 			enabled !== isKeyEnabled(k) ||
 			JSON.stringify(limits) !== JSON.stringify(initialLimits(k)) ||
-			JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []),
-		[k, enabled, limits, ipAllowlist],
+			JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ||
+			JSON.stringify(storageLocations) !== JSON.stringify(k.storage_locations ?? []),
+		[k, enabled, limits, ipAllowlist, storageLocations],
 	);
 
 	const updateLimit = (field: keyof LimitsForm, value: string) => {
@@ -160,7 +163,7 @@ export default function KeySettingsForm({ k }: { k: any }) {
 
 		setSaving(true);
 		try {
-			const promise = updateApiKeyAction(k.id, { ...(enabled !== isKeyEnabled(k) ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ? { ipAllowlist } : {}), limits: limitPayload });
+			const promise = updateApiKeyAction(k.id, { ...(enabled !== isKeyEnabled(k) ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ? { ipAllowlist } : {}), ...(JSON.stringify(storageLocations) !== JSON.stringify(k.storage_locations ?? []) ? { storageLocations } : {}), limits: limitPayload });
 			toast.promise(promise, {
 					loading: t("strings.phraseSavingKey"),
 					success: t("strings.Key updated"),
@@ -212,6 +215,15 @@ export default function KeySettingsForm({ k }: { k: any }) {
 
 			<Separator />
 			<KeyIpAllowlistEditor entries={ipAllowlist} onChange={setIpAllowlist} disabled={saving} />
+
+			<Separator />
+			<section className="space-y-4">
+				<div>
+					<label htmlFor="edit-key-storage" className="text-sm font-medium">{t("keyStorage.title")}</label>
+					<p className="text-xs text-muted-foreground">{t("keyStorage.help")}</p>
+				</div>
+				<KeyStorageLocationPicker id="edit-key-storage" value={storageLocations} onChange={setStorageLocations} disabled={saving} />
+			</section>
 
 			<div className="flex justify-end">
 				<Button type="submit" disabled={saving || !dirty}>{saving ? t("strings.phraseSaving") : t("strings.Save Changes")}</Button>

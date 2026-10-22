@@ -8,6 +8,7 @@ import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME, isManagedKeyName } from "@/lib/managed-keys";
 import { requireAccountWorkspace } from "./context";
 import { keyIpAllowlistSchema } from "./keyIpAllowlist";
+import { parseKeyStorageLocations } from "./key-storage-locations";
 import { workspaceUserProfile } from "./workspaceUserProfile";
 import { keyUsageSeries } from "./keyUsageSeries";
 
@@ -113,7 +114,7 @@ accountSettingsKeysRouter.get("/keys/:keyId", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const result = await getDataClient(c.env).from("keys")
-		.select("id,workspace_id,name,prefix,status,created_by,created_at,last_used_at,expires_at,ip_allowlist,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos")
+		.select("id,workspace_id,name,prefix,status,created_by,created_at,last_used_at,expires_at,ip_allowlist,storage_locations,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos")
 		.eq("id", c.req.param("keyId")).maybeSingle();
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const key = result.data;
@@ -178,11 +179,13 @@ accountSettingsKeysRouter.post("/keys", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const workspaceId = String(body.workspaceId ?? "").trim(); const name = String(body.name ?? "").trim();
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId }); if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); if (!name) return c.json({ error: "invalid_name" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const storage = parseKeyStorageLocations(body.storageLocations ?? []);
+	if (storage.ok === false) return c.json({ error: "invalid_storage_locations", message: storage.message }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
 		await enforceKeyLimit(context, c.env, "api"); const key = generateKey("sk"); const limits = limitMetadata(body.limits ?? {});
-		const result = await context.client.from("keys").insert({ workspace_id: workspaceId, name, kid: key.kid, hash: await hmac(c.env, key.secret), prefix: key.prefix, status: "active", scopes: typeof body.scopes === "string" ? body.scopes : "[]", created_by: user.id, daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos }).select("id").maybeSingle();
+		const result = await context.client.from("keys").insert({ workspace_id: workspaceId, name, kid: key.kid, hash: await hmac(c.env, key.secret), prefix: key.prefix, status: "active", scopes: typeof body.scopes === "string" ? body.scopes : "[]", created_by: user.id, daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos, storage_locations: storage.value }).select("id").maybeSingle();
 		if (result.error || !result.data?.id) throw result.error ?? new Error("key_write_failed");
-		await recordWorkspaceAuditEvent(context.client, { workspaceId, actorUserId: user.id, action: "api_key.created", targetType: "api_key", targetId: result.data.id, targetName: name, metadata: { prefix: key.prefix, status: "active", limits }, requestId: requestId(c) });
+		await recordWorkspaceAuditEvent(context.client, { workspaceId, actorUserId: user.id, action: "api_key.created", targetType: "api_key", targetId: result.data.id, targetName: name, metadata: { prefix: key.prefix, status: "active", limits, storageLocations: storage.value }, requestId: requestId(c) });
 		return c.json({ id: result.data.id, plaintext: key.plaintext, prefix: key.prefix }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "key_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
 });
@@ -214,6 +217,11 @@ accountSettingsKeysRouter.put("/keys/:keyId", async (c) => {
 			update[column] = value ?? 0;
 		}
 	}
+	if (body.storageLocations !== undefined) {
+		const storage = parseKeyStorageLocations(body.storageLocations, Array.isArray(loaded.key.storage_locations) ? loaded.key.storage_locations : []);
+		if (storage.ok === false) return c.json({ error: "invalid_storage_locations", message: storage.message }, 400, PRIVATE_NO_STORE_HEADERS);
+		update.storage_locations = storage.value;
+	}
     if (body.ipAllowlist !== undefined) {
         const parsed = keyIpAllowlistSchema.safeParse(body.ipAllowlist);
         if (!parsed.success) return c.json({ error: "invalid_ip_allowlist", message: "Each entry needs a label and a valid IPv4, IPv6, or CIDR address (maximum 100 entries)." }, 400, PRIVATE_NO_STORE_HEADERS);
@@ -223,7 +231,7 @@ accountSettingsKeysRouter.put("/keys/:keyId", async (c) => {
 	// Only a real status change is a pause or a resume; a retried request is an update.
 	const statusChanged = typeof update.status === "string" && update.status !== String(loaded.key.status ?? "");
 	const action = statusChanged ? (update.status === "paused" ? "api_key.paused" : "api_key.resumed") : "api_key.updated";
-	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action, targetType: "api_key", targetId: loaded.key.id, targetName: String(update.name ?? loaded.key.name ?? ""), metadata: { changedFields: Object.keys(update), ...(update.status ? { status: update.status } : {}) }, requestId: requestId(c) });
+	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action, targetType: "api_key", targetId: loaded.key.id, targetName: String(update.name ?? loaded.key.name ?? ""), metadata: { changedFields: Object.keys(update), ...(update.status ? { status: update.status } : {}), ...("storage_locations" in update ? { storageLocations: update.storage_locations } : {}) }, requestId: requestId(c) });
 	if ("ip_allowlist" in update) {
 		if (!await invalidateGatewayKey(c.env, loaded.key.id)) return c.json({ error: "key_gateway_sync_failed", message: "Settings saved, but gateway policy refresh failed. Retry saving to synchronize access restrictions." }, 503, PRIVATE_NO_STORE_HEADERS);
 	} else if ("status" in update || body.limits !== undefined) c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id));
@@ -247,7 +255,7 @@ accountSettingsKeysRouter.post("/keys/:keyId/rotate", async (c) => {
 	const loaded = await apiKeyContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); if (String(loaded.key.status).toLowerCase() === "deleted") return c.json({ error: "key_deleted" }, 409, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({})); let expires: string | null | undefined; try { expires = optionalExpiry(body.previousKeyExpiresAt); } catch { return c.json({ error: "invalid_expiry" }, 400, PRIVATE_NO_STORE_HEADERS); }
 	const key = generateKey("sk"); const newName = typeof body.newName === "string" && body.newName.trim() ? body.newName.trim() : `${loaded.key.name} (rotated)`;
-	const inserted = await loaded.context.client.from("keys").insert({ workspace_id: loaded.context.workspaceId, name: newName, kid: key.kid, hash: await hmac(c.env, key.secret), prefix: key.prefix, status: "active", scopes: loaded.key.scopes ?? "[]", ip_allowlist: loaded.key.ip_allowlist ?? [], created_by: loaded.user.id, daily_limit_requests: nonNegative(loaded.key.daily_limit_requests), weekly_limit_requests: nonNegative(loaded.key.weekly_limit_requests), monthly_limit_requests: nonNegative(loaded.key.monthly_limit_requests), daily_limit_cost_nanos: nonNegative(loaded.key.daily_limit_cost_nanos), weekly_limit_cost_nanos: nonNegative(loaded.key.weekly_limit_cost_nanos), monthly_limit_cost_nanos: nonNegative(loaded.key.monthly_limit_cost_nanos), soft_blocked: Boolean(loaded.key.soft_blocked) }).select("id").maybeSingle();
+	const inserted = await loaded.context.client.from("keys").insert({ workspace_id: loaded.context.workspaceId, name: newName, kid: key.kid, hash: await hmac(c.env, key.secret), prefix: key.prefix, status: "active", scopes: loaded.key.scopes ?? "[]", ip_allowlist: loaded.key.ip_allowlist ?? [], storage_locations: loaded.key.storage_locations ?? [], created_by: loaded.user.id, daily_limit_requests: nonNegative(loaded.key.daily_limit_requests), weekly_limit_requests: nonNegative(loaded.key.weekly_limit_requests), monthly_limit_requests: nonNegative(loaded.key.monthly_limit_requests), daily_limit_cost_nanos: nonNegative(loaded.key.daily_limit_cost_nanos), weekly_limit_cost_nanos: nonNegative(loaded.key.weekly_limit_cost_nanos), monthly_limit_cost_nanos: nonNegative(loaded.key.monthly_limit_cost_nanos), soft_blocked: Boolean(loaded.key.soft_blocked) }).select("id").maybeSingle();
 	if (inserted.error || !inserted.data?.id) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (expires !== undefined) { let updated = await loaded.context.client.from("keys").update({ expires_at: expires }).eq("id", loaded.key.id); if (updated.error && missingExpiry(updated.error)) updated = { error: null } as any; if (updated.error) { await loaded.context.client.from("keys").delete().eq("id", inserted.data.id); return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); } c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id)); }
 	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action: "api_key.rotated", targetType: "api_key", targetId: loaded.key.id, targetName: loaded.key.name, metadata: { replacementKeyId: inserted.data.id, replacementKeyName: newName, previousKeyExpiresAt: expires ?? null }, requestId: requestId(c) });

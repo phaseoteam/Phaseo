@@ -69,6 +69,7 @@
 		"validate:prompt-templates": "node scripts/sync-prompt-templates.mjs --check",
 		"validate:slack-agent-pricing": "node scripts/sync-slack-agent-pricing.mjs --check",
 		"validate:slack-secrets": "node scripts/sync-slack-secrets.mjs --check",
+		"validate:key-storage-locations": "node scripts/sync-key-storage-locations.mjs --check",
 		"data:update-statuses": "tsx scripts/update-database-model-statuses.ts",
 		"data:sync-artificial-analysis": "tsx scripts/sync-artificial-analysis-benchmarks.ts",
 		"data:sync-epoch-eci": "tsx scripts/sync-epoch-eci-benchmarks.ts",

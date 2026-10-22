@@ -5983,6 +5983,31 @@
 		"openFromTable": "Ouvrez une clé depuis le tableau des clés API.",
 		"limitInvalid": "Les limites doivent être nulles ou positives."
 	},
+	"keyStorage": {
+		"storedIn": "Stockée dans",
+		"notSet": "Non renseigné",
+		"title": "Où cette clé est-elle stockée ?",
+		"optional": "(facultatif)",
+		"help": "Si l'un de ces services signale une fuite, vous pourrez retrouver et révoquer en une seule étape toutes les clés qui y sont stockées.",
+		"choose": "Choisir où elle est stockée",
+		"search": "Rechercher une plateforme",
+		"noResults": "Aucune plateforme correspondante",
+		"selectedCount": "{count, plural, one {# emplacement} other {# emplacements}}",
+		"limit": "Jusqu'à {max} emplacements par clé.",
+		"remove": "Retirer {name}",
+		"categories": {
+			"hosting": "Plateformes d'hébergement",
+			"cloud": "Fournisseurs cloud",
+			"ci": "Code et CI",
+			"secrets": "Gestionnaires de secrets",
+			"other": "Autre"
+		},
+		"locations": {
+			"local-machine": "Mon ordinateur",
+			"own-server": "Mes propres serveurs",
+			"other": "Ailleurs"
+		}
+	},
 	"providerDashboard": {
 		"profile": "Profil du fournisseur",
 		"overrides": "Modifications manuelles",

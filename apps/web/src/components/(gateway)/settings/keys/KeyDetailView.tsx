@@ -9,6 +9,7 @@ import { UserUsageChip } from "./UserUsageChip";
 import { KeyUsageCharts } from "./KeyUsageCharts";
 import { KeyNameHeading } from "./KeyNameHeading";
 import KeySettingsForm from "@/components/(gateway)/settings/keys/KeySettingsForm";
+import { KeyStorageLocationList } from "@/components/(gateway)/settings/keys/KeyStorageLocationPicker";
 import { KeyPageActions } from "@/components/(gateway)/settings/keys/KeyPageActions";
 import { type KeyDetailData } from "@/lib/fetchers/internal/fetchSettingsKeyDetail";
 
@@ -32,7 +33,7 @@ export async function KeyDetailView({ data }: { data: KeyDetailData }) {
 				{[
 					[t("keyDetail.prefix"), `${key.prefix}…`], [t("teams.createdBy"), key.created_by ? <UserUsageChip userId={key.created_by} name={data.creatorName} avatarUrl={data.creatorAvatarUrl} workspaceId={key.workspace_id} currentUserId={data.currentUserId} canViewWorkspaceUsers={data.canManage} /> : t("teams.unknown")],
 					[t("teams.created"), date(key.created_at, t("teams.unknown"))], [t("oauthDetail.lastUsed"), date(key.last_used_at ?? (String(usage?.last_used_at ?? "") || null), t("labels.never"))],
-					[t("strings.Expires"), date(key.expires_at, t("labels.noExpiry"))], [t("keyDetail.keyId"), key.id],
+					[t("strings.Expires"), date(key.expires_at, t("labels.noExpiry"))], [t("keyStorage.storedIn"), key.storage_locations?.length ? <KeyStorageLocationList value={key.storage_locations} /> : t("keyStorage.notSet")], [t("keyDetail.keyId"), key.id],
 				].map(([label, value]) => <div key={String(label)}><dt className="text-muted-foreground">{label}</dt><dd className="mt-1 break-all font-medium">{value}</dd></div>)}
 			</dl>
 		</section>

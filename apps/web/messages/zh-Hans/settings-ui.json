@@ -5983,6 +5983,31 @@
 		"openFromTable": "从 API 密钥表中打开密钥。",
 		"limitInvalid": "限制必须为零或正数。"
 	},
+	"keyStorage": {
+		"storedIn": "存储位置",
+		"notSet": "未设置",
+		"title": "此密钥存储在哪里？",
+		"optional": "（可选）",
+		"help": "如果其中某个平台报告数据泄露，你可以一步找到并撤销存储在那里的所有密钥。",
+		"choose": "选择存储位置",
+		"search": "搜索平台",
+		"noResults": "没有匹配的平台",
+		"selectedCount": "{count, plural, other {# 个位置}}",
+		"limit": "每个密钥最多 {max} 个位置。",
+		"remove": "移除 {name}",
+		"categories": {
+			"hosting": "托管平台",
+			"cloud": "云服务商",
+			"ci": "代码与 CI",
+			"secrets": "密钥管理工具",
+			"other": "其他"
+		},
+		"locations": {
+			"local-machine": "我的电脑",
+			"own-server": "自有服务器",
+			"other": "其他地方"
+		}
+	},
 	"providerDashboard": {
 		"profile": "提供商资料",
 		"overrides": "手动覆盖",

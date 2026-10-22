@@ -193,6 +193,9 @@ jobs:
             - name: Validate shared Slack agent secrets format
               run: pnpm run validate:slack-secrets
 
+            - name: Validate shared key storage locations
+              run: pnpm run validate:key-storage-locations
+
             - name: Validate unique Supabase migration versions
               shell: bash
               run: |
