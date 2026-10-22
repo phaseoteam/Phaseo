@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AudioLines, CircleCheck, FileText, Image as ImageIcon, Minus, Type, Video, type LucideIcon } from "lucide-react";
+import { AudioLines, Binary, CircleCheck, FileText, Image as ImageIcon, Minus, Type, Video, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CompareGrid, CompareNoteRow, CompareRow, CompareSection, MODEL_COLOURS, useCompareGrid, type CompareCell } from "./CompareGrid";
 import { bestIndices, priceRow, timeValue, visibleOnPhone, type Direction, type VerdictReason, type Verdicts } from "./compareViewMath";
@@ -33,19 +33,25 @@ function WithUnit({ value, unit }: { value: React.ReactNode; unit: string }) {
 
 const MODALITY_ICONS: Array<[string, LucideIcon]> = [["text", Type], ["image", ImageIcon], ["audio", AudioLines], ["video", Video], ["file", FileText]];
 const AUDIO_TYPES = new Set(["audio", "speech", "music", "transcription"]);
+const EMBEDDING_TYPES = new Set(["embedding", "embeddings"]);
 
 function hasModality(types: string[], key: string): boolean {
 	const lower = types.map((type) => type.toLowerCase());
 	if (key === "audio") return lower.some((type) => AUDIO_TYPES.has(type));
 	if (key === "file") return lower.some((type) => type === "file" || type === "pdf" || type === "document");
+	if (key === "embeddings") return lower.some((type) => EMBEDDING_TYPES.has(type));
 	return lower.includes(key);
 }
 
 /** One icon per modality, lit when the model supports it, like a row of indicator lights. */
 function ModalityIcons({ types, format }: { types: string[]; format: CompareFormat }) {
+	// Embedding vectors only get an icon when a model outputs them, so ordinary rows stay at five.
+	const icons = hasModality(types, "embeddings") ? [...MODALITY_ICONS, ["embeddings", Binary] as [string, LucideIcon]] : MODALITY_ICONS;
+	// A type none of the icons covers would leave the whole row dimmed, so name it instead.
+	if (!icons.some(([key]) => hasModality(types, key))) return <>{format.modalities(types)}</>;
 	return (
 		<span className="inline-flex items-center gap-1.5" title={format.modalities(types)}>
-			{MODALITY_ICONS.map(([key, Icon]) => {
+			{icons.map(([key, Icon]) => {
 				const on = hasModality(types, key);
 				return (
 					<span
