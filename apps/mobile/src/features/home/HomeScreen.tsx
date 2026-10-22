@@ -14,6 +14,7 @@ import { formatCompact, formatRelativeDay, formatUsd } from "@/lib/format";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useWorkspace } from "@/providers/WorkspaceProvider";
+import { onePerModel } from "./releases";
 
 // One label per release, most useful first: "Released" beats "Announced" when both apply.
 // Upcoming entries (mostly retirements) read in the future tense.
@@ -61,7 +62,7 @@ export function HomeScreen() {
           </View>
 
           <Section title="Latest releases" action={<Link href="/models" asChild><Pressable hitSlop={8} className="shrink-0"><Text variant="small" numberOfLines={1} className="font-semibold text-link">All models</Text></Pressable></Link>}>
-            {releases.isLoading ? <ReleaseSkeleton /> : (releases.data?.past ?? []).filter(isNewRelease).slice(0, 8).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
+            {releases.isLoading ? <ReleaseSkeleton /> : onePerModel((releases.data?.past ?? []).filter(isNewRelease)).slice(0, 8).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
           </Section>
 
           {releases.data?.future.length ? (
