@@ -4,7 +4,7 @@
 
 import { getBindings } from "@/runtime/env";
 import type { ProviderExecuteArgs } from "../types";
-import { resolveProviderKey, type ResolvedKey } from "../keys";
+import { orderedByokMetas, resolveProviderKey, type ResolvedKey } from "../keys";
 
 function azureConfigError(code: string): Error & { code: string } {
     const error = new Error(code) as Error & { code: string };
@@ -20,7 +20,71 @@ export type AzureOpenAIConfig = {
     authToken?: string;
 };
 
-export function resolveAzureConfig(args?: Pick<ProviderExecuteArgs, "model" | "providerModelSlug">): AzureOpenAIConfig {
+type AzureCredentialArgs = Pick<ProviderExecuteArgs, "model" | "providerModelSlug"> &
+    Partial<Pick<ProviderExecuteArgs, "byokMeta">> & { forceGatewayKey?: boolean };
+
+export type AzureByokDeployment = {
+    key: string;
+    byokId: string | null;
+    baseUrl: string;
+    deployment: string;
+    apiVersion?: string;
+};
+
+function firstString(entry: Record<string, unknown>, names: string[]): string | undefined {
+    for (const name of names) {
+        const value = entry[name];
+        if (typeof value === "string" && value.trim()) return value.trim();
+    }
+    return undefined;
+}
+
+function isJsonCredential(key: unknown): boolean {
+    return typeof key === "string" && key.trim().startsWith("{");
+}
+
+function modelSlugMatches(candidate: string, slugs: string[]): boolean {
+    const normalized = candidate.trim().toLowerCase();
+    const bare = normalized.replace(/^[^/]+\//, "");
+    return slugs.some((slug) => slug === normalized || slug.replace(/^[^/]+\//, "") === bare);
+}
+
+/**
+ * The customer's own deployment for this model from an Azure BYOK key. The key is saved
+ * as JSON, `{"deployments":[{"modelSlug","endpointUrl","apiKey","modelId"}]}`, with the
+ * field aliases the BYOK form and validator accept (apps/web/src/lib/byok/providerKeyValidation.ts,
+ * core/provider-credentials.ts). Keys without a deployment for the model are skipped.
+ */
+export function resolveAzureByokDeployment(args: AzureCredentialArgs): AzureByokDeployment | null {
+    if (args.forceGatewayKey || !args.byokMeta?.length) return null;
+    const slugs = [args.model, args.providerModelSlug]
+        .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+        .map((value) => value.trim().toLowerCase());
+    for (const meta of orderedByokMetas(args.byokMeta)) {
+        if (!isJsonCredential(meta.key)) continue;
+        let parsed: unknown;
+        try { parsed = JSON.parse(String(meta.key)); } catch { continue; }
+        const deployments = (parsed as { deployments?: unknown })?.deployments;
+        if (!Array.isArray(deployments)) continue;
+        for (const entry of deployments) {
+            if (!entry || typeof entry !== "object") continue;
+            const record = entry as Record<string, unknown>;
+            const modelSlug = firstString(record, ["modelSlug", "phaseoModelSlug", "aiStatsModelSlug"]);
+            const baseUrl = firstString(record, ["endpointUrl", "endpoint", "foundryEndpoint", "azureEndpoint"]);
+            const key = firstString(record, ["apiKey"]);
+            const deployment = firstString(record, ["modelId", "providerModelId", "azureModelId"]);
+            if (!modelSlug || !baseUrl || !key || !deployment || !modelSlugMatches(modelSlug, slugs)) continue;
+            return { key, byokId: meta.id ?? null, baseUrl, deployment, apiVersion: firstString(record, ["apiVersion"]) };
+        }
+    }
+    return null;
+}
+
+export function resolveAzureConfig(args?: AzureCredentialArgs): AzureOpenAIConfig {
+    const byok = args ? resolveAzureByokDeployment(args) : null;
+    if (byok) {
+        return { baseUrl: byok.baseUrl, apiVersion: byok.apiVersion || "v1", deployment: byok.deployment, apiKey: byok.key };
+    }
     const bindings = getBindings();
     let resource: Partial<AzureOpenAIConfig> | undefined;
     if (bindings.AZURE_OPENAI_DEPLOYMENTS && args) {
@@ -49,19 +113,20 @@ export function resolveAzureConfig(args?: Pick<ProviderExecuteArgs, "model" | "p
     };
 }
 
-export function resolveAzureKey(args: ProviderExecuteArgs): ResolvedKey {
-    return resolveProviderKey(args, () => getBindings().AZURE_OPENAI_API_KEY);
-}
-
 export type AzureCredential = ResolvedKey & { authType: "api-key" | "entra" };
 
 export function resolveAzureCredential(args: Pick<ProviderExecuteArgs, "providerId" | "byokMeta" | "model" | "providerModelSlug"> & { forceGatewayKey?: boolean }): AzureCredential {
-	const config = resolveAzureConfig(args);
-	const apiKey = resolveProviderKey(args, () => config.apiKey, { allowEmptyFallback: true });
+	const byok = resolveAzureByokDeployment(args);
+	if (byok) return { key: byok.key, source: "byok", byokId: byok.byokId, authType: "api-key" };
+	// A JSON key with no deployment for this model never goes upstream as a key. A plain
+	// key (saved before deployment mappings) still applies to the gateway's resource.
+	const keyArgs = { ...args, byokMeta: (args.byokMeta ?? []).filter((meta) => !isJsonCredential(meta.key)) };
+	const config = resolveAzureConfig(keyArgs);
+	const apiKey = resolveProviderKey(keyArgs, () => config.apiKey, { allowEmptyFallback: true });
 	if (apiKey.key) return { ...apiKey, authType: "api-key" };
 	const token = config.authToken?.trim();
 	if (token) return { key: token, source: "gateway", byokId: null, authType: "entra" };
-	return { ...resolveProviderKey(args, () => config.apiKey), authType: "api-key" };
+	return { ...resolveProviderKey(keyArgs, () => config.apiKey), authType: "api-key" };
 }
 
 export function azureHeaders(key: string, authType: "api-key" | "entra" = "api-key"): Record<string, string> {
