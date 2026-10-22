@@ -226,6 +226,16 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         const parser = new SseParser();
         let sawTerminalSnapshot = false;
         let lastSeenUsage: any = null;
+        // After a Chat Completions terminal, usage settles at the stream's end: its
+        // [DONE], or the upstream closing (see the terminal handling below).
+        let settleUsageAtStreamEnd = false;
+        let lastUsageCandidate: any = null;
+        const settleUsageAtEnd = () => {
+            if (!settleUsageAtStreamEnd || finalUsageSettled) return;
+            // The last usage the stream reported, 0 counts included.
+            const finalUsage = lastUsageCandidate ?? lastSeenUsage;
+            finalizeUsage(finalUsage, { aborted: false, sawFinalUsage: finalUsage != null });
+        };
         const chatTerminal = ctx.protocol === "openai.chat.completions" ? createChatStreamTerminal() : null;
         // Responses clients get one event name per event (SSE line and data.type),
         // sequence numbers and the lifecycle events a source left out.
@@ -278,6 +288,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     const dataStr = frame.data;
                     const eventName = frame.event;
                     if (!dataStr) continue;
+                    if (dataStr.trim() === "[DONE]") settleUsageAtEnd();
                     // Chat streams end with exactly one data: [DONE], written after the
                     // last chunk below; an upstream one is not forwarded mid-stream.
                     if (chatTerminal && dataStr.trim() === "[DONE]") continue;
@@ -351,6 +362,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     // A usage event settles with the stream's accumulated usage, not only its own:
                     // Messages input and cache counts arrive on message_start, before the terminal.
                     const usageCandidate = usageFromEvents ? lastSeenUsage : (json?.usage ?? json?.response?.usage ?? null);
+                    if (usageCandidate) lastUsageCandidate = usageCandidate;
 
                     const fallbackTerminal =
                         !terminalByEvents &&
@@ -417,15 +429,21 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     let finalUsageAfterWrite: any = null;
                     // Capture terminal state before rewriting the frame, but do not
                     // start persistence until the terminal frame is downstream.
-                    // OpenAI chat streams emit finish_reason first and then a
-                    // separate usage-only frame, so a terminal frame without usage
-                    // must not settle billing before that trailing frame arrives.
                     if (isFinalSnapshot) {
                         if (onFinalSnapshot) {
                             try { onFinalSnapshot(finalSnapshotFromEvents ?? json); } catch { }
                         }
-                        finalUsageAfterWrite = usageCandidate ?? lastSeenUsage;
-                    } else if (sawTerminalSnapshot && usageCandidate) {
+                        // A Chat Completions stream can report usage after its finish chunk:
+                        // a usage-only chunk (`choices: []`, as with stream_options.include_usage),
+                        // even when content chunks carried usage too, and other choices can still
+                        // be writing. Its usage is the last one reported, so it settles when the
+                        // stream ends, not with whatever usage the finish chunk had seen.
+                        if ((detectedProtocol ?? ctx.protocol) === "openai.chat.completions") {
+                            settleUsageAtStreamEnd = true;
+                        } else {
+                            finalUsageAfterWrite = usageCandidate ?? lastSeenUsage;
+                        }
+                    } else if (sawTerminalSnapshot && usageCandidate && !settleUsageAtStreamEnd) {
                         finalUsageAfterWrite = usageCandidate;
                     }
 
@@ -522,6 +540,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     downstreamClosed = true;
                 }
             }
+            settleUsageAtEnd();
             if (!finalUsageSettled) {
                 finalizeUsage(lastSeenUsage, {
                     aborted: !sawTerminalSnapshot,
