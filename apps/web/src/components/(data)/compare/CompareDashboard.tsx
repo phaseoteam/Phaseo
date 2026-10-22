@@ -15,38 +15,57 @@ type CompareDashboardProps = {
 	selectedOptions: CompareModelOption[];
 	view: CompareViewData;
 	usage: CompareViewUsageByModel;
-	/** A pair page's models. Changing the selection there opens the general compare page. */
-	fixedIds?: string[];
 	/** Curated head-to-head pages, listed when nothing is selected. */
 	pairs?: ComparePairLink[];
 };
 
-export default function CompareDashboard({ selectedOptions, view, usage, fixedIds, pairs = [] }: CompareDashboardProps) {
-	const t = useTranslations("Catalogue.compareView");
+/** `/compare?models=…`: the selection lives in the query string. */
+export default function CompareDashboard(props: CompareDashboardProps) {
 	const params = useSearchParams();
 	const searchParams = useMemo(() => params ?? new URLSearchParams(), [params]);
 	const router = useRouter();
 	const pathname = usePathname();
 	const selectedIds = useMemo(
 		// The page fetches at most four, so ids past that are neither shown nor reported missing.
-		() => fixedIds ?? [...new Set(searchParams.getAll("models").map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4),
-		[fixedIds, searchParams],
+		() => [...new Set(searchParams.getAll("models").map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4),
+		[searchParams],
 	);
-
 	const setSelected = (ids: string[]) => {
-		if (fixedIds) {
-			// "/de-DE/compare/a-vs-b" becomes "/de-DE/compare?models=…".
-			const base = pathname.replace(//[^/]+$/, "");
-			router.push(`${base}?${ids.map((id) => `models=${encodeURIComponent(encodeModelIdForUrl(id))}`).join("&")}`);
-			return;
-		}
 		const params = new URLSearchParams(searchParams.toString());
 		params.delete("models");
 		ids.forEach((id) => params.append("models", encodeModelIdForUrl(id)));
 		const query = params.toString();
 		router.replace(query ? `?${query}` : pathname, { scroll: false });
 	};
+	return <CompareDashboardBody {...props} selectedIds={selectedIds} onSelect={setSelected} />;
+}
 
+/**
+ * `/compare/a-vs-b`: the two models come from the path. It doesn't read the
+ * query string, so the page can be cached per URL; changing the selection
+ * opens the general compare page.
+ */
+export function ComparePairDashboard({ ids, ...props }: CompareDashboardProps & { ids: string[] }) {
+	const router = useRouter();
+	const pathname = usePathname();
+	const setSelected = (next: string[]) => {
+		// "/de-DE/compare/a-vs-b" becomes "/de-DE/compare?models=…".
+		const base = pathname.slice(0, pathname.lastIndexOf("/"));
+		const query = next.map((id) => `models=${encodeURIComponent(encodeModelIdForUrl(id))}`).join("&");
+		router.push(query ? `${base}?${query}` : base);
+	};
+	return <CompareDashboardBody {...props} selectedIds={ids} onSelect={setSelected} />;
+}
+
+function CompareDashboardBody({
+	selectedOptions,
+	view,
+	usage,
+	pairs = [],
+	selectedIds,
+	onSelect,
+}: CompareDashboardProps & { selectedIds: string[]; onSelect: (ids: string[]) => void }) {
+	const t = useTranslations("Catalogue.compareView");
 	const modelsById = new Map(view.models.map((model) => [model.id, model]));
 	const ordered = selectedIds.flatMap((id) => {
 		const model = modelsById.get(id);
@@ -68,10 +87,10 @@ export default function CompareDashboard({ selectedOptions, view, usage, fixedId
 					usage={usage}
 					selectedOptions={selectedOptions}
 					selectedIds={ordered.map((model) => model.id)}
-					onSelectedIdsChange={setSelected}
+					onSelectedIdsChange={onSelect}
 				/>
 			) : (
-				<CompareEmptyState selectedOptions={selectedOptions} onSelect={setSelected} pairs={pairs} />
+				<CompareEmptyState selectedOptions={selectedOptions} onSelect={onSelect} pairs={pairs} />
 			)}
 		</div>
 	);

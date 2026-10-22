@@ -62,7 +62,8 @@ export function CompareView({
 			<div className="space-y-10">
 				<div className="mb-4 space-y-3">
 					<nav aria-label={t("breadcrumb")} className="text-xs text-muted-foreground">
-						<Link href={pathname} className="hover:underline">{t("compare")}</Link>
+						{/* On a pair page ("/compare/a-vs-b") the crumb goes back to "/compare". */}
+						<Link href={/\/compare\/[^/]+$/.test(pathname) ? pathname.slice(0, pathname.lastIndexOf("/")) : pathname} className="hover:underline">{t("compare")}</Link>
 						<span aria-hidden> / </span>
 						<span>{title}</span>
 					</nav>

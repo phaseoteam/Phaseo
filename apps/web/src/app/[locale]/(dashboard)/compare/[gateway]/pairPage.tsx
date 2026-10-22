@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
+import { ComparePairDashboard } from "@/components/(data)/compare/CompareDashboard";
 import { ComparePairSummary } from "@/components/(data)/compare/ComparePairSummary";
 import { pairPath, sortPair } from "@/components/(data)/compare/comparePairs";
 import { loadComparePairData } from "@/components/(data)/compare/loadCompare";
@@ -39,11 +39,11 @@ export async function ComparePairPage({ ids, locale }: { ids: [string, string]; 
 	return (
 		<main className="flex min-h-screen flex-col">
 			<section className="w-full">
-				<CompareDashboard
+				<ComparePairDashboard
 					selectedOptions={models.map(toCompareModelOption)}
 					view={{ ...view, models }}
 					usage={usage}
-					fixedIds={ids}
+					ids={ids}
 				/>
 			</section>
 			<ComparePairSummary locale={locale} baseUrl={SITE_URL} models={models} usage={usage} peers={view.peers ?? []} related={related} />
