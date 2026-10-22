@@ -8,6 +8,7 @@ Updated on 22 October 2026. Before images show production. The desktop, phone an
 | Phone | [Before](before-phone.png) | [After](after-phone.png) |
 | Pinned range comparison | — | [Comparison](range-comparison.png) |
 | Pinned domain comparison | — | [Comparison](domain-comparison.png) |
+| Search for ECI | — | [Branded search entry](search-eci.png) |
 
 ## Data contract
 
@@ -24,5 +25,6 @@ Updated on 22 October 2026. Before images show production. The desktop, phone an
 - Thirteen ECI tests passed, including default range rendering, missing intervals, zero/negative estimates, timeline focus/pinning, interval comparison, source parsing and fallback. Full web typechecking, localization validation and the production build passed. The UI audit found 0 unreviewed candidates across 1610 modules.
 - Browser checks loaded live data with 10 selected models and 10 published ranges, verified pinned comparison with both intervals, timeline uncertainty, mobile model drawer with search and Done, and no document overflow at desktop and 390px. The comparison card stayed inside the phone viewport. CSV export produced 10 rows with a confidence-interval field containing numeric low/high bounds.
 - Earlier local requests on 21 October had upstream timeouts; the 22 October production-build verification succeeded with live scores and domain data. This is local verification, not a claim of production deployment. No production writes, schema changes, imports or migrations were performed.
+- Search follow-up: 13 search/alias/ranking tests passed, full web typechecking passed, and scoped ESLint had 0 errors (4 existing warnings in virtualizer and flag-image code). Browser verification found one branded benchmark for both ECI and Epoch; exact ECI aliases rank ahead of incidental substring matches. Both search renderers use the Epoch mark.
 
 See the PR's Proof section for command results and build warnings.
