@@ -10889,7 +10889,15 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/AnthropicMessage'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicMessage'
+              - $ref: '#/components/schemas/AnthropicSystemMessage'
+            discriminator:
+              propertyName: role
+              mapping:
+                user: '#/components/schemas/AnthropicMessage'
+                assistant: '#/components/schemas/AnthropicMessage'
+                system: '#/components/schemas/AnthropicSystemMessage'
         max_tokens:
           type: integer
           minimum: 1
@@ -11030,17 +11038,48 @@ components:
       properties:
         role:
           type: string
-          description: बातचीत में इस बिंदु से लागू होने वाले निर्देश के लिए `system` का उपयोग करें। सिस्टम संदेश एक स्ट्रिंग या टेक्स्ट ब्लॉक लेता है, उपयोगकर्ता टर्न (या सर्वर टूल परिणाम पर खत्म होने वाले असिस्टेंट टर्न) के ठीक बाद आना चाहिए, और अंतिम संदेश होना चाहिए या उसके बाद असिस्टेंट टर्न आना चाहिए।
           enum:
             - user
             - assistant
-            - system
         content:
           oneOf:
             - type: string
             - type: array
               items:
                 $ref: '#/components/schemas/AnthropicContentBlock'
+    AnthropicSystemMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          description: बातचीत में इस बिंदु से लागू होने वाले निर्देश के लिए `system` का उपयोग करें। सिस्टम संदेश एक स्ट्रिंग या टेक्स्ट ब्लॉक लेता है, उपयोगकर्ता टर्न (या सर्वर टूल परिणाम पर खत्म होने वाले असिस्टेंट टर्न) के ठीक बाद आना चाहिए, और अंतिम संदेश होना चाहिए या उसके बाद असिस्टेंट टर्न आना चाहिए।
+          enum:
+            - system
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/AnthropicSystemTextBlock'
+      additionalProperties: false
+    AnthropicSystemTextBlock:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     AnthropicContentBlock:
       type: object
       properties:

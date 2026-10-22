@@ -728,7 +728,13 @@ export function irToAnthropicMessages(
 		}
 	}
 
-	placeLateSystemMessages(messages, systemSegments, supportsAnthropicMidConversationSystemMessages(resolvedModel));
+	// Microsoft Foundry (`azure`) is not among the platforms Anthropic lists for
+	// mid-conversation system messages, so those requests always hoist.
+	placeLateSystemMessages(
+		messages,
+		systemSegments,
+		options?.providerId !== "azure" && supportsAnthropicMidConversationSystemMessages(resolvedModel),
+	);
 	let system = joinAnthropicSystemSegments(systemSegments);
 
 	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens

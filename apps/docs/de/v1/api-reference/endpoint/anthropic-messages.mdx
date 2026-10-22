@@ -32,7 +32,7 @@ curl https://api.phaseo.app/v1/messages \
 ```
 
 - Eine Systemnachricht akzeptiert einen String oder Textblöcke. Sie muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden. An anderen Positionen gibt die API 400 zurück.
-- Claude Fable 5 und 5.1, Mythos 5 und 5.1, Opus 4.8, Opus 5 und 5.5, Sonnet 5.5 und Haiku 5.5 erhalten sie an ihrer Stelle. Andere Claude-Modelle, darunter Sonnet 5, erhalten sie als Teil des System-Prompts auf oberster Ebene. Andere Anbieter erhalten sie als Systemnachricht, genauso wie eine an Chat Completions gesendete.
+- Claude Fable 5 und 5.1, Mythos 5 und 5.1, Opus 4.8, Opus 5 und 5.5, Sonnet 5.5 und Haiku 5.5 erhalten sie an ihrer Stelle. Andere Claude-Modelle, darunter Sonnet 5, sowie alle Claude-Modelle auf Microsoft Foundry erhalten sie als Teil des System-Prompts auf oberster Ebene. Andere Anbieter erhalten sie als Systemnachricht, genauso wie eine an Chat Completions gesendete.
 - `clear_at`, `output_config` sowie `tool_addition`- und `tool_removal`-Blöcke werden nicht unterstützt.
 
 ## Hinweise

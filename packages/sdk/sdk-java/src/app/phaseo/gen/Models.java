@@ -99,6 +99,17 @@ public final class Models {
 		public Object usage;
 	}
 
+	public static class AnthropicSystemMessage {
+		public Object content;
+		public Object role;
+	}
+
+	public static class AnthropicSystemTextBlock {
+		public Object cache_control;
+		public String text;
+		public Object type;
+	}
+
 	public static class AnthropicTool {
 		public Boolean async;
 		public String description;

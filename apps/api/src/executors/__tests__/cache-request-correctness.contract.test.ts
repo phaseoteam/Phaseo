@@ -421,6 +421,15 @@ describe("A-F8: Anthropic system and developer messages", () => {
 		expect(call.bodyJson.messages.at(-1)).toEqual({ role: "system", content: "From now on, answer in one word." });
 	});
 
+	it("hoists a /v1/messages system message on Microsoft Foundry, which Anthropic does not list for them", async () => {
+		const call = await captureFailedCall((url) => hasHost(url, "api.azure.example"), () => azureExecute(args(
+			messagesIR({ model: "anthropic/claude-opus-5", ...messagesConversation }),
+			{ providerId: "azure", providerModelSlug: "claude-opus-5" },
+		)));
+		expect(call.bodyJson.system).toBe("You are terse.\nFrom now on, answer in one word.");
+		expect(call.bodyJson.messages.map((message: any) => message.role)).toEqual(["user", "assistant", "user"]);
+	});
+
 	it("hoists a /v1/messages system message on Sonnet 5, which does not support them", async () => {
 		const call = await captureAnthropic(messagesIR({ model: "anthropic/claude-sonnet-5", ...messagesConversation }));
 		expect(call.bodyJson.system).toBe("You are terse.\nFrom now on, answer in one word.");

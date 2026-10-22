@@ -22,5 +22,5 @@ export interface AnthropicMessage {
         tool_use_id?: string;
         type?: "text" | "image" | "tool_use" | "tool_result";
       }[];
-  role: "user" | "assistant" | "system";
+  role: "user" | "assistant";
 }

@@ -32,7 +32,7 @@ curl https://api.phaseo.app/v1/messages \
 ```
 
 - Un mensaje de sistema acepta una cadena o bloques de texto. Debe ir justo después de un turno de usuario (o de un turno del asistente que termine en un resultado de herramienta del servidor) y ser el último mensaje o ir seguido de un turno del asistente. En otras posiciones se devuelve un 400.
-- Claude Fable 5 y 5.1, Mythos 5 y 5.1, Opus 4.8, Opus 5 y 5.5, Sonnet 5.5 y Haiku 5.5 lo reciben en su posición. Los demás modelos de Claude, incluido Sonnet 5, lo reciben como parte del prompt de sistema de nivel superior. Los demás proveedores lo reciben como un mensaje de sistema, igual que uno enviado a Chat Completions.
+- Claude Fable 5 y 5.1, Mythos 5 y 5.1, Opus 4.8, Opus 5 y 5.5, Sonnet 5.5 y Haiku 5.5 lo reciben en su posición. Los demás modelos de Claude, incluido Sonnet 5, y todos los modelos de Claude en Microsoft Foundry lo reciben como parte del prompt de sistema de nivel superior. Los demás proveedores lo reciben como un mensaje de sistema, igual que uno enviado a Chat Completions.
 - No se admiten `clear_at`, `output_config` ni los bloques `tool_addition` o `tool_removal`.
 
 ## Notas

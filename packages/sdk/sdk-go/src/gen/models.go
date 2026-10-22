@@ -59,7 +59,7 @@ type AnthropicMessagesRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	MaxTokens int `json:"max_tokens"`
-	Messages []map[string]interface{} `json:"messages"`
+	Messages []interface{} `json:"messages"`
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
@@ -94,6 +94,17 @@ type AnthropicMessagesResponse struct {
 	StopSequence *string `json:"stop_sequence,omitempty"`
 	Type *string `json:"type,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type AnthropicSystemMessage struct {
+	Content interface{} `json:"content"`
+	Role string `json:"role"`
+}
+
+type AnthropicSystemTextBlock struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	Text string `json:"text"`
+	Type string `json:"type"`
 }
 
 type AnthropicTool struct {

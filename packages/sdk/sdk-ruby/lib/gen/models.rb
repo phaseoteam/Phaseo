@@ -147,6 +147,18 @@ module Phaseo
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
     AnthropicMessagesResponse = Struct.new(:content, :context_management, :id, :model, :role, :stop_reason, :stop_sequence, :type, :usage, keyword_init: true)
+    # @!attribute [rw] content
+    #   @return [String, Array<Hash{String => Object}>]
+    # @!attribute [rw] role
+    #   @return [String]
+    AnthropicSystemMessage = Struct.new(:content, :role, keyword_init: true)
+    # @!attribute [rw] cache_control
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] text
+    #   @return [String]
+    # @!attribute [rw] type
+    #   @return [String]
+    AnthropicSystemTextBlock = Struct.new(:cache_control, :text, :type, keyword_init: true)
     # @!attribute [rw] async
     #   @return [Boolean, nil]
     # @!attribute [rw] description

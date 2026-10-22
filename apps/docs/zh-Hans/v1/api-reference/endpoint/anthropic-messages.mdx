@@ -32,7 +32,7 @@ curl https://api.phaseo.app/v1/messages \
 ```
 
 - 系统消息接受字符串或文本块。它必须紧跟在用户轮次（或以服务器工具结果结尾的助手轮次）之后，并且必须是最后一条消息，或者后面紧跟助手轮次。放在其他位置会返回 400。
-- Claude Fable 5 和 5.1、Mythos 5 和 5.1、Opus 4.8、Opus 5 和 5.5、Sonnet 5.5 以及 Haiku 5.5 会在原位置收到它。包括 Sonnet 5 在内的其他 Claude 模型会将它作为顶层系统提示的一部分接收。其他提供商会将它作为系统消息接收，与发送到 Chat Completions 的系统消息相同。
+- Claude Fable 5 和 5.1、Mythos 5 和 5.1、Opus 4.8、Opus 5 和 5.5、Sonnet 5.5 以及 Haiku 5.5 会在原位置收到它。包括 Sonnet 5 在内的其他 Claude 模型，以及 Microsoft Foundry 上的所有 Claude 模型，都会将它作为顶层系统提示的一部分接收。其他提供商会将它作为系统消息接收，与发送到 Chat Completions 的系统消息相同。
 - 不支持 `clear_at`、`output_config` 以及 `tool_addition` 或 `tool_removal` 块。
 
 ## 说明

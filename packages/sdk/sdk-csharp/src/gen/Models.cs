@@ -146,7 +146,7 @@ public sealed class AnthropicMessagesRequest
 	public long MaxTokens { get; set; }
 
 	[JsonPropertyName("messages")]
-	public List<Dictionary<string, object>> Messages { get; set; }
+	public List<object> Messages { get; set; }
 
 	[JsonPropertyName("meta")]
 	public bool? Meta { get; set; }
@@ -244,6 +244,29 @@ public sealed class AnthropicMessagesResponse
 
 	[JsonPropertyName("usage")]
 	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
+public sealed class AnthropicSystemMessage
+{
+	[JsonPropertyName("content")]
+	public object Content { get; set; }
+
+	[JsonPropertyName("role")]
+	public string Role { get; set; }
+
+}
+
+public sealed class AnthropicSystemTextBlock
+{
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
+	[JsonPropertyName("text")]
+	public string Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
 
 }
 

@@ -65,7 +65,7 @@ struct AnthropicMessagesRequest {
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	int max_tokens;
-	std::vector<std::map<std::string, std::any>> messages;
+	std::vector<std::any> messages;
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;
@@ -100,6 +100,17 @@ struct AnthropicMessagesResponse {
 	std::string stop_sequence;
 	std::string type;
 	std::map<std::string, std::any> usage;
+};
+
+struct AnthropicSystemMessage {
+	std::any content;
+	std::any role;
+};
+
+struct AnthropicSystemTextBlock {
+	std::map<std::string, std::any> cache_control;
+	std::string text;
+	std::any type;
 };
 
 struct AnthropicTool {
