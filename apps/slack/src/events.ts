@@ -265,12 +265,13 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 	const admitted = await meter.admit({ settings: meterSettings(installation), slackUserId: user, facts, eventId, now });
 	if (admitted.allowed === false) {
 		console.log("[slack-agent] answer refused", { installationId: installation.id, reason: admitted.reason, people: admitted.people });
-		if (admitted.auditForAdmins) {
-			await Promise.all([
-				recordRefusal(deps.db, installation, user, admitted),
-				emailAdminsAboutRefusal(deps.db, installation, admitted.reason, admitted.people),
-			]);
-		}
+		// The email is asked for on every refusal it covers, not only the meter's monthly
+		// notice: if queueing it failed once, the next refusal tries again. The database
+		// queues at most one a month per reason.
+		await Promise.all([
+			admitted.auditForAdmins ? recordRefusal(deps.db, installation, user, admitted) : undefined,
+			emailAdminsAboutRefusal(deps.db, installation, admitted.reason, admitted.people),
+		]);
 		return refuse(slack, target, admitted.reason, { tier: admitted.tier, limit: installation.answers_per_person_hour });
 	}
 

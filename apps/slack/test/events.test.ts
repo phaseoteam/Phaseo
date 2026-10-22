@@ -159,9 +159,22 @@ describe("events: who gets an answer", () => {
 		);
 		expect(world.db.tables.workspace_audit_events).toHaveLength(1);
 		expect(refusalEmails()).toEqual([{ p_installation_id: INSTALLATION_ID, p_reason: "plan_full", p_people: 3 }]);
-		// The meter asks once a month, so the next person turned away emails nobody.
+		// The audit log hears once a month; the email is asked for again and the database dedupes it.
 		await expect(run(directMessage({ user: "U0PERSON05", ts: "1792600010.000010" }))).resolves.toBe("refused_plan_full");
-		expect(refusalEmails()).toHaveLength(1);
+		expect(world.db.tables.workspace_audit_events).toHaveLength(1);
+		expect(refusalEmails()).toHaveLength(2);
+	});
+
+	it("tries the admin email again on the next refusal when queueing it failed", async () => {
+		await install({ plan_people: 3 });
+		for (const [index, user] of ["U0PERSON01", "U0PERSON02", "U0PERSON03"].entries()) await expect(run(directMessage({ user, ts: `1792600010.00000${index}` }))).resolves.toBe("started");
+		world.db.failingRpcs.add("queue_slack_agent_refusal_email");
+		await expect(run(directMessage({ user: "U0PERSON04", ts: "1792600010.000009" }))).resolves.toBe("refused_plan_full");
+		world.db.failingRpcs.delete("queue_slack_agent_refusal_email");
+		// The meter has already used this month's audit notice, but the email is still asked for.
+		await expect(run(directMessage({ user: "U0PERSON05", ts: "1792600010.000010" }))).resolves.toBe("refused_plan_full");
+		expect(world.db.tables.workspace_audit_events).toHaveLength(1);
+		expect(refusalEmails()).toHaveLength(2);
 	});
 
 	it("never says an admin has been told, since an email can be suppressed or fail", () => {
