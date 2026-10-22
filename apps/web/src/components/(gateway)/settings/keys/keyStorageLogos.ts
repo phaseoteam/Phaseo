@@ -1,5 +1,5 @@
-// Locations with a logo in public/logos/key-storage (Simple Icons, CC0).
-// Others show a generic icon. scripts/sync-key-storage-locations.mjs checks this list.
+// Locations with a logo in public/logos/key-storage (Simple Icons, CC0, or the
+// brand's own mark). Others show a generic icon. scripts/sync-key-storage-locations.mjs checks this list.
 export const KEY_STORAGE_LOGO_IDS: ReadonlySet<string> = new Set([
 	"1password",
 	"aws",
@@ -12,6 +12,7 @@ export const KEY_STORAGE_LOGO_IDS: ReadonlySet<string> = new Set([
 	"coolify",
 	"deno-deploy",
 	"digitalocean",
+	"doppler",
 	"expo",
 	"firebase",
 	"fly",
@@ -21,11 +22,13 @@ export const KEY_STORAGE_LOGO_IDS: ReadonlySet<string> = new Set([
 	"hashicorp-vault",
 	"heroku",
 	"hetzner",
+	"infisical",
 	"koyeb",
 	"kubernetes",
 	"linode",
 	"modal",
 	"netlify",
+	"northflank",
 	"ovhcloud",
 	"railway",
 	"render",
