@@ -341,7 +341,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "How Pricing Is Calculated",
 				"nav-how-phaseo-tracks-provider-availability": "How Provider Availability Is Tracked",
 				"nav-chat-decisions": "Decisions",
-				"nav-settings-account-providers": "Provider onboarding"
+				"nav-settings-account-providers": "Provider onboarding",
+				"nav-settings-budgets": "Budgets"
 			}
 		},
 		"searchDataUnavailable": "Unable to load search data.",

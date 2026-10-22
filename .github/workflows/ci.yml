@@ -181,11 +181,17 @@ jobs:
             - name: Validate shared request classifier rules
               run: pnpm run validate:request-classifiers
 
+            - name: Validate shared workspace budget rules
+              run: pnpm run validate:workspace-budgets
+
             - name: Validate shared prompt template rules
               run: pnpm run validate:prompt-templates
 
             - name: Validate shared Slack agent pricing
               run: pnpm run validate:slack-agent-pricing
+
+            - name: Validate shared Slack agent secrets format
+              run: pnpm run validate:slack-secrets
 
             - name: Validate unique Supabase migration versions
               shell: bash
@@ -431,7 +437,7 @@ jobs:
         needs: openapi-lint
         strategy:
             matrix:
-                app: [api, docs, web, web-api, mcp]
+                app: [api, docs, web, web-api, mcp, slack]
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
@@ -487,6 +493,15 @@ jobs:
                   pnpm --filter @phaseo/mcp typecheck
                   pnpm --filter @phaseo/mcp test
                   pnpm --filter @phaseo/mcp build:production
+
+            # Built and tested only: the hosted Slack app and its secrets don't
+            # exist yet, so the Worker is not in the deploy matrix.
+            - name: Slack agent typecheck, test & production build
+              if: matrix.app == 'slack'
+              run: |
+                  pnpm --filter @phaseo/slack-agent typecheck
+                  pnpm --filter @phaseo/slack-agent test
+                  pnpm --filter @phaseo/slack-agent build:production
 
     api-aimock:
         name: API AIMock matrix
@@ -1017,7 +1032,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: CLOUDFLARE_API_TOKEN
 
             - name: Load global Cloudflare account ID from Infisical
@@ -1028,7 +1043,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: CLOUDFLARE_ACCOUNT_ID
 
             - name: Load global OpenRouter key from Infisical
@@ -1039,7 +1054,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /provider-keys
                   secret-name: OPENROUTER_API_KEY
 
             - name: Load public model discovery webhook from Infisical
@@ -1050,7 +1065,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: DISCORD_WEBHOOK_NEW_MODELS_PUBLIC
 
             - name: Load model update Discord role from Infisical
@@ -1061,7 +1076,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: DISCORD_ROLE_ID
 
             - name: Deploy API app to Cloudflare
@@ -1081,7 +1096,9 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /gateway
+                  include-imports: false
+                  recursive: false
 
             - name: Deploy regional API Worker to Cloudflare
               if: matrix.target == 'api-eu' || matrix.target == 'api-us'

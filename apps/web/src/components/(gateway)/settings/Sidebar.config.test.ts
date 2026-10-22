@@ -44,6 +44,12 @@ describe("settings sidebar navigation", () => {
 		expect(getSettingsSidebar().flatMap((group) => group.items).some((item) => item.href === "/settings/classifiers")).toBe(false);
 	});
 
+	it("lists Budgets right after API keys in the workspace section", () => {
+		const workspace = getSettingsSidebar().find((group) => group.scope === "workspace")!.items.map((item) => item.href);
+		expect(workspace.indexOf("/settings/budgets")).toBe(workspace.indexOf("/settings/keys") + 1);
+		expect(getActiveSettingsNav("/settings/budgets")?.item.label).toBe("Budgets");
+	});
+
 	it("includes the workspace activity log under settings", () => {
 		const settings = getActiveSettingsNav("/settings/workspaces/activity")?.item;
 		expect(settings?.label).toBe("Settings");
@@ -75,6 +81,7 @@ describe("settings sidebar navigation", () => {
 				"Settings",
 				"Enterprise",
 				"API Keys",
+				"Budgets",
 				"Usage",
 				"Logs",
 				"Routing",

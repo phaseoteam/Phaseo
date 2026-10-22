@@ -1715,7 +1715,6 @@
 		"Out": "Salida",
 		"Refresh sessions": "Actualizar sesiones",
 		"phraseLoadingSessionDetails": "Cargando detalles de la sesión...",
-		"Filtered spend": "Gasto filtrado",
 		"phraseSpendIsCalculatedFromA5000RequestSample": "El gasto se calcula a partir de una muestra de 5000 solicitudes.",
 		"Req": "Sol.",
 		"Session": "Sesión",
@@ -3371,10 +3370,8 @@
 		"rollupAverage": "Resumen: Promedio",
 		"guardrailBreakdown": "Desglose de guardrails",
 		"guardrailEventsOverTime": "Eventos de guardrails a lo largo del tiempo",
-		"filteredSpend": "Gasto filtrado",
 		"requests": "Solicitudes",
 		"spend": "Gasto",
-		"sampledSpend": "El gasto se calcula a partir de una muestra de 5000 solicitudes.",
 		"topApiKeys": "Claves de API principales",
 		"topApps": "Aplicaciones principales",
 		"usageByModel": "Uso por modelo",
@@ -4478,7 +4475,8 @@
 		"classifiers": "Clasificadores",
 		"rateLimits": "Límites de velocidad",
 		"newClassifier": "Nuevo clasificador",
-		"classifier": "Clasificador"
+		"classifier": "Clasificador",
+		"budgets": "Presupuestos"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4706,7 +4704,8 @@
 		"empty": "No se encontraron ajustes.",
 		"providerProfile": "Perfil del proveedor",
 		"classifiers": "Clasificadores",
-		"rateLimits": "Límites de velocidad"
+		"rateLimits": "Límites de velocidad",
+		"budgets": "Presupuestos"
 	},
 	"settingsAvailability": {
 		"title": "Los ajustes no están disponibles temporalmente",
@@ -5201,10 +5200,12 @@
 		"classifierHint": "Asignada por el clasificador {name}",
 		"anyValue": "cualquier valor",
 		"notSet": "sin asignar",
-		"filterIs": "{key} = {value}",
-		"filterIsNot": "{key} ≠ {value}",
+		"filterIs": "{key}: {value}",
+		"filterIsNot": "{key}: no {value}",
 		"filterAny": "{key} tiene algún valor",
 		"filterNotSet": "{key} no está asignada",
+		"filterSummary": "{count, plural, one {<strong>#</strong> solicitud} other {<strong>#</strong> solicitudes}} · <strong>{spend}</strong> gastados",
+		"filterSummarySampled": "estimado a partir de una muestra de 5000 solicitudes",
 		"breakdownTitle": "Uso por etiqueta",
 		"breakdownDescription": "Solicitudes, gasto y tokens de cada valor de una etiqueta en este periodo.",
 		"classifierCallsNote": "Lo que han costado las llamadas de clasificador en este periodo, por clasificador.",
@@ -6345,5 +6346,74 @@
 			"deleteFailed": "No se pudo eliminar la política. Inténtalo de nuevo.",
 			"assignFailed": "No se pudo cambiar la asignación. Inténtalo de nuevo."
 		}
+	},
+	"budgets": {
+		"title": "Presupuestos",
+		"description": "Limita lo que puede gastar todo el espacio de trabajo cada día, semana o mes, o en total.",
+		"feedback": "¿Cómo podrían funcionar mejor los presupuestos para ti?",
+		"selectWorkspace": "Selecciona un espacio de trabajo para ver sus presupuestos.",
+		"readOnly": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar los presupuestos.",
+		"usageNote": "El uso incluye las solicitudes correctas y el trabajo asíncrono mientras sus fondos están reservados.",
+		"howItWorks": "Los presupuestos se aplican con exactitud en todas las claves del espacio de trabajo. Cuando se agota un presupuesto, la pasarela rechaza las solicitudes siguientes con un 429 hasta que se restablezca.",
+		"utcNote": "Los presupuestos diarios, semanales y mensuales se restablecen en límites UTC: a medianoche, el lunes a las 00:00 y el día 1 de cada mes. Los presupuestos totales nunca se restablecen.",
+		"keyLimitsHint": "Para limitar una sola clave, define sus límites en <link>Claves de API</link>.",
+		"interval": {
+			"daily": "Diario",
+			"weekly": "Semanal",
+			"monthly": "Mensual",
+			"lifetime": "Total"
+		},
+		"period": {
+			"daily": "Hoy",
+			"weekly": "Esta semana",
+			"monthly": "Este mes",
+			"lifetime": "Desde siempre"
+		},
+		"notSet": "Sin presupuesto",
+		"add": "Definir presupuesto",
+		"edit": "Editar",
+		"delete": "Eliminar",
+		"deleting": "Eliminando…",
+		"cancel": "Cancelar",
+		"save": "Guardar",
+		"saving": "Guardando…",
+		"usedUp": "Agotado",
+		"ofLimit": "de {limit}",
+		"percentUsed": "{percent} usado",
+		"remaining": "Quedan {amount}",
+		"resets": "Se restablece en {time} ({date})",
+		"neverResets": "No se restablece nunca",
+		"onPaceFor": "Al ritmo actual, {amount}",
+		"reachesLimit": "Alcanza el límite ~{date}",
+		"meterLabel": "{period}: {used} de {limit}",
+		"createTitle": {
+			"daily": "Definir un presupuesto diario",
+			"weekly": "Definir un presupuesto semanal",
+			"monthly": "Definir un presupuesto mensual",
+			"lifetime": "Definir un presupuesto total"
+		},
+		"editTitle": {
+			"daily": "Editar el presupuesto diario",
+			"weekly": "Editar el presupuesto semanal",
+			"monthly": "Editar el presupuesto mensual",
+			"lifetime": "Editar el presupuesto total"
+		},
+		"deleteTitle": {
+			"daily": "¿Eliminar el presupuesto diario?",
+			"weekly": "¿Eliminar el presupuesto semanal?",
+			"monthly": "¿Eliminar el presupuesto mensual?",
+			"lifetime": "¿Eliminar el presupuesto total?"
+		},
+		"limitLabel": "Límite (USD)",
+		"limitHelp": "Cuando el gasto del periodo alcance este importe, las solicitudes se rechazarán con un 429 hasta que el periodo se restablezca o aumentes el límite.",
+		"deleteBody": "Las solicitudes dejarán de estar limitadas en este periodo. El cambio se aplica de inmediato.",
+		"saved": "Presupuesto guardado",
+		"savedDelayed": "Presupuesto guardado. Puede tardar unos minutos en aplicarse a las solicitudes.",
+		"deleted": "Presupuesto eliminado",
+		"errorConflict": "Este espacio de trabajo ya tiene un presupuesto para ese periodo. Actualiza la página para editarlo.",
+		"errorForbidden": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar los presupuestos.",
+		"errorNotFound": "Este presupuesto ya no existe. Actualiza la página.",
+		"errorInvalid": "Introduce un importe mayor que cero.",
+		"errorFailed": "No se pudo guardar el presupuesto. Inténtalo de nuevo en un momento."
 	}
 }

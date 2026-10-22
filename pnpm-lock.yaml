@@ -523,6 +523,28 @@ importers:
         specifier: ^4.94.0
         version: 4.110.0(@cloudflare/workers-types@4.20260702.1)
 
+  apps/slack:
+    dependencies:
+      hono:
+        specifier: ^4.13.11
+        version: 4.13.12
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^5.20260710.1
+        version: 5.20260713.1
+      '@typescript/native':
+        specifier: 'catalog:'
+        version: typescript@7.0.2
+      typescript:
+        specifier: 'catalog:'
+        version: '@typescript/typescript6@6.0.2'
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(@vitest/coverage-v8@4.1.11)(jsdom@26.1.0)(vite@8.1.4(@types/node@26.2.0)(esbuild@0.25.12)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1))
+      wrangler:
+        specifier: ^4.118.0
+        version: 4.118.0(@cloudflare/workers-types@5.20260713.1)
+
   apps/web:
     dependencies:
       '@1password/save-button':
@@ -35878,6 +35900,23 @@ snapshots:
       workerd: 1.20260730.1
     optionalDependencies:
       '@cloudflare/workers-types': 4.20260702.1
+      fsevents: 2.3.3
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  wrangler@4.118.0(@cloudflare/workers-types@5.20260713.1):
+    dependencies:
+      '@cloudflare/kv-asset-handler': 0.5.0
+      '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260730.1)
+      blake3-wasm: 2.1.5
+      esbuild: 0.25.12
+      miniflare: 5.20260730.0-alpha
+      path-to-regexp: 0.1.13
+      unenv: 2.0.0-rc.24
+      workerd: 1.20260730.1
+    optionalDependencies:
+      '@cloudflare/workers-types': 5.20260713.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - bufferutil

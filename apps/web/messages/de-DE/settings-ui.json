@@ -1715,7 +1715,6 @@
 		"Out": "Ausgabe",
 		"Refresh sessions": "Sitzungen aktualisieren",
 		"phraseLoadingSessionDetails": "Sitzungsdetails werden geladen …",
-		"Filtered spend": "Gefilterte Ausgaben",
 		"phraseSpendIsCalculatedFromA5000RequestSample": "Die Ausgaben werden anhand einer Stichprobe von 5.000 Anfragen berechnet.",
 		"Req": "Anfrage",
 		"Session": "Sitzung",
@@ -3371,10 +3370,8 @@
 		"rollupAverage": "Zusammenfassung: Durchschnitt",
 		"guardrailBreakdown": "Aufschlüsselung der Leitplanken",
 		"guardrailEventsOverTime": "Leitplankenereignisse im Zeitverlauf",
-		"filteredSpend": "Gefilterte Ausgaben",
 		"requests": "Anfragen",
 		"spend": "Ausgaben",
-		"sampledSpend": "Die Ausgaben werden anhand einer Stichprobe von 5.000 Anfragen berechnet.",
 		"topApiKeys": "Top-API-Schlüssel",
 		"topApps": "Top-Apps",
 		"usageByModel": "Nutzung nach Modell",
@@ -4478,7 +4475,8 @@
 		"classifiers": "Klassifikatoren",
 		"rateLimits": "Ratenlimits",
 		"newClassifier": "Neuer Klassifikator",
-		"classifier": "Klassifikator"
+		"classifier": "Klassifikator",
+		"budgets": "Budgets"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4706,7 +4704,8 @@
 		"empty": "Keine Einstellungen gefunden.",
 		"providerProfile": "Anbieterprofil",
 		"classifiers": "Klassifikatoren",
-		"rateLimits": "Ratenlimits"
+		"rateLimits": "Ratenlimits",
+		"budgets": "Budgets"
 	},
 	"settingsAvailability": {
 		"title": "Die Einstellungen sind vorübergehend nicht verfügbar",
@@ -5201,10 +5200,12 @@
 		"classifierHint": "Vom Klassifikator {name} gesetzt",
 		"anyValue": "beliebiger Wert",
 		"notSet": "nicht gesetzt",
-		"filterIs": "{key} = {value}",
-		"filterIsNot": "{key} ≠ {value}",
+		"filterIs": "{key}: {value}",
+		"filterIsNot": "{key}: nicht {value}",
 		"filterAny": "{key} hat einen Wert",
 		"filterNotSet": "{key} ist nicht gesetzt",
+		"filterSummary": "{count, plural, one {<strong>#</strong> Anfrage} other {<strong>#</strong> Anfragen}} · <strong>{spend}</strong> ausgegeben",
+		"filterSummarySampled": "geschätzt aus einer Stichprobe von 5.000 Anfragen",
 		"breakdownTitle": "Nutzung nach Label",
 		"breakdownDescription": "Anfragen, Kosten und Tokens für jeden Wert eines Labels in diesem Zeitraum.",
 		"classifierCallsNote": "Was Klassifikator-Aufrufe in diesem Zeitraum gekostet haben, nach Klassifikator.",
@@ -6345,5 +6346,74 @@
 			"deleteFailed": "Die Richtlinie konnte nicht gelöscht werden. Versuche es erneut.",
 			"assignFailed": "Die Zuweisung konnte nicht geändert werden. Versuche es erneut."
 		}
+	},
+	"budgets": {
+		"title": "Budgets",
+		"description": "Begrenze, was der gesamte Workspace pro Tag, Woche oder Monat oder insgesamt ausgeben kann.",
+		"feedback": "Wie könnten Budgets besser für dich funktionieren?",
+		"selectWorkspace": "Wähle einen Workspace aus, um seine Budgets zu sehen.",
+		"readOnly": "Nur Inhaber und Admins des Workspace können Budgets ändern.",
+		"usageNote": "Die Nutzung umfasst erfolgreiche Anfragen sowie asynchrone Aufträge, solange deren Mittel reserviert sind.",
+		"howItWorks": "Budgets werden exakt durchgesetzt, über alle Schlüssel des Workspace hinweg. Sobald ein Budget aufgebraucht ist, lehnt das Gateway weitere Anfragen mit 429 ab, bis es zurückgesetzt wird.",
+		"utcNote": "Tages-, Wochen- und Monatsbudgets werden an UTC-Grenzen zurückgesetzt: um Mitternacht, montags um 00:00 und am 1. des Monats. Gesamtbudgets werden nie zurückgesetzt.",
+		"keyLimitsHint": "Um stattdessen einen einzelnen Schlüssel zu begrenzen, lege unter <link>API-Schlüssel</link> Limits dafür fest.",
+		"interval": {
+			"daily": "Täglich",
+			"weekly": "Wöchentlich",
+			"monthly": "Monatlich",
+			"lifetime": "Gesamt"
+		},
+		"period": {
+			"daily": "Heute",
+			"weekly": "Diese Woche",
+			"monthly": "Dieser Monat",
+			"lifetime": "Gesamter Zeitraum"
+		},
+		"notSet": "Kein Budget festgelegt",
+		"add": "Budget festlegen",
+		"edit": "Bearbeiten",
+		"delete": "Löschen",
+		"deleting": "Wird gelöscht…",
+		"cancel": "Abbrechen",
+		"save": "Speichern",
+		"saving": "Wird gespeichert…",
+		"usedUp": "Aufgebraucht",
+		"ofLimit": "von {limit}",
+		"percentUsed": "{percent} genutzt",
+		"remaining": "{amount} übrig",
+		"resets": "Zurücksetzung in {time} ({date})",
+		"neverResets": "Wird nie zurückgesetzt",
+		"onPaceFor": "Hochgerechnet {amount}",
+		"reachesLimit": "Erreicht das Limit ~{date}",
+		"meterLabel": "{period}: {used} von {limit}",
+		"createTitle": {
+			"daily": "Tagesbudget festlegen",
+			"weekly": "Wochenbudget festlegen",
+			"monthly": "Monatsbudget festlegen",
+			"lifetime": "Gesamtbudget festlegen"
+		},
+		"editTitle": {
+			"daily": "Tagesbudget bearbeiten",
+			"weekly": "Wochenbudget bearbeiten",
+			"monthly": "Monatsbudget bearbeiten",
+			"lifetime": "Gesamtbudget bearbeiten"
+		},
+		"deleteTitle": {
+			"daily": "Tagesbudget löschen?",
+			"weekly": "Wochenbudget löschen?",
+			"monthly": "Monatsbudget löschen?",
+			"lifetime": "Gesamtbudget löschen?"
+		},
+		"limitLabel": "Limit (USD)",
+		"limitHelp": "Sobald die Ausgaben im Zeitraum diesen Betrag erreichen, werden Anfragen mit 429 abgelehnt, bis der Zeitraum zurückgesetzt wird oder du das Limit erhöhst.",
+		"deleteBody": "Anfragen werden für diesen Zeitraum nicht mehr begrenzt. Das gilt sofort.",
+		"saved": "Budget gespeichert",
+		"savedDelayed": "Budget gespeichert. Es kann einige Minuten dauern, bis es für Anfragen gilt.",
+		"deleted": "Budget gelöscht",
+		"errorConflict": "Dieser Workspace hat bereits ein Budget für diesen Zeitraum. Lade die Seite neu, um es zu bearbeiten.",
+		"errorForbidden": "Nur Inhaber und Admins des Workspace können Budgets ändern.",
+		"errorNotFound": "Dieses Budget existiert nicht mehr. Lade die Seite neu.",
+		"errorInvalid": "Gib einen Betrag größer als null ein.",
+		"errorFailed": "Das Budget konnte nicht gespeichert werden. Versuche es gleich noch einmal."
 	}
 }

@@ -94,6 +94,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-settings-access", title: "Workspace Access", subtitle: "Manage workspace access controls", href: "/settings/workspaces/access", keywords: ["roles", "permissions", "team"] },
 	{ id: "nav-settings-enterprise", title: "Workspace Enterprise", subtitle: "Manage SSO, SCIM, and Enterprise billing", href: "/settings/workspaces/enterprise", keywords: ["enterprise", "sso", "saml", "scim", "provisioning"] },
 	{ id: "nav-settings-keys", title: "API Keys", subtitle: "Create and manage gateway API keys", href: "/settings/keys", keywords: ["keys", "tokens", "credentials"] },
+	{ id: "nav-settings-budgets", title: "Budgets", subtitle: "Cap workspace spend per day, week, month or in total", href: "/settings/budgets", keywords: ["budget", "spend limit", "spending cap", "cost limit"] },
 	{ id: "nav-settings-apps", title: "Workspace Apps", subtitle: "Manage gateway applications", href: "/settings/apps", keywords: ["apps", "applications"] },
 	{ id: "nav-settings-management-keys", title: "Management Keys", subtitle: "Manage provisioning credentials", href: "/settings/management-api-keys", keywords: ["management api", "provisioning keys"] },
 	{ id: "nav-settings-routing", title: "Routing Settings", subtitle: "Configure gateway routing", href: "/settings/routing", keywords: ["routing", "providers", "fallbacks"] },

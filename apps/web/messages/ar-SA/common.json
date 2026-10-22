@@ -341,7 +341,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "كيفية حساب الأسعار",
 				"nav-how-phaseo-tracks-provider-availability": "كيفية تتبع توفر المزودين",
 				"nav-chat-decisions": "القرارات",
-				"nav-settings-account-providers": "تهيئة المزوّدين"
+				"nav-settings-account-providers": "تهيئة المزوّدين",
+				"nav-settings-budgets": "الميزانيات"
 			}
 		},
 		"searchDataUnavailable": "تعذّر تحميل بيانات البحث.",
