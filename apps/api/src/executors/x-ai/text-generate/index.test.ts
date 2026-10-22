@@ -191,4 +191,106 @@ describe("x-ai text executor", () => {
 			output_text_tokens: 8,
 		});
 	});
+
+	// xAI's documented Responses usage: reasoning outside output_tokens, total = 32 + 9 + 110
+	// (https://docs.x.ai/openapi.json), plus server_side_tool_usage_details.
+	const XAI_USAGE = {
+		input_tokens: 32,
+		input_tokens_details: { cached_tokens: 8 },
+		output_tokens: 9,
+		output_tokens_details: { reasoning_tokens: 110 },
+		total_tokens: 151,
+		num_server_side_tools_used: 4,
+		server_side_tool_usage_details: {
+			web_search_calls: 2,
+			x_search_calls: 1,
+			x_posts_fetched: 10,
+			x_users_fetched: 3,
+			code_interpreter_calls: 1,
+			file_search_calls: 0,
+			mcp_calls: 0,
+			document_search_calls: 0,
+			image_generation_calls: 0,
+		},
+	};
+	const XAI_TOOL_METERS = {
+		native_web_search_requests: 2,
+		native_code_execution_requests: 1,
+		native_x_search_posts: 10,
+		native_x_search_users: 3,
+	};
+
+	it("bills reasoning tokens and server-side tools on buffered responses", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/responses"),
+			response: jsonResponse({
+				id: "resp_xai_3",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "grok-4.7",
+				status: "completed",
+				output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "ok" }] }],
+				usage: XAI_USAGE,
+			}, { status: 200 }),
+		}]);
+		const result = await executor(buildArgs());
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.bill.usage).toMatchObject({ output_tokens: 119, output_text_tokens: 119, ...XAI_TOOL_METERS });
+		expect(result.ir?.usage?.outputTokens).toBe(119);
+	});
+
+	it("bills streamed responses from the upstream usage, with reasoning and tools", async () => {
+		const sse = [
+			`event: response.created\ndata: ${JSON.stringify({ type: "response.created", response: { id: "resp_xai_4", status: "in_progress", output: [] } })}\n\n`,
+			`event: response.completed\ndata: ${JSON.stringify({ type: "response.completed", response: { id: "resp_xai_4", status: "completed", output: [], usage: XAI_USAGE } })}\n\n`,
+		].join("");
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/responses"),
+			response: new Response(sse, { status: 200, headers: { "content-type": "text/event-stream" } }),
+		}]);
+		const result = await executor(buildArgs({ stream: true }));
+		expect(result.kind).toBe("stream");
+		if (result.kind !== "stream") return;
+		await new Response(result.stream).text();
+		mock.restore();
+
+		expect(result.usageFinalizerAuthoritative).toBe(true);
+		const finalized = await result.usageFinalizer();
+		expect(finalized?.usage).toMatchObject({
+			input_text_tokens: 24,
+			cached_read_text_tokens: 8,
+			output_text_tokens: 119,
+			...XAI_TOOL_METERS,
+			server_tool_use: { web_search_requests: 2, code_execution_requests: 1, x_search_posts: 10, x_search_users: 3 },
+		});
+	});
+
+	it("sends json_schema structured outputs to xAI unchanged", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/responses"),
+			response: jsonResponse({
+				id: "resp_xai_5",
+				object: "response",
+				status: "completed",
+				output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "{}" }] }],
+				usage: { input_tokens: 4, output_tokens: 2, total_tokens: 6 },
+			}, { status: 200 }),
+		}]);
+		const schema = { type: "object", properties: { a: { type: "string" } }, required: ["a"] };
+		await executor(buildArgs({
+			messages: [
+				{ role: "system", content: [{ type: "text", text: "Be terse." }] },
+				{ role: "user", content: [{ type: "text", text: "hello" }] },
+			],
+			responseFormat: { type: "json_schema", name: "answer", schema, strict: true } as any,
+		}));
+		mock.restore();
+
+		const body = mock.calls[0]?.bodyJson;
+		expect(body?.text?.format).toMatchObject({ type: "json_schema", schema });
+		expect(JSON.stringify(body?.input)).not.toContain("The JSON must match this schema");
+	});
 });

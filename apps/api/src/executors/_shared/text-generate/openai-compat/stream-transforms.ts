@@ -1425,6 +1425,9 @@ function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {
 	if (typeof cache.writeTokens === "number") out.cached_write_tokens_are_subset_of_input = true;
 	if (typeof usage._ext?.citationTokens === "number") out.citation_tokens = usage._ext.citationTokens;
 	if (typeof usage._ext?.numSearchQueries === "number") out.num_search_queries = usage._ext.numSearchQueries;
+	// Server-tool counts (web searches) are billed per call; client usage shaping passes
+	// server_tool_use through to pricing, so streamed Responses usage keeps it.
+	if (usage._ext?.serverToolUse) out.server_tool_use = { ...usage._ext.serverToolUse };
 	if (typeof usage._ext?.searchContextSize === "string") out.search_context_size = usage._ext.searchContextSize;
 	if (usage._ext?.providerCost) out.cost = usage._ext.providerCost;
 	if (typeof cache.readTokens === "number") {

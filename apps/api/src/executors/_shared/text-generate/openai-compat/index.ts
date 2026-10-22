@@ -1042,6 +1042,7 @@ function normalizeUsageToAnthropic(usage: any): {
 	cache_creation?: { ephemeral_5m_input_tokens: number; ephemeral_1h_input_tokens: number };
 	cached_write_text_tokens_30m?: number;
 	cached_write_text_tokens_12h?: number;
+	server_tool_use?: Record<string, number>;
 } {
 	const inputTokens = Number(
 		usage?.input_tokens ??
@@ -1078,6 +1079,8 @@ function normalizeUsageToAnthropic(usage: any): {
 		// split to billing and are not part of the client usage.
 		...(typeof cache.write30mTokens === "number" ? { cached_write_text_tokens_30m: cache.write30mTokens } : {}),
 		...(typeof cache.write12hTokens === "number" ? { cached_write_text_tokens_12h: cache.write12hTokens } : {}),
+		// Messages usage has its own server_tool_use counts; billing reads web searches from it.
+		...(usage?.server_tool_use && typeof usage.server_tool_use === "object" ? { server_tool_use: usage.server_tool_use } : {}),
 	};
 }
 

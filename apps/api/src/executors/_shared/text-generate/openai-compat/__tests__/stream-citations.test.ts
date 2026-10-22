@@ -351,3 +351,41 @@ describe("tool calls in the Responses snapshot", () => {
 		expect(completed.output.find((item: any) => item.type === "function_call")).toMatchObject({ call_id: "call_1", name: "lookup" });
 	});
 });
+
+describe("Venice web search billing", () => {
+	// Venice bills web search per request and reports no counter; citations arrive on the first
+	// chunk, usage on the last (https://docs.venice.ai/api-reference/endpoint/chat/completions).
+	function veniceUpstream(): Frame[] {
+		const citations = [{ title: "Cite one", url: URL_1 }];
+		return [
+			{ data: { ...chunk({ role: "assistant", content: "" }).data, venice_parameters: { enable_web_search: "auto", web_search_citations: citations } } },
+			chunk({ content: "Hello world" }),
+			chunk({}, { finish_reason: "stop" }),
+			{ data: { id: "chatcmpl-1", object: "chat.completion.chunk", choices: [], usage: { prompt_tokens: 3, completion_tokens: 4, total_tokens: 7 } } },
+			"[DONE]",
+		];
+	}
+
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"] as const)(
+		"carries one web search request into the streamed %s usage",
+		async (protocol) => {
+			const frames = parseFrames(await clientStream(veniceUpstream(), protocol, "chat", "venice"));
+			const usage = frames.map((frame) => frame.data?.usage ?? frame.data?.response?.usage).filter(Boolean).at(-1);
+			expect(usage?.server_tool_use).toEqual({ web_search_requests: 1 });
+		},
+	);
+
+	it("counts a search on a buffered response with citations, and none without", () => {
+		const response = (veniceParameters: Record<string, unknown>) => ({
+			id: "chatcmpl-1",
+			object: "chat.completion",
+			choices: [{ index: 0, message: { role: "assistant", content: "ok" }, finish_reason: "stop" }],
+			usage: { prompt_tokens: 3, completion_tokens: 4, total_tokens: 7 },
+			venice_parameters: veniceParameters,
+		});
+		const searched = openAIChatToIR(response({ enable_web_search: "auto", web_search_citations: [{ title: "t", url: URL_1 }] }), "req_1", "m", "venice");
+		expect(searched.usage?._ext?.serverToolUse?.web_search_requests).toBe(1);
+		const skipped = openAIChatToIR(response({ enable_web_search: "auto", web_search_citations: [] }), "req_1", "m", "venice");
+		expect(skipped.usage?._ext?.serverToolUse).toBeUndefined();
+	});
+});
