@@ -50,3 +50,13 @@ describe("OTLP preset forms", () => {
 		}
 	});
 });
+
+describe("webhook form", () => {
+	test("offers the signing secret on the Webhook destination only", () => {
+		const webhook = AVAILABLE_DESTINATIONS.find((destination) => destination.id === "webhook");
+		expect(webhook?.fields.find((field) => field.key === "signing_secret")).toMatchObject({ type: "password", required: false });
+		for (const destination of COMING_SOON_DESTINATIONS) {
+			expect(destination.fields?.some((field) => field.key === "signing_secret") ?? false).toBe(false);
+		}
+	});
+});

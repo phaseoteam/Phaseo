@@ -3,6 +3,8 @@ import {
 	AVAILABLE_BROADCAST_DESTINATION_IDS,
 	applyOtlpTarget,
 	broadcastDestinationEndpoint,
+	broadcastWebhookSignatureHeaders,
+	broadcastWebhookSigningSecretError,
 	isBroadcastDestinationLimitError,
 	normalizeBroadcastDestinationId,
 	OTLP_PRESETS,
@@ -318,5 +320,26 @@ describe("Broadcast destination registry", () => {
 		expect(normalizeBroadcastDestinationId("webhook")).toBe("webhook");
 		expect(isBroadcastDestinationLimitError({ code: "23514", message: "broadcast_destination_limit_reached" })).toBe(true);
 		expect(isBroadcastDestinationLimitError(new Error("violates check constraint"))).toBe(false);
+	});
+});
+
+describe("Broadcast webhook signing", () => {
+	it("accepts no secret or 16 to 256 printable characters", () => {
+		expect(broadcastWebhookSigningSecretError(undefined)).toBeNull();
+		expect(broadcastWebhookSigningSecretError("")).toBeNull();
+		expect(broadcastWebhookSigningSecretError("a".repeat(16))).toBeNull();
+		expect(broadcastWebhookSigningSecretError("a".repeat(15))).toBe("Signing secret must be 16 to 256 characters");
+		expect(broadcastWebhookSigningSecretError("a".repeat(257))).toBe("Signing secret must be 16 to 256 characters");
+		expect(broadcastWebhookSigningSecretError("a".repeat(16) + " b")).toBe("Signing secret cannot contain spaces or control characters");
+		expect(broadcastWebhookSigningSecretError(12345678901234567)).toBe("Signing secret must be text");
+	});
+
+	it("signs `${timestamp}.${body}` with HMAC-SHA256", async () => {
+		// printf '1700000000.{"a":1}' | openssl dgst -sha256 -hmac 0123456789abcdef
+		expect(await broadcastWebhookSignatureHeaders({ signing_secret: "0123456789abcdef" }, '{"a":1}', 1_700_000_000_500)).toEqual({
+			"x-phaseo-timestamp": "1700000000",
+			"x-phaseo-signature": "9eb18f493f8ec135d9eb2dad817c369bb4e9cbfa818657897a7437c1cd8c3a23",
+		});
+		expect(await broadcastWebhookSignatureHeaders({}, "{}")).toEqual({});
 	});
 });

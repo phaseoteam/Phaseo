@@ -1,6 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
-import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, gzipBytes, resolveOtlpTarget } from "./broadcast-destinations";
+import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, broadcastWebhookSignatureHeaders, gzipBytes, resolveOtlpTarget } from "./broadcast-destinations";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
 import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
 import { BroadcastHealthRecorder } from "./broadcast-health";
@@ -519,11 +519,14 @@ export async function deliverGatewayWebhookPayload(
 ) {
 	let target: URL;
 	let requestHeaders: Headers;
+	const body = JSON.stringify(payload);
 	try {
 		target = new URL(String(config.url ?? "").trim());
+		requestHeaders = headers(config);
+		for (const [name, value] of Object.entries(await broadcastWebhookSignatureHeaders(config, body))) requestHeaders.set(name, value);
+		// Validated last, right before the request, to keep the DNS rebinding window small.
 		const validated = await validateWebhookEndpointUrlForDelivery(target.toString());
 		if (validated.ok === false) throw new Error(`Invalid webhook endpoint: ${validated.reason}`);
-		requestHeaders = headers(config);
 	} catch (error) {
 		return { delivered: false, retryable: false, status: null, delayMs: 0, error: error instanceof Error ? error.message : "Invalid webhook destination" };
 	}
@@ -532,7 +535,7 @@ export async function deliverGatewayWebhookPayload(
 		response = await fetch(target, {
 			method: String(config.method ?? "POST").toUpperCase() === "PUT" ? "PUT" : "POST",
 			headers: requestHeaders,
-			body: JSON.stringify(payload),
+			body,
 			redirect: "manual",
 			signal: AbortSignal.timeout(15_000),
 		});
