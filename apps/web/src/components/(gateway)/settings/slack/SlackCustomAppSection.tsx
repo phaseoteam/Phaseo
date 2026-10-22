@@ -27,6 +27,8 @@ import { Notice, SlackError } from "./SlackAgentFields";
 import { customAppPayload, slackErrorKey, type SlackAgentManagerView, type SlackCustomAppDraft, type SlackCustomAppProblem, type SlackErrorKey } from "./slackAgentForm";
 
 const EMPTY_DRAFT: SlackCustomAppDraft = { slackAppId: "", clientId: "", clientSecret: "", signingSecret: "" };
+// The English guide: translated headings give the section a different anchor in each locale.
+const SLACK_AGENT_MANIFEST_DOCS_URL = "https://phaseo.app/docs/v1/guides/slack-agent#use-your-own-slack-app";
 
 /** A company's own Slack app: what to register with Slack, and its credentials. */
 export function SlackCustomAppSection({ view }: { view: SlackAgentManagerView }) {
@@ -124,7 +126,11 @@ export function SlackCustomAppSection({ view }: { view: SlackAgentManagerView })
 									<CopyButton size="sm" variant="ghost" content={view.scopes.join(",")} aria-label={t("customApp.copyScopes")} />
 								</div>
 							</div>
-							<p className="text-xs text-muted-foreground">{t("customApp.manifest")}</p>
+							<p className="text-xs text-muted-foreground">
+								<a className="underline underline-offset-4 hover:text-foreground" href={SLACK_AGENT_MANIFEST_DOCS_URL} target="_blank" rel="noreferrer">
+									{t("customApp.manifest")}
+								</a>
+							</p>
 						</div>
 
 						{saved && !editing ? (
