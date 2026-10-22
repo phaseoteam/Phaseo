@@ -122,7 +122,8 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 			}
 			case "set_expiry": {
 				const date = new Date(`${expiresOn}T23:59:59Z`);
-				return expiresOn && date.getTime() > Date.now() ? { action: pending.action, expiresAt: date.toISOString() } : null;
+				// The server rejects past dates; observedAt keeps render pure.
+				return expiresOn && date.getTime() > data.observedAt ? { action: pending.action, expiresAt: date.toISOString() } : null;
 			}
 			case "set_storage_locations": return { action: pending.action, storageLocations: locations };
 		}
@@ -153,6 +154,20 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 		}
 	}
 
+	// Literal keys keep the plural messages type-checked.
+	const recommendTitle = {
+		safe_to_remove: (count: number) => t("keySecurity.recommend.safe_to_remove.title", { count }),
+		no_spend_limit: (count: number) => t("keySecurity.recommend.no_spend_limit.title", { count }),
+		never_expires: (count: number) => t("keySecurity.recommend.never_expires.title", { count }),
+		no_storage_location: (count: number) => t("keySecurity.recommend.no_storage_location.title", { count }),
+	};
+	const confirmMessage = {
+		pause: (count: number) => t("keySecurity.confirm.pause", { count }),
+		revoke: (count: number) => t("keySecurity.confirm.revoke", { count }),
+		set_monthly_spend_limit: (count: number) => t("keySecurity.confirm.set_monthly_spend_limit", { count }),
+		set_expiry: (count: number) => t("keySecurity.confirm.set_expiry", { count }),
+		set_storage_locations: (count: number) => t("keySecurity.confirm.set_storage_locations", { count }),
+	};
 	const revokeConfirmed = pending?.action !== "revoke" || confirmText.trim().toLowerCase() === "revoke";
 	const ready = Boolean(input()) && revokeConfirmed && !busy;
 	const selectedKeys = data.keys.filter((key) => selected.has(key.id));
@@ -193,7 +208,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 									<div className="flex gap-3">
 										<item.icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 										<div>
-											<div className="text-sm font-medium">{t(`keySecurity.recommend.${item.id}.title` as never, { count: item.count })}</div>
+											<div className="text-sm font-medium">{recommendTitle[item.id](item.count)}</div>
 											<p className="text-sm text-muted-foreground">{t(`keySecurity.recommend.${item.id}.body` as never)}</p>
 										</div>
 									</div>
@@ -337,7 +352,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 					<DialogHeader className="gap-2">
 						<DialogTitle>{pending?.label}</DialogTitle>
 						<DialogDescription>
-							{pending ? t(`keySecurity.confirm.${pending.action}` as never, { count: pending.keyIds.length }) : null}
+							{pending ? confirmMessage[pending.action](pending.keyIds.length) : null}
 						</DialogDescription>
 					</DialogHeader>
 					{pending?.action === "set_monthly_spend_limit" ? (
