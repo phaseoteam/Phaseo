@@ -14,16 +14,21 @@ export type BroadcastDestinationType = {
 // script checks this list against that table's CHECK constraint.
 export const BROADCAST_DESTINATION_TYPES = [
 	{ id: "arize", delivery: "otlp" },
+	{ id: "axiom", delivery: "otlp" },
 	{ id: "braintrust", delivery: "otlp" },
 	{ id: "clickhouse", delivery: null },
 	{ id: "comet_opik", delivery: "otlp" },
 	{ id: "datadog", delivery: "otlp" },
+	{ id: "dynatrace", delivery: "otlp" },
+	{ id: "elastic", delivery: "otlp" },
 	{ id: "grafana_cloud", delivery: "otlp" },
+	{ id: "honeycomb", delivery: "otlp" },
 	{ id: "langfuse", delivery: "otlp" },
 	{ id: "langsmith", delivery: "otlp" },
 	{ id: "new_relic", delivery: "otlp" },
 	{ id: "otel_collector", delivery: "otlp" },
 	{ id: "posthog", delivery: "otlp" },
+	{ id: "respan", delivery: "otlp" },
 	{ id: "s3", delivery: null },
 	{ id: "sentry", delivery: "otlp" },
 	{ id: "snowflake", delivery: null },
@@ -105,6 +110,9 @@ export type OtlpPreset = {
 	// A header or resource attribute whose template renders empty is left out.
 	headers?: Record<string, string>;
 	protocol?: OtlpProtocol;
+	// The only encodings the vendor accepts, when an otlp_protocol override to
+	// another one could never deliver.
+	protocols?: OtlpProtocol[];
 	compression?: OtlpCompression;
 	// Set on every resource, for vendors that read the project or service there.
 	resourceAttributes?: Record<string, string>;
@@ -128,6 +136,15 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 		headers: { space_id: "{space_id}", api_key: "{api_key}" },
 		protocol: "http/protobuf",
 		resourceAttributes: { "openinference.project.name": "{project_name}" },
+	},
+	// https://axiom.co/docs/send-data/opentelemetry
+	// Ingest goes to the edge deployment the dataset was created in.
+	axiom: {
+		endpoint: "https://{region}/v1/traces",
+		defaults: { region: "US" },
+		choices: { region: { US: "us-east-1.aws.edge.axiom.co", EU: "eu-central-1.aws.edge.axiom.co" } },
+		headers: { Authorization: "Bearer {api_token}", "X-Axiom-Dataset": "{dataset}" },
+		protocol: "http/protobuf",
 	},
 	// https://www.braintrust.dev/docs/integrations/sdk-integrations/opentelemetry
 	braintrust: {
@@ -160,6 +177,25 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 		protocol: "http/protobuf",
 		resourceAttributes: { dd_llmobs_enabled: "true" },
 	},
+	// https://docs.dynatrace.com/docs/ingest-from/opentelemetry/otlp-api
+	// The environment URL is https://{id}.live.dynatrace.com, without .apps.
+	// Access tokens need openTelemetryTrace.ingest; platform tokens need
+	// openpipeline:traces:ingest. Protobuf only.
+	dynatrace: {
+		endpoint: "{environment_url}/api/v2/otlp/v1/traces",
+		defaults: { token_type: "access" },
+		choices: { token_type: { access: "Api-Token", platform: "Bearer" } },
+		headers: { Authorization: "{token_type} {api_token}" },
+		protocol: "http/protobuf",
+		protocols: ["http/protobuf"],
+	},
+	// https://www.elastic.co/docs/reference/opentelemetry/motlp
+	// The endpoint is the deployment's or project's managed OTLP endpoint.
+	elastic: {
+		endpoint: "{otlp_endpoint}/v1/traces",
+		headers: { Authorization: "ApiKey {api_key}" },
+		protocol: "http/protobuf",
+	},
 	// https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp/
 	// The OTLP endpoint is the one on the stack's OpenTelemetry tile, ending in
 	// /otlp. Traces go to Tempo, which takes gzip.
@@ -168,6 +204,16 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 		headers: { Authorization: "{basic:instance_id:api_key}" },
 		protocol: "http/protobuf",
 		compression: "gzip",
+	},
+	// https://docs.honeycomb.io/send-data/opentelemetry/
+	// The dataset is only read by Honeycomb Classic; other environments name
+	// datasets after service.name.
+	honeycomb: {
+		endpoint: "https://{region}/v1/traces",
+		defaults: { region: "US" },
+		choices: { region: { US: "api.honeycomb.io", EU: "api.eu1.honeycomb.io" } },
+		headers: { "x-honeycomb-team": "{api_key}", "x-honeycomb-dataset": "{dataset?}" },
+		protocol: "http/protobuf",
 	},
 	// https://langfuse.com/integrations/native/opentelemetry
 	// Without the ingestion version header, traces can take up to 10 minutes to
@@ -206,6 +252,13 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 	posthog: {
 		endpoint: "{base_url}/i/v0/ai/otel",
 		defaults: { base_url: "https://us.i.posthog.com" },
+		headers: { Authorization: "Bearer {api_key}" },
+		protocol: "http/protobuf",
+	},
+	// https://www.respan.ai/docs/apis/traces/ingest-traces-otlp
+	respan: {
+		endpoint: "{base_url}/api/v2/traces",
+		defaults: { base_url: "https://api.respan.ai" },
 		headers: { Authorization: "Bearer {api_key}" },
 		protocol: "http/protobuf",
 	},
@@ -315,6 +368,9 @@ export function resolveOtlpTarget(id: unknown, config: Record<string, unknown>):
 	const protocolValue = String(config.otlp_protocol ?? "").trim() ? config.otlp_protocol : preset?.protocol;
 	const protocol = otlpProtocol({ otlp_protocol: protocolValue });
 	if (!protocol) throw new Error(`Protocol must be ${OTLP_PROTOCOLS.join(" or ")}`);
+	if (preset?.protocols && !preset.protocols.includes(protocol)) {
+		throw new Error(`Protocol must be ${preset.protocols.join(" or ")} for this destination`);
+	}
 	const compressionValue = String(config.otlp_compression ?? "").trim().toLowerCase() || preset?.compression || "none";
 	if (!OTLP_COMPRESSIONS.includes(compressionValue as OtlpCompression)) {
 		throw new Error(`Compression must be ${OTLP_COMPRESSIONS.join(" or ")}`);

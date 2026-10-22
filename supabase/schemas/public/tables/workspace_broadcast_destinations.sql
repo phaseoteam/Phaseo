@@ -19,8 +19,8 @@ CREATE TABLE "public"."workspace_broadcast_destinations" (
   "include_request_context"             boolean                  NOT NULL DEFAULT true,
   CONSTRAINT "workspace_broadcast_destinations_destination_id_check"
     CHECK
-    ((destination_id = ANY (ARRAY['arize'::text, 'braintrust'::text, 'clickhouse'::text, 'comet_opik'::text, 'datadog'::text, 'grafana_cloud'::text, 'langfuse'::text,
-    'langsmith'::text, 'new_relic'::text, 'otel_collector'::text, 'posthog'::text, 's3'::text, 'sentry'::text, 'snowflake'::text, 'wandb_weave'::text, 'webhook'::text]))),
+    ((destination_id = ANY (ARRAY['arize'::text, 'axiom'::text, 'braintrust'::text, 'clickhouse'::text, 'comet_opik'::text, 'datadog'::text, 'dynatrace'::text, 'elastic'::text, 'grafana_cloud'::text, 'honeycomb'::text, 'langfuse'::text,
+    'langsmith'::text, 'new_relic'::text, 'otel_collector'::text, 'posthog'::text, 'respan'::text, 's3'::text, 'sentry'::text, 'snowflake'::text, 'wandb_weave'::text, 'webhook'::text]))),
   CONSTRAINT "workspace_broadcast_destinations_group_join_operator_check" CHECK ((group_join_operator = ANY (ARRAY['and'::text, 'or'::text]))),
   CONSTRAINT "workspace_broadcast_destinations_pkey" PRIMARY KEY (id),
   CONSTRAINT "workspace_broadcast_destinations_sampling_rate_check" CHECK (((sampling_rate >= (0)::numeric) AND (sampling_rate <= (1)::numeric))),
