@@ -33,6 +33,11 @@ function run(event: Record<string, unknown>, overrides: Record<string, unknown> 
 	return processEvent(world.deps, hostedApp(world.env)!, envelope);
 }
 
+/** The admin emails asked for so far. */
+function refusalEmails() {
+	return world.db.rpcs.filter((call) => call.fn === "queue_slack_agent_refusal_email").map((call) => call.args);
+}
+
 beforeEach(async () => {
 	world = testWorld({ now: NOW });
 	clearUserFactsCache();
@@ -94,6 +99,15 @@ describe("events: who gets an answer", () => {
 		expect(replies[0]).toMatchObject({ token: BOT_TOKEN, args: { channel: "C0CHANNEL1", user: "U0PERSON01" } });
 		// A top-level mention has no thread yet, so the reply isn't put in one.
 		expect(replies[0].args.thread_ts).toBeUndefined();
+		// Only the unpaid charge is emailed to admins; a pause is their own choice.
+		expect(refusalEmails()).toEqual([{ p_installation_id: INSTALLATION_ID, p_reason: "payment_due", p_people: null }]);
+	});
+
+	it("still refuses when the admin email can't be queued", async () => {
+		world.db.failingRpcs.add("queue_slack_agent_refusal_email");
+		await install({ status: "payment_due" });
+		await expect(run(mention())).resolves.toBe("refused_payment_due");
+		expect(world.slack.ephemerals()).toHaveLength(1);
 	});
 
 	it("refuses people from other organisations by default, and records one admin notice", async () => {
@@ -114,6 +128,7 @@ describe("events: who gets an answer", () => {
 		await install({ allow_external_users: true });
 		clearUserFactsCache();
 		await expect(run(mention({ user: "U0OUTSIDE1" }))).resolves.toBe("started");
+		expect(refusalEmails(), "an admin's own setting is not emailed").toEqual([]);
 	});
 
 	it("treats another workspace of the same Enterprise Grid org as inside the organisation", async () => {
@@ -143,9 +158,13 @@ describe("events: who gets an answer", () => {
 			"The Phaseo agent has answered as many people this month as this workspace's plan covers (3 people, $0.99 a month). An admin can move to a bigger plan in Phaseo settings.",
 		);
 		expect(world.db.tables.workspace_audit_events).toHaveLength(1);
+		expect(refusalEmails()).toEqual([{ p_installation_id: INSTALLATION_ID, p_reason: "plan_full", p_people: 3 }]);
+		// The meter asks once a month, so the next person turned away emails nobody.
+		await expect(run(directMessage({ user: "U0PERSON05", ts: "1792600010.000010" }))).resolves.toBe("refused_plan_full");
+		expect(refusalEmails()).toHaveLength(1);
 	});
 
-	it("never says an admin has been told: refusals only reach the audit log", () => {
+	it("never says an admin has been told, since an email can be suppressed or fail", () => {
 		const reasons = ["paused", "payment_due", "external_user", "guest", "plan_full", "max_people", "monthly_cap", "hourly_limit", "user_unverified", "busy"] as const;
 		for (const reason of reasons) {
 			const text = refusalText(reason, { tier: { people: 3, priceNanos: 990_000_000 }, limit: 60 });

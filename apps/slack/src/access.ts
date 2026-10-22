@@ -106,8 +106,9 @@ export type ReplyReason = RefuseReason | "user_unverified" | "busy";
 
 /**
  * What someone sees when they can't get an answer. Null: say nothing (bots, and
- * an app that was removed and can't post). Refusals are only recorded in the
- * workspace audit log, so the text never says an admin has been told.
+ * an app that was removed and can't post). Some refusals are emailed to the
+ * workspace's admins, but an email can be suppressed or fail, so the text never
+ * says an admin has been told.
  */
 export function refusalText(reason: ReplyReason, details: { tier?: Tier; limit?: number } = {}): string | null {
 	switch (reason) {
