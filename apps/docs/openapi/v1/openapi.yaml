@@ -17365,7 +17365,9 @@ components:
             budgets. Null means the key counts only toward workspace-wide
             limits.
         storage_locations:
-          $ref: '#/components/schemas/ApiKeyStorageLocations'
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array

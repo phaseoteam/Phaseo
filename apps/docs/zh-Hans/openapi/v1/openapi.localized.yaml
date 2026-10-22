@@ -16499,7 +16499,9 @@ components:
           nullable: true
           description: 此密钥所属的部门，用于部门速率限制和预算。Null 表示该密钥仅计入整个工作区的限制。
         storage_locations:
-          $ref: '#/components/schemas/ApiKeyStorageLocations'
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array

@@ -16499,7 +16499,9 @@ components:
           nullable: true
           description: Abteilung, zu der dieser Schlüssel für Ratenlimits und Budgets der Abteilung gehört. Null bedeutet, dass der Schlüssel nur auf die Limits des gesamten Workspace angerechnet wird.
         storage_locations:
-          $ref: '#/components/schemas/ApiKeyStorageLocations'
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array

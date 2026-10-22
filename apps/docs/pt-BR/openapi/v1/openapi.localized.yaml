@@ -16499,7 +16499,9 @@ components:
           nullable: true
           description: Departamento ao qual esta chave pertence para os limites de taxa e os orçamentos do departamento. Null significa que a chave conta apenas para os limites de todo o espaço de trabalho.
         storage_locations:
-          $ref: '#/components/schemas/ApiKeyStorageLocations'
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array

@@ -405,7 +405,7 @@ class ApiKeyUpdateRequest
 	public $scopes;
 	/** @var bool|null */
 	public $soft_blocked;
-	/** @var array|null */
+	/** @var mixed|null */
 	public $storage_locations;
 }
 

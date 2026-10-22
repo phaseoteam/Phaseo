@@ -226,7 +226,7 @@ type ApiKeyUpdateRequest struct {
 	Name *string `json:"name,omitempty"`
 	Scopes interface{} `json:"scopes,omitempty"`
 	SoftBlocked *bool `json:"soft_blocked,omitempty"`
-	StorageLocations *[]string `json:"storage_locations,omitempty"`
+	StorageLocations *interface{} `json:"storage_locations,omitempty"`
 }
 
 type ApiKeyUsageBucket struct {

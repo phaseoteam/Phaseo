@@ -231,7 +231,7 @@ public final class Models {
 		public String name;
 		public Object scopes;
 		public Boolean soft_blocked;
-		public java.util.List<String> storage_locations;
+		public Object storage_locations;
 	}
 
 	public static class ApiKeyUsageBucket {

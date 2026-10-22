@@ -232,7 +232,7 @@ struct ApiKeyUpdateRequest {
 	std::string name;
 	std::any scopes;
 	std::optional<bool> soft_blocked;
-	std::vector<std::string> storage_locations;
+	std::optional<std::any> storage_locations;
 };
 
 struct ApiKeyUsageBucket {

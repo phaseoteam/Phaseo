@@ -16499,7 +16499,9 @@ components:
           nullable: true
           description: القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها.
         storage_locations:
-          $ref: '#/components/schemas/ApiKeyStorageLocations'
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array

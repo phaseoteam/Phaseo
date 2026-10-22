@@ -16499,7 +16499,9 @@ components:
           nullable: true
           description: Departamento al que pertenece esta clave para los límites de frecuencia y los presupuestos del departamento. Null significa que la clave solo cuenta para los límites de todo el espacio de trabajo.
         storage_locations:
-          $ref: '#/components/schemas/ApiKeyStorageLocations'
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array

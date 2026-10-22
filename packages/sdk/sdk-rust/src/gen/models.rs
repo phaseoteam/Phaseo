@@ -233,7 +233,7 @@ pub struct ApiKeyUpdateRequest {
 	pub name: Option<String>,
 	pub scopes: Option<String>,
 	pub soft_blocked: Option<bool>,
-	pub storage_locations: Option<Vec<String>>,
+	pub storage_locations: Option<Option<String>>,
 }
 
 pub struct ApiKeyUsageBucket {

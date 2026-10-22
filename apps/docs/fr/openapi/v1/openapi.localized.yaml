@@ -16499,7 +16499,9 @@ components:
           nullable: true
           description: Service auquel cette clé appartient pour les limites de débit et les budgets du service. Null signifie que la clé ne compte que pour les limites de l’ensemble de l’espace de travail.
         storage_locations:
-          $ref: '#/components/schemas/ApiKeyStorageLocations'
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
     ApiKeyStorageLocations:
       type: array

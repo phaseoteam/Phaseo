@@ -22,5 +22,5 @@ export interface ApiKeyUpdateRequest {
   name?: string;
   scopes?: string | string[];
   soft_blocked?: boolean;
-  storage_locations?: string[];
+  storage_locations?: string[] | null;
 }

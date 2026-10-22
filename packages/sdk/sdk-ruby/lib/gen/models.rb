@@ -330,7 +330,7 @@ module Phaseo
     # @!attribute [rw] soft_blocked
     #   @return [Boolean, nil]
     # @!attribute [rw] storage_locations
-    #   @return [Array<String>, nil]
+    #   @return [Object, nil]
     ApiKeyUpdateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :storage_locations, keyword_init: true)
     # @!attribute [rw] cost
     #   @return [Float]

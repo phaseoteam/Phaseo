@@ -559,7 +559,7 @@ public sealed class ApiKeyUpdateRequest
 	public bool? SoftBlocked { get; set; }
 
 	[JsonPropertyName("storage_locations")]
-	public List<string>? StorageLocations { get; set; }
+	public object? StorageLocations { get; set; }
 
 }
 
