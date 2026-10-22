@@ -112,9 +112,20 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 		if (!name.trim()) return;
 		setSaving(true);
 		try {
-			const created = await Promise.all(selectedTypes.map((type) => write(createNotificationDestination({ name: name.trim(), type, target: targetForType(type) }))));
-			setDestinations((current) => [...created.map((entry) => entry.destination), ...current]); setOpen(false); resetSheet(); toast.success(created.length === 1 ? s("Destination created") : `${created.length} ${s("destinations created")}`);
-			setRevealedSecrets(created.flatMap((entry) => entry.signingSecret ? [{ destinationName: entry.destination.name, secret: entry.signingSecret }] : []));
+			// Settle each create separately: a destination that was created keeps its one-time secret even if another type fails.
+			const results = await Promise.allSettled(selectedTypes.map((type) => write(createNotificationDestination({ name: name.trim(), type, target: targetForType(type) }))));
+			const created = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+			const failedTypes = selectedTypes.filter((_, index) => results[index]?.status === "rejected");
+			const firstFailure = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
+			if (created.length > 0) {
+				setDestinations((current) => [...created.map((entry) => entry.destination), ...current]);
+				setRevealedSecrets(created.flatMap((entry) => entry.signingSecret ? [{ destinationName: entry.destination.name, secret: entry.signingSecret }] : []));
+			}
+			if (!firstFailure) { setOpen(false); resetSheet(); toast.success(created.length === 1 ? s("Destination created") : `${created.length} ${s("destinations created")}`); return; }
+			// Leave only the failed types selected so trying again doesn't create duplicates.
+			setSelectedTypes(failedTypes);
+			if (created.length > 0) toast.success(created.length === 1 ? s("Destination created") : `${created.length} ${s("destinations created")}`);
+			toast.error(localizedSettingsError(firstFailure.reason, t, "Could not create destination"));
 		} catch (error) { toast.error(localizedSettingsError(error, t, "Could not create destination")); }
 		finally { setSaving(false); }
 	}
