@@ -340,7 +340,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "मूल्य की गणना कैसे होती है",
 				"nav-how-phaseo-tracks-provider-availability": "प्रदाता की उपलब्धता कैसे ट्रैक होती है",
 				"nav-chat-decisions": "निर्णय",
-				"nav-settings-account-providers": "प्रदाता ऑनबोर्डिंग"
+				"nav-settings-account-providers": "प्रदाता ऑनबोर्डिंग",
+				"nav-settings-budgets": "बजट"
 			}
 		},
 		"searchDataUnavailable": "खोज डेटा लोड नहीं हो सका।",

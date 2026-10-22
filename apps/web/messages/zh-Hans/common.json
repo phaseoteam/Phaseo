@@ -340,7 +340,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "价格如何计算",
 				"nav-how-phaseo-tracks-provider-availability": "提供商可用性如何跟踪",
 				"nav-chat-decisions": "决策",
-				"nav-settings-account-providers": "提供商入驻"
+				"nav-settings-account-providers": "提供商入驻",
+				"nav-settings-budgets": "预算"
 			}
 		},
 		"searchDataUnavailable": "无法加载搜索数据。",

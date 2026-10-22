@@ -4474,7 +4474,8 @@
 		"workspaces": "Arbeitsbereiche",
 		"classifiers": "Klassifikatoren",
 		"newClassifier": "Neuer Klassifikator",
-		"classifier": "Klassifikator"
+		"classifier": "Klassifikator",
+		"budgets": "Budgets"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4701,7 +4702,8 @@
 		"becomeProvider": "Anbieter werden",
 		"empty": "Keine Einstellungen gefunden.",
 		"providerProfile": "Anbieterprofil",
-		"classifiers": "Klassifikatoren"
+		"classifiers": "Klassifikatoren",
+		"budgets": "Budgets"
 	},
 	"settingsAvailability": {
 		"title": "Die Einstellungen sind vorübergehend nicht verfügbar",
@@ -6257,5 +6259,74 @@
 			"samplePercent": "Gib einen Anteil von 0,01% bis 100% ein.",
 			"budgetUsd": "Gib ein Budget über $0 ein oder lass das Feld leer."
 		}
+	},
+	"budgets": {
+		"title": "Budgets",
+		"description": "Begrenze, was der gesamte Workspace pro Tag, Woche oder Monat oder insgesamt ausgeben kann.",
+		"feedback": "Wie könnten Budgets besser für dich funktionieren?",
+		"selectWorkspace": "Wähle einen Workspace aus, um seine Budgets zu sehen.",
+		"readOnly": "Nur Inhaber und Admins des Workspace können Budgets ändern.",
+		"usageNote": "Die Nutzung umfasst erfolgreiche Anfragen sowie asynchrone Aufträge, solange deren Mittel reserviert sind.",
+		"howItWorks": "Budgets werden exakt durchgesetzt, über alle Schlüssel des Workspace hinweg. Sobald ein Budget aufgebraucht ist, lehnt das Gateway weitere Anfragen mit 429 ab, bis es zurückgesetzt wird.",
+		"utcNote": "Tages-, Wochen- und Monatsbudgets werden an UTC-Grenzen zurückgesetzt: um Mitternacht, montags um 00:00 und am 1. des Monats. Gesamtbudgets werden nie zurückgesetzt.",
+		"keyLimitsHint": "Um stattdessen einen einzelnen Schlüssel zu begrenzen, lege unter <link>API-Schlüssel</link> Limits dafür fest.",
+		"interval": {
+			"daily": "Täglich",
+			"weekly": "Wöchentlich",
+			"monthly": "Monatlich",
+			"lifetime": "Gesamt"
+		},
+		"period": {
+			"daily": "Heute",
+			"weekly": "Diese Woche",
+			"monthly": "Dieser Monat",
+			"lifetime": "Gesamter Zeitraum"
+		},
+		"notSet": "Kein Budget festgelegt",
+		"add": "Budget festlegen",
+		"edit": "Bearbeiten",
+		"delete": "Löschen",
+		"deleting": "Wird gelöscht…",
+		"cancel": "Abbrechen",
+		"save": "Speichern",
+		"saving": "Wird gespeichert…",
+		"usedUp": "Aufgebraucht",
+		"ofLimit": "von {limit}",
+		"percentUsed": "{percent} genutzt",
+		"remaining": "{amount} übrig",
+		"resets": "Zurücksetzung in {time} ({date})",
+		"neverResets": "Wird nie zurückgesetzt",
+		"onPaceFor": "Hochgerechnet {amount}",
+		"reachesLimit": "Erreicht das Limit ~{date}",
+		"meterLabel": "{period}: {used} von {limit}",
+		"createTitle": {
+			"daily": "Tagesbudget festlegen",
+			"weekly": "Wochenbudget festlegen",
+			"monthly": "Monatsbudget festlegen",
+			"lifetime": "Gesamtbudget festlegen"
+		},
+		"editTitle": {
+			"daily": "Tagesbudget bearbeiten",
+			"weekly": "Wochenbudget bearbeiten",
+			"monthly": "Monatsbudget bearbeiten",
+			"lifetime": "Gesamtbudget bearbeiten"
+		},
+		"deleteTitle": {
+			"daily": "Tagesbudget löschen?",
+			"weekly": "Wochenbudget löschen?",
+			"monthly": "Monatsbudget löschen?",
+			"lifetime": "Gesamtbudget löschen?"
+		},
+		"limitLabel": "Limit (USD)",
+		"limitHelp": "Sobald die Ausgaben im Zeitraum diesen Betrag erreichen, werden Anfragen mit 429 abgelehnt, bis der Zeitraum zurückgesetzt wird oder du das Limit erhöhst.",
+		"deleteBody": "Anfragen werden für diesen Zeitraum nicht mehr begrenzt. Das gilt sofort.",
+		"saved": "Budget gespeichert",
+		"savedDelayed": "Budget gespeichert. Es kann einige Minuten dauern, bis es für Anfragen gilt.",
+		"deleted": "Budget gelöscht",
+		"errorConflict": "Dieser Workspace hat bereits ein Budget für diesen Zeitraum. Lade die Seite neu, um es zu bearbeiten.",
+		"errorForbidden": "Nur Inhaber und Admins des Workspace können Budgets ändern.",
+		"errorNotFound": "Dieses Budget existiert nicht mehr. Lade die Seite neu.",
+		"errorInvalid": "Gib einen Betrag größer als null ein.",
+		"errorFailed": "Das Budget konnte nicht gespeichert werden. Versuche es gleich noch einmal."
 	}
 }

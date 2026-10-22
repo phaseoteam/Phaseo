@@ -31,6 +31,8 @@ Quando uma cota do gateway se esgota, a resposta é `429` com `Retry-After` em s
 
 Ao atingir os limites diários, semanais ou mensais de requisições e gastos de uma chave de API, ou os [orçamentos](./endpoint/budgets-list.mdx) do espaço de trabalho, a resposta é `429` com o código de erro `key_limit_exceeded`. Os campos `reason`, `limit_window` e `reset_at` do corpo identificam o limite e quando seu período é redefinido. `Retry-After` informa os segundos até essa redefinição. Ele é omitido quando o limite não é redefinido sozinho, como um orçamento vitalício ou uma chave bloqueada temporariamente; nesse caso, em vez de tentar novamente, aumente o orçamento do espaço de trabalho ou, se for um limite de chave, aumente o limite da chave ou use outra chave.
 
+Proprietários e administradores do espaço de trabalho também podem definir, alterar e excluir orçamentos no painel, em [Configurações → Orçamentos](https://phaseo.app/settings/budgets). A página mostra, para cada orçamento, o gasto até agora, a parcela usada, uma projeção para o período e quando ele é redefinido. Orçamentos diários, semanais e mensais são redefinidos em limites UTC: à meia-noite, na segunda-feira às 00:00 e no dia 1º do mês.
+
 Os orçamentos de departamento, gerenciados pela API `/v1/department-budgets`, não rejeitam solicitações. O gasto de um departamento conta as mesmas chaves e solicitações OAuth que os limites de taxa de departamento, descritos abaixo. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e novamente em 100% de um orçamento diário, semanal ou mensal. O gasto vem de dados de uso que podem ter até uma hora de atraso.
 
 ## Políticas de limite de taxa

@@ -26,6 +26,7 @@ import {
 	Inbox,
 	SlidersHorizontal,
 	Tags,
+	Wallet,
 } from "lucide-react";
 
 export type NavItem = {
@@ -239,6 +240,12 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				match: ["/settings/keys"],
 			},
 			{
+				href: "/settings/budgets",
+				label: "Budgets",
+				icon: Wallet,
+				match: ["/settings/budgets"],
+			},
+			{
 				href: "/settings/management-api-keys",
 				label: "Management Keys",
 				icon: UserKey,
@@ -331,6 +338,7 @@ const WORKSPACE_NAV_ORDER = [
 "/settings/workspaces/settings",
 	"/settings/workspaces/enterprise",
 	"/settings/keys",
+	"/settings/budgets",
 	"/settings/usage",
 	"/settings/usage/logs",
 	"/settings/routing",

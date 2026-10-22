@@ -4474,7 +4474,8 @@
 		"workspaces": "Workspaces",
 		"classifiers": "Classifiers",
 		"newClassifier": "New classifier",
-		"classifier": "Classifier"
+		"classifier": "Classifier",
+		"budgets": "Budgets"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4701,7 +4702,8 @@
 		"becomeProvider": "Become a provider",
 		"empty": "No settings found.",
 		"providerProfile": "Provider profile",
-		"classifiers": "Classifiers"
+		"classifiers": "Classifiers",
+		"budgets": "Budgets"
 	},
 	"settingsAvailability": {
 		"title": "Settings are temporarily unavailable",
@@ -6257,5 +6259,74 @@
 			"samplePercent": "Enter a share from 0.01% to 100%.",
 			"budgetUsd": "Enter a budget greater than $0, or leave it empty."
 		}
+	},
+	"budgets": {
+		"title": "Budgets",
+		"description": "Cap what the whole workspace can spend each day, week or month, or in total.",
+		"feedback": "How could budgets work better for you?",
+		"selectWorkspace": "Select a workspace to see its budgets.",
+		"readOnly": "Only workspace owners and admins can change budgets.",
+		"usageNote": "Usage counts successful requests, plus async work while its funds are reserved.",
+		"howItWorks": "Budgets are enforced exactly, across every key in the workspace. Once a budget is used up, the gateway rejects further requests with a 429 until it resets.",
+		"utcNote": "Daily, weekly and monthly budgets reset on UTC boundaries: midnight, Monday 00:00 and the 1st of the month. Lifetime budgets never reset.",
+		"keyLimitsHint": "To cap a single key instead, set limits on it in <link>API keys</link>.",
+		"interval": {
+			"daily": "Daily",
+			"weekly": "Weekly",
+			"monthly": "Monthly",
+			"lifetime": "Lifetime"
+		},
+		"period": {
+			"daily": "Today",
+			"weekly": "This week",
+			"monthly": "This month",
+			"lifetime": "All time"
+		},
+		"notSet": "No budget set",
+		"add": "Set budget",
+		"edit": "Edit",
+		"delete": "Delete",
+		"deleting": "Deleting…",
+		"cancel": "Cancel",
+		"save": "Save",
+		"saving": "Saving…",
+		"usedUp": "Used up",
+		"ofLimit": "of {limit}",
+		"percentUsed": "{percent} used",
+		"remaining": "{amount} left",
+		"resets": "Resets in {time} ({date})",
+		"neverResets": "Never resets",
+		"onPaceFor": "On pace for {amount}",
+		"reachesLimit": "Hits limit ~{date}",
+		"meterLabel": "{period}: {used} of {limit}",
+		"createTitle": {
+			"daily": "Set a daily budget",
+			"weekly": "Set a weekly budget",
+			"monthly": "Set a monthly budget",
+			"lifetime": "Set a lifetime budget"
+		},
+		"editTitle": {
+			"daily": "Edit the daily budget",
+			"weekly": "Edit the weekly budget",
+			"monthly": "Edit the monthly budget",
+			"lifetime": "Edit the lifetime budget"
+		},
+		"deleteTitle": {
+			"daily": "Delete the daily budget?",
+			"weekly": "Delete the weekly budget?",
+			"monthly": "Delete the monthly budget?",
+			"lifetime": "Delete the lifetime budget?"
+		},
+		"limitLabel": "Limit (USD)",
+		"limitHelp": "Once spend in the period reaches this amount, requests are rejected with a 429 until the period resets or you raise the limit.",
+		"deleteBody": "Requests will no longer be capped over this period. This applies straight away.",
+		"saved": "Budget saved",
+		"savedDelayed": "Budget saved. It may take a few minutes to apply to requests.",
+		"deleted": "Budget deleted",
+		"errorConflict": "This workspace already has a budget for that period. Refresh the page to edit it.",
+		"errorForbidden": "Only workspace owners and admins can change budgets.",
+		"errorNotFound": "This budget no longer exists. Refresh the page.",
+		"errorInvalid": "Enter an amount greater than zero.",
+		"errorFailed": "Couldn't save the budget. Try again in a moment."
 	}
 }

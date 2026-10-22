@@ -4474,7 +4474,8 @@
 		"workspaces": "Espaces de travail",
 		"classifiers": "Classificateurs",
 		"newClassifier": "Nouveau classificateur",
-		"classifier": "Classificateur"
+		"classifier": "Classificateur",
+		"budgets": "Budgets"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4701,7 +4702,8 @@
 		"becomeProvider": "Devenir fournisseur",
 		"empty": "Aucun paramètre trouvé.",
 		"providerProfile": "Profil du fournisseur",
-		"classifiers": "Classificateurs"
+		"classifiers": "Classificateurs",
+		"budgets": "Budgets"
 	},
 	"settingsAvailability": {
 		"title": "Les paramètres sont temporairement indisponibles",
@@ -6257,5 +6259,74 @@
 			"samplePercent": "Saisissez une part de 0,01 % à 100 %.",
 			"budgetUsd": "Saisissez un budget supérieur à $0, ou laissez le champ vide."
 		}
+	},
+	"budgets": {
+		"title": "Budgets",
+		"description": "Plafonnez ce que tout l'espace de travail peut dépenser chaque jour, semaine ou mois, ou au total.",
+		"feedback": "Comment les budgets pourraient-ils mieux vous servir ?",
+		"selectWorkspace": "Sélectionnez un espace de travail pour voir ses budgets.",
+		"readOnly": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent modifier les budgets.",
+		"usageNote": "L'utilisation comprend les requêtes réussies, ainsi que les tâches asynchrones tant que leurs fonds sont réservés.",
+		"howItWorks": "Les budgets sont appliqués exactement, sur toutes les clés de l'espace de travail. Une fois un budget épuisé, la passerelle rejette les requêtes suivantes avec une erreur 429 jusqu'à sa réinitialisation.",
+		"utcNote": "Les budgets quotidiens, hebdomadaires et mensuels sont réinitialisés sur des limites UTC : à minuit, le lundi à 00:00 et le 1er du mois. Les budgets globaux ne sont jamais réinitialisés.",
+		"keyLimitsHint": "Pour plafonner une seule clé, définissez plutôt ses limites dans <link>Clés API</link>.",
+		"interval": {
+			"daily": "Quotidien",
+			"weekly": "Hebdomadaire",
+			"monthly": "Mensuel",
+			"lifetime": "Global"
+		},
+		"period": {
+			"daily": "Aujourd'hui",
+			"weekly": "Cette semaine",
+			"monthly": "Ce mois-ci",
+			"lifetime": "Depuis le début"
+		},
+		"notSet": "Aucun budget défini",
+		"add": "Définir un budget",
+		"edit": "Modifier",
+		"delete": "Supprimer",
+		"deleting": "Suppression…",
+		"cancel": "Annuler",
+		"save": "Enregistrer",
+		"saving": "Enregistrement…",
+		"usedUp": "Épuisé",
+		"ofLimit": "sur {limit}",
+		"percentUsed": "{percent} utilisé",
+		"remaining": "{amount} restants",
+		"resets": "Réinitialisation dans {time} ({date})",
+		"neverResets": "Jamais réinitialisé",
+		"onPaceFor": "Au rythme actuel : {amount}",
+		"reachesLimit": "Atteint la limite ~{date}",
+		"meterLabel": "{period} : {used} sur {limit}",
+		"createTitle": {
+			"daily": "Définir un budget quotidien",
+			"weekly": "Définir un budget hebdomadaire",
+			"monthly": "Définir un budget mensuel",
+			"lifetime": "Définir un budget global"
+		},
+		"editTitle": {
+			"daily": "Modifier le budget quotidien",
+			"weekly": "Modifier le budget hebdomadaire",
+			"monthly": "Modifier le budget mensuel",
+			"lifetime": "Modifier le budget global"
+		},
+		"deleteTitle": {
+			"daily": "Supprimer le budget quotidien ?",
+			"weekly": "Supprimer le budget hebdomadaire ?",
+			"monthly": "Supprimer le budget mensuel ?",
+			"lifetime": "Supprimer le budget global ?"
+		},
+		"limitLabel": "Limite (USD)",
+		"limitHelp": "Dès que les dépenses de la période atteignent ce montant, les requêtes sont rejetées avec une erreur 429 jusqu'à la réinitialisation de la période ou jusqu'à ce que vous releviez la limite.",
+		"deleteBody": "Les requêtes ne seront plus plafonnées sur cette période. Le changement s'applique immédiatement.",
+		"saved": "Budget enregistré",
+		"savedDelayed": "Budget enregistré. Son application aux requêtes peut prendre quelques minutes.",
+		"deleted": "Budget supprimé",
+		"errorConflict": "Cet espace de travail a déjà un budget pour cette période. Actualisez la page pour le modifier.",
+		"errorForbidden": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent modifier les budgets.",
+		"errorNotFound": "Ce budget n'existe plus. Actualisez la page.",
+		"errorInvalid": "Saisissez un montant supérieur à zéro.",
+		"errorFailed": "Impossible d'enregistrer le budget. Réessayez dans un instant."
 	}
 }

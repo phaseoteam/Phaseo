@@ -4474,7 +4474,8 @@
 		"workspaces": "ワークスペース",
 		"classifiers": "分類器",
 		"newClassifier": "新しい分類器",
-		"classifier": "分類器"
+		"classifier": "分類器",
+		"budgets": "予算"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4701,7 +4702,8 @@
 		"becomeProvider": "プロバイダーになる",
 		"empty": "設定が見つかりません。",
 		"providerProfile": "プロバイダープロフィール",
-		"classifiers": "分類器"
+		"classifiers": "分類器",
+		"budgets": "予算"
 	},
 	"settingsAvailability": {
 		"title": "設定は一時的に利用できません",
@@ -6257,5 +6259,74 @@
 			"samplePercent": "0.01% から 100% の割合を入力してください。",
 			"budgetUsd": "$0 より大きい予算を入力するか、空欄のままにしてください。"
 		}
+	},
+	"budgets": {
+		"title": "予算",
+		"description": "ワークスペース全体の支出を、日・週・月ごと、または累計で制限します。",
+		"feedback": "予算をもっと使いやすくするには、どうすればよいですか？",
+		"selectWorkspace": "予算を表示するワークスペースを選択してください。",
+		"readOnly": "予算を変更できるのは、ワークスペースのオーナーと管理者だけです。",
+		"usageNote": "使用量には、成功したリクエストと、資金が予約されている間の非同期処理が含まれます。",
+		"howItWorks": "予算はワークスペースのすべてのキーに対して正確に適用されます。予算を使い切ると、リセットされるまでゲートウェイは以降のリクエストを 429 で拒否します。",
+		"utcNote": "日次・週次・月次の予算は UTC の区切りでリセットされます（深夜 0 時、月曜 00:00、毎月 1 日）。累計予算はリセットされません。",
+		"keyLimitsHint": "1 つのキーだけを制限する場合は、<link>API キー</link>でそのキーの上限を設定してください。",
+		"interval": {
+			"daily": "日次",
+			"weekly": "週次",
+			"monthly": "月次",
+			"lifetime": "累計"
+		},
+		"period": {
+			"daily": "今日",
+			"weekly": "今週",
+			"monthly": "今月",
+			"lifetime": "全期間"
+		},
+		"notSet": "予算は未設定です",
+		"add": "予算を設定",
+		"edit": "編集",
+		"delete": "削除",
+		"deleting": "削除中…",
+		"cancel": "キャンセル",
+		"save": "保存",
+		"saving": "保存中…",
+		"usedUp": "使い切りました",
+		"ofLimit": "/ {limit}",
+		"percentUsed": "{percent} 使用",
+		"remaining": "残り {amount}",
+		"resets": "{time}後にリセット（{date}）",
+		"neverResets": "リセットされません",
+		"onPaceFor": "現在のペースで {amount}",
+		"reachesLimit": "上限到達 ~{date}",
+		"meterLabel": "{period}: {used} / {limit}",
+		"createTitle": {
+			"daily": "日次予算を設定",
+			"weekly": "週次予算を設定",
+			"monthly": "月次予算を設定",
+			"lifetime": "累計予算を設定"
+		},
+		"editTitle": {
+			"daily": "日次予算を編集",
+			"weekly": "週次予算を編集",
+			"monthly": "月次予算を編集",
+			"lifetime": "累計予算を編集"
+		},
+		"deleteTitle": {
+			"daily": "日次予算を削除しますか？",
+			"weekly": "週次予算を削除しますか？",
+			"monthly": "月次予算を削除しますか？",
+			"lifetime": "累計予算を削除しますか？"
+		},
+		"limitLabel": "上限（USD）",
+		"limitHelp": "期間中の支出がこの金額に達すると、期間がリセットされるか上限を引き上げるまで、リクエストは 429 で拒否されます。",
+		"deleteBody": "この期間のリクエストは制限されなくなります。すぐに反映されます。",
+		"saved": "予算を保存しました",
+		"savedDelayed": "予算を保存しました。リクエストに反映されるまで数分かかる場合があります。",
+		"deleted": "予算を削除しました",
+		"errorConflict": "このワークスペースには、その期間の予算がすでにあります。ページを更新して編集してください。",
+		"errorForbidden": "予算を変更できるのは、ワークスペースのオーナーと管理者だけです。",
+		"errorNotFound": "この予算はもう存在しません。ページを更新してください。",
+		"errorInvalid": "0 より大きい金額を入力してください。",
+		"errorFailed": "予算を保存できませんでした。しばらくしてからもう一度お試しください。"
 	}
 }

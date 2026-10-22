@@ -4474,7 +4474,8 @@
 		"workspaces": "工作区",
 		"classifiers": "分类器",
 		"newClassifier": "新建分类器",
-		"classifier": "分类器"
+		"classifier": "分类器",
+		"budgets": "预算"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4701,7 +4702,8 @@
 		"becomeProvider": "成为提供商",
 		"empty": "未找到设置。",
 		"providerProfile": "提供商资料",
-		"classifiers": "分类器"
+		"classifiers": "分类器",
+		"budgets": "预算"
 	},
 	"settingsAvailability": {
 		"title": "设置暂时不可用",
@@ -6257,5 +6259,74 @@
 			"samplePercent": "请输入 0.01% 到 100% 之间的比例。",
 			"budgetUsd": "请输入大于 $0 的预算，或留空。"
 		}
+	},
+	"budgets": {
+		"title": "预算",
+		"description": "限制整个工作区每天、每周、每月或累计可以花费的金额。",
+		"feedback": "预算怎样才能更好地满足你的需要？",
+		"selectWorkspace": "选择一个工作区以查看其预算。",
+		"readOnly": "只有工作区所有者和管理员可以更改预算。",
+		"usageNote": "用量包括成功的请求，以及资金仍处于预留状态的异步任务。",
+		"howItWorks": "预算会在工作区的所有密钥上精确执行。预算用完后，网关会以 429 拒绝后续请求，直到预算重置。",
+		"utcNote": "每日、每周和每月预算按 UTC 边界重置：午夜、周一 00:00 和每月 1 日。累计预算永不重置。",
+		"keyLimitsHint": "如果只想限制单个密钥，请在<link>API 密钥</link>中为它设置限额。",
+		"interval": {
+			"daily": "每日",
+			"weekly": "每周",
+			"monthly": "每月",
+			"lifetime": "累计"
+		},
+		"period": {
+			"daily": "今天",
+			"weekly": "本周",
+			"monthly": "本月",
+			"lifetime": "全部时间"
+		},
+		"notSet": "未设置预算",
+		"add": "设置预算",
+		"edit": "编辑",
+		"delete": "删除",
+		"deleting": "正在删除…",
+		"cancel": "取消",
+		"save": "保存",
+		"saving": "正在保存…",
+		"usedUp": "已用完",
+		"ofLimit": "/ {limit}",
+		"percentUsed": "已用 {percent}",
+		"remaining": "剩余 {amount}",
+		"resets": "{time}后重置（{date}）",
+		"neverResets": "永不重置",
+		"onPaceFor": "按当前速度：{amount}",
+		"reachesLimit": "约 {date} 达到上限",
+		"meterLabel": "{period}：{used} / {limit}",
+		"createTitle": {
+			"daily": "设置每日预算",
+			"weekly": "设置每周预算",
+			"monthly": "设置每月预算",
+			"lifetime": "设置累计预算"
+		},
+		"editTitle": {
+			"daily": "编辑每日预算",
+			"weekly": "编辑每周预算",
+			"monthly": "编辑每月预算",
+			"lifetime": "编辑累计预算"
+		},
+		"deleteTitle": {
+			"daily": "删除每日预算？",
+			"weekly": "删除每周预算？",
+			"monthly": "删除每月预算？",
+			"lifetime": "删除累计预算？"
+		},
+		"limitLabel": "限额（USD）",
+		"limitHelp": "当本周期的支出达到此金额后，请求将以 429 被拒绝，直到周期重置或你提高限额。",
+		"deleteBody": "此周期内的请求将不再受限。更改立即生效。",
+		"saved": "预算已保存",
+		"savedDelayed": "预算已保存。可能需要几分钟才会对请求生效。",
+		"deleted": "预算已删除",
+		"errorConflict": "此工作区已有该周期的预算。请刷新页面后编辑。",
+		"errorForbidden": "只有工作区所有者和管理员可以更改预算。",
+		"errorNotFound": "此预算已不存在。请刷新页面。",
+		"errorInvalid": "请输入大于零的金额。",
+		"errorFailed": "无法保存预算。请稍后重试。"
 	}
 }
