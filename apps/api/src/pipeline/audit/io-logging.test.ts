@@ -223,6 +223,62 @@ describe("persistGatewayIoLog", () => {
 		expect(state.bucket.put).not.toHaveBeenCalled();
 	});
 
+	it.each([
+		["provider.require_zero_data_retention", { provider: { require_zero_data_retention: true } }],
+		["routing.requireZeroDataRetention", { routing: { requireZeroDataRetention: true } }],
+		["provider.zdr", { provider: { zdr: true } }],
+	])("never stores bodies for a request that asks for zero data retention itself (%s)", async (_name, routing) => {
+		const { persistGatewayIoLog } = await import("./io-logging");
+
+		const result = await persistGatewayIoLog({
+			requestId: "req_zdr_request",
+			workspaceId: "workspace_1",
+			keyId: "key_1",
+			success: true,
+			requestPayload: { model: "openai/gpt-5-mini", input: "secret", ...routing },
+			gatewayResponse: { output: "answer" },
+		});
+
+		expect(result).toEqual({
+			io_log_status: "not_enabled",
+			io_log_error: "Skipped: zero data retention is required for this request",
+		});
+		expect(state.bucket.put).not.toHaveBeenCalled();
+	});
+
+	it("never stores bodies when the request context says zero data retention applies", async () => {
+		// A preset's require_zero_data_retention is only in the merged body the context was built from.
+		const { persistGatewayIoLog } = await import("./io-logging");
+
+		const result = await persistGatewayIoLog({
+			requestId: "req_zdr_preset",
+			workspaceId: "workspace_1",
+			keyId: "key_1",
+			success: true,
+			requestPayload: { model: "@preset/private", input: "secret" },
+			zeroDataRetention: true,
+		});
+
+		expect(result).toMatchObject({ io_log_status: "not_enabled" });
+		expect(state.bucket.put).not.toHaveBeenCalled();
+	});
+
+	it("still stores bodies for a request that turns zero data retention off", async () => {
+		const { persistGatewayIoLog } = await import("./io-logging");
+
+		const result = await persistGatewayIoLog({
+			requestId: "req_zdr_off",
+			workspaceId: "workspace_1",
+			keyId: "key_1",
+			success: true,
+			requestPayload: { model: "openai/gpt-5-mini", input: "hello", provider: { require_zero_data_retention: false } },
+			zeroDataRetention: false,
+		});
+
+		expect(result).toMatchObject({ io_log_status: "stored" });
+		expect(state.bucket.put).toHaveBeenCalledTimes(1);
+	});
+
 	it("keeps bodies out of storage when the key's policy can't be read", async () => {
 		state.keyPolicy = new Error("kv down");
 		const { resolveGatewayIoLoggingPolicy } = await import("./io-logging");

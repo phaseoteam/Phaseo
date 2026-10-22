@@ -12,7 +12,7 @@ import {
 	buildV2RequestUsageMeters,
 	stripGatewayRequestUsageColumns,
 } from "../usage-columns";
-import { persistGatewayIoLog, resolveGatewayIoLoggingPolicy } from "./io-logging";
+import { persistGatewayIoLog, requestZeroDataRetention, resolveGatewayIoLoggingPolicy } from "./io-logging";
 import { persistGatewayUpstreamRequests } from "./upstream-requests";
 import { protectStealthAuditArgs } from "./stealth-identity";
 import { buildRoutingObservability, toProviderModelId } from "./routing-observability";
@@ -756,6 +756,8 @@ export async function auditSuccess(input: {
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
+    /** Zero data retention applies to the request, so no content is stored: no I/O log and no detail row. */
+    zeroDataRetention?: boolean;
     errorPayload?: Record<string, unknown> | null;
     requestPayload?: unknown;
     gatewayResponse?: unknown;
@@ -967,9 +969,18 @@ export async function auditSuccess(input: {
                     error: v2Error instanceof Error ? v2Error.message : String(v2Error),
                 });
             }
+            // Zero data retention from the request, its preset or its routing diagnostics
+            // turns capture off, so neither the I/O log nor the detail row keeps its content.
             const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
                 workspaceId: args.workspaceId,
                 keyId: args.keyId ?? null,
+                zeroDataRetention: requestZeroDataRetention({
+                    zeroDataRetention: args.zeroDataRetention,
+                    requestPayload: args.requestPayload,
+                    metadata: args.detailMetadata,
+                    gatewayResponse: args.gatewayResponse,
+                    providerResponse: args.providerResponse,
+                }),
             });
             if (ioLoggingPolicy.captureEnabled) {
                 await persistGatewayIoLog({
@@ -989,6 +1000,7 @@ export async function auditSuccess(input: {
                 serverToolTrace: args.serverToolTrace,
 				lifecycleEvents: args.lifecycleEvents,
                 metadata: args.detailMetadata ?? {},
+                zeroDataRetention: args.zeroDataRetention === true,
                 }, ioLoggingPolicy);
                 await insertGatewayRequestDetailsNonBlocking(
                     {
@@ -1030,6 +1042,8 @@ type AuditFailureBefore = {
     stage: "before";
     requestId: string;
     workspaceId?: string | null;
+    /** Zero data retention applies to the request, so no content is stored: no I/O log and no detail row. */
+    zeroDataRetention?: boolean;
     endpoint: Endpoint;
     model?: string | null;
     requestedModel?: string | null;
@@ -1078,6 +1092,8 @@ type AuditFailureExecute = {
     stage: "execute";
     requestId: string;
     workspaceId: string;
+    /** Zero data retention applies to the request, so no content is stored: no I/O log and no detail row. */
+    zeroDataRetention?: boolean;
     endpoint: Endpoint;
     model: string;
     requestedModel?: string;
@@ -1267,6 +1283,13 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
                         workspaceId: args.workspaceId,
                         keyId: args.keyId ?? null,
+                        zeroDataRetention: requestZeroDataRetention({
+                            zeroDataRetention: args.zeroDataRetention,
+                            requestPayload: args.requestPayload,
+                            metadata: args.detailMetadata,
+                            gatewayResponse: args.gatewayResponse,
+                            providerResponse: args.providerResponse,
+                        }),
                     });
                     if (ioLoggingPolicy.captureEnabled) {
                         await persistGatewayIoLog({
@@ -1284,6 +1307,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         providerRequest: null,
                         providerResponse: args.providerResponse,
                         metadata: args.detailMetadata ?? {},
+                        zeroDataRetention: args.zeroDataRetention === true,
                         }, ioLoggingPolicy);
                         await insertGatewayRequestDetailsNonBlocking(
                             {
@@ -1460,6 +1484,13 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                 const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
                     workspaceId: args.workspaceId,
                     keyId: args.keyId ?? null,
+                    zeroDataRetention: requestZeroDataRetention({
+                        zeroDataRetention: args.zeroDataRetention,
+                        requestPayload: args.requestPayload,
+                        metadata: args.detailMetadata,
+                        gatewayResponse: args.gatewayResponse,
+                        providerResponse: args.providerResponse,
+                    }),
                 });
                 if (ioLoggingPolicy.captureEnabled) {
                     await persistGatewayIoLog({
@@ -1479,6 +1510,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     serverToolTrace: args.serverToolTrace,
 					lifecycleEvents: args.lifecycleEvents,
                     metadata: args.detailMetadata ?? {},
+                    zeroDataRetention: args.zeroDataRetention === true,
                     }, ioLoggingPolicy);
                     await insertGatewayRequestDetailsNonBlocking(
                         {

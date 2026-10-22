@@ -19,7 +19,7 @@ vi.mock("../classification/data-contribution", async (importOriginal) => ({
 
 import { handleSuccessAudit } from "./audit";
 
-function context(neverStoreContent: boolean) {
+function context(neverStoreContent: boolean, zeroDataRetention = false) {
 	return {
 		requestId: "req_never_store",
 		workspaceId: "ws_never_store",
@@ -28,6 +28,7 @@ function context(neverStoreContent: boolean) {
 		model: "openai/gpt-5.4",
 		stream: false,
 		neverStoreContent,
+		zeroDataRetention,
 		teamSettings: { dataContributionEnabled: true },
 		body: { model: "openai/gpt-5.4", input: "private question", tools: [{ type: "web_search_preview_2025_03_11" }] },
 		rawBody: { model: "openai/gpt-5.4", input: "private question", tools: [{ type: "web_search_preview_2025_03_11" }] },
@@ -81,8 +82,8 @@ const result = {
 	},
 } as any;
 
-async function audit(neverStoreContent: boolean) {
-	await handleSuccessAudit(context(neverStoreContent), result, false, { output_tokens: 12, total_tokens: 12 }, 0, 0, "USD", "stop", 200, "resp_1", { id: "resp_1" });
+async function audit(neverStoreContent: boolean, zeroDataRetention = false) {
+	await handleSuccessAudit(context(neverStoreContent, zeroDataRetention), result, false, { output_tokens: 12, total_tokens: 12 }, 0, 0, "USD", "stop", 200, "resp_1", { id: "resp_1" });
 	return auditSuccessMock.mock.calls[0][0].detailMetadata;
 }
 
@@ -123,5 +124,29 @@ describe("handleSuccessAudit for a key that never stores content", () => {
 		expect(metadata.search_observability.nativeSearches).toEqual([{ type: "web_search_call", query: "private search query", status: "completed" }]);
 		expect(metadata.web_fetch_observability.fetches[0].url).toBe("https://example.com/private-page");
 		expect(persistDataContributionMock).toHaveBeenCalledTimes(1);
+		expect(auditSuccessMock.mock.calls[0][0].zeroDataRetention).toBe(false);
+	});
+});
+
+describe("handleSuccessAudit for a request under zero data retention", () => {
+	beforeEach(() => {
+		auditSuccessMock.mockReset().mockResolvedValue(undefined);
+		persistDataContributionMock.mockReset().mockResolvedValue({ status: "stored" });
+	});
+
+	it("is never sampled for data contribution, even when the workspace contributes", async () => {
+		await audit(false, true);
+		expect(persistDataContributionMock).not.toHaveBeenCalled();
+	});
+
+	it("tells the success audit, so the I/O log skips it", async () => {
+		await audit(false, true);
+		expect(auditSuccessMock.mock.calls[0][0].zeroDataRetention).toBe(true);
+	});
+
+	it("keeps search and fetch details in the request log", async () => {
+		const metadata = await audit(false, true);
+		expect(metadata.search_observability.nativeSearches).toEqual([{ type: "web_search_call", query: "private search query", status: "completed" }]);
+		expect(metadata.web_fetch_observability.fetches[0].url).toBe("https://example.com/private-page");
 	});
 });

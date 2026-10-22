@@ -29,6 +29,7 @@ vi.mock("@core/workspace-usage-rollups", () => ({
 vi.mock("./io-logging", () => ({
 	resolveGatewayIoLoggingPolicy: (...args: any[]) => resolveGatewayIoLoggingPolicyMock(...args),
 	persistGatewayIoLog: (...args: any[]) => persistGatewayIoLogMock(...args),
+	requestZeroDataRetention: () => false,
 }));
 
 vi.mock("./upstream-requests", () => ({
