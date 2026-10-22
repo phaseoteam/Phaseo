@@ -25,6 +25,12 @@ import { createDb, type Db } from "./supabase";
 //   alarm flushes what is left of the old month and deletes it once its answers
 //   in progress are counted or dropped.
 // - uninstalled() closes the meter for good when the app is removed in Slack.
+// - Thread reads: Slack limits conversations.replies per app and workspace (about
+//   one a minute for apps outside the Slack Marketplace). When a read gets 429,
+//   pauseHistoryReads() keeps its Retry-After, and every thread of the
+//   installation skips its read until then. Reads aren't spaced otherwise: Slack
+//   tolerates small bursts, and a read it refuses only costs that turn its read,
+//   which spacing would have skipped anyway.
 // It keeps Slack user ids and counts only, never message text.
 
 const FLUSH_INTERVAL_MS = 60_000;
@@ -37,6 +43,10 @@ const PENDING_TTL_MS = 30 * 60_000;
 /** Answered event ids are kept this long so a retried recordAnswer counts once. */
 const ANSWERED_TTL_MS = 2 * 24 * 60 * 60_000;
 const HOUR_MS = 60 * 60_000;
+/** Used when Slack's Retry-After is missing or unreadable. */
+const DEFAULT_RETRY_AFTER_SECONDS = 60;
+/** The longest pause a Retry-After can set; Slack's windows are a minute. */
+const MAX_HISTORY_PAUSE_MS = HOUR_MS;
 
 export type MeterSettings = Pick<Installation,
 	"id" | "workspace_id" | "status" | "plan_people" | "over_plan" | "max_people" | "monthly_cap_nanos"
@@ -289,6 +299,24 @@ export class WorkspaceMeter extends DurableObject<Env> {
 		const month = this.month(period);
 		const pending = this.sql.exec<{ count: number }>("SELECT count(*) AS count FROM pending WHERE period = ? AND at > ?", period, now - PENDING_TTL_MS).one().count;
 		return { period, ...month, pending };
+	}
+
+	/** Until when Slack asked this installation not to read threads (its last Retry-After), or null when reads may go ahead. */
+	historyReadsPausedUntil(now = Date.now()): number | null {
+		const until = Number(this.meta("history_paused_until") ?? 0);
+		return until > now ? until : null;
+	}
+
+	/** A thread read got 429: no thread of this installation reads again until Retry-After has passed. */
+	pauseHistoryReads(input: { retryAfterSeconds?: number; now?: number }): { until: number } {
+		const now = input.now ?? Date.now();
+		const seconds = input.retryAfterSeconds !== undefined && Number.isFinite(input.retryAfterSeconds) && input.retryAfterSeconds > 0
+			? input.retryAfterSeconds
+			: DEFAULT_RETRY_AFTER_SECONDS;
+		// A longer pause already set (another thread's 429) stays.
+		const until = Math.max(Number(this.meta("history_paused_until") ?? 0), now + Math.min(Math.ceil(seconds * 1000), MAX_HISTORY_PAUSE_MS));
+		this.setMeta("history_paused_until", String(until));
+		return { until };
 	}
 
 	/**

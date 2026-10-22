@@ -127,7 +127,7 @@ export function meterSettings(installation: Installation): MeterSettings {
 	};
 }
 
-function meterFor(env: Env, installationId: string) {
+export function meterFor(env: Env, installationId: string) {
 	return env.METERS.get(env.METERS.idFromName(installationId));
 }
 

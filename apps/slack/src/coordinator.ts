@@ -46,8 +46,11 @@ export type EnqueueResult =
 /** ts: a reply's Slack message, so a read of the thread that shows it isn't repeated from memory. */
 export type MemoryEntry = { kind: "reply" | "tool"; text: string; at: number; ts: string | null };
 
-/** A message from the thread's history (conversations.replies), for one turn only. */
-export type ContextEntry = { role: "user" | "assistant"; author: string | null; text: string; ts: string | null };
+/**
+ * A message from the thread's history (conversations.replies), for one turn only.
+ * role: a person, the agent itself, or another bot or app (name: what Slack shows for it).
+ */
+export type ContextEntry = { role: "user" | "assistant" | "app"; author: string | null; name?: string; text: string; ts: string | null };
 
 /** What a turn's read of its thread returned (history.ts). Kept for that turn only. */
 export type ThreadContext = {
@@ -337,7 +340,13 @@ export class ThreadCoordinator extends DurableObject<Env> {
 
 	/** The thread's recent messages for one turn; deleted with the turn. */
 	setTurnContext(turnId: number, context: ThreadContext): void {
-		const trim = (entry: ContextEntry): ContextEntry => ({ role: entry.role, author: entry.author, text: entry.text.slice(0, MAX_CONTEXT_CHARS), ts: entry.ts });
+		const trim = (entry: ContextEntry): ContextEntry => ({
+			role: entry.role,
+			author: entry.author,
+			...(entry.name ? { name: entry.name } : {}),
+			text: entry.text.slice(0, MAX_CONTEXT_CHARS),
+			ts: entry.ts,
+		});
 		const kept: ThreadContext = {
 			root: context.root ? trim(context.root) : null,
 			messages: context.messages.slice(-MAX_CONTEXT_ENTRIES).map(trim),

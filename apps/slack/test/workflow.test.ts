@@ -6,7 +6,9 @@ import type { TurnRequest } from "../src/coordinator";
 import type { Installation } from "../src/installations";
 import type { TurnRef } from "../src/turns";
 import { runTurn, type StepConfig, type StepRunner, type TurnDeps } from "../src/workflow";
-import { BOT_TOKEN, BOT_USER_ID, INSTALLATION_ID, installationRow, TEAM_ID, testWorld, WORKSPACE_ID, type TestWorld } from "./fakes";
+import {
+	BOT_TOKEN, BOT_USER_ID, COMPANY_APP_ID, COMPANY_APP_ROW_ID, HOSTED_APP_ID, INSTALLATION_ID, installationRow, TEAM_ID, testWorld, WORKSPACE_ID, type TestWorld,
+} from "./fakes";
 
 const NOW = Date.UTC(2026, 9, 21, 12, 0, 0);
 const GATEWAY_KEY = "phaseo_v1_sk_testkid00000_testsecret";
@@ -57,20 +59,21 @@ async function startTurn(overrides: Partial<TurnRequest> = {}): Promise<TurnRef>
 	const channel = overrides.channel ?? "C0CHANNEL1";
 	const messageTs = overrides.messageTs ?? `1792600000.00${String(counter).padStart(4, "0")}`;
 	const threadTs = overrides.threadTs ?? messageTs;
-	const threadKey = `${INSTALLATION_ID}:${channel}:${threadTs}`;
+	const installationId = overrides.installationId ?? INSTALLATION_ID;
+	const threadKey = `${installationId}:${channel}:${threadTs}`;
 	const coordinator = world.threads.get(world.threads.idFromName(threadKey));
 	let started: TurnRef | null = null;
 	coordinator.runner = { start: async (turn) => { started = turn; return { started: true }; } };
 	const eventId = `Ev0WF${String(counter).padStart(4, "0")}`;
-	world.meters.get(world.meters.idFromName(INSTALLATION_ID)).admit({
-		settings: { id: INSTALLATION_ID, workspace_id: WORKSPACE_ID, status: "active", plan_people: 100, over_plan: "refuse", max_people: null, monthly_cap_nanos: 100_000_000_000, answers_per_person_hour: 60, allow_guests: true, allow_external_users: false },
+	world.meters.get(world.meters.idFromName(installationId)).admit({
+		settings: { id: installationId, workspace_id: WORKSPACE_ID, status: "active", plan_people: 100, over_plan: "refuse", max_people: null, monthly_cap_nanos: 100_000_000_000, answers_per_person_hour: 60, allow_guests: true, allow_external_users: false },
 		slackUserId: overrides.slackUserId ?? "U0PERSON01",
 		facts: { isBot: false, isExternal: false, isGuest: false },
 		eventId,
 		now: NOW,
 	});
 	await coordinator.enqueue({
-		threadKey, eventId, installationId: INSTALLATION_ID, teamId: TEAM_ID, channel, threadTs, messageTs,
+		threadKey, eventId, installationId, teamId: TEAM_ID, channel, threadTs, messageTs,
 		slackUserId: "U0PERSON01", kind: channel.startsWith("D") ? "dm" : "mention", text: `<@${BOT_USER_ID}> what did we spend this week?`,
 		...overrides,
 	}, NOW);
@@ -218,6 +221,111 @@ describe("AgentTurnWorkflow", () => {
 		expect(step.outputs.filter((entry) => entry.name === "context").at(-1)?.output).toEqual({ source: "memory", messages: 0 });
 		// What came between is unknown now, so the next read starts at this message; replies after it stay known.
 		expect(coordinatorOf(second).knownMessages()).toEqual(["1792600000.000080", "1792600100.000001", "1792600100.000002"]);
+	});
+
+	it("labels other bots and apps in the thread as such: only its own bot user or app is the agent", async () => {
+		const agent = new ScriptedAgent(async () => answer());
+		const question = `<@${BOT_USER_ID}> what did the deploy cost?`;
+		world.slack.replies = [
+			{ ts: "1792600000.000050", user: "U0PERSON02", text: `<@${BOT_USER_ID}> did the deploy go out?` },
+			{ ts: "1792600000.000060", user: BOT_USER_ID, bot_id: "B0BOT00001", app_id: HOSTED_APP_ID, text: "I can't see deploys, but I can check spend." },
+			{ ts: "1792600000.000065", user: "U0OTHERBOT", bot_id: "B0OTHER001", app_id: "A0OTHER001", bot_profile: { app_id: "A0OTHER001", name: "Deploy Bot" }, text: "Deploy 42 finished." },
+			{ ts: "1792600000.000068", subtype: "bot_message", bot_id: "B0HOOK0001", text: "Build passed." },
+			{ ts: "1792600000.000069", bot_id: "B0COMPANY1", app_id: COMPANY_APP_ID, bot_profile: { app_id: COMPANY_APP_ID, name: "Acme Agent" }, text: "Posted by the company's own app." },
+			{ ts: "1792600000.000070", user: "U0PERSON01", text: question },
+		];
+		const prompt = (companyAppLine: string) => [
+			"Earlier messages in this Slack thread, oldest first:",
+			"<@U0PERSON02>: did the deploy go out?",
+			"You (Phaseo agent): I can't see deploys, but I can check spend.",
+			"Another app (Deploy Bot): Deploy 42 finished.",
+			"Another app: Build passed.",
+			companyAppLine,
+			"",
+			"New message from <@U0PERSON01>:",
+			"what did the deploy cost?",
+		].join("\n");
+		await runTurn(deps(agent), await startTurn({ threadTs: "1792600000.000050", messageTs: "1792600000.000070", text: question }), step);
+		expect(agent.requests[0].prompt).toBe(prompt("Another app (Acme Agent): Posted by the company's own app."));
+
+		// Installed with the company's own app, that app's posts are the agent's, even without its bot user.
+		await install({ slack_app_id: COMPANY_APP_ROW_ID });
+		world.db.tables.slack_apps = [{ id: COMPANY_APP_ROW_ID, slack_app_id: COMPANY_APP_ID }];
+		await runTurn(deps(agent), await startTurn({ threadTs: "1792600000.000040", messageTs: "1792600000.000070", text: question }), step);
+		expect(agent.requests[1].prompt).toBe(prompt("You (Phaseo agent): Posted by the company's own app."));
+	});
+
+	describe("Slack's Retry-After for thread reads", () => {
+		const OTHER_INSTALLATION_ID = "00000000-0000-4000-8000-0000000000a2";
+		const COULDNT_READ = "(You couldn't read this Slack thread's messages just now";
+		const reads = () => world.slack.of("conversations.replies").length;
+		let threads = 0;
+		/** A follow-up in a new thread (not its first message, so the turn reads the thread). */
+		function followUp(overrides: Partial<TurnRequest> = {}) {
+			threads += 1;
+			return startTurn({ threadTs: `${1_792_600_000 + threads}.000100`, messageTs: `${1_792_600_000 + threads}.000200`, ...overrides });
+		}
+
+		it("a 429 in one thread pauses reads in the installation's other threads until Retry-After, but not another installation's", async () => {
+			world.db.tables.slack_installations.push(await installationRow({ id: OTHER_INSTALLATION_ID, team_id: "T0TEST0002", bot_user_id: "U0BOT00002" }));
+			const agent = new ScriptedAgent(async () => answer());
+			world.slack.failures.set("conversations.replies", ["ratelimited:30"]);
+			await runTurn(deps(agent), await followUp(), step);
+			expect(reads()).toBe(1);
+			expect(agent.requests[0].prompt).toContain(COULDNT_READ);
+
+			// Another thread of the same installation doesn't ask Slack, and says it couldn't read.
+			await runTurn(deps(agent), await followUp(), step);
+			expect(reads()).toBe(1);
+			expect(agent.requests[1].prompt).toContain(COULDNT_READ);
+			expect(step.outputs.filter((entry) => entry.name === "context").at(-1)?.output).toEqual({ source: "memory", messages: 0 });
+
+			// Another installation (another Slack workspace) reads as usual.
+			await runTurn(deps(agent), await followUp({ installationId: OTHER_INSTALLATION_ID }), step);
+			expect(reads()).toBe(2);
+			expect(agent.requests[2].prompt).not.toContain(COULDNT_READ);
+
+			// Reads start again once Retry-After has passed.
+			world.clock.now = NOW + 29_999;
+			await runTurn(deps(agent), await followUp(), step);
+			expect(reads()).toBe(2);
+			world.clock.now = NOW + 30_000;
+			await runTurn(deps(agent), await followUp(), step);
+			expect(reads()).toBe(3);
+			expect(agent.requests.at(-1)!.prompt).not.toContain(COULDNT_READ);
+		});
+
+		it("doesn't space reads otherwise, for the hosted app or a company's own app, and a company app honours a 429 too", async () => {
+			const agent = new ScriptedAgent(async () => answer());
+			await runTurn(deps(agent), await followUp(), step);
+			await runTurn(deps(agent), await followUp(), step);
+			expect(reads()).toBe(2);
+
+			await install({ slack_app_id: COMPANY_APP_ROW_ID });
+			world.db.tables.slack_apps = [{ id: COMPANY_APP_ROW_ID, slack_app_id: COMPANY_APP_ID }];
+			await runTurn(deps(agent), await followUp(), step);
+			await runTurn(deps(agent), await followUp(), step);
+			expect(reads()).toBe(4);
+
+			world.slack.failures.set("conversations.replies", ["ratelimited"]);
+			await runTurn(deps(agent), await followUp(), step);
+			await runTurn(deps(agent), await followUp(), step);
+			expect(reads()).toBe(5);
+			world.clock.now = NOW + 60_000;
+			await runTurn(deps(agent), await followUp(), step);
+			expect(reads()).toBe(6);
+			expect(agent.requests.map((request) => request.prompt.includes(COULDNT_READ))).toEqual([false, false, false, false, true, true, false]);
+		});
+
+		it("still reads when the meter can't say whether reads are paused", async () => {
+			const agent = new ScriptedAgent(async () => answer());
+			meter().historyReadsPausedUntil = () => {
+				throw new Error("meter_unavailable");
+			};
+			await runTurn(deps(agent), await followUp(), step);
+			expect(reads()).toBe(1);
+			expect(agent.requests[0].prompt).not.toContain(COULDNT_READ);
+		});
 	});
 
 	describe("a 40-message thread", () => {
