@@ -341,6 +341,8 @@ const client = new Phaseo({
 });
 ```
 
+Before a model's first request, the client looks it up once with `GET /models` and refuses models that are not active. Pass `modelLifecycleChecks: false` to skip that lookup and let the gateway answer for the model; `client.models.validate()` still checks a model on demand.
+
 ## Environment variables
 
 - `PHASEO_API_KEY` (required unless passed in code)
