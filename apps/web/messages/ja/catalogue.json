@@ -2838,6 +2838,9 @@
 		"activityChart": "Phaseo 経由の {name} の日別トークン（過去 30 日）",
 		"activityNone": "過去 30 日間に Phaseo 経由のトラフィックはありません",
 		"activityNoneAll": "過去 30 日間、これらのモデルはいずれも Phaseo 経由のトラフィックがありません。",
+		"peersTitle": "ランキングでの位置",
+		"peersSub": "各能力指数の上位 5 モデルと、比較中のモデル。各モデルは最高スコアの設定で表示します。",
+		"peerModels": "{count} モデルをランク付け",
 		"activityRequestsTotal": "リクエスト（過去 30 日）"
 	},
 	"countries": {

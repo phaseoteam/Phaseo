@@ -8,6 +8,10 @@ import { composeComparisonModels, type ComparisonSources } from "@/models/compar
 import { composeCompareView } from "@/models/compare-view";
 import { fetchModelPricingSources } from "@/models/pricing";
 import { composeCompareActivity, composeCompareUsage } from "@/models/compare-usage";
+import { composeComparePeers, type PeerBoardSource } from "@/models/compare-peers";
+import { sharedPayload } from "@/cache/sharedPayload";
+import { loadEpochLeaderboard } from "@/benchmarks/model-ranks";
+import { loadBenchmarkRankings } from "./rankings";
 
 const COMPARE_CACHE = {
 	edgeTtlSeconds: 60 * 60,
@@ -33,6 +37,15 @@ const COMPARE_USAGE_CACHE = {
 	staleWhileRevalidateSeconds: 5 * 60,
 	cacheTags: ["web-api-compare", "web-api-model-performance", "web-api-model-token-trajectories", "web-api-model-realtime"],
 } as const;
+
+/** Ranks move whenever any model's scores do, so purge them with the leaderboards. */
+const COMPARE_PEERS_CACHE = {
+	...COMPARE_CACHE,
+	cacheTags: ["web-api-compare", "web-api-ranking-metadata", "web-api-benchmarks", "web-api-model-benchmarks"],
+} as const;
+const PEER_BOARDS_TTL_SECONDS = 15 * 60;
+/** The capability indexes; the cost index ranks spend, not ability. */
+const PEER_BOARD_FAMILIES = ["aa-intelligence-index-v", "aa-coding-index-v", "aa-agentic-index-v"];
 
 export const publicCompareRouter = new Hono<{ Bindings: Env }>();
 
@@ -76,6 +89,36 @@ publicCompareRouter.get("/compare/usage", async (c) => {
 	} catch (error) {
 		console.error("[web-api/compare] usage failed", { modelIds, error });
 		return c.json({ error: "compare_usage_unavailable" }, 503);
+	}
+});
+
+/** Every leaderboard the compare page can place models on, shared by every selection. */
+async function loadPeerBoards(env: Env): Promise<PeerBoardSource[]> {
+	return sharedPayload("compare-peer-boards/v1", PEER_BOARDS_TTL_SECONDS, async () => {
+		const [rankings, epoch] = await Promise.all([loadBenchmarkRankings(env), loadEpochLeaderboard(env)]);
+		const boards: PeerBoardSource[] = rankings.benchmarks
+			.filter((board) => PEER_BOARD_FAMILIES.some((family) => board.benchmark_id.startsWith(family)))
+			.map((board) => ({
+				benchmark_id: board.benchmark_id, name: board.name, source: "artificial-analysis", lower_is_better: board.lower_is_better,
+				entries: board.entries.map((entry) => ({ model_id: entry.model_id, model_name: entry.model_name ?? null, organisation_id: entry.organisation_id ?? null, score: entry.score, rank: entry.rank })),
+			}));
+		if (epoch?.entries.length) boards.push({
+			benchmark_id: epoch.benchmark_id, name: epoch.name, source: "epoch", lower_is_better: epoch.lower_is_better,
+			entries: epoch.entries.map((entry) => ({ model_id: entry.model_id, model_name: entry.model_name, organisation_id: entry.organisation_id, score: entry.score, rank: entry.rank })),
+		});
+		return boards;
+	});
+}
+
+publicCompareRouter.get("/compare/peers", async (c) => {
+	const modelIds = parseSelection(c.req.query("ids"));
+	if (!modelIds) return c.json({ error: "invalid_compare_selection" }, 400);
+	if (modelIds.length === 0) return withPublicCache(c.json({ boards: [] }), COMPARE_PEERS_CACHE);
+	try {
+		return withPublicCache(c.json({ boards: composeComparePeers(await loadPeerBoards(c.env), modelIds) }), COMPARE_PEERS_CACHE);
+	} catch (error) {
+		console.error("[web-api/compare] peers failed", { modelIds, error });
+		return c.json({ error: "compare_peers_unavailable" }, 503);
 	}
 });
 

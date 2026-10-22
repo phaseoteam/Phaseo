@@ -2838,6 +2838,9 @@
 		"activityChart": "{name} 通过 Phaseo 的每日 token，过去 30 天",
 		"activityNone": "过去 30 天没有通过 Phaseo 的流量",
 		"activityNoneAll": "过去 30 天，这些模型都没有通过 Phaseo 的流量。",
+		"peersTitle": "排名位置",
+		"peersSub": "每个能力指数的前五名，以及所比较的模型。每个模型取其得分最高的设置。",
+		"peerModels": "共 {count} 个模型参与排名",
 		"activityRequestsTotal": "个请求，过去 30 天"
 	},
 	"countries": {

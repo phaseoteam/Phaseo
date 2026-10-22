@@ -25,7 +25,7 @@ import type { AppStats, ModelStats, APIProviderUpdates } from "@/lib/fetchers/ap
 import type { ProviderMetrics } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { ArtificialAnalysisPublicData, BenchmarkCard, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import type { CountryListSummary, CountrySummary } from "@/lib/fetchers/countries/types";
-import type { CompareView } from "@/components/(data)/compare/view/types";
+import type { ComparePeerBoard, CompareView } from "@/components/(data)/compare/view/types";
 import type { FamilyCard, FamilyInfo } from "@/lib/fetchers/families/types";
 import type {
 	MarketplacePreset,
@@ -1131,6 +1131,13 @@ export async function fetchFrontendCompareView(modelIds: string[]): Promise<Comp
 	const ids = [...new Set(modelIds.map((value) => value.trim()).filter(Boolean))].sort();
 	if (ids.length === 0) return { models: [], benchmarks: [] };
 	return fetchPublicWebApi<CompareView>(`/api/_web/compare/view?ids=${encodeURIComponent(ids.join(","))}`);
+}
+
+/** The compared models' places on the capability leaderboards. */
+export async function fetchFrontendComparePeers(modelIds: string[]): Promise<ComparePeerBoard[]> {
+	const ids = [...new Set(modelIds.map((value) => value.trim()).filter(Boolean))].sort();
+	if (ids.length === 0) return [];
+	return (await fetchPublicWebApi<{ boards: ComparePeerBoard[] }>(`/api/_web/compare/peers?ids=${encodeURIComponent(ids.join(","))}`)).boards;
 }
 
 export type FrontendCompareUsage = Record<string, {

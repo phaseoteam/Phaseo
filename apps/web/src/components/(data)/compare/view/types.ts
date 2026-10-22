@@ -6,6 +6,20 @@
 export type CompareView = {
 	models: CompareViewModel[];
 	benchmarks: CompareViewBenchmark[];
+	/** Leaderboard context, fetched separately; absent when that request fails. */
+	peers?: ComparePeerBoard[];
+};
+
+export type ComparePeerEntry = { modelId: string; name: string; labId: string | null; score: number; rank: number };
+
+/** A capability leaderboard's leaders, then any compared model further down, in rank order. */
+export type ComparePeerBoard = {
+	id: string;
+	name: string;
+	source: "artificial-analysis" | "epoch";
+	lowerIsBetter: boolean;
+	total: number;
+	entries: ComparePeerEntry[];
 };
 
 export type CompareViewModel = {
