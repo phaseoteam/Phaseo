@@ -50,6 +50,18 @@ describe("settings sidebar navigation", () => {
 		expect(getActiveSettingsNav("/settings/budgets")?.item.label).toBe("Budgets");
 	});
 
+	it("shows Slack after Apps only behind the Slack agent flag", () => {
+		const hrefs = (showSlackAgent: boolean) => getSettingsSidebar({ showSlackAgent }).flatMap((group) => group.items.map((item) => item.href));
+		expect(hrefs(false)).not.toContain("/settings/slack");
+		const shown = hrefs(true);
+		expect(shown.indexOf("/settings/slack")).toBe(shown.indexOf("/settings/apps") + 1);
+		const active = getActiveSettingsNav("/settings/slack", { showSlackAgent: true });
+		expect(active?.item.label).toBe("Slack");
+		expect(active?.item.badge).toBe("Beta");
+		expect(active?.group.scope).toBe("workspace");
+		expect(getActiveSettingsNav("/settings/slack")?.item.label).not.toBe("Slack");
+	});
+
 	it("includes the workspace activity log under settings", () => {
 		const settings = getActiveSettingsNav("/settings/workspaces/activity")?.item;
 		expect(settings?.label).toBe("Settings");
@@ -82,6 +94,7 @@ describe("settings sidebar navigation", () => {
 				"Enterprise",
 				"API Keys",
 				"Budgets",
+				"Key Security",
 				"Usage",
 				"Logs",
 				"Routing",

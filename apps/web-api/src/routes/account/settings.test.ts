@@ -279,7 +279,7 @@ describe("account settings routes", () => {
 		);
 		expect(response.status).toBe(200);
 		expect(ledgerQuery?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
-		expect(ledgerQuery?.searchParams.get("or")).toBe("(kind.is.null,kind.not.in.(charge,usage))");
+		expect(ledgerQuery?.searchParams.get("or")).toBe("(kind.is.null,kind.not.in.(charge,usage),ref_type.eq.slack_agent_month)");
 		expect(ledgerQuery?.searchParams.get("limit")).toBe("250");
 		const body = await response.json() as { transactions: Array<{ kind: string | null }> };
 		expect(body.transactions.map(row => row.kind)).toEqual(billingKinds);

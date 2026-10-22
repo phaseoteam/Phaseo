@@ -25,6 +25,7 @@ import {
 	Workflow,
 	ClipboardCheck,
 	Inbox,
+	MessagesSquare,
 	SlidersHorizontal,
 	Tags,
 	Wallet,
@@ -271,6 +272,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				match: ["/settings/apps"],
 			},
 			{
+				href: "/settings/slack",
+				label: "Slack",
+				icon: MessagesSquare,
+				badge: "Beta",
+				match: ["/settings/slack"],
+			},
+			{
 				href: "/settings/routing",
 				label: "Routing",
 				icon: Waypoints,
@@ -357,13 +365,14 @@ const WORKSPACE_NAV_ORDER = [
 	"/settings/workspaces/private-models",
 	"/settings/byok",
 	"/settings/apps",
+	"/settings/slack",
 	"/settings/management-api-keys",
 	"/settings/broadcast",
 	"/settings/oauth-apps",
 	"/settings/webhooks",
 ] as const;
 
-export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showClassifiers?: boolean; showInternal?: boolean; providerMode?: boolean }): NavGroup[] {
+export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showClassifiers?: boolean; showSlackAgent?: boolean; showInternal?: boolean; providerMode?: boolean }): NavGroup[] {
 	if (options?.providerMode) {
 		return [
 			{ scope: "personal", items: BASE_SETTINGS_SIDEBAR[0].items.filter((item) => ["/settings/profile", "/settings/account"].includes(item.href)) },
@@ -379,6 +388,7 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 	const showEnterprise = options?.showEnterprise ?? true;
 	const showAutoRouting = options?.showAutoRouting ?? false;
 	const showClassifiers = options?.showClassifiers ?? false;
+	const showSlackAgent = options?.showSlackAgent ?? false;
 	const showInternal = options?.showInternal ?? false;
 	const groups = BASE_SETTINGS_SIDEBAR.map((group) => ({
 		...group,
@@ -388,6 +398,7 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 				(showWebhooks ? true : item.href !== "/settings/webhooks") &&
 				(showEnterprise ? true : item.href !== "/settings/workspaces/enterprise") &&
 				(showClassifiers ? true : item.href !== "/settings/classifiers") &&
+				(showSlackAgent ? true : item.href !== "/settings/slack") &&
 				(showInternal ? true : !item.href.startsWith("/settings/internal/")),
 			)
 			.map((item) => ({
@@ -429,7 +440,7 @@ export function isSettingsNavChildActive(
 
 export function getActiveSettingsNav(
 	pathname: string,
-	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean; showClassifiers?: boolean; providerMode?: boolean },
+	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean; showClassifiers?: boolean; showSlackAgent?: boolean; providerMode?: boolean },
 ): ResolvedSettingsNav | null {
 	const navGroups = getSettingsSidebar(options);
 

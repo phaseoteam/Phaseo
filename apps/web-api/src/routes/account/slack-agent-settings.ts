@@ -12,6 +12,10 @@ export const MAX_MONTHLY_USD = 100_000;
 export const MAX_INSTRUCTIONS_CHARS = 8_000;
 export const MAX_USAGE_DATA_CHANNELS = 100;
 export const MAX_ANSWERS_PER_PERSON_HOUR = 10_000;
+/** The slack_installations column defaults. */
+export const DEFAULT_ANSWERS_PER_PERSON_HOUR = 60;
+export const DEFAULT_ALLOW_GUESTS = true;
+export const DEFAULT_ALLOW_EXTERNAL_USERS = false;
 export const DEFAULT_SLACK_AGENT_MODEL = "phaseo/auto";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -34,6 +38,9 @@ export type SlackAgentInstallSettings = {
 	max_people: number | null;
 	monthly_cap_usd: number;
 	token_monthly_limit_usd: number;
+	answers_per_person_hour: number;
+	allow_guests: boolean;
+	allow_external_users: boolean;
 	model: string;
 	access_mode: AccessMode;
 	usage_data_mode: UsageDataMode;
@@ -154,6 +161,7 @@ export function planProblem(values: { plan_people: number; max_people: number | 
 
 const INSTALL_FIELDS = new Set([
 	"workspaceId", "plan_people", "over_plan", "max_people", "monthly_cap_usd", "token_monthly_limit_usd",
+	"answers_per_person_hour", "allow_guests", "allow_external_users",
 	"model", "access_mode", "usage_data_mode", "slack_app_id",
 ]);
 
@@ -172,6 +180,12 @@ export function parseInstallSettings(body: Body): Result<SlackAgentInstallSettin
 	if (cap.ok === false) return fail(cap.message);
 	const keyLimit = usd(body.token_monthly_limit_usd ?? 0, "token_monthly_limit_usd", true);
 	if (keyLimit.ok === false) return fail(keyLimit.message);
+	const hourly = integer(body.answers_per_person_hour ?? DEFAULT_ANSWERS_PER_PERSON_HOUR, "answers_per_person_hour", 1, MAX_ANSWERS_PER_PERSON_HOUR);
+	if (hourly.ok === false) return fail(hourly.message);
+	const guests = bool(body.allow_guests ?? DEFAULT_ALLOW_GUESTS, "allow_guests");
+	if (guests.ok === false) return fail(guests.message);
+	const external = bool(body.allow_external_users ?? DEFAULT_ALLOW_EXTERNAL_USERS, "allow_external_users");
+	if (external.ok === false) return fail(external.message);
 	const chosenModel = model(body.model ?? DEFAULT_SLACK_AGENT_MODEL);
 	if (chosenModel.ok === false) return fail(chosenModel.message);
 	const access = oneOf<AccessMode>(body.access_mode ?? "everyone", "access_mode", ["everyone", "linked"]);
@@ -189,6 +203,9 @@ export function parseInstallSettings(body: Body): Result<SlackAgentInstallSettin
 		max_people: max.value,
 		monthly_cap_usd: cap.value,
 		token_monthly_limit_usd: keyLimit.value,
+		answers_per_person_hour: hourly.value,
+		allow_guests: guests.value,
+		allow_external_users: external.value,
 		model: chosenModel.value,
 		access_mode: access.value,
 		usage_data_mode: usage.value,

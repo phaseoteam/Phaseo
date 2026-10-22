@@ -388,5 +388,17 @@
       "{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"result\",\"schema\":{\"type\":\"object\"}}}"
     ],
     "reason": "JSON examples in the template tools and response format inputs; they are API values, not copy."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/slack/SlackAgentSettingsClient.tsx"
+    ],
+    "attributes": [
+      "placeholder"
+    ],
+    "texts": [
+      "C0123ABCD, C0456EFGH"
+    ],
+    "reason": "Example Slack channel IDs in the usage-data channel input; they are Slack identifiers in their exact format, not copy."
   }
 ]

@@ -4060,7 +4060,8 @@
 				"autoTopUp": "自动充值",
 				"refund": "退款",
 				"adjustment": "调整",
-				"usage": "用量"
+				"usage": "用量",
+				"slackAgent": "Slack 智能体"
 			},
 			"refundEligibility": {
 				"refundInProgress": "此笔购买的退款已在处理中或已完成。",
@@ -4726,7 +4727,8 @@
 		"providerProfile": "提供商资料",
 		"classifiers": "分类器",
 		"budgets": "预算",
-		"keySecurity": "密钥安全"
+		"keySecurity": "密钥安全",
+		"slack": "Slack"
 	},
 	"settingsAvailability": {
 		"title": "设置暂时不可用",
@@ -6516,5 +6518,247 @@
 		"errorNotFound": "此预算已不存在。请刷新页面。",
 		"errorInvalid": "请输入大于零的金额。",
 		"errorFailed": "无法保存预算。请稍后重试。"
+	},
+	"slack": {
+		"title": "Slack",
+		"description": "将 Phaseo 智能体添加到 Slack，让你的团队向它提问，并由你选择的模型来回答。",
+		"teamFallback": "你的 Slack 工作区",
+		"notAvailable": "Slack 智能体暂不可用。准备就绪后会显示在这里。",
+		"fixFirst": "请先修正标出的字段。",
+		"saving": "正在保存…",
+		"cancel": "取消",
+		"openChat": "打开 Chat",
+		"addCredits": "充值额度",
+		"notices": {
+			"installed": "Phaseo 智能体现已加入 {team}。"
+		},
+		"member": {
+			"installed": "Phaseo 智能体已安装在 {team}。",
+			"notInstalled": "此工作区尚未安装 Phaseo 智能体。",
+			"askAdmin": "工作区所有者和管理员可以添加它并更改其设置。",
+			"linkHint": "如果智能体请你连接 Phaseo 账户，请使用它在 Slack 中发给你的链接。"
+		},
+		"install": {
+			"title": "添加到 Slack",
+			"description": "选择智能体的工作方式，然后在 Slack 中批准。之后你可以随时更改这些设置。",
+			"submit": "添加到 Slack",
+			"redirecting": "正在打开 Slack…",
+			"hostedUnavailable": "Phaseo 的 Slack 应用暂不可用。如需现在安装，请在“高级”中保存你自己的 Slack 应用。",
+			"customAppOnly": "这将安装你自己的 Slack 应用 {appId}。",
+			"appChoice": "Slack 应用",
+			"hostedApp": "Phaseo 的 Slack 应用",
+			"customApp": "你的 Slack 应用（{appId}）"
+		},
+		"sections": {
+			"agent": "智能体",
+			"access": "谁可以使用",
+			"usageData": "用量数据",
+			"limits": "限制",
+			"month": "本月",
+			"charges": "历史扣费",
+			"customApp": "高级：使用你自己的 Slack 应用",
+			"uninstall": "卸载"
+		},
+		"model": {
+			"label": "模型",
+			"auto": "自动",
+			"specific": "指定模型",
+			"autoHelp": "Phaseo 会为每个问题挑选合适的模型。",
+			"help": "模型 token 与其他网关请求一样计费，通过智能体自己的 API 密钥结算。"
+		},
+		"instructions": {
+			"label": "指令",
+			"help": "智能体在每次回答中都会遵循的额外说明，例如语气或重点。",
+			"placeholder": "回答尽量简短。需要时附上我们的员工手册链接。"
+		},
+		"access": {
+			"everyone": "Slack 中的所有人",
+			"linked": "仅限已关联的账户",
+			"everyoneHelp": "你的 Slack 工作区中的任何人都可以向智能体提问，但受以下限制约束。",
+			"linkedHelp": "仅限将 Slack 账户关联到此 Phaseo 工作区成员的人。智能体会向其他人发送用于关联的链接。"
+		},
+		"usageData": {
+			"help": "已关联的成员可以向智能体询问此工作区的 Phaseo 用量和支出。",
+			"off": "关闭",
+			"dm": "私信",
+			"dmAndChannels": "私信和指定频道",
+			"offHelp": "智能体从不分享用量数据。",
+			"dmHelp": "仅在与智能体的私信中。",
+			"dmAndChannelsHelp": "在私信中，以及下面列出的频道中。",
+			"channels": "频道 ID",
+			"channelsHelp": "用逗号分隔 ID。频道 ID 位于 Slack 中该频道详情的底部。留空则仅限私信。"
+		},
+		"limits": {
+			"pricing": "你按当月使用过智能体的人数支付对应套餐的价格。每人每月包含 {included} 次回答，在整个工作区共享；超出的回答每 1,000 次收费 {extra}。",
+			"plan": "套餐",
+			"planOption": "最多 {people} 人 · 每月 {price}",
+			"planCustom": "超过 {people} 人",
+			"customPeople": "套餐人数",
+			"customPrice": "每月 {price}",
+			"overPlan": "当新加入的人会超出套餐时",
+			"refuse": "拒绝",
+			"moveUp": "自动升级套餐",
+			"refuseHelp": "智能体会告知对方套餐已满，这次拒绝会记录在工作区活动日志中。",
+			"moveUpHelp": "套餐会随使用智能体的人数增长，最多到每月人数上限。",
+			"maxPeople": "每月人数上限",
+			"maxPeopleHelp": "留空表示不限制。",
+			"noLimit": "不限制",
+			"monthlyCap": "每月支出上限",
+			"monthlyCapHelp": "智能体的每月费用绝不会超过此金额。达到上限后，智能体会停止回答，直到下个月。",
+			"answersPerHour": "每人每小时回答数",
+			"answersPerHourHelp": "防止一个人用完整个月的额度。默认值为 {default}。",
+			"tokenLimit": "每月模型支出上限",
+			"tokenLimitHelp": "限制智能体的 API 密钥每月在模型 token 上的支出。留空表示不限制。",
+			"allowGuests": "允许访客",
+			"allowGuestsHelp": "你的 Slack 工作区中的访客可以使用智能体。",
+			"allowExternal": "允许其他公司的人",
+			"allowExternalHelp": "共享 Slack Connect 频道中其他公司的人可以使用智能体。"
+		},
+		"status": {
+			"active": "运行中",
+			"paused": "已暂停",
+			"payment_due": "待付款"
+		},
+		"installed": {
+			"team": "已安装在 {team}",
+			"since": "添加于 {date}",
+			"customApp": "使用你自己的 Slack 应用",
+			"pause": "暂停回答",
+			"resume": "恢复回答",
+			"pausedNote": "回答已暂停，直到你恢复为止。",
+			"pausedToast": "已暂停回答。",
+			"resumedToast": "已恢复回答。",
+			"save": "保存更改",
+			"saved": "设置已保存。",
+			"discard": "放弃更改"
+		},
+		"month": {
+			"note": "{date}截至目前，按 UTC 计算。月底时从额度中扣费。",
+			"people": "人数",
+			"peopleDetail": "本月得到回答的人",
+			"answers": "回答",
+			"included": "含 {count} 次",
+			"estimate": "预计费用",
+			"cap": "上限 {cap}",
+			"plan": "套餐",
+			"planValue": "最多 {people} 人",
+			"planPrice": "每月 {price}"
+		},
+		"charges": {
+			"month": "月份",
+			"people": "人数",
+			"answers": "回答",
+			"amount": "金额",
+			"status": "状态",
+			"charged": "已支付",
+			"pending": "等待额度",
+			"empty": "暂无扣费。首次扣费将在本月结束时进行。",
+			"note": "每笔扣费也会以“Slack 智能体”显示在你的账单交易中。",
+			"transactions": "查看交易"
+		},
+		"customApp": {
+			"description": "安装你公司自己的 Slack 应用来代替 Phaseo 的应用，例如使用你自己的名称和图标。请在其中登记此重定向 URL 和这些机器人权限范围。",
+			"manifest": "文档中的 Slack 智能体指南提供了包含这些设置的现成应用清单。",
+			"redirectUrl": "重定向 URL",
+			"copyRedirectUrl": "复制重定向 URL",
+			"scopes": "机器人令牌权限范围",
+			"copyScopes": "复制权限范围",
+			"appId": "应用 ID",
+			"clientId": "客户端 ID",
+			"clientSecret": "客户端密钥",
+			"signingSecret": "签名密钥",
+			"secretsHelp": "可在 Slack 中你的应用的 Basic Information 页面找到这些信息。Phaseo 会加密存储密钥，且不会再次显示。",
+			"save": "保存 Slack 应用",
+			"savedToast": "Slack 应用已保存。",
+			"saved": "应用 {appId}，客户端 ID {clientId}",
+			"secretsSaved": "密钥已保存。只有在需要替换时才需重新输入。",
+			"inUse": "智能体是通过此应用安装的，因此只能更改其密钥。如需更换应用，请先卸载。",
+			"replace": "替换信息",
+			"remove": "移除",
+			"removed": "Slack 应用已移除。",
+			"removeTitle": "移除你的 Slack 应用？",
+			"removeDescription": "Phaseo 会删除已保存的信息。之后的安装将使用 Phaseo 的 Slack 应用。",
+			"notAvailable": "使用你自己的 Slack 应用的功能暂不可用。"
+		},
+		"uninstall": {
+			"description": "从 Slack 中移除智能体并删除其 API 密钥。历史扣费仍保留在你的账单记录中。",
+			"button": "卸载",
+			"working": "正在卸载…",
+			"title": "要从 {team} 卸载 Phaseo 智能体吗？",
+			"confirmDescription": "它会立即停止回答，其 API 密钥会被删除，应用也会从 Slack 中移除。之后你可以再次添加。",
+			"done": "Phaseo 智能体已卸载。",
+			"slackNotConfirmed": "已在 Phaseo 中卸载，但 Slack 未确认。请同时在 Slack 中移除该应用。"
+		},
+		"problems": {
+			"planPeople": "请输入 {min} 到 {max} 之间的整数人数。",
+			"maxPeople": "请输入整数人数，或留空表示不限制。",
+			"maxPeopleBelowPlan": "不能低于套餐的 {people} 人。",
+			"monthlyCap": "请输入大于 $0 且不超过 {max} 的金额，例如 25 或 12.50。",
+			"capBelowPlan": "上限必须覆盖套餐价格 {price}。",
+			"answersPerHour": "请输入 1 到 {max} 之间的整数。",
+			"tokenLimit": "请输入不超过 {max} 的金额，或留空表示不限制。",
+			"model": "请选择一个模型。",
+			"instructions": "指令最多 {max} 个字符。",
+			"channelIds": "请输入 Slack 频道 ID，例如 C0123ABCD，用逗号分隔。",
+			"tooManyChannels": "最多列出 {max} 个频道。",
+			"customApp": {
+				"slackAppId": "请输入应用 ID，例如 A0123ABCDEF。",
+				"clientId": "请输入客户端 ID，例如 1234567890.1234567890。",
+				"clientSecret": "请粘贴客户端密钥。",
+				"signingSecret": "请粘贴签名密钥。"
+			}
+		},
+		"errors": {
+			"notAvailable": "Slack 智能体暂不可用。",
+			"forbidden": "只有工作区所有者和管理员可以更改 Slack 智能体。",
+			"privacyReview": "请先打开一次 Chat 并检查工作区的隐私设置，然后重试。",
+			"paymentDue": "上个月的 Slack 智能体费用付清后，回答才会恢复。请充值额度来支付。",
+			"appConflict": "另一位管理员同时为此工作区保存了 Slack 应用。请刷新后重试。",
+			"appTaken": "此 Slack 应用已连接到另一个 Phaseo 工作区。",
+			"appInUse": "请先卸载 Slack 智能体，再更换或移除 Slack 应用。",
+			"appNotFound": "请先保存你的 Slack 应用。",
+			"appMissing": "此工作区没有保存 Slack 应用。请刷新页面。",
+			"appUnavailable": "Phaseo 无法读取你的 Slack 应用已保存的信息。请重新保存后再试。",
+			"alreadyInstalled": "此工作区已安装 Slack 智能体。",
+			"teamInUse": "此 Slack 工作区已从另一个 Phaseo 工作区安装了智能体。请先在那里卸载。",
+			"notInstalled": "此工作区已不再安装 Slack 智能体。请刷新页面。",
+			"conflict": "Slack 智能体在此期间已被更改。请刷新后重试。",
+			"keyMissing": "智能体的 API 密钥缺失。请卸载智能体后重新添加。",
+			"slackDenied": "安装未在 Slack 中获得批准。",
+			"slackError": "Slack 无法完成安装。请重试。",
+			"slackResponseInvalid": "Slack 的回复与此次安装不符。请检查你的 Slack 应用信息后重试。",
+			"stateExpired": "安装耗时过长。请重新开始。",
+			"stateInvalid": "安装链接无效。请重新开始。",
+			"signInRequired": "请在此浏览器中登录 Phaseo，然后重新开始安装。",
+			"sessionMismatch": "请使用发起安装的管理员账户完成安装。",
+			"installFailed": "安装未完成，也没有进行任何设置。请重试。",
+			"invalid": "请检查设置后重试。",
+			"invalidWithMessage": "请检查设置后重试：{message}",
+			"unavailable": "Phaseo 暂时无法完成此操作。请稍后再试。",
+			"generic": "出了点问题。请重试。"
+		},
+		"link": {
+			"metaTitle": "连接 Slack",
+			"title": "连接你的 Slack 账户",
+			"description": "这会将打开此页面的 Slack 账户与你的 Phaseo 账户关联，让 Phaseo 智能体知道你是谁。",
+			"warning": "仅当你是从 Slack 中 Phaseo 智能体的消息打开此链接时才继续。",
+			"confirm": "连接账户",
+			"confirming": "正在连接…",
+			"missingToken": "此链接缺少代码。请从 Slack 中 Phaseo 智能体的消息重新打开。",
+			"failedTitle": "你的账户未连接",
+			"linkedTitle": "你的 Slack 账户已连接",
+			"linked": "你现在可以作为 {workspace} 的成员在 {team} 中使用 Phaseo 智能体。",
+			"linkedGeneric": "你现在可以在 Slack 中使用 Phaseo 智能体。",
+			"close": "你可以关闭此页面并返回 Slack。",
+			"errors": {
+				"expired": "此链接已过期。请在 Slack 中向 Phaseo 智能体索取新链接。",
+				"invalid": "此链接无效。请在 Slack 中向 Phaseo 智能体索取新链接。",
+				"notInstalled": "该 Slack 工作区已不再安装 Phaseo 智能体。",
+				"wrongWorkspace": "请使用将智能体添加到 Slack 的 Phaseo 工作区中的账户登录。",
+				"notAvailable": "Slack 智能体暂不可用。",
+				"signIn": "请登录 Phaseo，然后重新打开链接。",
+				"failed": "出了点问题。请重新打开链接。"
+			}
+		}
 	}
 }

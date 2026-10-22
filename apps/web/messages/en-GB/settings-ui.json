@@ -4060,7 +4060,8 @@
 				"autoTopUp": "Automatic top-up",
 				"refund": "Refund",
 				"adjustment": "Adjustment",
-				"usage": "Usage"
+				"usage": "Usage",
+				"slackAgent": "Slack agent"
 			},
 			"refundEligibility": {
 				"refundInProgress": "A refund for this purchase is already in progress or completed.",
@@ -4726,7 +4727,8 @@
 		"providerProfile": "Provider profile",
 		"classifiers": "Classifiers",
 		"budgets": "Budgets",
-		"keySecurity": "Key Security"
+		"keySecurity": "Key Security",
+		"slack": "Slack"
 	},
 	"settingsAvailability": {
 		"title": "Settings are temporarily unavailable",
@@ -6516,5 +6518,247 @@
 		"errorNotFound": "This budget no longer exists. Refresh the page.",
 		"errorInvalid": "Enter an amount greater than zero.",
 		"errorFailed": "Couldn't save the budget. Try again in a moment."
+	},
+	"slack": {
+		"title": "Slack",
+		"description": "Add the Phaseo agent to Slack so your team can ask it questions, answered by the model you choose.",
+		"teamFallback": "your Slack workspace",
+		"notAvailable": "The Slack agent isn't available yet. It will appear here once it's ready.",
+		"fixFirst": "Fix the highlighted fields first.",
+		"saving": "Saving…",
+		"cancel": "Cancel",
+		"openChat": "Open Chat",
+		"addCredits": "Add credits",
+		"notices": {
+			"installed": "The Phaseo agent is now in {team}."
+		},
+		"member": {
+			"installed": "The Phaseo agent is installed in {team}.",
+			"notInstalled": "The Phaseo agent isn't installed in this workspace.",
+			"askAdmin": "Workspace owners and admins can add it and change its settings.",
+			"linkHint": "If the agent asks you to connect your Phaseo account, use the link it sends you in Slack."
+		},
+		"install": {
+			"title": "Add to Slack",
+			"description": "Choose how the agent works, then approve it in Slack. You can change all of this later.",
+			"submit": "Add to Slack",
+			"redirecting": "Opening Slack…",
+			"hostedUnavailable": "Phaseo's Slack app isn't available yet. To install now, save your own Slack app under Advanced.",
+			"customAppOnly": "This installs your own Slack app, {appId}.",
+			"appChoice": "Slack app",
+			"hostedApp": "Phaseo's Slack app",
+			"customApp": "Your Slack app ({appId})"
+		},
+		"sections": {
+			"agent": "Agent",
+			"access": "Who can use it",
+			"usageData": "Usage data",
+			"limits": "Limits",
+			"month": "This month",
+			"charges": "Past charges",
+			"customApp": "Advanced: use your own Slack app",
+			"uninstall": "Uninstall"
+		},
+		"model": {
+			"label": "Model",
+			"auto": "Auto",
+			"specific": "A specific model",
+			"autoHelp": "Phaseo picks a suitable model for each question.",
+			"help": "Model tokens are billed like other gateway requests, through the agent's own API key."
+		},
+		"instructions": {
+			"label": "Instructions",
+			"help": "Extra guidance the agent follows in every answer, such as tone or what to focus on.",
+			"placeholder": "Keep answers short. Link to our handbook when it helps."
+		},
+		"access": {
+			"everyone": "Everyone in Slack",
+			"linked": "Linked accounts only",
+			"everyoneHelp": "Anyone in your Slack workspace can ask the agent, within the limits below.",
+			"linkedHelp": "Only people who link their Slack account to a member of this Phaseo workspace. The agent sends everyone else a link to do it."
+		},
+		"usageData": {
+			"help": "Linked members can ask the agent about this workspace's Phaseo usage and spend.",
+			"off": "Off",
+			"dm": "Direct messages",
+			"dmAndChannels": "Direct messages and chosen channels",
+			"offHelp": "The agent never shares usage data.",
+			"dmHelp": "Only in a direct message with the agent.",
+			"dmAndChannelsHelp": "In direct messages, and in the channels listed below.",
+			"channels": "Channel IDs",
+			"channelsHelp": "Separate IDs with commas. A channel's ID is at the bottom of its details in Slack. Leave empty for direct messages only."
+		},
+		"limits": {
+			"pricing": "You pay the plan price for the number of people who used the agent that month. Each person includes {included} answers a month, shared across the workspace; more answers cost {extra} per 1,000.",
+			"plan": "Plan",
+			"planOption": "Up to {people} people · {price} a month",
+			"planCustom": "More than {people} people",
+			"customPeople": "People on the plan",
+			"customPrice": "{price} a month",
+			"overPlan": "When a new person would go over the plan",
+			"refuse": "Refuse",
+			"moveUp": "Move up a plan automatically",
+			"refuseHelp": "The agent tells them the plan is full, and the refusal appears in the workspace activity log.",
+			"moveUpHelp": "The plan grows with the people who use the agent, up to the most people a month.",
+			"maxPeople": "Most people a month",
+			"maxPeopleHelp": "Leave blank for no limit.",
+			"noLimit": "No limit",
+			"monthlyCap": "Monthly spending cap",
+			"monthlyCapHelp": "The agent's monthly charge never goes above this. Once it's reached, the agent stops answering until next month.",
+			"answersPerHour": "Answers per person per hour",
+			"answersPerHourHelp": "Stops one person using up the month. The default is {default}.",
+			"tokenLimit": "Model spend limit a month",
+			"tokenLimitHelp": "Caps what the agent's API key spends on model tokens each month. Leave blank for no limit.",
+			"allowGuests": "Allow guests",
+			"allowGuestsHelp": "Guests in your Slack workspace can use the agent.",
+			"allowExternal": "Allow people from other companies",
+			"allowExternalHelp": "People from other companies in shared Slack Connect channels can use the agent."
+		},
+		"status": {
+			"active": "Active",
+			"paused": "Paused",
+			"payment_due": "Payment due"
+		},
+		"installed": {
+			"team": "Installed in {team}",
+			"since": "Added {date}",
+			"customApp": "Uses your own Slack app",
+			"pause": "Pause answers",
+			"resume": "Resume answers",
+			"pausedNote": "Answers are paused until you resume them.",
+			"pausedToast": "Answers paused.",
+			"resumedToast": "Answers resumed.",
+			"save": "Save changes",
+			"saved": "Settings saved.",
+			"discard": "Discard changes"
+		},
+		"month": {
+			"note": "{date} so far, in UTC. The charge is taken from credits when the month ends.",
+			"people": "People",
+			"peopleDetail": "Who got an answer this month",
+			"answers": "Answers",
+			"included": "{count} included",
+			"estimate": "Estimated charge",
+			"cap": "Cap {cap}",
+			"plan": "Plan",
+			"planValue": "Up to {people} people",
+			"planPrice": "{price} a month"
+		},
+		"charges": {
+			"month": "Month",
+			"people": "People",
+			"answers": "Answers",
+			"amount": "Amount",
+			"status": "Status",
+			"charged": "Paid",
+			"pending": "Waiting for credits",
+			"empty": "No charges yet. The first one is taken when this month ends.",
+			"note": "Each charge also appears in your billing transactions as Slack agent.",
+			"transactions": "View transactions"
+		},
+		"customApp": {
+			"description": "Install a Slack app your company owns instead of Phaseo's, for example to use your own name and icon. Register this redirect URL and these bot scopes in it.",
+			"manifest": "The Slack agent guide in the docs has a ready-made app manifest with these settings.",
+			"redirectUrl": "Redirect URL",
+			"copyRedirectUrl": "Copy redirect URL",
+			"scopes": "Bot token scopes",
+			"copyScopes": "Copy scopes",
+			"appId": "App ID",
+			"clientId": "Client ID",
+			"clientSecret": "Client secret",
+			"signingSecret": "Signing secret",
+			"secretsHelp": "Find these on your app's Basic Information page in Slack. Phaseo stores the secrets encrypted and never shows them again.",
+			"save": "Save Slack app",
+			"savedToast": "Slack app saved.",
+			"saved": "App {appId}, client ID {clientId}",
+			"secretsSaved": "Its secrets are saved. Enter them again only to replace them.",
+			"inUse": "The agent is installed with this app, so only its secrets can change. Uninstall to switch apps.",
+			"replace": "Replace details",
+			"remove": "Remove",
+			"removed": "Slack app removed.",
+			"removeTitle": "Remove your Slack app?",
+			"removeDescription": "Phaseo deletes its saved details. Later installs use Phaseo's Slack app.",
+			"notAvailable": "Using your own Slack app isn't available yet."
+		},
+		"uninstall": {
+			"description": "Removes the agent from Slack and deletes its API key. Past charges stay in your billing history.",
+			"button": "Uninstall",
+			"working": "Uninstalling…",
+			"title": "Uninstall the Phaseo agent from {team}?",
+			"confirmDescription": "It stops answering straight away, its API key is deleted and the app is removed from Slack. You can add it again later.",
+			"done": "The Phaseo agent is uninstalled.",
+			"slackNotConfirmed": "Uninstalled in Phaseo, but Slack didn't confirm it. Remove the app in Slack too."
+		},
+		"problems": {
+			"planPeople": "Enter a whole number of people from {min} to {max}.",
+			"maxPeople": "Enter a whole number of people, or leave it blank for no limit.",
+			"maxPeopleBelowPlan": "This can't be lower than the plan's {people} people.",
+			"monthlyCap": "Enter an amount above $0 and up to {max}, such as 25 or 12.50.",
+			"capBelowPlan": "The cap must cover the plan's price, {price}.",
+			"answersPerHour": "Enter a whole number from 1 to {max}.",
+			"tokenLimit": "Enter an amount up to {max}, or leave it blank for no limit.",
+			"model": "Choose a model.",
+			"instructions": "Keep instructions to {max} characters or fewer.",
+			"channelIds": "Enter Slack channel IDs such as C0123ABCD, separated by commas.",
+			"tooManyChannels": "List at most {max} channels.",
+			"customApp": {
+				"slackAppId": "Enter the app ID, such as A0123ABCDEF.",
+				"clientId": "Enter the client ID, such as 1234567890.1234567890.",
+				"clientSecret": "Paste the client secret.",
+				"signingSecret": "Paste the signing secret."
+			}
+		},
+		"errors": {
+			"notAvailable": "The Slack agent isn't available yet.",
+			"forbidden": "Only workspace owners and admins can change the Slack agent.",
+			"privacyReview": "Open Chat once and review your workspace privacy settings, then try again.",
+			"paymentDue": "Answers resume once last month's Slack agent charge is paid. Add credits to pay it.",
+			"appConflict": "Another admin saved a Slack app for this workspace at the same time. Reload and try again.",
+			"appTaken": "This Slack app is already connected to another Phaseo workspace.",
+			"appInUse": "Uninstall the Slack agent before switching to a different Slack app or removing it.",
+			"appNotFound": "Save your Slack app first.",
+			"appMissing": "No Slack app is saved for this workspace. Reload the page.",
+			"appUnavailable": "Phaseo couldn't read your Slack app's saved details. Save them again, then retry.",
+			"alreadyInstalled": "The Slack agent is already installed in this workspace.",
+			"teamInUse": "This Slack workspace already has the agent from another Phaseo workspace. Uninstall it there first.",
+			"notInstalled": "The Slack agent isn't installed in this workspace any more. Reload the page.",
+			"conflict": "The Slack agent changed in the meantime. Reload and try again.",
+			"keyMissing": "The agent's API key is missing. Uninstall the agent and add it again.",
+			"slackDenied": "The install wasn't approved in Slack.",
+			"slackError": "Slack couldn't finish the install. Try again.",
+			"slackResponseInvalid": "Slack's reply didn't match this install. Check your Slack app's details and try again.",
+			"stateExpired": "The install took too long. Start again.",
+			"stateInvalid": "The install link wasn't valid. Start again.",
+			"signInRequired": "Sign in to Phaseo in this browser, then start the install again.",
+			"sessionMismatch": "Finish the install signed in as the admin who started it.",
+			"installFailed": "The install didn't finish, and nothing was set up. Try again.",
+			"invalid": "Check the settings and try again.",
+			"invalidWithMessage": "Check the settings and try again: {message}",
+			"unavailable": "Phaseo couldn't do that right now. Try again in a moment.",
+			"generic": "Something went wrong. Try again."
+		},
+		"link": {
+			"metaTitle": "Connect Slack",
+			"title": "Connect your Slack account",
+			"description": "This links the Slack account that opened this page to your Phaseo account, so the Phaseo agent knows who you are.",
+			"warning": "Only continue if you opened this link from the Phaseo agent's message in Slack.",
+			"confirm": "Connect account",
+			"confirming": "Connecting…",
+			"missingToken": "This link is missing its code. Open it again from the Phaseo agent's message in Slack.",
+			"failedTitle": "Your account isn't connected",
+			"linkedTitle": "Your Slack account is connected",
+			"linked": "You can now use the Phaseo agent in {team} as a member of {workspace}.",
+			"linkedGeneric": "You can now use the Phaseo agent in Slack.",
+			"close": "You can close this page and go back to Slack.",
+			"errors": {
+				"expired": "This link has expired. Ask the Phaseo agent in Slack for a new one.",
+				"invalid": "This link isn't valid. Ask the Phaseo agent in Slack for a new one.",
+				"notInstalled": "The Phaseo agent is no longer installed in that Slack workspace.",
+				"wrongWorkspace": "Sign in with an account in the Phaseo workspace that added the agent to Slack.",
+				"notAvailable": "The Slack agent isn't available yet.",
+				"signIn": "Sign in to Phaseo, then open the link again.",
+				"failed": "Something went wrong. Open the link again."
+			}
+		}
 	}
 }
