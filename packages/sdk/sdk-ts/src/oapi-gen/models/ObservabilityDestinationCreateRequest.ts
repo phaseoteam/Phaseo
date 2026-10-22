@@ -45,5 +45,11 @@ export interface ObservabilityDestinationCreateRequest {
     }[];
   }[];
   sampling_rate?: number;
-  type: "otel_collector" | "webhook";
+  type:
+    | "braintrust"
+    | "datadog"
+    | "langfuse"
+    | "langsmith"
+    | "otel_collector"
+    | "webhook";
 }

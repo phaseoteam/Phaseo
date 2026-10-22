@@ -46,7 +46,13 @@ export interface ObservabilityDestinationResponse {
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "braintrust"
+      | "datadog"
+      | "langfuse"
+      | "langsmith"
+      | "otel_collector"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };

@@ -14,13 +14,13 @@ export type BroadcastDestinationType = {
 // script checks this list against that table's CHECK constraint.
 export const BROADCAST_DESTINATION_TYPES = [
 	{ id: "arize", delivery: null },
-	{ id: "braintrust", delivery: null },
+	{ id: "braintrust", delivery: "otlp" },
 	{ id: "clickhouse", delivery: null },
 	{ id: "comet_opik", delivery: null },
-	{ id: "datadog", delivery: null },
+	{ id: "datadog", delivery: "otlp" },
 	{ id: "grafana_cloud", delivery: null },
-	{ id: "langfuse", delivery: null },
-	{ id: "langsmith", delivery: null },
+	{ id: "langfuse", delivery: "otlp" },
+	{ id: "langsmith", delivery: "otlp" },
 	{ id: "new_relic", delivery: null },
 	{ id: "otel_collector", delivery: "otlp" },
 	{ id: "posthog", delivery: null },
@@ -89,13 +89,17 @@ export const OTLP_COMPRESSIONS = ["none", "gzip"] as const;
 export type OtlpCompression = (typeof OTLP_COMPRESSIONS)[number];
 
 // How a vendor's OTLP intake is reached from the fields its form collects.
-// Templates use {field} for a config value and {basic:user_field:password_field}
-// for an HTTP basic Authorization value. A placeholder at the start of the
-// endpoint is a base URL and is inserted as is; any later one is URL-encoded.
+// Templates use {field} for a config value, {field?} for one that may be left
+// empty, and {basic:user_field:password_field} for an HTTP basic Authorization
+// value. A placeholder at the start of the endpoint is a base URL and is
+// inserted as is; any later one is URL-encoded.
 export type OtlpPreset = {
 	endpoint: string;
 	// Used when the config leaves a field empty.
 	defaults?: Record<string, string>;
+	// Fields that must be one of these values, such as a vendor's regions.
+	allowedValues?: Record<string, readonly string[]>;
+	// A header or resource attribute whose template renders empty is left out.
 	headers?: Record<string, string>;
 	protocol?: OtlpProtocol;
 	compression?: OtlpCompression;
@@ -110,7 +114,50 @@ export type OtlpPreset = {
 
 // Destination types sent over OTLP with a vendor's settings. Types without an
 // entry here, such as otel_collector, take the endpoint and headers as entered.
-export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> = {};
+export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> = {
+	// https://www.braintrust.dev/docs/integrations/sdk-integrations/opentelemetry
+	braintrust: {
+		endpoint: "{base_url}/otel/v1/traces",
+		defaults: { base_url: "https://api.braintrust.dev" },
+		headers: { Authorization: "Bearer {api_key}", "x-bt-parent": "project_id:{project_id}" },
+		protocol: "http/protobuf",
+	},
+	// LLM Observability over OTLP:
+	// https://docs.datadoghq.com/llm_observability/instrumentation/otel_instrumentation/
+	// Sites are those with an OTLP intake, less the government sites, which do
+	// not offer LLM Observability. Without dd-ml-app the ML app is the
+	// service.name, phaseo-gateway. dd_llmobs_enabled turns on the conversion
+	// to LLM Observability spans; without it a trace can land as plain APM.
+	datadog: {
+		endpoint: "https://otlp.{site}/v1/traces",
+		defaults: { site: "datadoghq.com" },
+		allowedValues: {
+			site: ["datadoghq.com", "us3.datadoghq.com", "us5.datadoghq.com", "datadoghq.eu", "ap1.datadoghq.com", "ap2.datadoghq.com", "uk1.datadoghq.com"],
+		},
+		headers: { "dd-api-key": "{api_key}", "dd-otlp-source": "llmobs", "dd-ml-app": "{ml_app?}" },
+		protocol: "http/protobuf",
+		resourceAttributes: { dd_llmobs_enabled: "true" },
+	},
+	// https://langfuse.com/integrations/native/opentelemetry
+	// Without the ingestion version header, traces can take up to 10 minutes to
+	// appear. Langfuse reads sessions from langfuse.session.id or session.id.
+	langfuse: {
+		endpoint: "{base_url}/api/public/otel/v1/traces",
+		defaults: { base_url: "https://cloud.langfuse.com" },
+		headers: { Authorization: "{basic:public_key:secret_key}", "x-langfuse-ingestion-version": "4" },
+		protocol: "http/protobuf",
+		attributeAliases: { "langfuse.session.id": "gen_ai.conversation.id" },
+	},
+	// https://docs.langchain.com/langsmith/trace-with-opentelemetry
+	// Self-hosted instances take their API URL with /api/v1 as the base URL.
+	// Without a project, traces go to the "default" project.
+	langsmith: {
+		endpoint: "{base_url}/otel/v1/traces",
+		defaults: { base_url: "https://api.smith.langchain.com" },
+		headers: { "x-api-key": "{api_key}", "Langsmith-Project": "{project?}" },
+		protocol: "http/protobuf",
+	},
+};
 
 // Everything needed to send one OTLP export to a destination.
 export type OtlpTarget = {
@@ -123,7 +170,7 @@ export type OtlpTarget = {
 	maxAttributeLength: number | null;
 };
 
-const PLACEHOLDER = /\{([a-z0-9_:]+)\}/g;
+const PLACEHOLDER = /\{([a-z0-9_:]+\??)\}/g;
 
 function base64(text: string): string {
 	let binary = "";
@@ -137,15 +184,22 @@ function renderTemplate(
 	preset: OtlpPreset,
 	encode: (value: string, offset: number) => string = (value) => value,
 ): string {
-	const field = (name: string) => {
+	const field = (name: string, optional = false) => {
 		const value = String(config[name] ?? "").trim() || preset.defaults?.[name] || "";
-		if (!value) throw new Error(`${name} is required`);
+		if (!value) {
+			if (optional) return "";
+			throw new Error(`${name} is required`);
+		}
+		const allowed = preset.allowedValues?.[name];
+		if (allowed && !allowed.includes(value)) throw new Error(`${name} must be one of: ${allowed.join(", ")}`);
 		return value;
 	};
 	return template.replace(PLACEHOLDER, (_match, name: string, offset: number) => {
 		const [kind, user, password] = name.split(":");
 		if (kind === "basic" && user && password) return `Basic ${base64(`${field(user)}:${field(password)}`)}`;
-		return encode(field(name), offset);
+		const optional = name.endsWith("?");
+		const value = field(optional ? name.slice(0, -1) : name, optional);
+		return value ? encode(value, offset) : "";
 	});
 }
 
@@ -192,6 +246,7 @@ export function resolveOtlpTarget(id: unknown, config: Record<string, unknown>):
 	const headers = new Headers();
 	for (const [key, template] of Object.entries(preset?.headers ?? {})) {
 		const value = renderTemplate(template, config, preset!);
+		if (!value) continue;
 		// Headers rejects these with an unhelpful TypeError.
 		if (/[\r\n\0]/.test(value)) throw new Error(`Header ${key} must not contain line breaks`);
 		headers.set(key, value);
@@ -205,7 +260,8 @@ export function resolveOtlpTarget(id: unknown, config: Record<string, unknown>):
 		protocol,
 		compression: compressionValue as OtlpCompression,
 		resourceAttributes: Object.fromEntries(Object.entries(preset?.resourceAttributes ?? {})
-			.map(([key, template]) => [key, renderTemplate(template, config, preset!)])),
+			.map(([key, template]) => [key, renderTemplate(template, config, preset!)])
+			.filter(([, value]) => value)),
 		attributeAliases: { ...preset?.attributeAliases },
 		maxAttributeLength: preset?.maxAttributeLength ?? null,
 	};
