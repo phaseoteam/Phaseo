@@ -20,6 +20,7 @@ import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
+import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { readDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 
@@ -798,6 +799,14 @@ export async function handleError({
         requestObservability?.requestPayload ??
         recoveredRequest.requestPayload ??
         null;
+    // Rejections before makeMeta have no ctx.meta; read metadata and trace keys the same way it would.
+    const requestMetadataForObservability = ctx?.meta
+        ? ctx.meta.requestMetadata ?? null
+        : readRequestMetadata((requestPayloadForObservability as any)?.metadata);
+    const traceContextForObservability = ctx?.meta
+        ? ctx.meta.otelTraceContext ?? null
+        : parseW3cTraceContext(req?.headers.get("traceparent") ?? null, req?.headers.get("tracestate") ?? null) ??
+            metadataTraceContext(requestMetadataForObservability);
     const generationId =
         ctx?.requestId ??
         body?.generation_id ??
@@ -1125,12 +1134,12 @@ export async function handleError({
                 errorType,
                 startedAtMs: ctx?.meta?.startedAtMs ?? Date.now(),
                 completedAtMs: Date.now(),
-                traceContext: ctx?.meta?.otelTraceContext ?? null,
+                traceContext: traceContextForObservability,
                 requestMethod: requestMeta.requestMethod,
                 requestPath: requestMeta.requestPath,
                 sessionId: auditArgs.sessionId,
                 edgeColo: requestMeta.edgeColo,
-                metadata: ctx?.meta?.requestMetadata ?? null,
+                metadata: requestMetadataForObservability,
                 rateLimitPolicyId: isPolicyRejection ? (errorPayload.policy_id as string | undefined) ?? null : null,
                 rateLimitScope: isPolicyRejection ? (errorPayload.limit_scope as string | undefined) ?? null : null,
             })

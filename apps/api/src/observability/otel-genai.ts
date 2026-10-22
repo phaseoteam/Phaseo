@@ -85,6 +85,8 @@ export type AsyncGenAiTelemetry = {
 	spanId?: string | null;
 	requestPayload?: unknown;
 	responsePayload?: unknown;
+	/** The batch request's string metadata, exported like GatewayGenAiTelemetry.metadata. */
+	metadata?: Record<string, string> | null;
 };
 
 export type GatewayOtlpBuildOptions = {
@@ -611,6 +613,7 @@ export function buildAsyncGenAiOtlpPayload(
 		attr("phaseo.cost.currency", args.currency),
 		attr("http.response.status_code", args.statusCode),
 		attr("error.type", args.success ? null : args.errorType ?? "_OTHER"),
+		...metadataAttributes(args.metadata),
 		...(options.includeSensitiveContent
 			? [
 					jsonAttribute("gen_ai.input.messages", normaliseInputMessages(args.requestPayload)),
@@ -632,7 +635,7 @@ export function buildAsyncGenAiOtlpPayload(
 		...(inherited?.parentSpanId && !isDeferred ? { parentSpanId: inherited.parentSpanId } : {}),
 		...(inherited?.traceState ? { traceState: inherited.traceState } : {}),
 		flags: inherited?.traceFlags ?? 1,
-		name: `${args.operation}.${args.phase} ${args.model}`,
+		name: metadataName(args.metadata, "span_name", "trace_name") ?? `${args.operation}.${args.phase} ${args.model}`,
 		kind: spanKind,
 		startTimeUnixNano: nanos(args.startedAtMs),
 		endTimeUnixNano: nanos(args.completedAtMs),

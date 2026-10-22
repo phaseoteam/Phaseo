@@ -269,6 +269,24 @@ describe("async GenAI lifecycle spans", () => {
 		});
 	});
 
+	it("exports batch metadata and names the span from it", () => {
+		const submission = buildAsyncGenAiOtlpPayload({
+			requestId: "req_batch",
+			workspaceId: "ws_1",
+			operation: "batch",
+			phase: "submit",
+			endpoint: "batch",
+			model: "openai/gpt-5",
+			startedAtMs: 1,
+			completedAtMs: 2,
+			success: true,
+			metadata: { span_name: "nightly evals", team: "search" },
+		}, options);
+		const span = spans(submission.payload)[0];
+		expect(span.name).toBe("nightly evals");
+		expect(attributes(span)["phaseo.metadata.team"]).toEqual({ stringValue: "search" });
+	});
+
 	it("models a realtime turn as a GenAI CLIENT span", () => {
 		const turn = buildAsyncGenAiOtlpPayload({
 			requestId: "turn_1",

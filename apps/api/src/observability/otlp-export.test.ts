@@ -152,6 +152,26 @@ describe("Broadcast destination selection and metadata", () => {
 		const withoutContext = renderBroadcastPayload(event, { ...destination, include_request_context: false }) as any;
 		expect(keys(withoutContext).filter((key: string) => key.startsWith("phaseo.metadata."))).toEqual([]);
 		expect(names(withoutContext)[0]).toBe("POST /v1/chat/completions");
+
+		const batch = {
+			kind: "async" as const,
+			args: {
+				requestId: "req_batch",
+				workspaceId: "ws_1",
+				operation: "batch" as const,
+				phase: "submit" as const,
+				endpoint: "batch" as const,
+				model: "openai/gpt-5",
+				startedAtMs: 1,
+				completedAtMs: 2,
+				success: true,
+				metadata: { span_name: "nightly evals", team: "growth" },
+			},
+		};
+		expect(names(renderBroadcastPayload(batch, destination))[0]).toBe("nightly evals");
+		const batchWithoutContext = renderBroadcastPayload(batch, { ...destination, include_request_context: false }) as any;
+		expect(keys(batchWithoutContext).filter((key: string) => key.startsWith("phaseo.metadata."))).toEqual([]);
+		expect(names(batchWithoutContext)[0]).toBe("batch.submit openai/gpt-5");
 	});
 });
 

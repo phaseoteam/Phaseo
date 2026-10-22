@@ -235,12 +235,16 @@ export async function destinationConfig(destination: Destination): Promise<Recor
 // The OTLP payload one destination receives for an event.
 export function renderBroadcastPayload(telemetry: BroadcastTelemetry, destination: Destination): unknown {
 	// Request metadata also renames spans, so the context toggle drops it whole.
+	const dropMetadata = destination.include_request_context === false;
 	const payload = telemetry.kind === "gateway"
 		? buildGatewayGenAiOtlpPayload(
-			destination.include_request_context === false ? { ...telemetry.args, metadata: null } : telemetry.args,
+			dropMetadata ? { ...telemetry.args, metadata: null } : telemetry.args,
 			buildOptions(destination),
 		)
-		: buildAsyncGenAiOtlpPayload(telemetry.args, buildOptions(destination)).payload;
+		: buildAsyncGenAiOtlpPayload(
+			dropMetadata ? { ...telemetry.args, metadata: null } : telemetry.args,
+			buildOptions(destination),
+		).payload;
 	return filterMetadata(payload, destination);
 }
 
