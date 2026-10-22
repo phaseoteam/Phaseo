@@ -537,6 +537,27 @@ export function resolveProviderExecutor(providerId: string, capability: string):
 	return null;
 }
 
+// Text executors that authenticate with their own credential shapes (SDK keys, AWS
+// SigV4, Google OAuth, Azure deployments, private endpoints). Every other text
+// executor goes through executeOpenAIWire, which reads the managed key with
+// resolveOpenAICompatKey.
+const OWN_CREDENTIAL_TEXT_EXECUTORS: ReadonlySet<ProviderExecutor> = new Set([
+	openaiText,
+	anthropicText,
+	azureText,
+	googleAiStudioText,
+	googleVertexText,
+	amazonBedrockText,
+	xAiText,
+	privateModelText,
+]);
+
+/** Whether the provider's text executor reads its managed key through resolveOpenAICompatKey. */
+export function textExecutorUsesOpenAICompatKey(providerId: string): boolean {
+	const executor = resolveProviderExecutor(providerId, "text.generate");
+	return Boolean(executor) && !OWN_CREDENTIAL_TEXT_EXECUTORS.has(executor!);
+}
+
 export function isProviderCapabilityEnabled(providerId: string, capability: string): boolean {
 	const normalizedCapability = normalizeCapability(capability);
 	const provider = EXECUTORS_BY_PROVIDER[normalizeProviderId(providerId)];
