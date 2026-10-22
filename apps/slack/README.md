@@ -31,7 +31,29 @@ Repeats are safe, and an event older than the current install is ignored. The
 app's manifest must subscribe to both events.
 
 Refusals are recorded in the workspace audit log (`slack_agent.answer_refused`).
-Nothing pushes or emails them yet, so replies never say an admin has been told.
+The ones only an owner or admin can fix (plan full, the people limit or spending
+cap reached, a charge unpaid) are also emailed to them, at most once a month per
+reason. An email can be suppressed or fail, so replies never say an admin has
+been told.
+
+## Slack app manifest
+
+`manifest.json` is the hosted app's manifest. The Slack agent guide
+(`apps/docs/v1/guides/slack-agent.mdx`, and each translation) prints the same
+manifest for companies that use their own Slack app, with `YOUR_APP_ID` in both
+request URLs. `test/manifest.test.ts` keeps them in step with the code: the bot
+scopes must equal web-api's `SLACK_AGENT_BOT_SCOPES`, the bot events must be
+exactly the ones `src/events.ts` handles, and the URLs must point at this
+Worker's production host and routes.
+
+- `features.agent_view` is Slack's agent messaging experience (new apps can't use
+  `assistant_view`). It gives the app its Messages tab and agent sessions.
+- `app_uninstalled` and `tokens_revoked` need no scope, but Slack only sends them
+  to apps that subscribe.
+- Token rotation is off. Slack can't turn it off again, and the hosted app's
+  client credentials are optional secrets here.
+- Editing the manifest file doesn't change the live Slack app: paste the new
+  manifest on the app's App Manifest page in Slack too.
 
 ## Durable Objects
 
