@@ -261,7 +261,8 @@ begin
       error_message = nullif(trim(coalesce(p_error_message, '')), ''),
       generation_ms = greatest(0, floor(extract(epoch from (v_session.ended_at - v_session.started_at)) * 1000))::integer,
       usage = coalesce(p_usage, '{}'::jsonb),
-      cost_nanos = v_prepaid + v_charge,
+      -- The full priced cost; any uncollected part stays on the session.
+      cost_nanos = v_total,
       currency = 'USD',
       pricing_lines = case when jsonb_typeof(coalesce(p_pricing_lines, '[]'::jsonb)) = 'array'
         then p_pricing_lines else '[]'::jsonb end
