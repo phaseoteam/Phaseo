@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "build": { "command": "pnpm build:ui" },
   "compatibility_date": "2026-07-26",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "workers_dev": true,
   "durable_objects": { "bindings": [{ "name": "INFERENCE_RUNS", "class_name": "InferenceRunReceipt" }] },
   "migrations": [{ "tag": "inference-receipts-v1", "new_sqlite_classes": ["InferenceRunReceipt"] }],
