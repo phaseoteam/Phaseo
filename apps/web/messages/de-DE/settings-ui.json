@@ -237,7 +237,8 @@
 		"noWorkspaceSelected": "Kein Arbeitsbereich ausgewählt",
 		"viewDetails": "Details anzeigen",
 		"testConnection": "Verbindung testen",
-		"tryAgain": "Erneut versuchen"
+		"tryAgain": "Erneut versuchen",
+		"revoked": "Widerrufen"
 	},
 	"keys": {
 		"keyName": "Schlüsselname",
@@ -5981,7 +5982,8 @@
 		"clearUserFilter": "Benutzerfilter löschen",
 		"nameConflict": "Mehrere Schlüssel haben diesen Namen.",
 		"openFromTable": "Öffne einen Schlüssel aus der API-Schlüsseltabelle.",
-		"limitInvalid": "Limits müssen null oder positiv sein."
+		"limitInvalid": "Limits müssen null oder positiv sein.",
+		"revokedNote": "Dieser Schlüssel wurde widerrufen, weil er offengelegt sein könnte. Er kann nicht wieder aktiviert werden: Rotiere ihn, um einen neuen Schlüssel zu erhalten."
 	},
 	"keyStorage": {
 		"storedIn": "Gespeichert in",

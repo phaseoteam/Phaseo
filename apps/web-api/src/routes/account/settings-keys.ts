@@ -200,7 +200,12 @@ async function apiKeyContext(c: any) {
 accountSettingsKeysRouter.put("/keys/:keyId", async (c) => {
 	const loaded = await apiKeyContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); if (String(loaded.key.status).toLowerCase() === "deleted") return c.json({ error: "key_deleted" }, 409, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({})); const update: Record<string, unknown> = {};
-	if (typeof body.name === "string") update.name = body.name; if (typeof body.paused === "boolean") update.status = body.paused ? "paused" : "active";
+	if (typeof body.name === "string") update.name = body.name;
+	if (typeof body.paused === "boolean") {
+		// Revoked keys may be exposed; they stay revoked (protect_revoked_key_status).
+		if (String(loaded.key.status).toLowerCase() === "revoked") return c.json({ error: "key_revoked", message: "This key was revoked and cannot be turned back on. Rotate it or create a new key." }, 409, PRIVATE_NO_STORE_HEADERS);
+		update.status = body.paused ? "paused" : "active";
+	}
 	const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in update);
 	if (keyStateChanged && isUsableKey({ ...loaded.key, ...update })) {
 		try { await enforceKeyLimit(loaded.context, c.env, "api", loaded.key.id); }

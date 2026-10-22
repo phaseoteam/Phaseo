@@ -143,6 +143,7 @@ export default function KeySettingsForm({ k }: { k: any }) {
 	const [ipAllowlist, setIpAllowlist] = useState<KeyIpEntry[]>(() => k.ip_allowlist ?? []);
 	const [storageLocations, setStorageLocations] = useState<string[]>(() => k.storage_locations ?? []);
 	const [saving, setSaving] = useState(false);
+	const revoked = String(k?.status ?? "").toLowerCase() === "revoked";
 	const dirty = useMemo(
 		() =>
 			enabled !== isKeyEnabled(k) ||
@@ -188,9 +189,9 @@ export default function KeySettingsForm({ k }: { k: any }) {
 				<div className="flex items-center justify-between gap-4">
 					<div>
 						<div className="text-sm font-medium">{t("labels.enabled")}</div>
-						<div className="text-xs text-muted-foreground">{t("strings.phraseDisabledKeysCannotMakeGatewayRequests")}</div>
+						<div className="text-xs text-muted-foreground">{revoked ? t("keyDetail.revokedNote") : t("strings.phraseDisabledKeysCannotMakeGatewayRequests")}</div>
 					</div>
-					<Switch checked={enabled} onCheckedChange={setEnabled} aria-label={t("labels.enabled")} />
+					<Switch checked={enabled} onCheckedChange={setEnabled} disabled={revoked} aria-label={t("labels.enabled")} />
 				</div>
 			</section>
 

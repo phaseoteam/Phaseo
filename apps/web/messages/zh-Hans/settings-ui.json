@@ -237,7 +237,8 @@
 		"noWorkspaceSelected": "未选择工作区",
 		"viewDetails": "查看详情",
 		"testConnection": "测试连接",
-		"tryAgain": "重试"
+		"tryAgain": "重试",
+		"revoked": "已撤销"
 	},
 	"keys": {
 		"keyName": "按键名称",
@@ -5981,7 +5982,8 @@
 		"clearUserFilter": "清除用户筛选",
 		"nameConflict": "多个密钥使用此名称。",
 		"openFromTable": "从 API 密钥表中打开密钥。",
-		"limitInvalid": "限制必须为零或正数。"
+		"limitInvalid": "限制必须为零或正数。",
+		"revokedNote": "此密钥可能已泄露，因此已被撤销。它无法重新启用：请轮换以获取新密钥。"
 	},
 	"keyStorage": {
 		"storedIn": "存储位置",

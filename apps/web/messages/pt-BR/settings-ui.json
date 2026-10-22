@@ -237,7 +237,8 @@
 		"noWorkspaceSelected": "Nenhum espaço de trabalho selecionado",
 		"viewDetails": "Ver detalhes",
 		"testConnection": "Conexão de teste",
-		"tryAgain": "Tente novamente"
+		"tryAgain": "Tente novamente",
+		"revoked": "Revogada"
 	},
 	"keys": {
 		"keyName": "Nome da chave",
@@ -5981,7 +5982,8 @@
 		"clearUserFilter": "Limpar filtro de usuário",
 		"nameConflict": "Várias chaves têm este nome.",
 		"openFromTable": "Abra uma chave pela tabela de chaves de API.",
-		"limitInvalid": "Os limites devem ser zero ou um número positivo."
+		"limitInvalid": "Os limites devem ser zero ou um número positivo.",
+		"revokedNote": "Esta chave foi revogada porque pode estar exposta. Ela não pode ser reativada: faça a rotação para obter uma nova chave."
 	},
 	"keyStorage": {
 		"storedIn": "Armazenada em",

@@ -23,7 +23,7 @@ export async function KeyDetailView({ data }: { data: KeyDetailData }) {
 		<header className="flex items-center justify-between gap-4 border-b pb-6">
 			<div className="flex min-w-0 items-center gap-4">
 				<Button variant="ghost" size="icon" asChild><Link href="/settings/keys" aria-label={t("keyDetail.back")}><ArrowLeft className="size-4" /></Link></Button>
-				<div className="min-w-0"><div className="flex flex-wrap items-center gap-3"><KeyNameHeading key={key.name} k={key} canManage={data.canManage} /><Badge variant="outline">{expired ? t("labels.expired") : key.status === "active" ? t("labels.enabled") : t("labels.disabled")}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{data.workspaceName ?? t("labels.workspace")} · {t("usageViewFilters.apiKey")}</p></div>
+				<div className="min-w-0"><div className="flex flex-wrap items-center gap-3"><KeyNameHeading key={key.name} k={key} canManage={data.canManage} /><Badge variant="outline">{key.status === "revoked" ? t("labels.revoked") : expired ? t("labels.expired") : key.status === "active" ? t("labels.enabled") : t("labels.disabled")}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{data.workspaceName ?? t("labels.workspace")} · {t("usageViewFilters.apiKey")}</p></div>
 			</div>
 			{data.canManage && <KeyPageActions k={key} />}
 		</header>

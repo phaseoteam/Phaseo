@@ -237,7 +237,8 @@
 		"noWorkspaceSelected": "ワークスペースが選択されていません",
 		"viewDetails": "詳細を表示",
 		"testConnection": "接続をテスト",
-		"tryAgain": "再試行"
+		"tryAgain": "再試行",
+		"revoked": "無効化済み"
 	},
 	"keys": {
 		"keyName": "キー名",
@@ -5981,7 +5982,8 @@
 		"clearUserFilter": "ユーザーフィルターを解除",
 		"nameConflict": "同じ名前のキーが複数あります。",
 		"openFromTable": "APIキーの一覧からキーを開いてください。",
-		"limitInvalid": "上限は0または正の数にしてください。"
+		"limitInvalid": "上限は0または正の数にしてください。",
+		"revokedNote": "このキーは漏えいの可能性があるため無効化されました。再度有効にはできません。ローテーションして新しいキーを取得してください。"
 	},
 	"keyStorage": {
 		"storedIn": "保管場所",

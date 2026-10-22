@@ -810,6 +810,10 @@ async function handleUpdateKey(req: Request) {
 			updatePayload.name = nextName;
 		}
 		if (typeof body.disabled === "boolean") {
+			// Revoked keys may be exposed; they stay revoked (protect_revoked_key_status).
+			if (String(existing.status ?? "").toLowerCase() === "revoked") {
+				return json({ error: "key_revoked", message: "This key was revoked and cannot be turned back on. Rotate it or create a new key." }, 409, { "Cache-Control": "no-store" });
+			}
 			updatePayload.status = body.disabled ? "paused" : "active";
 		}
 		if (typeof body.soft_blocked === "boolean") {

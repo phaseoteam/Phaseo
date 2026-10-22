@@ -67,6 +67,20 @@ describe("key storage locations", () => {
         expect(mocks.update).not.toHaveBeenCalled();
     });
 
+    it("never resumes a revoked key", async () => {
+        mocks.key.status = "revoked";
+        try {
+            const response = await request("PUT", "/keys/key-1", { paused: false });
+            expect(response.status).toBe(409);
+            expect(await response.json()).toMatchObject({ error: "key_revoked" });
+            expect(mocks.update).not.toHaveBeenCalled();
+            // Other settings on a revoked key can still change.
+            expect((await request("PUT", "/keys/key-1", { storageLocations: [] })).status).toBe(200);
+        } finally {
+            mocks.key.status = "active";
+        }
+    });
+
     it("gives a rotated key the same locations", async () => {
         expect((await request("POST", "/keys/key-1/rotate", {})).status).toBe(200);
         expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({ storage_locations: ["railway"] }));

@@ -71,6 +71,11 @@ CREATE TRIGGER protect_key_never_store_content
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_key_never_store_content();
 
+CREATE TRIGGER protect_revoked_key_status
+  BEFORE UPDATE OF status ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_revoked_key_status();
+
 CREATE POLICY "keys_delete_own_team" ON "public"."keys"
   FOR DELETE
   TO "authenticated"

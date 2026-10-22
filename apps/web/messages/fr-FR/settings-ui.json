@@ -237,7 +237,8 @@
 		"noWorkspaceSelected": "Aucun espace de travail sélectionné",
 		"viewDetails": "Afficher les détails",
 		"testConnection": "Tester la connexion",
-		"tryAgain": "Essayer à nouveau"
+		"tryAgain": "Essayer à nouveau",
+		"revoked": "Révoquée"
 	},
 	"keys": {
 		"keyName": "Nom de clé",
@@ -5981,7 +5982,8 @@
 		"clearUserFilter": "Effacer le filtre utilisateur",
 		"nameConflict": "Plusieurs clés portent ce nom.",
 		"openFromTable": "Ouvrez une clé depuis le tableau des clés API.",
-		"limitInvalid": "Les limites doivent être nulles ou positives."
+		"limitInvalid": "Les limites doivent être nulles ou positives.",
+		"revokedNote": "Cette clé a été révoquée car elle a peut-être été exposée. Elle ne peut pas être réactivée : faites-la tourner pour obtenir une nouvelle clé."
 	},
 	"keyStorage": {
 		"storedIn": "Stockée dans",

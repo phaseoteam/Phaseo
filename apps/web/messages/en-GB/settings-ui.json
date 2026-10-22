@@ -237,7 +237,8 @@
 		"noWorkspaceSelected": "No workspace selected",
 		"viewDetails": "View details",
 		"testConnection": "Test Connection",
-		"tryAgain": "Try again"
+		"tryAgain": "Try again",
+		"revoked": "Revoked"
 	},
 	"keys": {
 		"keyName": "Key name",
@@ -5981,7 +5982,8 @@
 		"clearUserFilter": "Clear user filter",
 		"nameConflict": "Multiple keys share this name.",
 		"openFromTable": "Open a key from the API keys table.",
-		"limitInvalid": "Limits must be zero or a positive number."
+		"limitInvalid": "Limits must be zero or a positive number.",
+		"revokedNote": "This key was revoked because it may be exposed. It can't be turned back on: rotate it to get a new key."
 	},
 	"keyStorage": {
 		"storedIn": "Stored in",
