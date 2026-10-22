@@ -51,7 +51,7 @@ function toResponsesInput(messages: AgentMessage[]) {
 		const baseMessage = {
 			type: "message",
 			role: message.role,
-			content: coerceTextContent(message.content),
+			content: message.role === "user" && Array.isArray(message.content) ? message.content.map(part => part.type === "text" ? { type: "input_text", text: part.text } : { type: "input_image", image_url: part.image_url.url }) : coerceTextContent(message.content as string),
 		} as Record<string, unknown>;
 
 		if (
@@ -268,23 +268,28 @@ export function createGatewayAgentClient(
 				return;
 			}
 			let text = "";
+			const completedItems: unknown[] = [];
 			for await (const chunk of response as AsyncGenerator<Record<string, unknown>>) {
 				const eventType = String(chunk.type ?? "");
 				const delta = typeof chunk.delta === "string" ? chunk.delta : typeof chunk.text === "string" ? chunk.text : "";
-				if (eventType.includes("reasoning") && delta) yield { type: "response.reasoning.delta" as const, delta, raw: chunk };
-				else if ((eventType.includes("output_text.delta") || delta) && delta) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
+				if (eventType.includes("reasoning") && eventType.endsWith(".delta") && delta) yield { type: "response.reasoning.delta" as const, delta, raw: chunk };
+				else if (eventType === "response.output_text.delta" && delta) { text += delta; yield { type: "response.output_text.delta" as const, delta, raw: chunk }; }
 				if (chunk.item) {
+					if (eventType === "response.output_item.done") completedItems.push(chunk.item);
 					for (const item of normalizeAgentItems(chunk.item)) {
 						yield { type: "response.item" as const, item, raw: chunk };
 					}
 				}
 				if (eventType === "response.completed") {
 					const rawResponse = (chunk.response ?? chunk) as ResponsesResponse;
+					if (!Array.isArray(rawResponse.output_items) && !Array.isArray(rawResponse.output)) rawResponse.output = completedItems as ResponsesResponse["output"];
 					yield { type: "response.completed" as const, response: toAgentModelResponse(rawResponse), raw: chunk };
 					return;
 				}
 			}
-			yield { type: "response.completed" as const, response: { message: { role: "assistant", content: text } } };
+			const final = toAgentModelResponse({ output: completedItems } as ResponsesResponse);
+			if (!final.message.content) final.message.content = text;
+			yield { type: "response.completed" as const, response: final };
 		},
 	};
 }
