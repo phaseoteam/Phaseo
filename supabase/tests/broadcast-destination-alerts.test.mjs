@@ -9,7 +9,7 @@ const user = (n) => id('2', n);
 const route = (n) => id('4', n);
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
-const alertsMigration = await read('../migrations/20261021135140_broadcast_destination_alerts.sql');
+const alertsMigration = await read('../migrations/20261022112903_broadcast_destination_alerts.sql');
 const enqueue = async () => (await rows('select public.enqueue_broadcast_destination_alerts() as n'))[0].n;
 const alerts = () => rows(`select workspace_id, to_email, payload, dedupe_key from public.email_outbox where kind = 'broadcast_destination_failing' order by created_at, workspace_id`);
 // Destinations are created a day ago unless createdMinutesAgo says otherwise.
@@ -67,7 +67,7 @@ try {
   await db.exec(await read('../schemas/public/tables/workspace_broadcast_destination_limits.sql'));
   await db.exec(await read('../schemas/public/tables/workspace_broadcast_destinations.sql'));
   // Health as #3102's migration creates it, without alerted_at.
-  await db.exec((await read('../migrations/20261021130717_broadcast_destination_health.sql')));
+  await db.exec((await read('../migrations/20261022112902_broadcast_destination_health.sql')));
   await db.exec(alertsMigration);
 
   const schema = (path) => read(`../schemas/${path}`);
