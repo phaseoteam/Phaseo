@@ -8943,6 +8943,66 @@
 			"ja": "保持期間12時間でキャッシュに書き込まれた入力トークン。入力料金の2.5倍で請求されます。",
 			"zh-Hans": "以 12 小时保留时长写入缓存的输入 token，按输入价格的 2.5 倍计费。",
 			"ar": "رموز الإدخال المكتوبة في التخزين المؤقت لمدة 12 ساعة، وتُحتسب بـ 2.5x سعر الإدخال."
+		},
+		"Spoken audio on an assistant message when the request asks for audio output: the audio id, base64 audio in the requested format, when the audio expires (Unix seconds) and its transcript. Streamed as delta.audio pieces.": {
+			"es": "Audio hablado en un mensaje del asistente cuando la solicitud pide salida de audio: el id del audio, el audio en base64 en el formato solicitado, cuándo caduca el audio (segundos Unix) y su transcripción. Se transmite en fragmentos delta.audio.",
+			"fr": "Audio parlé sur un message de l'assistant lorsque la requête demande une sortie audio : l'identifiant de l'audio, l'audio en base64 au format demandé, sa date d'expiration (secondes Unix) et sa transcription. Diffusé en fragments delta.audio.",
+			"de": "Gesprochenes Audio in einer Assistentennachricht, wenn die Anfrage Audioausgabe verlangt: die Audio-ID, Base64-Audio im angeforderten Format, wann das Audio abläuft (Unix-Sekunden) und sein Transkript. Wird als delta.audio-Teile gestreamt.",
+			"pt-BR": "Áudio falado em uma mensagem do assistente quando a solicitação pede saída de áudio: o id do áudio, o áudio em base64 no formato solicitado, quando o áudio expira (segundos Unix) e sua transcrição. Transmitido em partes delta.audio.",
+			"hi": "जब अनुरोध ऑडियो आउटपुट माँगता है, तब असिस्टेंट संदेश पर बोला गया ऑडियो: ऑडियो id, अनुरोधित फ़ॉर्मैट में base64 ऑडियो, ऑडियो की समाप्ति का समय (Unix सेकंड) और उसका ट्रांसक्रिप्ट। delta.audio हिस्सों में स्ट्रीम होता है।",
+			"ja": "リクエストが音声出力を求めたときのアシスタントメッセージの音声です。音声 ID、要求された形式の base64 音声、音声の有効期限 (Unix 秒)、その文字起こしを含みます。delta.audio の断片としてストリーミングされます。",
+			"zh-Hans": "当请求要求音频输出时，助手消息上的语音：音频 id、请求格式的 base64 音频、音频的过期时间（Unix 秒）及其转写文本。以 delta.audio 片段流式传输。",
+			"ar": "الصوت المنطوق في رسالة المساعد عندما يطلب الطلب إخراجًا صوتيًا: معرّف الصوت، والصوت بترميز base64 بالتنسيق المطلوب، وموعد انتهاء صلاحية الصوت (بثوانٍ Unix) ونصه المكتوب. يُبث على شكل أجزاء delta.audio."
+		},
+		"An earlier audio response, sent back on an assistant message by its id (message.audio.id) to continue an audio conversation. OpenAI and Azure OpenAI routes take it; other providers drop it and report messages.audio as a dropped parameter.": {
+			"es": "Una respuesta de audio anterior, enviada de vuelta en un mensaje del asistente mediante su id (message.audio.id) para continuar una conversación de audio. Las rutas de OpenAI y Azure OpenAI la aceptan; los demás proveedores la descartan e informan messages.audio como parámetro descartado.",
+			"fr": "Une réponse audio précédente, renvoyée dans un message de l'assistant par son identifiant (message.audio.id) pour poursuivre une conversation audio. Les routes OpenAI et Azure OpenAI l'acceptent ; les autres fournisseurs l'ignorent et signalent messages.audio comme paramètre ignoré.",
+			"de": "Eine frühere Audioantwort, die in einer Assistentennachricht über ihre ID (message.audio.id) zurückgesendet wird, um eine Audiounterhaltung fortzusetzen. OpenAI- und Azure-OpenAI-Routen übernehmen sie; andere Anbieter verwerfen sie und melden messages.audio als verworfenen Parameter.",
+			"pt-BR": "Uma resposta de áudio anterior, enviada de volta em uma mensagem do assistente pelo seu id (message.audio.id) para continuar uma conversa de áudio. As rotas da OpenAI e do Azure OpenAI a aceitam; os demais provedores a descartam e informam messages.audio como parâmetro descartado.",
+			"hi": "पिछला ऑडियो जवाब, जिसे ऑडियो बातचीत जारी रखने के लिए असिस्टेंट संदेश पर उसकी id (message.audio.id) से वापस भेजा जाता है। OpenAI और Azure OpenAI रूट इसे लेते हैं; दूसरे प्रोवाइडर इसे हटा देते हैं और messages.audio को हटाए गए पैरामीटर के रूप में रिपोर्ट करते हैं।",
+			"ja": "以前の音声レスポンスです。音声での会話を続けるために、アシスタントメッセージでその ID (message.audio.id) を指定して送り返します。OpenAI と Azure OpenAI のルートはこれを受け付けます。その他のプロバイダーはこれを破棄し、messages.audio を破棄されたパラメーターとして報告します。",
+			"zh-Hans": "之前的音频响应，在助手消息中通过其 id（message.audio.id）发回，以继续音频对话。OpenAI 和 Azure OpenAI 路由会接受它；其他提供商会丢弃它，并将 messages.audio 报告为已丢弃的参数。",
+			"ar": "استجابة صوتية سابقة تُعاد في رسالة المساعد عبر معرّفها (message.audio.id) لمتابعة محادثة صوتية. تقبلها مسارات OpenAI وAzure OpenAI؛ أما المزوّدون الآخرون فيتجاهلونها ويُبلغون عن messages.audio كمعامل متجاهَل."
+		},
+		"Messages with variable placeholders that the gateway fills in for each request, and the variables they take.": {
+			"es": "Mensajes con marcadores de variables que el gateway rellena en cada solicitud, y las variables que reciben.",
+			"fr": "Messages contenant des espaces réservés de variables que la passerelle remplit à chaque requête, et les variables qu’ils acceptent.",
+			"de": "Nachrichten mit Variablen-Platzhaltern, die das Gateway bei jeder Anfrage ausfüllt, und die Variablen, die sie erwarten.",
+			"pt-BR": "Mensagens com marcadores de variáveis que o gateway preenche em cada solicitação, e as variáveis que elas recebem.",
+			"hi": "वेरिएबल प्लेसहोल्डर वाले संदेश, जिन्हें गेटवे हर अनुरोध के लिए भरता है, और वे वेरिएबल जो वे लेते हैं।",
+			"ja": "変数プレースホルダーを含むメッセージ（ゲートウェイがリクエストごとに埋めます）と、それらが受け取る変数。",
+			"zh-Hans": "包含变量占位符的消息（网关会在每个请求中填入），以及它们接受的变量。",
+			"ar": "رسائل تحتوي على عناصر نائبة للمتغيرات تملؤها البوابة في كل طلب، والمتغيرات التي تأخذها."
+		},
+		"Fills in the prompt template saved on a preset. Leave out model or set it to the same reference, and send an empty conversation or the turns to add after the template.": {
+			"es": "Rellena la plantilla de prompt guardada en un preset. Omite model o usa la misma referencia, y envía una conversación vacía o los turnos que se añadirán después de la plantilla.",
+			"fr": "Remplit le modèle de prompt enregistré sur un preset. Omettez model ou indiquez la même référence, et envoyez une conversation vide ou les tours à ajouter après le modèle.",
+			"de": "Füllt die in einem Preset gespeicherte Prompt-Vorlage aus. Lassen Sie model weg oder setzen Sie dieselbe Referenz, und senden Sie eine leere Unterhaltung oder die Nachrichten, die nach der Vorlage folgen sollen.",
+			"pt-BR": "Preenche o template de prompt salvo em um preset. Omita model ou use a mesma referência, e envie uma conversa vazia ou os turnos a adicionar depois do template.",
+			"hi": "किसी प्रीसेट पर सहेजे गए प्रॉम्प्ट टेम्पलेट को भरता है। model छोड़ दें या उसे इसी संदर्भ पर सेट करें, और खाली बातचीत भेजें या वे टर्न भेजें जो टेम्पलेट के बाद जोड़ने हैं।",
+			"ja": "プリセットに保存されたプロンプトテンプレートを埋めます。model は省略するか同じ参照を指定し、空の会話か、テンプレートの後に追加するターンを送信してください。",
+			"zh-Hans": "填充保存在预设中的提示词模板。可省略 model 或将其设为同一引用，并发送空对话或要追加在模板之后的轮次。",
+			"ar": "يملأ قالب الموجّه المحفوظ في إعداد مسبق. اترك model أو اضبطه على المرجع نفسه، وأرسل محادثة فارغة أو الأدوار التي تُضاف بعد القالب."
+		},
+		"Preset reference starting with @, such as @support-triage or @publisher/support-triage.": {
+			"es": "Referencia del preset que empieza por @, como @support-triage o @publisher/support-triage.",
+			"fr": "Référence du preset commençant par @, comme @support-triage ou @publisher/support-triage.",
+			"de": "Preset-Referenz, die mit @ beginnt, etwa @support-triage oder @publisher/support-triage.",
+			"pt-BR": "Referência do preset que começa com @, como @support-triage ou @publisher/support-triage.",
+			"hi": "@ से शुरू होने वाला प्रीसेट संदर्भ, जैसे @support-triage या @publisher/support-triage।",
+			"ja": "@ で始まるプリセット参照（例: @support-triage、@publisher/support-triage）。",
+			"zh-Hans": "以 @ 开头的预设引用，例如 @support-triage 或 @publisher/support-triage。",
+			"ar": "مرجع الإعداد المسبق الذي يبدأ بـ @، مثل @support-triage أو @publisher/support-triage."
+		},
+		"Values for the template variables. Image variables take an https URL, a data URL or an image part.": {
+			"es": "Valores para las variables de la plantilla. Las variables de imagen aceptan una URL https, una URL de datos o una parte de imagen.",
+			"fr": "Valeurs des variables du modèle. Les variables d’image acceptent une URL https, une URL de données ou une partie image.",
+			"de": "Werte für die Vorlagenvariablen. Bildvariablen akzeptieren eine https-URL, eine Daten-URL oder einen Bildteil.",
+			"pt-BR": "Valores para as variáveis do template. Variáveis de imagem aceitam uma URL https, uma URL de dados ou uma parte de imagem.",
+			"hi": "टेम्पलेट वेरिएबल के मान। इमेज वेरिएबल https URL, data URL या इमेज पार्ट लेते हैं।",
+			"ja": "テンプレート変数の値。画像変数には https URL、データ URL、または画像パートを指定します。",
+			"zh-Hans": "模板变量的值。图像变量接受 https URL、data URL 或图像部分。",
+			"ar": "قيم متغيرات القالب. تقبل متغيرات الصور عنوان https أو عنوان data أو جزء صورة."
 		}
 	},
 	"GET /apps": {

@@ -605,6 +605,41 @@ describe("OpenAI media endpoints", () => {
 		}
 	});
 
+	it("bills streamed images on a per-image card from the completed events", async () => {
+		const perImageCard = {
+			...PRICING_CARD,
+			rules: [{ ...PRICING_CARD.rules[0], meter: "output_image", unit: "image", price_per_unit: "0.03" }],
+		};
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/images/generations"),
+			response: sseResponse([
+				{ type: "image_generation.partial_image", b64_json: "p", partial_image_index: 0 },
+				{ type: "image_generation.completed", b64_json: "one" },
+				{ type: "image_generation.completed", b64_json: "two" },
+			]),
+		}]);
+		const result = await execImages({
+			endpoint: "images.generations",
+			model: "acme/flux-image",
+			body: { model: "acme/flux-image", prompt: "A lighthouse", stream: true, n: 2 },
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: perImageCard,
+			providerModelSlug: "flux-image",
+			stream: true,
+		} as any);
+		mock.restore();
+		expect(result.kind).toBe("stream");
+		if (result.kind !== "stream") return;
+		await new Response(result.stream).text();
+		const finalized = await result.usageFinalizer?.();
+		// Before: no output_image meter, so $0.
+		expect(finalized?.usage?.output_image).toBe(2);
+		expect(finalized?.usage?.pricing?.total_nanos).toBe(60_000_000);
+	});
+
 	it("forwards GPT image edit parameters", async () => {
 		let outputFormat: string | null = null;
 		let outputCompression: string | null = null;

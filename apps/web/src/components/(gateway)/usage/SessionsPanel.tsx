@@ -24,7 +24,10 @@ import {
 import { Logo } from "@/components/Logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
+import { buildOpenRequestInChatHref } from "@/components/(chat)/chatMessageMetadata";
+import { normalizeLogReplayEndpoint } from "@/lib/chat/logReplay";
 import { CopyButton } from "@/components/ui/copy-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -56,6 +59,7 @@ import {
 	AppWindow,
 	Check,
 	Copy,
+	MessageSquare,
 	RefreshCw,
 } from "lucide-react";
 import {
@@ -510,6 +514,15 @@ function SessionDetailSheet({
 	const [requestDetailOpen, setRequestDetailOpen] = React.useState(false);
 	const [selectedRequest, setSelectedRequest] =
 		React.useState<SessionRequestRow | null>(null);
+	const searchParams = useSearchParams();
+	const tUi = useTranslations("Common.ui");
+	// The newest text request already carries the whole conversation so far.
+	const latestChatRequest = requests
+		.filter((request) => normalizeLogReplayEndpoint(request.endpoint) !== null)
+		.reduce<SessionRequestRow | null>(
+			(latest, request) => (!latest || request.created_at > latest.created_at ? request : latest),
+			null,
+		);
 
 	React.useEffect(() => {
 		const updateNow = () => setRelativeNowMs(Date.now());
@@ -649,6 +662,15 @@ function SessionDetailSheet({
 								{m("Session title", { id: shortenIdentifier(session.session_id, 6) })}
 							</ProviderInspectorSheetTitle>
 							<ProviderInspectorSheetDescription>{subtitle}</ProviderInspectorSheetDescription>
+							{latestChatRequest ? (
+								<Link
+									href={buildOpenRequestInChatHref(latestChatRequest.request_id, searchParams.get("workspaceId"))}
+									className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-2 w-fit")}
+								>
+									<MessageSquare />
+									{tUi("actions.openInChat")}
+								</Link>
+							) : null}
 						</ProviderInspectorSheetHeader>
 
 						<div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-5 sm:p-6">
@@ -720,6 +742,9 @@ function SessionDetailSheet({
 										<TableHead className="text-right">{t("strings.Out" as never)}</TableHead>
 										<TableHead className="text-right">{t("strings.Cost" as never)}</TableHead>
 										<TableHead>{t("strings.Status" as never)}</TableHead>
+										<TableHead className="w-10">
+											<span className="sr-only">{tUi("actions.openInChat")}</span>
+										</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
@@ -845,6 +870,20 @@ function SessionDetailSheet({
 																</div>
 															) : null}
 														</div>
+													</TableCell>
+													<TableCell className="py-2">
+														{/* Opens the conversation as it stood at this turn. */}
+														{normalizeLogReplayEndpoint(request.endpoint) ? (
+															<Link
+																href={buildOpenRequestInChatHref(request.request_id, searchParams.get("workspaceId"))}
+																className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+																aria-label={tUi("actions.openInChat")}
+																title={tUi("actions.openInChat")}
+																onClick={stopRowClick}
+															>
+																<MessageSquare />
+															</Link>
+														) : null}
 													</TableCell>
 												</TableRow>
 											);

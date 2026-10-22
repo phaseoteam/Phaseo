@@ -9,7 +9,9 @@ import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
+import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, MessageSquare, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { buildOpenRequestInChatHref, canOpenRequestInChat } from "@/components/(chat)/chatMessageMetadata";
 import {
 	Dialog,
 	DialogContent,
@@ -819,6 +821,7 @@ export default function RequestDetailDialog({
 	const t = useTranslations("SettingsUI");
 	const roomErrorT = useTranslations("Product.chatRooms");
 	const roomErrorTranslator = roomErrorT as unknown as RoomErrorTranslator;
+	const tUi = useTranslations("Common.ui");
 	const locale = useLocale();
 	const s = (key: string) => t(settingsStringKey(key) as never);
 	const m = (key: string, values: Record<string, string | number>) =>
@@ -1578,9 +1581,18 @@ export default function RequestDetailDialog({
 						{s("Fetching full generation log…")}
 					</div>
 				) : null}
-				{headerActions ? (
-					<div className="border-b bg-muted/20 px-5 py-2 sm:px-6">
+				{headerActions || canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
+					<div className="flex flex-wrap items-center gap-2 border-b bg-muted/20 px-5 py-2 sm:px-6">
 						{headerActions}
+						{canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
+							<Link
+								href={buildOpenRequestInChatHref(request.request_id, searchParams.get("workspaceId"))}
+								className={buttonVariants({ variant: "outline", size: "sm" })}
+							>
+								<MessageSquare />
+								{tUi("actions.openInChat")}
+							</Link>
+						) : null}
 					</div>
 				) : null}
 
@@ -2757,7 +2769,7 @@ export default function RequestDetailDialog({
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Prompt")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.request_payload ?? ioLog.payload.provider_request ?? null, null, 2)}</pre></div>
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Completion")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.gateway_response ?? ioLog.payload.provider_response ?? null, null, 2)}</pre></div>
 										</div>
-									) : <p className="text-muted-foreground">{ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
+									) : <p className="text-muted-foreground">{ioLog.status === "restricted" ? tUi("privacy.contentsRestricted") : ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
 								</div>
 							</GenerationSection>
 						) : null}

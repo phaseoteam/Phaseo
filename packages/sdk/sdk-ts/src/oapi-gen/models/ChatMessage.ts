@@ -1,4 +1,7 @@
 export interface ChatMessage {
+  audio?: {
+    id: string;
+  } | null;
   audios?: {
     audio_url: {
       url: string;

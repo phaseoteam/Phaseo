@@ -4486,7 +4486,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
       responses:
         '200':
           description: Rate limit policies
@@ -4506,7 +4506,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -4541,7 +4541,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+      description: Returns one rate limit policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
       responses:
         '200':
           description: Rate limit policy
@@ -4561,7 +4561,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -4587,7 +4587,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -4608,7 +4608,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
       parameters:
         - name: policy_id
           in: query
@@ -4659,7 +4659,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -4694,7 +4694,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+      description: Returns one rate limit assignment. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
       responses:
         '200':
           description: Rate limit assignment
@@ -4714,7 +4714,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -4740,7 +4740,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, guardrail and end-user-default assignments; concurrent_requests and department assignments are not enforced yet.
+      description: Removes a policy from its target. The gateway enforces requests_per_minute and tokens_per_minute for key, member, department, guardrail and end-user-default assignments; concurrent_requests is not enforced yet.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -9573,6 +9573,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         messages:
           type: array
           minItems: 1
@@ -9805,6 +9807,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          nullable: true
+          description: Eine frühere Audioantwort, die in einer Assistentennachricht über ihre ID (message.audio.id) zurückgesendet wird, um eine Audiounterhaltung fortzusetzen. OpenAI- und Azure-OpenAI-Routen übernehmen sie; andere Anbieter verwerfen sie und melden messages.audio als verworfenen Parameter.
+          required:
+            - id
+          properties:
+            id:
+              type: string
         tool_call_id:
           type: string
         reasoning_content:
@@ -9819,6 +9830,65 @@ components:
             $ref: '#/components/schemas/ChatReasoningDetail'
       discriminator:
         propertyName: role
+    ChatResponseMessage:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+            - tool
+        content:
+          description: 'Inhalt der Nachricht: ein String oder ein Array von Inhaltsteilen. Nur Assistant-Nachrichten, die Tools aufrufen (mit tool_calls), können ihn auf null setzen; das Gateway lehnt null-Inhalte bei anderen Rollen mit einem 400-Fehler ab.'
+          anyOf:
+            - type: string
+              nullable: true
+            - type: array
+              items:
+                $ref: '#/components/schemas/MessageContentPart'
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: 'Gesprochenes Audio in einer Assistentennachricht, wenn die Anfrage Audioausgabe verlangt: die Audio-ID, Base64-Audio im angeforderten Format, wann das Audio abläuft (Unix-Sekunden) und sein Transkript. Wird als delta.audio-Teile gestreamt.'
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
+        tool_call_id:
+          type: string
+        reasoning_content:
+          type: string
+          description: Der Reasoning-Text des Modells, sofern der Anbieter ihn zurückgibt. Wird als delta.reasoning_content gestreamt.
+        reasoning:
+          type: string
+          description: Derselbe Reasoning-Text wie reasoning_content, unter dem Namen, den manche Clients lesen. Wird als delta.reasoning gestreamt. In der Eingabe als Alias für reasoning_content akzeptiert.
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
     ChatReasoningDetail:
       type: object
       required:
@@ -10561,7 +10631,7 @@ components:
         index:
           type: integer
         message:
-          $ref: '#/components/schemas/ChatMessage'
+          $ref: '#/components/schemas/ChatResponseMessage'
         finish_reason:
           type: string
           enum:
@@ -10641,6 +10711,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         system:
           oneOf:
             - type: string
@@ -10739,6 +10811,10 @@ components:
         user:
           type: string
           description: Endbenutzerkennung, wie bei Chat Completions. Claude-Modelle erhalten sie als `metadata.user_id`, sofern `metadata.user_id` nicht gesetzt ist.
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: Gruppiert zusammengehörige Anfragen, damit sie bei dem Anbieter bleiben, der ihren Prompt-Cache hat. Phaseo sendet einen Hash aus deinem Workspace und diesem Schlüssel an den Anbieter, nie den Rohschlüssel.
         stop_sequences:
           type: array
           items:
@@ -10897,6 +10973,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         input:
           oneOf:
             - type: string
@@ -16601,7 +16679,111 @@ components:
     PresetConfig:
       type: object
       description: Begrenzte Standardwerte für Gateway-Anfragen, einschließlich Prompts, Parameter, Routing und Plugins.
+      properties:
+        prompt:
+          $ref: '#/components/schemas/PresetPromptTemplate'
       additionalProperties: true
+    PresetPromptTemplate:
+      type: object
+      description: Nachrichten mit Variablen-Platzhaltern, die das Gateway bei jeder Anfrage ausfüllt, und die Variablen, die sie erwarten.
+      required:
+        - messages
+      properties:
+        syntax:
+          type: string
+          enum:
+            - mustache-v1
+        messages:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/PresetPromptTemplateMessage'
+        variables:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PresetPromptVariable'
+        tools:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tool_choice: {}
+        response_format:
+          type: object
+          additionalProperties: true
+    PresetPromptTemplateMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - text
+                      - variable
+                  text:
+                    type: string
+                  name:
+                    type: string
+    PresetPromptVariable:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - string
+            - number
+            - boolean
+            - enum
+            - array
+            - object
+            - any
+            - image
+        required:
+          type: boolean
+        default: {}
+        description:
+          type: string
+          maxLength: 500
+        enum:
+          type: array
+          items:
+            type: string
+        max_length:
+          type: integer
+          minimum: 1
+    PromptTemplateReference:
+      type: object
+      description: Füllt die in einem Preset gespeicherte Prompt-Vorlage aus. Lassen Sie model weg oder setzen Sie dieselbe Referenz, und senden Sie eine leere Unterhaltung oder die Nachrichten, die nach der Vorlage folgen sollen.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: Preset-Referenz, die mit @ beginnt, etwa @support-triage oder @publisher/support-triage.
+        variables:
+          type: object
+          additionalProperties: true
+          description: Werte für die Vorlagenvariablen. Bildvariablen akzeptieren eine https-URL, eine Daten-URL oder einen Bildteil.
     Preset:
       type: object
       required:

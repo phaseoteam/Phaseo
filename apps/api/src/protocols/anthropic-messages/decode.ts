@@ -64,6 +64,7 @@ export type AnthropicMessagesRequest = {
 	};
 	context_management?: Record<string, any>;
 	user?: string;
+	prompt_cache_key?: string | null;
 	image_config?: {
 		aspect_ratio?: string;
 		image_size?: "0.5K" | "1K" | "2K" | "4K";
@@ -86,7 +87,7 @@ export type AnthropicCacheControl = {
 
 export type AnthropicContentBlock =
 	| { type: "text"; text: string; cache_control?: AnthropicCacheControl }
-	| { type: "image"; cache_control?: AnthropicCacheControl; source: { type: "base64" | "url"; data?: string; url?: string; media_type?: string } }
+	| { type: "image"; cache_control?: AnthropicCacheControl; source: { type: "base64" | "url" | "file"; data?: string; url?: string; media_type?: string; file_id?: string } }
 	| { type: "tool_use"; id: string; name: string; input: Record<string, any> }
 	| { type: "tool_result"; tool_use_id: string; content: string | any[]; cache_control?: AnthropicCacheControl }
 	| { type: "server_tool_use"; id: string; name: string; input?: Record<string, any> }
@@ -328,6 +329,8 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		serviceTier: isAutoServiceTier(req.service_tier)
 			? "auto"
 			: resolveTextServiceTier({ service_tier: req.service_tier }),
+		// As on Chat and Responses: namespaced per workspace before it is sent upstream.
+		promptCacheKey: typeof req.prompt_cache_key === "string" ? req.prompt_cache_key : undefined,
 		// provider_options apply as they do on Chat and Responses.
 		promptCacheRetention: providerCacheOptions.promptCacheRetention,
 		promptCacheOptions: providerOptions?.openai?.prompt_cache_options,
@@ -440,6 +443,16 @@ function normalizeAnthropicContent(block: AnthropicContentBlock): IRContentPart 
 
 	if (block.type === "image") {
 		const cacheControl = normalizeAnthropicCacheControl((block as any).cache_control);
+		if (block.source.type === "file") {
+			// A Files API upload. https://platform.claude.com/docs/en/build-with-claude/files
+			return {
+				type: "image",
+				source: "id" as const,
+				data: block.source.file_id || "",
+				mimeType: block.source.media_type,
+				cacheControl,
+			};
+		}
 		if (block.source.type === "url") {
 			return {
 				type: "image",
@@ -476,14 +489,67 @@ function normalizeAnthropicContent(block: AnthropicContentBlock): IRContentPart 
 		};
 	}
 
-	// Preserve document/PDF/file, thinking, citations, and provider-native tool
-	// blocks losslessly so the native executor can forward them unchanged.
+	const document = documentBlockToIRFile(block as any);
+	if (document) return document;
+
+	// Preserve thinking, citations, and provider-native tool blocks (and
+	// documents with no file form) losslessly so the native executor can
+	// forward them unchanged.
 	if (block && typeof block === "object") {
 		return { type: "provider_block", block: { ...(block as any) } };
 	}
 	return { type: "text", text: String(block) };
 }
 
+
+function utf8ToBase64(text: string): string {
+	const bytes = new TextEncoder().encode(text);
+	let binary = "";
+	for (let i = 0; i < bytes.length; i += 0x8000) {
+		binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	}
+	return btoa(binary);
+}
+
+/**
+ * An Anthropic `document` block as an IR file part, keeping the block itself
+ * for Claude routes. Other providers then get a PDF or text file in their own
+ * shape instead of a block they reject. A `content` document of text blocks
+ * becomes a text file; any other source stays a provider block.
+ * https://platform.claude.com/docs/en/build-with-claude/pdf-support
+ * https://platform.claude.com/docs/en/build-with-claude/citations
+ */
+function documentBlockToIRFile(block: Record<string, any> | null | undefined): IRContentPart | null {
+	if (!block || block.type !== "document") return null;
+	const source = block.source;
+	if (!source || typeof source !== "object") return null;
+	const title = typeof block.title === "string" && block.title.trim() ? { filename: block.title.trim() } : {};
+	const cacheControl = normalizeAnthropicCacheControl(block.cache_control);
+	const common = { ...title, ...(cacheControl ? { cacheControl } : {}), nativeBlock: { ...block } };
+	if (source.type === "base64" && typeof source.data === "string" && source.data) {
+		const mimeType = typeof source.media_type === "string" && source.media_type ? source.media_type : "application/pdf";
+		return { type: "file", source: "data", data: source.data, mimeType, ...common };
+	}
+	if (source.type === "text" && typeof source.data === "string") {
+		const mimeType = typeof source.media_type === "string" && source.media_type ? source.media_type : "text/plain";
+		return { type: "file", source: "data", data: utf8ToBase64(source.data), mimeType, ...common };
+	}
+	if (source.type === "url" && typeof source.url === "string" && source.url) {
+		// URL documents are PDFs.
+		return { type: "file", source: "url", data: source.url, mimeType: "application/pdf", ...common };
+	}
+	if (source.type === "file" && typeof source.file_id === "string" && source.file_id) {
+		return { type: "file", source: "id", data: source.file_id, ...common };
+	}
+	if (
+		source.type === "content" && Array.isArray(source.content) && source.content.length > 0
+		&& source.content.every((entry: any) => entry?.type === "text" && typeof entry.text === "string")
+	) {
+		const text = source.content.map((entry: any) => entry.text).join("\n\n");
+		return { type: "file", source: "data", data: utf8ToBase64(text), mimeType: "text/plain", ...common };
+	}
+	return null;
+}
 
 function normalizeAnthropicCacheControl(value: unknown): AnthropicCacheControl | undefined {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;

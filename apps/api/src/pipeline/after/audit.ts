@@ -7,6 +7,8 @@ import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
 import { applyRequestClassifiers } from "../classification/request-classifiers";
+import { recordShadowSpend } from "@core/spend-limits";
+import { hasConfiguredKeyLimits } from "../before/context.shared";
 import type { PipelineContext } from "../before/types";
 import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
 import type { RequestResult } from "../execute";
@@ -31,6 +33,17 @@ import {
 	persistDataContribution,
 } from "../classification/data-contribution";
 import { currentDataContributionDiscountNanos } from "../pricing/data-contribution-discount";
+
+function promptTemplateMetadata(ctx: PipelineContext) {
+    const template = ctx.promptTemplate;
+    if (!template) return null;
+    return {
+        preset_id: template.presetId,
+        preset_slug: template.presetSlug,
+        variable_names: template.variableNames,
+        message_count: template.messageCount,
+    };
+}
 
 function getProviderAttempts(ctx: PipelineContext): Array<Record<string, unknown>> {
     return Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : [];
@@ -303,6 +316,7 @@ export async function handleFailureAudit(
                 } : {}),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
+                prompt_template: promptTemplateMetadata(ctx),
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
                 routing_diagnostics: sanitizeForAxiom((ctx as any).routingDiagnostics ?? null),
                 provider_enablement_diagnostics: sanitizeForAxiom(
@@ -476,7 +490,7 @@ export async function handleSuccessAudit(
         mergeWebFetchObservability(ctx.webFetchObservability ?? null),
     );
 
-    await runGatewayTelemetryPipelines({
+    const deliveries = await runGatewayTelemetryPipelines({
         requestId: ctx.requestId,
         workspaceId: ctx.workspaceId,
         writeSupabase: shouldPersistGatewayAudit(ctx) ? () => auditSuccess({
@@ -552,6 +566,7 @@ export async function handleSuccessAudit(
                 labels: ctx.meta.labels ?? [],
                 classifications: ctx.requestClassifications ?? null,
                 client_source: ctx.meta.clientSource ?? null,
+                prompt_template: promptTemplateMetadata(ctx),
                 finish_reason: finishReason ?? null,
                 plugin_executions: sanitizeForAxiom(ctx.pluginExecutions ?? null),
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
@@ -632,6 +647,19 @@ export async function handleSuccessAudit(
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     });
+
+	// Shadow mode only: once the success row is written, the spend-limit coordinator can count it.
+	const rowWritten = deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered);
+	if (rowWritten && ctx.meta.authMethod !== "oauth" && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
+		recordShadowSpend({
+			workspaceId: ctx.workspaceId,
+			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
+			billingRequestId: ctx.billingRequestId,
+			requestId: ctx.requestId,
+			costNanos: totalNanos,
+			internal: ctx.internal,
+		});
+	}
 
 	if (!isStealthRequest(ctx) && !byok && ctx.teamSettings?.dataContributionEnabled === true) {
 		const pricing = (usageWithMultimodal as any)?.pricing;

@@ -19,6 +19,14 @@ function average(values: Array<number | null>): number | null {
 	return present.length ? present.reduce((sum, value) => sum + value, 0) / present.length : null;
 }
 
+export type UsageWindow = "30m" | "24h" | "5d";
+
+/** The first value present, with the window it describes. */
+function firstWithWindow(candidates: Array<[number | null, UsageWindow]>): { value: number | null; window: UsageWindow | null } {
+	for (const [value, window] of candidates) if (value !== null) return { value, window };
+	return { value: null, window: null };
+}
+
 export function composeCompareUsage(sourceRows: Row[]) {
 	return Object.fromEntries(sourceRows.flatMap((source) => {
 		const modelId = String(source.model_id ?? "").trim();
@@ -34,14 +42,20 @@ export function composeCompareUsage(sourceRows: Row[]) {
 			date: String(point.date ?? ""),
 			value: number(point.tokens) ?? 0,
 		}));
-		const latencyFallback = number(summary?.avg_latency_ms)
-			?? average(hourly.map((item) => number(item.avg_latency_ms)))
-			?? average(timeOfDay.map((item) => number(item.avg_latency_ms)))
-			?? average(providers.map((item) => number(item.avg_latency_ms)));
-		const throughputFallback = number(summary?.avg_throughput)
-			?? average(hourly.map((item) => number(item.avg_throughput)))
-			?? average(timeOfDay.map((item) => number(item.avg_throughput)))
-			?? average(providers.map((item) => number(item.avg_throughput)));
+		const latency = firstWithWindow([
+			[number(source.realtime_latency_p50), "30m"],
+			[number(summary?.avg_latency_ms), "24h"],
+			[average(hourly.map((item) => number(item.avg_latency_ms))), "24h"],
+			[average(timeOfDay.map((item) => number(item.avg_latency_ms))), "5d"],
+			[average(providers.map((item) => number(item.avg_latency_ms))), "24h"],
+		]);
+		const throughput = firstWithWindow([
+			[number(source.realtime_throughput_p50), "30m"],
+			[number(summary?.avg_throughput), "24h"],
+			[average(hourly.map((item) => number(item.avg_throughput))), "24h"],
+			[average(timeOfDay.map((item) => number(item.avg_throughput))), "5d"],
+			[average(providers.map((item) => number(item.avg_throughput))), "24h"],
+		]);
 		return [[modelId, {
 			periodDays: 30,
 			tokens30d: points30d.reduce((sum, point) => sum + point.value, 0),
@@ -49,8 +63,11 @@ export function composeCompareUsage(sourceRows: Row[]) {
 			points30d,
 			totalRequests: number(summary?.total_requests) ?? 0,
 			requests30m: number(source.realtime_requests) ?? 0,
-			latencyP50Ms30m: number(source.realtime_latency_p50) ?? latencyFallback,
-			throughputP50TokPerSec30m: number(source.realtime_throughput_p50) ?? throughputFallback,
+			latencyP50Ms30m: latency.value,
+			throughputP50TokPerSec30m: throughput.value,
+			// The fields keep their old names; these say which window each value covers.
+			latencyWindow: latency.window,
+			throughputWindow: throughput.window,
 			cumulativeTokens: number(cumulative?.total_tokens),
 			requestPoints24h: hourly.map((point) => ({ date: String(point.bucket ?? ""), value: number(point.requests) ?? 0 })),
 		}]];

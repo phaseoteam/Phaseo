@@ -5,11 +5,14 @@
 //      missing or exhausted slice awaits the object. Spend is recorded idempotently in the
 //      background after the charge. Behind GATEWAY_SPEND_LIMIT_DO_MODE (off | shadow | enforce).
 //
-// Wiring (not done here):
-//   before:  const decision = await checkSpendLimit({ workspaceId, keyId, admissionId: ctx.billingRequestId })
-//            enforce: "denied" -> respond like `!context.keyLimit.ok` with decision.keyLimit;
-//                     "unavailable" -> fall back to the request-context RPC path.
-//            shadow:  shadowSpendLimit({ ... }, context.keyLimit) after the legacy check.
+// Wiring:
+//   shadow (wired): guardContext calls shadowSpendLimitOnce beside the legacy key-limit check, and
+//            handleSuccessAudit calls recordShadowSpend once the gateway_requests row is written.
+//            Neither changes what the request gets; divergences are logged.
+//   enforce (not wired yet):
+//   before:  const decision = await checkSpendLimit({ workspaceId, keyId, admissionId })
+//            "denied" -> respond like `!context.keyLimit.ok` with decision.keyLimit;
+//            "unavailable" -> fall back to the request-context RPC path.
 //   after:   recordSpend({ admission, workspaceId, keyId, billingRequestId, requestId, costNanos })
 //            once the request is charged and its gateway_requests row (success = true) is queued;
 //            releaseSpend(admission) when the request ends without a successful charge.
@@ -294,10 +297,73 @@ export function shadowSpendLimit(
 	return run;
 }
 
+/** The coordinator seeds keys by UUID; OAuth requests carry a client ID instead and are skipped. */
+const KEY_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Requests already shadowed in this isolate (guardContext runs more than once per request). */
+const SHADOWED_MAX = 10_000;
+const shadowed = new Set<string>();
+
+function currentMode(): SpendLimitMode {
+	try {
+		return getSpendLimitMode();
+	} catch {
+		return "off";
+	}
+}
+
+/**
+ * Shadow mode, before the request: compares the coordinator with the legacy key-limit decision
+ * once per request, in the background. Does nothing unless GATEWAY_SPEND_LIMIT_DO_MODE is
+ * "shadow". Never throws or waits.
+ */
+export function shadowSpendLimitOnce(
+	args: { workspaceId: string; keyId: string | null | undefined; requestId: string; internal?: boolean },
+	legacy: Pick<GateCheck, "ok" | "reason"> & Partial<GateCheck>,
+): void {
+	try {
+		if (args.internal || !args.keyId || !KEY_ID.test(args.keyId) || currentMode() !== "shadow") return;
+		if (shadowed.has(args.requestId)) return;
+		if (shadowed.size >= SHADOWED_MAX) shadowed.delete(shadowed.values().next().value as string);
+		shadowed.add(args.requestId);
+		void shadowSpendLimit({ workspaceId: args.workspaceId, keyId: args.keyId, admissionId: args.requestId }, legacy)
+			.catch(() => undefined);
+	} catch (error) {
+		console.warn("spend_limit_shadow_failed", { error: error instanceof Error ? error.message : String(error) });
+	}
+}
+
+/**
+ * Shadow mode, after the request: tells the coordinator about a successful request's cost once
+ * its gateway_requests row is written, so its usage tracks the legacy count. Does nothing unless
+ * GATEWAY_SPEND_LIMIT_DO_MODE is "shadow". Never throws.
+ */
+export function recordShadowSpend(args: {
+	workspaceId: string;
+	keyId: string | null | undefined;
+	billingRequestId: string;
+	requestId: string;
+	costNanos: number;
+	internal?: boolean;
+}): void {
+	try {
+		if (args.internal || !args.keyId || !KEY_ID.test(args.keyId) || currentMode() !== "shadow") return;
+		recordSpend({
+			workspaceId: args.workspaceId,
+			keyId: args.keyId,
+			billingRequestId: args.billingRequestId,
+			requestId: args.requestId,
+			costNanos: args.costNanos,
+		});
+	} catch (error) {
+		console.warn("spend_limit_shadow_record_failed", { error: error instanceof Error ? error.message : String(error) });
+	}
+}
+
 /** Clears isolate lease state (tests only). */
 export function __resetSpendLimitsForTests(): void {
 	pools.clear();
 	recordQueues.clear();
+	shadowed.clear();
 }
 
 /** Flushes queued spend records now (tests and shutdown paths). */

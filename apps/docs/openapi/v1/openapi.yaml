@@ -4711,9 +4711,9 @@ paths:
       summary: List rate limit policies
       description: >-
         Lists the workspace's named rate limit policies. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute and tokens_per_minute for key, member, department,
+        guardrail and end-user-default assignments; concurrent_requests is not
+        enforced yet.
       responses:
         '200':
           description: Rate limit policies
@@ -4736,9 +4736,8 @@ paths:
       description: >-
         Creates a named policy with requests per minute, tokens per minute, or
         concurrent request limits. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        tokens_per_minute for key, member, department, guardrail and
+        end-user-default assignments; concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -4775,9 +4774,8 @@ paths:
       summary: Get a rate limit policy
       description: >-
         Returns one rate limit policy. The gateway enforces requests_per_minute
-        and tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        and tokens_per_minute for key, member, department, guardrail and
+        end-user-default assignments; concurrent_requests is not enforced yet.
       responses:
         '200':
           description: Rate limit policy
@@ -4801,8 +4799,8 @@ paths:
         Changes a policy's name, description, limits, or fail-closed setting.
         Set a limit to null to remove it; at least one limit must remain. The
         gateway enforces requests_per_minute and tokens_per_minute for key,
-        member, guardrail and end-user-default assignments; concurrent_requests
-        and department assignments are not enforced yet.
+        member, department, guardrail and end-user-default assignments;
+        concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -4830,9 +4828,9 @@ paths:
       summary: Delete a rate limit policy
       description: >-
         Deletes a policy and every assignment that uses it. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute and tokens_per_minute for key, member, department,
+        guardrail and end-user-default assignments; concurrent_requests is not
+        enforced yet.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -4856,9 +4854,8 @@ paths:
       description: >-
         Lists where rate limit policies apply, optionally filtered by policy or
         target type. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        tokens_per_minute for key, member, department, guardrail and
+        end-user-default assignments; concurrent_requests is not enforced yet.
       parameters:
         - name: policy_id
           in: query
@@ -4913,9 +4910,8 @@ paths:
         Applies a policy to one API key, workspace member, department, or
         guardrail, or sets the workspace default for each end user. Each target
         can have one policy. The gateway enforces requests_per_minute and
-        tokens_per_minute for key, member, guardrail and end-user-default
-        assignments; concurrent_requests and department assignments are not
-        enforced yet.
+        tokens_per_minute for key, member, department, guardrail and
+        end-user-default assignments; concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -4952,9 +4948,9 @@ paths:
       summary: Get a rate limit assignment
       description: >-
         Returns one rate limit assignment. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute and tokens_per_minute for key, member, department,
+        guardrail and end-user-default assignments; concurrent_requests is not
+        enforced yet.
       responses:
         '200':
           description: Rate limit assignment
@@ -4977,8 +4973,8 @@ paths:
       description: >-
         Switches the policy applied to an assignment's target. The gateway
         enforces requests_per_minute and tokens_per_minute for key, member,
-        guardrail and end-user-default assignments; concurrent_requests and
-        department assignments are not enforced yet.
+        department, guardrail and end-user-default assignments;
+        concurrent_requests is not enforced yet.
       requestBody:
         required: true
         content:
@@ -5006,9 +5002,9 @@ paths:
       summary: Delete a rate limit assignment
       description: >-
         Removes a policy from its target. The gateway enforces
-        requests_per_minute and tokens_per_minute for key, member, guardrail and
-        end-user-default assignments; concurrent_requests and department
-        assignments are not enforced yet.
+        requests_per_minute and tokens_per_minute for key, member, department,
+        guardrail and end-user-default assignments; concurrent_requests is not
+        enforced yet.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -10044,6 +10040,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         messages:
           type: array
           minItems: 1
@@ -10308,6 +10306,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          nullable: true
+          description: >-
+            An earlier audio response, sent back on an assistant message by its
+            id (message.audio.id) to continue an audio conversation. OpenAI and
+            Azure OpenAI routes take it; other providers drop it and report
+            messages.audio as a dropped parameter.
+          required:
+            - id
+          properties:
+            id:
+              type: string
         tool_call_id:
           type: string
         reasoning_content:
@@ -10327,6 +10338,78 @@ components:
             $ref: '#/components/schemas/ChatReasoningDetail'
       discriminator:
         propertyName: role
+    ChatResponseMessage:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+            - tool
+        content:
+          description: >-
+            Message content: a string or an array of content parts. Only
+            assistant messages that call tools (with tool_calls) may set it to
+            null; the gateway rejects null content for other roles with a 400
+            error.
+          anyOf:
+            - type: string
+              nullable: true
+            - type: array
+              items:
+                $ref: '#/components/schemas/MessageContentPart'
+        name:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatImageOutputPart'
+        audios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatAudioOutputPart'
+        audio:
+          type: object
+          description: >-
+            Spoken audio on an assistant message when the request asks for audio
+            output: the audio id, base64 audio in the requested format, when the
+            audio expires (Unix seconds) and its transcript. Streamed as
+            delta.audio pieces.
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+            expires_at:
+              type: integer
+            transcript:
+              type: string
+        tool_call_id:
+          type: string
+        reasoning_content:
+          type: string
+          description: >-
+            The model's reasoning text, when the provider returns it. Streamed
+            as delta.reasoning_content.
+        reasoning:
+          type: string
+          description: >-
+            The same reasoning text as reasoning_content, under the name some
+            clients read. Streamed as delta.reasoning. Accepted on input as an
+            alias for reasoning_content.
+        reasoning_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatReasoningDetail'
     ChatReasoningDetail:
       type: object
       required:
@@ -11111,7 +11194,7 @@ components:
         index:
           type: integer
         message:
-          $ref: '#/components/schemas/ChatMessage'
+          $ref: '#/components/schemas/ChatResponseMessage'
         finish_reason:
           type: string
           enum:
@@ -11215,6 +11298,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         system:
           oneOf:
             - type: string
@@ -11330,6 +11415,13 @@ components:
           description: >-
             End-user identifier, as on Chat Completions. Claude models receive
             it as `metadata.user_id` unless `metadata.user_id` is set.
+        prompt_cache_key:
+          type: string
+          nullable: true
+          description: >-
+            Groups related requests so they stay on the provider that holds
+            their prompt cache. Phaseo sends a hash of your workspace and this
+            key upstream, never the raw key.
         stop_sequences:
           type: array
           items:
@@ -11508,6 +11600,8 @@ components:
           type: string
         models:
           $ref: '#/components/schemas/ModelFallbacks'
+        prompt:
+          $ref: '#/components/schemas/PromptTemplateReference'
         input:
           oneOf:
             - type: string
@@ -17436,7 +17530,120 @@ components:
       description: >-
         Bounded gateway request defaults, including prompts, parameters,
         routing, and plugins.
+      properties:
+        prompt:
+          $ref: '#/components/schemas/PresetPromptTemplate'
       additionalProperties: true
+    PresetPromptTemplate:
+      type: object
+      description: >-
+        Messages with variable placeholders that the gateway fills in for each
+        request, and the variables they take.
+      required:
+        - messages
+      properties:
+        syntax:
+          type: string
+          enum:
+            - mustache-v1
+        messages:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/PresetPromptTemplateMessage'
+        variables:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PresetPromptVariable'
+        tools:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tool_choice: {}
+        response_format:
+          type: object
+          additionalProperties: true
+    PresetPromptTemplateMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - developer
+            - user
+            - assistant
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: object
+                required:
+                  - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - text
+                      - variable
+                  text:
+                    type: string
+                  name:
+                    type: string
+    PresetPromptVariable:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - string
+            - number
+            - boolean
+            - enum
+            - array
+            - object
+            - any
+            - image
+        required:
+          type: boolean
+        default: {}
+        description:
+          type: string
+          maxLength: 500
+        enum:
+          type: array
+          items:
+            type: string
+        max_length:
+          type: integer
+          minimum: 1
+    PromptTemplateReference:
+      type: object
+      description: >-
+        Fills in the prompt template saved on a preset. Leave out model or set
+        it to the same reference, and send an empty conversation or the turns to
+        add after the template.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: >-
+            Preset reference starting with @, such as @support-triage or
+            @publisher/support-triage.
+        variables:
+          type: object
+          additionalProperties: true
+          description: >-
+            Values for the template variables. Image variables take an https
+            URL, a data URL or an image part.
     Preset:
       type: object
       required:

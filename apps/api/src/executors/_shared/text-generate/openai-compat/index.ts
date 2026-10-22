@@ -21,6 +21,7 @@ import {
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
+import { inlineAudioUrlsForProvider } from "./inline-audio";
 import {
 	openAICompatHeaders,
 	openAICompatUrl,
@@ -84,17 +85,27 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Providers that keep prompt caches per replica and route on an x-session-affinity
-// header. The value is the workspace-namespaced cache key, never the raw client key.
-// https://docs.fireworks.ai/guides/prompt-caching
-// https://developers.cloudflare.com/workers-ai/features/prompt-caching
-const SESSION_AFFINITY_HEADER_PROVIDERS = new Set(["fireworks", "cloudflare"]);
+// Providers that keep prompt caches per replica and route on a session header, by the
+// header each one documents. The value is the workspace-namespaced cache key, never the
+// raw client key.
+// - Fireworks: https://docs.fireworks.ai/guides/prompt-caching
+// - Cloudflare: https://developers.cloudflare.com/workers-ai/features/prompt-caching
+// - Baseten: "Reuse the same x-session-affinity value for related requests to improve
+//   cached input tokens reuse" (https://docs.baseten.co/inference/model-apis/pricing-and-limits)
+// - Morph: "x-session-id ... Use this one: it reaches both region and worker placement"
+//   (https://docs.morphllm.com/sdk/components/caching)
+const SESSION_AFFINITY_HEADERS: ReadonlyMap<string, string> = new Map([
+	["fireworks", "x-session-affinity"],
+	["cloudflare", "x-session-affinity"],
+	["baseten", "x-session-affinity"],
+	["morph", "x-session-id"],
+]);
 
 export function sessionAffinityHeaders(args: Pick<ExecutorExecuteArgs, "providerId" | "meta">): Record<string, string> {
 	const key = args.meta?.cacheAffinityKey;
 	if (typeof key !== "string" || key.length === 0) return {};
-	if (!SESSION_AFFINITY_HEADER_PROVIDERS.has(String(args.providerId ?? "").trim().toLowerCase())) return {};
-	return { "x-session-affinity": key };
+	const header = SESSION_AFFINITY_HEADERS.get(String(args.providerId ?? "").trim().toLowerCase());
+	return header ? { [header]: key } : {};
 }
 
 export type OpenAIWirePolicy = {
@@ -133,10 +144,15 @@ export async function executeOpenAIWire(
 	const endpointForRoute = (targetRoute: "responses" | "chat") =>
 		targetRoute === "responses" ? "/responses" : "/chat/completions";
 
+	// Audio given by URL is downloaded and sent as base64 input_audio.
+	const inlinedAudio = await inlineAudioUrlsForProvider(args.ir, args);
+	if (inlinedAudio.ok === false) return inlinedAudio.result;
+	const encodeIr = inlinedAudio.ir;
+
 	const buildPayloadForRoute = (targetRoute: "responses" | "chat"): Record<string, any> => {
 		const requestPayload = targetRoute === "responses"
-			? irToOpenAIResponses(args.ir, modelForRouting, args.providerId, args.capabilityParams)
-			: irToOpenAIChat(args.ir, modelForRouting, args.providerId, args.capabilityParams);
+			? irToOpenAIResponses(encodeIr, modelForRouting, args.providerId, args.capabilityParams)
+			: irToOpenAIChat(encodeIr, modelForRouting, args.providerId, args.capabilityParams);
 
 		const upstreamStream = policy.useClientStreamingMode ? args.ir.stream : true;
 		const payload: Record<string, any> = {
@@ -1231,6 +1247,7 @@ export async function bufferStreamToIR(
 		throw new Error("openai_stream_missing_response");
 	}
 
+	finaliseChatAudio(finalResponse);
 	const isChatLikeResponse = isChatCompletionResponse(finalResponse);
 
 	// Convert to IR using appropriate transformer
@@ -1374,6 +1391,43 @@ function mergeUsageSnapshots(prev: any, next: any): any {
 	return merged;
 }
 
+const CHAT_AUDIO_DATA_CHUNKS = Symbol("chatAudioDataChunks");
+
+/**
+ * OpenAI streams Chat audio output as `choices[].delta.audio` pieces: the id and
+ * expires_at once, and base64 `data` and `transcript` in fragments
+ * (https://platform.openai.com/docs/api-reference/chat-streaming/streaming).
+ */
+function appendChatAudioDelta(message: any, delta: any): void {
+	const audio = message.audio && typeof message.audio === "object" ? message.audio : (message.audio = {});
+	if (typeof delta.id === "string" && delta.id) audio.id = delta.id;
+	if (typeof delta.expires_at === "number") audio.expires_at = delta.expires_at;
+	if (typeof delta.transcript === "string") audio.transcript = (audio.transcript ?? "") + delta.transcript;
+	if (typeof delta.data === "string" && delta.data) {
+		(audio[CHAT_AUDIO_DATA_CHUNKS] ??= []).push(delta.data);
+	}
+}
+
+/** Each base64 fragment is encoded on its own, so padded fragments are re-encoded as one. */
+export function joinBase64Chunks(chunks: string[]): string {
+	if (chunks.slice(0, -1).every((chunk) => chunk.length % 4 === 0 && !chunk.includes("="))) {
+		return chunks.join("");
+	}
+	let binary = "";
+	for (const chunk of chunks) binary += atob(chunk);
+	return btoa(binary);
+}
+
+function finaliseChatAudio(response: any): void {
+	for (const choice of Array.isArray(response?.choices) ? response.choices : []) {
+		const audio = choice?.message?.audio;
+		const chunks: string[] | undefined = audio?.[CHAT_AUDIO_DATA_CHUNKS];
+		if (!chunks) continue;
+		audio.data = joinBase64Chunks(chunks);
+		delete audio[CHAT_AUDIO_DATA_CHUNKS];
+	}
+}
+
 function accumulateChatCompletion(finalResponse: any, payload: any): any {
 	if (!payload || !Array.isArray(payload?.choices)) {
 		if (payload?.usage && finalResponse) {
@@ -1415,6 +1469,7 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
 				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
 				...(Array.isArray(message.audios) ? { audios: message.audios } : Array.isArray(previousMessage.audios) ? { audios: previousMessage.audios } : {}),
+				...(message.audio && typeof message.audio === "object" ? { audio: message.audio } : previousMessage.audio ? { audio: previousMessage.audio } : {}),
 				...(Array.isArray(message._contentParts)
 					? { _contentParts: message._contentParts }
 					: Array.isArray(previousMessage._contentParts)
@@ -1463,6 +1518,9 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				choice.message.audios = [];
 			}
 			choice.message.audios.push(...chunk.delta.audios);
+		}
+		if (chunk.delta?.audio && typeof chunk.delta.audio === "object") {
+			appendChatAudioDelta(choice.message, chunk.delta.audio);
 		}
 		if (chunk.finish_reason) {
 			choice.finish_reason = chunk.finish_reason;

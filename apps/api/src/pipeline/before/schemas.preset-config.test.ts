@@ -127,6 +127,14 @@ describe("presetConfigSchema", () => {
     });
 });
 
+describe("presetConfigSchema prompt templates", () => {
+    it("keeps the prompt block as stored and leaves it out when absent", () => {
+        const prompt = { messages: [{ role: "user", content: "Hi {{name}}" }], variables: { name: { type: "string" } } };
+        expect(presetConfigSchema.parse({ prompt }).prompt).toEqual(prompt);
+        expect(presetConfigSchema.parse({})).not.toHaveProperty("prompt");
+    });
+});
+
 describe("contextSchema preset parsing", () => {
     it("parses preset payloads returned by gateway context SQL", () => {
         const parsed = contextSchema.parse({

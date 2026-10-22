@@ -1,33 +1,27 @@
-import type { ExtendedModel } from "@/data/types";
+import type { CompareViewModel } from "./view/types";
 
-export type CompareModelOption = Pick<ExtendedModel, "id" | "name" | "release_date" | "input_types" | "output_types"> & {
-	provider: Pick<NonNullable<ExtendedModel["provider"]>, "provider_id" | "name"> | null;
+export type CompareModelOption = {
+	id: string;
+	name: string;
+	release_date: string | null;
+	input_types: string[] | string | null;
+	output_types: string[] | string | null;
+	provider: { provider_id: string; name: string } | null;
+	/** Absent from web API deployments older than the compare view. */
+	status?: string | null;
+	/** Whether Phaseo routes the model today. */
+	routed?: boolean;
 };
 
-export function toCompareModelOption(model: ExtendedModel): CompareModelOption {
+export function toCompareModelOption(model: CompareViewModel): CompareModelOption {
 	return {
-		id: model.id, name: model.name, release_date: model.release_date,
-		input_types: model.input_types, output_types: model.output_types,
-		provider: model.provider ? { provider_id: model.provider.provider_id, name: model.provider.name } : null,
+		id: model.id,
+		name: model.name,
+		release_date: model.releaseDate,
+		input_types: model.inputTypes,
+		output_types: model.outputTypes,
+		provider: { provider_id: model.lab.id, name: model.lab.name },
+		status: model.status,
+		routed: model.providers.length > 0,
 	};
 }
-
-export type CompareGatewayUsagePoint = {
-	date: string;
-	value: number;
-};
-
-export type CompareGatewayUsage = {
-	periodDays: number;
-	tokens30d: number;
-	latestDate: string | null;
-	points30d: CompareGatewayUsagePoint[];
-	totalRequests: number;
-	requests30m: number;
-	latencyP50Ms30m: number | null;
-	throughputP50TokPerSec30m: number | null;
-	cumulativeTokens: number | null;
-	requestPoints24h: CompareGatewayUsagePoint[];
-};
-
-export type CompareGatewayUsageByModel = Record<string, CompareGatewayUsage>;

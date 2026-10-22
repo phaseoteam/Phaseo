@@ -18,7 +18,8 @@ import {
 } from "./textNormalizePolicy";
 import { dropUnsupportedParams, type DroppedParam } from "./unsupportedParams";
 import { dropVerbatimResponsesItems } from "./responsesItems";
-import { dropUnsupportedCacheTtl } from "./cacheTtl";
+import { dropAssistantAudioReferences } from "./assistantAudio";
+import { dropUnsupportedCacheTtl, dropUnsupportedPromptCacheOptions } from "./cacheTtl";
 import { dropUnsupportedTwelveHourCache } from "./prompt-cache-ttl";
 type ParamRange = {
     min?: number;
@@ -240,16 +241,27 @@ export function normalizeIRForProvider(
     const supported = dropUnsupportedParams(ir, providerId, capabilityParams);
     // Responses input items only OpenAI's API defines are removed the same way.
     const items = dropVerbatimResponsesItems(supported.ir, providerId);
+    // And assistant audio references, which only OpenAI's Chat routes take.
+    const assistantAudio = dropAssistantAudioReferences(items.ir, providerId);
     // So is a 1-hour cache TTL on a model the provider caches for 5 minutes only.
-    const cacheTtl = dropUnsupportedCacheTtl(items.ir, providerId, [options?.modelForReasoning]);
+    const cacheTtl = dropUnsupportedCacheTtl(assistantAudio.ir, providerId, [options?.modelForReasoning]);
     // And OpenAI's 12-hour cache lifetime, where the route cannot take it: see ./prompt-cache-ttl.ts.
     const twelveHourCache = dropUnsupportedTwelveHourCache(cacheTtl.ir, providerId, {
         models: [options?.modelForReasoning, cacheTtl.ir.model],
         pricingCard: options?.pricingCard,
     });
-    const dropped = [...supported.dropped, ...items.dropped, ...cacheTtl.dropped, ...twelveHourCache.dropped];
+    // And Moonshot's prompt_cache_options, to the mode and lifetimes the route can take.
+    const cacheOptions = dropUnsupportedPromptCacheOptions(twelveHourCache.ir, providerId, options?.pricingCard);
+    const dropped = [
+        ...supported.dropped,
+        ...items.dropped,
+        ...assistantAudio.dropped,
+        ...cacheTtl.dropped,
+        ...twelveHourCache.dropped,
+        ...cacheOptions.dropped,
+    ];
     if (dropped.length > 0) options?.onDroppedParams?.(dropped);
-    ir = restrictToAllowedTools(twelveHourCache.ir, providerId);
+    ir = restrictToAllowedTools(cacheOptions.ir, providerId);
     const modelForReasoning = options?.modelForReasoning ?? ir.model;
     const nextMaxTokens = normalizeMaxTokens(
         ir,

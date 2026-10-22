@@ -1,5 +1,6 @@
 "use client";
 import { GroupedInputPrice } from "./GroupedInputPrice";
+import { CacheWritePricing, groupCacheWriteTiers } from "./CacheWritePricing";
 import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
 import { localizedPricingDisplayLabel } from "@/i18n/pricing-display";
 
@@ -62,6 +63,7 @@ import {
 } from "@/components/(data)/model/pricing/ProviderModelParameters";
 import {
 	buildProviderSections,
+	compareTokenTiers,
 	buildProviderTablePriceSummaryForColumn,
 	fmtUSD,
 	ruleMatchCovers,
@@ -735,10 +737,7 @@ function renderCompactTierSummary(
 	freeLabel: string,
 	l: (value: string | null | undefined) => string,
 ) {
-	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
-		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
-		return a.per1M - b.per1M;
-	});
+	const orderedTiers = [...(tiers ?? [])].sort(compareTokenTiers);
 	if (!orderedTiers.length) {
 		return (
 			<div className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
@@ -799,13 +798,15 @@ function renderSecondaryTierSummary(
 	valueClassName: string | undefined,
 	freeLabel: string,
 	l: (value: string | null | undefined) => string,
+	locale: string,
 ) {
-	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
-		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
-		return a.per1M - b.per1M;
-	});
+	const orderedTiers = [...(tiers ?? [])].sort(compareTokenTiers);
 	if (!orderedTiers.length) {
 		return <div className="text-xs font-semibold tabular-nums text-foreground">--</div>;
+	}
+	const cacheWriteGroups = groupCacheWriteTiers(orderedTiers);
+	if (cacheWriteGroups) {
+		return <CacheWritePricing label={label} groups={cacheWriteGroups} unitLabel={unitLabel} valueClassName={valueClassName} freeLabel={freeLabel} locale={locale} localizeLabel={l} />;
 	}
 	const hasAnyComparison = orderedTiers.some(hasTokenTierComparison);
 	const conditions = getTokenTierConditions(orderedTiers);
@@ -813,10 +814,10 @@ function renderSecondaryTierSummary(
 	return (
 		<div
 			className={cn(
-				"inline-grid items-baseline gap-x-1.5 gap-y-0.5",
+				"grid w-full min-w-0 items-baseline gap-x-1.5 gap-y-0.5",
 				hasAnyComparison
-					? "grid-cols-[max-content_repeat(3,max-content)]"
-					: "grid-cols-[max-content_repeat(2,max-content)]",
+					? "grid-cols-[repeat(3,max-content)_minmax(0,1fr)]"
+					: "grid-cols-[repeat(2,max-content)_minmax(0,1fr)]",
 			)}
 		>
 			{orderedTiers.map((tier, index) => {
@@ -846,7 +847,7 @@ function renderSecondaryTierSummary(
 						>
 							{tier.per1M === 0 ? freeLabel : fmtUSD(tier.per1M)}
 						</span>
-						<span className="whitespace-nowrap text-left text-[10px] text-muted-foreground">
+						<span className="min-w-0 break-words text-left text-[10px] text-muted-foreground">
 							{l(conditions[index])}
 						</span>
 					</React.Fragment>
@@ -854,7 +855,7 @@ function renderSecondaryTierSummary(
 			})}
 			<div
 				className={cn(
-					"justify-self-center text-[10px] text-muted-foreground",
+					"justify-self-start text-[10px] text-muted-foreground",
 					hasAnyComparison ? "col-span-3 col-start-2" : "col-span-2 col-start-2",
 				)}
 			>
@@ -2367,13 +2368,13 @@ export default function ProviderCard({
 		label,
 		tiles,
 	}));
-	const tokenMetricGroups = allTokenMetricGroups.map(({ label, tiles }) => ({
-		label,
-		tiles: tiles.slice(0, 3),
-		columns: Math.min(3, tiles.length),
-	}));
+	const tokenMetricGroups = allTokenMetricGroups.map(({ label, tiles }) => {
+		const primaryTiles = tiles.filter((tile) => !tile.key.endsWith("-cache-write")).slice(0, 3);
+		return { label, tiles: primaryTiles, columns: primaryTiles.length };
+	}).filter((group) => group.tiles.length > 0);
+	const primaryTokenKeys = new Set(tokenMetricGroups.flatMap((group) => group.tiles.map((tile) => tile.key)));
 	const additionalTokenMetricTiles = allTokenMetricGroups.flatMap(({ label, tiles }) =>
-		tiles.slice(3).map((tile) => ({ ...tile, groupTitle: label })),
+		tiles.filter((tile) => !primaryTokenKeys.has(tile.key)).map((tile) => ({ ...tile, groupTitle: label })),
 	);
 	const infoScope = providerModelsInScope;
 	const tableInfoScope = tableProviderModelsInScope;
@@ -3020,7 +3021,7 @@ export default function ProviderCard({
 								)}
 							>
 								<div className="text-[11px] text-muted-foreground">
-									{tokenMetricGroups.length > 1
+										{allTokenMetricGroups.length > 1
 										? `${group.label} ${tile.title}`
 										: tile.title}
 								</div>
@@ -3123,7 +3124,7 @@ export default function ProviderCard({
 						{additionalTokenMetricTiles.map((tile) => (
 							<React.Fragment key={tile.key}>
 								{renderSecondaryTierSummary(
-									tokenMetricGroups.length > 1
+									allTokenMetricGroups.length > 1
 										? `${tile.groupTitle} ${tile.title}`
 										: tile.title,
 									tile.tiers,
@@ -3131,6 +3132,7 @@ export default function ProviderCard({
 									selectedPlanPriceClass,
 									tx("Common.ui.chatSettings.free" as never),
 									localizePricingLabel,
+									locale,
 								)}
 							</React.Fragment>
 						))}

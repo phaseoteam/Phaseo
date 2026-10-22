@@ -6,6 +6,7 @@ import type { Env } from "@/env";
 import type { AccountWorkspaceContext } from "@/routes/account/context";
 import { metadataForIds } from "@/routes/account/settings-usage";
 import { applyRequestLabelFilter, requestLabelFilterFromParams } from "@/usage/requestClassifiers";
+import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import {
 	LONG_RUNNING_REQUEST_ENDPOINTS,
 	buildNotInFilter,
@@ -362,11 +363,23 @@ export function normalizeGatewayUpstreamRows(
 	});
 }
 
+// Shown instead of the stored log when the workspace limits contents to owners and admins.
+const RESTRICTED_IO_LOG: GatewayIoLog = {
+	status: "restricted",
+	storage_provider: null,
+	bytes: null,
+	retention_until: null,
+	error: null,
+	payload: null,
+};
+
 async function fetchGatewayIoLog(
 	workspaceId: string,
 	requestId: string,
 ): Promise<GatewayIoLog | null> {
-	const env = current().env;
+	const { account, env } = current();
+	const access = await readIoLogContentsAccess(account.client, workspaceId);
+	if (!canReadIoLogContents(access, account.role)) return RESTRICTED_IO_LOG;
 	const token = String(env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 	if (!token) return null;
 
@@ -2680,7 +2693,8 @@ export async function fetchSessionRequests(params: {
 		)
 		.eq("workspace_id", workspaceId)
 		.eq("session_id", sessionId)
-		.order("created_at", { ascending: true })
+		// The latest 500 turns, so long sessions can still be continued from their newest turn.
+		.order("created_at", { ascending: false })
 		.limit(500);
 
 	if (params.timeRange?.from) {
@@ -2740,7 +2754,7 @@ export async function fetchSessionRequests(params: {
 			)
 			.eq("workspace_id", workspaceId)
 			.eq("session_id", sessionId)
-			.order("created_at", { ascending: true })
+			.order("created_at", { ascending: false })
 			.limit(500);
 
 		if (params.timeRange?.from) {
@@ -2756,7 +2770,7 @@ export async function fetchSessionRequests(params: {
 			return [];
 		}
 		return (
-			(fallbackData as any[] | null)?.map((row) => {
+			(fallbackData as any[] | null)?.slice().reverse().map((row) => {
 				return {
 					...toRequestRow(row),
 				} as SessionRequestRow;
@@ -2765,7 +2779,7 @@ export async function fetchSessionRequests(params: {
 	}
 
 	return (
-		(data as any[] | null)?.map((row) => {
+		(data as any[] | null)?.slice().reverse().map((row) => {
 			return {
 				...toRequestRow(row),
 			} as SessionRequestRow;
