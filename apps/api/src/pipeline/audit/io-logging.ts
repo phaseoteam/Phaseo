@@ -173,7 +173,37 @@ export type GatewayIoLoggingPolicy = WorkspaceIoLoggingSettings & {
     captureEnabled: boolean;
     /** The key was created with `never_store_content`, so nothing is captured whatever the workspace setting. */
     neverStoreContent: boolean;
+    /**
+     * The workspace keeps I/O logs, but zero data retention is known to apply to this request
+     * (from the workspace, a key guardrail, the request, its preset or its routing). Nothing is
+     * captured; callers record the skip with recordGatewayIoLogZeroDataRetentionSkip so the
+     * request log says why. A key policy that couldn't be read doesn't count: capture is off
+     * then too, but ZDR isn't known to be the reason.
+     */
+    recordZeroDataRetentionSkip: boolean;
 };
+
+/** The I/O log record of a request whose content zero data retention kept out of storage. */
+const ZERO_DATA_RETENTION_SKIP = {
+    io_log_status: "not_enabled",
+    io_log_error: "Skipped: zero data retention is required for this request",
+} as const satisfies GatewayIoLogColumns;
+
+/**
+ * Why an I/O log holds no content, as a stable code clients can show in their own words.
+ * Only zero data retention has a code so far; other records only carry `io_log_error`.
+ */
+export type GatewayIoLogSkipReason = "zero_data_retention";
+
+export function gatewayIoLogSkipReason(row: {
+    io_log_status?: string | null;
+    io_log_error?: string | null;
+}): GatewayIoLogSkipReason | null {
+    return row.io_log_status === ZERO_DATA_RETENTION_SKIP.io_log_status &&
+        row.io_log_error === ZERO_DATA_RETENTION_SKIP.io_log_error
+        ? "zero_data_retention"
+        : null;
+}
 
 export async function resolveGatewayIoLoggingPolicy(input: {
     workspaceId: string;
@@ -194,19 +224,28 @@ export async function resolveGatewayIoLoggingPolicy(input: {
         : { zeroDataRetention: false, neverStoreContent: false };
     const zeroDataRetention =
         workspaceSettings.zeroDataRetention || keyPolicy.zeroDataRetention || input.zeroDataRetention === true;
+    // ZDR that is known to apply, not assumed because the key's policy couldn't be read.
+    const zeroDataRetentionKnown =
+        workspaceSettings.zeroDataRetention ||
+        input.zeroDataRetention === true ||
+        (keyPolicy.zeroDataRetention && keyPolicy.readFailed !== true);
     const neverStoreContent = keyPolicy.neverStoreContent;
     const settings = { ...workspaceSettings, zeroDataRetention };
-    const featureEnabled = settings.enabled && !zeroDataRetention && !neverStoreContent
+    const mayCapture = !zeroDataRetention && !neverStoreContent;
+    // The gate is also checked for a ZDR request, whose skip is recorded only where I/O logs show.
+    const gateEnabled = settings.enabled && (mayCapture || zeroDataRetentionKnown)
         ? await isGatewayIoLoggingFeatureEnabled({
             workspaceId: input.workspaceId,
             apiKeyId: input.keyId ?? null,
         }, bindings)
         : false;
+    const featureEnabled = gateEnabled && mayCapture;
     return {
         ...settings,
         featureEnabled,
         neverStoreContent,
-        captureEnabled: featureEnabled && settings.enabled && !zeroDataRetention && !neverStoreContent,
+        captureEnabled: featureEnabled && settings.enabled && mayCapture,
+        recordZeroDataRetentionSkip: gateEnabled && settings.enabled && zeroDataRetentionKnown,
     };
 }
 
@@ -221,6 +260,8 @@ export async function resolveGatewayIoLoggingPolicy(input: {
 async function keyDataPolicy(input: { workspaceId: string; keyId?: string | null }): Promise<{
     zeroDataRetention: boolean;
     neverStoreContent: boolean;
+    /** The policy couldn't be read, so both flags are on to keep bodies out. */
+    readFailed?: true;
 }> {
     if (!input.keyId) return { zeroDataRetention: false, neverStoreContent: false };
     try {
@@ -231,7 +272,7 @@ async function keyDataPolicy(input: { workspaceId: string; keyId?: string | null
             workspaceId: input.workspaceId,
             error: error instanceof Error ? error.message : String(error),
         });
-        return { zeroDataRetention: true, neverStoreContent: true };
+        return { zeroDataRetention: true, neverStoreContent: true, readFailed: true };
     }
 }
 
@@ -309,8 +350,10 @@ export function requestZeroDataRetention(
     );
 }
 
+type GatewayIoLogRecordKey = Pick<GatewayIoLogInput, "requestId" | "workspaceId">;
+
 async function persistGatewayIoLogMetadata(
-    input: GatewayIoLogInput,
+    input: GatewayIoLogRecordKey,
     columns: GatewayIoLogColumns,
 ): Promise<void> {
     const row: GatewayIoLogMetadataRow = {
@@ -327,7 +370,7 @@ async function persistGatewayIoLogMetadata(
 }
 
 async function finalizeGatewayIoLog(
-    input: GatewayIoLogInput,
+    input: GatewayIoLogRecordKey,
     columns: GatewayIoLogColumns,
 ): Promise<GatewayIoLogColumns> {
     try {
@@ -347,6 +390,17 @@ async function finalizeGatewayIoLog(
     }
 }
 
+/**
+ * Records, without any content, that zero data retention kept a request out of the
+ * I/O log, so the request log shows why there's nothing to see. Callers check the
+ * policy's `recordZeroDataRetentionSkip` first.
+ */
+export async function recordGatewayIoLogZeroDataRetentionSkip(
+    input: GatewayIoLogRecordKey,
+): Promise<GatewayIoLogColumns> {
+    return finalizeGatewayIoLog(input, ZERO_DATA_RETENTION_SKIP);
+}
+
 export async function persistGatewayIoLog(
     input: GatewayIoLogInput,
     resolvedPolicy?: GatewayIoLoggingPolicy,
@@ -357,13 +411,13 @@ export async function persistGatewayIoLog(
         keyId: input.keyId ?? null,
     });
     if (!policy.captureEnabled) {
-        return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
+        return finalizeGatewayIoLog(
+            input,
+            policy.recordZeroDataRetentionSkip ? ZERO_DATA_RETENTION_SKIP : { io_log_status: "not_enabled" },
+        );
     }
     if (requestZeroDataRetention(input)) {
-        return finalizeGatewayIoLog(input, {
-            io_log_status: "not_enabled",
-            io_log_error: "Skipped: zero data retention is required for this request",
-        });
+        return finalizeGatewayIoLog(input, ZERO_DATA_RETENTION_SKIP);
     }
 
     const bucket = bindings.GATEWAY_IO_LOGS_BUCKET;

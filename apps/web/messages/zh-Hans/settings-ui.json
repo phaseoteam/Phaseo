@@ -5890,6 +5890,7 @@
 		"toolCalls": "工具调用",
 		"retainedUntil": "保留至",
 		"notStored": "未存储",
+		"skippedZeroDataRetention": "已跳过：要求零数据保留",
 		"selectedRoute": "所选路由",
 		"routingDurationNotRecorded": "未记录路由时长",
 		"requestInput": "请求输入",

@@ -5890,6 +5890,7 @@
 		"toolCalls": "Appels d’outils",
 		"retainedUntil": "Conservé jusqu’au",
 		"notStored": "Non stocké",
+		"skippedZeroDataRetention": "Ignoré : la conservation zéro des données est exigée",
 		"selectedRoute": "Route sélectionnée",
 		"routingDurationNotRecorded": "Durée du routage non enregistrée",
 		"requestInput": "Entrée de la requête",

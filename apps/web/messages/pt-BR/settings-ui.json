@@ -5890,6 +5890,7 @@
 		"toolCalls": "Chamadas de ferramentas",
 		"retainedUntil": "Retido até",
 		"notStored": "Não armazenado",
+		"skippedZeroDataRetention": "Ignorado: a retenção zero de dados é exigida",
 		"selectedRoute": "Rota selecionada",
 		"routingDurationNotRecorded": "Duração do roteamento não registrada",
 		"requestInput": "Entrada da solicitação",

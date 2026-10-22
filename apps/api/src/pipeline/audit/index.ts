@@ -12,7 +12,12 @@ import {
 	buildV2RequestUsageMeters,
 	stripGatewayRequestUsageColumns,
 } from "../usage-columns";
-import { persistGatewayIoLog, requestZeroDataRetention, resolveGatewayIoLoggingPolicy } from "./io-logging";
+import {
+    persistGatewayIoLog,
+    recordGatewayIoLogZeroDataRetentionSkip,
+    requestZeroDataRetention,
+    resolveGatewayIoLoggingPolicy,
+} from "./io-logging";
 import { persistGatewayUpstreamRequests } from "./upstream-requests";
 import { protectStealthAuditArgs } from "./stealth-identity";
 import { buildRoutingObservability, toProviderModelId } from "./routing-observability";
@@ -1025,6 +1030,8 @@ export async function auditSuccess(input: {
                     },
                     "supabase_audit_success_details_insert",
                 );
+            } else if (ioLoggingPolicy.recordZeroDataRetentionSkip) {
+                await recordGatewayIoLogZeroDataRetentionSkip({ requestId: args.requestId, workspaceId: args.workspaceId });
             }
             if (v2PersistenceError) throw v2PersistenceError;
         } catch (err) {
@@ -1332,6 +1339,8 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                             },
                             "supabase_audit_failure_before_details_insert",
                         );
+                    } else if (ioLoggingPolicy.recordZeroDataRetentionSkip) {
+                        await recordGatewayIoLogZeroDataRetentionSkip({ requestId: args.requestId, workspaceId: args.workspaceId });
                     }
                     if (v2PersistenceError) throw v2PersistenceError;
                 } catch (err) {
@@ -1535,6 +1544,8 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         },
                         "supabase_audit_failure_execute_details_insert",
                     );
+                } else if (ioLoggingPolicy.recordZeroDataRetentionSkip) {
+                    await recordGatewayIoLogZeroDataRetentionSkip({ requestId: args.requestId, workspaceId: args.workspaceId });
                 }
                 if (v2PersistenceError) throw v2PersistenceError;
             } catch (err) {
