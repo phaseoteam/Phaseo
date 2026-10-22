@@ -1,8 +1,8 @@
 // Purpose: Zero data retention keeps a request's content out of everything the audit stores:
-//          the I/O log object in R2 and the gateway_request_details row in Supabase. The I/O
-//          log metadata row still records, without content, that ZDR was why nothing was kept.
+//          the I/O log object in R2 is the only place content goes. The I/O log metadata row
+//          still records, without content, that ZDR was why nothing was kept.
 // Why: The request's own (or its preset's) require_zero_data_retention only skipped the R2
-//      object, so with workspace I/O logging on the detail row still kept the full request,
+//      object, so with workspace I/O logging on a database row still kept the full request,
 //      response and provider payloads, on success and on both failure paths.
 // How: Run auditSuccess and auditFailure with the real I/O log policy, workspace I/O logging
 //      on, and a Supabase client and bucket that record every write.
@@ -30,7 +30,7 @@ vi.mock("@/runtime/env", () => ({
 			}
 			const record = (row: Record<string, any>) => (state.writes[table] ??= []).push(row);
 			return {
-				// gateway_requests reads the inserted row back; gateway_request_details awaits the insert.
+				// gateway_requests reads the inserted row back.
 				insert: (row: Record<string, any>) => {
 					record(row);
 					return Object.assign(Promise.resolve({ error: null }), {
@@ -114,14 +114,12 @@ describe("audit content storage under zero data retention", () => {
 		state.keyPolicy = { privacyZdrOnly: false, neverStoreContent: false };
 	});
 
-	it.each(kinds)("stores the I/O log and detail row without zero data retention (%s)", async (kind) => {
+	it.each(kinds)("stores the I/O log without zero data retention (%s)", async (kind) => {
 		await audit(kind);
 
 		expect(state.put).toHaveBeenCalledOnce();
 		expect(new TextDecoder().decode(state.put.mock.calls[0]?.[1] as Uint8Array)).toContain(PROMPT);
-		// The detail row only ever holds metadata (index.request-details.test.ts).
-		expect(state.writes.gateway_request_details).toHaveLength(1);
-		expect(JSON.stringify(state.writes.gateway_request_details)).not.toContain(PROMPT);
+		expect(state.writes.gateway_io_logs?.[0]?.io_log_status).toBe("stored");
 	});
 
 	it.each(kinds.flatMap((kind) => [
@@ -139,7 +137,6 @@ describe("audit content storage under zero data retention", () => {
 		// The request itself is still logged, without its content.
 		expect(state.writes.gateway_requests).toHaveLength(1);
 		expect(state.put).not.toHaveBeenCalled();
-		expect(state.writes.gateway_request_details).toBeUndefined();
 		// The I/O log records why, so the request log says "Skipped: zero data retention is required".
 		expect(state.writes.gateway_io_logs).toEqual([{
 			workspace_id: "ws_zdr",
@@ -156,7 +153,6 @@ describe("audit content storage under zero data retention", () => {
 
 		expect(state.writes.gateway_requests).toHaveLength(1);
 		expect(state.put).not.toHaveBeenCalled();
-		expect(state.writes.gateway_request_details).toBeUndefined();
 		expect(state.writes.gateway_io_logs).toBeUndefined();
 	});
 });

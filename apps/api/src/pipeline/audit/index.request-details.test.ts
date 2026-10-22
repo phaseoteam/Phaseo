@@ -1,15 +1,16 @@
-// Purpose: The gateway_request_details row is written with request metadata only, never content.
-// Why: With workspace I/O logging on, the row also stored the full request, response and provider
-//      payloads, which nothing reads; the logs view and Open in Chat read only the R2 I/O log.
-//      Requests served by the regional (EU and US) endpoints, whose I/O log says contents aren't
-//      kept, still had them in the row.
-// How: Run auditSuccess and auditFailure with workspace I/O logging on, with and without an I/O
-//      log bucket, and check every detail row write for the payload columns and the content.
+// Purpose: The audit never writes to gateway_request_details.
+// Why: With workspace I/O logging on, every captured request inserted a row there, at first with the
+//      full request, response and provider payloads. Nothing reads the table (the logs view and Open in
+//      Chat read only the R2 I/O log), and production no longer has it, so each insert failed and
+//      logged an error.
+// How: Run auditSuccess and auditFailure with workspace I/O logging on, with and without an I/O log
+//      bucket, and check no write reaches the table and no error or warning mentions it.
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
 	writes: {} as Record<string, Array<Record<string, any>>>,
+	tables: [] as string[],
 	put: vi.fn(async (..._args: unknown[]) => null),
 	bucket: true,
 }));
@@ -21,6 +22,7 @@ vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		rpc: async () => ({ data: "event", error: null }),
 		from: (table: string) => {
+			state.tables.push(table);
 			if (table === "workspace_settings") {
 				return { select: () => ({ eq: () => ({ maybeSingle: async () => ({
 					data: { io_logging_enabled: true, io_logging_include_provider_payloads: true },
@@ -29,7 +31,7 @@ vi.mock("@/runtime/env", () => ({
 			}
 			const record = (row: Record<string, any>) => (state.writes[table] ??= []).push(row);
 			return {
-				// gateway_requests reads the inserted row back; gateway_request_details awaits the insert.
+				// gateway_requests reads the inserted row back.
 				insert: (row: Record<string, any>) => {
 					record(row);
 					return Object.assign(Promise.resolve({ error: null }), {
@@ -60,14 +62,6 @@ import { auditFailure, auditSuccess } from "./index";
 
 const PROMPT = "private prompt";
 const ANSWER = "private answer";
-const CONTENT_COLUMNS = [
-	"request_payload",
-	"request_content",
-	"gateway_response",
-	"response_content",
-	"provider_request",
-	"provider_response",
-];
 
 type Kind = "success" | "before failure" | "execute failure";
 
@@ -116,32 +110,31 @@ const cases = (["success", "before failure", "execute failure"] as Kind[]).flatM
 	[kind, "a regional endpoint (no I/O log bucket)", false],
 ] as Array<[Kind, string, boolean]>);
 
-describe("gateway_request_details rows", () => {
+describe("gateway_request_details", () => {
 	beforeEach(() => {
 		state.writes = {};
+		state.tables = [];
 		state.put.mockClear();
 	});
 
-	it.each(cases)("are written without content on %s via %s", async (kind, _endpoint, bucket) => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it.each(cases)("is never written on %s via %s", async (kind, _endpoint, bucket) => {
 		state.bucket = bucket;
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
 		await audit(kind);
 
-		const rows = state.writes.gateway_request_details ?? [];
-		expect(rows).toHaveLength(1);
-		for (const column of CONTENT_COLUMNS) expect(rows[0]).not.toHaveProperty(column);
-		expect(JSON.stringify(rows)).not.toContain(PROMPT);
-		expect(JSON.stringify(rows)).not.toContain(ANSWER);
-		// The row keeps the request's metadata.
-		expect(rows[0]).toMatchObject({
-			gateway_request_id: "row_details",
-			request_id: "req_details",
-			workspace_id: "ws_details",
-			endpoint: "responses",
-			success: kind === "success",
-			metadata: expect.objectContaining({ routing_diagnostics: { selectedProvider: "openai" } }),
-		});
-		// The content still goes to the I/O log in R2 when there's a bucket, and nowhere when there isn't.
+		expect(state.tables).not.toContain("gateway_request_details");
+		expect(state.writes.gateway_request_details).toBeUndefined();
+		const logged = JSON.stringify([...errorSpy.mock.calls, ...warnSpy.mock.calls]);
+		expect(logged).not.toMatch(/request_details|request details/i);
+		// The request is still recorded, and its content goes to the I/O log in R2 when there's a
+		// bucket and nowhere when there isn't.
+		expect(state.writes.gateway_requests).toHaveLength(1);
 		expect(state.put).toHaveBeenCalledTimes(bucket ? 1 : 0);
 		expect(state.writes.gateway_io_logs?.[0]?.io_log_status).toBe(bucket ? "stored" : "missing_bucket");
 	});

@@ -89,7 +89,7 @@ describe("handleError for a preset that requires zero data retention", () => {
 
 		const event = sendAxiomWideEvent.mock.calls.map((call) => call[0]).find((entry) => entry.event_type !== "gateway.telemetry_delivery");
 		expect(event).toMatchObject({ observability_detail_level: "full", key_id: "key_preset", workspace_id: "ws_preset", status_code: 400 });
-		// The I/O log and the request detail row read the same flag from the audit.
+		// The I/O log reads this flag from the audit.
 		expect(auditArgs.zeroDataRetention).toBe(presetZdr);
 		if (presetZdr) {
 			expect(event?.request_payload_redacted_json).toBeUndefined();
