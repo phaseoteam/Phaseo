@@ -540,6 +540,8 @@ export type WorkspacePolicy = {
 	privacyEnableFreeMayTrain?: boolean;
 	privacyEnableInputOutputLogging?: boolean;
 	privacyZdrOnly?: boolean;
+	/** The key's `never_store_content`: no request or response content is kept or forwarded. */
+	neverStoreContent?: boolean;
 	accountPolicyApplied?: boolean;
     enforceAllowed: boolean;
     activeGuardrailIds: string[];
@@ -736,6 +738,8 @@ export type PipelineContext = {
     /** Set when the preset rendered a prompt template; variable values are not kept. */
     promptTemplate?: ({ presetId: string; presetSlug: string | null } & import("./promptTemplate").PromptTemplateApplication) | null;
     internal?: boolean;
+    /** The calling key never has its content stored: no I/O log, cached response, detailed telemetry or broadcast content. */
+    neverStoreContent?: boolean;
     /** Classifies this request with the caller's credentials during the success audit. */
     requestClassifierCall?: ClassifierCall;
     /** Set on the in-process classifier call itself: never classified, not rate limited. */

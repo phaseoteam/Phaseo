@@ -99,6 +99,21 @@ describe("response-cache fingerprinting", () => {
 			reason: "tools_present",
 		});
 	});
+
+	it("never caches responses for a key that never stores content", () => {
+		expect(
+			isResponseCacheEligible({
+				endpoint: "responses",
+				stream: false,
+				hasTools: false,
+				serverToolsEnabled: false,
+				neverStoreContent: true,
+			}),
+		).toEqual({
+			eligible: false,
+			reason: "content_storage_disabled",
+		});
+	});
 });
 
 describe("response-cache policy", () => {

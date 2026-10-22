@@ -252,6 +252,9 @@ export type BeforeRequestObservabilitySnapshot = {
     requestPayload: unknown;
     requestedModel: string | null;
     model?: string | null;
+    /** The authenticated key, so failures before the context exists still apply its data policy. */
+    workspaceId?: string | null;
+    apiKeyId?: string | null;
 };
 
 export async function beforeRequest(
@@ -285,6 +288,9 @@ export async function beforeRequest(
     const a = await timer.span("guardAuth", () => guardAuth(req));
     if (!a.ok) return a as { ok: false; response: Response };
     const { requestId, workspaceId, apiKeyId, apiKeyRef, apiKeyKid, userId, internal } = a.value;
+    const reportObservability = (snapshot: Omit<BeforeRequestObservabilitySnapshot, "workspaceId" | "apiKeyId">) =>
+        options?.onObservabilitySnapshot?.({ ...snapshot, workspaceId, apiKeyId });
+    reportObservability({ requestPayload: null, requestedModel: null });
 	const bindings = getBindings();
 	const perfGatewayAccess = resolvePerfGatewayAccess({
 		environment: bindings.ENV,
@@ -408,7 +414,7 @@ export async function beforeRequest(
     const requestedModel = typeof rawBody?.model === "string" && rawBody.model.trim()
         ? rawBody.model.trim()
         : null;
-    options?.onObservabilitySnapshot?.({
+    reportObservability({
         requestPayload: rawBody,
         requestedModel,
     });
@@ -537,7 +543,7 @@ export async function beforeRequest(
 			}),
 		};
 	}
-    options?.onObservabilitySnapshot?.({
+    reportObservability({
         requestPayload: rawBody,
         requestedModel,
         model,
@@ -768,7 +774,7 @@ export async function beforeRequest(
 		}
 		autoRouterEvaluation = selection.evaluation;
 		c = selection.selected.contextResult as Awaited<ReturnType<typeof guardContext>>;
-		options?.onObservabilitySnapshot?.({ requestPayload: rawBody, requestedModel, model: selection.selected.resolvedModel });
+		reportObservability({ requestPayload: rawBody, requestedModel, model: selection.selected.resolvedModel });
 	} else {
 		const speculative = speculativeContext && !testingModeEnabled ? await speculativeContext : null;
 		if (speculative && "error" in speculative) throw speculative.error;
@@ -813,7 +819,7 @@ export async function beforeRequest(
         modelSubstitution = redirected.substitution;
         // Downstream decoding reads the model from the body, not the context.
         body = { ...body, model: modelSubstitution.to };
-        options?.onObservabilitySnapshot?.({ requestPayload: rawBody, requestedModel, model: modelSubstitution.to });
+        reportObservability({ requestPayload: rawBody, requestedModel, model: modelSubstitution.to });
     }
     let { context, providers, resolvedModel, candidateDiagnostics } = c.value;
     const contextTelemetry = context.contextTelemetry ?? null;
@@ -1669,6 +1675,7 @@ export async function beforeRequest(
     const ctx: PipelineContext = {
 		quotaUserId: userId ?? null,
 		activeGuardrailIds: workspacePolicy.activeGuardrailIds ?? [],
+		neverStoreContent: workspacePolicy.neverStoreContent === true,
         endpoint,
         capability,
         requestId,

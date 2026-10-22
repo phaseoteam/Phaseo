@@ -183,9 +183,14 @@ export function isResponseCacheEligible(args: {
 	debugEnabled?: boolean;
 	hasTools?: boolean;
 	serverToolsEnabled?: boolean;
+	/** The key was created with never_store_content, so its responses are never cached. */
+	neverStoreContent?: boolean;
 }): { eligible: boolean; reason: string } {
 	if (!RESPONSE_CACHE_ELIGIBLE_ENDPOINTS.has(args.endpoint)) {
 		return { eligible: false, reason: "unsupported_endpoint" };
+	}
+	if (args.neverStoreContent) {
+		return { eligible: false, reason: "content_storage_disabled" };
 	}
 	if (args.stream) {
 		return { eligible: false, reason: "streaming_request" };
