@@ -695,6 +695,13 @@ describe("management key routes", () => {
 			await expect(response.json()).resolves.toMatchObject({ error: "key_revoked" });
 			expect(state.updatePayloads).toHaveLength(0);
 		});
+
+		it("still updates other fields of a revoked key when disabled: true is sent back", async () => {
+			state.keyRows.push(keyRow({ status: "revoked" }), keyRow({ status: "revoked", name: "Renamed" }));
+			const response = await patch({ disabled: true, name: "Renamed" });
+			expect(response.status).toBe(200);
+			expect(state.updatePayloads[0]).toEqual({ name: "Renamed" });
+		});
 	});
 
 	it("never reads, changes, rotates or deletes keys Phaseo manages for Chat and the Slack agent", async () => {
