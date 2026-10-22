@@ -75,6 +75,12 @@ const publicKeys = {
 		[...publicKeys.all(), "model-usage-daily", modelId] as const,
 	modelPricing: (modelId: string) =>
 		[...publicKeys.all(), "model-pricing", modelId] as const,
+	modelPricingHistory: (modelId: string) =>
+		[...publicKeys.all(), "model-pricing-history", modelId] as const,
+	modelPricingInsightsUsage: (modelId: string, providerIds: string[]) =>
+		[...publicKeys.all(), "model-pricing-insights-usage", modelId, stableListKey(providerIds)] as const,
+	modelEffectivePricingDaily: (modelId: string, providerIds: string[]) =>
+		[...publicKeys.all(), "model-effective-pricing-daily", modelId, stableListKey(providerIds)] as const,
 	modelRuntimeStats: (args: {
 		modelId: string;
 		providerIds: string[];
