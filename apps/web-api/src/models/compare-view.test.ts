@@ -20,6 +20,8 @@ describe("composeCompareView pricing", () => {
 		expect(gpt.pricing!.tiers.batch.find((row) => row.kind === "input")?.price).toBe(0.625);
 		expect(gpt.providers.map((provider) => provider.id)).toEqual(["openai"]);
 		expect(gpt.providers[0]).toMatchObject({ input: 1.25, output: 10, cacheRead: 0.125, tiers: ["standard", "batch", "flex", "priority"] });
+		// The headline route's tier prices are the model's pricing, so they aren't sent twice.
+		expect(gpt.providers[0]!.pricing).toBeUndefined();
 	});
 
 	it("uses Sonnet 4.5's standard $3 list price, not the $1.50 batch rate", () => {
@@ -71,6 +73,14 @@ describe("composeCompareView providers and limits", () => {
 	it("splits current Phaseo routes from other listings and merges same-name providers", () => {
 		const sonnet = model("anthropic/claude-sonnet-4.5");
 		expect(sonnet.providers.map((provider) => provider.name)).toEqual(["Anthropic", "Amazon Bedrock", "Google Vertex", "Venice"]);
+		// Every other route carries its own tier prices.
+		expect(sonnet.providers[0]!.pricing).toBeUndefined();
+		for (const provider of sonnet.providers.slice(1).filter((entry) => entry.input !== null)) {
+			// The base band: the unconditional row, else the first band (some routes price only in context bands).
+			const inputs = provider.pricing?.standard?.filter((row) => row.kind === "input") ?? [];
+			expect(inputs.length).toBeGreaterThan(0);
+			expect((inputs.find((row) => !row.conditional) ?? inputs[0])?.price).toBe(provider.input);
+		}
 		// anthropic-aws is a disabled "Anthropic" route, so it neither lists twice nor shows as another listing.
 		expect(sonnet.otherListings).toEqual([{ id: "listing-only", name: "Listing Only" }]);
 		const opus = model("anthropic/claude-opus-5.5");

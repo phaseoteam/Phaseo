@@ -62,6 +62,12 @@ export type CompareViewProvider = {
 	contextWindow: number | null;
 	maxOutput: number | null;
 	tiers: string[];
+	/**
+	 * This route's own price rows by service tier, so the page can price whichever
+	 * route and tier a reader picks. Left out for the headline route, whose rows
+	 * are already the model's `pricing`.
+	 */
+	pricing?: Record<string, CompareViewPriceRow[]>;
 	quantisation: string | null;
 };
 
@@ -426,7 +432,7 @@ function plansOf(entry: ProviderEntry): string[] {
 	return sortPlans([...new Set(entry.rules.filter((rule) => pricePerUnit(rule) !== null).map((rule) => text(rule.pricing_plan).toLowerCase() || "standard"))]);
 }
 
-function toProvider(entry: ProviderEntry): CompareViewProvider {
+function toProvider(entry: ProviderEntry, isHeadline: boolean): CompareViewProvider {
 	return {
 		id: entry.id,
 		name: entry.name,
@@ -436,6 +442,7 @@ function toProvider(entry: ProviderEntry): CompareViewProvider {
 		contextWindow: maxOf(entry.currentModels.map((model) => number(model.context_length) ?? number(model.max_input_tokens))),
 		maxOutput: maxOf(entry.currentModels.map((model) => number(model.max_output_tokens))),
 		tiers: plansOf(entry),
+		...(isHeadline ? {} : { pricing: tierRows(entry.rules) }),
 		quantisation: entry.currentModels.map((model) => model.quantization_scheme).find(Boolean) ?? null,
 	};
 }
@@ -611,7 +618,7 @@ function composeModel(model: Row, source: ComparisonSources, now: number): Compa
 		maxOutput: modelMaxOutput ? { tokens: modelMaxOutput, source: "model" } : providerMaxOutput ? { tokens: providerMaxOutput, source: "providers" } : null,
 		features: featureFlags(routed),
 		pricing,
-		providers: routed.map(toProvider),
+		providers: routed.map((entry) => toProvider(entry, entry === headline)),
 		otherListings,
 		subscriptionPlans: (plansForModel(modelId, source.modelPlans, source.plans) ?? []).map((plan) => {
 			const organisationRow = asRow(plan.organisation);

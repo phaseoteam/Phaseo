@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import { CompareGrid, CompareRow, MODEL_COLOURS, type CompareCell } from "./CompareGrid";
+import { CompareGrid, CompareGroup, CompareRow, CompareSection, MODEL_COLOURS, type CompareCell } from "./CompareGrid";
 import { Segmented } from "./ComparePricing";
 import {
 	bestIndices,
@@ -18,6 +18,18 @@ import {
 import type { CompareEffort, CompareViewBenchmark, CompareViewModel } from "./types";
 
 const AA_HEADLINE_ID = /^aa-intelligence-index(-v\d+)?$/;
+
+/** Benchmarks by category, in the order they first appear; uncategorised ones last. */
+function groupByCategory(benchmarks: CompareViewBenchmark[], otherLabel: string): Array<[string, CompareViewBenchmark[]]> {
+	const groups = new Map<string, CompareViewBenchmark[]>();
+	for (const benchmark of benchmarks) {
+		const key = benchmark.category?.trim() ?? "";
+		groups.set(key, [...(groups.get(key) ?? []), benchmark]);
+	}
+	const named = [...groups.entries()].filter(([key]) => key).map(([key, list]): [string, CompareViewBenchmark[]] => [key.charAt(0).toUpperCase() + key.slice(1), list]);
+	const other = groups.get("");
+	return other ? [...named, [otherLabel, other]] : named;
+}
 
 function scoreText(benchmark: CompareViewBenchmark, score: number): string {
 	if (/\(USD\)/.test(benchmark.name)) return formatUsd(score);
@@ -50,7 +62,7 @@ function CapabilityCard({ benchmark, models }: { benchmark: CompareViewBenchmark
 	return (
 		<div className="rounded-md border border-border p-4">
 			<h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">{benchmark.name} <SourceBadge benchmark={benchmark} /></h3>
-			<p className="mb-3 text-xs text-muted-foreground">{t("eciCardSub")}</p>
+			<p className="mb-3 text-xs text-muted-foreground">{t("eciCardSub")} · {t("eciSource")}</p>
 			<div className="space-y-1">
 				{models.map((model, index) => {
 					const result = results[index];
@@ -104,7 +116,7 @@ function EffortBarCard({ benchmark, models, effort }: { benchmark: CompareViewBe
 							<span className={cn("h-2.5 overflow-hidden rounded-sm", picked.kind === "result" ? "bg-muted" : "bg-[repeating-linear-gradient(90deg,var(--border)_0_4px,transparent_4px_8px)]")} aria-hidden>
 								{picked.kind === "result" ? <span className="block h-full rounded-sm" style={{ width: `${(picked.result.score / max) * 100}%`, background: MODEL_COLOURS[index] }} /> : null}
 							</span>
-							<span className={cn("text-right tabular-nums", best.has(index) && "font-semibold text-emerald-700 dark:text-emerald-300")}>
+							<span className={cn("text-right tabular-nums", best.has(index) && "font-semibold text-emerald-600 dark:text-emerald-400")}>
 								{picked.kind === "result" && effort && picked.result.effort !== effort && picked.result.variant ? <span className="block text-[11px] font-normal text-muted-foreground">{picked.result.variant}</span> : null}
 								{picked.kind === "result" ? scoreText(benchmark, picked.result.score)
 									: <span className="text-xs font-normal text-muted-foreground">{picked.kind === "notAtEffort" ? t("notTested") : t("notReported")}</span>}
@@ -128,6 +140,7 @@ export function CompareBenchmarks({ models, benchmarks }: { models: CompareViewM
 	const eci = shared.find((benchmark) => benchmark.id === ECI_BENCHMARK_ID);
 	const headline = shared.find((benchmark) => AA_HEADLINE_ID.test(benchmark.id));
 	const rows = shared.filter((benchmark) => benchmark !== eci && benchmark !== headline);
+	const categories = groupByCategory(rows, t("otherCategory"));
 	if (!shared.length && !single.length) return null;
 
 	const cells = (benchmark: CompareViewBenchmark): CompareCell[] => {
@@ -147,27 +160,28 @@ export function CompareBenchmarks({ models, benchmarks }: { models: CompareViewM
 	const label = (benchmark: CompareViewBenchmark) => (benchmark.link ? (
 		<a href={benchmark.link} target="_blank" rel="noopener noreferrer" className="hover:underline">{benchmark.name}</a>
 	) : benchmark.name);
-	const labelSub = (benchmark: CompareViewBenchmark) => (benchmark.source === "lab" ? t("labReported") : benchmark.source === "artificial-analysis" && effort ? t("byEffort") : undefined);
+	const labelSub = (benchmark: CompareViewBenchmark) => [
+		benchmark.source === "lab" ? t("labReported") : benchmark.source === "artificial-analysis" && effort ? t("byEffort") : null,
+		benchmark.higherIsBetter ? null : t("lowerIsBetter"),
+	].filter(Boolean).join(" · ") || undefined;
 
 	return (
-		<section id="benchmarks" aria-labelledby="compare-benchmarks" className="scroll-mt-32 space-y-4">
-			<div className="flex flex-wrap items-end justify-between gap-3">
-				<div>
-					<h2 id="compare-benchmarks" className="text-base font-semibold">{t("benchmarks")}</h2>
-					<p className="text-xs text-muted-foreground">{models.length > 1 ? t("benchmarksSub") : t("benchmarksSubSingle")}</p>
+		<CompareSection
+			id="benchmarks"
+			title={t("benchmarks")}
+			description={models.length > 1 ? t("benchmarksSub") : t("benchmarksSubSingle")}
+			actions={levels.length > 1 && effort ? (
+				<div className="flex flex-wrap items-center gap-2">
+					<span className="text-xs text-muted-foreground">{t("compareAtEffort")}</span>
+					<Segmented
+						label={t("compareAtEffort")}
+						value={effort}
+						onChange={setChosen}
+						options={levels.map((level) => ({ value: level.effort, label: t(`effort.${level.effort}` as never), hint: `${level.models}/${models.length}` }))}
+					/>
 				</div>
-				{levels.length > 1 && effort ? (
-					<div className="flex flex-wrap items-center gap-2">
-						<span className="text-xs text-muted-foreground">{t("compareAtEffort")}</span>
-						<Segmented
-							label={t("compareAtEffort")}
-							value={effort}
-							onChange={setChosen}
-							options={levels.map((level) => ({ value: level.effort, label: t(`effort.${level.effort}` as never), hint: `${level.models}/${models.length}` }))}
-						/>
-					</div>
-				) : null}
-			</div>
+			) : null}
+		>
 			{eci || headline ? (
 				<div className="grid gap-4 lg:grid-cols-2">
 					{eci ? <CapabilityCard benchmark={eci} models={models} /> : null}
@@ -175,20 +189,16 @@ export function CompareBenchmarks({ models, benchmarks }: { models: CompareViewM
 				</div>
 			) : null}
 			{rows.length ? (
-				<div className="space-y-1">
-					{models.length > 1 ? <h3 className="text-sm font-semibold">{t("sharedBenchmarks")}</h3> : null}
-					<CompareGrid label={t("benchmarks")}>
-						{rows.map((benchmark) => (
-							<CompareRow
-								key={benchmark.id}
-								label={label(benchmark)}
-								labelSub={labelSub(benchmark)}
-								cells={cells(benchmark)}
-								note={benchmark.higherIsBetter ? t("higherIsBetter") : t("lowerIsBetter")}
-							/>
-						))}
-					</CompareGrid>
-				</div>
+				<CompareGrid label={t("sharedBenchmarks")}>
+					{categories.map(([category, list]) => (
+						<Fragment key={category}>
+							<CompareGroup title={category} />
+							{list.map((benchmark) => (
+								<CompareRow key={benchmark.id} label={label(benchmark)} labelSub={labelSub(benchmark)} cells={cells(benchmark)} />
+							))}
+						</Fragment>
+					))}
+				</CompareGrid>
 			) : null}
 			{single.length ? (
 				<div className="space-y-1">
@@ -204,7 +214,6 @@ export function CompareBenchmarks({ models, benchmarks }: { models: CompareViewM
 									label={label(benchmark)}
 									labelSub={labelSub(benchmark)}
 									cells={cells(benchmark)}
-									note={benchmark.higherIsBetter ? t("higherIsBetter") : t("lowerIsBetter")}
 								/>
 							))}
 						</CompareGrid>
@@ -212,6 +221,6 @@ export function CompareBenchmarks({ models, benchmarks }: { models: CompareViewM
 				</div>
 			) : null}
 			<p className="text-xs text-muted-foreground">{t("benchmarkSources")}</p>
-		</section>
+		</CompareSection>
 	);
 }
