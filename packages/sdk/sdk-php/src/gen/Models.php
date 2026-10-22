@@ -1561,7 +1561,7 @@ class DecisionBoxAnswer
 {
 	/** @var array<string, mixed> */
 	public $box;
-	/** @var float */
+	/** @var float|null */
 	public $confidence;
 	/** @var string|null */
 	public $name;

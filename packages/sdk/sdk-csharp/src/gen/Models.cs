@@ -2166,7 +2166,7 @@ public sealed class DecisionBoxAnswer
 	public Dictionary<string, object> Box { get; set; }
 
 	[JsonPropertyName("confidence")]
-	public double Confidence { get; set; }
+	public double? Confidence { get; set; }
 
 	[JsonPropertyName("name")]
 	public string? Name { get; set; }

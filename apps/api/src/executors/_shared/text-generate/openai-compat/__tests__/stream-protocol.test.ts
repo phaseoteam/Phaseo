@@ -1173,3 +1173,146 @@ describe("resolveStreamForProtocol", () => {
 		expect(typeof audioBlock?.audio_url?.url === "string" || typeof audioBlock?.b64_json === "string").toBe(true);
 	});
 });
+
+// https://docs.mistral.ai/capabilities/reasoning: delta.content is a list holding a
+// ThinkChunk while the model thinks, a list holding the closing ThinkChunk and the
+// first TextChunk at the transition, then a plain string.
+function mistralReasoningUpstream(): Response {
+	const chunk = (content: unknown, extra: Record<string, unknown> = {}) => ({
+		data: {
+			id: "mistral_stream_1",
+			object: "chat.completion.chunk",
+			created: 1710000000,
+			model: "zai-glm-5-3",
+			choices: [{ index: 0, delta: { content }, finish_reason: null, ...extra }],
+		},
+	});
+	return makeSseResponse([
+		chunk([{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }] }]),
+		chunk([
+			{ type: "thinking", thinking: [{ type: "text", text: " It is 8." }] },
+			{ type: "text", text: "The answer " },
+		]),
+		chunk("is 8.", { finish_reason: "stop" }),
+		{
+			data: {
+				id: "mistral_stream_1",
+				object: "chat.completion.chunk",
+				created: 1710000000,
+				model: "zai-glm-5-3",
+				choices: [],
+				usage: { prompt_tokens: 3, completion_tokens: 9, total_tokens: 12 },
+			},
+		},
+		"[DONE]",
+	]);
+}
+
+describe("Mistral reasoning chunk-list streams", () => {
+	it("rewrites chunk-list deltas to string content and reasoning_content for Chat clients", async () => {
+		const stream = resolveStreamForProtocol(
+			mistralReasoningUpstream(),
+			baseArgs({ providerId: "mistral", providerModelSlug: "zai-glm-5-3" }),
+			"chat",
+		);
+		const chunks = parseSseJsonFrames(await readStreamText(stream));
+		const deltas = chunks.map((chunk) => chunk.choices?.[0]?.delta).filter(Boolean);
+
+		expect(deltas.every((delta) => delta.content === undefined || typeof delta.content === "string")).toBe(true);
+		expect(deltas.map((delta) => delta.reasoning_content ?? "").join("")).toBe("Add 5 and 3. It is 8.");
+		expect(deltas.map((delta) => delta.content ?? "").join("")).toBe("The answer is 8.");
+	});
+
+	it.each(["mistral", "mistral-eu"])("streams the reasoning and the whole answer to Responses clients (%s)", async (providerId) => {
+		const stream = resolveStreamForProtocol(
+			mistralReasoningUpstream(),
+			baseArgs({ providerId, providerModelSlug: "zai-glm-5-3", endpoint: "responses", protocol: "openai.responses" }),
+			"chat",
+		);
+		const output = await readStreamText(stream);
+		const deltasOf = (eventName: string) => output.split("\n\n")
+			.filter((frame) => frame.startsWith(`event: ${eventName}\n`))
+			.map((frame) => JSON.parse(frame.slice(frame.indexOf("data: ") + 6)).delta)
+			.join("");
+		const reasoning = deltasOf("response.reasoning_text.delta");
+		const text = deltasOf("response.output_text.delta");
+		const completed = parseSseJsonFrames(output).find((frame) => frame?.response?.status === "completed")?.response;
+
+		expect(reasoning).toBe("Add 5 and 3. It is 8.");
+		expect(text).toBe("The answer is 8.");
+		expect(JSON.stringify(completed)).not.toContain("[object Object]");
+		expect(completed.output.find((item: any) => item.type === "message").content[0].text).toBe("The answer is 8.");
+	});
+});
+
+// https://docs.tokenfactory.nebius.com/api-reference/inference/create-a-response:
+// Nebius Responses streams are data-only frames with no `event:` line.
+function nebiusEventlessResponsesUpstream(): Response {
+	const response = {
+		id: "resp_nebius_1",
+		object: "response",
+		created_at: 1710000001,
+		model: "Qwen/Qwen3-235B-A22B-Instruct-2507",
+	};
+	return makeSseResponse([
+		{ data: { type: "response.created", response: { ...response, status: "in_progress", output: [] } } },
+		{ data: { type: "response.output_text.delta", item_id: "msg_1", output_index: 0, content_index: 0, delta: "Hello " } },
+		{ data: { type: "response.output_text.delta", item_id: "msg_1", output_index: 0, content_index: 0, delta: "world" } },
+		{
+			data: {
+				type: "response.completed",
+				response: {
+					...response,
+					status: "completed",
+					output: [{ type: "message", id: "msg_1", role: "assistant", content: [{ type: "output_text", text: "Hello world" }] }],
+					usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
+				},
+			},
+		},
+		"[DONE]",
+	]);
+}
+
+describe("Responses streams without event lines", () => {
+	it("streams text and the final usage chunk to Chat clients", async () => {
+		const stream = resolveStreamForProtocol(
+			nebiusEventlessResponsesUpstream(),
+			baseArgs({ providerId: "nebius-token-factory", providerModelSlug: "Qwen/Qwen3-235B-A22B-Instruct-2507" }),
+			"responses",
+		);
+		const chunks = parseSseJsonFrames(await readStreamText(stream));
+		const text = chunks.map((chunk) => chunk.choices?.[0]?.delta?.content ?? "").join("");
+
+		expect(text).toBe("Hello world");
+		expect(chunks.some((chunk) => chunk.choices?.[0]?.finish_reason === "stop")).toBe(true);
+		expect(chunks.find((chunk) => chunk.usage)?.usage).toMatchObject({ prompt_tokens: 3, completion_tokens: 2 });
+	});
+
+	it("names each event for Responses clients", async () => {
+		const stream = resolveStreamForProtocol(
+			nebiusEventlessResponsesUpstream(),
+			baseArgs({ providerId: "nebius-token-factory", endpoint: "responses", protocol: "openai.responses" }),
+			"responses",
+		);
+		const output = await readStreamText(stream);
+
+		expect(output).toContain("event: response.output_text.delta\n");
+		expect(output).toContain("event: response.completed\n");
+		expect(output).not.toContain("event: response.event\n");
+	});
+
+	it("surfaces a data-only error frame to Chat clients", async () => {
+		const stream = resolveStreamForProtocol(
+			makeSseResponse([
+				{ data: { type: "response.created", response: { id: "resp_nebius_2", status: "in_progress", output: [] } } },
+				{ data: { type: "error", message: "Unable to process request. Repeat the request later.", code: "server_error" } },
+				"[DONE]",
+			]),
+			baseArgs({ providerId: "nebius-token-factory" }),
+			"responses",
+		);
+		const chunks = parseSseJsonFrames(await readStreamText(stream));
+
+		expect(chunks.some((chunk) => chunk.error)).toBe(true);
+	});
+});

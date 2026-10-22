@@ -22,6 +22,7 @@ import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { providerAcceptsStreamOptions } from "./prompt-cache-policy";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
 import { inlineAudioUrlsForProvider } from "./inline-audio";
+import { splitContentChunks } from "./providers/mistral/quirks";
 import {
 	openAICompatHeaders,
 	openAICompatUrl,
@@ -1495,7 +1496,15 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 			};
 		}
 
-		if (chunk.delta?.content) {
+		// A chunk-list delta (Mistral ThinkChunk + TextChunk) splits into text and
+		// reasoning; appending the list to the string would give "[object Object]".
+		const contentChunks = splitContentChunks(chunk.delta?.content);
+		if (contentChunks) {
+			if (contentChunks.text) choice.message.content = (choice.message.content || "") + contentChunks.text;
+			if (contentChunks.reasoning) {
+				choice.message.reasoning_content = (choice.message.reasoning_content || "") + contentChunks.reasoning;
+			}
+		} else if (chunk.delta?.content) {
 			choice.message.content = (choice.message.content || "") + chunk.delta.content;
 		}
 		if (chunk.delta?.reasoning_content) {

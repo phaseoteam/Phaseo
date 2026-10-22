@@ -34,7 +34,59 @@ export function mapFilePartToMistral(part: Extract<IRContentPart, { type: "file"
 	);
 }
 
+function readThinkingText(thinking: unknown): string {
+	if (typeof thinking === "string") return thinking;
+	if (!Array.isArray(thinking)) return "";
+	return thinking
+		.map((part: any) => typeof part === "string" ? part : typeof part?.text === "string" ? part.text : "")
+		.join("");
+}
+
+/**
+ * Mistral reasoning replies carry `content` as a list of chunks instead of a
+ * string: ThinkChunks (`{ type: "thinking", thinking: [{ type: "text", text }] }`)
+ * and TextChunks (`{ type: "text", text }`). Streams send such lists while the
+ * model thinks and at the transition, then plain strings; zai-glm models always
+ * send lists. Returns null when `content` is not a list.
+ * https://docs.mistral.ai/capabilities/reasoning
+ */
+export function splitContentChunks(content: unknown): { text: string; reasoning: string } | null {
+	if (!Array.isArray(content)) return null;
+	let text = "";
+	let reasoning = "";
+	for (const chunk of content) {
+		if (typeof chunk === "string") {
+			text += chunk;
+		} else if (chunk?.type === "thinking") {
+			reasoning += readThinkingText(chunk.thinking);
+		} else if ((chunk?.type === undefined || chunk?.type === "text") && typeof chunk?.text === "string") {
+			text += chunk.text;
+		}
+	}
+	return { text, reasoning };
+}
+
 export const mistralQuirks: ProviderQuirks = {
+	extractReasoning: ({ choice, rawContent }) => {
+		const split = splitContentChunks(choice?.message?.content);
+		if (!split) return { main: rawContent, reasoning: [] };
+		return { main: split.text, reasoning: split.reasoning ? [split.reasoning] : [] };
+	},
+	// Rewrite chunk-list deltas into the string `content` and `reasoning_content`
+	// deltas every gateway stream reader and Chat client expects.
+	transformStreamChunk: ({ chunk }) => {
+		if (!Array.isArray(chunk?.choices)) return;
+		for (const choice of chunk.choices) {
+			const delta = choice?.delta;
+			const split = splitContentChunks(delta?.content);
+			if (!split) continue;
+			delta.content = split.text;
+			if (split.reasoning) {
+				delta.reasoning_content = (typeof delta.reasoning_content === "string" ? delta.reasoning_content : "") + split.reasoning;
+			}
+		}
+	},
+
 	transformRequest: ({ request }) => {
 		if (!request || typeof request !== "object") return;
 

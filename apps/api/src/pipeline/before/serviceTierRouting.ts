@@ -474,6 +474,18 @@ export async function applyServiceTierRouting(args: {
     const remappedProviders: ServiceTierRoutingDiagnostics["remappedProviders"] = [];
 
     for (const candidate of args.candidates) {
+		// Sail runs flex only as background Responses or Batch; synchronous Responses,
+		// Chat and Messages reject it with a 400, and the gateway streams Sail
+		// requests in the foreground (https://docs.sailresearch.com/completion-windows).
+		if (requestedPlan === "flex" && candidate.providerId === "sail-research") {
+			droppedProviders.push({
+				providerId: candidate.providerId,
+				apiModelId: candidate.apiModelId ?? null,
+				providerModelSlug: candidate.providerModelSlug ?? null,
+				reason: "service_tier_flex_unsupported",
+			});
+			continue;
+		}
 		const catalogTier = readProviderCatalogTier(candidate.capabilityParams);
 		if (catalogTier) {
 			const plan = catalogTier.name === "fast" ? "priority" : catalogTier.name;

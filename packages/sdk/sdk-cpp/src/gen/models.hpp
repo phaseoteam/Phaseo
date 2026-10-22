@@ -875,7 +875,7 @@ struct DecisionBox {
 
 struct DecisionBoxAnswer {
 	std::map<std::string, std::any> box;
-	double confidence;
+	std::optional<double> confidence;
 	std::optional<std::string> name;
 	std::any type;
 };

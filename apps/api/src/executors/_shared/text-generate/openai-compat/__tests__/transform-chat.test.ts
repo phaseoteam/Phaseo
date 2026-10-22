@@ -1284,3 +1284,108 @@ describe("irToOpenAIChat", () => {
 		expect(request.response_format.json_schema.strict).toBe(true);
 	});
 });
+
+// https://docs.mistral.ai/capabilities/reasoning: message.content is a list of
+// ThinkChunks and TextChunks; zai-glm models always answer this way.
+describe("Mistral reasoning chunk lists", () => {
+	const reply = (content: unknown) => ({
+		id: "chatcmpl_mistral_reasoning",
+		object: "chat.completion",
+		created: 1234567890,
+		model: "zai-glm-5-3",
+		choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }],
+		usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+	});
+
+	it.each(["mistral", "mistral-eu"])("splits ThinkChunks into reasoning and TextChunks into the answer (%s)", (provider) => {
+		const ir = openAIChatToIR(reply([
+			{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3. " }, { type: "text", text: "That is 8." }] },
+			{ type: "text", text: "The answer is 8." },
+		]), "req_mistral", "z-ai/glm-5.3", provider);
+
+		expect(ir.choices[0].message.content).toEqual([
+			{ type: "reasoning_text", text: "Add 5 and 3. That is 8." },
+			{ type: "text", text: "The answer is 8." },
+		]);
+	});
+
+	it("keeps a thinking-only reply as reasoning", () => {
+		const ir = openAIChatToIR(reply([
+			{ type: "thinking", thinking: [{ type: "text", text: "Still thinking" }] },
+		]), "req_mistral", "mistral/mistral-small-4", "mistral");
+
+		expect(ir.choices[0].message.content).toEqual([{ type: "reasoning_text", text: "Still thinking" }]);
+	});
+
+	it("leaves plain string replies unchanged", () => {
+		const ir = openAIChatToIR(reply("Paris"), "req_mistral", "mistral/mistral-small-4", "mistral");
+
+		expect(ir.choices[0].message.content).toEqual([{ type: "text", text: "Paris" }]);
+	});
+});
+
+describe("Reflection assistant reasoning_content", () => {
+	// https://developers.reflection.ai/reasoning: every assistant message needs a
+	// non-empty reasoning_content, or the request fails with 400.
+	it("fills reasoning_content on assistant turns that have no plain reasoning", () => {
+		const request = irToOpenAIChat({
+			model: "reflection/beam-501b-a23b",
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "Example question" }] },
+				{ role: "assistant", content: [{ type: "text", text: "Example answer" }] },
+				{ role: "user", content: [{ type: "text", text: "Look it up" }] },
+				{
+					role: "assistant",
+					content: [{ type: "reasoning_text", text: "signed", reasoningFormat: "anthropic-claude-v1", thoughtSignature: "sig" }],
+					toolCalls: [{ id: "call_1", name: "lookup", arguments: "{}" }],
+				},
+				{ role: "tool", toolResults: [{ toolCallId: "call_1", content: "found" }] },
+				{
+					role: "assistant",
+					content: [{ type: "reasoning_text", text: "I should answer." }, { type: "text", text: "Done" }],
+				},
+				{ role: "user", content: [{ type: "text", text: "Thanks" }] },
+			],
+			stream: false,
+		} as any, "Beam-1.0-501B-A23B", "reflection");
+
+		const assistants = request.messages.filter((message: any) => message.role === "assistant");
+		expect(assistants.map((message: any) => message.reasoning_content)).toEqual(["…", "…", "I should answer."]);
+	});
+});
+
+describe("Alibaba glm-5.3 reasoning effort", () => {
+	// https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-chat-completions:
+	// glm-5.3 takes max, high or low, and enable_thinking false fails the request.
+	it.each([
+		["minimal", "low"],
+		["low", "low"],
+		["medium", "high"],
+		["high", "high"],
+		["xhigh", "max"],
+		["max", "max"],
+		["none", "low"],
+	])("maps %s to %s", (effort, expected) => {
+		const request = irToOpenAIChat({
+			model: "glm-5.3",
+			messages: [{ role: "user", content: [{ type: "text", text: "Plan the migration." }] }],
+			stream: false,
+			reasoning: { effort },
+		} as any, "glm-5.3", "alibaba-cloud");
+
+		expect(request.reasoning_effort).toBe(expected);
+		expect(request.enable_thinking).toBeUndefined();
+	});
+
+	it("does not send enable_thinking false when thinking is disabled", () => {
+		const request = irToOpenAIChat({
+			model: "glm-5.3",
+			messages: [{ role: "user", content: [{ type: "text", text: "Hello." }] }],
+			stream: false,
+			reasoning: { enabled: false },
+		} as any, "glm-5.3", "alibaba-cloud");
+
+		expect(request.enable_thinking).toBeUndefined();
+		expect(request.reasoning_effort).toBe("low");
+	});
+});

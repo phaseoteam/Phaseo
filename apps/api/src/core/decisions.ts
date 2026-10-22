@@ -96,7 +96,8 @@ const probability = lazySchema(() => z.number().finite().min(0).max(1));
 const answerName = lazySchema(() => z.string().nullable());
 export const NativeDecisionAnswerSchema = lazySchema(() => z.discriminatedUnion("type", [
 	z.object({
-		type: z.literal("box"), name: answerName, confidence: probability,
+		// Null when the model gives no confidence for the box.
+		type: z.literal("box"), name: answerName, confidence: probability.nullable(),
 		box: z.object({ top: probability, bottom: probability, left: probability, right: probability })
 			.refine(box => box.top < box.bottom && box.left < box.right, "Box edges must be ordered."),
 	}).passthrough(),

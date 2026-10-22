@@ -1559,7 +1559,7 @@ type DecisionBox struct {
 
 type DecisionBoxAnswer struct {
 	Box map[string]interface{} `json:"box"`
-	Confidence float64 `json:"confidence"`
+	Confidence *float64 `json:"confidence"`
 	Name *string `json:"name"`
 	Type string `json:"type"`
 }
