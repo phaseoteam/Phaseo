@@ -525,7 +525,7 @@ def createRealtimeSession(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> OcrResponse:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/audio/realtime/sessions"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
