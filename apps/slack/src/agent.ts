@@ -11,6 +11,7 @@ import {
 	type AgentTool,
 } from "@phaseo/agent-sdk";
 import type { Env } from "./env";
+import { withoutTrailingSlashes } from "./url";
 
 // The agent run behind a small interface, so a turn can be tested without the
 // gateway. The real runner uses @phaseo/agent-sdk against the gateway through the
@@ -73,7 +74,7 @@ export function requestLabelsHeader(labels: AgentTurnRequest["labels"]): string 
 }
 
 export function gatewayBaseUrl(env: Pick<Env, "PHASEO_API_BASE_URL">): string {
-	return env.PHASEO_API_BASE_URL?.trim().replace(/\/+$/, "") || DEFAULT_GATEWAY_BASE_URL;
+	return withoutTrailingSlashes(env.PHASEO_API_BASE_URL?.trim() ?? "") || DEFAULT_GATEWAY_BASE_URL;
 }
 
 /** Requests go through the service binding when there is one (production), else over the internet. */
@@ -132,8 +133,7 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 					baseUrl: options.baseUrl,
 					fetchImpl: options.fetchImpl,
 					devtools: { enabled: false },
-					// No deprecation warnings in Worker logs. (The SDK still checks the model once per
-					// client, GET /models, before its first request.)
+					// No deprecation warnings in Worker logs.
 					enableDeprecationWarnings: false,
 					headers: { "x-title": APP_TITLE, "x-phaseo-metadata": requestLabelsHeader(request.labels) },
 				},
@@ -147,15 +147,12 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 			const agent = createAgent({
 				id: AGENT_ID,
 				model: request.model,
-				// A function, not a string: the SDK sends a string twice (as instructions and as a system message).
-				instructions: () => request.instructions,
+				instructions: request.instructions,
 				tools: request.tools,
 				maxSteps: MAX_STEPS,
 				stopWhen: [stepCountIs(MAX_STEPS), maxCost(request.maxCostUsd)],
 			});
 			const stream = agent.stream({ input: request.prompt, client, signal: request.signal, devtools: { enabled: false } });
-			// A failed run also rejects the result promise; the error reaches us through the stream below.
-			stream.getResult().catch(() => undefined);
 			let result: AgentRunResult<unknown, unknown, unknown> | null = null;
 			for await (const event of stream.getFullStream()) {
 				if (event.type === "response.output_text.delta") await hooks.onText(event.delta);
@@ -175,7 +172,7 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 export type TurnErrorKind = "no_credits" | "cap_reached" | "model_unavailable" | "failed";
 
 function errorCodes(error: unknown): { status: number | null; codes: string[]; failedProviders: number } {
-	// A streamed request's HTTP error arrives as the SDK's own error, not wrapped; fromUnknown reads both.
+	// The SDK wraps gateway errors as AgentGatewayError; fromUnknown also reads anything that isn't.
 	const asGateway = (value: unknown) => isAgentGatewayError(value) ? value : AgentGatewayError.fromUnknown(value);
 	const gateway = asGateway(error) ?? asGateway((error as { cause?: unknown } | null)?.cause);
 	if (!gateway) return { status: null, codes: [], failedProviders: 0 };

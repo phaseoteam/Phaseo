@@ -32,11 +32,6 @@ function request(overrides: Partial<AgentTurnRequest> = {}): AgentTurnRequest {
 	};
 }
 
-/** The SDK checks the model once per client before its first request. */
-function isModelLookup(input: RequestInfo | URL): boolean {
-	return String(input instanceof Request ? input.url : input).includes("/models?");
-}
-
 async function capture(input: RequestInfo | URL, init?: RequestInit) {
 	const req = input instanceof Request ? input : new Request(input, init);
 	return { url: req.url, headers: req.headers, body: JSON.parse(await req.text()) as Record<string, any> };
@@ -46,7 +41,6 @@ describe("the SDK agent runner", () => {
 	it("sends the Slack data rules, labels and tools with every gateway request, and streams the text", async () => {
 		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
 		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-			if (isModelLookup(input)) return Response.json({ data: [] });
 			seen.push(await capture(input, init));
 			return sse([
 				{ type: "response.output_text.delta", delta: "Hello" },
@@ -85,22 +79,25 @@ describe("the SDK agent runner", () => {
 			{ type: "phaseo:web_fetch" },
 		]);
 		expect(JSON.stringify(sent.body.input)).toContain("New message from <@U0PERSON01>");
+		// Sent once, as instructions, not also as a system message.
+		expect(JSON.stringify(sent.body.input)).not.toContain("You are the Phaseo agent.");
 	});
 
 	it("stops at the cost a retried turn has left, not the whole turn's limit", async () => {
-		const fetchImpl = vi.fn(async (input: RequestInfo | URL) => (isModelLookup(input) ? Response.json({ data: [] }) : sse([COMPLETED])));
+		const fetchImpl = vi.fn(async () => sse([COMPLETED]));
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
 		const output = await runner.run(request({ maxCostUsd: 0.001 }), { onText: async () => undefined, onStep: async () => undefined });
 		expect(output).toMatchObject({ costUsd: 0.0021, stopReason: "max_cost:0.001" });
 	});
 
 	it("goes through the PHASEO_API service binding when there is one", async () => {
-		const binding = { fetch: vi.fn(async (req: Request) => (isModelLookup(req) ? Response.json({ data: [] }) : sse([COMPLETED]))) };
+		const binding = { fetch: vi.fn(async (_req: Request) => sse([COMPLETED])) };
 		const runner = createSdkAgentRunner({ fetchImpl: gatewayFetch({ PHASEO_API: binding as unknown as Fetcher }), baseUrl: "https://api.phaseo.app/v1" });
 		await runner.run(request(), { onText: async () => undefined, onStep: async () => undefined });
 		const calls = binding.fetch.mock.calls.map(([req]) => `${req.method} ${req.url}`);
-		expect(calls).toEqual(["GET https://api.phaseo.app/v1/models?model_id=phaseo%2Fauto&limit=1", "POST https://api.phaseo.app/v1/responses"]);
-		expect(binding.fetch.mock.calls[1][0]).toBeInstanceOf(Request);
+		// One request: the agent client doesn't look the model up first.
+		expect(calls).toEqual(["POST https://api.phaseo.app/v1/responses"]);
+		expect(binding.fetch.mock.calls[0][0]).toBeInstanceOf(Request);
 		expect(gatewayFetch({})).toBe(fetch);
 	});
 
@@ -119,9 +116,7 @@ describe("the SDK agent runner", () => {
 	});
 
 	it("surfaces a gateway refusal from a streamed request as an error the turn can classify", async () => {
-		const fetchImpl = vi.fn(async (input: RequestInfo | URL) => isModelLookup(input)
-			? Response.json({ data: [] })
-			: Response.json({ error: { code: "insufficient_funds", message: "Not enough credits" } }, { status: 402 }));
+		const fetchImpl = vi.fn(async () => Response.json({ error: { code: "insufficient_funds", message: "Not enough credits" } }, { status: 402 }));
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
 		const failure = await runner.run(request(), { onText: async () => undefined, onStep: async () => undefined }).then(() => null, (caught: unknown) => caught);
 		expect(classifyTurnError(failure)).toBe("no_credits");
