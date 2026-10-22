@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deliverGatewayOtlpPayload, deliverGatewayWebhookPayload, drainGatewayOtlpOutbox, filterMetadata, selected } from "./otlp-export";
+import { deliverGatewayOtlpPayload, deliverGatewayWebhookPayload, drainGatewayOtlpOutbox, filterMetadata, renderBroadcastPayload, selected } from "./otlp-export";
 import { encodeOtlpTraceRequest } from "./otlp-protobuf";
 import { OTLP_PRESETS } from "./broadcast-destinations";
 
@@ -29,6 +29,7 @@ vi.mock("@/runtime/env", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@/runtime/env")>();
 	return {
 		...actual,
+		getBindings: () => ({}),
 		getSupabaseAdmin: () => ({
 			rpc: async (name: string, args: { p_results?: Array<Record<string, unknown>> }) => {
 				if (name !== "record_broadcast_destination_health") return { data: supabase.claimed, error: null };
@@ -137,6 +138,40 @@ describe("Broadcast destination selection and metadata", () => {
 			include_request_context: false,
 		}) as any;
 		expect(filtered.resourceSpans[0].attributes.map((attribute: any) => attribute.key)).toEqual(["service.name"]);
+	});
+
+	it("drops request metadata and its span names when request context is off", () => {
+		const event = { kind: "gateway" as const, args: { ...telemetry, metadata: { trace_name: "checkout", team: "growth" } } };
+		const keys = (payload: any) => payload.resourceSpans[0].scopeSpans[0].spans[0].attributes.map((attribute: any) => attribute.key);
+		const names = (payload: any) => payload.resourceSpans[0].scopeSpans[0].spans.map((span: any) => span.name);
+
+		const withContext = renderBroadcastPayload(event, destination) as any;
+		expect(keys(withContext)).toContain("phaseo.metadata.team");
+		expect(names(withContext)[0]).toBe("checkout");
+
+		const withoutContext = renderBroadcastPayload(event, { ...destination, include_request_context: false }) as any;
+		expect(keys(withoutContext).filter((key: string) => key.startsWith("phaseo.metadata."))).toEqual([]);
+		expect(names(withoutContext)[0]).toBe("POST /v1/chat/completions");
+
+		const batch = {
+			kind: "async" as const,
+			args: {
+				requestId: "req_batch",
+				workspaceId: "ws_1",
+				operation: "batch" as const,
+				phase: "submit" as const,
+				endpoint: "batch" as const,
+				model: "openai/gpt-5",
+				startedAtMs: 1,
+				completedAtMs: 2,
+				success: true,
+				metadata: { span_name: "nightly evals", team: "growth" },
+			},
+		};
+		expect(names(renderBroadcastPayload(batch, destination))[0]).toBe("nightly evals");
+		const batchWithoutContext = renderBroadcastPayload(batch, { ...destination, include_request_context: false }) as any;
+		expect(keys(batchWithoutContext).filter((key: string) => key.startsWith("phaseo.metadata."))).toEqual([]);
+		expect(names(batchWithoutContext)[0]).toBe("batch.submit openai/gpt-5");
 	});
 });
 

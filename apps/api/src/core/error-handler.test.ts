@@ -3,6 +3,10 @@ const emitGatewayRequestEventMock = vi.fn(async () => {});
 vi.mock("@observability/events", () => ({
 	emitGatewayRequestEvent: (...args: unknown[]) => emitGatewayRequestEventMock(...args),
 }));
+const enqueueGatewayOtlpExportMock = vi.hoisted(() => vi.fn(async (_input: any) => {}));
+vi.mock("@observability/otlp-export", () => ({
+	enqueueGatewayOtlpExport: (input: unknown) => enqueueGatewayOtlpExportMock(input),
+}));
 const background = vi.hoisted(() => [] as Promise<unknown>[]);
 vi.mock("@/runtime/env", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/runtime/env")>()),
@@ -26,6 +30,7 @@ async function handleError(...args: Parameters<typeof handleErrorWithoutWaiting>
 
 beforeEach(() => {
 	emitGatewayRequestEventMock.mockReset();
+	enqueueGatewayOtlpExportMock.mockClear();
 	background.length = 0;
 });
 
@@ -804,6 +809,33 @@ describe("handleError", () => {
 		expect(event?.provider_response_redacted_json).toBeUndefined();
 		expect(event?.error_details_redacted_json).toBeUndefined();
 		expect(JSON.stringify(event)).not.toContain("private");
+	});
+
+	it("exports request metadata and its trace keys on failures before the request context exists", async () => {
+		const run = async (headers: Record<string, string>) => {
+			enqueueGatewayOtlpExportMock.mockClear();
+			await handleError({
+				stage: "before",
+				res: new Response(JSON.stringify({ error: "insufficient_credits" }), { status: 402, headers: { "content-type": "application/json" } }),
+				endpoint: "chat.completions",
+				req: new Request("https://example.test/v1/chat/completions", { method: "POST", headers }),
+				requestObservability: {
+					requestPayload: { model: "openai/gpt-5-nano", metadata: { trace_id: "conversation-42", span_name: "checkout" } },
+					requestedModel: "openai/gpt-5-nano",
+					workspaceId: "ws_agent",
+					apiKeyId: "key_agent",
+				},
+				auditFailure: async () => {},
+			});
+			return enqueueGatewayOtlpExportMock.mock.calls[0]?.[0];
+		};
+
+		const fromMetadata = await run({});
+		expect(fromMetadata?.metadata).toEqual({ trace_id: "conversation-42", span_name: "checkout" });
+		expect(fromMetadata?.traceContext?.traceId).toMatch(/^[0-9a-f]{32}$/);
+
+		const fromHeader = await run({ traceparent: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01" });
+		expect(fromHeader?.traceContext).toMatchObject({ traceId: "0af7651916cd43dd8448eb211c80319c", parentSpanId: "b7ad6b7169203331" });
 	});
 
 	it("captures malformed early request payloads for observability", async () => {

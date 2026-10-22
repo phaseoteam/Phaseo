@@ -395,6 +395,7 @@ export async function handleFailureAudit(
             sessionId: ctx.meta.sessionId ?? null,
             edgeColo: ctx.meta.edgeColo ?? null,
             labels: ctx.meta.labels ?? null,
+            metadata: ctx.meta.requestMetadata ?? null,
         }),
         writeAxiom: () => emitGatewayRequestEvent({
             ctx,
@@ -652,6 +653,7 @@ export async function handleSuccessAudit(
             sessionId: ctx.meta.sessionId ?? null,
             edgeColo: ctx.meta.edgeColo ?? null,
             labels: ctx.meta.labels ?? null,
+            metadata: ctx.meta.requestMetadata ?? null,
         }),
         writeAxiom: () => emitGatewayRequestEvent({
             ctx,
