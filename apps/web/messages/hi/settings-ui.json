@@ -1095,7 +1095,13 @@
 		"totalTokens": "कुल टोकन",
 		"userId": "उपयोगकर्ता ID",
 		"connectionStatusRefreshed": "कनेक्शन की स्थिति अपडेट की गई",
-		"connectionStatusRefreshFailed": "कनेक्शन की स्थिति अपडेट नहीं की जा सकी"
+		"connectionStatusRefreshFailed": "कनेक्शन की स्थिति अपडेट नहीं की जा सकी",
+		"healthHealthy": "ठीक है",
+		"healthFailing": "विफल हो रहा है",
+		"healthIdle": "अभी तक कोई डिलीवरी नहीं",
+		"healthDisabled": "अक्षम",
+		"healthLastDay": "24 घंटे: {delivered, number} भेजे गए, {failed, number} विफल",
+		"healthLastError": "{count, plural, one {पिछला अनुरोध विफल रहा} other {पिछले # अनुरोध विफल रहे}}: {error}"
 	},
 	"oauthDetail": {
 		"never": "कभी नहीं",

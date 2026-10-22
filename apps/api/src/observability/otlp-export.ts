@@ -3,6 +3,7 @@ import { tieredRead } from "@core/tiered-cache";
 import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, gzipBytes, resolveOtlpTarget } from "./broadcast-destinations";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
 import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
+import { BroadcastHealthRecorder } from "./broadcast-health";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
 import { keyNeverStoresContent } from "@pipeline/audit/io-logging";
 import {
@@ -563,6 +564,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 	let delivered = 0;
 	let retried = 0;
 	let failed = 0;
+	const health = new BroadcastHealthRecorder();
 	for (const row of rows) {
 		const destinationResult = await client
 			.from("workspace_broadcast_destinations")
@@ -581,6 +583,7 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 			continue;
 		}
 		let outcome;
+		const startedAtMs = Date.now();
 		try {
 			const destination = destinationResult.data as Destination & { enabled: boolean };
 			const config = await destinationConfig(destination);
@@ -596,7 +599,9 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 				error: deliveryError instanceof Error ? deliveryError.message : "OTLP delivery failed",
 			};
 		}
+		health.request(row.destination_id, outcome, startedAtMs);
 		if (outcome.delivered) {
+			health.event(row.destination_id, true);
 			await updateOutboxRow(client, row.id, {
 				status: "delivered",
 				payload: SCRUBBED_PAYLOAD,
@@ -620,9 +625,19 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 			updated_at: new Date().toISOString(),
 		});
 		if (shouldRetry) retried += 1;
-		else failed += 1;
+		else {
+			failed += 1;
+			health.event(row.destination_id, false);
+		}
 	}
+	await health.flush();
 	return { claimed: rows.length, delivered, retried, failed };
+}
+
+export async function pruneBroadcastDeliveryHourly(limit = 5000): Promise<number> {
+	const { data, error } = await getSupabaseAdmin().rpc("prune_broadcast_destination_delivery_hourly", { p_limit: limit });
+	if (error) throw new Error(`broadcast_delivery_hourly_prune_failed:${error.message}`);
+	return Number(data ?? 0);
 }
 
 export async function pruneBroadcastEventReceipts(limit = 5000): Promise<number> {

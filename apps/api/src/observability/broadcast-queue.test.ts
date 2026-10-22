@@ -12,12 +12,17 @@ const state = vi.hoisted(() => ({
 	destinations: [] as Array<Record<string, unknown>>,
 	loadError: null as { message: string } | null,
 	receipts: new Set<string>(),
+	health: [] as Array<Array<Record<string, unknown>>>,
 }));
 
 vi.mock("@/runtime/env", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/runtime/env")>()),
 	getBindings: () => state.bindings,
 	getSupabaseAdmin: () => ({
+		rpc: async (name: string, args: { p_results: Array<Record<string, unknown>> }) => {
+			if (name === "record_broadcast_destination_health") state.health.push(args.p_results);
+			return { data: args.p_results.length, error: null };
+		},
 		from: (table: string) => table === "broadcast_event_receipts" ? {
 			upsert: (rows: Array<{ event_id: string }>) => ({
 				select: async () => {
@@ -93,6 +98,7 @@ describe("processBroadcastQueueBatch", () => {
 		state.destinations = [otlp("collector"), webhook("hook")];
 		state.loadError = null;
 		state.receipts = new Set();
+		state.health = [];
 		vi.spyOn(console, "warn").mockImplementation(() => undefined);
 		vi.spyOn(console, "error").mockImplementation(() => undefined);
 	});
@@ -205,6 +211,42 @@ describe("processBroadcastQueueBatch", () => {
 		expect(event.ack).toHaveBeenCalled();
 	});
 
+	it("records each destination's health once per batch", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (url: URL) => url.hostname === "collector.example.com"
+			? new Response(null, { status: 200 })
+			: new Response(null, { status: 401 })));
+		state.destinations = [otlp("collector"), webhook("hook"), { ...webhook("off"), enabled: false }];
+
+		await processBroadcastQueueBatch(batch(
+			message({ eventId: "req_1", destinationIds: ["collector", "hook", "off"] }),
+			message({ eventId: "req_2", destinationIds: ["collector", "hook"] }),
+		));
+
+		expect(state.health).toHaveLength(1);
+		const byId = Object.fromEntries(state.health[0].map((entry) => [entry.destination_id, entry]));
+		expect(Object.keys(byId).sort()).toEqual(["collector", "hook"]);
+		expect(byId.collector).toMatchObject({ delivered: 2, failed: 0, failures: 0, last_failure_at: null, last_error: null });
+		expect(byId.collector.last_success_at).toEqual(expect.any(String));
+		expect(byId.hook).toMatchObject({
+			delivered: 0,
+			failed: 2,
+			failures: 2,
+			last_success_at: null,
+			last_http_status: 401,
+			last_error: "Webhook endpoint returned 401",
+		});
+	});
+
+	it("counts a failure that will be retried in the streak but not as a failed event", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 503 })));
+
+		await processBroadcastQueueBatch(batch(message({ eventId: "req_1", destinationIds: ["collector"] })));
+
+		expect(state.health[0]).toEqual([expect.objectContaining({
+			destination_id: "collector", delivered: 0, failed: 0, failures: 1, last_http_status: 503,
+		})]);
+	});
+
 	it("drops events for destinations that were disabled or deleted", async () => {
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
@@ -216,6 +258,7 @@ describe("processBroadcastQueueBatch", () => {
 		expect(summary).toMatchObject({ requests: 0, failed: 2 });
 		expect(fetchMock).not.toHaveBeenCalled();
 		expect(event.ack).toHaveBeenCalled();
+		expect(state.health).toEqual([]);
 	});
 
 	it("retries the batch when destinations cannot be loaded", async () => {

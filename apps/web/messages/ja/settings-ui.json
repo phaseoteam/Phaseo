@@ -1095,7 +1095,13 @@
 		"totalTokens": "合計トークン数",
 		"userId": "ユーザーID",
 		"connectionStatusRefreshed": "接続状況を更新しました",
-		"connectionStatusRefreshFailed": "接続状況を更新できませんでした"
+		"connectionStatusRefreshFailed": "接続状況を更新できませんでした",
+		"healthHealthy": "正常",
+		"healthFailing": "失敗中",
+		"healthIdle": "まだ配信はありません",
+		"healthDisabled": "無効",
+		"healthLastDay": "24時間: 送信 {delivered, number} 件、失敗 {failed, number} 件",
+		"healthLastError": "{count, plural, other {直近 # 件のリクエストが失敗}}: {error}"
 	},
 	"oauthDetail": {
 		"never": "未使用",

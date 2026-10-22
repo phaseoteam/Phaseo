@@ -1095,7 +1095,13 @@
 		"totalTokens": "总 token 数",
 		"userId": "用户 ID",
 		"connectionStatusRefreshed": "已刷新连接状态",
-		"connectionStatusRefreshFailed": "无法刷新连接状态"
+		"connectionStatusRefreshFailed": "无法刷新连接状态",
+		"healthHealthy": "正常",
+		"healthFailing": "失败",
+		"healthIdle": "尚无投递",
+		"healthDisabled": "已停用",
+		"healthLastDay": "24 小时：已发送 {delivered, number} 条，失败 {failed, number} 条",
+		"healthLastError": "{count, plural, other {最近 # 次请求失败}}：{error}"
 	},
 	"oauthDetail": {
 		"never": "绝不",

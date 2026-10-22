@@ -1095,7 +1095,13 @@
 		"totalTokens": "Nombre total de jetons",
 		"userId": "ID utilisateur",
 		"connectionStatusRefreshed": "État de connexion actualisé",
-		"connectionStatusRefreshFailed": "Impossible d’actualiser l’état de connexion"
+		"connectionStatusRefreshFailed": "Impossible d’actualiser l’état de connexion",
+		"healthHealthy": "Opérationnel",
+		"healthFailing": "En échec",
+		"healthIdle": "Aucune livraison pour l’instant",
+		"healthDisabled": "Désactivé",
+		"healthLastDay": "24 h : {delivered, number} envoyés, {failed, number} en échec",
+		"healthLastError": "{count, plural, one {La dernière requête a échoué} other {Les # dernières requêtes ont échoué}} : {error}"
 	},
 	"oauthDetail": {
 		"never": "Jamais",

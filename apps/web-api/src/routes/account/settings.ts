@@ -609,6 +609,30 @@ accountSettingsRouter.get("/account/mfa", async (c) => {
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+type BroadcastHealthSummaryRow = {
+	destination_id: string;
+	last_success_at: string | null;
+	last_failure_at: string | null;
+	last_http_status: number | null;
+	last_error: string | null;
+	consecutive_failures: number | null;
+	delivered_24h: number | string | null;
+	failed_24h: number | string | null;
+};
+
+function broadcastHealth(row: BroadcastHealthSummaryRow | undefined) {
+	if (!row) return null;
+	return {
+		lastSuccessAt: row.last_success_at ?? null,
+		lastFailureAt: row.last_failure_at ?? null,
+		lastHttpStatus: row.last_http_status ?? null,
+		lastError: row.last_error ?? null,
+		consecutiveFailures: Number(row.consecutive_failures ?? 0),
+		delivered24h: Number(row.delivered_24h ?? 0),
+		failed24h: Number(row.failed_24h ?? 0),
+	};
+}
+
 accountSettingsRouter.get("/broadcast", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
 	if (!workspaceId) {
@@ -624,13 +648,14 @@ accountSettingsRouter.get("/broadcast", async (c) => {
 		workspaceId,
 	});
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [teamResult, configuredResult] = await Promise.all([
+	const [teamResult, configuredResult, healthResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", workspaceId).maybeSingle(),
 		context.client
 			.from("workspace_broadcast_destinations")
 			.select("id,destination_id,name,enabled,sampling_rate,updated_at")
 			.eq("workspace_id", workspaceId)
 			.order("created_at", { ascending: false }),
+		context.client.rpc("broadcast_destination_health_summary", { p_workspace_id: workspaceId }),
 	]);
 	if (teamResult.error) {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -638,6 +663,10 @@ accountSettingsRouter.get("/broadcast", async (c) => {
 	if (configuredResult.error && !configuredResult.error.message.includes("workspace_broadcast_destinations")) {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
+	// Health is informational, so the list still loads without it.
+	if (healthResult.error) console.error("broadcast_health_summary_failed", { error: healthResult.error.message });
+	const health = new Map(((healthResult.error ? [] : healthResult.data ?? []) as BroadcastHealthSummaryRow[])
+		.map((row) => [String(row.destination_id), row]));
 	return c.json({
 		configuredDestinations: (configuredResult.data ?? []).map((row) => ({
 			id: row.id,
@@ -647,6 +676,7 @@ accountSettingsRouter.get("/broadcast", async (c) => {
 			samplingRate: Number(row.sampling_rate ?? 1),
 			destinationConfig: null,
 			updatedAt: row.updated_at ?? null,
+			health: broadcastHealth(health.get(String(row.id))),
 		})),
 		teamName: teamResult.data?.name ?? null,
 		workspaceId,

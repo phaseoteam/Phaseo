@@ -1095,7 +1095,13 @@
 		"totalTokens": "Tokens totales",
 		"userId": "ID de usuario",
 		"connectionStatusRefreshed": "Estado de conexión actualizado",
-		"connectionStatusRefreshFailed": "No se pudo actualizar el estado de conexión"
+		"connectionStatusRefreshFailed": "No se pudo actualizar el estado de conexión",
+		"healthHealthy": "Correcto",
+		"healthFailing": "Con errores",
+		"healthIdle": "Aún sin entregas",
+		"healthDisabled": "Desactivado",
+		"healthLastDay": "24 h: {delivered, number} enviados, {failed, number} fallidos",
+		"healthLastError": "{count, plural, one {Falló la última solicitud} other {Fallaron las últimas # solicitudes}}: {error}"
 	},
 	"oauthDetail": {
 		"never": "Nunca",

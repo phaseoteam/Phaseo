@@ -29,7 +29,7 @@ import { runBatchProviderWebhookReplayJob } from "@/routes/internal/batch-webhoo
 import { runRealtimeSessionReconciliationJob } from "@core/realtime-sessions";
 import { runDataContributionClassifierJob } from "@/pipeline/classification/classifier-worker";
 import { pruneExpiredDataContributions } from "@/pipeline/classification/data-contribution";
-import { drainGatewayOtlpOutbox, pruneBroadcastEventReceipts, pruneGatewayOtlpOutbox } from "@/observability/otlp-export";
+import { drainGatewayOtlpOutbox, pruneBroadcastDeliveryHourly, pruneBroadcastEventReceipts, pruneGatewayOtlpOutbox } from "@/observability/otlp-export";
 import { pruneBroadcastSpill } from "@/observability/broadcast-event";
 import { runAccountDeletionPurgeJob } from "@/pipeline/privacy/account-deletion";
 import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry";
@@ -576,6 +576,8 @@ async function handleOtelExportPruneScheduledEvent(env: GatewayBindings): Promis
 		if (spilled > 0) console.log("broadcast_spill_pruned", { deleted: spilled });
 		const receipts = await pruneBroadcastEventReceipts();
 		if (receipts > 0) console.log("broadcast_event_receipts_pruned", { deleted: receipts });
+		const hourly = await pruneBroadcastDeliveryHourly();
+		if (hourly > 0) console.log("broadcast_delivery_hourly_pruned", { deleted: hourly });
 	} finally {
 		clearRuntime();
 	}

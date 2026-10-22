@@ -1,6 +1,7 @@
 import type { StatsigProfile } from "@/lib/statsig/shared";
 import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
+import type { BroadcastDestinationHealth } from "@/components/(gateway)/settings/observability/broadcastHealth";
 import type { DisplayPreferences } from "@/lib/displayPreferences";
 import type { BudgetInterval as WorkspaceBudgetInterval } from "@/components/(gateway)/settings/budgets/workspaceBudgets";
 import type { ClassifierDimension, ClassifierScope, InputScope, SampleBy } from "@/components/(gateway)/settings/classifiers/requestClassifiers";
@@ -155,6 +156,7 @@ export type SettingsBroadcastInitialData = {
 		name: string;
 		samplingRate: number;
 		updatedAt: string | null;
+		health: BroadcastDestinationHealth | null;
 	}>;
 	teamName: string | null;
 	workspaceId: string | null;

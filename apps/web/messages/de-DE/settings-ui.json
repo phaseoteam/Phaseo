@@ -1095,7 +1095,13 @@
 		"addDestination": "Ziel hinzufügen",
 		"deleteDestinationDescription": "Dadurch werden die Zielverbindung und die zugehörigen Schlüssel- und Regelzuordnungen dauerhaft entfernt.",
 		"connectionStatusRefreshed": "Verbindungsstatus aktualisiert",
-		"connectionStatusRefreshFailed": "Der Verbindungsstatus konnte nicht aktualisiert werden"
+		"connectionStatusRefreshFailed": "Der Verbindungsstatus konnte nicht aktualisiert werden",
+		"healthHealthy": "Fehlerfrei",
+		"healthFailing": "Fehlerhaft",
+		"healthIdle": "Noch keine Zustellungen",
+		"healthDisabled": "Deaktiviert",
+		"healthLastDay": "24 h: {delivered, number} gesendet, {failed, number} fehlgeschlagen",
+		"healthLastError": "{count, plural, one {Letzte Anfrage fehlgeschlagen} other {Letzte # Anfragen fehlgeschlagen}}: {error}"
 	},
 	"oauthDetail": {
 		"never": "Nie",
