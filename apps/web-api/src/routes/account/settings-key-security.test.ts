@@ -22,7 +22,9 @@ const mocks = vi.hoisted(() => {
 			state.rpc(name, args);
 			const data = name === "workspace_key_security_summary"
 				? { total: 1, locations: [] }
-				: [{ id: "k1", name: "Prod", owner_email: "ada@example.com" }];
+				: name === "workspace_key_storage_incidents"
+					? [{ id: "incident-1", location_id: "railway", action: "revoke", keys: 1 }]
+					: [{ id: "k1", name: "Prod", owner_email: "ada@example.com" }];
 			const result = { data, error: null };
 			return Object.assign(Promise.resolve(result), { limit: async () => result });
 		},
@@ -57,7 +59,10 @@ describe("key security", () => {
 
 	it("returns the overview, hiding owner emails from members", async () => {
 		const read = async () => (await app.request("https://example.com/key-security?workspaceId=workspace-1", {}, {} as Env)).json() as Promise<any>;
-		expect((await read()).keys[0].owner_email).toBe("ada@example.com");
+		const admin = await read();
+		expect(admin.keys[0].owner_email).toBe("ada@example.com");
+		expect(admin.incidents).toEqual([expect.objectContaining({ location_id: "railway", keys: 1 })]);
+		expect(mocks.state.rpc).toHaveBeenCalledWith("workspace_key_storage_incidents", { p_workspace_id: "workspace-1" });
 		mocks.state.role = "member";
 		const member = await read();
 		expect(member.canManage).toBe(false);

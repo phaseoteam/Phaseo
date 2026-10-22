@@ -73,9 +73,11 @@ accountSettingsKeySecurityRouter.get("/key-security", async (c) => {
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const canManage = isManager(context.role);
 	// Members see the overview; key owners' emails are for owners and admins.
-	const [summary, keys] = await Promise.all([
+	const [summary, keys, incidents] = await Promise.all([
 		context.client.rpc("workspace_key_security_summary", { p_workspace_id: context.workspaceId }),
 		context.client.rpc("workspace_key_security", { p_workspace_id: context.workspaceId }).limit(2000),
+		// Platform breaches where Phaseo revoked or paused this workspace's keys.
+		context.client.rpc("workspace_key_storage_incidents", { p_workspace_id: context.workspaceId }),
 	]);
 	if (summary.error || keys.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({
@@ -85,6 +87,8 @@ accountSettingsKeySecurityRouter.get("/key-security", async (c) => {
 		observedAt: Date.now(),
 		summary: summary.data,
 		keys: (keys.data ?? []).map((key: Record<string, unknown>) => canManage ? key : { ...key, owner_email: null }),
+		// A notice is better missing than blocking the page.
+		incidents: incidents.error ? [] : incidents.data ?? [],
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

@@ -5,6 +5,7 @@ import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppre
 import { getModelDeprecationTemplateVariables, renderModelDeprecationEmail } from "@/pipeline/notifications/model-deprecation";
 import { renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
 import { renderFeedbackRequestEmail } from "@/pipeline/notifications/feedback-request";
+import { renderStorageIncidentEmail } from "@/pipeline/notifications/storage-incident";
 
 type OutboxRow = {
 	id: string;
@@ -279,6 +280,10 @@ function renderEmailForRow(row: OutboxRow): {
 			html: rendered.html,
 			text: rendered.text,
 		};
+	}
+	if (row.template === "security_storage_incident" || row.kind === "security_storage_incident") {
+		const rendered = renderStorageIncidentEmail(row.payload ?? {});
+		return { subject: row.subject ?? rendered.subject, html: rendered.html, text: rendered.text };
 	}
 	if (row.template === "auto_top_up_failed" || row.kind === "auto_top_up_failed") {
 		const rendered = renderBillingAlertEmail(row.payload ?? {}, "auto_top_up_failed");
