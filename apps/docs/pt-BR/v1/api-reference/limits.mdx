@@ -33,6 +33,8 @@ Ao atingir os limites diários, semanais ou mensais de requisições e gastos de
 
 Proprietários e administradores do espaço de trabalho também podem definir, alterar e excluir orçamentos no painel, em [Configurações → Orçamentos](https://phaseo.app/settings/budgets). A página mostra, para cada orçamento, o gasto até agora, a parcela usada, uma projeção para o período e quando ele é redefinido. Orçamentos diários, semanais e mensais são redefinidos em limites UTC: à meia-noite, na segunda-feira às 00:00 e no dia 1º do mês.
 
+Os orçamentos de departamento, gerenciados pela API `/v1/department-budgets`, não rejeitam solicitações. O gasto de um departamento conta as mesmas chaves e solicitações OAuth que os limites de taxa de departamento, descritos abaixo. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e novamente em 100% de um orçamento diário, semanal ou mensal. O gasto vem de dados de uso que podem ter até uma hora de atraso.
+
 ## Políticas de limite de taxa
 
 Os administradores do espaço de trabalho podem criar políticas de limite de taxa nomeadas pela API de gerenciamento `/v1/rate-limits` e atribuí-las a chaves de API, membros do espaço de trabalho, departamentos, proteções ou como padrão para cada usuário final. O gateway aplica o `requests_per_minute` e o `tokens_per_minute` de uma política, cada um medido em um minuto móvel:
@@ -76,6 +78,7 @@ Regras de limites de taxa para agentes, resumindo esta página:
 
 - As cotas do Gateway retornam `429` com o motivo `customer_requests_per_minute` ou `free_requests_per_day`; aguarde os segundos de `Retry-After`. Se a aplicação de cotas estiver indisponível, o Gateway retorna `503` com orientações para tentar de novo.
 - Limites de chave e orçamentos retornam `429` com `key_limit_exceeded` e um `reset_at`. Sem `Retry-After`, o limite não é redefinido sozinho: aumente o limite ou use outra chave em vez de tentar de novo.
+- Os orçamentos de departamento nunca retornam `429`; eles apenas enviam alertas.
 - As políticas de limite de taxa do espaço de trabalho retornam `429` com `rate_limit_exceeded`, `policy_id` e `limit_scope`. `x-ratelimit-remaining-requests` é aproximado.
 - `Retry-After` pode ser um número de segundos ou uma data HTTP; valide o valor antes de agendar uma nova tentativa. Nunca reenvie uma tarefa de vídeo ou em lote ambígua; consulte o status dela.
 </Visibility>

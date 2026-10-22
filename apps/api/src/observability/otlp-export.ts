@@ -4,6 +4,7 @@ import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, gzipBytes, resolv
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
 import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
+import { keyNeverStoresContent } from "@pipeline/audit/io-logging";
 import {
 	buildAsyncGenAiOtlpPayload,
 	buildGatewayGenAiOtlpPayload,
@@ -256,20 +257,24 @@ async function enqueuePayloads(args: {
 	const configured = await destinations(args.workspaceId);
 	const selectedDestinations = configured.filter((destination) => selected(destination, args.gatewaySelection, args.eventId));
 	if (!selectedDestinations.length) return 0;
+	// A key created with never_store_content never has its content forwarded,
+	// whatever each destination asks for.
+	const telemetry = selectedDestinations.some((destination) => buildOptions(destination).includeSensitiveContent)
+		&& !(await keyNeverStoresContent({ workspaceId: args.workspaceId, keyId: args.gatewaySelection.keyId }))
+		? args.telemetry
+		: withoutContent(args.telemetry);
 	const queued = await publishBroadcastEvent({
 		eventId: args.eventId,
 		workspaceId: args.workspaceId,
 		destinationIds: selectedDestinations.map((destination) => destination.id),
-		telemetry: selectedDestinations.some((destination) => buildOptions(destination).includeSensitiveContent)
-			? args.telemetry
-			: withoutContent(args.telemetry),
+		telemetry,
 	});
 	if (queued) return selectedDestinations.length;
 	const rows = selectedDestinations.map((destination) => ({
 		workspace_id: args.workspaceId,
 		destination_id: destination.id,
 		event_id: args.eventId,
-		payload: renderBroadcastPayload(args.telemetry, destination),
+		payload: renderBroadcastPayload(telemetry, destination),
 		status: "pending",
 		next_attempt_at: new Date().toISOString(),
 	}));

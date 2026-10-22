@@ -724,6 +724,28 @@ describe("handleError", () => {
 		}));
 	});
 
+	it("keeps the authenticated key and workspace on failures before the request context exists", async () => {
+		let capturedAuditArgs: any = null;
+		await handleError({
+			stage: "before",
+			res: new Response(JSON.stringify({ error: "unsupported_model" }), { status: 400, headers: { "content-type": "application/json" } }),
+			endpoint: "responses",
+			requestObservability: {
+				requestPayload: { model: "openai/gpt-5-nano", input: "private prompt" },
+				requestedModel: "openai/gpt-5-nano",
+				workspaceId: "ws_agent",
+				apiKeyId: "key_agent",
+			},
+			auditFailure: async (args) => {
+				capturedAuditArgs = args;
+			},
+		});
+
+		// The audit, telemetry and broadcast paths read the key's data policy from these.
+		expect(capturedAuditArgs).toMatchObject({ workspaceId: "ws_agent", keyId: "key_agent" });
+		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws_agent", keyId: "key_agent" }));
+	});
+
 	it("captures malformed early request payloads for observability", async () => {
 		let capturedAuditArgs: any = null;
 		const upstream = new Response(

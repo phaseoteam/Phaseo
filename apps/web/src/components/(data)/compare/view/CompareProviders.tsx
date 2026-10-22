@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { ProviderLogo } from "../ProviderLogo";
-import { MODEL_COLOURS } from "./CompareGrid";
+import { CompareSection, MODEL_COLOURS } from "./CompareGrid";
 import { bestIndices } from "./compareViewMath";
 import type { CompareViewModel } from "./types";
 import { useCompareFormat } from "./useCompareFormat";
@@ -20,16 +20,12 @@ export function CompareProviders({ models }: { models: CompareViewModel[] }) {
 	const cheapestInput = bestIndices(model.providers.map((provider) => provider.input), "lower");
 	const cheapestOutput = bestIndices(model.providers.map((provider) => provider.output), "lower");
 	const cheapestCache = bestIndices(model.providers.map((provider) => provider.cacheRead), "lower");
-	const best = (winners: Set<number>, index: number) => winners.has(index) && "font-semibold text-emerald-700 dark:text-emerald-300";
+	const best = (winners: Set<number>, index: number) => winners.has(index) && "font-semibold text-emerald-600 dark:text-emerald-400";
 	const money = (value: number | null) => (value == null ? "–" : format.usd(value));
 	const tokens = (value: number | null) => (value == null ? "–" : format.tokens(value));
 
 	return (
-		<section id="providers" aria-labelledby="compare-providers" className="scroll-mt-32 space-y-3">
-			<div>
-				<h2 id="compare-providers" className="text-base font-semibold">{t("providers")}</h2>
-				<p className="text-xs text-muted-foreground">{t("providersSub")}</p>
-			</div>
+		<CompareSection id="providers" title={t("providers")} description={t("providersSub")}>
 			{models.length > 1 ? (
 				<div role="tablist" aria-label={t("providers")} className="flex flex-wrap gap-1.5">
 					{models.map((entry, index) => (
@@ -120,6 +116,6 @@ export function CompareProviders({ models }: { models: CompareViewModel[] }) {
 					</details>
 				) : null}
 			</div>
-		</section>
+		</CompareSection>
 	);
 }

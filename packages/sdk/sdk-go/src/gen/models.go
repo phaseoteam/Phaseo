@@ -1687,6 +1687,54 @@ type DeletedResponse struct {
 	Deleted bool `json:"deleted"`
 }
 
+type DepartmentBudget struct {
+	CreatedAt string `json:"created_at"`
+	CreatedBy *string `json:"created_by,omitempty"`
+	DepartmentId string `json:"department_id"`
+	DepartmentName *string `json:"department_name"`
+	Exceeded bool `json:"exceeded"`
+	Id string `json:"id"`
+	Interval string `json:"interval"`
+	Limit float64 `json:"limit"`
+	LimitNanos int `json:"limit_nanos"`
+	Remaining float64 `json:"remaining"`
+	RemainingNanos int `json:"remaining_nanos"`
+	ResetAt *string `json:"reset_at,omitempty"`
+	UpdatedAt string `json:"updated_at"`
+	Usage float64 `json:"usage"`
+	UsageNanos int `json:"usage_nanos"`
+	WindowStart *string `json:"window_start,omitempty"`
+	WorkspaceId string `json:"workspace_id"`
+}
+
+type DepartmentBudgetInput struct {
+	DepartmentId string `json:"department_id"`
+	Interval string `json:"interval"`
+	Limit float64 `json:"limit"`
+}
+
+type DepartmentBudgetInterval string
+
+const (
+	DepartmentBudgetIntervalDaily DepartmentBudgetInterval = "daily"
+	DepartmentBudgetIntervalWeekly DepartmentBudgetInterval = "weekly"
+	DepartmentBudgetIntervalMonthly DepartmentBudgetInterval = "monthly"
+)
+
+
+type DepartmentBudgetListResponse struct {
+	Data []map[string]interface{} `json:"data"`
+}
+
+type DepartmentBudgetResponse struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type DepartmentBudgetUpdateInput struct {
+	Interval *string `json:"interval,omitempty"`
+	Limit *float64 `json:"limit,omitempty"`
+}
+
 type DynamicRoute struct {
 	Config map[string]interface{} `json:"config"`
 	CreatedAt *string `json:"created_at,omitempty"`

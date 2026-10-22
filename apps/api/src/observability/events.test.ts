@@ -227,6 +227,7 @@ describe("emitGatewayRequestEvent", () => {
 			capability: "responses",
 			requestId: "req_error_obs_123",
 			protocol: "openai",
+			neverStoreContent: false,
 			meta: {
 				apiKeyId: "key_error_obs_123",
 				requestMethod: "POST",
@@ -1035,6 +1036,53 @@ describe("emitGatewayRequestEvent", () => {
 		expect(event.error_message).toBeUndefined();
 		expect(event.upstream_error_message).toBeUndefined();
 		expect(event.failure_sample_first_upstream_error_message).toBeUndefined();
+		expect(JSON.stringify(event)).not.toContain("private");
+	});
+
+	it("keeps request and response content out for a key that never stores content", async () => {
+		const ctx = {
+			endpoint: "responses",
+			capability: "responses",
+			requestId: "req_never_store_obs",
+			workspaceId: "ws_never_store_obs",
+			neverStoreContent: true,
+			meta: { apiKeyId: "key_agent" },
+			rawBody: { model: "openai/gpt-5-mini", input: "private message from a chat app" },
+			body: { model: "openai/gpt-5-mini", input: "private message from a chat app" },
+			model: "openai/gpt-5-mini",
+			routingDiagnostics: { selectedProvider: "openai" },
+		} as unknown as PipelineContext;
+
+		await emitGatewayRequestEvent({
+			ctx,
+			statusCode: 502,
+			success: false,
+			errorCode: "upstream_error",
+			errorMessage: "Upstream provider failed",
+			mappedRequest: JSON.stringify({ input: "private upstream request" }),
+			providerResponse: { output: "private provider output" },
+			gatewayResponse: { output: "private gateway output" },
+			errorDetails: { error: { message: "Upstream rejected the request", input: "private echoed input" } },
+		});
+
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event).toMatchObject({
+			observability_detail_level: "full",
+			key_id: "key_agent",
+			status_code: 502,
+			error_code: "upstream_error",
+			error_message: "Upstream provider failed",
+			// Error messages are kept for support; the raw upstream body is not.
+			upstream_error_message: "Upstream rejected the request",
+		});
+		expect(event.upstream_error_json).toBeUndefined();
+		expect(event.request_payload_redacted_json).toBeUndefined();
+		expect(event.upstream_request_redacted_json).toBeUndefined();
+		expect(event.provider_response_redacted_json).toBeUndefined();
+		expect(event.gateway_response_redacted_json).toBeUndefined();
+		expect(event.error_details_redacted_json).toBeUndefined();
+		// Operational detail is still kept.
+		expect(event.routing_diagnostics_json).toBeDefined();
 		expect(JSON.stringify(event)).not.toContain("private");
 	});
 });

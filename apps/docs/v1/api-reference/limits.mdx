@@ -34,6 +34,8 @@ An API key's daily, weekly or monthly request and spend limits, and the workspac
 
 Workspace owners and admins can also set, change and delete budgets in the dashboard under [Settings → Budgets](https://phaseo.app/settings/budgets). The page shows each budget's spend so far, the share used, a projection for the period and when it resets. Daily, weekly and monthly budgets reset on UTC boundaries: midnight, Monday 00:00 and the 1st of the month.
 
+Department budgets, managed through the `/v1/department-budgets` API, do not reject requests. A department's spend counts the same keys and OAuth requests as department rate limits, below. Owners and admins get a mobile push at about 80% and again at 100% of a daily, weekly or monthly budget. Spend comes from usage that can lag by up to an hour.
+
 ## Rate limit policies
 
 Workspace admins can create named rate limit policies through the `/v1/rate-limits` management API and assign them to API keys, workspace members, departments, guardrails, or as the default for each end user. The gateway enforces a policy's `requests_per_minute` and `tokens_per_minute`, each measured over a rolling minute:
@@ -77,6 +79,7 @@ Rate-limit rules for agents, summarising this page:
 
 - Gateway quotas return `429` with reason `customer_requests_per_minute` or `free_requests_per_day`; wait `Retry-After` seconds. If quota enforcement is unavailable, the gateway returns `503` with retry guidance.
 - Key limits and budgets return `429` with `key_limit_exceeded` and a `reset_at`. Without `Retry-After` the limit does not reset by itself: raise the limit or use another key instead of retrying.
+- Department budgets never return `429`; they only send alerts.
 - Workspace rate limit policies return `429` with `rate_limit_exceeded`, `policy_id` and `limit_scope`. `x-ratelimit-remaining-requests` is approximate.
 - `Retry-After` can be seconds or an HTTP date; validate it before scheduling a retry. Never resubmit an ambiguous video or batch job; check its status instead.
 </Visibility>

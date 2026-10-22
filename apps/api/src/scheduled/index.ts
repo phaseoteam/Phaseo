@@ -21,7 +21,7 @@ import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/
 import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-request";
 import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
 import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
-import { runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
+import { runDepartmentBudgetAlertSweep, runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
@@ -409,8 +409,12 @@ async function handleSpendLimitSweepScheduledEvent(env: GatewayBindings): Promis
 	if (env.MOBILE_PUSH_ENABLED !== "true") return;
 	configureRuntime(env);
 	try {
-		const summary = await runSpendLimitWarningSweep();
-		if (summary.warned > 0) console.log("spend_limit_warnings_swept", summary);
+		// Independent sweeps: one failing must not hold back the other's alerts.
+		const [spend, departments] = await Promise.allSettled([runSpendLimitWarningSweep(), runDepartmentBudgetAlertSweep()]);
+		if (spend.status === "fulfilled" && spend.value.warned > 0) console.log("spend_limit_warnings_swept", spend.value);
+		if (departments.status === "fulfilled" && departments.value.alerted > 0) console.log("department_budget_alerts_swept", departments.value);
+		const failed = [spend, departments].find((result): result is PromiseRejectedResult => result.status === "rejected");
+		if (failed) throw failed.reason;
 	} finally {
 		clearRuntime();
 	}

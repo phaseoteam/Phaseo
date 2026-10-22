@@ -168,6 +168,8 @@ export async function getWorkspaceIoLoggingSettings(workspaceId: string): Promis
 export type GatewayIoLoggingPolicy = WorkspaceIoLoggingSettings & {
     featureEnabled: boolean;
     captureEnabled: boolean;
+    /** The key was created with `never_store_content`, so nothing is captured whatever the workspace setting. */
+    neverStoreContent: boolean;
 };
 
 export async function resolveGatewayIoLoggingPolicy(input: {
@@ -178,11 +180,13 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     // Settings are cached per isolate; the feature gate is an external HTTP
     // call, so only evaluate it for workspaces that have logging switched on.
     const workspaceSettings = await getWorkspaceIoLoggingSettings(input.workspaceId);
-    const zeroDataRetention = workspaceSettings.enabled
-        ? workspaceSettings.zeroDataRetention || await keyRequiresZeroDataRetention(input)
-        : workspaceSettings.zeroDataRetention;
+    const keyPolicy = workspaceSettings.enabled
+        ? await keyDataPolicy(input)
+        : { zeroDataRetention: false, neverStoreContent: false };
+    const zeroDataRetention = workspaceSettings.zeroDataRetention || keyPolicy.zeroDataRetention;
+    const neverStoreContent = keyPolicy.neverStoreContent;
     const settings = { ...workspaceSettings, zeroDataRetention };
-    const featureEnabled = settings.enabled && !zeroDataRetention
+    const featureEnabled = settings.enabled && !zeroDataRetention && !neverStoreContent
         ? await isGatewayIoLoggingFeatureEnabled({
             workspaceId: input.workspaceId,
             apiKeyId: input.keyId ?? null,
@@ -191,29 +195,51 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     return {
         ...settings,
         featureEnabled,
-        captureEnabled: featureEnabled && settings.enabled && !zeroDataRetention,
+        neverStoreContent,
+        captureEnabled: featureEnabled && settings.enabled && !zeroDataRetention && !neverStoreContent,
     };
 }
 
 /**
- * The effective ZDR setting for the calling key: the workspace setting or any of
- * the key's guardrails. This is the policy routing enforces, read through the
- * same cache, which is invalidated when settings or guardrails change. Requests
- * rejected before routing never carry it in their diagnostics, so it is read
- * here rather than from the log. A failed read keeps bodies out of storage.
+ * The calling key's data policy: ZDR from the workspace setting or any of the
+ * key's guardrails, and the key's own `never_store_content`. This is the policy
+ * routing enforces, read through the same cache, which is invalidated when
+ * settings, guardrails or the key change. Requests rejected before routing never
+ * carry it in their diagnostics, so it is read here rather than from the log. A
+ * failed read keeps bodies out of storage.
  */
-async function keyRequiresZeroDataRetention(input: { workspaceId: string; keyId?: string | null }): Promise<boolean> {
-    if (!input.keyId) return false;
+async function keyDataPolicy(input: { workspaceId: string; keyId?: string | null }): Promise<{
+    zeroDataRetention: boolean;
+    neverStoreContent: boolean;
+}> {
+    if (!input.keyId) return { zeroDataRetention: false, neverStoreContent: false };
     try {
         const policy = await fetchWorkspacePolicy({ workspaceId: input.workspaceId, apiKeyId: input.keyId });
-        return policy.privacyZdrOnly === true;
+        return { zeroDataRetention: policy.privacyZdrOnly === true, neverStoreContent: policy.neverStoreContent === true };
     } catch (error) {
         console.error("[io-logging] could not read the key's data policy", {
             workspaceId: input.workspaceId,
             error: error instanceof Error ? error.message : String(error),
         });
-        return true;
+        return { zeroDataRetention: true, neverStoreContent: true };
     }
+}
+
+/**
+ * Whether the calling key was created with `never_store_content`. Telemetry and
+ * broadcasts use it to leave request and response content out. The request
+ * context already knows once routing has loaded the policy (`known`); requests
+ * that failed earlier read it through the same cache. A failed read counts as
+ * "never store".
+ */
+export async function keyNeverStoresContent(input: {
+    workspaceId?: string | null;
+    keyId?: string | null;
+    known?: boolean | null;
+}): Promise<boolean> {
+    if (typeof input.known === "boolean") return input.known;
+    if (!input.workspaceId || input.workspaceId === "unknown" || !input.keyId) return false;
+    return (await keyDataPolicy({ workspaceId: input.workspaceId, keyId: input.keyId })).neverStoreContent;
 }
 
 /**

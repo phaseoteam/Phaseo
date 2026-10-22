@@ -26,6 +26,7 @@ const state = vi.hoisted(() => ({
 	departmentLookups: [] as Array<Array<{ column: string; value: unknown }>>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	deleteFilters: [] as Array<{ table: string; column: string; value: unknown }>,
+	nameFilters: [] as unknown[][],
 	enforceWorkspaceKeyLimit: vi.fn(async (_workspaceId: string, _keyType: string, _excludeKeyId?: string) => undefined),
 	isUsableWorkspaceKey: vi.fn((key: Record<string, unknown>) => {
 		if (key.status !== "active" || key.soft_blocked !== false) return false;
@@ -114,6 +115,7 @@ function buildKeysSupabaseMock() {
 				select: () => query,
 				eq: () => query,
 				neq: () => query,
+				not: (...args: unknown[]) => { state.nameFilters.push(args); return query; },
 				or: () => query,
 				order: () => query,
 				range: () => query,
@@ -195,8 +197,8 @@ vi.mock("@core/rate-limit-policies", () => ({
 	publishRateLimitPlan: state.publishRateLimitPlan,
 }));
 
-vi.mock("./management-helpers", () => ({
-	CHAT_MANAGED_KEY_NAME: "__chat_route_managed_key__",
+vi.mock("./management-helpers", async (importOriginal) => ({
+	...(await importOriginal<typeof import("./management-helpers")>()),
 	enforceWorkspaceKeyLimit: state.enforceWorkspaceKeyLimit,
 	isUsableWorkspaceKey: state.isUsableWorkspaceKey,
 }));
@@ -221,6 +223,7 @@ describe("management key routes", () => {
 		state.updatePayloads.length = 0;
 		state.updateFilters.length = 0;
 		state.deleteFilters.length = 0;
+		state.nameFilters.length = 0;
 		state.setKeyVersion.mockClear();
 		state.copyRateLimit.mockReset().mockResolvedValue(false);
 		state.publishRateLimitPlan.mockClear();
@@ -648,6 +651,50 @@ describe("management key routes", () => {
 			await expect(response.json()).resolves.toMatchObject({ data: { department_id: null } });
 			expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
 		});
+	});
+
+	it("never reads, changes, rotates or deletes keys Phaseo manages for Chat and the Slack agent", async () => {
+		const { keysRoutes } = await import("./keys");
+		const { MANAGED_KEY_NAMES_FILTER } = await import("./management-helpers");
+		expect(MANAGED_KEY_NAMES_FILTER).toBe('("__chat_route_managed_key__","__slack_agent_managed_key__")');
+
+		const calls: Array<[string, RequestInit]> = [
+			["https://example.com/hash_managed", { method: "GET" }],
+			["https://example.com/hash_managed", { method: "PATCH", body: JSON.stringify({ name: "Mine now" }), headers: { "Content-Type": "application/json" } }],
+			["https://example.com/hash_managed", { method: "DELETE" }],
+			["https://example.com/hash_managed/rotate", { method: "POST" }],
+		];
+		for (const [url, init] of calls) {
+			state.nameFilters.length = 0;
+			const response = await keysRoutes.request(url, init);
+			expect(response.status, `${init.method} ${url}`).toBe(404);
+			expect(state.nameFilters, `${init.method} ${url}`).toContainEqual(["name", "in", MANAGED_KEY_NAMES_FILTER]);
+		}
+		expect(state.updatePayloads).toEqual([]);
+		expect(state.deletedKeyIds).toEqual([]);
+	});
+
+	it("refuses to create or rename a key with a name Phaseo reserves for its managed keys", async () => {
+		const { keysRoutes } = await import("./keys");
+		for (const name of ["__slack_agent_managed_key__", " __chat_route_managed_key__ "]) {
+			const created = await keysRoutes.request("https://example.com/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ name }),
+			});
+			expect(created.status, name).toBe(400);
+			expect(await created.json()).toMatchObject({ message: "This key name is reserved for keys Phaseo manages" });
+		}
+
+		state.keyRows.push({ id: "key_1", workspace_id: "ws_1", kid: "kid_1", hash: "hash_1", name: "Primary Key", status: "active" });
+		const renamed = await keysRoutes.request("https://example.com/hash_1", {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ name: "__slack_agent_managed_key__" }),
+		});
+		expect(renamed.status).toBe(400);
+		expect(state.insertPayloads).toEqual([]);
+		expect(state.updatePayloads).toEqual([]);
 	});
 
 	it("deletes a key by hash and removes its dependent records", async () => {

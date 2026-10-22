@@ -41,7 +41,8 @@ CREATE TABLE "public"."keys" (
   CONSTRAINT "keys_created_by_fkey" FOREIGN KEY (created_by) REFERENCES public.users(user_id) ON DELETE CASCADE,
   CONSTRAINT "keys_ip_allowlist_valid" CHECK (public.valid_key_ip_allowlist(ip_allowlist)),
   "department_id"            uuid,
-  CONSTRAINT "keys_department_fkey" FOREIGN KEY (department_id, workspace_id) REFERENCES public.workspace_departments(id, workspace_id) ON DELETE SET NULL (department_id)
+  CONSTRAINT "keys_department_fkey" FOREIGN KEY (department_id, workspace_id) REFERENCES public.workspace_departments(id, workspace_id) ON DELETE SET NULL (department_id),
+  "never_store_content"      boolean                  NOT NULL DEFAULT false
 );
 
 ALTER TABLE "public"."keys"
@@ -62,6 +63,11 @@ CREATE TRIGGER keys_set_updated_at
   BEFORE UPDATE ON public.keys
   FOR EACH ROW
   EXECUTE FUNCTION public.update_key_updated_at();
+
+CREATE TRIGGER protect_key_never_store_content
+  BEFORE UPDATE OF never_store_content ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_key_never_store_content();
 
 CREATE POLICY "keys_delete_own_team" ON "public"."keys"
   FOR DELETE
@@ -95,3 +101,5 @@ CREATE INDEX keys_department_id_idx ON public.keys USING btree (department_id, w
 COMMENT ON COLUMN "public"."keys"."department_id" IS 'Department whose limits and budgets this key counts toward. NULL means the key counts only toward workspace-wide limits. Requests made with OAuth use the user''s department instead.';
 
 COMMENT ON COLUMN "public"."keys"."ip_allowlist" IS 'Labeled IPv4/IPv6 addresses or CIDRs allowed to use this key. Empty permits any IP.';
+
+COMMENT ON COLUMN "public"."keys"."never_store_content" IS 'When true, Phaseo never keeps or forwards this key''s request and response content: no I/O log, cached response, detailed telemetry or observability destination content, whatever the workspace settings. Cannot be turned off once on.';

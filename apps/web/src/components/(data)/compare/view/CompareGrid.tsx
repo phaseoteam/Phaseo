@@ -26,12 +26,40 @@ export function useCompareGrid() {
 	return useContext(GridContext);
 }
 
-/** Label, one column per model, then a note column on wide screens. Phones show labels above two values. */
+/** A label column, then one column per model. The sticky model header uses the same columns, so values sit under their model. */
 export function gridStyle(modelCount: number): CSSProperties {
-	return { "--compare-columns": `minmax(9rem,13rem) repeat(${modelCount}, minmax(0,1fr)) minmax(0,9rem)` } as CSSProperties;
+	return { "--compare-columns": `minmax(8rem,13rem) repeat(${modelCount}, minmax(0,1fr))` } as CSSProperties;
 }
 
-const GRID_CLASS = "grid grid-cols-2 gap-x-3 sm:[grid-template-columns:var(--compare-columns)]";
+/** Phones show the label above two values. */
+export const GRID_CLASS = "grid grid-cols-2 gap-x-4 sm:[grid-template-columns:var(--compare-columns)]";
+
+export function CompareSection({
+	id,
+	title,
+	description,
+	actions,
+	children,
+}: {
+	id: string;
+	title: string;
+	description?: ReactNode;
+	actions?: ReactNode;
+	children: ReactNode;
+}) {
+	return (
+		<section id={id} aria-labelledby={`compare-${id}`} className="scroll-mt-48 space-y-3">
+			<div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-2">
+				<div className="min-w-0">
+					<h2 id={`compare-${id}`} className="text-lg font-semibold tracking-tight">{title}</h2>
+					{description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
+				</div>
+				{actions}
+			</div>
+			{children}
+		</section>
+	);
+}
 
 export function CompareGrid({ children, className, label }: { children: ReactNode; className?: string; label: string }) {
 	const { modelCount } = useCompareGrid();
@@ -42,11 +70,12 @@ export function CompareGrid({ children, className, label }: { children: ReactNod
 	);
 }
 
+/** A sub-heading inside a section's table, e.g. a benchmark category. */
 export function CompareGroup({ title, source }: { title: string; source?: ReactNode }) {
 	return (
-		<div role="row" className="mt-2 rounded-md bg-muted/60 px-3 py-1.5 text-xs font-semibold first:mt-0">
+		<div role="row" className="pt-4 pb-1 text-sm font-medium first:pt-0 sm:px-3">
 			<span role="columnheader">{title}</span>
-			{source ? <span className="ml-2 font-normal text-muted-foreground">{source}</span> : null}
+			{source ? <span className="ml-2 text-xs font-normal text-muted-foreground">{source}</span> : null}
 		</div>
 	);
 }
@@ -64,22 +93,20 @@ export function CompareRow({
 	label,
 	labelSub,
 	cells,
-	note,
 	alwaysShow = false,
 }: {
 	label: ReactNode;
 	labelSub?: ReactNode;
 	cells: CompareCell[];
-	note?: ReactNode;
 	alwaysShow?: boolean;
 }) {
 	const { phonePage, highlightBest, differencesOnly, bestLabel } = useCompareGrid();
 	if (!alwaysShow && differencesOnly && isUniform(cells.map((cell) => cell.text))) return null;
 	return (
-		<div role="row" className={cn(GRID_CLASS, "border-b border-border/70 py-2 text-sm sm:items-start sm:py-2.5")}>
-			<div role="rowheader" className="col-span-2 px-1 pb-1 text-xs text-muted-foreground sm:col-span-1 sm:px-3 sm:pb-0 sm:text-sm sm:font-medium sm:text-foreground">
+		<div role="row" className={cn(GRID_CLASS, "border-b border-border/60 py-2 text-sm transition-colors hover:bg-muted/30 sm:items-baseline sm:py-3")}>
+			<div role="rowheader" className="col-span-2 pb-1 text-xs text-muted-foreground sm:col-span-1 sm:px-3 sm:pb-0 sm:text-sm">
 				{label}
-				{labelSub ? <span className="mt-0.5 block text-xs font-normal text-muted-foreground">{labelSub}</span> : null}
+				{labelSub ? <span className="mt-0.5 block text-xs text-muted-foreground/80">{labelSub}</span> : null}
 			</div>
 			{cells.map((cell, index) => {
 				const best = highlightBest && cell.best;
@@ -88,22 +115,21 @@ export function CompareRow({
 						key={index}
 						role="cell"
 						className={cn(
-							"min-w-0 rounded-md px-1 tabular-nums sm:px-3",
+							"min-w-0 font-medium tabular-nums sm:px-3",
 							!visibleOnPhone(index, phonePage) && "hidden sm:block",
-							best && "bg-emerald-500/10 font-semibold text-emerald-700 dark:text-emerald-300",
-							cell.muted && "text-muted-foreground",
+							best && "text-emerald-600 dark:text-emerald-400",
+							cell.muted && "font-normal text-muted-foreground",
 						)}
 					>
-						<span className="inline-flex items-center gap-1">
-							{best ? <Check aria-hidden className="size-3.5 shrink-0" /> : null}
+						<span className="inline-flex items-baseline gap-1">
 							<span className="min-w-0 break-words">{cell.content}</span>
+							{best ? <Check aria-hidden className="size-3.5 shrink-0 self-center" /> : null}
 						</span>
 						{best ? <span className="sr-only"> ({bestLabel})</span> : null}
 						{cell.sub ? <span className="block text-xs font-normal text-muted-foreground">{cell.sub}</span> : null}
 					</div>
 				);
 			})}
-			<div role="cell" className="hidden px-3 text-xs text-muted-foreground sm:block">{note}</div>
 		</div>
 	);
 }
@@ -111,7 +137,7 @@ export function CompareRow({
 /** A full-width row inside a grid, for notes like "3 rows hidden". */
 export function CompareNoteRow({ children }: { children: ReactNode }) {
 	return (
-		<div role="row" className="border-b border-border/70 px-1 py-2 text-xs text-muted-foreground sm:px-3">
+		<div role="row" className="border-b border-border/60 py-2 text-xs text-muted-foreground sm:px-3">
 			<span role="cell">{children}</span>
 		</div>
 	);

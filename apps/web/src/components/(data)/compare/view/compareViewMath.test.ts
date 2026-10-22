@@ -6,7 +6,9 @@ import {
 	effortLevels,
 	formatUsd,
 	groupBenchmarks,
-	hiddenConditionalRows,
+	activeTier,
+	applyRoute,
+	extraBands,
 	pickResult,
 	priceRow,
 	requestCost,
@@ -94,7 +96,7 @@ describe("pricing", () => {
 			standard: [{ ...tokens("input", 10, true), condition: "input tokens ≤ 272K" }, { ...tokens("input", 20, true), condition: "input tokens > 272K" }, tokens("output", 50)],
 		} } });
 		expect(tokenPrice(astra, "input")).toBe(10);
-		expect(hiddenConditionalRows(astra, "standard")).toBe(1);
+		expect(extraBands(astra, "standard", priceRow(astra, "input")!).map((row) => [row.condition, row.price])).toEqual([["input tokens > 272K", 20]]);
 		expect(tokenPrice(sonnet, "input")).toBe(3);
 	});
 
@@ -109,6 +111,32 @@ describe("pricing", () => {
 		expect(requestCost(gpt5, TYPICAL_REQUEST)).toBeCloseTo(0.0075);
 		expect(requestCost(sonnet, TYPICAL_REQUEST)).toBeCloseTo(0.0135);
 		expect(requestCost(gpt5, { inputTokens: 1_000_000, outputTokens: 0, cachedShare: 0.5 })).toBeCloseTo(0.6875);
+		// Batch has no cache-read row, so cached input falls back to the batch input price.
+		expect(requestCost(gpt5, TYPICAL_REQUEST, "batch")).toBeCloseTo(0.00375);
+	});
+
+	it("prices the route and tier a reader picks", () => {
+		const route = (id: string, input: number, tiers: Record<string, CompareViewPriceRow[]> | undefined) => ({
+			id, name: id.toUpperCase(), input, output: null, cacheRead: null, contextWindow: null, maxOutput: null,
+			tiers: Object.keys(tiers ?? {}), pricing: tiers, quantisation: null,
+		});
+		const opus = model("anthropic/claude-opus-5.5", {
+			pricing: { provider: { id: "anthropic", name: "Anthropic", routed: true }, tiers: { standard: [tokens("input", 4)], batch: [tokens("input", 2)] } },
+			providers: [
+				route("anthropic", 4, { standard: [tokens("input", 4)], batch: [tokens("input", 2)] }),
+				route("azure", 4.4, { standard: [tokens("input", 4.4)] }),
+				// Cached before routes carried prices: can't be priced, so the headline route stays.
+				route("stale", 5, undefined),
+			],
+		});
+		expect(tokenPrice(applyRoute(opus, "azure"), "input")).toBe(4.4);
+		expect(applyRoute(opus, "azure").pricing?.provider).toEqual({ id: "azure", name: "AZURE", routed: true });
+		expect(applyRoute(opus, "stale")).toBe(opus);
+		expect(applyRoute(opus, null)).toBe(opus);
+		// Batch on the lab route; Azure only sells standard, so a batch choice falls back to it.
+		expect(activeTier(opus, "batch")).toBe("batch");
+		expect(activeTier(applyRoute(opus, "azure"), "batch")).toBe("standard");
+		expect(tokenPrice(opus, "input", activeTier(opus, "batch"))).toBe(2);
 	});
 
 	it("orders tiers with the list price first", () => {

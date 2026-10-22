@@ -136,6 +136,12 @@ export type Options = RequestControls & {
   devtools?: Partial<DevToolsConfig>;
   enableDeprecationWarnings?: boolean;
   warningsAsErrors?: boolean;
+  /**
+   * Look a model up (`GET /models`, once per model per client) before its first request, to refuse
+   * models that are not active and warn about deprecated ones. Defaults to true. Set false to skip the
+   * lookup and let the gateway answer for the model; `models.validate()` still looks it up on demand.
+   */
+  modelLifecycleChecks?: boolean;
   logger?: PhaseoLogger;
   headers?: Record<string, string>;
   /** Optional user-defined application attribution. Phaseo never sets this automatically. */
@@ -455,9 +461,11 @@ export class Phaseo {
   private readonly fetchImpl: typeof fetch;
   private readonly enableDeprecationWarnings: boolean;
   private readonly warningsAsErrors: boolean;
+  private readonly modelLifecycleChecks: boolean;
   private readonly logger?: PhaseoLogger;
   private readonly warnedModels = new Set<string>();
-  private readonly modelLifecycleCache = new Map<string, ModelLifecycleInfo | null>();
+  // Holds the lookup itself, so concurrent first requests for a model share one GET /models.
+  private readonly modelLifecycleCache = new Map<string, Promise<ModelLifecycleInfo | null>>();
 
   readonly responses = {
     parse: async <T>(req: ResponsesRequest, schema: OutputSchema<T>): Promise<T> => {
@@ -645,6 +653,7 @@ export class Phaseo {
     this.fetchImpl = createTransport(opts.fetchImpl ?? fetch, opts);
     this.enableDeprecationWarnings = opts.enableDeprecationWarnings ?? true;
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
+    this.modelLifecycleChecks = opts.modelLifecycleChecks ?? true;
     this.logger = opts.logger;
 
     this.telemetry = new TelemetryCapture(opts.devtools, "3.0.0");
@@ -800,6 +809,7 @@ export class Phaseo {
   }
 
   private async maybeWarnForPayload(payload: unknown): Promise<void> {
+    if (!this.modelLifecycleChecks) return;
     const modelId = extractModelIdFromPayload(payload);
     if (!modelId) return;
     await this.ensureModelRequestable(modelId);
@@ -842,10 +852,15 @@ export class Phaseo {
   private async resolveModelLifecycle(modelId: string): Promise<ModelLifecycleInfo | null> {
     const normalizedModelId = modelId.trim();
     if (!normalizedModelId) return null;
-    if (this.modelLifecycleCache.has(normalizedModelId)) {
-      return this.modelLifecycleCache.get(normalizedModelId) ?? null;
+    let lookup = this.modelLifecycleCache.get(normalizedModelId);
+    if (!lookup) {
+      lookup = this.lookUpModelLifecycle(normalizedModelId);
+      this.modelLifecycleCache.set(normalizedModelId, lookup);
     }
+    return lookup;
+  }
 
+  private async lookUpModelLifecycle(normalizedModelId: string): Promise<ModelLifecycleInfo | null> {
     try {
       const payload = await this.request("GET", "/models", {
         query: { model_id: normalizedModelId, limit: 1 },
@@ -857,16 +872,9 @@ export class Phaseo {
         const candidateId = asTrimmedString(entry?.model_id) ?? asTrimmedString(entry?.id);
         return candidateId === normalizedModelId;
       });
-      if (!model) {
-        this.modelLifecycleCache.set(normalizedModelId, null);
-        return null;
-      }
-
-      const lifecycle = toModelLifecycleInfo(model, normalizedModelId);
-      this.modelLifecycleCache.set(normalizedModelId, lifecycle);
-      return lifecycle;
+      if (!model) return null;
+      return toModelLifecycleInfo(model, normalizedModelId);
     } catch {
-      this.modelLifecycleCache.set(normalizedModelId, null);
       return null;
     }
   }
@@ -1239,8 +1247,13 @@ export class Phaseo {
   }
 
   async *streamResponses(req: ResponsesRequest, options: PhaseoRequestOptions = {}): AsyncGenerator<ResponseStreamChunk> {
+    // An SSE event is named on its `event:` line; data that does not name itself takes that name.
+    let eventName: string | undefined;
     for await (const line of this.streamResponse(req, options)) {
-      const chunk = parseResponseStreamLine(line);
+      if (line.startsWith("event:")) eventName = line.slice(6).trim() || undefined;
+      const isData = line.startsWith("data:");
+      const chunk = parseResponseStreamLine(line, isData ? eventName : undefined);
+      if (isData) eventName = undefined;
       if (!chunk) continue;
       yield chunk;
     }
@@ -1721,7 +1734,7 @@ function parseChatStreamLine(line: string): ChatStreamChunk | null {
   };
 }
 
-function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
+function parseResponseStreamLine(line: string, eventName?: string): ResponseStreamChunk | null {
   const parsed = parseSseJson(line);
   if (parsed === null) return null;
   if (!isRecord(parsed)) {
@@ -1736,6 +1749,7 @@ function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
   const usage = extractUsage(parsed);
   return {
     ...parsed,
+    ...(eventName && typeof parsed.type !== "string" ? { type: eventName } : {}),
     text: extractResponseChunkText(parsed),
     usage,
     reasoningTokens: extractReasoningTokens(usage)

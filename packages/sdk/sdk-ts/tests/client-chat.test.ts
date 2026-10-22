@@ -162,6 +162,34 @@ describe("Phaseo chat helpers", () => {
     expect(reasoningTokens).toBe(9);
   });
 
+  test("names response stream chunks from the SSE event line when the data has no type", async () => {
+    const encoder = new TextEncoder();
+    const fetchImpl: typeof fetch = vi.fn(async () => new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode('event: response.reasoning_text.delta\ndata: {"delta":"think"}\n\n'));
+          controller.enqueue(encoder.encode('event: response.output_text.delta\ndata: {"type":"response.output_text.delta","delta":"hi"}\n\n'));
+          controller.enqueue(encoder.encode('data: {"delta":"!"}\n\n'));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      }),
+      { status: 200, headers: { "Content-Type": "text/event-stream" } },
+    )) as unknown as typeof fetch;
+
+    const client = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl });
+    const dataChunks = [];
+    for await (const chunk of client.streamResponses({ model: "openai/gpt-5-nano", input: "hi" })) {
+      if (typeof chunk.delta === "string") dataChunks.push({ type: chunk.type, delta: chunk.delta });
+    }
+
+    expect(dataChunks).toEqual([
+      { type: "response.reasoning_text.delta", delta: "think" },
+      { type: "response.output_text.delta", delta: "hi" },
+      { type: undefined, delta: "!" },
+    ]);
+  });
+
   test("parses message stream chunks with text and usage", async () => {
     const encoder = new TextEncoder();
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
