@@ -4,7 +4,7 @@ describe("logos", () => {
 	test("resolves the Base Labs icon in both themes", () => {
 		for (const theme of ["light", "dark"] as const) {
 			expect(resolveLogo("baselabs", { theme })).toMatchObject({
-				id: "baselabs", label: "Base Labs", src: "/logos/baselabs.png", variant: "color",
+				id: "baselabs", label: "Base Labs", src: "/logos/baselabs.svg", variant: "color",
 			});
 		}
 	});
