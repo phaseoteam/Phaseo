@@ -861,8 +861,21 @@ export const REALTIME_SPEND_LIMIT_REASONS = [
 	"realtime_key_cost_limit_reached",
 ] as const;
 
+/**
+ * Policy changes made in settings. The relay warns, rechecks after a grace
+ * period and ends the call only if the block still applies.
+ */
+export const REALTIME_POLICY_GRACE_REASONS = [
+	"realtime_workspace_policy_blocked",
+	"realtime_provider_not_available",
+] as const;
+
 export function realtimeAccessEndReason(message: string): string | null {
 	return REALTIME_ACCESS_END_REASONS.find((reason) => message.includes(reason)) ?? null;
+}
+
+export function isRealtimePolicyGraceReason(reason: string): boolean {
+	return REALTIME_POLICY_GRACE_REASONS.some((graceReason) => reason.includes(graceReason));
 }
 
 /** Key limits, or a workspace budget raised by gateway_workspace_budget_status. */
@@ -1271,8 +1284,11 @@ export async function updateRealtimeSessionUsage(args: {
 		pricedNanos,
 	);
 	const policy = await evaluateActiveRealtimePolicy(session, estimatedCostNanos);
-	// Lost access ends every call; a spend limit ends only playground calls.
-	const ends = "reason" in policy && (!policy.spendLimit || isPlaygroundRealtimeSession(session));
+	// Lost access ends every call; a spend limit ends only playground calls. A
+	// policy block comes back as a warning so the relay can give notice first.
+	const ends = "reason" in policy
+		&& !isRealtimePolicyGraceReason(policy.reason)
+		&& (!policy.spendLimit || isPlaygroundRealtimeSession(session));
 	const { data: updated, error: updateError } = await supabase
 		.from("gateway_realtime_sessions")
 		.update({

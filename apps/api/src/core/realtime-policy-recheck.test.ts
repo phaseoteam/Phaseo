@@ -138,6 +138,18 @@ describe("active realtime policy recheck", () => {
 		expect(state.updates[0]).toMatchObject({ status: "ending", disconnect_reason: "realtime_workspace_disabled" });
 	});
 
+	it.each(["api", "chat"] as const)("returns a %s call's policy block as a warning so the relay can give notice", async (source) => {
+		const { applyWorkspacePolicy } = await import("@pipeline/before/workspacePolicy");
+		state.session = session(source);
+		vi.mocked(applyWorkspacePolicy).mockReturnValueOnce({ ok: false } as any);
+		const blocked = await updateRealtimeSessionUsage({ auth, sessionId: "rt_policy", usage: {} });
+		expect(state.updates[0].status).toBeUndefined();
+		expect(blocked.policy_warnings).toEqual(["realtime_workspace_policy_blocked"]);
+		vi.mocked(applyWorkspacePolicy).mockReturnValueOnce({ ok: true, providers: [] } as any);
+		const removed = await updateRealtimeSessionUsage({ auth, sessionId: "rt_policy", usage: {} });
+		expect(removed.policy_warnings).toEqual(["realtime_provider_not_available"]);
+	});
+
 	it("still extends an API call's hold past a key spend limit", async () => {
 		state.session = session("api");
 		state.keyLimit = costLimitReached;

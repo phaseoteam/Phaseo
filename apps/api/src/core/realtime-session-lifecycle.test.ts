@@ -393,6 +393,61 @@ describe("running out of funds on an API call", () => {
 	});
 });
 
+describe("policy blocks and removed providers", () => {
+	const blocked = (object: any, reason = "realtime_workspace_policy_blocked") =>
+		({ ...object.session, status: "connected", policy_warnings: [reason] });
+
+	it("warn, recheck after 30 seconds and end if the block still applies", async () => {
+		vi.useFakeTimers();
+		const { object } = relay("spacex-ai", { source: "api" });
+		delete object.persistUsage;
+		mocks.updateRealtimeSessionUsage.mockResolvedValue(blocked(object, "realtime_provider_not_available"));
+		await object.persistUsage();
+		await object.persistUsage();
+		expect(sentOfType(object, "session.warning")).toEqual([
+			expect.objectContaining({ code: "policy_blocked", status: "ending", seconds_remaining: 30 }),
+		]);
+		expect(object.acceptingAudio).toBe(true);
+		await vi.advanceTimersByTimeAsync(30_000);
+		expect(mocks.updateRealtimeSessionUsage).toHaveBeenCalledTimes(3);
+		expect(ended(object)).toMatchObject({ reason: "policy_blocked", initiated_by: "gateway" });
+	});
+
+	it("keep the call going when the change is undone during the grace period", async () => {
+		vi.useFakeTimers();
+		const { object } = relay("spacex-ai", { source: "api" });
+		delete object.persistUsage;
+		const cleared = { ...object.session, status: "connected" };
+		mocks.updateRealtimeSessionUsage.mockResolvedValueOnce(blocked(object));
+		await object.persistUsage();
+		mocks.updateRealtimeSessionUsage.mockResolvedValue(cleared);
+		await vi.advanceTimersByTimeAsync(30_000);
+		expect(sentOfType(object, "session.warning").map((event: any) => event.status)).toEqual(["ending", "cleared"]);
+		expect(sentOfType(object, "session.ended")).toHaveLength(0);
+		expect(mocks.settleRealtimeSession).not.toHaveBeenCalled();
+	});
+
+	it("end the call if the recheck after the grace period fails", async () => {
+		vi.useFakeTimers();
+		const { object } = relay("spacex-ai", { source: "api" });
+		delete object.persistUsage;
+		mocks.updateRealtimeSessionUsage.mockResolvedValueOnce(blocked(object));
+		await object.persistUsage();
+		mocks.updateRealtimeSessionUsage.mockRejectedValue(new Error("supabase_down"));
+		await vi.advanceTimersByTimeAsync(30_000);
+		expect(ended(object)).toMatchObject({ reason: "policy_blocked" });
+	});
+
+	it("give the same notice when the block surfaces as a failed hold extension", async () => {
+		vi.useFakeTimers();
+		const { object } = relay("openai", { source: "api" });
+		mocks.extendRealtimeSessionHold.mockRejectedValue(new Error("realtime_workspace_policy_blocked"));
+		await object.enforceBudget(object.session);
+		expect(sentOfType(object, "session.warning")).toEqual([expect.objectContaining({ code: "policy_blocked" })]);
+		expect(sentOfType(object, "session.ended")).toHaveLength(0);
+	});
+});
+
 describe("spend limits on an API call", () => {
 	it("warn once and never end the call", async () => {
 		const { object } = relay("openai", { source: "api" });

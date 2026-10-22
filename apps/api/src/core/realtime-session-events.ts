@@ -34,6 +34,7 @@ export const REALTIME_WARNING_CODES = [
 	"funds_low",
 	"overdraft_in_use",
 	"spend_limit_exceeded",
+	"policy_blocked",
 ] as const;
 export type RealtimeWarningCode = typeof REALTIME_WARNING_CODES[number];
 
