@@ -7,6 +7,7 @@ import { fetchSettingsAppsInitialData } from "@/lib/fetchers/internal/fetchSetti
 import { fetchSettingsAuthorizedAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsAuthorizedAppsInitialData";
 import { fetchSettingsDynamicRoutesInitialData } from "@/lib/fetchers/internal/fetchSettingsDynamicRoutesInitialData";
 import { fetchSettingsKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsKeysInitialData";
+import { fetchSettingsKeySecurityInitialData } from "@/lib/fetchers/internal/fetchSettingsKeySecurityInitialData";
 import { fetchSettingsManagementApiKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsManagementApiKeysInitialData";
 import { fetchSettingsRoutingInitialData } from "@/lib/fetchers/internal/fetchSettingsRoutingInitialData";
 import { fetchSettingsGuardrailsInitialData } from "@/lib/fetchers/internal/fetchSettingsGuardrailsInitialData";
@@ -79,6 +80,7 @@ const readers = {
 	"authorized-apps": async () => fetchSettingsAuthorizedAppsInitialData(await getLocale()),
 	"dynamic-routes": fetchSettingsDynamicRoutesInitialData,
 	keys: fetchSettingsKeysInitialData,
+	"key-security": fetchSettingsKeySecurityInitialData,
 	"management-api-keys": fetchSettingsManagementApiKeysInitialData,
 	routing: fetchSettingsRoutingInitialData,
 	guardrails: fetchSettingsGuardrailsInitialData,

@@ -95,7 +95,7 @@ async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof re
 	if ((countResult.count ?? 0) >= limit) throw new Error("key_limit_reached");
 }
 
-async function invalidateGatewayKey(env: Env, keyId: string) {
+export async function invalidateGatewayKey(env: Env, keyId: string) {
 	const key = env.PHASEO_MANAGEMENT_KEY ?? env.PHASEO_CONTROL_KEY;
 	try {
 		if (!key || !env.PHASEO_CONTROL_SECRET) throw new Error("missing_control_configuration");

@@ -725,3 +725,46 @@ export type UsageUpstreamRequestRow = {
 type UsageUpstreamPayload = { availableKeys: Array<{ id: string; name: string | null; prefix: string | null }>; modelMetadataEntries: Array<[string, any]>; providerMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]>; upstreamRequests: UsageUpstreamRequestRow[] };
 export type SettingsUsageLogsLoadState = "ready" | "unauthorized" | "no_workspace" | "forbidden" | "failed";
 export type SettingsUsageLogsInitialData = { signedIn: boolean; workspaceId: string | null; loadState?: SettingsUsageLogsLoadState } & ({ view: "logs"; data: UsageLogsPayload | null } | { view: "upstream"; data: UsageUpstreamPayload | null } | { view: "jobs"; data: UsageJobsPayload | null } | { view: "sessions"; data: UsageSessionsPayload | null });
+
+export type KeySecurityKey = {
+	id: string;
+	name: string;
+	prefix: string;
+	status: "active" | "paused";
+	created_by: string | null;
+	owner_name: string | null;
+	/** Owners and admins only. */
+	owner_email: string | null;
+	created_at: string;
+	/** Null when the key has never been used for a request. */
+	last_used_at: string | null;
+	expires_at: string | null;
+	storage_locations: string[];
+	has_spend_limit: boolean;
+	has_ip_allowlist: boolean;
+	never_used: boolean;
+	idle: boolean;
+	safe_to_remove: boolean;
+	risk: number;
+};
+
+export type KeySecuritySummary = {
+	total: number;
+	paused: number;
+	no_spend_limit: number;
+	never_expires: number;
+	idle: number;
+	safe_to_remove: number;
+	no_ip_allowlist: number;
+	no_storage_location: number;
+	locations: Array<{ id: string; keys: number }>;
+};
+
+export type SettingsKeySecurityInitialData = {
+	workspaceId: string;
+	canManage: boolean;
+	maxBulkKeys: number;
+	observedAt: number;
+	summary: KeySecuritySummary;
+	keys: KeySecurityKey[];
+};

@@ -4496,7 +4496,8 @@
 		"classifiers": "Clasificadores",
 		"newClassifier": "Nuevo clasificador",
 		"classifier": "Clasificador",
-		"budgets": "Presupuestos"
+		"budgets": "Presupuestos",
+		"security": "Seguridad de claves"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4724,7 +4725,8 @@
 		"empty": "No se encontraron ajustes.",
 		"providerProfile": "Perfil del proveedor",
 		"classifiers": "Clasificadores",
-		"budgets": "Presupuestos"
+		"budgets": "Presupuestos",
+		"keySecurity": "Seguridad de claves"
 	},
 	"settingsAvailability": {
 		"title": "Los ajustes no están disponibles temporalmente",
@@ -6009,6 +6011,105 @@
 			"own-server": "Mis propios servidores",
 			"other": "En otro sitio"
 		}
+	},
+	"keySecurity": {
+		"title": "Seguridad de las claves",
+		"description": "Encuentra las claves de API que podrían causar daños si se filtraran y corrígelas en bloque.",
+		"overview": "Resumen",
+		"empty": "Este espacio de trabajo no tiene claves de API activas.",
+		"filters": {
+			"no_spend_limit": "Sin límite de gasto",
+			"never_expires": "No caduca nunca",
+			"idle": "Inactiva 90+ días",
+			"safe_to_remove": "Se puede eliminar",
+			"no_ip_allowlist": "Sin lista de IP permitidas",
+			"no_storage_location": "Ubicación de almacenamiento sin definir"
+		},
+		"help": {
+			"no_spend_limit": "Una clave filtrada podría gastar sin tope.",
+			"never_expires": "Claves que siguen siendo válidas hasta que alguien las elimine.",
+			"idle": "Sin solicitudes en los últimos 90 días.",
+			"safe_to_remove": "Inactivas y nunca usadas, o inactivas durante 180+ días.",
+			"no_ip_allowlist": "Se pueden usar desde cualquier dirección IP.",
+			"no_storage_location": "Si una plataforma sufre una brecha, no sabrás que estas claves estaban allí."
+		},
+		"risks": {
+			"safe_to_remove": "Se puede eliminar",
+			"idle": "Inactiva",
+			"no_spend_limit": "Sin límite de gasto",
+			"never_expires": "Sin caducidad",
+			"no_ip_allowlist": "Cualquier IP"
+		},
+		"recommendations": "Recomendaciones",
+		"recommend": {
+			"safe_to_remove": {
+				"title": "{count, plural, one {Eliminar # clave sin usar} other {Eliminar # claves sin usar}}",
+				"body": "Pide a cada propietario que lo confirme y luego revoca. Copia la lista de propietarios y haz que tu agente consulte con cada uno."
+			},
+			"no_spend_limit": {
+				"title": "{count, plural, one {Definir un límite de gasto en # clave} other {Definir un límite de gasto en # claves}}",
+				"body": "Un límite mensual acota lo que puede gastar una clave filtrada."
+			},
+			"never_expires": {
+				"title": "{count, plural, one {Revisar # clave sin caducidad} other {Revisar # claves sin caducidad}}",
+				"body": "Pide a cada propietario que defina una fecha de caducidad o que elimine las claves que ya no necesite."
+			},
+			"no_storage_location": {
+				"title": "{count, plural, one {Registrar dónde se guarda # clave} other {Registrar dónde se guardan # claves}}",
+				"body": "Así, si una plataforma que usas sufre una brecha, podrás revocar en un solo paso todas las claves guardadas allí."
+			}
+		},
+		"viewKeys": "Ver claves",
+		"copyOwners": "Copiar lista de propietarios",
+		"ownersCopied": "{count, plural, one {Se copió # clave como CSV} other {Se copiaron # claves como CSV}}",
+		"copyFailed": "No se pudo copiar al portapapeles",
+		"storedIn": "Dónde se guardan las claves",
+		"storedInHelp": "Si una de estas plataformas informa de una brecha, revoca todas las claves guardadas allí.",
+		"keyCount": "{count, plural, one {# clave} other {# claves}}",
+		"revokeAll": "Revocar todas",
+		"revokeAllIn": "Revocar todas las claves guardadas en {name}",
+		"allKeys": "Todas las claves",
+		"keysIn": "Claves guardadas en {name}",
+		"clearFilter": "Mostrar todas las claves",
+		"selected": "{count} seleccionadas",
+		"selectAll": "Seleccionar todas las claves mostradas",
+		"selectKey": "Seleccionar {name}",
+		"actions": {
+			"pause": "Pausar",
+			"revoke": "Revocar",
+			"set_monthly_spend_limit": "Definir límite de gasto mensual",
+			"set_expiry": "Definir caducidad",
+			"set_storage_locations": "Definir ubicación de almacenamiento"
+		},
+		"confirm": {
+			"pause": "{count, plural, one {# clave dejará de funcionar hasta que se reactive.} other {# claves dejarán de funcionar hasta que se reactiven.}}",
+			"revoke": "{count, plural, one {# clave dejará de funcionar en menos de un minuto y no se podrá volver a activar. Todo lo que la use necesitará una clave nueva.} other {# claves dejarán de funcionar en menos de un minuto y no se podrán volver a activar. Todo lo que las use necesitará una clave nueva.}}",
+			"set_monthly_spend_limit": "{count, plural, one {Define el límite de gasto mensual de # clave.} other {Define el límite de gasto mensual de # claves.}}",
+			"set_expiry": "{count, plural, one {# clave dejará de funcionar al final de este día (UTC).} other {# claves dejarán de funcionar al final de este día (UTC).}}",
+			"set_storage_locations": "{count, plural, one {Sustituye las ubicaciones de almacenamiento de # clave.} other {Sustituye las ubicaciones de almacenamiento de # claves.}}"
+		},
+		"monthlyLimitUsd": "Límite mensual (USD)",
+		"expiresOn": "Caduca el",
+		"typeRevoke": "Escribe «revoke» para confirmar",
+		"working": "Procesando…",
+		"changed": "{count, plural, one {Se actualizó # clave} other {Se actualizaron # claves}}",
+		"actionFailed": "No se pudieron actualizar las claves",
+		"tooMany": "Selecciona como máximo {max} claves a la vez.",
+		"columns": {
+			"key": "Clave",
+			"owner": "Propietario",
+			"lastUsed": "Último uso",
+			"expires": "Caduca",
+			"storedIn": "Guardada en",
+			"risks": "Riesgos"
+		},
+		"paused": "En pausa",
+		"unknownOwner": "Desconocido",
+		"neverUsed": "Nunca usada",
+		"never": "Nunca",
+		"notSet": "Sin definir",
+		"adminOnly": "Solo los propietarios y administradores del espacio pueden cambiar las claves.",
+		"partial": "Se muestran las {shown} claves de mayor riesgo de {total}. «Revocar todas» sigue abarcando todas las claves guardadas en una ubicación."
 	},
 	"providerDashboard": {
 		"profile": "Perfil del proveedor",

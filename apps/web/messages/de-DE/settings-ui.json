@@ -4496,7 +4496,8 @@
 		"classifiers": "Klassifikatoren",
 		"newClassifier": "Neuer Klassifikator",
 		"classifier": "Klassifikator",
-		"budgets": "Budgets"
+		"budgets": "Budgets",
+		"security": "Schlüsselsicherheit"
 	},
 	"passwordStrength": {
 		"labels": {
@@ -4724,7 +4725,8 @@
 		"empty": "Keine Einstellungen gefunden.",
 		"providerProfile": "Anbieterprofil",
 		"classifiers": "Klassifikatoren",
-		"budgets": "Budgets"
+		"budgets": "Budgets",
+		"keySecurity": "Schlüsselsicherheit"
 	},
 	"settingsAvailability": {
 		"title": "Die Einstellungen sind vorübergehend nicht verfügbar",
@@ -6009,6 +6011,105 @@
 			"own-server": "Eigene Server",
 			"other": "Woanders"
 		}
+	},
+	"keySecurity": {
+		"title": "Schlüsselsicherheit",
+		"description": "Finde API-Schlüssel, die bei einem Leak Schaden anrichten könnten, und behebe die Probleme gesammelt.",
+		"overview": "Übersicht",
+		"empty": "Dieser Workspace hat keine aktiven API-Schlüssel.",
+		"filters": {
+			"no_spend_limit": "Kein Ausgabenlimit",
+			"never_expires": "Läuft nie ab",
+			"idle": "Seit 90+ Tagen inaktiv",
+			"safe_to_remove": "Kann entfernt werden",
+			"no_ip_allowlist": "Keine IP-Zulassungsliste",
+			"no_storage_location": "Speicherort nicht festgelegt"
+		},
+		"help": {
+			"no_spend_limit": "Ein geleakter Schlüssel könnte ohne Obergrenze Geld ausgeben.",
+			"never_expires": "Schlüssel, die gültig bleiben, bis jemand sie entfernt.",
+			"idle": "Keine Anfragen in den letzten 90 Tagen.",
+			"safe_to_remove": "Inaktiv und nie verwendet oder seit 180+ Tagen inaktiv.",
+			"no_ip_allowlist": "Von jeder IP-Adresse aus nutzbar.",
+			"no_storage_location": "Wenn eine Plattform ein Datenleck hat, weißt du nicht, dass diese Schlüssel dort lagen."
+		},
+		"risks": {
+			"safe_to_remove": "Kann entfernt werden",
+			"idle": "Inaktiv",
+			"no_spend_limit": "Kein Ausgabenlimit",
+			"never_expires": "Kein Ablaufdatum",
+			"no_ip_allowlist": "Jede IP"
+		},
+		"recommendations": "Empfehlungen",
+		"recommend": {
+			"safe_to_remove": {
+				"title": "{count, plural, one {# ungenutzten Schlüssel entfernen} other {# ungenutzte Schlüssel entfernen}}",
+				"body": "Lass jeden Eigentümer bestätigen und widerrufe dann. Kopiere die Eigentümerliste und lass deinen Agenten bei jedem Eigentümer nachfragen."
+			},
+			"no_spend_limit": {
+				"title": "{count, plural, one {Ausgabenlimit für # Schlüssel festlegen} other {Ausgabenlimit für # Schlüssel festlegen}}",
+				"body": "Ein monatliches Limit begrenzt, was ein geleakter Schlüssel ausgeben kann."
+			},
+			"never_expires": {
+				"title": "{count, plural, one {# Schlüssel ohne Ablaufdatum prüfen} other {# Schlüssel ohne Ablaufdatum prüfen}}",
+				"body": "Bitte jeden Eigentümer, ein Ablaufdatum festzulegen oder nicht mehr benötigte Schlüssel zu entfernen."
+			},
+			"no_storage_location": {
+				"title": "{count, plural, one {Speicherort für # Schlüssel erfassen} other {Speicherort für # Schlüssel erfassen}}",
+				"body": "Wenn dann eine von dir genutzte Plattform ein Datenleck hat, kannst du alle dort gespeicherten Schlüssel in einem Schritt widerrufen."
+			}
+		},
+		"viewKeys": "Schlüssel anzeigen",
+		"copyOwners": "Eigentümerliste kopieren",
+		"ownersCopied": "{count, plural, one {# Schlüssel als CSV kopiert} other {# Schlüssel als CSV kopiert}}",
+		"copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen",
+		"storedIn": "Wo Schlüssel gespeichert sind",
+		"storedInHelp": "Wenn eine dieser Plattformen ein Datenleck meldet, widerrufe alle dort gespeicherten Schlüssel.",
+		"keyCount": "{count, plural, one {# Schlüssel} other {# Schlüssel}}",
+		"revokeAll": "Alle widerrufen",
+		"revokeAllIn": "Alle in {name} gespeicherten Schlüssel widerrufen",
+		"allKeys": "Alle Schlüssel",
+		"keysIn": "In {name} gespeicherte Schlüssel",
+		"clearFilter": "Alle Schlüssel anzeigen",
+		"selected": "{count} ausgewählt",
+		"selectAll": "Alle angezeigten Schlüssel auswählen",
+		"selectKey": "{name} auswählen",
+		"actions": {
+			"pause": "Pausieren",
+			"revoke": "Widerrufen",
+			"set_monthly_spend_limit": "Monatliches Ausgabenlimit festlegen",
+			"set_expiry": "Ablaufdatum festlegen",
+			"set_storage_locations": "Speicherort festlegen"
+		},
+		"confirm": {
+			"pause": "{count, plural, one {# Schlüssel funktioniert nicht mehr, bis er wieder aktiviert wird.} other {# Schlüssel funktionieren nicht mehr, bis sie wieder aktiviert werden.}}",
+			"revoke": "{count, plural, one {# Schlüssel funktioniert innerhalb einer Minute nicht mehr und kann nie wieder aktiviert werden. Alles, was ihn nutzt, braucht einen neuen Schlüssel.} other {# Schlüssel funktionieren innerhalb einer Minute nicht mehr und können nie wieder aktiviert werden. Alles, was sie nutzt, braucht einen neuen Schlüssel.}}",
+			"set_monthly_spend_limit": "{count, plural, one {Legt das monatliche Ausgabenlimit für # Schlüssel fest.} other {Legt das monatliche Ausgabenlimit für # Schlüssel fest.}}",
+			"set_expiry": "{count, plural, one {# Schlüssel funktioniert ab Ende dieses Tages (UTC) nicht mehr.} other {# Schlüssel funktionieren ab Ende dieses Tages (UTC) nicht mehr.}}",
+			"set_storage_locations": "{count, plural, one {Ersetzt die Speicherorte von # Schlüssel.} other {Ersetzt die Speicherorte von # Schlüsseln.}}"
+		},
+		"monthlyLimitUsd": "Monatliches Limit (USD)",
+		"expiresOn": "Läuft ab am",
+		"typeRevoke": "Gib „revoke“ ein, um zu bestätigen",
+		"working": "Wird ausgeführt…",
+		"changed": "{count, plural, one {# Schlüssel aktualisiert} other {# Schlüssel aktualisiert}}",
+		"actionFailed": "Die Schlüssel konnten nicht aktualisiert werden",
+		"tooMany": "Wähle höchstens {max} Schlüssel auf einmal aus.",
+		"columns": {
+			"key": "Schlüssel",
+			"owner": "Eigentümer",
+			"lastUsed": "Zuletzt verwendet",
+			"expires": "Läuft ab",
+			"storedIn": "Gespeichert in",
+			"risks": "Risiken"
+		},
+		"paused": "Pausiert",
+		"unknownOwner": "Unbekannt",
+		"neverUsed": "Nie verwendet",
+		"never": "Nie",
+		"notSet": "Nicht festgelegt",
+		"adminOnly": "Nur Workspace-Inhaber und Administratoren können Schlüssel ändern.",
+		"partial": "Die {shown} riskantesten von {total} Schlüsseln werden angezeigt. „Alle widerrufen“ erfasst trotzdem jeden an einem Ort gespeicherten Schlüssel."
 	},
 	"providerDashboard": {
 		"profile": "Anbieterprofil",
