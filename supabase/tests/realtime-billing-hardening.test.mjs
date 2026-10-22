@@ -43,7 +43,7 @@ const markUnresolved = (id, confirmed) => one(`select * from public.gateway_real
 
 try {
   await db.exec(await readFile(new URL('./fixtures/realtime-billing-before.sql', import.meta.url), 'utf8'));
-  await db.exec(await readFile(new URL('../migrations/20261021105855_realtime_billing_hardening.sql', import.meta.url), 'utf8'));
+  await db.exec(await readFile(new URL('../migrations/20261022092218_realtime_billing_hardening.sql', import.meta.url), 'utf8'));
   await db.query('insert into public.workspaces (id) values ($1)', [ws]);
   await db.query('insert into public.keys (id, workspace_id) values ($1, $3), ($2, $3)', [keyA, keyB, ws]);
   await db.query(`insert into public.users (user_id, role) values ($1, 'admin')`, [admin]);
