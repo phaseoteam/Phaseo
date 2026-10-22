@@ -145,6 +145,7 @@ type ApiKey struct {
 	Scopes interface{} `json:"scopes"`
 	SoftBlocked bool `json:"soft_blocked"`
 	Status *string `json:"status"`
+	StorageLocations *[]string `json:"storage_locations,omitempty"`
 	UpdatedAt *string `json:"updated_at"`
 	Usage float64 `json:"usage"`
 	UsageDaily float64 `json:"usage_daily"`
@@ -165,6 +166,7 @@ type ApiKeyCreateRequest struct {
 	Name string `json:"name"`
 	Scopes interface{} `json:"scopes,omitempty"`
 	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+	StorageLocations *[]string `json:"storage_locations,omitempty"`
 	WorkspaceId *string `json:"workspace_id,omitempty"`
 }
 
@@ -211,6 +213,8 @@ type ApiKeyRotateResponse struct {
 
 type ApiKeyScopeValue = interface{}
 
+type ApiKeyStorageLocations = []string
+
 type ApiKeyUpdateRequest struct {
 	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled *bool `json:"disabled,omitempty"`
@@ -222,6 +226,7 @@ type ApiKeyUpdateRequest struct {
 	Name *string `json:"name,omitempty"`
 	Scopes interface{} `json:"scopes,omitempty"`
 	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+	StorageLocations *[]string `json:"storage_locations,omitempty"`
 }
 
 type ApiKeyUsageBucket struct {
@@ -258,6 +263,7 @@ type ApiKeyWithValue struct {
 	Scopes interface{} `json:"scopes"`
 	SoftBlocked bool `json:"soft_blocked"`
 	Status *string `json:"status"`
+	StorageLocations *[]string `json:"storage_locations,omitempty"`
 	UpdatedAt *string `json:"updated_at"`
 	Usage float64 `json:"usage"`
 	UsageDaily float64 `json:"usage_daily"`

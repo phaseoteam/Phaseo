@@ -373,6 +373,9 @@ public sealed class ApiKey
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
 
+	[JsonPropertyName("storage_locations")]
+	public List<string>? StorageLocations { get; set; }
+
 	[JsonPropertyName("updated_at")]
 	public string? UpdatedAt { get; set; }
 
@@ -427,6 +430,9 @@ public sealed class ApiKeyCreateRequest
 
 	[JsonPropertyName("soft_blocked")]
 	public bool? SoftBlocked { get; set; }
+
+	[JsonPropertyName("storage_locations")]
+	public List<string>? StorageLocations { get; set; }
 
 	[JsonPropertyName("workspace_id")]
 	public string? WorkspaceId { get; set; }
@@ -518,6 +524,8 @@ public sealed class ApiKeyRotateResponse
 
 public sealed class ApiKeyScopeValue { }
 
+public sealed class ApiKeyStorageLocations { }
+
 public sealed class ApiKeyUpdateRequest
 {
 	[JsonPropertyName("department_id")]
@@ -549,6 +557,9 @@ public sealed class ApiKeyUpdateRequest
 
 	[JsonPropertyName("soft_blocked")]
 	public bool? SoftBlocked { get; set; }
+
+	[JsonPropertyName("storage_locations")]
+	public List<string>? StorageLocations { get; set; }
 
 }
 
@@ -642,6 +653,9 @@ public sealed class ApiKeyWithValue
 
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
+
+	[JsonPropertyName("storage_locations")]
+	public List<string>? StorageLocations { get; set; }
 
 	[JsonPropertyName("updated_at")]
 	public string? UpdatedAt { get; set; }

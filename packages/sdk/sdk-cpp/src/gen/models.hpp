@@ -151,6 +151,7 @@ struct ApiKey {
 	std::any scopes;
 	bool soft_blocked;
 	std::optional<std::string> status;
+	std::vector<std::string> storage_locations;
 	std::optional<std::string> updated_at;
 	double usage;
 	double usage_daily;
@@ -171,6 +172,7 @@ struct ApiKeyCreateRequest {
 	std::string name;
 	std::any scopes;
 	std::optional<bool> soft_blocked;
+	std::vector<std::string> storage_locations;
 	std::string workspace_id;
 };
 
@@ -217,6 +219,8 @@ struct ApiKeyRotateResponse {
 
 using ApiKeyScopeValue = std::any;
 
+using ApiKeyStorageLocations = std::any;
+
 struct ApiKeyUpdateRequest {
 	std::optional<std::string> department_id;
 	std::optional<bool> disabled;
@@ -228,6 +232,7 @@ struct ApiKeyUpdateRequest {
 	std::string name;
 	std::any scopes;
 	std::optional<bool> soft_blocked;
+	std::vector<std::string> storage_locations;
 };
 
 struct ApiKeyUsageBucket {
@@ -264,6 +269,7 @@ struct ApiKeyWithValue {
 	std::any scopes;
 	bool soft_blocked;
 	std::optional<std::string> status;
+	std::vector<std::string> storage_locations;
 	std::optional<std::string> updated_at;
 	double usage;
 	double usage_daily;

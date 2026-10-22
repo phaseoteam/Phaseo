@@ -1289,6 +1289,7 @@ export type CreateApiKeyParams = {
     name: string;
     scopes?: string | string[];
     soft_blocked?: boolean;
+    storage_locations?: string[];
     workspace_id?: string;
   };
 };
@@ -1335,6 +1336,7 @@ export async function createApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -1400,6 +1402,7 @@ export async function createApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -9771,6 +9774,7 @@ export async function getApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -9836,6 +9840,7 @@ export async function getApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -10060,6 +10065,7 @@ export async function getCurrentApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -10123,6 +10129,7 @@ export async function getCurrentApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -13142,6 +13149,7 @@ export async function listApiKeys(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -13206,6 +13214,7 @@ export async function listApiKeys(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -21599,6 +21608,7 @@ export async function rotateApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -21666,6 +21676,7 @@ export async function rotateApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -22092,6 +22103,7 @@ export type UpdateApiKeyParams = {
     name?: string;
     scopes?: string | string[];
     soft_blocked?: boolean;
+    storage_locations?: string[];
   };
 };
 
@@ -22136,6 +22148,7 @@ export async function updateApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -22201,6 +22214,7 @@ export async function updateApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;

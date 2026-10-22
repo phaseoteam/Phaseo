@@ -27,6 +27,7 @@
     "models/ApiKeyRotateRequest.ts",
     "models/ApiKeyRotateResponse.ts",
     "models/ApiKeyScopeValue.ts",
+    "models/ApiKeyStorageLocations.ts",
     "models/ApiKeyUpdateRequest.ts",
     "models/ApiKeyUsageBucket.ts",
     "models/ApiKeyUsageWindows.ts",

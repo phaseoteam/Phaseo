@@ -148,6 +148,7 @@ public final class Models {
 		public Object scopes;
 		public Boolean soft_blocked;
 		public String status;
+		public java.util.List<String> storage_locations;
 		public String updated_at;
 		public Double usage;
 		public Double usage_daily;
@@ -168,6 +169,7 @@ public final class Models {
 		public String name;
 		public Object scopes;
 		public Boolean soft_blocked;
+		public java.util.List<String> storage_locations;
 		public String workspace_id;
 	}
 
@@ -215,6 +217,9 @@ public final class Models {
 	public static class ApiKeyScopeValue {
 	}
 
+	public static class ApiKeyStorageLocations {
+	}
+
 	public static class ApiKeyUpdateRequest {
 		public String department_id;
 		public Boolean disabled;
@@ -226,6 +231,7 @@ public final class Models {
 		public String name;
 		public Object scopes;
 		public Boolean soft_blocked;
+		public java.util.List<String> storage_locations;
 	}
 
 	public static class ApiKeyUsageBucket {
@@ -262,6 +268,7 @@ public final class Models {
 		public Object scopes;
 		public Boolean soft_blocked;
 		public String status;
+		public java.util.List<String> storage_locations;
 		public String updated_at;
 		public Double usage;
 		public Double usage_daily;

@@ -152,6 +152,7 @@ pub struct ApiKey {
 	pub scopes: String,
 	pub soft_blocked: bool,
 	pub status: Option<String>,
+	pub storage_locations: Option<Vec<String>>,
 	pub updated_at: Option<String>,
 	pub usage: f64,
 	pub usage_daily: f64,
@@ -172,6 +173,7 @@ pub struct ApiKeyCreateRequest {
 	pub name: String,
 	pub scopes: Option<String>,
 	pub soft_blocked: Option<bool>,
+	pub storage_locations: Option<Vec<String>>,
 	pub workspace_id: Option<String>,
 }
 
@@ -218,6 +220,8 @@ pub struct ApiKeyRotateResponse {
 
 pub type ApiKeyScopeValue = JsonValue;
 
+pub type ApiKeyStorageLocations = JsonValue;
+
 pub struct ApiKeyUpdateRequest {
 	pub department_id: Option<Option<String>>,
 	pub disabled: Option<bool>,
@@ -229,6 +233,7 @@ pub struct ApiKeyUpdateRequest {
 	pub name: Option<String>,
 	pub scopes: Option<String>,
 	pub soft_blocked: Option<bool>,
+	pub storage_locations: Option<Vec<String>>,
 }
 
 pub struct ApiKeyUsageBucket {
@@ -265,6 +270,7 @@ pub struct ApiKeyWithValue {
 	pub scopes: String,
 	pub soft_blocked: bool,
 	pub status: Option<String>,
+	pub storage_locations: Option<Vec<String>>,
 	pub updated_at: Option<String>,
 	pub usage: f64,
 	pub usage_daily: f64,
