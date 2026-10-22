@@ -593,6 +593,7 @@ describe("Phaseo MCP OAuth discovery", () => {
 			"analytics:read",
 			"generations:read",
 			"gateway:access",
+			"connections:use",
 		]);
 		expect(response.headers.get("x-content-type-options")).toBe("nosniff");
 		expect(response.headers.get("access-control-allow-origin")).toBe("*");

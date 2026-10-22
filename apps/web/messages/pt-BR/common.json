@@ -636,7 +636,9 @@
 			"managePermissions": "Gerenciar permissões",
 			"additionalPermissionsDescription": "Este aplicativo agora pode solicitar mais permissões. Seu acesso atual não mudou; use “Autorizar novamente” acima para iniciar uma nova solicitação no aplicativo.",
 			"updatePermissionsFailed": "Não foi possível atualizar as permissões. Tente novamente.",
-			"firstPartyDescription": "CLI oficial da Phaseo para entrar, gerenciar equipes e criar chaves."
+			"firstPartyDescription": "CLI oficial da Phaseo para entrar, gerenciar equipes e criar chaves.",
+			"connectionsPermissionLabel": "Usar seus servidores MCP conectados",
+			"connectionsPermissionDescription": "Permite que o aplicativo liste e execute ferramentas dos servidores MCP que você conectou no Phaseo, usando suas contas nesses serviços."
 		},
 		"callback": {
 			"redirecting": "Redirecionando…",

@@ -852,6 +852,14 @@ describe("OAuth route security", () => {
 		}
 		expect(filterMcpAuthorizationScopes(client, [...requested, "keys:write"], params.get("resource")!)).not.toContain("gateway:access");
 		expect(filterMcpAuthorizationScopes(client, ["models:read"], params.get("resource")!)).toEqual(["models:read"]);
+
+		// connections:use steps up the same way, alone or with gateway:access, and only for Phaseo's MCP server.
+		const mcpResource = params.get("resource")!;
+		expect(filterMcpAuthorizationScopes(client, ["models:read", "connections:use"], mcpResource)).toEqual(["models:read", "connections:use"]);
+		expect(filterMcpAuthorizationScopes(client, [...requested, "connections:use"], mcpResource)).toEqual([...requested, "connections:use"]);
+		expect(filterMcpAuthorizationScopes(client, ["models:read", "connections:use"], "https://other.example/mcp")).not.toContain("connections:use");
+		expect(filterMcpAuthorizationScopes({ ...client, registration_source: "developer" }, ["connections:use"], mcpResource)).not.toContain("connections:use");
+		expect(filterMcpAuthorizationScopes(client, ["connections:use", "keys:write"], mcpResource)).not.toContain("connections:use");
 	});
 
 	it("classifies legacy loopback registrations as native clients", async () => {

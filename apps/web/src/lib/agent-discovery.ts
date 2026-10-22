@@ -46,6 +46,7 @@ export const OAUTH_SCOPES_SUPPORTED = [
 	"email",
 	"profile",
 	"gateway:access",
+	"connections:use",
 	"me:read",
 	"models:read",
 	"providers:read",

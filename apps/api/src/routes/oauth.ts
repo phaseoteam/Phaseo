@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
-import { ALL_SUPPORTED_SCOPES, GATEWAY_ACCESS_SCOPE } from "@/lib/authz/capabilities";
+import { ALL_SUPPORTED_SCOPES, CONNECTIONS_USE_SCOPE, GATEWAY_ACCESS_SCOPE } from "@/lib/authz/capabilities";
 import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
 import { authenticateManagement } from "@/pipeline/before/auth";
 import { json, withRuntime } from "@/routes/utils";
@@ -56,6 +56,7 @@ export const OAUTH_CORS_HEADERS: Record<string, string> = {
 };
 const DYNAMIC_MCP_SCOPES = [
 	GATEWAY_ACCESS_SCOPE,
+	CONNECTIONS_USE_SCOPE,
 	"openid",
 	"profile",
 	"email",
@@ -94,6 +95,7 @@ const DYNAMIC_MCP_DEFAULT_SCOPES = [
 ] as const;
 const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
 const RESOURCE_BOUND_MCP_SCOPES = [
+	CONNECTIONS_USE_SCOPE,
 	"models:read",
 	"providers:read",
 	"pricing:read",
@@ -289,12 +291,14 @@ export function filterMcpAuthorizationScopes(
 	requested: string[],
 	resource: string,
 ): string[] {
+	// Clients registered before connections:use existed may ask for it the same way.
+	const stepUpScopes = [GATEWAY_ACCESS_SCOPE, CONNECTIONS_USE_SCOPE].filter((scope) => requested.includes(scope));
 	const explicitStepUp = client.registration_source === "dynamic"
 		&& resource === "https://mcp.phaseo.app/mcp"
-		&& requested.includes(GATEWAY_ACCESS_SCOPE)
+		&& stepUpScopes.length > 0
 		&& requested.every((scope) => scope === GATEWAY_ACCESS_SCOPE || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
 	return filterAllowedScopes(explicitStepUp
-		? { ...client, allowed_scopes: [...client.allowed_scopes, GATEWAY_ACCESS_SCOPE] }
+		? { ...client, allowed_scopes: [...client.allowed_scopes, ...stepUpScopes] }
 		: client, requested);
 }
 

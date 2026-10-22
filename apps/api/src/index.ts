@@ -17,6 +17,7 @@ export { RealtimeRelayDurableObject } from "@core/realtime-relay-durable-object"
 export { ProviderRateLimitDurableObject } from "@core/provider-rate-limit-durable-object";
 export { CustomerRateLimitDurableObject } from "@core/customer-rate-limit-durable-object";
 export { SpendLimitDurableObject } from "@core/spend-limit-durable-object";
+export { McpConnectionLockDurableObject } from "@core/mcp-hub/connection-lock-durable-object";
 export { RoutingHealthDurableObject } from "@core/routing-health-durable-object";
 
 const app = new Hono<Env>();

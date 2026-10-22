@@ -116,6 +116,14 @@ class_name = "SpendLimitDurableObject"
 tag = "v3-spend-limits"
 new_sqlite_classes = ["SpendLimitDurableObject"]
 
+[[durable_objects.bindings]]
+name = "MCP_CONNECTION_LOCKS"
+class_name = "McpConnectionLockDurableObject"
+
+[[migrations]]
+tag = "v4-mcp-connection-locks"
+new_sqlite_classes = ["McpConnectionLockDurableObject"]
+
 [[ratelimits]]
 name = "REALTIME_RELAY_RATE_LIMITER"
 namespace_id = "41003"

@@ -66,6 +66,14 @@ export type GatewayBindings = {
 	/** Kill switch: "false" stops request classifiers. On when unset. */
 	REQUEST_CLASSIFIERS_ENABLED?: string;
 	SPEND_LIMITS?: DurableObjectNamespace;
+	/** Refreshes one connected MCP server's tokens at a time (McpConnectionLockDurableObject). */
+	MCP_CONNECTION_LOCKS?: DurableObjectNamespace;
+	/** "true" turns on the MCP hub (/internal/mcp-hub) for Connections. */
+	MCP_HUB_ENABLED?: string;
+	/** Decrypts connected MCP server tokens (shared with the web API): base64 32-byte keys by version. */
+	MCP_CONNECTIONS_KEY_V1?: string;
+	MCP_CONNECTIONS_KEY_V2?: string;
+	MCP_CONNECTIONS_ACTIVE_KEY_VERSION?: string;
 	/** off | shadow | enforce for the SpendLimit Durable Object (default off). */
 	GATEWAY_SPEND_LIMIT_DO_MODE?: string;
     KV?: KVNamespace;

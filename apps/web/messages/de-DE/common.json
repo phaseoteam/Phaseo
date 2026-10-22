@@ -636,7 +636,9 @@
 			"managePermissions": "Berechtigungen verwalten",
 			"additionalPermissionsDescription": "Diese Anwendung kann jetzt weitere Berechtigungen anfordern. Dein aktueller Zugriff hat sich nicht geändert. Starte oben über „Erneut autorisieren“ eine neue Anfrage in der Anwendung.",
 			"updatePermissionsFailed": "Berechtigungen konnten nicht aktualisiert werden. Versuche es erneut.",
-			"firstPartyDescription": "Offizielle Phaseo-CLI zum Anmelden, Verwalten von Teams und Erstellen von Schlüsseln."
+			"firstPartyDescription": "Offizielle Phaseo-CLI zum Anmelden, Verwalten von Teams und Erstellen von Schlüsseln.",
+			"connectionsPermissionLabel": "Deine verbundenen MCP-Server nutzen",
+			"connectionsPermissionDescription": "Erlaubt der Anwendung, Tools der MCP-Server aufzulisten und auszuführen, die du in Phaseo verbunden hast, mit deinen Konten bei diesen Diensten."
 		},
 		"callback": {
 			"redirecting": "Weiterleitung…",

@@ -636,7 +636,9 @@
 			"managePermissions": "अनुमतियाँ प्रबंधित करें",
 			"additionalPermissionsDescription": "यह ऐप अब और अनुमतियाँ माँग सकता है। आपका मौजूदा ऐक्सेस नहीं बदला है। ऐप से नया अनुरोध शुरू करने के लिए ऊपर “फिर से अनुमति दें” चुनें।",
 			"updatePermissionsFailed": "अनुमतियाँ अपडेट नहीं हो सकीं। फिर कोशिश करें।",
-			"firstPartyDescription": "साइन इन करने, टीमों को प्रबंधित करने और कुंजियाँ बनाने के लिए Phaseo का आधिकारिक CLI।"
+			"firstPartyDescription": "साइन इन करने, टीमों को प्रबंधित करने और कुंजियाँ बनाने के लिए Phaseo का आधिकारिक CLI।",
+			"connectionsPermissionLabel": "अपने कनेक्ट किए गए MCP सर्वर इस्तेमाल करें",
+			"connectionsPermissionDescription": "एप्लिकेशन को Phaseo में आपके कनेक्ट किए गए MCP सर्वरों के टूल देखने और चलाने देता है, उन सेवाओं पर आपके खातों से।"
 		},
 		"callback": {
 			"redirecting": "रीडायरेक्ट किया जा रहा है…",

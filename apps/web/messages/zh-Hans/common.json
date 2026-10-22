@@ -636,7 +636,9 @@
 			"managePermissions": "管理权限",
 			"additionalPermissionsDescription": "此应用现在可以请求更多权限。你当前的访问权限没有变化。请使用上方的“重新授权”从应用发起新请求。",
 			"updatePermissionsFailed": "无法更新权限。请重试。",
-			"firstPartyDescription": "用于登录、管理团队和创建密钥的 Phaseo 官方 CLI。"
+			"firstPartyDescription": "用于登录、管理团队和创建密钥的 Phaseo 官方 CLI。",
+			"connectionsPermissionLabel": "使用你连接的 MCP 服务器",
+			"connectionsPermissionDescription": "允许应用列出并运行你在 Phaseo 中连接的 MCP 服务器的工具，使用你在这些服务上的账户。"
 		},
 		"callback": {
 			"redirecting": "正在重定向…",

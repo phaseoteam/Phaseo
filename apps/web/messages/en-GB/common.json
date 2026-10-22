@@ -636,7 +636,9 @@
 			"managePermissions": "Manage permissions",
 			"additionalPermissionsDescription": "This app can now request more permissions. Your existing access has not changed; use Reauthorize above to start a new request from the app.",
 			"updatePermissionsFailed": "Could not update permissions. Please try again.",
-			"firstPartyDescription": "Official first-party Phaseo CLI for signing in, managing teams, and creating keys."
+			"firstPartyDescription": "Official first-party Phaseo CLI for signing in, managing teams, and creating keys.",
+			"connectionsPermissionLabel": "Use your connected MCP servers",
+			"connectionsPermissionDescription": "Lets the application list and run tools from the MCP servers you connected in Phaseo, using your accounts on those services."
 		},
 		"callback": {
 			"redirecting": "Redirecting…",
