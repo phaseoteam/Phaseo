@@ -94,9 +94,13 @@ async function loadDestinations(ids: string[]): Promise<Map<string, QueuedDestin
 	return new Map(((data ?? []) as QueuedDestination[]).map((destination) => [destination.id, destination]));
 }
 
+const utf8 = new TextEncoder();
+
 // Payloads for the same destination share one request, split to stay under
-// MAX_OTLP_REQUEST_BYTES. Each OTLP payload is a list of resourceSpans, so
-// concatenating them is still a valid export request.
+// MAX_OTLP_REQUEST_BYTES of UTF-8. Protobuf stores strings as UTF-8 too, so the
+// JSON's UTF-8 size bounds either encoding even for multibyte prompts. Each OTLP
+// payload is a list of resourceSpans, so concatenating them is still a valid
+// export request.
 function otlpDeliveries(destination: QueuedDestination, config: Record<string, unknown>, events: Event[]): Delivery[] {
 	const deliveries: Delivery[] = [];
 	let current: { events: Event[]; spans: unknown[]; bytes: number } = { events: [], spans: [], bytes: 0 };
@@ -108,7 +112,7 @@ function otlpDeliveries(destination: QueuedDestination, config: Record<string, u
 	for (const event of events) {
 		const payload = renderBroadcastPayload(event.telemetry, destination) as { resourceSpans?: unknown[] };
 		const spans = payload.resourceSpans ?? [];
-		const bytes = JSON.stringify(spans).length;
+		const bytes = utf8.encode(JSON.stringify(spans)).byteLength;
 		if (current.bytes + bytes > MAX_OTLP_REQUEST_BYTES) flush();
 		current.events.push(event);
 		current.spans.push(...spans);

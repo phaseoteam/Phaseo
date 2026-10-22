@@ -2148,7 +2148,7 @@ class ObservabilityDestination(TypedDict):
 	privacy_mode: bool
 	rule_groups: List[ObservabilityRuleGroup]
 	sampling_rate: float
-	type: Literal["braintrust", "datadog", "langfuse", "langsmith", "otel_collector", "webhook"]
+	type: Literal["braintrust", "datadog", "grafana_cloud", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "sentry", "webhook"]
 	updated_at: NotRequired[Optional[str]]
 	workspace_id: str
 
@@ -2165,7 +2165,7 @@ class ObservabilityDestinationCreateRequest(TypedDict):
 	privacy_mode: NotRequired[bool]
 	rule_groups: NotRequired[List[ObservabilityRuleGroup]]
 	sampling_rate: NotRequired[float]
-	type: Literal["braintrust", "datadog", "langfuse", "langsmith", "otel_collector", "webhook"]
+	type: Literal["braintrust", "datadog", "grafana_cloud", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "sentry", "webhook"]
 
 class ObservabilityDestinationListResponse(TypedDict):
 	data: List[ObservabilityDestination]
@@ -2187,7 +2187,7 @@ class ObservabilityDestinationPolicyInput(TypedDict):
 class ObservabilityDestinationResponse(TypedDict):
 	data: ObservabilityDestination
 
-ObservabilityDestinationType = Literal["braintrust", "datadog", "langfuse", "langsmith", "otel_collector", "webhook"]
+ObservabilityDestinationType = Literal["braintrust", "datadog", "grafana_cloud", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "sentry", "webhook"]
 
 class ObservabilityDestinationUpdateRequest(TypedDict):
 	config: NotRequired[Dict[str, Any]]

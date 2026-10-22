@@ -4671,9 +4671,13 @@ export type CreateObservabilityDestinationParams = {
     type:
       | "braintrust"
       | "datadog"
+      | "grafana_cloud"
       | "langfuse"
       | "langsmith"
+      | "new_relic"
       | "otel_collector"
+      | "posthog"
+      | "sentry"
       | "webhook";
   };
 };
@@ -4735,9 +4739,13 @@ export async function createObservabilityDestination(
     type:
       | "braintrust"
       | "datadog"
+      | "grafana_cloud"
       | "langfuse"
       | "langsmith"
+      | "new_relic"
       | "otel_collector"
+      | "posthog"
+      | "sentry"
       | "webhook";
     updated_at?: string | null;
     workspace_id: string;
@@ -4796,9 +4804,13 @@ export async function createObservabilityDestination(
       type:
         | "braintrust"
         | "datadog"
+        | "grafana_cloud"
         | "langfuse"
         | "langsmith"
+        | "new_relic"
         | "otel_collector"
+        | "posthog"
+        | "sentry"
         | "webhook";
       updated_at?: string | null;
       workspace_id: string;
@@ -11145,9 +11157,13 @@ export async function getObservabilityDestination(
     type:
       | "braintrust"
       | "datadog"
+      | "grafana_cloud"
       | "langfuse"
       | "langsmith"
+      | "new_relic"
       | "otel_collector"
+      | "posthog"
+      | "sentry"
       | "webhook";
     updated_at?: string | null;
     workspace_id: string;
@@ -11208,9 +11224,13 @@ export async function getObservabilityDestination(
       type:
         | "braintrust"
         | "datadog"
+        | "grafana_cloud"
         | "langfuse"
         | "langsmith"
+        | "new_relic"
         | "otel_collector"
+        | "posthog"
+        | "sentry"
         | "webhook";
       updated_at?: string | null;
       workspace_id: string;
@@ -16663,9 +16683,13 @@ export async function listObservabilityDestinations(
     type:
       | "braintrust"
       | "datadog"
+      | "grafana_cloud"
       | "langfuse"
       | "langsmith"
+      | "new_relic"
       | "otel_collector"
+      | "posthog"
+      | "sentry"
       | "webhook";
     updated_at?: string | null;
     workspace_id: string;
@@ -16725,9 +16749,13 @@ export async function listObservabilityDestinations(
       type:
         | "braintrust"
         | "datadog"
+        | "grafana_cloud"
         | "langfuse"
         | "langsmith"
+        | "new_relic"
         | "otel_collector"
+        | "posthog"
+        | "sentry"
         | "webhook";
       updated_at?: string | null;
       workspace_id: string;
@@ -23157,9 +23185,13 @@ export async function updateObservabilityDestination(
     type:
       | "braintrust"
       | "datadog"
+      | "grafana_cloud"
       | "langfuse"
       | "langsmith"
+      | "new_relic"
       | "otel_collector"
+      | "posthog"
+      | "sentry"
       | "webhook";
     updated_at?: string | null;
     workspace_id: string;
@@ -23220,9 +23252,13 @@ export async function updateObservabilityDestination(
       type:
         | "braintrust"
         | "datadog"
+        | "grafana_cloud"
         | "langfuse"
         | "langsmith"
+        | "new_relic"
         | "otel_collector"
+        | "posthog"
+        | "sentry"
         | "webhook";
       updated_at?: string | null;
       workspace_id: string;

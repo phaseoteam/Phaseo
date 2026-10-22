@@ -104,16 +104,16 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "grafana_cloud",
 		label: "Grafana Cloud",
-		description: "Push traces using Grafana OTLP credentials.",
+		description: "Send traces to Grafana Cloud Tempo with your stack's OpenTelemetry credentials.",
 		logoId: "observability-grafana",
 		fields: [
 			{
 				key: "otlp_endpoint",
 				label: "OTLP Endpoint",
-				placeholder: "https://otlp-gateway-prod-us-central-0.grafana.net/otlp",
+				placeholder: "https://otlp-gateway-prod-us-east-0.grafana.net/otlp",
 			},
 			{ key: "instance_id", label: "Instance ID", placeholder: "1234567" },
-			{ key: "api_key", label: "API Key", placeholder: "glc_...", type: "password" },
+			{ key: "api_key", label: "Access Policy Token", placeholder: "glc_...", type: "password" },
 		],
 	},
 	{
@@ -150,12 +150,12 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	},
 	{
 		id: "new_relic",
-		label: "New Relic AI",
-		description: "Write traces into New Relic AI monitoring.",
+		label: "New Relic",
+		description: "Send traces to New Relic over OpenTelemetry.",
 		logoId: "observability-newrelic",
 		fields: [
-			{ key: "license_key", label: "License Key", placeholder: "NRAK-...", type: "password" },
-			{ key: "region", label: "Region", placeholder: "US" },
+			{ key: "license_key", label: "License Key", placeholder: "...NRAL", type: "password" },
+			{ key: "region", label: "Region (Optional)", placeholder: "US, EU or JP", required: false },
 		],
 	},
 	{
@@ -186,14 +186,14 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "posthog",
 		label: "PostHog",
-		description: "Publish traces into PostHog events.",
+		description: "Send GenAI traces to PostHog LLM analytics as generation events.",
 		logoId: "observability-posthog",
 		fields: [
-			{ key: "api_key", label: "Project API Key", placeholder: "phc_...", type: "password" },
+			{ key: "api_key", label: "Project Token", placeholder: "phc_...", type: "password" },
 			{
-				key: "endpoint",
-				label: "Endpoint (Optional)",
-				placeholder: "https://us.i.posthog.com",
+				key: "base_url",
+				label: "Host (Optional)",
+				placeholder: "https://us.i.posthog.com or https://eu.i.posthog.com",
 				required: false,
 			},
 		],
@@ -242,18 +242,18 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "sentry",
 		label: "Sentry",
-		description: "Forward traces to Sentry ingest endpoint.",
+		description: "Send traces to a Sentry project's OTLP endpoint.",
 		logoId: "observability-sentry",
 		fields: [
 			{
 				key: "otlp_endpoint",
-				label: "OTLP Endpoint",
-				placeholder: "https://o0.ingest.sentry.io/api/0/envelope/",
+				label: "OTLP Traces Endpoint",
+				placeholder: "https://o0.ingest.sentry.io/api/0/integration/otlp/v1/traces",
 			},
 			{
-				key: "dsn",
-				label: "DSN",
-				placeholder: "https://...@o0.ingest.sentry.io/0",
+				key: "public_key",
+				label: "Public Key",
+				placeholder: "From Client Keys (DSN)",
 				type: "password",
 			},
 		],

@@ -48,9 +48,13 @@ export interface ObservabilityDestination {
   type:
     | "braintrust"
     | "datadog"
+    | "grafana_cloud"
     | "langfuse"
     | "langsmith"
+    | "new_relic"
     | "otel_collector"
+    | "posthog"
+    | "sentry"
     | "webhook";
   updated_at?: string | null;
   workspace_id: string;

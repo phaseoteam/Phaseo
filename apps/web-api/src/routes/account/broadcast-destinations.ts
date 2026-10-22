@@ -19,14 +19,14 @@ export const BROADCAST_DESTINATION_TYPES = [
 	{ id: "clickhouse", delivery: null },
 	{ id: "comet_opik", delivery: null },
 	{ id: "datadog", delivery: "otlp" },
-	{ id: "grafana_cloud", delivery: null },
+	{ id: "grafana_cloud", delivery: "otlp" },
 	{ id: "langfuse", delivery: "otlp" },
 	{ id: "langsmith", delivery: "otlp" },
-	{ id: "new_relic", delivery: null },
+	{ id: "new_relic", delivery: "otlp" },
 	{ id: "otel_collector", delivery: "otlp" },
-	{ id: "posthog", delivery: null },
+	{ id: "posthog", delivery: "otlp" },
 	{ id: "s3", delivery: null },
-	{ id: "sentry", delivery: null },
+	{ id: "sentry", delivery: "otlp" },
 	{ id: "snowflake", delivery: null },
 	{ id: "wandb_weave", delivery: null },
 	{ id: "webhook", delivery: "webhook" },
@@ -100,6 +100,9 @@ export type OtlpPreset = {
 	defaults?: Record<string, string>;
 	// Fields that must be one of these values, such as a vendor's regions.
 	allowedValues?: Record<string, readonly string[]>;
+	// Fields picked by name, such as a region, and the value each name stands
+	// for. The name is matched without regard to case.
+	choices?: Record<string, Record<string, string>>;
 	// A header or resource attribute whose template renders empty is left out.
 	headers?: Record<string, string>;
 	protocol?: OtlpProtocol;
@@ -139,6 +142,15 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 		protocol: "http/protobuf",
 		resourceAttributes: { dd_llmobs_enabled: "true" },
 	},
+	// https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp/
+	// The OTLP endpoint is the one on the stack's OpenTelemetry tile, ending in
+	// /otlp. Traces go to Tempo, which takes gzip.
+	grafana_cloud: {
+		endpoint: "{otlp_endpoint}/v1/traces",
+		headers: { Authorization: "{basic:instance_id:api_key}" },
+		protocol: "http/protobuf",
+		compression: "gzip",
+	},
 	// https://langfuse.com/integrations/native/opentelemetry
 	// Without the ingestion version header, traces can take up to 10 minutes to
 	// appear. Langfuse reads sessions from langfuse.session.id or session.id.
@@ -156,6 +168,35 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 		endpoint: "{base_url}/otel/v1/traces",
 		defaults: { base_url: "https://api.smith.langchain.com" },
 		headers: { "x-api-key": "{api_key}", "Langsmith-Project": "{project?}" },
+		protocol: "http/protobuf",
+	},
+	// https://docs.newrelic.com/docs/opentelemetry/best-practices/opentelemetry-otlp/
+	// Authenticated with an ingest license key. String attributes over 4,095
+	// characters are not accepted, so prompts and outputs are cut to fit.
+	new_relic: {
+		endpoint: "https://{region}/v1/traces",
+		defaults: { region: "US" },
+		choices: { region: { US: "otlp.nr-data.net", EU: "otlp.eu01.nr-data.net", JP: "otlp.jp.nr-data.net" } },
+		headers: { "api-key": "{license_key}" },
+		protocol: "http/protobuf",
+		compression: "gzip",
+		maxAttributeLength: 4095,
+	},
+	// https://posthog.com/docs/llm-analytics/installation/opentelemetry
+	// Authenticated with the project token. The intake keeps gen_ai spans and
+	// reads gen_ai.conversation.id as the session; requests are capped at 4 MB.
+	posthog: {
+		endpoint: "{base_url}/i/v0/ai/otel",
+		defaults: { base_url: "https://us.i.posthog.com" },
+		headers: { Authorization: "Bearer {api_key}" },
+		protocol: "http/protobuf",
+	},
+	// https://docs.sentry.io/concepts/otlp/direct/traces/
+	// Project settings > Client Keys (DSN) shows the OTLP traces endpoint and the
+	// public key that authenticates it.
+	sentry: {
+		endpoint: "{otlp_endpoint}",
+		headers: { "x-sentry-auth": "sentry sentry_key={public_key}" },
 		protocol: "http/protobuf",
 	},
 };
@@ -193,7 +234,11 @@ function renderTemplate(
 		}
 		const allowed = preset.allowedValues?.[name];
 		if (allowed && !allowed.includes(value)) throw new Error(`${name} must be one of: ${allowed.join(", ")}`);
-		return value;
+		const choices = preset.choices?.[name];
+		if (!choices) return value;
+		const choice = Object.keys(choices).find((key) => key.toLowerCase() === value.toLowerCase());
+		if (!choice) throw new Error(`${name} must be one of: ${Object.keys(choices).join(", ")}`);
+		return choices[choice];
 	};
 	return template.replace(PLACEHOLDER, (_match, name: string, offset: number) => {
 		const [kind, user, password] = name.split(":");

@@ -13,7 +13,9 @@ import {
 
 describe("Broadcast destination registry", () => {
 	it("lists only destinations with an exporter as available", () => {
-		expect(AVAILABLE_BROADCAST_DESTINATION_IDS).toEqual(["braintrust", "datadog", "langfuse", "langsmith", "otel_collector", "webhook"]);
+		expect(AVAILABLE_BROADCAST_DESTINATION_IDS).toEqual([
+			"braintrust", "datadog", "grafana_cloud", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "sentry", "webhook",
+		]);
 	});
 
 	it("resolves the OTLP traces endpoint the way the exporter calls it", () => {
@@ -29,7 +31,7 @@ describe("Broadcast destination registry", () => {
 		expect(broadcastDestinationEndpoint("webhook", { url: " https://hooks.example.com ", endpoint: "https://x.example.com" }))
 			.toBe("https://hooks.example.com");
 		expect(broadcastDestinationEndpoint("otel_collector", { endpoint: "https://c.example.com" })).toBe("https://c.example.com/v1/traces");
-		expect(broadcastDestinationEndpoint("posthog", { endpoint: "https://c.example.com" })).toBe("");
+		expect(broadcastDestinationEndpoint("wandb_weave", { endpoint: "https://c.example.com" })).toBe("");
 	});
 
 	describe("OTLP presets", () => {
@@ -46,14 +48,14 @@ describe("Broadcast destination registry", () => {
 		};
 		const config = { public_key: "pk", secret_key: "sk", project: "a b/c" };
 		beforeEach(() => {
-			OTLP_PRESETS.posthog = preset;
+			OTLP_PRESETS.wandb_weave = preset;
 		});
 		afterEach(() => {
-			delete OTLP_PRESETS.posthog;
+			delete OTLP_PRESETS.wandb_weave;
 		});
 
 		it("builds the endpoint, headers and settings from the vendor's fields", () => {
-			expect(resolveOtlpTarget("posthog", config)).toEqual({
+			expect(resolveOtlpTarget("wandb_weave", config)).toEqual({
 				endpoint: "https://intake.example.com/projects/a%20b%2Fc/v1/traces",
 				headers: { authorization: `Basic ${btoa("pk:sk")}`, "x-project": "a b/c" },
 				protocol: "http/protobuf",
@@ -65,7 +67,7 @@ describe("Broadcast destination registry", () => {
 		});
 
 		it("lets the config override the base URL, protocol, compression and headers", () => {
-			const target = resolveOtlpTarget("posthog", {
+			const target = resolveOtlpTarget("wandb_weave", {
 				...config,
 				base_url: "https://eu.example.com/",
 				otlp_protocol: "http/json",
@@ -81,9 +83,9 @@ describe("Broadcast destination registry", () => {
 		});
 
 		it("names a missing field and rejects header injection", () => {
-			expect(() => resolveOtlpTarget("posthog", { public_key: "pk", secret_key: "sk" })).toThrow("project is required");
-			expect(() => resolveOtlpTarget("posthog", { ...config, project: "a\r\nX-Evil: 1" })).toThrow("must not contain line breaks");
-			expect(() => resolveOtlpTarget("posthog", { ...config, otlp_compression: "zstd" })).toThrow("Compression must be none or gzip");
+			expect(() => resolveOtlpTarget("wandb_weave", { public_key: "pk", secret_key: "sk" })).toThrow("project is required");
+			expect(() => resolveOtlpTarget("wandb_weave", { ...config, project: "a\r\nX-Evil: 1" })).toThrow("must not contain line breaks");
+			expect(() => resolveOtlpTarget("wandb_weave", { ...config, otlp_compression: "zstd" })).toThrow("Compression must be none or gzip");
 		});
 
 		it("sets resource attributes, copies aliased attributes and truncates long values", () => {
@@ -93,7 +95,7 @@ describe("Broadcast destination registry", () => {
 					scopeSpans: [{ spans: [{ name: "chat", attributes: [{ key: "gen_ai.input.messages", value: { stringValue: "hello world" } }] }] }],
 				}],
 			};
-			const applied = applyOtlpTarget(payload, resolveOtlpTarget("posthog", config)) as typeof payload;
+			const applied = applyOtlpTarget(payload, resolveOtlpTarget("wandb_weave", config)) as typeof payload;
 			expect(applied.resourceSpans[0].resource.attributes).toEqual([{ key: "vendor.project", value: { stringValue: "a b/c" } }]);
 			expect(applied.resourceSpans[0].scopeSpans[0].spans[0].attributes).toEqual([
 				{ key: "gen_ai.input.messages", value: { stringValue: "hello" } },
@@ -159,6 +161,56 @@ describe("Broadcast destination registry", () => {
 				protocol: "http/protobuf",
 			});
 			expect(() => resolveOtlpTarget("braintrust", { api_key: "bt" })).toThrow("project_id is required");
+		});
+
+		it("sends Grafana Cloud traces to the stack's OTLP gateway with Basic credentials", () => {
+			expect(resolveOtlpTarget("grafana_cloud", {
+				otlp_endpoint: "https://otlp-gateway-prod-us-east-0.grafana.net/otlp/",
+				instance_id: "123456",
+				api_key: "glc_1",
+			})).toMatchObject({
+				endpoint: "https://otlp-gateway-prod-us-east-0.grafana.net/otlp/v1/traces",
+				headers: { authorization: basic("123456", "glc_1") },
+				protocol: "http/protobuf",
+				compression: "gzip",
+			});
+			expect(() => resolveOtlpTarget("grafana_cloud", { instance_id: "123456", api_key: "glc_1" })).toThrow("otlp_endpoint is required");
+		});
+
+		it("sends New Relic traces to the region's OTLP endpoint", () => {
+			expect(resolveOtlpTarget("new_relic", { license_key: "abcNRAL" })).toMatchObject({
+				endpoint: "https://otlp.nr-data.net/v1/traces",
+				headers: { "api-key": "abcNRAL" },
+				protocol: "http/protobuf",
+				compression: "gzip",
+				maxAttributeLength: 4095,
+			});
+			expect(resolveOtlpTarget("new_relic", { license_key: "abcNRAL", region: "eu" }).endpoint).toBe("https://otlp.eu01.nr-data.net/v1/traces");
+			expect(resolveOtlpTarget("new_relic", { license_key: "abcNRAL", region: "JP" }).endpoint).toBe("https://otlp.jp.nr-data.net/v1/traces");
+			expect(() => resolveOtlpTarget("new_relic", { license_key: "abcNRAL", region: "attacker.example.com" })).toThrow("region must be one of: US, EU, JP");
+		});
+
+		it("sends PostHog traces to the LLM analytics intake with the project token", () => {
+			expect(resolveOtlpTarget("posthog", { api_key: "phc_1" })).toMatchObject({
+				endpoint: "https://us.i.posthog.com/i/v0/ai/otel",
+				headers: { authorization: "Bearer phc_1" },
+				protocol: "http/protobuf",
+			});
+			expect(resolveOtlpTarget("posthog", { api_key: "phc_1", base_url: "https://eu.i.posthog.com/" }).endpoint)
+				.toBe("https://eu.i.posthog.com/i/v0/ai/otel");
+		});
+
+		it("sends Sentry traces to the project's OTLP endpoint with its public key", () => {
+			expect(resolveOtlpTarget("sentry", {
+				otlp_endpoint: "https://o1.ingest.us.sentry.io/api/2/integration/otlp/v1/traces",
+				public_key: "abc123",
+			})).toMatchObject({
+				endpoint: "https://o1.ingest.us.sentry.io/api/2/integration/otlp/v1/traces",
+				headers: { "x-sentry-auth": "sentry sentry_key=abc123" },
+				protocol: "http/protobuf",
+			});
+			expect(() => resolveOtlpTarget("sentry", { otlp_endpoint: "https://o1.ingest.sentry.io/api/2/integration/otlp/v1/traces" }))
+				.toThrow("public_key is required");
 		});
 
 		it("copies the conversation id to Langfuse's session attribute", () => {
