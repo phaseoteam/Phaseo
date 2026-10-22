@@ -29,6 +29,8 @@ type EventArgs = {
     edgeContinent?: string | null;
     edgeAsn?: number | null;
     keyId?: string | null;
+    /** Zero data retention applies, as the caller knows it: a preset's, for a failure before the context exists. */
+    zeroDataRetention?: boolean;
     statusCode?: number | null;
     success: boolean;
     errorCode?: string | null;
@@ -1200,9 +1202,10 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         // A key created with never_store_content, or under zero data retention, keeps
         // the operational detail (routing, attempts, headers) but none of its requests
         // or responses. Both are set on the context when routing loads the policy; a
-        // request rejected before then may still ask for ZDR itself.
+        // request rejected before then may still ask for ZDR itself, or through its preset.
         const keepContentOut = includeDetailedPayloads || !args.success
-            ? requestAsksForZeroDataRetention(args.requestPayload ?? ctx?.rawBody ?? null) ||
+            ? args.zeroDataRetention === true ||
+                requestAsksForZeroDataRetention(args.requestPayload ?? ctx?.rawBody ?? null) ||
                 await keyKeepsContentOutOfTelemetry({
                     workspaceId,
                     keyId: args.keyId ?? ctx?.meta?.apiKeyId ?? null,

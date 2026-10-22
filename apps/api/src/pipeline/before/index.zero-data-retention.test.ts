@@ -68,7 +68,7 @@ vi.mock("./sensitiveInfo", () => ({
 	applySensitiveInfoGuardrails: (args: any) => ({ ok: true, body: args.body, rawBody: args.rawBody, enforcement: args.existingEnforcement ?? null }),
 }));
 
-import { beforeRequest } from "./index";
+import { beforeRequest, type BeforeRequestObservabilitySnapshot } from "./index";
 import { Timer } from "../telemetry/timer";
 
 const provider = {
@@ -207,5 +207,56 @@ describe("beforeRequest zero data retention", () => {
 	it("does not apply otherwise, nor when the request turns it off", async () => {
 		expect((await contextFor({ model, input: "hello" })).zeroDataRetention).toBe(false);
 		expect((await contextFor({ model, input: "hello", provider: { require_zero_data_retention: false } })).zeroDataRetention).toBe(false);
+	});
+
+	describe("for a failure before the context exists", () => {
+		// The preset only allows a provider the model doesn't have, so it fails with
+		// no_providers_after_preset_filter after the preset is loaded.
+		const presetWith = (provider: Record<string, unknown>) => ({
+			id: "preset_zdr", name: "@private", slug: "private", description: null, visibility: "team",
+			config: { allowedProviders: ["anthropic"], provider },
+		});
+
+		async function failureSnapshot(rawBody: Record<string, unknown>, preset: unknown) {
+			useRequest(rawBody, { preset });
+			const snapshots: BeforeRequestObservabilitySnapshot[] = [];
+			const result = await beforeRequest(
+				new Request("https://gateway.local/v1/responses", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify(rawBody),
+				}),
+				"responses",
+				new Timer(),
+				null,
+				{ onObservabilitySnapshot: (snapshot) => snapshots.push(snapshot) },
+			);
+			expect(result.ok).toBe(false);
+			if (result.ok) throw new Error("beforeRequest succeeded");
+			expect(JSON.stringify(await result.response.json())).toContain("no_providers_after_preset_filter");
+			// The error handler receives the last snapshot.
+			return snapshots.at(-1);
+		}
+
+		it("reports the preset's ZDR to the error handler, which the raw payload doesn't show", async () => {
+			const snapshot = await failureSnapshot(
+				{ model, input: "private prompt" },
+				presetWith({ requireZeroDataRetention: true }),
+			);
+			expect(snapshot).toMatchObject({
+				zeroDataRetention: true,
+				requestPayload: { model, input: "private prompt" },
+				workspaceId: "team_zdr",
+				apiKeyId: "key_zdr",
+			});
+		});
+
+		it("doesn't report it for a preset without ZDR, nor when the request turns the preset's off", async () => {
+			expect(await failureSnapshot({ model, input: "hello" }, presetWith({}))).not.toHaveProperty("zeroDataRetention");
+			expect(await failureSnapshot(
+				{ model, input: "hello", provider: { require_zero_data_retention: false } },
+				presetWith({ requireZeroDataRetention: true }),
+			)).not.toHaveProperty("zeroDataRetention");
+		});
 	});
 });

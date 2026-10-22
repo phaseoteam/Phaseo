@@ -678,6 +678,7 @@ export async function handleError({
         model?: string | null;
         workspaceId?: string | null;
         apiKeyId?: string | null;
+        zeroDataRetention?: boolean;
     },
 }): Promise<Response> {
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
@@ -1001,12 +1002,14 @@ export async function handleError({
     // Admission rejections happen before any provider is called.
     const providerForAudit = isFreeModelLimit || isPolicyRejection ? null : providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
     const loggedErrorCode = `${isFreeModelLimit ? "gateway" : attribution}:${errCode}`;
+    // Without a context, a preset's ZDR comes from the early snapshot; the I/O log and
+    // telemetry also read the key's policy and the request payload.
+    const zeroDataRetention = ctx?.zeroDataRetention === true || requestObservability?.zeroDataRetention === true;
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
         workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? requestObservability?.workspaceId ?? null,
-        // Without a context, the I/O log reads ZDR from the key's policy and the request payload.
-        zeroDataRetention: ctx?.zeroDataRetention === true,
+        zeroDataRetention,
         endpoint,
         model: modelForObservability,
         requestedModel,
@@ -1136,6 +1139,7 @@ export async function handleError({
         result: undefined,
         requestId: auditArgs.requestId,
         workspaceId: auditArgs.workspaceId ?? "unknown",
+        zeroDataRetention,
         endpoint,
         model: modelForObservability,
         requestedModel,

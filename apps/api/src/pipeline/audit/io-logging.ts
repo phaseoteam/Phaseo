@@ -178,6 +178,12 @@ export type GatewayIoLoggingPolicy = WorkspaceIoLoggingSettings & {
 export async function resolveGatewayIoLoggingPolicy(input: {
     workspaceId: string;
     keyId?: string | null;
+    /**
+     * Zero data retention applies to this request itself (see requestZeroDataRetention).
+     * Capture is then off, like for workspace or guardrail ZDR, so callers store no content
+     * anywhere: no I/O log and no request detail row.
+     */
+    zeroDataRetention?: boolean;
 }): Promise<GatewayIoLoggingPolicy> {
     const bindings = getBindings();
     // Settings are cached per isolate; the feature gate is an external HTTP
@@ -186,7 +192,8 @@ export async function resolveGatewayIoLoggingPolicy(input: {
     const keyPolicy = workspaceSettings.enabled
         ? await keyDataPolicy(input)
         : { zeroDataRetention: false, neverStoreContent: false };
-    const zeroDataRetention = workspaceSettings.zeroDataRetention || keyPolicy.zeroDataRetention;
+    const zeroDataRetention =
+        workspaceSettings.zeroDataRetention || keyPolicy.zeroDataRetention || input.zeroDataRetention === true;
     const neverStoreContent = keyPolicy.neverStoreContent;
     const settings = { ...workspaceSettings, zeroDataRetention };
     const featureEnabled = settings.enabled && !zeroDataRetention && !neverStoreContent
@@ -287,6 +294,21 @@ export function requestRequiresZeroDataRetention(...sources: unknown[]): boolean
     });
 }
 
+/**
+ * Whether zero data retention applies to the request beyond what the workspace and key
+ * policy say: the context's flag (the request's own or its preset's), the logged request
+ * payload asking for it, or the routing diagnostics it recorded.
+ */
+export function requestZeroDataRetention(
+    input: Pick<GatewayIoLogInput, "zeroDataRetention" | "requestPayload" | "metadata" | "gatewayResponse" | "providerResponse">,
+): boolean {
+    return (
+        input.zeroDataRetention === true ||
+        requestAsksForZeroDataRetention(input.requestPayload) ||
+        requestRequiresZeroDataRetention(input.metadata, input.gatewayResponse, input.providerResponse)
+    );
+}
+
 async function persistGatewayIoLogMetadata(
     input: GatewayIoLogInput,
     columns: GatewayIoLogColumns,
@@ -337,11 +359,7 @@ export async function persistGatewayIoLog(
     if (!policy.captureEnabled) {
         return finalizeGatewayIoLog(input, { io_log_status: "not_enabled" });
     }
-    if (
-        input.zeroDataRetention === true ||
-        requestAsksForZeroDataRetention(input.requestPayload) ||
-        requestRequiresZeroDataRetention(input.metadata, input.gatewayResponse, input.providerResponse)
-    ) {
+    if (requestZeroDataRetention(input)) {
         return finalizeGatewayIoLog(input, {
             io_log_status: "not_enabled",
             io_log_error: "Skipped: zero data retention is required for this request",

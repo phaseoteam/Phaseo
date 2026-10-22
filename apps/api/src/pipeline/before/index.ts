@@ -255,6 +255,11 @@ export type BeforeRequestObservabilitySnapshot = {
     /** The authenticated key, so failures before the context exists still apply its data policy. */
     workspaceId?: string | null;
     apiKeyId?: string | null;
+    /**
+     * The request's preset requires zero data retention, which the raw payload doesn't show,
+     * so failures before the context exists still keep the request's content out.
+     */
+    zeroDataRetention?: boolean;
 };
 
 export async function beforeRequest(
@@ -288,8 +293,12 @@ export async function beforeRequest(
     const a = await timer.span("guardAuth", () => guardAuth(req));
     if (!a.ok) return a as { ok: false; response: Response };
     const { requestId, workspaceId, apiKeyId, apiKeyRef, apiKeyKid, userId, internal } = a.value;
-    const reportObservability = (snapshot: Omit<BeforeRequestObservabilitySnapshot, "workspaceId" | "apiKeyId">) =>
-        options?.onObservabilitySnapshot?.({ ...snapshot, workspaceId, apiKeyId });
+    // Each report adds to the last, so a later model never drops an earlier ZDR flag.
+    let observabilitySnapshot: BeforeRequestObservabilitySnapshot = { requestPayload: null, requestedModel: null, workspaceId, apiKeyId };
+    const reportObservability = (snapshot: Partial<Omit<BeforeRequestObservabilitySnapshot, "workspaceId" | "apiKeyId">>) => {
+        observabilitySnapshot = { ...observabilitySnapshot, ...snapshot };
+        options?.onObservabilitySnapshot?.(observabilitySnapshot);
+    };
     reportObservability({ requestPayload: null, requestedModel: null });
 	const bindings = getBindings();
 	const perfGatewayAccess = resolvePerfGatewayAccess({
@@ -822,6 +831,16 @@ export async function beforeRequest(
         reportObservability({ requestPayload: rawBody, requestedModel, model: modelSubstitution.to });
     }
     let { context, providers, resolvedModel, candidateDiagnostics } = c.value;
+    // A preset's require_zero_data_retention is only in the merged body, so report it now:
+    // a failure from here until the context exists (a preset filter leaving no provider,
+    // say) must keep the request's content out of telemetry and the I/O log too. The merge
+    // decides, as for ctx.zeroDataRetention, since the request's own setting wins.
+    if (context.preset?.config?.provider?.requireZeroDataRetention === true) {
+        const { mergePresetWithBody } = await import("./presetMerge");
+        if (getEffectiveRoutingHints(mergePresetWithBody(body, context.preset, endpoint)).requireZeroDataRetention === true) {
+            reportObservability({ zeroDataRetention: true });
+        }
+    }
     const contextTelemetry = context.contextTelemetry ?? null;
     const contextTimingSpans = {
         context_total: contextTelemetry?.totalMs,
