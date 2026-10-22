@@ -86,6 +86,8 @@ try {
   assert.equal(num(row.captured_nanos), usd(6));
   assert.equal(num(row.uncollected_nanos), usd(1));
   assert.equal(row.billing_anomaly, 'overdraft_cap_reached');
+  // The request row reports the full priced cost, not just what was collected.
+  assert.equal(num((await one('select cost_nanos from public.gateway_requests where realtime_session_id = $1', [id])).cost_nanos), usd(7));
 
   // 3. A wallet already in debt still captures its own hold, never more than the cap allows.
   id = await seed({ balance: usd(-0.8) + usd(0.5), hold: usd(0.5) });
