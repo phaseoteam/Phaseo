@@ -620,6 +620,20 @@ function getProviderAttemptsFromArgs(args: EventArgs): Array<Record<string, unkn
     return getAttemptErrorsFromArgs(args);
 }
 
+/**
+ * Attempts without the provider's raw error body (`upstream_payload_preview`, a truncated
+ * copy that can echo the request or output), for requests whose content stays out of
+ * telemetry. Status codes, provider ids, error codes and messages stay, as on the event.
+ */
+function withoutAttemptPayloads(attempts: unknown): unknown {
+    if (!Array.isArray(attempts)) return attempts;
+    return attempts.map((attempt) => {
+        if (!attempt || typeof attempt !== "object" || !("upstream_payload_preview" in attempt)) return attempt;
+        const { upstream_payload_preview: _payload, ...kept } = attempt as Record<string, unknown>;
+        return kept;
+    });
+}
+
 function extractAttemptSignals(args: EventArgs): AttemptSignals {
     const attempts = getProviderAttemptsFromArgs(args);
     const providerSet = new Set<string>();
@@ -1196,6 +1210,9 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             })
             : false;
         const includeContent = includeDetailedPayloads && !keepContentOut;
+        // Attempts keep their operational detail but, like the event, not the raw upstream body.
+        const attemptsForTelemetry = (attempts: unknown) =>
+            keepContentOut ? withoutAttemptPayloads(attempts) : attempts;
 
         const sanitizedGatewayRequest = includeContent
             ? sanitizeForAxiom(args.requestPayload ?? ctx?.rawBody ?? ctx?.body ?? null)
@@ -1225,7 +1242,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             ? sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null)
             : null;
         const sanitizedAttemptErrors = includeDetailedPayloads
-            ? sanitizeForAxiom((ctx as any)?.attemptErrors ?? null)
+            ? sanitizeForAxiom(attemptsForTelemetry((ctx as any)?.attemptErrors ?? null))
             : null;
         const sanitizedProviderEnablement = includeDetailedPayloads
             ? sanitizeForAxiom((ctx as any)?.providerEnablementDiagnostics ?? null)
@@ -1249,7 +1266,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         })();
         const modelResolved = args.model ?? ctx?.model ?? modelRequested ?? null;
         const sanitizedProviderAttempts = includeDetailedPayloads
-            ? sanitizeForAxiom(getProviderAttemptsFromArgs(args))
+            ? sanitizeForAxiom(attemptsForTelemetry(getProviderAttemptsFromArgs(args)))
             : null;
         const providerFailure = extractProviderFailureSummary(args);
         const failureSample = extractFailureSampleSummary(args);

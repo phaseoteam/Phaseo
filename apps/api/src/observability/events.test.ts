@@ -1182,4 +1182,84 @@ describe("emitGatewayRequestEvent", () => {
 		expect(control).toMatchObject({ request_id: "req_no_zdr_before" });
 		expect(control.request_payload_redacted_json).toBeDefined();
 	});
+
+	describe("provider attempts of a request whose content stays out", () => {
+		// As execute/index.ts records a non-2xx provider response: a truncated copy of the
+		// raw body, which can echo the prompt, next to the parsed status and error code.
+		const failedAttempt = {
+			attempt_number: 1,
+			provider: "openai",
+			endpoint: "responses",
+			model: "openai/gpt-5-mini",
+			type: "upstream_non_2xx",
+			status: 400,
+			status_text: "Bad Request",
+			upstream_error_code: "invalid_prompt",
+			upstream_error_type: "invalid_request_error",
+			upstream_error_message: "Invalid prompt",
+			upstream_payload_preview: "{\"error\":{\"message\":\"Invalid prompt\",\"input\":\"private echoed prompt\"}}",
+		};
+		const policies = {
+			"zero data retention": { neverStoreContent: false, zeroDataRetention: true },
+			"a key that never stores content": { neverStoreContent: true, zeroDataRetention: false },
+			"neither": { neverStoreContent: false, zeroDataRetention: false },
+		};
+		const emitFailure = (policy: keyof typeof policies, attemptsOn: "context" | "error details") => {
+			const ctx = {
+				endpoint: "responses",
+				capability: "responses",
+				requestId: "req_attempt_payload",
+				workspaceId: "ws_attempt_payload",
+				...policies[policy],
+				meta: { apiKeyId: "key_attempt_payload" },
+				model: "openai/gpt-5-mini",
+				routingDiagnostics: { selectedProvider: "openai" },
+				...(attemptsOn === "context"
+					? { attemptErrors: [failedAttempt], providerAttempts: [{ ...failedAttempt, outcome: "upstream_non_2xx", duration_ms: 12 }] }
+					: {}),
+			} as unknown as PipelineContext;
+			return emitGatewayRequestEvent({
+				ctx,
+				statusCode: 502,
+				success: false,
+				errorCode: "upstream_error",
+				errorMessage: "Upstream provider failed",
+				// As pipeline/after/guards.ts reports a single provider's failure.
+				...(attemptsOn === "error details" ? { errorDetails: { error: "upstream_error", failure_sample: [failedAttempt] } } : {}),
+			});
+		};
+
+		it.each([
+			["zero data retention", "context"],
+			["zero data retention", "error details"],
+			["a key that never stores content", "context"],
+			["a key that never stores content", "error details"],
+		] as const)("drops the raw provider body from the attempts under %s (attempts on the %s)", async (policy, attemptsOn) => {
+			await emitFailure(policy, attemptsOn);
+			const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+			expect(event).toMatchObject({ observability_detail_level: "full", status_code: 502 });
+			const providerAttempts = JSON.parse(String(event.provider_attempts_json));
+			expect(providerAttempts).toEqual([expect.objectContaining({
+				provider: "openai",
+				status: 400,
+				upstream_error_code: "invalid_prompt",
+				upstream_error_type: "invalid_request_error",
+				upstream_error_message: "Invalid prompt",
+			})]);
+			expect(providerAttempts[0]).not.toHaveProperty("upstream_payload_preview");
+			if (attemptsOn === "context") {
+				const attemptErrors = JSON.parse(String(event.attempt_errors_json));
+				expect(attemptErrors).toEqual([expect.objectContaining({ provider: "openai", status: 400, upstream_error_code: "invalid_prompt" })]);
+				expect(attemptErrors[0]).not.toHaveProperty("upstream_payload_preview");
+			}
+			expect(JSON.stringify(event)).not.toContain("private");
+		});
+
+		it("keeps the raw provider body in the attempts otherwise", async () => {
+			await emitFailure("neither", "context");
+			const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+			expect(JSON.parse(String(event.provider_attempts_json))[0].upstream_payload_preview).toContain("private echoed prompt");
+			expect(JSON.parse(String(event.attempt_errors_json))[0].upstream_payload_preview).toContain("private echoed prompt");
+		});
+	});
 });
