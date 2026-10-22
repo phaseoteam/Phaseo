@@ -254,9 +254,15 @@ describe("x-ai text executor", () => {
 		const result = await executor(buildArgs({ stream: true }));
 		expect(result.kind).toBe("stream");
 		if (result.kind !== "stream") return;
-		await new Response(result.stream).text();
+		const clientFrames = await new Response(result.stream).text();
 		mock.restore();
 
+		// The client sees the same output count the request is billed for.
+		const completed = clientFrames.split("\n\n").map((block) => block.split("\n").find((line) => line.startsWith("data: "))?.slice(6))
+			.filter((data): data is string => Boolean(data))
+			.map((data) => JSON.parse(data))
+			.find((payload) => payload.type === "response.completed");
+		expect(completed?.response?.usage?.output_tokens).toBe(119);
 		expect(result.usageFinalizerAuthoritative).toBe(true);
 		const finalized = await result.usageFinalizer();
 		expect(finalized?.usage).toMatchObject({

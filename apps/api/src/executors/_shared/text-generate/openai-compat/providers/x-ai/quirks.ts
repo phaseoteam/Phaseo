@@ -125,4 +125,7 @@ export const xAiQuirks: ProviderQuirks = {
 			usage.requests = 1;
 		}
 	},
+
+	// Streamed clients see the same output count as buffered ones and as the bill.
+	normalizeStreamedResponse: ({ response }) => foldXAiReasoningIntoOutput(response?.usage),
 };

@@ -13,19 +13,24 @@ export function metaWebSearchCount(response: any): number {
 	).length;
 }
 
+/** Record the response's searches on its usage as server_tool_use, unless usage already counts them. */
+function addMetaWebSearches(response: any): void {
+	const usage = response?.usage;
+	if (!usage || typeof usage !== "object") return;
+	const searches = metaWebSearchCount(response);
+	if (searches === 0) return;
+	const serverToolUse = usage.server_tool_use && typeof usage.server_tool_use === "object" ? usage.server_tool_use : {};
+	if (typeof serverToolUse.web_search_requests === "number") return;
+	usage.server_tool_use = { ...serverToolUse, web_search_requests: searches };
+}
+
 export const metaQuirks: ProviderQuirks = {
 	transformRequest: ({ request }) => {
 		if (request.service_tier === "standard") {
 			request.service_tier = "default";
 		}
 	},
-	normalizeResponse: ({ response }) => {
-		const usage = response?.usage;
-		if (!usage || typeof usage !== "object") return;
-		const searches = metaWebSearchCount(response);
-		if (searches === 0) return;
-		const serverToolUse = usage.server_tool_use && typeof usage.server_tool_use === "object" ? usage.server_tool_use : {};
-		if (typeof serverToolUse.web_search_requests === "number") return;
-		usage.server_tool_use = { ...serverToolUse, web_search_requests: searches };
-	},
+	normalizeResponse: ({ response }) => addMetaWebSearches(response),
+	// Streamed /v1/responses and /v1/messages clients get the upstream terminal event as is.
+	normalizeStreamedResponse: ({ response }) => addMetaWebSearches(response),
 };

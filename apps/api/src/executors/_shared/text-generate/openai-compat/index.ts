@@ -38,6 +38,7 @@ import {
 	transformChatStream,
 	transformChatStreamToResponses,
 	transformResponsesStreamToChat,
+	normalizeTerminalResponsesFrames,
 } from "./stream-transforms";
 import {
 	adaptRequestFromUpstreamError,
@@ -518,17 +519,22 @@ export function resolveStreamForProtocol(
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	const state = createStreamAdapterState(args);
 	const canonicalResponses = route === "responses" && options?.canonicalResponsesEvents === true;
+	// A native Responses upstream reaches clients unparsed; provider quirks fix its terminal
+	// response (usage) so streamed clients and billing match a buffered response.
+	const body = route === "responses" && !canonicalResponses
+		? normalizeTerminalResponsesFrames(res.body, args.providerId)
+		: res.body;
 
 	if (protocol === "openai.chat.completions") {
 		if (route === "responses") {
-			return transformResponsesStreamToChat(res.body, args, state);
+			return transformResponsesStreamToChat(body, args, state);
 		}
-		return transformChatStream(res.body, args, state);
+		return transformChatStream(body, args, state);
 	}
 
 	if (protocol === "openai.responses") {
-		if (canonicalResponses) return res.body;
-		return transformChatStreamToResponses(res.body, args, state);
+		if (canonicalResponses) return body;
+		return transformChatStreamToResponses(body, args, state);
 	}
 
 	if (protocol === "anthropic.messages") {
@@ -536,13 +542,13 @@ export function resolveStreamForProtocol(
 		// This keeps /messages streaming compatible whether upstream emits responses events
 		// or chat-completion chunks on a responses route.
 		const responsesStream = canonicalResponses
-			? res.body
-			: transformChatStreamToResponses(res.body, args, state);
+			? body
+			: transformChatStreamToResponses(body, args, state);
 		return transformResponsesStreamToAnthropic(responsesStream, args);
 	}
 
 	// Default: passthrough (responses protocol or unknown)
-	return res.body;
+	return body;
 }
 
 function transformResponsesStreamToAnthropic(

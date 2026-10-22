@@ -182,6 +182,51 @@ export function transformChatStream(
 	});
 }
 
+const TERMINAL_RESPONSES_EVENTS = new Set(["response.completed", "response.incomplete"]);
+
+/**
+ * Apply a provider's normalizeStreamedResponse quirk to the response carried by a native
+ * Responses stream's terminal event. Every other frame is forwarded byte for byte.
+ */
+export function normalizeTerminalResponsesFrames(
+	stream: ReadableStream<Uint8Array>,
+	providerId: string,
+): ReadableStream<Uint8Array> {
+	const normalize = getProviderQuirks(providerId).normalizeStreamedResponse;
+	if (!normalize) return stream;
+	const parser = new SseParser();
+	const encoder = new TextEncoder();
+	const forward = (frame: { event: string | null; data: string; raw: string }, controller: TransformStreamDefaultController<Uint8Array>) => {
+		let payload: any;
+		if (frame.data && frame.data !== "[DONE]") {
+			try {
+				payload = JSON.parse(frame.data);
+			} catch {
+				payload = undefined;
+			}
+		}
+		const type = frame.event ?? payload?.type;
+		if (payload?.response && typeof payload.response === "object" && TERMINAL_RESPONSES_EVENTS.has(type)) {
+			try {
+				normalize({ response: payload.response });
+				controller.enqueue(encoder.encode(`${frame.event ? `event: ${frame.event}\n` : ""}data: ${JSON.stringify(payload)}\n\n`));
+				return;
+			} catch {
+				// Forward the frame unchanged rather than break the stream.
+			}
+		}
+		controller.enqueue(encoder.encode(`${frame.raw}\n\n`));
+	};
+	return stream.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
+		transform(chunk, controller) {
+			for (const frame of parser.pushBytes(chunk)) forward(frame, controller);
+		},
+		flush(controller) {
+			for (const frame of parser.flush()) forward(frame, controller);
+		},
+	}));
+}
+
 export function transformResponsesStreamToChat(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,

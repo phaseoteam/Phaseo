@@ -389,3 +389,40 @@ describe("Venice web search billing", () => {
 		expect(skipped.usage?._ext?.serverToolUse).toBeUndefined();
 	});
 });
+
+describe("Meta web search billing on native Responses streams", () => {
+	// Meta reports searches only as web_search_call output items (https://dev.meta.ai/docs/search-grounding).
+	function metaUpstream(): Frame[] {
+		const response = {
+			id: "resp_meta",
+			object: "response",
+			status: "completed",
+			output: [
+				{ id: "ws_1", type: "web_search_call", status: "completed" },
+				{ id: "ws_2", type: "web_search_call", status: "completed" },
+				{ type: "message", role: "assistant", content: [{ type: "output_text", text: "ok" }] },
+			],
+			usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 },
+		};
+		return [
+			{ event: "response.created", data: { type: "response.created", response: { ...response, status: "in_progress", output: [], usage: null } } },
+			{ event: "response.output_text.delta", data: { type: "response.output_text.delta", output_index: 2, content_index: 0, delta: "ok" } },
+			{ event: "response.completed", data: { type: "response.completed", response } },
+		];
+	}
+
+	it.each(["openai.responses", "anthropic.messages", "openai.chat.completions"] as const)(
+		"carries the completed searches into the streamed %s usage",
+		async (protocol) => {
+			const frames = parseFrames(await clientStream(metaUpstream(), protocol, "responses", "meta"));
+			const usage = frames.map((frame) => frame.data?.usage ?? frame.data?.response?.usage ?? frame.data?.message?.usage).filter(Boolean).at(-1);
+			expect(usage?.server_tool_use?.web_search_requests).toBe(2);
+		},
+	);
+
+	it("forwards a provider's other Responses frames byte for byte", async () => {
+		const upstream = metaUpstream().slice(0, 2);
+		const forwarded = await clientStream(upstream, "openai.responses", "responses", "meta");
+		expect(forwarded).toBe(await sse(upstream).text());
+	});
+});
