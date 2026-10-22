@@ -11,7 +11,7 @@ Anthropic SDK のワークフローを維持したまま、リクエストを Ph
 
 | 設定 | 変更前 | 変更後 |
 | --- | --- | --- |
-| ベースURL | Anthropic の既定値 | `https://api.phaseo.app/v1` |
+| ベースURL | Anthropic の既定値 | `https://api.phaseo.app` |
 | APIキー | Anthropic のキー | `PHASEO_API_KEY` |
 | モデル | Anthropic のモデル名 | `GET /v1/models` が返す Phaseo モデルID |
 | Messages 呼び出し | 既存の SDK 呼び出し | 通常は変更なし |
@@ -25,15 +25,16 @@ Anthropic SDK のワークフローを維持したまま、リクエストを Ph
 
 <Step title="Anthropic クライアントを更新する">
 
-SDK の接続先を Phaseo のベースURLに変更し、Phaseo のキーを設定します。
+SDK の接続先を Phaseo のルートホスト `https://api.phaseo.app` に変更し、Phaseo のキーを `authToken`（Python では `auth_token`）に設定します。SDK は `/v1/messages` を自動で付加し、キーを `Authorization: Bearer` として送信します。Phaseo を呼び出すようになった環境からは `ANTHROPIC_API_KEY` を削除してください。古いバージョンの SDK が Anthropic のキーも送信するのを防げます。
 
 <CodeGroup>
 ```typescript TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app",
 });
 
 const response = await client.messages.create({
@@ -48,8 +49,8 @@ import os
 import anthropic
 
 client = anthropic.Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    auth_token=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
 )
 
 response = client.messages.create(
@@ -89,7 +90,7 @@ curl https://api.phaseo.app/v1/messages \
 ## 移行チェックリスト
 
 - すべてのデプロイ環境で Phaseo キーを設定した。
-- Anthropic クライアントが `https://api.phaseo.app/v1` を使用している。
+- Anthropic クライアントが `https://api.phaseo.app` を使用している。
 - 本番で使うすべてのモデルIDを `GET /v1/models` で確認した。
 - ステージング環境でストリーミングとツール利用のフローが動作する。
 - Anthropic 固有のベータヘッダーとパラメーターを確認した。

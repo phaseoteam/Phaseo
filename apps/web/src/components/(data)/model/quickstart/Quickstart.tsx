@@ -12,7 +12,7 @@ import {
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BASE_URL } from "./config";
+import { ANTHROPIC_SDK_BASE_URL, BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 import { resolveGatewayPath } from "./endpoint-paths";
@@ -1778,8 +1778,8 @@ console.log(response);`
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ.get("PHASEO_API_KEY"),
-    base_url="${BASE_URL}",
+    auth_token=os.environ.get("PHASEO_API_KEY"),
+    base_url="${ANTHROPIC_SDK_BASE_URL}",
 )
 
 payload = ${payloadJsonPython}
@@ -1793,8 +1793,9 @@ print(response)`
 			? `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "${BASE_URL}",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "${ANTHROPIC_SDK_BASE_URL}",
 });
 
 const response = await client.messages.create({
