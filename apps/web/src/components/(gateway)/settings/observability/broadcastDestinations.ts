@@ -14,10 +14,10 @@ export type BroadcastDestinationType = {
 // Every id accepted by workspace_broadcast_destinations.destination_id. The sync
 // script checks this list against that table's CHECK constraint.
 export const BROADCAST_DESTINATION_TYPES = [
-	{ id: "arize", delivery: null },
+	{ id: "arize", delivery: "otlp" },
 	{ id: "braintrust", delivery: "otlp" },
 	{ id: "clickhouse", delivery: null },
-	{ id: "comet_opik", delivery: null },
+	{ id: "comet_opik", delivery: "otlp" },
 	{ id: "datadog", delivery: "otlp" },
 	{ id: "grafana_cloud", delivery: "otlp" },
 	{ id: "langfuse", delivery: "otlp" },
@@ -28,7 +28,7 @@ export const BROADCAST_DESTINATION_TYPES = [
 	{ id: "s3", delivery: null },
 	{ id: "sentry", delivery: "otlp" },
 	{ id: "snowflake", delivery: null },
-	{ id: "wandb_weave", delivery: null },
+	{ id: "wandb_weave", delivery: "otlp" },
 	{ id: "webhook", delivery: "webhook" },
 ] as const satisfies readonly BroadcastDestinationType[];
 
@@ -119,11 +119,30 @@ export type OtlpPreset = {
 // Destination types sent over OTLP with a vendor's settings. Types without an
 // entry here, such as otel_collector, take the endpoint and headers as entered.
 export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> = {
+	// https://arize.com/docs/ax/concepts/otel-openinference/exporter
+	// gen_ai spans are converted to OpenInference on ingest. The HTTP intake
+	// does not decompress bodies, so exports are sent uncompressed. EU spaces
+	// use https://otlp.eu-west-1a.arize.com.
+	arize: {
+		endpoint: "{base_url}/v1/traces",
+		defaults: { base_url: "https://otlp.arize.com" },
+		headers: { space_id: "{space_id}", api_key: "{api_key}" },
+		protocol: "http/protobuf",
+		resourceAttributes: { "openinference.project.name": "{project_name}" },
+	},
 	// https://www.braintrust.dev/docs/integrations/sdk-integrations/opentelemetry
 	braintrust: {
 		endpoint: "{base_url}/otel/v1/traces",
 		defaults: { base_url: "https://api.braintrust.dev" },
 		headers: { Authorization: "Bearer {api_key}", "x-bt-parent": "project_id:{project_id}" },
+		protocol: "http/protobuf",
+	},
+	// https://www.comet.com/docs/opik/integrations/opentelemetry
+	// Self-hosted Opik takes its URL, ending before /api, as the base URL.
+	comet_opik: {
+		endpoint: "{base_url}/api/v1/private/otel/v1/traces",
+		defaults: { base_url: "https://www.comet.com/opik" },
+		headers: { Authorization: "{api_key}", "Comet-Workspace": "{workspace}", projectName: "{project_name}" },
 		protocol: "http/protobuf",
 	},
 	// LLM Observability over OTLP:
@@ -198,6 +217,18 @@ export const OTLP_PRESETS: Partial<Record<BroadcastDestinationId, OtlpPreset>> =
 		endpoint: "{otlp_endpoint}",
 		headers: { "x-sentry-auth": "sentry sentry_key={public_key}" },
 		protocol: "http/protobuf",
+	},
+	// https://docs.coreweave.com/products/wandb/weave/guides/tracking/trace-agents-otel
+	// The agents endpoint renders gen_ai spans, groups them by
+	// gen_ai.conversation.id and takes gzip. Spans without an entity and project
+	// are rejected.
+	wandb_weave: {
+		endpoint: "{base_url}/agents/otel/v1/traces",
+		defaults: { base_url: "https://trace.wandb.ai" },
+		headers: { "wandb-api-key": "{api_key}" },
+		protocol: "http/protobuf",
+		compression: "gzip",
+		resourceAttributes: { "wandb.entity": "{entity}", "wandb.project": "{project}" },
 	},
 };
 

@@ -3869,7 +3869,9 @@ type ObservabilityDestinationResponse struct {
 type ObservabilityDestinationType string
 
 const (
+	ObservabilityDestinationTypeArize ObservabilityDestinationType = "arize"
 	ObservabilityDestinationTypeBraintrust ObservabilityDestinationType = "braintrust"
+	ObservabilityDestinationTypeCometOpik ObservabilityDestinationType = "comet_opik"
 	ObservabilityDestinationTypeDatadog ObservabilityDestinationType = "datadog"
 	ObservabilityDestinationTypeGrafanaCloud ObservabilityDestinationType = "grafana_cloud"
 	ObservabilityDestinationTypeLangfuse ObservabilityDestinationType = "langfuse"
@@ -3878,6 +3880,7 @@ const (
 	ObservabilityDestinationTypeOtelCollector ObservabilityDestinationType = "otel_collector"
 	ObservabilityDestinationTypePosthog ObservabilityDestinationType = "posthog"
 	ObservabilityDestinationTypeSentry ObservabilityDestinationType = "sentry"
+	ObservabilityDestinationTypeWandbWeave ObservabilityDestinationType = "wandb_weave"
 	ObservabilityDestinationTypeWebhook ObservabilityDestinationType = "webhook"
 )
 

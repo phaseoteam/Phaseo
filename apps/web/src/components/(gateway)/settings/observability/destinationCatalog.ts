@@ -31,16 +31,16 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "arize",
 		label: "Arize AI",
-		description: "Send traces to Arize with API + space credentials.",
+		description: "Send GenAI traces to an Arize AX project over OpenTelemetry.",
 		logoId: "observability-arize",
 		fields: [
-			{ key: "api_key", label: "API Key", placeholder: "arize_...", type: "password" },
-			{ key: "space_key", label: "Space Key", placeholder: "space-key-123" },
-			{ key: "model_id", label: "Model ID", placeholder: "gateway-prod" },
+			{ key: "api_key", label: "API Key", placeholder: "ak-...", type: "password" },
+			{ key: "space_id", label: "Space ID", placeholder: "U3BhY2U6..." },
+			{ key: "project_name", label: "Project Name", placeholder: "phaseo-gateway" },
 			{
 				key: "base_url",
-				label: "Base URL (Optional)",
-				placeholder: "https://otlp.arize.com/v1",
+				label: "OTLP Host (Optional)",
+				placeholder: "https://otlp.arize.com, or https://otlp.eu-west-1a.arize.com for EU spaces",
 				required: false,
 			},
 		],
@@ -77,12 +77,18 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "comet_opik",
 		label: "Comet Opik",
-		description: "Send observability payloads to Comet Opik.",
+		description: "Send GenAI traces to a Comet Opik project over OpenTelemetry.",
 		logoId: "observability-opik",
 		fields: [
-			{ key: "api_key", label: "API Key", placeholder: "opik_...", type: "password" },
+			{ key: "api_key", label: "API Key", placeholder: "Your Opik API key", type: "password" },
 			{ key: "workspace", label: "Workspace", placeholder: "my-workspace" },
-			{ key: "project_name", label: "Project Name", placeholder: "gateway-prod" },
+			{ key: "project_name", label: "Project Name", placeholder: "phaseo-gateway" },
+			{
+				key: "base_url",
+				label: "Base URL (Optional)",
+				placeholder: "https://www.comet.com/opik",
+				required: false,
+			},
 		],
 	},
 	{
@@ -275,7 +281,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "wandb_weave",
 		label: "W&B Weave",
-		description: "Send traces to Weights & Biases Weave.",
+		description: "Send GenAI traces to a W&B Weave project's Agents view.",
 		logoId: "wandb-weave",
 		fields: [
 			{ key: "api_key", label: "API Key", placeholder: "wandb_...", type: "password" },
@@ -284,7 +290,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 			{
 				key: "base_url",
 				label: "Base URL (Optional)",
-				placeholder: "https://api.wandb.ai",
+				placeholder: "https://trace.wandb.ai",
 				required: false,
 			},
 		],

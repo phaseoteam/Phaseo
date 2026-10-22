@@ -47,7 +47,9 @@ export interface ObservabilityDestinationResponse {
     }[];
     sampling_rate: number;
     type:
+      | "arize"
       | "braintrust"
+      | "comet_opik"
       | "datadog"
       | "grafana_cloud"
       | "langfuse"
@@ -56,6 +58,7 @@ export interface ObservabilityDestinationResponse {
       | "otel_collector"
       | "posthog"
       | "sentry"
+      | "wandb_weave"
       | "webhook";
     updated_at?: string | null;
     workspace_id: string;

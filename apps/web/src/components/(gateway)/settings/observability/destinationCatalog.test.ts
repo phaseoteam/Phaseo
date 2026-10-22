@@ -4,9 +4,9 @@ import { resolveLogo } from "@/lib/logos";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-describe("coming-soon observability destinations", () => {
+describe("observability destination logos", () => {
 	test("Weave retains its product branding separately from Forge inference", () => {
-		const destination = COMING_SOON_DESTINATIONS.find((item) => item.label === "W&B Weave");
+		const destination = AVAILABLE_DESTINATIONS.find((item) => item.label === "W&B Weave");
 		expect(destination).toMatchObject({ label: "W&B Weave", logoId: "wandb-weave" });
 		for (const theme of ["light", "dark"] as const) {
 			expect(resolveLogo(destination!.logoId!, { theme })).toMatchObject({
@@ -18,7 +18,7 @@ describe("coming-soon observability destinations", () => {
 	});
 
 	test("every assigned logo resolves to a local SVG asset", () => {
-		for (const destination of COMING_SOON_DESTINATIONS) {
+		for (const destination of [...AVAILABLE_DESTINATIONS, ...COMING_SOON_DESTINATIONS]) {
 			if (!destination.logoId) continue;
 
 			const logo = resolveLogo(destination.logoId);

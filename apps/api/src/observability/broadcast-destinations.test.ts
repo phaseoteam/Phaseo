@@ -14,7 +14,8 @@ import {
 describe("Broadcast destination registry", () => {
 	it("lists only destinations with an exporter as available", () => {
 		expect(AVAILABLE_BROADCAST_DESTINATION_IDS).toEqual([
-			"braintrust", "datadog", "grafana_cloud", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "sentry", "webhook",
+			"arize", "braintrust", "comet_opik", "datadog", "grafana_cloud", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog",
+			"sentry", "wandb_weave", "webhook",
 		]);
 	});
 
@@ -31,7 +32,7 @@ describe("Broadcast destination registry", () => {
 		expect(broadcastDestinationEndpoint("webhook", { url: " https://hooks.example.com ", endpoint: "https://x.example.com" }))
 			.toBe("https://hooks.example.com");
 		expect(broadcastDestinationEndpoint("otel_collector", { endpoint: "https://c.example.com" })).toBe("https://c.example.com/v1/traces");
-		expect(broadcastDestinationEndpoint("wandb_weave", { endpoint: "https://c.example.com" })).toBe("");
+		expect(broadcastDestinationEndpoint("s3", { endpoint: "https://c.example.com" })).toBe("");
 	});
 
 	describe("OTLP presets", () => {
@@ -48,14 +49,14 @@ describe("Broadcast destination registry", () => {
 		};
 		const config = { public_key: "pk", secret_key: "sk", project: "a b/c" };
 		beforeEach(() => {
-			OTLP_PRESETS.wandb_weave = preset;
+			OTLP_PRESETS.s3 = preset;
 		});
 		afterEach(() => {
-			delete OTLP_PRESETS.wandb_weave;
+			delete OTLP_PRESETS.s3;
 		});
 
 		it("builds the endpoint, headers and settings from the vendor's fields", () => {
-			expect(resolveOtlpTarget("wandb_weave", config)).toEqual({
+			expect(resolveOtlpTarget("s3", config)).toEqual({
 				endpoint: "https://intake.example.com/projects/a%20b%2Fc/v1/traces",
 				headers: { authorization: `Basic ${btoa("pk:sk")}`, "x-project": "a b/c" },
 				protocol: "http/protobuf",
@@ -67,7 +68,7 @@ describe("Broadcast destination registry", () => {
 		});
 
 		it("lets the config override the base URL, protocol, compression and headers", () => {
-			const target = resolveOtlpTarget("wandb_weave", {
+			const target = resolveOtlpTarget("s3", {
 				...config,
 				base_url: "https://eu.example.com/",
 				otlp_protocol: "http/json",
@@ -83,9 +84,9 @@ describe("Broadcast destination registry", () => {
 		});
 
 		it("names a missing field and rejects header injection", () => {
-			expect(() => resolveOtlpTarget("wandb_weave", { public_key: "pk", secret_key: "sk" })).toThrow("project is required");
-			expect(() => resolveOtlpTarget("wandb_weave", { ...config, project: "a\r\nX-Evil: 1" })).toThrow("must not contain line breaks");
-			expect(() => resolveOtlpTarget("wandb_weave", { ...config, otlp_compression: "zstd" })).toThrow("Compression must be none or gzip");
+			expect(() => resolveOtlpTarget("s3", { public_key: "pk", secret_key: "sk" })).toThrow("project is required");
+			expect(() => resolveOtlpTarget("s3", { ...config, project: "a\r\nX-Evil: 1" })).toThrow("must not contain line breaks");
+			expect(() => resolveOtlpTarget("s3", { ...config, otlp_compression: "zstd" })).toThrow("Compression must be none or gzip");
 		});
 
 		it("sets resource attributes, copies aliased attributes and truncates long values", () => {
@@ -95,7 +96,7 @@ describe("Broadcast destination registry", () => {
 					scopeSpans: [{ spans: [{ name: "chat", attributes: [{ key: "gen_ai.input.messages", value: { stringValue: "hello world" } }] }] }],
 				}],
 			};
-			const applied = applyOtlpTarget(payload, resolveOtlpTarget("wandb_weave", config)) as typeof payload;
+			const applied = applyOtlpTarget(payload, resolveOtlpTarget("s3", config)) as typeof payload;
 			expect(applied.resourceSpans[0].resource.attributes).toEqual([{ key: "vendor.project", value: { stringValue: "a b/c" } }]);
 			expect(applied.resourceSpans[0].scopeSpans[0].spans[0].attributes).toEqual([
 				{ key: "gen_ai.input.messages", value: { stringValue: "hello" } },
@@ -211,6 +212,40 @@ describe("Broadcast destination registry", () => {
 			});
 			expect(() => resolveOtlpTarget("sentry", { otlp_endpoint: "https://o1.ingest.sentry.io/api/2/integration/otlp/v1/traces" }))
 				.toThrow("public_key is required");
+		});
+
+		it("sends Arize traces to the space and names the project on the resource", () => {
+			expect(resolveOtlpTarget("arize", { api_key: "ak", space_id: "sp", project_name: "gateway" })).toMatchObject({
+				endpoint: "https://otlp.arize.com/v1/traces",
+				headers: { space_id: "sp", api_key: "ak" },
+				protocol: "http/protobuf",
+				compression: "none",
+				resourceAttributes: { "openinference.project.name": "gateway" },
+			});
+			expect(resolveOtlpTarget("arize", { api_key: "ak", space_id: "sp", project_name: "g", base_url: "https://otlp.eu-west-1a.arize.com" }).endpoint)
+				.toBe("https://otlp.eu-west-1a.arize.com/v1/traces");
+			expect(() => resolveOtlpTarget("arize", { api_key: "ak", project_name: "g" })).toThrow("space_id is required");
+		});
+
+		it("sends Opik traces to the workspace's project", () => {
+			expect(resolveOtlpTarget("comet_opik", { api_key: "ok", workspace: "team", project_name: "gateway" })).toMatchObject({
+				endpoint: "https://www.comet.com/opik/api/v1/private/otel/v1/traces",
+				headers: { authorization: "ok", "comet-workspace": "team", projectname: "gateway" },
+				protocol: "http/protobuf",
+			});
+			expect(resolveOtlpTarget("comet_opik", { api_key: "ok", workspace: "t", project_name: "g", base_url: "https://opik.example.com/" }).endpoint)
+				.toBe("https://opik.example.com/api/v1/private/otel/v1/traces");
+		});
+
+		it("sends Weave traces to the agents endpoint with the entity and project", () => {
+			expect(resolveOtlpTarget("wandb_weave", { api_key: "wb", entity: "team", project: "gateway" })).toMatchObject({
+				endpoint: "https://trace.wandb.ai/agents/otel/v1/traces",
+				headers: { "wandb-api-key": "wb" },
+				protocol: "http/protobuf",
+				compression: "gzip",
+				resourceAttributes: { "wandb.entity": "team", "wandb.project": "gateway" },
+			});
+			expect(() => resolveOtlpTarget("wandb_weave", { api_key: "wb", entity: "team" })).toThrow("project is required");
 		});
 
 		it("copies the conversation id to Langfuse's session attribute", () => {

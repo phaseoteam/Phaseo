@@ -1,5 +1,7 @@
 export type ObservabilityDestinationType =
+  | "arize"
   | "braintrust"
+  | "comet_opik"
   | "datadog"
   | "grafana_cloud"
   | "langfuse"
@@ -8,4 +10,5 @@ export type ObservabilityDestinationType =
   | "otel_collector"
   | "posthog"
   | "sentry"
+  | "wandb_weave"
   | "webhook";
