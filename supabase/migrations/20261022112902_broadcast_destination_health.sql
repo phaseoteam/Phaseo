@@ -1,3 +1,4 @@
+-- phaseo:allow-destructive-migration reason: The only DELETE is inside the new prune_broadcast_destination_delivery_hourly function, which removes bounded batches of hourly delivery counts older than eight days each time it is called; this migration creates new tables and deletes no rows.
 -- Broadcast destination health: the latest delivery outcome and failure streak per
 -- destination, hourly delivered and failed counts, and the functions that record
 -- prune and summarise them.
