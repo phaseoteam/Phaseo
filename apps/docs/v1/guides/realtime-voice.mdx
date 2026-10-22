@@ -1,0 +1,154 @@
+---
+title: "Realtime voice sessions"
+description: "Run a realtime voice call through the Phaseo relay, end it cleanly, and get the final bill when the call ends."
+"og:image": "https://phaseo.app/og/dynamic?title=Realtime%20voice%20sessions&description=Run%20a%20realtime%20voice%20call%20through%20the%20Phaseo%20relay%2C%20end%20it%20cleanly%2C%20and%20get%20the%20final%20bill%20when%20the%20call%20ends.&pathname=/docs/v1/guides/realtime-voice"
+icon: "phone"
+---
+
+<Note>
+Realtime voice is in beta and access is gated per workspace. Translations of this page are pending.
+</Note>
+
+A realtime session is a voice call between your client and a provider's realtime model, relayed by Phaseo so it can be metered and billed. The relay forwards the provider's own events unchanged and adds three of its own: `session.end`, `session.warning` and `session.ended`.
+
+## Start a session
+
+Create the session from your server:
+
+```bash
+curl https://api.phaseo.app/v1/audio/realtime/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
+```
+
+The response includes `client_secret`, `connect.url`, `max_duration_seconds` and `idle_timeout_seconds` (always `null` for API sessions). Open a WebSocket to `connect.url` on `api.phaseo.app` with the WebSocket subprotocol `rtsec.<client_secret>`. The relay sends `relay.connected` once the provider is ready, then accepts microphone audio as `{"type": "client.audio", "audio": "<base64 PCM16>"}`: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+
+Phaseo holds $5 of credit when the session starts and extends the hold as the call runs.
+
+## End a session
+
+Send `session.end` when the caller hangs up:
+
+```json
+{ "type": "session.end", "reason": "caller hung up" }
+```
+
+| Field | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `reason` | string | none | Your own note, up to 120 printable characters, echoed back as `client_reason`. |
+| `cancel_response` | boolean | `true` | `true` cancels a reply that is still playing. `false` lets it finish, for up to 20 seconds. |
+
+The relay then:
+
+1. stops accepting audio;
+2. discards microphone audio the provider has not committed to a turn;
+3. cancels the reply in progress, or lets it finish, and waits up to 10 seconds for its usage;
+4. for GPT Live, sends the provider `session.close` and waits for `session.closed`;
+5. settles the bill;
+6. sends `session.ended`;
+7. closes the socket with code `1000`.
+
+Closing the socket without `session.end` also ends the call and bills it the same way, but your client won't receive `session.ended`.
+
+## session.ended
+
+The relay sends `session.ended` on every ending: one you requested, one the provider started and one the gateway started. It's sent while your socket is still open, just before the relay closes it.
+
+```json
+{
+  "type": "session.ended",
+  "session_id": "rt_01k8...",
+  "reason": "client_requested",
+  "initiated_by": "client",
+  "client_reason": "caller hung up",
+  "duration_seconds": 184.2,
+  "usage": { "input_audio_tokens": 1840, "output_audio_tokens": 3120, "input_text_tokens": 412 },
+  "cost": {
+    "total_usd": 0.231,
+    "total_nanos": 231000000,
+    "estimated": false,
+    "estimate_basis": null,
+    "debt_nanos": 0,
+    "uncollected_nanos": 0,
+    "currency": "USD"
+  },
+  "billing_status": "settled"
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `reason` | A stable reason code. See [reason codes](#reason-codes). |
+| `initiated_by` | `client`, `gateway` or `provider`. |
+| `duration_seconds` | Time since the relay connected. |
+| `usage` | The billed meters: token counts by modality and, for xAI and GPT Live, `audio_seconds`. |
+| `cost.estimated` | `true` when part of the usage was estimated from metered audio because the provider's usage for an interrupted turn never arrived. `estimate_basis` says why. |
+| `cost.debt_nanos` | The part of the cost charged as overdraft beyond your holds and free balance. |
+| `cost.uncollected_nanos` | Cost beyond the overdraft cap that wasn't charged. |
+| `provider_close_code` | The provider's WebSocket close code, when the provider ended the call. |
+| `billing_status` | `settled`, `pending` or `unresolved`. |
+
+If settlement is still being retried, `billing_status` is `pending` and `cost` shows the running estimate. If the session needs a billing review, it's `unresolved`. In both cases `final_bill` gives the request to fetch the final cost once it's settled:
+
+```json
+"final_bill": { "method": "GET", "path": "/v1/generations?id=realtime%3Art_01k8..." }
+```
+
+### Reason codes
+
+| `reason` | `initiated_by` | When |
+| --- | --- | --- |
+| `client_requested` | client | You sent `session.end`. |
+| `client_disconnected` | client | Your socket closed without `session.end`. |
+| `provider_closed` | provider | The provider closed its connection, for example Google after about 150 idle seconds (code `1008`) or after its `goAway`. |
+| `provider_error` | provider | The provider connection failed or reported an error. |
+| `max_duration_reached` | gateway | The provider's session limit was reached. |
+| `insufficient_funds` | gateway | The overdraft cap was reached. |
+| `key_revoked` | gateway | The API key was revoked or deleted during the call. |
+| `key_expired` | gateway | The API key expired during the call. |
+| `key_blocked` | gateway | The API key was paused during the call. |
+| `workspace_disabled` | gateway | The workspace no longer exists. |
+| `policy_blocked` | gateway | A workspace policy change blocked the model, or removed the provider from the allowed list, and was still in place 30 seconds after the `policy_blocked` warning. |
+| `input_rejected` | gateway | The relay rejected client audio: too large, faster than real time, or the provider fell behind. |
+| `session_reconciled` | gateway | The relay lost its state and the session was closed by reconciliation. |
+| `gateway_error` | gateway | Phaseo couldn't process provider events or record usage. |
+| `idle_timeout` | gateway | Playground only: five minutes without audio. |
+| `spend_limit_reached` | gateway | Playground only: a key spend limit or workspace budget was reached. |
+
+New codes may be added, so treat an unknown `reason` like `gateway_error`.
+
+## session.warning
+
+Warnings tell you what's coming without ending the call. Each code is sent at most once per threshold.
+
+```json
+{ "type": "session.warning", "code": "max_duration_approaching", "message": "...", "seconds_remaining": 120, "expires_at": "2026-10-22T11:00:00.000Z" }
+```
+
+| `code` | Extra fields | When |
+| --- | --- | --- |
+| `max_duration_approaching` | `seconds_remaining`, `expires_at` | 2 minutes and 30 seconds before the provider's session limit. |
+| `provider_closing` | `seconds_remaining` | The provider announced it will close the connection (Google `goAway`). |
+| `funds_low` | `remaining_usd` | The credit hold couldn't be extended. The call continues on your free balance. |
+| `overdraft_in_use` | `remaining_usd`, `overdraft_used_usd` | Your free balance is used up and the call is running on overdraft. Sent again when less than $0.25 of the cap is left. |
+| `spend_limit_exceeded` | `limit` (`key` or `workspace_budget`) | A key spend limit or workspace budget was reached. The call continues; new requests are refused. |
+| `policy_blocked` | `status`, plus `seconds_remaining` and `ends_at` when `status` is `ending` | A workspace policy now blocks the call, or its provider was removed from the allowed list. The call ends after 30 seconds unless the change is undone, in which case a second warning arrives with `status: "cleared"`. |
+
+`remaining_usd` is what the call can still spend before it ends, including the overdraft.
+
+## Limits
+
+API sessions are never ended for being idle, and spend limits only warn. A call ends on its own only when one of these happens:
+
+| Limit | Value |
+| --- | --- |
+| OpenAI Realtime | 60 minutes |
+| xAI | 120 minutes |
+| Google Live | 15 minutes, until session resumption is supported. Google itself may close the connection earlier with `goAway`. |
+| GPT Live | 25 minutes |
+| Overdraft cap | $1 beyond your holds and free balance |
+| Lost access | The key is revoked, expired or paused, or the workspace is removed. Detected within about a minute, then the call ends without a grace period. |
+| Policy change | 30 seconds after a `policy_blocked` warning, if the policy still blocks the call |
+
+Session limits count from when the relay connects, not from when the session was created.

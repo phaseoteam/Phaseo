@@ -19,8 +19,18 @@ export const REALTIME_INITIAL_HOLD_NANOS = 5_000_000_000;
 export const REALTIME_HOLD_INCREMENT_NANOS = 5_000_000_000;
 export const REALTIME_EXTEND_THRESHOLD = 0.8;
 export const REALTIME_GRACEFUL_STOP_THRESHOLD = 0.95;
-export const REALTIME_MAX_DURATION_SECONDS = 25 * 60;
+// Provider session limits are the only time caps on a relayed call. Each is
+// counted from when the relay connects (claims) the session, not from creation.
+export const OPENAI_REALTIME_MAX_DURATION_SECONDS = 60 * 60;
+export const XAI_REALTIME_MAX_DURATION_SECONDS = 120 * 60;
+// Until upstream session resumption is supported.
 export const GOOGLE_REALTIME_MAX_DURATION_SECONDS = 15 * 60;
+export const LIVE_MAX_DURATION_SECONDS = 25 * 60;
+// The longest any relay session may run, whatever its provider.
+export const REALTIME_RELAY_MAX_DURATION_SECONDS = XAI_REALTIME_MAX_DURATION_SECONDS;
+// session.warning max_duration_approaching is sent this many seconds before the cap.
+export const REALTIME_DURATION_WARNING_SECONDS = [120, 30] as const;
+// Playground (source "chat") sessions only: API sessions never end for being idle.
 export const REALTIME_IDLE_TIMEOUT_SECONDS = 5 * 60;
 // A session whose relay is never claimed is reaped after this long.
 export const REALTIME_UNCLAIMED_SESSION_TIMEOUT_SECONDS = 2 * 60;
@@ -71,10 +81,52 @@ export function realtimeOtelContext(
 	};
 }
 
-export function realtimeMaxDurationSeconds(provider: RealtimeProvider): number {
-	return provider === "google-ai-studio"
-		? GOOGLE_REALTIME_MAX_DURATION_SECONDS
-		: REALTIME_MAX_DURATION_SECONDS;
+export function realtimeMaxDurationSeconds(provider: RealtimeProvider, model?: string | null): number {
+	if (provider === "google-ai-studio") return GOOGLE_REALTIME_MAX_DURATION_SECONDS;
+	if (provider === "x-ai" || provider === "spacex-ai") return XAI_REALTIME_MAX_DURATION_SECONDS;
+	if (model && isLiveModel(model)) return LIVE_MAX_DURATION_SECONDS;
+	return OPENAI_REALTIME_MAX_DURATION_SECONDS;
+}
+
+/** API sessions are never ended by the gateway for idleness, spend limits or holds. */
+export function isPlaygroundRealtimeSession(session: Pick<RealtimeSessionRow, "source"> | null | undefined): boolean {
+	return session?.source === "chat";
+}
+
+/**
+ * Where a session stands against the overdraft cap, mirroring
+ * gateway_realtime_settle_once: the cost is charged from the session's holds,
+ * then free balance, then up to REALTIME_MAX_OVERDRAFT_NANOS of debt.
+ */
+export function computeRealtimeFundingPosition(args: {
+	estimatedCostNanos: number;
+	sessionReservedNanos: number;
+	capturedNanos?: number;
+	walletBalanceNanos: number;
+	walletReservedNanos: number;
+}): { overdraftUsedNanos: number; remainingNanos: number; capReached: boolean } {
+	const due = Math.max(0, Math.round(args.estimatedCostNanos) - Math.max(0, Math.round(args.capturedNanos ?? 0)));
+	const held = Math.max(0, Math.round(args.sessionReservedNanos));
+	const free = Math.round(args.walletBalanceNanos) - Math.max(0, Math.round(args.walletReservedNanos));
+	const overdraftUsedNanos = Math.max(0, due - held - Math.max(0, free));
+	const remainingNanos = held + free + REALTIME_MAX_OVERDRAFT_NANOS - due;
+	return { overdraftUsedNanos, remainingNanos, capReached: remainingNanos <= 0 };
+}
+
+export async function getRealtimeFundingPosition(session: RealtimeSessionRow) {
+	const { data, error } = await getSupabaseAdmin()
+		.from("wallets")
+		.select("balance_nanos,reserved_nanos")
+		.eq("workspace_id", session.workspace_id)
+		.maybeSingle();
+	if (error) throw error;
+	return computeRealtimeFundingPosition({
+		estimatedCostNanos: Number(session.estimated_cost_nanos ?? 0) || 0,
+		sessionReservedNanos: Number(session.reserved_nanos ?? 0) || 0,
+		capturedNanos: Number(session.captured_nanos ?? 0) || 0,
+		walletBalanceNanos: Number(data?.balance_nanos ?? 0) || 0,
+		walletReservedNanos: Number(data?.reserved_nanos ?? 0) || 0,
+	});
 }
 
 export type RealtimeAuthContext = {
@@ -120,6 +172,8 @@ export type RealtimeSessionRow = {
 	metadata?: Record<string, unknown> | null;
 	last_event_at?: string | null;
 	updated_at?: string | null;
+	/** Not a column: spend-limit reasons the recheck found on an API session, which only warn. */
+	policy_warnings?: string[];
 };
 
 type ProviderSession = {
@@ -792,10 +846,80 @@ async function requireRealtimePriceCard(provider: RealtimeProvider, modelId: str
 	return card;
 }
 
+/** Reasons that end a call on every source: the caller lost access. */
+export const REALTIME_ACCESS_END_REASONS = [
+	"realtime_key_revoked",
+	"realtime_key_expired",
+	"realtime_key_blocked",
+	"realtime_workspace_disabled",
+	"realtime_workspace_policy_blocked",
+	"realtime_provider_not_available",
+] as const;
+/** Spend limits end playground calls but only warn on API calls. */
+export const REALTIME_SPEND_LIMIT_REASONS = [
+	"realtime_key_limit_exceeded",
+	"realtime_key_cost_limit_reached",
+] as const;
+
+/**
+ * Policy changes made in settings. The relay warns, rechecks after a grace
+ * period and ends the call only if the block still applies.
+ */
+export const REALTIME_POLICY_GRACE_REASONS = [
+	"realtime_workspace_policy_blocked",
+	"realtime_provider_not_available",
+] as const;
+
+export function realtimeAccessEndReason(message: string): string | null {
+	return REALTIME_ACCESS_END_REASONS.find((reason) => message.includes(reason)) ?? null;
+}
+
+export function isRealtimePolicyGraceReason(reason: string): boolean {
+	return REALTIME_POLICY_GRACE_REASONS.some((graceReason) => reason.includes(graceReason));
+}
+
+/** Key limits, or a workspace budget raised by gateway_workspace_budget_status. */
+export function isRealtimeSpendLimitReason(message: string): boolean {
+	return REALTIME_SPEND_LIMIT_REASONS.some((reason) => message.includes(reason))
+		|| /workspace_[a-z]+_cost_budget_reached/.test(message);
+}
+
+type RealtimePolicyOutcome = { ok: true } | { ok: false; reason: string; spendLimit: boolean };
+
+/**
+ * Reads the key and workspace directly: the cached gateway context does not
+ * reflect a key revoked or paused after the session started.
+ */
+async function realtimeKeyAccessReason(session: RealtimeSessionRow): Promise<string | null> {
+	if (!session.key_id) return null;
+	const supabase = getSupabaseAdmin();
+	const { data: key, error } = await supabase
+		.from("keys")
+		.select("status,soft_blocked,expires_at,revoked_at")
+		.eq("id", session.key_id)
+		.maybeSingle();
+	if (error) throw error;
+	if (!key) {
+		const { data: workspace, error: workspaceError } = await supabase
+			.from("workspaces")
+			.select("id")
+			.eq("id", session.workspace_id)
+			.maybeSingle();
+		if (workspaceError) throw workspaceError;
+		return workspace ? "realtime_key_revoked" : "realtime_workspace_disabled";
+	}
+	if (key.status !== "active" || key.revoked_at) return "realtime_key_revoked";
+	if (key.soft_blocked === true) return "realtime_key_blocked";
+	if (key.expires_at && Date.parse(String(key.expires_at)) <= Date.now()) return "realtime_key_expired";
+	return null;
+}
+
 async function evaluateActiveRealtimePolicy(
 	session: RealtimeSessionRow,
 	estimatedCostNanos: number,
-): Promise<{ ok: true } | { ok: false; reason: string }> {
+): Promise<RealtimePolicyOutcome> {
+	const accessReason = await realtimeKeyAccessReason(session);
+	if (accessReason) return { ok: false, reason: accessReason, spendLimit: false };
 	const live = isLiveModel(session.model_id);
 	const policyModel = live ? liveConfig(session.metadata).backendModel : session.model_id;
 	const context = await fetchGatewayContext({
@@ -804,9 +928,10 @@ async function evaluateActiveRealtimePolicy(
 		model: policyModel,
 		endpoint: live ? "text.generate" : "audio.realtime",
 	});
-	if (!context.key.ok) return { ok: false, reason: "realtime_key_invalid" };
+	if (!context.key.ok) return { ok: false, reason: "realtime_key_revoked", spendLimit: false };
+	let spendLimitReason: string | null = null;
 	if (!context.keyLimit.ok && context.keyLimit.limitMetric !== "requests") {
-		return { ok: false, reason: "realtime_key_limit_exceeded" };
+		spendLimitReason = "realtime_key_limit_exceeded";
 	}
 	const provider = providerFromModel(session.model_id, session.provider);
 	const { candidates } = buildProviderCandidatesWithDiagnostics(context);
@@ -822,19 +947,20 @@ async function evaluateActiveRealtimePolicy(
 		teamSettings: context.teamSettings ?? null,
 	});
 	if (!policyResult.ok) {
-		return { ok: false, reason: "realtime_workspace_policy_blocked" };
+		return { ok: false, reason: "realtime_workspace_policy_blocked", spendLimit: false };
 	}
 	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(candidates), resolvedModel: session.model_id,
 		body: { model: session.model_id, provider }, workspacePolicy, teamSettings: context.teamSettings ?? null }).ok) {
-		return { ok: false, reason: "realtime_workspace_policy_blocked" };
+		return { ok: false, reason: "realtime_workspace_policy_blocked", spendLimit: false };
 	}
 	if (!provider || !policyResult.providers.some((candidate) => candidate.providerId === provider)) {
-		return { ok: false, reason: "realtime_provider_not_available" };
+		return { ok: false, reason: "realtime_provider_not_available", spendLimit: false };
 	}
+	if (spendLimitReason) return { ok: false, reason: spendLimitReason, spendLimit: true };
 	for (const bucket of Object.values(context.keyLimit.buckets ?? {})) {
 		if (!bucket || bucket.costLimitNanos <= 0) continue;
 		if (bucket.costUsedNanos + Math.max(0, estimatedCostNanos) >= bucket.costLimitNanos) {
-			return { ok: false, reason: "realtime_key_cost_limit_reached" };
+			return { ok: false, reason: "realtime_key_cost_limit_reached", spendLimit: true };
 		}
 	}
 	return { ok: true };
@@ -880,7 +1006,7 @@ export async function createRealtimeSession(args: {
 	const supabase = getSupabaseAdmin();
 	const sessionId = `rt_${ulid().toLowerCase()}`;
 	const reservationPrefix = `rt:${sessionId}:`;
-	const expiresAt = new Date(Date.now() + realtimeMaxDurationSeconds(provider) * 1000).toISOString();
+	const expiresAt = new Date(Date.now() + realtimeMaxDurationSeconds(provider, modelId) * 1000).toISOString();
 
 	const useRelay = args.relay !== false || !args.auth.internal;
 	const relaySecret = useRelay ? `rtsec_${ulid().toLowerCase()}${ulid().toLowerCase()}` : null;
@@ -1079,7 +1205,8 @@ export async function extendRealtimeSessionHold(args: {
 		Math.max(0, Math.round(args.estimatedCostNanos ?? 0)),
 	);
 	const policy = await evaluateActiveRealtimePolicy(session, estimatedCostNanos);
-	if ("reason" in policy) throw new Error(policy.reason);
+	// Spend limits only warn on API sessions, so they do not block the hold either.
+	if ("reason" in policy && (!policy.spendLimit || isPlaygroundRealtimeSession(session))) throw new Error(policy.reason);
 	const rpc = await supabase.rpc("gateway_realtime_extend_hold_once", {
 		p_workspace_id: args.auth.workspaceId,
 		p_session_id: args.sessionId,
@@ -1097,6 +1224,8 @@ export async function markRealtimeSessionConnected(args: {
 	auth: RealtimeAuthContext;
 	sessionId: string;
 	providerSessionId?: string;
+	/** The provider cap counted from when the relay claimed the session. */
+	expiresAt?: string | null;
 }): Promise<RealtimeSessionRow> {
 	const now = new Date().toISOString();
 	const { data, error } = await getSupabaseAdmin()
@@ -1104,6 +1233,7 @@ export async function markRealtimeSessionConnected(args: {
 		.update({
 			status: "connected",
 			...(args.providerSessionId ? { provider_session_id: args.providerSessionId } : {}),
+			...(args.expiresAt ? { expires_at: args.expiresAt } : {}),
 			connected_at: now,
 			last_event_at: now,
 			updated_at: now,
@@ -1154,10 +1284,15 @@ export async function updateRealtimeSessionUsage(args: {
 		pricedNanos,
 	);
 	const policy = await evaluateActiveRealtimePolicy(session, estimatedCostNanos);
+	// Lost access ends every call; a spend limit ends only playground calls. A
+	// policy block comes back as a warning so the relay can give notice first.
+	const ends = "reason" in policy
+		&& !isRealtimePolicyGraceReason(policy.reason)
+		&& (!policy.spendLimit || isPlaygroundRealtimeSession(session));
 	const { data: updated, error: updateError } = await supabase
 		.from("gateway_realtime_sessions")
 		.update({
-			...("reason" in policy
+			...(ends && "reason" in policy
 				? {
 						status: "ending",
 						disconnect_reason: policy.reason,
@@ -1188,7 +1323,10 @@ export async function updateRealtimeSessionUsage(args: {
 		}
 		return current as RealtimeSessionRow;
 	}
-	return updated as RealtimeSessionRow;
+	return {
+		...(updated as RealtimeSessionRow),
+		...(!ends && "reason" in policy ? { policy_warnings: [policy.reason] } : {}),
+	};
 }
 
 /**
@@ -1460,6 +1598,13 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 	for (const row of sessions ?? []) {
 		const session = row as RealtimeSessionRow;
 		try {
+			// A quiet API call is not stuck: only its relay can say whether the
+			// sockets are gone. Without a relay binding, wait for its expiry.
+			const expired = Boolean(session.expires_at && Date.parse(session.expires_at) <= Date.now());
+			if (!args?.relay && !isPlaygroundRealtimeSession(session) && session.status !== "created" && !expired) {
+				sessionsHealthy += 1;
+				continue;
+			}
 			if (args?.relay) {
 				const stub = args.relay.get(args.relay.idFromName(session.session_id));
 				const response = await stub.fetch(
@@ -1564,11 +1709,12 @@ export function publicRealtimeSessionPayload(args: {
 	const estimatedNanos = Math.max(0, Number(args.session.estimated_cost_nanos ?? 0) || 0);
 	const startedAt = Date.parse(args.session.started_at);
 	const expiresAt = Date.parse(args.session.expires_at ?? "");
-	const maxDurationSeconds = Number.isFinite(startedAt) && Number.isFinite(expiresAt)
-		? Math.max(0, Math.round((expiresAt - startedAt) / 1000))
-		: realtimeMaxDurationSeconds(
-			providerFromModel(args.session.model_id, args.session.provider) ?? "openai",
-		);
+	// Counted from when the relay connects; expires_at moves to match at that point.
+	const maxDurationSeconds = realtimeMaxDurationSeconds(
+		providerFromModel(args.session.model_id, args.session.provider) ?? "openai",
+		args.session.model_id,
+	);
+	const idleTimeoutSeconds = isPlaygroundRealtimeSession(args.session) ? REALTIME_IDLE_TIMEOUT_SECONDS : null;
 	return {
 		id: args.session.session_id,
 		session_id: args.session.session_id,
@@ -1579,6 +1725,8 @@ export function publicRealtimeSessionPayload(args: {
 		status: args.session.status,
 		expiresAt: args.session.expires_at,
 		expires_at: args.session.expires_at,
+		max_duration_seconds: maxDurationSeconds,
+		idle_timeout_seconds: idleTimeoutSeconds,
 		...(args.clientSecret ? { clientSecret: args.clientSecret, client_secret: args.clientSecret } : {}),
 		...(args.connect ? { connect: args.connect } : {}),
 		billing: {
@@ -1590,7 +1738,8 @@ export function publicRealtimeSessionPayload(args: {
 			extendThreshold: REALTIME_EXTEND_THRESHOLD,
 			gracefulStopThreshold: REALTIME_GRACEFUL_STOP_THRESHOLD,
 			maxDurationSeconds,
-			idleTimeoutSeconds: REALTIME_IDLE_TIMEOUT_SECONDS,
+			idleTimeoutSeconds,
+			maxOverdraftUsd: REALTIME_MAX_OVERDRAFT_NANOS / 1_000_000_000,
 			authoritative: true,
 		},
 		...(args.raw !== undefined ? { raw: args.raw } : {}),

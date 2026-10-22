@@ -96,6 +96,7 @@
                   "v1/guides/service-tiers",
                   "v1/guides/prompt-caching",
                   "v1/guides/multimodality",
+                  "v1/guides/realtime-voice",
                   "v1/guides/async-video-and-batch",
                   "v1/guides/document-parsing",
                   "v1/guides/tool-calling",
@@ -15277,7 +15278,7 @@
     },
     {
       "source": "/v1/api-reference/endpoint/realtime",
-      "destination": "/v1/api-reference/introduction"
+      "destination": "/v1/guides/realtime-voice"
     },
     {
       "source": "/v1/api-reference/endpoint/video-:slug*",
