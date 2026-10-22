@@ -11,7 +11,7 @@ jest.mock("nuqs", () => {
 	const parser = { withDefault: () => parser };
 	return { parseAsString: parser, parseAsArrayOf: () => parser, useQueryStates: () => {
 		const React = jest.requireActual("react");
-		const defaults = { eciMetric: "overall", eciView: "timeline", eciOrg: "all", eciAccess: "all", eciSince: "2024", eciModels: null, eciSearch: "", eciLabels: "true" };
+		const defaults = { eciMetric: "overall", eciView: "range", eciOrg: "all", eciAccess: "all", eciSince: "2024", eciModels: null, eciSearch: "", eciLabels: "true" };
 		const [state, set] = React.useState(defaults);
 		return [state, (patch: Record<string, unknown>) => set((current: Record<string, unknown>) => ({ ...current, ...Object.fromEntries(Object.entries(patch).map(([k, v]) => [k, v ?? defaults[k as keyof typeof defaults]])) }))];
 	} };
@@ -37,6 +37,7 @@ async function mount(source = data) {
 it("retains SVG focus while pinning and compares ECI point differences, then dismisses with Escape", async () => {
 	const { node, cleanup } = await mount();
 	try {
+		await act(async () => [...node.querySelectorAll<HTMLButtonElement>("[data-eci-chart=overall] button")].find((button) => button.textContent === "Capability over time")!.click());
 		const a = node.querySelector<SVGElement>('circle[role="button"][aria-label^="Alpha"]')!;
 		expect(a).not.toBeNull();
 		await act(async () => a.focus());
@@ -77,5 +78,35 @@ it("clears the model selection without reverting to all models", async () => {
 		await act(async () => clear.click());
 		expect(node.querySelectorAll('circle[role="button"]')).toHaveLength(0);
 		expect(node.textContent).toContain("No models match these filters.");
+	} finally { cleanup(); }
+});
+
+it("defaults to a common-axis range comparison and retains missing intervals without inventing them", async () => {
+	const mounted = await mount();
+	try {
+		const range = mounted.node.querySelector('[data-eci-ranges]')!;
+		expect(range).not.toBeNull();
+		expect(range.querySelectorAll('[data-eci-interval]')).toHaveLength(1);
+		expect(range.textContent).toContain("148–152");
+		expect(range.textContent).toContain("Interval unavailable");
+		const a = range.querySelector<HTMLButtonElement>('[data-eci-range="a"]')!;
+		await act(async () => a.click());
+		const b = range.querySelector<HTMLButtonElement>('[data-eci-range="b"]')!;
+		await act(async () => b.focus());
+		const card = mounted.node.querySelector('[role="status"]')!;
+		expect(card.textContent).toContain("148–152");
+		expect(card.textContent).toContain("Interval unavailable");
+		expect(card.textContent).toContain("not a test of statistical significance");
+	} finally { mounted.cleanup(); }
+});
+
+it("plots zero and negative estimates on the range axis", async () => {
+	const { node, cleanup } = await mount({ ...data, rows: data.rows.map((row, index) => ({ ...row, scores: { ...row.scores, overall: index ? -2 : 0 }, interval: index ? null : { low: -1, high: 1 } })) });
+	try {
+		const range = node.querySelector('[data-eci-ranges]')!;
+		expect(range.querySelector('[data-eci-range="a"]')?.getAttribute("aria-label")).toContain("Alpha high: 0");
+		expect(range.querySelector('[data-eci-range="b"]')?.getAttribute("aria-label")).toContain("Beta low: -2");
+		expect(range.querySelectorAll('[data-eci-interval]')).toHaveLength(1);
+		expect(range.textContent).not.toContain("NaN");
 	} finally { cleanup(); }
 });

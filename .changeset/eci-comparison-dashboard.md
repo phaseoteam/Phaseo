@@ -2,4 +2,4 @@
 "@phaseo/web": patch
 ---
 
-Add an Epoch capability workspace matching Artificial Analysis, with release timelines, domain comparisons, shared model controls, pinned inspection and exportable rankings.
+Add an Epoch capability workspace with confidence-range comparisons, release timelines, domain views, shared model controls, pinned inspection and exportable rankings.
