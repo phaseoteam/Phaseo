@@ -83,6 +83,9 @@ export type PricingDimensionKey =
     | "server_tool_apply_patch_requests"
     | "native_web_search_requests"
     | "native_web_fetch_requests"
+    | "native_code_execution_requests"
+    | "native_x_search_posts"
+    | "native_x_search_users"
     | "requests";
 
 export type ConditionOp =

@@ -1224,6 +1224,7 @@ function anthropicUsageExt(usage: any): NonNullable<IRChatResponse["usage"]>["_e
 			: undefined;
 	}
 	if (serverToolUse) ext.serverToolUse = serverToolUse;
+	if (typeof usage?.inference_geo === "string" && usage.inference_geo) ext.inferenceGeo = usage.inference_geo;
 	return Object.keys(ext).length ? ext : undefined;
 }
 

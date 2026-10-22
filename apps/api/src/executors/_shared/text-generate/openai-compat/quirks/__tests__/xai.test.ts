@@ -10,7 +10,7 @@ describe("SpaceXAI quirks", () => {
 	});
 
 	describe("transformRequest", () => {
-		it("downgrades json_schema and strips unsupported fields for reasoning models", () => {
+		it("keeps json_schema, which xAI supports, and strips unsupported fields for reasoning models", () => {
 			const request: Record<string, any> = {
 				model: "grok-4-0709",
 				response_format: {
@@ -38,9 +38,10 @@ describe("SpaceXAI quirks", () => {
 				model: request.model,
 			});
 
-			expect(request.response_format).toEqual({ type: "json_object" });
-			expect(request.messages[0].role).toBe("system");
-			expect(String(request.messages[0].content)).toContain("The JSON must match this schema");
+			// https://docs.x.ai/developers/model-capabilities/text/structured-outputs
+			expect(request.response_format.type).toBe("json_schema");
+			expect(request.response_format.json_schema.schema.required).toEqual(["answer"]);
+			expect(request.messages).toEqual([{ role: "user", content: "Return one answer." }]);
 			expect(request.presence_penalty).toBeUndefined();
 			expect(request.frequency_penalty).toBeUndefined();
 			expect(request.stop).toBeUndefined();
@@ -100,6 +101,26 @@ describe("SpaceXAI quirks", () => {
 			xAiQuirks.normalizeResponse?.({ response, ir: {} as any });
 
 			expect(response.usage.requests).toBe(7);
+		});
+
+		it("folds reasoning that xAI reports outside completion tokens into the output, once", () => {
+			// Documented Chat example: prompt 32 + completion 9 + reasoning 94 = total 135
+			// (https://docs.x.ai/openapi.json).
+			const response: Record<string, any> = {
+				usage: {
+					prompt_tokens: 32,
+					completion_tokens: 9,
+					total_tokens: 135,
+					completion_tokens_details: { reasoning_tokens: 94 },
+				},
+			};
+
+			xAiQuirks.normalizeResponse?.({ response, ir: {} as any });
+			xAiQuirks.normalizeResponse?.({ response, ir: {} as any });
+
+			expect(response.usage.completion_tokens).toBe(103);
+			expect(response.usage.output_tokens).toBe(103);
+			expect(response.usage.total_tokens).toBe(135);
 		});
 	});
 });

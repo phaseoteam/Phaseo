@@ -166,6 +166,15 @@ export function normalizeTextUsageForPricing(
 		meters.service_tier = observedServiceTier;
 		meters.serviceTier = observedServiceTier;
 	}
+	// Where Claude ran the request (`usage.inference_geo`, "global" or "us"). US-only inference
+	// is priced at 1.1x on Claude 4.6+ (https://platform.claude.com/docs/en/manage-claude/data-residency),
+	// so price rows match on it.
+	const inferenceGeo = typeof usageRaw.inference_geo === "string"
+		? usageRaw.inference_geo
+		: typeof usageRaw._ext?.inferenceGeo === "string"
+			? usageRaw._ext.inferenceGeo
+			: undefined;
+	if (inferenceGeo) (meters as Record<string, any>).inference_geo = inferenceGeo.trim().toLowerCase();
 
 	return meters;
 }
