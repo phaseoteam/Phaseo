@@ -29,6 +29,11 @@ CREATE TRIGGER canonical_routing_capability
   FOR EACH ROW
   EXECUTE FUNCTION public.enforce_canonical_routing_capability();
 
+CREATE TRIGGER public_catalogue_changed
+  AFTER INSERT OR DELETE OR UPDATE ON public.v2_route_parameter_support
+  FOR EACH ROW
+  EXECUTE FUNCTION private.bump_public_catalogue_revision();
+
 CREATE POLICY "service_role_full_access" ON "public"."v2_route_parameter_support"
   FOR ALL
   TO "service_role"

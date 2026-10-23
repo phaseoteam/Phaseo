@@ -225,6 +225,7 @@ jobs:
                   node supabase/tests/rankings-distributions.test.mjs
                   node --test supabase/tests/models-page-cheapest-provider-pricing.test.mjs
                   node supabase/tests/benchmark-direction-default.test.mjs
+                  node supabase/tests/public-catalogue-revision.test.mjs
                   node scripts/tests/workspace-provisioning.mjs
                   pnpm exec tsx apps/web/scripts/catalogue/enumSnapshot.test.ts
                   pnpm exec tsx --test scripts/update-model-statuses.test.ts

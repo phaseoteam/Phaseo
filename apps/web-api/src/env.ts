@@ -6,6 +6,8 @@ export type Env = {
 	NEXT_PUBLIC_SUPABASE_ANON_KEY?: string;
 	SUPABASE_SERVICE_ROLE_KEY?: string;
 	REVALIDATION_SECRET?: string;
+	/** Website route that expires cached pages after a catalogue purge. */
+	WEB_REVALIDATE_URL?: string;
 	INVITE_ENCRYPTION_KEY?: string;
 	HMAC_ENCRYPTION_KEY?: string;
 	SCIM_TOKEN_PEPPER?: string;

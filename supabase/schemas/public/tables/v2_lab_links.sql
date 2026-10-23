@@ -16,6 +16,11 @@ CREATE TRIGGER catalogue_row_history
   FOR EACH ROW
   EXECUTE FUNCTION catalogue_private.record_row_history();
 
+CREATE TRIGGER public_catalogue_changed
+  AFTER INSERT OR DELETE OR UPDATE ON public.v2_lab_links
+  FOR EACH ROW
+  EXECUTE FUNCTION private.bump_public_catalogue_revision();
+
 CREATE POLICY "v2_lab_links_public_select" ON "public"."v2_lab_links"
   FOR SELECT
   TO "anon", "authenticated"

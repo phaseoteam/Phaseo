@@ -92,6 +92,11 @@ CREATE TRIGGER enforce_self_serve_provider_review_routing
   FOR EACH ROW
   EXECUTE FUNCTION public.enforce_self_serve_provider_review_routing();
 
+CREATE TRIGGER public_catalogue_changed
+  AFTER INSERT OR DELETE OR UPDATE ON public.v2_providers
+  FOR EACH ROW
+  EXECUTE FUNCTION private.bump_public_catalogue_revision();
+
 CREATE TRIGGER routing_catalogue_changed
   AFTER INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.v2_providers
   FOR EACH STATEMENT
