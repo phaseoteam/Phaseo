@@ -6,6 +6,7 @@ export type GlobalNavigationItem = PaletteItem & { href: string };
 export type SearchCapabilities = {
 	autoRouting: boolean;
 	classifiers: boolean;
+	slackAgent: boolean;
 	enterprise: boolean;
 	webhooks: boolean;
 	video: boolean;
@@ -16,6 +17,7 @@ export type SearchCapabilities = {
 export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
 	autoRouting: false,
 	classifiers: false,
+	slackAgent: false,
 	enterprise: false,
 	webhooks: false,
 	video: false,
@@ -26,6 +28,7 @@ export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
 const GATED_DESTINATIONS: ReadonlyArray<[string, keyof SearchCapabilities]> = [
 	["/settings/routing/auto", "autoRouting"],
 	["/settings/classifiers", "classifiers"],
+	["/settings/slack", "slackAgent"],
 	["/settings/workspaces/enterprise", "enterprise"],
 	["/settings/webhooks", "webhooks"],
 	["/chat/video", "video"],
@@ -104,6 +107,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-settings-guardrails", title: "Guardrails", subtitle: "Manage request and response guardrails", href: "/settings/guardrails", keywords: ["safety", "validation", "policies"] },
 	{ id: "nav-settings-rate-limits", title: "Rate limits", subtitle: "Limit requests and tokens per minute for keys, members and departments", href: "/settings/rate-limits", keywords: ["rate limit", "throttle", "rpm", "tpm", "429", "quota"] },
 	{ id: "nav-settings-classifiers", title: "Classifiers", subtitle: "Label requests automatically with a model", href: "/settings/classifiers", keywords: ["labels", "taxonomy", "department", "tagging", "categorise"] },
+	{ id: "nav-settings-slack", title: "Slack", subtitle: "Add the Phaseo agent to Slack", href: "/settings/slack", keywords: ["slack", "agent", "bot", "assistant", "integration"] },
 	{ id: "nav-settings-oauth", title: "OAuth Apps", subtitle: "Manage OAuth applications and grants", href: "/settings/oauth-apps", keywords: ["oauth", "clients", "authorized apps"] },
 	{ id: "nav-settings-broadcast", title: "Broadcast", subtitle: "Configure observability destinations", href: "/settings/broadcast", keywords: ["observability", "telemetry", "destinations"] },
 	{ id: "nav-settings-webhooks", title: "Webhooks", subtitle: "Manage event webhooks", href: "/settings/webhooks", keywords: ["events", "callbacks", "notifications"] },
@@ -119,7 +123,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 ];
 
 // Derive settings pages from the sidebar so new subpages remain discoverable.
-const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true, showClassifiers: true }).flatMap((group) =>
+const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true, showClassifiers: true, showSlackAgent: true }).flatMap((group) =>
 	group.items.filter((item) => !item.disabled && !item.external).flatMap((item) => [
 		{ id: `nav-${item.href.slice(1).replaceAll("/", "-")}`, title: item.label, href: item.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label] },
 		...(item.children ?? []).map((child) => ({ id: `nav-${child.href.slice(1).replaceAll("/", "-")}`, title: `${item.label}: ${child.label}`, href: child.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label, child.label] })),

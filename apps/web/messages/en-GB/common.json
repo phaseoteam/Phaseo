@@ -256,6 +256,8 @@
 				"nav-settings-guardrails": "Guardrails",
 				"nav-settings-rate-limits": "Rate limits",
 				"nav-settings-classifiers": "Classifiers",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "Key Security",
 				"nav-settings-oauth": "OAuth Apps",
 				"nav-settings-broadcast": "Broadcast",
 				"nav-settings-webhooks": "Webhooks",

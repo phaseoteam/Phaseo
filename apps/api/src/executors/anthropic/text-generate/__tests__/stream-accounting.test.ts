@@ -71,6 +71,23 @@ describe("Anthropic stream accounting", () => {
 		});
 	});
 
+	it("keeps message_start input and cache counts when message_delta repeats them as 0", async () => {
+		const zeroed = FIXTURE.replace(
+			JSON.stringify({ output_tokens: 9 }),
+			JSON.stringify({ input_tokens: 0, cache_read_input_tokens: 0, output_tokens: 9 }),
+		);
+		expect(zeroed).not.toBe(FIXTURE);
+		const accounting = createAnthropicStreamAccounting();
+		const responses = await readText(body(zeroed).pipeThrough(
+			createAnthropicToResponsesStreamTransformer("req_acct", "claude-x", { accounting }),
+		));
+		expect(accounting.snapshot().usage).toEqual({ input_tokens: 30, cache_read_input_tokens: 4, output_tokens: 9 });
+		// The fixture stops on max_tokens, so the terminal Responses event is response.incomplete.
+		const terminal = responses.split("\n\n").find((frame) => frame.startsWith("event: response.incomplete")) ?? "";
+		const usage = JSON.parse(terminal.slice(terminal.indexOf("data: ") + 6)).response.usage;
+		expect(usage).toMatchObject({ input_tokens: 34, output_tokens: 9, input_tokens_details: { cached_tokens: 4 } });
+	});
+
 	it("does not change the transformer's emitted bytes", async () => {
 		const plain = await readText(body(FIXTURE).pipeThrough(
 			createAnthropicToResponsesStreamTransformer("req_acct", "claude-x"),

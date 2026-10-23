@@ -58,8 +58,15 @@ function matches(snapshot: PublicCatalogSnapshot, model: string, endpoints: stri
         snapshot.variants.every((variant, index) => variant.endpoint === endpoints[index]);
 }
 
+function catalogPolicyBoundary(snapshot: PublicCatalogSnapshot): number | null {
+    const managed = snapshot.variants.some(variant => variant.providers.some(row =>
+        (row.capability_params as { data_policy?: { catalogManaged?: boolean } } | undefined)?.data_policy?.catalogManaged === true));
+    return managed ? Math.min(snapshot.boundaryAt ?? Infinity, snapshot.checkedAt + 300_000) : snapshot.boundaryAt;
+}
+
 function covers(snapshot: PublicCatalogSnapshot, now: number): boolean {
-    return snapshot.checkedAt <= now && (snapshot.boundaryAt === null || now < snapshot.boundaryAt);
+    const boundary = catalogPolicyBoundary(snapshot);
+    return snapshot.checkedAt <= now && (boundary === null || now < boundary);
 }
 
 /** The snapshot valid at `now`, or `null` when a boundary passed without a prefetched successor. */
@@ -179,7 +186,7 @@ export async function loadTextContextBundle(args: {
         }
         if (!args.disableCache) await rememberCatalogEntry(args.model, endpoints, reloaded).catch(() => undefined);
     }
-    const selected = catalog;
+    const selected = { ...catalog, boundaryAt: catalogPolicyBoundary(catalog) };
     return {
         catalog: selected, settings: bundle.settings, billingMode: bundle.billingMode, cacheStatus, catalogReadMs, rpcMs,
         variants: selected.variants.map(variant => ({ endpoint: variant.endpoint, payload: {

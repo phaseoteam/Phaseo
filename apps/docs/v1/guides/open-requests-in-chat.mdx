@@ -10,7 +10,7 @@ When Gateway I/O logs are on, Phaseo stores the prompt and response of each requ
 ## Before you start
 
 - Turn on **Store request and response payloads** in **Settings → Privacy**. Only requests made while it is on can be opened.
-- When **Require zero data retention** is on, the workspace never stores prompts or responses. Neither do requests made with an API key whose guardrail requires zero data retention. Their requests can't be opened.
+- When **Require zero data retention** is on, the workspace never stores prompts or responses. Neither do requests made with an API key whose guardrail requires zero data retention, or requests that set `require_zero_data_retention` themselves. Their requests can't be opened.
 - Requests sent to the [regional endpoints](./regional-routing.mdx) (`eu.api.phaseo.app` and `us.api.phaseo.app`) aren't stored, so they can't be opened.
 - You need to be a member of the workspace the request belongs to. If **Who can view contents** is set to **Owners and admins**, only owners and admins can open its requests.
 

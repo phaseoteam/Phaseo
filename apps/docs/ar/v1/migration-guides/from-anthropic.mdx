@@ -11,7 +11,7 @@ icon: "/icons/brands/anthropic.svg"
 
 | الإعداد | قبل | بعد |
 | --- | --- | --- |
-| عنوان URL الأساسي | القيمة الافتراضية لـ Anthropic | `https://api.phaseo.app/v1` |
+| عنوان URL الأساسي | القيمة الافتراضية لـ Anthropic | `https://api.phaseo.app` |
 | مفتاح API | مفتاح Anthropic | `PHASEO_API_KEY` |
 | النموذج | اسم نموذج Anthropic | معرّف نموذج Phaseo الذي يعيده `GET /v1/models` |
 | استدعاء Messages | استدعاء SDK الحالي | لا يتغير عادةً |
@@ -25,15 +25,16 @@ icon: "/icons/brands/anthropic.svg"
 
 <Step title="حدّث عميل Anthropic">
 
-وجّه SDK إلى عنوان URL الأساسي لـ Phaseo واستخدم مفتاح Phaseo.
+وجّه SDK إلى المضيف الجذر لـ Phaseo، `https://api.phaseo.app`، ومرّر مفتاح Phaseo بوصفه `authToken` (`auth_token` في Python). يضيف SDK المسار `/v1/messages` تلقائيًا ويرسل المفتاح في `Authorization: Bearer`. احذف `ANTHROPIC_API_KEY` من البيئات التي تتصل الآن بـ Phaseo، حتى لا ترسل إصدارات SDK الأقدم مفتاح Anthropic أيضًا.
 
 <CodeGroup>
 ```typescript TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app",
 });
 
 const response = await client.messages.create({
@@ -48,8 +49,8 @@ import os
 import anthropic
 
 client = anthropic.Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    auth_token=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
 )
 
 response = client.messages.create(
@@ -89,7 +90,7 @@ curl https://api.phaseo.app/v1/messages \
 ## قائمة التحقق من الترحيل
 
 - تم إعداد مفتاح Phaseo في كل بيئة نشر.
-- يشير عميل Anthropic إلى `https://api.phaseo.app/v1`.
+- يشير عميل Anthropic إلى `https://api.phaseo.app`.
 - تم التحقق من كل معرّف نموذج إنتاج باستخدام `GET /v1/models`.
 - تنجح مسارات البث واستخدام الأدوات في بيئة التجهيز.
 - تمت مراجعة رؤوس الإصدار التجريبي والمعلمات الخاصة بـ Anthropic.

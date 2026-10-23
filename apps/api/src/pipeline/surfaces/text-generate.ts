@@ -842,6 +842,7 @@ async function runTextGeneratePipelineInner(
 			hasTools: Array.isArray(pre.ctx.body?.tools) && pre.ctx.body.tools.length > 0,
 			serverToolsEnabled: preparedServerTools.config.enabled,
 			neverStoreContent: pre.ctx.neverStoreContent === true,
+			zeroDataRetention: pre.ctx.zeroDataRetention === true,
 		});
 		pre.ctx.responseCache = {
 			enabled: false,

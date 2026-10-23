@@ -461,6 +461,9 @@ async function createInstallation(env: Env, context: AccountWorkspaceContext, se
 			over_plan: settings.over_plan,
 			max_people: settings.max_people,
 			monthly_cap_nanos: usdToNanos(settings.monthly_cap_usd),
+			answers_per_person_hour: settings.answers_per_person_hour,
+			allow_guests: settings.allow_guests,
+			allow_external_users: settings.allow_external_users,
 			installed_by: context.user.id,
 		}).select("id").maybeSingle();
 		if (installation.error) {
@@ -557,6 +560,9 @@ accountSettingsSlackRouter.get("/slack/oauth/callback", async (c) => {
 		max_people: settings.max_people,
 		monthly_cap_usd: settings.monthly_cap_usd,
 		key_monthly_limit_usd: settings.token_monthly_limit_usd,
+		answers_per_person_hour: settings.answers_per_person_hour,
+		allow_guests: settings.allow_guests,
+		allow_external_users: settings.allow_external_users,
 		model: settings.model,
 		access_mode: settings.access_mode,
 		usage_data_mode: settings.usage_data_mode,

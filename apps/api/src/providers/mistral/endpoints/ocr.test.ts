@@ -21,6 +21,20 @@ const OCR_4_PRICING_CARD = {
 	],
 } as any;
 
+const OCR_3_PRICING_CARD = {
+	provider: "mistral",
+	model: "mistral/ocr-3",
+	endpoint: "ocr",
+	effective_from: null,
+	effective_to: null,
+	currency: "USD",
+	version: null,
+	rules: [
+		{ meter: "input_pages", unit: "page", unit_size: 1000, price_per_unit: 2, currency: "USD", pricing_plan: "standard", match: [], priority: 100, effective_from: null, effective_to: null },
+		{ meter: "input_pages", unit: "page", unit_size: 1000, price_per_unit: 3, currency: "USD", pricing_plan: "standard", match: [{ path: "ocr_params.annotations", op: "eq", or_group: 1, and_index: 1, value: true }], priority: 110, effective_from: null, effective_to: null },
+	],
+} as any;
+
 function buildArgs(body: Record<string, unknown>, providerId = "mistral", pricingCard: any = null) {
 	return {
 		endpoint: "ocr",
@@ -129,5 +143,22 @@ describe("Mistral OCR endpoint", () => {
 			document_annotation_prompt: "Extract fields",
 		}).success).toBe(false);
 		expect(OcrSchema.safeParse({ model: "mistral/ocr-4", image: "a", document: { type: "file", file_id: crypto.randomUUID() } }).success).toBe(false);
+	});
+
+	it("bills annotated pages at the annotation price and plain pages at the page price", async () => {
+		const annotationFormat = { type: "json_schema", json_schema: { name: "invoice", schema: { type: "object" } } };
+		const totals: number[] = [];
+		for (const extra of [{}, { document_annotation_format: annotationFormat }, { bbox_annotation_format: annotationFormat }]) {
+			const mock = installFetchMock([{
+				match: (url) => url.endsWith("/v1/ocr"),
+				response: jsonResponse({ pages: [], model: "mistral-ocr-2512", usage_info: { pages_processed: 10 } }),
+			}]);
+			const args = buildArgs({ model: "mistral/ocr-3", document: { type: "document_url", document_url: "https://example.com/a.pdf" }, ...extra }, "mistral", OCR_3_PRICING_CARD);
+			const result = await exec({ ...args, model: "mistral/ocr-3", providerModelSlug: "mistral-ocr-2512" });
+			mock.restore();
+			totals.push((result.bill.usage as any)?.pricing?.total_nanos);
+		}
+		// 10 pages: $2 / 1,000 plain, $3 / 1,000 annotated.
+		expect(totals).toEqual([20_000_000, 30_000_000, 30_000_000]);
 	});
 });

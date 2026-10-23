@@ -1521,6 +1521,8 @@ export default function RequestDetailDialog({
 		"App where used",
 	]);
 	const trainingPolicyItem = requestDetailItems.find((item) => item.label === s("Data policy"));
+	// Zero data retention kept this request out of the I/O log, from the workspace, a key guardrail or the request itself.
+	const ioLogSkippedForZeroDataRetention = ioLog?.reason === "zero_data_retention";
 	const dataPolicyItems = [
 		...(trainingPolicyItem
 			? [{
@@ -1539,7 +1541,9 @@ export default function RequestDetailDialog({
 						? m("Retained until", {
 								date: format.dateTime(ioLog.retention_until),
 							})
-						: s("No Retained Payload")}
+						: ioLogSkippedForZeroDataRetention
+							? t("trace.skippedZeroDataRetention" as never)
+							: s("No Retained Payload")}
 				</span>
 			),
 		},
@@ -2781,7 +2785,7 @@ export default function RequestDetailDialog({
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Prompt")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.request_payload ?? ioLog.payload.provider_request ?? null, null, 2)}</pre></div>
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Completion")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.gateway_response ?? ioLog.payload.provider_response ?? null, null, 2)}</pre></div>
 										</div>
-									) : <p className="text-muted-foreground">{ioLog.status === "restricted" ? tUi("privacy.contentsRestricted") : ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
+									) : <p className="text-muted-foreground">{ioLog.status === "restricted" ? tUi("privacy.contentsRestricted") : ioLogSkippedForZeroDataRetention ? t("trace.skippedZeroDataRetention" as never) : ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
 								</div>
 							</GenerationSection>
 						) : null}

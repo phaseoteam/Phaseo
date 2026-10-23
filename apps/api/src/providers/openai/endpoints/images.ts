@@ -228,6 +228,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         model: deployment || args.providerModelSlug || args.model,
     };
     const req = mapGatewayToOpenAIImages(modifiedBody, args.body as Record<string, unknown>, args.providerId);
+    // Together takes no size or quality field; its output follows width and height,
+    // which default to 1024 (https://docs.together.ai/openapi.yaml).
+    const togetherSize = req as { width?: unknown; height?: unknown };
+    const pricingInput = args.providerId === "together"
+        ? { ...modifiedBody, width: togetherSize.width ?? 1024, height: togetherSize.height ?? 1024 }
+        : modifiedBody;
     const res = await (args.upstreamTiming?.fetch ?? fetch)(url, {
         method: "POST",
         headers,
@@ -251,7 +257,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             const imagePixels = resolveOutputImagePixels(req, modifiedBody.n ?? 1, args.providerId);
             if (imagePixels !== undefined) usageMeters.image_pixels = imagePixels;
             if (!args.pricingCard) return { ...bill, usage: usageMeters };
-            const pricedUsage = computeBillAfterProviderCharge(usageMeters as Record<string, any>, args.pricingCard, buildImagePricingRequestOptions(modifiedBody, usageMeters));
+            const pricedUsage = computeBillAfterProviderCharge(usageMeters as Record<string, any>, args.pricingCard, buildImagePricingRequestOptions(pricingInput, usageMeters));
             return {
                 ...bill,
                 cost_cents: pricedUsage.pricing.total_cents,
@@ -304,7 +310,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         const pricedUsage = computeBillAfterProviderCharge(
             usageMeters as Record<string, any>,
             args.pricingCard,
-            buildImagePricingRequestOptions(modifiedBody, usageMeters),
+            buildImagePricingRequestOptions(pricingInput, usageMeters),
         );
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;

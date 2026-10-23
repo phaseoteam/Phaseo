@@ -256,6 +256,8 @@
 				"nav-settings-guardrails": "गार्डरेल",
 				"nav-settings-rate-limits": "रेट लिमिट",
 				"nav-settings-classifiers": "क्लासिफ़ायर",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "कुंजी सुरक्षा",
 				"nav-settings-oauth": "OAuth ऐप्स",
 				"nav-settings-broadcast": "प्रसारण",
 				"nav-settings-webhooks": "Webhooks",

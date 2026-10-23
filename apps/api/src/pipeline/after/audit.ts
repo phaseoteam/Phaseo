@@ -271,6 +271,7 @@ export async function handleFailureAudit(
             stage: "execute",
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            zeroDataRetention: ctx.zeroDataRetention === true,
             endpoint: ctx.endpoint,
             model: ctx.model,
             requestedModel: ctx.requestedModel ?? ctx.model,
@@ -394,6 +395,7 @@ export async function handleFailureAudit(
             sessionId: ctx.meta.sessionId ?? null,
             edgeColo: ctx.meta.edgeColo ?? null,
             labels: ctx.meta.labels ?? null,
+            metadata: ctx.meta.requestMetadata ?? null,
         }),
         writeAxiom: () => emitGatewayRequestEvent({
             ctx,
@@ -518,6 +520,7 @@ export async function handleSuccessAudit(
         writeSupabase: shouldPersistGatewayAudit(ctx) ? () => auditSuccess({
             requestId: ctx.requestId,
             workspaceId: ctx.workspaceId,
+            zeroDataRetention: ctx.zeroDataRetention === true,
             provider: result.provider,
             providerApiModelId: result.apiModelId ?? null,
             providerModelSlug: result.providerModelSlug ?? null,
@@ -650,6 +653,7 @@ export async function handleSuccessAudit(
             sessionId: ctx.meta.sessionId ?? null,
             edgeColo: ctx.meta.edgeColo ?? null,
             labels: ctx.meta.labels ?? null,
+            metadata: ctx.meta.requestMetadata ?? null,
         }),
         writeAxiom: () => emitGatewayRequestEvent({
             ctx,
@@ -683,8 +687,15 @@ export async function handleSuccessAudit(
 		});
 	}
 
-	// A key that never stores content is never sampled for data contribution either.
-	if (!isStealthRequest(ctx) && !byok && ctx.teamSettings?.dataContributionEnabled === true && ctx.neverStoreContent !== true) {
+	// A key that never stores content, or a request under zero data retention, is never
+	// sampled for data contribution either.
+	if (
+		!isStealthRequest(ctx) &&
+		!byok &&
+		ctx.teamSettings?.dataContributionEnabled === true &&
+		ctx.neverStoreContent !== true &&
+		ctx.zeroDataRetention !== true
+	) {
 		const pricing = (usageWithMultimodal as any)?.pricing;
 		const currentDiscountNanos = currentDataContributionDiscountNanos(pricing, totalNanos);
 		const capture = await persistDataContribution({

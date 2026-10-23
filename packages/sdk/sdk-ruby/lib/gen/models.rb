@@ -147,6 +147,18 @@ module Phaseo
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
     AnthropicMessagesResponse = Struct.new(:content, :context_management, :id, :model, :role, :stop_reason, :stop_sequence, :type, :usage, keyword_init: true)
+    # @!attribute [rw] content
+    #   @return [String, Array<Hash{String => Object}>]
+    # @!attribute [rw] role
+    #   @return [String]
+    AnthropicSystemMessage = Struct.new(:content, :role, keyword_init: true)
+    # @!attribute [rw] cache_control
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] text
+    #   @return [String]
+    # @!attribute [rw] type
+    #   @return [String]
+    AnthropicSystemTextBlock = Struct.new(:cache_control, :text, :type, keyword_init: true)
     # @!attribute [rw] async
     #   @return [Boolean, nil]
     # @!attribute [rw] description
@@ -211,6 +223,8 @@ module Phaseo
     #   @return [Boolean]
     # @!attribute [rw] status
     #   @return [String, nil]
+    # @!attribute [rw] storage_locations
+    #   @return [Array<String>, nil]
     # @!attribute [rw] updated_at
     #   @return [String, nil]
     # @!attribute [rw] usage
@@ -225,7 +239,7 @@ module Phaseo
     #   @return [Float]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    ApiKey = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
+    ApiKey = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :storage_locations, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
     # @!attribute [rw] department_id
     #   @return [String, nil]
     # @!attribute [rw] disabled
@@ -246,9 +260,11 @@ module Phaseo
     #   @return [String, Array<String>, nil]
     # @!attribute [rw] soft_blocked
     #   @return [Boolean, nil]
+    # @!attribute [rw] storage_locations
+    #   @return [Array<String>, nil]
     # @!attribute [rw] workspace_id
     #   @return [String, nil]
-    ApiKeyCreateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :workspace_id, keyword_init: true)
+    ApiKeyCreateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :storage_locations, :workspace_id, keyword_init: true)
     # @!attribute [rw] cost
     #   @return [Float, nil]
     # @!attribute [rw] requests
@@ -292,6 +308,7 @@ module Phaseo
     #   @return [String, nil]
     ApiKeyRotateResponse = Struct.new(:data, :previous_key_expires_at, keyword_init: true)
     ApiKeyScopeValue = Object
+    ApiKeyStorageLocations = Object
     # @!attribute [rw] department_id
     #   @return [String, nil]
     # @!attribute [rw] disabled
@@ -312,7 +329,9 @@ module Phaseo
     #   @return [String, Array<String>, nil]
     # @!attribute [rw] soft_blocked
     #   @return [Boolean, nil]
-    ApiKeyUpdateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, keyword_init: true)
+    # @!attribute [rw] storage_locations
+    #   @return [Object, nil]
+    ApiKeyUpdateRequest = Struct.new(:department_id, :disabled, :expires_at, :include_byok_in_limit, :limit, :limit_reset, :limits, :name, :scopes, :soft_blocked, :storage_locations, keyword_init: true)
     # @!attribute [rw] cost
     #   @return [Float]
     # @!attribute [rw] requests
@@ -369,6 +388,8 @@ module Phaseo
     #   @return [Boolean]
     # @!attribute [rw] status
     #   @return [String, nil]
+    # @!attribute [rw] storage_locations
+    #   @return [Array<String>, nil]
     # @!attribute [rw] updated_at
     #   @return [String, nil]
     # @!attribute [rw] usage
@@ -383,7 +404,7 @@ module Phaseo
     #   @return [Float]
     # @!attribute [rw] workspace_id
     #   @return [String]
-    ApiKeyWithValue = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :key, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
+    ApiKeyWithValue = Struct.new(:created_at, :created_by, :creator_user_id, :department_id, :disabled, :expires_at, :hash, :id, :include_byok_in_limit, :key, :label, :last_used_at, :limit, :limit_remaining, :limit_reset, :limits, :name, :prefix, :scopes, :soft_blocked, :status, :storage_locations, :updated_at, :usage, :usage_daily, :usage_details, :usage_monthly, :usage_weekly, :workspace_id, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     # @!attribute [rw] key
@@ -1285,7 +1306,7 @@ module Phaseo
     # @!attribute [rw] box
     #   @return [Hash{String => Object}]
     # @!attribute [rw] confidence
-    #   @return [Float]
+    #   @return [Float, nil]
     # @!attribute [rw] name
     #   @return [String, nil]
     # @!attribute [rw] type
@@ -5739,6 +5760,8 @@ module Phaseo
     WorkspaceNotificationRoute = Struct.new(:destination_ids, :event_kind, keyword_init: true)
     # @!attribute [rw] auto_top_up_failed
     #   @return [Array<String>]
+    # @!attribute [rw] broadcast_destination_failing
+    #   @return [Array<String>]
     # @!attribute [rw] low_balance
     #   @return [Array<String>]
     # @!attribute [rw] model_deprecation
@@ -5749,7 +5772,7 @@ module Phaseo
     #   @return [Array<String>]
     # @!attribute [rw] rate_limit_throttled
     #   @return [Array<String>]
-    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :low_balance, :model_deprecation, :model_substitution, :payment_method_expiring, :rate_limit_throttled, keyword_init: true)
+    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :broadcast_destination_failing, :low_balance, :model_deprecation, :model_substitution, :payment_method_expiring, :rate_limit_throttled, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceNotificationRouteResponse = Struct.new(:data, keyword_init: true)

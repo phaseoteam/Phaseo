@@ -256,6 +256,8 @@
 				"nav-settings-guardrails": "Reglas de protección",
 				"nav-settings-rate-limits": "Límites de velocidad",
 				"nav-settings-classifiers": "Clasificadores",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "Seguridad de claves",
 				"nav-settings-oauth": "Aplicaciones OAuth",
 				"nav-settings-broadcast": "Difusión",
 				"nav-settings-webhooks": "Webhooks",

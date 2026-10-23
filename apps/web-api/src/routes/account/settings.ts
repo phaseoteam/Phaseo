@@ -17,6 +17,7 @@ import { accountSettingsTeamsRouter } from "./settings-teams";
 import { accountSettingsProfileRouter } from "./settings-profile";
 import { accountSettingsProfileAvatarRouter, ownedProfileAvatarKey } from "./settings-profile-avatar";
 import { accountSettingsKeysRouter } from "./settings-keys";
+import { accountSettingsKeySecurityRouter } from "./settings-key-security";
 import { accountSettingsWorkspaceUsersRouter } from "./settings-workspace-users";
 import { accountSettingsAuditRouter } from "./settings-audit";
 import { accountSettingsOAuthRouter } from "./settings-oauth";
@@ -144,6 +145,7 @@ accountSettingsRouter.route("/", accountSettingsTeamsRouter);
 accountSettingsRouter.route("/", accountSettingsProfileRouter);
 accountSettingsRouter.route("/", accountSettingsProfileAvatarRouter);
 accountSettingsRouter.route("/", accountSettingsKeysRouter);
+accountSettingsRouter.route("/", accountSettingsKeySecurityRouter);
 accountSettingsRouter.route("/", accountSettingsWorkspaceUsersRouter);
 accountSettingsRouter.route("/", accountSettingsAuditRouter);
 accountSettingsRouter.route("/", accountSettingsOAuthRouter);
@@ -609,6 +611,30 @@ accountSettingsRouter.get("/account/mfa", async (c) => {
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+type BroadcastHealthSummaryRow = {
+	destination_id: string;
+	last_success_at: string | null;
+	last_failure_at: string | null;
+	last_http_status: number | null;
+	last_error: string | null;
+	consecutive_failures: number | null;
+	delivered_24h: number | string | null;
+	failed_24h: number | string | null;
+};
+
+function broadcastHealth(row: BroadcastHealthSummaryRow | undefined) {
+	if (!row) return null;
+	return {
+		lastSuccessAt: row.last_success_at ?? null,
+		lastFailureAt: row.last_failure_at ?? null,
+		lastHttpStatus: row.last_http_status ?? null,
+		lastError: row.last_error ?? null,
+		consecutiveFailures: Number(row.consecutive_failures ?? 0),
+		delivered24h: Number(row.delivered_24h ?? 0),
+		failed24h: Number(row.failed_24h ?? 0),
+	};
+}
+
 accountSettingsRouter.get("/broadcast", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
 	if (!workspaceId) {
@@ -624,13 +650,14 @@ accountSettingsRouter.get("/broadcast", async (c) => {
 		workspaceId,
 	});
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [teamResult, configuredResult] = await Promise.all([
+	const [teamResult, configuredResult, healthResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", workspaceId).maybeSingle(),
 		context.client
 			.from("workspace_broadcast_destinations")
 			.select("id,destination_id,name,enabled,sampling_rate,updated_at")
 			.eq("workspace_id", workspaceId)
 			.order("created_at", { ascending: false }),
+		context.client.rpc("broadcast_destination_health_summary", { p_workspace_id: workspaceId }),
 	]);
 	if (teamResult.error) {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -638,6 +665,10 @@ accountSettingsRouter.get("/broadcast", async (c) => {
 	if (configuredResult.error && !configuredResult.error.message.includes("workspace_broadcast_destinations")) {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
+	// Health is informational, so the list still loads without it.
+	if (healthResult.error) console.error("broadcast_health_summary_failed", { error: healthResult.error.message });
+	const health = new Map(((healthResult.error ? [] : healthResult.data ?? []) as BroadcastHealthSummaryRow[])
+		.map((row) => [String(row.destination_id), row]));
 	return c.json({
 		configuredDestinations: (configuredResult.data ?? []).map((row) => ({
 			id: row.id,
@@ -647,6 +678,7 @@ accountSettingsRouter.get("/broadcast", async (c) => {
 			samplingRate: Number(row.sampling_rate ?? 1),
 			destinationConfig: null,
 			updatedAt: row.updated_at ?? null,
+			health: broadcastHealth(health.get(String(row.id))),
 		})),
 		teamName: teamResult.data?.name ?? null,
 		workspaceId,
@@ -1271,7 +1303,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 		context.client.from("credit_ledger")
 			.select("id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at")
 			// Usage debits belong in usage logs; filter before the billing history limit.
-			.or("kind.is.null,kind.not.in.(charge,usage)")
+			// The Slack agent's month-end charge is a bill, so it stays.
+			.or("kind.is.null,kind.not.in.(charge,usage),ref_type.eq.slack_agent_month")
 			.eq("workspace_id", workspaceId).order("event_time", { ascending: false }).limit(250),
 	]);
 	if (walletResult.error || transactionsResult.error) {

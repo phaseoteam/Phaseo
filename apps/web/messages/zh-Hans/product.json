@@ -2428,7 +2428,9 @@
 			"rule": "规则：{keyword}"
 		},
 		"realtimeBillingTitle": "实时账单",
-		"realtimeBillingDescription": "查看缺失的用量、冻结资金以及经过审计的计费决定。"
+		"realtimeBillingDescription": "查看缺失的用量、冻结资金以及经过审计的计费决定。",
+		"keyIncidentsTitle": "密钥存储事件",
+		"keyIncidentsDescription": "撤销或暂停存储在发生数据泄露的平台上的所有 API 密钥。"
 	},
 	"webhookPage": {
 		"description": "将异步视频和批处理作业的更新发送至应用程序，支持签名和重试。",

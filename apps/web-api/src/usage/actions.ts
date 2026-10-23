@@ -276,6 +276,8 @@ export type GatewayIoLog = {
 	bytes: number | null;
 	retention_until: string | null;
 	error: string | null;
+	/** Why nothing was stored, as a stable code (`zero_data_retention`); `error` has the gateway's English text. */
+	reason?: "zero_data_retention" | null;
 	payload: Record<string, unknown> | null;
 };
 

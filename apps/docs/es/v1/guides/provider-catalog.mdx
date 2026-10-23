@@ -14,6 +14,40 @@ V1.1 declara `"schema_version": "1.1"` y publica `service_tiers` dentro de cada 
 
 Descarga el [esquema V1](https://phaseo.app/api/internal/provider-catalog/schema) o el [esquema V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1). Las versiones no compatibles se rechazan de forma explícita.
 
+### Políticas de datos V1.2 (vista previa)
+
+V1.2 añade declaraciones de entrenamiento y retención específicas de cada capacidad a cada nivel de servicio. Coordina la activación con Phaseo antes de publicar estos campos; los importadores anteriores los rechazan. Los feeds V1 y V1.1 siguen siendo compatibles.
+
+V1.2 también acepta `declarations` opcionales por modelo o nivel para la identidad del modelo, límites tipados de entrada/salida, descripciones de parámetros, precios y capacidad por ámbito, descuentos y detalles de despliegue. Se validan y conservan para su revisión. No habilitan parámetros ni cambian automáticamente los precios facturables, la aplicación de límites de capacidad o las garantías de residencia. Los resultados de validación identifican las declaraciones almacenadas; sigue publicando los precios y capacidades efectivos mediante sus campos existentes.
+
+Establece `schema_version` en `"1.2"` y añade un objeto `data_policy` a cada nivel aplicable:
+
+```json
+{
+  "capabilities": [{
+    "id": "text.generate",
+    "training_policy": "no_train",
+    "retention_mode": "none",
+    "retention_days": 0,
+    "zero_data_retention": true,
+    "zdr_eligibility": "eligible",
+    "requirements": { "contract_mode": "none", "account_settings": [] },
+    "privacy_policy_url": "https://provider.example/privacy",
+    "terms_of_service_url": "https://provider.example/terms"
+  }]
+}
+```
+
+Este ejemplo es el valor `data_policy` del nivel, no un feed completo. Los IDs de capacidad son canónicos: usa `text.generate` incluso cuando el modelo declare `responses` o `chat.completions`.
+
+La declaración cubre tanto las entradas como las salidas a lo largo de la cadena de procesamiento upstream. No describe los metadatos de facturación. Los valores de entrenamiento son `unknown`, `may_train`, `no_train`, `opt_out_available` y `enterprise_no_train`. Los modos de retención son `unknown`, `none`, `transient`, `fixed` y `until_deleted`. Usa cero días para none, una duración máxima positiva para transient/fixed y null para unknown/until-deleted.
+
+Declara los acuerdos necesarios con `contract_mode`: `none`, `customer_agreement` o `enterprise_agreement`. Los ajustes de cuenta necesarios son objetos con `id`, `description` y una `documentation_url` HTTPS en el array `account_settings`. Los programas condicionales usan `zdr_eligibility: "conditional"` y no pueden declarar una garantía activa con valor true. Siguen siendo informativos hasta que Phaseo pueda verificar el cumplimiento.
+
+Phaseo aprueba de forma independiente la fuente de la política. El feed no puede marcar una declaración como verificada. Esta versión solo concede ZDR activo a la generación de texto incondicional en ofertas que no sean batch, sin entrenamiento ni retención de contenido. Alojar un modelo por tu cuenta no declara ZDR por sí solo.
+
+Una vez que una oferta adopta una política gestionada por el feed, establecer false, enviar null, omitir su declaración o reducir la versión del feed retira esa garantía. Las anulaciones manuales de Phaseo se mantienen por separado. Las declaraciones positivas caducan tras 24 horas sin una validación correcta del catálogo; revocar la aprobación no requiere una nueva consulta al proveedor.
+
 ## Publica niveles normalizados
 
 | Nivel | Significado |

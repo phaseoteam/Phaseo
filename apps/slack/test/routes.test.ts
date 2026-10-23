@@ -91,7 +91,10 @@ describe("routes", () => {
 		expect(await response.text()).toBe("");
 		await expect(settled()).resolves.toEqual(["started"]);
 		const thread = world.threads.get(world.threads.idFromName(`${INSTALLATION_ID}:C0CHANNEL1:1792600000.000100`));
-		expect(thread.status()).toEqual({ running: null, queued: 0, events: 1, memory: 0 });
+		expect(thread.status()).toEqual({ running: 1, queued: 0, events: 1, memory: 0 });
+		// The turn runs as a Workflow instance whose params hold ids, never the message.
+		expect(world.turns.created.map((entry) => entry.id)).toEqual(["turn-Ev0TEST0001"]);
+		expect(JSON.stringify(world.turns.created)).not.toContain("what did we spend");
 	});
 
 	it("acknowledges Slack's retries and replays inside the window, and handles the event once", async () => {
@@ -103,7 +106,8 @@ describe("routes", () => {
 		expect(replay.status).toBe(200);
 		await expect(settled()).resolves.toEqual(["started", "duplicate", "duplicate"]);
 		const meter = world.meters.get(world.meters.idFromName(INSTALLATION_ID));
-		expect(meter.usage(NOW)).toMatchObject({ people: 1, pending: 0 });
+		expect(meter.usage(NOW)).toMatchObject({ people: 1, pending: 1 });
+		expect(world.turns.created).toHaveLength(1);
 	});
 
 	it("handles the app being removed in Slack before answering, and asks Slack to retry when the database is down", async () => {

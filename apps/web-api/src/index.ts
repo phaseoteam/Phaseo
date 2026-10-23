@@ -25,9 +25,9 @@ app.route("/scim/v2", scimRouter);
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 
 export default Object.assign(app, {
-	async scheduled(event: ScheduledController, env: Env): Promise<void> {
+	async scheduled(event: ScheduledController, env: Env, executionCtx: ExecutionContext): Promise<void> {
 		await Promise.all([
-			handleProviderCatalogScheduledEvent(event, env),
+			handleProviderCatalogScheduledEvent(event, env, executionCtx),
 			handleSlackAgentChargesScheduledEvent(event, env),
 		]);
 	},

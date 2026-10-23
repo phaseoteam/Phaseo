@@ -1,4 +1,6 @@
 "use client";
+
+import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
 import { CacheWritePricing, groupCacheWriteTiers } from "./CacheWritePricing";
 import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
@@ -2837,7 +2839,7 @@ export default function ProviderCard({
 		dataPolicy: (() => {
 			const tierPolicy = provider.provider.service_tier_data_policies?.[selectedPlan] ?? null;
 			const capabilityPolicies = infoScope
-				.map((providerModel) => providerModel.data_policy)
+				.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy))
 				.filter((policy): policy is NonNullable<typeof policy> => Boolean(policy));
 			const policies = tierPolicy ? [tierPolicy] : capabilityPolicies;
 			if (!policies.length) return [{
@@ -2857,9 +2859,9 @@ export default function ProviderCard({
 				contractNotes: provider.provider.data_policy_contract_notes ?? null,
 				notes: policy.reason ?? provider.provider.prompt_training_notes ?? null,
 				sourceUrl: policy.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
-				promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
+				promptTrainingPolicy: policy.trainingPolicy ?? provider.provider.prompt_training_policy ?? null,
 				zeroDataRetention: resolveScopedZdr(provider.provider.zero_data_retention,
-					infoScope.map((model) => model.data_policy), tierPolicy),
+					infoScope.map((model) => currentCatalogDataPolicy(model.data_policy)), tierPolicy),
 			}));
 		})(),
 		residency: [
@@ -2869,7 +2871,7 @@ export default function ProviderCard({
 				dataRegions: provider.provider.default_data_regions ?? null,
 				zeroDataRetention: resolveScopedZdr(
 					provider.provider.zero_data_retention,
-					infoScope.map((model) => model.data_policy),
+					infoScope.map((model) => currentCatalogDataPolicy(model.data_policy)),
 					provider.provider.service_tier_data_policies?.[selectedPlan],
 				),
 				notes: provider.provider.residency_notes ?? null,
@@ -2895,6 +2897,7 @@ export default function ProviderCard({
 			infoScope.length > 0
 				? infoScope.map((providerModel) => ({
 						policy:
+							currentCatalogDataPolicy(providerModel.data_policy)?.trainingPolicy ??
 							providerModel.prompt_training_policy_override ??
 							provider.provider.prompt_training_policy ??
 							null,
@@ -2911,9 +2914,9 @@ export default function ProviderCard({
 						userIdentifierNotes:
 							provider.provider.user_identifier_notes ?? null,
 						privacyPolicyUrl:
-							provider.provider.privacy_policy_url ?? null,
+							currentCatalogDataPolicy(providerModel.data_policy)?.evidenceUrl ?? provider.provider.privacy_policy_url ?? null,
 						termsOfServiceUrl:
-							provider.provider.terms_of_service_url ?? null,
+							currentCatalogDataPolicy(providerModel.data_policy)?.termsOfServiceUrl ?? provider.provider.terms_of_service_url ?? null,
 						isOverride: Boolean(
 							providerModel.prompt_training_policy_override,
 						),
@@ -3229,7 +3232,7 @@ export default function ProviderCard({
 	const dataPolicySectionId = `${sheetSectionPrefix}-data-policy`;
 	const parametersSectionId = `${sheetSectionPrefix}-parameters`;
 	const selectedTierPolicy = provider.provider.service_tier_data_policies?.[selectedPlan] ?? null;
-	const scopedCapabilityPolicies = providerModelsInScope.map((providerModel) => providerModel.data_policy ?? null);
+	const scopedCapabilityPolicies = providerModelsInScope.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy) ?? null);
 	const selectedCapabilityPolicies = scopedCapabilityPolicies.filter(
 		(policy): policy is NonNullable<typeof policy> => Boolean(policy),
 	);

@@ -147,4 +147,53 @@ describe("validateProviderDocsCompliance", () => {
 			if (result.ok) expect(result.providers.map((p) => p.providerId)).toEqual(["anthropic", "openai"]);
 		});
 	});
+
+	it("rejects a forced tool choice for Sonnet 5.5, Fable 5.1 and Mythos 5.1 with a clear 400", async () => {
+		const tools = [{ name: "get_weather", input_schema: { type: "object", properties: {} } }];
+		for (const [model, label] of [
+			["anthropic/claude-sonnet-5.5", "Sonnet 5.5"],
+			["anthropic/claude-fable-5.1", "Fable 5.1"],
+			["anthropic/claude-mythos-5.1", "Mythos 5.1"],
+		]) {
+			for (const toolChoice of [{ type: "any" }, { type: "tool", name: "get_weather" }]) {
+				const result = validateProviderDocsCompliance({
+					endpoint: "messages",
+					body: { model, max_tokens: 64, messages: [{ role: "user", content: "Weather?" }], tools, tool_choice: toolChoice },
+					requestId: "req_test",
+					workspaceId: "team_test",
+					model,
+					providers: [candidate("anthropic"), candidate("amazon-bedrock"), candidate("google-vertex")],
+					requestedParams: ["tool_choice"],
+				});
+				expect(result.ok).toBe(false);
+				if (!result.ok) {
+					expect(result.response.status).toBe(400);
+					const body = await result.response.json() as any;
+					expect(JSON.stringify(body)).toContain(`${label}: forced tool choice is not supported`);
+				}
+			}
+			const auto = validateProviderDocsCompliance({
+				endpoint: "messages",
+				body: { model, max_tokens: 64, messages: [{ role: "user", content: "Weather?" }], tools, tool_choice: { type: "auto" }, temperature: 0.2 },
+				requestId: "req_test",
+				workspaceId: "team_test",
+				model,
+				providers: [candidate("anthropic")],
+				requestedParams: ["tool_choice", "temperature"],
+			});
+			expect(auto.ok).toBe(true);
+		}
+		// Sonnet 5 and Fable 5 still accept forced tool use.
+		for (const model of ["anthropic/claude-sonnet-5", "anthropic/claude-fable-5"]) {
+			expect(validateProviderDocsCompliance({
+				endpoint: "messages",
+				body: { model, max_tokens: 64, messages: [{ role: "user", content: "Weather?" }], tools, tool_choice: { type: "any" } },
+				requestId: "req_test",
+				workspaceId: "team_test",
+				model,
+				providers: [candidate("anthropic")],
+				requestedParams: ["tool_choice"],
+			}).ok).toBe(true);
+		}
+	});
 });

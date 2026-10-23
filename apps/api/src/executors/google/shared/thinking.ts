@@ -15,6 +15,11 @@ const GOOGLE_DEFAULT_GEMINI3_LEVELS: GoogleThinkingLevel[] = [
 
 const GOOGLE_GEMMA4_LEVELS: GoogleThinkingLevel[] = ["MINIMAL", "HIGH"];
 
+// No MINIMAL: Google returns a validation error for it on these models.
+const GOOGLE_LOW_MEDIUM_HIGH_LEVELS: GoogleThinkingLevel[] = ["LOW", "MEDIUM", "HIGH"];
+
+const GOOGLE_LEVEL_ORDER: GoogleThinkingLevel[] = ["MINIMAL", "LOW", "MEDIUM", "HIGH"];
+
 const GOOGLE_GEMMA4_MODELS = new Set([
 	"gemma-4-26b-a4b",
 	"gemma-4-31b",
@@ -29,9 +34,18 @@ const GOOGLE_THINKING_LEVEL_SUPPORT: Record<string, GoogleThinkingLevel[]> = {
 	"gemini-3-pro-preview-developer": GOOGLE_DEFAULT_GEMINI3_LEVELS,
 	"gemini-3-pro-preview-thinking-developer": GOOGLE_DEFAULT_GEMINI3_LEVELS,
 	"gemini-3-pro-image-preview": GOOGLE_DEFAULT_GEMINI3_LEVELS,
-	"gemini-3.1-pro-preview": GOOGLE_DEFAULT_GEMINI3_LEVELS,
+	// https://ai.google.dev/gemini-api/docs/thinking: 3.1 Pro takes low, medium and high.
+	"gemini-3.1-pro-preview": GOOGLE_LOW_MEDIUM_HIGH_LEVELS,
 	"gemini-3.1-flash-image-preview": GOOGLE_DEFAULT_GEMINI3_LEVELS,
+	// https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-7-flash
+	"gemini-3.7-flash": GOOGLE_LOW_MEDIUM_HIGH_LEVELS,
+	// https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/4-argon:
+	// "Setting thinking_budget or thinking_level="MINIMAL" returns an HTTP 400 validation error."
+	"gemini-4-argon": GOOGLE_LOW_MEDIUM_HIGH_LEVELS,
 };
+
+// Models that refuse thinkingBudget and take thinkingLevel only.
+const GOOGLE_THINKING_BUDGET_UNSUPPORTED = ["gemini-4-argon"];
 
 function normalizeModelName(model: string): string {
 	return normalizeGoogleModelSlug(String(model ?? "").trim()).replace(/:free$/i, "");
@@ -61,6 +75,18 @@ export function getSupportedGoogleThinkingLevels(model: string): GoogleThinkingL
 
 export function modelSupportsGoogleThinkingLevels(model: string): boolean {
 	return getSupportedGoogleThinkingLevels(model).length > 0;
+}
+
+/** True when the model rejects thinkingBudget, so reasoning must be sent as a thinkingLevel. */
+export function modelRejectsGoogleThinkingBudget(model: string): boolean {
+	const normalized = normalizeModelName(model);
+	return GOOGLE_THINKING_BUDGET_UNSUPPORTED.some(prefix =>
+		normalized === prefix || normalized.startsWith(`${prefix}-`) || normalized.startsWith(`${prefix}_`));
+}
+
+/** The least thinking a model accepts: MINIMAL where supported, otherwise its lowest level. */
+export function getLowestGoogleThinkingLevel(model: string): GoogleThinkingLevel | undefined {
+	return getSupportedGoogleThinkingLevels(model)[0];
 }
 
 export function getDefaultGoogleThinkingLevel(model: string): GoogleThinkingLevel | undefined {
@@ -96,12 +122,8 @@ export function resolveGoogleThinkingLevelForEffort(
 	const supported = getSupportedGoogleThinkingLevels(model);
 	if (supported.length === 0) return undefined;
 	if (supported.includes(mapped)) return mapped;
-	if (
-		supported.length === 2 &&
-		supported.includes("MINIMAL") &&
-		supported.includes("HIGH")
-	) {
-		return mapped === "LOW" ? "MINIMAL" : "HIGH";
-	}
-	return supported[supported.length - 1];
+	// The nearest supported level, so "minimal" becomes LOW where MINIMAL is rejected.
+	const rank = (level: GoogleThinkingLevel) => GOOGLE_LEVEL_ORDER.indexOf(level);
+	return supported.reduce((best, level) =>
+		Math.abs(rank(level) - rank(mapped)) < Math.abs(rank(best) - rank(mapped)) ? level : best);
 }

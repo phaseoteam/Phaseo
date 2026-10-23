@@ -1,4 +1,5 @@
 import { getBindings, getByokKey } from "@/runtime/env";
+import { validateWebhookEndpointUrl } from "./webhook-endpoints";
 
 const MAX_SCOPE_ITEMS = 256;
 const FINGERPRINT_PBKDF2_ITERATIONS = 100_000;
@@ -36,6 +37,53 @@ export function normalizeCredentialScope(value: unknown, field: string): string[
 	return values;
 }
 
+// Azure resource hosts a workspace's own Azure key may be sent to: Azure OpenAI
+// (<resource>.openai.azure.com), Foundry (<resource>.services.ai.azure.com) and Azure AI
+// services (<resource>.cognitiveservices.azure.com), plus the Azure Government (.us) and
+// Azure China (.cn) clouds.
+// https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/endpoints
+const AZURE_BYOK_HOST_SUFFIXES = [
+	".openai.azure.com",
+	".services.ai.azure.com",
+	".cognitiveservices.azure.com",
+	".openai.azure.us",
+	".cognitiveservices.azure.us",
+	".openai.azure.cn",
+	".cognitiveservices.azure.cn",
+];
+
+export const AZURE_BYOK_ENDPOINT_RULE =
+	"Azure endpoints must be https://<resource>.openai.azure.com, .services.ai.azure.com or .cognitiveservices.azure.com (or the .us and .cn clouds), with no port, credentials or query.";
+
+/**
+ * A BYOK Azure endpoint the gateway may call, normalised, or null. Only HTTPS on an Azure
+ * resource host (one label before a documented suffix) passes, so a saved credential cannot
+ * point the gateway at an internal or arbitrary host.
+ */
+export function normalizeAzureByokEndpoint(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const checked = validateWebhookEndpointUrl(value.trim());
+	if (checked.ok === false) return null;
+	let url: URL;
+	try { url = new URL(checked.url); } catch { return null; }
+	if (url.protocol !== "https:" || url.username || url.password || url.port || url.search) return null;
+	const host = url.hostname.toLowerCase();
+	const suffix = AZURE_BYOK_HOST_SUFFIXES.find((candidate) => host.endsWith(candidate));
+	if (!suffix) return null;
+	const resource = host.slice(0, -suffix.length);
+	if (!/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(resource)) return null;
+	return url.toString();
+}
+
+/** A Cloudflare account id: 32 hexadecimal characters, so it is safe in an API path. */
+export function isCloudflareAccountId(value: unknown): value is string {
+	return typeof value === "string" && /^[0-9a-f]{32}$/i.test(value);
+}
+
+function azureDeploymentEndpoint(deployment: Record<string, unknown>): unknown {
+	return deployment.endpointUrl ?? deployment.endpoint ?? deployment.foundryEndpoint ?? deployment.azureEndpoint;
+}
+
 export function validateProviderCredential(providerId: string, rawValue: unknown): { value: string; strict: boolean } {
 	const value = String(rawValue ?? "").trim();
 	if (!value) throw new Error("key is required");
@@ -56,7 +104,12 @@ export function validateProviderCredential(providerId: string, rawValue: unknown
 		try { parsed = JSON.parse(value) as Record<string, unknown>; } catch { throw new Error("valid JSON credentials are required for this provider"); }
 		if (providerId === "google-vertex" && !(parsed.type === "service_account" && parsed.client_email && parsed.private_key)) throw new Error("Google service-account credentials are incomplete");
 		if (providerId === "cloudflare" && !(parsed.apiToken && parsed.accountId)) throw new Error("Cloudflare credentials require apiToken and accountId");
+		if (providerId === "cloudflare" && !isCloudflareAccountId(parsed.accountId)) throw new Error("Cloudflare accountId must be the 32-character hexadecimal account ID");
 		if (providerId === "azure" && !(Array.isArray(parsed.deployments) && parsed.deployments.length)) throw new Error("Azure credentials require at least one deployment mapping");
+		if (providerId === "azure" && (parsed.deployments as unknown[]).some((deployment) =>
+			!deployment || typeof deployment !== "object" || !normalizeAzureByokEndpoint(azureDeploymentEndpoint(deployment as Record<string, unknown>)))) {
+			throw new Error(AZURE_BYOK_ENDPOINT_RULE);
+		}
 		return { value, strict: true };
 	}
 	if (providerId === "amazon-bedrock" && value.startsWith("{")) {

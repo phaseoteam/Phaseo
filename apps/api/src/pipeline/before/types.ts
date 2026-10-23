@@ -740,6 +740,12 @@ export type PipelineContext = {
     internal?: boolean;
     /** The calling key never has its content stored: no I/O log, cached response, detailed telemetry or broadcast content. */
     neverStoreContent?: boolean;
+    /**
+     * Zero data retention applies (the workspace setting, one of the key's guardrails, or the
+     * request's own `require_zero_data_retention`): no I/O log, cached response, data
+     * contribution sample or detailed telemetry content.
+     */
+    zeroDataRetention?: boolean;
     /** Classifies this request with the caller's credentials during the success audit. */
     requestClassifierCall?: ClassifierCall;
     /** Set on the in-process classifier call itself: never classified, not rate limited. */

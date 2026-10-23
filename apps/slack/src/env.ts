@@ -1,5 +1,6 @@
 import type { ThreadCoordinator } from "./coordinator";
 import type { WorkspaceMeter } from "./meter";
+import type { TurnRef } from "./turns";
 
 // Bindings, vars and secrets of the Slack agent Worker (wrangler.jsonc). Secrets
 // are listed in README.md; none of them is ever logged or returned.
@@ -8,10 +9,14 @@ export interface Env {
 	THREADS: DurableObjectNamespace<ThreadCoordinator>;
 	/** One WorkspaceMeter per installation: who may get an answer this month, and the counts billed for it. */
 	METERS: DurableObjectNamespace<WorkspaceMeter>;
+	/** Agent turns (AgentTurnWorkflow), one instance per Slack event. */
+	AGENT_TURNS: Workflow<TurnRef>;
 	/** The gateway, through a service binding in production (used by agent turns). */
 	PHASEO_API?: Fetcher;
 
 	ENV?: string;
+	/** The gateway's base URL (default https://api.phaseo.app/v1); requests use PHASEO_API when bound. */
+	PHASEO_API_BASE_URL?: string;
 	/** Where the account linking page lives (default https://phaseo.app). */
 	PHASEO_WEB_ORIGIN?: string;
 

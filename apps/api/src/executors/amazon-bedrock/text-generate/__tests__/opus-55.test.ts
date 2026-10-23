@@ -102,7 +102,7 @@ describe("managed Bedrock Opus 5.5 Mantle contract", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ AMAZON_BEDROCK_API_KEY: JSON.stringify({ accessKeyId: "mock-access", secretAccessKey: "mock-secret", region: "ap-southeast-4", baseUrl: "https://bedrock-mantle.ap-southeast-4.api.aws/openai/v1" }), AMAZON_BEDROCK_REGION: "us-west-2" } as any);
 		const mock = installFetchMock([{ match: url => url === "https://bedrock-mantle.ap-southeast-4.api.aws/anthropic/v1/messages", response: Response.json(opusMessage) }]);
-		try { await executor(request); expect(mock.calls[0].headers.Authorization).toContain("/ap-southeast-4/bedrock/aws4_request"); }
+		try { await executor(request); expect(mock.calls[0].headers.Authorization).toContain("/ap-southeast-4/bedrock-mantle/aws4_request"); }
 		finally { mock.restore(); }
 	});
 

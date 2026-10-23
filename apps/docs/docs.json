@@ -143,8 +143,10 @@
                   "v1/guides/app-attribution",
                   "v1/guides/request-labels",
                   "v1/guides/request-classifiers",
+                  "v1/guides/broadcast",
                   "v1/guides/open-requests-in-chat",
-                  "v1/guides/workspace-notifications"
+                  "v1/guides/workspace-notifications",
+                  "v1/guides/slack-agent"
                 ]
               },
               {
@@ -1802,8 +1804,10 @@
                   "es/v1/guides/app-attribution",
                   "es/v1/guides/request-labels",
                   "es/v1/guides/request-classifiers",
+                  "es/v1/guides/broadcast",
                   "es/v1/guides/open-requests-in-chat",
-                  "es/v1/guides/workspace-notifications"
+                  "es/v1/guides/workspace-notifications",
+                  "es/v1/guides/slack-agent"
                 ]
               },
               {
@@ -3495,8 +3499,10 @@
                   "fr/v1/guides/app-attribution",
                   "fr/v1/guides/request-labels",
                   "fr/v1/guides/request-classifiers",
+                  "fr/v1/guides/broadcast",
                   "fr/v1/guides/open-requests-in-chat",
-                  "fr/v1/guides/workspace-notifications"
+                  "fr/v1/guides/workspace-notifications",
+                  "fr/v1/guides/slack-agent"
                 ]
               },
               {
@@ -5188,8 +5194,10 @@
                   "de/v1/guides/app-attribution",
                   "de/v1/guides/request-labels",
                   "de/v1/guides/request-classifiers",
+                  "de/v1/guides/broadcast",
                   "de/v1/guides/open-requests-in-chat",
-                  "de/v1/guides/workspace-notifications"
+                  "de/v1/guides/workspace-notifications",
+                  "de/v1/guides/slack-agent"
                 ]
               },
               {
@@ -6881,8 +6889,10 @@
                   "pt-BR/v1/guides/app-attribution",
                   "pt-BR/v1/guides/request-labels",
                   "pt-BR/v1/guides/request-classifiers",
+                  "pt-BR/v1/guides/broadcast",
                   "pt-BR/v1/guides/open-requests-in-chat",
-                  "pt-BR/v1/guides/workspace-notifications"
+                  "pt-BR/v1/guides/workspace-notifications",
+                  "pt-BR/v1/guides/slack-agent"
                 ]
               },
               {
@@ -8574,8 +8584,10 @@
                   "ja/v1/guides/app-attribution",
                   "ja/v1/guides/request-labels",
                   "ja/v1/guides/request-classifiers",
+                  "ja/v1/guides/broadcast",
                   "ja/v1/guides/open-requests-in-chat",
-                  "ja/v1/guides/workspace-notifications"
+                  "ja/v1/guides/workspace-notifications",
+                  "ja/v1/guides/slack-agent"
                 ]
               },
               {
@@ -10267,8 +10279,10 @@
                   "zh-Hans/v1/guides/app-attribution",
                   "zh-Hans/v1/guides/request-labels",
                   "zh-Hans/v1/guides/request-classifiers",
+                  "zh-Hans/v1/guides/broadcast",
                   "zh-Hans/v1/guides/open-requests-in-chat",
-                  "zh-Hans/v1/guides/workspace-notifications"
+                  "zh-Hans/v1/guides/workspace-notifications",
+                  "zh-Hans/v1/guides/slack-agent"
                 ]
               },
               {
@@ -11960,8 +11974,10 @@
                   "hi/v1/guides/app-attribution",
                   "hi/v1/guides/request-labels",
                   "hi/v1/guides/request-classifiers",
+                  "hi/v1/guides/broadcast",
                   "hi/v1/guides/open-requests-in-chat",
-                  "hi/v1/guides/workspace-notifications"
+                  "hi/v1/guides/workspace-notifications",
+                  "hi/v1/guides/slack-agent"
                 ]
               },
               {
@@ -13653,8 +13669,10 @@
                   "ar/v1/guides/app-attribution",
                   "ar/v1/guides/request-labels",
                   "ar/v1/guides/request-classifiers",
+                  "ar/v1/guides/broadcast",
                   "ar/v1/guides/open-requests-in-chat",
-                  "ar/v1/guides/workspace-notifications"
+                  "ar/v1/guides/workspace-notifications",
+                  "ar/v1/guides/slack-agent"
                 ]
               },
               {

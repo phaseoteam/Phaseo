@@ -84,8 +84,14 @@ export async function linkUrl(env: Env, installationId: string, slackUserId: str
 	return url.toString();
 }
 
-export function connectAccountMessage(url: string): { text: string; blocks: unknown[] } {
-	const text = "Connect your Phaseo account to use the Phaseo agent here. The button works for 15 minutes.";
+/**
+ * The private Connect button. "access": the installation answers linked accounts
+ * only. "usage": anyone may ask, and linking lets the agent answer usage questions.
+ */
+export function connectAccountMessage(url: string, reason: "access" | "usage" = "access"): { text: string; blocks: unknown[] } {
+	const text = reason === "access"
+		? "Connect your Phaseo account to use the Phaseo agent here. The button works for 15 minutes."
+		: "Connect your Phaseo account so the Phaseo agent can answer questions about this workspace's Phaseo usage. The button works for 15 minutes.";
 	return {
 		text,
 		blocks: [
@@ -106,8 +112,9 @@ export type ReplyReason = RefuseReason | "user_unverified" | "busy";
 
 /**
  * What someone sees when they can't get an answer. Null: say nothing (bots, and
- * an app that was removed and can't post). Refusals are only recorded in the
- * workspace audit log, so the text never says an admin has been told.
+ * an app that was removed and can't post). Some refusals are emailed to the
+ * workspace's admins, but an email can be suppressed or fail, so the text never
+ * says an admin has been told.
  */
 export function refusalText(reason: ReplyReason, details: { tier?: Tier; limit?: number } = {}): string | null {
 	switch (reason) {

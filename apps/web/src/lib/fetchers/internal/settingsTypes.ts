@@ -1,6 +1,7 @@
 import type { StatsigProfile } from "@/lib/statsig/shared";
 import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
+import type { BroadcastDestinationHealth } from "@/components/(gateway)/settings/observability/broadcastHealth";
 import type { DisplayPreferences } from "@/lib/displayPreferences";
 import type { BudgetInterval as WorkspaceBudgetInterval } from "@/components/(gateway)/settings/budgets/workspaceBudgets";
 import type { ClassifierDimension, ClassifierScope, InputScope, SampleBy } from "@/components/(gateway)/settings/classifiers/requestClassifiers";
@@ -155,6 +156,7 @@ export type SettingsBroadcastInitialData = {
 		name: string;
 		samplingRate: number;
 		updatedAt: string | null;
+		health: BroadcastDestinationHealth | null;
 	}>;
 	teamName: string | null;
 	workspaceId: string | null;
@@ -448,7 +450,7 @@ export type NotificationDestination = {
 	signingSecretRotatedAt?: string | null;
 };
 
-export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled";
+export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled" | "broadcast_destination_failing";
 
 export type SettingsPaymentMethodsInitialData = {
 	customerId: string | null;
@@ -756,3 +758,60 @@ export type UsageUpstreamRequestRow = {
 type UsageUpstreamPayload = { availableKeys: Array<{ id: string; name: string | null; prefix: string | null }>; modelMetadataEntries: Array<[string, any]>; providerMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]>; upstreamRequests: UsageUpstreamRequestRow[] };
 export type SettingsUsageLogsLoadState = "ready" | "unauthorized" | "no_workspace" | "forbidden" | "failed";
 export type SettingsUsageLogsInitialData = { signedIn: boolean; workspaceId: string | null; loadState?: SettingsUsageLogsLoadState } & ({ view: "logs"; data: UsageLogsPayload | null } | { view: "upstream"; data: UsageUpstreamPayload | null } | { view: "jobs"; data: UsageJobsPayload | null } | { view: "sessions"; data: UsageSessionsPayload | null });
+
+export type KeySecurityKey = {
+	id: string;
+	name: string;
+	prefix: string;
+	status: "active" | "paused";
+	created_by: string | null;
+	owner_name: string | null;
+	/** Owners and admins only. */
+	owner_email: string | null;
+	created_at: string;
+	/** Null when the key has never been used for a request. */
+	last_used_at: string | null;
+	expires_at: string | null;
+	storage_locations: string[];
+	has_spend_limit: boolean;
+	has_ip_allowlist: boolean;
+	never_used: boolean;
+	idle: boolean;
+	safe_to_remove: boolean;
+	risk: number;
+};
+
+export type KeySecuritySummary = {
+	total: number;
+	paused: number;
+	no_spend_limit: number;
+	never_expires: number;
+	idle: number;
+	safe_to_remove: number;
+	no_ip_allowlist: number;
+	no_storage_location: number;
+	locations: Array<{ id: string; keys: number }>;
+};
+
+export type KeyStorageIncidentNotice = {
+	id: string;
+	location_id: string;
+	action: "revoke" | "pause";
+	title: string;
+	customer_message: string;
+	source_url: string | null;
+	applied_at: string;
+	keys: number;
+	key_ids: string[];
+};
+
+export type SettingsKeySecurityInitialData = {
+	workspaceId: string;
+	canManage: boolean;
+	maxBulkKeys: number;
+	observedAt: number;
+	summary: KeySecuritySummary;
+	keys: KeySecurityKey[];
+	/** Platform breaches in the last 90 days where Phaseo revoked or paused this workspace's keys. */
+	incidents: KeyStorageIncidentNotice[];
+};

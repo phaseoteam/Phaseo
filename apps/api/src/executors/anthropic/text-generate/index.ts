@@ -22,6 +22,7 @@ import {
 	createAnthropicToResponsesStreamTransformer,
 } from "./stream-transformer";
 import { SseParser } from "@core/sse-parser";
+import { mergeMessagesStreamUsage } from "@core/usage-normalization";
 import { toIRAnnotations } from "@protocols/shared/citations";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
@@ -30,8 +31,10 @@ import { ANTHROPIC_REASONING_FORMAT, canReplayReasoning } from "@core/reasoning-
 import { applyAnthropicCacheControlDefaults, normalizeAnthropicCacheControlValue } from "./cache-control";
 import {
 	supportsAnthropicMidConversationSystemMessages,
+	isAnthropicSystemMessagePlacementValid,
 	anthropicThinkingOffType,
 	clampClaudeEffort,
+	isClaude46,
 	supportsAnthropicInferenceGeo,
 	usesClaudeAdaptiveThinkingControls,
 } from "@core/claudeModelCapabilities";
@@ -457,10 +460,7 @@ export async function bufferAnthropicStreamToMessage(res: Response, upstreamStar
 
 	const applyUsage = (usage: any) => {
 		if (!usage || typeof usage !== "object") return;
-		message.usage = {
-			...(message.usage ?? {}),
-			...usage,
-		};
+		message.usage = mergeMessagesStreamUsage(message.usage, usage);
 	};
 
 	const parsePartialJson = (value: string): any => {
@@ -727,7 +727,13 @@ export function irToAnthropicMessages(
 		}
 	}
 
-	placeLateSystemMessages(messages, systemSegments, supportsAnthropicMidConversationSystemMessages(resolvedModel));
+	// Microsoft Foundry (`azure`) is not among the platforms Anthropic lists for
+	// mid-conversation system messages, so those requests always hoist.
+	placeLateSystemMessages(
+		messages,
+		systemSegments,
+		options?.providerId !== "azure" && supportsAnthropicMidConversationSystemMessages(resolvedModel),
+	);
 	let system = joinAnthropicSystemSegments(systemSegments);
 
 	// Use IR maxTokens if provided, otherwise fall back to provider's max_output_tokens
@@ -835,17 +841,34 @@ export function irToAnthropicMessages(
 			ir.reasoning.enabled === true ||
 			typeof ir.reasoning.maxTokens === "number";
 
+		const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number" && ir.reasoning.maxTokens > 0
+			? ir.reasoning.maxTokens
+			: undefined;
 		if (reasoningDisabled) {
 			request.thinking = { type: "disabled" };
+		} else if (
+			isClaude46(resolvedModel) &&
+			reasoningMaxTokens === undefined &&
+			(ir.reasoning.enabled === true || Boolean(ir.reasoning.effort))
+		) {
+			// Opus 4.6 and Sonnet 4.6 think only when `thinking` is set, and adaptive is their
+			// documented mode, so a reasoning request without a budget (effort alone, or
+			// Messages `adaptive`) turns adaptive thinking on, steered by effort.
+			// https://platform.claude.com/docs/en/build-with-claude/thinking
+			request.thinking = { type: "adaptive" };
 		} else if (hasThinkingControl) {
-			const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number"
-				? ir.reasoning.maxTokens
-				: undefined;
-			if (typeof reasoningMaxTokens === "number" && reasoningMaxTokens > 0) {
+			if (reasoningMaxTokens !== undefined) {
 				request.thinking = { type: "enabled", budget_tokens: reasoningMaxTokens };
 			} else if (ir.reasoning.enabled === true) {
 				request.thinking = { type: "enabled", budget_tokens: 1024 };
 			}
+		}
+		if (isClaude46(resolvedModel) && request.thinking && request.thinking.type !== "disabled") {
+			// With thinking on, these models reject temperature and top_k, and take top_p
+			// only from 0.95 to 1. Reasoning wins over the sampling settings.
+			delete request.temperature;
+			delete request.top_k;
+			if (typeof request.top_p === "number" && request.top_p < 0.95) delete request.top_p;
 		}
 
 		const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning.effort);
@@ -957,10 +980,11 @@ function resolveAnthropicMetadataUserId(ir: IRChatRequest): string | undefined {
 /**
  * Place system or developer messages that arrive after the conversation has
  * started. Models that support mid-conversation system messages keep them in
- * place when Anthropic's placement rule holds (straight after a user turn, and
- * either last or followed by an assistant turn), which leaves the cached
- * prefix untouched. Anything else is hoisted into the top-level system prompt,
- * which is how Anthropic's own OpenAI compatibility layer treats them.
+ * place when Anthropic's placement rule holds (straight after a user turn or
+ * an assistant turn ending in a server tool result, and either last or
+ * followed by an assistant turn), which leaves the cached prefix untouched.
+ * Anything else is hoisted into the top-level system prompt, which is how
+ * Anthropic's own OpenAI compatibility layer treats them.
  */
 function placeLateSystemMessages(
 	messages: any[],
@@ -976,10 +1000,7 @@ function placeLateSystemMessages(
 			parts.push(messages[index + 1].content);
 			messages.splice(index + 1, 1);
 		}
-		const previous = messages[index - 1];
-		const next = messages[index + 1];
-		const validPlacement = previous?.role === "user" && (!next || next.role === "assistant");
-		if (supportsMidConversation && validPlacement) {
+		if (supportsMidConversation && isAnthropicSystemMessagePlacementValid(messages[index - 1], messages[index + 1])) {
 			messages[index] = { role: "system", content: joinAnthropicSystemSegments(parts) };
 			continue;
 		}
@@ -1224,6 +1245,7 @@ function anthropicUsageExt(usage: any): NonNullable<IRChatResponse["usage"]>["_e
 			: undefined;
 	}
 	if (serverToolUse) ext.serverToolUse = serverToolUse;
+	if (typeof usage?.inference_geo === "string" && usage.inference_geo) ext.inferenceGeo = usage.inference_geo;
 	return Object.keys(ext).length ? ext : undefined;
 }
 

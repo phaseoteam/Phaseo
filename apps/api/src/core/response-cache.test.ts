@@ -114,6 +114,18 @@ describe("response-cache fingerprinting", () => {
 			reason: "content_storage_disabled",
 		});
 	});
+
+	it("never stores or serves a response under zero data retention", () => {
+		const request = { endpoint: "responses" as const, stream: false, hasTools: false, serverToolsEnabled: false };
+		expect(isResponseCacheEligible({ ...request, zeroDataRetention: true })).toEqual({
+			eligible: false,
+			reason: "zero_data_retention",
+		});
+		// Never-store keeps its own reason when both apply.
+		expect(isResponseCacheEligible({ ...request, zeroDataRetention: true, neverStoreContent: true }).reason)
+			.toBe("content_storage_disabled");
+		expect(isResponseCacheEligible({ ...request, zeroDataRetention: false })).toEqual({ eligible: true, reason: "eligible" });
+	});
 });
 
 describe("response-cache policy", () => {

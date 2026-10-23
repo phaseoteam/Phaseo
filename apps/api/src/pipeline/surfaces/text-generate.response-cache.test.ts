@@ -403,6 +403,36 @@ describe("runTextGeneratePipeline response cache", () => {
 		});
 	});
 
+	it("never reads or fills the cache for a request under zero data retention", async () => {
+		const store = { get: vi.fn().mockResolvedValue({ responseBody: { id: "resp_cached" } }), set: vi.fn(), delete: vi.fn() };
+		getResponseCacheMock.mockReturnValue(store);
+		doRequestWithIRMock.mockResolvedValue({
+			result: {
+				kind: "completed",
+				ir: {
+					id: "ir_zdr",
+					model: "openai/gpt-5.4-nano",
+					choices: [{ index: 0, message: { role: "assistant", content: [{ type: "text", text: "hello" }] }, finishReason: "stop" }],
+				},
+				upstream: new Response(JSON.stringify({ ok: true }), { status: 200 }),
+				provider: "openai",
+				generationTimeMs: 4,
+				bill: { cost_cents: 0, currency: "USD" },
+			},
+		});
+		finalizeRequestMock.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+		const args = createArgs();
+		args.pre.ctx.zeroDataRetention = true;
+		const response = await runTextGeneratePipeline(args);
+
+		expect(response.status).toBe(200);
+		expect(store.get).not.toHaveBeenCalled();
+		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
+		// Disabled, so the after stage writes nothing back either.
+		expect(args.pre.ctx.responseCache).toMatchObject({ enabled: false, status: "bypass", reason: "zero_data_retention", key: null });
+	});
+
 	it("materializes an internal provider stream for a buffered client", async () => {
 		getResponseCacheMock.mockReturnValue(null);
 		const providerStream = new ReadableStream<Uint8Array>({

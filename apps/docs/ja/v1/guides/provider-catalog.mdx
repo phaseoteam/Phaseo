@@ -14,6 +14,40 @@ V1.1 は `"schema_version": "1.1"` を宣言し、各モデルの中で `service
 
 [V1 スキーマ](https://phaseo.app/api/internal/provider-catalog/schema) または [V1.1 スキーマ](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) をダウンロードしてください。サポートされていないバージョンは明示的に拒否されます。
 
+### V1.2 データポリシー（プレビュー）
+
+V1.2 では、各サービス階層に、機能ごとのトレーニングと保持に関する宣言を追加できます。これらのフィールドを公開する前に、Phaseo と有効化を調整してください。古いインポーターはこれらを拒否します。V1 と V1.1 のフィードは引き続きサポートされます。
+
+V1.2 では、モデルまたは階層ごとに任意の `declarations` も指定できます。モデルの識別情報、型付き入出力制限、パラメータの説明、適用範囲ごとの料金と処理能力、割引、デプロイの詳細を記述できます。これらは検証後、レビュー用に保存されます。パラメータの有効化、請求料金、処理能力制限の適用、データ所在地の保証を自動的に変更するものではありません。検証結果には保存された宣言が示されます。実際に適用する料金と機能は、引き続き既存のフィールドで公開してください。
+
+`schema_version` を `"1.2"` に設定し、対象の各階層に `data_policy` オブジェクトを追加します。
+
+```json
+{
+  "capabilities": [{
+    "id": "text.generate",
+    "training_policy": "no_train",
+    "retention_mode": "none",
+    "retention_days": 0,
+    "zero_data_retention": true,
+    "zdr_eligibility": "eligible",
+    "requirements": { "contract_mode": "none", "account_settings": [] },
+    "privacy_policy_url": "https://provider.example/privacy",
+    "terms_of_service_url": "https://provider.example/terms"
+  }]
+}
+```
+
+この例は階層の `data_policy` の値であり、完全なフィードではありません。機能 ID は正規 ID です。モデルが `responses` や `chat.completions` を宣言していても、`text.generate` を使用してください。
+
+宣言は、上流の処理チェーン全体にわたるプロンプトと出力の両方を対象とします。請求メタデータは対象外です。トレーニングの値は `unknown`、`may_train`、`no_train`、`opt_out_available`、`enterprise_no_train` です。保持モードは `unknown`、`none`、`transient`、`fixed`、`until_deleted` です。none には 0 日、transient/fixed には正の最大保持期間、unknown/until-deleted には null を指定します。
+
+必要な契約は `contract_mode` で宣言します。値は `none`、`customer_agreement`、`enterprise_agreement` です。必要なアカウント設定は、`id`、`description`、HTTPS の `documentation_url` を持つオブジェクトとして `account_settings` 配列に指定します。条件付きプログラムでは `zdr_eligibility: "conditional"` を使用し、有効な保証として true を宣言することはできません。Phaseo が条件の充足を検証できるまでは、参考情報として扱われます。
+
+Phaseo はポリシーの情報源を独立して承認します。フィードから宣言を検証済みにすることはできません。このリリースでは、トレーニングもコンテンツ保持も行わない、非バッチの無条件テキスト生成にのみ有効な ZDR を認めます。モデルを自社でホストしているだけでは、ZDR の宣言にはなりません。
+
+フィード管理のポリシーを採用した後は、false の設定、null の送信、宣言の省略、フィードバージョンの引き下げによって保証が撤回されます。Phaseo の手動オーバーライドは別途管理されます。カタログの検証に 24 時間成功しなかった場合、肯定的な宣言は失効します。承認の取り消しにプロバイダーからの再取得は必要ありません。
+
 ## 正規化された階層の公開
 
 | 階層 | 意味 |
