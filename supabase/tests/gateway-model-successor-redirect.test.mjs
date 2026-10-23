@@ -35,6 +35,7 @@ try {
   await db.exec(await read('../migrations/20261015111100_model_successor_routing_approval.sql'));
   await db.exec(await read('../migrations/20261015111200_gateway_model_successor_redirect.sql'));
   await db.exec(await read('../migrations/20261015111300_workspace_model_successor_overrides.sql'));
+  await db.exec(await read('../migrations/20261023210737_model_successor_price_comparison.sql'));
   assert.deepEqual((await db.query(`select model_successor_redirect_enabled e, model_successor_price_policy p, model_successor_max_price_increase_percent m from public.workspace_settings`)).rows,
     [{ e: false, p: 'never', m: 0 }]);
   await rejects(db.query(`update public.workspace_settings set model_successor_price_policy='sometimes'`), /price_policy_check/);
@@ -118,6 +119,47 @@ try {
   assert.deepEqual([result.target, result.price_ratio, result.price_comparable], ['lab/new', null, false]);
   await db.exec(`delete from public.v2_pricing_sku_meters where sku_id='new-sku' and meter_key='requests'`);
   assert.equal((await resolve('lab/old')).price_comparable, true);
+
+  // Successor-only meters a redirected request cannot incur are skipped: cached
+  // reads, web tools, and inputs in a modality the old model never accepted.
+  // (The fixture's input_tokens is the older name of input_text_tokens.)
+  await db.exec(`insert into public.v2_pricing_sku_meters(sku_id, meter_key, unit_quantity, price_nanos) values
+    ('new-sku', 'cached_read_text_tokens', 1000000, 250000000), ('new-sku', 'native_web_search_requests', 1000, 10000000000),
+    ('new-sku', 'input_audio_tokens', 1000000, 9000000000)`);
+  result = await resolve('lab/old');
+  assert.deepEqual([result.price_comparable, Number(result.price_ratio)], [true, 1.25]);
+  // Input tokens in a modality the old model accepted compare with its text input price.
+  await db.exec(`update public.v2_models set input_modalities='{text,audio}' where model_slug='lab/old'`);
+  assert.equal(Number((await resolve('lab/old')).price_ratio), 4.5);
+  await db.exec(`update public.v2_models set input_modalities='{text}' where model_slug='lab/old'`);
+  // So do cache writes, which are opt-in and replace input billing.
+  await db.exec(`insert into public.v2_pricing_sku_meters(sku_id, meter_key, unit_quantity, price_nanos) values
+    ('new-sku', 'cached_write_text_tokens_5m', 1000000, 3000000000)`);
+  assert.equal(Number((await resolve('lab/old')).price_ratio), 1.5);
+  // Output in a modality the old model never produced is skipped too.
+  await db.exec(`insert into public.v2_pricing_sku_meters(sku_id, meter_key, unit_quantity, price_nanos) values
+    ('new-sku', 'output_audio_tokens', 1000000, 20000000000)`);
+  assert.equal(Number((await resolve('lab/old')).price_ratio), 1.5);
+  await db.exec(`delete from public.v2_pricing_sku_meters where sku_id='new-sku' and meter_key in
+    ('cached_read_text_tokens', 'native_web_search_requests', 'input_audio_tokens', 'cached_write_text_tokens_5m', 'output_audio_tokens')`);
+
+  // The old model's deprecated prices still count.
+  await db.exec(`update public.v2_pricing_skus set status='deprecated' where sku_id='old-sku'`);
+  assert.equal(Number((await resolve('lab/old')).price_ratio), 1.25);
+
+  // With no price rows left, the reference prices recorded for it are used.
+  await db.exec(`update public.v2_pricing_skus set provider_model_id='removed-route' where sku_id='old-sku'`);
+  assert.equal((await resolve('lab/old')).price_comparable, false);
+  await db.exec(`update public.v2_model_successor_routing set reference_prices='[
+    {"meter_key": "input_tokens", "unit_quantity": 1000, "price_nanos": 2000000},
+    {"meter_key": "output_tokens", "unit_quantity": 1000000, "price_nanos": 4000000000}]' where model_slug='lab/old'`);
+  result = await resolve('lab/old');
+  assert.deepEqual([result.price_comparable, Number(result.price_ratio)], [true, 2]);
+  // Price rows win over reference prices when both exist.
+  await db.exec(`update public.v2_pricing_skus set provider_model_id='old-host' where sku_id='old-sku'`);
+  assert.equal(Number((await resolve('lab/old')).price_ratio), 1.25);
+  await rejects(db.query(`update public.v2_model_successor_routing set reference_prices='{}' where model_slug='lab/old'`), /reference_prices_check/);
+  await db.exec(`update public.v2_model_successor_routing set reference_prices=null where model_slug='lab/old'`);
 
   // Without shared priced meters the ratio is unknown.
   await db.exec(`update public.v2_pricing_sku_meters set meter_key='image_units' where sku_id='new-sku'`);
