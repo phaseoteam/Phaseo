@@ -295,7 +295,7 @@ function AssignmentsSection({ data }: { data: Data }) {
 					<div className="space-y-1.5">
 						<Label>{t("assignType")}</Label>
 						<Select value={targetType} onValueChange={(value) => { setTargetType(value as SettingsRateLimitTargetType); setTargetId(""); }}>
-							<SelectTrigger className="w-full rounded-md"><SelectValue /></SelectTrigger>
+							<SelectTrigger className="w-full rounded-md" aria-label={t("assignType")}><SelectValue>{t(`targetTypes.${targetType}`)}</SelectValue></SelectTrigger>
 							<SelectContent>
 								{TARGET_TYPES.map((type) => <SelectItem key={type} value={type}>{t(`targetTypes.${type}`)}</SelectItem>)}
 							</SelectContent>
@@ -338,7 +338,7 @@ function AssignmentsSection({ data }: { data: Data }) {
 									disabled={pending}
 									onValueChange={(value) => run(() => write(changeRateLimitAssignment(assignment.id, value)), t("toasts.changed"))}
 								>
-									<SelectTrigger className="w-48 rounded-md" aria-label={t("assignPolicy")}><SelectValue /></SelectTrigger>
+									<SelectTrigger className="w-48 rounded-md" aria-label={t("assignPolicy")}><SelectValue>{data.policies.find((policy) => policy.id === assignment.policyId)?.name ?? t("choosePolicy")}</SelectValue></SelectTrigger>
 									<SelectContent>
 										{data.policies.map((policy) => <SelectItem key={policy.id} value={policy.id}>{policy.name}</SelectItem>)}
 									</SelectContent>
