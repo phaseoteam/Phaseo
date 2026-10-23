@@ -348,9 +348,9 @@ describe("BigQuery", () => {
 		expect(form.get("grant_type")).toBe("urn:ietf:params:oauth:grant-type:jwt-bearer");
 		const [header, claims, signature] = form.get("assertion")!.split(".");
 		expect(decode(header)).toEqual({ alg: "RS256", typ: "JWT" });
+		expect(decode(claims)).not.toHaveProperty("sub");
 		expect(decode(claims)).toMatchObject({
 			iss: account.client_email,
-			sub: account.client_email,
 			aud: "https://oauth2.googleapis.com/token",
 			scope: "https://www.googleapis.com/auth/bigquery.insertdata",
 		});
@@ -363,8 +363,8 @@ describe("BigQuery", () => {
 		const body = JSON.parse(String(insert.init.body));
 		expect(body).toMatchObject({ skipInvalidRows: false, ignoreUnknownValues: true });
 		expect(body.rows[0].insertId).toBe("gateway:req_1/b7ad6b7169203331");
-		expect(body.rows[0].json).toMatchObject({ span_id: "b7ad6b7169203331", start_time: "2025-10-23T10:00:00.123456Z", resource_attributes: "{\"service.name\":\"phaseo-gateway\"}" });
-		expect(JSON.parse(body.rows[0].json.attributes)["gen_ai.usage.input_tokens"]).toBe(50);
+		expect(body.rows[0].json).toMatchObject({ span_id: "b7ad6b7169203331", start_time: "2025-10-23T10:00:00.123456Z", resource_attributes: { "service.name": "phaseo-gateway" } });
+		expect(body.rows[0].json.attributes["gen_ai.usage.input_tokens"]).toBe(50);
 	});
 
 	it("reuses the access token until shortly before it expires", async () => {
@@ -386,7 +386,27 @@ describe("BigQuery", () => {
 			status: 200,
 			error: "BigQuery rejected the rows: invalid: duration_ms: Cannot convert value to integer.",
 			retryAfter: null,
+			retryable: false,
 		});
+	});
+
+	it("retries rate limits and backend errors", async () => {
+		const limited = google(() => Response.json({ error: { code: 403, message: "Exceeded rate limits: too many table update operations", errors: [{ reason: "rateLimitExceeded" }] } }, { status: 403 }));
+		expect(await sendBroadcastRows("bigquery", config(), [], limited.send)).toMatchObject({ ok: false, status: 403, retryable: true });
+		clearBroadcastRowsTokenCache();
+		const denied = google(() => Response.json({ error: { code: 403, message: "Access Denied: Table", errors: [{ reason: "accessDenied" }] } }, { status: 403 }));
+		expect(await sendBroadcastRows("bigquery", config(), [], denied.send)).toMatchObject({ ok: false, status: 403, retryable: false, error: "Destination returned 403: Access Denied: Table" });
+		clearBroadcastRowsTokenCache();
+		const backend = google(() => Response.json({ insertErrors: [{ index: 0, errors: [{ reason: "backendError", message: "" }] }] }));
+		expect(await sendBroadcastRows("bigquery", config(), broadcastRows(otlp, "e"), backend.send)).toMatchObject({ ok: false, retryable: true });
+	});
+
+	it("does not count a row-error list too long to read as delivered", async () => {
+		const stopped = Array.from({ length: 5_000 }, (_, index) => ({ index, errors: [{ reason: index === 4_000 ? "invalid" : "stopped", location: "", message: "" }] }));
+		const { send } = google(() => Response.json({ insertErrors: stopped }));
+		const result = await sendBroadcastRows("bigquery", config(), broadcastRows(otlp, "e"), send);
+		expect(result).toMatchObject({ ok: false, status: 200, retryable: false });
+		expect(result.error).toContain("too long to read in full");
 	});
 
 	it("reports API and sign-in errors", async () => {

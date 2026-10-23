@@ -509,7 +509,8 @@ async function googleAccessToken(account: ServiceAccount, send: BroadcastRowsFet
 	const requestedAtMs = Date.now();
 	const now = Math.floor(requestedAtMs / 1000);
 	const assertion = await signRs256Jwt(
-		{ iss: account.client_email, sub: account.client_email, aud: GOOGLE_TOKEN_URL, scope: BIGQUERY_SCOPE, iat: now, exp: now + 3600 },
+		// No sub claim: that asks to act as a Workspace user (domain-wide delegation).
+		{ iss: account.client_email, aud: GOOGLE_TOKEN_URL, scope: BIGQUERY_SCOPE, iat: now, exp: now + 3600 },
 		await rsaKey(account.private_key),
 	);
 	const response = await send(new URL(GOOGLE_TOKEN_URL), {
@@ -541,13 +542,24 @@ async function googleAccessToken(account: ServiceAccount, send: BroadcastRowsFet
 }
 
 // insertId lets BigQuery drop a row it already received in the last minute or
-// so, which covers a batch retried after a lost response. JSON values are sent
-// as JSON text, which both JSON and STRING columns accept.
+// so, which covers a batch retried after a lost response. Attribute objects are
+// sent as objects, which JSON columns store as JSON.
 function bigQueryRows(rows: BroadcastRow[]) {
-	return rows.map((row) => ({
-		insertId: `${row.event_id}/${row.span_id}`.slice(0, 128),
-		json: { ...row, attributes: JSON.stringify(row.attributes), resource_attributes: JSON.stringify(row.resource_attributes) },
-	}));
+	return rows.map((row) => ({ insertId: `${row.event_id}/${row.span_id}`.slice(0, 128), json: row }));
+}
+
+// https://cloud.google.com/bigquery/docs/error-messages
+// Reasons that pass with time; the rest need the table or config fixed.
+const BIGQUERY_TRANSIENT_REASONS = new Set(["backendError", "internalError", "rateLimitExceeded"]);
+
+function bigQueryReason(text: string): string | null {
+	try {
+		const errors = object(object(JSON.parse(text)).error).errors;
+		const reason = Array.isArray(errors) ? object(errors[0]).reason : null;
+		return typeof reason === "string" ? reason : null;
+	} catch {
+		return /"reason"\s*:\s*"([A-Za-z]+)"/.exec(text)?.[1] ?? null;
+	}
 }
 
 async function sendBigQuery(config: Record<string, unknown>, rows: BroadcastRow[], send: BroadcastRowsFetch): Promise<BroadcastRowsResult> {
@@ -559,19 +571,33 @@ async function sendBigQuery(config: Record<string, unknown>, rows: BroadcastRow[
 		headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
 		body: JSON.stringify({ kind: "bigquery#tableDataInsertAllRequest", skipInvalidRows: false, ignoreUnknownValues: true, rows: bigQueryRows(rows) }),
 	});
-	if (!response.ok) return failed(response);
-	let json: Json = {};
+	const text = await boundedText(response);
+	if (!response.ok) {
+		// A rate limit arrives as 403, which is otherwise not worth retrying.
+		const reason = bigQueryReason(text);
+		return { ...await failed(response, text), ...(reason ? { retryable: BIGQUERY_TRANSIENT_REASONS.has(reason) || response.status >= 500 } : {}) };
+	}
+	// Success is a short body. A long one lists row errors: with skipInvalidRows
+	// off, one invalid row rejects the batch and the others report "stopped".
+	let errors: Json[];
 	try {
-		json = object(JSON.parse(await boundedText(response)));
-	} catch {}
-	const insertErrors = Array.isArray(json.insertErrors) ? json.insertErrors : [];
-	// With skipInvalidRows off, one invalid row rejects the batch; the other rows
-	// report "stopped". The first real error explains it.
-	const errors = insertErrors.flatMap((entry) => Array.isArray(object(entry).errors) ? object(entry).errors as unknown[] : []).map(object);
+		const insertErrors = object(JSON.parse(text)).insertErrors;
+		errors = (Array.isArray(insertErrors) ? insertErrors : []).flatMap((entry) => Array.isArray(object(entry).errors) ? object(entry).errors as unknown[] : []).map(object);
+	} catch {
+		// Cut off at the read limit: take the first reason that is not "stopped".
+		const reason = [...text.matchAll(/"reason"\s*:\s*"([A-Za-z]+)"/g)].map((match) => match[1]).find((value) => value !== "stopped");
+		errors = [{ reason: reason ?? "invalid", message: "the response listing the rejected rows was too long to read in full" }];
+	}
 	const cause = errors.find((error) => error.reason !== "stopped") ?? errors[0];
 	if (cause) {
 		const detail = [cause.reason, cause.location, cause.message].filter((part) => typeof part === "string" && part).join(": ");
-		return { ok: false, status: response.status, error: `BigQuery rejected the rows${detail ? `: ${detail}` : ""}`.slice(0, 500), retryAfter: null };
+		return {
+			ok: false,
+			status: response.status,
+			error: `BigQuery rejected the rows${detail ? `: ${detail}` : ""}`.slice(0, 500),
+			retryAfter: null,
+			retryable: BIGQUERY_TRANSIENT_REASONS.has(String(cause.reason)),
+		};
 	}
 	return { ok: true, status: response.status, error: null, retryAfter: null };
 }
