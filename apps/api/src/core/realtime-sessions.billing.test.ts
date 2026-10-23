@@ -170,8 +170,8 @@ describe("realtime voice billing simulation", () => {
 	});
 
 	it("caps each provider at its own session limit", () => {
-		// Google until upstream resumption is supported; xAI per its docs.
-		expect(realtimeMaxDurationSeconds("google-ai-studio")).toBe(15 * 60);
+		// Google: one hour across resumed connections; xAI per its docs.
+		expect(realtimeMaxDurationSeconds("google-ai-studio")).toBe(60 * 60);
 		expect(realtimeMaxDurationSeconds("x-ai")).toBe(120 * 60);
 		expect(realtimeMaxDurationSeconds("spacex-ai")).toBe(120 * 60);
 		expect(realtimeMaxDurationSeconds("openai", "openai/gpt-live-1")).toBe(25 * 60);
