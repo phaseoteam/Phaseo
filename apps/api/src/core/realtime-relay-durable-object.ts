@@ -46,6 +46,7 @@ import {
 	ELEVENLABS_PROVIDER,
 	applyElevenLabsConversationCost,
 	buildElevenLabsSessionUpdate,
+	elevenLabsProviderModel,
 	elevenLabsRealtimeUrl,
 	fetchElevenLabsConversationCost,
 	resolveElevenLabsKey,
@@ -572,6 +573,8 @@ export class RealtimeRelayDurableObject {
 	// ElevenLabs: refused session length (fell back to its default) and the
 	// end-of-call retries for its reported charge before settlement waits on alarms.
 	private elevenLabsDurationFallback = false;
+	// The model asked for in session.update; ElevenLabs confirms it in session.updated.
+	private elevenLabsModel: string | null = null;
 	private elevenLabsQuickRetryMs = [0, 2_000, 5_000];
 
 	private get isLive() { return isLiveModel(this.session?.model_id); }
@@ -761,7 +764,9 @@ export class RealtimeRelayDurableObject {
 			delete this.usage.provider_closed_at_ms;
 			await this.checkpointUsage(true);
 			this.attachUpstream();
+			this.elevenLabsModel = model;
 			this.sendUpstream(buildElevenLabsSessionUpdate({
+				model,
 				voice,
 				instructions,
 				maxDurationSeconds: ELEVENLABS_REALTIME_MAX_DURATION_SECONDS + ELEVENLABS_MAX_DURATION_MARGIN_SECONDS,
@@ -1082,6 +1087,19 @@ export class RealtimeRelayDurableObject {
 	 * when the event was handled here.
 	 */
 	private async handleElevenLabsSetupEvent(event: Record<string, unknown>, type: string): Promise<boolean> {
+		if (type === "session.updated") {
+			// session.created always reports Mini; session.updated is the first event that
+			// shows the model in use. Priced as one model, served as another: end before any reply.
+			const served = getStringField(getRecordField(event, "session") ?? {}, "model");
+			if (this.elevenLabsModel && served && served !== this.elevenLabsModel) {
+				console.error("realtime_relay_elevenlabs_model_mismatch", { sessionId: this.session?.session_id, requested: this.elevenLabsModel, served });
+				this.providerSetupComplete = false;
+				this.acceptingAudio = false;
+				await this.forceAuthoritativeUsage("failed", "provider_model_mismatch");
+				return true;
+			}
+			return false;
+		}
 		if (type === "session.created") {
 			const conversationId = getStringField(getRecordField(event, "session") ?? {}, "id");
 			if (conversationId && !this.usage.provider_conversation_id) {
@@ -1096,6 +1114,7 @@ export class RealtimeRelayDurableObject {
 		this.elevenLabsDurationFallback = true;
 		if (this.session) {
 			this.sendUpstream(buildElevenLabsSessionUpdate({
+				model: this.elevenLabsModel ?? this.session.provider_model_id ?? elevenLabsProviderModel(this.session.model_id),
 				voice: this.session.voice,
 				instructions: typeof metadataRecord(this.session).instructions === "string" ? String(metadataRecord(this.session).instructions) : null,
 			}));

@@ -27,6 +27,10 @@ function elevenLabsBaseUrl(): string {
 	return String(bindings.ELEVENLABS_BASE_URL || "https://api.elevenlabs.io").replace(/\/+$/, "");
 }
 
+/**
+ * ElevenLabs ignores this query parameter (recorded 2026-10-23: ?model=eleven_realtime_v1_max
+ * ran and billed Mini); the model is chosen by session.model in session.update.
+ */
 export function elevenLabsRealtimeUrl(providerModel: string): string {
 	const base = elevenLabsBaseUrl().replace(/^http/, "ws");
 	return `${base}/v1/convai/realtime?model=${encodeURIComponent(providerModel)}`;
@@ -43,6 +47,7 @@ export function elevenLabsCanonicalModel(model: string): string {
 }
 
 export function buildElevenLabsSessionUpdate(args: {
+	model: string;
 	voice?: string | null;
 	instructions?: string | null;
 	maxDurationSeconds?: number | null;
@@ -51,6 +56,7 @@ export function buildElevenLabsSessionUpdate(args: {
 		type: "session.update",
 		session: {
 			type: "realtime",
+			model: args.model,
 			...(args.instructions ? { instructions: args.instructions } : {}),
 			output_modalities: ["audio"],
 			...(args.maxDurationSeconds
