@@ -574,6 +574,18 @@ export async function applyServiceTierRouting(args: {
             }
         }
 
+        // Moonshot's K3.1 Pro Highspeed sibling must load before its tier can execute.
+        // Keeping the base candidate here would charge Priority for Standard speed.
+        if (requestedPlan === "priority" && candidate.providerId === "moonshotai" && candidate.apiModelId === "moonshotai/kimi-k3.1-pro") {
+            droppedProviders.push({
+                providerId: candidate.providerId,
+                apiModelId: candidate.apiModelId ?? null,
+                providerModelSlug: candidate.providerModelSlug ?? null,
+                reason: "service_tier_priority_unsupported",
+            });
+            continue;
+        }
+
         if (supportsPublicRequestedTier) {
             nextCandidates.push(candidate);
             continue;
