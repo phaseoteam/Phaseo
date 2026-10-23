@@ -3286,7 +3286,9 @@
 		"modelsCount": "{count, plural, one {# modèle} other {# modèles}}",
 		"noModelsMatch": "Aucun modèle ne correspond à votre recherche.",
 		"showAllModels": "Afficher les {count} modèles",
-		"loadingAllModels": "Chargement de tous les modèles…"
+		"loadingAllModels": "Chargement de tous les modèles…",
+		"allModelsFailed": "Impossible de charger tous les modèles : ces résultats peuvent être incomplets.",
+		"retryLoadingModels": "Réessayer"
 	},
 	"appDetail": {
 		"appNotFound": "Application introuvable.",

@@ -3286,7 +3286,9 @@
 		"modelsCount": "モデル数: {count}",
 		"noModelsMatch": "検索に一致するモデルはありません。",
 		"showAllModels": "{count} 件のモデルをすべて表示",
-		"loadingAllModels": "すべてのモデルを読み込み中…"
+		"loadingAllModels": "すべてのモデルを読み込み中…",
+		"allModelsFailed": "すべてのモデルを読み込めなかったため、結果が不完全な可能性があります。",
+		"retryLoadingModels": "再試行"
 	},
 	"appDetail": {
 		"appNotFound": "アプリが見つかりません。",

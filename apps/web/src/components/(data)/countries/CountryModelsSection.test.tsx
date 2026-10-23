@@ -79,3 +79,25 @@ it("renders the preview with full counts and loads the rest on Show all", async 
 	expect(shownIds()).toEqual([...Array.from({ length: 8 }, (_, i) => `big/m${7 - i}`), "small/one"]);
 	expect([...container.querySelectorAll("button")].some((node) => node.textContent?.startsWith("Show all"))).toBe(false);
 });
+
+it("warns that a search is incomplete when the full list fails, and retries", async () => {
+	// 404 isn't retried, so the query fails at once; 5xx ends the same way after its retries.
+	(global.fetch as jest.Mock).mockImplementationOnce(async () => ({ ok: false, status: 404, json: async () => ({}) }));
+	const input = container.querySelector("input")!;
+	await act(async () => {
+		Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "big/m1");
+		input.dispatchEvent(new Event("input", { bubbles: true }));
+	});
+	await flush();
+
+	// Only the preview (big/m2..m7) was searched, so big/m1 is missing until the retry.
+	expect(container.textContent).toContain("Couldn't load every model");
+	expect(shownIds()).toEqual([]);
+
+	const retry = [...container.querySelectorAll("button")].find((node) => node.textContent === "Try again");
+	await act(async () => { retry!.click(); });
+	await flush();
+
+	expect(container.textContent).not.toContain("Couldn't load every model");
+	expect(shownIds()).toEqual(["big/m1"]);
+});

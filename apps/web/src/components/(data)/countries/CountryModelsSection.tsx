@@ -107,6 +107,22 @@ export default function CountryModelsSection({
 				</p>
 			</div>
 
+			{normalizedQuery && allModels.isError && !hasAllModels ? (
+				// The search only covered the preview, so say so and offer a retry.
+				<div className="flex flex-col gap-2 rounded-md border border-border/70 px-3 py-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+					<p>{t("allModelsFailed")}</p>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						className="rounded-md"
+						onClick={() => void allModels.refetch()}
+					>
+						{t("retryLoadingModels")}
+					</Button>
+				</div>
+			) : null}
+
 			{groups.length ? (
 				<div className="space-y-8">
 					{groups.map((group) => {
