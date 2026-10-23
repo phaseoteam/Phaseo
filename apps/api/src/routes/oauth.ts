@@ -1097,20 +1097,33 @@ oauthRouter.get(
 		if (!scopes.includes("openid")) {
 			return oauthError("insufficient_scope", "Token requires openid", 403);
 		}
-		const { data } = await getSupabaseAdmin().auth.admin.getUserById(auth.userId);
+		const profile = scopes.includes("profile");
+		const supabase = getSupabaseAdmin();
+		const [{ data }, account] = await Promise.all([
+			supabase.auth.admin.getUserById(auth.userId),
+			// The name set on the profile page wins over the sign-in provider's, as in the site's header.
+			profile
+				? supabase.from("users").select("display_name").eq("user_id", auth.userId).maybeSingle()
+				: Promise.resolve({ data: null }),
+		]);
 		const user = data?.user;
 		const metadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
-		const name =
-			typeof metadata.full_name === "string"
-				? metadata.full_name
-				: typeof metadata.name === "string"
-					? metadata.name
-					: null;
+		const metadataString = (keys: string[]) => {
+			for (const key of keys) {
+				const value = metadata[key];
+				if (typeof value === "string" && value.trim()) return value.trim();
+			}
+			return null;
+		};
+		const displayName = typeof account.data?.display_name === "string" ? account.data.display_name.trim() : "";
+		const name = displayName || metadataString(["full_name", "name"]);
+		const picture = metadataString(["avatar_url", "picture", "picture_url"]);
 		return json(
 			{
 				sub: auth.userId,
 				email: scopes.includes("email") ? user?.email ?? null : undefined,
-				name: scopes.includes("profile") ? name : undefined,
+				name: profile ? name : undefined,
+				picture: profile ? picture : undefined,
 				workspace_id: auth.workspaceId,
 				client_id: auth.oauthClientId,
 				resource: auth.oauthResource ?? undefined,
