@@ -36,6 +36,8 @@ Workspace owners and admins can also set, change and delete budgets in the dashb
 
 Department budgets, managed through the `/v1/department-budgets` API, do not reject requests. A department's spend counts the same keys and OAuth requests as department rate limits, below. Owners and admins get a mobile push at about 80% and again at 100% of a daily, weekly or monthly budget. Spend comes from usage that can lag by up to an hour.
 
+Owners and admins can also manage department budgets under [Settings → Budgets](https://phaseo.app/settings/budgets), or with the Terraform provider's `phaseo_department_budget` resource.
+
 ## Rate limit policies
 
 Workspace admins can create named rate limit policies through the `/v1/rate-limits` management API and assign them to API keys, workspace members, departments, guardrails, or as the default for each end user. The gateway enforces a policy's `requests_per_minute` and `tokens_per_minute`, each measured over a rolling minute:
@@ -45,6 +47,8 @@ Workspace admins can create named rate limit policies through the `/v1/rate-limi
 - **Department:** one allowance shared by everything that counts toward the department. A key linked to a department counts toward that department only. Any other key counts toward every department its creator belongs to, and OAuth requests count toward every department of their user. A member with a department override counts toward the override department only.
 - **Guardrail:** a separate allowance for each key (or OAuth user) the guardrail covers.
 - **End-user default:** a separate allowance for each end user, identified by the request's `user` field or `X-Phaseo-User-Id` header. Requests without an end-user ID are not limited by it.
+
+Owners and admins can also manage policies and their assignments under [Settings → Rate limits](https://phaseo.app/settings/rate-limits), or with the Terraform provider's `phaseo_rate_limit_policy` and `phaseo_rate_limit_assignment` resources.
 
 When several policies apply, each is counted and the first one exhausted rejects the request. Policy limits apply in addition to the gateway limits above. Policy changes take effect within about a minute. Department membership changes made in the dashboard or through SCIM can take up to about five minutes.
 
