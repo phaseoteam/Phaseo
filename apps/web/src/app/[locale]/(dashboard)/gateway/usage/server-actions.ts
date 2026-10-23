@@ -44,7 +44,7 @@ export interface RequestRow {
 export interface PaginatedRequestsParams { [key: string]: any; cursor?: { createdAt: string; id: string } | null; page?: number; sortField: string; sortDirection: "asc" | "desc" }
 export interface ProviderMetadataEntry { name: string; promptTrainingPolicy: string | null; [key: string]: any }
 export interface AppMetadata { id?: string; title: string; imageUrl: string | null; [key: string]: any }
-export type GatewayIoLog = { status: string; storage_provider: string | null; bytes: number | null; retention_until: string | null; error: string | null; payload: Record<string, unknown> | null; };
+export type GatewayIoLog = { status: string; storage_provider: string | null; bytes: number | null; retention_until: string | null; error: string | null; reason?: "zero_data_retention" | null; payload: Record<string, unknown> | null; };
 export type ModelMetadataEntry = { organisationId: string; organisationName: string; canonicalModelId?: string; modelName?: string };
 export interface InvestigateGenerationResult { request: RequestRow; appName: string | null; modelMetadata: Array<[string, ModelMetadataEntry]>; providerNames: Array<[string, string]>; providerMetadata: Array<[string, ProviderMetadataEntry]>; ioLog?: GatewayIoLog | null; requestClassifiers?: RequestClassifierSummary[]; [key: string]: any }
 export interface ChartDataResult { requestsChart: any[]; tokensChart: any[]; costChart: any[]; current: any; previous: any; [key: string]: any }

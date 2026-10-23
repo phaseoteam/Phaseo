@@ -773,21 +773,21 @@ function buildUsageSummary(usage: any): {
 function RequestHeader({
 	request,
 	headerNavigation,
+	actions,
 }: {
 	request: RequestRow;
 	headerNavigation?: React.ReactNode;
+	actions?: React.ReactNode;
 }) {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const timestamp = format.dateTime(request.created_at);
 	return (
-		<div className="relative">
-			{headerNavigation ? (
-				<div className="absolute right-14 top-4 z-10">{headerNavigation}</div>
-			) : null}
-			<div className="px-5 py-4 sm:px-6 sm:py-5">
-				<div className={cn("pr-10", headerNavigation && "pr-36")}>
+		<div>
+			{/* pr-14 keeps the actions clear of the dialog's close button. */}
+			<div className="flex items-start gap-3 px-5 py-4 pr-14 sm:px-6 sm:py-5 sm:pr-14">
+				<div className="min-w-0 flex-1">
 					<DialogTitle className="text-base font-semibold">{t("strings.Job details")}</DialogTitle>
 					<div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
 						<span>{timestamp}</span>
@@ -795,6 +795,12 @@ function RequestHeader({
 						<CopyableText value={request.request_id} ariaLabel={t("strings.Copy generation id" as never)} />
 					</div>
 				</div>
+				{actions || headerNavigation ? (
+					<div className="flex shrink-0 items-center gap-2">
+						{actions}
+						{headerNavigation}
+					</div>
+				) : null}
 			</div>
 			<Separator />
 		</div>
@@ -1515,6 +1521,8 @@ export default function RequestDetailDialog({
 		"App where used",
 	]);
 	const trainingPolicyItem = requestDetailItems.find((item) => item.label === s("Data policy"));
+	// Zero data retention kept this request out of the I/O log, from the workspace, a key guardrail or the request itself.
+	const ioLogSkippedForZeroDataRetention = ioLog?.reason === "zero_data_retention";
 	const dataPolicyItems = [
 		...(trainingPolicyItem
 			? [{
@@ -1533,7 +1541,9 @@ export default function RequestDetailDialog({
 						? m("Retained until", {
 								date: format.dateTime(ioLog.retention_until),
 							})
-						: s("No Retained Payload")}
+						: ioLogSkippedForZeroDataRetention
+							? t("trace.skippedZeroDataRetention" as never)
+							: s("No Retained Payload")}
 				</span>
 			),
 		},
@@ -1574,25 +1584,31 @@ export default function RequestDetailDialog({
 
 	const detailContent = (
 		<>
-				<RequestHeader request={request} headerNavigation={headerNavigation} />
+				<RequestHeader
+					request={request}
+					headerNavigation={headerNavigation}
+					actions={
+						canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
+							<Link
+								href={buildOpenRequestInChatHref(request.request_id, searchParams.get("workspaceId"))}
+								className={buttonVariants({ variant: "outline", size: "sm" })}
+								title={tUi("actions.openInChat")}
+							>
+								<MessageSquare />
+								<span className="sr-only sm:not-sr-only">{tUi("actions.openInChat")}</span>
+							</Link>
+						) : null
+					}
+				/>
 				{loading ? (
 					<div className="flex items-center gap-2 border-b border-border/70 px-5 py-2 text-xs text-muted-foreground sm:px-6">
 						<LoaderCircle className="size-3.5 animate-spin" />
 						{s("Fetching full generation log…")}
 					</div>
 				) : null}
-				{headerActions || canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
+				{headerActions ? (
 					<div className="flex flex-wrap items-center gap-2 border-b bg-muted/20 px-5 py-2 sm:px-6">
 						{headerActions}
-						{canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
-							<Link
-								href={buildOpenRequestInChatHref(request.request_id, searchParams.get("workspaceId"))}
-								className={buttonVariants({ variant: "outline", size: "sm" })}
-							>
-								<MessageSquare />
-								{tUi("actions.openInChat")}
-							</Link>
-						) : null}
 					</div>
 				) : null}
 
@@ -2769,7 +2785,7 @@ export default function RequestDetailDialog({
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Prompt")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.request_payload ?? ioLog.payload.provider_request ?? null, null, 2)}</pre></div>
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Completion")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.gateway_response ?? ioLog.payload.provider_response ?? null, null, 2)}</pre></div>
 										</div>
-									) : <p className="text-muted-foreground">{ioLog.status === "restricted" ? tUi("privacy.contentsRestricted") : ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
+									) : <p className="text-muted-foreground">{ioLog.status === "restricted" ? tUi("privacy.contentsRestricted") : ioLogSkippedForZeroDataRetention ? t("trace.skippedZeroDataRetention" as never) : ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
 								</div>
 							</GenerationSection>
 						) : null}

@@ -143,6 +143,18 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 			model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai",
 		}]), { status: 200 });
 	}
+	if (url.includes("/rpc/broadcast_destination_health_summary")) {
+		return new Response(JSON.stringify([{
+			destination_id: "destination-row-1",
+			last_success_at: "2026-10-21T09:00:00Z",
+			last_failure_at: "2026-10-21T10:00:00Z",
+			last_http_status: 401,
+			last_error: "OTLP endpoint returned 401",
+			consecutive_failures: 3,
+			delivered_24h: "120",
+			failed_24h: "4",
+		}]), { status: 200 });
+	}
 	if (url.includes("workspace_broadcast_destinations")) {
 		return new Response(JSON.stringify([{
 			id: "destination-row-1",
@@ -279,7 +291,7 @@ describe("account settings routes", () => {
 		);
 		expect(response.status).toBe(200);
 		expect(ledgerQuery?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
-		expect(ledgerQuery?.searchParams.get("or")).toBe("(kind.is.null,kind.not.in.(charge,usage))");
+		expect(ledgerQuery?.searchParams.get("or")).toBe("(kind.is.null,kind.not.in.(charge,usage),ref_type.eq.slack_agent_month)");
 		expect(ledgerQuery?.searchParams.get("limit")).toBe("250");
 		const body = await response.json() as { transactions: Array<{ kind: string | null }> };
 		expect(body.transactions.map(row => row.kind)).toEqual(billingKinds);
@@ -480,6 +492,15 @@ describe("account settings routes", () => {
 				id: "destination-row-1",
 				destinationId: "destination-1",
 				samplingRate: 0.5,
+				health: {
+					lastSuccessAt: "2026-10-21T09:00:00Z",
+					lastFailureAt: "2026-10-21T10:00:00Z",
+					lastHttpStatus: 401,
+					lastError: "OTLP endpoint returned 401",
+					consecutiveFailures: 3,
+					delivered24h: 120,
+					failed24h: 4,
+				},
 			}],
 		});
 		await expect(danger.json()).resolves.toEqual({ signedIn: true });

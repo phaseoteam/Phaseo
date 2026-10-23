@@ -7,7 +7,8 @@ import { normalizeFinishReason } from "@core/finish-reason";
 import type { Protocol } from "@protocols/detect";
 import { createStreamCitationCollector } from "./stream-citations";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
-import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
+import { detectStreamProtocol, extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
+import { accumulateStreamUsage } from "@core/usage-normalization";
 import { SseParser } from "@core/sse-parser";
 import { createStreamReasoningStateCollector } from "./stream-reasoning-state";
 import { UpstreamStreamError } from "@core/stream-errors";
@@ -1076,6 +1077,11 @@ export async function consumeTextProtocolStreamToIR(args: {
 		sawContentPartDelta: false,
 	};
 	const citations = createStreamCitationCollector();
+	// Usage accumulates by the protocol of the frame that carried it.
+	const accumulateUsage = (eventName: string | null, frame: any, usage: any) => {
+		const frameProtocol = detectStreamProtocol({ protocol: undefined, eventName, frame }) ?? args.protocol;
+		usageRaw = accumulateStreamUsage(frameProtocol, usageRaw, usage);
+	};
 
 	while (true) {
 		const { done, value } = await reader.read();
@@ -1124,7 +1130,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 				}
 
 				if (event.type === "usage") {
-					usageRaw = event.usage;
+					accumulateUsage(eventName, payload, event.usage);
 					continue;
 				}
 				applyUnifiedEventToAccumulators({
@@ -1171,7 +1177,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 						continue;
 					}
 					if (event.type === "usage") {
-						usageRaw = event.usage;
+						accumulateUsage(eventName, payload, event.usage);
 						continue;
 					}
 					applyUnifiedEventToAccumulators({

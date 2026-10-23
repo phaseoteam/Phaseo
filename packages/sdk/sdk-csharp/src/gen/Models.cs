@@ -146,7 +146,7 @@ public sealed class AnthropicMessagesRequest
 	public long MaxTokens { get; set; }
 
 	[JsonPropertyName("messages")]
-	public List<Dictionary<string, object>> Messages { get; set; }
+	public List<object> Messages { get; set; }
 
 	[JsonPropertyName("meta")]
 	public bool? Meta { get; set; }
@@ -244,6 +244,29 @@ public sealed class AnthropicMessagesResponse
 
 	[JsonPropertyName("usage")]
 	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
+public sealed class AnthropicSystemMessage
+{
+	[JsonPropertyName("content")]
+	public object Content { get; set; }
+
+	[JsonPropertyName("role")]
+	public string Role { get; set; }
+
+}
+
+public sealed class AnthropicSystemTextBlock
+{
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
+	[JsonPropertyName("text")]
+	public string Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
 
 }
 
@@ -350,6 +373,9 @@ public sealed class ApiKey
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
 
+	[JsonPropertyName("storage_locations")]
+	public List<string>? StorageLocations { get; set; }
+
 	[JsonPropertyName("updated_at")]
 	public string? UpdatedAt { get; set; }
 
@@ -404,6 +430,9 @@ public sealed class ApiKeyCreateRequest
 
 	[JsonPropertyName("soft_blocked")]
 	public bool? SoftBlocked { get; set; }
+
+	[JsonPropertyName("storage_locations")]
+	public List<string>? StorageLocations { get; set; }
 
 	[JsonPropertyName("workspace_id")]
 	public string? WorkspaceId { get; set; }
@@ -495,6 +524,8 @@ public sealed class ApiKeyRotateResponse
 
 public sealed class ApiKeyScopeValue { }
 
+public sealed class ApiKeyStorageLocations { }
+
 public sealed class ApiKeyUpdateRequest
 {
 	[JsonPropertyName("department_id")]
@@ -526,6 +557,9 @@ public sealed class ApiKeyUpdateRequest
 
 	[JsonPropertyName("soft_blocked")]
 	public bool? SoftBlocked { get; set; }
+
+	[JsonPropertyName("storage_locations")]
+	public object? StorageLocations { get; set; }
 
 }
 
@@ -619,6 +653,9 @@ public sealed class ApiKeyWithValue
 
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
+
+	[JsonPropertyName("storage_locations")]
+	public List<string>? StorageLocations { get; set; }
 
 	[JsonPropertyName("updated_at")]
 	public string? UpdatedAt { get; set; }
@@ -2143,7 +2180,7 @@ public sealed class DecisionBoxAnswer
 	public Dictionary<string, object> Box { get; set; }
 
 	[JsonPropertyName("confidence")]
-	public double Confidence { get; set; }
+	public double? Confidence { get; set; }
 
 	[JsonPropertyName("name")]
 	public string? Name { get; set; }
@@ -9670,11 +9707,20 @@ public sealed class WorkspaceNotificationDestination
 	[JsonPropertyName("created_at")]
 	public string? CreatedAt { get; set; }
 
+	[JsonPropertyName("has_signing_secret")]
+	public bool? HasSigningSecret { get; set; }
+
 	[JsonPropertyName("id")]
 	public string Id { get; set; }
 
 	[JsonPropertyName("name")]
 	public string Name { get; set; }
+
+	[JsonPropertyName("signing_secret")]
+	public string? SigningSecret { get; set; }
+
+	[JsonPropertyName("signing_secret_rotated_at")]
+	public string? SigningSecretRotatedAt { get; set; }
 
 	[JsonPropertyName("status")]
 	public string Status { get; set; }
@@ -9771,6 +9817,9 @@ public sealed class WorkspaceNotificationRouteMap
 {
 	[JsonPropertyName("auto_top_up_failed")]
 	public List<string> AutoTopUpFailed { get; set; }
+
+	[JsonPropertyName("broadcast_destination_failing")]
+	public List<string> BroadcastDestinationFailing { get; set; }
 
 	[JsonPropertyName("low_balance")]
 	public List<string> LowBalance { get; set; }

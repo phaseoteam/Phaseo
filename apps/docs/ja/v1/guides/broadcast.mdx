@@ -1,0 +1,177 @@
+---
+title: "Broadcast"
+description: "すべてのリクエストのトレースを、オブザーバビリティツール、Webhook、ストレージバケット、データウェアハウスに送信します。"
+icon: "radio-tower"
+---
+
+Broadcast は、コードを変更することなく、各ゲートウェイリクエストのトレースを選んだ宛先に送信します。トレースは OpenTelemetry の GenAI 規約に従います。リクエスト全体に 1 つの span、プロバイダーへの各試行に 1 つずつ span があり、モデル、プロバイダー、トークン使用量、コスト、タイミング、そして（無効にしない限り）プロンプトと出力が含まれます。
+
+Broadcast は無料です。オーナーと管理者は **設定 → Broadcast** で宛先を管理するか、[オブザーバビリティ宛先 API](../api-reference/endpoint/observability-destinations-create.mdx) と `settings:write` を持つ[管理キー](../developers/management-api-keys.mdx)で管理できます。1 つのワークスペースには、種類ごとに最大 5 つの宛先を作成できます。
+
+## 宛先を追加する
+
+1. **設定 → Broadcast** を開き、宛先を選びます。
+2. 認証情報を入力します。認証情報は保存前に暗号化され、二度と表示されません。
+3. 送信する内容を選びます（下の「送信する内容を選ぶ」を参照）。
+4. **接続をテスト** を選択します。Phaseo は実際の配信と同じ方法でサンプルのトレースを送信するため、ここで失敗した場合は宛先自体のエラーが表示されます。
+5. 保存します。これ以降に完了したリクエストは、約 1 分以内に送信されます。
+
+| 種類 | 宛先 |
+| --- | --- |
+| OpenTelemetry ツール | Arize AI, Axiom, Braintrust, Comet Opik, Datadog, Dynatrace, Elastic, Grafana Cloud, Honeycomb, Langfuse, LangSmith, New Relic, PostHog, Respan, Sentry, W&B Weave |
+| 任意の OTLP エンドポイント | OpenTelemetry Collector（OTLP/HTTP、JSON または protobuf、gzip は任意） |
+| 自社のサービス | Webhook |
+| オブジェクトストレージ | Amazon S3 と S3 互換ストア、Cloudflare R2、Google Cloud Storage |
+| データベースとデータウェアハウス | ClickHouse, Google BigQuery, Snowflake |
+
+各フォームでは、API キーやプロジェクト、リージョンなど、そのツールに必要な項目だけを入力します。OpenTelemetry ツールはすべて同じ span を受け取り、各ベンダーのエンドポイント、ヘッダー、エンコーディングは Phaseo が設定します。
+
+## 送信する内容を選ぶ
+
+宛先ごとに個別の設定があります。
+
+- **プライバシーモード** を有効にすると、プロンプト、出力、システム指示、ツール定義がすべてのトレースから除外されます。コンテンツを一切保存しない API キーで行われたリクエストは、この設定にかかわらず、コンテンツ付きで転送されることはありません。
+- **生成メタデータ**、**コスト**、**ID**、**リクエストコンテキスト** は、それぞれ span 属性のグループをオンまたはオフにします。**リクエストコンテキスト** をオフにすると、リクエストメタデータ（下の「独自のトレースコンテキストを追加する」を参照）も送信されなくなります。
+- **割合** は、対象となるリクエストのうち送信する割合を 0 から 1 で指定します。選択はリクエストと宛先ごとに固定されるため、再試行された配信が異なる方法でサンプリングされることはありません。
+- **APIキーのフィルター** は、特定のキーで行われたリクエストを含めるか除外します。
+- **ルールのフィルター** は、一致するリクエストだけを送信します。ルールでは、モデル、プロバイダー、ユーザー ID、終了理由、コスト、トークン数などのフィールドを比較し、**かつ** と **または** でグループ化できます。**正規表現に一致** は線形時間のエンジンを使います。後方参照と先読み・後読みはサポートされず、大きすぎるパターンは保存時に拒否されます。
+
+## 独自のトレースコンテキストを追加する
+
+リクエスト本文に `metadata` オブジェクトを含めると、トレースに名前を付けたり独自のフィールドを添付したりできます。Phaseo はこれを Broadcast 用に読み取ります。
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [{ "role": "user", "content": "Summarise this ticket" }],
+  "metadata": {
+    "trace_id": "ticket-48213",
+    "trace_name": "support-summary",
+    "generation_name": "summarise",
+    "customer_tier": "enterprise"
+  }
+}
+```
+
+| キー | 効果 |
+| --- | --- |
+| `trace_id` | リクエストが属するトレース。32 文字の 16 進数 ID または UUID はそのまま使われます。それ以外の文字列はハッシュ化されるため、同じ値を持つすべてのリクエストが同じトレースにまとめられます。 |
+| `parent_span_id` | リクエストをその下にネストする、16 文字の 16 進数の span ID。`trace_id` と組み合わせて使います。 |
+| `trace_name`, `span_name` | リクエストの span の名前。両方が設定されている場合は `span_name` が優先されます。 |
+| `generation_name` | プロバイダーへの各試行の span の名前。 |
+| その他のキー | `phaseo.metadata.<key>` という名前の span 属性として送信されます。 |
+
+値には文字列、数値、ブール値を使えます。ネストされたオブジェクトはスキップされます。Phaseo は最大 64 文字のキーを最大 64 個まで保持し、値は 512 文字で切り詰めます。W3C の `traceparent` ヘッダーがある場合は、`trace_id` と `parent_span_id` ではなく、そのヘッダーによってトレースが決まります。
+
+`metadata` にシークレットや個人データを含めないでください。**リクエストコンテキスト** がオンになっているすべての宛先に送信されます。
+
+## Webhook の配信
+
+Webhook は、リクエストごとに 1 回の `POST`（選択した場合は `PUT`）を受け取ります。本文は OTLP/JSON のエクスポート `{"resourceSpans": [...]}` で、そのリクエストの span が含まれます。エンドポイントが必要とする `Authorization` ヘッダーなど、独自のヘッダーを追加するには **Headers JSON** を使います。
+
+**Signing Secret**（16〜256 文字、空白なし）を追加すると、すべての配信、テスト、サンプルに署名されます。その場合、Phaseo は次の 2 つのヘッダーを追加します。
+
+```http
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` は、タイムスタンプ、ピリオド（`.`）、変更されていないリクエスト本文をこの順に連結したものを、シークレットをキーとして計算した HMAC-SHA256 の 16 進数表現です。これは通知 Webhook と同じ方式なので、その[検証コード](./workspace-notifications.mdx)を再利用できます。Broadcast の配信にはイベント ID ヘッダーがありません。本文内の span ID で重複を排除してください。
+
+**接続をテスト** は、`X-Test-Connection: true` ヘッダーを付けて `{"resourceSpans": []}` を送信します。`400` レスポンスも到達可能と見なされるため、空のエクスポートを拒否する受信側でもテストに合格します。
+
+## オブジェクトストレージとデータウェアハウスの行
+
+オブジェクトストレージ、ClickHouse、BigQuery、Snowflake は、トレースではなく span ごとに 1 行を受け取ります。各バッチは 1 回のリクエスト（1 つのオブジェクト、または 1 回の挿入）で書き込まれます。
+
+| 列 | 型 | 内容 |
+| --- | --- | --- |
+| `event_id` | 文字列 | リクエストのイベント ID。リクエストのすべての span で共通です。 |
+| `trace_id` | 文字列 | 32 文字の 16 進数のトレース ID。 |
+| `span_id` | 文字列 | 16 文字の 16 進数の span ID。 |
+| `parent_span_id` | 文字列または null | 親の span。リクエストの span の場合は null です。 |
+| `name` | 文字列 | span の名前。 |
+| `kind` | 文字列 | リクエストは `server`、プロバイダーへの試行は `client`。 |
+| `start_time`, `end_time` | タイムスタンプ | UTC の RFC 3339 形式、マイクロ秒単位。 |
+| `duration_ms` | 数値 | 終了時刻から開始時刻を引いた値（ミリ秒）。 |
+| `status_code` | 文字列 | `unset`、`ok`、`error` のいずれか。 |
+| `status_message` | 文字列または null | エラーメッセージ（ある場合）。 |
+| `service_name` | 文字列または null | `phaseo-gateway`。 |
+| `attributes` | オブジェクト | `gen_ai.request.model` や `gen_ai.usage.input_tokens` など、名前ごとの span 属性。型は保持されます。 |
+| `resource_attributes` | オブジェクト | `service.name` などのリソース属性。 |
+
+1 行の上限は 512 KB です。インライン画像などで span の内容がそれを超える場合は、最も大きい属性値が容量を分け合うように切り詰められます。各値は先頭部分が残り、末尾が `…[truncated]` になり、それらの属性名は `phaseo.truncated_attributes` 属性に記録されます。
+
+失敗したバッチは再試行されます。宛先がバッチを保存したもののレスポンスが失われた場合、再試行によって一部の行が二重に書き込まれることがあります。`event_id` と `span_id` を使って重複を排除してください。BigQuery と Snowflake では、こうした重複の大半を防ぐリクエスト ID が使われます。
+
+### オブジェクトストレージ
+
+各バッチは gzip 圧縮された JSON Lines ファイルです。**Path Template** でファイルのキーを設定します。既定値は `phaseo/{year}/{month}/{day}/{hour}/{uuid}` で、Phaseo が `.jsonl.gz` を付け加えます。テンプレートでは `{year}`、`{month}`、`{day}`、`{hour}`、`{date}`（`YYYY-MM-DD`）、`{uuid}` を使えます。ファイルが互いに上書きされないよう、`{uuid}` を必ず含めてください。時刻は UTC です。
+
+- **Amazon S3**: バケットに対して `s3:PutObject` を実行できるアクセスキーと、バケットのリージョン。S3 互換ストアの場合は **S3-Compatible Endpoint** を設定します。
+- **Cloudflare R2**: R2 API トークンのアクセスキー ID とシークレット、アカウント ID、そしてバケットが管轄区域内にある場合はその管轄区域（`eu` または `fedramp`）。
+- **Google Cloud Storage**: バケットにオブジェクトを作成できるサービスアカウントの HMAC キー。
+
+オブジェクトは `Content-Encoding` ヘッダーなしで圧縮された状態で保存されるため、Athena、BigQuery、Snowflake の外部テーブルは `.gz` 拡張子によってそれらを読み取ります。
+
+### ClickHouse
+
+行は HTTPS インターフェース経由で `JSONEachRow` として、非同期挿入で挿入されます。テーブルにない列はスキップされるため、必要な列だけを残せます。
+
+```sql
+CREATE TABLE phaseo_traces (
+  event_id String, trace_id String, span_id String, parent_span_id Nullable(String),
+  name String, kind LowCardinality(String),
+  start_time DateTime64(6, 'UTC'), end_time DateTime64(6, 'UTC'), duration_ms Float64,
+  status_code LowCardinality(String), status_message Nullable(String), service_name Nullable(String),
+  attributes String, resource_attributes String
+) ENGINE = MergeTree ORDER BY (start_time, trace_id);
+```
+
+ClickHouse Cloud では、ポート 8443 のエンドポイントを使ってください。`attributes` と `resource_attributes` は `JSON` 列にすることもできます。
+
+### BigQuery
+
+行は `insertAll` でストリーミングされ、イベント ID と span ID が挿入 ID として使われます。テーブルに対する **BigQuery Data Editor** を持つサービスアカウントを作成し、その JSON キーファイルをフォームに貼り付けます。`attributes` と `resource_attributes` は `JSON` 列である必要があります。
+
+```sql
+CREATE TABLE observability.phaseo_traces (
+  event_id STRING, trace_id STRING, span_id STRING, parent_span_id STRING,
+  name STRING, kind STRING, start_time TIMESTAMP, end_time TIMESTAMP, duration_ms FLOAT64,
+  status_code STRING, status_message STRING, service_name STRING,
+  attributes JSON, resource_attributes JSON
+) PARTITION BY DATE(start_time) CLUSTER BY trace_id;
+```
+
+### Snowflake
+
+各バッチは SQL API を通じた 1 回の `INSERT` で、キーペア認証でサインインするため、指定したウェアハウスで実行されます。Phaseo 用のユーザーを作成し、RSA キーを設定します。
+
+```sql
+CREATE TABLE PHASEO.OBSERVABILITY.PHASEO_TRACES (
+  EVENT_ID STRING, TRACE_ID STRING, SPAN_ID STRING, PARENT_SPAN_ID STRING,
+  NAME STRING, KIND STRING, START_TIME TIMESTAMP_TZ, END_TIME TIMESTAMP_TZ, DURATION_MS FLOAT,
+  STATUS_CODE STRING, STATUS_MESSAGE STRING, SERVICE_NAME STRING,
+  ATTRIBUTES VARIANT, RESOURCE_ATTRIBUTES VARIANT
+);
+-- openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out phaseo_key.p8
+-- openssl rsa -in phaseo_key.p8 -pubout
+ALTER USER PHASEO_BROADCAST SET RSA_PUBLIC_KEY = 'MIIBIjANBgkqh...';
+```
+
+秘密鍵（暗号化されていない `BEGIN PRIVATE KEY`）をフォームに貼り付け、`myorg-myaccount` のような組織とアカウントの識別子を使います。ユーザーのロールには、テーブルに対する `INSERT` と、ウェアハウス、データベース、スキーマに対する `USAGE` が必要です。
+
+## 配信、ヘルス、アラート
+
+タイムアウト、レート制限、サーバーエラーで失敗した配信は、バックオフを挟んで最大 8 回まで再試行されます。拒否されたキーや存在しないテーブルなど、その他のエラーは再試行されません。
+
+**設定 → Broadcast** には、各宛先のヘルスが **正常**、**失敗中**、**まだ配信はありません**、**無効** のいずれかで表示され、最後のエラーと、直近 24 時間に配信されたリクエストと失敗したリクエストの数も表示されます。
+
+宛先が動作しなくなったときに知らせを受けるには、**ブロードキャストのアラート** を[通知先](./workspace-notifications.mdx)に送るよう設定します。アラートは、宛先が 5 回以上連続してリクエストに失敗し、かつ 15 分間何も配信していないときに送信されます。アラートは失敗が続く間に 1 回だけ送信され、宛先が回復して少なくとも 6 時間が経過した後にのみ再び送信されます。
+
+## 関連項目
+
+- [オブザーバビリティ宛先 API](../api-reference/endpoint/observability-destinations-list.mdx)
+- [リクエストラベル](./request-labels.mdx)（`phaseo.label.<key>` 属性として送信されます）
+- [ワークスペース通知](./workspace-notifications.mdx)
+- [オブザーバビリティ連携](./integrations/observability.mdx)（独自のクライアントからトレースする場合）

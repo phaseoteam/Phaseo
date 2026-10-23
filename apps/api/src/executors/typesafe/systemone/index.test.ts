@@ -3,6 +3,9 @@ import type { ExecutorExecuteArgs } from "@executors/types";
 import { createUpstreamTimingTracker } from "@executors/_shared/timing/upstream";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../../tests/helpers/runtime";
+import { DecisionsSchema } from "@core/schemas";
+import { decodeDecisionsRequest } from "@protocols/decisions/decode";
+import { encodeDecisionsResponse } from "@protocols/decisions/encode";
 import { executor } from "./index";
 
 function buildArgs(overrides: Partial<ExecutorExecuteArgs> = {}): ExecutorExecuteArgs {
@@ -63,6 +66,38 @@ describe("TypeSafe System One executor", () => {
 			questions: { mug: { type: "box", instructions: "The mug" } } } }));
 		expect(result.upstream.status).toBe(400);
 		expect(result.localClientError).toBe(true);
+	});
+	// BoxAnswer.confidence is "Null when the model does not provide confidence" (https://docs.typesafe.ai/api).
+	it("accepts and returns a Box answer with null confidence", async () => {
+		const box = { top: 0.2, bottom: 0.66, left: 0.19, right: 0.68 };
+		const mock = installFetchMock([{ match: url => url === "https://api.typesafe.ai/v1/systemone",
+			response: jsonResponse({ model: "jev-1.14.0", answers: { red_rectangle: { type: "box", box, confidence: null } }, usage: { input_tokens: 285, output_tokens: 20 } }),
+		}]);
+		try {
+			const result = await executor(buildArgs({ providerModelSlug: "jev-1.14.0", ir: { model: "typesafe/jev-1.14.0", state: "Photo", images: ["data:image/png;base64,AQID"], questions: { red_rectangle: { type: "box", instructions: "The red rectangle" } } } }));
+			expect(result.upstream.status).toBe(200);
+			expect(result.ir).toMatchObject({ answers: { red_rectangle: { type: "box", box, confidence: null } } });
+			expect(result.bill.usage).toMatchObject({ input_tokens: 285, output_tokens: 20 });
+		} finally { mock.restore(); }
+	});
+	it.each([null, 0.9])("returns Box confidence %s through the public decisions response", (confidence) => {
+		const box = { top: 0.2, bottom: 0.66, left: 0.19, right: 0.68 };
+		const request = decodeDecisionsRequest(DecisionsSchema.parse({
+			model: "typesafe/jev-1.14.0",
+			input: [{ role: "user", content: [{ type: "input_image", image_url: "data:image/png;base64,AQID" }] }],
+			questions: [{ type: "box", name: "red_rectangle", instructions: "The red rectangle" }],
+		}));
+		const response = encodeDecisionsResponse({ model: "typesafe/jev-1.14.0", answers: { question_0: { type: "box", box, confidence } } } as any, request);
+		expect(response.answers).toEqual([{ type: "box", name: "red_rectangle", box, confidence }]);
+	});
+	it("still rejects a choice answer with null confidence", async () => {
+		const mock = installFetchMock([{ match: url => url === "https://api.typesafe.ai/v1/systemone",
+			response: jsonResponse({ answers: { segment: { type: "choice", choice: "startup", probabilities: { startup: 0.7, enterprise: 0.3 }, confidence: null } }, usage: { input_tokens: 40, output_tokens: 2 } }),
+		}]);
+		try {
+			const result = await executor(buildArgs());
+			expect(result.upstream.status).toBe(502);
+		} finally { mock.restore(); }
 	});
 	it("rejects malformed Box responses without billing", async () => {
 		const mock = installFetchMock([{ match: url => url === "https://api.typesafe.ai/v1/systemone",

@@ -8534,6 +8534,16 @@
 			"zh-Hans": "模型报告的置信度，不保证正确。",
 			"ar": "ثقة يبلغ عنها النموذج؛ لا تضمن صحة النتيجة."
 		},
+		"Confidence in the box, from 0 to 1, or null when the model gives none.": {
+			"es": "Confianza en el recuadro, de 0 a 1, o null cuando el modelo no la indica.",
+			"fr": "Confiance dans le cadre, de 0 à 1, ou null quand le modèle n’en fournit pas.",
+			"de": "Konfidenz für den Rahmen, von 0 bis 1, oder null, wenn das Modell keine angibt.",
+			"pt-BR": "Confiança na caixa, de 0 a 1, ou null quando o modelo não a informa.",
+			"hi": "बॉक्स पर विश्वास, 0 से 1 तक, या null जब मॉडल इसे नहीं बताता।",
+			"ja": "ボックスの信頼度（0〜1）。モデルが返さない場合は null です。",
+			"zh-Hans": "对该框的置信度，取值 0 到 1；模型未提供时为 null。",
+			"ar": "الثقة في المربع، من 0 إلى 1، أو null عندما لا يقدّمها النموذج."
+		},
 		"Probability that the value is undetermined.": {
 			"es": "Probabilidad de que el valor no se pueda determinar.",
 			"fr": "Probabilité que la valeur soit indéterminée.",
@@ -8944,6 +8954,36 @@
 			"zh-Hans": "以 12 小时保留时长写入缓存的输入 token，按输入价格的 2.5 倍计费。",
 			"ar": "رموز الإدخال المكتوبة في التخزين المؤقت لمدة 12 ساعة، وتُحتسب بـ 2.5x سعر الإدخال."
 		},
+		"Whether deliveries are signed with x-phaseo-signature. Only custom webhook destinations are signed; ones created before signing stay unsigned until a secret is generated.": {
+			"es": "Indica si las entregas se firman con x-phaseo-signature. Solo se firman los destinos de webhook personalizados; los creados antes de la firma siguen sin firmar hasta que se genera un secreto.",
+			"fr": "Indique si les envois sont signés avec x-phaseo-signature. Seules les destinations webhook personnalisées sont signées ; celles créées avant la signature restent non signées jusqu’à la génération d’un secret.",
+			"de": "Gibt an, ob Zustellungen mit x-phaseo-signature signiert werden. Nur benutzerdefinierte Webhook-Ziele werden signiert; vor der Signierung angelegte Ziele bleiben unsigniert, bis ein Geheimnis erzeugt wird.",
+			"pt-BR": "Indica se as entregas são assinadas com x-phaseo-signature. Somente destinos de webhook personalizados são assinados; os criados antes da assinatura continuam sem assinatura até que um segredo seja gerado.",
+			"hi": "क्या डिलीवरी x-phaseo-signature से साइन होती हैं। केवल कस्टम वेबहुक गंतव्य साइन होते हैं; साइनिंग से पहले बने गंतव्य सीक्रेट बनने तक बिना साइन के रहते हैं।",
+			"ja": "配信が x-phaseo-signature で署名されるかどうか。署名されるのはカスタム Webhook 通知先のみです。署名導入前に作成された通知先は、シークレットを生成するまで署名されません。",
+			"zh-Hans": "投递是否使用 x-phaseo-signature 签名。只有自定义 Webhook 目标会签名；在签名功能推出前创建的目标在生成密钥之前保持未签名。",
+			"ar": "ما إذا كانت عمليات التسليم موقّعة باستخدام x-phaseo-signature. تُوقَّع وجهات webhook المخصصة فقط؛ وتبقى الوجهات التي أُنشئت قبل التوقيع غير موقّعة حتى يُنشأ سر."
+		},
+		"When the current signing secret was generated.": {
+			"es": "Cuándo se generó el secreto de firma actual.",
+			"fr": "Date de génération du secret de signature actuel.",
+			"de": "Zeitpunkt, zu dem das aktuelle Signaturgeheimnis erzeugt wurde.",
+			"pt-BR": "Quando o segredo de assinatura atual foi gerado.",
+			"hi": "मौजूदा साइनिंग सीक्रेट कब बनाया गया था।",
+			"ja": "現在の署名シークレットが生成された日時。",
+			"zh-Hans": "当前签名密钥的生成时间。",
+			"ar": "وقت إنشاء سر التوقيع الحالي."
+		},
+		"The webhook signing secret. Returned only when a custom webhook destination is created or its secret is rotated; store it securely.": {
+			"es": "El secreto de firma del webhook. Solo se devuelve al crear un destino de webhook personalizado o al rotar su secreto; guárdalo de forma segura.",
+			"fr": "Le secret de signature du webhook. Renvoyé uniquement à la création d’une destination webhook personnalisée ou au renouvellement de son secret ; conservez-le en lieu sûr.",
+			"de": "Das Signaturgeheimnis des Webhooks. Wird nur beim Anlegen eines benutzerdefinierten Webhook-Ziels oder beim Rotieren seines Geheimnisses zurückgegeben; sicher aufbewahren.",
+			"pt-BR": "O segredo de assinatura do webhook. Retornado somente quando um destino de webhook personalizado é criado ou seu segredo é rotacionado; guarde-o com segurança.",
+			"hi": "वेबहुक साइनिंग सीक्रेट। यह केवल कस्टम वेबहुक गंतव्य बनाते समय या उसका सीक्रेट बदलते समय लौटाया जाता है; इसे सुरक्षित रखें।",
+			"ja": "Webhook の署名シークレット。カスタム Webhook 通知先の作成時またはシークレットのローテーション時にのみ返されます。安全に保管してください。",
+			"zh-Hans": "Webhook 签名密钥。仅在创建自定义 Webhook 目标或轮换其密钥时返回；请妥善保存。",
+			"ar": "سر توقيع webhook. يُعاد فقط عند إنشاء وجهة webhook مخصصة أو تدوير سرها؛ احفظه بأمان."
+		},
 		"Spoken audio on an assistant message when the request asks for audio output: the audio id, base64 audio in the requested format, when the audio expires (Unix seconds) and its transcript. Streamed as delta.audio pieces.": {
 			"es": "Audio hablado en un mensaje del asistente cuando la solicitud pide salida de audio: el id del audio, el audio en base64 en el formato solicitado, cuándo caduca el audio (segundos Unix) y su transcripción. Se transmite en fragmentos delta.audio.",
 			"fr": "Audio parlé sur un message de l'assistant lorsque la requête demande une sortie audio : l'identifiant de l'audio, l'audio en base64 au format demandé, sa date d'expiration (secondes Unix) et sa transcription. Diffusé en fragments delta.audio.",
@@ -9003,6 +9043,26 @@
 			"ja": "テンプレート変数の値。画像変数には https URL、データ URL、または画像パートを指定します。",
 			"zh-Hans": "模板变量的值。图像变量接受 https URL、data URL 或图像部分。",
 			"ar": "قيم متغيرات القالب. تقبل متغيرات الصور عنوان https أو عنوان data أو جزء صورة."
+		},
+		"Use `system` for an instruction that applies from this point in the conversation. A system message takes a string or text blocks, must come straight after a user turn (or an assistant turn ending in a server tool result), and must be the last message or be followed by an assistant turn.": {
+			"es": "Usa `system` para una instrucción que se aplica a partir de este punto de la conversación. Un mensaje de sistema acepta una cadena o bloques de texto, debe ir justo después de un turno de usuario (o de un turno del asistente que termine en un resultado de herramienta del servidor) y debe ser el último mensaje o ir seguido de un turno del asistente.",
+			"fr": "Utilisez `system` pour une instruction qui s’applique à partir de ce point de la conversation. Un message système accepte une chaîne ou des blocs de texte, doit suivre directement un tour utilisateur (ou un tour de l’assistant qui se termine par un résultat d’outil serveur) et doit être le dernier message ou être suivi d’un tour de l’assistant.",
+			"de": "Verwende `system` für eine Anweisung, die ab dieser Stelle der Unterhaltung gilt. Eine Systemnachricht akzeptiert einen String oder Textblöcke, muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und muss die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden.",
+			"pt-BR": "Use `system` para uma instrução que vale a partir deste ponto da conversa. Uma mensagem de sistema aceita uma string ou blocos de texto, deve vir logo após um turno do usuário (ou um turno do assistente que termine em um resultado de ferramenta do servidor) e deve ser a última mensagem ou ser seguida por um turno do assistente.",
+			"hi": "बातचीत में इस बिंदु से लागू होने वाले निर्देश के लिए `system` का उपयोग करें। सिस्टम संदेश एक स्ट्रिंग या टेक्स्ट ब्लॉक लेता है, उपयोगकर्ता टर्न (या सर्वर टूल परिणाम पर खत्म होने वाले असिस्टेंट टर्न) के ठीक बाद आना चाहिए, और अंतिम संदेश होना चाहिए या उसके बाद असिस्टेंट टर्न आना चाहिए।",
+			"ja": "会話のこの時点以降に適用する指示には `system` を使います。システムメッセージは文字列またはテキストブロックを受け付け、ユーザーターン（またはサーバーツールの結果で終わるアシスタントターン）の直後に置き、最後のメッセージにするか、直後にアシスタントターンを続ける必要があります。",
+			"zh-Hans": "对于从对话此处开始生效的指令，请使用 `system`。系统消息接受字符串或文本块，必须紧跟在用户轮次（或以服务器工具结果结尾的助手轮次）之后，并且必须是最后一条消息，或者后面紧跟助手轮次。",
+			"ar": "استخدم `system` لتعليمة تنطبق من هذه النقطة في المحادثة. تقبل رسالة النظام سلسلة نصية أو كتلًا نصية، ويجب أن تأتي مباشرةً بعد دور المستخدم (أو بعد دور المساعد الذي ينتهي بنتيجة أداة خادم)، ويجب أن تكون الرسالة الأخيرة أو أن يليها دور المساعد."
+		},
+		"Where you keep this key, such as the hosting platform whose environment variables hold it. Optional. If one of these places reports a breach, you can find and revoke every key stored there. Known ids: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.": {
+			"es": "Dónde guardas esta clave, por ejemplo la plataforma de alojamiento cuyas variables de entorno la contienen. Opcional. Si uno de estos lugares informa de una brecha, puedes encontrar y revocar todas las claves guardadas allí. Identificadores conocidos: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.",
+			"fr": "Où vous stockez cette clé, par exemple la plateforme d’hébergement dont les variables d’environnement la contiennent. Facultatif. Si l’un de ces services signale une fuite, vous pouvez retrouver et révoquer toutes les clés qui y sont stockées. Identifiants connus : railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.",
+			"de": "Wo du diesen Schlüssel aufbewahrst, zum Beispiel die Hosting-Plattform, in deren Umgebungsvariablen er liegt. Optional. Wenn einer dieser Orte ein Datenleck meldet, kannst du alle dort gespeicherten Schlüssel finden und widerrufen. Bekannte IDs: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.",
+			"pt-BR": "Onde você guarda esta chave, como a plataforma de hospedagem cujas variáveis de ambiente a contêm. Opcional. Se um desses lugares relatar um vazamento, você pode encontrar e revogar todas as chaves armazenadas lá. IDs conhecidos: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.",
+			"hi": "आप यह कुंजी कहाँ रखते हैं, जैसे वह होस्टिंग प्लेटफ़ॉर्म जिसके environment variables में यह है। वैकल्पिक। अगर इनमें से कोई जगह डेटा उल्लंघन की सूचना देती है, तो आप वहाँ रखी हर कुंजी ढूँढकर रद्द कर सकते हैं। ज्ञात ID: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other।",
+			"ja": "このキーの保管場所（キーを環境変数に保持しているホスティングプラットフォームなど）。任意です。保管場所で情報漏えいが報告された場合、そこに保管されているすべてのキーを見つけて無効化できます。既知の ID: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other。",
+			"zh-Hans": "你存放此密钥的位置，例如在环境变量中保存它的托管平台。可选。如果其中某个位置报告数据泄露，你可以找到并撤销存储在那里的所有密钥。已知 ID：railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other。",
+			"ar": "المكان الذي تحتفظ فيه بهذا المفتاح، مثل منصة الاستضافة التي تحتفظ به في متغيرات البيئة. اختياري. إذا أبلغ أحد هذه الأماكن عن اختراق، يمكنك العثور على كل المفاتيح المخزنة فيه وإبطالها. المعرّفات المعروفة: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other."
 		}
 	},
 	"GET /apps": {
@@ -10016,6 +10076,50 @@
 				"ja": "テストに失敗しました",
 				"zh-Hans": "测试失败",
 				"ar": "فشل الاختبار"
+			}
+		}
+	},
+	"POST /notifications/destinations/{id}/rotate-secret": {
+		"summary": {
+			"es": "Rotar el secreto de firma de un webhook de notificaciones",
+			"fr": "Renouveler le secret de signature d’un webhook de notification",
+			"de": "Signaturgeheimnis eines Benachrichtigungs-Webhooks rotieren",
+			"pt-BR": "Rotacionar o segredo de assinatura de um webhook de notificação",
+			"hi": "सूचना वेबहुक का साइनिंग सीक्रेट बदलें",
+			"ja": "通知 Webhook の署名シークレットをローテーション",
+			"zh-Hans": "轮换通知 Webhook 签名密钥",
+			"ar": "تدوير سر توقيع webhook الإشعارات"
+		},
+		"description": {
+			"es": "Genera un nuevo secreto de firma para un destino de webhook personalizado y lo devuelve una sola vez. Los destinos creados antes de la firma obtienen así su primer secreto. Las entregas posteriores se firman con el nuevo secreto y el anterior deja de usarse.",
+			"fr": "Génère un nouveau secret de signature pour une destination webhook personnalisée et ne le renvoie qu’une seule fois. Les destinations créées avant la signature obtiennent ainsi leur premier secret. Les envois suivants sont signés avec le nouveau secret et l’ancien n’est plus utilisé.",
+			"de": "Erzeugt ein neues Signaturgeheimnis für ein benutzerdefiniertes Webhook-Ziel und gibt es nur einmal zurück. Ziele, die vor der Signierung angelegt wurden, erhalten so ihr erstes Geheimnis. Spätere Zustellungen werden mit dem neuen Geheimnis signiert; das vorherige wird nicht mehr verwendet.",
+			"pt-BR": "Gera um novo segredo de assinatura para um destino de webhook personalizado e o retorna uma única vez. Destinos criados antes da assinatura recebem assim o primeiro segredo. As entregas seguintes são assinadas com o novo segredo e o anterior deixa de ser usado.",
+			"hi": "कस्टम वेबहुक गंतव्य के लिए नया साइनिंग सीक्रेट बनाता है और उसे केवल एक बार लौटाता है। साइनिंग से पहले बने गंतव्यों को इसी तरह पहला सीक्रेट मिलता है। आगे की डिलीवरी नए सीक्रेट से साइन होती हैं और पिछला सीक्रेट उपयोग में नहीं रहता।",
+			"ja": "カスタム Webhook 通知先の新しい署名シークレットを生成し、一度だけ返します。署名導入前に作成された通知先は、この方法で最初のシークレットを取得します。以降の配信は新しいシークレットで署名され、以前のシークレットは使われなくなります。",
+			"zh-Hans": "为自定义 Webhook 通知目标生成新的签名密钥，并且只返回一次。在签名功能推出前创建的目标通过此方式获得第一个密钥。之后的投递使用新密钥签名，旧密钥不再使用。",
+			"ar": "ينشئ سر توقيع جديدًا لوجهة webhook مخصصة ويعيده مرة واحدة فقط. تحصل الوجهات التي أُنشئت قبل التوقيع على سرها الأول بهذه الطريقة. تُوقَّع عمليات التسليم اللاحقة بالسر الجديد ويتوقف استخدام السر السابق."
+		},
+		"responses": {
+			"200": {
+				"es": "Secreto de firma rotado",
+				"fr": "Secret de signature renouvelé",
+				"de": "Signaturgeheimnis rotiert",
+				"pt-BR": "Segredo de assinatura rotacionado",
+				"hi": "साइनिंग सीक्रेट बदल दिया गया",
+				"ja": "署名シークレットをローテーションしました",
+				"zh-Hans": "签名密钥已轮换",
+				"ar": "تم تدوير سر التوقيع"
+			},
+			"default": {
+				"es": "La solicitud ha fallado",
+				"fr": "La requête a échoué",
+				"de": "Anfrage fehlgeschlagen",
+				"pt-BR": "A solicitação falhou",
+				"hi": "अनुरोध विफल हुआ",
+				"ja": "リクエストに失敗しました",
+				"zh-Hans": "请求失败",
+				"ar": "فشل الطلب"
 			}
 		}
 	},

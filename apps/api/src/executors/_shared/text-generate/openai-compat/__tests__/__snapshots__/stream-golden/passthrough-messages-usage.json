@@ -1,5 +1,8 @@
 {
   "usageRaw": {
+    "input_tokens": 25,
+    "cache_read_input_tokens": 5,
+    "cache_creation_input_tokens": 2,
     "output_tokens": 42
   },
   "info": {

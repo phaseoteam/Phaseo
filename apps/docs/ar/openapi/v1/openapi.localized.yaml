@@ -5135,6 +5135,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: تدوير سر توقيع webhook الإشعارات
+      description: ينشئ سر توقيع جديدًا لوجهة webhook مخصصة ويعيده مرة واحدة فقط. تحصل الوجهات التي أُنشئت قبل التوقيع على سرها الأول بهذه الطريقة. تُوقَّع عمليات التسليم اللاحقة بالسر الجديد ويتوقف استخدام السر السابق.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: تم تدوير سر التوقيع
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: فشل الطلب
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -10861,7 +10889,15 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/AnthropicMessage'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicMessage'
+              - $ref: '#/components/schemas/AnthropicSystemMessage'
+            discriminator:
+              propertyName: role
+              mapping:
+                user: '#/components/schemas/AnthropicMessage'
+                assistant: '#/components/schemas/AnthropicMessage'
+                system: '#/components/schemas/AnthropicSystemMessage'
         max_tokens:
           type: integer
           minimum: 1
@@ -11011,6 +11047,39 @@ components:
             - type: array
               items:
                 $ref: '#/components/schemas/AnthropicContentBlock'
+    AnthropicSystemMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          description: استخدم `system` لتعليمة تنطبق من هذه النقطة في المحادثة. تقبل رسالة النظام سلسلة نصية أو كتلًا نصية، ويجب أن تأتي مباشرةً بعد دور المستخدم (أو بعد دور المساعد الذي ينتهي بنتيجة أداة خادم)، ويجب أن تكون الرسالة الأخيرة أو أن يليها دور المساعد.
+          enum:
+            - system
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/AnthropicSystemTextBlock'
+      additionalProperties: false
+    AnthropicSystemTextBlock:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     AnthropicContentBlock:
       type: object
       properties:
@@ -12677,6 +12746,8 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: الثقة في المربع، من 0 إلى 1، أو null عندما لا يقدّمها النموذج.
     DecisionBox:
       type: object
       required:
@@ -16175,6 +16246,8 @@ components:
           format: uuid
           nullable: true
           description: القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: يحدد ما إذا كانت بيانات اعتماد المزوّد تُحتسب ضمن حد إنفاق المفتاح. القيمة حاليًا false دائمًا.
@@ -16384,6 +16457,8 @@ components:
           format: uuid
           nullable: true
           description: القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -16423,7 +16498,22 @@ components:
           format: uuid
           nullable: true
           description: القسم الذي ينتمي إليه هذا المفتاح لأغراض حدود المعدل وميزانيات القسم. تعني القيمة null أن المفتاح يُحتسب فقط ضمن حدود مساحة العمل بأكملها.
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: 'المكان الذي تحتفظ فيه بهذا المفتاح، مثل منصة الاستضافة التي تحتفظ به في متغيرات البيئة. اختياري. إذا أبلغ أحد هذه الأماكن عن اختراق، يمكنك العثور على كل المفاتيح المخزنة فيه وإبطالها. المعرّفات المعروفة: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.'
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:
@@ -17844,7 +17934,29 @@ components:
     ObservabilityDestinationType:
       type: string
       enum:
+        - arize
+        - axiom
+        - bigquery
+        - braintrust
+        - clickhouse
+        - comet_opik
+        - datadog
+        - dynatrace
+        - elastic
+        - gcs
+        - grafana_cloud
+        - honeycomb
+        - langfuse
+        - langsmith
+        - new_relic
         - otel_collector
+        - posthog
+        - r2
+        - respan
+        - s3
+        - sentry
+        - snowflake
+        - wandb_weave
         - webhook
     ObservabilityKeyFilter:
       type: object
@@ -21767,6 +21879,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: ما إذا كانت عمليات التسليم موقّعة باستخدام x-phaseo-signature. تُوقَّع وجهات webhook المخصصة فقط؛ وتبقى الوجهات التي أُنشئت قبل التوقيع غير موقّعة حتى يُنشأ سر.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: وقت إنشاء سر التوقيع الحالي.
+        signing_secret:
+          type: string
+          description: سر توقيع webhook. يُعاد فقط عند إنشاء وجهة webhook مخصصة أو تدوير سرها؛ احفظه بأمان.
         created_at:
           type: string
           format: date-time
@@ -21853,6 +21976,7 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - broadcast_destination_failing
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -21862,6 +21986,7 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - broadcast_destination_failing
       properties:
         low_balance:
           type: array
@@ -21889,6 +22014,11 @@ components:
             type: string
             format: uuid
         rate_limit_throttled:
+          type: array
+          items:
+            type: string
+            format: uuid
+        broadcast_destination_failing:
           type: array
           items:
             type: string

@@ -14,6 +14,11 @@ function thinkingType(ir: any): "enabled" | "disabled" | undefined {
 export function applyBytePlusRequestQuirks(request: any, ir: any): void {
 	const type = thinkingType(ir);
 	if (type) request.thinking = { type };
+	// ModelArk Responses stores every response unless `store` is false (it defaults to
+	// true). Keep the gateway default, no storage, unless the client asked for it.
+	// https://docs.byteplus.com/en/docs/ModelArk/create-model-responses-api
+	const isResponsesRequest = request.input != null || request.input_items != null;
+	if (isResponsesRequest && ir?.store !== true) request.store = false;
 	for (const item of request.input ?? request.input_items ?? request.messages ?? []) {
 		for (const part of Array.isArray(item?.content) ? item.content : []) {
 			// ModelArk takes video as `input_video` with a string `video_url`.

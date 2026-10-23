@@ -1,0 +1,177 @@
+---
+title: "Broadcast"
+description: "Envía una traza de cada solicitud a tu herramienta de observabilidad, a un webhook, a un bucket de almacenamiento o a un almacén de datos."
+icon: "radio-tower"
+---
+
+Broadcast envía una traza de cada solicitud del gateway a los destinos que elijas, sin cambiar tu código. La traza sigue las convenciones GenAI de OpenTelemetry: un span para la solicitud y un span para cada intento con un proveedor, con el modelo, el proveedor, el uso de tokens, el coste, los tiempos y (salvo que lo desactives) el prompt y la salida.
+
+Broadcast es gratuito. Los propietarios y administradores gestionan los destinos en **Configuración → Broadcast**, o con la [API de destinos de observabilidad](../api-reference/endpoint/observability-destinations-create.mdx) y una [clave de gestión](../developers/management-api-keys.mdx) con `settings:write`. Un espacio de trabajo puede tener hasta cinco destinos de cada tipo.
+
+## Añadir un destino
+
+1. Abre **Configuración → Broadcast** y elige un destino.
+2. Introduce sus credenciales. Se cifran antes de guardarse y no se vuelven a mostrar.
+3. Elige qué se envía (consulta la sección «Elegir qué se envía»).
+4. Selecciona **Conexión de prueba**. Phaseo envía una traza de ejemplo del mismo modo que las entregas reales, así que un fallo aquí muestra el error del propio destino.
+5. Guarda. Las solicitudes que terminen a partir de ese momento se envían en aproximadamente un minuto.
+
+| Tipo | Destinos |
+| --- | --- |
+| Herramientas de OpenTelemetry | Arize AI, Axiom, Braintrust, Comet Opik, Datadog, Dynatrace, Elastic, Grafana Cloud, Honeycomb, Langfuse, LangSmith, New Relic, PostHog, Respan, Sentry, W&B Weave |
+| Cualquier endpoint OTLP | OpenTelemetry Collector (OTLP/HTTP, JSON o protobuf, gzip opcional) |
+| Tu propio servicio | Webhook |
+| Almacenamiento de objetos | Amazon S3 y almacenes compatibles con S3, Cloudflare R2, Google Cloud Storage |
+| Bases de datos y almacenes de datos | ClickHouse, Google BigQuery, Snowflake |
+
+Cada formulario pide solo lo que necesita esa herramienta, como una clave de API y un proyecto o una región. Las herramientas de OpenTelemetry reciben los mismos spans; Phaseo completa el endpoint, las cabeceras y la codificación de cada proveedor.
+
+## Elegir qué se envía
+
+Cada destino tiene su propia configuración:
+
+- **Modo de privacidad** deja fuera de cada traza los prompts, las salidas, las instrucciones del sistema y las definiciones de herramientas. Las solicitudes hechas con una clave de API que nunca almacena contenido nunca se reenvían con contenido, diga lo que diga esta opción.
+- **Metadatos de generación**, **Costo**, **Identidad** y **Solicitar contexto** activan o desactivan cada uno un grupo de atributos de span. Desactivar **Solicitar contexto** también descarta los metadatos de la solicitud (consulta la sección «Añadir tu propio contexto de traza»).
+- **Tasa** envía una parte de las solicitudes aptas, de 0 a 1. La elección es estable para cada solicitud y destino, así que una entrega reintentada nunca se muestrea de forma distinta.
+- **Filtro de clave API** incluye o excluye las solicitudes hechas con claves concretas.
+- **Reglas de filtrado** envían solo las solicitudes que coinciden. Las reglas comparan campos como el modelo, el proveedor, el ID de usuario, el motivo de finalización, el coste o los recuentos de tokens, y se pueden agrupar con **y** y **o**. **Matches regex** usa un motor de tiempo lineal: no admite referencias inversas ni lookaround, y un patrón demasiado grande se rechaza al guardarlo.
+
+## Añadir tu propio contexto de traza
+
+Pon un objeto `metadata` en el cuerpo de la solicitud para dar nombre a las trazas y adjuntar tus propios campos. Phaseo lo lee para Broadcast:
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [{ "role": "user", "content": "Summarise this ticket" }],
+  "metadata": {
+    "trace_id": "ticket-48213",
+    "trace_name": "support-summary",
+    "generation_name": "summarise",
+    "customer_tier": "enterprise"
+  }
+}
+```
+
+| Clave | Efecto |
+| --- | --- |
+| `trace_id` | La traza a la que pertenece la solicitud. Un ID hexadecimal de 32 caracteres o un UUID se usa tal cual; cualquier otra cadena se convierte en hash, de modo que todas las solicitudes con el mismo valor se unen a la misma traza. |
+| `parent_span_id` | Un ID de span hexadecimal de 16 caracteres bajo el que anidar la solicitud. Se usa junto con `trace_id`. |
+| `trace_name`, `span_name` | Nombre del span de la solicitud. Si se definen ambos, prevalece `span_name`. |
+| `generation_name` | Nombre del span de cada intento con un proveedor. |
+| Cualquier otra clave | Se envía como un atributo de span llamado `phaseo.metadata.<key>`. |
+
+Los valores pueden ser cadenas, números o booleanos; los objetos anidados se omiten. Phaseo conserva hasta 64 claves de 64 caracteres como máximo y recorta los valores a 512 caracteres. Si hay una cabecera W3C `traceparent`, esta decide la traza en lugar de `trace_id` y `parent_span_id`.
+
+No pongas secretos ni datos personales en `metadata`: se envía a todos los destinos que tienen activado **Solicitar contexto**.
+
+## Entregas por webhook
+
+Un webhook recibe un `POST` (o un `PUT`, si lo eliges) por solicitud. El cuerpo es una exportación OTLP/JSON, `{"resourceSpans": [...]}`, con los spans de esa solicitud. Usa **Headers JSON** para añadir tus propias cabeceras, como una cabecera `Authorization` que espere tu endpoint.
+
+Añade un **Signing Secret** (de 16 a 256 caracteres, sin espacios) para que cada entrega, prueba y ejemplo vaya firmado. Phaseo añade entonces dos cabeceras:
+
+```http
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` es el HMAC-SHA256 en hexadecimal de la marca de tiempo, un punto (`.`) y el cuerpo de la solicitud sin modificar, con tu secreto como clave. Es el mismo esquema que el de los webhooks de notificación, así que puedes reutilizar su [código de verificación](./workspace-notifications.mdx). Las entregas de Broadcast no tienen cabecera de ID de evento: elimina duplicados con los ID de span del cuerpo.
+
+**Conexión de prueba** envía `{"resourceSpans": []}` con una cabecera `X-Test-Connection: true`. Una respuesta `400` cuenta como accesible, así que un receptor que rechace las exportaciones vacías también supera la prueba.
+
+## Filas de almacenamiento de objetos y almacenes de datos
+
+El almacenamiento de objetos, ClickHouse, BigQuery y Snowflake reciben una fila por span en lugar de trazas. Cada lote se escribe en una sola solicitud: un objeto o una inserción.
+
+| Columna | Tipo | Contenido |
+| --- | --- | --- |
+| `event_id` | cadena | El ID de evento de la solicitud. Todos los spans de una solicitud lo comparten. |
+| `trace_id` | cadena | ID de traza hexadecimal de 32 caracteres. |
+| `span_id` | cadena | ID de span hexadecimal de 16 caracteres. |
+| `parent_span_id` | cadena o null | El span padre, o null para el span de la solicitud. |
+| `name` | cadena | Nombre del span. |
+| `kind` | cadena | `server` para la solicitud, `client` para los intentos con proveedores. |
+| `start_time`, `end_time` | marca de tiempo | RFC 3339 en UTC, con precisión de microsegundos. |
+| `duration_ms` | número | Fin menos inicio, en milisegundos. |
+| `status_code` | cadena | `unset`, `ok` o `error`. |
+| `status_message` | cadena o null | El mensaje de error, si lo hay. |
+| `service_name` | cadena o null | `phaseo-gateway`. |
+| `attributes` | objeto | Atributos del span por nombre, como `gen_ai.request.model` o `gen_ai.usage.input_tokens`, conservando sus tipos. |
+| `resource_attributes` | objeto | Atributos del recurso, como `service.name`. |
+
+Una fila ocupa como máximo 512 KB. Cuando un span contiene más, como una imagen insertada, sus valores de atributo más grandes se recortan para repartirse el espacio; cada uno conserva su inicio y termina en `…[truncated]`, y sus nombres se enumeran en el atributo `phaseo.truncated_attributes`.
+
+Un lote que falla se reintenta. Si el destino lo guardó pero se perdió la respuesta, el reintento puede escribir algunas filas dos veces; usa `event_id` y `span_id` para eliminar duplicados. BigQuery y Snowflake usan ID de solicitud que evitan la mayoría de estos duplicados.
+
+### Almacenamiento de objetos
+
+Cada lote es un archivo JSON Lines comprimido con gzip. **Path Template** define su clave, por defecto `phaseo/{year}/{month}/{day}/{hour}/{uuid}`, y Phaseo añade `.jsonl.gz`. La plantilla puede usar `{year}`, `{month}`, `{day}`, `{hour}`, `{date}` (`YYYY-MM-DD`) y `{uuid}`, y debe incluir `{uuid}` para que los archivos nunca se sobrescriban entre sí. Las horas están en UTC.
+
+- **Amazon S3**: una clave de acceso que pueda ejecutar `s3:PutObject` en el bucket, y la región del bucket. Para un almacén compatible con S3, define **S3-Compatible Endpoint**.
+- **Cloudflare R2**: el ID de clave de acceso y el secreto de un token de API de R2, tu ID de cuenta y la jurisdicción si el bucket está en una (`eu` o `fedramp`).
+- **Google Cloud Storage**: una clave HMAC de una cuenta de servicio que pueda crear objetos en el bucket.
+
+Los objetos se guardan comprimidos, sin cabecera `Content-Encoding`, para que las tablas externas de Athena, BigQuery y Snowflake los lean por su extensión `.gz`.
+
+### ClickHouse
+
+Las filas se insertan como `JSONEachRow` a través de la interfaz HTTPS, con inserciones asíncronas. Las columnas que la tabla no tiene se omiten, así que puedes conservar solo las que necesites:
+
+```sql
+CREATE TABLE phaseo_traces (
+  event_id String, trace_id String, span_id String, parent_span_id Nullable(String),
+  name String, kind LowCardinality(String),
+  start_time DateTime64(6, 'UTC'), end_time DateTime64(6, 'UTC'), duration_ms Float64,
+  status_code LowCardinality(String), status_message Nullable(String), service_name Nullable(String),
+  attributes String, resource_attributes String
+) ENGINE = MergeTree ORDER BY (start_time, trace_id);
+```
+
+Usa el endpoint del puerto 8443 para ClickHouse Cloud. `attributes` y `resource_attributes` también pueden ser columnas `JSON`.
+
+### BigQuery
+
+Las filas se transmiten con `insertAll`, usando los ID de evento y de span como ID de inserción. Crea una cuenta de servicio con **BigQuery Data Editor** en la tabla y pega su archivo de clave JSON en el formulario. `attributes` y `resource_attributes` deben ser columnas `JSON`:
+
+```sql
+CREATE TABLE observability.phaseo_traces (
+  event_id STRING, trace_id STRING, span_id STRING, parent_span_id STRING,
+  name STRING, kind STRING, start_time TIMESTAMP, end_time TIMESTAMP, duration_ms FLOAT64,
+  status_code STRING, status_message STRING, service_name STRING,
+  attributes JSON, resource_attributes JSON
+) PARTITION BY DATE(start_time) CLUSTER BY trace_id;
+```
+
+### Snowflake
+
+Cada lote es un único `INSERT` a través de la SQL API, con inicio de sesión mediante autenticación por par de claves, de modo que se ejecuta en el almacén que indiques. Crea un usuario para Phaseo y asígnale una clave RSA:
+
+```sql
+CREATE TABLE PHASEO.OBSERVABILITY.PHASEO_TRACES (
+  EVENT_ID STRING, TRACE_ID STRING, SPAN_ID STRING, PARENT_SPAN_ID STRING,
+  NAME STRING, KIND STRING, START_TIME TIMESTAMP_TZ, END_TIME TIMESTAMP_TZ, DURATION_MS FLOAT,
+  STATUS_CODE STRING, STATUS_MESSAGE STRING, SERVICE_NAME STRING,
+  ATTRIBUTES VARIANT, RESOURCE_ATTRIBUTES VARIANT
+);
+-- openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out phaseo_key.p8
+-- openssl rsa -in phaseo_key.p8 -pubout
+ALTER USER PHASEO_BROADCAST SET RSA_PUBLIC_KEY = 'MIIBIjANBgkqh...';
+```
+
+Pega la clave privada (`BEGIN PRIVATE KEY`, sin cifrar) en el formulario y usa el identificador de organización y cuenta, como `myorg-myaccount`. El rol del usuario necesita `INSERT` en la tabla y `USAGE` en el almacén, la base de datos y el esquema.
+
+## Entrega, estado y alertas
+
+Las entregas que fallan por un tiempo de espera agotado, un límite de frecuencia o un error del servidor se reintentan con espera progresiva, hasta ocho intentos. Otros errores, como una clave rechazada o una tabla inexistente, no se reintentan.
+
+**Configuración → Broadcast** muestra el estado de cada destino: **Correcto**, **Con errores**, **Aún sin entregas** o **Desactivado**, con el último error y las solicitudes entregadas y fallidas de las últimas 24 horas.
+
+Para recibir un aviso cuando un destino deje de funcionar, envía **Alertas de Transmisión** a un [destino de notificación](./workspace-notifications.mdx). Se envía una alerta cuando un destino ha fallado al menos cinco solicitudes seguidas y no ha entregado nada durante 15 minutos. Se envía una vez por racha de fallos, y de nuevo solo después de que el destino se haya recuperado y hayan pasado al menos seis horas.
+
+## Relacionado
+
+- [API de destinos de observabilidad](../api-reference/endpoint/observability-destinations-list.mdx)
+- [Etiquetas de solicitud](./request-labels.mdx), que se envían como atributos `phaseo.label.<key>`
+- [Notificaciones del espacio de trabajo](./workspace-notifications.mdx)
+- [Integraciones de observabilidad](./integrations/observability.mdx), para trazar desde tu propio cliente

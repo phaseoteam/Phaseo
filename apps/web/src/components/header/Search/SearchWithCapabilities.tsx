@@ -4,6 +4,7 @@ import {
 	batchApiFlag,
 	enterpriseSelfServePreviewEnabled,
 	realtimeVoiceFlag,
+	slackAgentSettingsEnabled,
 	videoApiFlag,
 } from "@/lib/flags";
 import { catalogueGamesEnabled } from "@/lib/games/preview";
@@ -17,9 +18,10 @@ export async function SearchWithCapabilities(props: { className?: string }) {
 	// Explicitly opt this boundary into request time so Cache Components does not
 	// attempt to evaluate those values during prerendering.
 	await connection();
-	const [autoRouting, classifiers, enterprise, webhooks, video, realtime, games, authHeader] = await Promise.all([
+	const [autoRouting, classifiers, slackAgent, enterprise, webhooks, video, realtime, games, authHeader] = await Promise.all([
 		autoRoutingFlag().catch(() => false),
 		requestClassifiersFlag().catch(() => false),
+		slackAgentSettingsEnabled(),
 		enterpriseSelfServePreviewEnabled().catch(() => false),
 		batchApiFlag().catch(() => false),
 		videoApiFlag().catch(() => false),
@@ -32,7 +34,7 @@ export async function SearchWithCapabilities(props: { className?: string }) {
 		<SearchWrapper
 			{...props}
 			isAdmin={Boolean(authHeader?.user?.id) && authHeader?.userRole === "admin"}
-			capabilities={{ autoRouting, classifiers, enterprise, webhooks, video, realtime, games }}
+			capabilities={{ autoRouting, classifiers, slackAgent, enterprise, webhooks, video, realtime, games }}
 			accountQueryScope={toAccountQueryScope({
 				userId: authHeader?.user?.id,
 				workspaceId: authHeader?.currentTeamId,

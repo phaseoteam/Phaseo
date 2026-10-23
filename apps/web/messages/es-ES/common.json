@@ -255,6 +255,8 @@
 				"nav-settings-privacy": "Ajustes de privacidad",
 				"nav-settings-guardrails": "Reglas de protección",
 				"nav-settings-classifiers": "Clasificadores",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "Seguridad de claves",
 				"nav-settings-oauth": "Aplicaciones OAuth",
 				"nav-settings-broadcast": "Difusión",
 				"nav-settings-webhooks": "Webhooks",
@@ -340,7 +342,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "Cómo se calculan los precios",
 				"nav-how-phaseo-tracks-provider-availability": "Cómo se supervisa la disponibilidad de los proveedores",
 				"nav-chat-decisions": "Decisiones",
-				"nav-settings-account-providers": "Incorporación de proveedores"
+				"nav-settings-account-providers": "Incorporación de proveedores",
+				"nav-settings-budgets": "Presupuestos"
 			}
 		},
 		"searchDataUnavailable": "No se pudieron cargar los datos de búsqueda.",

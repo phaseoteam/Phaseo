@@ -2428,7 +2428,9 @@
 			"rule": "Rule: {keyword}"
 		},
 		"realtimeBillingTitle": "Realtime billing",
-		"realtimeBillingDescription": "Review missing usage, held funds, and audited billing decisions."
+		"realtimeBillingDescription": "Review missing usage, held funds, and audited billing decisions.",
+		"keyIncidentsTitle": "Key storage incidents",
+		"keyIncidentsDescription": "Revoke or pause every API key stored on a breached platform."
 	},
 	"webhookPage": {
 		"description": "Send signed, retryable updates from your async video and batch jobs to your application.",

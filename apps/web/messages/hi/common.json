@@ -255,6 +255,8 @@
 				"nav-settings-privacy": "गोपनीयता सेटिंग",
 				"nav-settings-guardrails": "गार्डरेल",
 				"nav-settings-classifiers": "क्लासिफ़ायर",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "कुंजी सुरक्षा",
 				"nav-settings-oauth": "OAuth ऐप्स",
 				"nav-settings-broadcast": "प्रसारण",
 				"nav-settings-webhooks": "Webhooks",
@@ -340,7 +342,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "मूल्य की गणना कैसे होती है",
 				"nav-how-phaseo-tracks-provider-availability": "प्रदाता की उपलब्धता कैसे ट्रैक होती है",
 				"nav-chat-decisions": "निर्णय",
-				"nav-settings-account-providers": "प्रदाता ऑनबोर्डिंग"
+				"nav-settings-account-providers": "प्रदाता ऑनबोर्डिंग",
+				"nav-settings-budgets": "बजट"
 			}
 		},
 		"searchDataUnavailable": "खोज डेटा लोड नहीं हो सका।",

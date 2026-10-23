@@ -9,7 +9,7 @@ Quando os logs de E/S do Gateway estão ativados, o Phaseo armazena o prompt e a
 ## Antes de começar
 
 - Ative **Armazenar os dados das solicitações e respostas** em **Configurações → Privacidade**. Só é possível abrir solicitações feitas enquanto a opção estava ativada.
-- Com **Exigir retenção zero de dados** ativado, o workspace nunca armazena prompts nem respostas. O mesmo vale para solicitações feitas com uma chave de API cujo guardrail exige retenção zero de dados. Essas solicitações não podem ser abertas.
+- Com **Exigir retenção zero de dados** ativado, o workspace nunca armazena prompts nem respostas. O mesmo vale para solicitações feitas com uma chave de API cujo guardrail exige retenção zero de dados e para solicitações que definem `require_zero_data_retention` por conta própria. Essas solicitações não podem ser abertas.
 - Solicitações enviadas aos [endpoints regionais](./regional-routing.mdx) (`eu.api.phaseo.app` e `us.api.phaseo.app`) não são armazenadas, então não podem ser abertas.
 - Você precisa ser membro do workspace ao qual a solicitação pertence. Se **Quem pode ver o conteúdo** estiver em **Proprietários e administradores**, só eles podem abrir as solicitações.
 

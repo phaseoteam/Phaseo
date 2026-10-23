@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateMaxTries, getBaseModel, stripPrioritySuffix, googleFlexMinimumHeadersTimeoutMs } from "./utils";
+import { calculateMaxTries, getBaseModel, stripPrioritySuffix, googleFlexMinimumHeadersTimeoutMs, longThinkingMinimumHeadersTimeoutMs } from "./utils";
 
 describe("Google Flex queue deadline", () => {
 	it.each(["google-ai-studio", "google-vertex", "google-vertex-eu"])("extends the deadline for %s Flex", (provider) => {
@@ -45,5 +45,19 @@ describe("priority suffix helpers", () => {
 	it("limits attempts to one provider when fallbacks are disabled", () => {
 		expect(calculateMaxTries(0, false)).toBe(0);
 		expect(calculateMaxTries(3, false)).toBe(1);
+	});
+});
+
+describe("long-thinking headers deadline", () => {
+	it.each(["google-ai-studio", "google-vertex", "google-vertex-eu"])("gives Gemini 4 Argon on %s Google's documented 20 minutes", (provider) => {
+		expect(longThinkingMinimumHeadersTimeoutMs(provider, "gemini-4-argon")).toBe(1_200_000);
+		expect(longThinkingMinimumHeadersTimeoutMs(provider, "google/gemini-4-argon")).toBe(1_200_000);
+		expect(longThinkingMinimumHeadersTimeoutMs(provider, "gemini-4-argon-cyber-permissive")).toBe(1_200_000);
+	});
+	it("keeps the configured deadline for other models and providers", () => {
+		expect(longThinkingMinimumHeadersTimeoutMs("google-vertex", "gemini-3.6-flash")).toBeUndefined();
+		expect(longThinkingMinimumHeadersTimeoutMs("google-vertex", "gemini-4-argonaut")).toBeUndefined();
+		expect(longThinkingMinimumHeadersTimeoutMs("google-vertex", null)).toBeUndefined();
+		expect(longThinkingMinimumHeadersTimeoutMs("some-other-provider", "google/gemini-4-argon")).toBeUndefined();
 	});
 });

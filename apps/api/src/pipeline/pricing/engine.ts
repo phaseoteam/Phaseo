@@ -35,6 +35,7 @@ const KNOWN_METERS = new Set<string>([
     "server_tool_web_search_requests", "server_tool_web_search_extra_results", "server_tool_web_fetch_requests", "server_tool_advisor_requests",
     "server_tool_image_generation_requests", "server_tool_apply_patch_requests",
     "native_web_search_requests", "native_web_fetch_requests",
+    "native_code_execution_requests", "native_x_search_posts", "native_x_search_users",
     "requests",
     ...OPENAI_CACHE_WRITE_TTL_METERS,
 ]);
@@ -435,6 +436,16 @@ function splitUsage(
         meters.native_web_fetch_requests == null
     ) {
         meters.native_web_fetch_requests = nativeWebFetchRequests;
+    }
+    // Other per-call server tools (xAI code execution and X search). Executors report them as
+    // flat meters and inside server_tool_use, which is what survives stream usage shaping.
+    for (const [meter, serverToolUseKey] of [
+        ["native_code_execution_requests", "code_execution_requests"],
+        ["native_x_search_posts", "x_search_posts"],
+        ["native_x_search_users", "x_search_users"],
+    ] as const) {
+        const count = pickFirstFiniteNumber(usageRaw, [meter, `server_tool_use.${serverToolUseKey}`]);
+        if (typeof count === "number" && meters[meter] == null) meters[meter] = count;
     }
 
     const inputTextTokens = meters.input_text_tokens;

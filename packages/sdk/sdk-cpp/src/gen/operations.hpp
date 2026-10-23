@@ -1045,6 +1045,11 @@ inline Response RotateWebhookEndpointSecret(Client& client, const std::map<std::
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response RotateWorkspaceNotificationDestinationSecret(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/notifications/destinations/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/rotate-secret";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response SetWorkspaceDepartmentMember(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/identity/departments/" + path_segment(path.count("departmentId") ? path.at("departmentId") : std::string{}) + "/members/" + path_segment(path.count("userId") ? path.at("userId") : std::string{});
 	return client.request("PUT", resolved_path, body);

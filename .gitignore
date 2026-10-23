@@ -9,6 +9,8 @@ build
 .env*
 apps/mcp/.dev.vars
 apps/mcp/.wrangler/
+apps/slack/.dev.vars
+apps/slack/.wrangler/
 pnpm-debug.log
 .turbo/
 **/.turbo/

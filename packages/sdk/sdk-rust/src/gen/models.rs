@@ -66,7 +66,7 @@ pub struct AnthropicMessagesRequest {
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub max_tokens: i64,
-	pub messages: Vec<HashMap<String, String>>,
+	pub messages: Vec<String>,
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
@@ -101,6 +101,17 @@ pub struct AnthropicMessagesResponse {
 	pub stop_sequence: Option<String>,
 	pub r#type: Option<String>,
 	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct AnthropicSystemMessage {
+	pub content: String,
+	pub role: String,
+}
+
+pub struct AnthropicSystemTextBlock {
+	pub cache_control: Option<HashMap<String, String>>,
+	pub text: String,
+	pub r#type: String,
 }
 
 pub struct AnthropicTool {
@@ -141,6 +152,7 @@ pub struct ApiKey {
 	pub scopes: String,
 	pub soft_blocked: bool,
 	pub status: Option<String>,
+	pub storage_locations: Option<Vec<String>>,
 	pub updated_at: Option<String>,
 	pub usage: f64,
 	pub usage_daily: f64,
@@ -161,6 +173,7 @@ pub struct ApiKeyCreateRequest {
 	pub name: String,
 	pub scopes: Option<String>,
 	pub soft_blocked: Option<bool>,
+	pub storage_locations: Option<Vec<String>>,
 	pub workspace_id: Option<String>,
 }
 
@@ -207,6 +220,8 @@ pub struct ApiKeyRotateResponse {
 
 pub type ApiKeyScopeValue = JsonValue;
 
+pub type ApiKeyStorageLocations = JsonValue;
+
 pub struct ApiKeyUpdateRequest {
 	pub department_id: Option<Option<String>>,
 	pub disabled: Option<bool>,
@@ -218,6 +233,7 @@ pub struct ApiKeyUpdateRequest {
 	pub name: Option<String>,
 	pub scopes: Option<String>,
 	pub soft_blocked: Option<bool>,
+	pub storage_locations: Option<Option<String>>,
 }
 
 pub struct ApiKeyUsageBucket {
@@ -254,6 +270,7 @@ pub struct ApiKeyWithValue {
 	pub scopes: String,
 	pub soft_blocked: bool,
 	pub status: Option<String>,
+	pub storage_locations: Option<Vec<String>>,
 	pub updated_at: Option<String>,
 	pub usage: f64,
 	pub usage_daily: f64,
@@ -865,7 +882,7 @@ pub struct DecisionBox {
 
 pub struct DecisionBoxAnswer {
 	pub r#box: HashMap<String, String>,
-	pub confidence: f64,
+	pub confidence: Option<f64>,
 	pub name: Option<String>,
 	pub r#type: String,
 }
@@ -4034,8 +4051,11 @@ pub type WorkspaceModelSuccessorPricePolicy = JsonValue;
 
 pub struct WorkspaceNotificationDestination {
 	pub created_at: Option<Option<String>>,
+	pub has_signing_secret: Option<bool>,
 	pub id: String,
 	pub name: String,
+	pub signing_secret: Option<String>,
+	pub signing_secret_rotated_at: Option<Option<String>>,
 	pub status: String,
 	pub target_preview: String,
 	pub r#type: String,
@@ -4084,6 +4104,7 @@ pub struct WorkspaceNotificationRoute {
 
 pub struct WorkspaceNotificationRouteMap {
 	pub auto_top_up_failed: Vec<String>,
+	pub broadcast_destination_failing: Vec<String>,
 	pub low_balance: Vec<String>,
 	pub model_deprecation: Vec<String>,
 	pub model_substitution: Vec<String>,

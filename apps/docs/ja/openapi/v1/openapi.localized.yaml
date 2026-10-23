@@ -5135,6 +5135,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: 通知 Webhook の署名シークレットをローテーション
+      description: カスタム Webhook 通知先の新しい署名シークレットを生成し、一度だけ返します。署名導入前に作成された通知先は、この方法で最初のシークレットを取得します。以降の配信は新しいシークレットで署名され、以前のシークレットは使われなくなります。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 署名シークレットをローテーションしました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: リクエストに失敗しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -10861,7 +10889,15 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/AnthropicMessage'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicMessage'
+              - $ref: '#/components/schemas/AnthropicSystemMessage'
+            discriminator:
+              propertyName: role
+              mapping:
+                user: '#/components/schemas/AnthropicMessage'
+                assistant: '#/components/schemas/AnthropicMessage'
+                system: '#/components/schemas/AnthropicSystemMessage'
         max_tokens:
           type: integer
           minimum: 1
@@ -11011,6 +11047,39 @@ components:
             - type: array
               items:
                 $ref: '#/components/schemas/AnthropicContentBlock'
+    AnthropicSystemMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          description: 会話のこの時点以降に適用する指示には `system` を使います。システムメッセージは文字列またはテキストブロックを受け付け、ユーザーターン（またはサーバーツールの結果で終わるアシスタントターン）の直後に置き、最後のメッセージにするか、直後にアシスタントターンを続ける必要があります。
+          enum:
+            - system
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/AnthropicSystemTextBlock'
+      additionalProperties: false
+    AnthropicSystemTextBlock:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     AnthropicContentBlock:
       type: object
       properties:
@@ -12677,6 +12746,8 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: ボックスの信頼度（0〜1）。モデルが返さない場合は null です。
     DecisionBox:
       type: object
       required:
@@ -16175,6 +16246,8 @@ components:
           format: uuid
           nullable: true
           description: 部門のレート制限と予算の対象として、このキーが属する部門。Null の場合、キーはワークスペース全体の制限にのみ計上されます。
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: プロバイダーの認証情報をキーの支出上限に含めるかどうかを示します。現在は常に false です。
@@ -16384,6 +16457,8 @@ components:
           format: uuid
           nullable: true
           description: 部門のレート制限と予算の対象として、このキーが属する部門。Null の場合、キーはワークスペース全体の制限にのみ計上されます。
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -16423,7 +16498,22 @@ components:
           format: uuid
           nullable: true
           description: 部門のレート制限と予算の対象として、このキーが属する部門。Null の場合、キーはワークスペース全体の制限にのみ計上されます。
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: 'このキーの保管場所（キーを環境変数に保持しているホスティングプラットフォームなど）。任意です。保管場所で情報漏えいが報告された場合、そこに保管されているすべてのキーを見つけて無効化できます。既知の ID: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other。'
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:
@@ -17844,7 +17934,29 @@ components:
     ObservabilityDestinationType:
       type: string
       enum:
+        - arize
+        - axiom
+        - bigquery
+        - braintrust
+        - clickhouse
+        - comet_opik
+        - datadog
+        - dynatrace
+        - elastic
+        - gcs
+        - grafana_cloud
+        - honeycomb
+        - langfuse
+        - langsmith
+        - new_relic
         - otel_collector
+        - posthog
+        - r2
+        - respan
+        - s3
+        - sentry
+        - snowflake
+        - wandb_weave
         - webhook
     ObservabilityKeyFilter:
       type: object
@@ -21767,6 +21879,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: 配信が x-phaseo-signature で署名されるかどうか。署名されるのはカスタム Webhook 通知先のみです。署名導入前に作成された通知先は、シークレットを生成するまで署名されません。
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 現在の署名シークレットが生成された日時。
+        signing_secret:
+          type: string
+          description: Webhook の署名シークレット。カスタム Webhook 通知先の作成時またはシークレットのローテーション時にのみ返されます。安全に保管してください。
         created_at:
           type: string
           format: date-time
@@ -21853,6 +21976,7 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - broadcast_destination_failing
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -21862,6 +21986,7 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - broadcast_destination_failing
       properties:
         low_balance:
           type: array
@@ -21889,6 +22014,11 @@ components:
             type: string
             format: uuid
         rate_limit_throttled:
+          type: array
+          items:
+            type: string
+            format: uuid
+        broadcast_destination_failing:
           type: array
           items:
             type: string

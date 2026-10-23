@@ -246,7 +246,7 @@ async function remapToTierSibling(
     if (!providerApiModelIds.length) return null;
 
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select("provider_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at")
         .eq("capability_id", capability)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
@@ -359,7 +359,7 @@ async function remapToHiddenTierSibling(
     if (!providerApiModelIds.length) return null;
 
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select("provider_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at")
         .eq("capability_id", capability)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
@@ -474,6 +474,18 @@ export async function applyServiceTierRouting(args: {
     const remappedProviders: ServiceTierRoutingDiagnostics["remappedProviders"] = [];
 
     for (const candidate of args.candidates) {
+		// Sail runs flex only as background Responses or Batch; synchronous Responses,
+		// Chat and Messages reject it with a 400, and the gateway streams Sail
+		// requests in the foreground (https://docs.sailresearch.com/completion-windows).
+		if (requestedPlan === "flex" && candidate.providerId === "sail-research") {
+			droppedProviders.push({
+				providerId: candidate.providerId,
+				apiModelId: candidate.apiModelId ?? null,
+				providerModelSlug: candidate.providerModelSlug ?? null,
+				reason: "service_tier_flex_unsupported",
+			});
+			continue;
+		}
 		const catalogTier = readProviderCatalogTier(candidate.capabilityParams);
 		if (catalogTier) {
 			const plan = catalogTier.name === "fast" ? "priority" : catalogTier.name;

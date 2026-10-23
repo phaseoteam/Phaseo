@@ -1,7 +1,9 @@
-import type { Env } from "@/env";
-
-// Secrets and signed tokens for the Slack agent. The Slack Worker reads the same
-// formats, so keep them stable and covered by the fixed vectors in the tests:
+// Generated from packages/shared/slack-secrets/index.ts by scripts/sync-slack-secrets.mjs. Do not edit.
+// Secrets and signed tokens for the Slack agent. This is the one definition:
+// web-api (install, settings, link confirmation) and the Slack Worker (events,
+// link buttons) each use a generated copy (scripts/sync-slack-secrets.mjs), so
+// both sides read and write one format. Keep it stable, dependency-free, and
+// covered by the fixed vectors in test-vectors.ts, which both apps test:
 //
 // - Encrypted secrets: "<version>.<iv>.<ciphertext>" (base64url, no padding),
 //   AES-256-GCM over the JSON of a string record with sorted keys. The key is
@@ -11,6 +13,13 @@ import type { Env } from "@/env";
 //   payload is the JSON of the caller's fields plus purpose, exp (Unix seconds)
 //   and a random nonce, and the signature is HMAC-SHA256(SLACK_STATE_SECRET)
 //   over the payload's base64url text.
+
+/** The settings these helpers read. Each app's Env has them. */
+export type SlackSecretsEnv = {
+	SLACK_SECRETS_ENCRYPTION_KEY?: string;
+	SLACK_SECRETS_ENCRYPTION_KEY_VERSION?: string;
+	SLACK_STATE_SECRET?: string;
+};
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -37,7 +46,7 @@ function arrayBuffer(bytes: Uint8Array): ArrayBuffer {
 	return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
-function encryptionMaterial(env: Env): { secret: string; version: string } {
+function encryptionMaterial(env: SlackSecretsEnv): { secret: string; version: string } {
 	const secret = env.SLACK_SECRETS_ENCRYPTION_KEY?.trim();
 	if (!secret) throw new Error("slack_secrets_encryption_unconfigured");
 	const version = env.SLACK_SECRETS_ENCRYPTION_KEY_VERSION?.trim() || "v1";
@@ -61,7 +70,7 @@ function sortedRecord(record: Record<string, string>): Record<string, string> {
 }
 
 /** Encrypts a record of strings into the one text column format the Slack tables use. */
-export async function encryptSlackSecrets(env: Env, record: Record<string, string>): Promise<string> {
+export async function encryptSlackSecrets(env: SlackSecretsEnv, record: Record<string, string>): Promise<string> {
 	const { secret, version } = encryptionMaterial(env);
 	const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
 	const ciphertext = await crypto.subtle.encrypt(
@@ -73,7 +82,7 @@ export async function encryptSlackSecrets(env: Env, record: Record<string, strin
 }
 
 /** Decrypts a value from encryptSlackSecrets. Throws on a wrong key, version or tampered value. */
-export async function decryptSlackSecrets(env: Env, value: string): Promise<Record<string, string>> {
+export async function decryptSlackSecrets(env: SlackSecretsEnv, value: string): Promise<Record<string, string>> {
 	const { secret, version } = encryptionMaterial(env);
 	const parts = String(value ?? "").split(".");
 	if (parts.length !== 3) throw new Error("slack_secrets_malformed");
@@ -103,7 +112,7 @@ export type SlackTokenResult<T> =
 	| { ok: true; payload: T & { purpose: SlackTokenPurpose; exp: number; nonce: string } }
 	| { ok: false; reason: "unconfigured" | "malformed" | "bad_signature" | "wrong_purpose" | "expired" };
 
-async function hmacKey(env: Env): Promise<CryptoKey | null> {
+async function hmacKey(env: SlackSecretsEnv): Promise<CryptoKey | null> {
 	const secret = env.SLACK_STATE_SECRET?.trim();
 	if (!secret) return null;
 	return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
@@ -111,7 +120,7 @@ async function hmacKey(env: Env): Promise<CryptoKey | null> {
 
 /** Signs a short-lived token for one purpose. The payload cannot override purpose, exp or nonce. */
 export async function signSlackToken(
-	env: Env,
+	env: SlackSecretsEnv,
 	purpose: SlackTokenPurpose,
 	payload: Record<string, unknown>,
 	ttlSeconds: number,
@@ -137,7 +146,7 @@ export async function signSlackToken(
  * payload is trusted; then the purpose and expiry.
  */
 export async function verifySlackToken<T extends Record<string, unknown> = Record<string, unknown>>(
-	env: Env,
+	env: SlackSecretsEnv,
 	purpose: SlackTokenPurpose,
 	token: unknown,
 	now = Date.now(),

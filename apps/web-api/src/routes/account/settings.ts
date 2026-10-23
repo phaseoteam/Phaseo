@@ -17,12 +17,14 @@ import { accountSettingsTeamsRouter } from "./settings-teams";
 import { accountSettingsProfileRouter } from "./settings-profile";
 import { accountSettingsProfileAvatarRouter, ownedProfileAvatarKey } from "./settings-profile-avatar";
 import { accountSettingsKeysRouter } from "./settings-keys";
+import { accountSettingsKeySecurityRouter } from "./settings-key-security";
 import { accountSettingsWorkspaceUsersRouter } from "./settings-workspace-users";
 import { accountSettingsAuditRouter } from "./settings-audit";
 import { accountSettingsOAuthRouter } from "./settings-oauth";
 import { accountSettingsByokRouter } from "./settings-byok";
 import { accountSettingsGuardrailsRouter } from "./settings-guardrails";
 import { accountSettingsClassifiersRouter } from "./settings-classifiers";
+import { accountSettingsBudgetsRouter } from "./settings-budgets";
 import { accountSettingsSlackRouter } from "./settings-slack";
 import { accountSettingsBroadcastRouter } from "./settings-broadcast";
 import { accountSettingsWebhooksRouter } from "./settings-webhooks";
@@ -142,12 +144,14 @@ accountSettingsRouter.route("/", accountSettingsTeamsRouter);
 accountSettingsRouter.route("/", accountSettingsProfileRouter);
 accountSettingsRouter.route("/", accountSettingsProfileAvatarRouter);
 accountSettingsRouter.route("/", accountSettingsKeysRouter);
+accountSettingsRouter.route("/", accountSettingsKeySecurityRouter);
 accountSettingsRouter.route("/", accountSettingsWorkspaceUsersRouter);
 accountSettingsRouter.route("/", accountSettingsAuditRouter);
 accountSettingsRouter.route("/", accountSettingsOAuthRouter);
 accountSettingsRouter.route("/", accountSettingsByokRouter);
 accountSettingsRouter.route("/", accountSettingsGuardrailsRouter);
 accountSettingsRouter.route("/", accountSettingsClassifiersRouter);
+accountSettingsRouter.route("/", accountSettingsBudgetsRouter);
 accountSettingsRouter.route("/", accountSettingsSlackRouter);
 accountSettingsRouter.route("/", accountSettingsBroadcastRouter);
 accountSettingsRouter.route("/", accountSettingsWebhooksRouter);
@@ -605,6 +609,30 @@ accountSettingsRouter.get("/account/mfa", async (c) => {
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+type BroadcastHealthSummaryRow = {
+	destination_id: string;
+	last_success_at: string | null;
+	last_failure_at: string | null;
+	last_http_status: number | null;
+	last_error: string | null;
+	consecutive_failures: number | null;
+	delivered_24h: number | string | null;
+	failed_24h: number | string | null;
+};
+
+function broadcastHealth(row: BroadcastHealthSummaryRow | undefined) {
+	if (!row) return null;
+	return {
+		lastSuccessAt: row.last_success_at ?? null,
+		lastFailureAt: row.last_failure_at ?? null,
+		lastHttpStatus: row.last_http_status ?? null,
+		lastError: row.last_error ?? null,
+		consecutiveFailures: Number(row.consecutive_failures ?? 0),
+		delivered24h: Number(row.delivered_24h ?? 0),
+		failed24h: Number(row.failed_24h ?? 0),
+	};
+}
+
 accountSettingsRouter.get("/broadcast", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
 	if (!workspaceId) {
@@ -620,13 +648,14 @@ accountSettingsRouter.get("/broadcast", async (c) => {
 		workspaceId,
 	});
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [teamResult, configuredResult] = await Promise.all([
+	const [teamResult, configuredResult, healthResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", workspaceId).maybeSingle(),
 		context.client
 			.from("workspace_broadcast_destinations")
 			.select("id,destination_id,name,enabled,sampling_rate,updated_at")
 			.eq("workspace_id", workspaceId)
 			.order("created_at", { ascending: false }),
+		context.client.rpc("broadcast_destination_health_summary", { p_workspace_id: workspaceId }),
 	]);
 	if (teamResult.error) {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -634,6 +663,10 @@ accountSettingsRouter.get("/broadcast", async (c) => {
 	if (configuredResult.error && !configuredResult.error.message.includes("workspace_broadcast_destinations")) {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
+	// Health is informational, so the list still loads without it.
+	if (healthResult.error) console.error("broadcast_health_summary_failed", { error: healthResult.error.message });
+	const health = new Map(((healthResult.error ? [] : healthResult.data ?? []) as BroadcastHealthSummaryRow[])
+		.map((row) => [String(row.destination_id), row]));
 	return c.json({
 		configuredDestinations: (configuredResult.data ?? []).map((row) => ({
 			id: row.id,
@@ -643,6 +676,7 @@ accountSettingsRouter.get("/broadcast", async (c) => {
 			samplingRate: Number(row.sampling_rate ?? 1),
 			destinationConfig: null,
 			updatedAt: row.updated_at ?? null,
+			health: broadcastHealth(health.get(String(row.id))),
 		})),
 		teamName: teamResult.data?.name ?? null,
 		workspaceId,
@@ -1267,7 +1301,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 		context.client.from("credit_ledger")
 			.select("id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at")
 			// Usage debits belong in usage logs; filter before the billing history limit.
-			.or("kind.is.null,kind.not.in.(charge,usage)")
+			// The Slack agent's month-end charge is a bill, so it stays.
+			.or("kind.is.null,kind.not.in.(charge,usage),ref_type.eq.slack_agent_month")
 			.eq("workspace_id", workspaceId).order("event_time", { ascending: false }).limit(250),
 	]);
 	if (walletResult.error || transactionsResult.error) {
@@ -1322,7 +1357,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const observedAt = Date.now();
-	const [walletResult, initialSettingsResult, latestPaymentResult, userResult, destinationsResult, routesResult, creditSpendResult] = await Promise.all([
+	const [walletResult, initialSettingsResult, latestPaymentResult, userResult, initialDestinationsResult, routesResult, creditSpendResult] = await Promise.all([
 		context.client.from("wallets")
 			.select("workspace_id,stripe_customer_id,balance_nanos,reserved_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id")
 			.eq("workspace_id", workspaceId).maybeSingle(),
@@ -1334,13 +1369,19 @@ accountSettingsRouter.get("/credits", async (c) => {
 			.or("status.ilike.paid,status.ilike.succeeded").gt("amount_nanos", 0)
 			.order("event_time", { ascending: false }).limit(1).maybeSingle(),
 		context.client.from("users").select("obfuscate_info,declared_country_code").eq("user_id", context.user.id).maybeSingle(),
-		context.client.from("notification_destinations").select("id,name,type,status,target_preview,created_at").eq("workspace_id", workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }),
+		context.client.from("notification_destinations").select("id,name,type,status,target_preview,created_at,signing_secret_ciphertext,signing_secret_rotated_at").eq("workspace_id", workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }),
 		context.client.from("notification_event_destinations").select("event_kind,destination_id").eq("workspace_id", workspaceId),
 		// Sums every wallet charge in the database (request charges plus async and realtime ledger
 		// charges), so this is what actually drains credits. BYOK requests only count when charged.
 		context.client.rpc("get_workspace_recent_credit_spend", { p_workspace_id: workspaceId, p_since: creditSpendWindowStart(observedAt) }),
 	]);
 	let settingsResult = initialSettingsResult;
+	let destinationsResult = initialDestinationsResult;
+	if (destinationsResult.error?.code === "42703") {
+		// Signing secret columns roll out with the notification webhook signing migration.
+		// Until then every destination reads as unsigned.
+		destinationsResult = await context.client.from("notification_destinations").select("id,name,type,status,target_preview,created_at").eq("workspace_id", workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }) as typeof initialDestinationsResult;
+	}
 	if (settingsResult.error?.code === "42703") {
 		// Low-balance settings were introduced after some existing deployments.
 		// Treat their absence as the default disabled state while the schema rolls out.
@@ -1362,7 +1403,7 @@ accountSettingsRouter.get("/credits", async (c) => {
 		paymentMethodExpiringEmailEnabled: settingsResult.data?.payment_method_expiring_email_enabled !== false,
 		modelDeprecationAlertsEnabled: Boolean(settingsResult.data?.model_deprecation_alerts_enabled),
 		modelDeprecationAlertsIncludeAdmins: Boolean(settingsResult.data?.model_deprecation_alerts_include_admins),
-		notificationDestinations: (destinationsResult.data ?? []).map((row) => ({ id: String(row.id), name: String(row.name), type: String(row.type), status: String(row.status), targetPreview: String(row.target_preview), createdAt: row.created_at ?? null })),
+		notificationDestinations: (destinationsResult.data ?? []).map((row) => ({ id: String(row.id), name: String(row.name), type: String(row.type), status: String(row.status), targetPreview: String(row.target_preview), createdAt: row.created_at ?? null, hasSigningSecret: Boolean(row.signing_secret_ciphertext), signingSecretRotatedAt: row.signing_secret_rotated_at ?? null })),
 		notificationRoutes: (routesResult.data ?? []).reduce<Record<string, string[]>>((routes, row) => {
 			const kind = String(row.event_kind); (routes[kind] ??= []).push(String(row.destination_id)); return routes;
 		}, {}),

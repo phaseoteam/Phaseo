@@ -5135,6 +5135,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: Rotacionar o segredo de assinatura de um webhook de notificação
+      description: Gera um novo segredo de assinatura para um destino de webhook personalizado e o retorna uma única vez. Destinos criados antes da assinatura recebem assim o primeiro segredo. As entregas seguintes são assinadas com o novo segredo e o anterior deixa de ser usado.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Segredo de assinatura rotacionado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: A solicitação falhou
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -10861,7 +10889,15 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/AnthropicMessage'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicMessage'
+              - $ref: '#/components/schemas/AnthropicSystemMessage'
+            discriminator:
+              propertyName: role
+              mapping:
+                user: '#/components/schemas/AnthropicMessage'
+                assistant: '#/components/schemas/AnthropicMessage'
+                system: '#/components/schemas/AnthropicSystemMessage'
         max_tokens:
           type: integer
           minimum: 1
@@ -11011,6 +11047,39 @@ components:
             - type: array
               items:
                 $ref: '#/components/schemas/AnthropicContentBlock'
+    AnthropicSystemMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          description: Use `system` para uma instrução que vale a partir deste ponto da conversa. Uma mensagem de sistema aceita uma string ou blocos de texto, deve vir logo após um turno do usuário (ou um turno do assistente que termine em um resultado de ferramenta do servidor) e deve ser a última mensagem ou ser seguida por um turno do assistente.
+          enum:
+            - system
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/AnthropicSystemTextBlock'
+      additionalProperties: false
+    AnthropicSystemTextBlock:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     AnthropicContentBlock:
       type: object
       properties:
@@ -12677,6 +12746,8 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: Confiança na caixa, de 0 a 1, ou null quando o modelo não a informa.
     DecisionBox:
       type: object
       required:
@@ -16175,6 +16246,8 @@ components:
           format: uuid
           nullable: true
           description: Departamento ao qual esta chave pertence para os limites de taxa e os orçamentos do departamento. Null significa que a chave conta apenas para os limites de todo o espaço de trabalho.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: Indica se as credenciais do provedor contam para o limite de gastos da chave. Atualmente, o valor é sempre false.
@@ -16384,6 +16457,8 @@ components:
           format: uuid
           nullable: true
           description: Departamento ao qual esta chave pertence para os limites de taxa e os orçamentos do departamento. Null significa que a chave conta apenas para os limites de todo o espaço de trabalho.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -16423,7 +16498,22 @@ components:
           format: uuid
           nullable: true
           description: Departamento ao qual esta chave pertence para os limites de taxa e os orçamentos do departamento. Null significa que a chave conta apenas para os limites de todo o espaço de trabalho.
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: 'Onde você guarda esta chave, como a plataforma de hospedagem cujas variáveis de ambiente a contêm. Opcional. Se um desses lugares relatar um vazamento, você pode encontrar e revogar todas as chaves armazenadas lá. IDs conhecidos: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.'
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:
@@ -17844,7 +17934,29 @@ components:
     ObservabilityDestinationType:
       type: string
       enum:
+        - arize
+        - axiom
+        - bigquery
+        - braintrust
+        - clickhouse
+        - comet_opik
+        - datadog
+        - dynatrace
+        - elastic
+        - gcs
+        - grafana_cloud
+        - honeycomb
+        - langfuse
+        - langsmith
+        - new_relic
         - otel_collector
+        - posthog
+        - r2
+        - respan
+        - s3
+        - sentry
+        - snowflake
+        - wandb_weave
         - webhook
     ObservabilityKeyFilter:
       type: object
@@ -21767,6 +21879,17 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: Indica se as entregas são assinadas com x-phaseo-signature. Somente destinos de webhook personalizados são assinados; os criados antes da assinatura continuam sem assinatura até que um segredo seja gerado.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Quando o segredo de assinatura atual foi gerado.
+        signing_secret:
+          type: string
+          description: O segredo de assinatura do webhook. Retornado somente quando um destino de webhook personalizado é criado ou seu segredo é rotacionado; guarde-o com segurança.
         created_at:
           type: string
           format: date-time
@@ -21853,6 +21976,7 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - broadcast_destination_failing
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -21862,6 +21986,7 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - broadcast_destination_failing
       properties:
         low_balance:
           type: array
@@ -21889,6 +22014,11 @@ components:
             type: string
             format: uuid
         rate_limit_throttled:
+          type: array
+          items:
+            type: string
+            format: uuid
+        broadcast_destination_failing:
           type: array
           items:
             type: string

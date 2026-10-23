@@ -177,6 +177,24 @@ class AnthropicMessagesResponse
 	public $usage;
 }
 
+class AnthropicSystemMessage
+{
+	/** @var string|array */
+	public $content;
+	/** @var string */
+	public $role;
+}
+
+class AnthropicSystemTextBlock
+{
+	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var string */
+	public $text;
+	/** @var string */
+	public $type;
+}
+
 class AnthropicTool
 {
 	/** @var bool|null */
@@ -249,6 +267,8 @@ class ApiKey
 	public $soft_blocked;
 	/** @var string|null */
 	public $status;
+	/** @var array|null */
+	public $storage_locations;
 	/** @var string|null */
 	public $updated_at;
 	/** @var float */
@@ -287,6 +307,8 @@ class ApiKeyCreateRequest
 	public $scopes;
 	/** @var bool|null */
 	public $soft_blocked;
+	/** @var array|null */
+	public $storage_locations;
 	/** @var string|null */
 	public $workspace_id;
 }
@@ -359,6 +381,8 @@ class ApiKeyRotateResponse
 
 class ApiKeyScopeValue { }
 
+class ApiKeyStorageLocations { }
+
 class ApiKeyUpdateRequest
 {
 	/** @var string|null */
@@ -381,6 +405,8 @@ class ApiKeyUpdateRequest
 	public $scopes;
 	/** @var bool|null */
 	public $soft_blocked;
+	/** @var mixed|null */
+	public $storage_locations;
 }
 
 class ApiKeyUsageBucket
@@ -447,6 +473,8 @@ class ApiKeyWithValue
 	public $soft_blocked;
 	/** @var string|null */
 	public $status;
+	/** @var array|null */
+	public $storage_locations;
 	/** @var string|null */
 	public $updated_at;
 	/** @var float */
@@ -1543,7 +1571,7 @@ class DecisionBoxAnswer
 {
 	/** @var array<string, mixed> */
 	public $box;
-	/** @var float */
+	/** @var float|null */
 	public $confidence;
 	/** @var string|null */
 	public $name;
@@ -7075,10 +7103,16 @@ class WorkspaceNotificationDestination
 {
 	/** @var string|null */
 	public $created_at;
+	/** @var bool|null */
+	public $has_signing_secret;
 	/** @var string */
 	public $id;
 	/** @var string */
 	public $name;
+	/** @var string|null */
+	public $signing_secret;
+	/** @var string|null */
+	public $signing_secret_rotated_at;
 	/** @var string */
 	public $status;
 	/** @var string */
@@ -7155,6 +7189,8 @@ class WorkspaceNotificationRouteMap
 {
 	/** @var array */
 	public $auto_top_up_failed;
+	/** @var array */
+	public $broadcast_destination_failing;
 	/** @var array */
 	public $low_balance;
 	/** @var array */

@@ -74,11 +74,11 @@ const CONTEXT_CACHE_PREFIX = "gateway:context";
 // Multi-tier caching constants (respecting Cloudflare KV 60s minimum)
 // Bump when the static context payload changes or a catalogue/pricing repair
 // must invalidate previously cached provider cards across Worker isolates.
-const STATIC_CACHE_PREFIX = "gateway:static:v5";
+const STATIC_CACHE_PREFIX = "gateway:static:v6";
 const DYNAMIC_CACHE_PREFIX = "gateway:dynamic";
 // Preset payloads include provider/pricing snapshots too, so invalidate them
 // with the static context when catalogue or pricing data changes.
-const PRESET_CACHE_PREFIX = "gateway:preset:v4";
+const PRESET_CACHE_PREFIX = "gateway:preset:v5";
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
@@ -712,7 +712,7 @@ async function resolveProviderScopedModelToApiModel(args: {
         args.model,
     );
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select("provider_api_model_id:provider_model_id")
         .in("capability_id", capabilityCandidates)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
@@ -803,7 +803,7 @@ async function fetchTestingProviderSnapshots(args: {
     if (!providerModelIds.length) return [];
 
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select(
             "provider_api_model_id:provider_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at"
         )
@@ -995,7 +995,7 @@ async function fetchFreeRouterProviderPool(args: {
     );
     const capabilityId = getContextCapabilityCandidates(args.endpoint, FREE_ROUTER_MODEL_ID)[0] ?? args.endpoint;
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select("provider_api_model_id:provider_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at")
         .eq("capability_id", capabilityId)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])

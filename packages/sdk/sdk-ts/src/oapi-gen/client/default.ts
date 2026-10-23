@@ -872,32 +872,49 @@ export type CreateAnthropicMessageParams = {
     };
     echo_upstream_request?: boolean;
     max_tokens: number;
-    messages: {
-      content:
-        | string
-        | {
-            cache_control?: {
-              scope?: string;
-              ttl?: string;
-              type?: string;
-              [key: string]: unknown;
-            };
-            content?: string;
-            id?: string;
-            input?: {};
-            name?: string;
-            source?: {
-              data?: string;
-              media_type?: string;
-              type?: string;
-              url?: string;
-            };
-            text?: string;
-            tool_use_id?: string;
-            type?: "text" | "image" | "tool_use" | "tool_result";
-          }[];
-      role: "user" | "assistant";
-    }[];
+    messages: (
+      | {
+          content:
+            | string
+            | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                content?: string;
+                id?: string;
+                input?: {};
+                name?: string;
+                source?: {
+                  data?: string;
+                  media_type?: string;
+                  type?: string;
+                  url?: string;
+                };
+                text?: string;
+                tool_use_id?: string;
+                type?: "text" | "image" | "tool_use" | "tool_result";
+              }[];
+          role: "user" | "assistant";
+        }
+      | {
+          content:
+            | string
+            | {
+                cache_control?: {
+                  scope?: string;
+                  ttl?: string;
+                  type?: string;
+                  [key: string]: unknown;
+                };
+                text: string;
+                type: "text";
+              }[];
+          role: "system";
+        }
+    )[];
     meta?: boolean;
     metadata?: {
       [key: string]: unknown;
@@ -1272,6 +1289,7 @@ export type CreateApiKeyParams = {
     name: string;
     scopes?: string | string[];
     soft_blocked?: boolean;
+    storage_locations?: string[];
     workspace_id?: string;
   };
 };
@@ -1318,6 +1336,7 @@ export async function createApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -1383,6 +1402,7 @@ export async function createApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -4651,7 +4671,31 @@ export type CreateObservabilityDestinationParams = {
       }[];
     }[];
     sampling_rate?: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
   };
 };
 
@@ -4709,7 +4753,31 @@ export async function createObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -4764,7 +4832,31 @@ export async function createObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -7998,8 +8090,11 @@ export async function createWorkspaceNotificationDestination(
 ): Promise<{
   data: {
     created_at?: string | null;
+    has_signing_secret?: boolean;
     id: string;
     name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
     status: "active" | "disabled";
     target_preview: string;
     type:
@@ -8017,8 +8112,11 @@ export async function createWorkspaceNotificationDestination(
   return client.request<{
     data: {
       created_at?: string | null;
+      has_signing_secret?: boolean;
       id: string;
       name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
       status: "active" | "disabled";
       target_preview: string;
       type:
@@ -9709,6 +9807,7 @@ export async function getApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -9774,6 +9873,7 @@ export async function getApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -9998,6 +10098,7 @@ export async function getCurrentApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -10061,6 +10162,7 @@ export async function getCurrentApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -11101,7 +11203,31 @@ export async function getObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -11158,7 +11284,31 @@ export async function getObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -13054,6 +13204,7 @@ export async function listApiKeys(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -13118,6 +13269,7 @@ export async function listApiKeys(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -16607,7 +16759,31 @@ export async function listObservabilityDestinations(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   }[];
@@ -16663,7 +16839,31 @@ export async function listObservabilityDestinations(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     }[];
@@ -19402,8 +19602,11 @@ export async function listWorkspaceNotificationDestinations(
 ): Promise<{
   data: {
     created_at?: string | null;
+    has_signing_secret?: boolean;
     id: string;
     name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
     status: "active" | "disabled";
     target_preview: string;
     type:
@@ -19421,8 +19624,11 @@ export async function listWorkspaceNotificationDestinations(
   return client.request<{
     data: {
       created_at?: string | null;
+      has_signing_secret?: boolean;
       id: string;
       name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
       status: "active" | "disabled";
       target_preview: string;
       type:
@@ -19459,6 +19665,7 @@ export async function listWorkspaceNotificationRoutes(
 ): Promise<{
   data: {
     auto_top_up_failed: string[];
+    broadcast_destination_failing: string[];
     low_balance: string[];
     model_deprecation: string[];
     model_substitution: string[];
@@ -19471,6 +19678,7 @@ export async function listWorkspaceNotificationRoutes(
   return client.request<{
     data: {
       auto_top_up_failed: string[];
+      broadcast_destination_failing: string[];
       low_balance: string[];
       model_deprecation: string[];
       model_substitution: string[];
@@ -19964,7 +20172,7 @@ export async function makeDecision(
               right: number;
               top: number;
             };
-            confidence: number;
+            confidence: number | null;
             name: string | null;
             type: "box";
           }
@@ -20052,7 +20260,7 @@ export async function makeDecision(
                 right: number;
                 top: number;
               };
-              confidence: number;
+              confidence: number | null;
               name: string | null;
               type: "box";
             }
@@ -21479,6 +21687,7 @@ export async function rotateApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -21546,6 +21755,7 @@ export async function rotateApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -21627,6 +21837,73 @@ export async function rotateWebhookEndpointSecret(
     updatedAt?: string | null;
     url: string;
     workspaceId: string;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RotateWorkspaceNotificationDestinationSecretParams = {
+  path: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Generates a new signing secret for a custom webhook destination and returns it once. Destinations created before signing get their first secret this way. Later deliveries are signed with the new secret and the previous secret stops being used.
+ */
+export async function rotateWorkspaceNotificationDestinationSecret(
+  client: Client,
+  args: RotateWorkspaceNotificationDestinationSecretParams,
+): Promise<{
+  data: {
+    created_at?: string | null;
+    has_signing_secret?: boolean;
+    id: string;
+    name: string;
+    signing_secret?: string;
+    signing_secret_rotated_at?: string | null;
+    status: "active" | "disabled";
+    target_preview: string;
+    type:
+      | "email"
+      | "discord"
+      | "discord_webhook"
+      | "slack"
+      | "microsoft_teams"
+      | "custom_webhook";
+    updated_at?: string | null;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/notifications/destinations/${encodeURIComponent(String(path["id"]))}/rotate-secret`;
+  return client.request<{
+    data: {
+      created_at?: string | null;
+      has_signing_secret?: boolean;
+      id: string;
+      name: string;
+      signing_secret?: string;
+      signing_secret_rotated_at?: string | null;
+      status: "active" | "disabled";
+      target_preview: string;
+      type:
+        | "email"
+        | "discord"
+        | "discord_webhook"
+        | "slack"
+        | "microsoft_teams"
+        | "custom_webhook";
+      updated_at?: string | null;
+    };
   }>({
     method: "POST",
     path: resolvedPath,
@@ -21905,6 +22182,7 @@ export type UpdateApiKeyParams = {
     name?: string;
     scopes?: string | string[];
     soft_blocked?: boolean;
+    storage_locations?: string[] | null;
   };
 };
 
@@ -21949,6 +22227,7 @@ export async function updateApiKey(
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;
@@ -22014,6 +22293,7 @@ export async function updateApiKey(
       scopes: string | string[];
       soft_blocked: boolean;
       status: string | null;
+      storage_locations?: string[];
       updated_at: string | null;
       usage: number;
       usage_daily: number;
@@ -23016,7 +23296,31 @@ export async function updateObservabilityDestination(
       }[];
     }[];
     sampling_rate: number;
-    type: "otel_collector" | "webhook";
+    type:
+      | "arize"
+      | "axiom"
+      | "bigquery"
+      | "braintrust"
+      | "clickhouse"
+      | "comet_opik"
+      | "datadog"
+      | "dynatrace"
+      | "elastic"
+      | "gcs"
+      | "grafana_cloud"
+      | "honeycomb"
+      | "langfuse"
+      | "langsmith"
+      | "new_relic"
+      | "otel_collector"
+      | "posthog"
+      | "r2"
+      | "respan"
+      | "s3"
+      | "sentry"
+      | "snowflake"
+      | "wandb_weave"
+      | "webhook";
     updated_at?: string | null;
     workspace_id: string;
   };
@@ -23073,7 +23377,31 @@ export async function updateObservabilityDestination(
         }[];
       }[];
       sampling_rate: number;
-      type: "otel_collector" | "webhook";
+      type:
+        | "arize"
+        | "axiom"
+        | "bigquery"
+        | "braintrust"
+        | "clickhouse"
+        | "comet_opik"
+        | "datadog"
+        | "dynatrace"
+        | "elastic"
+        | "gcs"
+        | "grafana_cloud"
+        | "honeycomb"
+        | "langfuse"
+        | "langsmith"
+        | "new_relic"
+        | "otel_collector"
+        | "posthog"
+        | "r2"
+        | "respan"
+        | "s3"
+        | "sentry"
+        | "snowflake"
+        | "wandb_weave"
+        | "webhook";
       updated_at?: string | null;
       workspace_id: string;
     };
@@ -24307,7 +24635,8 @@ export type UpdateWorkspaceNotificationRouteParams = {
       | "payment_method_expiring"
       | "model_deprecation"
       | "model_substitution"
-      | "rate_limit_throttled";
+      | "rate_limit_throttled"
+      | "broadcast_destination_failing";
   };
   query?: Record<string, never>;
   headers?: Record<string, never>;
@@ -24331,7 +24660,8 @@ export async function updateWorkspaceNotificationRoute(
       | "payment_method_expiring"
       | "model_deprecation"
       | "model_substitution"
-      | "rate_limit_throttled";
+      | "rate_limit_throttled"
+      | "broadcast_destination_failing";
   };
 }> {
   const { path, query, headers, body } = args;
@@ -24347,7 +24677,8 @@ export async function updateWorkspaceNotificationRoute(
         | "payment_method_expiring"
         | "model_deprecation"
         | "model_substitution"
-        | "rate_limit_throttled";
+        | "rate_limit_throttled"
+        | "broadcast_destination_failing";
     };
   }>({
     method: "PUT",

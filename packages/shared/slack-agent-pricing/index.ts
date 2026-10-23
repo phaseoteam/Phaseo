@@ -1,10 +1,10 @@
 // Slack agent pricing: the monthly plan price for the people who used the agent,
 // the answers each plan includes, and the price of answers beyond them.
 //
-// This is the one definition of the price. The month-end charge (web-api) uses a
-// generated copy (scripts/sync-slack-agent-pricing.mjs), and later the Slack
-// Worker's meter and the settings page will too, so what we show, enforce and
-// charge cannot drift apart. Keep it dependency-free.
+// This is the one definition of the price. The month-end charge (web-api), the
+// Slack Worker's meter and the settings page (web) use generated copies
+// (scripts/sync-slack-agent-pricing.mjs), so what we show, enforce and charge
+// cannot drift apart. Keep it dependency-free.
 //
 // Amounts are in nanodollars (1 USD = 1,000,000,000). Model tokens are not part
 // of this price: they are billed through the installation's gateway key as

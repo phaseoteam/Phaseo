@@ -12,6 +12,7 @@ import {
 	AUTO_ROUTING_GATE,
 	REQUEST_CLASSIFIERS_GATE,
 	MODEL_SUCCESSOR_REDIRECT_GATE,
+	SLACK_AGENT_GATE,
 	PRESET_EXPERIMENTS_GATE,
 	SAML_SSO_GATE,
 	CATALOGUE_GAMES_PREVIEW_GATE,
@@ -118,6 +119,29 @@ export const modelSuccessorRedirectFlag = statsigAdapter
 			key: MODEL_SUCCESSOR_REDIRECT_GATE,
 			decide: () => false,
 		});
+
+export const slackAgentFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: SLACK_AGENT_GATE,
+			identify,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: SLACK_AGENT_GATE,
+			decide: () => false,
+		});
+
+/**
+ * Settings → Slack stays hidden until the hosted Slack app exists. Phaseo admins
+ * see it anyway, to test with their own Slack app; web-api still checks roles.
+ */
+export async function slackAgentSettingsEnabled(): Promise<boolean> {
+	const [gateEnabled, isAdmin] = await Promise.all([
+		slackAgentFlag().catch(() => false),
+		isAdminViewer().catch(() => false),
+	]);
+	return gateEnabled || isAdmin;
+}
 
 export const presetExperimentsFlag = statsigAdapter
 	? flag<boolean, StatsigUser>({

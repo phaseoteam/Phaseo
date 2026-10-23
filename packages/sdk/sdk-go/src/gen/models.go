@@ -59,7 +59,7 @@ type AnthropicMessagesRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	MaxTokens int `json:"max_tokens"`
-	Messages []map[string]interface{} `json:"messages"`
+	Messages []interface{} `json:"messages"`
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
@@ -94,6 +94,17 @@ type AnthropicMessagesResponse struct {
 	StopSequence *string `json:"stop_sequence,omitempty"`
 	Type *string `json:"type,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type AnthropicSystemMessage struct {
+	Content interface{} `json:"content"`
+	Role string `json:"role"`
+}
+
+type AnthropicSystemTextBlock struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
+	Text string `json:"text"`
+	Type string `json:"type"`
 }
 
 type AnthropicTool struct {
@@ -134,6 +145,7 @@ type ApiKey struct {
 	Scopes interface{} `json:"scopes"`
 	SoftBlocked bool `json:"soft_blocked"`
 	Status *string `json:"status"`
+	StorageLocations *[]string `json:"storage_locations,omitempty"`
 	UpdatedAt *string `json:"updated_at"`
 	Usage float64 `json:"usage"`
 	UsageDaily float64 `json:"usage_daily"`
@@ -154,6 +166,7 @@ type ApiKeyCreateRequest struct {
 	Name string `json:"name"`
 	Scopes interface{} `json:"scopes,omitempty"`
 	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+	StorageLocations *[]string `json:"storage_locations,omitempty"`
 	WorkspaceId *string `json:"workspace_id,omitempty"`
 }
 
@@ -200,6 +213,8 @@ type ApiKeyRotateResponse struct {
 
 type ApiKeyScopeValue = interface{}
 
+type ApiKeyStorageLocations = []string
+
 type ApiKeyUpdateRequest struct {
 	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled *bool `json:"disabled,omitempty"`
@@ -211,6 +226,7 @@ type ApiKeyUpdateRequest struct {
 	Name *string `json:"name,omitempty"`
 	Scopes interface{} `json:"scopes,omitempty"`
 	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+	StorageLocations *interface{} `json:"storage_locations,omitempty"`
 }
 
 type ApiKeyUsageBucket struct {
@@ -247,6 +263,7 @@ type ApiKeyWithValue struct {
 	Scopes interface{} `json:"scopes"`
 	SoftBlocked bool `json:"soft_blocked"`
 	Status *string `json:"status"`
+	StorageLocations *[]string `json:"storage_locations,omitempty"`
 	UpdatedAt *string `json:"updated_at"`
 	Usage float64 `json:"usage"`
 	UsageDaily float64 `json:"usage_daily"`
@@ -1548,7 +1565,7 @@ type DecisionBox struct {
 
 type DecisionBoxAnswer struct {
 	Box map[string]interface{} `json:"box"`
-	Confidence float64 `json:"confidence"`
+	Confidence *float64 `json:"confidence"`
 	Name *string `json:"name"`
 	Type string `json:"type"`
 }
@@ -3858,7 +3875,29 @@ type ObservabilityDestinationResponse struct {
 type ObservabilityDestinationType string
 
 const (
+	ObservabilityDestinationTypeArize ObservabilityDestinationType = "arize"
+	ObservabilityDestinationTypeAxiom ObservabilityDestinationType = "axiom"
+	ObservabilityDestinationTypeBigquery ObservabilityDestinationType = "bigquery"
+	ObservabilityDestinationTypeBraintrust ObservabilityDestinationType = "braintrust"
+	ObservabilityDestinationTypeClickhouse ObservabilityDestinationType = "clickhouse"
+	ObservabilityDestinationTypeCometOpik ObservabilityDestinationType = "comet_opik"
+	ObservabilityDestinationTypeDatadog ObservabilityDestinationType = "datadog"
+	ObservabilityDestinationTypeDynatrace ObservabilityDestinationType = "dynatrace"
+	ObservabilityDestinationTypeElastic ObservabilityDestinationType = "elastic"
+	ObservabilityDestinationTypeGcs ObservabilityDestinationType = "gcs"
+	ObservabilityDestinationTypeGrafanaCloud ObservabilityDestinationType = "grafana_cloud"
+	ObservabilityDestinationTypeHoneycomb ObservabilityDestinationType = "honeycomb"
+	ObservabilityDestinationTypeLangfuse ObservabilityDestinationType = "langfuse"
+	ObservabilityDestinationTypeLangsmith ObservabilityDestinationType = "langsmith"
+	ObservabilityDestinationTypeNewRelic ObservabilityDestinationType = "new_relic"
 	ObservabilityDestinationTypeOtelCollector ObservabilityDestinationType = "otel_collector"
+	ObservabilityDestinationTypePosthog ObservabilityDestinationType = "posthog"
+	ObservabilityDestinationTypeR2 ObservabilityDestinationType = "r2"
+	ObservabilityDestinationTypeRespan ObservabilityDestinationType = "respan"
+	ObservabilityDestinationTypeS3 ObservabilityDestinationType = "s3"
+	ObservabilityDestinationTypeSentry ObservabilityDestinationType = "sentry"
+	ObservabilityDestinationTypeSnowflake ObservabilityDestinationType = "snowflake"
+	ObservabilityDestinationTypeWandbWeave ObservabilityDestinationType = "wandb_weave"
 	ObservabilityDestinationTypeWebhook ObservabilityDestinationType = "webhook"
 )
 
@@ -5665,8 +5704,11 @@ const (
 
 type WorkspaceNotificationDestination struct {
 	CreatedAt *string `json:"created_at,omitempty"`
+	HasSigningSecret *bool `json:"has_signing_secret,omitempty"`
 	Id string `json:"id"`
 	Name string `json:"name"`
+	SigningSecret *string `json:"signing_secret,omitempty"`
+	SigningSecretRotatedAt *string `json:"signing_secret_rotated_at,omitempty"`
 	Status string `json:"status"`
 	TargetPreview string `json:"target_preview"`
 	Type string `json:"type"`
@@ -5725,6 +5767,7 @@ const (
 	WorkspaceNotificationEventKindModelDeprecation WorkspaceNotificationEventKind = "model_deprecation"
 	WorkspaceNotificationEventKindModelSubstitution WorkspaceNotificationEventKind = "model_substitution"
 	WorkspaceNotificationEventKindRateLimitThrottled WorkspaceNotificationEventKind = "rate_limit_throttled"
+	WorkspaceNotificationEventKindBroadcastDestinationFailing WorkspaceNotificationEventKind = "broadcast_destination_failing"
 )
 
 
@@ -5735,6 +5778,7 @@ type WorkspaceNotificationRoute struct {
 
 type WorkspaceNotificationRouteMap struct {
 	AutoTopUpFailed []string `json:"auto_top_up_failed"`
+	BroadcastDestinationFailing []string `json:"broadcast_destination_failing"`
 	LowBalance []string `json:"low_balance"`
 	ModelDeprecation []string `json:"model_deprecation"`
 	ModelSubstitution []string `json:"model_substitution"`

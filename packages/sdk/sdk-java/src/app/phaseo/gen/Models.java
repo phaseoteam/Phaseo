@@ -99,6 +99,17 @@ public final class Models {
 		public Object usage;
 	}
 
+	public static class AnthropicSystemMessage {
+		public Object content;
+		public Object role;
+	}
+
+	public static class AnthropicSystemTextBlock {
+		public Object cache_control;
+		public String text;
+		public Object type;
+	}
+
 	public static class AnthropicTool {
 		public Boolean async;
 		public String description;
@@ -137,6 +148,7 @@ public final class Models {
 		public Object scopes;
 		public Boolean soft_blocked;
 		public String status;
+		public java.util.List<String> storage_locations;
 		public String updated_at;
 		public Double usage;
 		public Double usage_daily;
@@ -157,6 +169,7 @@ public final class Models {
 		public String name;
 		public Object scopes;
 		public Boolean soft_blocked;
+		public java.util.List<String> storage_locations;
 		public String workspace_id;
 	}
 
@@ -204,6 +217,9 @@ public final class Models {
 	public static class ApiKeyScopeValue {
 	}
 
+	public static class ApiKeyStorageLocations {
+	}
+
 	public static class ApiKeyUpdateRequest {
 		public String department_id;
 		public Boolean disabled;
@@ -215,6 +231,7 @@ public final class Models {
 		public String name;
 		public Object scopes;
 		public Boolean soft_blocked;
+		public Object storage_locations;
 	}
 
 	public static class ApiKeyUsageBucket {
@@ -251,6 +268,7 @@ public final class Models {
 		public Object scopes;
 		public Boolean soft_blocked;
 		public String status;
+		public java.util.List<String> storage_locations;
 		public String updated_at;
 		public Double usage;
 		public Double usage_daily;
@@ -4071,8 +4089,11 @@ public final class Models {
 
 	public static class WorkspaceNotificationDestination {
 		public String created_at;
+		public Boolean has_signing_secret;
 		public String id;
 		public String name;
+		public String signing_secret;
+		public String signing_secret_rotated_at;
 		public Object status;
 		public String target_preview;
 		public Object type;
@@ -4123,6 +4144,7 @@ public final class Models {
 
 	public static class WorkspaceNotificationRouteMap {
 		public java.util.List<String> auto_top_up_failed;
+		public java.util.List<String> broadcast_destination_failing;
 		public java.util.List<String> low_balance;
 		public java.util.List<String> model_deprecation;
 		public java.util.List<String> model_substitution;

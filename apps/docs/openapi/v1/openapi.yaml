@@ -5424,6 +5424,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /notifications/destinations/{id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: rotateWorkspaceNotificationDestinationSecret
+      summary: Rotate a notification webhook signing secret
+      description: >-
+        Generates a new signing secret for a custom webhook destination and
+        returns it once. Destinations created before signing get their first
+        secret this way. Later deliveries are signed with the new secret and the
+        previous secret stops being used.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Signing secret rotated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceNotificationDestinationResponse'
+        default:
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
       x-beta: true
@@ -11454,7 +11486,15 @@ components:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/AnthropicMessage'
+            oneOf:
+              - $ref: '#/components/schemas/AnthropicMessage'
+              - $ref: '#/components/schemas/AnthropicSystemMessage'
+            discriminator:
+              propertyName: role
+              mapping:
+                user: '#/components/schemas/AnthropicMessage'
+                assistant: '#/components/schemas/AnthropicMessage'
+                system: '#/components/schemas/AnthropicSystemMessage'
         max_tokens:
           type: integer
           minimum: 1
@@ -11627,6 +11667,44 @@ components:
             - type: array
               items:
                 $ref: '#/components/schemas/AnthropicContentBlock'
+    AnthropicSystemMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          description: >-
+            Use `system` for an instruction that applies from this point in the
+            conversation. A system message takes a string or text blocks, must
+            come straight after a user turn (or an assistant turn ending in a
+            server tool result), and must be the last message or be followed by
+            an assistant turn.
+          enum:
+            - system
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/AnthropicSystemTextBlock'
+      additionalProperties: false
+    AnthropicSystemTextBlock:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        text:
+          type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
     AnthropicContentBlock:
       type: object
       properties:
@@ -13387,6 +13465,10 @@ components:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
+          description: >-
+            Confidence in the box, from 0 to 1, or null when the model gives
+            none.
     DecisionBox:
       type: object
       required:
@@ -17016,6 +17098,8 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
         include_byok_in_limit:
           type: boolean
           description: >-
@@ -17234,6 +17318,8 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          $ref: '#/components/schemas/ApiKeyStorageLocations'
       additionalProperties: false
     ApiKeyUpdateRequest:
       type: object
@@ -17278,7 +17364,31 @@ components:
             Department this key belongs to for department rate limits and
             budgets. Null means the key counts only toward workspace-wide
             limits.
+        storage_locations:
+          allOf:
+            - $ref: '#/components/schemas/ApiKeyStorageLocations'
+          nullable: true
       additionalProperties: false
+    ApiKeyStorageLocations:
+      type: array
+      maxItems: 8
+      uniqueItems: true
+      description: >-
+        Where you keep this key, such as the hosting platform whose environment
+        variables hold it. Optional. If one of these places reports a breach,
+        you can find and revoke every key stored there. Known ids: railway,
+        vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase,
+        digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo,
+        deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud,
+        scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password,
+        bitwarden, hashicorp-vault, doppler, infisical, local-machine,
+        own-server, other.
+      items:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{0,39}$
+      example:
+        - railway
+        - github
     ApiKeyRotateRequest:
       type: object
       properties:
@@ -18710,7 +18820,29 @@ components:
     ObservabilityDestinationType:
       type: string
       enum:
+        - arize
+        - axiom
+        - bigquery
+        - braintrust
+        - clickhouse
+        - comet_opik
+        - datadog
+        - dynatrace
+        - elastic
+        - gcs
+        - grafana_cloud
+        - honeycomb
+        - langfuse
+        - langsmith
+        - new_relic
         - otel_collector
+        - posthog
+        - r2
+        - respan
+        - s3
+        - sentry
+        - snowflake
+        - wandb_weave
         - webhook
     ObservabilityKeyFilter:
       type: object
@@ -22695,6 +22827,22 @@ components:
           enum:
             - active
             - disabled
+        has_signing_secret:
+          type: boolean
+          description: >-
+            Whether deliveries are signed with x-phaseo-signature. Only custom
+            webhook destinations are signed; ones created before signing stay
+            unsigned until a secret is generated.
+        signing_secret_rotated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the current signing secret was generated.
+        signing_secret:
+          type: string
+          description: >-
+            The webhook signing secret. Returned only when a custom webhook
+            destination is created or its secret is rotated; store it securely.
         created_at:
           type: string
           format: date-time
@@ -22783,6 +22931,7 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - broadcast_destination_failing
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -22792,6 +22941,7 @@ components:
         - model_deprecation
         - model_substitution
         - rate_limit_throttled
+        - broadcast_destination_failing
       properties:
         low_balance:
           type: array
@@ -22819,6 +22969,11 @@ components:
             type: string
             format: uuid
         rate_limit_throttled:
+          type: array
+          items:
+            type: string
+            format: uuid
+        broadcast_destination_failing:
           type: array
           items:
             type: string

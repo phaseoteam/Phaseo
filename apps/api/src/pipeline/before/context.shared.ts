@@ -200,12 +200,13 @@ export function computeAdaptiveTtlForDynamic(context: GatewayContextData): numbe
  * Uses longer TTL since this data changes infrequently
  */
 export function computeStaticTtl(
-	context?: Pick<GatewayContextData, "pricing"> | null,
+	context?: (Pick<GatewayContextData, "pricing"> & Partial<Pick<GatewayContextData, "providers">>) | null,
 	nowMs: number = Date.now(),
 ): number | null {
 	// Static data can be cached for 5-15 minutes.
 	// Use midpoint default and keep tunable via constants.
-	const defaultTtl = Math.floor((STATIC_TTL_MIN + STATIC_TTL_MAX) / 2);
+	const defaultTtl = context?.providers?.some((provider) => provider.capabilityParams?.data_policy?.catalogManaged === true)
+		? 300 : Math.floor((STATIC_TTL_MIN + STATIC_TTL_MAX) / 2);
 	let nextPricingBoundaryMs: number | null = null;
 	for (const card of Object.values(context?.pricing ?? {})) {
 		const boundaryMs = card?.effective_to ? Date.parse(card.effective_to) : Number.NaN;

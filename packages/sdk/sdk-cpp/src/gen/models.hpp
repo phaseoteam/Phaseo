@@ -65,7 +65,7 @@ struct AnthropicMessagesRequest {
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	int max_tokens;
-	std::vector<std::map<std::string, std::any>> messages;
+	std::vector<std::any> messages;
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;
@@ -100,6 +100,17 @@ struct AnthropicMessagesResponse {
 	std::string stop_sequence;
 	std::string type;
 	std::map<std::string, std::any> usage;
+};
+
+struct AnthropicSystemMessage {
+	std::any content;
+	std::any role;
+};
+
+struct AnthropicSystemTextBlock {
+	std::map<std::string, std::any> cache_control;
+	std::string text;
+	std::any type;
 };
 
 struct AnthropicTool {
@@ -140,6 +151,7 @@ struct ApiKey {
 	std::any scopes;
 	bool soft_blocked;
 	std::optional<std::string> status;
+	std::vector<std::string> storage_locations;
 	std::optional<std::string> updated_at;
 	double usage;
 	double usage_daily;
@@ -160,6 +172,7 @@ struct ApiKeyCreateRequest {
 	std::string name;
 	std::any scopes;
 	std::optional<bool> soft_blocked;
+	std::vector<std::string> storage_locations;
 	std::string workspace_id;
 };
 
@@ -206,6 +219,8 @@ struct ApiKeyRotateResponse {
 
 using ApiKeyScopeValue = std::any;
 
+using ApiKeyStorageLocations = std::any;
+
 struct ApiKeyUpdateRequest {
 	std::optional<std::string> department_id;
 	std::optional<bool> disabled;
@@ -217,6 +232,7 @@ struct ApiKeyUpdateRequest {
 	std::string name;
 	std::any scopes;
 	std::optional<bool> soft_blocked;
+	std::optional<std::any> storage_locations;
 };
 
 struct ApiKeyUsageBucket {
@@ -253,6 +269,7 @@ struct ApiKeyWithValue {
 	std::any scopes;
 	bool soft_blocked;
 	std::optional<std::string> status;
+	std::vector<std::string> storage_locations;
 	std::optional<std::string> updated_at;
 	double usage;
 	double usage_daily;
@@ -864,7 +881,7 @@ struct DecisionBox {
 
 struct DecisionBoxAnswer {
 	std::map<std::string, std::any> box;
-	double confidence;
+	std::optional<double> confidence;
 	std::optional<std::string> name;
 	std::any type;
 };
@@ -4033,8 +4050,11 @@ using WorkspaceModelSuccessorPricePolicy = std::any;
 
 struct WorkspaceNotificationDestination {
 	std::optional<std::string> created_at;
+	std::optional<bool> has_signing_secret;
 	std::string id;
 	std::string name;
+	std::string signing_secret;
+	std::optional<std::string> signing_secret_rotated_at;
 	std::any status;
 	std::string target_preview;
 	std::any type;
@@ -4083,6 +4103,7 @@ struct WorkspaceNotificationRoute {
 
 struct WorkspaceNotificationRouteMap {
 	std::vector<std::string> auto_top_up_failed;
+	std::vector<std::string> broadcast_destination_failing;
 	std::vector<std::string> low_balance;
 	std::vector<std::string> model_deprecation;
 	std::vector<std::string> model_substitution;
