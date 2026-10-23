@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Check, Link2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CompareModelOption } from "../types";
+import { CompareActivity } from "./CompareActivity";
 import { CompareBenchmarks } from "./CompareBenchmarks";
 import { CompareGridProvider } from "./CompareGrid";
 import { CompareHeader } from "./CompareHeader";
@@ -112,8 +113,9 @@ export function CompareView({
 				<ComparePricing models={priced} tiers={tiers} />
 				<CompareCalculator models={priced} tiers={tiers} />
 				<ComparePerformance models={models} usage={usage} />
+				<CompareActivity models={models} usage={usage} />
 				<CompareFeatures models={models} priced={priced} tiers={tiers} />
-				<CompareBenchmarks models={models} benchmarks={view.benchmarks} />
+				<CompareBenchmarks models={models} benchmarks={view.benchmarks} peers={view.peers ?? []} />
 				<CompareProviders models={models} />
 				<CompareDetails models={models} />
 				{pages > 1 ? <p className="text-xs text-muted-foreground sm:hidden">{t("phoneBestNote")}</p> : null}

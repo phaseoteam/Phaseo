@@ -209,7 +209,8 @@ begin
   -- time, so a correction that moves a request to another key or model within the
   -- hour is rebuilt too. v2_usage_overview_requests counts each request as the
   -- overview does; get_private_usage_overview reads requests outside the rollups
-  -- from the same view.
+  -- from the same view. The 15-minute rollup also keeps each request's actor (key creator
+  -- or OAuth user) apart for spend rules; the label rollup does not.
   for grain in
     select distinct batch.workspace_id, date_trunc('hour', batch.occurred_at, 'UTC') as bucket_start
     from pg_temp.v2_rollup_batch batch
@@ -232,18 +233,18 @@ begin
         and request.occurred_at < grain.bucket_start + interval '1 hour'
     ), totals as (
       insert into public.v2_private_usage_15m (
-        workspace_id, bucket_start, model_id, provider_model_id, key_id, app_id, byok,
+        workspace_id, bucket_start, model_id, provider_model_id, key_id, app_id, byok, actor_user_id,
         requests, successful_requests, guardrail_blocked, cost_nanos,
         tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
       )
       select
         grain.workspace_id, request.bucket_start, request.model_id, request.provider_model_id,
-        request.key_id, request.app_id, request.byok,
+        request.key_id, request.app_id, request.byok, request.actor_user_id,
         count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
         sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
         sum(request.reasoning_tokens), sum(request.cached_tokens)
       from requests request
-      group by 2, 3, 4, 5, 6, 7
+      group by 2, 3, 4, 5, 6, 7, 8
     )
     insert into public.v2_private_usage_labels_15m (
       workspace_id, bucket_start, label_key, label_value, model_id, provider_model_id, key_id, app_id, byok,

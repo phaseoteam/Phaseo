@@ -263,7 +263,11 @@ creditsRouter.put("/notification-preferences", async (c) => {
 	if (typeof body.paymentMethodExpiring === "boolean") update.payment_method_expiring_email_enabled = body.paymentMethodExpiring;
 	if (typeof body.modelDeprecationAlerts === "boolean") update.model_deprecation_alerts_enabled = body.modelDeprecationAlerts;
 	if (typeof body.modelDeprecationAlertsIncludeAdmins === "boolean") update.model_deprecation_alerts_include_admins = body.modelDeprecationAlertsIncludeAdmins;
-	if (!("auto_top_up_failure_email_enabled" in update) && !("payment_method_expiring_email_enabled" in update) && !("model_deprecation_alerts_enabled" in update) && !("model_deprecation_alerts_include_admins" in update)) return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (body.departmentSpendAttribution !== undefined) {
+		if (body.departmentSpendAttribution !== "all" && body.departmentSpendAttribution !== "primary") return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
+		update.department_spend_attribution = body.departmentSpendAttribution;
+	}
+	if (!("auto_top_up_failure_email_enabled" in update) && !("payment_method_expiring_email_enabled" in update) && !("model_deprecation_alerts_enabled" in update) && !("model_deprecation_alerts_include_admins" in update) && !("department_spend_attribution" in update)) return c.json({ error: "invalid_preferences" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.from("workspace_settings").upsert(update, { onConflict: "workspace_id" });
 	if (result.error) return c.json({ error: "credits_update_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);

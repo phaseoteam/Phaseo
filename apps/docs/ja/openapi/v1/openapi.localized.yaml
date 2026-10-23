@@ -21770,12 +21770,27 @@ components:
         model_deprecation:
           type: boolean
       additionalProperties: false
+    WorkspaceSpendAttribution:
+      type: string
+      description: キーに部門が設定されていない場合に、支出ルールが個人の支出をどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門が常に優先されます。
+      enum:
+        - all
+        - primary
+    WorkspaceSpendSettings:
+      type: object
+      required:
+        - department_attribution
+      properties:
+        department_attribution:
+          $ref: '#/components/schemas/WorkspaceSpendAttribution'
+      additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
       required:
         - auto_top_up
         - low_balance_email
         - email_preferences
+        - spend
       properties:
         auto_top_up:
           $ref: '#/components/schemas/WorkspaceAutoTopUpSettings'
@@ -21783,6 +21798,8 @@ components:
           $ref: '#/components/schemas/WorkspaceLowBalanceEmailSettings'
         email_preferences:
           $ref: '#/components/schemas/WorkspaceNotificationEmailPreferences'
+        spend:
+          $ref: '#/components/schemas/WorkspaceSpendSettings'
       additionalProperties: false
     WorkspaceNotificationSettingsResponse:
       type: object
@@ -21846,6 +21863,15 @@ components:
           $ref: '#/components/schemas/WorkspaceLowBalanceEmailUpdate'
         email_preferences:
           $ref: '#/components/schemas/WorkspaceNotificationEmailPreferencesUpdate'
+        spend:
+          $ref: '#/components/schemas/WorkspaceSpendSettingsUpdate'
+      additionalProperties: false
+    WorkspaceSpendSettingsUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        department_attribution:
+          $ref: '#/components/schemas/WorkspaceSpendAttribution'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string

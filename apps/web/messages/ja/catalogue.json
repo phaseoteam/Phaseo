@@ -2826,7 +2826,22 @@
 		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, other {さらに#件の課金項目を表示}}",
 		"fewerMeters": "課金項目を折りたたむ",
-		"otherCategory": "その他"
+		"otherCategory": "その他",
+		"activity": "アクティビティ",
+		"activitySub": "過去 30 日間に Phaseo 経由で 1 日ごとに送信されたトークン",
+		"activityTotal": "トークン（過去 30 日）",
+		"activityInput": "入力",
+		"activityOutput": "出力",
+		"activityReasoning": "推論",
+		"activityRequests": "リクエスト",
+		"activityDay": "{date}: {tokens} トークン、{requests} リクエスト",
+		"activityChart": "Phaseo 経由の {name} の日別トークン（過去 30 日）",
+		"activityNone": "過去 30 日間に Phaseo 経由のトラフィックはありません",
+		"activityNoneAll": "過去 30 日間、これらのモデルはいずれも Phaseo 経由のトラフィックがありません。",
+		"peersTitle": "ランキングでの位置",
+		"peersSub": "各能力指数の上位 5 モデルと、比較中のモデル。各モデルは最高スコアの設定で表示します。",
+		"peerModels": "{count} モデルをランク付け",
+		"activityRequestsTotal": "リクエスト（過去 30 日）"
 	},
 	"countries": {
 		"title": "国別AI",

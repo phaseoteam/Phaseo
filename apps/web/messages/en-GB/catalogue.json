@@ -2826,7 +2826,22 @@
 		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, one {Show # more meter} other {Show # more meters}}",
 		"fewerMeters": "Show fewer meters",
-		"otherCategory": "Other"
+		"otherCategory": "Other",
+		"activity": "Activity",
+		"activitySub": "Tokens sent through Phaseo each day over the last 30 days",
+		"activityTotal": "tokens, last 30 days",
+		"activityInput": "Input",
+		"activityOutput": "Output",
+		"activityReasoning": "Reasoning",
+		"activityRequests": "Requests",
+		"activityDay": "{date}: {tokens} tokens, {requests} requests",
+		"activityChart": "Daily tokens for {name} through Phaseo, last 30 days",
+		"activityNone": "No traffic through Phaseo in the last 30 days",
+		"activityNoneAll": "None of these models has had traffic through Phaseo in the last 30 days.",
+		"peersTitle": "Where they rank",
+		"peersSub": "The five leaders on each capability index, then the compared models. Each model at its best-scoring setting.",
+		"peerModels": "{count, plural, one {# model ranked} other {# models ranked}}",
+		"activityRequestsTotal": "requests, last 30 days"
 	},
 	"countries": {
 		"title": "AI by country",

@@ -2826,7 +2826,22 @@
 		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, one {# और मीटर दिखाएँ} other {# और मीटर दिखाएँ}}",
 		"fewerMeters": "कम मीटर दिखाएँ",
-		"otherCategory": "अन्य"
+		"otherCategory": "अन्य",
+		"activity": "गतिविधि",
+		"activitySub": "पिछले 30 दिनों में हर दिन Phaseo के ज़रिए भेजे गए टोकन",
+		"activityTotal": "टोकन, पिछले 30 दिन",
+		"activityInput": "इनपुट",
+		"activityOutput": "आउटपुट",
+		"activityReasoning": "रीज़निंग",
+		"activityRequests": "अनुरोध",
+		"activityDay": "{date}: {tokens} टोकन, {requests} अनुरोध",
+		"activityChart": "Phaseo के ज़रिए {name} के दैनिक टोकन, पिछले 30 दिन",
+		"activityNone": "पिछले 30 दिनों में Phaseo के ज़रिए कोई ट्रैफ़िक नहीं",
+		"activityNoneAll": "पिछले 30 दिनों में इनमें से किसी भी मॉडल पर Phaseo के ज़रिए कोई ट्रैफ़िक नहीं आया।",
+		"peersTitle": "रैंकिंग में स्थान",
+		"peersSub": "हर क्षमता सूचकांक के शीर्ष पाँच मॉडल, फिर तुलना किए गए मॉडल। हर मॉडल अपनी सबसे अच्छे स्कोर वाली सेटिंग पर।",
+		"peerModels": "{count, plural, one {# मॉडल रैंक किया गया} other {# मॉडल रैंक किए गए}}",
+		"activityRequestsTotal": "अनुरोध, पिछले 30 दिन"
 	},
 	"countries": {
 		"title": "देश के अनुसार AI",

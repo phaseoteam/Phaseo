@@ -12862,6 +12862,9 @@ export async function getWorkspaceNotificationSettings(
       enabled: boolean;
       threshold_usd: number;
     };
+    spend: {
+      department_attribution: "all" | "primary";
+    };
   };
 }> {
   const { path, query, headers, body } = args;
@@ -12882,6 +12885,9 @@ export async function getWorkspaceNotificationSettings(
       low_balance_email: {
         enabled: boolean;
         threshold_usd: number;
+      };
+      spend: {
+        department_attribution: "all" | "primary";
       };
     };
   }>({
@@ -24711,6 +24717,9 @@ export type UpdateWorkspaceNotificationSettingsParams = {
       enabled: boolean;
       threshold_usd?: number;
     };
+    spend?: {
+      department_attribution?: "all" | "primary";
+    };
   };
 };
 
@@ -24737,6 +24746,9 @@ export async function updateWorkspaceNotificationSettings(
       enabled: boolean;
       threshold_usd: number;
     };
+    spend: {
+      department_attribution: "all" | "primary";
+    };
   };
 }> {
   const { path, query, headers, body } = args;
@@ -24757,6 +24769,9 @@ export async function updateWorkspaceNotificationSettings(
       low_balance_email: {
         enabled: boolean;
         threshold_usd: number;
+      };
+      spend: {
+        department_attribution: "all" | "primary";
       };
     };
   }>({

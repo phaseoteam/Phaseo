@@ -5,11 +5,11 @@ import RoutingSettingsClient from "@/components/(gateway)/settings/routing/Routi
 import ModelSuccessorRoutingSettings from "@/components/(gateway)/settings/routing/ModelSuccessorRoutingSettings";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
-import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSettingsQuery";
+import { SettingsResourceQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import type { SettingsRoutingInitialData } from "@/lib/fetchers/internal/settingsTypes";
 
 
-export default function RoutingSettingsPage() {
+export default function RoutingSettingsPage({ showModelSuccessor }: { showModelSuccessor: boolean }) {
 	const t = useTranslations("SettingsUI");
 	return (
 		<div className="space-y-6">
@@ -18,13 +18,21 @@ export default function RoutingSettingsPage() {
 				description={t("headers.routingDescription")}
 			/>
 			<Suspense fallback={<SettingsSectionFallback />}>
-				<RoutingSettingsContent />
+				<RoutingSettingsContent showModelSuccessor={showModelSuccessor} />
 			</Suspense>
 		</div>
 	);
 }
 
-const RoutingSettingsContent = withSettingsResource("routing", function RoutingSettingsContent({ initialData }: { initialData: SettingsRoutingInitialData }) {
+function RoutingSettingsContent({ showModelSuccessor }: { showModelSuccessor: boolean }) {
+	return (
+		<SettingsResourceQuery resource="routing">
+			{(initialData) => <RoutingSettingsView initialData={initialData} showModelSuccessor={showModelSuccessor} />}
+		</SettingsResourceQuery>
+	);
+}
+
+function RoutingSettingsView({ initialData, showModelSuccessor }: { initialData: SettingsRoutingInitialData; showModelSuccessor: boolean }) {
 	const t = useTranslations("SettingsUI");
 
 	if (!initialData.workspaceId) {
@@ -46,7 +54,7 @@ const RoutingSettingsContent = withSettingsResource("routing", function RoutingS
 				initialResponseHealingMode={initialData.responseHealingMode}
 				teamName={initialData.teamName}
 			/>
-			<ModelSuccessorRoutingSettings />
+			{showModelSuccessor ? <ModelSuccessorRoutingSettings /> : null}
 		</div>
 	);
-});
+}

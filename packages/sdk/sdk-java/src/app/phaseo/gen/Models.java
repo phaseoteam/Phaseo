@@ -4168,6 +4168,7 @@ public final class Models {
 		public Object auto_top_up;
 		public Object email_preferences;
 		public Object low_balance_email;
+		public Object spend;
 	}
 
 	public static class WorkspaceNotificationSettingsResponse {
@@ -4178,6 +4179,7 @@ public final class Models {
 		public Object auto_top_up;
 		public Object email_preferences;
 		public Object low_balance_email;
+		public Object spend;
 	}
 
 	public static class WorkspaceNotificationTestResponse {
@@ -4303,6 +4305,17 @@ public final class Models {
 		public Boolean response_healing_locked;
 		public Object response_healing_mode;
 		public Object routing_mode;
+	}
+
+	public static class WorkspaceSpendAttribution {
+	}
+
+	public static class WorkspaceSpendSettings {
+		public Object department_attribution;
+	}
+
+	public static class WorkspaceSpendSettingsUpdate {
+		public Object department_attribution;
 	}
 
 	public static class WorkspaceSsoResponse {

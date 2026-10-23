@@ -5435,8 +5435,9 @@
 		"accessChanged": "Votre session ou votre accès à l’espace de travail a changé. Rechargez pour continuer.",
 		"loadFailed": "Impossible de charger les paramètres.",
 		"retry": "Réessayer",
-		"refresh": "Actualiser les paramètres",
-		"refreshFailed": "L’actualisation a échoué. Les derniers paramètres chargés sont affichés."
+		"refreshFailed": "L’actualisation a échoué. Les derniers paramètres chargés sont affichés.",
+		"changedElsewhere": "Ces paramètres ont changé depuis le chargement de la page.",
+		"showLatest": "Afficher la dernière version"
 	},
 	"landingGaps": {
 		"identityBilling": "Facturation de l’identité et de la gouvernance de cet espace, distincte des crédits d’utilisation des modèles.",
