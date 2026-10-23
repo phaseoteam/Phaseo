@@ -40,6 +40,6 @@ CREATE POLICY "deny_direct_client_access" ON "public"."model_discovery_review_it
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."model_discovery_review_items" TO "service_role";
 
-COMMENT ON TABLE "public"."model_discovery_review_items" IS 'Internal review queue for provider model additions and confirmed removals detected by the Cloudflare watcher.';
+COMMENT ON TABLE "public"."model_discovery_review_items" IS 'Historical automated discovery review queue. Ingestion retired 2026-10-23 in favor of Discord notifications. Separate provider catalog submission reviews remain active.';
 
 REVOKE ALL ON TABLE "public"."model_discovery_review_items" FROM "anon", "authenticated";
