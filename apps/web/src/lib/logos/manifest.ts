@@ -124,6 +124,10 @@ export const logoManifest = {
 	baseten: {
 		color: "/logos/baseten.svg",
 	},
+	baselabs: {
+		// Lossless vector of the official grid icon: https://labs.baseten.co/favicon.ico.
+		color: "/logos/baselabs.svg",
+	},
 	"black-forest-labs": {
 		light: "/logos/black-forest-labs_light.svg",
 		dark: "/logos/black-forest-labs_dark.svg",

@@ -4,12 +4,14 @@ import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 import * as React from "react";
-import { BellRing, ChevronDown, Plus, Trash2, X } from "lucide-react";
+import { BellRing, ChevronDown, KeyRound, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useTranslations } from "next-intl";
 
-import { createNotificationDestination, deleteNotificationDestination, setBillingNotificationPreference, testNotificationConfiguration, testNotificationDestination } from "@/app/(dashboard)/settings/credits/actions";
+import { createNotificationDestination, deleteNotificationDestination, rotateNotificationDestinationSecret, setBillingNotificationPreference, testNotificationConfiguration, testNotificationDestination } from "@/app/(dashboard)/settings/credits/actions";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import NotificationSigningSecretDialog, { type RevealedNotificationSecret } from "@/components/(gateway)/settings/notifications/NotificationSigningSecretDialog";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -61,6 +63,8 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 	const [slackMentions, setSlackMentions] = React.useState({ userIds: "", userGroupIds: "" });
 	const [teamsMentionIds, setTeamsMentionIds] = React.useState("");
 	const [saving, setSaving] = React.useState(false);
+	const [revealedSecrets, setRevealedSecrets] = React.useState<RevealedNotificationSecret[]>([]);
+	const [secretTarget, setSecretTarget] = React.useState<NotificationDestination | null>(null);
 	const selectedProvider = selectedTypes.length === 1 ? providerByType.get(selectedTypes[0]!) : null;
 	const SelectedProviderIcon = selectedProvider?.icon ?? BellRing;
 	const configurationValid = selectedTypes.length > 0 && selectedTypes.every(isTypeConfigured);
@@ -108,9 +112,33 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 		if (!name.trim()) return;
 		setSaving(true);
 		try {
-			const created = await Promise.all(selectedTypes.map((type) => write(createNotificationDestination({ name: name.trim(), type, target: targetForType(type) }))));
-			setDestinations((current) => [...created, ...current]); setOpen(false); resetSheet(); toast.success(created.length === 1 ? s("Destination created") : `${created.length} ${s("destinations created")}`);
+			// Settle each create separately: a destination that was created keeps its one-time secret even if another type fails.
+			const results = await Promise.allSettled(selectedTypes.map((type) => write(createNotificationDestination({ name: name.trim(), type, target: targetForType(type) }))));
+			const created = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+			const failedTypes = selectedTypes.filter((_, index) => results[index]?.status === "rejected");
+			const firstFailure = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
+			if (created.length > 0) {
+				setDestinations((current) => [...created.map((entry) => entry.destination), ...current]);
+				setRevealedSecrets(created.flatMap((entry) => entry.signingSecret ? [{ destinationName: entry.destination.name, secret: entry.signingSecret }] : []));
+			}
+			if (!firstFailure) { setOpen(false); resetSheet(); toast.success(created.length === 1 ? s("Destination created") : `${created.length} ${s("destinations created")}`); return; }
+			// Leave only the failed types selected so trying again doesn't create duplicates.
+			setSelectedTypes(failedTypes);
+			if (created.length > 0) toast.success(created.length === 1 ? s("Destination created") : `${created.length} ${s("destinations created")}`);
+			toast.error(localizedSettingsError(firstFailure.reason, t, "Could not create destination"));
 		} catch (error) { toast.error(localizedSettingsError(error, t, "Could not create destination")); }
+		finally { setSaving(false); }
+	}
+	async function createSigningSecret(destination: NotificationDestination) {
+		setSecretTarget(null); setSaving(true);
+		const toastId = toast.loading(t("notificationCopy.secretCreating"));
+		try {
+			const result = await write(rotateNotificationDestinationSecret(destination.id));
+			if (!result.ok) { toast.error(localizedSettingsError(result.error, t, "Could not create a signing secret", t("notificationCopy.secretCreateFailed")), { id: toastId }); return; }
+			setDestinations((current) => current.map((entry) => entry.id === destination.id ? { ...entry, hasSigningSecret: true, signingSecretRotatedAt: result.signingSecretRotatedAt } : entry));
+			setRevealedSecrets([{ destinationName: destination.name, secret: result.signingSecret }]);
+			toast.success(t("notificationCopy.secretCreated"), { id: toastId });
+		} catch (error) { toast.error(localizedSettingsError(error, t, "Could not create a signing secret", t("notificationCopy.secretCreateFailed")), { id: toastId }); }
 		finally { setSaving(false); }
 	}
 
@@ -138,6 +166,10 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						<div><h3 className="text-sm font-medium">{s("Rate Limit Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Get an alert when rate limit policies reject requests, at most once an hour.")}</p></div>
 						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="rate_limit_throttled" initialDestinationIds={initialNotificationRoutes.rate_limit_throttled ?? []} /></div>
 					</div>
+					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+						<div><h3 className="text-sm font-medium">{t("notificationCopy.broadcastAlertsTitle")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{t("notificationCopy.broadcastAlertsDescription")}</p></div>
+						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="broadcast_destination_failing" initialDestinationIds={initialNotificationRoutes.broadcast_destination_failing ?? []} /></div>
+					</div>
 				</div>
 			</section>
 
@@ -151,7 +183,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						<div className="flex flex-col items-center px-6 py-12 text-center"><div className="mb-4 rounded-md border bg-muted/40 p-3"><BellRing className="size-5 text-muted-foreground" /></div><h3 className="text-sm font-medium">{s("No destinations yet")}</h3><p className="mt-1 max-w-sm text-sm text-muted-foreground">{s("phraseAddADestinationToRouteAlertsToTheToolsYourTeamAlreadyWatches")}</p><Button className="mt-5 rounded-md" variant="outline" onClick={() => setOpen(true)}><Plus /> {s("Add destination")}</Button></div>
 					) : destinations.map((destination, index) => {
 						const item = providerByType.get(destination.type)!; const Icon = item.icon;
-						return <div key={destination.id} className={cn("flex items-center gap-3 px-4 py-3.5", index > 0 && "border-t")}><div className={cn("grid size-9 place-items-center rounded-md", item.color)}><Icon className="size-4.5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{destination.name}</p><p className="truncate text-xs text-muted-foreground">{item.name} · {destination.targetPreview}</p></div><DropdownMenu><DropdownMenuTrigger asChild><Button className="rounded-md" variant="outline" size="sm" disabled={saving}>{s("Send test")} <ChevronDown className="ml-1 size-3.5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => sendDestinationTest(destination.id, "notification_test")}>{t("notificationCopy.connectionTest")}</DropdownMenuItem><DropdownMenuItem onClick={() => sendDestinationTest(destination.id, "model_deprecation")}>{t("notificationCopy.deprecationSample")}</DropdownMenuItem></DropdownMenuContent></DropdownMenu><Button className="rounded-md" variant="ghost" size="icon-sm" aria-label={s("Delete {name}", { name: destination.name })} disabled={saving} onClick={() => void removeDestination(destination.id)}><Trash2 /></Button></div>;
+						return <div key={destination.id} className={cn("flex items-center gap-3 px-4 py-3.5", index > 0 && "border-t")}><div className={cn("grid size-9 place-items-center rounded-md", item.color)}><Icon className="size-4.5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{destination.name}</p><p className="truncate text-xs text-muted-foreground">{item.name} · {destination.targetPreview}{destination.type === "custom_webhook" ? <> · <span className={destination.hasSigningSecret ? undefined : "text-amber-700 dark:text-amber-400"}>{destination.hasSigningSecret ? t("notificationCopy.signed") : t("notificationCopy.unsigned")}</span></> : null}</p>{destination.type === "custom_webhook" && !destination.hasSigningSecret ? <p className="mt-0.5 text-xs text-muted-foreground">{t("notificationCopy.unsignedHelp")}</p> : null}</div>{destination.type === "custom_webhook" ? <Button className="rounded-md" variant="outline" size="sm" disabled={saving} aria-label={destination.hasSigningSecret ? t("notificationCopy.rotateSecret") : t("notificationCopy.generateSecret")} onClick={() => setSecretTarget(destination)}><KeyRound className="size-3.5 sm:mr-1" /><span className="hidden sm:inline">{destination.hasSigningSecret ? t("notificationCopy.rotateSecret") : t("notificationCopy.generateSecret")}</span></Button> : null}<DropdownMenu><DropdownMenuTrigger asChild><Button className="rounded-md" variant="outline" size="sm" disabled={saving}>{s("Send test")} <ChevronDown className="ml-1 size-3.5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => sendDestinationTest(destination.id, "notification_test")}>{t("notificationCopy.connectionTest")}</DropdownMenuItem><DropdownMenuItem onClick={() => sendDestinationTest(destination.id, "model_deprecation")}>{t("notificationCopy.deprecationSample")}</DropdownMenuItem></DropdownMenuContent></DropdownMenu><Button className="rounded-md" variant="ghost" size="icon-sm" aria-label={s("Delete {name}", { name: destination.name })} disabled={saving} onClick={() => void removeDestination(destination.id)}><Trash2 /></Button></div>;
 					})}
 				</div>
 			</section>
@@ -169,13 +201,28 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						<div className="space-y-5">
 							<div className="space-y-2"><Label htmlFor="destination-name">{t("notificationCopy.nameLabel")}</Label><Input className="rounded-md" id="destination-name" value={name} onChange={(event) => setName(event.target.value)} placeholder={t("notificationCopy.namePlaceholder")} autoFocus /></div>
 							<fieldset><legend className="mb-2 text-sm font-medium">{t("notificationCopy.channelsLabel")}</legend><div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">{localizedProviders.map((item) => { const Icon = item.icon; const selected = selectedTypes.includes(item.type); return <label key={item.type} className={cn("flex min-h-[4.5rem] cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 transition-colors hover:bg-muted/50", selected && "border-foreground/30 bg-muted/70")}><span className={cn("grid size-9 shrink-0 place-items-center rounded-md border border-border/70", item.color)}><Icon className="size-5" /></span><span className="min-w-0 flex-1"><span className="block text-sm font-medium">{item.name}</span><span className="mt-0.5 block text-xs leading-4 text-muted-foreground">{item.description}</span></span><Checkbox className="shrink-0" checked={selected} aria-label={`Select ${item.name}`} onCheckedChange={(checked) => setSelectedTypes((current) => checked ? [...current.filter((type) => type !== item.type), item.type] : current.filter((type) => type !== item.type))} /></label>; })}</div></fieldset>
-							<div>{selectedTypes.map((type, index) => { const item = providerByType.get(type)!; const Icon = item.icon; return <section key={type} className={cn("space-y-3 py-4", index > 0 && "border-t")}><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><span className={cn("grid size-7 place-items-center rounded-md", item.color)}><Icon className="size-4" /></span><h3 className="text-sm font-medium">{item.name}</h3></div><Button className="rounded-md" type="button" size="sm" variant="outline" disabled={!isTypeConfigured(type)} onClick={() => sendConfigurationTest(type)}>{s("Send test")}</Button></div>{type === "email" ? <div className="space-y-2"><div className="flex flex-wrap gap-1.5">{emails.map((email) => <span key={email} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">{email}<button type="button" className="rounded-md text-muted-foreground hover:text-foreground" aria-label={t("notificationCopy.removeEmail", { email })} onClick={() => setEmails((current) => current.filter((value) => value !== email))}><X className="size-3" /></button></span>)}</div><div className="flex gap-2"><Input className="rounded-md" type="email" value={emailDraft} onChange={(event) => setEmailDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === ",") { event.preventDefault(); addEmail(); } }} placeholder="alerts@company.com" /><Button className="rounded-md" type="button" variant="outline" onClick={addEmail}>{t("notificationCopy.addEmail")}</Button></div></div> : type === "discord" ? <><div className="grid gap-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="discord-channel-id">{t("notificationCopy.channelId")}</Label><Input className="rounded-md" id="discord-channel-id" value={targets.discord ?? ""} onChange={(event) => setTargets((current) => ({ ...current, discord: event.target.value }))} placeholder="123456789012345678" /></div><div className="space-y-2"><Label htmlFor="discord-bot-token">{t("notificationCopy.botToken")}</Label><Input className="rounded-md" id="discord-bot-token" type="password" autoComplete="off" value={discordBotToken} onChange={(event) => setDiscordBotToken(event.target.value)} placeholder={t("notificationCopy.botTokenPlaceholder")} /></div></div>{discordMentionFields("discord")}</> : <><div className="space-y-2"><Label htmlFor={`target-${type}`}>{item.field}</Label><Input className="rounded-md" id={`target-${type}`} type="url" value={targets[type] ?? ""} onChange={(event) => setTargets((current) => ({ ...current, [type]: event.target.value }))} placeholder={item.placeholder} /></div>{type === "discord_webhook" ? discordMentionFields("discord_webhook") : type === "slack" ? slackMentionFields() : type === "microsoft_teams" ? teamsMentionFields() : null}</>}<p className="text-xs text-muted-foreground">{t("notificationCopy.credentialsEncrypted")}</p></section>; })}</div>
+							<div>{selectedTypes.map((type, index) => { const item = providerByType.get(type)!; const Icon = item.icon; return <section key={type} className={cn("space-y-3 py-4", index > 0 && "border-t")}><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><span className={cn("grid size-7 place-items-center rounded-md", item.color)}><Icon className="size-4" /></span><h3 className="text-sm font-medium">{item.name}</h3></div><Button className="rounded-md" type="button" size="sm" variant="outline" disabled={!isTypeConfigured(type)} onClick={() => sendConfigurationTest(type)}>{s("Send test")}</Button></div>{type === "email" ? <div className="space-y-2"><div className="flex flex-wrap gap-1.5">{emails.map((email) => <span key={email} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">{email}<button type="button" className="rounded-md text-muted-foreground hover:text-foreground" aria-label={t("notificationCopy.removeEmail", { email })} onClick={() => setEmails((current) => current.filter((value) => value !== email))}><X className="size-3" /></button></span>)}</div><div className="flex gap-2"><Input className="rounded-md" type="email" value={emailDraft} onChange={(event) => setEmailDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === ",") { event.preventDefault(); addEmail(); } }} placeholder="alerts@company.com" /><Button className="rounded-md" type="button" variant="outline" onClick={addEmail}>{t("notificationCopy.addEmail")}</Button></div></div> : type === "discord" ? <><div className="grid gap-3 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="discord-channel-id">{t("notificationCopy.channelId")}</Label><Input className="rounded-md" id="discord-channel-id" value={targets.discord ?? ""} onChange={(event) => setTargets((current) => ({ ...current, discord: event.target.value }))} placeholder="123456789012345678" /></div><div className="space-y-2"><Label htmlFor="discord-bot-token">{t("notificationCopy.botToken")}</Label><Input className="rounded-md" id="discord-bot-token" type="password" autoComplete="off" value={discordBotToken} onChange={(event) => setDiscordBotToken(event.target.value)} placeholder={t("notificationCopy.botTokenPlaceholder")} /></div></div>{discordMentionFields("discord")}</> : <><div className="space-y-2"><Label htmlFor={`target-${type}`}>{item.field}</Label><Input className="rounded-md" id={`target-${type}`} type="url" value={targets[type] ?? ""} onChange={(event) => setTargets((current) => ({ ...current, [type]: event.target.value }))} placeholder={item.placeholder} /></div>{type === "discord_webhook" ? discordMentionFields("discord_webhook") : type === "slack" ? slackMentionFields() : type === "microsoft_teams" ? teamsMentionFields() : null}</>}<p className="text-xs text-muted-foreground">{t("notificationCopy.credentialsEncrypted")}</p>{type === "custom_webhook" ? <p className="text-xs text-muted-foreground">{t("notificationCopy.configurationTestUnsigned")}</p> : null}</section>; })}</div>
 						</div>
 					</div>
 					</ScrollArea>
 					<div className="flex shrink-0 items-center justify-end gap-2 border-t border-zinc-200/80 bg-background px-5 py-3 dark:border-zinc-800"><Button className="rounded-md" variant="outline" onClick={() => setOpen(false)}>{s("Cancel")}</Button><Button className="rounded-md" disabled={saving || !name.trim() || !configurationValid} onClick={() => void createDestination()}>{saving ? t("notificationCopy.creating" as never) : selectedTypes.length > 1 ? t("notificationCopy.createChannels" as never, { count: selectedTypes.length } as never) : t("notificationCopy.create" as never)}</Button></div>
 				</ProviderInspectorSheetContent>
 			</ProviderInspectorSheet>
+
+			<AlertDialog open={secretTarget !== null} onOpenChange={(next) => { if (!next) setSecretTarget(null); }}>
+				<AlertDialogContent className="rounded-md">
+					<AlertDialogHeader>
+						<AlertDialogTitle>{secretTarget?.hasSigningSecret ? t("notificationCopy.rotateSecretTitle", { name: secretTarget?.name ?? "" }) : t("notificationCopy.generateSecretTitle", { name: secretTarget?.name ?? "" })}</AlertDialogTitle>
+						<AlertDialogDescription>{secretTarget?.hasSigningSecret ? t("notificationCopy.rotateSecretDescription") : t("notificationCopy.generateSecretDescription")}</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel className="rounded-md">{s("Cancel")}</AlertDialogCancel>
+						<AlertDialogAction className="rounded-md" onClick={() => { if (secretTarget) void createSigningSecret(secretTarget); }}>{secretTarget?.hasSigningSecret ? t("notificationCopy.rotateSecret") : t("notificationCopy.generateSecret")}</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<NotificationSigningSecretDialog revealed={revealedSecrets[0] ?? null} onClose={() => setRevealedSecrets((current) => current.slice(1))} />
 		</>
 	);
 }

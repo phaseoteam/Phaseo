@@ -26,6 +26,7 @@ import {
 	Repeat,
 	CreditCard,
 	Gift,
+	MessagesSquare,
 	Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -59,7 +60,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { getCreditTransactionKindLabel } from "@/lib/credits/promoCodes";
+import { isSlackAgentCharge } from "@/lib/credits/promoCodes";
 import { formatRelativeToNow } from "@/lib/formatRelative";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import {
@@ -190,7 +191,7 @@ function formatRelativeDate(date: Date, nowMs: number, locale: string): string {
 }
 
 type TransactionStatusKey = "succeeded" | "failed" | "pending" | "cancelled" | "processing" | "paid";
-type TransactionKindKey = "promoCredit" | "goodwillCredit" | "oneOff" | "topUp" | "autoTopUp" | "refund" | "adjustment" | "usage";
+type TransactionKindKey = "promoCredit" | "goodwillCredit" | "oneOff" | "topUp" | "autoTopUp" | "refund" | "adjustment" | "usage" | "slackAgent";
 
 function statusChip(
 	status: string | null | undefined,
@@ -251,7 +252,8 @@ function statusChip(
 			className: cn("capitalize", TRANSACTION_CHIP_TONES.info),
 			icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 		};
-	if (raw === "paid")
+	// The Slack agent's month-end charge is "captured" once taken from credits.
+	if (raw === "paid" || raw === "captured")
 		return {
 			label: labelFor("paid"),
 			className: cn("capitalize", TRANSACTION_CHIP_TONES.success),
@@ -266,7 +268,18 @@ function statusChip(
 	};
 }
 
-function kindBadge(kind: string | null | undefined, labelFor: (key: TransactionKindKey) => string) {
+function kindBadge(kind: string | null | undefined, refType: string | null | undefined, labelFor: (key: TransactionKindKey) => string) {
+
+	if (isSlackAgentCharge(refType))
+		return (
+			<Badge
+				variant="outline"
+				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.indigo)}
+			>
+				<MessagesSquare className="h-3 w-3" aria-hidden />
+				{labelFor("slackAgent")}
+			</Badge>
+		);
 
 	if (kind === "promo_code")
 		return (
@@ -697,7 +710,7 @@ export default function RecentTransactions({
 											<TableCell className="py-2 font-medium tabular-nums">
 														{amountPill(t.amount_nanos ?? 0, currency, preferences)}
 											</TableCell>
-											<TableCell className="py-2">{kindBadge(t.kind, kindLabel)}</TableCell>
+											<TableCell className="py-2">{kindBadge(t.kind, t.ref_type, kindLabel)}</TableCell>
 											<TableCell className="py-2">
 												<Badge
 													variant="outline"

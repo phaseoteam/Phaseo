@@ -3,6 +3,10 @@ const emitGatewayRequestEventMock = vi.fn(async () => {});
 vi.mock("@observability/events", () => ({
 	emitGatewayRequestEvent: (...args: unknown[]) => emitGatewayRequestEventMock(...args),
 }));
+const enqueueGatewayOtlpExportMock = vi.hoisted(() => vi.fn(async (_input: any) => {}));
+vi.mock("@observability/otlp-export", () => ({
+	enqueueGatewayOtlpExport: (input: unknown) => enqueueGatewayOtlpExportMock(input),
+}));
 const background = vi.hoisted(() => [] as Promise<unknown>[]);
 vi.mock("@/runtime/env", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/runtime/env")>()),
@@ -26,6 +30,7 @@ async function handleError(...args: Parameters<typeof handleErrorWithoutWaiting>
 
 beforeEach(() => {
 	emitGatewayRequestEventMock.mockReset();
+	enqueueGatewayOtlpExportMock.mockClear();
 	background.length = 0;
 });
 
@@ -722,6 +727,115 @@ describe("handleError", () => {
 			requestMethod: "POST",
 			requestPath: "/v1/responses",
 		}));
+	});
+
+	it("keeps the authenticated key and workspace on failures before the request context exists", async () => {
+		let capturedAuditArgs: any = null;
+		await handleError({
+			stage: "before",
+			res: new Response(JSON.stringify({ error: "unsupported_model" }), { status: 400, headers: { "content-type": "application/json" } }),
+			endpoint: "responses",
+			requestObservability: {
+				requestPayload: { model: "openai/gpt-5-nano", input: "private prompt" },
+				requestedModel: "openai/gpt-5-nano",
+				workspaceId: "ws_agent",
+				apiKeyId: "key_agent",
+			},
+			auditFailure: async (args) => {
+				capturedAuditArgs = args;
+			},
+		});
+
+		// The audit, telemetry and broadcast paths read the key's data policy from these.
+		expect(capturedAuditArgs).toMatchObject({ workspaceId: "ws_agent", keyId: "key_agent" });
+		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws_agent", keyId: "key_agent" }));
+	});
+
+	it("keeps content out of the telemetry for a failure before the request context exists when the key requires ZDR", async () => {
+		// The real telemetry event, with the key's guardrail requiring zero data retention.
+		const sendAxiomWideEvent = vi.fn(async (_event: Record<string, unknown>) => {});
+		vi.resetModules();
+		vi.doUnmock("@observability/events");
+		vi.doMock("@observability/axiom", () => ({
+			sendAxiomWideEvent,
+			emitGatewayTelemetryDeliveryFailure: async () => {},
+			emitGatewayOperationalFailure: async () => {},
+		}));
+		vi.doMock("@/pipeline/before/workspacePolicy", () => ({
+			fetchWorkspacePolicy: async () => ({ privacyZdrOnly: true, neverStoreContent: false }),
+		}));
+		// Broadcasts (the customer's own destination) are not under test and would hit the network.
+		vi.doMock("@observability/otlp-export", () => ({ enqueueGatewayOtlpExport: async () => {} }));
+		try {
+			const env = await import("@/runtime/env");
+			env.configureRuntime({
+				SUPABASE_URL: "https://example.supabase.co",
+				SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+				GATEWAY_CACHE: {} as KVNamespace,
+				NODE_ENV: "test",
+				AXIOM_API_KEY: "axiom_test_key",
+				AXIOM_DATASET: "gateway-wide",
+				AXIOM_DETAIL_SAMPLE_RATE: "1",
+			} as any);
+			const { handleError: handleWithTelemetry } = await import("./error-handler");
+			await handleWithTelemetry({
+				stage: "before",
+				res: new Response(JSON.stringify({ error: "no_zero_data_retention_provider", input: "private echoed prompt" }), {
+					status: 400,
+					headers: { "content-type": "application/json" },
+				}),
+				endpoint: "responses",
+				requestObservability: {
+					requestPayload: { model: "openai/gpt-5-nano", input: "private prompt" },
+					requestedModel: "openai/gpt-5-nano",
+					workspaceId: "ws_zdr",
+					apiKeyId: "key_zdr_guardrail",
+				},
+				auditFailure: async () => {},
+			});
+			await Promise.all(background.splice(0));
+			env.clearRuntime();
+		} finally {
+			vi.doUnmock("@observability/axiom");
+			vi.doUnmock("@/pipeline/before/workspacePolicy");
+			vi.doUnmock("@observability/otlp-export");
+			vi.resetModules();
+		}
+
+		const event = sendAxiomWideEvent.mock.calls.map((call) => call[0]).find((entry) => entry.event_type !== "gateway.telemetry_delivery");
+		expect(event).toMatchObject({ observability_detail_level: "full", key_id: "key_zdr_guardrail", workspace_id: "ws_zdr", status_code: 400 });
+		expect(event?.request_payload_redacted_json).toBeUndefined();
+		expect(event?.gateway_response_redacted_json).toBeUndefined();
+		expect(event?.provider_response_redacted_json).toBeUndefined();
+		expect(event?.error_details_redacted_json).toBeUndefined();
+		expect(JSON.stringify(event)).not.toContain("private");
+	});
+
+	it("exports request metadata and its trace keys on failures before the request context exists", async () => {
+		const run = async (headers: Record<string, string>) => {
+			enqueueGatewayOtlpExportMock.mockClear();
+			await handleError({
+				stage: "before",
+				res: new Response(JSON.stringify({ error: "insufficient_credits" }), { status: 402, headers: { "content-type": "application/json" } }),
+				endpoint: "chat.completions",
+				req: new Request("https://example.test/v1/chat/completions", { method: "POST", headers }),
+				requestObservability: {
+					requestPayload: { model: "openai/gpt-5-nano", metadata: { trace_id: "conversation-42", span_name: "checkout" } },
+					requestedModel: "openai/gpt-5-nano",
+					workspaceId: "ws_agent",
+					apiKeyId: "key_agent",
+				},
+				auditFailure: async () => {},
+			});
+			return enqueueGatewayOtlpExportMock.mock.calls[0]?.[0];
+		};
+
+		const fromMetadata = await run({});
+		expect(fromMetadata?.metadata).toEqual({ trace_id: "conversation-42", span_name: "checkout" });
+		expect(fromMetadata?.traceContext?.traceId).toMatch(/^[0-9a-f]{32}$/);
+
+		const fromHeader = await run({ traceparent: "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01" });
+		expect(fromHeader?.traceContext).toMatchObject({ traceId: "0af7651916cd43dd8448eb211c80319c", parentSpanId: "b7ad6b7169203331" });
 	});
 
 	it("captures malformed early request payloads for observability", async () => {

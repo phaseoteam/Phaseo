@@ -65,12 +65,14 @@ struct AnthropicMessagesRequest {
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	int max_tokens;
-	std::vector<std::map<std::string, std::any>> messages;
+	std::vector<std::any> messages;
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;
 	std::vector<std::string> models;
 	std::vector<std::any> plugins;
+	std::map<std::string, std::any> prompt;
+	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -98,6 +100,17 @@ struct AnthropicMessagesResponse {
 	std::string stop_sequence;
 	std::string type;
 	std::map<std::string, std::any> usage;
+};
+
+struct AnthropicSystemMessage {
+	std::any content;
+	std::any role;
+};
+
+struct AnthropicSystemTextBlock {
+	std::map<std::string, std::any> cache_control;
+	std::string text;
+	std::any type;
 };
 
 struct AnthropicTool {
@@ -138,6 +151,7 @@ struct ApiKey {
 	std::any scopes;
 	bool soft_blocked;
 	std::optional<std::string> status;
+	std::vector<std::string> storage_locations;
 	std::optional<std::string> updated_at;
 	double usage;
 	double usage_daily;
@@ -158,6 +172,7 @@ struct ApiKeyCreateRequest {
 	std::string name;
 	std::any scopes;
 	std::optional<bool> soft_blocked;
+	std::vector<std::string> storage_locations;
 	std::string workspace_id;
 };
 
@@ -204,6 +219,8 @@ struct ApiKeyRotateResponse {
 
 using ApiKeyScopeValue = std::any;
 
+using ApiKeyStorageLocations = std::any;
+
 struct ApiKeyUpdateRequest {
 	std::optional<std::string> department_id;
 	std::optional<bool> disabled;
@@ -215,6 +232,7 @@ struct ApiKeyUpdateRequest {
 	std::string name;
 	std::any scopes;
 	std::optional<bool> soft_blocked;
+	std::optional<std::any> storage_locations;
 };
 
 struct ApiKeyUsageBucket {
@@ -251,6 +269,7 @@ struct ApiKeyWithValue {
 	std::any scopes;
 	bool soft_blocked;
 	std::optional<std::string> status;
+	std::vector<std::string> storage_locations;
 	std::optional<std::string> updated_at;
 	double usage;
 	double usage_daily;
@@ -578,6 +597,7 @@ struct ChatCompletionsRequest {
 	std::vector<std::any> plugins;
 	std::map<std::string, std::any> prediction;
 	std::optional<double> presence_penalty;
+	std::map<std::string, std::any> prompt;
 	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> prompt_cache_options;
 	std::any prompt_cache_retention;
@@ -622,6 +642,7 @@ struct ChatImageOutputPart {
 };
 
 struct ChatMessage {
+	std::optional<std::map<std::string, std::any>> audio;
 	std::vector<std::map<std::string, std::any>> audios;
 	std::any content;
 	std::vector<std::map<std::string, std::any>> images;
@@ -643,6 +664,20 @@ struct ChatReasoningDetail {
 	std::string summary;
 	std::string text;
 	std::any type;
+};
+
+struct ChatResponseMessage {
+	std::map<std::string, std::any> audio;
+	std::vector<std::map<std::string, std::any>> audios;
+	std::any content;
+	std::vector<std::map<std::string, std::any>> images;
+	std::string name;
+	std::string reasoning;
+	std::string reasoning_content;
+	std::vector<std::map<std::string, std::any>> reasoning_details;
+	std::any role;
+	std::string tool_call_id;
+	std::vector<std::map<std::string, std::any>> tool_calls;
 };
 
 struct Classifier {
@@ -846,7 +881,7 @@ struct DecisionBox {
 
 struct DecisionBoxAnswer {
 	std::map<std::string, std::any> box;
-	double confidence;
+	std::optional<double> confidence;
 	std::optional<std::string> name;
 	std::any type;
 };
@@ -983,6 +1018,47 @@ struct DecisionsUsage {
 
 struct DeletedResponse {
 	std::any deleted;
+};
+
+struct DepartmentBudget {
+	std::string created_at;
+	std::optional<std::string> created_by;
+	std::string department_id;
+	std::optional<std::string> department_name;
+	bool exceeded;
+	std::string id;
+	std::any interval;
+	double limit;
+	int limit_nanos;
+	double remaining;
+	int remaining_nanos;
+	std::optional<std::string> reset_at;
+	std::string updated_at;
+	double usage;
+	int usage_nanos;
+	std::optional<std::string> window_start;
+	std::string workspace_id;
+};
+
+struct DepartmentBudgetInput {
+	std::string department_id;
+	std::any interval;
+	double limit;
+};
+
+using DepartmentBudgetInterval = std::any;
+
+struct DepartmentBudgetListResponse {
+	std::vector<std::map<std::string, std::any>> data;
+};
+
+struct DepartmentBudgetResponse {
+	std::map<std::string, std::any> data;
+};
+
+struct DepartmentBudgetUpdateInput {
+	std::any interval;
+	std::optional<double> limit;
 };
 
 struct DynamicRoute {
@@ -2570,6 +2646,7 @@ struct Preset {
 };
 
 struct PresetConfig {
+	std::map<std::string, std::any> prompt;
 };
 
 struct PresetCreateRequest {
@@ -2593,6 +2670,29 @@ struct PresetForkRequest {
 struct PresetListResponse {
 	std::vector<std::map<std::string, std::any>> data;
 	int total_count;
+};
+
+struct PresetPromptTemplate {
+	std::vector<std::map<std::string, std::any>> messages;
+	std::map<std::string, std::any> response_format;
+	std::any syntax;
+	std::any tool_choice;
+	std::vector<std::map<std::string, std::any>> tools;
+	std::map<std::string, std::any> variables;
+};
+
+struct PresetPromptTemplateMessage {
+	std::any content;
+	std::any role;
+};
+
+struct PresetPromptVariable {
+	std::any default;
+	std::string description;
+	std::vector<std::string> enum;
+	std::optional<int> max_length;
+	std::optional<bool> required;
+	std::any type;
 };
 
 struct PresetPublisher {
@@ -2797,6 +2897,11 @@ struct PromptCacheBreakpoint {
 struct PromptCacheOptions {
 	std::any mode;
 	std::string ttl;
+};
+
+struct PromptTemplateReference {
+	std::string id;
+	std::map<std::string, std::any> variables;
 };
 
 struct Provider {
@@ -3133,6 +3238,7 @@ struct ResponsesRequest {
 	std::optional<bool> parallel_tool_calls;
 	std::vector<std::any> plugins;
 	std::string previous_response_id;
+	std::map<std::string, std::any> prompt;
 	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> prompt_cache_options;
 	std::any prompt_cache_retention;
@@ -3944,8 +4050,11 @@ using WorkspaceModelSuccessorPricePolicy = std::any;
 
 struct WorkspaceNotificationDestination {
 	std::optional<std::string> created_at;
+	std::optional<bool> has_signing_secret;
 	std::string id;
 	std::string name;
+	std::string signing_secret;
+	std::optional<std::string> signing_secret_rotated_at;
 	std::any status;
 	std::string target_preview;
 	std::any type;
@@ -3994,6 +4103,7 @@ struct WorkspaceNotificationRoute {
 
 struct WorkspaceNotificationRouteMap {
 	std::vector<std::string> auto_top_up_failed;
+	std::vector<std::string> broadcast_destination_failing;
 	std::vector<std::string> low_balance;
 	std::vector<std::string> model_deprecation;
 	std::vector<std::string> model_substitution;

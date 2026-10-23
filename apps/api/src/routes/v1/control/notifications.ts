@@ -7,10 +7,10 @@ import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { deliverNotificationTest, type NotificationTestKind } from "@/pipeline/notifications/notification-delivery";
 import { json, withRuntime } from "@/routes/utils";
 import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
-import { encryptNotificationTarget, notificationTargetPreview, NOTIFICATION_DESTINATION_TYPES, validateNotificationTarget, type NotificationDestinationType } from "./notification-target";
+import { encryptNotificationTarget, isSignedNotificationDestinationType, issueNotificationSigningSecret, notificationTargetPreview, NOTIFICATION_DESTINATION_TYPES, toPublicNotificationDestination, validateNotificationTarget, type NotificationDestinationType } from "./notification-target";
 
 const NO_STORE = { "Cache-Control": "no-store" };
-const EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled"] as const;
+const EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing"] as const;
 const NOTIFICATION_TEST_KINDS = ["notification_test", "model_deprecation"] as const;
 
 async function authorize(req: Request, write: boolean) {
@@ -89,15 +89,37 @@ async function updateSettings(req: Request) {
 	await audit(access.auth, "notifications.settings.updated", "workspace_notification_settings", access.auth.workspaceId, { sections: changed }); return getSettings(req);
 }
 
-async function listDestinations(req: Request) { const access = await authorize(req, false); if ("response" in access) return access.response; const { data, error } = await getSupabaseAdmin().from("notification_destinations").select("id,name,type,status,target_preview,created_at,updated_at").eq("workspace_id", access.auth.workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }); return error ? json({ error: "notification_destinations_unavailable" }, 503, NO_STORE) : json({ data: data ?? [] }, 200, NO_STORE); }
+const DESTINATION_PUBLIC_COLUMNS = "id,name,type,status,target_preview,signing_secret_ciphertext,signing_secret_rotated_at,created_at,updated_at";
+async function listDestinations(req: Request) { const access = await authorize(req, false); if ("response" in access) return access.response; const { data, error } = await getSupabaseAdmin().from("notification_destinations").select(DESTINATION_PUBLIC_COLUMNS).eq("workspace_id", access.auth.workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }); return error ? json({ error: "notification_destinations_unavailable" }, 503, NO_STORE) : json({ data: (data ?? []).map((row) => toPublicNotificationDestination(row as Record<string, unknown>)) }, 200, NO_STORE); }
 
 async function createDestination(req: Request) {
 	const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	const type = String(body.type ?? "") as NotificationDestinationType; const name = String(body.name ?? "").trim(); if (!NOTIFICATION_DESTINATION_TYPES.includes(type) || !name || name.length > 100) return json({ error: "bad_request", message: "Invalid destination" }, 400, NO_STORE);
-	try { const target = validateNotificationTarget(type, body.target); const encrypted = await encryptNotificationTarget(target); const { data, error } = await getSupabaseAdmin().from("notification_destinations").insert({ workspace_id: access.auth.workspaceId, name, type, status: "active", target_preview: notificationTargetPreview(type, target), ...encrypted, created_by: access.auth.userId }).select("id,name,type,target_preview,status,created_at,updated_at").single(); if (error) return json({ error: error.code === "23505" ? "destination_exists" : "notification_destination_write_failed" }, error.code === "23505" ? 409 : 503, NO_STORE); await audit(access.auth, "notifications.destination.created", "notification_destination", String(data.id), { name, type }); return json({ data }, 201, NO_STORE); } catch (error: any) { return json({ error: "bad_request", message: error.message }, 400, NO_STORE); }
+	try { const target = validateNotificationTarget(type, body.target); const encrypted = await encryptNotificationTarget(target); const signing = isSignedNotificationDestinationType(type) ? await issueNotificationSigningSecret() : null; const { data, error } = await getSupabaseAdmin().from("notification_destinations").insert({ workspace_id: access.auth.workspaceId, name, type, status: "active", target_preview: notificationTargetPreview(type, target), ...encrypted, ...signing?.columns, created_by: access.auth.userId }).select(DESTINATION_PUBLIC_COLUMNS).single(); if (error) return json({ error: error.code === "23505" ? "destination_exists" : "notification_destination_write_failed" }, error.code === "23505" ? 409 : 503, NO_STORE); await audit(access.auth, "notifications.destination.created", "notification_destination", String(data.id), { name, type, signed: Boolean(signing) }); return json({ data: { ...toPublicNotificationDestination(data as Record<string, unknown>), ...(signing ? { signing_secret: signing.secret } : {}) } }, 201, NO_STORE); } catch (error: any) { return json({ error: "bad_request", message: error.message }, 400, NO_STORE); }
 }
 
 async function deleteDestination(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const id = lastPath(req); const client = getSupabaseAdmin(); const { data, error } = await client.from("notification_destinations").update({ status: "deleted", deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", id).eq("workspace_id", access.auth.workspaceId).neq("status", "deleted").select("id,name,type").maybeSingle(); if (error) return json({ error: "notification_destination_delete_failed" }, 503, NO_STORE); if (!data) return json({ error: "not_found" }, 404, NO_STORE); const routes = await client.from("notification_event_destinations").delete().eq("workspace_id", access.auth.workspaceId).eq("destination_id", id); if (routes.error) return json({ error: "notification_destination_delete_failed" }, 503, NO_STORE); await audit(access.auth, "notifications.destination.deleted", "notification_destination", id, { name: data.name, type: data.type }); return json({ deleted: true }, 200, NO_STORE); }
+
+// Generates a signing secret for a custom webhook destination, or replaces the current one.
+// Destinations created before signing existed get their first secret here. The secret is
+// returned once; the next delivery is signed with it and the old one is discarded.
+async function rotateDestinationSecret(req: Request) {
+	const access = await authorize(req, true); if ("response" in access) return access.response;
+	const parts = new URL(req.url).pathname.split("/").filter(Boolean); const id = decodeURIComponent(parts.at(-2) ?? "").trim();
+	if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "not_found" }, 404, NO_STORE);
+	const client = getSupabaseAdmin();
+	const existing = await client.from("notification_destinations").select("id,type").eq("id", id).eq("workspace_id", access.auth.workspaceId).eq("is_ephemeral", false).neq("status", "deleted").maybeSingle();
+	if (existing.error) return json({ error: "notification_destination_write_failed" }, 503, NO_STORE);
+	if (!existing.data) return json({ error: "not_found" }, 404, NO_STORE);
+	if (!isSignedNotificationDestinationType(String(existing.data.type))) return json({ error: "bad_request", message: "Only custom webhook destinations are signed" }, 400, NO_STORE);
+	let signing: Awaited<ReturnType<typeof issueNotificationSigningSecret>>;
+	try { signing = await issueNotificationSigningSecret(); } catch { return json({ error: "notification_destination_write_failed" }, 503, NO_STORE); }
+	const { data, error } = await client.from("notification_destinations").update({ ...signing.columns, updated_at: new Date().toISOString() }).eq("id", id).eq("workspace_id", access.auth.workspaceId).eq("type", "custom_webhook").neq("status", "deleted").select(DESTINATION_PUBLIC_COLUMNS).maybeSingle();
+	if (error) return json({ error: "notification_destination_write_failed" }, 503, NO_STORE);
+	if (!data) return json({ error: "not_found" }, 404, NO_STORE);
+	await audit(access.auth, "notifications.destination.secret_rotated", "notification_destination", id, { name: (data as Record<string, unknown>).name, type: "custom_webhook" });
+	return json({ data: { ...toPublicNotificationDestination(data as Record<string, unknown>), signing_secret: signing.secret } }, 200, NO_STORE);
+}
 
 async function testDestinationConfig(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const type = String(body.type ?? "") as NotificationDestinationType; if (!NOTIFICATION_DESTINATION_TYPES.includes(type)) return json({ error: "bad_request" }, 400, NO_STORE); const kind = parseNotificationTestKind(body.kind); if (!kind) return json({ error: "bad_request", message: "Unsupported notification test kind" }, 400, NO_STORE); try { const target = validateNotificationTarget(type, body.target); const status = await deliverNotificationTest({ workspaceId: access.auth.workspaceId, type, target, kind }); return json({ data: { delivered: true, status } }, 200, NO_STORE); } catch (error: any) { return json({ error: "notification_test_failed", message: error.message }, 502, NO_STORE); } }
 async function testSavedDestination(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const parts = new URL(req.url).pathname.split("/").filter(Boolean); const id = decodeURIComponent(parts.at(-2) ?? "").trim(); const body = await req.json().catch(() => ({})); if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "bad_request", message: "Invalid notification test body" }, 400, NO_STORE); const kind = parseNotificationTestKind(body.kind); if (!kind) return json({ error: "bad_request", message: "Unsupported notification test kind" }, 400, NO_STORE); try { const status = await deliverNotificationTest({ workspaceId: access.auth.workspaceId, destinationId: id, kind }); return json({ data: { delivered: true, status } }, 200, NO_STORE); } catch (error: any) { return json({ error: error.message === "notification_destination_not_found" ? "not_found" : "notification_test_failed", message: error.message }, error.message === "notification_destination_not_found" ? 404 : 502, NO_STORE); } }
@@ -108,5 +130,5 @@ async function updateRoute(req: Request) { const access = await authorize(req, t
 export const notificationRoutes = new Hono<Env>();
 notificationRoutes.get("/settings", withRuntime(getSettings)); notificationRoutes.patch("/settings", withRuntime(updateSettings));
 notificationRoutes.get("/destinations", withRuntime(listDestinations)); notificationRoutes.post("/destinations", withRuntime(createDestination)); notificationRoutes.delete("/destinations/:id", withRuntime(deleteDestination));
-notificationRoutes.post("/destinations/test", withRuntime(testDestinationConfig)); notificationRoutes.post("/destinations/:id/test", withRuntime(testSavedDestination));
+notificationRoutes.post("/destinations/test", withRuntime(testDestinationConfig)); notificationRoutes.post("/destinations/:id/test", withRuntime(testSavedDestination)); notificationRoutes.post("/destinations/:id/rotate-secret", withRuntime(rotateDestinationSecret));
 notificationRoutes.get("/routes", withRuntime(listRoutes)); notificationRoutes.put("/routes/:eventKind", withRuntime(updateRoute));

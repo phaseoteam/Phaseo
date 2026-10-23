@@ -48,6 +48,7 @@ import { executor as respanDecisions } from "./respan/decisions";
 import { executor as canopyWaveText } from "./canopy-wave/text-generate";
 import { executor as tensorixText } from "./tensorix/text-generate";
 import { executor as basetenText } from "./baseten/text-generate";
+import { executor as basetenDecisions } from "./baseten/decisions";
 import { executor as baiduText } from "./baidu/text-generate";
 import { executor as baiduImage } from "./baidu/image-generate";
 import { executor as cerebrasText } from "./cerebras/text-generate";
@@ -337,6 +338,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	baseten: {
 		"text.generate": basetenText,
+		"decisions.make": basetenDecisions,
 	},
 	"bytedance-seed": {
 		"text.generate": bytedanceSeedText,
@@ -533,6 +535,27 @@ export function resolveProviderExecutor(providerId: string, capability: string):
 		if (executor) return executor;
 	}
 	return null;
+}
+
+// Text executors that authenticate with their own credential shapes (SDK keys, AWS
+// SigV4, Google OAuth, Azure deployments, private endpoints). Every other text
+// executor goes through executeOpenAIWire, which reads the managed key with
+// resolveOpenAICompatKey.
+const OWN_CREDENTIAL_TEXT_EXECUTORS: ReadonlySet<ProviderExecutor> = new Set([
+	openaiText,
+	anthropicText,
+	azureText,
+	googleAiStudioText,
+	googleVertexText,
+	amazonBedrockText,
+	xAiText,
+	privateModelText,
+]);
+
+/** Whether the provider's text executor reads its managed key through resolveOpenAICompatKey. */
+export function textExecutorUsesOpenAICompatKey(providerId: string): boolean {
+	const executor = resolveProviderExecutor(providerId, "text.generate");
+	return Boolean(executor) && !OWN_CREDENTIAL_TEXT_EXECUTORS.has(executor!);
 }
 
 export function isProviderCapabilityEnabled(providerId: string, capability: string): boolean {

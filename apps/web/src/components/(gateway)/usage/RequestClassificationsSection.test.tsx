@@ -21,7 +21,7 @@ const render = (detailMetadata: unknown, list = classifiers) => renderToStaticMa
 );
 
 describe("RequestClassificationsSection", () => {
-	it("shows each classifier's answers, status, model, cost and a link to the classifier call", () => {
+	it("shows each classifier's answers, problems, model, cost and a link to the classifier call", () => {
 		const html = render({
 			labels: [{ key: "team", value: "search" }, { key: "department", value: "legal" }, { key: "intent", value: "draft" }],
 			classifications: [
@@ -31,11 +31,15 @@ describe("RequestClassificationsSection", () => {
 				{ classifier_id: "c-bad", status: "unknown", labels: [] },
 			],
 		});
-		expect(html).toContain("Classifications");
+		expect(html).toContain("Labels");
 		expect(html).toContain("Department");
 		expect(html).toContain("legal");
 		expect(html).toContain("92% confidence");
-		expect(html).toContain("Classified");
+		// A value opens the logs filtered to it, keeping the other filters.
+		expect(html).toContain('href="/settings/usage/logs/requests?usage_preset=last_7d&amp;label_key=department&amp;label_value=legal"');
+		expect(html).toContain("View call");
+		// Status is only shown when something needs attention.
+		expect(html).not.toContain(">Classified<");
 		expect(html).toContain("Reused from session");
 		expect(html).toContain("Budget reached");
 		expect(html).toContain("openai/gpt-5-mini");

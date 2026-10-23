@@ -46,3 +46,13 @@ test.each(Object.keys(catalogs) as Array<keyof typeof catalogs>)("renders retain
 	] });
 	expect(() => renderToStaticMarkup(<NextIntlClientProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><OrderedLifecycleEvents journal={journal!} toolResults={new Map()} /></NextIntlClientProvider>)).not.toThrow();
 });
+
+test.each(Object.keys(catalogs) as Array<keyof typeof catalogs>)("says zero data retention skipped the I/O log, in the reader's language, in %s", (locale) => {
+	const messages = catalogs[locale];
+	const html = renderToStaticMarkup(<NextIntlClientProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "test", success: true } as RequestRow} timelineItems={[]} ioLog={{
+		status: "not_enabled", storage_provider: null, bytes: null, retention_until: null,
+		error: "Skipped: zero data retention is required for this request", reason: "zero_data_retention", payload: null,
+	}} /></NextIntlClientProvider>);
+	expect(html).toContain(messages.trace.skippedZeroDataRetention);
+	if (locale !== "en-GB") expect(html).not.toContain("Skipped: zero data retention is required for this request");
+});

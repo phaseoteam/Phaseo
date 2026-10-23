@@ -1,0 +1,307 @@
+---
+title: "Templates de prompt"
+description: "Mantenha os prompts em uma predefinição e envie apenas os valores que mudam a cada solicitação."
+icon: "braces"
+---
+
+Um template de prompt é uma lista de mensagens com `{{variables}}`, salva em uma [predefinição](./presets.mdx). Seu aplicativo envia a referência da predefinição e os valores das variáveis. A Phaseo verifica os valores, preenche as mensagens e envia a solicitação ao modelo da predefinição.
+
+Assim, o texto do prompt fica fora do código do aplicativo. Você pode alterar o prompt no painel sem fazer deploy, e todos os solicitantes usam o mesmo texto, as mesmas ferramentas e o mesmo formato de resposta.
+
+Os templates funcionam em `POST /v1/chat/completions`, `POST /v1/responses` e `POST /v1/messages`.
+
+## Início rápido
+
+<Steps>
+<Step title="Escreva o template">
+
+Abra **Configurações -> Predefinições**, crie ou abra uma predefinição, escolha o modelo e abra a aba **Template de prompt**. Adicione mensagens e escreva as variáveis entre chaves duplas:
+
+```text
+System: You triage support tickets for {{company}}. Reply in a {{tone}} tone.
+User:   Ticket: {{ticket}}
+```
+
+O editor lista cada variável que encontra. Defina o tipo, se ela é obrigatória, um valor padrão e uma descrição. Preencha o painel **Experimente** para ver exatamente as mensagens que o gateway vai enviar e, depois, salve.
+
+Depois que a predefinição for salva, **Executar a predefinição salva** envia uma solicitação real com seus valores de teste e mostra a resposta, o modelo e a contagem de tokens. Isso usa os créditos do seu espaço de trabalho. O mesmo painel traz código em cURL, TypeScript e Python para a solicitação, preenchido com seus valores de teste.
+
+</Step>
+
+<Step title="Envie as variáveis">
+
+Informe a predefinição em `prompt.id` e coloque os valores em `prompt.variables`. Omita `model` ou defina-o com a mesma referência.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": {
+      "id": "@support-triage",
+      "variables": {
+        "company": "Acme",
+        "tone": "friendly",
+        "ticket": "I was charged twice this month."
+      }
+    }
+  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const completion = await client.generateText({
+	model: "@support-triage",
+	messages: [],
+	prompt: {
+		id: "@support-triage",
+		variables: {
+			company: "Acme",
+			tone: "friendly",
+			ticket: "I was charged twice this month.",
+		},
+	},
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+completion = client.generate_text({
+    "prompt": {
+        "id": "@support-triage",
+        "variables": {
+            "company": "Acme",
+            "tone": "friendly",
+            "ticket": "I was charged twice this month.",
+        },
+    },
+})
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Confira a solicitação">
+
+Abra **Gateway -> Registros** para ver a solicitação, o modelo que a atendeu e o custo. Os metadados da solicitação registram a predefinição, os nomes das variáveis e o número de mensagens geradas, mas não os valores das variáveis.
+
+</Step>
+</Steps>
+
+## Use templates em cada endpoint
+
+O mesmo objeto `prompt` funciona nos três endpoints. As mensagens de sistema e de desenvolvedor do template se tornam as instruções de sistema do endpoint, e as demais mensagens vêm antes de qualquer conversa enviada pela sua solicitação.
+
+| Endpoint | As mensagens de sistema do template vão para | A conversa do template vem antes de |
+| --- | --- | --- |
+| `/v1/chat/completions` | `messages` (mantidas como mensagens de sistema) | suas `messages` |
+| `/v1/responses` | `instructions` | seu `input` |
+| `/v1/messages` | `system` | suas `messages` |
+
+Você pode enviar uma conversa junto com o template. Por exemplo, uma solicitação de chat pode adicionar os turnos de acompanhamento do usuário depois das mensagens do template:
+
+```json
+{
+  "prompt": { "id": "@support-triage", "variables": { "company": "Acme", "ticket": "Refund request" } },
+  "messages": [
+    { "role": "assistant", "content": "Can you share the order number?" },
+    { "role": "user", "content": "It is 10482." }
+  ]
+}
+```
+
+## Sintaxe dos templates
+
+Os templates usam um subconjunto pequeno e sem lógica do Mustache. Nada em um template é executado como código.
+
+| Sintaxe | O que faz |
+| --- | --- |
+| `{{name}}` | Insere um valor. Texto é inserido como está, números e booleanos como texto, e listas e objetos como JSON. Um valor opcional ausente não insere nada. |
+| `{{customer.name}}` | Insere um campo de uma variável do tipo objeto. |
+| `{{#name}}...{{/name}}` | Gera o bloco uma vez quando o valor está definido e não é `false`, ou uma vez para cada item de uma lista. Dentro dele, `{{.}}` é o item atual, e seus campos podem ser usados pelo nome. |
+| `{{^name}}...{{/name}}` | Gera o bloco quando o valor está ausente, é `false`, é um texto vazio ou uma lista vazia. |
+| `{{! note }}` | Um comentário. Ele é removido. |
+| `\{{` | Um `{{` literal. |
+
+Os valores são inseridos como texto simples, sem escape de HTML. Um valor pode alterar o texto de uma mensagem, mas nunca a estrutura da solicitação.
+
+Se uma mensagem ficar só com espaços em branco depois de gerada, ela é descartada. Use isso para tornar uma mensagem inteira opcional:
+
+```text
+{{#notes}}Notes from the account manager: {{notes}}{{/notes}}
+```
+
+Para repetir texto para cada item de uma lista, abra uma seção na lista e use `{{.}}` para o item atual:
+
+```text
+Examples of good replies:
+{{#examples}}- {{.}}
+{{/examples}}
+```
+
+Parciais (`{{> name}}`), tags sem escape (`{{{name}}}` e `{{& name}}`), mudanças de delimitador e lambdas não são compatíveis, e o editor e a API recusam templates que os usem.
+
+## Variáveis
+
+Cada variável tem um tipo. Você só precisa declarar uma variável para mudar os padrões dela; variáveis usadas nas mensagens, mas não declaradas, são texto obrigatório.
+
+| Tipo | Aceita |
+| --- | --- |
+| `string` | Texto. Defina `max_length` para limitar o tamanho. |
+| `number` | Um número. |
+| `boolean` | `true` ou `false`. |
+| `enum` | Uma das strings listadas em `enum`. |
+| `array` | Uma lista. |
+| `object` | Um objeto JSON. |
+| `any` | Qualquer valor JSON. |
+| `image` | Uma imagem para uma mensagem de usuário. Veja a seção Variáveis de imagem abaixo. |
+
+Cada variável também pode ter:
+
+- `required`: a solicitação falha quando o valor está ausente. Uma variável obrigatória não pode ter valor padrão.
+- `default`: usado quando a solicitação omite o valor. Precisa corresponder ao tipo.
+- `description`: exibida no editor e nas mensagens de erro, com até 500 caracteres.
+
+Um nome usado apenas para abrir seções, como `notes` e `examples` acima, é opcional e aceita qualquer valor.
+
+As solicitações são verificadas de forma rigorosa. Um valor obrigatório ausente, um valor do tipo errado ou um nome que o template não tem retorna um `400` que lista todos os problemas de uma vez, para que um erro de digitação não remova silenciosamente parte de um prompt.
+
+## Variáveis de imagem
+
+Uma variável de imagem preenche uma parte de conteúdo inteira de uma mensagem de usuário, então é o template que decide onde a imagem fica. No editor, escolha **Adicionar imagem** dentro de uma mensagem de usuário. Na API, use uma parte `variable`:
+
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Before:" },
+    { "type": "variable", "name": "before" },
+    { "type": "text", "text": "After:" },
+    { "type": "variable", "name": "after" },
+    { "type": "text", "text": "What changed?" }
+  ]
+}
+```
+
+A solicitação pode enviar cada imagem como uma URL `https`, uma URL `data:image/...` ou uma parte de imagem no formato de chat completions, Responses ou Messages. A Phaseo a converte para o formato do endpoint chamado. O modelo selecionado precisa aceitar imagens como entrada.
+
+## Ferramentas e formato de resposta
+
+Um template pode incluir `tools`, `tool_choice` e `response_format`, escritos no formato de chat completions. A Phaseo os converte para os endpoints Responses e Messages.
+
+Quando os dois definem a mesma coisa, a solicitação sempre prevalece:
+
+- As ferramentas são combinadas pelo nome da função. Se a solicitação definir uma ferramenta com o mesmo nome, a definição da solicitação será usada.
+- O `tool_choice` e o formato de resposta da solicitação (`response_format`, `text.format` ou `output_config.format`) substituem os do template.
+
+Parâmetros da solicitação como `temperature` e `max_tokens` funcionam normalmente. Os padrões da própria predefinição preenchem apenas os campos que a solicitação omite.
+
+## Crie um template com a API
+
+Os templates ficam armazenados em `config.prompt` da predefinição. Crie ou atualize a predefinição com uma [chave de API de gerenciamento](../developers/management-api-keys.mdx) que tenha `presets:write`:
+
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "@support-triage",
+    "visibility": "team",
+    "config": {
+      "models": ["anthropic/claude-haiku-5.5"],
+      "prompt": {
+        "messages": [
+          { "role": "system", "content": "You triage support tickets for {{company}}. Reply in a {{tone}} tone." },
+          { "role": "user", "content": "Ticket: {{ticket}}" }
+        ],
+        "variables": {
+          "company": { "type": "string", "required": true },
+          "tone": { "type": "enum", "enum": ["formal", "friendly"], "default": "formal" },
+          "ticket": { "type": "string", "required": true, "max_length": 4000 }
+        }
+      }
+    }
+  }'
+```
+
+A Phaseo verifica o template quando ele é salvo. Um template com erro de sintaxe, tipo desconhecido ou valor padrão que não corresponde ao tipo é recusado com `400 invalid_prompt_template` e a localização de cada problema, tanto aqui quanto no editor.
+
+As alterações salvas chegam às solicitações em cerca de dois minutos.
+
+## Erros
+
+Problemas de template em uma solicitação retornam `400` com o código `validation_error`. `reason` contém o código do primeiro problema, e `details` lista todos eles com o caminho:
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+    "type": "invalid_request_error"
+  },
+  "code": "validation_error",
+  "reason": "template_variable_required",
+  "description": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+  "details": [
+    {
+      "message": "Template \"@support-triage\" needs variable \"ticket\" (string)",
+      "path": ["prompt", "variables", "ticket"],
+      "keyword": "template_variable_required"
+    }
+  ]
+}
+```
+
+| Motivo | Causa |
+| --- | --- |
+| `template_variable_required` | Falta uma variável obrigatória. |
+| `template_variable_type` | Um valor não corresponde ao tipo, à lista `enum` ou ao `max_length`. |
+| `template_variable_unknown` | A solicitação enviou uma variável que o template não tem, ou a predefinição não tem template. |
+| `template_variables_invalid` | `prompt.variables` não é um objeto. |
+| `template_limit_exceeded` | As variáveis ou o texto gerado ultrapassam os limites abaixo. |
+| `template_rendered_empty` | O template não gerou nenhuma mensagem de usuário ou de assistente, e a solicitação não enviou nenhuma. |
+| `template_endpoint_unsupported` | A predefinição tem um template e foi chamada por um endpoint diferente dos três acima. |
+| `prompt_model_conflict` | `model` indica uma predefinição ou um modelo diferente de `prompt.id`. |
+| `prompt_version_unsupported` | A solicitação definiu `prompt.version`. |
+| `prompt_model_fallbacks_unsupported` | A solicitação definiu alternativas em `models`. Liste os modelos alternativos na predefinição. |
+
+Um `prompt.id` que não corresponde a nenhuma predefinição do seu espaço de trabalho retorna `404`.
+
+## Limites
+
+| Limite | Valor |
+| --- | --- |
+| Mensagens por template | 64 |
+| Variáveis por template | 64 |
+| Texto do template em todas as mensagens | 48.000 caracteres |
+| Profundidade de aninhamento de seções | 8 |
+| Repetições de seção por solicitação | 1.000 |
+| Texto gerado por solicitação | 1.000.000 caracteres |
+| Tamanho de `prompt.variables` | 256 KB |
+| Valores por `enum` | 100 |
+
+## Guardrails e registros
+
+Os [guardrails](../cookbook/guardrails-for-api-keys.mdx) verificam os valores das variáveis como conteúdo do usuário, mesmo quando o template os coloca em uma mensagem de sistema. Um guardrail que oculta um valor o oculta em todos os lugares onde o template o inseriu, e um que bloqueia um valor bloqueia a solicitação.
+
+Os metadados da solicitação registram a predefinição, os nomes das variáveis e o número de mensagens geradas. Os valores em si só são mantidos onde o corpo da solicitação é mantido, conforme as configurações de registro normais do seu espaço de trabalho.
+
+## Limitações atuais
+
+- As solicitações usam o template na última versão salva. Ainda não é possível fixar uma versão anterior com `prompt.version`.
+- Alternativas em `models` não podem ser combinadas com um template. Adicione os modelos alternativos à predefinição.
+- Os templates se aplicam apenas a solicitações de chat completions, Responses e Messages.
+
+## Guias relacionados
+
+- [Predefinições](./presets.mdx)
+- [Saídas estruturadas](./structured-outputs.mdx)
+- [Chamadas de ferramentas](./tool-calling.mdx)
+- [Multimodalidade](./multimodality.mdx)

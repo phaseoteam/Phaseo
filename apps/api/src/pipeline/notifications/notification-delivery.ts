@@ -1,11 +1,11 @@
-import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@/core/webhook-endpoints";
+import { buildWebhookSignatureHeaders, decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@/core/webhook-endpoints";
 import { sendEmail } from "@/lib/email/resend";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppressions";
 import { getModelDeprecationContent, getModelDeprecationTemplateVariables, renderModelDeprecationEmail, renderNotificationTestEmail } from "@/pipeline/notifications/model-deprecation";
 import { getModelSubstitutionContent, renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
 
-const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "notification_test"];
+const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "notification_test"];
 const EVENT_PAGE_SIZE = 100;
 const MAX_ROUTING_PASSES = 20;
 // Kept below PostgREST's 1,000-row response cap; the RPC also clamps it.
@@ -31,7 +31,8 @@ export function shouldNotifyModelDeprecation(model: { status?: unknown; deprecat
 }
 
 type EventRow = { id: string; kind: string; subject: string | null; workspace_id: string; payload: Record<string, unknown> | null; created_at: string };
-type DestinationRow = { id: string; workspace_id: string; name: string; type: string; target_ciphertext: string; target_iv: string; target_key_version: string; status: string; is_ephemeral?: boolean };
+type DestinationRow = { id: string; workspace_id: string; name: string; type: string; target_ciphertext: string; target_iv: string; target_key_version: string; status: string; is_ephemeral?: boolean; signing_secret_ciphertext?: string | null; signing_secret_iv?: string | null; signing_secret_key_version?: string | null };
+const DESTINATION_COLUMNS = "id,workspace_id,name,type,target_ciphertext,target_iv,target_key_version,status,is_ephemeral,signing_secret_ciphertext,signing_secret_iv,signing_secret_key_version";
 type ClaimedAttemptRow = { id: string; event_id: string; destination_id: string; attempts: number; claim_token: string };
 
 export async function forEachPage<T>(pageSize: number, fetchPage: (from: number, to: number) => Promise<T[]>, visit: (row: T) => Promise<void>): Promise<number> {
@@ -52,6 +53,25 @@ function rateLimitThrottledMessage(payload: Record<string, unknown>): string {
 	return `Rate limit policies rejected ${total} ${total === 1 ? "request" : "requests"} in the last ${minutes} minutes.${top.length ? ` Most rejected: ${top.join(", ")}.` : ""}`;
 }
 
+// Destination names and vendor error text go to Slack, Discord and Teams, where
+// angle brackets can form mentions and links, so they are dropped.
+function plainText(value: unknown, max: number): string {
+	const text = String(value ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
+	return text.length > max ? text.slice(0, max - 1) + "…" : text;
+}
+
+function broadcastDestinationFailingMessage(payload: Record<string, unknown>): string {
+	const total = Number(payload.failing_destinations ?? 0);
+	const destinations = (Array.isArray(payload.destinations) ? payload.destinations : []) as Array<Record<string, unknown>>;
+	const details = destinations.slice(0, 5).map((destination) => {
+		const failures = Number(destination.consecutive_failures ?? 0);
+		const error = plainText(destination.last_error, 200);
+		return ` ${plainText(destination.name, 100) || "Unnamed destination"}: ${failures} ${failures === 1 ? "request" : "requests"} failed in a row${error ? ` (${error})` : ""}.`;
+	});
+	const more = total > details.length ? ` ${total - details.length} more failing.` : "";
+	return `Broadcast could not deliver traces to ${total} ${total === 1 ? "destination" : "destinations"}.${details.join("")}${more}`;
+}
+
 export function eventContent(event: EventRow) {
 	if (event.kind === "model_deprecation") {
 		const content = getModelDeprecationContent(event.payload ?? {});
@@ -62,14 +82,16 @@ export function eventContent(event: EventRow) {
 		return { title: content.title, message: content.message, settingsUrl: content.settingsUrl };
 	}
 	const payload = event.payload ?? {};
-	const title = String(payload.title ?? event.subject ?? ({ low_balance: "Low balance alert", auto_top_up_failed: "Auto Top-Up failed", payment_method_expiring: "Payment method expiring soon", model_deprecation: "Model deprecation alert", rate_limit_throttled: "Rate limit alert", notification_test: "Phaseo test notification" } as Record<string, string>)[event.kind] ?? "Phaseo notification");
+	const title = String(payload.title ?? event.subject ?? ({ low_balance: "Low balance alert", auto_top_up_failed: "Auto Top-Up failed", payment_method_expiring: "Payment method expiring soon", model_deprecation: "Model deprecation alert", rate_limit_throttled: "Rate limit alert", broadcast_destination_failing: "Broadcast destination failing", notification_test: "Phaseo test notification" } as Record<string, string>)[event.kind] ?? "Phaseo notification");
 	let message = String(payload.message ?? "");
 	if (!message && event.kind === "low_balance") message = `Your workspace balance is $${Number(payload.balance_usd ?? 0).toFixed(2)}, at or below the configured $${Number(payload.threshold_usd ?? 0).toFixed(2)} threshold.`;
 	if (!message && event.kind === "auto_top_up_failed") message = String(payload.reason ?? "Phaseo could not automatically add credits to your workspace.");
 	if (!message && event.kind === "payment_method_expiring") message = `The ${String(payload.brand ?? "card")} ending in ${String(payload.last4 ?? "unknown")} expires ${String(payload.expiry ?? "soon")}.`;
 	if (!message && event.kind === "model_deprecation") message = `${String(payload.model_name ?? payload.model_id ?? "A model used by your workspace")} has been deprecated${payload.retirement_date ? ` and is scheduled to retire on ${String(payload.retirement_date)}` : ""}.`;
 	if (!message && event.kind === "rate_limit_throttled") message = rateLimitThrottledMessage(payload);
-	return { title, message: message || "A workspace notification was generated.", settingsUrl: "https://phaseo.app/settings/notifications" };
+	if (!message && event.kind === "broadcast_destination_failing") message = broadcastDestinationFailingMessage(payload);
+	const settingsUrl = event.kind === "broadcast_destination_failing" ? "https://phaseo.app/settings/broadcast" : "https://phaseo.app/settings/notifications";
+	return { title, message: message || "A workspace notification was generated.", settingsUrl };
 }
 
 export function buildProviderRequest(type: string, target: string, content: ReturnType<typeof eventContent>, event: EventRow): { url: string; body: unknown; headers?: Record<string, string> } {
@@ -77,17 +99,32 @@ export function buildProviderRequest(type: string, target: string, content: Retu
 	if (type === "discord_webhook") { let config: { url: string; userIds?: string[]; roleIds?: string[] }; try { config = JSON.parse(target) as typeof config; } catch { config = { url: target }; } const userIds = config.userIds ?? []; const roleIds = config.roleIds ?? []; const mentions = [...userIds.map((id) => `<@${id}>`), ...roleIds.map((id) => `<@&${id}>`)].join(" "); return { url: config.url, body: { content: `${mentions ? `${mentions}\n` : ""}**${content.title}**\n${content.message}`, allowed_mentions: { parse: [], users: userIds, roles: roleIds }, embeds: [{ title: content.title, description: content.message, url: content.settingsUrl, color: 5793266 }] } }; }
 	if (type === "slack") { let config: { url: string; userIds?: string[]; userGroupIds?: string[] }; try { config = JSON.parse(target) as typeof config; } catch { config = { url: target }; } const mentions = [...(config.userIds ?? []).map((id) => `<@${id}>`), ...(config.userGroupIds ?? []).map((id) => `<!subteam^${id}>`)].join(" "); return { url: config.url, body: { text: `${mentions ? `${mentions} ` : ""}${content.title}: ${content.message}`, blocks: [{ type: "header", text: { type: "plain_text", text: content.title } }, ...(mentions ? [{ type: "section", text: { type: "mrkdwn", text: mentions } }] : []), { type: "section", text: { type: "mrkdwn", text: content.message } }, { type: "actions", elements: [{ type: "button", text: { type: "plain_text", text: "Manage notifications" }, url: content.settingsUrl }] }] } }; }
 	if (type === "microsoft_teams") { let config: { url: string; mentionIds?: string[] }; try { config = JSON.parse(target) as typeof config; } catch { config = { url: target }; } const mentionIds = config.mentionIds ?? []; const mentionText = mentionIds.map((id) => `<at>${id}</at>`).join(" "); const entities = mentionIds.map((id) => ({ type: "mention", text: `<at>${id}</at>`, mentioned: { id, name: id } })); return { url: config.url, body: { type: "message", attachments: [{ contentType: "application/vnd.microsoft.card.adaptive", content: { $schema: "http://adaptivecards.io/schemas/adaptive-card.json", type: "AdaptiveCard", version: "1.4", body: [{ type: "TextBlock", weight: "Bolder", size: "Medium", text: content.title }, ...(mentionText ? [{ type: "TextBlock", wrap: true, text: mentionText }] : []), { type: "TextBlock", wrap: true, text: content.message }], actions: [{ type: "Action.OpenUrl", title: "Manage notifications", url: content.settingsUrl }], ...(entities.length ? { msteams: { entities } } : {}) } }] } }; }
-	return { url: target, body: { id: event.id, type: event.kind, createdAt: event.created_at, workspaceId: event.workspace_id, data: { ...event.payload, title: content.title, message: content.message } } };
+	return { url: target, body: { id: event.id, type: event.kind, createdAt: event.created_at, workspaceId: event.workspace_id, data: { ...event.payload, title: content.title, message: content.message } }, headers: { "x-phaseo-event-id": event.id, "x-phaseo-event-type": event.kind } };
 }
 
 async function decryptTarget(destination: DestinationRow): Promise<string> {
 	return decryptWebhookSecret({ secretCiphertext: destination.target_ciphertext, secretIv: destination.target_iv, secretKeyVersion: destination.target_key_version });
 }
 
-async function postJson(url: string, body: unknown, headers?: Record<string, string>, signal?: AbortSignal): Promise<number> {
+// Custom webhooks are signed when the destination has a signing secret. Destinations
+// created before signing existed have none and keep sending unsigned until an admin
+// generates one. A stored secret that cannot be decrypted fails the attempt (and is
+// retried) rather than silently sending unsigned to a receiver that verifies.
+export async function resolveDestinationSigningSecret(destination: Pick<DestinationRow, "type" | "signing_secret_ciphertext" | "signing_secret_iv" | "signing_secret_key_version">): Promise<string | null> {
+	if (destination.type !== "custom_webhook" || !destination.signing_secret_ciphertext || !destination.signing_secret_iv) return null;
+	try {
+		return await decryptWebhookSecret({ secretCiphertext: destination.signing_secret_ciphertext, secretIv: destination.signing_secret_iv, secretKeyVersion: destination.signing_secret_key_version });
+	} catch {
+		throw new Error("notification_signing_secret_unavailable");
+	}
+}
+
+async function postJson(url: string, body: unknown, headers?: Record<string, string>, signal?: AbortSignal, signingSecret?: string | null): Promise<number> {
+	const bodyText = JSON.stringify(body);
+	const signatureHeaders = signingSecret ? await buildWebhookSignatureHeaders(signingSecret, bodyText) : {};
 	const validated = await validateWebhookEndpointUrlForDelivery(url);
 	if (!validated.ok) throw new Error("reason" in validated ? validated.reason : "webhook_url_invalid");
-	const response = await fetch(validated.url, { method: "POST", headers: { "content-type": "application/json", "user-agent": "Phaseo-Notifications/1.0", ...headers }, body: JSON.stringify(body), redirect: "manual", signal });
+	const response = await fetch(validated.url, { method: "POST", headers: { "content-type": "application/json", "user-agent": "Phaseo-Notifications/1.0", ...headers, ...signatureHeaders }, body: bodyText, redirect: "manual", signal });
 	if (!response.ok) {
 		const hostname = new URL(validated.url).hostname.toLowerCase();
 		const isDiscordWebhook = (hostname === "discord.com" || hostname === "discordapp.com") && new URL(validated.url).pathname.startsWith("/api/webhooks/");
@@ -131,7 +168,7 @@ async function deliver(event: EventRow, destination: DestinationRow): Promise<nu
 		return 202;
 	}
 	const request = buildProviderRequest(destination.type, target, content, event);
-	return postJson(request.url, request.body, request.headers, signal);
+	return postJson(request.url, request.body, request.headers, signal, await resolveDestinationSigningSecret(destination));
 }
 
 export async function deliverNotificationTest(input: {
@@ -167,7 +204,7 @@ export async function deliverNotificationTest(input: {
 	if (input.destinationId) {
 		const result = await getSupabaseAdmin()
 			.from("notification_destinations")
-			.select("id,workspace_id,name,type,target_ciphertext,target_iv,target_key_version,status,is_ephemeral")
+			.select(DESTINATION_COLUMNS)
 			.eq("id", input.destinationId)
 			.eq("workspace_id", input.workspaceId)
 			.eq("status", "active")
@@ -229,7 +266,7 @@ export async function runNotificationDeliveryJob(limit = 25): Promise<{ queued: 
 		try {
 			const [eventResult, destinationResult] = await Promise.all([
 				supabase.from("email_outbox").select("id,kind,subject,workspace_id,payload,created_at").eq("id", attempt.event_id).single(),
-				supabase.from("notification_destinations").select("id,workspace_id,name,type,target_ciphertext,target_iv,target_key_version,status,is_ephemeral").eq("id", attempt.destination_id).eq("status", "active").single(),
+				supabase.from("notification_destinations").select(DESTINATION_COLUMNS).eq("id", attempt.destination_id).eq("status", "active").single(),
 			]);
 			if (eventResult.error || destinationResult.error) throw new Error("notification_delivery_source_missing");
 			const responseStatus = await deliver(eventResult.data as EventRow, destinationResult.data as DestinationRow);

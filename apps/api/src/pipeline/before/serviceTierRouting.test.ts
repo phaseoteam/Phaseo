@@ -12,7 +12,7 @@ const loadPriceCardMock = vi.hoisted(() => vi.fn());
 vi.mock("@/runtime/env", () => ({
     getSupabaseAdmin: () => ({
         from: (table: string) => {
-            if (table === "v2_model_provider_routes" || table === "v2_route_capabilities") {
+            if (table === "v2_model_provider_routes" || table === "v2_effective_route_capabilities") {
                 const rows = table === "v2_model_provider_routes"
                     ? queryState.providerRows.map((row) => ({
                         ...row,
@@ -104,6 +104,30 @@ function makeCandidate(args: {
 }
 
 describe("applyServiceTierRouting", () => {
+    // Sail rejects flex on synchronous Responses, Chat and Messages
+    // (https://docs.sailresearch.com/completion-windows).
+    it("drops Sail Research for flex requests but keeps it for standard", async () => {
+        const plans: Array<"standard" | "flex"> = ["standard", "flex", "standard", "flex"];
+        const sail = makeCandidate({
+            providerId: "sail-research",
+            apiModelId: "z-ai/glm-5.2",
+            providerModelSlug: "zai-org/GLM-5.2-FP8",
+            pricingCard: makeCard({ provider: "sail-research", model: "z-ai/glm-5.2", plans }),
+        });
+        const other = makeCandidate({
+            providerId: "deepinfra",
+            apiModelId: "z-ai/glm-5.2",
+            pricingCard: makeCard({ provider: "deepinfra", model: "z-ai/glm-5.2", plans }),
+        });
+
+        const flex = await applyServiceTierRouting({ candidates: [sail, other], body: { service_tier: "flex" }, capability: "text.generate" });
+        expect(flex.candidates.map((candidate) => candidate.providerId)).toEqual(["deepinfra"]);
+        expect(flex.diagnostics.droppedProviders).toMatchObject([{ providerId: "sail-research", reason: "service_tier_flex_unsupported" }]);
+
+        const standard = await applyServiceTierRouting({ candidates: [sail, other], body: { service_tier: "standard" }, capability: "text.generate" });
+        expect(standard.candidates.map((candidate) => candidate.providerId)).toEqual(["sail-research", "deepinfra"]);
+    });
+
     it("selects a declared catalog tier without sibling guessing", async () => {
         const candidates = ["standard", "fast", "flex"].map((name) => makeCandidate({
             providerId: "catalog", apiModelId: "acme/model", providerModelSlug: `upstream-${name}`,

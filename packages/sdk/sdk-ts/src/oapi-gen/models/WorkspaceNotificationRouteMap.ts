@@ -1,5 +1,6 @@
 export interface WorkspaceNotificationRouteMap {
   auto_top_up_failed: string[];
+  broadcast_destination_failing: string[];
   low_balance: string[];
   model_deprecation: string[];
   model_substitution: string[];

@@ -102,7 +102,7 @@ already stored in Infisical, inject the secret without printing it and opt into
 that source explicitly:
 
 ```bash
-infisical run --projectId=<project-id> --env=prod --path=/ -- pnpm run data:test-public-model-announcement -- --send --webhook-env DISCORD_WEBHOOK_NEW_MODELS_PUBLIC
+infisical run --projectId=<project-id> --env=prod --path=/operations -- pnpm run data:test-public-model-announcement -- --send --webhook-env DISCORD_WEBHOOK_NEW_MODELS_PUBLIC
 ```
 
 This still sends the sample payload with empty user and role mention lists. It

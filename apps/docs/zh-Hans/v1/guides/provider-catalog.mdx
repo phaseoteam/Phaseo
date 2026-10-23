@@ -14,6 +14,40 @@ V1.1 声明 `"schema_version": "1.1"`，并在每个模型中发布 `service_tie
 
 下载 [V1 Schema](https://phaseo.app/api/internal/provider-catalog/schema) 或 [V1.1 Schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1)。不受支持的版本会被明确拒绝。
 
+### V1.2 数据政策（预览）
+
+V1.2 为每个服务层级添加按能力划分的训练和保留声明。发布这些字段前，请与 Phaseo 协调启用时间；旧版导入器会拒绝这些字段。V1 和 V1.1 数据源仍受支持。
+
+V1.2 还接受模型级或层级级的可选 `declarations`，用于描述模型标识、类型化输入/输出限制、参数说明、按范围划分的价格和容量、折扣及部署详情。这些声明会经过验证并保留以供审核，不会自动启用参数，也不会更改计费价格、容量限制的执行方式或数据驻留保证。验证结果会标识已存储的声明；请继续通过现有字段发布实际生效的价格和能力。
+
+将 `schema_version` 设为 `"1.2"`，并为每个适用层级添加 `data_policy` 对象：
+
+```json
+{
+  "capabilities": [{
+    "id": "text.generate",
+    "training_policy": "no_train",
+    "retention_mode": "none",
+    "retention_days": 0,
+    "zero_data_retention": true,
+    "zdr_eligibility": "eligible",
+    "requirements": { "contract_mode": "none", "account_settings": [] },
+    "privacy_policy_url": "https://provider.example/privacy",
+    "terms_of_service_url": "https://provider.example/terms"
+  }]
+}
+```
+
+此示例是层级的 `data_policy` 值，并非完整数据源。能力 ID 使用规范标识：即使模型声明了 `responses` 或 `chat.completions`，也应使用 `text.generate`。
+
+声明涵盖整个上游处理链中的提示和输出，不描述计费元数据。训练值包括 `unknown`、`may_train`、`no_train`、`opt_out_available` 和 `enterprise_no_train`。保留模式包括 `unknown`、`none`、`transient`、`fixed` 和 `until_deleted`。none 使用零天，transient/fixed 使用正数的最长保留时长，unknown/until-deleted 使用 null。
+
+通过 `contract_mode` 声明所需协议：`none`、`customer_agreement` 或 `enterprise_agreement`。所需账户设置以对象形式放入 `account_settings` 数组，对象包含 `id`、`description` 和 HTTPS `documentation_url`。有条件的计划使用 `zdr_eligibility: "conditional"`，不能将有效保证声明为 true。在 Phaseo 能验证条件已满足之前，这些信息仅供参考。
+
+Phaseo 独立审批政策来源。数据源不能将声明标记为已验证。本版本仅对不进行训练、不保留内容且无附加条件的非批处理文本生成提供有效 ZDR。自行托管模型本身并不构成 ZDR 声明。
+
+某个服务方案采用数据源管理的政策后，设为 false、发送 null、省略声明或降低数据源版本都会撤回该保证。Phaseo 的手动覆盖单独管理。如果连续 24 小时未成功验证目录，肯定性声明就会失效；撤销审批不需要重新抓取提供商数据。
+
 ## 发布标准化层级
 
 | 层级 | 含义 |

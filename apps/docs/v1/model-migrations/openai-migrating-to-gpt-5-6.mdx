@@ -127,7 +127,7 @@ For repeated context, keep the stable part of the prompt in cacheable blocks and
 }
 ```
 
-`prompt_cache_breakpoint` caches everything up to and including its block. A block `cache_control` such as `{"type": "ephemeral"}` works too, and Phaseo sends it to GPT-5.6 as `prompt_cache_breakpoint`. Either mark reaches Claude as a cache breakpoint, so a fallback to Claude still caches. In `explicit` mode OpenAI caches only the breakpoints you place, and `30m` is the only `ttl` it accepts. Phaseo does not send `prompt_cache_retention` to GPT-5.6. See [Prompt Caching](../guides/prompt-caching.mdx#openai-retention-and-options).
+`prompt_cache_breakpoint` caches everything up to and including its block. A block `cache_control` such as `{"type": "ephemeral"}` works too, and Phaseo sends it to GPT-5.6 as `prompt_cache_breakpoint`. Either mark reaches Claude as a cache breakpoint, so a fallback to Claude still caches. In `explicit` mode OpenAI caches only the breakpoints you place. The `ttl` is `30m` (the default) or `12h`, which OpenAI accepts on its Responses API only; see [12-hour cache on OpenAI](../guides/prompt-caching.mdx#12-hour-cache-on-openai). Phaseo does not send `prompt_cache_retention` to GPT-5.6. See [Prompt Caching](../guides/prompt-caching.mdx#openai-retention-and-options).
 
 ## What to test
 

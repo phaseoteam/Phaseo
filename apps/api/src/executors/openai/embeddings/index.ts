@@ -114,11 +114,17 @@ function isDataUrl(value: string): boolean {
 	return value.startsWith("data:");
 }
 
-function extractBase64Payload(value: string): string {
-	const trimmed = value.trim();
-	const match = /^data:[^,]*;base64,(.*)$/i.exec(trimmed);
-	if (match && match[1]) return match[1];
-	return trimmed;
+// Voyage documents `image_base64` and `video_base64` as full data URLs
+// (`data:image/jpeg;base64,...`), so the prefix is kept. The IR encoder wraps
+// `source: "data"` parts in a default prefix, which can double one the client
+// already sent; keep only the innermost data URL.
+function normaliseVoyageDataUrl(value: string): string {
+	let current = value.trim();
+	for (;;) {
+		const nested = /^data:[^,]*;base64,(data:[\s\S]*)$/i.exec(current);
+		if (!nested?.[1]) return current;
+		current = nested[1].trim();
+	}
 }
 
 function extractUrlString(value: unknown): string | undefined {
@@ -143,7 +149,7 @@ function toVoyageMultimodalPart(part: any): Record<string, string> | null {
 				: extractUrlString(part?.image_url ?? part?.url);
 		if (!imageValue) return null;
 		return isDataUrl(imageValue)
-			? { type: "image_base64", image_base64: extractBase64Payload(imageValue) }
+			? { type: "image_base64", image_base64: normaliseVoyageDataUrl(imageValue) }
 			: { type: "image_url", image_url: imageValue };
 	}
 	if (type === "input_video" || type === "video_url" || type === "video") {
@@ -153,7 +159,7 @@ function toVoyageMultimodalPart(part: any): Record<string, string> | null {
 				: extractUrlString(part?.video_url ?? part?.url);
 		if (!videoValue) return null;
 		return isDataUrl(videoValue)
-			? { type: "video_base64", video_base64: extractBase64Payload(videoValue) }
+			? { type: "video_base64", video_base64: normaliseVoyageDataUrl(videoValue) }
 			: { type: "video_url", video_url: videoValue };
 	}
 	if (typeof part === "string") {

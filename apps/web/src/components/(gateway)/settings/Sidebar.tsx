@@ -44,6 +44,7 @@ export default function SettingsSidebar({
 	showEnterprise = false,
 	showAutoRouting = false,
 	showClassifiers = false,
+	showSlackAgent = false,
 	showInternal = false,
 	providerMode = false,
 }: {
@@ -57,6 +58,7 @@ export default function SettingsSidebar({
 	showEnterprise?: boolean;
 	showAutoRouting?: boolean;
 	showClassifiers?: boolean;
+	showSlackAgent?: boolean;
 	showInternal?: boolean;
 	providerMode?: boolean;
 }) {
@@ -82,7 +84,7 @@ export default function SettingsSidebar({
 	const isCollapsed = state === "collapsed" && !isMobile;
 	const [search, setSearch] = useState("");
 	const isSearching = search.trim().length > 0 && !isCollapsed;
-	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showEnterprise, showAutoRouting, showClassifiers, showInternal, providerMode });
+	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showEnterprise, showAutoRouting, showClassifiers, showSlackAgent, showInternal, providerMode });
 
 	function matchScore(item: NavItem) {
 		const path = pathname ?? "";

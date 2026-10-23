@@ -17,7 +17,6 @@ import type {
 	SignInModel,
 	SupportedModelsStats,
 } from "@/lib/fetchers/landing/sign-in/types";
-import type { ExtendedModel } from "@/data/types";
 import type { APIProviderCard } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { APIProviderHeader } from "@/lib/fetchers/api-providers/types";
 import type { APIProviderModelListItem } from "@/lib/fetchers/api-providers/providerDataTypes";
@@ -26,7 +25,7 @@ import type { AppStats, ModelStats, APIProviderUpdates } from "@/lib/fetchers/ap
 import type { ProviderMetrics } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { ArtificialAnalysisPublicData, BenchmarkCard, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import type { CountryListSummary, CountrySummary } from "@/lib/fetchers/countries/types";
-import { getComparisonModelsCached } from "@/lib/fetchers/compare/getComparisonModels";
+import type { CompareView } from "@/components/(data)/compare/view/types";
 import type { FamilyCard, FamilyInfo } from "@/lib/fetchers/families/types";
 import type {
 	MarketplacePreset,
@@ -1127,10 +1126,11 @@ export async function fetchFrontendOrganisationLogoIdsByNames(
 	return (await fetchPublicWebApi<{ organisations: Record<string, string> }>(`/api/_web/rankings/organisation-logo-ids?names=${encodeURIComponent([...new Set(names)].sort().join(","))}`)).organisations;
 }
 
-export async function fetchFrontendComparisonModels(
-	modelIds: string[],
-): Promise<ExtendedModel[]> {
-	return getComparisonModelsCached(modelIds, false);
+/** The compact compare payload; the Worker composes prices, routes and benchmarks. */
+export async function fetchFrontendCompareView(modelIds: string[]): Promise<CompareView> {
+	const ids = [...new Set(modelIds.map((value) => value.trim()).filter(Boolean))].sort();
+	if (ids.length === 0) return { models: [], benchmarks: [] };
+	return fetchPublicWebApi<CompareView>(`/api/_web/compare/view?ids=${encodeURIComponent(ids.join(","))}`);
 }
 
 export type FrontendCompareUsage = Record<string, {
@@ -1144,6 +1144,8 @@ export type FrontendCompareUsage = Record<string, {
 	throughputP50TokPerSec30m: number | null;
 	cumulativeTokens: number | null;
 	requestPoints24h: Array<{ date: string; value: number }>;
+	latencyWindow?: "30m" | "24h" | "5d" | null;
+	throughputWindow?: "30m" | "24h" | "5d" | null;
 }>;
 
 export async function fetchFrontendCompareUsage(modelIds: string[]): Promise<FrontendCompareUsage> {

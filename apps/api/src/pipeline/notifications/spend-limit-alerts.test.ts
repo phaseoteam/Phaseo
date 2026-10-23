@@ -18,7 +18,7 @@ vi.mock("@/runtime/env", () => ({
 	},
 }));
 
-const { noteSpendLimitReached, resetRememberedSpendLimits, runSpendLimitWarningSweep } = await import("./spend-limit-alerts");
+const { noteSpendLimitReached, resetRememberedSpendLimits, runDepartmentBudgetAlertSweep, runSpendLimitWarningSweep } = await import("./spend-limit-alerts");
 
 const oct16 = new Date("2026-10-16T12:00:00Z");
 
@@ -110,5 +110,17 @@ describe("spend limit alerts", () => {
 
 		state.rpc.mockResolvedValueOnce({ data: null, error: { message: "timeout" } });
 		await expect(runSpendLimitWarningSweep()).rejects.toThrow("spend_limit_sweep_failed:timeout");
+	});
+
+	it("runs the department budget sweep and reports what it found", async () => {
+		state.rpc.mockResolvedValueOnce({ data: { budgets: 3, alerted: 2 }, error: null });
+		await expect(runDepartmentBudgetAlertSweep()).resolves.toEqual({ budgets: 3, alerted: 2 });
+		expect(state.rpc).toHaveBeenCalledWith("sweep_department_budget_alerts", {});
+
+		state.rpc.mockResolvedValueOnce({ data: null, error: null });
+		await expect(runDepartmentBudgetAlertSweep()).resolves.toEqual({ budgets: 0, alerted: 0 });
+
+		state.rpc.mockResolvedValueOnce({ data: null, error: { message: "timeout" } });
+		await expect(runDepartmentBudgetAlertSweep()).rejects.toThrow("department_budget_sweep_failed:timeout");
 	});
 });

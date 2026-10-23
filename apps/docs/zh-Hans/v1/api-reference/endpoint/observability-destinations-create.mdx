@@ -3,8 +3,41 @@ title: "创建可观测性目标"
 sidebarTitle: "创建目标"
 badge: "测试版"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /observability/destinations"
-description: "创建 Webhook 或 OpenTelemetry 目标。"
+description: "创建 Broadcast 目标：OpenTelemetry 工具、webhook、存储桶或数据仓库。"
 ---
 <Note>此端点需要具有 `settings:write` 权限的管理 API 密钥。</Note>
 
-`config` 对象仅可写入，存储前会加密。端点必须使用公共 HTTPS 地址。
+`config` 对象仅可写入，存储前会加密。端点必须使用公共 HTTPS 地址。有关每种目标的作用及其接收的内容，请参阅 [Broadcast](../../guides/broadcast.mdx)。
+
+## 各类型的 config 键
+
+所有值均为字符串。缺少必需键，或包含目标无法使用的值的请求，会返回 `400`，并在消息中指明该键。
+
+| `type` | 必需的 `config` 键 | 可选的 `config` 键 |
+| --- | --- | --- |
+| `arize` | `api_key`, `space_id`, `project_name` | `base_url` |
+| `axiom` | `api_token`, `dataset` | `region` |
+| `bigquery` | `service_account_json`, `dataset`, `table` | `project_id` |
+| `braintrust` | `api_key`, `project_id` | `base_url` |
+| `clickhouse` | `endpoint`, `password`, `table` | `username`, `database` |
+| `comet_opik` | `api_key`, `workspace`, `project_name` | `base_url` |
+| `datadog` | `api_key` | `ml_app`, `site` |
+| `dynatrace` | `environment_url`, `api_token` | `token_type` |
+| `elastic` | `otlp_endpoint`, `api_key` | — |
+| `gcs` | `bucket`, `access_key_id`, `secret_access_key` | `path_template` |
+| `grafana_cloud` | `otlp_endpoint`, `instance_id`, `api_key` | — |
+| `honeycomb` | `api_key` | `region`, `dataset` |
+| `langfuse` | `secret_key`, `public_key` | `base_url` |
+| `langsmith` | `api_key` | `project`, `base_url` |
+| `new_relic` | `license_key` | `region` |
+| `otel_collector` | `otlp_endpoint` | `otlp_protocol`, `headers_json` |
+| `posthog` | `api_key` | `base_url` |
+| `r2` | `account_id`, `bucket`, `access_key_id`, `secret_access_key` | `jurisdiction`, `path_template` |
+| `respan` | `api_key` | `base_url` |
+| `s3` | `bucket`, `access_key_id`, `secret_access_key` | `region`, `endpoint`, `session_token`, `path_template` |
+| `sentry` | `otlp_endpoint`, `public_key` | — |
+| `snowflake` | `account`, `user`, `private_key`, `warehouse`, `database`, `schema`, `table` | `role` |
+| `wandb_weave` | `api_key`, `entity`, `project` | `base_url` |
+| `webhook` | `url` | `method`, `headers_json`, `signing_secret` |
+
+OpenTelemetry 类型还接受 `otlp_protocol`（`http/json` 或 `http/protobuf`）和 `otlp_compression`（`none` 或 `gzip`），供应商只接受其中一个值的情况除外。webhook 的 `headers_json` 是一个以字符串形式提供的 JSON 对象，将请求头名称映射到值。

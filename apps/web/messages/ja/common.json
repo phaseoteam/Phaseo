@@ -255,6 +255,8 @@
 				"nav-settings-privacy": "プライバシー設定",
 				"nav-settings-guardrails": "ガードレール",
 				"nav-settings-classifiers": "分類器",
+				"nav-settings-slack": "Slack",
+				"nav-settings-security": "キーのセキュリティ",
 				"nav-settings-oauth": "OAuthアプリ",
 				"nav-settings-broadcast": "イベント配信",
 				"nav-settings-webhooks": "Webhooks",
@@ -340,7 +342,8 @@
 				"nav-how-phaseo-calculates-model-pricing": "料金の計算方法",
 				"nav-how-phaseo-tracks-provider-availability": "プロバイダーの利用可能状況の追跡方法",
 				"nav-chat-decisions": "判断",
-				"nav-settings-account-providers": "プロバイダーの初期設定"
+				"nav-settings-account-providers": "プロバイダーの初期設定",
+				"nav-settings-budgets": "予算"
 			}
 		},
 		"searchDataUnavailable": "検索データを読み込めませんでした。",
@@ -1257,6 +1260,7 @@
 			"enableConnection": "接続を有効化",
 			"deleteDestination": "送信先を削除",
 			"openRequestDetails": "リクエストの詳細を開く",
+			"openInChat": "チャットで開く",
 			"copyRequestId": "リクエストIDをコピー",
 			"copySessionId": "セッションIDをコピー",
 			"copyNativeResponseId": "ネイティブ応答IDをコピー",
@@ -1382,6 +1386,11 @@
 			"retention90Days": "90日",
 			"retention180Days": "180日",
 			"retention365Days": "365日",
+			"contentsAccessTitle": "内容を閲覧できるユーザー",
+			"contentsAccessDescription": "保存されたプロンプトと応答を、リクエストの詳細、Chat、API で閲覧できるユーザーを選択します。",
+			"contentsAccessMembers": "すべてのメンバー",
+			"contentsAccessAdmins": "オーナーと管理者",
+			"contentsRestricted": "このワークスペースでは、リクエストの内容を閲覧できるのはオーナーと管理者のみです。",
 			"allowAllExceptSelectedModels": "選択したモデルを除くすべてを許可",
 			"allowAnyProvider": "すべてのプロバイダーを許可",
 			"allowOnlySelectedProviders": "選択したプロバイダーのみ許可",

@@ -200,7 +200,8 @@ describe("google-ai-studio embeddings executor", () => {
 					},
 				],
 			})),
-		).rejects.toThrow(/expected image\/ input/i);
+		// A web page served for an image URL is no longer inlined, so the URL is reported as not inlinable.
+		).rejects.toThrow(/could not inline image URL/i);
 
 		expect(mock.calls).toHaveLength(2);
 		mock.restore();

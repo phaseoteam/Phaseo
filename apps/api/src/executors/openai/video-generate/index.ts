@@ -20,6 +20,10 @@ import type { ProviderExecutor } from "../../types";
 
 const OPENAI_VIDEO_SECONDS = new Set(["4", "8", "12"]);
 const OPENAI_VIDEO_SIZES = new Set(["720x1280", "1280x720", "1024x1792", "1792x1024"]);
+// OpenAI's documented defaults for POST /videos (https://platform.openai.com/docs/api-reference/videos/create).
+// Applied before reserving, so an omitted field is priced, sent and billed as what OpenAI generates.
+const OPENAI_VIDEO_DEFAULT_SECONDS = "4";
+const OPENAI_VIDEO_DEFAULT_SIZE = "720x1280";
 
 function normalizePositiveSeconds(value: unknown): string | undefined {
 	if (typeof value === "number" && Number.isFinite(value) && value > 0) {
@@ -247,8 +251,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
 		() => bindings.OPENAI_API_KEY,
 	);
-	const seconds = parseDurationSeconds(ir);
-	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution });
+	const seconds = parseDurationSeconds(ir) ?? OPENAI_VIDEO_DEFAULT_SECONDS;
+	const size = resolveVideoSize({ size: ir.size, resolution: ir.resolution }) ?? OPENAI_VIDEO_DEFAULT_SIZE;
 	const quality = ir.quality ?? ((ir.rawRequest as any)?.quality ?? null);
 	const inputReference = resolveInputReferenceValue(ir);
 	const inputReferenceFileId = extractInputReferenceFileId(inputReference);

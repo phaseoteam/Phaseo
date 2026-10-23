@@ -16,6 +16,9 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("typesafe", "systemone")).toBe(executor);
 		expect(resolveProviderExecutor("siliconflow", "decisions.make")).toBeTruthy();
 		expect(resolveProviderExecutor("inception", "decisions.make")).toBeTruthy();
+		expect(resolveProviderExecutor("baseten", "decisions.make")).toBeTruthy();
+		expect(resolveProviderExecutor("baseten", "decisions.make")).toBe(EXECUTORS_BY_PROVIDER.baseten["decisions.make"]);
+		expect(resolveProviderExecutor("baseten", "systemone")).toBe(EXECUTORS_BY_PROVIDER.baseten["decisions.make"]);
 	});
 
 	it("resolves Respan Span-01 only for Decisions", () => {

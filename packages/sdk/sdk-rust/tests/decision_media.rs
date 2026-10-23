@@ -5,7 +5,7 @@ use phaseo::gen::models::{DecisionBoxAnswer, DecisionInputAudio};
 fn decision_box_answer_exposes_the_box_field_as_a_raw_identifier() {
     let answer = DecisionBoxAnswer {
         r#box: HashMap::new(),
-        confidence: 0.9,
+        confidence: Some(0.9),
         name: Some("mug".into()),
         r#type: "box".into(),
     };

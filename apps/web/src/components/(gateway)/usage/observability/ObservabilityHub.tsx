@@ -90,7 +90,8 @@ import { formatUsageComparisonRange, type UsageRangePreset } from "@/lib/gateway
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
 import RequestLabelFilter from "@/components/(gateway)/usage/RequestLabelFilter";
 import UsageLabelBreakdown from "@/components/(gateway)/usage/UsageLabelBreakdown";
-import { buildLabelKeyOptions, labelValueDisplay, type RequestClassifierSummary } from "@/components/(gateway)/usage/requestClassifierLabels";
+import LabelFilterSummary from "@/components/(gateway)/usage/LabelFilterSummary";
+import { type RequestClassifierSummary } from "@/components/(gateway)/usage/requestClassifierLabels";
 import { Logo } from "@/components/Logo";
 import type { UsageLabelFacet, UsageLabelSummary } from "@/lib/fetchers/internal/settingsTypes";
 import type {
@@ -2533,11 +2534,6 @@ export default function ObservabilityHub({
 	customTo?: string | null;
 }) {
 	const t = useTranslations("SettingsUI.observability");
-	const tLabels = useTranslations("SettingsUI.requestClassifierUsage");
-	const labelKeyName = (key: string) => {
-		const option = buildLabelKeyOptions(labelFacets, requestClassifiers).find((entry) => entry.key === key);
-		return option?.kind === "classifier_calls" ? tLabels("classifierCalls") : option?.name ?? key;
-	};
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -2556,29 +2552,11 @@ export default function ObservabilityHub({
 				</div>
 			</div>
 			{labelSummary ? (
-				<Card className="ring-1 ring-primary/15">
-					<CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
-						<div className="min-w-0">
-							<p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{t("filteredSpend")}</p>
-							<p className="mt-1 truncate text-sm font-medium">
-								<span className="font-mono">{labelKeyName(labelSummary.key)}</span>
-								<span className="px-1.5 text-muted-foreground">=</span>
-								<span>{labelValueDisplay(labelSummary.key, labelSummary.value, requestClassifiers)}</span>
-							</p>
-						</div>
-						<div className="flex items-center gap-6 text-sm">
-							<div>
-								<p className="text-xs text-muted-foreground">{t("requests")}</p>
-								<p className="mt-1 font-mono font-medium">{formatNumber(labelSummary.requestCount)}</p>
-							</div>
-							<div>
-								<p className="text-xs text-muted-foreground">{t("spend")}</p>
-								<p className="mt-1 font-mono font-medium">{formatCurrency(labelSummary.totalCostNanos / 1e9)}</p>
-							</div>
-						</div>
-						{labelSummary.isSampled ? <p className="basis-full text-xs text-muted-foreground">{t("sampledSpend")}</p> : null}
-					</CardContent>
-				</Card>
+				<LabelFilterSummary
+					requestCount={labelSummary.requestCount}
+					totalCostNanos={labelSummary.totalCostNanos}
+					isSampled={labelSummary.isSampled}
+				/>
 			) : null}
 
 			{initialTab === "overview" ? <Overview data={data} /> : null}

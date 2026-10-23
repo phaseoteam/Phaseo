@@ -1164,6 +1164,93 @@ describe("buildProviderSections", () => {
 		);
 	});
 
+	test.each([
+		["standard", 1],
+		["batch", 0.5],
+		["flex", 0.5],
+		["priority", 2],
+		["ultrafast", 6],
+	] as const)("keeps OpenAI cache lifetimes and context ranges distinct for %s", (plan, multiplier) => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = ["30m", "12h"].flatMap((ttl) =>
+			[false, true].map((long) => ({
+				...provider.pricing_rules[0]!,
+				id: `${plan}-${ttl}-${long ? "long" : "short"}`,
+				pricing_plan: plan,
+				meter: `cached_write_text_tokens_${ttl}`,
+				price_per_unit: 2 * (long ? 2 : 1) * (ttl === "12h" ? 2.5 : 1.25) * multiplier,
+				match: [{ path: "input_tokens", op: long ? "gt" : "lte", value: 272000 }],
+			})),
+		);
+
+		const sections = buildProviderSections(provider, plan);
+
+		expect(sections.textTokens?.write).toHaveLength(4);
+		expect(sections.textTokens?.write).toEqual(expect.arrayContaining([
+			expect.objectContaining({ label: "30 min TTL · ≤ 272k input tokens", per1M: 2.5 * multiplier }),
+			expect.objectContaining({ label: "30 min TTL · > 272k input tokens", per1M: 5 * multiplier }),
+			expect.objectContaining({ label: "12 hour TTL · ≤ 272k input tokens", per1M: 5 * multiplier }),
+			expect.objectContaining({ label: "12 hour TTL · > 272k input tokens", per1M: 10 * multiplier }),
+		]));
+		expect(sections.otherRules).toEqual([]);
+	});
+
+	test("compares OpenAI cache promotions within the same lifetime and context range", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = ["30m", "12h"].flatMap((ttl) =>
+			[100, 200].map((priority) => ({
+				...provider.pricing_rules[0]!,
+				id: `${ttl}-${priority}`,
+				meter: `cached_write_text_tokens_${ttl}`,
+				price_per_unit: (ttl === "12h" ? 12.5 : 6.25) * (priority === 200 ? 0.8 : 1),
+				priority,
+				match: [{ path: "input_tokens", op: "lte", value: 272000 }],
+			})),
+		);
+
+		const sections = buildProviderSections(provider, "standard");
+
+		expect(sections.textTokens?.write).toEqual([
+			expect.objectContaining({ label: "30 min TTL · ≤ 272k input tokens", per1M: 5, basePer1M: 6.25, comparisonKind: "discount" }),
+			expect.objectContaining({ label: "12 hour TTL · ≤ 272k input tokens", per1M: 10, basePer1M: 12.5, comparisonKind: "discount" }),
+		]);
+	});
+
+	test("orders cache writes by context then lifetime even when prices disagree", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [
+			["gt", "12h", 1], ["lte", "12h", 20],
+			["gt", "30m", 0.5], ["lte", "30m", 10],
+		].map(([op, ttl, price], index) => ({
+			...provider.pricing_rules[0]!,
+			id: `cache-order-${index}`,
+			meter: `cached_write_text_tokens_${ttl}`,
+			price_per_unit: Number(price),
+			match: [{ path: "input_tokens", op: String(op), value: 272000 }],
+		}));
+
+		expect(buildProviderSections(provider, "standard").textTokens?.write.map((tier) => tier.ruleId)).toEqual([
+			"cache-order-3", "cache-order-1", "cache-order-2", "cache-order-0",
+		]);
+	});
+
+	test("labels upcoming OpenAI cache prices with both lifetime and context", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0]!,
+			meter: "cached_write_text_tokens_12h",
+			price_per_unit: 10,
+			effective_from: "2026-11-01T00:00:00.000Z",
+			match: [{ path: "input_tokens", op: "gt", value: 272000 }],
+		}];
+
+		const sections = buildProviderSections(provider, "standard", new Date("2026-10-21T00:00:00.000Z"));
+
+		expect(sections.upcomingChanges).toEqual([
+			expect.objectContaining({ title: "Text Tokens · Cache Writes", subtitle: "12 hour TTL · > 272k input tokens", price: 10 }),
+		]);
+	});
+
 	test("shows off-peak pricing first outside configured UTC windows", () => {
 		const provider = makeProviderPricing();
 		provider.pricing_rules = [{

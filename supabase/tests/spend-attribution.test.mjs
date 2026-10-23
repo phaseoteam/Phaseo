@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
-const migration = await read('../migrations/20261021100616_spend_attribution.sql');
+const migration = await read('../migrations/20261023153136_spend_attribution.sql');
 const section = (from, to) => {
   const start = migration.indexOf(from);
   const end = migration.indexOf(to, start + 1);
