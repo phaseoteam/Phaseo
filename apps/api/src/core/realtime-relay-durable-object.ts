@@ -30,6 +30,8 @@ import {
 	resolveGoogleKey,
 	resolveOpenAIKey,
 	resolveXAIKey,
+	isDurationBilledRealtimeProvider,
+	ELEVENLABS_REALTIME_MAX_DURATION_SECONDS,
 	settleRealtimeSession,
 	sha256Hex,
 	updateRealtimeSessionUsage,
@@ -38,6 +40,16 @@ import {
 	type RealtimeSessionRow,
 } from "@core/realtime-sessions";
 import { enqueueAsyncGenAiOtlpExport } from "@observability/otlp-export";
+import {
+	ELEVENLABS_DEFAULT_MAX_DURATION_SECONDS,
+	ELEVENLABS_MAX_DURATION_MARGIN_SECONDS,
+	ELEVENLABS_PROVIDER,
+	applyElevenLabsConversationCost,
+	buildElevenLabsSessionUpdate,
+	elevenLabsRealtimeUrl,
+	fetchElevenLabsConversationCost,
+	resolveElevenLabsKey,
+} from "./elevenlabs-realtime";
 import { isLiveModel, liveConfig, liveStartEvent, ingestLiveUsage, assertLiveFinalUsage, priceLiveUsage, liveUsageMeters, type LiveUsage } from "./live-sessions";
 import {
 	buildSessionEndedEvent,
@@ -145,6 +157,9 @@ type RelayUsageAggregate = LiveUsage & {
 	provider_reconnects?: number;
 	provider_resume_failures?: number;
 	resume_dropped_audio_ms?: number;
+	// ElevenLabs: the conversation whose reported charge is read back at settlement.
+	provider_conversation_id?: string;
+	provider_cost_status?: string;
 };
 
 type RelayProviderState = {
@@ -188,6 +203,11 @@ const STORAGE_PROVIDER_STATE = "provider_state";
 const STORAGE_SETTLEMENT_ATTEMPTS = "settlement_attempts";
 const STORAGE_CLAIMED_AT = "claimed_at_ms";
 const STORAGE_DEADLINE = "deadline_ms";
+const STORAGE_PROVIDER_COST_SINCE = "provider_cost_since_ms";
+// ElevenLabs reports a conversation's charge after the call. Settlement waits
+// for it this long (holds stay in place), retrying on this interval.
+export const ELEVENLABS_RELAY_COST_WAIT_MS = 10 * 60_000;
+const ELEVENLABS_COST_RETRY_MS = 30_000;
 const OPENAI_BILLING_EVENT_TYPES = new Set([
 	"input_audio_buffer.committed",
 	"response.created",
@@ -544,6 +564,10 @@ export class RealtimeRelayDurableObject {
 	private liveAnsweredCalls = new Set<string>();
 	private liveToolOutputsPending = 0;
 	private liveCloseReason = "";
+	// ElevenLabs: refused session length (fell back to its default) and the
+	// end-of-call retries for its reported charge before settlement waits on alarms.
+	private elevenLabsDurationFallback = false;
+	private elevenLabsQuickRetryMs = [0, 2_000, 5_000];
 
 	private get isLive() { return isLiveModel(this.session?.model_id); }
 	// Playground rules (idle timeout, hold and spend-limit closes) apply only to source "chat".
@@ -718,6 +742,25 @@ export class RealtimeRelayDurableObject {
 
 		if (provider === "google-ai-studio") {
 			this.upstream = await this.openGoogleSocket(null);
+			return;
+		}
+
+		if (provider === ELEVENLABS_PROVIDER) {
+			// Header auth from the relay: the key never reaches the client, and
+			// minting a client secret would only add a round trip here.
+			const key = resolveElevenLabsKey();
+			if (!key) throw new Error("elevenlabs_key_missing");
+			this.upstream = await connectWebSocket(elevenLabsRealtimeUrl(model), { headers: { "xi-api-key": key } });
+			// ElevenLabs bills connected minutes pro rata from here.
+			if (!this.usage.provider_connected_at_ms) this.usage.provider_connected_at_ms = Date.now();
+			delete this.usage.provider_closed_at_ms;
+			await this.checkpointUsage(true);
+			this.attachUpstream();
+			this.sendUpstream(buildElevenLabsSessionUpdate({
+				voice,
+				instructions,
+				maxDurationSeconds: ELEVENLABS_REALTIME_MAX_DURATION_SECONDS + ELEVENLABS_MAX_DURATION_MARGIN_SECONDS,
+			}));
 			return;
 		}
 
@@ -955,7 +998,7 @@ export class RealtimeRelayDurableObject {
 			this.usage = addDuration(this.usage, "input_audio_ms", validated.durationMs);
 		}
 		const pendingBefore = this.inputSinceLastResponse;
-		if (provider !== "spacex-ai") {
+		if (!isDurationBilledRealtimeProvider(provider)) {
 			this.usage.pending_input_audio_ms = toNumber(this.usage.pending_input_audio_ms) + validated.durationMs;
 		}
 		// OpenAI only bills audio once the provider commits it and creates a
@@ -1022,6 +1065,78 @@ export class RealtimeRelayDurableObject {
 		this.sendUpstream({ type: "response.create", ...(eventId ? { event_id: eventId } : {}) });
 	}
 
+	/**
+	 * ElevenLabs setup: remember the conversation id (its bill is read back by
+	 * it) and, if ElevenLabs refuses the requested session length, fall back to
+	 * its 600 s default and end the call before ElevenLabs does. Returns true
+	 * when the event was handled here.
+	 */
+	private async handleElevenLabsSetupEvent(event: Record<string, unknown>, type: string): Promise<boolean> {
+		if (type === "session.created") {
+			const conversationId = getStringField(getRecordField(event, "session") ?? {}, "id");
+			if (conversationId && !this.usage.provider_conversation_id) {
+				this.usage.provider_conversation_id = conversationId;
+				await this.checkpointUsage(true);
+			}
+			return false;
+		}
+		const error = getRecordField(event, "error");
+		if (type !== "error" || !error || this.providerSetupComplete || this.elevenLabsDurationFallback
+			|| getStringField(error, "param") !== "session.max_duration_seconds") return false;
+		this.elevenLabsDurationFallback = true;
+		if (this.session) {
+			this.sendUpstream(buildElevenLabsSessionUpdate({
+				voice: this.session.voice,
+				instructions: typeof metadataRecord(this.session).instructions === "string" ? String(metadataRecord(this.session).instructions) : null,
+			}));
+		}
+		const providerDeadline = this.claimedAtMs + (ELEVENLABS_DEFAULT_MAX_DURATION_SECONDS - 5) * 1000;
+		if (this.claimedAtMs > 0 && (this.deadlineMs <= 0 || providerDeadline < this.deadlineMs)) {
+			this.deadlineMs = providerDeadline;
+			await this.state.storage.put(STORAGE_DEADLINE, this.deadlineMs);
+			await this.scheduleExpiryAlarm();
+			for (const timer of this.warningTimers) clearTimeout(timer);
+			this.warningTimers = [];
+			this.scheduleDurationWarnings();
+		}
+		console.warn("realtime_relay_elevenlabs_duration_fallback", { sessionId: this.session?.session_id, message: getStringField(error, "message") });
+		return true;
+	}
+
+	/**
+	 * What ElevenLabs charged for the conversation, read back once it has
+	 * finished. Waits a few seconds at the end of the call, then retries from
+	 * the alarm for up to ELEVENLABS_RELAY_COST_WAIT_MS before settling from
+	 * the relay's own connected-time meter.
+	 */
+	private async reconcileElevenLabsCost(): Promise<number | "pending"> {
+		const conversationId = typeof this.usage.provider_conversation_id === "string" ? this.usage.provider_conversation_id : "";
+		if (!conversationId) return 0;
+		let since = await this.state.storage.get<number>(STORAGE_PROVIDER_COST_SINCE);
+		if (!since) {
+			since = Date.now();
+			await this.state.storage.put(STORAGE_PROVIDER_COST_SINCE, since);
+		}
+		for (const delay of this.endedSent ? [0] : this.elevenLabsQuickRetryMs) {
+			if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+			const cost = await fetchElevenLabsConversationCost(conversationId).catch((error) => {
+				console.warn("realtime_relay_elevenlabs_cost_fetch_failed", {
+					sessionId: this.session?.session_id,
+					error: error instanceof Error ? error.message : String(error),
+				});
+				return null;
+			});
+			if (cost?.ready) {
+				this.usage = applyElevenLabsConversationCost(this.usage, cost);
+				return cost.costNanos;
+			}
+		}
+		if (Date.now() - since < ELEVENLABS_RELAY_COST_WAIT_MS) return "pending";
+		console.error("realtime_relay_elevenlabs_cost_unavailable", { sessionId: this.session?.session_id, conversationId });
+		this.usage.provider_cost_status = "unavailable";
+		return 0;
+	}
+
 	private async rejectAudio(reason: string) {
 		this.acceptingAudio = false;
 		this.sendClient({ type: "relay.input_rejected", reason });
@@ -1063,6 +1178,9 @@ export class RealtimeRelayDurableObject {
 		// Connection management is handled by the relay: goAway and resumption
 		// handles are never forwarded (a handle resumes our provider session).
 		if (event && (event.goAway || event.sessionResumptionUpdate)) forwarded = true;
+		// The relay retries a refused ElevenLabs session length itself.
+		if (event?.type === "error" && !this.providerSetupComplete && !this.elevenLabsDurationFallback
+			&& getStringField(getRecordField(event, "error") ?? {}, "param") === "session.max_duration_seconds") forwarded = true;
 		// Usage-bearing and in-flight events are journaled to Durable Object
 		// storage before the client sees them; everything else is forwarded first.
 		if (!event || !this.session || !this.isBillingEvent(event)) forward();
@@ -1116,6 +1234,7 @@ export class RealtimeRelayDurableObject {
 			return;
 		}
 		if (type === "session.updated" || event.setupComplete) this.providerSetupComplete = true;
+		if (provider === ELEVENLABS_PROVIDER && await this.handleElevenLabsSetupEvent(event, type)) return;
 		if (event.error && !this.providerSetupComplete) {
 			forward();
 			await this.settle("failed", "provider_session_setup_failed");
@@ -1175,7 +1294,7 @@ export class RealtimeRelayDurableObject {
 			this.markResponseInFlight();
 		}
 
-		if (type === "response.output_audio.delta" && provider === "spacex-ai") {
+		if (type === "response.output_audio.delta" && isDurationBilledRealtimeProvider(provider)) {
 			this.usage = addDuration(
 				this.usage,
 				"output_audio_ms",
@@ -1292,7 +1411,7 @@ export class RealtimeRelayDurableObject {
 		}
 		forward();
 
-		if (type === "response.output_audio.delta" && provider === "spacex-ai") void this.maybePersistUsage();
+		if (type === "response.output_audio.delta" && isDurationBilledRealtimeProvider(provider)) void this.maybePersistUsage();
 		if (completedTurn) {
 			await this.persistUsage();
 			if (completedTurn.responseId !== "") {
@@ -1489,7 +1608,7 @@ export class RealtimeRelayDurableObject {
 	}
 
 	private hasPendingBilling(): boolean {
-		if (!this.session || providerFromSession(this.session) === "spacex-ai") return false;
+		if (!this.session || isDurationBilledRealtimeProvider(providerFromSession(this.session))) return false;
 		return this.responseInFlight || this.inputSinceLastResponse || this.providerState.googleTurnActive;
 	}
 
@@ -1631,7 +1750,7 @@ export class RealtimeRelayDurableObject {
 			this.waitingForOpenAIInputClear = true;
 			this.usage.input_audio_clear_pending = true;
 			this.sendUpstream({ type: "input_audio_buffer.clear" });
-		} else if (provider === "spacex-ai" && this.receivedAudioMs > 0) {
+		} else if (isDurationBilledRealtimeProvider(provider) && this.receivedAudioMs > 0) {
 			this.sendUpstream({ type: "input_audio_buffer.clear" });
 		} else if (provider === "google-ai-studio" && this.googleAudioActive) {
 			this.googleAudioActive = false;
@@ -1685,7 +1804,7 @@ export class RealtimeRelayDurableObject {
 		const provider = providerFromSession(this.session);
 		this.cancelResponsesOnDrain = true;
 		if (
-			provider === "spacex-ai" ||
+			isDurationBilledRealtimeProvider(provider) ||
 			(!this.hasPendingBilling() && !this.waitingForOpenAIInputClear) ||
 			this.upstream?.readyState !== WebSocket.OPEN
 		) {
@@ -1743,7 +1862,7 @@ export class RealtimeRelayDurableObject {
 	 * sent and received, so the billed audio meter is the provider wall clock.
 	 */
 	private refreshProviderSessionDuration() {
-		if (!this.session || providerFromSession(this.session) !== "spacex-ai") return;
+		if (!this.session || !isDurationBilledRealtimeProvider(providerFromSession(this.session))) return;
 		const startedAt = toNumber(this.usage.provider_connected_at_ms);
 		if (startedAt <= 0) return;
 		const endedAt = toNumber(this.usage.provider_closed_at_ms)
@@ -2168,7 +2287,24 @@ export class RealtimeRelayDurableObject {
 		this.closeUpstream("realtime_relay_settling");
 		// xAI's reported cost can raise the bill above connected-time pricing but
 		// never lower it: server-VAD sessions are billed for their full duration.
-		const providerCostNanos = provider === "spacex-ai" ? toNumber(this.usage.provider_cost_nanos) : 0;
+		let providerCostNanos = provider === "spacex-ai" ? toNumber(this.usage.provider_cost_nanos) : 0;
+		if (provider === ELEVENLABS_PROVIDER) {
+			// ElevenLabs reports no usage in-band. Its charge for the conversation
+			// (minutes plus LLM tokens) is read back and used as a floor, while the
+			// holds are still in place; until then the bill is pending.
+			const cost = await this.reconcileElevenLabsCost();
+			if (cost === "pending") {
+				this.settling = false;
+				await this.state.storage.put(STORAGE_USAGE, this.usage);
+				await this.state.storage.setAlarm(Date.now() + ELEVENLABS_COST_RETRY_MS);
+				if (!this.endedSent) {
+					this.sendSessionEnded("pending");
+					this.closeClient("realtime_billing_pending");
+				}
+				return false;
+			}
+			providerCostNanos = cost;
+		}
 		try {
 			const result = await settleRealtimeSession({
 				auth: authForSession(this.session, `realtime_relay_settle:${this.session.session_id}`),
