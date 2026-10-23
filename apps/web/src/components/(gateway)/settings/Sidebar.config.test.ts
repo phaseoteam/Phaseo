@@ -1,6 +1,11 @@
 import { getActiveSettingsNav, getSettingsSidebar, isSettingsNavChildActive } from "./Sidebar.config";
 
 describe("settings sidebar navigation", () => {
+	it("removes the retired discovery queue while keeping provider review", () => {
+		const hrefs = getSettingsSidebar({ showInternal: true }).flatMap((group) => group.items.map((item) => item.href));
+		expect(hrefs).not.toContain("/settings/internal/model-discovery");
+		expect(hrefs).toContain("/settings/internal/provider-review");
+	});
 	it("puts provider catalogs first without workspace or billing navigation", () => {
 		const groups = getSettingsSidebar({ providerMode: true });
 		expect(groups.map((group) => group.scope)).toEqual(["personal", "provider"]);
