@@ -6629,7 +6629,32 @@
 		"errorForbidden": "Only workspace owners and admins can change budgets.",
 		"errorNotFound": "This budget no longer exists. Refresh the page.",
 		"errorInvalid": "Enter an amount greater than zero.",
-		"errorFailed": "Couldn't save the budget. Try again in a moment."
+		"errorFailed": "Couldn't save the budget. Try again in a moment.",
+		"departments": {
+			"title": "Department budgets",
+			"alertsOnly": "Alerts only",
+			"description": "Track what each department spends each day, week or month. Owners and admins are notified at about 80% and 100% of a budget. Requests are never blocked.",
+			"add": "Add department budget",
+			"unavailable": "Department budgets couldn't be loaded. Refresh the page to try again.",
+			"empty": "No department budgets yet.",
+			"noDepartments": "Create departments in <link>Departments</link> to give them budgets.",
+			"spendNote": "A department's spend is what its linked API keys cost, plus its members' keys that aren't linked to a department and their OAuth requests. It is updated about every hour.",
+			"unnamed": "Department",
+			"reached": "Reached",
+			"department": "Department",
+			"chooseDepartment": "Choose a department…",
+			"period": "Period",
+			"createTitle": "Add a department budget",
+			"editTitle": "Edit department budget",
+			"limitHelp": "Owners and admins are notified when the department's spend in the period reaches about 80% and 100% of this amount. Requests are not blocked.",
+			"saved": "Department budget saved",
+			"deleted": "Department budget deleted",
+			"deleteTitle": "Delete this department budget?",
+			"deleteBody": "Owners and admins will stop getting spend alerts for {department} over this period.",
+			"errorDepartment": "Choose a department.",
+			"errorConflict": "This department already has a budget for that period. Refresh the page to edit it.",
+			"errorNotFound": "This department or budget no longer exists. Refresh the page."
+		}
 	},
 	"slack": {
 		"title": "Slack",

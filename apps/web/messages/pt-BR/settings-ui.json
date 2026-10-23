@@ -6629,7 +6629,32 @@
 		"errorForbidden": "Somente proprietários e administradores do workspace podem alterar os orçamentos.",
 		"errorNotFound": "Este orçamento não existe mais. Atualize a página.",
 		"errorInvalid": "Insira um valor maior que zero.",
-		"errorFailed": "Não foi possível salvar o orçamento. Tente novamente em instantes."
+		"errorFailed": "Não foi possível salvar o orçamento. Tente novamente em instantes.",
+		"departments": {
+			"title": "Orçamentos de departamento",
+			"alertsOnly": "Somente alertas",
+			"description": "Acompanhe quanto cada departamento gasta por dia, semana ou mês. Proprietários e administradores são avisados em cerca de 80% e 100% de um orçamento. As solicitações nunca são bloqueadas.",
+			"add": "Adicionar orçamento de departamento",
+			"unavailable": "Não foi possível carregar os orçamentos de departamento. Atualize a página para tentar de novo.",
+			"empty": "Ainda não há orçamentos de departamento.",
+			"noDepartments": "Crie departamentos em <link>Departamentos</link> para definir orçamentos para eles.",
+			"spendNote": "O gasto de um departamento é o custo das chaves de API vinculadas a ele, mais as chaves dos seus membros que não estão vinculadas a nenhum departamento e as solicitações OAuth deles. Ele é atualizado mais ou menos a cada hora.",
+			"unnamed": "Departamento",
+			"reached": "Atingido",
+			"department": "Departamento",
+			"chooseDepartment": "Escolha um departamento…",
+			"period": "Período",
+			"createTitle": "Adicionar um orçamento de departamento",
+			"editTitle": "Editar orçamento de departamento",
+			"limitHelp": "Proprietários e administradores são avisados quando o gasto do departamento no período chega a cerca de 80% e 100% deste valor. As solicitações não são bloqueadas.",
+			"saved": "Orçamento de departamento salvo",
+			"deleted": "Orçamento de departamento excluído",
+			"deleteTitle": "Excluir este orçamento de departamento?",
+			"deleteBody": "Proprietários e administradores deixarão de receber alertas de gasto de {department} neste período.",
+			"errorDepartment": "Escolha um departamento.",
+			"errorConflict": "Este departamento já tem um orçamento para esse período. Atualize a página para editá-lo.",
+			"errorNotFound": "Este departamento ou orçamento não existe mais. Atualize a página."
+		}
 	},
 	"slack": {
 		"title": "Slack",

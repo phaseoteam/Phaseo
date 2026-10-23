@@ -44,7 +44,9 @@ describe("global search navigation", () => {
 				if ((normalized !== "page.tsx" && !normalized.endsWith("/page.tsx")) || normalized.includes("[") || normalized.startsWith("internal/") || normalized.startsWith("settings/internal/")) continue;
 				const source = fs.readFileSync(path.join(root, file), "utf8");
 				if (/\b(?:redirect|permanentRedirect)\(/.test(source)) continue;
-				const href = normalized === "page.tsx" ? "/" : `/${normalized.slice(0, -"/page.tsx".length)}`;
+				// Route groups such as `(list)` are not part of the URL.
+				const route = normalized === "page.tsx" ? "" : normalized.slice(0, -"/page.tsx".length).split("/").filter((segment) => !/^\(.+\)$/.test(segment)).join("/");
+				const href = `/${route}`;
 				expect(hrefs).toContain(href);
 			}
 		}

@@ -23,6 +23,12 @@ import {
 // Usage comes from gateway_workspace_budget_status, the function the gateway
 // enforces with, so the page shows exactly what enforcement sees. Every member
 // can read budgets; only owners and admins can change them.
+//
+// Department budgets (workspace_department_budgets) live on the same page.
+// They only alert, through the 15-minute sweep_department_budget_alerts, so
+// their writes need no gateway invalidation. Usage comes from
+// workspace_department_budget_status, the function the sweep reads, and the
+// writes use the same validation and audit actions as /v1/department-budgets.
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const BUDGET_COLUMNS = "id,workspace_id,interval,limit_nanos,created_by,created_at,updated_at";
@@ -44,6 +50,22 @@ type BudgetStatusRow = BudgetRow & {
 	window_start?: string | null;
 	reset_at?: string | null;
 };
+
+export type DepartmentBudgetInterval = Exclude<BudgetInterval, "lifetime">;
+
+export type SettingsDepartmentBudget = Omit<SettingsWorkspaceBudget, "interval"> & {
+	interval: DepartmentBudgetInterval;
+	department_id: string;
+	department_name: string | null;
+};
+
+export type SettingsBudgetDepartment = { id: string; name: string };
+
+const DEPARTMENT_BUDGET_COLUMNS = "id,workspace_id,department_id,interval,limit_nanos,created_by,created_at,updated_at";
+const DEPARTMENT_BUDGET_INTERVAL_ERROR = "interval must be daily, weekly, or monthly";
+
+type DepartmentBudgetRow = Omit<BudgetRow, "interval"> & { interval: DepartmentBudgetInterval; department_id: string };
+type DepartmentBudgetStatusRow = DepartmentBudgetRow & Omit<BudgetStatusRow, "interval"> & { department_name?: string | null };
 
 export type SettingsWorkspaceBudget = {
 	id: string;
@@ -95,7 +117,27 @@ function budgetId(c: any): string | null {
 	return UUID_PATTERN.test(id) ? id.toLowerCase() : null;
 }
 
-export function formatSettingsBudget(row: BudgetStatusRow): SettingsWorkspaceBudget {
+function departmentBudgetId(c: any): string | null {
+	const id = String(c.req.param("departmentBudgetId") ?? "").trim();
+	return UUID_PATTERN.test(id) ? id.toLowerCase() : null;
+}
+
+/** Department budgets have no lifetime window. */
+function parseDepartmentBudgetInterval(value: unknown): DepartmentBudgetInterval | null {
+	const interval = parseBudgetInterval(value);
+	return interval && interval !== "lifetime" ? interval : null;
+}
+
+export function formatSettingsDepartmentBudget(row: DepartmentBudgetStatusRow): SettingsDepartmentBudget {
+	return {
+		...formatSettingsBudget(row),
+		interval: row.interval,
+		department_id: row.department_id,
+		department_name: row.department_name ?? null,
+	};
+}
+
+export function formatSettingsBudget(row: Omit<BudgetStatusRow, "interval"> & { interval: BudgetInterval }): SettingsWorkspaceBudget {
 	const limitNanos = Number(row.limit_nanos) || 0;
 	const usageNanos = Math.max(0, Number(row.usage_nanos ?? 0) || 0);
 	return {
@@ -128,6 +170,37 @@ async function loadBudgetStatus(context: AccountWorkspaceContext): Promise<{ bud
 	return { budgets, now: typeof result?.now === "string" ? result.now : null };
 }
 
+/** One RPC: usage per department budget, summed in SQL. */
+async function loadDepartmentBudgetStatus(context: AccountWorkspaceContext): Promise<DepartmentBudgetStatusRow[]> {
+	const { data, error } = await context.client.rpc("workspace_department_budget_status", { p_workspace_id: context.workspaceId });
+	if (error) throw error;
+	return Array.isArray(data) ? data as DepartmentBudgetStatusRow[] : [];
+}
+
+async function loadDepartments(context: AccountWorkspaceContext): Promise<SettingsBudgetDepartment[]> {
+	const { data, error } = await context.client.from("workspace_departments").select("id,name")
+		.eq("workspace_id", context.workspaceId).order("name").limit(500);
+	if (error) throw error;
+	return (data ?? []).map((row: { id: string; name: string }) => ({ id: row.id, name: row.name }));
+}
+
+async function departmentStatusFor(context: AccountWorkspaceContext, row: DepartmentBudgetRow): Promise<SettingsDepartmentBudget> {
+	const status = await loadDepartmentBudgetStatus(context).catch(() => null);
+	return formatSettingsDepartmentBudget(status?.find((budget) => budget.id === row.id) ?? row);
+}
+
+async function auditDepartmentBudget(context: AccountWorkspaceContext, action: "created" | "updated" | "deleted", row: DepartmentBudgetRow) {
+	await recordWorkspaceAuditEvent(context.client as never, {
+		workspaceId: context.workspaceId,
+		actorUserId: context.user.id,
+		action: `workspace_department_budget.${action}`,
+		targetType: "workspace_department_budget",
+		targetId: row.id,
+		targetName: row.interval,
+		metadata: { department_id: row.department_id, interval: row.interval, limit_nanos: Number(row.limit_nanos) },
+	});
+}
+
 async function statusFor(context: AccountWorkspaceContext, row: BudgetRow): Promise<SettingsWorkspaceBudget> {
 	const status = await loadBudgetStatus(context).catch(() => null);
 	return formatSettingsBudget(status?.budgets.find((budget) => budget.id === row.id) ?? row);
@@ -153,11 +226,18 @@ export const accountSettingsBudgetsRouter = new Hono<{ Bindings: Env }>();
 
 accountSettingsBudgetsRouter.get("/budgets", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
-	if (!workspaceId) return json(c, { workspaceId: null, canManageBudgets: false, observedAt: new Date().toISOString(), budgets: [] });
+	if (!workspaceId) {
+		return json(c, { workspaceId: null, canManageBudgets: false, observedAt: new Date().toISOString(), budgets: [], departmentBudgets: [], departments: [] });
+	}
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return json(c, { error: "forbidden" }, 403);
 	try {
-		const status = await loadBudgetStatus(context);
+		// Department budgets are optional on the page: if they can't be read, the
+		// workspace budgets still load and departmentBudgets is null.
+		const [status, departmentSection] = await Promise.all([
+			loadBudgetStatus(context),
+			Promise.all([loadDepartmentBudgetStatus(context), loadDepartments(context)]).catch(() => null),
+		]);
 		const budgets = status.budgets
 			.map(formatSettingsBudget)
 			.sort((a, b) => budgetIntervalRank(a.interval) - budgetIntervalRank(b.interval));
@@ -166,6 +246,8 @@ accountSettingsBudgetsRouter.get("/budgets", async (c) => {
 			canManageBudgets: canManageBudgets(context),
 			observedAt: status.now ?? new Date().toISOString(),
 			budgets,
+			departmentBudgets: departmentSection ? departmentSection[0].map(formatSettingsDepartmentBudget) : null,
+			departments: departmentSection ? departmentSection[1] : [],
 		});
 	} catch {
 		return json(c, { error: "budgets_unavailable" }, 503);
@@ -240,4 +322,69 @@ accountSettingsBudgetsRouter.delete("/budgets/:budgetId", async (c) => {
 	await audit(context, "deleted", row);
 	const gatewayCacheInvalidated = await invalidate(context, c.env);
 	return json(c, { deleted: true, id: row.id, gatewayCacheInvalidated });
+});
+
+accountSettingsBudgetsRouter.post("/budgets/departments", async (c) => {
+	const body = await readBody(c);
+	const manager = await managerContext(c, body.workspaceId);
+	if ("response" in manager) return manager.response;
+	const { context } = manager;
+	const departmentId = String(body.departmentId ?? "").trim();
+	const interval = parseDepartmentBudgetInterval(body.interval);
+	const limit = parseBudgetLimitUsd(body.limit);
+	if (!UUID_PATTERN.test(departmentId)) return badRequest(c, "departmentId must be a UUID");
+	if (!interval) return badRequest(c, DEPARTMENT_BUDGET_INTERVAL_ERROR);
+	if (limit === null) return badRequest(c, BUDGET_LIMIT_ERROR);
+	const result = await context.client.from("workspace_department_budgets").insert({
+		workspace_id: context.workspaceId,
+		department_id: departmentId.toLowerCase(),
+		interval,
+		limit_nanos: budgetUsdToNanos(limit),
+		created_by: context.user.id,
+	}).select(DEPARTMENT_BUDGET_COLUMNS).maybeSingle();
+	if (result.error) {
+		if (result.error.code === "23505") return json(c, { error: "conflict", message: `This department already has a ${interval} budget` }, 409);
+		// The foreign key covers (department_id, workspace_id), so another workspace's department is not found either.
+		if (result.error.code === "23503") return json(c, { error: "not_found", message: "Department not found" }, 404);
+		return json(c, { error: "budget_write_failed" }, 503);
+	}
+	const row = result.data as DepartmentBudgetRow;
+	await auditDepartmentBudget(context, "created", row);
+	return json(c, { budget: await departmentStatusFor(context, row) }, 201);
+});
+
+accountSettingsBudgetsRouter.patch("/budgets/departments/:departmentBudgetId", async (c) => {
+	const body = await readBody(c);
+	const manager = await managerContext(c, body.workspaceId);
+	if ("response" in manager) return manager.response;
+	const { context } = manager;
+	const id = departmentBudgetId(c);
+	if (!id) return badRequest(c, "Budget id is required");
+	const limit = parseBudgetLimitUsd(body.limit);
+	if (limit === null) return badRequest(c, BUDGET_LIMIT_ERROR);
+	const result = await context.client.from("workspace_department_budgets").update({
+		limit_nanos: budgetUsdToNanos(limit),
+		updated_at: new Date().toISOString(),
+	}).eq("workspace_id", context.workspaceId).eq("id", id).select(DEPARTMENT_BUDGET_COLUMNS).maybeSingle();
+	if (result.error) return json(c, { error: "budget_write_failed" }, 503);
+	if (!result.data) return json(c, { error: "not_found", message: "Budget not found" }, 404);
+	const row = result.data as DepartmentBudgetRow;
+	await auditDepartmentBudget(context, "updated", row);
+	return json(c, { budget: await departmentStatusFor(context, row) });
+});
+
+accountSettingsBudgetsRouter.delete("/budgets/departments/:departmentBudgetId", async (c) => {
+	const body = await readBody(c);
+	const manager = await managerContext(c, body.workspaceId ?? c.req.query("workspaceId"));
+	if ("response" in manager) return manager.response;
+	const { context } = manager;
+	const id = departmentBudgetId(c);
+	if (!id) return badRequest(c, "Budget id is required");
+	const result = await context.client.from("workspace_department_budgets").delete()
+		.eq("workspace_id", context.workspaceId).eq("id", id).select(DEPARTMENT_BUDGET_COLUMNS).maybeSingle();
+	if (result.error) return json(c, { error: "budget_write_failed" }, 503);
+	if (!result.data) return json(c, { error: "not_found", message: "Budget not found" }, 404);
+	const row = result.data as DepartmentBudgetRow;
+	await auditDepartmentBudget(context, "deleted", row);
+	return json(c, { deleted: true, id: row.id });
 });

@@ -6629,7 +6629,32 @@
 		"errorForbidden": "Nur Inhaber und Admins des Workspace können Budgets ändern.",
 		"errorNotFound": "Dieses Budget existiert nicht mehr. Lade die Seite neu.",
 		"errorInvalid": "Gib einen Betrag größer als null ein.",
-		"errorFailed": "Das Budget konnte nicht gespeichert werden. Versuche es gleich noch einmal."
+		"errorFailed": "Das Budget konnte nicht gespeichert werden. Versuche es gleich noch einmal.",
+		"departments": {
+			"title": "Abteilungsbudgets",
+			"alertsOnly": "Nur Benachrichtigungen",
+			"description": "Verfolge, was jede Abteilung pro Tag, Woche oder Monat ausgibt. Inhaber und Admins werden bei etwa 80 % und 100 % eines Budgets benachrichtigt. Anfragen werden nie blockiert.",
+			"add": "Abteilungsbudget hinzufügen",
+			"unavailable": "Die Abteilungsbudgets konnten nicht geladen werden. Lade die Seite neu, um es noch einmal zu versuchen.",
+			"empty": "Noch keine Abteilungsbudgets.",
+			"noDepartments": "Lege unter <link>Abteilungen</link> Abteilungen an, um ihnen Budgets zu geben.",
+			"spendNote": "Die Ausgaben einer Abteilung sind die Kosten ihrer verknüpften API-Schlüssel, plus die Schlüssel ihrer Mitglieder, die mit keiner Abteilung verknüpft sind, und deren OAuth-Anfragen. Sie werden etwa stündlich aktualisiert.",
+			"unnamed": "Abteilung",
+			"reached": "Erreicht",
+			"department": "Abteilung",
+			"chooseDepartment": "Abteilung auswählen…",
+			"period": "Zeitraum",
+			"createTitle": "Abteilungsbudget hinzufügen",
+			"editTitle": "Abteilungsbudget bearbeiten",
+			"limitHelp": "Inhaber und Admins werden benachrichtigt, wenn die Ausgaben der Abteilung im Zeitraum etwa 80 % und 100 % dieses Betrags erreichen. Anfragen werden nicht blockiert.",
+			"saved": "Abteilungsbudget gespeichert",
+			"deleted": "Abteilungsbudget gelöscht",
+			"deleteTitle": "Dieses Abteilungsbudget löschen?",
+			"deleteBody": "Inhaber und Admins erhalten für {department} in diesem Zeitraum keine Ausgabenbenachrichtigungen mehr.",
+			"errorDepartment": "Wähle eine Abteilung aus.",
+			"errorConflict": "Diese Abteilung hat für diesen Zeitraum bereits ein Budget. Lade die Seite neu, um es zu bearbeiten.",
+			"errorNotFound": "Diese Abteilung oder dieses Budget gibt es nicht mehr. Lade die Seite neu."
+		}
 	},
 	"slack": {
 		"title": "Slack",

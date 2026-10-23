@@ -6629,7 +6629,32 @@
 		"errorForbidden": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar los presupuestos.",
 		"errorNotFound": "Este presupuesto ya no existe. Actualiza la página.",
 		"errorInvalid": "Introduce un importe mayor que cero.",
-		"errorFailed": "No se pudo guardar el presupuesto. Inténtalo de nuevo en un momento."
+		"errorFailed": "No se pudo guardar el presupuesto. Inténtalo de nuevo en un momento.",
+		"departments": {
+			"title": "Presupuestos de departamento",
+			"alertsOnly": "Solo alertas",
+			"description": "Controla lo que gasta cada departamento al día, a la semana o al mes. Los propietarios y administradores reciben un aviso hacia el 80 % y el 100 % de un presupuesto. Las solicitudes nunca se bloquean.",
+			"add": "Añadir presupuesto de departamento",
+			"unavailable": "No se pudieron cargar los presupuestos de departamento. Actualiza la página para volver a intentarlo.",
+			"empty": "Todavía no hay presupuestos de departamento.",
+			"noDepartments": "Crea departamentos en <link>Departamentos</link> para asignarles presupuestos.",
+			"spendNote": "El gasto de un departamento es lo que cuestan sus claves de API vinculadas, más las claves de sus miembros que no están vinculadas a ningún departamento y sus solicitudes OAuth. Se actualiza aproximadamente cada hora.",
+			"unnamed": "Departamento",
+			"reached": "Alcanzado",
+			"department": "Departamento",
+			"chooseDepartment": "Elige un departamento…",
+			"period": "Periodo",
+			"createTitle": "Añadir un presupuesto de departamento",
+			"editTitle": "Editar presupuesto de departamento",
+			"limitHelp": "Los propietarios y administradores reciben un aviso cuando el gasto del departamento en el periodo alcanza aproximadamente el 80 % y el 100 % de este importe. Las solicitudes no se bloquean.",
+			"saved": "Presupuesto de departamento guardado",
+			"deleted": "Presupuesto de departamento eliminado",
+			"deleteTitle": "¿Eliminar este presupuesto de departamento?",
+			"deleteBody": "Los propietarios y administradores dejarán de recibir alertas de gasto de {department} para este periodo.",
+			"errorDepartment": "Elige un departamento.",
+			"errorConflict": "Este departamento ya tiene un presupuesto para ese periodo. Actualiza la página para editarlo.",
+			"errorNotFound": "Este departamento o presupuesto ya no existe. Actualiza la página."
+		}
 	},
 	"slack": {
 		"title": "Slack",

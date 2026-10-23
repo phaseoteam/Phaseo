@@ -662,12 +662,21 @@ export type SettingsWorkspaceBudget = {
 	created_at: string;
 	updated_at: string;
 };
+/** A department budget: alerts at about 80% and 100%, never blocks (web-api settings-budgets). */
+export type SettingsDepartmentBudget = Omit<SettingsWorkspaceBudget, "interval"> & {
+	interval: Exclude<WorkspaceBudgetInterval, "lifetime">;
+	department_id: string;
+	department_name: string | null;
+};
 export type SettingsBudgetsInitialData = {
 	workspaceId: string | null;
 	canManageBudgets: boolean;
 	/** Database time the usage was read, so projections match between render and hydration. */
 	observedAt: string;
 	budgets: SettingsWorkspaceBudget[];
+	/** Null when department budgets couldn't be read; absent from older web-api responses. */
+	departmentBudgets?: SettingsDepartmentBudget[] | null;
+	departments?: Array<{ id: string; name: string }>;
 };
 
 export type SettingsUsageAlertsInitialData = { signedIn: boolean; warnings: DeprecationWarning[]; workspaceId: string | null };
