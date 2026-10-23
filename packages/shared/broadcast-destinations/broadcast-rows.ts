@@ -510,7 +510,7 @@ export async function sendBroadcastRows(
 	if (!isBroadcastRowsDestination(id)) throw new Error("Not a row destination");
 	if (id === "clickhouse") {
 		const target = clickHouseTarget(config);
-		return send(target.url, {
+		return settled(await send(target.url, {
 			method: "POST",
 			headers: {
 				"content-type": "application/x-ndjson",
@@ -519,7 +519,7 @@ export async function sendBroadcastRows(
 				"x-clickhouse-key": target.password,
 			},
 			body: await gzip(jsonLines(rows)) as Uint8Array<ArrayBuffer>,
-		});
+		}));
 	}
 	const now = options.now ?? new Date();
 	const store = objectStore(id, config);
