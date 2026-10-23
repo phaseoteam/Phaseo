@@ -23,7 +23,7 @@
 		"typecheck": "turbo run typecheck",
 		"clean": "turbo run clean",
 		"test:sdk-ts": "cd packages/sdk/sdk-ts && pnpm run test",
-		"test:sdk-py": "node scripts/run-python.mjs --ensure pytest --with ./packages/sdk/sdk-py -- -m pytest packages/sdk/sdk-py/tests",
+		"test:sdk-py": "node scripts/run-python.mjs --ensure pytest --with ./packages/sdk/sdk-py[realtime] -- -m pytest packages/sdk/sdk-py/tests",
 		"test:sdk-go": "pnpm --filter @phaseo/go-sdk run test",
 		"test:sdk-csharp": "pnpm --filter @phaseo/csharp-sdk run test",
 		"test:sdk-java": "pnpm --filter @phaseo/java-sdk run test",

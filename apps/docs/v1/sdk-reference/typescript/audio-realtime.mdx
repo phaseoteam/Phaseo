@@ -1,0 +1,81 @@
+---
+icon: "phone"
+title: "Realtime voice"
+description: "Run a realtime voice call through the Phaseo relay with the TypeScript SDK and get the final bill when it ends."
+"og:image": "https://phaseo.app/og/dynamic?title=Realtime%20voice&description=Run%20a%20realtime%20voice%20call%20through%20the%20Phaseo%20relay%20with%20the%20TypeScript%20SDK%20and%20get%20the%20final%20bill%20when%20it%20ends.&pathname=/docs/v1/sdk-reference/typescript/audio-realtime"
+---
+
+<Note>
+Realtime voice is in beta and access is gated per workspace. Translations of this page are pending.
+</Note>
+
+**Method**: `client.realtime.connect()` creates the session (`POST /v1/audio/realtime/sessions`), opens the relay WebSocket and resolves once the relay sends `relay.connected`. It works in browsers and in Node.js 22 or later, which have a global `WebSocket`. On older runtimes, install the `ws` package or pass your own constructor as `webSocket`.
+
+The relay protocol, warnings and reason codes are described in [Realtime voice sessions](/v1/guides/realtime-voice).
+
+### Example
+
+```typescript
+import { Phaseo, RealtimeSessionClosedError } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+
+const session = await client.realtime.connect({
+  model: "openai/gpt-realtime-2",
+  voice: "marin",
+  instructions: "Answer in one sentence.",
+});
+
+session.onWarning((warning) => console.warn(warning.code, warning.message));
+session.on("response.output_audio.delta", (event) => play(event.delta as string));
+
+// PCM16 microphone audio: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+session.sendAudio(pcm16Chunk);
+
+try {
+  const ended = await session.end({ reason: "caller hung up" });
+  console.log(ended.reason, ended.duration_seconds, ended.cost.total_usd, ended.billing_status);
+} catch (error) {
+  if (error instanceof RealtimeSessionClosedError) {
+    // The call is still billed. Fetch the final cost later with error.finalBill.path.
+    console.error(error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+To read every event instead, iterate the session. Iteration stops when the socket closes.
+
+```typescript
+for await (const event of session) {
+  if (event.type === "session.ended") console.log("bill", event.cost);
+}
+```
+
+### Connect options
+
+- `model` (required): a realtime model ID, for example `openai/gpt-realtime-2`.
+- `voice`, `instructions`, `provider`, `metadata`: passed to the create-session request.
+- `webSocket`: a WebSocket constructor to use instead of the global one.
+- `connectTimeoutMs`: how long to wait for `relay.connected`. Default 30 seconds.
+
+### Session
+
+| Member | Description |
+| --- | --- |
+| `id`, `info` | The session ID and the create-session response, without `client_secret`. |
+| `sendAudio(pcm16)` | Sends a `Uint8Array` or `ArrayBuffer` of PCM16 audio as `client.audio`. The SDK base64-encodes it. |
+| `send(event)` | Sends any event as JSON, for provider-specific messages. |
+| `on(type, listener)` | Subscribes to one event type, or every event with `"*"`. Returns an unsubscribe function. Provider events arrive unchanged. |
+| `onWarning(listener)`, `onEnded(listener)` | Typed helpers for `session.warning` and `session.ended`. |
+| `[Symbol.asyncIterator]` | Yields every event from when iteration starts until the socket closes. |
+| `end({ reason?, cancelResponse?, timeoutMs? })` | Sends `session.end` and resolves with `session.ended`: `reason`, `initiated_by`, `duration_seconds`, `usage`, `cost`, `billing_status` and, unless settled, `final_bill`. Default timeout 60 seconds. |
+| `ended` | A promise for `session.ended` however the call ends, including endings the provider or gateway started. |
+| `close()` | Closes the socket without waiting for the bill. The call is still billed. |
+
+### Errors
+
+If the socket closes, or `end()` times out, without `session.ended`, `end()` and `ended` reject with `RealtimeSessionClosedError`. It has `sessionId`, `closeCode`, `closeReason` and `finalBill`, the request that returns the final cost once it is settled: `GET /v1/generations?id=realtime%3A<session_id>`. `realtimeFinalBill(sessionId)` builds the same request.
+
+`connect()` rejects if the relay ends the session before it connects or if `relay.connected` doesn't arrive in time.

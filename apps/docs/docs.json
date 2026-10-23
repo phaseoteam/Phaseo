@@ -876,7 +876,8 @@
                     "pages": [
                       "v1/sdk-reference/typescript/audio-speech",
                       "v1/sdk-reference/typescript/audio-transcriptions",
-                      "v1/sdk-reference/typescript/audio-translations"
+                      "v1/sdk-reference/typescript/audio-translations",
+                      "v1/sdk-reference/typescript/audio-realtime"
                     ]
                   },
                   {
@@ -934,7 +935,8 @@
                     "pages": [
                       "v1/sdk-reference/python/audio-speech",
                       "v1/sdk-reference/python/audio-transcriptions",
-                      "v1/sdk-reference/python/audio-translations"
+                      "v1/sdk-reference/python/audio-translations",
+                      "v1/sdk-reference/python/audio-realtime"
                     ]
                   },
                   {
