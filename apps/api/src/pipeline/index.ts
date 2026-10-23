@@ -24,6 +24,9 @@ import {
 	logPipelineExecutionError,
 } from "./error-response";
 import { rejectedByRateLimitPolicy, withRateLimitPolicyHeaders } from "@core/rate-limit-policies";
+import {
+	createConcurrencyLeases, releaseConcurrencyAfter, releaseConcurrencyLeases, type ConcurrencyLeases,
+} from "@core/customer-rate-limits";
 
 const EARLY_OBSERVABILITY_BODY_LIMIT_BYTES = 256 * 1024;
 const MODEL_FALLBACK_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -251,6 +254,17 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
     const { endpoint, schema } = opts;
 
     return async function handler(req: Request) {
+        // Concurrency slots taken by rate limit policies are held until the response has been delivered.
+        const concurrency = createConcurrencyLeases();
+        try {
+            return releaseConcurrencyAfter(await handleRequest(req, concurrency), concurrency);
+        } catch (error) {
+            releaseConcurrencyLeases(concurrency);
+            throw error;
+        }
+    };
+
+    async function handleRequest(req: Request, concurrency: ConcurrencyLeases): Promise<Response> {
         const timer = new Timer();
         const gatewayTrace = gatewayTraceFor(req);
         gatewayTrace?.mark("pipeline_entry");
@@ -367,6 +381,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				// One HTTP request is one admission against rate limit policies.
 				rateLimitAdmissionId ??= fallbackPre.ctx.billingRequestId;
 				fallbackPre.ctx.rateLimitAdmissionId = rateLimitAdmissionId;
+				fallbackPre.ctx.rateLimitConcurrency = concurrency;
 				fallbackPre.ctx.routingDiagnostics = {
 					...(fallbackPre.ctx.routingDiagnostics ?? {}),
 					modelFallback: {
@@ -435,6 +450,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             pre.ctx.meta.before_ms = beforeMs;
         }
         pre.ctx.gatewayTimingTrace = gatewayTrace;
+        pre.ctx.rateLimitConcurrency = concurrency;
 
         try {
 			const response = withRateLimitPolicyHeaders(await runWithHeaders({ pre, req, endpoint, timing }), pre.ctx);
@@ -470,5 +486,5 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
                 req,
             }), pre.ctx);
         }
-    };
+    }
 }
