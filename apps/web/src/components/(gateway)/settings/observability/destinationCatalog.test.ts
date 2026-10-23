@@ -80,3 +80,11 @@ describe("object storage forms", () => {
 		}
 	});
 });
+
+describe("ClickHouse form", () => {
+	test("requires the endpoint, password and table, defaulting the user and database", () => {
+		const definition = AVAILABLE_DESTINATIONS.find((destination) => destination.id === "clickhouse");
+		const required = Object.fromEntries(definition!.fields.map((field) => [field.key, field.required !== false]));
+		expect(required).toEqual({ endpoint: true, username: false, password: true, database: false, table: true });
+	});
+});

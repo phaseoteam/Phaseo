@@ -2,6 +2,7 @@ export type ObservabilityDestinationType =
   | "arize"
   | "axiom"
   | "braintrust"
+  | "clickhouse"
   | "comet_opik"
   | "datadog"
   | "dynatrace"

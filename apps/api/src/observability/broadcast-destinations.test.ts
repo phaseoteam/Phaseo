@@ -16,7 +16,7 @@ import {
 describe("Broadcast destination registry", () => {
 	it("lists only destinations with an exporter as available", () => {
 		expect(AVAILABLE_BROADCAST_DESTINATION_IDS).toEqual([
-			"arize", "axiom", "braintrust", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse",
+			"arize", "axiom", "braintrust", "clickhouse", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse",
 			"langsmith", "new_relic", "otel_collector", "posthog", "r2", "respan", "s3", "sentry", "wandb_weave", "webhook",
 		]);
 	});

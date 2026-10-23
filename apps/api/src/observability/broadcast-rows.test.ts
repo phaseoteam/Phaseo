@@ -258,3 +258,44 @@ describe("sendBroadcastRows", () => {
 		expect(headers.authorization).toContain("x-amz-security-token");
 	});
 });
+
+describe("ClickHouse", () => {
+	const config = { endpoint: "https://abc123.eu-west-1.aws.clickhouse.cloud:8443/", username: "phaseo", password: "secret", database: "observability", table: "traces" };
+
+	it("inserts gzipped JSONEachRow through the HTTP interface", async () => {
+		const requests: Array<{ url: URL; init: RequestInit }> = [];
+		await sendBroadcastRows("clickhouse", config, broadcastRows(otlp, "gateway:req_1"), async (url, init) => {
+			requests.push({ url, init });
+			return new Response(null, { status: 200 });
+		});
+		const [{ url, init }] = requests;
+		expect(`${url.origin}${url.pathname}`).toBe("https://abc123.eu-west-1.aws.clickhouse.cloud:8443/");
+		expect(url.searchParams.get("query")).toBe("INSERT INTO `observability`.`traces` FORMAT JSONEachRow");
+		expect(Object.fromEntries([...url.searchParams].filter(([key]) => key !== "query"))).toEqual({
+			input_format_skip_unknown_fields: "1",
+			date_time_input_format: "best_effort",
+			input_format_json_read_objects_as_strings: "1",
+			async_insert: "1",
+			wait_for_async_insert: "1",
+		});
+		expect(init.method).toBe("POST");
+		expect(init.headers).toEqual({
+			"content-type": "application/x-ndjson",
+			"content-encoding": "gzip",
+			"x-clickhouse-user": "phaseo",
+			"x-clickhouse-key": "secret",
+		});
+		const text = await new Response(new Blob([init.body as Uint8Array<ArrayBuffer>]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+		expect(text.trim().split("\n").map((line) => JSON.parse(line).span_id)).toEqual(["b7ad6b7169203331", "00f067aa0ba902b7"]);
+	});
+
+	it("defaults the user and database and checks identifiers", () => {
+		expect(broadcastRowsEndpoint("clickhouse", { endpoint: "https://ch.example.com:8443", password: "p", table: "traces" })).toBe("https://ch.example.com:8443/");
+		expect(() => broadcastRowsEndpoint("clickhouse", { ...config, table: "traces; DROP TABLE x" })).toThrow("table must start with a letter");
+		expect(() => broadcastRowsEndpoint("clickhouse", { ...config, database: "a`b" })).toThrow("database must start with a letter");
+		expect(() => broadcastRowsEndpoint("clickhouse", { ...config, table: "" })).toThrow("table is required");
+		expect(() => broadcastRowsEndpoint("clickhouse", { ...config, password: "" })).toThrow("password is required");
+		expect(() => broadcastRowsEndpoint("clickhouse", { ...config, endpoint: "http://ch.example.com:8123" })).toThrow("endpoint must be an HTTPS URL");
+		expect(() => broadcastRowsEndpoint("clickhouse", { ...config, endpoint: "https://ch.example.com/?user=x" })).toThrow("endpoint must be an HTTPS URL");
+	});
+});

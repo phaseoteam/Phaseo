@@ -1,5 +1,5 @@
 // Delivery for Broadcast destinations that store rows rather than receive
-// traces: object storage, and later warehouses. Each span in an event's OTLP
+// traces: object storage and databases. Each span in an event's OTLP
 // payload becomes one flat row, and a batch of rows is written in one request.
 // Dependency-free so the gateway and the dashboard API share it; only Web
 // Crypto and CompressionStream are used.
@@ -25,12 +25,13 @@ export type BroadcastRow = {
 	resource_attributes: Json;
 };
 
-export const BROADCAST_ROWS_DESTINATION_IDS = ["gcs", "r2", "s3"] as const;
+export const BROADCAST_ROWS_DESTINATION_IDS = ["clickhouse", "gcs", "r2", "s3"] as const;
 export type BroadcastRowsDestinationId = (typeof BROADCAST_ROWS_DESTINATION_IDS)[number];
 
-// The most one request carries, as uncompressed JSON. Objects are gzipped, so
-// what reaches the bucket is several times smaller.
+// The most one request carries, as uncompressed JSON. Bodies are gzipped, so
+// what is sent is several times smaller.
 export const BROADCAST_ROWS_REQUEST_LIMITS: Record<BroadcastRowsDestinationId, { bytes: number; rows: number }> = {
+	clickhouse: { bytes: 8 * 1024 * 1024, rows: 50_000 },
 	gcs: { bytes: 8 * 1024 * 1024, rows: 50_000 },
 	r2: { bytes: 8 * 1024 * 1024, rows: 50_000 },
 	s3: { bytes: 8 * 1024 * 1024, rows: 50_000 },
@@ -375,10 +376,53 @@ export function isBroadcastRowsDestination(id: unknown): id is BroadcastRowsDest
 	return BROADCAST_ROWS_DESTINATION_IDS.includes(id as BroadcastRowsDestinationId);
 }
 
+const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]{0,127}$/;
+
+function identifier(config: Record<string, unknown>, name: string, fallback?: string): string {
+	const value = field(config, name) || fallback || "";
+	if (!value) throw new Error(`${name} is required`);
+	if (!IDENTIFIER.test(value)) throw new Error(`${name} must start with a letter or underscore and use only letters, digits and underscores`);
+	return value;
+}
+
+type ClickHouseTarget = { url: URL; user: string; password: string };
+
+// https://clickhouse.com/docs/interfaces/http
+// Rows are inserted as JSONEachRow. Columns the table lacks are skipped, ISO
+// timestamps are read into DateTime64 columns, and attribute objects into
+// String columns as JSON text (or into JSON columns as is). Async inserts let
+// the server merge the many small batches Broadcast sends.
+function clickHouseTarget(config: Record<string, unknown>): ClickHouseTarget {
+	const endpoint = required(config, "endpoint");
+	let base: URL;
+	try {
+		base = new URL(endpoint);
+	} catch {
+		throw new Error("endpoint must be a valid absolute URL");
+	}
+	if (base.protocol !== "https:" || base.username || base.password || base.search || base.hash) {
+		throw new Error("endpoint must be an HTTPS URL without credentials, query or fragment");
+	}
+	const database = identifier(config, "database", "default");
+	const table = identifier(config, "table");
+	const url = new URL(base.origin + base.pathname.replace(/\/+$/, "") + "/");
+	url.searchParams.set("query", `INSERT INTO \`${database}\`.\`${table}\` FORMAT JSONEachRow`);
+	url.searchParams.set("input_format_skip_unknown_fields", "1");
+	url.searchParams.set("date_time_input_format", "best_effort");
+	url.searchParams.set("input_format_json_read_objects_as_strings", "1");
+	url.searchParams.set("async_insert", "1");
+	url.searchParams.set("wait_for_async_insert", "1");
+	return { url, user: field(config, "username") || "default", password: required(config, "password") };
+}
+
 // The base URL requests go to, after checking the config. Throws a message
 // naming the field at fault.
 export function broadcastRowsEndpoint(id: string, config: Record<string, unknown>): string {
 	if (!isBroadcastRowsDestination(id)) throw new Error("Not a row destination");
+	if (id === "clickhouse") {
+		const target = clickHouseTarget(config);
+		return `${target.url.origin}${target.url.pathname}`;
+	}
 	const store = objectStore(id, config);
 	pathTemplate(config);
 	required(config, "access_key_id");
@@ -464,6 +508,19 @@ export async function sendBroadcastRows(
 	options: { now?: Date; uuid?: string } = {},
 ): Promise<BroadcastRowsResult> {
 	if (!isBroadcastRowsDestination(id)) throw new Error("Not a row destination");
+	if (id === "clickhouse") {
+		const target = clickHouseTarget(config);
+		return send(target.url, {
+			method: "POST",
+			headers: {
+				"content-type": "application/x-ndjson",
+				"content-encoding": "gzip",
+				"x-clickhouse-user": target.user,
+				"x-clickhouse-key": target.password,
+			},
+			body: await gzip(jsonLines(rows)) as Uint8Array<ArrayBuffer>,
+		});
+	}
 	const now = options.now ?? new Date();
 	const store = objectStore(id, config);
 	const key = broadcastObjectKey(config, now, options.uuid ?? crypto.randomUUID());

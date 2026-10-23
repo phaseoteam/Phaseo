@@ -49,6 +49,7 @@ export interface ObservabilityDestination {
     | "arize"
     | "axiom"
     | "braintrust"
+    | "clickhouse"
     | "comet_opik"
     | "datadog"
     | "dynatrace"

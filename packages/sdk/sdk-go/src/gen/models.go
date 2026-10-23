@@ -3878,6 +3878,7 @@ const (
 	ObservabilityDestinationTypeArize ObservabilityDestinationType = "arize"
 	ObservabilityDestinationTypeAxiom ObservabilityDestinationType = "axiom"
 	ObservabilityDestinationTypeBraintrust ObservabilityDestinationType = "braintrust"
+	ObservabilityDestinationTypeClickhouse ObservabilityDestinationType = "clickhouse"
 	ObservabilityDestinationTypeCometOpik ObservabilityDestinationType = "comet_opik"
 	ObservabilityDestinationTypeDatadog ObservabilityDestinationType = "datadog"
 	ObservabilityDestinationTypeDynatrace ObservabilityDestinationType = "dynatrace"
