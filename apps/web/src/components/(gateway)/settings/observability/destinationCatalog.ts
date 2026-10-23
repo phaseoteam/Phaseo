@@ -148,6 +148,23 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		],
 	},
 	{
+		id: "gcs",
+		label: "Google Cloud Storage",
+		description: "Write traces to a bucket as gzipped JSON lines, one row per span.",
+		logoId: "google",
+		fields: [
+			{ key: "bucket", label: "Bucket", placeholder: "gateway-traces" },
+			{ key: "access_key_id", label: "HMAC Access ID", placeholder: "GOOG1..." },
+			{ key: "secret_access_key", label: "HMAC Secret", placeholder: "********", type: "password" },
+			{
+				key: "path_template",
+				label: "Path Template (Optional)",
+				placeholder: "phaseo/{year}/{month}/{day}/{hour}/{uuid}, must include {uuid}; .jsonl.gz is added",
+				required: false,
+			},
+		],
+	},
+	{
 		id: "grafana_cloud",
 		label: "Grafana Cloud",
 		description: "Send traces to Grafana Cloud Tempo with your stack's OpenTelemetry credentials.",
@@ -255,6 +272,30 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		],
 	},
 	{
+		id: "r2",
+		label: "Cloudflare R2",
+		description: "Write traces to an R2 bucket as gzipped JSON lines, one row per span.",
+		logoId: "cloudflare",
+		fields: [
+			{ key: "account_id", label: "Account ID", placeholder: "32-character Cloudflare account ID" },
+			{ key: "bucket", label: "Bucket", placeholder: "gateway-traces" },
+			{ key: "access_key_id", label: "Access Key ID", placeholder: "R2 API token access key ID" },
+			{ key: "secret_access_key", label: "Secret Access Key", placeholder: "********", type: "password" },
+			{
+				key: "jurisdiction",
+				label: "Jurisdiction (Optional)",
+				placeholder: "default, eu or fedramp, matching the bucket",
+				required: false,
+			},
+			{
+				key: "path_template",
+				label: "Path Template (Optional)",
+				placeholder: "phaseo/{year}/{month}/{day}/{hour}/{uuid}, must include {uuid}; .jsonl.gz is added",
+				required: false,
+			},
+		],
+	},
+	{
 		id: "respan",
 		label: "Respan",
 		description: "Send GenAI traces to Respan over OpenTelemetry.",
@@ -271,8 +312,8 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	},
 	{
 		id: "s3",
-		label: "S3 / S3-Compatible",
-		description: "Batch traces into object storage.",
+		label: "Amazon S3 / S3-Compatible",
+		description: "Write traces to a bucket as gzipped JSON lines, one row per span.",
 		logoId: "aws",
 		fields: [
 			{ key: "bucket", label: "Bucket", placeholder: "gateway-traces" },
@@ -291,8 +332,8 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 			},
 			{
 				key: "endpoint",
-				label: "Endpoint (Optional)",
-				placeholder: "https://s3.amazonaws.com",
+				label: "S3-Compatible Endpoint (Optional)",
+				placeholder: "https://minio.example.com, for stores other than AWS",
 				required: false,
 			},
 			{
@@ -305,7 +346,7 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 			{
 				key: "path_template",
 				label: "Path Template (Optional)",
-				placeholder: "{date}/{uuid}.json",
+				placeholder: "phaseo/{year}/{month}/{day}/{hour}/{uuid}, must include {uuid}; .jsonl.gz is added",
 				required: false,
 			},
 		],

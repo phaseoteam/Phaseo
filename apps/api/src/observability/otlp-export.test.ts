@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deliverGatewayOtlpPayload, deliverGatewayWebhookPayload, drainGatewayOtlpOutbox, filterMetadata, renderBroadcastPayload, selected } from "./otlp-export";
+import { deliverGatewayOtlpPayload, deliverGatewayRowsPayload, deliverGatewayWebhookPayload, drainGatewayOtlpOutbox, filterMetadata, renderBroadcastPayload, selected } from "./otlp-export";
 import { encodeOtlpTraceRequest } from "./otlp-protobuf";
 import { OTLP_PRESETS } from "./broadcast-destinations";
 
@@ -342,6 +342,29 @@ describe("deliverGatewayOtlpPayload", () => {
 			error: "Invalid OTLP endpoint: webhook_url_private_network_not_allowed",
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
+	});
+});
+
+describe("deliverGatewayRowsPayload", () => {
+	const config = { bucket: "traces", access_key_id: "AKIA", secret_access_key: "secret" };
+
+	it("rejects storage endpoints that resolve to private addresses", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await deliverGatewayRowsPayload([], { ...config, endpoint: "https://private-dns.example.com" }, 1, "s3");
+		expect(result).toMatchObject({ delivered: false, retryable: false, error: "Invalid destination endpoint: webhook_url_private_network_not_allowed" });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("does not retry a config the destination can never accept", async () => {
+		const result = await deliverGatewayRowsPayload([], { ...config, bucket: "Bad_Bucket" }, 1, "s3");
+		expect(result).toMatchObject({ delivered: false, retryable: false, error: expect.stringContaining("bucket must be") });
+	});
+
+	it("retries network failures", async () => {
+		vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Network connection lost")));
+		const result = await deliverGatewayRowsPayload([], config, 1, "s3");
+		expect(result).toMatchObject({ delivered: false, retryable: true, error: "Network connection lost" });
 	});
 });
 

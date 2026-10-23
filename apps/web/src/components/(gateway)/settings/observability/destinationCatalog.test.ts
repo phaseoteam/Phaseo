@@ -60,3 +60,22 @@ describe("webhook form", () => {
 		}
 	});
 });
+
+describe("object storage forms", () => {
+	test("ask for the bucket and keys, with the path template optional", () => {
+		const required: Record<string, string[]> = {
+			s3: ["bucket", "access_key_id", "secret_access_key"],
+			r2: ["account_id", "bucket", "access_key_id", "secret_access_key"],
+			gcs: ["bucket", "access_key_id", "secret_access_key"],
+		};
+		for (const [id, keys] of Object.entries(required)) {
+			const definition = AVAILABLE_DESTINATIONS.find((destination) => destination.id === id);
+			expect(definition).toBeDefined();
+			for (const key of keys) {
+				expect({ id, key, required: definition!.fields.find((field) => field.key === key)?.required !== false }).toEqual({ id, key, required: true });
+			}
+			expect(definition!.fields.find((field) => field.key === "secret_access_key")?.type).toBe("password");
+			expect(definition!.fields.find((field) => field.key === "path_template")?.required).toBe(false);
+		}
+	});
+});

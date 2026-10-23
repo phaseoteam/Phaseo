@@ -53,6 +53,7 @@ export interface ObservabilityDestinationCreateRequest {
     | "datadog"
     | "dynatrace"
     | "elastic"
+    | "gcs"
     | "grafana_cloud"
     | "honeycomb"
     | "langfuse"
@@ -60,7 +61,9 @@ export interface ObservabilityDestinationCreateRequest {
     | "new_relic"
     | "otel_collector"
     | "posthog"
+    | "r2"
     | "respan"
+    | "s3"
     | "sentry"
     | "wandb_weave"
     | "webhook";
