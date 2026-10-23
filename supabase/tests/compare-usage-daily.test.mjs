@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
-const migration = await readFile(new URL('../migrations/20261022123227_compare_usage_daily.sql', import.meta.url), 'utf8');
+const migration = await readFile(new URL('../migrations/20261023153357_compare_usage_daily.sql', import.meta.url), 'utf8');
 const schemaFile = await readFile(new URL('../schemas/public/functions/get_compare_usage_daily.sql', import.meta.url), 'utf8');
 assert.ok(migration.includes(schemaFile), 'the migration creates exactly the declarative function');
 
