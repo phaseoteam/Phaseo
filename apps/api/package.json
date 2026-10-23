@@ -35,6 +35,7 @@
 		"test:live:audio-images": "pnpm exec vitest run tests/integration/audio-images.live.spec.ts",
 		"test:live:video-batch": "pnpm exec vitest run tests/integration/video-batch.live.spec.ts",
 		"test:live:targeted": "tsx scripts/run-live-targeted-tests.ts",
+		"test:live:broadcast": "bash scripts/broadcast-live-local.sh",
 		"test:live:provider-endpoint-matrix": "pnpm exec vitest run tests/integration/provider-endpoint-matrix.live.spec.ts",
 		"test:live:provider": "tsx scripts/run-live-provider-tests.ts",
 		"test:live:provider:arcee": "tsx scripts/run-live-provider-tests.ts --provider arcee",
