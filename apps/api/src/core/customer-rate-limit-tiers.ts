@@ -39,7 +39,7 @@ type Manifest = { v: number; w: Record<string, string> };
  * The publisher is the only writer; the loader never consults Postgres, so a
  * missing key resolves to the `new` tier and is cached in this isolate only.
  */
-export async function readCustomerLimits(workspaceId: string, ladderRaw: string | undefined): Promise<ResolvedCustomerLimits> {
+export async function readCustomerLimits(workspaceId: string, ladderRaw: string | undefined, raisesEnabled = false): Promise<ResolvedCustomerLimits> {
 	const published = await tieredRead<PublishedCustomerTier>({
 		key: customerTierKey(workspaceId),
 		loader: async () => null,
@@ -54,7 +54,27 @@ export async function readCustomerLimits(workspaceId: string, ladderRaw: string 
 		isFreshInL3: () => true,
 		validate: isPublishedCustomerTier,
 	});
-	return resolveCustomerLimits(published, customerRateLimitLadder(ladderRaw), Date.now());
+	return resolveCustomerLimits(published, customerRateLimitLadder(ladderRaw), Date.now(), { raisesEnabled });
+}
+
+/** One workspace's trust-ladder inputs, or null when the workspace does not exist. */
+export async function readCustomerRateLimitInputs(workspaceId: string): Promise<CustomerRateLimitInputs | null> {
+	const { data, error } = await getSupabaseAdmin().rpc("gateway_customer_rate_limit_inputs", { p_workspace_id: workspaceId, p_limit: 1 });
+	if (error) throw new Error(error.message || "Failed to load customer rate-limit inputs");
+	return ((data ?? []) as CustomerRateLimitInputs[])[0] ?? null;
+}
+
+/**
+ * Publishes one workspace's tier straight away, e.g. after a self-serve raise,
+ * so it applies within the isolate cache time instead of the next publisher run.
+ * The manifest is left alone: the next run rewrites the same value once.
+ */
+export async function publishCustomerRateLimitTier(inputs: CustomerRateLimitInputs, ladderRaw: string | undefined): Promise<PublishedCustomerTier> {
+	const published = publishedCustomerTier(inputs, parseCustomerRateLimitLadder(ladderRaw), Date.now());
+	const kv = getCache();
+	if (published.tier === "new" && !published.override && !published.raise) await kv.delete(customerTierKey(inputs.workspace_id));
+	else await putPublished(kv, inputs.workspace_id, published);
+	return published;
 }
 
 /** Same envelope as the tiered cache's KV layer (`{ v, at }`), without its isolate fill. */

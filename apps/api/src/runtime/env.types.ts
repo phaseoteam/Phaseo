@@ -61,6 +61,8 @@ export type GatewayBindings = {
 	CUSTOMER_RATE_LIMIT_LADDER?: string;
 	CUSTOMER_RATE_LIMIT_LADDER_ENABLED?: string;
 	CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED?: string;
+	/** Kill switch for self-serve rate limit raises: requests and active raises apply only when "true". */
+	CUSTOMER_RATE_LIMIT_SELF_SERVE_RAISES_ENABLED?: string;
 	/** Enforces workspace rate limit policies (requests per minute) through CUSTOMER_RATE_LIMITS. */
 	RATE_LIMIT_POLICIES_ENABLED?: string;
 	/** Kill switch: "false" stops request classifiers. On when unset. */
