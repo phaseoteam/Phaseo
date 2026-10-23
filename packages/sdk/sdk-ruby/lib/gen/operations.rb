@@ -169,6 +169,12 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createLiveSession(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/live/sessions"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/management-keys"

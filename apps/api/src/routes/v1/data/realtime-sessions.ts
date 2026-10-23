@@ -128,7 +128,7 @@ export const realtimeSessionsRoutes = new Hono<Env>();
 export const liveSessionsRoutes = new Hono<Env>();
 export const createLiveSessionSchema = realtimeSessionBaseSchema.omit({ thinking_level: true }).extend({
 	type: z.literal("live").optional(), model: z.literal(LIVE_MODEL), provider: z.literal("openai"),
-	voice: z.enum(LIVE_VOICES).default("marin"), source: z.literal("chat"),
+	voice: z.enum(LIVE_VOICES).default("marin"), source: z.enum(["api", "chat"]).optional(),
 	backend_model: z.enum(LIVE_BACKENDS).default(LIVE_BACKENDS[0]),
 	backend_settings: liveBackendSettingsSchema.optional(),
 }).strict();
@@ -370,7 +370,11 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			workspace_id: auth.value.workspaceId,
 		});
 	}
-	if (!live && isLiveModel(parsed.data.model)) return err("unsupported_model_or_endpoint", { reason: "live_playground_only" });
+	if (!live && isLiveModel(parsed.data.model)) {
+		return err("unsupported_model_or_endpoint", { reason: "live_sessions_endpoint_required",
+			message: "GPT Live sessions are created with POST /v1/live/sessions.",
+			request_id: auth.value.requestId, workspace_id: auth.value.workspaceId });
+	}
 	const backendModel = "backend_model" in parsed.data ? String(parsed.data.backend_model) : undefined;
 	const context = await guardContext({
 		workspaceId: auth.value.workspaceId,

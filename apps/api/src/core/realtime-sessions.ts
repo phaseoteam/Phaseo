@@ -1010,8 +1010,10 @@ export async function createRealtimeSession(args: {
 			: null;
 	const voice = defaultVoice(provider, args.voice);
 	const live = isLiveModel(modelId);
-	if (live && (!args.liveBackendModel || args.source !== "chat" || !args.auth.userId || args.relay === false)) {
-		throw new Error("live_playground_only");
+	// GPT Live runs only through the relay (it owns billing). Playground sessions
+	// also need the signed-in user; API sessions are authorised by the key.
+	if (live && (!args.liveBackendModel || args.relay === false || (args.source === "chat" && !args.auth.userId))) {
+		throw new Error("live_session_invalid");
 	}
 	if (live && !LIVE_VOICES.includes(voice as typeof LIVE_VOICES[number])) throw new Error("live_voice_not_supported");
 	const liveSettings = live ? await createLiveConfig(args.liveBackendModel!, args.liveBackendSettings) : null;
