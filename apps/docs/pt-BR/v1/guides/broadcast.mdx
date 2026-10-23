@@ -13,7 +13,7 @@ O Broadcast é gratuito. Proprietários e administradores gerenciam os destinos 
 1. Abra **Configurações → Broadcast** e escolha um destino.
 2. Insira as credenciais dele. Elas são criptografadas antes do armazenamento e nunca mais são exibidas.
 3. Escolha o que é enviado (veja a seção "Escolher o que é enviado").
-4. Selecione **Conexão de teste**. O Phaseo envia um rastreamento de exemplo da mesma forma que as entregas reais, então uma falha aqui mostra o erro do próprio destino.
+4. Selecione **Testar conexão**. O Phaseo envia um rastreamento de exemplo da mesma forma que as entregas reais, então uma falha aqui mostra o erro do próprio destino.
 5. Salve. As solicitações concluídas depois disso são enviadas em cerca de um minuto.
 
 | Tipo | Destinos |
@@ -34,7 +34,7 @@ Cada destino tem suas próprias configurações:
 - **Metadados de geração**, **Custo**, **Identidade** e **Contexto da solicitação** ativam ou desativam, cada um, um grupo de atributos de span. Desativar **Contexto da solicitação** também remove os metadados da solicitação (veja a seção "Adicionar seu próprio contexto de rastreamento").
 - **Taxa** envia uma parte das solicitações elegíveis, de 0 a 1. A escolha é estável para cada solicitação e destino, então uma entrega repetida nunca é amostrada de forma diferente.
 - **Filtro de chave de API** inclui ou exclui solicitações feitas com chaves específicas.
-- **Propriedades do filtro** enviam apenas as solicitações correspondentes. As regras comparam campos como modelo, provedor, ID do usuário, motivo de término, custo ou contagens de tokens, e podem ser agrupadas com **e** e **ou**. **Matches regex** usa um mecanismo de tempo linear: referências retroativas e lookaround não são suportados, e um padrão grande demais é rejeitado ao salvar.
+- **Regras de filtro** enviam apenas as solicitações correspondentes. As regras comparam campos como modelo, provedor, ID do usuário, motivo de término, custo ou contagens de tokens, e podem ser agrupadas com **e** e **ou**. **Matches regex** usa um mecanismo de tempo linear: referências retroativas e lookaround não são suportados, e um padrão grande demais é rejeitado ao salvar.
 
 ## Adicionar seu próprio contexto de rastreamento
 
@@ -78,7 +78,7 @@ x-phaseo-signature: 5d2a…e41f
 
 `x-phaseo-signature` é o HMAC-SHA256 em hexadecimal do timestamp, de um ponto (`.`) e do corpo da solicitação sem alterações, usando seu segredo como chave. É o mesmo esquema dos webhooks de notificação, então você pode reutilizar o [código de verificação](./workspace-notifications.mdx) deles. As entregas do Broadcast não têm cabeçalho de ID de evento: elimine duplicatas pelos IDs de span no corpo.
 
-**Conexão de teste** envia `{"resourceSpans": []}` com um cabeçalho `X-Test-Connection: true`. Uma resposta `400` conta como acessível, então um receptor que rejeita exportações vazias também passa no teste.
+**Testar conexão** envia `{"resourceSpans": []}` com um cabeçalho `X-Test-Connection: true`. Uma resposta `400` conta como acessível, então um receptor que rejeita exportações vazias também passa no teste.
 
 ## Linhas de armazenamento de objetos e data warehouses
 
