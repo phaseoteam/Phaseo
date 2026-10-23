@@ -74,13 +74,16 @@ const RISK_FILTERS: KeySecurityRisk[] = ["safe_to_remove", "no_spend_limit", "ne
 /** How many storage locations show before "Show all". */
 const TOP_LOCATIONS = 5;
 
-// Full class names, so Tailwind finds them.
-const GREEN = { tag: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", icon: "text-emerald-600 dark:text-emerald-400" };
-const BLUE = { tag: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300", icon: "text-sky-600 dark:text-sky-400" };
-const VIOLET = { tag: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300", icon: "text-violet-600 dark:text-violet-400" };
-const AMBER = { tag: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300", icon: "text-amber-600 dark:text-amber-400" };
-const ORANGE = { tag: "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300", icon: "text-orange-600 dark:text-orange-400" };
-const ROSE = { tag: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300", icon: "text-rose-600 dark:text-rose-400" };
+// Full class names, so Tailwind finds them. Borders and fills use the sRGB hex of each
+// Tailwind 500 colour: Chrome draws the rounded corners of a faint oklch orange-500 or
+// violet-500 border with cyan specks on light backgrounds, because those colours sit
+// outside sRGB. The hex versions look the same without the specks.
+const GREEN = { tag: "border-[#00bc7d]/30 bg-[#00bc7d]/10 text-emerald-700 dark:text-emerald-300", icon: "text-emerald-600 dark:text-emerald-400" };
+const BLUE = { tag: "border-[#00a6f4]/30 bg-[#00a6f4]/10 text-sky-700 dark:text-sky-300", icon: "text-sky-600 dark:text-sky-400" };
+const VIOLET = { tag: "border-[#8e51ff]/30 bg-[#8e51ff]/10 text-violet-700 dark:text-violet-300", icon: "text-violet-600 dark:text-violet-400" };
+const AMBER = { tag: "border-[#fe9a00]/30 bg-[#fe9a00]/10 text-amber-700 dark:text-amber-300", icon: "text-amber-600 dark:text-amber-400" };
+const ORANGE = { tag: "border-[#ff6900]/30 bg-[#ff6900]/10 text-orange-700 dark:text-orange-300", icon: "text-orange-600 dark:text-orange-400" };
+const ROSE = { tag: "border-[#ff2056]/30 bg-[#ff2056]/10 text-rose-700 dark:text-rose-300", icon: "text-rose-600 dark:text-rose-400" };
 
 /** Green is fine, blue and violet are informational, amber and orange want a look, rose is the most urgent. */
 const TONES: Record<KeySecurityRisk | KeySecurityStatus, typeof GREEN> = {
