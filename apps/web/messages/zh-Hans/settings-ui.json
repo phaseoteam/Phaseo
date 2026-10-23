@@ -6485,7 +6485,7 @@
 		"newPolicy": "新建策略",
 		"emptyTitle": "还没有速率限制策略",
 		"emptyBody": "创建一个策略，然后将其分配给密钥、成员、部门或护栏。",
-		"strict": "严格（尚未执行）",
+		"strict": "严格",
 		"edit": "编辑",
 		"delete": "删除",
 		"cancel": "取消",
@@ -6496,7 +6496,7 @@
 		"listAppliesTo": "适用于",
 		"limitRequests": "{count, number} 个请求/分钟",
 		"limitTokens": "{count, number} 个令牌/分钟",
-		"limitConcurrent": "{count, number} 个并发（尚未执行）",
+		"limitConcurrent": "同时 {count, number} 个",
 		"throttled": "过去 {hours} 小时内 {count, number} 个请求",
 		"notThrottled": "过去 {hours} 小时内没有",
 		"notAssigned": "尚未分配",
@@ -6510,15 +6510,19 @@
 			"descriptionPlaceholder": "可选",
 			"requestsPerMinute": "每分钟请求数",
 			"tokensPerMinute": "每分钟令牌数",
+			"concurrentRequests": "并发请求数",
 			"noLimit": "不限制",
 			"tokensHint": "令牌在每个请求完成后按实际用量计数，因此正在进行的请求可能使用量略微超过限制。",
-			"apiOnlyHint": "此策略还通过 API 设置了并发限制或严格模式。在此处保存会保留这些设置。"
+			"concurrencyHint": "并发请求数统计正在处理的请求，流式请求在结束前都会计入。检查它会给策略覆盖的每个请求增加少量延迟。",
+			"strict": "严格模式",
+			"strictHint": "在发送每个请求前检查限制，无法检查时拒绝请求。结果精确，但会给策略覆盖的每个请求增加延迟。关闭时，限制在后台检查，检查失败时请求会被放行。"
 		},
 		"problems": {
 			"name": "请输入不超过 100 个字符的名称。",
 			"description": "描述不能超过 500 个字符。",
 			"requestsPerMinute": "请输入 1 到 2,147,483,647 之间的整数，或留空。",
 			"tokensPerMinute": "请输入至少为 1 的整数，或留空。",
+			"concurrentRequests": "请输入 1 到 2,147,483,647 之间的整数，或留空。",
 			"limits": "请至少设置一个限制。"
 		},
 		"assignmentsTitle": "分配",

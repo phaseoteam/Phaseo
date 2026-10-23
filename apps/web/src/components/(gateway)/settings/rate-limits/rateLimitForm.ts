@@ -19,19 +19,23 @@ export type PolicyDraft = {
 	description: string;
 	requestsPerMinute: string;
 	tokensPerMinute: string;
+	concurrentRequests: string;
+	failClosed: boolean;
 };
 
-export type PolicyProblem = "name" | "description" | "requestsPerMinute" | "tokensPerMinute" | "limits";
+export type PolicyProblem = "name" | "description" | "requestsPerMinute" | "tokensPerMinute" | "concurrentRequests" | "limits";
 
 export type PolicyPayload = {
 	name: string;
 	description: string | null;
 	requests_per_minute: number | null;
 	tokens_per_minute: number | null;
+	concurrent_requests: number | null;
+	fail_closed: boolean;
 };
 
 export function emptyPolicyDraft(): PolicyDraft {
-	return { name: "", description: "", requestsPerMinute: "", tokensPerMinute: "" };
+	return { name: "", description: "", requestsPerMinute: "", tokensPerMinute: "", concurrentRequests: "", failClosed: false };
 }
 
 export function draftFromPolicy(policy: SettingsRateLimitPolicy): PolicyDraft {
@@ -40,6 +44,8 @@ export function draftFromPolicy(policy: SettingsRateLimitPolicy): PolicyDraft {
 		description: policy.description ?? "",
 		requestsPerMinute: policy.requestsPerMinute == null ? "" : String(policy.requestsPerMinute),
 		tokensPerMinute: policy.tokensPerMinute == null ? "" : String(policy.tokensPerMinute),
+		concurrentRequests: policy.concurrentRequests == null ? "" : String(policy.concurrentRequests),
+		failClosed: policy.failClosed,
 	};
 }
 
@@ -52,15 +58,8 @@ function parseLimit(value: string, max: number): number | null | undefined {
 	return Number.isSafeInteger(parsed) && parsed >= 1 && parsed <= max ? parsed : undefined;
 }
 
-/**
- * Builds the create or update body. The page edits only requests and tokens per
- * minute, so a policy whose only limit is a concurrency limit set through the
- * API still counts as having a limit.
- */
-export function draftToPayload(
-	draft: PolicyDraft,
-	existing?: Pick<SettingsRateLimitPolicy, "concurrentRequests"> | null,
-): { ok: true; payload: PolicyPayload } | { ok: false; problem: PolicyProblem } {
+/** Builds the create or update body, with every field the page edits. */
+export function draftToPayload(draft: PolicyDraft): { ok: true; payload: PolicyPayload } | { ok: false; problem: PolicyProblem } {
 	const name = draft.name.trim();
 	if (!name || name.length > MAX_NAME_LENGTH) return { ok: false, problem: "name" };
 	const description = draft.description.trim();
@@ -69,12 +68,19 @@ export function draftToPayload(
 	if (requestsPerMinute === undefined) return { ok: false, problem: "requestsPerMinute" };
 	const tokensPerMinute = parseLimit(draft.tokensPerMinute, Number.MAX_SAFE_INTEGER);
 	if (tokensPerMinute === undefined) return { ok: false, problem: "tokensPerMinute" };
-	if (requestsPerMinute === null && tokensPerMinute === null && existing?.concurrentRequests == null) {
-		return { ok: false, problem: "limits" };
-	}
+	const concurrentRequests = parseLimit(draft.concurrentRequests, MAX_INT4);
+	if (concurrentRequests === undefined) return { ok: false, problem: "concurrentRequests" };
+	if (requestsPerMinute === null && tokensPerMinute === null && concurrentRequests === null) return { ok: false, problem: "limits" };
 	return {
 		ok: true,
-		payload: { name, description: description || null, requests_per_minute: requestsPerMinute, tokens_per_minute: tokensPerMinute },
+		payload: {
+			name,
+			description: description || null,
+			requests_per_minute: requestsPerMinute,
+			tokens_per_minute: tokensPerMinute,
+			concurrent_requests: concurrentRequests,
+			fail_closed: draft.failClosed,
+		},
 	};
 }
 
