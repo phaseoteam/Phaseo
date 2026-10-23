@@ -6485,7 +6485,7 @@
 		"newPolicy": "Neue Richtlinie",
 		"emptyTitle": "Noch keine Ratenlimit-Richtlinien",
 		"emptyBody": "Erstelle eine Richtlinie und weise sie dann Schlüsseln, Mitgliedern, Abteilungen oder Guardrails zu.",
-		"strict": "Strikt (noch nicht durchgesetzt)",
+		"strict": "Strikt",
 		"edit": "Bearbeiten",
 		"delete": "Löschen",
 		"cancel": "Abbrechen",
@@ -6496,7 +6496,7 @@
 		"listAppliesTo": "Gilt für",
 		"limitRequests": "{count, number} Anfragen/Min.",
 		"limitTokens": "{count, number} Tokens/Min.",
-		"limitConcurrent": "{count, number} gleichzeitig (noch nicht durchgesetzt)",
+		"limitConcurrent": "{count, number} gleichzeitig",
 		"throttled": "{count, plural, one {# Anfrage} other {# Anfragen}} in den letzten {hours} Stunden",
 		"notThrottled": "Keine in den letzten {hours} Stunden",
 		"notAssigned": "Noch nicht zugewiesen",
@@ -6510,15 +6510,19 @@
 			"descriptionPlaceholder": "Optional",
 			"requestsPerMinute": "Anfragen pro Minute",
 			"tokensPerMinute": "Tokens pro Minute",
+			"concurrentRequests": "Gleichzeitige Anfragen",
 			"noLimit": "Kein Limit",
 			"tokensHint": "Tokens werden nach Abschluss jeder Anfrage anhand der tatsächlichen Nutzung gezählt, daher können bereits laufende Anfragen die Nutzung leicht über das Limit bringen.",
-			"apiOnlyHint": "Für diese Richtlinie sind über die API auch ein Parallelitätslimit oder der strikte Modus gesetzt. Beim Speichern hier bleiben sie erhalten."
+			"concurrencyHint": "Gleichzeitige Anfragen zählt laufende Anfragen, Streams bis zu ihrem Ende. Die Prüfung erhöht die Latenz jeder Anfrage, für die die Richtlinie gilt, etwas.",
+			"strict": "Strikter Modus",
+			"strictHint": "Prüft die Limits vor dem Senden jeder Anfrage und lehnt Anfragen ab, wenn die Prüfung nicht möglich ist. Exakt, erhöht aber die Latenz jeder Anfrage, für die die Richtlinie gilt. Sonst werden die Limits im Hintergrund geprüft und Anfragen zugelassen, wenn eine Prüfung fehlschlägt."
 		},
 		"problems": {
 			"name": "Gib einen Namen mit bis zu 100 Zeichen ein.",
 			"description": "Die Beschreibung darf höchstens 500 Zeichen lang sein.",
 			"requestsPerMinute": "Gib eine ganze Zahl von 1 bis 2.147.483.647 ein oder lass das Feld leer.",
 			"tokensPerMinute": "Gib eine ganze Zahl von mindestens 1 ein oder lass das Feld leer.",
+			"concurrentRequests": "Gib eine ganze Zahl von 1 bis 2.147.483.647 ein oder lass das Feld leer.",
 			"limits": "Lege mindestens ein Limit fest."
 		},
 		"assignmentsTitle": "Zuweisungen",
