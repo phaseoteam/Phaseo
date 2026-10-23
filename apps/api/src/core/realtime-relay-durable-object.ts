@@ -81,6 +81,8 @@ const GOOGLE_RESUME_MAX_ATTEMPTS = 2;
 // Client audio held while the relay switches connections (~0.3 s recorded).
 // Anything beyond this is dropped, never billed.
 const GOOGLE_RESUME_AUDIO_BUFFER_MS = 5_000;
+// A GPT Live function result returned by the client (fits the 96 KB message cap).
+const LIVE_MAX_FUNCTION_OUTPUT_CHARS = 64 * 1024;
 // Server VAD keeps this much audio before detected speech in the committed buffer.
 const OPENAI_VAD_PREFIX_PADDING_MS = 300;
 // After this many failed settlement attempts the session moves to billing
@@ -543,6 +545,10 @@ export class RealtimeRelayDurableObject {
 	private resumeAudio: Array<{ audio: string; ms: number }> = [];
 	private resumeAudioMs = 0;
 	private googleIdleTimer: number | null = null;
+	// GPT Live function calls already answered, and outputs awaiting response.create.
+	private liveAnsweredCalls = new Set<string>();
+	private liveToolOutputsPending = 0;
+	private liveCloseReason = "";
 
 	private get isLive() { return isLiveModel(this.session?.model_id); }
 	// Playground rules (idle timeout, hold and spend-limit closes) apply only to source "chat".
@@ -886,6 +892,10 @@ export class RealtimeRelayDurableObject {
 			await this.handleClientEnd(message as unknown as ClientEndMessage);
 			return;
 		}
+		if (this.isLive && (type === "response.item.create" || type === "response.create")) {
+			this.forwardLiveToolEvent(message as unknown as Record<string, unknown>);
+			return;
+		}
 		if (!message || message.type !== "client.audio" || !message.audio) return;
 		const provider = this.session ? providerFromSession(this.session) : null;
 		if (!provider || !this.acceptingAudio || !this.providerSetupComplete) return;
@@ -978,6 +988,50 @@ export class RealtimeRelayDurableObject {
 		});
 	}
 
+	/**
+	 * GPT Live function tools run on the client: it returns each result as a
+	 * function_call_output for a call the backend made, then asks for the
+	 * follow-up reply with response.create. Nothing else is accepted, so a
+	 * client can only continue a tool turn; the reply's tokens are billed from
+	 * the backend's usage like any other response.
+	 */
+	private forwardLiveToolEvent(message: Record<string, unknown>) {
+		const reject = (reason: string) => this.sendClient({ type: "relay.client_event_rejected", event_type: message.type, reason });
+		if (!this.acceptingAudio || !this.providerSetupComplete || this.liveClosing || this.end) {
+			reject("realtime_session_not_accepting_input");
+			return;
+		}
+		const eventId = typeof message.event_id === "string" && /^[\w.:-]{1,64}$/.test(message.event_id) ? message.event_id : undefined;
+		if (message.type === "response.item.create") {
+			const item = message.item && typeof message.item === "object" ? message.item as Record<string, unknown> : {};
+			const callId = getStringField(item, "call_id");
+			if (item.type !== "function_call_output" || !callId || !this.usage.live_function_call_ids?.includes(callId)) {
+				reject("live_function_call_unknown");
+				return;
+			}
+			if (this.liveAnsweredCalls.has(callId)) {
+				reject("live_function_call_already_answered");
+				return;
+			}
+			const output = item.output;
+			if (typeof output !== "string" || output.length > LIVE_MAX_FUNCTION_OUTPUT_CHARS) {
+				reject("live_function_output_invalid");
+				return;
+			}
+			this.liveAnsweredCalls.add(callId);
+			this.liveToolOutputsPending += 1;
+			this.sendUpstream({ type: "response.item.create", ...(eventId ? { event_id: eventId } : {}),
+				item: { type: "function_call_output", call_id: callId, output } });
+			return;
+		}
+		if (this.liveToolOutputsPending <= 0) {
+			reject("live_response_create_requires_tool_output");
+			return;
+		}
+		this.liveToolOutputsPending = 0;
+		this.sendUpstream({ type: "response.create", ...(eventId ? { event_id: eventId } : {}) });
+	}
+
 	private async rejectAudio(reason: string) {
 		this.acceptingAudio = false;
 		this.sendClient({ type: "relay.input_rejected", reason });
@@ -1037,6 +1091,7 @@ export class RealtimeRelayDurableObject {
 		const type = getStringField(event, "type");
 		if (this.isLive) {
 			this.usage = { ...this.usage, ...ingestLiveUsage(this.usage, event) };
+			if (type === "session.closed") this.liveCloseReason = getStringField(event, "reason");
 			if (LIVE_BILLING_EVENT_TYPES.has(type)) await this.checkpointUsage(true);
 			forward();
 			if (type === "session.started") {
@@ -1063,7 +1118,10 @@ export class RealtimeRelayDurableObject {
 			}
 			if (this.usage.live_final && !this.usage.live_pending_responses?.length && !this.usage.live_tool_calls?.some((call) => !call.done)) {
 				const pending = await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT);
-				await this.settle(pending?.status ?? "completed", pending?.reason ?? "live_session_closed");
+				// GPT Live expires a session that gets no audio for about 30 s
+				// (recorded 2026-10-22: session.closed reason "expired" at 30.5 s).
+				await this.settle(pending?.status ?? "completed", pending?.reason
+					?? (this.liveCloseReason === "expired" ? "live_session_expired" : "live_session_closed"));
 			}
 			return;
 		}

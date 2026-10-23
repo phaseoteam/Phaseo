@@ -145,6 +145,11 @@ inline Response CreateImageEdit(Client& client, const std::map<std::string, std:
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateLiveSession(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/live/sessions";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/management-keys";
 	return client.request("POST", resolved_path, body);

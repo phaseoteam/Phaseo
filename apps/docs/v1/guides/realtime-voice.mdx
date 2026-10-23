@@ -32,6 +32,38 @@ Keep streaming microphone audio for the whole call, including silence. Google cl
 
 Google also replaces each connection after about 10 minutes. The relay moves the call to a new connection with Google's session resumption, keeps your socket open and sends `{"type": "relay.provider_reconnected", "reconnects": 1}` when the switch is done. Audio you send during the switch (usually under a second) is held and passed on. The resumed connection reprocesses the conversation so far, and Google bills that again as input tokens on the next turn, so a long call costs a little more per turn after each switch. All of it is included in `usage` and the bill. The relay only warns with `provider_closing` if it can't resume, and the call then ends when Google closes the connection.
 
+### GPT Live sessions
+
+GPT Live (`openai/gpt-live-1`) handles the voice and hands reasoning to a Responses backend model. Create it with `POST /v1/live/sessions`:
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-live-1",
+    "provider": "openai",
+    "voice": "marin",
+    "backend_model": "openai/gpt-5.6-luna",
+    "backend_settings": {
+      "tools": [{ "type": "function", "name": "get_time", "description": "Returns the current UTC time.", "parameters": { "type": "object", "properties": {} } }]
+    }
+  }'
+```
+
+`voice` is one of `alloy`, `ash`, `ballad`, `beacon`, `bossa`, `cedar`, `cinder`, `coral`, `delta`, `echo`, `gleam`, `marin`, `meridian`, `quartz`, `ripple`, `sage`, `shimmer`, `stone`, `tempo`, `verse`, `vesper` or `willow`. `backend_model` is `openai/gpt-5.6-luna` (default) or `openai/gpt-5.6-terra`. Connect and stream 24 kHz audio the same way as other sessions.
+
+Function tools run on your client. The backend's call arrives as a `response.event` whose `event.item.type` is `function_call`. Run the tool, then send the result and ask for the follow-up reply:
+
+```json
+{ "type": "response.item.create", "item": { "type": "function_call_output", "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" } }
+{ "type": "response.create" }
+```
+
+The relay accepts a `function_call_output` only for a call the backend made, once per call and up to 64 KB, and `response.create` only after at least one output. Anything else gets `{"type": "relay.client_event_rejected", "reason": "..."}` and the call continues. Phaseo never runs function tools itself.
+
+A GPT Live call is billed per second of voice ($0.05 per minute, from GPT Live's own `usage.seconds`) plus the backend model's tokens for every response, including the replies after tool results. GPT Live expires a session that receives no audio for about 30 seconds, which ends the call with `provider_idle_timeout`. Keep streaming microphone audio, silence included.
+
 ## End a session
 
 Send `session.end` when the caller hangs up:
@@ -108,6 +140,7 @@ If settlement is still being retried, `billing_status` is `pending` and `cost` s
 | `client_requested` | client | You sent `session.end`. |
 | `client_disconnected` | client | Your socket closed without `session.end`. |
 | `provider_closed` | provider | The provider closed its connection, for example Google after about 150 seconds without audio (code `1008`), or after a `goAway` the relay couldn't resume from. |
+| `provider_idle_timeout` | provider | GPT Live expired the session because it received no audio for about 30 seconds. |
 | `provider_error` | provider | The provider connection failed or reported an error. |
 | `max_duration_reached` | gateway | The provider's session limit was reached. |
 | `insufficient_funds` | gateway | The overdraft cap was reached. |
