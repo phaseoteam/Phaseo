@@ -2834,7 +2834,7 @@
 		"activityOutput": "输出",
 		"activityReasoning": "推理",
 		"activityRequests": "请求",
-		"activityDay": "{date}：{tokens} token，{requests} 个请求",
+		"activityDay": "{date}：{tokens} token，{count, plural, other {{requests} 个请求}}",
 		"activityChart": "{name} 通过 Phaseo 的每日 token，过去 30 天",
 		"activityNone": "过去 30 天没有通过 Phaseo 的流量",
 		"activityNoneAll": "过去 30 天，这些模型都没有通过 Phaseo 的流量。",
