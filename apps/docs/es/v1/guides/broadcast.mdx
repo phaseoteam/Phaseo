@@ -13,7 +13,7 @@ Broadcast es gratuito. Los propietarios y administradores gestionan los destinos
 1. Abre **Configuración → Broadcast** y elige un destino.
 2. Introduce sus credenciales. Se cifran antes de guardarse y no se vuelven a mostrar.
 3. Elige qué se envía (consulta la sección «Elegir qué se envía»).
-4. Selecciona **Conexión de prueba**. Phaseo envía una traza de ejemplo del mismo modo que las entregas reales, así que un fallo aquí muestra el error del propio destino.
+4. Selecciona **Probar conexión**. Phaseo envía una traza de ejemplo del mismo modo que las entregas reales, así que un fallo aquí muestra el error del propio destino.
 5. Guarda. Las solicitudes que terminen a partir de ese momento se envían en aproximadamente un minuto.
 
 | Tipo | Destinos |
@@ -31,7 +31,7 @@ Cada formulario pide solo lo que necesita esa herramienta, como una clave de API
 Cada destino tiene su propia configuración:
 
 - **Modo de privacidad** deja fuera de cada traza los prompts, las salidas, las instrucciones del sistema y las definiciones de herramientas. Las solicitudes hechas con una clave de API que nunca almacena contenido nunca se reenvían con contenido, diga lo que diga esta opción.
-- **Metadatos de generación**, **Costo**, **Identidad** y **Solicitar contexto** activan o desactivan cada uno un grupo de atributos de span. Desactivar **Solicitar contexto** también descarta los metadatos de la solicitud (consulta la sección «Añadir tu propio contexto de traza»).
+- **Metadatos de generación**, **Coste**, **Identidad** y **Contexto de la solicitud** activan o desactivan cada uno un grupo de atributos de span. Desactivar **Contexto de la solicitud** también descarta los metadatos de la solicitud (consulta la sección «Añadir tu propio contexto de traza»).
 - **Tasa** envía una parte de las solicitudes aptas, de 0 a 1. La elección es estable para cada solicitud y destino, así que una entrega reintentada nunca se muestrea de forma distinta.
 - **Filtro de clave API** incluye o excluye las solicitudes hechas con claves concretas.
 - **Reglas de filtrado** envían solo las solicitudes que coinciden. Las reglas comparan campos como el modelo, el proveedor, el ID de usuario, el motivo de finalización, el coste o los recuentos de tokens, y se pueden agrupar con **y** y **o**. **Matches regex** usa un motor de tiempo lineal: no admite referencias inversas ni lookaround, y un patrón demasiado grande se rechaza al guardarlo.
@@ -63,7 +63,7 @@ Pon un objeto `metadata` en el cuerpo de la solicitud para dar nombre a las traz
 
 Los valores pueden ser cadenas, números o booleanos; los objetos anidados se omiten. Phaseo conserva hasta 64 claves de 64 caracteres como máximo y recorta los valores a 512 caracteres. Si hay una cabecera W3C `traceparent`, esta decide la traza en lugar de `trace_id` y `parent_span_id`.
 
-No pongas secretos ni datos personales en `metadata`: se envía a todos los destinos que tienen activado **Solicitar contexto**.
+No pongas secretos ni datos personales en `metadata`: se envía a todos los destinos que tienen activado **Contexto de la solicitud**.
 
 ## Entregas por webhook
 
@@ -78,7 +78,7 @@ x-phaseo-signature: 5d2a…e41f
 
 `x-phaseo-signature` es el HMAC-SHA256 en hexadecimal de la marca de tiempo, un punto (`.`) y el cuerpo de la solicitud sin modificar, con tu secreto como clave. Es el mismo esquema que el de los webhooks de notificación, así que puedes reutilizar su [código de verificación](./workspace-notifications.mdx). Las entregas de Broadcast no tienen cabecera de ID de evento: elimina duplicados con los ID de span del cuerpo.
 
-**Conexión de prueba** envía `{"resourceSpans": []}` con una cabecera `X-Test-Connection: true`. Una respuesta `400` cuenta como accesible, así que un receptor que rechace las exportaciones vacías también supera la prueba.
+**Probar conexión** envía `{"resourceSpans": []}` con una cabecera `X-Test-Connection: true`. Una respuesta `400` cuenta como accesible, así que un receptor que rechace las exportaciones vacías también supera la prueba.
 
 ## Filas de almacenamiento de objetos y almacenes de datos
 
