@@ -1,0 +1,177 @@
+---
+title: "Broadcast"
+description: "أرسل تتبعًا لكل طلب إلى أداة قابلية الرصد أو webhook أو حاوية تخزين أو مستودع بيانات."
+icon: "radio-tower"
+---
+
+يرسل Broadcast تتبعًا لكل طلب يمر عبر البوابة إلى الوجهات التي تختارها، دون تغيير الكود. يتبع التتبع اصطلاحات OpenTelemetry الخاصة بـ GenAI: نطاق (span) واحد للطلب، ونطاق واحد لكل محاولة لدى مزوّد، مع النموذج والمزوّد واستخدام الرموز والتكلفة والتوقيت، والموجّه والمخرجات (ما لم توقف ذلك).
+
+Broadcast مجاني. يدير المالكون والمسؤولون الوجهات من **الإعدادات → Broadcast**، أو عبر [واجهة API لوجهات قابلية الرصد](../api-reference/endpoint/observability-destinations-create.mdx) باستخدام [مفتاح إدارة](../developers/management-api-keys.mdx) يملك `settings:write`. يمكن أن تضم مساحة العمل حتى خمس وجهات من كل نوع.
+
+## إضافة وجهة
+
+1. افتح **الإعدادات → Broadcast** واختر وجهة.
+2. أدخل بيانات اعتمادها. تُشفّر قبل التخزين ولا تُعرض مرة أخرى أبدًا.
+3. اختر ما يُرسل (راجع «اختيار ما يُرسل» أدناه).
+4. اختر **اختبار الاتصال**. يرسل Phaseo تتبعًا تجريبيًا بالطريقة نفسها التي تُرسل بها عمليات التسليم الفعلية، لذا يُظهر أي فشل هنا الخطأ الصادر عن الوجهة نفسها.
+5. احفظ. تُرسل الطلبات التي تنتهي بعد ذلك خلال دقيقة تقريبًا.
+
+| الفئة | الوجهات |
+| --- | --- |
+| أدوات OpenTelemetry | Arize AI, Axiom, Braintrust, Comet Opik, Datadog, Dynatrace, Elastic, Grafana Cloud, Honeycomb, Langfuse, LangSmith, New Relic, PostHog, Respan, Sentry, W&B Weave |
+| أي نقطة نهاية OTLP | OpenTelemetry Collector (OTLP/HTTP، بصيغة JSON أو protobuf، مع gzip اختياريًا) |
+| خدمتك الخاصة | Webhook |
+| تخزين الكائنات | Amazon S3 ومخازن متوافقة مع S3، وCloudflare R2، وGoogle Cloud Storage |
+| قواعد البيانات والمستودعات | ClickHouse, Google BigQuery, Snowflake |
+
+يطلب كل نموذج ما تحتاجه تلك الأداة فقط، مثل مفتاح API ومشروع أو منطقة. تتلقى أدوات OpenTelemetry النطاقات نفسها، ويتولى Phaseo ملء نقطة النهاية والترويسات والترميز الخاصة بكل مورّد.
+
+## اختيار ما يُرسل
+
+لكل وجهة إعداداتها الخاصة:
+
+- يستبعد **أسلوب الخصوصية** الموجّهات والمخرجات وتعليمات النظام وتعريفات الأدوات من كل تتبع. الطلبات المرسلة بمفتاح API لا يخزّن المحتوى أبدًا لا تُمرَّر مع محتواها أبدًا، أيًّا كانت قيمة هذا الإعداد.
+- يشغّل كل من **البيانات الوصفية للتوليد** و**التكلفة** و**الهوية** و**سياق الطلب** مجموعة من سمات النطاق أو يوقفها. يؤدي إيقاف **سياق الطلب** أيضًا إلى استبعاد البيانات الوصفية للطلب (راجع «إضافة سياق التتبع الخاص بك» أدناه).
+- يرسل **المعدل** نسبة من الطلبات المؤهلة، من 0 إلى 1. يكون الاختيار ثابتًا لكل طلب ووجهة، لذا لا تُؤخذ عيّنة عملية تسليم أُعيدت محاولتها بطريقة مختلفة أبدًا.
+- تُضمّن **تصفية مفاتيح API** الطلبات المرسلة بمفاتيح معيّنة أو تستبعدها.
+- لا ترسل **قواعد التصفية** إلا الطلبات المطابقة. تقارن القواعد حقولًا مثل النموذج والمزوّد ومعرّف المستخدم وسبب الانتهاء والتكلفة وعدد الرموز، ويمكن تجميعها باستخدام **و** و**أو**. يستخدم **يطابق التعبير النمطي** محركًا يعمل في زمن خطي: المراجع الخلفية والنظر حول النمط غير مدعومة، ويُرفض النمط الكبير جدًا عند حفظه.
+
+## إضافة سياق التتبع الخاص بك
+
+ضع كائن `metadata` في جسم الطلب لتسمية التتبعات وإرفاق حقولك الخاصة. يقرأه Phaseo من أجل Broadcast:
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [{ "role": "user", "content": "Summarise this ticket" }],
+  "metadata": {
+    "trace_id": "ticket-48213",
+    "trace_name": "support-summary",
+    "generation_name": "summarise",
+    "customer_tier": "enterprise"
+  }
+}
+```
+
+| المفتاح | التأثير |
+| --- | --- |
+| `trace_id` | التتبع الذي ينتمي إليه الطلب. يُستخدم المعرّف الست عشري المكوّن من 32 حرفًا أو UUID كما هو؛ وتُجزّأ أي سلسلة أخرى، فتنضم كل الطلبات التي تحمل القيمة نفسها إلى التتبع نفسه. |
+| `parent_span_id` | معرّف نطاق ست عشري من 16 حرفًا يُدرج الطلب تحته. يُستخدم مع `trace_id`. |
+| `trace_name`, `span_name` | اسم نطاق الطلب. تكون الأولوية لـ `span_name` إذا ضُبط الاثنان. |
+| `generation_name` | اسم نطاق كل محاولة لدى مزوّد. |
+| أي مفتاح آخر | يُرسل بوصفه سمة نطاق باسم `phaseo.metadata.<key>`. |
+
+يمكن أن تكون القيم سلاسل نصية أو أرقامًا أو قيمًا منطقية؛ وتُتخطّى الكائنات المتداخلة. يحتفظ Phaseo بما يصل إلى 64 مفتاحًا لا يتجاوز طول كل منها 64 حرفًا، ويقتطع القيم عند 512 حرفًا. إذا وُجدت ترويسة W3C `traceparent`، فهي التي تحدد التتبع بدلًا من `trace_id` و`parent_span_id`.
+
+لا تضع أسرارًا أو بيانات شخصية في `metadata`: فهي تُرسل إلى كل وجهة يكون فيها **سياق الطلب** مفعّلًا.
+
+## عمليات التسليم إلى webhook
+
+يتلقى webhook طلب `POST` واحدًا (أو `PUT` إذا اخترته) لكل طلب. الجسم عبارة عن تصدير OTLP/JSON، `{"resourceSpans": [...]}`، يحمل نطاقات ذلك الطلب. استخدم **Headers JSON** لإضافة ترويساتك الخاصة، مثل ترويسة `Authorization` التي تتوقعها نقطة النهاية لديك.
+
+أضف **Signing Secret** (من 16 إلى 256 حرفًا، دون مسافات) ليُوقَّع كل تسليم واختبار وعيّنة. يضيف Phaseo حينها ترويستين:
+
+```http
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` هي قيمة HMAC-SHA256 بالنظام الست عشري للطابع الزمني ثم نقطة (`.`) ثم جسم الطلب دون تعديل، باستخدام السر الخاص بك مفتاحًا. هذه هي الطريقة نفسها المستخدمة في webhooks الإشعارات، لذا يمكنك إعادة استخدام [كود التحقق](./workspace-notifications.mdx) الخاص بها. لا تحمل عمليات تسليم Broadcast ترويسة لمعرّف الحدث: أزل التكرار اعتمادًا على معرّفات النطاقات في الجسم.
+
+يرسل **اختبار الاتصال** القيمة `{"resourceSpans": []}` مع ترويسة `X-Test-Connection: true`. تُعدّ الاستجابة `400` دليلًا على إمكانية الوصول، لذا ينجح الاختبار حتى مع مستقبِل يرفض عمليات التصدير الفارغة.
+
+## صفوف تخزين الكائنات والمستودعات
+
+يتلقى تخزين الكائنات وClickHouse وBigQuery وSnowflake صفًا واحدًا لكل نطاق بدلًا من التتبعات. تُكتب كل دفعة في طلب واحد: كائن واحد، أو عملية إدراج واحدة.
+
+| العمود | النوع | المحتوى |
+| --- | --- | --- |
+| `event_id` | سلسلة نصية | معرّف حدث الطلب. تشترك فيه كل نطاقات الطلب. |
+| `trace_id` | سلسلة نصية | معرّف تتبع ست عشري من 32 حرفًا. |
+| `span_id` | سلسلة نصية | معرّف نطاق ست عشري من 16 حرفًا. |
+| `parent_span_id` | سلسلة نصية أو null | النطاق الأب، أو null لنطاق الطلب. |
+| `name` | سلسلة نصية | اسم النطاق. |
+| `kind` | سلسلة نصية | `server` للطلب، و`client` لمحاولات المزوّد. |
+| `start_time`, `end_time` | طابع زمني | بصيغة RFC 3339 بتوقيت UTC، بدقة الميكروثانية. |
+| `duration_ms` | رقم | وقت الانتهاء مطروحًا منه وقت البدء، بالمللي ثانية. |
+| `status_code` | سلسلة نصية | `unset` أو `ok` أو `error`. |
+| `status_message` | سلسلة نصية أو null | رسالة الخطأ، إن وُجدت. |
+| `service_name` | سلسلة نصية أو null | `phaseo-gateway`. |
+| `attributes` | كائن | سمات النطاق حسب الاسم، مثل `gen_ai.request.model` أو `gen_ai.usage.input_tokens`، مع الحفاظ على أنواعها. |
+| `resource_attributes` | كائن | سمات المورد، مثل `service.name`. |
+
+الحد الأقصى للصف 512 KB. عندما يحمل نطاق أكثر من ذلك، مثل صورة مضمّنة، تُقتطع أكبر قيم سماته لتتقاسم المساحة، فتحتفظ كل قيمة ببدايتها وتنتهي بـ `…[truncated]`، وتُدرج أسماؤها في السمة `phaseo.truncated_attributes`.
+
+تُعاد محاولة الدفعة التي تفشل. إذا حفظت الوجهة الدفعة لكن الاستجابة فُقدت، فقد تكتب إعادة المحاولة بعض الصفوف مرتين؛ استخدم `event_id` و`span_id` لإزالة التكرار. يستخدم BigQuery وSnowflake معرّفات طلبات تمنع معظم هذا التكرار.
+
+### تخزين الكائنات
+
+كل دفعة ملف JSON lines مضغوط بـ gzip. يحدد **Path Template** مفتاح الملف، وهو افتراضيًا `phaseo/{year}/{month}/{day}/{hour}/{uuid}`، ويضيف Phaseo إليه `.jsonl.gz`. يمكن أن يستخدم القالب `{year}` و`{month}` و`{day}` و`{hour}` و`{date}` (`YYYY-MM-DD`) و`{uuid}`، ويجب أن يتضمن `{uuid}` حتى لا تكتب الملفات فوق بعضها أبدًا. الأوقات بتوقيت UTC.
+
+- **Amazon S3**: مفتاح وصول يمكنه تنفيذ `s3:PutObject` على الحاوية، ومنطقة الحاوية. للمخازن المتوافقة مع S3، اضبط **S3-Compatible Endpoint**.
+- **Cloudflare R2**: معرّف مفتاح الوصول والسر لرمز R2 API، ومعرّف حسابك، والولاية القضائية إذا كانت الحاوية ضمن إحداها (`eu` أو `fedramp`).
+- **Google Cloud Storage**: مفتاح HMAC لحساب خدمة يمكنه إنشاء كائنات في الحاوية.
+
+تُخزَّن الكائنات مضغوطة دون ترويسة `Content-Encoding`، لذا تقرأها الجداول الخارجية في Athena وBigQuery وSnowflake اعتمادًا على امتدادها `.gz`.
+
+### ClickHouse
+
+تُدرج الصفوف بصيغة `JSONEachRow` عبر واجهة HTTPS، مع الإدراج غير المتزامن. تُتخطّى الأعمدة غير الموجودة في الجدول، لذا يمكنك الاحتفاظ بالأعمدة التي تحتاجها فقط:
+
+```sql
+CREATE TABLE phaseo_traces (
+  event_id String, trace_id String, span_id String, parent_span_id Nullable(String),
+  name String, kind LowCardinality(String),
+  start_time DateTime64(6, 'UTC'), end_time DateTime64(6, 'UTC'), duration_ms Float64,
+  status_code LowCardinality(String), status_message Nullable(String), service_name Nullable(String),
+  attributes String, resource_attributes String
+) ENGINE = MergeTree ORDER BY (start_time, trace_id);
+```
+
+استخدم نقطة النهاية على المنفذ 8443 مع ClickHouse Cloud. يمكن أن يكون `attributes` و`resource_attributes` أيضًا عمودين من نوع `JSON`.
+
+### BigQuery
+
+تُبث الصفوف باستخدام `insertAll`، مع استخدام معرّفات الحدث والنطاق معرّفاتٍ للإدراج. أنشئ حساب خدمة يملك الدور **BigQuery Data Editor** على الجدول، ثم الصق ملف مفتاح JSON الخاص به في النموذج. يجب أن يكون `attributes` و`resource_attributes` عمودين من نوع `JSON`:
+
+```sql
+CREATE TABLE observability.phaseo_traces (
+  event_id STRING, trace_id STRING, span_id STRING, parent_span_id STRING,
+  name STRING, kind STRING, start_time TIMESTAMP, end_time TIMESTAMP, duration_ms FLOAT64,
+  status_code STRING, status_message STRING, service_name STRING,
+  attributes JSON, resource_attributes JSON
+) PARTITION BY DATE(start_time) CLUSTER BY trace_id;
+```
+
+### Snowflake
+
+كل دفعة عملية `INSERT` واحدة عبر SQL API، تسجّل الدخول باستخدام مصادقة زوج المفاتيح، لذا تعمل على المستودع الذي تحدده. أنشئ مستخدمًا لـ Phaseo وامنحه مفتاح RSA:
+
+```sql
+CREATE TABLE PHASEO.OBSERVABILITY.PHASEO_TRACES (
+  EVENT_ID STRING, TRACE_ID STRING, SPAN_ID STRING, PARENT_SPAN_ID STRING,
+  NAME STRING, KIND STRING, START_TIME TIMESTAMP_TZ, END_TIME TIMESTAMP_TZ, DURATION_MS FLOAT,
+  STATUS_CODE STRING, STATUS_MESSAGE STRING, SERVICE_NAME STRING,
+  ATTRIBUTES VARIANT, RESOURCE_ATTRIBUTES VARIANT
+);
+-- openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out phaseo_key.p8
+-- openssl rsa -in phaseo_key.p8 -pubout
+ALTER USER PHASEO_BROADCAST SET RSA_PUBLIC_KEY = 'MIIBIjANBgkqh...';
+```
+
+الصق المفتاح الخاص (`BEGIN PRIVATE KEY`، غير مشفّر) في النموذج، واستخدم معرّف المؤسسة والحساب، مثل `myorg-myaccount`. يحتاج دور المستخدم إلى `INSERT` على الجدول و`USAGE` على المستودع وقاعدة البيانات والمخطط.
+
+## التسليم والحالة والتنبيهات
+
+تُعاد محاولة عمليات التسليم التي تفشل بسبب انتهاء المهلة أو حد المعدل أو خطأ في الخادم، مع تأخير متزايد، حتى ثماني محاولات. أما الأخطاء الأخرى، مثل رفض المفتاح أو عدم وجود الجدول، فلا تُعاد محاولتها.
+
+تعرض **الإعدادات → Broadcast** حالة كل وجهة: **سليم** أو **يفشل** أو **لا توجد عمليات تسليم بعد** أو **معطّل**، مع آخر خطأ وعدد الطلبات المسلّمة والفاشلة خلال آخر 24 ساعة.
+
+لتُبلَّغ عندما تتوقف وجهة عن العمل، وجّه **تنبيهات البث** إلى [وجهة إشعارات](./workspace-notifications.mdx). يُرسل التنبيه عندما تفشل وجهة في خمسة طلبات متتالية على الأقل ولا تسلّم شيئًا لمدة 15 دقيقة. يُرسل مرة واحدة لكل سلسلة إخفاقات، ولا يُرسل مجددًا إلا بعد تعافي الوجهة ومرور ست ساعات على الأقل.
+
+## ذو صلة
+
+- [واجهة API لوجهات قابلية الرصد](../api-reference/endpoint/observability-destinations-list.mdx)
+- [تسميات الطلبات](./request-labels.mdx)، التي تُرسل بوصفها سمات `phaseo.label.<key>`
+- [إشعارات مساحة العمل](./workspace-notifications.mdx)
+- [تكاملات قابلية الرصد](./integrations/observability.mdx)، للتتبع من العميل الخاص بك بدلًا من ذلك
