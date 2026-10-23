@@ -277,6 +277,20 @@ const video = await client.videos.create({
 const genericSocketUrl = client.getAsyncJobWebSocketUrl("video", "video_123");
 ```
 
+## Realtime voice (beta)
+
+`client.realtime.connect()` creates a realtime session and opens the relay WebSocket (global `WebSocket` in browsers and Node.js 22+, or the `ws` package). Provider events pass through unchanged.
+
+```ts
+const session = await client.realtime.connect({ model: "openai/gpt-realtime-2", voice: "marin" });
+session.onWarning((warning) => console.warn(warning.code));
+session.on("response.output_audio.delta", (event) => play(event.delta as string));
+session.sendAudio(pcm16Chunk); // PCM16 bytes; base64 is handled for you
+const ended = await session.end({ reason: "caller hung up" }); // session.ended: reason, usage, cost, billing_status
+```
+
+If the socket closes without `session.ended`, `end()` rejects with `RealtimeSessionClosedError`, whose `finalBill` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Batch jobs
 
 Use batch helpers when you want deferred execution with polling and webhooks. Batch jobs support OpenAI, Anthropic, Google Gemini, Mistral, xAI, Groq, and Together AI through the requested `model`; `provider` is only needed as an advanced routing constraint.

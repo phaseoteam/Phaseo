@@ -19,6 +19,7 @@ from .model_ids import MODEL_IDS, ModelIds
 from .transport import HttpClient, APIResponse, PhaseoHTTPError, RawResponse, RequestHook, request_trace_url
 from .helpers import parse_output, output_text, collect_stream, check_capabilities, check_parameter_support, batch_results, match_batch_result, StructuredOutputError, StreamResponseError
 from .async_client import AsyncPhaseo, AsyncJobHandle, collect_async_stream, ParsedOutput
+from .realtime import AsyncRealtime, RealtimeSession, RealtimeSessionClosedError, realtime_final_bill
 from .media import upload_input, download_to
 from .jobs import (
     JobWaitOptions, JobTimeoutError, JobCancelledError, JobFailedError, JobHandle,
@@ -2007,6 +2008,10 @@ __all__ = [
     "APIResponse",
     "AsyncPhaseo",
     "AsyncJobHandle",
+    "AsyncRealtime",
+    "RealtimeSession",
+    "RealtimeSessionClosedError",
+    "realtime_final_bill",
     "JobHandle",
     "PhaseoHTTPError",
     "RawResponse",

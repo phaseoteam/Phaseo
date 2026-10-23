@@ -49,6 +49,7 @@ import * as ops from "./oapi-gen/client/index.js";
 import { PhaseoHttpError, Client, type RawResponse } from "./runtime/client.js";
 import { createTransport, type RequestControls } from "./runtime/transport.js";
 import { JobHandle } from "./jobHandle.js";
+import { openRealtimeSession, type RealtimeConnectOptions, type RealtimeSession, type RealtimeSessionInfo } from "./realtime.js";
 import { paginateItems, paginatePages, type PageOptions } from "./pagination.js";
 import {
   parseOutput,
@@ -62,6 +63,20 @@ import {
   type ParameterSupportReport,
 } from "./helpers.js";
 export { JobHandle } from "./jobHandle.js";
+export {
+  RealtimeSession,
+  RealtimeSessionClosedError,
+  realtimeFinalBill,
+  type RealtimeConnectOptions,
+  type RealtimeEndOptions,
+  type RealtimeEvent,
+  type RealtimeFinalBill,
+  type RealtimeSessionEndedEvent,
+  type RealtimeSessionInfo,
+  type RealtimeSessionWarningEvent,
+  type RealtimeWebSocket,
+  type RealtimeWebSocketConstructor,
+} from "./realtime.js";
 export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
 export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
 export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type RequestEvent, type ResponseEvent, type RetryEvent, type ResponseMetadata } from "./runtime/transport.js";
@@ -625,6 +640,16 @@ export class Phaseo {
       providerId: string,
       params: Record<string, string | number | boolean> = {},
     ): Promise<unknown> => this.getProviderDerankStatus(providerId, params),
+  };
+
+  /** Realtime voice sessions (beta): create a session and talk to it over the relay WebSocket. */
+  readonly realtime = {
+    /** Creates the session and opens the relay socket; resolves once the relay sends `relay.connected`. */
+    connect: async (options: RealtimeConnectOptions): Promise<RealtimeSession> => {
+      const { webSocket, connectTimeoutMs, ...body } = options;
+      const info: RealtimeSessionInfo = await ops.createRealtimeSession(this.client, { body });
+      return openRealtimeSession(this.basePath, info, { webSocket, connectTimeoutMs });
+    },
   };
 
   readonly asyncJobs = {
