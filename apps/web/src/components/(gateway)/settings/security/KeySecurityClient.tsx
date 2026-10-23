@@ -74,10 +74,31 @@ const RISK_FILTERS: KeySecurityRisk[] = ["safe_to_remove", "no_spend_limit", "ne
 /** How many storage locations show before "Show all". */
 const TOP_LOCATIONS = 5;
 
+// Full class names, so Tailwind finds them.
+const GREEN = { tag: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", icon: "text-emerald-600 dark:text-emerald-400" };
+const BLUE = { tag: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300", icon: "text-sky-600 dark:text-sky-400" };
+const VIOLET = { tag: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300", icon: "text-violet-600 dark:text-violet-400" };
+const AMBER = { tag: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300", icon: "text-amber-600 dark:text-amber-400" };
+const ORANGE = { tag: "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300", icon: "text-orange-600 dark:text-orange-400" };
+const ROSE = { tag: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300", icon: "text-rose-600 dark:text-rose-400" };
+
+/** Green is fine, blue and violet are informational, amber and orange want a look, rose is the most urgent. */
+const TONES: Record<KeySecurityRisk | KeySecurityStatus, typeof GREEN> = {
+	active: GREEN,
+	never_used: BLUE,
+	paused: VIOLET,
+	idle: AMBER,
+	safe_to_remove: ROSE,
+	no_spend_limit: ROSE,
+	never_expires: AMBER,
+	no_ip_allowlist: ORANGE,
+	no_storage_location: BLUE,
+};
+
 function Tag({ kind, label }: { kind: KeySecurityRisk | KeySecurityStatus; label: string }) {
 	const Icon = ICONS[kind];
 	return (
-		<span className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-xs text-muted-foreground">
+		<span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-xs", TONES[kind].tag)}>
 			<Icon aria-hidden="true" className="size-3" />{label}
 		</span>
 	);
@@ -337,7 +358,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 						const Icon = ICONS[risk];
 						return (
 							<FilterChip key={risk} active={filter.kind === risk} label={t(`keySecurity.filters.${risk}` as never)} count={summary[risk]} title={t(`keySecurity.help.${risk}` as never)} onClick={() => choose({ kind: risk })}>
-								<Icon aria-hidden="true" className="size-3.5" />
+								<Icon aria-hidden="true" className={cn("size-3.5", TONES[risk].icon)} />
 							</FilterChip>
 						);
 					})}
