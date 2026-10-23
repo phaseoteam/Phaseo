@@ -254,6 +254,7 @@
 				"nav-settings-presets": "ルーティングプリセット",
 				"nav-settings-privacy": "プライバシー設定",
 				"nav-settings-guardrails": "ガードレール",
+				"nav-settings-rate-limits": "レート制限",
 				"nav-settings-classifiers": "分類器",
 				"nav-settings-slack": "Slack",
 				"nav-settings-security": "キーのセキュリティ",

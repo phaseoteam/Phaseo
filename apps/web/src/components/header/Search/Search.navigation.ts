@@ -105,6 +105,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-settings-presets", title: "Routing Presets", subtitle: "Create reusable routing presets", href: "/settings/presets", keywords: ["presets", "routing profiles"] },
 	{ id: "nav-settings-privacy", title: "Privacy Settings", subtitle: "Configure data handling preferences", href: "/settings/privacy", keywords: ["privacy", "retention", "zdr"] },
 	{ id: "nav-settings-guardrails", title: "Guardrails", subtitle: "Manage request and response guardrails", href: "/settings/guardrails", keywords: ["safety", "validation", "policies"] },
+	{ id: "nav-settings-rate-limits", title: "Rate limits", subtitle: "Limit requests and tokens per minute for keys, members and departments", href: "/settings/rate-limits", keywords: ["rate limit", "throttle", "rpm", "tpm", "429", "quota"] },
 	{ id: "nav-settings-classifiers", title: "Classifiers", subtitle: "Label requests automatically with a model", href: "/settings/classifiers", keywords: ["labels", "taxonomy", "department", "tagging", "categorise"] },
 	{ id: "nav-settings-slack", title: "Slack", subtitle: "Add the Phaseo agent to Slack", href: "/settings/slack", keywords: ["slack", "agent", "bot", "assistant", "integration"] },
 	{ id: "nav-settings-oauth", title: "OAuth Apps", subtitle: "Manage OAuth applications and grants", href: "/settings/oauth-apps", keywords: ["oauth", "clients", "authorized apps"] },

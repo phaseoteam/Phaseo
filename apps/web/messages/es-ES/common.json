@@ -254,6 +254,7 @@
 				"nav-settings-presets": "Preajustes de enrutamiento",
 				"nav-settings-privacy": "Ajustes de privacidad",
 				"nav-settings-guardrails": "Reglas de protección",
+				"nav-settings-rate-limits": "Límites de velocidad",
 				"nav-settings-classifiers": "Clasificadores",
 				"nav-settings-slack": "Slack",
 				"nav-settings-security": "Seguridad de claves",

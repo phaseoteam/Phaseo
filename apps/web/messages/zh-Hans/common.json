@@ -254,6 +254,7 @@
 				"nav-settings-presets": "路由预设",
 				"nav-settings-privacy": "隐私设置",
 				"nav-settings-guardrails": "防护规则",
+				"nav-settings-rate-limits": "速率限制",
 				"nav-settings-classifiers": "分类器",
 				"nav-settings-slack": "Slack",
 				"nav-settings-security": "密钥安全",

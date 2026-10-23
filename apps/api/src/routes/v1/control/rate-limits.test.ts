@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
 	audit: vi.fn(),
 	publish: vi.fn(async (_workspaceId: string) => true),
 	nextId: 100,
+	actor: vi.fn(async (_token: string): Promise<{ userId: string } | null> => null),
 }));
 
 // Unique targets enforced by the database's partial unique indexes.
@@ -79,6 +80,7 @@ vi.mock("@/runtime/env", () => ({
 	}),
 }));
 vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: vi.fn(async () => state.auth) }));
+vi.mock("@/lib/oauth/service", () => ({ getSupabaseActor: state.actor }));
 vi.mock("@/lib/audit/workspaceAudit", () => ({ recordWorkspaceAuditEvent: state.audit }));
 vi.mock("@core/rate-limit-policies", () => ({ publishRateLimitPlan: state.publish }));
 vi.mock("@/routes/utils", () => ({
@@ -86,13 +88,17 @@ vi.mock("@/routes/utils", () => ({
 	withRuntime: (handler: (req: Request) => Promise<Response>) => async (c: any) => handler(c.req.raw),
 }));
 
-async function call(path: string, method = "GET", body?: unknown) {
+async function call(path: string, method = "GET", body?: unknown, headers: Record<string, string> = {}) {
 	const { rateLimitsRoutes } = await import("./rate-limits");
 	return rateLimitsRoutes.request(`https://example.com${path}`, {
 		method,
-		...(body === undefined ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+		headers: { ...(body === undefined ? {} : { "Content-Type": "application/json" }), ...headers },
+		...(body === undefined ? {} : { body: JSON.stringify(body) }),
 	});
 }
+
+const SESSION = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.signature";
+const DASHBOARD = { authorization: `Bearer ${SESSION}`, "x-phaseo-workspace-id": WORKSPACE };
 
 describe("rate limit policy management", () => {
 	beforeEach(() => {
@@ -113,7 +119,13 @@ describe("rate limit policy management", () => {
 				{ id: OTHER_KEY, workspace_id: OTHER_WORKSPACE, status: "active" },
 			],
 			workspace_guardrails: [],
+			workspaces: [{ id: WORKSPACE, owner_user_id: "owner-user" }],
+			workspace_members: [
+				{ workspace_id: WORKSPACE, user_id: "admin-user", role: "admin" },
+				{ workspace_id: WORKSPACE, user_id: "member-user", role: "member" },
+			],
 		};
+		state.actor.mockReset().mockResolvedValue(null);
 		state.audit.mockReset();
 		state.publish.mockClear();
 	});
@@ -257,5 +269,54 @@ describe("rate limit policy management", () => {
 		const response = await call("/policies", "POST", { name: "Denied", requests_per_minute: 1 });
 		expect(response.status).toBe(403);
 		expect(state.tables.workspace_rate_limit_policies).toHaveLength(2);
+	});
+
+	it("lets a workspace admin manage policies from the dashboard session", async () => {
+		const { guardManagementAuth } = await import("@/pipeline/before/guards");
+		vi.mocked(guardManagementAuth).mockClear();
+		state.auth.value.scopes = [];
+		state.actor.mockResolvedValue({ userId: "admin-user" });
+		const response = await call("/policies", "POST", { name: "Dashboard", requests_per_minute: 30 }, DASHBOARD);
+		expect(response.status).toBe(201);
+		expect(state.actor).toHaveBeenCalledWith(SESSION);
+		expect(guardManagementAuth).not.toHaveBeenCalled();
+		expect(state.audit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ workspaceId: WORKSPACE, actorUserId: "admin-user", action: "rate_limit_policy.created" }));
+		expect(state.publish).toHaveBeenCalledWith(WORKSPACE);
+	});
+
+	it("treats the workspace owner as a manager even without a member row", async () => {
+		state.actor.mockResolvedValue({ userId: "owner-user" });
+		expect((await call("/policies", "GET", undefined, DASHBOARD)).status).toBe(200);
+	});
+
+	it("refuses dashboard members and outsiders", async () => {
+		state.actor.mockResolvedValue({ userId: "member-user" });
+		expect((await call("/policies", "POST", { name: "Member", requests_per_minute: 1 }, DASHBOARD)).status).toBe(403);
+		state.actor.mockResolvedValue({ userId: "stranger" });
+		expect((await call("/policies", "GET", undefined, DASHBOARD)).status).toBe(403);
+		expect(state.tables.workspace_rate_limit_policies).toHaveLength(2);
+		expect(state.publish).not.toHaveBeenCalled();
+	});
+
+	it("keeps management keys working when they also send the workspace header", async () => {
+		const { guardManagementAuth } = await import("@/pipeline/before/guards");
+		vi.mocked(guardManagementAuth).mockClear();
+		const headers = { authorization: "Bearer phaseo_mk_test", "x-phaseo-workspace-id": WORKSPACE };
+		expect((await call("/policies", "GET", undefined, headers)).status).toBe(200);
+		expect(state.actor).not.toHaveBeenCalled();
+		expect(guardManagementAuth).toHaveBeenCalledTimes(1);
+	});
+
+	it("falls back to management authentication when Supabase rejects the token", async () => {
+		const { guardManagementAuth } = await import("@/pipeline/before/guards");
+		vi.mocked(guardManagementAuth).mockClear();
+		state.auth = { ok: false, response: new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }) };
+		try {
+			expect((await call("/policies", "GET", undefined, DASHBOARD)).status).toBe(401);
+			expect(state.actor).toHaveBeenCalledWith(SESSION);
+			expect(guardManagementAuth).toHaveBeenCalledTimes(1);
+		} finally {
+			state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", scopes: [...ALL_SCOPES] } };
+		}
 	});
 });

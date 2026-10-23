@@ -21,6 +21,7 @@ it.each([
 	["oauth-apps/RedirectUriManager.tsx", ["updateRedirectUrisAction"]],
 	["beta/BetaSettingsClient.tsx", ["updateBetaPreferences"]],
 	["classifiers/ClassifierEditor.tsx", ["createClassifier", "updateClassifier", "deleteClassifier"]],
+	["rate-limits/RateLimitsSettingsClient.tsx", ["createRateLimitPolicy", "updateRateLimitPolicy", "deleteRateLimitPolicy", "assignRateLimitPolicy", "changeRateLimitAssignment", "removeRateLimitAssignment"]],
 	["slack/SlackAgentSettingsClient.tsx", ["updateSlackAgent", "uninstallSlackAgent"]],
 	["slack/SlackCustomAppSection.tsx", ["saveSlackCustomApp", "removeSlackCustomApp"]],
 ] as const)("invalidates every settings write in %s after settlement", (file, actions) => {
