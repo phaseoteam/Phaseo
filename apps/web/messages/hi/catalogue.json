@@ -2834,7 +2834,7 @@
 		"activityOutput": "आउटपुट",
 		"activityReasoning": "रीज़निंग",
 		"activityRequests": "अनुरोध",
-		"activityDay": "{date}: {tokens} टोकन, {requests} अनुरोध",
+		"activityDay": "{date}: {tokens} टोकन, {count, plural, other {{requests} अनुरोध}}",
 		"activityChart": "Phaseo के ज़रिए {name} के दैनिक टोकन, पिछले 30 दिन",
 		"activityNone": "पिछले 30 दिनों में Phaseo के ज़रिए कोई ट्रैफ़िक नहीं",
 		"activityNoneAll": "पिछले 30 दिनों में इनमें से किसी भी मॉडल पर Phaseo के ज़रिए कोई ट्रैफ़िक नहीं आया।",

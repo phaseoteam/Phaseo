@@ -2834,7 +2834,7 @@
 		"activityOutput": "الإخراج",
 		"activityReasoning": "الاستدلال",
 		"activityRequests": "الطلبات",
-		"activityDay": "{date}: {tokens} رمز، {count, plural, one {طلب واحد} two {طلبان} few {{requests} طلبات} many {{requests} طلبًا} other {{requests} طلب}}",
+		"activityDay": "{date}: {tokens} رمز، {count, plural, zero {لا طلبات} one {طلب واحد} two {طلبان} few {{requests} طلبات} many {{requests} طلبًا} other {{requests} طلب}}",
 		"activityChart": "الرموز اليومية لـ {name} عبر Phaseo، آخر 30 يومًا",
 		"activityNone": "لا توجد حركة عبر Phaseo خلال آخر 30 يومًا",
 		"activityNoneAll": "لم تحصل أي من هذه النماذج على حركة عبر Phaseo خلال آخر 30 يومًا.",
