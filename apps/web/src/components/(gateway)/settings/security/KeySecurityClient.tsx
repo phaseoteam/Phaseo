@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ClipboardCopy, Hourglass, Network, PauseCircle, ShieldAlert, ShieldOff, Trash2, Wallet, MapPin } from "lucide-react";
+import { CircleCheck, CircleDashed, ClipboardCopy, Clock, Hourglass, Network, PauseCircle, ShieldAlert, ShieldOff, Trash2, Wallet, MapPin } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,28 +28,22 @@ import {
 	useKeyStorageLocationName,
 } from "../keys/KeyStorageLocationPicker";
 import type { KeySecurityKey, SettingsKeySecurityInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { SortableTableHead, nextTableSort, type TableSort } from "../../usage/SortableTableHead";
+import {
+	keySecurityRisks,
+	keySecurityStatus,
+	matchesKeySecurityFilter,
+	sameKeySecurityFilter,
+	sortKeySecurityKeys,
+	type KeySecurityFilter,
+	type KeySecurityRisk,
+	type KeySecuritySortKey,
+	type KeySecurityStatus,
+} from "./keySecurityTable";
 
 const NANOS_PER_USD = 1_000_000_000;
 /** The word typed to confirm a bulk revoke. It isn't translated, so it is the same in every language. */
 const REVOKE_CONFIRMATION = "revoke";
-
-export type KeySecurityFilter =
-	| { kind: "all" }
-	| { kind: "no_spend_limit" | "never_expires" | "idle" | "safe_to_remove" | "no_ip_allowlist" | "no_storage_location" }
-	| { kind: "location"; id: string };
-
-export function matchesKeySecurityFilter(key: KeySecurityKey, filter: KeySecurityFilter) {
-	switch (filter.kind) {
-		case "all": return true;
-		case "no_spend_limit": return !key.has_spend_limit;
-		case "never_expires": return key.expires_at === null;
-		case "idle": return key.idle;
-		case "safe_to_remove": return key.safe_to_remove;
-		case "no_ip_allowlist": return !key.has_ip_allowlist;
-		case "no_storage_location": return key.storage_locations.length === 0;
-		case "location": return key.storage_locations.includes(filter.id);
-	}
-}
 
 /** A CSV of keys and their owners, for asking each owner what to do with their key. */
 export function keyOwnerCsv(keys: KeySecurityKey[]) {
@@ -64,22 +58,72 @@ export function keyOwnerCsv(keys: KeySecurityKey[]) {
 
 type PendingAction = { action: BulkKeyActionInput["action"]; selection: BulkKeySelection; count: number; label: string };
 
-function Stat({ icon: Icon, label, value, help, active, onClick }: {
-	icon: typeof Wallet; label: string; value: number; help: string; active: boolean; onClick: () => void;
+/** One icon per risk or status, shared by the filters and the table. */
+const ICONS: Record<KeySecurityRisk | KeySecurityStatus, typeof Wallet> = {
+	safe_to_remove: Trash2,
+	no_spend_limit: Wallet,
+	never_expires: Hourglass,
+	idle: Clock,
+	no_ip_allowlist: Network,
+	no_storage_location: MapPin,
+	paused: PauseCircle,
+	never_used: CircleDashed,
+	active: CircleCheck,
+};
+const RISK_FILTERS: KeySecurityRisk[] = ["safe_to_remove", "no_spend_limit", "never_expires", "idle", "no_ip_allowlist", "no_storage_location"];
+/** How many storage locations show before "Show all". */
+const TOP_LOCATIONS = 5;
+
+// Full class names, so Tailwind finds them. Borders and fills use the sRGB hex of each
+// Tailwind 500 colour: Chrome draws the rounded corners of a faint oklch orange-500 or
+// violet-500 border with cyan specks on light backgrounds, because those colours sit
+// outside sRGB. The hex versions look the same without the specks.
+const GREEN = { tag: "border-[#00bc7d]/30 bg-[#00bc7d]/10 text-emerald-700 dark:text-emerald-300", icon: "text-emerald-600 dark:text-emerald-400" };
+const BLUE = { tag: "border-[#00a6f4]/30 bg-[#00a6f4]/10 text-sky-700 dark:text-sky-300", icon: "text-sky-600 dark:text-sky-400" };
+const VIOLET = { tag: "border-[#8e51ff]/30 bg-[#8e51ff]/10 text-violet-700 dark:text-violet-300", icon: "text-violet-600 dark:text-violet-400" };
+const AMBER = { tag: "border-[#fe9a00]/30 bg-[#fe9a00]/10 text-amber-700 dark:text-amber-300", icon: "text-amber-600 dark:text-amber-400" };
+const ORANGE = { tag: "border-[#ff6900]/30 bg-[#ff6900]/10 text-orange-700 dark:text-orange-300", icon: "text-orange-600 dark:text-orange-400" };
+const ROSE = { tag: "border-[#ff2056]/30 bg-[#ff2056]/10 text-rose-700 dark:text-rose-300", icon: "text-rose-600 dark:text-rose-400" };
+
+/** Green is fine, blue and violet are informational, amber and orange want a look, rose is the most urgent. */
+const TONES: Record<KeySecurityRisk | KeySecurityStatus, typeof GREEN> = {
+	active: GREEN,
+	never_used: BLUE,
+	paused: VIOLET,
+	idle: AMBER,
+	safe_to_remove: ROSE,
+	no_spend_limit: ROSE,
+	never_expires: AMBER,
+	no_ip_allowlist: ORANGE,
+	no_storage_location: BLUE,
+};
+
+function Tag({ kind, label }: { kind: KeySecurityRisk | KeySecurityStatus; label: string }) {
+	const Icon = ICONS[kind];
+	return (
+		<span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-xs", TONES[kind].tag)}>
+			<Icon aria-hidden="true" className="size-3" />{label}
+		</span>
+	);
+}
+
+function FilterChip({ active, label, count, title, onClick, children }: {
+	active: boolean; label: string; count: number; title?: string; onClick: () => void; children?: React.ReactNode;
 }) {
 	return (
 		<button
 			type="button"
 			onClick={onClick}
 			aria-pressed={active}
+			title={title}
 			className={cn(
-				"rounded-md border p-4 text-left transition-colors hover:border-foreground/40",
-				active ? "border-foreground bg-muted/60" : "border-border",
+				"inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs transition-colors",
+				active ? "border-foreground bg-muted text-foreground" : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",
 			)}
 		>
-			<div className="flex items-center gap-2 text-sm text-muted-foreground"><Icon className="size-4" />{label}</div>
-			<div className="mt-2 text-2xl font-semibold tabular-nums">{value}</div>
-			<p className="mt-1 text-xs leading-5 text-muted-foreground">{help}</p>
+			{children}
+			<span>{label}</span>
+			<span className="tabular-nums text-muted-foreground">{count}</span>
 		</button>
 	);
 }
@@ -96,16 +140,33 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 	const [spendLimitUsd, setSpendLimitUsd] = React.useState("");
 	const [expiresOn, setExpiresOn] = React.useState("");
 	const [locations, setLocations] = React.useState<string[]>([]);
+	const [sort, setSort] = React.useState<TableSort<KeySecuritySortKey>>(null);
+	const [allLocations, setAllLocations] = React.useState(false);
+	const keysSection = React.useRef<HTMLElement>(null);
 	const { summary, canManage, maxBulkKeys } = data;
 
-	const visible = React.useMemo(() => data.keys.filter((key) => matchesKeySecurityFilter(key, filter)), [data.keys, filter]);
+	const visible = React.useMemo(() => sortKeySecurityKeys(data.keys.filter((key) => matchesKeySecurityFilter(key, filter)), sort), [data.keys, filter, sort]);
 	const visibleIds = visible.map((key) => key.id);
 	const selectedVisible = visibleIds.filter((id) => selected.has(id));
 	const allSelected = visible.length > 0 && selectedVisible.length === visible.length;
 
 	function choose(next: KeySecurityFilter) {
-		setFilter((current) => JSON.stringify(current) === JSON.stringify(next) ? { kind: "all" } : next);
+		setFilter((current) => sameKeySecurityFilter(current, next) ? { kind: "all" } : next);
 		setSelected(new Set());
+	}
+
+	function changeSort(key: KeySecuritySortKey) {
+		setSort((current) => nextTableSort(current, key));
+	}
+
+	// From a recommendation or location: filter the table and bring it into view.
+	function show(next: KeySecurityFilter) {
+		setFilter(next);
+		setSelected(new Set());
+		requestAnimationFrame(() => {
+			const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+			keysSection.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+		});
 	}
 
 	function open(action: PendingAction["action"], keyIds: string[], label: string) {
@@ -169,6 +230,13 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 		never_expires: (count: number) => t("keySecurity.recommend.never_expires.title", { count }),
 		no_storage_location: (count: number) => t("keySecurity.recommend.no_storage_location.title", { count }),
 	};
+	const statusLabel: Record<KeySecurityStatus, string> = {
+		paused: t("keySecurity.paused"),
+		safe_to_remove: t("keySecurity.risks.safe_to_remove"),
+		idle: t("keySecurity.risks.idle"),
+		never_used: t("keySecurity.neverUsed"),
+		active: t("keySecurity.status.active"),
+	};
 	const confirmMessage = {
 		pause: (count: number) => t("keySecurity.confirm.pause", { count }),
 		revoke: (count: number) => t("keySecurity.confirm.revoke", { count }),
@@ -225,19 +293,6 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 	return (
 		<div className="space-y-8">
 			{notices}
-			<section className="space-y-3" aria-label={t("keySecurity.overview")}>
-				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-					<Stat icon={Wallet} label={t("keySecurity.filters.no_spend_limit")} value={summary.no_spend_limit} help={t("keySecurity.help.no_spend_limit")} active={filter.kind === "no_spend_limit"} onClick={() => choose({ kind: "no_spend_limit" })} />
-					<Stat icon={Hourglass} label={t("keySecurity.filters.never_expires")} value={summary.never_expires} help={t("keySecurity.help.never_expires")} active={filter.kind === "never_expires"} onClick={() => choose({ kind: "never_expires" })} />
-					<Stat icon={PauseCircle} label={t("keySecurity.filters.idle")} value={summary.idle} help={t("keySecurity.help.idle")} active={filter.kind === "idle"} onClick={() => choose({ kind: "idle" })} />
-					<Stat icon={Trash2} label={t("keySecurity.filters.safe_to_remove")} value={summary.safe_to_remove} help={t("keySecurity.help.safe_to_remove")} active={filter.kind === "safe_to_remove"} onClick={() => choose({ kind: "safe_to_remove" })} />
-				</div>
-				<div className="grid gap-3 sm:grid-cols-2">
-					<Stat icon={Network} label={t("keySecurity.filters.no_ip_allowlist")} value={summary.no_ip_allowlist} help={t("keySecurity.help.no_ip_allowlist")} active={filter.kind === "no_ip_allowlist"} onClick={() => choose({ kind: "no_ip_allowlist" })} />
-					<Stat icon={MapPin} label={t("keySecurity.filters.no_storage_location")} value={summary.no_storage_location} help={t("keySecurity.help.no_storage_location")} active={filter.kind === "no_storage_location"} onClick={() => choose({ kind: "no_storage_location" })} />
-				</div>
-			</section>
-
 			{recommendations.length > 0 ? (
 				<section className="space-y-3">
 					<h2 className="text-base font-semibold">{t("keySecurity.recommendations")}</h2>
@@ -254,7 +309,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 										</div>
 									</div>
 									<div className="flex shrink-0 gap-2">
-										<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => choose({ kind: item.id })}>{t("keySecurity.viewKeys")}</Button>
+										<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => show({ kind: item.id })}>{t("keySecurity.viewKeys")}</Button>
 										{item.owners && canManage ? (
 											<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => copyOwners(keys)}><ClipboardCopy className="size-4" />{t("keySecurity.copyOwners")}</Button>
 										) : null}
@@ -273,7 +328,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 						<p className="text-sm text-muted-foreground">{t("keySecurity.storedInHelp")}</p>
 					</div>
 					<ul className="divide-y rounded-md border">
-						{summary.locations.map((location) => {
+						{(allLocations ? summary.locations : summary.locations.slice(0, TOP_LOCATIONS)).map((location) => {
 							return (
 								<li key={location.id} className="flex items-center justify-between gap-3 p-3">
 									<div className="flex min-w-0 items-center gap-2 text-sm">
@@ -282,7 +337,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 										<span className="text-muted-foreground">{t("keySecurity.keyCount", { count: location.keys })}</span>
 									</div>
 									<div className="flex shrink-0 gap-2">
-										<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => choose({ kind: "location", id: location.id })}>{t("keySecurity.viewKeys")}</Button>
+										<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => show({ kind: "location", id: location.id })}>{t("keySecurity.viewKeys")}</Button>
 										{canManage ? (
 											<Button type="button" variant="destructive" size="sm" className="rounded-md" onClick={() => openLocation(location.id, location.keys)}>
 												<ShieldOff className="size-4" />{t("keySecurity.revokeAll")}
@@ -293,17 +348,41 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 							);
 						})}
 					</ul>
+					{summary.locations.length > TOP_LOCATIONS ? (
+						<Button type="button" variant="ghost" size="sm" className="rounded-md" aria-expanded={allLocations} onClick={() => setAllLocations((value) => !value)}>
+							{allLocations ? t("keySecurity.showFewerLocations") : t("keySecurity.showAllLocations", { count: summary.locations.length })}
+						</Button>
+					) : null}
 				</section>
 			) : null}
 
-			<section className="space-y-3">
-				<div className="flex flex-wrap items-center justify-between gap-2">
-					<h2 className="text-base font-semibold">
-						{filter.kind === "all" ? t("keySecurity.allKeys") : filter.kind === "location" ? t("keySecurity.keysIn", { name: nameOf(filter.id) }) : t(`keySecurity.filters.${filter.kind}` as never)}
-						<span className="ml-2 font-normal text-muted-foreground">{visible.length}</span>
-					</h2>
-					{data.keys.length < summary.total ? <p className="w-full text-xs text-muted-foreground">{t("keySecurity.partial", { shown: data.keys.length, total: summary.total })}</p> : null}
-					{filter.kind !== "all" ? <Button type="button" variant="ghost" size="sm" className="rounded-md" onClick={() => choose({ kind: "all" })}>{t("keySecurity.clearFilter")}</Button> : null}
+			<section ref={keysSection} className="scroll-mt-4 space-y-3">
+				<h2 className="text-base font-semibold">{t("keySecurity.keys")}</h2>
+				<div role="group" aria-label={t("keySecurity.filterLabel")} className="flex flex-wrap gap-1.5">
+					<FilterChip active={filter.kind === "all"} label={t("keySecurity.allKeys")} count={summary.total} onClick={() => choose({ kind: "all" })} />
+					{/* The active filter stays visible after a bulk fix takes its count to 0. */}
+					{RISK_FILTERS.filter((risk) => summary[risk] > 0 || filter.kind === risk).map((risk) => {
+						const Icon = ICONS[risk];
+						return (
+							<FilterChip key={risk} active={filter.kind === risk} label={t(`keySecurity.filters.${risk}` as never)} count={summary[risk]} title={t(`keySecurity.help.${risk}` as never)} onClick={() => choose({ kind: risk })}>
+								<Icon aria-hidden="true" className={cn("size-3.5", TONES[risk].icon)} />
+							</FilterChip>
+						);
+					})}
+					{/* Locations are chosen from "Where keys are stored"; only the chosen one shows here. */}
+					{filter.kind === "location" ? (
+						<FilterChip active label={nameOf(filter.id)} count={summary.locations.find((location) => location.id === filter.id)?.keys ?? visible.length} onClick={() => choose({ kind: "all" })}>
+							<KeyStorageLogo id={filter.id} className="size-3.5" />
+						</FilterChip>
+					) : null}
+				</div>
+				<div className="flex min-h-8 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+					<span>
+						{t("keySecurity.showing", { shown: visible.length, total: summary.total })}
+						{filter.kind === "location" ? ` · ${t("keySecurity.keysIn", { name: nameOf(filter.id) })}` : filter.kind !== "all" ? ` · ${t(`keySecurity.help.${filter.kind}` as never)}` : ""}
+					</span>
+					{filter.kind !== "all" ? <Button type="button" variant="ghost" size="sm" className="h-7 rounded-md" onClick={() => choose({ kind: "all" })}>{t("keySecurity.clearFilter")}</Button> : null}
+					{data.keys.length < summary.total ? <p className="w-full text-xs">{t("keySecurity.partial", { shown: data.keys.length, total: summary.total })}</p> : null}
 				</div>
 
 				{canManage && selectedVisible.length > 0 ? (
@@ -332,12 +411,14 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 										/>
 									</th>
 								) : null}
-								<th className="p-3 font-medium">{t("keySecurity.columns.key")}</th>
-								<th className="p-3 font-medium">{t("keySecurity.columns.owner")}</th>
-								<th className="p-3 font-medium">{t("keySecurity.columns.lastUsed")}</th>
-								<th className="p-3 font-medium">{t("keySecurity.columns.expires")}</th>
-								<th className="p-3 font-medium">{t("keySecurity.columns.storedIn")}</th>
-								<th className="p-3 font-medium">{t("keySecurity.columns.risks")}</th>
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.key")} sortKey="name" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.owner")} sortKey="owner" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.created")} sortKey="created" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.lastUsed")} sortKey="lastUsed" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.expires")} sortKey="expires" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.storedIn")} sortKey="storedIn" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.status")} sortKey="status" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.risks")} sortKey="risks" activeSort={sort} onSortChange={changeSort} />
 							</tr>
 						</thead>
 						<tbody className="divide-y">
@@ -358,26 +439,20 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 									) : null}
 									<td className="p-3">
 										<Link href={keyDetailHref({ name: key.name, prefix: key.prefix, workspace_id: data.workspaceId })} className="font-medium hover:underline">{key.name}</Link>
-										<div className="font-mono text-xs text-muted-foreground">{key.prefix}…{key.status === "paused" ? ` · ${t("keySecurity.paused")}` : ""}</div>
+										<div className="font-mono text-xs text-muted-foreground">{key.prefix}…</div>
 									</td>
 									<td className="p-3">
 										<div>{key.owner_name ?? t("keySecurity.unknownOwner")}</div>
 										{key.owner_email ? <div className="text-xs text-muted-foreground">{key.owner_email}</div> : null}
 									</td>
+									<td className="p-3 whitespace-nowrap"><DisplayDate value={key.created_at} /></td>
 									<td className="p-3 whitespace-nowrap">{key.last_used_at ? <DisplayDate value={key.last_used_at} /> : t("keySecurity.neverUsed")}</td>
 									<td className="p-3 whitespace-nowrap">{key.expires_at ? <DisplayDate value={key.expires_at} /> : t("keySecurity.never")}</td>
 									<td className="p-3">{key.storage_locations.length ? <KeyStorageLocationList value={key.storage_locations} className="text-xs" /> : <span className="text-muted-foreground">{t("keySecurity.notSet")}</span>}</td>
+									<td className="p-3"><Tag kind={keySecurityStatus(key)} label={statusLabel[keySecurityStatus(key)]} /></td>
 									<td className="p-3">
 										<div className="flex flex-wrap gap-1">
-											{([
-												["safe_to_remove", key.safe_to_remove],
-												["idle", key.idle && !key.safe_to_remove],
-												["no_spend_limit", !key.has_spend_limit],
-												["never_expires", key.expires_at === null],
-												["no_ip_allowlist", !key.has_ip_allowlist],
-											] as const).filter(([, on]) => on).map(([risk]) => (
-												<span key={risk} className="rounded-md border px-1.5 py-0.5 text-xs text-muted-foreground">{t(`keySecurity.risks.${risk}` as never)}</span>
-											))}
+											{keySecurityRisks(key).map((risk) => <Tag key={risk} kind={risk} label={t(`keySecurity.risks.${risk}` as never)} />)}
 										</div>
 									</td>
 								</tr>

@@ -4735,6 +4735,7 @@
 		"providerProfile": "Anbieterprofil",
 		"classifiers": "Klassifikatoren",
 		"budgets": "Budgets",
+		"keys": "Schlüssel",
 		"keySecurity": "Schlüsselsicherheit",
 		"slack": "Slack"
 	},
@@ -6112,7 +6113,9 @@
 			"lastUsed": "Zuletzt verwendet",
 			"expires": "Läuft ab",
 			"storedIn": "Gespeichert in",
-			"risks": "Risiken"
+			"risks": "Risiken",
+			"created": "Erstellt",
+			"status": "Status"
 		},
 		"paused": "Pausiert",
 		"unknownOwner": "Unbekannt",
@@ -6129,7 +6132,15 @@
 			"pausedNext": "Rotiere diese Schlüssel, bevor du sie wieder aktivierst, und prüfe deine Anfrageprotokolle auf Traffic, den du nicht kennst.",
 			"replace": "Ersatzschlüssel erstellen",
 			"source": "Offenlegung von {name} lesen"
-		}
+		},
+		"keys": "Schlüssel",
+		"filterLabel": "Schlüssel filtern",
+		"showing": "{shown} von {total} Schlüsseln",
+		"status": {
+			"active": "Aktiv"
+		},
+		"showAllLocations": "Alle {count} Orte anzeigen",
+		"showFewerLocations": "Weniger anzeigen"
 	},
 	"keyIncidents": {
 		"title": "Vorfälle bei Schlüsselspeicherorten",

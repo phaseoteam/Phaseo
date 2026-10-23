@@ -21,7 +21,7 @@ import {
 	MAX_KEY_STORAGE_LOCATIONS,
 	keyStorageLocation,
 } from "./keyStorageLocations";
-import { KEY_STORAGE_LOGO_IDS } from "./keyStorageLogos";
+import { KEY_STORAGE_LOGOS } from "./keyStorageLogos";
 
 const GENERIC_ICONS: Record<string, typeof KeyRound> = {
 	"local-machine": Laptop,
@@ -29,15 +29,29 @@ const GENERIC_ICONS: Record<string, typeof KeyRound> = {
 	other: MapPin,
 };
 
-/** A location's mark, drawn in the current text colour so it suits both themes. */
+/** A location's mark in its brand colour, or the text colour where the brand colour wouldn't show up. */
 export function KeyStorageLogo({ id, className }: { id: string; className?: string }) {
-	if (KEY_STORAGE_LOGO_IDS.has(id)) {
+	const logo = KEY_STORAGE_LOGOS[id];
+	if (logo) {
 		const url = `url(/logos/key-storage/${id}.svg)`;
+		if (logo.original) {
+			return (
+				<span
+					aria-hidden="true"
+					className={cn("inline-block size-4 shrink-0 bg-contain bg-center bg-no-repeat", className)}
+					style={{ backgroundImage: url }}
+				/>
+			);
+		}
 		return (
 			<span
 				aria-hidden="true"
-				className={cn("inline-block size-4 shrink-0 bg-current", className)}
-				style={{ maskImage: url, WebkitMaskImage: url, maskSize: "contain", WebkitMaskSize: "contain", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat", maskPosition: "center", WebkitMaskPosition: "center" }}
+				className={cn(
+					"inline-block size-4 shrink-0",
+					!logo.color ? "bg-current" : logo.light === false ? "bg-current dark:bg-(--logo)" : logo.dark === false ? "bg-(--logo) dark:bg-current" : "bg-(--logo)",
+					className,
+				)}
+				style={{ "--logo": logo.color, maskImage: url, WebkitMaskImage: url, maskSize: "contain", WebkitMaskSize: "contain", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat", maskPosition: "center", WebkitMaskPosition: "center" } as React.CSSProperties}
 			/>
 		);
 	}

@@ -4735,6 +4735,7 @@
 		"providerProfile": "ملف المزوّد",
 		"classifiers": "المصنِّفات",
 		"budgets": "الميزانيات",
+		"keys": "المفاتيح",
 		"keySecurity": "أمان المفاتيح",
 		"slack": "Slack"
 	},
@@ -6112,7 +6113,9 @@
 			"lastUsed": "آخر استخدام",
 			"expires": "تاريخ الانتهاء",
 			"storedIn": "مخزَّن في",
-			"risks": "المخاطر"
+			"risks": "المخاطر",
+			"created": "تاريخ الإنشاء",
+			"status": "الحالة"
 		},
 		"paused": "متوقف مؤقتًا",
 		"unknownOwner": "غير معروف",
@@ -6129,7 +6132,15 @@
 			"pausedNext": "دوّر هذه المفاتيح قبل استعادتها، وتحقق من سجلات الطلبات بحثًا عن أي حركة مرور لا تعرفها.",
 			"replace": "إنشاء مفاتيح بديلة",
 			"source": "اقرأ إفصاح {name}"
-		}
+		},
+		"keys": "المفاتيح",
+		"filterLabel": "تصفية المفاتيح",
+		"showing": "المفاتيح المعروضة: {shown} من أصل {total}",
+		"status": {
+			"active": "نشط"
+		},
+		"showAllLocations": "عرض كل المواقع ({count})",
+		"showFewerLocations": "عرض أقل"
 	},
 	"keyIncidents": {
 		"title": "حوادث أماكن تخزين المفاتيح",

@@ -4735,6 +4735,7 @@
 		"providerProfile": "プロバイダープロフィール",
 		"classifiers": "分類器",
 		"budgets": "予算",
+		"keys": "キー",
 		"keySecurity": "キーのセキュリティ",
 		"slack": "Slack"
 	},
@@ -6112,7 +6113,9 @@
 			"lastUsed": "最終使用",
 			"expires": "有効期限",
 			"storedIn": "保管場所",
-			"risks": "リスク"
+			"risks": "リスク",
+			"created": "作成日",
+			"status": "ステータス"
 		},
 		"paused": "一時停止中",
 		"unknownOwner": "不明",
@@ -6129,7 +6132,15 @@
 			"pausedNext": "再開する前にこれらのキーをローテーションし、リクエストログに心当たりのないトラフィックがないか確認してください。",
 			"replace": "代わりのキーを作成",
 			"source": "{name} の公表内容を読む"
-		}
+		},
+		"keys": "キー",
+		"filterLabel": "キーを絞り込む",
+		"showing": "{total} 件中 {shown} 件のキーを表示",
+		"status": {
+			"active": "有効"
+		},
+		"showAllLocations": "{count} 件の保管場所をすべて表示",
+		"showFewerLocations": "表示を減らす"
 	},
 	"keyIncidents": {
 		"title": "キー保管場所のインシデント",

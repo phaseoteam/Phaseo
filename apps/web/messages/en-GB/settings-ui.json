@@ -4735,6 +4735,7 @@
 		"providerProfile": "Provider profile",
 		"classifiers": "Classifiers",
 		"budgets": "Budgets",
+		"keys": "Keys",
 		"keySecurity": "Key Security",
 		"slack": "Slack"
 	},
@@ -6112,7 +6113,9 @@
 			"lastUsed": "Last used",
 			"expires": "Expires",
 			"storedIn": "Stored in",
-			"risks": "Risks"
+			"risks": "Risks",
+			"created": "Created",
+			"status": "Status"
 		},
 		"paused": "Paused",
 		"unknownOwner": "Unknown",
@@ -6129,7 +6132,15 @@
 			"pausedNext": "Rotate these keys before resuming them, and check your request logs for traffic you don't recognise.",
 			"replace": "Create replacement keys",
 			"source": "Read {name}'s disclosure"
-		}
+		},
+		"keys": "Keys",
+		"filterLabel": "Filter keys",
+		"showing": "Showing {shown} of {total} keys",
+		"status": {
+			"active": "Active"
+		},
+		"showAllLocations": "Show all {count} locations",
+		"showFewerLocations": "Show fewer"
 	},
 	"keyIncidents": {
 		"title": "Key storage incidents",

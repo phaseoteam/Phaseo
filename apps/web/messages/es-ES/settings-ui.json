@@ -4735,6 +4735,7 @@
 		"providerProfile": "Perfil del proveedor",
 		"classifiers": "Clasificadores",
 		"budgets": "Presupuestos",
+		"keys": "Claves",
 		"keySecurity": "Seguridad de claves",
 		"slack": "Slack"
 	},
@@ -6112,7 +6113,9 @@
 			"lastUsed": "Último uso",
 			"expires": "Caduca",
 			"storedIn": "Guardada en",
-			"risks": "Riesgos"
+			"risks": "Riesgos",
+			"created": "Creada",
+			"status": "Estado"
 		},
 		"paused": "En pausa",
 		"unknownOwner": "Desconocido",
@@ -6129,7 +6132,15 @@
 			"pausedNext": "Rota estas claves antes de reactivarlas y revisa tus registros de solicitudes por si hay tráfico que no reconozcas.",
 			"replace": "Crear claves de sustitución",
 			"source": "Leer el comunicado de {name}"
-		}
+		},
+		"keys": "Claves",
+		"filterLabel": "Filtrar claves",
+		"showing": "Mostrando {shown} de {total} claves",
+		"status": {
+			"active": "Activa"
+		},
+		"showAllLocations": "Mostrar las {count} ubicaciones",
+		"showFewerLocations": "Mostrar menos"
 	},
 	"keyIncidents": {
 		"title": "Incidentes de almacenamiento de claves",
