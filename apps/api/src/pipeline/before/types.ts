@@ -691,6 +691,8 @@ export type PipelineContext = {
 	 * model fallbacks of one HTTP request reuse the primary attempt's admission.
 	 */
 	rateLimitAdmissionId?: string;
+	/** Concurrency slots this HTTP request holds; shared by its fallback attempts and released by the entrypoint. */
+	rateLimitConcurrency?: import("@core/customer-rate-limits").ConcurrencyLeases;
     /** Request-owned diagnostics; never cache or serialize. Not enabled by public headers. */
     gatewayTimingTrace?: import("../telemetry/gateway-trace").GatewayTimingTrace;
     /** Request-owned persistence barrier; never cache or serialize this field. */
