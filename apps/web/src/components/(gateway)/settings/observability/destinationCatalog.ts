@@ -57,6 +57,28 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 		],
 	},
 	{
+		id: "bigquery",
+		label: "Google BigQuery",
+		description: "Stream traces into a BigQuery table, one row per span.",
+		logoId: "google",
+		fields: [
+			{
+				key: "service_account_json",
+				label: "Service Account Key (JSON)",
+				placeholder: "Paste the key file of a service account with BigQuery Data Editor on the table",
+				type: "password",
+			},
+			{ key: "dataset", label: "Dataset", placeholder: "observability" },
+			{ key: "table", label: "Table", placeholder: "phaseo_traces" },
+			{
+				key: "project_id",
+				label: "Project ID (Optional)",
+				placeholder: "Defaults to the key's project",
+				required: false,
+			},
+		],
+	},
+	{
 		id: "braintrust",
 		label: "Braintrust",
 		description: "Send GenAI traces to a Braintrust project over OpenTelemetry.",

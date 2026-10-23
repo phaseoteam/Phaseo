@@ -26,12 +26,15 @@ export type BroadcastRow = {
 	resource_attributes: Json;
 };
 
-export const BROADCAST_ROWS_DESTINATION_IDS = ["clickhouse", "gcs", "r2", "s3"] as const;
+export const BROADCAST_ROWS_DESTINATION_IDS = ["bigquery", "clickhouse", "gcs", "r2", "s3"] as const;
 export type BroadcastRowsDestinationId = (typeof BROADCAST_ROWS_DESTINATION_IDS)[number];
 
 // The most one request carries, as uncompressed JSON. Bodies are gzipped, so
 // what is sent is several times smaller.
 export const BROADCAST_ROWS_REQUEST_LIMITS: Record<BroadcastRowsDestinationId, { bytes: number; rows: number }> = {
+	// insertAll takes up to 10 MB and recommends at most 500 rows per request;
+	// larger batches are accepted but slower.
+	bigquery: { bytes: 5 * 1024 * 1024, rows: 5_000 },
 	clickhouse: { bytes: 8 * 1024 * 1024, rows: 50_000 },
 	gcs: { bytes: 8 * 1024 * 1024, rows: 50_000 },
 	r2: { bytes: 8 * 1024 * 1024, rows: 50_000 },
@@ -416,6 +419,189 @@ function clickHouseTarget(config: Record<string, unknown>): ClickHouseTarget {
 	return { url, user: field(config, "username") || "default", password: required(config, "password") };
 }
 
+const BIGQUERY_PROJECT = /^([a-z][a-z0-9.-]*:)?[a-z][a-z0-9-]{4,28}[a-z0-9]$/;
+const BIGQUERY_DATASET = /^[A-Za-z0-9_]{1,1024}$/;
+const BIGQUERY_TABLE = /^[A-Za-z0-9_-]{1,1024}$/;
+const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const BIGQUERY_SCOPE = "https://www.googleapis.com/auth/bigquery.insertdata";
+
+type ServiceAccount = { client_email: string; private_key: string; project_id?: string };
+type BigQueryTarget = { url: URL; account: ServiceAccount };
+
+function serviceAccount(config: Record<string, unknown>): ServiceAccount {
+	const raw = required(config, "service_account_json");
+	let parsed: Json;
+	try {
+		parsed = object(JSON.parse(raw));
+	} catch {
+		throw new Error("service_account_json must be the service account's JSON key file");
+	}
+	if (parsed.type !== "service_account" || typeof parsed.client_email !== "string" || typeof parsed.private_key !== "string" || !parsed.private_key.includes("BEGIN PRIVATE KEY")) {
+		throw new Error("service_account_json must be the service account's JSON key file");
+	}
+	return {
+		client_email: parsed.client_email,
+		private_key: parsed.private_key,
+		project_id: typeof parsed.project_id === "string" ? parsed.project_id : undefined,
+	};
+}
+
+// https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
+function bigQueryTarget(config: Record<string, unknown>): BigQueryTarget {
+	const account = serviceAccount(config);
+	const project = field(config, "project_id") || account.project_id || "";
+	if (!project) throw new Error("project_id is required");
+	if (!BIGQUERY_PROJECT.test(project)) throw new Error("project_id must be a Google Cloud project ID");
+	const dataset = required(config, "dataset");
+	if (!BIGQUERY_DATASET.test(dataset)) throw new Error("dataset must use only letters, digits and underscores");
+	const table = required(config, "table");
+	if (!BIGQUERY_TABLE.test(table)) throw new Error("table must use only letters, digits, underscores and hyphens");
+	const path = ["projects", project, "datasets", dataset, "tables", table].map(encodeURIComponent).join("/");
+	return { url: new URL(`https://bigquery.googleapis.com/bigquery/v2/${path}/insertAll`), account };
+}
+
+function base64Url(bytes: Uint8Array): string {
+	let binary = "";
+	for (const byte of bytes) binary += String.fromCharCode(byte);
+	return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function pemBytes(pem: string, label: string): Uint8Array<ArrayBuffer> {
+	const body = pem.replace(/\\n/g, "\n").replace(new RegExp(`-----(BEGIN|END) ${label}-----`, "g"), "").replace(/\s+/g, "");
+	let binary: string;
+	try {
+		binary = atob(body);
+	} catch {
+		throw new Error(`The ${label.toLowerCase()} is not valid PEM`);
+	}
+	return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+async function rsaKey(pem: string, extractable = false): Promise<CryptoKey> {
+	try {
+		return await crypto.subtle.importKey("pkcs8", pemBytes(pem, "PRIVATE KEY"), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, extractable, ["sign"]);
+	} catch (error) {
+		if (error instanceof Error && error.message.includes("not valid PEM")) throw error;
+		throw new Error("The private key must be an unencrypted RSA key in PKCS #8 PEM (BEGIN PRIVATE KEY)");
+	}
+}
+
+// An RS256 JSON Web Token for the claims.
+export async function signRs256Jwt(claims: Json, key: CryptoKey): Promise<string> {
+	const unsigned = `${base64Url(utf8.encode(JSON.stringify({ alg: "RS256", typ: "JWT" })))}.${base64Url(utf8.encode(JSON.stringify(claims)))}`;
+	const signature = new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, utf8.encode(unsigned)));
+	return `${unsigned}.${base64Url(signature)}`;
+}
+
+// Access tokens last an hour; each isolate reuses one per service account until
+// five minutes before it expires.
+const GOOGLE_TOKEN_CACHE = new Map<string, { token: string; refreshAtMs: number }>();
+const GOOGLE_TOKEN_CACHE_LIMIT = 64;
+
+export function clearBroadcastRowsTokenCache(): void {
+	GOOGLE_TOKEN_CACHE.clear();
+}
+
+async function googleAccessToken(account: ServiceAccount, send: BroadcastRowsFetch): Promise<string | BroadcastRowsResult> {
+	const cacheKey = await sha256Hex(`${account.client_email}\n${account.private_key}`);
+	const cached = GOOGLE_TOKEN_CACHE.get(cacheKey);
+	if (cached && Date.now() < cached.refreshAtMs) return cached.token;
+	const requestedAtMs = Date.now();
+	const now = Math.floor(requestedAtMs / 1000);
+	const assertion = await signRs256Jwt(
+		// No sub claim: that asks to act as a Workspace user (domain-wide delegation).
+		{ iss: account.client_email, aud: GOOGLE_TOKEN_URL, scope: BIGQUERY_SCOPE, iat: now, exp: now + 3600 },
+		await rsaKey(account.private_key),
+	);
+	const response = await send(new URL(GOOGLE_TOKEN_URL), {
+		method: "POST",
+		headers: { "content-type": "application/x-www-form-urlencoded" },
+		body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion }).toString(),
+	});
+	const text = await boundedText(response);
+	let json: Json = {};
+	try {
+		json = object(JSON.parse(text));
+	} catch {}
+	if (!response.ok || typeof json.access_token !== "string") {
+		const reason = [json.error, json.error_description].filter((part) => typeof part === "string" && part).join(": ");
+		return {
+			ok: false,
+			status: response.status,
+			error: `Google sign-in for the service account failed${reason ? `: ${reason}` : ` (${response.status})`}`,
+			retryAfter: response.headers.get("retry-after"),
+		};
+	}
+	const expiresIn = Number(json.expires_in);
+	if (Number.isFinite(expiresIn) && expiresIn > 600) {
+		GOOGLE_TOKEN_CACHE.delete(cacheKey);
+		GOOGLE_TOKEN_CACHE.set(cacheKey, { token: json.access_token, refreshAtMs: requestedAtMs + (expiresIn - 300) * 1000 });
+		while (GOOGLE_TOKEN_CACHE.size > GOOGLE_TOKEN_CACHE_LIMIT) GOOGLE_TOKEN_CACHE.delete(GOOGLE_TOKEN_CACHE.keys().next().value!);
+	}
+	return json.access_token;
+}
+
+// insertId lets BigQuery drop a row it already received in the last minute or
+// so, which covers a batch retried after a lost response. Attribute objects are
+// sent as objects, which JSON columns store as JSON.
+function bigQueryRows(rows: BroadcastRow[]) {
+	return rows.map((row) => ({ insertId: `${row.event_id}/${row.span_id}`.slice(0, 128), json: row }));
+}
+
+// https://cloud.google.com/bigquery/docs/error-messages
+// Reasons that pass with time; the rest need the table or config fixed.
+const BIGQUERY_TRANSIENT_REASONS = new Set(["backendError", "internalError", "rateLimitExceeded"]);
+
+function bigQueryReason(text: string): string | null {
+	try {
+		const errors = object(object(JSON.parse(text)).error).errors;
+		const reason = Array.isArray(errors) ? object(errors[0]).reason : null;
+		return typeof reason === "string" ? reason : null;
+	} catch {
+		return /"reason"\s*:\s*"([A-Za-z]+)"/.exec(text)?.[1] ?? null;
+	}
+}
+
+async function sendBigQuery(config: Record<string, unknown>, rows: BroadcastRow[], send: BroadcastRowsFetch): Promise<BroadcastRowsResult> {
+	const target = bigQueryTarget(config);
+	const token = await googleAccessToken(target.account, send);
+	if (typeof token !== "string") return token;
+	const response = await send(target.url, {
+		method: "POST",
+		headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+		body: JSON.stringify({ kind: "bigquery#tableDataInsertAllRequest", skipInvalidRows: false, ignoreUnknownValues: true, rows: bigQueryRows(rows) }),
+	});
+	const text = await boundedText(response);
+	if (!response.ok) {
+		// A rate limit arrives as 403, which is otherwise not worth retrying.
+		const reason = bigQueryReason(text);
+		return { ...await failed(response, text), ...(reason ? { retryable: BIGQUERY_TRANSIENT_REASONS.has(reason) || response.status >= 500 } : {}) };
+	}
+	// Success is a short body. A long one lists row errors: with skipInvalidRows
+	// off, one invalid row rejects the batch and the others report "stopped".
+	let errors: Json[];
+	try {
+		const insertErrors = object(JSON.parse(text)).insertErrors;
+		errors = (Array.isArray(insertErrors) ? insertErrors : []).flatMap((entry) => Array.isArray(object(entry).errors) ? object(entry).errors as unknown[] : []).map(object);
+	} catch {
+		// Cut off at the read limit: take the first reason that is not "stopped".
+		const reason = [...text.matchAll(/"reason"\s*:\s*"([A-Za-z]+)"/g)].map((match) => match[1]).find((value) => value !== "stopped");
+		errors = [{ reason: reason ?? "invalid", message: "the response listing the rejected rows was too long to read in full" }];
+	}
+	const cause = errors.find((error) => error.reason !== "stopped") ?? errors[0];
+	if (cause) {
+		const detail = [cause.reason, cause.location, cause.message].filter((part) => typeof part === "string" && part).join(": ");
+		return {
+			ok: false,
+			status: response.status,
+			error: `BigQuery rejected the rows${detail ? `: ${detail}` : ""}`.slice(0, 500),
+			retryAfter: null,
+			retryable: BIGQUERY_TRANSIENT_REASONS.has(String(cause.reason)),
+		};
+	}
+	return { ok: true, status: response.status, error: null, retryAfter: null };
+}
+
 // The base URL requests go to, after checking the config. Throws a message
 // naming the field at fault.
 export function broadcastRowsEndpoint(id: string, config: Record<string, unknown>): string {
@@ -424,6 +610,7 @@ export function broadcastRowsEndpoint(id: string, config: Record<string, unknown
 		const target = clickHouseTarget(config);
 		return `${target.url.origin}${target.url.pathname}`;
 	}
+	if (id === "bigquery") return bigQueryTarget(config).url.toString();
 	const store = objectStore(id, config);
 	pathTemplate(config);
 	required(config, "access_key_id");
@@ -509,6 +696,7 @@ export async function sendBroadcastRows(
 	options: { now?: Date; uuid?: string } = {},
 ): Promise<BroadcastRowsResult> {
 	if (!isBroadcastRowsDestination(id)) throw new Error("Not a row destination");
+	if (id === "bigquery") return sendBigQuery(config, rows, send);
 	if (id === "clickhouse") {
 		const target = clickHouseTarget(config);
 		return settled(await send(target.url, {

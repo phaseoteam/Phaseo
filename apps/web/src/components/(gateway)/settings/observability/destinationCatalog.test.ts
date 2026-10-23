@@ -88,3 +88,12 @@ describe("ClickHouse form", () => {
 		expect(required).toEqual({ endpoint: true, username: false, password: true, database: false, table: true });
 	});
 });
+
+describe("BigQuery form", () => {
+	test("takes the key file as a secret and defaults the project", () => {
+		const definition = AVAILABLE_DESTINATIONS.find((destination) => destination.id === "bigquery");
+		const required = Object.fromEntries(definition!.fields.map((field) => [field.key, field.required !== false]));
+		expect(required).toEqual({ service_account_json: true, dataset: true, table: true, project_id: false });
+		expect(definition!.fields.find((field) => field.key === "service_account_json")?.type).toBe("password");
+	});
+});

@@ -1,6 +1,7 @@
 export type ObservabilityDestinationType =
   | "arize"
   | "axiom"
+  | "bigquery"
   | "braintrust"
   | "clickhouse"
   | "comet_opik"

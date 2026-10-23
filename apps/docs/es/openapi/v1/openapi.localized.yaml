@@ -17936,6 +17936,7 @@ components:
       enum:
         - arize
         - axiom
+        - bigquery
         - braintrust
         - clickhouse
         - comet_opik
