@@ -5433,7 +5433,6 @@
 		"accessChanged": "Sua sessão ou acesso ao espaço de trabalho mudou. Recarregue para continuar.",
 		"loadFailed": "Não foi possível carregar as configurações.",
 		"retry": "Tentar novamente",
-		"refresh": "Atualizar configurações",
 		"refreshFailed": "Falha ao atualizar. Exibindo as últimas configurações carregadas."
 	},
 	"landingGaps": {

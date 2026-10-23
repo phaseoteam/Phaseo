@@ -5433,7 +5433,6 @@
 		"accessChanged": "Your session or workspace access changed. Reload to continue.",
 		"loadFailed": "Settings could not be loaded.",
 		"retry": "Try again",
-		"refresh": "Refresh settings",
 		"refreshFailed": "Refresh failed. Showing the last loaded settings."
 	},
 	"landingGaps": {

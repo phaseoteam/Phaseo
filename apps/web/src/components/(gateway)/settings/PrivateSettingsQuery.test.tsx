@@ -9,6 +9,10 @@ import { settleWrites } from "@/lib/query/settleWrites";
 
 jest.mock("@tanstack/react-query", () => ({ useQuery: jest.fn(), useQueryClient: jest.fn() }));
 jest.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+jest.mock("next-intl", () => {
+	const { privateQuery } = jest.requireActual("../../../../messages/en-GB/settings-ui.json");
+	return { useTranslations: () => (key: string) => privateQuery[key] };
+});
 jest.mock("@/app/(dashboard)/settings/cachedSettingsActions", () => ({ readCachedSettings: jest.fn() }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
 jest.mock("@/lib/web-api/client", () => ({ ...jest.requireActual("@/lib/web-api/client"), fetchAccountWebApi: jest.fn() }));
@@ -35,6 +39,12 @@ it("retains data with a warning on transient errors", () => {
 	const html = render();
 	expect(html).toContain("private data");
 	expect(html).toContain("Refresh failed");
+});
+it("has no manual refresh button and revalidates stale data on focus", () => {
+	const html = render();
+	expect(html).toContain("private data");
+	expect(html).not.toContain("<button");
+	expect(options).toMatchObject({ refetchOnWindowFocus: true, refetchOnReconnect: true, refetchInterval: false });
 });
 it("does not initialize an editor from expired data while the first read is pending", () => {
 	jest.mocked(useQuery).mockReturnValue({ data: { name: "expired draft" }, isStale: true, isFetching: true, isFetchedAfterMount: false } as never);

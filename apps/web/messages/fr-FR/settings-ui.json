@@ -5433,7 +5433,6 @@
 		"accessChanged": "Votre session ou votre accès à l’espace de travail a changé. Rechargez pour continuer.",
 		"loadFailed": "Impossible de charger les paramètres.",
 		"retry": "Réessayer",
-		"refresh": "Actualiser les paramètres",
 		"refreshFailed": "L’actualisation a échoué. Les derniers paramètres chargés sont affichés."
 	},
 	"landingGaps": {

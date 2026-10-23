@@ -5433,7 +5433,6 @@
 		"accessChanged": "Deine Sitzung oder dein Zugriff auf den Arbeitsbereich hat sich geändert. Lade die Seite neu, um fortzufahren.",
 		"loadFailed": "Die Einstellungen konnten nicht geladen werden.",
 		"retry": "Erneut versuchen",
-		"refresh": "Einstellungen aktualisieren",
 		"refreshFailed": "Die Aktualisierung ist fehlgeschlagen. Die zuletzt geladenen Einstellungen werden angezeigt."
 	},
 	"landingGaps": {

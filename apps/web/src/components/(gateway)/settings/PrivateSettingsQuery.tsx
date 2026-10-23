@@ -1,9 +1,8 @@
 "use client";
 
-import { Fragment, createContext, useContext, useCallback, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { createContext, useContext, useCallback, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { RefreshCw } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
@@ -54,7 +53,6 @@ export function PrivateSettingsQuery<T>({ path, children, workspace = true, reso
 }) {
 	const t = useTranslations("SettingsUI.privateQuery");
 	const context = useContext(SettingsScopeContext);
-	const [refreshVersion, setRefreshVersion] = useState(0);
 	if (!context) throw new Error("Missing private settings scope");
 	const scope = workspace ? { ...context, workspaceId: workspaceId ?? context.workspaceId } : { ...context, workspaceId: null };
 	const cacheParams = new URLSearchParams();
@@ -104,9 +102,8 @@ export function PrivateSettingsQuery<T>({ path, children, workspace = true, reso
 	if (initialRead.stale && !query.isFetchedAfterMount && query.isFetching) return <SettingsSectionFallback />;
 	if (!query.data) return <SettingsSectionFallback />;
 	return <>
-		<div className="mb-2 flex justify-end"><Button variant="ghost" size="icon" aria-label={t("refresh")} disabled={query.isFetching} onClick={() => void query.refetch().then((result) => { if (result.isSuccess) setRefreshVersion((version) => version + 1); })}><RefreshCw className={query.isFetching ? "size-4 animate-spin" : "size-4"} /></Button></div>
 		{query.error ? <p role="status">{t("refreshFailed")}</p> : null}
-		<Fragment key={refreshVersion}>{children(query.data)}</Fragment>
+		{children(query.data)}
 	</>;
 }
 

@@ -5433,7 +5433,6 @@
 		"accessChanged": "你的会话或工作区访问权限已更改。请重新加载以继续。",
 		"loadFailed": "无法加载设置。",
 		"retry": "重试",
-		"refresh": "刷新设置",
 		"refreshFailed": "刷新失败。正在显示上次加载的设置。"
 	},
 	"landingGaps": {
