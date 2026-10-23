@@ -73,6 +73,7 @@ vi.mock("@/runtime/env", () => ({
 	}),
 	getBindingsIfConfigured: () => mocks.bindings,
 	dispatchBackground: (promise: Promise<unknown>) => { mocks.background.push(promise); },
+	captureBackgroundDispatcher: () => (promise: Promise<unknown>) => { mocks.background.push(promise); },
 	ensureRuntimeForBackground: () => () => {},
 }));
 vi.mock("@core/customer-rate-limit-tiers", () => ({ readCustomerLimits: vi.fn() }));
@@ -728,6 +729,19 @@ describe("concurrency limits and strict policies", () => {
 		const response = await guardRateLimitPolicies(ctx());
 		expect(response?.status).toBe(429);
 		expect(await response?.json()).toMatchObject({ reason: "policy_unavailable", policy_id: STRICT_RPM });
+	});
+
+	it("still releases a slot when the body finishes after the request's runtime was cleared", async () => {
+		publishPlan(concurrencyPlan({ rpm: null, cc: 2, name: "Concurrent" }));
+		const leases = createConcurrencyLeases();
+		const request = ctx({ rateLimitConcurrency: leases });
+		expect(await guardRateLimitPolicies(request)).toBeNull();
+		const response = releaseConcurrencyAfter(new Response("done"), leases);
+		// withRuntime clears the runtime before a non-streamed body is read.
+		mocks.bindings = {};
+		await response.text();
+		await settle();
+		expect(mocks.releaseConcurrency).toHaveBeenCalledWith(scopeKey, request.billingRequestId);
 	});
 
 	it("releases the request's slots once the response body is delivered or cancelled", async () => {
