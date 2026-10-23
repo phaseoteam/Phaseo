@@ -3,6 +3,8 @@ import app from "@/index";
 
 const WORKSPACE = "00000000-0000-4000-8000-000000000001";
 const BUDGET_ID = "00000000-0000-4000-8000-0000000000b1";
+const DEPARTMENT = "00000000-0000-4000-8000-0000000000d1";
+const DEPARTMENT_BUDGET_ID = "00000000-0000-4000-8000-0000000000e1";
 const env = {
 	ENV: "development" as const,
 	SUPABASE_URL: "https://example.supabase.co",
@@ -28,7 +30,14 @@ type Fixture = {
 	noRow?: boolean;
 	statusError?: boolean;
 	budgets?: Array<Record<string, unknown>>;
+	departmentStatusError?: boolean;
+	departmentBudgets?: Array<Record<string, unknown>>;
+	departmentWriteError?: { code: string; message: string } | null;
 };
+
+function departmentRow(overrides: Record<string, unknown> = {}) {
+	return { ...row({ id: DEPARTMENT_BUDGET_ID, interval: "weekly", limit_nanos: 20_000_000_000 }), department_id: DEPARTMENT, ...overrides };
+}
 
 function database(fixture: Fixture = {}) {
 	const requests: Array<{ url: URL; method: string; body: any; headers: Headers }> = [];
@@ -57,6 +66,18 @@ function database(fixture: Fixture = {}) {
 			if (fixture.noRow) return Response.json([]);
 			const patch = request.method === "PATCH" ? JSON.parse(text) : {};
 			return Response.json([row(request.method === "POST" ? JSON.parse(text) : patch)]);
+		}
+		if (url.pathname.endsWith("/rpc/workspace_department_budget_status")) {
+			if (fixture.departmentStatusError) return Response.json({ code: "XX000", message: "boom" }, { status: 500 });
+			return Response.json(fixture.departmentBudgets ?? [
+				{ ...departmentRow(), department_name: "Research", usage_nanos: 5_000_000_000, window_start: "2026-10-19T00:00:00Z", reset_at: "2026-10-26T00:00:00Z" },
+			]);
+		}
+		if (url.pathname.endsWith("/workspace_departments")) return Response.json([{ id: DEPARTMENT, name: "Research" }]);
+		if (url.pathname.endsWith("/workspace_department_budgets")) {
+			if (fixture.departmentWriteError) return Response.json(fixture.departmentWriteError, { status: 409 });
+			if (fixture.noRow) return Response.json([]);
+			return Response.json([departmentRow(request.method === "POST" || request.method === "PATCH" ? JSON.parse(text) : {})]);
 		}
 		if (url.pathname.endsWith("/workspace_audit_events")) return new Response(null, { status: 201 });
 		if (url.pathname.endsWith("/keys")) return Response.json([{ id: "key-1" }, { id: "key-2" }]);
@@ -213,5 +234,101 @@ describe("workspace budget settings writes", () => {
 		expect(response.status).toBe(201);
 		expect(await response.json()).toMatchObject({ gatewayCacheInvalidated: false });
 		expect(budgetWrites(requests)).toHaveLength(1);
+	});
+});
+
+const departmentBudgetWrites = (requests: ReturnType<typeof database>) =>
+	requests.filter((entry) => entry.url.pathname.endsWith("/workspace_department_budgets") && entry.method !== "GET");
+
+describe("department budget settings", () => {
+	it("lists department budgets and the departments beside the workspace budgets", async () => {
+		const requests = database({ role: "member" });
+		const body = await (await call(`/budgets?workspaceId=${WORKSPACE}`)).json() as any;
+		expect(body.departments).toEqual([{ id: DEPARTMENT, name: "Research" }]);
+		expect(body.departmentBudgets).toHaveLength(1);
+		expect(body.departmentBudgets[0]).toMatchObject({
+			id: DEPARTMENT_BUDGET_ID, department_id: DEPARTMENT, department_name: "Research", interval: "weekly",
+			limit_usd: 20, usage_usd: 5, percent_used: 25, exceeded: false, reset_at: "2026-10-26T00:00:00Z",
+		});
+		const rpc = requests.find((entry) => entry.url.pathname.endsWith("/rpc/workspace_department_budget_status"))!;
+		expect(rpc.body).toEqual({ p_workspace_id: WORKSPACE });
+		const departments = requests.find((entry) => entry.url.pathname.endsWith("/workspace_departments"))!;
+		expect(departments.url.searchParams.get("workspace_id")).toBe(`eq.${WORKSPACE}`);
+	});
+
+	it("still lists workspace budgets when department budgets cannot be read", async () => {
+		database({ role: "admin", departmentStatusError: true });
+		const response = await call(`/budgets?workspaceId=${WORKSPACE}`);
+		expect(response.status).toBe(200);
+		const body = await response.json() as any;
+		expect(body.budgets).toHaveLength(2);
+		expect(body.departmentBudgets).toBeNull();
+		expect(body.departments).toEqual([]);
+	});
+
+	it("rejects members", async () => {
+		const requests = database({ role: "member" });
+		const response = await call("/budgets/departments", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE, departmentId: DEPARTMENT, interval: "weekly", limit: 10 }) });
+		expect(response.status).toBe(403);
+		expect(departmentBudgetWrites(requests)).toHaveLength(0);
+	});
+
+	it.each([
+		[{ departmentId: "nope", interval: "weekly", limit: 10 }, "departmentId must be a UUID"],
+		[{ departmentId: DEPARTMENT, interval: "lifetime", limit: 10 }, "interval must be daily, weekly, or monthly"],
+		[{ departmentId: DEPARTMENT, interval: "weekly", limit: 0 }, "limit must be a positive USD amount"],
+	])("validates %j before writing", async (input, message) => {
+		const requests = database({ role: "admin" });
+		const response = await call("/budgets/departments", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE, ...input }) });
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error: "bad_request", message });
+		expect(departmentBudgetWrites(requests)).toHaveLength(0);
+	});
+
+	it("creates a department budget in nanos and audits it like the control API, without touching the gateway", async () => {
+		const requests = database({ role: "admin" });
+		const response = await call("/budgets/departments", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE, departmentId: DEPARTMENT, interval: " Weekly ", limit: "12.5" }) });
+		expect(response.status).toBe(201);
+		expect(departmentBudgetWrites(requests)[0]!.body).toEqual({
+			workspace_id: WORKSPACE, department_id: DEPARTMENT, interval: "weekly", limit_nanos: 12_500_000_000, created_by: "user-a",
+		});
+		const auditEvent = requests.find((entry) => entry.url.pathname.endsWith("/workspace_audit_events"))!;
+		expect(auditEvent.body).toMatchObject({
+			action: "workspace_department_budget.created", target_type: "workspace_department_budget", target_name: "weekly",
+			metadata: { department_id: DEPARTMENT, interval: "weekly", limit_nanos: 12_500_000_000 },
+		});
+		expect(invalidations(requests)).toHaveLength(0);
+		expect(await response.json()).toMatchObject({ budget: { department_name: "Research", usage_usd: 5 } });
+	});
+
+	it("maps a duplicate interval to 409 and another workspace's department to 404", async () => {
+		database({ role: "admin", departmentWriteError: { code: "23505", message: "duplicate" } });
+		const body = JSON.stringify({ workspaceId: WORKSPACE, departmentId: DEPARTMENT, interval: "weekly", limit: 10 });
+		expect((await call("/budgets/departments", { method: "POST", body })).status).toBe(409);
+		database({ role: "admin", departmentWriteError: { code: "23503", message: "fk" } });
+		expect((await call("/budgets/departments", { method: "POST", body })).status).toBe(404);
+	});
+
+	it("updates only the limit, scoped to the workspace", async () => {
+		const requests = database({ role: "owner" });
+		const response = await call(`/budgets/departments/${DEPARTMENT_BUDGET_ID}`, { method: "PATCH", body: JSON.stringify({ workspaceId: WORKSPACE, limit: 30, interval: "daily" }) });
+		expect(response.status).toBe(200);
+		const update = departmentBudgetWrites(requests)[0]!;
+		expect(update.body).toMatchObject({ limit_nanos: 30_000_000_000 });
+		expect(update.body.interval).toBeUndefined();
+		expect(update.url.searchParams.get("workspace_id")).toBe(`eq.${WORKSPACE}`);
+		expect(update.url.searchParams.get("id")).toBe(`eq.${DEPARTMENT_BUDGET_ID}`);
+		expect(requests.find((entry) => entry.url.pathname.endsWith("/workspace_audit_events"))!.body.action).toBe("workspace_department_budget.updated");
+	});
+
+	it("deletes and audits, and returns 404 for another workspace's budget", async () => {
+		const requests = database({ role: "admin" });
+		const response = await call(`/budgets/departments/${DEPARTMENT_BUDGET_ID}`, { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) });
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ deleted: true, id: DEPARTMENT_BUDGET_ID });
+		expect(requests.find((entry) => entry.url.pathname.endsWith("/workspace_audit_events"))!.body.action).toBe("workspace_department_budget.deleted");
+		database({ role: "admin", noRow: true });
+		expect((await call(`/budgets/departments/${DEPARTMENT_BUDGET_ID}`, { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) })).status).toBe(404);
+		expect((await call("/budgets/departments/not-a-uuid", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) })).status).toBe(400);
 	});
 });
