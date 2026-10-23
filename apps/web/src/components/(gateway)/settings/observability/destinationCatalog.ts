@@ -395,15 +395,22 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "snowflake",
 		label: "Snowflake",
-		description: "Load traces into Snowflake for analytics.",
+		description: "Insert traces into a Snowflake table, one row per span.",
 		logoId: "observability-snowflake",
 		fields: [
-			{ key: "account", label: "Account Identifier", placeholder: "xy12345.us-east-1" },
-			{ key: "token", label: "Token", placeholder: "********", type: "password" },
-			{ key: "database", label: "Database", placeholder: "PHASEO" },
-			{ key: "schema", label: "Schema", placeholder: "TRACES" },
-			{ key: "table", label: "Table", placeholder: "EVENTS" },
+			{ key: "account", label: "Account Identifier", placeholder: "myorg-myaccount" },
+			{ key: "user", label: "User", placeholder: "PHASEO_BROADCAST" },
+			{
+				key: "private_key",
+				label: "Private Key",
+				placeholder: "Unencrypted PKCS #8 PEM whose public key is set on the user",
+				type: "password",
+			},
 			{ key: "warehouse", label: "Warehouse", placeholder: "COMPUTE_WH" },
+			{ key: "database", label: "Database", placeholder: "PHASEO" },
+			{ key: "schema", label: "Schema", placeholder: "OBSERVABILITY" },
+			{ key: "table", label: "Table", placeholder: "PHASEO_TRACES" },
+			{ key: "role", label: "Role (Optional)", placeholder: "The user's default role", required: false },
 		],
 	},
 	{

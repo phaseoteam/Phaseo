@@ -37,7 +37,7 @@ export const BROADCAST_DESTINATION_TYPES = [
 	{ id: "respan", delivery: "otlp" },
 	{ id: "s3", delivery: "rows" },
 	{ id: "sentry", delivery: "otlp" },
-	{ id: "snowflake", delivery: null },
+	{ id: "snowflake", delivery: "rows" },
 	{ id: "wandb_weave", delivery: "otlp" },
 	{ id: "webhook", delivery: "webhook" },
 ] as const satisfies readonly BroadcastDestinationType[];

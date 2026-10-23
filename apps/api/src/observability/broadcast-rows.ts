@@ -26,7 +26,7 @@ export type BroadcastRow = {
 	resource_attributes: Json;
 };
 
-export const BROADCAST_ROWS_DESTINATION_IDS = ["bigquery", "clickhouse", "gcs", "r2", "s3"] as const;
+export const BROADCAST_ROWS_DESTINATION_IDS = ["bigquery", "clickhouse", "gcs", "r2", "s3", "snowflake"] as const;
 export type BroadcastRowsDestinationId = (typeof BROADCAST_ROWS_DESTINATION_IDS)[number];
 
 // The most one request carries, as uncompressed JSON. Bodies are gzipped, so
@@ -39,6 +39,8 @@ export const BROADCAST_ROWS_REQUEST_LIMITS: Record<BroadcastRowsDestinationId, {
 	gcs: { bytes: 8 * 1024 * 1024, rows: 50_000 },
 	r2: { bytes: 8 * 1024 * 1024, rows: 50_000 },
 	s3: { bytes: 8 * 1024 * 1024, rows: 50_000 },
+	// Sent as one bound JSON value per statement.
+	snowflake: { bytes: 4 * 1024 * 1024, rows: 10_000 },
 };
 
 const SPAN_KINDS = ["unspecified", "internal", "server", "client", "producer", "consumer"];
@@ -602,6 +604,127 @@ async function sendBigQuery(config: Record<string, unknown>, rows: BroadcastRow[
 	return { ok: true, status: response.status, error: null, retryAfter: null };
 }
 
+// Account identifiers are org-account names (myorg-myaccount) or account
+// locators, optionally with their region (xy12345.us-east-1.aws).
+const SNOWFLAKE_ACCOUNT = /^[A-Za-z0-9][A-Za-z0-9_-]*(\.[A-Za-z0-9-]+){0,2}$/;
+const SNOWFLAKE_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_$]{0,254}$/;
+const SNOWFLAKE_COLUMNS: Array<[string, string]> = [
+	["EVENT_ID", "value:event_id::string"],
+	["TRACE_ID", "value:trace_id::string"],
+	["SPAN_ID", "value:span_id::string"],
+	["PARENT_SPAN_ID", "value:parent_span_id::string"],
+	["NAME", "value:name::string"],
+	["KIND", "value:kind::string"],
+	["START_TIME", "value:start_time::timestamp_tz"],
+	["END_TIME", "value:end_time::timestamp_tz"],
+	["DURATION_MS", "value:duration_ms::float"],
+	["STATUS_CODE", "value:status_code::string"],
+	["STATUS_MESSAGE", "value:status_message::string"],
+	["SERVICE_NAME", "value:service_name::string"],
+	["ATTRIBUTES", "value:attributes"],
+	["RESOURCE_ATTRIBUTES", "value:resource_attributes"],
+];
+
+type SnowflakeTarget = {
+	url: URL;
+	account: string;
+	user: string;
+	privateKey: string;
+	table: string;
+	context: Record<string, string>;
+};
+
+function snowflakeIdentifier(config: Record<string, unknown>, name: string, optional = false): string {
+	const value = field(config, name);
+	if (!value) {
+		if (optional) return "";
+		throw new Error(`${name} is required`);
+	}
+	if (!SNOWFLAKE_IDENTIFIER.test(value)) throw new Error(`${name} must start with a letter or underscore and use only letters, digits, _ and $`);
+	return value;
+}
+
+// https://docs.snowflake.com/en/developer-guide/sql-api/submitting-requests
+function snowflakeTarget(config: Record<string, unknown>): SnowflakeTarget {
+	const account = required(config, "account").replace(/\.snowflakecomputing\.com$/i, "");
+	if (!SNOWFLAKE_ACCOUNT.test(account)) throw new Error("account must be an account identifier such as myorg-myaccount or xy12345.us-east-1");
+	const user = required(config, "user");
+	if (!/^[A-Za-z0-9_.@-]{1,255}$/.test(user)) throw new Error("user must be a Snowflake user name");
+	const privateKey = required(config, "private_key");
+	if (!privateKey.includes("BEGIN PRIVATE KEY")) throw new Error("private_key must be an unencrypted PKCS #8 PEM key (BEGIN PRIVATE KEY)");
+	const database = snowflakeIdentifier(config, "database");
+	const schema = snowflakeIdentifier(config, "schema");
+	const table = snowflakeIdentifier(config, "table");
+	const warehouse = snowflakeIdentifier(config, "warehouse");
+	const role = snowflakeIdentifier(config, "role", true);
+	// Hostnames use hyphens where account names have underscores.
+	const host = `${account.toLowerCase().replace(/_/g, "-")}.snowflakecomputing.com`;
+	return {
+		url: new URL(`https://${host}/api/v2/statements`),
+		account,
+		user,
+		privateKey,
+		table: `${database}.${schema}.${table}`,
+		context: { database, schema, warehouse, ...(role ? { role } : {}) },
+	};
+}
+
+// Key-pair JWTs are reused for 50 minutes; Snowflake accepts them for an hour.
+const SNOWFLAKE_JWT_CACHE = new Map<string, { token: string; refreshAtMs: number }>();
+
+// https://docs.snowflake.com/en/developer-guide/sql-api/authenticating#using-key-pair-authentication
+// The issuer names the public key by the SHA-256 of its DER encoding, which is
+// derived here from the private key.
+async function snowflakeJwt(target: SnowflakeTarget): Promise<string> {
+	// The JWT names the account without its region, in upper case.
+	const account = target.account.split(".")[0].toUpperCase();
+	const user = target.user.toUpperCase();
+	const cacheKey = await sha256Hex(`${account}\n${user}\n${target.privateKey}`);
+	const cached = SNOWFLAKE_JWT_CACHE.get(cacheKey);
+	if (cached && Date.now() < cached.refreshAtMs) return cached.token;
+	const privateKey = await rsaKey(target.privateKey, true);
+	const jwk = await crypto.subtle.exportKey("jwk", privateKey);
+	const publicKey = await crypto.subtle.importKey("jwk", { kty: "RSA", n: jwk.n, e: jwk.e, ext: true }, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, true, ["verify"]);
+	const spki = new Uint8Array(await crypto.subtle.exportKey("spki", publicKey));
+	let binary = "";
+	for (const byte of new Uint8Array(await crypto.subtle.digest("SHA-256", spki))) binary += String.fromCharCode(byte);
+	const fingerprint = btoa(binary);
+	const now = Math.floor(Date.now() / 1000);
+	const token = await signRs256Jwt({ iss: `${account}.${user}.SHA256:${fingerprint}`, sub: `${account}.${user}`, iat: now, exp: now + 3540 }, privateKey);
+	SNOWFLAKE_JWT_CACHE.delete(cacheKey);
+	SNOWFLAKE_JWT_CACHE.set(cacheKey, { token, refreshAtMs: Date.now() + 50 * 60_000 });
+	while (SNOWFLAKE_JWT_CACHE.size > GOOGLE_TOKEN_CACHE_LIMIT) SNOWFLAKE_JWT_CACHE.delete(SNOWFLAKE_JWT_CACHE.keys().next().value!);
+	return token;
+}
+
+// The batch is bound as one JSON array and expanded with FLATTEN, so a batch is
+// one statement whatever its size. Identifiers are unquoted, so Snowflake
+// upper-cases them as it does in worksheets.
+export function snowflakeInsertStatement(table: string): string {
+	return `INSERT INTO ${table} (${SNOWFLAKE_COLUMNS.map(([column]) => column).join(", ")}) SELECT ${SNOWFLAKE_COLUMNS.map(([, value]) => value).join(", ")} FROM TABLE(FLATTEN(INPUT => PARSE_JSON(?)))`;
+}
+
+async function sendSnowflake(config: Record<string, unknown>, rows: BroadcastRow[], send: BroadcastRowsFetch): Promise<BroadcastRowsResult> {
+	const target = snowflakeTarget(config);
+	const token = await snowflakeJwt(target);
+	// A 202 means the insert is still running after the wait; it was accepted.
+	return settled(await send(target.url, {
+		method: "POST",
+		headers: {
+			authorization: `Bearer ${token}`,
+			"x-snowflake-authorization-token-type": "KEYPAIR_JWT",
+			"content-type": "application/json",
+			accept: "application/json",
+		},
+		body: JSON.stringify({
+			statement: snowflakeInsertStatement(target.table),
+			timeout: 60,
+			...target.context,
+			bindings: { "1": { type: "TEXT", value: JSON.stringify(rows) } },
+		}),
+	}));
+}
+
 // The base URL requests go to, after checking the config. Throws a message
 // naming the field at fault.
 export function broadcastRowsEndpoint(id: string, config: Record<string, unknown>): string {
@@ -611,6 +734,7 @@ export function broadcastRowsEndpoint(id: string, config: Record<string, unknown
 		return `${target.url.origin}${target.url.pathname}`;
 	}
 	if (id === "bigquery") return bigQueryTarget(config).url.toString();
+	if (id === "snowflake") return snowflakeTarget(config).url.toString();
 	const store = objectStore(id, config);
 	pathTemplate(config);
 	required(config, "access_key_id");
@@ -697,6 +821,7 @@ export async function sendBroadcastRows(
 ): Promise<BroadcastRowsResult> {
 	if (!isBroadcastRowsDestination(id)) throw new Error("Not a row destination");
 	if (id === "bigquery") return sendBigQuery(config, rows, send);
+	if (id === "snowflake") return sendSnowflake(config, rows, send);
 	if (id === "clickhouse") {
 		const target = clickHouseTarget(config);
 		return settled(await send(target.url, {

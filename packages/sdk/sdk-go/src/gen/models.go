@@ -3896,6 +3896,7 @@ const (
 	ObservabilityDestinationTypeRespan ObservabilityDestinationType = "respan"
 	ObservabilityDestinationTypeS3 ObservabilityDestinationType = "s3"
 	ObservabilityDestinationTypeSentry ObservabilityDestinationType = "sentry"
+	ObservabilityDestinationTypeSnowflake ObservabilityDestinationType = "snowflake"
 	ObservabilityDestinationTypeWandbWeave ObservabilityDestinationType = "wandb_weave"
 	ObservabilityDestinationTypeWebhook ObservabilityDestinationType = "webhook"
 )

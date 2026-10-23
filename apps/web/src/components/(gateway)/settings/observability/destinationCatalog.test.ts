@@ -97,3 +97,13 @@ describe("BigQuery form", () => {
 		expect(definition!.fields.find((field) => field.key === "service_account_json")?.type).toBe("password");
 	});
 });
+
+describe("Snowflake form", () => {
+	test("asks for key-pair sign-in and the table, with the role optional", () => {
+		const definition = AVAILABLE_DESTINATIONS.find((destination) => destination.id === "snowflake");
+		const required = Object.fromEntries(definition!.fields.map((field) => [field.key, field.required !== false]));
+		expect(required).toEqual({ account: true, user: true, private_key: true, warehouse: true, database: true, schema: true, table: true, role: false });
+		expect(definition!.fields.find((field) => field.key === "private_key")?.type).toBe("password");
+		expect(definition!.fields.some((field) => field.key === "token")).toBe(false);
+	});
+});

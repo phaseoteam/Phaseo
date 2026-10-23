@@ -67,6 +67,7 @@ export interface ObservabilityDestinationCreateRequest {
     | "respan"
     | "s3"
     | "sentry"
+    | "snowflake"
     | "wandb_weave"
     | "webhook";
 }

@@ -68,6 +68,7 @@ export interface ObservabilityDestinationListResponse {
       | "respan"
       | "s3"
       | "sentry"
+      | "snowflake"
       | "wandb_weave"
       | "webhook";
     updated_at?: string | null;
