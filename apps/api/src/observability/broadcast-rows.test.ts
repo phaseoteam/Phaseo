@@ -9,6 +9,8 @@ import {
 	jsonLines,
 	sendBroadcastRows,
 	signAwsRequest,
+	snowflakeInsertStatement,
+	snowflakeRequestId,
 } from "./broadcast-rows";
 
 const AWS_EXAMPLE_KEYS = {
@@ -437,5 +439,145 @@ describe("BigQuery", () => {
 	it("rejects a key that is not an RSA PKCS #8 key", async () => {
 		const broken = { ...account, private_key: "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n" };
 		await expect(sendBroadcastRows("bigquery", { ...config(), service_account_json: JSON.stringify(broken) }, [], async () => new Response())).rejects.toThrow("unencrypted RSA key in PKCS #8 PEM");
+	});
+});
+
+describe("Snowflake", () => {
+	let publicKey: CryptoKey;
+	let pem: string;
+	let fingerprint: string;
+
+	beforeAll(async () => {
+		const pair = await crypto.subtle.generateKey(
+			{ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+			true,
+			["sign", "verify"],
+		);
+		publicKey = pair.publicKey;
+		const der = new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey));
+		pem = `-----BEGIN PRIVATE KEY-----\n${btoa(String.fromCharCode(...der)).replace(/(.{64})/g, "$1\n")}\n-----END PRIVATE KEY-----\n`;
+		// What `openssl rsa -pubout -outform DER | openssl dgst -sha256 -binary | openssl enc -base64` prints.
+		const spki = new Uint8Array(await crypto.subtle.exportKey("spki", pair.publicKey));
+		fingerprint = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest("SHA-256", spki))));
+	});
+
+	const decode = (part: string) => JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+	const config = () => ({
+		account: "myorg-my_account", user: "phaseo_broadcast", private_key: pem,
+		warehouse: "COMPUTE_WH", database: "PHASEO", schema: "OBSERVABILITY", table: "PHASEO_TRACES",
+	});
+
+	it("inserts the batch as one statement, signed in with a key-pair JWT", async () => {
+		const calls: Array<{ url: URL; init: RequestInit }> = [];
+		const result = await sendBroadcastRows("snowflake", { ...config(), role: "BROADCAST_WRITER" }, broadcastRows(otlp, "gateway:req_1"), async (url, init) => {
+			calls.push({ url, init });
+			return Response.json({ code: "090001", message: "Statement executed successfully." });
+		});
+		expect(result).toEqual({ ok: true, status: 200, error: null, retryAfter: null });
+		const [{ url, init }] = calls;
+		expect(`${url.origin}${url.pathname}`).toBe("https://myorg-my-account.snowflakecomputing.com/api/v2/statements");
+		expect(url.searchParams.get("requestId")).toBe(await snowflakeRequestId(broadcastRows(otlp, "gateway:req_1")));
+		const headers = init.headers as Record<string, string>;
+		expect(headers["x-snowflake-authorization-token-type"]).toBe("KEYPAIR_JWT");
+		const [header, claims, signature] = headers.authorization.replace("Bearer ", "").split(".");
+		expect(decode(header)).toEqual({ alg: "RS256", typ: "JWT" });
+		expect(decode(claims)).toMatchObject({ iss: `MYORG-MY_ACCOUNT.PHASEO_BROADCAST.SHA256:${fingerprint}`, sub: "MYORG-MY_ACCOUNT.PHASEO_BROADCAST" });
+		expect(decode(claims).exp - decode(claims).iat).toBeLessThanOrEqual(3600);
+		const signatureBytes = Uint8Array.from(atob(signature.replace(/-/g, "+").replace(/_/g, "/")), (char) => char.charCodeAt(0));
+		expect(await crypto.subtle.verify("RSASSA-PKCS1-v1_5", publicKey, signatureBytes, new TextEncoder().encode(`${header}.${claims}`))).toBe(true);
+
+		const body = JSON.parse(String(init.body));
+		expect(body).toMatchObject({ warehouse: "COMPUTE_WH", database: "PHASEO", schema: "OBSERVABILITY", role: "BROADCAST_WRITER", timeout: 60 });
+		expect(body.statement).toBe(snowflakeInsertStatement("PHASEO.OBSERVABILITY.PHASEO_TRACES"));
+		expect(body.statement).toMatch(/^INSERT INTO PHASEO\.OBSERVABILITY\.PHASEO_TRACES \(EVENT_ID, .*, RESOURCE_ATTRIBUTES\) SELECT value:event_id::string, .* FROM TABLE\(FLATTEN\(INPUT => PARSE_JSON\(\?\)\)\)$/);
+		expect(body.bindings["1"].type).toBe("TEXT");
+		expect(JSON.parse(body.bindings["1"].value).map((row: { span_id: string }) => row.span_id)).toEqual(["b7ad6b7169203331", "00f067aa0ba902b7"]);
+	});
+
+	it("names the account without its region in the JWT and reuses it", async () => {
+		const tokens: string[] = [];
+		const send = async (_url: URL, init: RequestInit) => {
+			tokens.push((init.headers as Record<string, string>).authorization);
+			return Response.json({ message: "Statement executed successfully." });
+		};
+		const located = { ...config(), account: "xy12345.us-east-1.aws" };
+		expect(await sendBroadcastRows("snowflake", located, [], send)).toMatchObject({ ok: true, status: 200 });
+		await sendBroadcastRows("snowflake", located, [], send);
+		expect(tokens[0]).toBe(tokens[1]);
+		expect(decode(tokens[0].replace("Bearer ", "").split(".")[1]).sub).toBe("XY12345.PHASEO_BROADCAST");
+		expect(broadcastRowsEndpoint("snowflake", located)).toBe("https://xy12345.us-east-1.aws.snowflakecomputing.com/api/v2/statements");
+	});
+
+	it("polls a running insert until it finishes", async () => {
+		const handle = "01b2c3d4-0000-1111-0000-000000000001";
+		const calls: Array<{ url: URL; method: string }> = [];
+		const responses = [
+			Response.json({ statementHandle: handle, message: "Asynchronous execution in progress." }, { status: 202 }),
+			Response.json({ statementHandle: handle, message: "Asynchronous execution in progress." }, { status: 202 }),
+			Response.json({ code: "100132", message: "JavaScript execution error" }, { status: 422 }),
+		];
+		const result = await sendBroadcastRows("snowflake", config(), broadcastRows(otlp, "e"), async (url, init) => {
+			calls.push({ url, method: String(init.method) });
+			return responses.shift()!;
+		}, { pollIntervalMs: 0 });
+		expect(calls.map((call) => `${call.method} ${call.url.pathname}`)).toEqual([
+			"POST /api/v2/statements",
+			`GET /api/v2/statements/${handle}`,
+			`GET /api/v2/statements/${handle}`,
+		]);
+		expect(result).toMatchObject({ ok: false, status: 422, error: "Destination returned 422: JavaScript execution error" });
+	});
+
+	it("retries an insert still running after the polls, with the same request ID", async () => {
+		const urls: URL[] = [];
+		const running = async (url: URL) => {
+			urls.push(url);
+			return Response.json({ statementHandle: "01b2c3d4-0000-1111-0000-000000000001" }, { status: 202 });
+		};
+		const rows = broadcastRows(otlp, "e");
+		expect(await sendBroadcastRows("snowflake", config(), rows, running, { pollIntervalMs: 0 })).toMatchObject({ ok: false, status: 202, retryable: true });
+		expect(urls).toHaveLength(11);
+		expect(urls[0].searchParams.get("retry")).toBeNull();
+		const requestId = urls[0].searchParams.get("requestId");
+		expect(requestId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+
+		urls.length = 0;
+		await sendBroadcastRows("snowflake", config(), rows, async (url) => {
+			urls.push(url);
+			return Response.json({ message: "ok" });
+		}, { attempt: 2 });
+		expect(urls[0].searchParams.get("requestId")).toBe(requestId);
+		expect(urls[0].searchParams.get("retry")).toBe("true");
+		expect(await snowflakeRequestId(rows.slice(1))).not.toBe(requestId);
+	});
+
+	it("reports Snowflake's statement error", async () => {
+		const result = await sendBroadcastRows("snowflake", config(), [], async () => Response.json(
+			{ code: "002003", message: "SQL compilation error:\nTable 'PHASEO.OBSERVABILITY.PHASEO_TRACES' does not exist or not authorized.", sqlState: "42S02" },
+			{ status: 422 },
+		));
+		expect(result).toEqual({
+			ok: false,
+			status: 422,
+			error: "Destination returned 422: SQL compilation error: Table 'PHASEO.OBSERVABILITY.PHASEO_TRACES' does not exist or not authorized.",
+			retryAfter: null,
+		});
+	});
+
+	it("shows the title of an HTML error page, such as for an unknown account", async () => {
+		const page = "<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n<title>File not Found</title>\n<style>.ErrorContainer { width: 650px; }</style></head><body>...</body></html>";
+		expect(await sendBroadcastRows("snowflake", config(), [], async () => new Response(page, { status: 404, headers: { "content-type": "text/html" } })))
+			.toMatchObject({ ok: false, status: 404, error: "Destination returned 404: File not Found" });
+	});
+
+	it("checks identifiers and the key before sending", () => {
+		expect(broadcastRowsEndpoint("snowflake", { ...config(), account: "myorg-myaccount.snowflakecomputing.com" })).toBe("https://myorg-myaccount.snowflakecomputing.com/api/v2/statements");
+		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), table: "T; DROP TABLE X" })).toThrow("table must start with a letter");
+		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), schema: "\"Quoted\"" })).toThrow("schema must start with a letter");
+		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), role: "a b" })).toThrow("role must start with a letter");
+		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), warehouse: "" })).toThrow("warehouse is required");
+		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), account: "evil.example.com/x" })).toThrow("account must be an account identifier");
+		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), account: "xy12345.global" })).toThrow("rather than a .global one");
+		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), private_key: "-----BEGIN ENCRYPTED PRIVATE KEY-----" })).toThrow("unencrypted PKCS #8");
 	});
 });

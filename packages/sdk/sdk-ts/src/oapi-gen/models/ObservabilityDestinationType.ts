@@ -20,5 +20,6 @@ export type ObservabilityDestinationType =
   | "respan"
   | "s3"
   | "sentry"
+  | "snowflake"
   | "wandb_weave"
   | "webhook";

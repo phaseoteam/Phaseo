@@ -4693,6 +4693,7 @@ export type CreateObservabilityDestinationParams = {
       | "respan"
       | "s3"
       | "sentry"
+      | "snowflake"
       | "wandb_weave"
       | "webhook";
   };
@@ -4774,6 +4775,7 @@ export async function createObservabilityDestination(
       | "respan"
       | "s3"
       | "sentry"
+      | "snowflake"
       | "wandb_weave"
       | "webhook";
     updated_at?: string | null;
@@ -4852,6 +4854,7 @@ export async function createObservabilityDestination(
         | "respan"
         | "s3"
         | "sentry"
+        | "snowflake"
         | "wandb_weave"
         | "webhook";
       updated_at?: string | null;
@@ -11222,6 +11225,7 @@ export async function getObservabilityDestination(
       | "respan"
       | "s3"
       | "sentry"
+      | "snowflake"
       | "wandb_weave"
       | "webhook";
     updated_at?: string | null;
@@ -11302,6 +11306,7 @@ export async function getObservabilityDestination(
         | "respan"
         | "s3"
         | "sentry"
+        | "snowflake"
         | "wandb_weave"
         | "webhook";
       updated_at?: string | null;
@@ -16776,6 +16781,7 @@ export async function listObservabilityDestinations(
       | "respan"
       | "s3"
       | "sentry"
+      | "snowflake"
       | "wandb_weave"
       | "webhook";
     updated_at?: string | null;
@@ -16855,6 +16861,7 @@ export async function listObservabilityDestinations(
         | "respan"
         | "s3"
         | "sentry"
+        | "snowflake"
         | "wandb_weave"
         | "webhook";
       updated_at?: string | null;
@@ -23311,6 +23318,7 @@ export async function updateObservabilityDestination(
       | "respan"
       | "s3"
       | "sentry"
+      | "snowflake"
       | "wandb_weave"
       | "webhook";
     updated_at?: string | null;
@@ -23391,6 +23399,7 @@ export async function updateObservabilityDestination(
         | "respan"
         | "s3"
         | "sentry"
+        | "snowflake"
         | "wandb_weave"
         | "webhook";
       updated_at?: string | null;
