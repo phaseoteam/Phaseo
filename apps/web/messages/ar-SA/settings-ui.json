@@ -6135,7 +6135,7 @@
 		},
 		"keys": "المفاتيح",
 		"filterLabel": "تصفية المفاتيح",
-		"showing": "عرض {shown} من أصل {total} مفتاح",
+		"showing": "المفاتيح المعروضة: {shown} من أصل {total}",
 		"status": {
 			"active": "نشط"
 		},

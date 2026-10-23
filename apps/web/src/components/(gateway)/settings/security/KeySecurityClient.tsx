@@ -163,7 +163,10 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 	function show(next: KeySecurityFilter) {
 		setFilter(next);
 		setSelected(new Set());
-		requestAnimationFrame(() => keysSection.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+		requestAnimationFrame(() => {
+			const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+			keysSection.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+		});
 	}
 
 	function open(action: PendingAction["action"], keyIds: string[], label: string) {
@@ -357,7 +360,8 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 				<h2 className="text-base font-semibold">{t("keySecurity.keys")}</h2>
 				<div role="group" aria-label={t("keySecurity.filterLabel")} className="flex flex-wrap gap-1.5">
 					<FilterChip active={filter.kind === "all"} label={t("keySecurity.allKeys")} count={summary.total} onClick={() => choose({ kind: "all" })} />
-					{RISK_FILTERS.filter((risk) => summary[risk] > 0).map((risk) => {
+					{/* The active filter stays visible after a bulk fix takes its count to 0. */}
+					{RISK_FILTERS.filter((risk) => summary[risk] > 0 || filter.kind === risk).map((risk) => {
 						const Icon = ICONS[risk];
 						return (
 							<FilterChip key={risk} active={filter.kind === risk} label={t(`keySecurity.filters.${risk}` as never)} count={summary[risk]} title={t(`keySecurity.help.${risk}` as never)} onClick={() => choose({ kind: risk })}>
