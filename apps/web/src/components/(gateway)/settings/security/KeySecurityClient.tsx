@@ -28,28 +28,19 @@ import {
 	useKeyStorageLocationName,
 } from "../keys/KeyStorageLocationPicker";
 import type { KeySecurityKey, SettingsKeySecurityInitialData } from "@/lib/fetchers/internal/settingsTypes";
+import { SortableTableHead, nextTableSort, type TableSort } from "../../usage/SortableTableHead";
+import {
+	matchesKeySecurityFilter,
+	sameKeySecurityFilter,
+	sortKeySecurityKeys,
+	type KeySecurityFilter,
+	type KeySecurityRisk,
+	type KeySecuritySortKey,
+} from "./keySecurityTable";
 
 const NANOS_PER_USD = 1_000_000_000;
 /** The word typed to confirm a bulk revoke. It isn't translated, so it is the same in every language. */
 const REVOKE_CONFIRMATION = "revoke";
-
-export type KeySecurityFilter =
-	| { kind: "all" }
-	| { kind: "no_spend_limit" | "never_expires" | "idle" | "safe_to_remove" | "no_ip_allowlist" | "no_storage_location" }
-	| { kind: "location"; id: string };
-
-export function matchesKeySecurityFilter(key: KeySecurityKey, filter: KeySecurityFilter) {
-	switch (filter.kind) {
-		case "all": return true;
-		case "no_spend_limit": return !key.has_spend_limit;
-		case "never_expires": return key.expires_at === null;
-		case "idle": return key.idle;
-		case "safe_to_remove": return key.safe_to_remove;
-		case "no_ip_allowlist": return !key.has_ip_allowlist;
-		case "no_storage_location": return key.storage_locations.length === 0;
-		case "location": return key.storage_locations.includes(filter.id);
-	}
-}
 
 /** A CSV of keys and their owners, for asking each owner what to do with their key. */
 export function keyOwnerCsv(keys: KeySecurityKey[]) {
@@ -64,22 +55,32 @@ export function keyOwnerCsv(keys: KeySecurityKey[]) {
 
 type PendingAction = { action: BulkKeyActionInput["action"]; selection: BulkKeySelection; count: number; label: string };
 
-function Stat({ icon: Icon, label, value, help, active, onClick }: {
-	icon: typeof Wallet; label: string; value: number; help: string; active: boolean; onClick: () => void;
+const RISK_FILTERS: Array<{ kind: KeySecurityRisk; icon: typeof Wallet }> = [
+	{ kind: "safe_to_remove", icon: Trash2 },
+	{ kind: "no_spend_limit", icon: Wallet },
+	{ kind: "never_expires", icon: Hourglass },
+	{ kind: "idle", icon: PauseCircle },
+	{ kind: "no_ip_allowlist", icon: Network },
+	{ kind: "no_storage_location", icon: MapPin },
+];
+
+function FilterChip({ active, label, count, title, onClick, children }: {
+	active: boolean; label: string; count: number; title?: string; onClick: () => void; children?: React.ReactNode;
 }) {
 	return (
 		<button
 			type="button"
 			onClick={onClick}
 			aria-pressed={active}
+			title={title}
 			className={cn(
-				"rounded-md border p-4 text-left transition-colors hover:border-foreground/40",
-				active ? "border-foreground bg-muted/60" : "border-border",
+				"inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs transition-colors",
+				active ? "border-foreground bg-muted text-foreground" : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",
 			)}
 		>
-			<div className="flex items-center gap-2 text-sm text-muted-foreground"><Icon className="size-4" />{label}</div>
-			<div className="mt-2 text-2xl font-semibold tabular-nums">{value}</div>
-			<p className="mt-1 text-xs leading-5 text-muted-foreground">{help}</p>
+			{children}
+			<span>{label}</span>
+			<span className="tabular-nums text-muted-foreground">{count}</span>
 		</button>
 	);
 }
@@ -96,16 +97,29 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 	const [spendLimitUsd, setSpendLimitUsd] = React.useState("");
 	const [expiresOn, setExpiresOn] = React.useState("");
 	const [locations, setLocations] = React.useState<string[]>([]);
+	const [sort, setSort] = React.useState<TableSort<KeySecuritySortKey>>(null);
+	const keysSection = React.useRef<HTMLElement>(null);
 	const { summary, canManage, maxBulkKeys } = data;
 
-	const visible = React.useMemo(() => data.keys.filter((key) => matchesKeySecurityFilter(key, filter)), [data.keys, filter]);
+	const visible = React.useMemo(() => sortKeySecurityKeys(data.keys.filter((key) => matchesKeySecurityFilter(key, filter)), sort), [data.keys, filter, sort]);
 	const visibleIds = visible.map((key) => key.id);
 	const selectedVisible = visibleIds.filter((id) => selected.has(id));
 	const allSelected = visible.length > 0 && selectedVisible.length === visible.length;
 
 	function choose(next: KeySecurityFilter) {
-		setFilter((current) => JSON.stringify(current) === JSON.stringify(next) ? { kind: "all" } : next);
+		setFilter((current) => sameKeySecurityFilter(current, next) ? { kind: "all" } : next);
 		setSelected(new Set());
+	}
+
+	function changeSort(key: KeySecuritySortKey) {
+		setSort((current) => nextTableSort(current, key));
+	}
+
+	// From a recommendation or location: filter the table and bring it into view.
+	function show(next: KeySecurityFilter) {
+		setFilter(next);
+		setSelected(new Set());
+		requestAnimationFrame(() => keysSection.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
 	}
 
 	function open(action: PendingAction["action"], keyIds: string[], label: string) {
@@ -225,19 +239,6 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 	return (
 		<div className="space-y-8">
 			{notices}
-			<section className="space-y-3" aria-label={t("keySecurity.overview")}>
-				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-					<Stat icon={Wallet} label={t("keySecurity.filters.no_spend_limit")} value={summary.no_spend_limit} help={t("keySecurity.help.no_spend_limit")} active={filter.kind === "no_spend_limit"} onClick={() => choose({ kind: "no_spend_limit" })} />
-					<Stat icon={Hourglass} label={t("keySecurity.filters.never_expires")} value={summary.never_expires} help={t("keySecurity.help.never_expires")} active={filter.kind === "never_expires"} onClick={() => choose({ kind: "never_expires" })} />
-					<Stat icon={PauseCircle} label={t("keySecurity.filters.idle")} value={summary.idle} help={t("keySecurity.help.idle")} active={filter.kind === "idle"} onClick={() => choose({ kind: "idle" })} />
-					<Stat icon={Trash2} label={t("keySecurity.filters.safe_to_remove")} value={summary.safe_to_remove} help={t("keySecurity.help.safe_to_remove")} active={filter.kind === "safe_to_remove"} onClick={() => choose({ kind: "safe_to_remove" })} />
-				</div>
-				<div className="grid gap-3 sm:grid-cols-2">
-					<Stat icon={Network} label={t("keySecurity.filters.no_ip_allowlist")} value={summary.no_ip_allowlist} help={t("keySecurity.help.no_ip_allowlist")} active={filter.kind === "no_ip_allowlist"} onClick={() => choose({ kind: "no_ip_allowlist" })} />
-					<Stat icon={MapPin} label={t("keySecurity.filters.no_storage_location")} value={summary.no_storage_location} help={t("keySecurity.help.no_storage_location")} active={filter.kind === "no_storage_location"} onClick={() => choose({ kind: "no_storage_location" })} />
-				</div>
-			</section>
-
 			{recommendations.length > 0 ? (
 				<section className="space-y-3">
 					<h2 className="text-base font-semibold">{t("keySecurity.recommendations")}</h2>
@@ -254,7 +255,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 										</div>
 									</div>
 									<div className="flex shrink-0 gap-2">
-										<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => choose({ kind: item.id })}>{t("keySecurity.viewKeys")}</Button>
+										<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => show({ kind: item.id })}>{t("keySecurity.viewKeys")}</Button>
 										{item.owners && canManage ? (
 											<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => copyOwners(keys)}><ClipboardCopy className="size-4" />{t("keySecurity.copyOwners")}</Button>
 										) : null}
@@ -282,7 +283,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 										<span className="text-muted-foreground">{t("keySecurity.keyCount", { count: location.keys })}</span>
 									</div>
 									<div className="flex shrink-0 gap-2">
-										<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => choose({ kind: "location", id: location.id })}>{t("keySecurity.viewKeys")}</Button>
+										<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => show({ kind: "location", id: location.id })}>{t("keySecurity.viewKeys")}</Button>
 										{canManage ? (
 											<Button type="button" variant="destructive" size="sm" className="rounded-md" onClick={() => openLocation(location.id, location.keys)}>
 												<ShieldOff className="size-4" />{t("keySecurity.revokeAll")}
@@ -296,14 +297,29 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 				</section>
 			) : null}
 
-			<section className="space-y-3">
-				<div className="flex flex-wrap items-center justify-between gap-2">
-					<h2 className="text-base font-semibold">
-						{filter.kind === "all" ? t("keySecurity.allKeys") : filter.kind === "location" ? t("keySecurity.keysIn", { name: nameOf(filter.id) }) : t(`keySecurity.filters.${filter.kind}` as never)}
-						<span className="ml-2 font-normal text-muted-foreground">{visible.length}</span>
-					</h2>
-					{data.keys.length < summary.total ? <p className="w-full text-xs text-muted-foreground">{t("keySecurity.partial", { shown: data.keys.length, total: summary.total })}</p> : null}
-					{filter.kind !== "all" ? <Button type="button" variant="ghost" size="sm" className="rounded-md" onClick={() => choose({ kind: "all" })}>{t("keySecurity.clearFilter")}</Button> : null}
+			<section ref={keysSection} className="scroll-mt-4 space-y-3">
+				<h2 className="text-base font-semibold">{t("keySecurity.keys")}</h2>
+				<div role="group" aria-label={t("keySecurity.filterLabel")} className="flex flex-wrap gap-1.5">
+					<FilterChip active={filter.kind === "all"} label={t("keySecurity.allKeys")} count={summary.total} onClick={() => choose({ kind: "all" })} />
+					{RISK_FILTERS.filter((risk) => summary[risk.kind] > 0).map((risk) => (
+						<FilterChip key={risk.kind} active={filter.kind === risk.kind} label={t(`keySecurity.filters.${risk.kind}` as never)} count={summary[risk.kind]} title={t(`keySecurity.help.${risk.kind}` as never)} onClick={() => choose({ kind: risk.kind })}>
+							<risk.icon aria-hidden="true" className="size-3.5" />
+						</FilterChip>
+					))}
+					{/* Locations are chosen from "Where keys are stored"; only the chosen one shows here. */}
+					{filter.kind === "location" ? (
+						<FilterChip active label={nameOf(filter.id)} count={summary.locations.find((location) => location.id === filter.id)?.keys ?? visible.length} onClick={() => choose({ kind: "all" })}>
+							<KeyStorageLogo id={filter.id} className="size-3.5" />
+						</FilterChip>
+					) : null}
+				</div>
+				<div className="flex min-h-8 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+					<span>
+						{t("keySecurity.showing", { shown: visible.length, total: summary.total })}
+						{filter.kind === "location" ? ` · ${t("keySecurity.keysIn", { name: nameOf(filter.id) })}` : filter.kind !== "all" ? ` · ${t(`keySecurity.help.${filter.kind}` as never)}` : ""}
+					</span>
+					{filter.kind !== "all" ? <Button type="button" variant="ghost" size="sm" className="h-7 rounded-md" onClick={() => choose({ kind: "all" })}>{t("keySecurity.clearFilter")}</Button> : null}
+					{data.keys.length < summary.total ? <p className="w-full text-xs">{t("keySecurity.partial", { shown: data.keys.length, total: summary.total })}</p> : null}
 				</div>
 
 				{canManage && selectedVisible.length > 0 ? (
@@ -332,10 +348,11 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 										/>
 									</th>
 								) : null}
-								<th className="p-3 font-medium">{t("keySecurity.columns.key")}</th>
-								<th className="p-3 font-medium">{t("keySecurity.columns.owner")}</th>
-								<th className="p-3 font-medium">{t("keySecurity.columns.lastUsed")}</th>
-								<th className="p-3 font-medium">{t("keySecurity.columns.expires")}</th>
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.key")} sortKey="name" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.owner")} sortKey="owner" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.created")} sortKey="created" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.lastUsed")} sortKey="lastUsed" activeSort={sort} onSortChange={changeSort} />
+								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.expires")} sortKey="expires" activeSort={sort} onSortChange={changeSort} />
 								<th className="p-3 font-medium">{t("keySecurity.columns.storedIn")}</th>
 								<th className="p-3 font-medium">{t("keySecurity.columns.risks")}</th>
 							</tr>
@@ -364,6 +381,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 										<div>{key.owner_name ?? t("keySecurity.unknownOwner")}</div>
 										{key.owner_email ? <div className="text-xs text-muted-foreground">{key.owner_email}</div> : null}
 									</td>
+									<td className="p-3 whitespace-nowrap"><DisplayDate value={key.created_at} /></td>
 									<td className="p-3 whitespace-nowrap">{key.last_used_at ? <DisplayDate value={key.last_used_at} /> : t("keySecurity.neverUsed")}</td>
 									<td className="p-3 whitespace-nowrap">{key.expires_at ? <DisplayDate value={key.expires_at} /> : t("keySecurity.never")}</td>
 									<td className="p-3">{key.storage_locations.length ? <KeyStorageLocationList value={key.storage_locations} className="text-xs" /> : <span className="text-muted-foreground">{t("keySecurity.notSet")}</span>}</td>

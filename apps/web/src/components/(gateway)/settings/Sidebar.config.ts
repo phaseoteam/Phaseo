@@ -14,7 +14,6 @@ import {
 	KeyRound,
 	RadioTower,
 	Shield,
-	ShieldAlert,
 	ShieldCheck,
 	Settings as SettingsIcon,
 	User,
@@ -239,19 +238,17 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				href: "/settings/keys",
 				label: "API Keys",
 				icon: KeyRound,
-				match: ["/settings/keys"],
+				match: ["/settings/keys", "/settings/security"],
+				children: [
+					{ href: "/settings/keys", label: "Keys" },
+					{ href: "/settings/security", label: "Key Security" },
+				],
 			},
 			{
 				href: "/settings/budgets",
 				label: "Budgets",
 				icon: Wallet,
 				match: ["/settings/budgets"],
-			},
-			{
-				href: "/settings/security",
-				label: "Key Security",
-				icon: ShieldAlert,
-				match: ["/settings/security"],
 			},
 			{
 				href: "/settings/management-api-keys",

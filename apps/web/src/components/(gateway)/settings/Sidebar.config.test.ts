@@ -68,6 +68,13 @@ describe("settings sidebar navigation", () => {
 		expect(settings?.children?.map((child) => child.label)).toContain("Activity");
 	});
 
+	it("groups Key Security under API Keys", () => {
+		const active = getActiveSettingsNav("/settings/security");
+		expect(active?.item.label).toBe("API Keys");
+		expect(active?.item.children?.find((child) => isSettingsNavChildActive("/settings/security", child))?.label).toBe("Key Security");
+		expect(getActiveSettingsNav("/settings/keys/prod-key")?.item.children?.find((child) => isSettingsNavChildActive("/settings/keys/prod-key", child))?.label).toBe("Keys");
+	});
+
 	it("exposes Auto Routing within the Routing section", () => {
 		const active = getActiveSettingsNav("/settings/routing/auto", { showAutoRouting: true });
 		expect(active?.item.label).toBe("Routing");
@@ -94,7 +101,6 @@ describe("settings sidebar navigation", () => {
 				"Enterprise",
 				"API Keys",
 				"Budgets",
-				"Key Security",
 				"Usage",
 				"Logs",
 				"Routing",

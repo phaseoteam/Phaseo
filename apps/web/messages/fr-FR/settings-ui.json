@@ -4735,6 +4735,7 @@
 		"providerProfile": "Profil du fournisseur",
 		"classifiers": "Classificateurs",
 		"budgets": "Budgets",
+		"keys": "Clés",
 		"keySecurity": "Sécurité des clés",
 		"slack": "Slack"
 	},
@@ -6112,7 +6113,8 @@
 			"lastUsed": "Dernière utilisation",
 			"expires": "Expire",
 			"storedIn": "Stockée dans",
-			"risks": "Risques"
+			"risks": "Risques",
+			"created": "Créée"
 		},
 		"paused": "En pause",
 		"unknownOwner": "Inconnu",
@@ -6129,7 +6131,10 @@
 			"pausedNext": "Effectuez une rotation de ces clés avant de les réactiver, et recherchez dans vos journaux des requêtes tout trafic que vous ne reconnaissez pas.",
 			"replace": "Créer des clés de remplacement",
 			"source": "Lire la communication de {name}"
-		}
+		},
+		"keys": "Clés",
+		"filterLabel": "Filtrer les clés",
+		"showing": "{shown} clés sur {total}"
 	},
 	"keyIncidents": {
 		"title": "Incidents de stockage des clés",

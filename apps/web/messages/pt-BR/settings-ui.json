@@ -4735,6 +4735,7 @@
 		"providerProfile": "Perfil do provedor",
 		"classifiers": "Classificadores",
 		"budgets": "Orçamentos",
+		"keys": "Chaves",
 		"keySecurity": "Segurança das chaves",
 		"slack": "Slack"
 	},
@@ -6112,7 +6113,8 @@
 			"lastUsed": "Último uso",
 			"expires": "Expira",
 			"storedIn": "Armazenada em",
-			"risks": "Riscos"
+			"risks": "Riscos",
+			"created": "Criada"
 		},
 		"paused": "Pausada",
 		"unknownOwner": "Desconhecido",
@@ -6129,7 +6131,10 @@
 			"pausedNext": "Faça a rotação dessas chaves antes de reativá-las e verifique nos seus registros de solicitações se há tráfego que você não reconhece.",
 			"replace": "Criar chaves substitutas",
 			"source": "Ler o comunicado de {name}"
-		}
+		},
+		"keys": "Chaves",
+		"filterLabel": "Filtrar chaves",
+		"showing": "Mostrando {shown} de {total} chaves"
 	},
 	"keyIncidents": {
 		"title": "Incidentes de armazenamento de chaves",

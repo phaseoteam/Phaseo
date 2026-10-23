@@ -4735,6 +4735,7 @@
 		"providerProfile": "提供商资料",
 		"classifiers": "分类器",
 		"budgets": "预算",
+		"keys": "密钥",
 		"keySecurity": "密钥安全",
 		"slack": "Slack"
 	},
@@ -6112,7 +6113,8 @@
 			"lastUsed": "上次使用",
 			"expires": "到期",
 			"storedIn": "存储位置",
-			"risks": "风险"
+			"risks": "风险",
+			"created": "创建时间"
 		},
 		"paused": "已暂停",
 		"unknownOwner": "未知",
@@ -6129,7 +6131,10 @@
 			"pausedNext": "恢复这些密钥之前请先轮换它们，并检查请求日志中是否有你无法识别的流量。",
 			"replace": "创建替换密钥",
 			"source": "阅读 {name} 的披露公告"
-		}
+		},
+		"keys": "密钥",
+		"filterLabel": "筛选密钥",
+		"showing": "显示 {total} 个密钥中的 {shown} 个"
 	},
 	"keyIncidents": {
 		"title": "密钥存储事件",
