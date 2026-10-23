@@ -26,7 +26,7 @@ A named set of limits. It applies to nothing until it is assigned with `phaseo_r
 
 ### Optional
 
-- `description` (String) Up to 500 characters.
+- `description` (String) Up to 500 characters. Omit it rather than setting an empty string; names and descriptions must not start or end with whitespace, because the API trims them.
 - `requests_per_minute` (Number) Requests allowed per rolling minute.
 - `tokens_per_minute` (Number) Input and output tokens allowed per rolling minute, counted when each request completes.
 - `concurrent_requests` (Number) Requests allowed in progress at once. A request holds a slot until its response has been sent in full.

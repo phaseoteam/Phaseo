@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -130,5 +131,31 @@ resource "phaseo_department_budget" "research" {
 		if !found {
 			t.Errorf("expected a %q call, got %v", want, *log)
 		}
+	}
+}
+
+func TestAccRateLimitPolicyRejectsTextTheAPIWouldRewrite(t *testing.T) {
+	for _, attributes := range []string{
+		`name = " Standard"`,
+		"name = \"Standard\"\n  description = \"\"",
+		"name = \"Standard\"\n  description = \"Edge keys \"",
+	} {
+		resource.Test(t, resource.TestCase{
+			ProtoV6ProviderFactories: testProviderFactories,
+			TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_5_0)},
+			Steps: []resource.TestStep{{
+				Config: fmt.Sprintf(`
+provider "phaseo" {
+  api_key  = "test-management-key"
+  base_url = "https://api.phaseo.test/v1"
+}
+resource "phaseo_rate_limit_policy" "standard" {
+  %s
+  requests_per_minute = 60
+}
+`, attributes),
+				ExpectError: regexp.MustCompile(`whitespace`),
+			}},
+		})
 	}
 }

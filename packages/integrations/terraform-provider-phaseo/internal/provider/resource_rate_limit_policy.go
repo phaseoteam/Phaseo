@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -47,6 +48,10 @@ type rateLimitPolicyResponse struct {
 	Data rateLimitPolicyAPIModel `json:"data"`
 }
 
+// The API trims names and descriptions and stores an empty description as null.
+// Refusing other spellings keeps the state equal to the configuration.
+var trimmedText = regexp.MustCompile(`(?s)^\S(.*\S)?$`)
+
 func NewRateLimitPolicyResource() resource.Resource { return &rateLimitPolicyResource{} }
 func (r *rateLimitPolicyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_rate_limit_policy"
@@ -57,8 +62,8 @@ func (r *rateLimitPolicyResource) Schema(_ context.Context, _ resource.SchemaReq
 	}
 	resp.Schema = schema.Schema{Description: "A named workspace rate limit policy. Assign it with phaseo_rate_limit_assignment. Set at least one limit.", Attributes: map[string]schema.Attribute{
 		"id":                  schema.StringAttribute{Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-		"name":                schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.LengthBetween(1, 100)}},
-		"description":         schema.StringAttribute{Optional: true, Validators: []validator.String{stringvalidator.LengthAtMost(500)}},
+		"name":                schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.LengthBetween(1, 100), stringvalidator.RegexMatches(trimmedText, "must not start or end with whitespace")}},
+		"description":         schema.StringAttribute{Optional: true, Description: "Up to 500 characters. Omit it rather than setting it to an empty string.", Validators: []validator.String{stringvalidator.LengthAtMost(500), stringvalidator.RegexMatches(trimmedText, "must not be empty or start or end with whitespace")}},
 		"requests_per_minute": limit("Requests allowed per rolling minute."),
 		"tokens_per_minute":   limit("Input and output tokens allowed per rolling minute, counted when each request completes."),
 		"concurrent_requests": limit("Requests allowed in progress at once."),
