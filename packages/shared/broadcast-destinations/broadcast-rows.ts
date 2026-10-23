@@ -84,7 +84,62 @@ function timestamp(value: bigint): string {
 	return `${iso.slice(0, -1)}${micros.toString().padStart(3, "0")}Z`;
 }
 
-// Flattens an OTLP/JSON export request into rows, one per span.
+// The largest row sent, as JSON. A request inlining an image or a long
+// document can carry megabytes in one attribute; cutting rows to this keeps an
+// event's few spans well inside every destination's request and row limits.
+export const MAX_BROADCAST_ROW_BYTES = 512 * 1024;
+const TRUNCATED_SUFFIX = "…[truncated]";
+
+// Cuts the row's largest attribute values until it fits, and lists their keys
+// in phaseo.truncated_attributes. The space left is shared evenly between the
+// large values, so each keeps its start; non-string values are replaced by a
+// marker.
+function capRow(row: BroadcastRow): BroadcastRow {
+	if (broadcastRowBytes(row) <= MAX_BROADCAST_ROW_BYTES) return row;
+	const entries = Object.entries(row.attributes).map(([key, value]) => ({ key, value, bytes: utf8.encode(JSON.stringify(value)).byteLength }));
+	const attributeBytes = entries.reduce((total, entry) => total + entry.bytes, 0);
+	// Room for the list of cut keys and the markers.
+	let budget = MAX_BROADCAST_ROW_BYTES - (broadcastRowBytes(row) - attributeBytes) - 4096;
+	// The largest size each value may keep: values under it stay whole.
+	let cap = 0;
+	const ascending = [...entries].sort((a, b) => a.bytes - b.bytes);
+	for (let index = 0; index < ascending.length; index++) {
+		const share = Math.floor(budget / (ascending.length - index));
+		if (ascending[index].bytes > share) {
+			cap = Math.max(0, share);
+			break;
+		}
+		budget -= ascending[index].bytes;
+	}
+	const attributes: Json = {};
+	const truncated: string[] = [];
+	for (const entry of entries) {
+		if (entry.bytes <= cap || entry.bytes <= 64) {
+			attributes[entry.key] = entry.value;
+			continue;
+		}
+		truncated.push(entry.key);
+		attributes[entry.key] = typeof entry.value === "string" ? cutString(entry.value, cap) : "[truncated]";
+	}
+	attributes["phaseo.truncated_attributes"] = truncated;
+	return { ...row, attributes };
+}
+
+// The longest start of the value whose JSON, with the marker, fits in maxBytes.
+function cutString(value: string, maxBytes: number): string {
+	const fits = (length: number) => utf8.encode(JSON.stringify(value.slice(0, length) + TRUNCATED_SUFFIX)).byteLength <= maxBytes;
+	let low = 0;
+	let high = Math.min(value.length, maxBytes);
+	while (low < high) {
+		const middle = Math.ceil((low + high) / 2);
+		if (fits(middle)) low = middle;
+		else high = middle - 1;
+	}
+	return low > 0 ? value.slice(0, low) + TRUNCATED_SUFFIX : "[truncated]";
+}
+
+// Flattens an OTLP/JSON export request into rows, one per span, each at most
+// MAX_BROADCAST_ROW_BYTES.
 export function broadcastRows(payload: unknown, eventId: string): BroadcastRow[] {
 	const rows: BroadcastRow[] = [];
 	for (const resourceSpans of Array.isArray(object(payload).resourceSpans) ? object(payload).resourceSpans as unknown[] : []) {
@@ -95,7 +150,7 @@ export function broadcastRows(payload: unknown, eventId: string): BroadcastRow[]
 				const start = nanos(span.startTimeUnixNano);
 				const end = nanos(span.endTimeUnixNano);
 				const status = object(span.status);
-				rows.push({
+				rows.push(capRow({
 					event_id: eventId,
 					trace_id: String(span.traceId ?? ""),
 					span_id: String(span.spanId ?? ""),
@@ -110,7 +165,7 @@ export function broadcastRows(payload: unknown, eventId: string): BroadcastRow[]
 					service_name: typeof resource["service.name"] === "string" ? resource["service.name"] : null,
 					attributes: attributeObject(span.attributes),
 					resource_attributes: resource,
-				});
+				}));
 			}
 		}
 	}
@@ -218,9 +273,22 @@ function required(config: Record<string, unknown>, name: string): string {
 	return value;
 }
 
-// Bucket names valid on every supported store: 3-63 lower-case letters, digits,
-// dots and hyphens, starting and ending with a letter or digit.
+// S3 and R2 bucket names: 3-63 lower-case letters, digits, dots and hyphens,
+// starting and ending with a letter or digit.
 const BUCKET = /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/;
+// https://cloud.google.com/storage/docs/buckets#naming
+// GCS also allows underscores, and dotted names up to 222 characters made of
+// parts of at most 63.
+const GCS_BUCKET = /^[a-z0-9][a-z0-9._-]{1,220}[a-z0-9]$/;
+
+function bucketError(id: string, bucket: string): string | null {
+	if (id === "gcs") {
+		const parts = bucket.split(".");
+		const valid = GCS_BUCKET.test(bucket) && (parts.length > 1 || bucket.length <= 63) && parts.every((part) => part.length > 0 && part.length <= 63) && !bucket.startsWith("goog");
+		return valid ? null : "bucket must be a Google Cloud Storage bucket name: lower-case letters, digits, dots, hyphens or underscores";
+	}
+	return BUCKET.test(bucket) && !bucket.includes("..") ? null : "bucket must be 3-63 lower-case letters, digits, dots or hyphens";
+}
 const AWS_REGION = /^[a-z]{2}(-[a-z]+)+-\d+$/;
 const R2_ACCOUNT = /^[a-f0-9]{32}$/;
 export const R2_JURISDICTIONS = { default: "", eu: ".eu", fedramp: ".fedramp" } as const;
@@ -232,7 +300,8 @@ type ObjectStore = { base: URL; bucket: string; region: string; service: string 
 
 function objectStore(id: string, config: Record<string, unknown>): ObjectStore {
 	const bucket = required(config, "bucket");
-	if (!BUCKET.test(bucket) || bucket.includes("..")) throw new Error("bucket must be 3-63 lower-case letters, digits, dots or hyphens");
+	const bucketProblem = bucketError(id, bucket);
+	if (bucketProblem) throw new Error(bucketProblem);
 	if (id === "r2") {
 		const account = required(config, "account_id").toLowerCase();
 		if (!R2_ACCOUNT.test(account)) throw new Error("account_id must be the 32-character Cloudflare account ID");

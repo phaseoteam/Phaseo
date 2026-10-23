@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+	MAX_BROADCAST_ROW_BYTES,
 	broadcastObjectKey,
+	broadcastRowBytes,
 	broadcastRows,
 	broadcastRowsEndpoint,
 	jsonLines,
@@ -118,6 +120,26 @@ describe("broadcastRows", () => {
 		expect(rows[1]).toMatchObject({ parent_span_id: "b7ad6b7169203331", kind: "client", duration_ms: 0, status_code: "unset", status_message: null });
 	});
 
+	it("cuts oversized attributes so each row fits", () => {
+		const image = `data:image/png;base64,${"A".repeat(3 * 1024 * 1024)}`;
+		const payload = structuredClone(otlp);
+		payload.resourceSpans[0].scopeSpans[0].spans[0].attributes.push(
+			{ key: "trace.input", value: { stringValue: image } },
+			{ key: "trace.output", value: { stringValue: "é".repeat(400_000) } },
+		);
+		const [row] = broadcastRows(payload, "gateway:req_1");
+		expect(broadcastRowBytes(row)).toBeLessThanOrEqual(MAX_BROADCAST_ROW_BYTES);
+		expect(row.attributes["phaseo.truncated_attributes"]).toContain("trace.input");
+		expect(String(row.attributes["trace.input"])).toMatch(/^data:image\/png;base64,A+…\[truncated\]$/);
+		expect(row.attributes["gen_ai.request.model"]).toBe("openai/gpt-5");
+		expect(row.attributes["phaseo.truncated_attributes"]).toEqual(["trace.input", "trace.output"]);
+		// Both large values keep a start of about the same size.
+		const kept = ["trace.input", "trace.output"].map((key) => new TextEncoder().encode(String(row.attributes[key])).byteLength);
+		expect(Math.min(...kept)).toBeGreaterThan(200_000);
+		expect(String(row.attributes["trace.output"])).toMatch(/^é+…\[truncated\]$/);
+		expect(broadcastRows(otlp, "e")[0].attributes).not.toHaveProperty("phaseo.truncated_attributes");
+	});
+
 	it("returns no rows for an empty or malformed payload", () => {
 		expect(broadcastRows({ resourceSpans: [] }, "e")).toEqual([]);
 		expect(broadcastRows(null, "e")).toEqual([]);
@@ -135,11 +157,17 @@ describe("object storage config", () => {
 		expect(broadcastRowsEndpoint("r2", { ...keys, bucket: "traces", account_id: "0123456789abcdef0123456789ABCDEF" })).toBe("https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com/traces/");
 		expect(broadcastRowsEndpoint("r2", { ...keys, bucket: "traces", account_id: "0123456789abcdef0123456789abcdef", jurisdiction: "EU" })).toBe("https://0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com/traces/");
 		expect(broadcastRowsEndpoint("gcs", { ...keys, bucket: "traces" })).toBe("https://storage.googleapis.com/traces/");
+		expect(broadcastRowsEndpoint("gcs", { ...keys, bucket: "project_logs" })).toBe("https://storage.googleapis.com/project_logs/");
+		expect(broadcastRowsEndpoint("gcs", { ...keys, bucket: `logs.${"a".repeat(63)}.example.com` })).toContain("/logs.");
 	});
 
 	it("names the field at fault", () => {
 		expect(() => broadcastRowsEndpoint("s3", { ...keys })).toThrow("bucket is required");
 		expect(() => broadcastRowsEndpoint("s3", { ...keys, bucket: "Bad_Bucket" })).toThrow("bucket must be");
+		expect(() => broadcastRowsEndpoint("s3", { ...keys, bucket: "project_logs" })).toThrow("bucket must be 3-63");
+		expect(() => broadcastRowsEndpoint("gcs", { ...keys, bucket: "a".repeat(64) })).toThrow("Google Cloud Storage bucket name");
+		expect(() => broadcastRowsEndpoint("gcs", { ...keys, bucket: `${"a".repeat(64)}.example` })).toThrow("Google Cloud Storage bucket name");
+		expect(() => broadcastRowsEndpoint("gcs", { ...keys, bucket: "googtraces" })).toThrow("Google Cloud Storage bucket name");
 		expect(() => broadcastRowsEndpoint("s3", { ...keys, bucket: "traces", region: "nowhere" })).toThrow("region must be");
 		expect(() => broadcastRowsEndpoint("s3", { ...keys, bucket: "traces", endpoint: "http://minio.example.com" })).toThrow("endpoint must be an HTTPS URL");
 		expect(() => broadcastRowsEndpoint("r2", { ...keys, bucket: "traces", account_id: "abc" })).toThrow("account_id must be");
