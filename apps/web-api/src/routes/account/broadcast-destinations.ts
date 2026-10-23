@@ -3,7 +3,9 @@
 // exporter and control API, the dashboard API and the dashboard. Edit this file,
 // then run `node scripts/sync-broadcast-destinations.mjs` to refresh the copies.
 
-export type BroadcastDelivery = "otlp" | "webhook";
+// otlp sends traces, webhook posts each event, and rows writes one row per span
+// in batches (see broadcast-rows.ts).
+export type BroadcastDelivery = "otlp" | "rows" | "webhook";
 
 export type BroadcastDestinationType = {
 	id: string;
@@ -16,12 +18,14 @@ export type BroadcastDestinationType = {
 export const BROADCAST_DESTINATION_TYPES = [
 	{ id: "arize", delivery: "otlp" },
 	{ id: "axiom", delivery: "otlp" },
+	{ id: "bigquery", delivery: null },
 	{ id: "braintrust", delivery: "otlp" },
 	{ id: "clickhouse", delivery: null },
 	{ id: "comet_opik", delivery: "otlp" },
 	{ id: "datadog", delivery: "otlp" },
 	{ id: "dynatrace", delivery: "otlp" },
 	{ id: "elastic", delivery: "otlp" },
+	{ id: "gcs", delivery: "rows" },
 	{ id: "grafana_cloud", delivery: "otlp" },
 	{ id: "honeycomb", delivery: "otlp" },
 	{ id: "langfuse", delivery: "otlp" },
@@ -29,8 +33,9 @@ export const BROADCAST_DESTINATION_TYPES = [
 	{ id: "new_relic", delivery: "otlp" },
 	{ id: "otel_collector", delivery: "otlp" },
 	{ id: "posthog", delivery: "otlp" },
+	{ id: "r2", delivery: "rows" },
 	{ id: "respan", delivery: "otlp" },
-	{ id: "s3", delivery: null },
+	{ id: "s3", delivery: "rows" },
 	{ id: "sentry", delivery: "otlp" },
 	{ id: "snowflake", delivery: null },
 	{ id: "wandb_weave", delivery: "otlp" },
@@ -462,6 +467,8 @@ export function broadcastDestinationEndpoint(id: unknown, config: Record<string,
 	if (delivery === "webhook") return String(config.url ?? "").trim();
 	return delivery === "otlp" ? resolveOtlpTarget(id, config).endpoint : "";
 }
+
+// Row destinations are checked by broadcastRowsEndpoint in broadcast-rows.ts.
 
 // An explicit otlp_traces_endpoint is used as is; the first other base URL gets
 // /v1/traces appended unless it already ends with it.

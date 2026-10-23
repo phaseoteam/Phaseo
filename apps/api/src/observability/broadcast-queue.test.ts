@@ -168,6 +168,46 @@ describe("processBroadcastQueueBatch", () => {
 		}
 	});
 
+	it("writes one object per row destination for the whole batch", async () => {
+		state.destinations = [{
+			id: "bucket", destination_id: "s3", enabled: true,
+			destination_config: { bucket: "traces", region: "eu-west-2", access_key_id: "AKIA", secret_access_key: "secret" },
+		}];
+		const fetchMock = vi.fn().mockImplementation(async () => new Response(null, { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		const summary = await processBroadcastQueueBatch(batch(
+			message({ eventId: "req_1", destinationIds: ["bucket"] }),
+			message({ eventId: "req_2", destinationIds: ["bucket"] }),
+		));
+
+		expect(summary).toMatchObject({ requests: 1, delivered: 2, failed: 0 });
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const [url, init] = fetchMock.mock.calls[0] as [URL, RequestInit];
+		expect(url.toString()).toMatch(/^https:\/\/traces\.s3\.eu-west-2\.amazonaws\.com\/phaseo\/\d{4}\/\d{2}\/\d{2}\/\d{2}\/[0-9a-f-]{36}\.jsonl\.gz$/);
+		expect(init.method).toBe("PUT");
+		const text = await new Response(new Blob([init.body as Uint8Array<ArrayBuffer>]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+		const rows = text.trim().split("\n").map((line) => JSON.parse(line));
+		expect(new Set(rows.map((row) => row.event_id))).toEqual(new Set(["req_1", "req_2"]));
+		expect(rows.every((row) => row.trace_id && row.span_id && row.attributes)).toBe(true);
+	});
+
+	it("retries a row destination's server errors and reports its error code", async () => {
+		state.destinations = [
+			{ id: "busy", destination_id: "r2", enabled: true, destination_config: { bucket: "busy", account_id: "0123456789abcdef0123456789abcdef", access_key_id: "a", secret_access_key: "s" } },
+			{ id: "denied", destination_id: "gcs", enabled: true, destination_config: { bucket: "denied", access_key_id: "a", secret_access_key: "s" } },
+		];
+		vi.stubGlobal("fetch", vi.fn(async (url: URL) => url.hostname === "storage.googleapis.com"
+			? new Response("<?xml version='1.0'?><Error><Code>AccessDenied</Code><Message>Access denied.</Message></Error>", { status: 403 })
+			: new Response(null, { status: 503 })));
+
+		const summary = await processBroadcastQueueBatch(batch(message({ eventId: "req_1", destinationIds: ["busy", "denied"] })));
+
+		expect(summary).toMatchObject({ requests: 2, delivered: 0, retried: 1, failed: 1 });
+		expect(sendBatch).toHaveBeenCalledWith([expect.objectContaining({ body: expect.objectContaining({ destinationIds: ["busy"], attempt: 2 }) })]);
+		expect(console.warn).toHaveBeenCalledWith("broadcast_delivery_failed", expect.objectContaining({ destinationId: "denied", status: 403, retryable: false, error: "Destination returned 403: AccessDenied" }));
+	});
+
 	it("requeues an event for only the destinations that failed", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (url: URL) => url.hostname === "collector.example.com"
 			? new Response(null, { status: 503, headers: { "retry-after": "7" } })

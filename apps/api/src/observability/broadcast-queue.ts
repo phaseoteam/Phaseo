@@ -3,10 +3,18 @@ import type { GatewayBindings } from "@/runtime/env.types";
 import { mapWithConcurrency } from "@/pipeline/model-discovery/concurrency";
 import { broadcastDelivery } from "./broadcast-destinations";
 import { BroadcastHealthRecorder } from "./broadcast-health";
+import {
+	BROADCAST_ROWS_REQUEST_LIMITS,
+	broadcastRowBytes,
+	broadcastRows,
+	type BroadcastRow,
+	type BroadcastRowsDestinationId,
+} from "./broadcast-rows";
 import { broadcastMessageBytes, gunzipJson, type BroadcastQueueMessage, type BroadcastTelemetry } from "./broadcast-event";
 import {
 	MAX_ATTEMPTS,
 	deliverGatewayOtlpPayload,
+	deliverGatewayRowsPayload,
 	deliverGatewayWebhookPayload,
 	destinationConfig,
 	renderBroadcastPayload,
@@ -35,7 +43,8 @@ type Outcome = Awaited<ReturnType<typeof deliverGatewayOtlpPayload>>;
 type QueuedDestination = Destination & { enabled: boolean };
 type QueuedMessage = Message<BroadcastQueueMessage>;
 type Event = { message: QueuedMessage; body: BroadcastQueueMessage; telemetry: BroadcastTelemetry };
-// One request: an OTLP batch of events for a destination, or one webhook event.
+// One request: an OTLP or row batch of events for a destination, or one webhook
+// event.
 type Delivery = { destination: QueuedDestination; config: Record<string, unknown>; events: Event[]; payload: unknown };
 // Destinations an event still needs, and the soonest any may be retried.
 type Pending = { ids: string[]; delayMs: number };
@@ -123,12 +132,35 @@ function otlpDeliveries(destination: QueuedDestination, config: Record<string, u
 	return deliveries;
 }
 
+// Rows for the same destination share one request, up to the store's limits.
+function rowsDeliveries(destination: QueuedDestination, config: Record<string, unknown>, events: Event[]): Delivery[] {
+	const limits = BROADCAST_ROWS_REQUEST_LIMITS[destination.destination_id as BroadcastRowsDestinationId];
+	const deliveries: Delivery[] = [];
+	let current: { events: Event[]; rows: BroadcastRow[]; bytes: number } = { events: [], rows: [], bytes: 0 };
+	const flush = () => {
+		if (!current.events.length) return;
+		deliveries.push({ destination, config, events: current.events, payload: current.rows });
+		current = { events: [], rows: [], bytes: 0 };
+	};
+	for (const event of events) {
+		const rows = broadcastRows(renderBroadcastPayload(event.telemetry, destination), event.body.eventId);
+		const bytes = rows.reduce((total, row) => total + broadcastRowBytes(row), 0);
+		if (current.bytes + bytes > limits.bytes || current.rows.length + rows.length > limits.rows) flush();
+		current.events.push(event);
+		current.rows.push(...rows);
+		current.bytes += bytes;
+	}
+	flush();
+	return deliveries;
+}
+
 async function deliver(delivery: Delivery): Promise<Outcome> {
 	const attempts = Math.max(...delivery.events.map((event) => event.body.attempt));
 	try {
-		return broadcastDelivery(delivery.destination.destination_id) === "webhook"
-			? await deliverGatewayWebhookPayload(delivery.payload, delivery.config, attempts)
-			: await deliverGatewayOtlpPayload(delivery.payload, delivery.config, attempts, delivery.destination.destination_id);
+		const kind = broadcastDelivery(delivery.destination.destination_id);
+		if (kind === "webhook") return await deliverGatewayWebhookPayload(delivery.payload, delivery.config, attempts);
+		if (kind === "rows") return await deliverGatewayRowsPayload(delivery.payload as BroadcastRow[], delivery.config, attempts, delivery.destination.destination_id);
+		return await deliverGatewayOtlpPayload(delivery.payload, delivery.config, attempts, delivery.destination.destination_id);
 	} catch (error) {
 		return { delivered: false, retryable: false, status: null, delayMs: 0, error: errorMessage(error) };
 	}
@@ -189,6 +221,7 @@ async function deliverEvents(
 			continue;
 		}
 		if (delivery === "otlp") deliveries.push(...otlpDeliveries(destination, config, destinationEvents));
+		else if (delivery === "rows") deliveries.push(...rowsDeliveries(destination, config, destinationEvents));
 		else {
 			for (const event of destinationEvents) {
 				deliveries.push({ destination, config, events: [event], payload: renderBroadcastPayload(event.telemetry, destination) });

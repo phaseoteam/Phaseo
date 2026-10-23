@@ -17,12 +17,14 @@ import {
 	AVAILABLE_BROADCAST_DESTINATION_IDS,
 	BROADCAST_RULE_CONDITIONS,
 	BROADCAST_RULE_FIELDS,
+	broadcastDelivery,
 	broadcastDestinationEndpoint,
 	broadcastWebhookSigningSecretError,
 	isBroadcastDestinationLimitError,
 	OTLP_PROTOCOLS,
 	otlpProtocol,
 } from "@/observability/broadcast-destinations";
+import { broadcastRowsEndpoint } from "@/observability/broadcast-rows";
 import { compileSafeRegex } from "@/observability/safe-regex";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -61,9 +63,10 @@ function config(value: unknown): Record<string, string> | null {
 }
 
 function validateEndpoint(type: string, values: Record<string, string>) {
-	if (type !== "webhook" && !otlpProtocol(values)) throw new Error(`otlp_protocol must be one of: ${OTLP_PROTOCOLS.join(", ")}`);
-	// Outside the try: an OTLP preset names the field it is missing.
-	const resolved = broadcastDestinationEndpoint(type, values);
+	const delivery = broadcastDelivery(type);
+	if (delivery === "otlp" && !otlpProtocol(values)) throw new Error(`otlp_protocol must be one of: ${OTLP_PROTOCOLS.join(", ")}`);
+	// Outside the try: an OTLP preset or row destination names the field it is missing.
+	const resolved = delivery === "rows" ? broadcastRowsEndpoint(type, values) : broadcastDestinationEndpoint(type, values);
 	let url: URL;
 	try { url = new URL(resolved); } catch { throw new Error("Destination endpoint must be a valid absolute URL"); }
 	if (url.protocol !== "https:" || url.username || url.password) throw new Error("Destination endpoint must use HTTPS without URL credentials");

@@ -1,6 +1,7 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
-import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, broadcastWebhookSignatureHeaders, gzipBytes, resolveOtlpTarget } from "./broadcast-destinations";
+import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, broadcastDelivery, broadcastWebhookSignatureHeaders, gzipBytes, resolveOtlpTarget } from "./broadcast-destinations";
+import { broadcastRows, sendBroadcastRows, type BroadcastRow, type BroadcastRowsResult } from "./broadcast-rows";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
 import { compileSafeRegex, type RegexBudget, type SafeRegex } from "./safe-regex";
 import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
@@ -41,6 +42,7 @@ export type Destination = {
 type OutboxRow = {
 	id: string;
 	destination_id: string;
+	event_id: string;
 	payload: unknown;
 	attempts: number;
 };
@@ -577,6 +579,42 @@ export async function deliverGatewayWebhookPayload(
 	};
 }
 
+// Writes rows to an object store or warehouse in one request.
+export async function deliverGatewayRowsPayload(
+	rows: BroadcastRow[],
+	config: Record<string, unknown>,
+	attempts = 1,
+	destinationType: string,
+) {
+	let result: BroadcastRowsResult;
+	try {
+		result = await sendBroadcastRows(destinationType, config, rows, async (url, init) => {
+			// Validated right before each request, to keep the DNS rebinding window small.
+			const validated = await validateWebhookEndpointUrlForDelivery(url.toString());
+			if (validated.ok === false) throw new InvalidRowsDestination(`Invalid destination endpoint: ${validated.reason}`);
+			return fetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(30_000) });
+		});
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Row delivery failed";
+		// A config or endpoint the destination will never accept is not retried;
+		// a network failure is.
+		const invalid = error instanceof InvalidRowsDestination || !(error instanceof TypeError || (error instanceof DOMException && error.name === "TimeoutError"));
+		return invalid
+			? { delivered: false, retryable: false, status: null, delayMs: 0, error: message }
+			: { delivered: false, retryable: true, status: null, delayMs: retryDelayMs(attempts, null), error: message };
+	}
+	if (result.ok) return { delivered: true, retryable: false, status: result.status, delayMs: 0, error: null };
+	return {
+		delivered: false,
+		retryable: result.retryable ?? RETRYABLE_STATUS.has(result.status),
+		status: result.status,
+		delayMs: retryDelayMs(attempts, result.retryAfter),
+		error: result.error,
+	};
+}
+
+class InvalidRowsDestination extends Error {}
+
 async function updateOutboxRow(
 	client: ReturnType<typeof getSupabaseAdmin>,
 	id: string,
@@ -622,9 +660,12 @@ export async function drainGatewayOtlpOutbox(limit = 100): Promise<{
 		try {
 			const destination = destinationResult.data as Destination & { enabled: boolean };
 			const config = await destinationConfig(destination);
-			outcome = destination.destination_id === "webhook"
+			const delivery = broadcastDelivery(destination.destination_id);
+			outcome = delivery === "webhook"
 				? await deliverGatewayWebhookPayload(row.payload, config, row.attempts)
-				: await deliverGatewayOtlpPayload(row.payload, config, row.attempts, destination.destination_id);
+				: delivery === "rows"
+					? await deliverGatewayRowsPayload(broadcastRows(row.payload, row.event_id), config, row.attempts, destination.destination_id)
+					: await deliverGatewayOtlpPayload(row.payload, config, row.attempts, destination.destination_id);
 		} catch (deliveryError) {
 			outcome = {
 				delivered: false,
