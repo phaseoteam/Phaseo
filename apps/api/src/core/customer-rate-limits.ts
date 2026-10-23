@@ -19,7 +19,7 @@
 //      finishes, and frees itself after CONCURRENCY_LEASE_TTL_MS if that release
 //      is lost. A strict policy awaits its request and token checks too, and
 //      rejects the request when the object cannot answer instead of admitting it.
-import { dispatchBackground, ensureRuntimeForBackground, getBindingsIfConfigured } from "@/runtime/env";
+import { captureBackgroundDispatcher, dispatchBackground, ensureRuntimeForBackground, getBindingsIfConfigured } from "@/runtime/env";
 import { awaitShared } from "@core/shared-wait";
 import type { GatewayBindings } from "@/runtime/env.types";
 import { err } from "@pipeline/before/http";
@@ -303,7 +303,17 @@ export const CONCURRENCY_LEASE_TTL_MS = 15 * 60_000;
  * response has been delivered. Requests without one are not limited by
  * concurrency, because nothing would release their slots.
  */
-export type ConcurrencyLeases = { held: Map<string, string>; released: boolean };
+export type ConcurrencyLeases = {
+	held: Map<string, string>;
+	released: boolean;
+	/**
+	 * Captured when a slot is taken and when the response is wrapped: the body
+	 * can finish after the request's runtime has been cleared, when neither the
+	 * bindings nor the request's waitUntil can be looked up any more.
+	 */
+	namespace?: GatewayBindings["CUSTOMER_RATE_LIMITS"];
+	dispatch?: (promise: Promise<unknown>) => void;
+};
 
 export function createConcurrencyLeases(): ConcurrencyLeases {
 	return { held: new Map(), released: false };
@@ -320,6 +330,8 @@ export function releaseConcurrencyAfter(response: Response, leases: ConcurrencyL
 		releaseConcurrencyLeases(leases);
 		return response;
 	}
+	// Still inside the request here; the body may finish after its runtime is cleared.
+	leases.dispatch = captureBackgroundDispatcher();
 	const reader = response.body.getReader();
 	const body = new ReadableStream<Uint8Array>({
 		async pull(controller) {
@@ -349,25 +361,21 @@ export function releaseConcurrencyLeases(leases: ConcurrencyLeases | null | unde
 	if (!leases || leases.released) return;
 	leases.released = true;
 	if (!leases.held.size) return;
-	const namespace = getBindingsIfConfigured()?.CUSTOMER_RATE_LIMITS;
+	const namespace = leases.namespace ?? getBindingsIfConfigured()?.CUSTOMER_RATE_LIMITS;
 	const held = [...leases.held];
 	leases.held.clear();
-	if (!namespace) return;
-	const release = ensureRuntimeForBackground();
-	dispatchBackground((async () => {
+	if (!namespace) {
+		console.warn("customer_rate_limit_release_failed", { error: "binding_unavailable" });
+		return;
+	}
+	(leases.dispatch ?? dispatchBackground)(Promise.all(held.map(async ([scopeKey, leaseId]) => {
 		try {
-			await Promise.all(held.map(async ([scopeKey, leaseId]) => {
-				try {
-					await (namespace.getByName(scopeKey) as unknown as CustomerStub).releaseConcurrency(scopeKey, leaseId);
-				} catch (error) {
-					// The lease expires on its own after CONCURRENCY_LEASE_TTL_MS.
-					console.warn("customer_rate_limit_release_failed", { error: error instanceof Error ? error.message : String(error) });
-				}
-			}));
-		} finally {
-			release();
+			await (namespace.getByName(scopeKey) as unknown as CustomerStub).releaseConcurrency(scopeKey, leaseId);
+		} catch (error) {
+			// The lease expires on its own after CONCURRENCY_LEASE_TTL_MS.
+			console.warn("customer_rate_limit_release_failed", { error: error instanceof Error ? error.message : String(error) });
 		}
-	})());
+	})));
 }
 
 /** Bindings that enforce rate limit policies, or null when enforcement is off or unavailable. */
@@ -449,6 +457,8 @@ async function awaitScope(bindings: GatewayBindings, scope: PolicyQuotaScope, ad
 	if (concurrentRequests != null && leases && !leases.released) {
 		// Recorded before asking, so a slot granted after the wait gave up is still released.
 		leases.held.set(scope.scopeKey, admissionId);
+		leases.namespace ??= bindings.CUSTOMER_RATE_LIMITS;
+		leases.dispatch ??= captureBackgroundDispatcher();
 		checks.push(askCounter(bindings, scope.scopeKey, (stub) => stub.acquireConcurrency(scope.scopeKey, admissionId, concurrentRequests, CONCURRENCY_LEASE_TTL_MS)).then((admission) => {
 			if (admission?.allowed) return null;
 			// A full scope holds nothing for this request; an unanswered one may, so it stays recorded.
