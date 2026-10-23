@@ -6625,7 +6625,32 @@
 		"errorForbidden": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent modifier les budgets.",
 		"errorNotFound": "Ce budget n'existe plus. Actualisez la page.",
 		"errorInvalid": "Saisissez un montant supérieur à zéro.",
-		"errorFailed": "Impossible d'enregistrer le budget. Réessayez dans un instant."
+		"errorFailed": "Impossible d'enregistrer le budget. Réessayez dans un instant.",
+		"departments": {
+			"title": "Budgets des départements",
+			"alertsOnly": "Alertes uniquement",
+			"description": "Suivez ce que chaque département dépense par jour, par semaine ou par mois. Les propriétaires et les administrateurs sont prévenus à environ 80 % et 100 % d'un budget. Les requêtes ne sont jamais bloquées.",
+			"add": "Ajouter un budget de département",
+			"unavailable": "Impossible de charger les budgets des départements. Actualisez la page pour réessayer.",
+			"empty": "Aucun budget de département pour le moment.",
+			"noDepartments": "Créez des départements dans <link>Départements</link> pour leur attribuer des budgets.",
+			"spendNote": "Les dépenses d'un département correspondent au coût de ses clés API liées, plus les clés de ses membres qui ne sont liées à aucun département et leurs requêtes OAuth. Elles sont mises à jour environ toutes les heures.",
+			"unnamed": "Département",
+			"reached": "Atteint",
+			"department": "Département",
+			"chooseDepartment": "Choisissez un département…",
+			"period": "Période",
+			"createTitle": "Ajouter un budget de département",
+			"editTitle": "Modifier le budget du département",
+			"limitHelp": "Les propriétaires et les administrateurs sont prévenus lorsque les dépenses du département sur la période atteignent environ 80 % et 100 % de ce montant. Les requêtes ne sont pas bloquées.",
+			"saved": "Budget du département enregistré",
+			"deleted": "Budget du département supprimé",
+			"deleteTitle": "Supprimer ce budget de département ?",
+			"deleteBody": "Les propriétaires et les administrateurs ne recevront plus d'alertes de dépenses pour {department} sur cette période.",
+			"errorDepartment": "Choisissez un département.",
+			"errorConflict": "Ce département a déjà un budget pour cette période. Actualisez la page pour le modifier.",
+			"errorNotFound": "Ce département ou ce budget n'existe plus. Actualisez la page."
+		}
 	},
 	"slack": {
 		"title": "Slack",

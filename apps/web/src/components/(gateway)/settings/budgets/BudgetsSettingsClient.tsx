@@ -64,7 +64,7 @@ export default function BudgetsSettingsClient({
 	const t = useTranslations("SettingsUI.budgets");
 	const [editing, setEditing] = useState<Editing | null>(null);
 	const [deleting, setDeleting] = useState<SettingsWorkspaceBudget | null>(null);
-	useRefreshAtBudgetReset(data.budgets);
+	useRefreshAtBudgetReset([...data.budgets, ...(data.departmentBudgets ?? [])]);
 	if (!data.workspaceId) return <Notice>{t("selectWorkspace")}</Notice>;
 	// The API always sends the database time; without it there is simply no projection.
 	const observedAt = Date.parse(data.observedAt) || 0;
@@ -102,15 +102,15 @@ export default function BudgetsSettingsClient({
 }
 
 /** The earliest reset time in ms, or null when no budget resets (lifetime only). */
-export function nextBudgetReset(budgets: SettingsWorkspaceBudget[]): number | null {
+export function nextBudgetReset(budgets: Array<Pick<SettingsWorkspaceBudget, "reset_at">>): number | null {
 	return budgets.reduce<number | null>((earliest, budget) => {
 		const resetAt = budget.reset_at ? Date.parse(budget.reset_at) : Number.NaN;
 		return Number.isFinite(resetAt) && (earliest === null || resetAt < earliest) ? resetAt : earliest;
 	}, null);
 }
 
-/** Refetch once the earliest budget window resets, so usage and reset times don't stay on the old window. */
-function useRefreshAtBudgetReset(budgets: SettingsWorkspaceBudget[]) {
+/** Refetch once the earliest budget window (workspace or department) resets, so usage and reset times don't stay on the old window. */
+function useRefreshAtBudgetReset(budgets: Array<Pick<SettingsWorkspaceBudget, "reset_at">>) {
 	const now = useLimitClock();
 	const invalidate = useInvalidatePrivateSettings();
 	const refreshedFor = useRef<number | null>(null);
@@ -122,7 +122,7 @@ function useRefreshAtBudgetReset(budgets: SettingsWorkspaceBudget[]) {
 	}, [now, nextReset, invalidate]);
 }
 
-function useUsd() {
+export function useUsd() {
 	const format = useDisplayFormatters();
 	return (value: number) => format.number(value, {
 		style: "currency",

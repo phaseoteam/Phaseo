@@ -6625,7 +6625,32 @@
 		"errorForbidden": "只有工作区所有者和管理员可以更改预算。",
 		"errorNotFound": "此预算已不存在。请刷新页面。",
 		"errorInvalid": "请输入大于零的金额。",
-		"errorFailed": "无法保存预算。请稍后重试。"
+		"errorFailed": "无法保存预算。请稍后重试。",
+		"departments": {
+			"title": "部门预算",
+			"alertsOnly": "仅提醒",
+			"description": "跟踪每个部门每天、每周或每月的支出。达到预算的约 80% 和 100% 时会通知所有者和管理员。请求永远不会被阻止。",
+			"add": "添加部门预算",
+			"unavailable": "无法加载部门预算。请刷新页面重试。",
+			"empty": "还没有部门预算。",
+			"noDepartments": "在<link>部门</link>中创建部门后即可为其设置预算。",
+			"spendNote": "部门的支出是其关联 API 密钥的费用，加上其成员未关联任何部门的密钥及其 OAuth 请求的费用。大约每小时更新一次。",
+			"unnamed": "部门",
+			"reached": "已达到",
+			"department": "部门",
+			"chooseDepartment": "选择部门…",
+			"period": "周期",
+			"createTitle": "添加部门预算",
+			"editTitle": "编辑部门预算",
+			"limitHelp": "当部门在该周期内的支出达到此金额的约 80% 和 100% 时，会通知所有者和管理员。请求不会被阻止。",
+			"saved": "部门预算已保存",
+			"deleted": "部门预算已删除",
+			"deleteTitle": "删除此部门预算？",
+			"deleteBody": "所有者和管理员将不再收到 {department} 在此周期内的支出提醒。",
+			"errorDepartment": "请选择一个部门。",
+			"errorConflict": "该部门在此周期已有预算。请刷新页面后编辑。",
+			"errorNotFound": "该部门或预算已不存在。请刷新页面。"
+		}
 	},
 	"slack": {
 		"title": "Slack",
