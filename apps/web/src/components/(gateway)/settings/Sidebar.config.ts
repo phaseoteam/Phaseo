@@ -23,7 +23,6 @@ import {
 	Webhook,
 	Workflow,
 	ClipboardCheck,
-	Inbox,
 	MessagesSquare,
 	SlidersHorizontal,
 	Tags,
@@ -334,7 +333,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 		heading: "Internal",
 		scope: "personal",
 		items: [
-			{ href: "/settings/internal/model-discovery", label: "Discovery queue", icon: Inbox, match: ["/settings/internal/model-discovery"] },
 			{ href: "/settings/internal/provider-review", label: "Provider review", icon: ClipboardCheck, match: ["/settings/internal/provider-review"] },
 		],
 	},
