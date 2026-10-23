@@ -6114,7 +6114,8 @@
 			"expires": "Läuft ab",
 			"storedIn": "Gespeichert in",
 			"risks": "Risiken",
-			"created": "Erstellt"
+			"created": "Erstellt",
+			"status": "Status"
 		},
 		"paused": "Pausiert",
 		"unknownOwner": "Unbekannt",
@@ -6134,7 +6135,12 @@
 		},
 		"keys": "Schlüssel",
 		"filterLabel": "Schlüssel filtern",
-		"showing": "{shown} von {total} Schlüsseln"
+		"showing": "{shown} von {total} Schlüsseln",
+		"status": {
+			"active": "Aktiv"
+		},
+		"showAllLocations": "Alle {count} Orte anzeigen",
+		"showFewerLocations": "Weniger anzeigen"
 	},
 	"keyIncidents": {
 		"title": "Vorfälle bei Schlüsselspeicherorten",

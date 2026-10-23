@@ -8,7 +8,30 @@ export type KeySecurityFilter =
 	| { kind: KeySecurityRisk }
 	| { kind: "location"; id: string };
 
-export type KeySecuritySortKey = "name" | "owner" | "created" | "lastUsed" | "expires";
+export type KeySecuritySortKey = "name" | "owner" | "created" | "lastUsed" | "expires" | "storedIn" | "status" | "risks";
+
+/** How the key is being used, most urgent first. */
+export const KEY_SECURITY_STATUSES = ["paused", "safe_to_remove", "idle", "never_used", "active"] as const;
+export type KeySecurityStatus = (typeof KEY_SECURITY_STATUSES)[number];
+
+/** Settings that make a leaked key more dangerous. Storage location has its own column. */
+export type KeySecuritySettingRisk = "no_spend_limit" | "never_expires" | "no_ip_allowlist";
+
+export function keySecurityStatus(key: KeySecurityKey): KeySecurityStatus {
+	if (key.status === "paused") return "paused";
+	if (key.safe_to_remove) return "safe_to_remove";
+	if (key.idle) return "idle";
+	if (key.never_used) return "never_used";
+	return "active";
+}
+
+export function keySecurityRisks(key: KeySecurityKey): KeySecuritySettingRisk[] {
+	const risks: KeySecuritySettingRisk[] = [];
+	if (!key.has_spend_limit) risks.push("no_spend_limit");
+	if (key.expires_at === null) risks.push("never_expires");
+	if (!key.has_ip_allowlist) risks.push("no_ip_allowlist");
+	return risks;
+}
 
 export function matchesKeySecurityFilter(key: KeySecurityKey, filter: KeySecurityFilter) {
 	switch (filter.kind) {
@@ -36,6 +59,10 @@ const SORT_VALUE: Record<KeySecuritySortKey, (key: KeySecurityKey) => string | n
 	created: (key) => time(key.created_at, 0),
 	lastUsed: (key) => time(key.last_used_at, Number.NEGATIVE_INFINITY),
 	expires: (key) => time(key.expires_at, Number.POSITIVE_INFINITY),
+	storedIn: (key) => [...key.storage_locations].sort().join(" "),
+	// Descending puts the most urgent status and the most risks first.
+	status: (key) => KEY_SECURITY_STATUSES.length - KEY_SECURITY_STATUSES.indexOf(keySecurityStatus(key)),
+	risks: (key) => keySecurityRisks(key).length,
 };
 
 /** Keys in the chosen column order. Without a sort they keep the server's riskiest-first order. */

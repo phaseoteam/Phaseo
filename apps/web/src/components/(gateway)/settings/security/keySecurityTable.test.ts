@@ -1,5 +1,5 @@
 import type { KeySecurityKey } from "@/lib/fetchers/internal/settingsTypes";
-import { matchesKeySecurityFilter, sameKeySecurityFilter, sortKeySecurityKeys } from "./keySecurityTable";
+import { keySecurityRisks, keySecurityStatus, matchesKeySecurityFilter, sameKeySecurityFilter, sortKeySecurityKeys } from "./keySecurityTable";
 
 const key = (overrides: Partial<KeySecurityKey>): KeySecurityKey => ({
 	id: "k", name: "Key", prefix: "abc", status: "active", created_by: null, owner_name: null, owner_email: null,
@@ -27,6 +27,20 @@ describe("key security table", () => {
 	it("sorts never used as the oldest use and never expires as the latest expiry", () => {
 		expect(ids(sortKeySecurityKeys(keys, { key: "lastUsed", direction: "desc" }))).toEqual(["c", "a", "b"]);
 		expect(ids(sortKeySecurityKeys(keys, { key: "expires", direction: "asc" }))).toEqual(["c", "a", "b"]);
+	});
+
+	it("splits usage status from risky settings", () => {
+		expect(keySecurityStatus(key({ status: "paused", safe_to_remove: true }))).toBe("paused");
+		expect(keySecurityStatus(key({ idle: true, safe_to_remove: true }))).toBe("safe_to_remove");
+		expect(keySecurityStatus(key({ never_used: false }))).toBe("active");
+		expect(keySecurityRisks(key({ has_spend_limit: true }))).toEqual(["never_expires", "no_ip_allowlist"]);
+	});
+
+	it("sorts the most urgent status and the most risks first when descending", () => {
+		const list = [key({ id: "x", never_used: false, has_spend_limit: true, has_ip_allowlist: true }), key({ id: "y", status: "paused" })];
+		expect(ids(sortKeySecurityKeys(list, { key: "status", direction: "desc" }))).toEqual(["y", "x"]);
+		expect(ids(sortKeySecurityKeys(list, { key: "risks", direction: "desc" }))).toEqual(["y", "x"]);
+		expect(ids(sortKeySecurityKeys(keys, { key: "storedIn", direction: "desc" }))).toEqual(["a", "b", "c"]);
 	});
 
 	it("filters by risk and location", () => {

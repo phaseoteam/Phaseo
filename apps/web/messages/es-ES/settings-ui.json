@@ -6114,7 +6114,8 @@
 			"expires": "Caduca",
 			"storedIn": "Guardada en",
 			"risks": "Riesgos",
-			"created": "Creada"
+			"created": "Creada",
+			"status": "Estado"
 		},
 		"paused": "En pausa",
 		"unknownOwner": "Desconocido",
@@ -6134,7 +6135,12 @@
 		},
 		"keys": "Claves",
 		"filterLabel": "Filtrar claves",
-		"showing": "Mostrando {shown} de {total} claves"
+		"showing": "Mostrando {shown} de {total} claves",
+		"status": {
+			"active": "Activa"
+		},
+		"showAllLocations": "Mostrar las {count} ubicaciones",
+		"showFewerLocations": "Mostrar menos"
 	},
 	"keyIncidents": {
 		"title": "Incidentes de almacenamiento de claves",

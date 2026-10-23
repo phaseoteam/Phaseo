@@ -6114,7 +6114,8 @@
 			"expires": "到期",
 			"storedIn": "存储位置",
 			"risks": "风险",
-			"created": "创建时间"
+			"created": "创建时间",
+			"status": "状态"
 		},
 		"paused": "已暂停",
 		"unknownOwner": "未知",
@@ -6134,7 +6135,12 @@
 		},
 		"keys": "密钥",
 		"filterLabel": "筛选密钥",
-		"showing": "显示 {total} 个密钥中的 {shown} 个"
+		"showing": "显示 {total} 个密钥中的 {shown} 个",
+		"status": {
+			"active": "活跃"
+		},
+		"showAllLocations": "显示全部 {count} 个位置",
+		"showFewerLocations": "收起"
 	},
 	"keyIncidents": {
 		"title": "密钥存储事件",

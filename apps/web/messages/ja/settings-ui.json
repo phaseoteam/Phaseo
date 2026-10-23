@@ -6114,7 +6114,8 @@
 			"expires": "有効期限",
 			"storedIn": "保管場所",
 			"risks": "リスク",
-			"created": "作成日"
+			"created": "作成日",
+			"status": "ステータス"
 		},
 		"paused": "一時停止中",
 		"unknownOwner": "不明",
@@ -6134,7 +6135,12 @@
 		},
 		"keys": "キー",
 		"filterLabel": "キーを絞り込む",
-		"showing": "{total} 件中 {shown} 件のキーを表示"
+		"showing": "{total} 件中 {shown} 件のキーを表示",
+		"status": {
+			"active": "有効"
+		},
+		"showAllLocations": "{count} 件の保管場所をすべて表示",
+		"showFewerLocations": "表示を減らす"
 	},
 	"keyIncidents": {
 		"title": "キー保管場所のインシデント",

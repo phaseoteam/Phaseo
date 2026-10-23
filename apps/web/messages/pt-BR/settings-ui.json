@@ -6114,7 +6114,8 @@
 			"expires": "Expira",
 			"storedIn": "Armazenada em",
 			"risks": "Riscos",
-			"created": "Criada"
+			"created": "Criada",
+			"status": "Status"
 		},
 		"paused": "Pausada",
 		"unknownOwner": "Desconhecido",
@@ -6134,7 +6135,12 @@
 		},
 		"keys": "Chaves",
 		"filterLabel": "Filtrar chaves",
-		"showing": "Mostrando {shown} de {total} chaves"
+		"showing": "Mostrando {shown} de {total} chaves",
+		"status": {
+			"active": "Ativa"
+		},
+		"showAllLocations": "Mostrar todos os {count} locais",
+		"showFewerLocations": "Mostrar menos"
 	},
 	"keyIncidents": {
 		"title": "Incidentes de armazenamento de chaves",

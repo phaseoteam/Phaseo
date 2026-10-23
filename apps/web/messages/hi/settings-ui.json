@@ -6114,7 +6114,8 @@
 			"expires": "समाप्ति",
 			"storedIn": "कहाँ संग्रहीत",
 			"risks": "जोखिम",
-			"created": "बनाई गई"
+			"created": "बनाई गई",
+			"status": "स्थिति"
 		},
 		"paused": "रोका गया",
 		"unknownOwner": "अज्ञात",
@@ -6134,7 +6135,12 @@
 		},
 		"keys": "कुंजियाँ",
 		"filterLabel": "कुंजियाँ फ़िल्टर करें",
-		"showing": "{total} में से {shown} कुंजियाँ दिखाई जा रही हैं"
+		"showing": "{total} में से {shown} कुंजियाँ दिखाई जा रही हैं",
+		"status": {
+			"active": "सक्रिय"
+		},
+		"showAllLocations": "सभी {count} स्थान दिखाएँ",
+		"showFewerLocations": "कम दिखाएँ"
 	},
 	"keyIncidents": {
 		"title": "कुंजी संग्रहण से जुड़ी घटनाएँ",

@@ -6114,7 +6114,8 @@
 			"expires": "تاريخ الانتهاء",
 			"storedIn": "مخزَّن في",
 			"risks": "المخاطر",
-			"created": "تاريخ الإنشاء"
+			"created": "تاريخ الإنشاء",
+			"status": "الحالة"
 		},
 		"paused": "متوقف مؤقتًا",
 		"unknownOwner": "غير معروف",
@@ -6134,7 +6135,12 @@
 		},
 		"keys": "المفاتيح",
 		"filterLabel": "تصفية المفاتيح",
-		"showing": "عرض {shown} من أصل {total} مفتاح"
+		"showing": "عرض {shown} من أصل {total} مفتاح",
+		"status": {
+			"active": "نشط"
+		},
+		"showAllLocations": "عرض كل المواقع ({count})",
+		"showFewerLocations": "عرض أقل"
 	},
 	"keyIncidents": {
 		"title": "حوادث أماكن تخزين المفاتيح",
