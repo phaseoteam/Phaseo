@@ -128,9 +128,12 @@ try {
     ('new-sku', 'input_audio_tokens', 1000000, 9000000000)`);
   result = await resolve('lab/old');
   assert.deepEqual([result.price_comparable, Number(result.price_ratio)], [true, 1.25]);
+  // The gateway checks the request for the ones a request can opt into.
+  assert.deepEqual(result.price_skipped_meters, ['input_audio_tokens', 'native_web_search_requests']);
   // Input tokens in a modality the old model accepted compare with its text input price.
   await db.exec(`update public.v2_models set input_modalities='{text,audio}' where model_slug='lab/old'`);
-  assert.equal(Number((await resolve('lab/old')).price_ratio), 4.5);
+  result = await resolve('lab/old');
+  assert.deepEqual([Number(result.price_ratio), result.price_skipped_meters], [4.5, ['native_web_search_requests']]);
   await db.exec(`update public.v2_models set input_modalities='{text}' where model_slug='lab/old'`);
   // So do cache writes, which are opt-in and replace input billing.
   await db.exec(`insert into public.v2_pricing_sku_meters(sku_id, meter_key, unit_quantity, price_nanos) values
@@ -173,7 +176,8 @@ try {
   await db.exec(`update public.v2_pricing_sku_meters set meter_key='input_tokens' where sku_id='new-sku' and price_nanos=2500000000`);
   await db.exec(`update public.v2_pricing_sku_meters set meter_key='output_tokens' where sku_id='new-sku' and price_nanos=8000000000`);
   result = await resolveFor('lab/old', 'lab/new');
-  assert.deepEqual([result.target, result.reason, result.workspace_override, Number(result.price_ratio)], ['lab/new', 'eligible', true, 1.25]);
+  assert.deepEqual([result.target, result.reason, result.workspace_override, Number(result.price_ratio), result.price_skipped_meters],
+    ['lab/new', 'eligible', true, 1.25, []]);
   assert.deepEqual([(await resolveFor('lab/old', 'lab/mid')).target, (await resolveFor('lab/old', 'lab/mid')).reason], [null, 'no_served_successor']);
   assert.equal((await resolveFor('lab/old:free', 'lab/new')).reason, 'free_to_paid');
   await db.exec(`update public.v2_model_successor_routing set unserved_since=now() where model_slug='lab/old'`);

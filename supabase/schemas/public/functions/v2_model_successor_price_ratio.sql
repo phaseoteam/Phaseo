@@ -15,9 +15,11 @@ CREATE OR REPLACE FUNCTION public.v2_model_successor_price_ratio (
   -- output_tokens are the older names of the text token meters.
   -- A meter only the successor bills is compared the way a redirected request
   -- would be billed:
-  -- - skipped when the request cannot incur it: cached reads (cheaper than
-  --   input), web search and fetch tools the old model never billed, and
-  --   inputs or outputs in a modality the old model never had;
+  -- - skipped for cached reads, which cost less than the input already compared;
+  -- - skipped but listed in skipped_meters for web search and fetch tools the
+  --   old model never billed and inputs or outputs in a modality it never had:
+  --   the old model could not have served such a request, so the gateway only
+  --   redirects one that uses none of them;
   -- - compared with the old text input price for cache writes (opt-in, and
   --   they replace input billing) and for image, audio or video input tokens
   --   the old model billed as ordinary input.
@@ -56,24 +58,32 @@ CREATE OR REPLACE FUNCTION public.v2_model_successor_price_ratio (
       t.meter_key like 'input_%' as is_input,
       exists (select 1 from old_prices o where o.meter_key=t.meter_key) as old_billed
     from sku_prices t where t.model_slug=p_to_model_slug
-  ), pairs as (
-    select o.unit_price as old_price, n.unit_price as new_price
+  ), classified as (
+    select n.*,
+      not n.old_billed and (n.meter_key like 'cached_read_%' or n.meter_key like 'implicit_cached_%') as cache_read,
+      not n.old_billed and (n.meter_key in ('native_web_search_requests', 'native_web_fetch_requests')
+        or (n.modality is not null and not n.modality = any(case when n.is_input then m.input_modalities else m.output_modalities end)))
+        as needs_request_check
     from new_meters n
     cross join (select m.input_modalities, m.output_modalities from public.v2_models m where m.model_slug=p_from_model_slug) m
+  ), pairs as (
+    select o.unit_price as old_price, n.unit_price as new_price
+    from classified n
     left join old_prices o on o.meter_key = case
       when n.old_billed then n.meter_key
       when n.meter_key like 'cached_write_%' or n.meter_key ~ '^input_(image|audio|video)_tokens$' then 'input_text_tokens'
       else n.meter_key end
-    where n.old_billed or not (
-      n.meter_key like 'cached_read_%' or n.meter_key like 'implicit_cached_%'
-      or n.meter_key in ('native_web_search_requests', 'native_web_fetch_requests')
-      or (n.modality is not null and not n.modality = any(case when n.is_input then m.input_modalities else m.output_modalities end)))
+    where not n.cache_read and not n.needs_request_check
   ), summary as (
     select count(*) > 0 and coalesce(bool_and(old_price is not null and (old_price > 0 or new_price = 0)), false) as comparable,
       max(case when old_price > 0 then new_price / old_price when new_price = 0 then 0 end) as ratio
     from pairs
   )
-  select jsonb_build_object('comparable', comparable, 'ratio', case when comparable then round(ratio, 6) end)
+  -- skipped_meters only holds them while the prices are comparable: the
+  -- gateway treats the prices as not comparable when the request could incur one.
+  select jsonb_build_object('comparable', comparable, 'ratio', case when comparable then round(ratio, 6) end,
+    'skipped_meters', case when comparable then coalesce(
+      (select jsonb_agg(meter_key order by meter_key) from classified where needs_request_check), '[]'::jsonb) end)
   from summary
 $function$;
 

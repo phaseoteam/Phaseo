@@ -354,6 +354,26 @@ describe("beforeRequest model successor redirect", () => {
 		expect(guardContextMock).toHaveBeenCalledTimes(1);
 	});
 
+	it("returns the original failure when the request could incur a charge the price check left out", async () => {
+		findModelSuccessorMock.mockResolvedValue({
+			model: "openai/gpt-old", replacementModel: "openai/gpt-new", unservedSince: null, target: "openai/gpt-new",
+			chain: ["openai/gpt-new"], reason: "eligible", priceRatio: 1, priceComparable: true,
+			priceSkippedMeters: ["native_web_search_requests"], workspaceOverride: false,
+		});
+		primary({ tools: [{ type: "web_search" }] });
+		guardContextMock.mockResolvedValueOnce(unserved("openai/gpt-old"));
+		let result = await beforeRequest(request({}), "responses", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (!result.ok) expect(result.response.status).toBe(410);
+
+		// The same successor serves a request without web tools.
+		primary();
+		guardContextMock.mockResolvedValueOnce(unserved("openai/gpt-old"));
+		guardContextMock.mockResolvedValueOnce(contextFor("openai/gpt-new"));
+		result = await beforeRequest(request({}), "responses", new Timer(), null);
+		expect(result.ok).toBe(true);
+	});
+
 	it("uses the workspace's own replacement instead of the approved successor", async () => {
 		const rawBody = primary();
 		loadSuccessorRedirectPolicyMock.mockResolvedValue({ enabled: true, pricePolicy: "never", maxPriceIncreasePercent: 0, overrides: { "openai/gpt-old": "openai/gpt-custom" } });
