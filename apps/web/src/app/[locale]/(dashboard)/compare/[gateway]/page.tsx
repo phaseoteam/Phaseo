@@ -7,6 +7,8 @@ import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { buildMetadata } from "@/lib/seo";
 import type { PublicLocale } from "@/i18n/routing";
+import { parsePairSlug } from "@/components/(data)/compare/comparePairs";
+import { ComparePairPage, comparePairMetadata } from "./pairPage";
 
 type ComparisonCopy = {
 	intro: string;
@@ -61,6 +63,9 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ gateway: string; locale: PublicLocale }> }): Promise<Metadata> {
 	const { gateway, locale } = await params;
+	// The segment also carries model pairs: "/compare/openai_gpt-5-vs-anthropic_claude-sonnet-4.5".
+	const pair = parsePairSlug(gateway);
+	if (pair) return comparePairMetadata(pair, locale);
 	const comparison = comparisons[gateway];
 	if (!comparison) return {};
 	const t = await getTranslations({ locale, namespace: "Site.gatewayComparison" });
@@ -73,6 +78,8 @@ export async function generateMetadata({ params }: { params: Promise<{ gateway: 
 
 export default async function ComparisonPage({ params }: { params: Promise<{ gateway: string; locale: PublicLocale }> }) {
 	const { gateway, locale } = await params;
+	const pair = parsePairSlug(gateway);
+	if (pair) return <ComparePairPage ids={pair} locale={locale} />;
 	const comparison = comparisons[gateway];
 	if (!comparison) notFound();
 	const t = await getTranslations({ locale, namespace: "Site.gatewayComparison" });

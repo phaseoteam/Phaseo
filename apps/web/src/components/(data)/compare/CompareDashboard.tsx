@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import type { ComparePairLink } from "./ComparePairSummary";
 import { decodeModelIdFromUrl, encodeModelIdForUrl } from "./compareUrl";
 import type { CompareModelOption } from "./types";
 import { CompareEmptyState } from "./view/CompareEmptyState";
@@ -14,10 +15,12 @@ type CompareDashboardProps = {
 	selectedOptions: CompareModelOption[];
 	view: CompareViewData;
 	usage: CompareViewUsageByModel;
+	/** Curated head-to-head pages, listed when nothing is selected. */
+	pairs?: ComparePairLink[];
 };
 
-export default function CompareDashboard({ selectedOptions, view, usage }: CompareDashboardProps) {
-	const t = useTranslations("Catalogue.compareView");
+/** `/compare?models=…`: the selection lives in the query string. */
+export default function CompareDashboard(props: CompareDashboardProps) {
 	const params = useSearchParams();
 	const searchParams = useMemo(() => params ?? new URLSearchParams(), [params]);
 	const router = useRouter();
@@ -27,7 +30,6 @@ export default function CompareDashboard({ selectedOptions, view, usage }: Compa
 		() => [...new Set(searchParams.getAll("models").map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4),
 		[searchParams],
 	);
-
 	const setSelected = (ids: string[]) => {
 		const params = new URLSearchParams(searchParams.toString());
 		params.delete("models");
@@ -35,7 +37,35 @@ export default function CompareDashboard({ selectedOptions, view, usage }: Compa
 		const query = params.toString();
 		router.replace(query ? `?${query}` : pathname, { scroll: false });
 	};
+	return <CompareDashboardBody {...props} selectedIds={selectedIds} onSelect={setSelected} />;
+}
 
+/**
+ * `/compare/a-vs-b`: the two models come from the path. It doesn't read the
+ * query string, so the page can be cached per URL; changing the selection
+ * opens the general compare page.
+ */
+export function ComparePairDashboard({ ids, ...props }: CompareDashboardProps & { ids: string[] }) {
+	const router = useRouter();
+	const pathname = usePathname();
+	const setSelected = (next: string[]) => {
+		// "/de-DE/compare/a-vs-b" becomes "/de-DE/compare?models=…".
+		const base = pathname.slice(0, pathname.lastIndexOf("/"));
+		const query = next.map((id) => `models=${encodeURIComponent(encodeModelIdForUrl(id))}`).join("&");
+		router.push(query ? `${base}?${query}` : base);
+	};
+	return <CompareDashboardBody {...props} selectedIds={ids} onSelect={setSelected} />;
+}
+
+function CompareDashboardBody({
+	selectedOptions,
+	view,
+	usage,
+	pairs = [],
+	selectedIds,
+	onSelect,
+}: CompareDashboardProps & { selectedIds: string[]; onSelect: (ids: string[]) => void }) {
+	const t = useTranslations("Catalogue.compareView");
 	const modelsById = new Map(view.models.map((model) => [model.id, model]));
 	const ordered = selectedIds.flatMap((id) => {
 		const model = modelsById.get(id);
@@ -57,10 +87,10 @@ export default function CompareDashboard({ selectedOptions, view, usage }: Compa
 					usage={usage}
 					selectedOptions={selectedOptions}
 					selectedIds={ordered.map((model) => model.id)}
-					onSelectedIdsChange={setSelected}
+					onSelectedIdsChange={onSelect}
 				/>
 			) : (
-				<CompareEmptyState selectedOptions={selectedOptions} onSelect={setSelected} />
+				<CompareEmptyState selectedOptions={selectedOptions} onSelect={onSelect} pairs={pairs} />
 			)}
 		</div>
 	);

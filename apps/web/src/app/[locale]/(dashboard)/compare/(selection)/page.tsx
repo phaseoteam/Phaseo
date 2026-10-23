@@ -4,9 +4,9 @@ import { Suspense } from "react";
 
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
-import { fetchFrontendComparePeers, fetchFrontendCompareUsage, fetchFrontendCompareView } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
 import { decodeModelIdFromUrl } from "@/components/(data)/compare/compareUrl";
+import { loadCompareData, loadComparePairs } from "@/components/(data)/compare/loadCompare";
 import { toCompareModelOption } from "@/components/(data)/compare/types";
 import type { CompareView, CompareViewUsageByModel } from "@/components/(data)/compare/view/types";
 
@@ -37,20 +37,6 @@ const normalizeSelection = (value: string | string[] | undefined): string[] => {
 
 const EMPTY_VIEW: CompareView = { models: [], benchmarks: [] };
 
-/** Only the fields the page renders, so the client props stay small. */
-function pickUsageFields(usage: Awaited<ReturnType<typeof fetchFrontendCompareUsage>>): CompareViewUsageByModel {
-	return Object.fromEntries(Object.entries(usage).map(([id, entry]) => [id, {
-		periodDays: entry.periodDays,
-		tokens30d: entry.tokens30d,
-		totalRequests: entry.totalRequests,
-		latencyP50Ms30m: entry.latencyP50Ms30m,
-		throughputP50TokPerSec30m: entry.throughputP50TokPerSec30m,
-		latencyWindow: entry.latencyWindow ?? null,
-		throughputWindow: entry.throughputWindow ?? null,
-		...(entry.activity30d ? { activity30d: entry.activity30d } : {}),
-	}]));
-}
-
 function CompareDashboardFallback() {
 	return (
 		<div className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-8">
@@ -68,31 +54,20 @@ async function ComparePageContent({ searchParams }: PageProps) {
 	const resolvedSearchParams = await searchParams;
 	const ids = [...new Set(normalizeSelection(resolvedSearchParams?.models).map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4);
 
-	const [view, usage, peers] = ids.length
-		? await Promise.all([
-				fetchFrontendCompareView(ids),
-				fetchFrontendCompareUsage(ids).then(pickUsageFields).catch((error) => {
-					// Usage only fills the Performance and Activity rows; the comparison still renders without it.
-					// eslint-disable-next-line no-console
-					console.warn("[compare] Gateway usage unavailable", error);
-					return {} as CompareViewUsageByModel;
-				}),
-				fetchFrontendComparePeers(ids).catch((error) => {
-					// Leaderboard context is optional; the benchmark table still renders.
-					// eslint-disable-next-line no-console
-					console.warn("[compare] Leaderboard ranks unavailable", error);
-					return [];
-				}),
-			])
-		: [EMPTY_VIEW, {} as CompareViewUsageByModel, []];
+	// With nothing selected, the page lists the curated head-to-head pages instead.
+	const [{ view, usage }, pairs] = await Promise.all([
+		ids.length ? loadCompareData(ids) : { view: EMPTY_VIEW, usage: {} as CompareViewUsageByModel },
+		ids.length ? [] : loadComparePairs(),
+	]);
 
 	// The pickers load the full model list in the browser when opened, so the
 	// page only carries options for the models it compares.
 	return (
 		<CompareDashboard
 			selectedOptions={view.models.map(toCompareModelOption)}
-			view={{ ...view, peers }}
+			view={view}
 			usage={usage}
+			pairs={pairs}
 		/>
 	);
 }
