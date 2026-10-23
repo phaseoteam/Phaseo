@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { composeCompareUsage } from "@/models/compare-usage";
+import { composeCompareActivity, composeCompareUsage } from "@/models/compare-usage";
 
 describe("composeCompareUsage", () => {
 	it("returns the final chart summary and uses realtime medians first", () => {
@@ -50,5 +50,24 @@ describe("composeCompareUsage", () => {
 		expect(usage["a/day"]).toMatchObject({ latencyP50Ms30m: 120, latencyWindow: "24h", throughputP50TokPerSec30m: 60, throughputWindow: "24h" });
 		expect(usage["b/five-days"]).toMatchObject({ latencyP50Ms30m: 3_100, latencyWindow: "5d", throughputP50TokPerSec30m: 73, throughputWindow: "5d" });
 		expect(usage["c/none"]).toMatchObject({ latencyP50Ms30m: null, latencyWindow: null, throughputWindow: null });
+	});
+});
+
+describe("composeCompareActivity", () => {
+	it("lays each model out on the same days, oldest first, with quiet days as zero", () => {
+		const activity = composeCompareActivity([
+			{ day_bucket: "2026-10-21", model_id: "a/one", requests: 5, input_tokens: "170", output_tokens: "30", reasoning_tokens: "5" },
+			{ day_bucket: "2026-10-19", model_id: "a/one", requests: 1, input_tokens: "0", output_tokens: "8", reasoning_tokens: "0" },
+			{ day_bucket: "2026-10-21", model_id: "z/unasked", requests: 9, input_tokens: "1", output_tokens: "1", reasoning_tokens: "1" },
+		], ["a/one", "b/quiet"], new Date("2026-10-22T09:30:00Z"), 4);
+
+		expect(Object.keys(activity)).toEqual(["a/one", "b/quiet"]);
+		expect(activity["a/one"]).toEqual([
+			{ date: "2026-10-19", requests: 1, input: 0, output: 8, reasoning: 0 },
+			{ date: "2026-10-20", requests: 0, input: 0, output: 0, reasoning: 0 },
+			{ date: "2026-10-21", requests: 5, input: 170, output: 25, reasoning: 5 },
+			{ date: "2026-10-22", requests: 0, input: 0, output: 0, reasoning: 0 },
+		]);
+		expect(activity["b/quiet"]!.every((day) => day.requests === 0 && day.input === 0)).toBe(true);
 	});
 });

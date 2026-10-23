@@ -2826,7 +2826,19 @@
 		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, one {# weiteren Zähler zeigen} other {# weitere Zähler zeigen}}",
 		"fewerMeters": "Weniger Zähler zeigen",
-		"otherCategory": "Sonstige"
+		"otherCategory": "Sonstige",
+		"activity": "Aktivität",
+		"activitySub": "Tokens, die in den letzten 30 Tagen täglich über Phaseo gesendet wurden",
+		"activityTotal": "Tokens, letzte 30 Tage",
+		"activityInput": "Eingabe",
+		"activityOutput": "Ausgabe",
+		"activityReasoning": "Reasoning",
+		"activityRequests": "Anfragen",
+		"activityDay": "{date}: {tokens} Tokens, {requests} Anfragen",
+		"activityChart": "Tägliche Tokens für {name} über Phaseo, letzte 30 Tage",
+		"activityNone": "Kein Verkehr über Phaseo in den letzten 30 Tagen",
+		"activityNoneAll": "Keines dieser Modelle hatte in den letzten 30 Tagen Verkehr über Phaseo.",
+		"activityRequestsTotal": "Anfragen, letzte 30 Tage"
 	},
 	"countries": {
 		"title": "KI nach Ländern",

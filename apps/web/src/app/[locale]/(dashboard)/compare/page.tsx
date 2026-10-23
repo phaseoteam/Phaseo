@@ -47,6 +47,7 @@ function pickUsageFields(usage: Awaited<ReturnType<typeof fetchFrontendCompareUs
 		throughputP50TokPerSec30m: entry.throughputP50TokPerSec30m,
 		latencyWindow: entry.latencyWindow ?? null,
 		throughputWindow: entry.throughputWindow ?? null,
+		...(entry.activity30d ? { activity30d: entry.activity30d } : {}),
 	}]));
 }
 
@@ -71,7 +72,7 @@ async function ComparePageContent({ searchParams }: PageProps) {
 		? await Promise.all([
 				fetchFrontendCompareView(ids),
 				fetchFrontendCompareUsage(ids).then(pickUsageFields).catch((error) => {
-					// Usage only fills the "On Phaseo" rows; the comparison still renders without it.
+					// Usage only fills the Performance and Activity rows; the comparison still renders without it.
 					// eslint-disable-next-line no-console
 					console.warn("[compare] Gateway usage unavailable", error);
 					return {} as CompareViewUsageByModel;
