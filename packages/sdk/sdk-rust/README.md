@@ -49,6 +49,22 @@ Use `client.preflight_request(...)` to validate a complete request against live
 routes. `workflows::Pager` and `workflows::JobHandle` provide lazy pagination and
 resumable job polling.
 
+## Realtime voice (beta)
+
+Enable the `realtime` feature (`phaseo = { version = "...", features = ["realtime"] }`), which adds `tungstenite`. `client.realtime().connect(..)` creates a realtime session and opens the relay WebSocket. Provider events pass through unchanged as `serde_json::Value`s.
+
+```rust
+use phaseo::realtime::{EndOptions, RealtimeOptions};
+
+let session = client.realtime().connect(RealtimeOptions::new("openai/gpt-realtime-2").voice("marin"))?;
+session.on_warning(|warning| eprintln!("{}", warning["code"]));
+let events = session.events(); // every event until the socket closes
+session.send_audio(&pcm16_chunk)?; // PCM16 bytes; base64 is handled for you
+let ended = session.end(EndOptions { reason: Some("caller hung up".into()), ..EndOptions::default() })?;
+```
+
+If the socket closes without `session.ended`, `end` returns `RealtimeError::Closed`, whose `final_bill_path` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Development
 
 ```bash
