@@ -7,6 +7,8 @@ pub mod gen;
 pub mod model_ids;
 mod parameter_support;
 mod phaseo;
+#[cfg(feature = "realtime")]
+pub mod realtime;
 pub mod workflows;
 
 pub use parameter_support::{check_parameter_support, ParameterSupportOptions};

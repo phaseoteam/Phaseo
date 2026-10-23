@@ -106,6 +106,19 @@ Resolution order for CA bundle:
 
 Disabling TLS verification (`verifyTls: false`) should only be used for local debugging.
 
+## Realtime voice (beta)
+
+`$client->realtime()->connect(...)` creates a realtime session and opens the relay WebSocket. It needs the optional `phrity/websocket` package: `composer require phrity/websocket`. Provider events pass through unchanged as arrays. PHP is single-threaded, so events are read when you call `receive()`, iterate `events()` or call `end()`, and your listeners run as each event is read.
+
+```php
+$session = $client->realtime()->connect(["model" => "openai/gpt-realtime-2", "voice" => "marin"]);
+$session->onWarning(fn (array $warning) => error_log($warning["code"]));
+$session->sendAudio($pcm16Chunk); // PCM16 bytes; base64 is handled for you
+$ended = $session->end(reason: "caller hung up"); // session.ended: reason, usage, cost, billing_status
+```
+
+If the socket closes without `session.ended`, `end()` throws `RealtimeSessionClosedException`, whose `getFinalBillPath()` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Free and paid models
 
 - Models with `:free` in the model ID can be called with zero deposited credits.

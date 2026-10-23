@@ -7,7 +7,7 @@
   "scripts": {
     "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @phaseo/rust-sdk",
     "build": "cargo build",
-    "test": "cargo test --all-targets",
+    "test": "cargo test --all-targets --features realtime",
     "lint": "cargo clippy --all-targets -- -D warnings",
     "package": "cargo package",
     "smoke:chat": "dotenv -e .env.local -- cargo test --test smoke_chat -- --nocapture",

@@ -92,6 +92,19 @@ puts generic_socket_url
 puts resource_socket_url
 ```
 
+## Realtime voice (beta)
+
+`client.realtime.connect(...)` creates a realtime session and opens the relay WebSocket. It needs the optional `websocket` gem: `gem install websocket` or `gem "websocket"` in your Gemfile. Provider events pass through unchanged as Hashes.
+
+```ruby
+session = client.realtime.connect(model: "openai/gpt-realtime-2", voice: "marin")
+session.on_warning { |warning| warn warning["code"] }
+session.send_audio(pcm16_chunk) # PCM16 bytes; base64 is handled for you
+ended = session.end(reason: "caller hung up") # session.ended: reason, usage, cost, billing_status
+```
+
+`session.each_event { |event| ... }` yields every event until the socket closes. If the socket closes without `session.ended`, `end` raises `PhaseoSdk::RealtimeSessionClosedError`, whose `final_bill_path` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Free and paid models
 
 - Models with `:free` in the model ID can be called with zero deposited credits.
