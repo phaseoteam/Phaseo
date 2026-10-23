@@ -55,6 +55,10 @@ type PrioritySiblingRoute = {
 };
 
 const PRIORITY_SIBLING_ROUTES = new Map<string, PrioritySiblingRoute>([
+    ["moonshotai/kimi-k3.1-pro", {
+        lookupId: "kimi-k3.1-pro-highspeed",
+        requestTiers: ["fast", "priority"],
+    }],
     ["moonshotai/kimi-k2.7-code", {
         lookupId: "moonshotai/kimi-k2.7-code-highspeed",
         requestTiers: ["fast", "priority"],

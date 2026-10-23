@@ -506,6 +506,33 @@ describe("applyServiceTierRouting", () => {
         ]);
     });
 
+    it.each(["priority", "fast"])("routes K3.1 Pro %s to Highspeed without changing the public model or price card", async (tier) => {
+        const model = "moonshotai/kimi-k3.1-pro";
+        queryState.providerRows = [{
+            provider_slug: "moonshotai", model_slug: model,
+            provider_model_id: "moonshotai:moonshotai/kimi-k3.1-pro-highspeed",
+            provider_model_slug: "kimi-k3.1-pro-highspeed", routing_enabled: false,
+            effective_from: null, effective_to: null,
+        }];
+        queryState.capabilityRows = [{
+            provider_model_id: "moonshotai:moonshotai/kimi-k3.1-pro-highspeed",
+            params: { "reasoning.effort": {} }, max_input_tokens: 1_048_576,
+            max_output_tokens: 1_048_576, status: "active", updated_at: null, created_at: null,
+        }];
+        const card = makeCard({ provider: "moonshotai", model, plans: ["standard", "priority"] });
+        const candidate = makeCandidate({ providerId: "moonshotai", apiModelId: model, providerModelSlug: "kimi-k3.1-pro", pricingCard: card });
+        const result = await applyServiceTierRouting({ candidates: [candidate], body: { service_tier: tier }, capability: "text.generate" });
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0]).toMatchObject({ apiModelId: model, providerModelSlug: "kimi-k3.1-pro-highspeed", pricingCard: card });
+        expect(result.diagnostics.remappedProviders).toHaveLength(1);
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
+        for (const body of [{}, { service_tier: "standard" }]) {
+            const standard = await applyServiceTierRouting({ candidates: [candidate], body, capability: "text.generate" });
+            expect(standard.candidates[0].providerModelSlug).toBe("kimi-k3.1-pro");
+            expect(standard.diagnostics.remappedProviders).toHaveLength(0);
+        }
+    });
+
     it("remaps Xiaomi MiMo V2.6 Pro fast requests to the hidden UltraSpeed slug", async () => {
         queryState.providerRows = [
             {
