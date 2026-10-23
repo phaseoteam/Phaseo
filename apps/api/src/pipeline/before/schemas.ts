@@ -230,7 +230,15 @@ const capabilityParamDescriptorSchema = z
 const capabilityParamsSchema = z
     .union([
         z.record(z.string(), z.any()),
-        z.array(z.union([z.string().trim().min(1), capabilityParamDescriptorSchema])),
+        z.array(
+            z.union([
+                z.string().trim().min(1),
+                capabilityParamDescriptorSchema,
+                // The context RPC appends `{data_policy}` (or `{}` once nulls
+                // are stripped) to list-shaped params; it is not a parameter.
+                z.object({ data_policy: z.any().optional() }).strict(),
+            ]),
+        ),
     ])
     .transform<Record<string, any>>((value) => {
         if (!Array.isArray(value)) return value;
@@ -239,6 +247,10 @@ const capabilityParamsSchema = z
         for (const entry of value) {
             if (typeof entry === "string") {
                 params[entry] = {};
+                continue;
+            }
+            if (!("param_id" in entry)) {
+                if (entry.data_policy !== undefined) params.data_policy = entry.data_policy;
                 continue;
             }
             const { param_id: paramId, ...config } = entry;
