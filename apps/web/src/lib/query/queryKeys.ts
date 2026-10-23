@@ -75,6 +75,8 @@ const publicKeys = {
 		[...publicKeys.all(), "model-usage-daily", modelId] as const,
 	modelPricing: (modelId: string) =>
 		[...publicKeys.all(), "model-pricing", modelId] as const,
+	countryDetail: (iso: string) =>
+		[...publicKeys.all(), "country-detail", iso] as const,
 	modelPricingHistory: (modelId: string) =>
 		[...publicKeys.all(), "model-pricing-history", modelId] as const,
 	modelPricingInsightsUsage: (modelId: string, providerIds: string[]) =>

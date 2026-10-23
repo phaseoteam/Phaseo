@@ -3284,7 +3284,9 @@
 		"searchPlaceholder": "मॉडल या संगठन खोजें",
 		"searchLabel": "देश के मॉडल खोजें",
 		"modelsCount": "{count, plural, one {# मॉडल} other {# मॉडल}}",
-		"noModelsMatch": "आपकी खोज से कोई मॉडल मेल नहीं खाता।"
+		"noModelsMatch": "आपकी खोज से कोई मॉडल मेल नहीं खाता।",
+		"showAllModels": "सभी {count} मॉडल दिखाएँ",
+		"loadingAllModels": "सभी मॉडल लोड हो रहे हैं…"
 	},
 	"appDetail": {
 		"appNotFound": "ऐप नहीं मिला।",

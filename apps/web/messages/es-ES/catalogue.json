@@ -3284,7 +3284,9 @@
 		"searchPlaceholder": "Buscar modelos u organizaciones",
 		"searchLabel": "Buscar modelos del país",
 		"modelsCount": "{count, plural, one {# modelo} other {# modelos}}",
-		"noModelsMatch": "Ningún modelo coincide con tu búsqueda."
+		"noModelsMatch": "Ningún modelo coincide con tu búsqueda.",
+		"showAllModels": "Mostrar los {count} modelos",
+		"loadingAllModels": "Cargando todos los modelos…"
 	},
 	"appDetail": {
 		"appNotFound": "No se encontró la aplicación.",

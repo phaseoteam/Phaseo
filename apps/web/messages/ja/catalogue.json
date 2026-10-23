@@ -3284,7 +3284,9 @@
 		"searchPlaceholder": "モデルまたは組織を検索",
 		"searchLabel": "国別モデルを検索",
 		"modelsCount": "モデル数: {count}",
-		"noModelsMatch": "検索に一致するモデルはありません。"
+		"noModelsMatch": "検索に一致するモデルはありません。",
+		"showAllModels": "{count} 件のモデルをすべて表示",
+		"loadingAllModels": "すべてのモデルを読み込み中…"
 	},
 	"appDetail": {
 		"appNotFound": "アプリが見つかりません。",
