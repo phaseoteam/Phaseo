@@ -642,6 +642,26 @@ export type SettingsRateLimitsInitialData = {
 	/** Requests each policy rejected in the last throttleWindowHours. */
 	throttles: Array<{ policyId: string; throttledRequests: number; lastThrottledAt: string | null }>;
 	throttleWindowHours: number;
+	/** The workspace's trust-ladder tier from the gateway; null when unavailable, absent from older responses. */
+	tier?: SettingsRateLimitTier | null;
+};
+
+export type SettingsRateLimitTierName = "new" | "standard" | "trusted" | "enterprise";
+/** GET /v1/rate-limits/tier: the workspace's tier and whether its owner can raise it one step. */
+export type SettingsRateLimitTier = {
+	tier: SettingsRateLimitTierName;
+	requestsPerMinute: number;
+	target: SettingsRateLimitTierName | null;
+	targetRequestsPerMinute: number | null;
+	eligible: boolean;
+	refusal: "disabled" | "override" | "raised" | "top_tier" | "no_paid_top_up" | "too_new" | "not_enough_spend" | "cooldown" | null;
+	/** Epoch ms. */
+	activeUntil: number | null;
+	availableAt: number | null;
+	durationDays: number;
+	thresholds: { minAgeDays: number; minLifetimePaidSpendUsd: number };
+	/** The signed-in user is the owner and the workspace is eligible. */
+	canRaise: boolean;
 };
 
 /** A workspace budget with usage from the gateway's enforcement function (web-api settings-budgets). */

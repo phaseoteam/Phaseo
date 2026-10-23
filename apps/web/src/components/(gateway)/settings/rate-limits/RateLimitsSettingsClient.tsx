@@ -50,6 +50,7 @@ import {
 	type PolicyDraft,
 	type PolicyProblem,
 } from "./rateLimitForm";
+import WorkspaceTierSection from "./WorkspaceTierSection";
 
 type Data = SettingsRateLimitsInitialData;
 type EditorState = { mode: "create" } | { mode: "edit"; policy: SettingsRateLimitPolicy } | null;
@@ -97,6 +98,7 @@ export default function RateLimitsSettingsClient({ data }: { data: Data }) {
 				)}
 			</section>
 			<AssignmentsSection data={data} />
+			<WorkspaceTierSection tier={data.tier ?? null} />
 			{editor ? <PolicyDialog key={editor.mode === "edit" ? editor.policy.id : "new"} state={editor} onClose={() => setEditor(null)} /> : null}
 		</div>
 	);

@@ -6556,6 +6556,35 @@
 			"saveFailed": "No se pudo guardar la política. Inténtalo de nuevo.",
 			"deleteFailed": "No se pudo eliminar la política. Inténtalo de nuevo.",
 			"assignFailed": "No se pudo cambiar la asignación. Inténtalo de nuevo."
+		},
+		"tier": {
+			"title": "Límite del espacio de trabajo",
+			"description": "Cada usuario del espacio de trabajo tiene además una cuota de solicitudes por minuto que depende de la situación del espacio de trabajo. Aumenta automáticamente a medida que el espacio de trabajo se consolida.",
+			"current": "{tier} · {count, number} solicitudes por minuto",
+			"tiers": {
+				"new": "Nuevo",
+				"standard": "Estándar",
+				"trusted": "De confianza",
+				"enterprise": "Facturación"
+			},
+			"raisedUntil": "Ampliado a {tier} hasta el {date}.",
+			"raise": "Ampliar a {tier}",
+			"ownerOnly": "Solo el propietario del espacio de trabajo puede ampliar el límite.",
+			"confirmTitle": "¿Ampliar a {tier} durante {days, number} días?",
+			"confirmBody": "La cuota de cada usuario sube a {count, number} solicitudes por minuto durante {days, number} días. Termina antes si se reembolsa un pago, y después no podrás volver a ampliar el límite durante un tiempo.",
+			"confirm": "Ampliar límite",
+			"cancel": "Cancelar",
+			"raising": "Ampliando…",
+			"raised": "Límite ampliado. Se aplica en menos de un minuto.",
+			"raiseFailed": "No se pudo ampliar el límite. Actualiza la página e inténtalo de nuevo.",
+			"refusals": {
+				"override": "Phaseo ha fijado un límite personalizado para este espacio de trabajo.",
+				"top_tier": "Este espacio de trabajo ya tiene el límite más alto disponible sin facturación.",
+				"no_paid_top_up": "Para ampliar el límite, primero hace falta una recarga pagada.",
+				"too_new": "El espacio de trabajo debe tener al menos {days, number} días para ampliar su límite.",
+				"not_enough_spend": "Para ampliar el límite hacen falta al menos {amount} en recargas pagadas.",
+				"cooldown": "Podrás volver a ampliar el límite el {date}."
+			}
 		}
 	},
 	"budgets": {

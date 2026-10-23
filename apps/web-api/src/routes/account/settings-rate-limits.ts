@@ -59,7 +59,25 @@ function emptyData(workspaceId: string | null) {
 		targets: { keys: [], members: [], departments: [], guardrails: [] },
 		throttles: [],
 		throttleWindowHours: THROTTLE_WINDOW_HOURS,
+		tier: null,
 	};
+}
+
+/**
+ * The workspace's trust-ladder tier and self-serve raise status, from the
+ * gateway (which holds the ladder configuration). Null when it can't be read,
+ * so the rest of the page still loads.
+ */
+async function readTier(c: any, workspaceId: string): Promise<unknown> {
+	const result: GatewayResult = await callGatewayControl({
+		env: c.env,
+		request: c.req.raw,
+		workspaceId,
+		method: "GET",
+		path: "/v1/rate-limits/tier",
+		failureEvent: "rate_limits_gateway_proxy_failed",
+	}).catch(() => ({ status: 0, payload: null }));
+	return result.status === 200 && result.payload?.data ? result.payload.data : null;
 }
 
 export const accountSettingsRateLimitsRouter = new Hono<{ Bindings: Env }>();
@@ -71,7 +89,7 @@ accountSettingsRateLimitsRouter.get("/rate-limits", async (c) => {
 	if (!context) return json(c, { error: "forbidden" }, 403);
 	if (!isManager(context)) return json(c, emptyData(workspaceId));
 	const since = new Date(Date.now() - THROTTLE_WINDOW_HOURS * 3_600_000).toISOString();
-	const [policies, assignments, keys, members, departments, guardrails, throttles] = await Promise.all([
+	const [policies, assignments, keys, members, departments, guardrails, throttles, tier] = await Promise.all([
 		context.client.from("workspace_rate_limit_policies").select(POLICY_COLUMNS)
 			.eq("workspace_id", workspaceId).order("name", { ascending: true }).limit(MAX_POLICIES),
 		context.client.from("workspace_rate_limit_policy_assignments").select(ASSIGNMENT_COLUMNS)
@@ -87,6 +105,7 @@ accountSettingsRateLimitsRouter.get("/rate-limits", async (c) => {
 			.eq("workspace_id", workspaceId).order("name", { ascending: true }),
 		// Summed in the database from the per-minute rollup.
 		context.client.rpc("workspace_rate_limit_throttle_summary", { p_workspace_id: workspaceId, p_since: since }),
+		readTier(c, workspaceId),
 	]);
 	if ([policies, assignments, keys, members, departments, guardrails, throttles].some((result) => result.error)) {
 		return json(c, { error: "settings_unavailable" }, 503);
@@ -126,8 +145,12 @@ accountSettingsRateLimitsRouter.get("/rate-limits", async (c) => {
 			lastThrottledAt: row.last_throttled_at ?? null,
 		})),
 		throttleWindowHours: THROTTLE_WINDOW_HOURS,
+		tier,
 	});
 });
+
+// The gateway allows only the workspace owner to raise, and checks eligibility itself.
+accountSettingsRateLimitsRouter.post("/rate-limits/tier/raise", (c) => forward(c, "POST", "/tier/raise", false));
 
 /** Forwards a write to the gateway; the body's workspaceId selects the workspace and is not sent on. */
 async function forward(c: any, method: string, path: string, withBody: boolean) {

@@ -107,6 +107,7 @@ describe("rate limit settings reads", () => {
 			},
 			throttles: [{ policyId: POLICY, throttledRequests: 12, lastThrottledAt: "2026-10-22T08:59:00+00:00" }],
 			throttleWindowHours: 24,
+			tier: null,
 		});
 		const rpc = requests.find((request) => request.url.pathname.endsWith("/rpc/workspace_rate_limit_throttle_summary"));
 		expect(rpc?.body).toMatchObject({ p_workspace_id: WORKSPACE, p_since: expect.any(String) });
@@ -122,6 +123,28 @@ describe("rate limit settings reads", () => {
 	it("reports the page as unavailable when a read fails", async () => {
 		database({ role: "owner", throttleError: true });
 		expect((await call(`/rate-limits?workspaceId=${WORKSPACE}`)).status).toBe(503);
+	});
+});
+
+describe("rate limit tier", () => {
+	it("adds the gateway's tier and raise status to the admin view, with the session", async () => {
+		const tier = { tier: "standard", requestsPerMinute: 25, target: "trusted", eligible: true, refusal: null, canRaise: true };
+		const requests = database({ role: "owner", gateway: () => Response.json({ data: tier }) });
+		const body = await (await call(`/rate-limits?workspaceId=${WORKSPACE}`)).json() as any;
+		expect(body.tier).toEqual(tier);
+		const forwarded = requests.find((request) => request.url.hostname === "gateway.test");
+		expect(forwarded?.method).toBe("GET");
+		expect(forwarded?.url.pathname).toBe("/v1/rate-limits/tier");
+		expect(forwarded?.headers.get("x-phaseo-workspace-id")).toBe(WORKSPACE);
+	});
+
+	it("forwards a raise without a body and passes the gateway's refusal through", async () => {
+		const requests = database({ gateway: () => Response.json({ error: "raise_unavailable", reason: "cooldown" }, { status: 409 }) });
+		const response = await call("/rate-limits/tier/raise", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE }) });
+		expect(response.status).toBe(409);
+		await expect(response.json()).resolves.toMatchObject({ error: "raise_unavailable", reason: "cooldown" });
+		const forwarded = requests.find((request) => request.url.hostname === "gateway.test");
+		expect([forwarded?.method, forwarded?.url.pathname, forwarded?.body]).toEqual(["POST", "/v1/rate-limits/tier/raise", null]);
 	});
 });
 
