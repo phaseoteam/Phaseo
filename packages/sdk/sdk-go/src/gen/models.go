@@ -3877,6 +3877,7 @@ type ObservabilityDestinationType string
 const (
 	ObservabilityDestinationTypeArize ObservabilityDestinationType = "arize"
 	ObservabilityDestinationTypeAxiom ObservabilityDestinationType = "axiom"
+	ObservabilityDestinationTypeBigquery ObservabilityDestinationType = "bigquery"
 	ObservabilityDestinationTypeBraintrust ObservabilityDestinationType = "braintrust"
 	ObservabilityDestinationTypeClickhouse ObservabilityDestinationType = "clickhouse"
 	ObservabilityDestinationTypeCometOpik ObservabilityDestinationType = "comet_opik"

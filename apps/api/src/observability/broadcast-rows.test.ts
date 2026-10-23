@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
 	MAX_BROADCAST_ROW_BYTES,
 	broadcastObjectKey,
 	broadcastRowBytes,
 	broadcastRows,
 	broadcastRowsEndpoint,
+	clearBroadcastRowsTokenCache,
 	jsonLines,
 	sendBroadcastRows,
 	signAwsRequest,
@@ -297,5 +298,124 @@ describe("ClickHouse", () => {
 		expect(() => broadcastRowsEndpoint("clickhouse", { ...config, password: "" })).toThrow("password is required");
 		expect(() => broadcastRowsEndpoint("clickhouse", { ...config, endpoint: "http://ch.example.com:8123" })).toThrow("endpoint must be an HTTPS URL");
 		expect(() => broadcastRowsEndpoint("clickhouse", { ...config, endpoint: "https://ch.example.com/?user=x" })).toThrow("endpoint must be an HTTPS URL");
+	});
+});
+
+describe("BigQuery", () => {
+	let publicKey: CryptoKey;
+	let account: Record<string, string>;
+
+	beforeAll(async () => {
+		const pair = await crypto.subtle.generateKey(
+			{ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+			true,
+			["sign", "verify"],
+		);
+		publicKey = pair.publicKey;
+		const der = new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey));
+		const base64 = btoa(String.fromCharCode(...der)).replace(/(.{64})/g, "$1\n");
+		account = {
+			type: "service_account",
+			project_id: "phaseo-analytics",
+			client_email: "broadcast@phaseo-analytics.iam.gserviceaccount.com",
+			private_key: `-----BEGIN PRIVATE KEY-----\n${base64}\n-----END PRIVATE KEY-----\n`,
+		};
+	});
+
+	beforeEach(() => clearBroadcastRowsTokenCache());
+
+	const decode = (part: string) => JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+	const config = () => ({ service_account_json: JSON.stringify(account), dataset: "observability", table: "phaseo_traces" });
+
+	function google(insertResponse: () => Response) {
+		const calls: Array<{ url: URL; init: RequestInit }> = [];
+		const send = async (url: URL, init: RequestInit) => {
+			calls.push({ url, init });
+			if (url.hostname === "oauth2.googleapis.com") return Response.json({ access_token: "ya29.token", expires_in: 3599, token_type: "Bearer" });
+			return insertResponse();
+		};
+		return { calls, send };
+	}
+
+	it("signs in as the service account and streams rows with insert IDs", async () => {
+		const { calls, send } = google(() => Response.json({ kind: "bigquery#tableDataInsertAllResponse" }));
+		const result = await sendBroadcastRows("bigquery", config(), broadcastRows(otlp, "gateway:req_1"), send);
+		expect(result).toEqual({ ok: true, status: 200, error: null, retryAfter: null });
+
+		const [token, insert] = calls;
+		expect(token.url.toString()).toBe("https://oauth2.googleapis.com/token");
+		const form = new URLSearchParams(String(token.init.body));
+		expect(form.get("grant_type")).toBe("urn:ietf:params:oauth:grant-type:jwt-bearer");
+		const [header, claims, signature] = form.get("assertion")!.split(".");
+		expect(decode(header)).toEqual({ alg: "RS256", typ: "JWT" });
+		expect(decode(claims)).toMatchObject({
+			iss: account.client_email,
+			sub: account.client_email,
+			aud: "https://oauth2.googleapis.com/token",
+			scope: "https://www.googleapis.com/auth/bigquery.insertdata",
+		});
+		expect(decode(claims).exp - decode(claims).iat).toBe(3600);
+		const signatureBytes = Uint8Array.from(atob(signature.replace(/-/g, "+").replace(/_/g, "/")), (char) => char.charCodeAt(0));
+		expect(await crypto.subtle.verify("RSASSA-PKCS1-v1_5", publicKey, signatureBytes, new TextEncoder().encode(`${header}.${claims}`))).toBe(true);
+
+		expect(insert.url.toString()).toBe("https://bigquery.googleapis.com/bigquery/v2/projects/phaseo-analytics/datasets/observability/tables/phaseo_traces/insertAll");
+		expect(insert.init.headers).toMatchObject({ authorization: "Bearer ya29.token" });
+		const body = JSON.parse(String(insert.init.body));
+		expect(body).toMatchObject({ skipInvalidRows: false, ignoreUnknownValues: true });
+		expect(body.rows[0].insertId).toBe("gateway:req_1/b7ad6b7169203331");
+		expect(body.rows[0].json).toMatchObject({ span_id: "b7ad6b7169203331", start_time: "2025-10-23T10:00:00.123456Z", resource_attributes: "{\"service.name\":\"phaseo-gateway\"}" });
+		expect(JSON.parse(body.rows[0].json.attributes)["gen_ai.usage.input_tokens"]).toBe(50);
+	});
+
+	it("reuses the access token until shortly before it expires", async () => {
+		const { calls, send } = google(() => Response.json({}));
+		await sendBroadcastRows("bigquery", config(), [], send);
+		await sendBroadcastRows("bigquery", config(), [], send);
+		expect(calls.map((call) => call.url.hostname)).toEqual(["oauth2.googleapis.com", "bigquery.googleapis.com", "bigquery.googleapis.com"]);
+	});
+
+	it("reports the row error that rejected the batch", async () => {
+		const { send } = google(() => Response.json({
+			insertErrors: [
+				{ index: 0, errors: [{ reason: "stopped", message: "" }] },
+				{ index: 1, errors: [{ reason: "invalid", location: "duration_ms", message: "Cannot convert value to integer." }] },
+			],
+		}));
+		expect(await sendBroadcastRows("bigquery", config(), broadcastRows(otlp, "e"), send)).toEqual({
+			ok: false,
+			status: 200,
+			error: "BigQuery rejected the rows: invalid: duration_ms: Cannot convert value to integer.",
+			retryAfter: null,
+		});
+	});
+
+	it("reports API and sign-in errors", async () => {
+		const notFound = google(() => Response.json({ error: { code: 404, message: "Not found: Table phaseo-analytics:observability.phaseo_traces" } }, { status: 404 }));
+		expect(await sendBroadcastRows("bigquery", config(), [], notFound.send)).toMatchObject({
+			ok: false,
+			status: 404,
+			error: "Destination returned 404: Not found: Table phaseo-analytics:observability.phaseo_traces",
+		});
+		clearBroadcastRowsTokenCache();
+		const denied = async () => Response.json({ error: "invalid_grant", error_description: "Invalid JWT Signature." }, { status: 400 });
+		expect(await sendBroadcastRows("bigquery", config(), [], denied)).toMatchObject({
+			ok: false,
+			status: 400,
+			error: "Google sign-in for the service account failed: invalid_grant: Invalid JWT Signature.",
+		});
+	});
+
+	it("checks the key file and table names", () => {
+		expect(broadcastRowsEndpoint("bigquery", { ...config(), project_id: "other-project" })).toBe("https://bigquery.googleapis.com/bigquery/v2/projects/other-project/datasets/observability/tables/phaseo_traces/insertAll");
+		expect(() => broadcastRowsEndpoint("bigquery", { ...config(), service_account_json: "{\"type\":\"authorized_user\"}" })).toThrow("must be the service account's JSON key file");
+		expect(() => broadcastRowsEndpoint("bigquery", { ...config(), service_account_json: "not json" })).toThrow("must be the service account's JSON key file");
+		expect(() => broadcastRowsEndpoint("bigquery", { ...config(), dataset: "a.b" })).toThrow("dataset must use only");
+		expect(() => broadcastRowsEndpoint("bigquery", { ...config(), table: "x/../y" })).toThrow("table must use only");
+		expect(() => broadcastRowsEndpoint("bigquery", { ...config(), project_id: "Bad Project" })).toThrow("project_id must be");
+	});
+
+	it("rejects a key that is not an RSA PKCS #8 key", async () => {
+		const broken = { ...account, private_key: "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n" };
+		await expect(sendBroadcastRows("bigquery", { ...config(), service_account_json: JSON.stringify(broken) }, [], async () => new Response())).rejects.toThrow("unencrypted RSA key in PKCS #8 PEM");
 	});
 });

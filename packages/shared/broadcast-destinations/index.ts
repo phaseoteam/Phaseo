@@ -17,7 +17,7 @@ export type BroadcastDestinationType = {
 export const BROADCAST_DESTINATION_TYPES = [
 	{ id: "arize", delivery: "otlp" },
 	{ id: "axiom", delivery: "otlp" },
-	{ id: "bigquery", delivery: null },
+	{ id: "bigquery", delivery: "rows" },
 	{ id: "braintrust", delivery: "otlp" },
 	{ id: "clickhouse", delivery: "rows" },
 	{ id: "comet_opik", delivery: "otlp" },

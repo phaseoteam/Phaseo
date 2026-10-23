@@ -4674,6 +4674,7 @@ export type CreateObservabilityDestinationParams = {
     type:
       | "arize"
       | "axiom"
+      | "bigquery"
       | "braintrust"
       | "clickhouse"
       | "comet_opik"
@@ -4754,6 +4755,7 @@ export async function createObservabilityDestination(
     type:
       | "arize"
       | "axiom"
+      | "bigquery"
       | "braintrust"
       | "clickhouse"
       | "comet_opik"
@@ -4831,6 +4833,7 @@ export async function createObservabilityDestination(
       type:
         | "arize"
         | "axiom"
+        | "bigquery"
         | "braintrust"
         | "clickhouse"
         | "comet_opik"
@@ -11200,6 +11203,7 @@ export async function getObservabilityDestination(
     type:
       | "arize"
       | "axiom"
+      | "bigquery"
       | "braintrust"
       | "clickhouse"
       | "comet_opik"
@@ -11279,6 +11283,7 @@ export async function getObservabilityDestination(
       type:
         | "arize"
         | "axiom"
+        | "bigquery"
         | "braintrust"
         | "clickhouse"
         | "comet_opik"
@@ -16752,6 +16757,7 @@ export async function listObservabilityDestinations(
     type:
       | "arize"
       | "axiom"
+      | "bigquery"
       | "braintrust"
       | "clickhouse"
       | "comet_opik"
@@ -16830,6 +16836,7 @@ export async function listObservabilityDestinations(
       type:
         | "arize"
         | "axiom"
+        | "bigquery"
         | "braintrust"
         | "clickhouse"
         | "comet_opik"
@@ -23285,6 +23292,7 @@ export async function updateObservabilityDestination(
     type:
       | "arize"
       | "axiom"
+      | "bigquery"
       | "braintrust"
       | "clickhouse"
       | "comet_opik"
@@ -23364,6 +23372,7 @@ export async function updateObservabilityDestination(
       type:
         | "arize"
         | "axiom"
+        | "bigquery"
         | "braintrust"
         | "clickhouse"
         | "comet_opik"
