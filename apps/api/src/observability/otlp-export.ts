@@ -1,7 +1,7 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
 import { AVAILABLE_BROADCAST_DESTINATION_IDS, applyOtlpTarget, broadcastDelivery, broadcastWebhookSignatureHeaders, gzipBytes, resolveOtlpTarget } from "./broadcast-destinations";
-import { broadcastRows, sendBroadcastRows, type BroadcastRow } from "./broadcast-rows";
+import { broadcastRows, sendBroadcastRows, type BroadcastRow, type BroadcastRowsResult } from "./broadcast-rows";
 import { decodeOtlpTraceResponse, encodeOtlpTraceRequest } from "./otlp-protobuf";
 import { compileSafeRegex, type RegexBudget, type SafeRegex } from "./safe-regex";
 import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
@@ -579,18 +579,6 @@ export async function deliverGatewayWebhookPayload(
 	};
 }
 
-// Error bodies from object stores are short XML or JSON; enough is kept to
-// show the code, such as AccessDenied or NoSuchBucket.
-async function errorSnippet(response: Response): Promise<string> {
-	try {
-		const text = (await response.text()).replace(/\s+/g, " ").trim();
-		const code = /<Code>([^<]{1,100})<\/Code>/.exec(text)?.[1];
-		return code ?? text.slice(0, 300);
-	} catch {
-		return "";
-	}
-}
-
 // Writes rows to an object store or warehouse in one request.
 export async function deliverGatewayRowsPayload(
 	rows: BroadcastRow[],
@@ -598,9 +586,9 @@ export async function deliverGatewayRowsPayload(
 	attempts = 1,
 	destinationType: string,
 ) {
-	let response: Response;
+	let result: BroadcastRowsResult;
 	try {
-		response = await sendBroadcastRows(destinationType, config, rows, async (url, init) => {
+		result = await sendBroadcastRows(destinationType, config, rows, async (url, init) => {
 			// Validated right before each request, to keep the DNS rebinding window small.
 			const validated = await validateWebhookEndpointUrlForDelivery(url.toString());
 			if (validated.ok === false) throw new InvalidRowsDestination(`Invalid destination endpoint: ${validated.reason}`);
@@ -615,17 +603,13 @@ export async function deliverGatewayRowsPayload(
 			? { delivered: false, retryable: false, status: null, delayMs: 0, error: message }
 			: { delivered: false, retryable: true, status: null, delayMs: retryDelayMs(attempts, null), error: message };
 	}
-	if (response.ok) {
-		await response.body?.cancel();
-		return { delivered: true, retryable: false, status: response.status, delayMs: 0, error: null };
-	}
-	const detail = await errorSnippet(response);
+	if (result.ok) return { delivered: true, retryable: false, status: result.status, delayMs: 0, error: null };
 	return {
 		delivered: false,
-		retryable: RETRYABLE_STATUS.has(response.status),
-		status: response.status,
-		delayMs: retryDelayMs(attempts, response.headers.get("retry-after")),
-		error: `Destination returned ${response.status}${detail ? `: ${detail}` : ""}`,
+		retryable: result.retryable ?? RETRYABLE_STATUS.has(result.status),
+		status: result.status,
+		delayMs: retryDelayMs(attempts, result.retryAfter),
+		error: result.error,
 	};
 }
 

@@ -72,7 +72,8 @@ describe("object storage forms", () => {
 			const definition = AVAILABLE_DESTINATIONS.find((destination) => destination.id === id);
 			expect(definition).toBeDefined();
 			for (const key of keys) {
-				expect({ id, key, required: definition!.fields.find((field) => field.key === key)?.required !== false }).toEqual({ id, key, required: true });
+				const field = definition!.fields.find((candidate) => candidate.key === key);
+				expect({ id, key, found: Boolean(field), required: field?.required !== false }).toEqual({ id, key, found: true, required: true });
 			}
 			expect(definition!.fields.find((field) => field.key === "secret_access_key")?.type).toBe("password");
 			expect(definition!.fields.find((field) => field.key === "path_template")?.required).toBe(false);

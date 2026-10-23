@@ -388,15 +388,81 @@ export function broadcastRowsEndpoint(id: string, config: Record<string, unknown
 
 export type BroadcastRowsFetch = (url: URL, init: RequestInit) => Promise<Response>;
 
+// What a write came to. status is the HTTP status of the request that decided
+// it, and error a short reason taken from the destination's response.
+// retryable overrides the status-based retry decision when the destination's
+// error says more, such as a rate limit reported as 403.
+export type BroadcastRowsResult = { ok: boolean; status: number; error: string | null; retryAfter: string | null; retryable?: boolean };
+
+// Error bodies are read up to this many bytes, so a misbehaving endpoint cannot
+// make the Worker buffer an unbounded response.
+const MAX_ERROR_BODY_BYTES = 64 * 1024;
+
+async function boundedText(response: Response): Promise<string> {
+	if (!response.body) return "";
+	const reader = response.body.getReader();
+	const chunks: Uint8Array[] = [];
+	let total = 0;
+	try {
+		while (total < MAX_ERROR_BODY_BYTES) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			const chunk = value.subarray(0, MAX_ERROR_BODY_BYTES - total);
+			chunks.push(chunk);
+			total += chunk.byteLength;
+		}
+	} finally {
+		await reader.cancel().catch(() => undefined);
+	}
+	const bytes = new Uint8Array(total);
+	let offset = 0;
+	for (const chunk of chunks) {
+		bytes.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	return new TextDecoder().decode(bytes);
+}
+
+// The useful part of an error body: an object store's XML error code, the
+// message of a JSON error, an HTML page's title, or the start of the text.
+function errorDetail(text: string): string {
+	const flat = text.replace(/\s+/g, " ").trim();
+	const code = /<Code>([^<]{1,100})<\/Code>/.exec(flat)?.[1];
+	if (code) return code;
+	if (/^<!doctype html|^<html/i.test(flat)) return /<title>([^<]{1,200})<\/title>/i.exec(flat)?.[1].trim() ?? "";
+	try {
+		const json = object(JSON.parse(flat));
+		const message = object(json.error).message ?? json.message ?? json.error_description ?? json.error;
+		if (typeof message === "string" && message.trim()) return message.replace(/\s+/g, " ").trim().slice(0, 300);
+	} catch {}
+	return flat.slice(0, 300);
+}
+
+async function failed(response: Response, text?: string): Promise<BroadcastRowsResult> {
+	const detail = errorDetail(text ?? await boundedText(response));
+	return {
+		ok: false,
+		status: response.status,
+		error: `Destination returned ${response.status}${detail ? `: ${detail}` : ""}`,
+		retryAfter: response.headers.get("retry-after"),
+	};
+}
+
+async function settled(response: Response): Promise<BroadcastRowsResult> {
+	if (!response.ok) return failed(response);
+	await response.body?.cancel().catch(() => undefined);
+	return { ok: true, status: response.status, error: null, retryAfter: null };
+}
+
 // Writes rows to the destination with `send`, which the caller uses to check
-// the URL against private networks. Throws for a config that cannot be sent.
+// each URL against private networks. Throws for a config that cannot be sent.
 export async function sendBroadcastRows(
 	id: string,
 	config: Record<string, unknown>,
 	rows: BroadcastRow[],
 	send: BroadcastRowsFetch,
 	options: { now?: Date; uuid?: string } = {},
-): Promise<Response> {
+): Promise<BroadcastRowsResult> {
 	if (!isBroadcastRowsDestination(id)) throw new Error("Not a row destination");
 	const now = options.now ?? new Date();
 	const store = objectStore(id, config);
@@ -417,5 +483,5 @@ export async function sendBroadcastRows(
 	});
 	// Host is set by fetch from the URL.
 	delete signed.host;
-	return send(url, { method: "PUT", headers: signed, body: body as Uint8Array<ArrayBuffer> });
+	return settled(await send(url, { method: "PUT", headers: signed, body: body as Uint8Array<ArrayBuffer> }));
 }

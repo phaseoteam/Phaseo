@@ -141,13 +141,9 @@ async function sendOtlpSample(id: string, config: Record<string, any>, payload: 
 // Writes a sample trace the way the gateway exporter would for a row destination.
 async function sendRowsSample(id: string, config: Record<string, any>, payload: unknown) {
 	const rows = broadcastRows(payload, `sample:${crypto.randomUUID()}`);
-	const response = await sendBroadcastRows(id, config, rows, (url, init) => fetchBroadcastEndpoint(safeEndpoint(url.toString()), { ...init, signal: AbortSignal.timeout(10_000) }));
-	if (!response.ok) {
-		const text = (await response.text()).replace(/\s+/g, " ").trim();
-		const detail = /<Code>([^<]{1,100})<\/Code>/.exec(text)?.[1] ?? text.slice(0, 200);
-		throw new Error(`Destination returned ${response.status}${detail ? `: ${detail}` : ""}`);
-	}
-	return response.status;
+	const result = await sendBroadcastRows(id, config, rows, (url, init) => fetchBroadcastEndpoint(safeEndpoint(url.toString()), { ...init, signal: AbortSignal.timeout(10_000) }));
+	if (!result.ok) throw new Error(result.error ?? `Destination returned ${result.status}`);
+	return result.status;
 }
 
 async function adminContext(c: any, workspaceId: unknown) { const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: String(workspaceId ?? "") }); return context && ["owner", "admin"].includes(context.role.toLowerCase()) ? context : null; }

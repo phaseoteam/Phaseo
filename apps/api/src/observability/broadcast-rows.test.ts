@@ -206,7 +206,7 @@ describe("sendBroadcastRows", () => {
 			},
 			{ now: new Date("2026-10-23T09:05:00Z"), uuid: "batch-1" },
 		);
-		expect(response.status).toBe(200);
+		expect(response).toEqual({ ok: true, status: 200, error: null, retryAfter: null });
 		expect(requests).toHaveLength(1);
 		const [{ url, init }] = requests;
 		expect(url.toString()).toBe("https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com/traces/phaseo/2026/10/23/09/batch-1.jsonl.gz");
@@ -221,6 +221,26 @@ describe("sendBroadcastRows", () => {
 		expect(lines.map((line) => line.span_id)).toEqual(["b7ad6b7169203331", "00f067aa0ba902b7"]);
 		const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", body as Uint8Array<ArrayBuffer>)), (byte) => byte.toString(16).padStart(2, "0")).join("");
 		expect(headers["x-amz-content-sha256"]).toBe(digest);
+	});
+
+	it("reads at most 64 KB of an error body and shows its code", async () => {
+		const pulled: number[] = [];
+		const body = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				pulled.push(1);
+				controller.enqueue(new TextEncoder().encode(pulled.length === 1 ? "<Error><Code>SlowDown</Code>" : "x".repeat(48 * 1024)));
+			},
+		});
+		const result = await sendBroadcastRows("s3", { bucket: "traces", access_key_id: "AKIA", secret_access_key: "secret" }, [], async () => new Response(body, { status: 503, headers: { "retry-after": "3" } }));
+		expect(result).toEqual({ ok: false, status: 503, error: "Destination returned 503: SlowDown", retryAfter: "3" });
+		// Two chunks reach the cap; the endless body is then cancelled.
+		expect(pulled.length).toBeLessThanOrEqual(4);
+	});
+
+	it("shows the message of a JSON or HTML error", async () => {
+		const send = (response: Response) => sendBroadcastRows("s3", { bucket: "traces", access_key_id: "AKIA", secret_access_key: "secret" }, [], async () => response);
+		expect((await send(Response.json({ message: "Bucket\nnot found" }, { status: 404 }))).error).toBe("Destination returned 404: Bucket not found");
+		expect((await send(new Response("<!DOCTYPE html><html><head><title>Bad Gateway</title></head></html>", { status: 502 }))).error).toBe("Destination returned 502: Bad Gateway");
 	});
 
 	it("sends the session token when one is set", async () => {
