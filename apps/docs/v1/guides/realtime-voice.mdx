@@ -22,7 +22,7 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
   -d '{"model": "openai/gpt-realtime-2", "voice": "marin"}'
 ```
 
-The response includes `client_secret`, `connect.url`, `max_duration_seconds` and `idle_timeout_seconds` (always `null` for API sessions). Open a WebSocket to `connect.url` on `api.phaseo.app` with the WebSocket subprotocol `rtsec.<client_secret>`. The relay sends `relay.connected` once the provider is ready, then accepts microphone audio as `{"type": "client.audio", "audio": "<base64 PCM16>"}`: 24 kHz for OpenAI and xAI, 16 kHz for Google.
+The response includes `client_secret`, `connect.url`, `max_duration_seconds` and `idle_timeout_seconds` (always `null` for API sessions). Open a WebSocket to `connect.url` on `api.phaseo.app` with the WebSocket subprotocol `rtsec.<client_secret>`. The relay sends `relay.connected` once the provider is ready, then accepts microphone audio as `{"type": "client.audio", "audio": "<base64 PCM16>"}`: 24 kHz for OpenAI, xAI and ElevenLabs, 16 kHz for Google.
 
 Phaseo holds $5 of credit when the session starts and extends the hold as the call runs.
 
@@ -69,6 +69,12 @@ Then run the tool, send the result and ask for the follow-up reply. If a call fa
 The relay accepts a `function_call_output` only for a call the backend made, once per call and up to 64 KB, and `response.create` only after at least one output. Anything else gets `{"type": "relay.client_event_rejected", "reason": "..."}` and the call continues. Phaseo never runs function tools itself.
 
 A GPT Live call is billed per second of voice ($0.05 per minute, from GPT Live's own `usage.seconds`) plus the backend model's tokens for every response, including the replies after tool results. GPT Live expires a session that receives no audio for about 30 seconds, which ends the call with `provider_idle_timeout`. Keep streaming microphone audio, silence included.
+
+### ElevenLabs Realtime sessions
+
+ElevenLabs Realtime (`eleven-labs/eleven-realtime-v1-mini`) uses the same create request and relay as OpenAI, with 24 kHz audio. Phaseo connects to ElevenLabs with its own key; your client only ever sees the relay.
+
+ElevenLabs bills a call for every second it's connected, plus the language-model tokens it uses, and it doesn't report usage during the call. The relay meters connected time while the call runs, so holds and the overdraft cap work as for other providers. When the call ends, Phaseo reads ElevenLabs' bill for the conversation and charges the larger of that and its own list-price total. That usually takes a few seconds. If it takes longer, `session.ended` arrives with `billing_status: "pending"` and a `final_bill` request, and the bill is settled within 10 minutes.
 
 ## End a session
 
@@ -192,6 +198,7 @@ API sessions are never ended for being idle, and spend limits only warn. A call 
 | xAI | 120 minutes |
 | Google Live | 60 minutes, across the connections the relay resumes. The call also ends if your client stops sending audio for about 150 seconds. |
 | GPT Live | 25 minutes |
+| ElevenLabs Realtime | 30 minutes |
 | Overdraft cap | $1 beyond your holds and free balance |
 | Lost access | The key is revoked, expired or paused, or the workspace is removed. Detected within about a minute, then the call ends without a grace period. |
 | Policy change | 30 seconds after a `policy_blocked` warning, if the policy still blocks the call |
