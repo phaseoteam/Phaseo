@@ -79,23 +79,48 @@ export function t3CodeHubs(userData = path.join(homedir(), ".t3", "userdata")): 
 
 export class UsageHubs {
 	private hubs: UsageHub[];
+	/** Hubs from T3 Code that were removed here, by address, so they aren't connected again on their own. */
+	private declined: string[];
+	private t3Connected?: Promise<void>;
 	/** Plans rarely change, so each account's profile is read once per launch. */
 	private readonly plans = new Map<string, string | null>();
 	constructor(private readonly file: string, private readonly secrets: HubSecrets, private readonly fetcher: Fetch = fetch, private readonly t3Hubs: () => ReturnType<typeof t3CodeHubs> = () => t3CodeHubs()) {
-		try { const stored = JSON.parse(readFileSync(file, "utf8")) as unknown; this.hubs = Array.isArray(stored) ? stored.filter((hub): hub is UsageHub => typeof hub?.id === "string" && typeof hub?.url === "string" && typeof hub?.label === "string") : []; }
-		catch { this.hubs = []; }
+		// The file was a bare list of hubs before it remembered removed ones.
+		let stored: unknown;
+		try { stored = JSON.parse(readFileSync(file, "utf8")) as unknown; } catch { stored = []; }
+		const hubs = Array.isArray(stored) ? stored : object(stored).hubs, declined = object(stored).declined;
+		this.hubs = Array.isArray(hubs) ? hubs.filter((hub): hub is UsageHub => typeof hub?.id === "string" && typeof hub?.url === "string" && typeof hub?.label === "string") : [];
+		this.declined = Array.isArray(declined) ? declined.filter((url): url is string => typeof url === "string") : [];
 	}
-	private save() { writeFileSync(`${this.file}.tmp`, JSON.stringify(this.hubs, null, 2)); renameSync(`${this.file}.tmp`, this.file); }
+	private save() { writeFileSync(`${this.file}.tmp`, JSON.stringify({ hubs: this.hubs, declined: this.declined }, null, 2)); renameSync(`${this.file}.tmp`, this.file); }
+
+	/**
+	 * T3 Code's hubs are connected on their own, once a launch: they're on this computer under keys T3 Code already
+	 * keeps, and when T3 Code runs Claude Code through one, that hub is the only place its subscriptions' limits are.
+	 * A hub removed here stays removed; one that refuses is left for Settings to offer, with the reason.
+	 */
+	private connectT3() {
+		return this.t3Connected ??= (async () => {
+			for (const hub of this.t3Hubs().filter(hub => !this.hubs.some(existing => existing.url === hub.url) && !this.declined.includes(hub.url))) {
+				try { await this.request({ type: "add", url: hub.url, key: hub.key, label: hub.label }); } catch { /* Offered in Settings instead. */ }
+			}
+		})();
+	}
 
 	async request(request: UsageHubRequest): Promise<UsageHub[] | UsageHubSnapshot | ImportableHub[]> {
-		if (request.type === "list") return this.hubs;
+		if (request.type === "list") { await this.connectT3(); return this.hubs; }
 		const missing = () => this.t3Hubs().filter(hub => !this.hubs.some(existing => existing.url === hub.url));
 		if (request.type === "t3-hubs") return missing().map(({ label, url }) => ({ label, url }));
 		if (request.type === "import-t3") {
 			for (const hub of missing()) await this.request({ type: "add", url: hub.url, key: hub.key, label: hub.label });
 			return this.hubs;
 		}
-		if (request.type === "remove") { this.secrets.remove(request.id); this.hubs = this.hubs.filter(hub => hub.id !== request.id); this.save(); return this.hubs; }
+		if (request.type === "remove") {
+			const removed = this.hubs.find(hub => hub.id === request.id);
+			this.secrets.remove(request.id); this.hubs = this.hubs.filter(hub => hub.id !== request.id);
+			if (removed && !this.declined.includes(removed.url)) this.declined = [...this.declined, removed.url];
+			this.save(); return this.hubs;
+		}
 		if (request.type === "check") {
 			const hub = this.hubs.find(value => value.id === request.id);
 			if (!hub) throw new Error("This hub is no longer set up.");
@@ -108,7 +133,7 @@ export class UsageHubs {
 		// Listing accounts once proves the address and key before anything is saved.
 		await this.accounts(hub, request.key);
 		await this.secrets.set(hub.id, request.key);
-		this.hubs = [...this.hubs, hub]; this.save();
+		this.hubs = [...this.hubs, hub]; this.declined = this.declined.filter(value => value !== hub.url); this.save();
 		return this.hubs;
 	}
 

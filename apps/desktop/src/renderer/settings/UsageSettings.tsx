@@ -31,9 +31,11 @@ export function UsageLimitsPanel() {
 	const { statuses, hubs, snapshots } = limits;
 	const { openSettings } = useWorkspace();
 	const pools = usagePools(usageAccounts(locals, limits));
-	// Limits nobody could read, said once at the top rather than repeated per account.
+	// Limits nobody could read, said once at the top rather than repeated per account. A login whose plan has no limits
+	// (Claude Code signed in with a key while a hub holds the subscriptions) isn't a failure once something else covers
+	// that provider.
 	const unread: string[] = [
-		...locals.flatMap((local): string[] => { const status = statuses[local.key]; if (!status || status === "checking") return []; return "error" in status ? [`${local.title}: ${status.error}`] : status.usageError && status.authenticated ? [`${local.title}: ${status.usageError}`] : []; }),
+		...locals.flatMap((local): string[] => { const status = statuses[local.key]; if (!status || status === "checking") return []; return "error" in status ? [`${local.title}: ${status.error}`] : status.usageError && status.authenticated && !(status.noPlanLimits && pools.some(pool => pool.provider === local.harness)) ? [`${local.title}: ${status.usageError}`] : []; }),
 		...hubs.flatMap(hub => { const snapshot = snapshots[hub.id]; return snapshot && snapshot !== "checking" ? [...snapshot.error ? [`${hub.label}: ${snapshot.error}`] : [], ...snapshot.accounts.filter(account => account.status.usageError).length ? [`${hub.label}: ${snapshot.accounts.filter(account => account.status.usageError).length} account(s) couldn't be read`] : []] : []; }),
 	];
 	return <div className="flex flex-col gap-6">

@@ -41,10 +41,10 @@ async function claudeDiscovery<T>(cwd: string, signal: AbortSignal, account: Acc
  } finally { signal.removeEventListener("abort", abort); controller.abort(); execution?.close(); release(); }
 }
 /** Plan limits from Claude Code's own /usage data. */
-export async function claudeUsage(cwd: string, signal: AbortSignal, account?: Account): Promise<Pick<AccountStatus, "usage" | "usageError" | "extraUsage" | "plan">> {
+export async function claudeUsage(cwd: string, signal: AbortSignal, account?: Account): Promise<Pick<AccountStatus, "usage" | "usageError" | "noPlanLimits" | "extraUsage" | "plan">> {
 	const result = await claudeDiscovery(cwd, signal, account, execution => execution.usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET({ skipBehaviors: true }));
 	const plan = result.subscription_type ? { plan: result.subscription_type } : {};
-	if (!result.rate_limits_available || !result.rate_limits) return { usageError: "Claude Code can't read plan limits for this login. API keys, cloud providers and long-lived tokens (claude setup-token) don't include them; a normal /login sign-in does.", ...plan };
+	if (!result.rate_limits_available || !result.rate_limits) return { noPlanLimits: true, usageError: "Claude Code can't read plan limits for this login. API keys, cloud providers and long-lived tokens (claude setup-token) don't include them; a normal /login sign-in does.", ...plan };
 	return { ...claudeLimits(result.rate_limits), ...plan };
 }
 

@@ -58,7 +58,7 @@ export function Accounts() {
 		catch (reason) { setError(String(reason)); return false; }
 	}
 	const visible = workspace.accounts.filter(account => Boolean(account.archived) === showArchived);
-	const state = (account: (typeof visible)[number]) => account.oauthExpiresAt ? Date.parse(account.oauthExpiresAt) <= Date.now() ? "Sign-in expired" : "Signed in" : account.kind === "api" ? account.harness === "cursor" ? "Cursor API key" : account.endpoint : account.configured ? "Signed in" : "Sign-in required";
+	const state = (account: (typeof visible)[number]) => account.oauthExpiresAt ? Date.parse(account.oauthExpiresAt) <= Date.now() ? "Sign-in expired" : account.profile?.email ? `Signed in as ${account.profile.email}` : "Signed in" : account.kind === "api" ? account.harness === "cursor" ? "Cursor API key" : account.endpoint : account.configured ? "Signed in" : "Sign-in required";
 	return <SettingsPageLayout title="Accounts" description="Subscriptions and API keys your chats run on." className="accounts-page">
 		{error && <p className="text-[13px] text-destructive" role="alert">{error}</p>}
 		<SettingsSection title="Logins on this computer" description="Codex and Claude Code use the login you already have in their own apps.">

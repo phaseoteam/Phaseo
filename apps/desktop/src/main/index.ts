@@ -2,7 +2,7 @@ import { imageMime } from "./attachments";
 import { linkTitle } from "./linkTitle";
 import { KeybindingsFile } from "./keybindingsFile";
 import { browserShortcuts } from "../shared/keybindings";
-import { signInPhaseo, PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth";
+import { phaseoProfile, signInPhaseo, PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth";
 import { PhaseoSkills } from "./phaseoSkills";
 import { GlobalInstructions } from "./globalInstructions";
 import { codexNativeActions } from "./codexNativeActions";
@@ -189,10 +189,28 @@ ipcMain.handle("workspace:phaseo-sign-in", async (event, accountId: unknown) => 
 		} catch (error) { credentialVault.remove(newSecret); throw error; }
 		if (existing) credentialVault.remove(existing.secretId ?? existing.id);
 		const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state);
+		void refreshPhaseoProfiles(accountIdToSave);
 		return { workspace: state, accountId: accountIdToSave };
 	} catch (error) { if (controller.signal.aborted) throw new Error("Sign-in canceled.", { cause: error }); throw error; }
 	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); releaseAccount(); }
 });
+/**
+ * Reads who each Phaseo sign-in belongs to, for the sidebar's profile: a new sign-in at once, the rest at most daily.
+ * A failure keeps the last profile (or the initials).
+ */
+async function refreshPhaseoProfiles(signedIn?: string) {
+	for (const account of workspaceRuntime.store.getAccounts()) {
+		if (account.harness !== "phaseo" || !account.oauthExpiresAt || account.archived || Date.parse(account.oauthExpiresAt) <= Date.now()) continue;
+		if (signedIn ? account.id !== signedIn : account.profile && Date.now() - Date.parse(account.profile.checkedAt) < 86_400_000) continue;
+		try {
+			const profile = await phaseoProfile(await credentialVault.get(account.secretId ?? account.id));
+			const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id);
+			if (!current || shutdownStarted) continue;
+			workspaceRuntime.store.saveAccount({ ...current, profile });
+			workspaceRuntime.onChange(workspaceRuntime.store.getOverview());
+		} catch { /* Kept as it was. */ }
+	}
+}
 ipcMain.handle("workspace:phaseo-cancel-sign-in", event => { if (!senderWindow(event)) throw new Error("Invalid sign-in request."); phaseoSignIns.get(event.sender.id)?.abort(); });
 /**
  * Catalogue prices by model, for the Usage page's estimates of what Claude Code and Codex used. They come from the first
@@ -929,6 +947,7 @@ app.whenReady().then(() => {
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);
 	createWindow();
 	missionService.start();
+	void refreshPhaseoProfiles();
 	workspaceRuntime.settleIdleThreads();
 	settleTimer = setInterval(() => workspaceRuntime.settleIdleThreads(), 60_000); settleTimer.unref();
 	workspaceRuntime.onPullRequestNotice = (taskId, summary, outcome) => { const title = workspaceRuntime.store.getOverview().tasks.find(task => task.id === taskId)?.title ?? "Chat"; taskNotifications.notice(taskId, title, summary, outcome !== "completed"); };

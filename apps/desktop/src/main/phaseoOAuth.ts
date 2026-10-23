@@ -1,4 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import type { Account } from "../shared/workspace";
 import { createServer } from "node:http";
 
 export const PHASEO_DESKTOP_CLIENT_ID = "phaseo_desktop";
@@ -81,4 +82,20 @@ export async function signInPhaseo({ openBrowser, signal, fetcher = fetch, timeo
 	} finally {
 		clearTimeout(timer); signal.removeEventListener("abort", cancel); controller.abort(); server.close(); server.closeAllConnections();
 	}
+}
+
+/**
+ * Who a Phaseo sign-in belongs to, for the sidebar's profile: OpenID userinfo for the token's account. A picture is
+ * kept only as an https address, loaded by the window (which shows initials when it can't).
+ */
+export async function phaseoProfile(key: string, fetcher: typeof fetch = fetch, signal: AbortSignal = AbortSignal.timeout(15_000)): Promise<NonNullable<Account["profile"]>> {
+	const response = await fetcher(`${apiRoot}/oauth/userinfo`, { headers: { Authorization: `Bearer ${key}` }, redirect: "error", signal });
+	if (!response.ok) throw new Error(`Phaseo couldn't read this account's profile (HTTP ${response.status}).`);
+	const body = await response.json() as Record<string, unknown>;
+	const text = (value: unknown, max = 200) => typeof value === "string" && value.trim() ? value.trim().slice(0, max) : undefined;
+	const picture = text(body.picture, 2048);
+	let https: string | undefined;
+	try { https = picture && new URL(picture).protocol === "https:" ? picture : undefined; } catch { https = undefined; }
+	const name = text(body.name), email = text(body.email);
+	return { checkedAt: new Date().toISOString(), ...name ? { name } : {}, ...email ? { email } : {}, ...https ? { picture: https } : {} };
 }

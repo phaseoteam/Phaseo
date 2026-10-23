@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { PHASEO_GATEWAY_ENDPOINT, signInPhaseo } from "./phaseoOAuth";
+import { PHASEO_GATEWAY_ENDPOINT, phaseoProfile, signInPhaseo } from "./phaseoOAuth";
 
 const tokens = { access_token: "owned-fixture-key", token_type: "Bearer", expires_in: 3600, scope: "gateway:access models:read", resource: PHASEO_GATEWAY_ENDPOINT };
 function callback(authorize: URL, state = authorize.searchParams.get("state")!) {
@@ -46,5 +46,17 @@ describe("Phaseo desktop OAuth", () => {
 	it("handles browser failures and timeout without leaving a listener", async () => {
 		await expect(signInPhaseo({ signal: new AbortController().signal, openBrowser: async () => { throw new Error("Browser unavailable"); } })).rejects.toThrow("Browser unavailable");
 		await expect(signInPhaseo({ signal: new AbortController().signal, timeoutMs: 25, openBrowser: async () => {} })).rejects.toThrow("timed out");
+	});
+});
+
+describe("Phaseo profile", () => {
+	it("reads the name, email and an https picture from userinfo with the account's token", async () => {
+		const fetcher = vi.fn(async () => Response.json({ sub: "user", name: "  Ada Lovelace ", email: "ada@example.invalid", picture: "https://lh3.googleusercontent.com/a/photo=s96-c" }));
+		expect(await phaseoProfile("token", fetcher as unknown as typeof fetch)).toMatchObject({ name: "Ada Lovelace", email: "ada@example.invalid", picture: "https://lh3.googleusercontent.com/a/photo=s96-c" });
+		expect(fetcher).toHaveBeenCalledWith("https://api.phaseo.app/oauth/userinfo", expect.objectContaining({ headers: { Authorization: "Bearer token" } }));
+		// Anything but an https picture is dropped, and a missing name stays missing.
+		const plain = await phaseoProfile("token", (async () => Response.json({ email: "ada@example.invalid", picture: "http://example.invalid/a.png" })) as unknown as typeof fetch);
+		expect(plain).not.toHaveProperty("picture"); expect(plain).not.toHaveProperty("name");
+		await expect(phaseoProfile("token", (async () => new Response("{}", { status: 401 })) as unknown as typeof fetch)).rejects.toThrow("HTTP 401");
 	});
 });

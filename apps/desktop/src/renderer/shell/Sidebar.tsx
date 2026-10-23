@@ -155,7 +155,13 @@ function FooterButton({ name, tip, active, onClick, children }: { name: string; 
 		className={cn("relative grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground outline-none hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 [&_svg]:size-4", active && "bg-sidebar-accent text-foreground")}>{children}</button></Tip>;
 }
 
-const Avatar = ({ name, className }: { name: string; className?: string }) => <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-md bg-linear-to-br from-[#0078b8] to-[#7c3aed] font-bold text-white", className)}>{name.slice(0, 2).toUpperCase()}</span>;
+/** The profile picture when there is one and it loads, otherwise initials. */
+function Avatar({ name, picture, className }: { name: string; picture?: string; className?: string }) {
+	const [failed, setFailed] = useState<string>();
+	if (picture && failed !== picture) return <img aria-hidden alt="" src={picture} referrerPolicy="no-referrer" onError={() => setFailed(picture)} className={cn("shrink-0 rounded-md object-cover", className)} />;
+	const initials = name.split(/[s._@-]+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("") || name.slice(0, 2);
+	return <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-md bg-linear-to-br from-[#0078b8] to-[#7c3aed] font-bold text-white", className)}>{initials.toUpperCase()}</span>;
+}
 
 /**
  * The sidebar's footer: the limit rings, then the profile as an avatar (its menu has the account and settings) and the
@@ -166,16 +172,18 @@ function AccountFooter() {
 	const { tasks } = useScheduledTasks();
 	const on = tasks.filter(task => task.enabled).length;
 	const account = usablePhaseoAccounts(overview)[0];
+	// Who signed in, from their Phaseo profile; the account's own name until it has been read.
+	const name = account?.profile?.name ?? account?.profile?.email?.split("@")[0] ?? account?.name ?? "", picture = account?.profile?.picture;
 	return <div className="sidebar-footer border-t border-sidebar-border"><UsageRings /><div className="flex items-center gap-1 p-2.5">
 		{account
 			? <DropdownMenu>
-				<DropdownMenuTrigger render={<button type="button" aria-label={`Profile: ${account.name}, signed in to Phaseo`} className="grid size-7 shrink-0 place-items-center rounded-md outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:bg-sidebar-accent" />}>
-					<Avatar name={account.name} className="size-6 text-[10px]" />
+				<DropdownMenuTrigger render={<button type="button" aria-label={`Profile: ${name}, signed in to Phaseo`} className="grid size-7 shrink-0 place-items-center rounded-md outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:bg-sidebar-accent" />}>
+					<Avatar name={name} picture={picture} className="size-6 text-[10px]" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent side="top" align="start" className="w-56">
 					<div className="flex items-center gap-2.5 px-2 py-1.5">
-						<Avatar name={account.name} className="size-7 text-[11px]" />
-						<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{account.name}</span><span className="block truncate text-[11px] text-muted-foreground">Signed in to Phaseo</span></span>
+						<Avatar name={name} picture={picture} className="size-7 text-[11px]" />
+						<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{name}</span><span className="block truncate text-[11px] text-muted-foreground">{account.profile?.email ?? "Signed in to Phaseo"}</span></span>
 					</div>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={() => openSettings("accounts")}><UserRound />Accounts</DropdownMenuItem>

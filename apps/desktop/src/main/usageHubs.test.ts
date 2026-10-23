@@ -24,6 +24,8 @@ function store() {
 	const secrets = new Map<string, string>();
 	return { secrets, vault: { set: async (id: string, value: string) => { secrets.set(id, value); }, get: async (id: string) => secrets.get(id) ?? "", remove: (id: string) => { secrets.delete(id); } } };
 }
+/** No T3 Code hubs, so tests never read this computer's. */
+const none = () => [];
 async function withDirectory(test: (directory: string) => Promise<void>) { const directory = mkdtempSync(path.join(tmpdir(), "phaseo-hubs-")); try { await test(directory); } finally { rmSync(directory, { recursive: true, force: true }); } }
 
 describe("usage hub responses", () => {
@@ -56,13 +58,13 @@ describe("usage hub responses", () => {
 describe("UsageHubs", () => {
 	it("checks the key before saving a hub, and keeps the key out of the hub list", async () => withDirectory(async directory => {
 		const { secrets, vault } = store(), { fetcher } = hubFixture();
-		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher);
+		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher, none);
 		await expect(hubs.request({ type: "add", url: "127.0.0.1:8317", key: "wrong" })).rejects.toThrow("rejected the management key");
 		expect(await hubs.request({ type: "list" })).toEqual([]);
 		const [hub] = await hubs.request({ type: "add", url: "http://127.0.0.1:8317/some/path", key: "secret", label: "Home hub" }) as UsageHub[];
 		expect(hub).toMatchObject({ label: "Home hub", url: "http://127.0.0.1:8317" });
 		expect(secrets.get(hub.id)).toBe("secret");
-		expect(JSON.stringify(await new UsageHubs(usageHubFile(directory), vault, fetcher).request({ type: "list" }))).not.toContain("secret");
+		expect(JSON.stringify(await new UsageHubs(usageHubFile(directory), vault, fetcher, none).request({ type: "list" }))).not.toContain("secret");
 		await expect(hubs.request({ type: "add", url: "ftp://hub", key: "secret" })).rejects.toThrow("http or https");
 		await hubs.request({ type: "remove", id: hub.id });
 		expect(secrets.has(hub.id)).toBe(false);
@@ -77,7 +79,7 @@ describe("UsageHubs", () => {
 		];
 		const { vault } = store();
 		const { fetcher, calls } = hubFixture({ files, upstream: (url, authIndex) => authIndex === "3" ? { status_code: 401, body: "{}" } : url.includes("chatgpt") ? { status_code: 200, body: JSON.stringify({ rate_limit: { primary_window: { used_percent: 40, limit_window_seconds: 18_000 } } }) } : url.endsWith("/profile") ? { status_code: 200, body: JSON.stringify({ organization: { organization_type: "claude_max", rate_limit_tier: "default_claude_max_5x" } }) } : { status_code: 200, body: JSON.stringify({ five_hour: { utilization: 20, resets_at: null } }) } });
-		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher);
+		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher, none);
 		const [hub] = await hubs.request({ type: "add", url: "http://hub.local:8317", key: "secret" }) as UsageHub[];
 		const snapshot = await hubs.request({ type: "check", id: hub.id }) as UsageHubSnapshot;
 		expect(snapshot.skipped).toBe(1);
@@ -91,8 +93,8 @@ describe("UsageHubs", () => {
 	}));
 	it("reports a hub it can't reach without failing the check", async () => withDirectory(async directory => {
 		const { vault } = store(), reachable = hubFixture();
-		const [hub] = await new UsageHubs(usageHubFile(directory), vault, reachable.fetcher).request({ type: "add", url: "http://hub.local:8317", key: "secret" }) as UsageHub[];
-		const snapshot = await new UsageHubs(usageHubFile(directory), vault, hubFixture({ down: true }).fetcher).request({ type: "check", id: hub.id }) as UsageHubSnapshot;
+		const [hub] = await new UsageHubs(usageHubFile(directory), vault, reachable.fetcher, none).request({ type: "add", url: "http://hub.local:8317", key: "secret" }) as UsageHub[];
+		const snapshot = await new UsageHubs(usageHubFile(directory), vault, hubFixture({ down: true }).fetcher, none).request({ type: "check", id: hub.id }) as UsageHubSnapshot;
 		expect(snapshot).toMatchObject({ accounts: [], error: "Couldn't reach the hub at http://hub.local:8317." });
 	}));
 });
@@ -116,5 +118,20 @@ describe("T3 Code hubs", () => {
 		const [hub] = await hubs.request({ type: "import-t3" }) as UsageHub[];
 		expect(hub).toMatchObject({ label: "Claude", url: "http://127.0.0.1:8317" }); expect(secrets.get(hub.id)).toBe("secret");
 		expect(await hubs.request({ type: "t3-hubs" })).toEqual([]);
+	}));
+	it("connects T3 Code's hubs on its own once, but not one removed here or one that refuses its key", async () => withDirectory(async directory => {
+		const { vault, secrets } = store(), { fetcher, calls } = hubFixture();
+		const t3 = vi.fn(() => [{ label: "Claude", url: "http://127.0.0.1:8317", key: "secret" }, { label: "Old", url: "http://10.0.0.9:8317", key: "wrong" }]);
+		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher, t3);
+		const [listed] = await Promise.all([hubs.request({ type: "list" }), hubs.request({ type: "list" })]);
+		expect((listed as UsageHub[]).map(hub => hub.url)).toEqual(["http://127.0.0.1:8317"]);
+		expect(secrets.size).toBe(1);
+		await hubs.request({ type: "list" });
+		expect(t3).toHaveBeenCalledTimes(1);
+		expect(calls.filter(call => call.authorization === "Bearer wrong")).toHaveLength(1);
+		await hubs.request({ type: "remove", id: (listed as UsageHub[])[0].id });
+		expect(await new UsageHubs(usageHubFile(directory), vault, fetcher, t3).request({ type: "list" })).toEqual([]);
+		// Importing on purpose brings it back.
+		expect((await new UsageHubs(usageHubFile(directory), vault, fetcher, () => t3().slice(0, 1)).request({ type: "import-t3" }) as UsageHub[]).map(hub => hub.url)).toEqual(["http://127.0.0.1:8317"]);
 	}));
 });
