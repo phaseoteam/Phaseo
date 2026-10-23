@@ -75,14 +75,14 @@ const DESTINATION_DEFINITIONS: DestinationDefinition[] = [
 	{
 		id: "clickhouse",
 		label: "ClickHouse",
-		description: "Insert traces directly into ClickHouse.",
+		description: "Insert traces into a ClickHouse table, one row per span.",
 		logoId: "observability-clickhouse",
 		fields: [
-			{ key: "endpoint", label: "HTTP Endpoint", placeholder: "https://host:8443" },
-			{ key: "username", label: "Username", placeholder: "default" },
+			{ key: "endpoint", label: "HTTPS Endpoint", placeholder: "https://abc123.us-east-1.aws.clickhouse.cloud:8443" },
+			{ key: "username", label: "Username (Optional)", placeholder: "default", required: false },
 			{ key: "password", label: "Password", placeholder: "********", type: "password" },
-			{ key: "database", label: "Database", placeholder: "gateway" },
-			{ key: "table", label: "Table", placeholder: "traces" },
+			{ key: "database", label: "Database (Optional)", placeholder: "default", required: false },
+			{ key: "table", label: "Table", placeholder: "phaseo_traces" },
 		],
 	},
 	{

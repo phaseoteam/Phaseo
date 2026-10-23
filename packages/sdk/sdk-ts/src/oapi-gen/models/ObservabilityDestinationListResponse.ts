@@ -50,6 +50,7 @@ export interface ObservabilityDestinationListResponse {
       | "arize"
       | "axiom"
       | "braintrust"
+      | "clickhouse"
       | "comet_opik"
       | "datadog"
       | "dynatrace"

@@ -20,7 +20,7 @@ export const BROADCAST_DESTINATION_TYPES = [
 	{ id: "axiom", delivery: "otlp" },
 	{ id: "bigquery", delivery: null },
 	{ id: "braintrust", delivery: "otlp" },
-	{ id: "clickhouse", delivery: null },
+	{ id: "clickhouse", delivery: "rows" },
 	{ id: "comet_opik", delivery: "otlp" },
 	{ id: "datadog", delivery: "otlp" },
 	{ id: "dynatrace", delivery: "otlp" },

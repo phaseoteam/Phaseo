@@ -40,6 +40,16 @@ describe("broadcast row destinations", () => {
 		expect(await response.json()).toEqual({ error: "Destination returned 404: NoSuchBucket" });
 	});
 
+	it("inserts a sample row when testing ClickHouse, and shows its error", async () => {
+		const fetchMock = vi.fn(async () => new Response("Code: 60. DB::Exception: Table observability.traces does not exist. (UNKNOWN_TABLE)", { status: 404 }));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await testConfig("clickhouse", { endpoint: "https://ch.example.com:8443", password: "p", database: "observability", table: "traces" });
+		expect(await response.json()).toEqual({ error: "Destination returned 404: Code: 60. DB::Exception: Table observability.traces does not exist. (UNKNOWN_TABLE)" });
+		const [url, init] = fetchMock.mock.calls[0] as unknown as [URL, RequestInit];
+		expect(url.searchParams.get("query")).toBe("INSERT INTO `observability`.`traces` FORMAT JSONEachRow");
+		expect(init.method).toBe("POST");
+	});
+
 	it("rejects a config before sending anything", async () => {
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);

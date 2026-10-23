@@ -2154,7 +2154,7 @@ class ObservabilityDestination(TypedDict):
 	privacy_mode: bool
 	rule_groups: List[ObservabilityRuleGroup]
 	sampling_rate: float
-	type: Literal["arize", "axiom", "braintrust", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "r2", "respan", "s3", "sentry", "wandb_weave", "webhook"]
+	type: Literal["arize", "axiom", "braintrust", "clickhouse", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "r2", "respan", "s3", "sentry", "wandb_weave", "webhook"]
 	updated_at: NotRequired[Optional[str]]
 	workspace_id: str
 
@@ -2171,7 +2171,7 @@ class ObservabilityDestinationCreateRequest(TypedDict):
 	privacy_mode: NotRequired[bool]
 	rule_groups: NotRequired[List[ObservabilityRuleGroup]]
 	sampling_rate: NotRequired[float]
-	type: Literal["arize", "axiom", "braintrust", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "r2", "respan", "s3", "sentry", "wandb_weave", "webhook"]
+	type: Literal["arize", "axiom", "braintrust", "clickhouse", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "r2", "respan", "s3", "sentry", "wandb_weave", "webhook"]
 
 class ObservabilityDestinationListResponse(TypedDict):
 	data: List[ObservabilityDestination]
@@ -2193,7 +2193,7 @@ class ObservabilityDestinationPolicyInput(TypedDict):
 class ObservabilityDestinationResponse(TypedDict):
 	data: ObservabilityDestination
 
-ObservabilityDestinationType = Literal["arize", "axiom", "braintrust", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "r2", "respan", "s3", "sentry", "wandb_weave", "webhook"]
+ObservabilityDestinationType = Literal["arize", "axiom", "braintrust", "clickhouse", "comet_opik", "datadog", "dynatrace", "elastic", "gcs", "grafana_cloud", "honeycomb", "langfuse", "langsmith", "new_relic", "otel_collector", "posthog", "r2", "respan", "s3", "sentry", "wandb_weave", "webhook"]
 
 class ObservabilityDestinationUpdateRequest(TypedDict):
 	config: NotRequired[Dict[str, Any]]

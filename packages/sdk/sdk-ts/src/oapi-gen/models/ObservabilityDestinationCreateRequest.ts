@@ -49,6 +49,7 @@ export interface ObservabilityDestinationCreateRequest {
     | "arize"
     | "axiom"
     | "braintrust"
+    | "clickhouse"
     | "comet_opik"
     | "datadog"
     | "dynatrace"
