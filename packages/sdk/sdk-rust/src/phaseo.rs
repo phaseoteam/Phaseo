@@ -178,6 +178,11 @@ impl Phaseo {
         Ok(self)
     }
 
+    /// The API base URL, for example `https://api.phaseo.app/v1`.
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
     pub fn with_header(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
         self.headers.insert(name.into(), value.into());
         self

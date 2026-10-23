@@ -6,6 +6,7 @@ require "cgi"
 require "uri"
 require_relative "phaseo_sdk/model_ids"
 require_relative "phaseo_sdk/workflows"
+require_relative "phaseo_sdk/realtime"
 require_relative "gen/client"
 require_relative "gen/models"
 require_relative "gen/operations"
@@ -48,7 +49,7 @@ module PhaseoSdk
       end-of-life
     ].freeze
 
-    attr_reader :raw_client, :async_jobs
+    attr_reader :raw_client, :async_jobs, :realtime
 
     def initialize(
       api_key: nil,
@@ -81,6 +82,7 @@ module PhaseoSdk
       @model_lifecycle_cache = {}
       @telemetry_recorder = TelemetryRecorder.new(devtools, "3.0.0")
       @async_jobs = AsyncJobsResource.new(self)
+      @realtime = Realtime.new(self, @base_path)
     end
 
     def set_timeout(seconds)

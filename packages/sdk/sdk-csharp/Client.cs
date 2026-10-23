@@ -52,6 +52,8 @@ namespace PhaseoSdk
         private readonly HashSet<string> _warnedModels = new(StringComparer.Ordinal);
         private readonly Dictionary<string, ModelLifecycleInfo?> _lifecycleCache = new(StringComparer.Ordinal);
         public AsyncJobsResource AsyncJobs { get; }
+        /// <summary>Realtime voice sessions (beta).</summary>
+        public RealtimeResource Realtime { get; }
         private static readonly HashSet<string> ActiveModelSourceStatuses = new(StringComparer.Ordinal)
         {
             "active",
@@ -110,6 +112,7 @@ namespace PhaseoSdk
             _telemetry = new TelemetryRecorder(devtools, "3.0.0");
             _lifecycleResolver = lifecycleResolver ?? FetchModelLifecycleAsync;
             AsyncJobs = new AsyncJobsResource(this);
+            Realtime = new RealtimeResource(_client, _basePath);
         }
 
 		public Phaseo SetTimeout(TimeSpan timeout)
