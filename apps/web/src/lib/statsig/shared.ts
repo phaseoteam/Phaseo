@@ -30,6 +30,8 @@ export const AUTO_ROUTING_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_AUTO_ROUTING_GATE ?? "gateway_auto_routing";
 export const REQUEST_CLASSIFIERS_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_REQUEST_CLASSIFIERS_GATE ?? "gateway_request_classifiers";
+export const MODEL_SUCCESSOR_REDIRECT_GATE =
+	process.env.NEXT_PUBLIC_STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE ?? "gateway_model_successor_redirect";
 export const SLACK_AGENT_GATE =
 	process.env.NEXT_PUBLIC_STATSIG_SLACK_AGENT_GATE ?? "slack_agent";
 export const PRESET_EXPERIMENTS_GATE =

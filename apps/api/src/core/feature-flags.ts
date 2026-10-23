@@ -13,6 +13,7 @@ const DEFAULT_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging";
 const DEFAULT_DATA_CONTRIBUTION_GATE = "gateway_data_contribution";
 const DEFAULT_AUTO_ROUTING_GATE = "gateway_auto_routing";
 const DEFAULT_REQUEST_CLASSIFIERS_GATE = "gateway_request_classifiers";
+const DEFAULT_MODEL_SUCCESSOR_REDIRECT_GATE = "gateway_model_successor_redirect";
 const WORKSPACE_OWNER_CACHE_TTL_MS = 5 * 60 * 1000;
 
 type StatsigGateSubject = {
@@ -99,6 +100,10 @@ export function getAutoRoutingFeatureGateName(bindings: Partial<GatewayBindings>
 
 export function getRequestClassifiersFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
 	return normalizeText(bindings.STATSIG_REQUEST_CLASSIFIERS_GATE) ?? DEFAULT_REQUEST_CLASSIFIERS_GATE;
+}
+
+export function getModelSuccessorRedirectFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
+	return normalizeText(bindings.STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE) ?? DEFAULT_MODEL_SUCCESSOR_REDIRECT_GATE;
 }
 
 async function resolveWorkspaceOwnerUserId(workspaceId: string): Promise<string | null> {
@@ -319,5 +324,16 @@ export async function isRequestClassifiersAccessEnabled(
 	return isStatsigGateEnabled(getRequestClassifiersFeatureGateName(bindings), {
 		...subject,
 		surface: "gateway_request_classifiers",
+	}, bindings);
+}
+
+/** Decided for the workspace owner, so a workspace is either in or out of the redirect rollout. */
+export async function isModelSuccessorRedirectAccessEnabled(
+	subject: Omit<StatsigGateSubject, "surface">,
+	bindings: Partial<GatewayBindings> = getBindings(),
+): Promise<boolean> {
+	return isStatsigGateEnabled(getModelSuccessorRedirectFeatureGateName(bindings), {
+		...subject,
+		surface: "gateway_model_successor_redirect",
 	}, bindings);
 }

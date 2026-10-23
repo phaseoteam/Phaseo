@@ -6,6 +6,7 @@ import {
 	getDataContributionFeatureGateName,
 	getAutoRoutingFeatureGateName,
 	getRequestClassifiersFeatureGateName,
+	getModelSuccessorRedirectFeatureGateName,
 	getVideoApiFeatureGateName,
 	getRealtimeVoiceFeatureGateName,
 	isBatchApiAccessEnabled,
@@ -14,6 +15,7 @@ import {
 	isDataContributionAccessEnabled,
 	isRealtimeVoiceAccessEnabled,
 	isAutoRoutingAccessEnabled,
+	isModelSuccessorRedirectAccessEnabled,
 	__resetFeatureGateCacheForTests,
 } from "./feature-flags";
 import type { AuthSuccess } from "@pipeline/before/auth";
@@ -62,6 +64,23 @@ describe("batch API feature gate", () => {
 		expect(getAutoRoutingFeatureGateName({})).toBe("gateway_auto_routing");
 		expect(getRequestClassifiersFeatureGateName({ STATSIG_REQUEST_CLASSIFIERS_GATE: "custom_classifier_gate" })).toBe("custom_classifier_gate");
 		expect(getRequestClassifiersFeatureGateName({})).toBe("gateway_request_classifiers");
+		expect(getModelSuccessorRedirectFeatureGateName({ STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE: "custom_successor_gate" })).toBe("custom_successor_gate");
+		expect(getModelSuccessorRedirectFeatureGateName({})).toBe("gateway_model_successor_redirect");
+	});
+
+	it("checks the model successor redirect against its own gate for the given owner", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+			const body = JSON.parse(String(init?.body));
+			expect(body).toMatchObject({
+				gateName: "gateway_model_successor_redirect",
+				user: { userID: "user_owner", custom: { workspace_id: "ws_batch_admin", surface: "gateway_model_successor_redirect" } },
+			});
+			return new Response(JSON.stringify({ value: false }));
+		}));
+		await expect(isModelSuccessorRedirectAccessEnabled(
+			{ workspaceId: "ws_batch_admin", userId: "user_owner" },
+			{ STATSIG_SERVER_KEY: "secret-statsig-key" },
+		)).resolves.toBe(false);
 	});
 
 	it("checks Auto Routing against its independent workspace gate", async () => {

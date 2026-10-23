@@ -11,6 +11,7 @@ import {
 	GATEWAY_IO_LOGGING_GATE,
 	AUTO_ROUTING_GATE,
 	REQUEST_CLASSIFIERS_GATE,
+	MODEL_SUCCESSOR_REDIRECT_GATE,
 	SLACK_AGENT_GATE,
 	PRESET_EXPERIMENTS_GATE,
 	SAML_SSO_GATE,
@@ -21,7 +22,7 @@ import {
 	type GatewayHeroVariant,
 } from "@/lib/statsig/shared";
 
-import { identify } from "./identify";
+import { identify, identifyWorkspaceOwner } from "./identify";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 
 const statsigAdapter = getStatsigFlagsAdapter();
@@ -103,6 +104,19 @@ export const requestClassifiersFlag = statsigAdapter
 		})
 	: flag<boolean>({
 			key: REQUEST_CLASSIFIERS_GATE,
+			decide: () => false,
+		});
+
+// Decided for the workspace owner, as the gateway does, so the settings
+// control only shows where the redirect can actually happen.
+export const modelSuccessorRedirectFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: MODEL_SUCCESSOR_REDIRECT_GATE,
+			identify: identifyWorkspaceOwner,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: MODEL_SUCCESSOR_REDIRECT_GATE,
 			decide: () => false,
 		});
 
