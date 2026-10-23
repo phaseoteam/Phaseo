@@ -2838,6 +2838,9 @@
 		"activityChart": "Tokens quotidiens de {name} via Phaseo, 30 derniers jours",
 		"activityNone": "Aucun trafic via Phaseo au cours des 30 derniers jours",
 		"activityNoneAll": "Aucun de ces modèles n’a eu de trafic via Phaseo au cours des 30 derniers jours.",
+		"peersTitle": "Leur classement",
+		"peersSub": "Les cinq premiers de chaque indice de capacités, puis les modèles comparés. Chaque modèle dans son réglage le mieux noté.",
+		"peerModels": "{count, plural, one {# modèle classé} other {# modèles classés}}",
 		"activityRequestsTotal": "requêtes, 30 derniers jours"
 	},
 	"countries": {

@@ -2838,6 +2838,9 @@
 		"activityChart": "Tägliche Tokens für {name} über Phaseo, letzte 30 Tage",
 		"activityNone": "Kein Verkehr über Phaseo in den letzten 30 Tagen",
 		"activityNoneAll": "Keines dieser Modelle hatte in den letzten 30 Tagen Verkehr über Phaseo.",
+		"peersTitle": "Platzierung",
+		"peersSub": "Die fünf besten Modelle jedes Fähigkeitsindex, danach die verglichenen Modelle. Jedes Modell in seiner bestbewerteten Einstellung.",
+		"peerModels": "{count, plural, one {# Modell bewertet} other {# Modelle bewertet}}",
 		"activityRequestsTotal": "Anfragen, letzte 30 Tage"
 	},
 	"countries": {

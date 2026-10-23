@@ -91,6 +91,37 @@ describe("public compare routes", () => {
 		expect(modelUrls.filter((url) => url.includes("/v2_models?")).length).toBe(1);
 	});
 
+	it("places the compared models among each capability leaderboard", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("epoch-capabilities-index")) return new Response("[]", { status: 200 });
+			if (url.includes("v2_benchmarks")) return new Response(JSON.stringify([
+				{ benchmark_id: "aa-intelligence-index-v4", name: "Intelligence Index", ascending_order: true, total_models: 7 },
+				{ benchmark_id: "aa-intelligence-index-cost-v4", name: "Cost to run the Intelligence Index", ascending_order: false, total_models: 7 },
+			]), { status: 200 });
+			if (url.includes("v2_benchmark_results")) return new Response(JSON.stringify(Array.from({ length: 7 }, (_, index) => [
+				{ benchmark_id: "aa-intelligence-index-v4", model_slug: `lab/model-${index + 1}`, score_numeric: 70 - index },
+				{ benchmark_id: "aa-intelligence-index-cost-v4", model_slug: `lab/model-${index + 1}`, score_numeric: 100 + index },
+			]).flat()), { status: 200 });
+			if (url.includes("v2_models")) return new Response(JSON.stringify(Array.from({ length: 7 }, (_, index) => ({
+				model_slug: `lab/model-${index + 1}`, name: `Model ${index + 1}`, lab_slug: "lab", lab: { name: "Lab" },
+			}))), { status: 200 });
+			return new Response("[]", { status: 200 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const response = await app.request("https://phaseo.app/api/_web/compare/peers?ids=lab%2Fmodel-7,lab%2Fmodel-2", {}, env);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=3600, stale-while-revalidate=86400");
+		const body = await response.json() as { boards: Array<{ id: string; total: number; entries: Array<{ modelId: string; rank: number }> }> };
+		expect(body.boards.map((board) => board.id)).toEqual(["aa-intelligence-index-v4"]);
+		expect(body.boards[0]!.total).toBe(7);
+		expect(body.boards[0]!.entries.map((entry) => [entry.modelId, entry.rank])).toEqual([
+			["lab/model-1", 1], ["lab/model-2", 2], ["lab/model-3", 3], ["lab/model-4", 4], ["lab/model-5", 5], ["lab/model-7", 7],
+		]);
+	});
+
 	it("returns the composed compare view with the selection cache policy", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);

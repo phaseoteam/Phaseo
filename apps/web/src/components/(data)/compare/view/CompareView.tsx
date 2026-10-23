@@ -115,7 +115,7 @@ export function CompareView({
 				<ComparePerformance models={models} usage={usage} />
 				<CompareActivity models={models} usage={usage} />
 				<CompareFeatures models={models} priced={priced} tiers={tiers} />
-				<CompareBenchmarks models={models} benchmarks={view.benchmarks} />
+				<CompareBenchmarks models={models} benchmarks={view.benchmarks} peers={view.peers ?? []} />
 				<CompareProviders models={models} />
 				<CompareDetails models={models} />
 				{pages > 1 ? <p className="text-xs text-muted-foreground sm:hidden">{t("phoneBestNote")}</p> : null}

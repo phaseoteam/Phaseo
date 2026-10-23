@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { getLocale, getTranslations } from "next-intl/server";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
-import { fetchFrontendCompareUsage, fetchFrontendCompareView } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchFrontendComparePeers, fetchFrontendCompareUsage, fetchFrontendCompareView } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
 import { decodeModelIdFromUrl } from "@/components/(data)/compare/compareUrl";
 import { toCompareModelOption } from "@/components/(data)/compare/types";
@@ -68,7 +68,7 @@ async function ComparePageContent({ searchParams }: PageProps) {
 	const resolvedSearchParams = await searchParams;
 	const ids = [...new Set(normalizeSelection(resolvedSearchParams?.models).map(decodeModelIdFromUrl).filter(Boolean))].slice(0, 4);
 
-	const [view, usage] = ids.length
+	const [view, usage, peers] = ids.length
 		? await Promise.all([
 				fetchFrontendCompareView(ids),
 				fetchFrontendCompareUsage(ids).then(pickUsageFields).catch((error) => {
@@ -77,15 +77,21 @@ async function ComparePageContent({ searchParams }: PageProps) {
 					console.warn("[compare] Gateway usage unavailable", error);
 					return {} as CompareViewUsageByModel;
 				}),
+				fetchFrontendComparePeers(ids).catch((error) => {
+					// Leaderboard context is optional; the benchmark table still renders.
+					// eslint-disable-next-line no-console
+					console.warn("[compare] Leaderboard ranks unavailable", error);
+					return [];
+				}),
 			])
-		: [EMPTY_VIEW, {} as CompareViewUsageByModel];
+		: [EMPTY_VIEW, {} as CompareViewUsageByModel, []];
 
 	// The pickers load the full model list in the browser when opened, so the
 	// page only carries options for the models it compares.
 	return (
 		<CompareDashboard
 			selectedOptions={view.models.map(toCompareModelOption)}
-			view={view}
+			view={{ ...view, peers }}
 			usage={usage}
 		/>
 	);
