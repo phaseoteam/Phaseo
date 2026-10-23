@@ -2,7 +2,7 @@ import type { ProviderCatalogModelPreview as ProviderCatalogModel } from "./prov
 
 export type CatalogOverride = { value: unknown; actor_id: string; actor_kind: "phaseo" | "provider"; edited_at: string };
 export type CatalogOverrides = Record<string, Record<string, CatalogOverride>>;
-export const catalogEditableFields = ["name", "description", "providerModelSlug", "inputModalities", "outputModalities", "contextLength", "maxOutputTokens", "availability", "availableFrom", "deprecatedAt", "shutdownAt", "capabilities", "pricing", "serviceTiers"] as const;
+export const catalogEditableFields = ["name", "description", "declarations", "providerModelSlug", "inputModalities", "outputModalities", "contextLength", "maxOutputTokens", "availability", "availableFrom", "deprecatedAt", "shutdownAt", "capabilities", "pricing", "serviceTiers"] as const;
 const equal = (left: unknown, right: unknown) => JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
 const token = (value: string) => value.replace(/~/g, "~0").replace(/\//g, "~1");
 const segments = (path: string) => path.split("/").slice(1).map((value) => value.replace(/~1/g, "/").replace(/~0/g, "~"));
@@ -47,13 +47,14 @@ function applyPath(model: ProviderCatalogModel, path: string, value: unknown) {
 
 export function normalizedCatalogDocument(models: ProviderCatalogModel[]) {
 	const price = (item: ProviderCatalogModel["pricing"][number]) => ({ meter_key: item.meterKey, modality: item.modality, direction: item.direction, unit: item.unit, unit_quantity: item.unitQuantity, price_nanos: item.priceNanos, display_label: item.displayLabel, display_unit: item.displayUnit, conditions: item.conditions });
-	const tiered = models.some((model) => model.serviceTiers?.length);
-	return { ...(tiered ? { schema_version: "1.1" } : {}), data: models.map((model) => ({
-		id: model.id, name: model.name, description: model.description, capabilities: model.capabilities,
+	const v12 = models.some((model) => model.catalogVersion === "1.2" || model.declarations !== undefined || model.serviceTiers?.some((tier) => tier.dataPolicy !== undefined || tier.declarations !== undefined));
+	const tiered = v12 || models.some((model) => model.serviceTiers?.length);
+	return { ...(tiered ? { schema_version: v12 ? "1.2" : "1.1" } : {}), data: models.map((model) => ({
+		...(model.declarations ? { declarations: model.declarations } : {}), id: model.id, name: model.name, description: model.description, capabilities: model.capabilities,
 		input_modalities: model.inputModalities, output_modalities: model.outputModalities,
 		context_length: model.contextLength, max_output_tokens: model.maxOutputTokens,
 		availability: model.availability, available_from: model.availableFrom, deprecated_at: model.deprecatedAt, shutdown_at: model.shutdownAt,
-		...(tiered ? { service_tiers: (model.serviceTiers?.length ? model.serviceTiers : [{ serviceTier: "standard", providerModelSlug: model.providerModelSlug, upstreamServiceTier: null, availability: model.availability, pricing: model.pricing }]).map((tier) => ({ service_tier: tier.serviceTier, provider_model_slug: tier.providerModelSlug, upstream_service_tier: tier.upstreamServiceTier, availability: tier.availability, pricing: tier.pricing.map(price) })) } : { provider_model_slug: model.providerModelSlug, pricing: model.pricing.map(price) }),
+		...(tiered ? { service_tiers: (model.serviceTiers?.length ? model.serviceTiers : [{ serviceTier: "standard", providerModelSlug: model.providerModelSlug, upstreamServiceTier: null, availability: model.availability, pricing: model.pricing }]).map((tier) => ({ ...("declarations" in tier && tier.declarations ? { declarations: tier.declarations } : {}), ...(v12 ? { data_policy: "dataPolicy" in tier ? tier.dataPolicy : null } : {}), service_tier: tier.serviceTier, provider_model_slug: tier.providerModelSlug, upstream_service_tier: tier.upstreamServiceTier, availability: tier.availability, pricing: tier.pricing.map(price) })) } : { provider_model_slug: model.providerModelSlug, pricing: model.pricing.map(price) }),
 	})) };
 }
 
@@ -109,6 +110,8 @@ export function catalogOverrideChanges(feed: ProviderCatalogModel[], overrides: 
 				const old = before.get(name), current = after.get(name);
 				const path = `/serviceTiers/${name}`;
 				if (!old || !current) { if (!equal(old, current)) changes.push({ model_id: model.id, field: path, value: current ?? null }); continue; }
+				if (!equal(old.declarations, current.declarations)) changes.push({ model_id: model.id, field: `${path}/declarations`, value: current.declarations ?? null });
+				if (!equal(old.dataPolicy, current.dataPolicy)) changes.push({ model_id: model.id, field: `${path}/dataPolicy`, value: current.dataPolicy ?? null });
 				if (name === "standard") {
 					if (!equal(old.upstreamServiceTier, current.upstreamServiceTier)) changes.push({ model_id: model.id, field: `${path}/upstreamServiceTier`, value: current.upstreamServiceTier });
 					continue;
