@@ -33,12 +33,16 @@ const GENERIC_ICONS: Record<string, typeof KeyRound> = {
 export function KeyStorageLogo({ id, className }: { id: string; className?: string }) {
 	const logo = KEY_STORAGE_LOGOS[id];
 	if (logo) {
-		const src = `/logos/key-storage/${id}.svg`;
+		const url = `url(/logos/key-storage/${id}.svg)`;
 		if (logo.original) {
-			// eslint-disable-next-line @next/next/no-img-element -- a 16px local SVG doesn't need next/image.
-			return <img src={src} alt="" aria-hidden="true" className={cn("inline-block size-4 shrink-0 object-contain", className)} />;
+			return (
+				<span
+					aria-hidden="true"
+					className={cn("inline-block size-4 shrink-0 bg-contain bg-center bg-no-repeat", className)}
+					style={{ backgroundImage: url }}
+				/>
+			);
 		}
-		const url = `url(${src})`;
 		return (
 			<span
 				aria-hidden="true"
