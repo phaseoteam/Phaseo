@@ -64,14 +64,24 @@ export async function readCustomerRateLimitInputs(workspaceId: string): Promise<
 	return ((data ?? []) as CustomerRateLimitInputs[])[0] ?? null;
 }
 
+/** A manifest value no published fingerprint can equal, so the next run rewrites the key. */
+const MANIFEST_REWRITE = "rewrite";
+
 /**
  * Publishes one workspace's tier straight away, e.g. after a self-serve raise,
  * so it applies within the isolate cache time instead of the next publisher run.
- * The manifest is left alone: the next run rewrites the same value once.
+ * Its manifest entry is set to MANIFEST_REWRITE, so the next scheduled run
+ * rewrites the key from Postgres even if the database went back to what the
+ * manifest last recorded (e.g. the raise was revoked in between).
  */
 export async function publishCustomerRateLimitTier(inputs: CustomerRateLimitInputs, ladderRaw: string | undefined): Promise<PublishedCustomerTier> {
 	const published = publishedCustomerTier(inputs, parseCustomerRateLimitLadder(ladderRaw), Date.now());
 	const kv = getCache();
+	const shard = shardOf(inputs.workspace_id);
+	const manifest = await readManifest(kv, shard);
+	manifest.w[inputs.workspace_id] = MANIFEST_REWRITE;
+	// The manifest is marked first: if the key write then fails, the next run still repairs it.
+	await kv.put(customerTierManifestKey(shard), JSON.stringify(manifest));
 	if (published.tier === "new" && !published.override && !published.raise) await kv.delete(customerTierKey(inputs.workspace_id));
 	else await putPublished(kv, inputs.workspace_id, published);
 	return published;

@@ -26,6 +26,7 @@ try {
       id uuid primary key default gen_random_uuid(), workspace_id uuid not null, kind text not null,
       amount_nanos bigint not null, ref_type text not null, ref_id text not null, status text,
       created_at timestamptz not null default now(),
+      event_time timestamptz not null default now(),
       unique (ref_type, ref_id)
     );
     grant select, insert, update, delete on public.workspaces, public.credit_ledger to service_role;
@@ -45,7 +46,8 @@ try {
       ('${ws(3)}', now() - interval '20 days'),
       ('${ws(4)}', now() - interval '20 days'),
       ('${ws(5)}', now() - interval '20 days'),
-      ('${ws(6)}', now() - interval '20 days');
+      ('${ws(6)}', now() - interval '20 days'),
+      ('${ws(7)}', now() - interval '20 days');
     insert into public.workspace_rate_limit_raises(workspace_id, from_tier, to_tier, requested_by, created_at, expires_at, revoked_at) values
       -- ws1: an active raise, after an older expired one.
       ('${ws(1)}', 'standard', 'trusted', '${owner}', now() - interval '70 days', now() - interval '40 days', null),
@@ -57,11 +59,14 @@ try {
       -- ws4: refunded after the raise.
       ('${ws(4)}', 'standard', 'trusted', '${owner}', now() - interval '2 days', now() + interval '28 days', null),
       -- ws5: refunded before the raise, so it still applies.
-      ('${ws(5)}', 'standard', 'trusted', '${owner}', now() - interval '1 day', now() + interval '29 days', null);
-    insert into public.credit_ledger(workspace_id, kind, amount_nanos, ref_type, ref_id, status, created_at) values
-      ('${ws(4)}', 'refund', -1000, 'Stripe_Refund', 're_after', 'succeeded', now() - interval '1 day'),
-      ('${ws(4)}', 'refund', -1000, 'Stripe_Refund', 're_pending', 'pending', now()),
-      ('${ws(5)}', 'refund', -1000, 'Stripe_Refund', 're_before', 'succeeded', now() - interval '5 days');
+      ('${ws(5)}', 'standard', 'trusted', '${owner}', now() - interval '1 day', now() + interval '29 days', null),
+      -- ws7: a refund pending before the raise that succeeded after it.
+      ('${ws(7)}', 'standard', 'trusted', '${owner}', now() - interval '2 days', now() + interval '28 days', null);
+    insert into public.credit_ledger(workspace_id, kind, amount_nanos, ref_type, ref_id, status, created_at, event_time) values
+      ('${ws(4)}', 'refund', -1000, 'Stripe_Refund', 're_after', 'succeeded', now() - interval '1 day', now() - interval '1 day'),
+      ('${ws(4)}', 'refund', -1000, 'Stripe_Refund', 're_pending', 'pending', now(), now()),
+      ('${ws(5)}', 'refund', -1000, 'Stripe_Refund', 're_before', 'succeeded', now() - interval '5 days', now() - interval '5 days'),
+      ('${ws(7)}', 'refund', -1000, 'Stripe_Refund', 're_late', 'succeeded', now() - interval '5 days', now() - interval '1 day');
   `);
 
   for (const role of ['anon', 'authenticated']) {
@@ -82,6 +87,7 @@ try {
     [ws(4)]: null,
     [ws(5)]: 'trusted',
     [ws(6)]: null,
+    [ws(7)]: null,
   });
   const active = all.find((row) => row.workspace_id === ws(1));
   assert.ok(new Date(active.raise_expires_at) > new Date(Date.now() + 28 * 86_400_000), 'the newest raise is returned');

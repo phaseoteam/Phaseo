@@ -30,7 +30,10 @@ CREATE OR REPLACE FUNCTION public.gateway_customer_rate_limit_inputs (
   --   per-request usage, so the per-workspace index lookup stays small.
   -- Overrides are returned with their expiry; callers ignore expired rows.
   -- * Self-serve raise: the newest raise that is unexpired, not revoked, and
-  --   not followed by a succeeded Stripe refund (a refund revokes it).
+  --   not followed by a succeeded Stripe refund (a refund revokes it). A refund
+  --   row is created when Stripe reports it and its event_time is set again when
+  --   its status changes, so a refund pending before the raise that succeeds
+  --   after it still counts.
   -- p_workspace_id limits the page to one workspace, for the raise endpoint.
   with page as (
     select w.id, w.created_at, w.billing_mode
@@ -81,7 +84,7 @@ CREATE OR REPLACE FUNCTION public.gateway_customer_rate_limit_inputs (
         where cl.workspace_id = p.id
           and cl.ref_type = 'Stripe_Refund'
           and lower(coalesce(cl.status, '')) = 'succeeded'
-          and cl.created_at >= r.created_at
+          and greatest(cl.created_at, cl.event_time) >= r.created_at
       )
     order by r.created_at desc
     limit 1
