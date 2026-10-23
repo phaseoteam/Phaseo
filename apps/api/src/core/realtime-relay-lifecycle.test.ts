@@ -75,8 +75,10 @@ describe("Realtime relay lifecycle", () => {
 		const object = relay(provider);
 		object.providerSetupComplete = true;
 		object.providerCompletedResponseSeen = true;
-		await object.handleClientMessage(JSON.stringify({ type: "client.audio", audio: Buffer.alloc(3200).toString("base64"), rms: 1 }));
-		expect(object.sendUpstream).not.toHaveBeenCalled();
+		const silence = Buffer.alloc(3200).toString("base64");
+		await object.handleClientMessage(JSON.stringify({ type: "client.audio", audio: silence, rms: 1 }));
+		// Forwarded to keep Google's connection open; never part of a billed turn.
+		expect(object.sendUpstream).toHaveBeenCalledExactlyOnceWith({ realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: silence } } });
 		expect(object.usage.input_audio_ms).toBeUndefined();
 		expect(object.receivedAudioMs).toBe(100);
 		expect(object.inputSinceLastResponse).toBe(false);
@@ -276,7 +278,9 @@ describe("Realtime relay lifecycle", () => {
 		// The pending flag is journaled immediately, not on the 1 s checkpoint throttle.
 		expect(object.state.storage.data.get("usage")).toMatchObject({ input_audio_pending: true });
 		for (let i = 0; i < 10; i++) await object.handleClientMessage(JSON.stringify({ type: "client.audio", audio: pcm(100, 16_000) }));
-		expect(object.sendUpstream).toHaveBeenLastCalledWith({ realtimeInput: { audioStreamEnd: true } });
+		// Trailing silence is forwarded so Google's own VAD ends the turn.
+		expect(object.sendUpstream).toHaveBeenLastCalledWith({ realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: pcm(100, 16_000) } } });
+		expect(object.googleAudioActive).toBe(false);
 		// Only a provider usage event may clear pending speech, not silence detection.
 		expect(object.inputSinceLastResponse).toBe(true);
 	});
