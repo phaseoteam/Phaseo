@@ -17,15 +17,18 @@ await db.exec(`
   create table public.v2_request_facts (
     request_event_id uuid primary key, workspace_id uuid, occurred_at timestamptz, app_id uuid, key_id uuid,
     endpoint text, requested_model_input text, requested_model_slug text, routed_model_slug text,
-    provider_model_id text, success boolean, error_code text, byok boolean, safe_metadata jsonb, cost_nanos bigint
+    provider_model_id text, success boolean, error_code text, byok boolean, safe_metadata jsonb, cost_nanos bigint,
+    auth_method text, gateway_request_id uuid, gateway_request_created_at timestamptz
   );
   create table public.v2_request_usage (request_event_id uuid, meter_key text, quantity numeric(30,12), sequence integer default 0);
   create table public.v2_model_provider_routes (provider_model_id text primary key, provider_slug text);
-  create table public.keys (id uuid primary key, workspace_id uuid, created_by uuid);
+  create table public.keys (id uuid primary key, workspace_id uuid, created_by uuid, oauth_user_id uuid, key_kind text not null default 'standard', department_id uuid);
   create table public.v2_analytics_outbox (request_event_id uuid primary key, workspace_id uuid, occurred_at timestamptz, status text);
+  -- Read by the view for OAuth requests only.
+  create table public.gateway_requests (id uuid, created_at timestamptz, oauth_user_id uuid, primary key (id, created_at));
   insert into public.keys values ('${keyA}', '${workspace}', null), ('${keyB}', '${workspace}', '${owner}');
   grant usage on schema private to service_role;
-  grant select on public.v2_request_facts, public.v2_request_usage, public.v2_model_provider_routes, public.keys, public.v2_analytics_outbox to service_role;
+  grant select on public.v2_request_facts, public.v2_request_usage, public.v2_model_provider_routes, public.keys, public.v2_analytics_outbox, public.gateway_requests to service_role;
 `);
 await db.exec(await read('../schemas/private/tables/v2_analytics_previous_grains.sql'));
 await db.exec((await read('../schemas/public/tables/v2_private_usage_15m.sql')).replace(/,\r?\n  CONSTRAINT "v2_private_usage_15m_workspace_id_fkey"[^\r\n]*/, ''));

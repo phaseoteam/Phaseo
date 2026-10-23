@@ -8954,6 +8954,16 @@
 			"zh-Hans": "以 12 小时保留时长写入缓存的输入 token，按输入价格的 2.5 倍计费。",
 			"ar": "رموز الإدخال المكتوبة في التخزين المؤقت لمدة 12 ساعة، وتُحتسب بـ 2.5x سعر الإدخال."
 		},
+		"How spend rules count a person's spend toward departments when their key has no department of its own: all counts it toward every department they belong to; primary counts it toward their primary department only. A key's own department always wins.": {
+			"es": "Cómo cuentan las reglas de gasto el gasto de una persona en los departamentos cuando su clave no tiene departamento propio: all lo cuenta en todos los departamentos a los que pertenece; primary solo en su departamento principal. El departamento propio de una clave siempre prevalece.",
+			"fr": "Comment les règles de dépenses imputent les dépenses d’une personne aux services lorsque sa clé n’a pas de service propre : all les impute à tous les services dont elle fait partie ; primary uniquement à son service principal. Le service propre d’une clé l’emporte toujours.",
+			"de": "Wie Ausgabenregeln die Ausgaben einer Person Abteilungen zurechnen, wenn ihr Schlüssel keine eigene Abteilung hat: all rechnet sie jeder Abteilung zu, der die Person angehört; primary nur ihrer Hauptabteilung. Die eigene Abteilung eines Schlüssels hat immer Vorrang.",
+			"pt-BR": "Como as regras de gastos atribuem o gasto de uma pessoa aos departamentos quando a chave dela não tem departamento próprio: all atribui a todos os departamentos dos quais ela faz parte; primary apenas ao departamento principal. O departamento próprio de uma chave sempre prevalece.",
+			"hi": "जब किसी व्यक्ति की कुंजी का अपना कोई विभाग नहीं होता, तब खर्च नियम उसके खर्च को विभागों में कैसे गिनते हैं: all उसे उन सभी विभागों में गिनता है जिनका वह सदस्य है; primary केवल उसके प्राथमिक विभाग में। कुंजी का अपना विभाग हमेशा प्राथमिकता पाता है।",
+			"ja": "キーに部門が設定されていない場合に、支出ルールが個人の支出をどの部門に計上するか。all は所属するすべての部門に、primary は主部門のみに計上します。キー自体の部門が常に優先されます。",
+			"zh-Hans": "当某人的密钥没有自己的部门时，支出规则如何将其支出计入部门：all 计入其所属的所有部门；primary 仅计入其主要部门。密钥自身的部门始终优先。",
+			"ar": "كيف تحتسب قواعد الإنفاق إنفاق الشخص ضمن الأقسام عندما لا يكون لمفتاحه قسم خاص به: all تحتسبه في كل الأقسام التي ينتمي إليها؛ وprimary في قسمه الأساسي فقط. ويُقدَّم دائمًا القسم الخاص بالمفتاح."
+		},
 		"Whether deliveries are signed with x-phaseo-signature. Only custom webhook destinations are signed; ones created before signing stay unsigned until a secret is generated.": {
 			"es": "Indica si las entregas se firman con x-phaseo-signature. Solo se firman los destinos de webhook personalizados; los creados antes de la firma siguen sin firmar hasta que se genera un secreto.",
 			"fr": "Indique si les envois sont signés avec x-phaseo-signature. Seules les destinations webhook personnalisées sont signées ; celles créées avant la signature restent non signées jusqu’à la génération d’un secret.",

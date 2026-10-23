@@ -17,8 +17,16 @@ CREATE VIEW "private"."v2_usage_overview_requests" WITH (security_invoker=true) 
         CASE
             WHEN (jsonb_typeof((fact.safe_metadata -> 'labels'::text)) = 'array'::text) THEN (fact.safe_metadata -> 'labels'::text)
             ELSE '[]'::jsonb
-        END AS labels
-   FROM (public.v2_request_facts fact
+        END AS labels,
+    COALESCE(
+        CASE
+            WHEN (fact.auth_method = 'oauth'::text) THEN ( SELECT request.oauth_user_id
+               FROM public.gateway_requests request
+              WHERE ((request.id = fact.gateway_request_id) AND (request.created_at = fact.gateway_request_created_at)))
+            ELSE NULL::uuid
+        END, key.oauth_user_id, key.created_by) AS actor_user_id
+   FROM ((public.v2_request_facts fact
+     LEFT JOIN public.keys key ON ((key.id = fact.key_id)))
      LEFT JOIN LATERAL ( SELECT COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'input_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'prompt_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'input_text_tokens'::text)), (0)::numeric) AS input_tokens,
             COALESCE(sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'output_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'completion_tokens'::text)), sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'output_text_tokens'::text)), (0)::numeric) AS output_tokens,
             sum(meter.quantity) FILTER (WHERE (meter.meter_key = 'total_tokens'::text)) AS total_tokens,
@@ -30,4 +38,4 @@ CREATE VIEW "private"."v2_usage_overview_requests" WITH (security_invoker=true) 
 
 GRANT SELECT ON TABLE "private"."v2_usage_overview_requests" TO "service_role";
 
-COMMENT ON VIEW "private"."v2_usage_overview_requests" IS 'One row per request as the usage overview counts it: the resolved model, tokens as the reported total or input plus output, cached reads and writes (one alias each, since the gateway writes the same count under several), guardrail blocks and request labels. Async job endpoints are left out; their own pages count them. Feeds the 15-minute rollups and the requests at the edges of get_private_usage_overview.';
+COMMENT ON VIEW "private"."v2_usage_overview_requests" IS 'One row per request as the usage overview counts it: the resolved model, tokens as the reported total or input plus output, cached reads and writes (one alias each, since the gateway writes the same count under several), guardrail blocks, request labels, and the actor spend rules attribute it to (the OAuth user for OAuth tokens, otherwise the key''s OAuth user or creator; read at rollup time, never on the request path). Async job endpoints are left out; their own pages count them. Feeds the 15-minute rollups and the requests at the edges of get_private_usage_overview.';

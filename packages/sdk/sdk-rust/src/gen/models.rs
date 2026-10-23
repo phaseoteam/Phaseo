@@ -4128,6 +4128,7 @@ pub struct WorkspaceNotificationSettings {
 	pub auto_top_up: HashMap<String, String>,
 	pub email_preferences: HashMap<String, String>,
 	pub low_balance_email: HashMap<String, String>,
+	pub spend: HashMap<String, String>,
 }
 
 pub struct WorkspaceNotificationSettingsResponse {
@@ -4138,6 +4139,7 @@ pub struct WorkspaceNotificationSettingsUpdateRequest {
 	pub auto_top_up: Option<HashMap<String, String>>,
 	pub email_preferences: Option<HashMap<String, String>>,
 	pub low_balance_email: Option<HashMap<String, String>>,
+	pub spend: Option<HashMap<String, String>>,
 }
 
 pub struct WorkspaceNotificationTestResponse {
@@ -4260,6 +4262,16 @@ pub struct WorkspaceSettingsUpdateRequest {
 	pub response_healing_locked: Option<bool>,
 	pub response_healing_mode: Option<String>,
 	pub routing_mode: Option<String>,
+}
+
+pub type WorkspaceSpendAttribution = JsonValue;
+
+pub struct WorkspaceSpendSettings {
+	pub department_attribution: String,
+}
+
+pub struct WorkspaceSpendSettingsUpdate {
+	pub department_attribution: Option<String>,
 }
 
 pub struct WorkspaceSsoResponse {

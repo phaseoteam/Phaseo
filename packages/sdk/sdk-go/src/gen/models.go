@@ -5802,6 +5802,7 @@ type WorkspaceNotificationSettings struct {
 	AutoTopUp map[string]interface{} `json:"auto_top_up"`
 	EmailPreferences map[string]interface{} `json:"email_preferences"`
 	LowBalanceEmail map[string]interface{} `json:"low_balance_email"`
+	Spend map[string]interface{} `json:"spend"`
 }
 
 type WorkspaceNotificationSettingsResponse struct {
@@ -5812,6 +5813,7 @@ type WorkspaceNotificationSettingsUpdateRequest struct {
 	AutoTopUp *map[string]interface{} `json:"auto_top_up,omitempty"`
 	EmailPreferences *map[string]interface{} `json:"email_preferences,omitempty"`
 	LowBalanceEmail *map[string]interface{} `json:"low_balance_email,omitempty"`
+	Spend *map[string]interface{} `json:"spend,omitempty"`
 }
 
 type WorkspaceNotificationTestResponse struct {
@@ -5956,6 +5958,22 @@ type WorkspaceSettingsUpdateRequest struct {
 	ResponseHealingLocked *bool `json:"response_healing_locked,omitempty"`
 	ResponseHealingMode *string `json:"response_healing_mode,omitempty"`
 	RoutingMode *string `json:"routing_mode,omitempty"`
+}
+
+type WorkspaceSpendAttribution string
+
+const (
+	WorkspaceSpendAttributionAll WorkspaceSpendAttribution = "all"
+	WorkspaceSpendAttributionPrimary WorkspaceSpendAttribution = "primary"
+)
+
+
+type WorkspaceSpendSettings struct {
+	DepartmentAttribution string `json:"department_attribution"`
+}
+
+type WorkspaceSpendSettingsUpdate struct {
+	DepartmentAttribution *string `json:"department_attribution,omitempty"`
 }
 
 type WorkspaceSsoResponse struct {

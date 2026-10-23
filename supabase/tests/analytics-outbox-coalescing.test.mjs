@@ -18,6 +18,8 @@ async function fixture(current) {
     for (const table of ['v2_private_usage_15m', 'v2_private_usage_labels_15m']) {
       await db.exec((await read(`../schemas/public/tables/${table}.sql`)).replace(new RegExp(`,\\r?\\n  CONSTRAINT "${table}_workspace_id_fkey"[^\\r\\n]*`), ''));
     }
+    // The fixture has no keys table; the view reads a key's creator for spend attribution.
+    await db.exec('create table public.keys (id uuid primary key, workspace_id uuid, created_by uuid, oauth_user_id uuid);');
     await db.exec(await read('../schemas/private/views/v2_usage_overview_requests.sql'));
   }
   await db.exec(await read(current ? '../schemas/public/functions/process_v2_analytics_outbox.sql' : './fixtures/analytics-outbox-before.sql'));

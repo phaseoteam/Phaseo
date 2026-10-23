@@ -16,4 +16,7 @@ export interface WorkspaceNotificationSettingsUpdateRequest {
     enabled: boolean;
     threshold_usd?: number;
   };
+  spend?: {
+    department_attribution?: "all" | "primary";
+  };
 }
