@@ -3284,7 +3284,11 @@
 		"searchPlaceholder": "搜索模型或组织",
 		"searchLabel": "搜索该国家的模型",
 		"modelsCount": "模型数：{count}",
-		"noModelsMatch": "没有符合搜索条件的模型。"
+		"noModelsMatch": "没有符合搜索条件的模型。",
+		"showAllModels": "显示全部 {count} 个模型",
+		"loadingAllModels": "正在加载全部模型…",
+		"allModelsFailed": "无法加载全部模型，因此结果可能不完整。",
+		"retryLoadingModels": "重试"
 	},
 	"appDetail": {
 		"appNotFound": "未找到应用。",

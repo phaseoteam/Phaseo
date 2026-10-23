@@ -3284,7 +3284,11 @@
 		"searchPlaceholder": "ابحث عن النماذج أو المؤسسات",
 		"searchLabel": "ابحث عن نماذج البلد",
 		"modelsCount": "{count, plural, zero {لا توجد نماذج} one {نموذج واحد} two {نموذجان} few {# نماذج} many {# نموذجًا} other {# نموذج}}",
-		"noModelsMatch": "لا توجد نماذج تطابق البحث."
+		"noModelsMatch": "لا توجد نماذج تطابق البحث.",
+		"showAllModels": "عرض كل النماذج ({count})",
+		"loadingAllModels": "جارٍ تحميل كل النماذج…",
+		"allModelsFailed": "تعذّر تحميل كل النماذج، لذا قد تكون هذه النتائج غير مكتملة.",
+		"retryLoadingModels": "إعادة المحاولة"
 	},
 	"appDetail": {
 		"appNotFound": "لم يتم العثور على التطبيق.",

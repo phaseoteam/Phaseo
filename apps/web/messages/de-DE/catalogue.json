@@ -3284,7 +3284,11 @@
 		"searchPlaceholder": "Modelle oder Organisationen suchen",
 		"searchLabel": "Ländermodelle suchen",
 		"modelsCount": "{count, plural, one {# Modell} other {# Modelle}}",
-		"noModelsMatch": "Keine Modelle entsprechen deiner Suche."
+		"noModelsMatch": "Keine Modelle entsprechen deiner Suche.",
+		"showAllModels": "Alle {count} Modelle anzeigen",
+		"loadingAllModels": "Alle Modelle werden geladen…",
+		"allModelsFailed": "Nicht alle Modelle konnten geladen werden, daher sind die Ergebnisse möglicherweise unvollständig.",
+		"retryLoadingModels": "Erneut versuchen"
 	},
 	"appDetail": {
 		"appNotFound": "App nicht gefunden.",
