@@ -2834,7 +2834,7 @@
 		"activityOutput": "出力",
 		"activityReasoning": "推論",
 		"activityRequests": "リクエスト",
-		"activityDay": "{date}: {tokens} トークン、{requests} リクエスト",
+		"activityDay": "{date}: {tokens} トークン、{count, plural, other {{requests} リクエスト}}",
 		"activityChart": "Phaseo 経由の {name} の日別トークン（過去 30 日）",
 		"activityNone": "過去 30 日間に Phaseo 経由のトラフィックはありません",
 		"activityNoneAll": "過去 30 日間、これらのモデルはいずれも Phaseo 経由のトラフィックがありません。",

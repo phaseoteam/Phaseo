@@ -886,10 +886,12 @@ async function fetchTestingProviderSnapshots(args: {
         const providerId = row?.provider_id;
         if (typeof providerApiModelId !== "string" || typeof providerId !== "string") continue;
         const cap = latestCapabilityByProviderModel.get(providerApiModelId);
+        const inputModalities = parseModalities(row?.input_modalities);
+        const outputModalities = parseModalities(row?.output_modalities);
         const inferredSupport = supportsEndpointViaModalities({
             endpoint: args.endpoint,
-            inputModalities: parseModalities(row?.input_modalities),
-            outputModalities: parseModalities(row?.output_modalities),
+            inputModalities,
+            outputModalities,
         });
         if (!cap && !inferredSupport) continue;
         const providerModelSlug =
@@ -921,6 +923,8 @@ async function fetchTestingProviderSnapshots(args: {
             baseWeight: 1,
             byokMeta: byokByProvider.get(providerId) ?? [],
             providerModelSlug,
+            inputModalities: setToArrayOrNull(inputModalities),
+            outputModalities: setToArrayOrNull(outputModalities),
             quantizationScheme:
 				typeof row?.metadata?.quantization_scheme === "string"
 					? row.metadata.quantization_scheme

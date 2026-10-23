@@ -34,7 +34,7 @@ function ActivityChart({ days, label }: { days: CompareActivityDay[]; label: str
 						let top = CHART_HEIGHT;
 						return (
 							<g key={day.date}>
-								<title>{t("activityDay", { date: format.shortDate(day.date), tokens: format.compactTokens(dayTotal(day)), requests: format.tokens(day.requests) })}</title>
+								<title>{t("activityDay", { date: format.shortDate(day.date), tokens: format.compactTokens(dayTotal(day)), requests: format.tokens(day.requests), count: day.requests })}</title>
 								{/* A full-height hit area, so quiet days still show their tooltip. */}
 								<rect x={index * 6} y={0} width={6} height={CHART_HEIGHT} className="fill-transparent" />
 								{SERIES.map((series) => {

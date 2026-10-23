@@ -2834,7 +2834,7 @@
 		"activityOutput": "Saída",
 		"activityReasoning": "Raciocínio",
 		"activityRequests": "Solicitações",
-		"activityDay": "{date}: {tokens} tokens, {requests} solicitações",
+		"activityDay": "{date}: {tokens} tokens, {count, plural, one {# solicitação} other {{requests} solicitações}}",
 		"activityChart": "Tokens diários de {name} pelo Phaseo, últimos 30 dias",
 		"activityNone": "Sem tráfego pelo Phaseo nos últimos 30 dias",
 		"activityNoneAll": "Nenhum destes modelos teve tráfego pelo Phaseo nos últimos 30 dias.",
