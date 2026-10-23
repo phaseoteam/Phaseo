@@ -647,6 +647,9 @@ function snowflakeIdentifier(config: Record<string, unknown>, name: string, opti
 function snowflakeTarget(config: Record<string, unknown>): SnowflakeTarget {
 	const account = required(config, "account").replace(/\.snowflakecomputing\.com$/i, "");
 	if (!SNOWFLAKE_ACCOUNT.test(account)) throw new Error("account must be an account identifier such as myorg-myaccount or xy12345.us-east-1");
+	// Global identifiers name the account differently in key-pair JWTs; the
+	// org-account form works for every account.
+	if (/\.global$/i.test(account)) throw new Error("account must be the org-account identifier (myorg-myaccount) rather than a .global one");
 	const user = required(config, "user");
 	if (!/^[A-Za-z0-9_.@-]{1,255}$/.test(user)) throw new Error("user must be a Snowflake user name");
 	const privateKey = required(config, "private_key");
@@ -703,25 +706,63 @@ export function snowflakeInsertStatement(table: string): string {
 	return `INSERT INTO ${table} (${SNOWFLAKE_COLUMNS.map(([column]) => column).join(", ")}) SELECT ${SNOWFLAKE_COLUMNS.map(([, value]) => value).join(", ")} FROM TABLE(FLATTEN(INPUT => PARSE_JSON(?)))`;
 }
 
-async function sendSnowflake(config: Record<string, unknown>, rows: BroadcastRow[], send: BroadcastRowsFetch): Promise<BroadcastRowsResult> {
+// The same rows always get the same request ID, so a resubmitted batch is
+// recognised: with retry=true Snowflake does not run an INSERT it already ran.
+export async function snowflakeRequestId(rows: BroadcastRow[]): Promise<string> {
+	const digest = await sha256Hex(rows.map((row) => `${row.event_id}/${row.span_id}`).join("\n"));
+	return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-${(8 | (parseInt(digest[16], 16) & 3)).toString(16)}${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
+}
+
+const SNOWFLAKE_POLLS = 10;
+const STATEMENT_HANDLE = /^[0-9a-f-]{36}$/i;
+
+// https://docs.snowflake.com/en/developer-guide/sql-api/handling-responses
+// 200 means the INSERT finished and 422 that it failed. 202 means it is still
+// running: its status is polled for about 20 seconds, then the batch is
+// retried, and the retry's request ID keeps it from running twice.
+async function sendSnowflake(
+	config: Record<string, unknown>,
+	rows: BroadcastRow[],
+	send: BroadcastRowsFetch,
+	options: { attempt?: number; pollIntervalMs?: number },
+): Promise<BroadcastRowsResult> {
 	const target = snowflakeTarget(config);
-	const token = await snowflakeJwt(target);
-	// A 202 means the insert is still running after the wait; it was accepted.
-	return settled(await send(target.url, {
+	const headers = {
+		authorization: `Bearer ${await snowflakeJwt(target)}`,
+		"x-snowflake-authorization-token-type": "KEYPAIR_JWT",
+		"content-type": "application/json",
+		accept: "application/json",
+	};
+	const url = new URL(target.url);
+	url.searchParams.set("requestId", await snowflakeRequestId(rows));
+	// Only a resubmission sets retry: it makes Snowflake search its history.
+	if ((options.attempt ?? 1) > 1) url.searchParams.set("retry", "true");
+	let response = await send(url, {
 		method: "POST",
-		headers: {
-			authorization: `Bearer ${token}`,
-			"x-snowflake-authorization-token-type": "KEYPAIR_JWT",
-			"content-type": "application/json",
-			accept: "application/json",
-		},
+		headers,
 		body: JSON.stringify({
 			statement: snowflakeInsertStatement(target.table),
 			timeout: 60,
 			...target.context,
 			bindings: { "1": { type: "TEXT", value: JSON.stringify(rows) } },
 		}),
-	}));
+	});
+	for (let poll = 0; response.status === 202 && poll < SNOWFLAKE_POLLS; poll++) {
+		let handle: unknown;
+		try {
+			handle = object(JSON.parse(await boundedText(response))).statementHandle;
+		} catch {}
+		if (typeof handle !== "string" || !STATEMENT_HANDLE.test(handle)) {
+			return { ok: false, status: 202, error: "Snowflake accepted the insert without a statement handle to check", retryAfter: null, retryable: true };
+		}
+		await new Promise((resolve) => setTimeout(resolve, options.pollIntervalMs ?? 2_000));
+		response = await send(new URL(`${target.url}/${handle}`), { method: "GET", headers });
+	}
+	if (response.status === 202) {
+		await response.body?.cancel().catch(() => undefined);
+		return { ok: false, status: 202, error: "Snowflake was still running the insert; it will be checked again", retryAfter: null, retryable: true };
+	}
+	return settled(response);
 }
 
 // The base URL requests go to, after checking the config. Throws a message
@@ -816,11 +857,12 @@ export async function sendBroadcastRows(
 	config: Record<string, unknown>,
 	rows: BroadcastRow[],
 	send: BroadcastRowsFetch,
-	options: { now?: Date; uuid?: string } = {},
+	// attempt is 1 for a batch's first send and counts up on retries.
+	options: { now?: Date; uuid?: string; attempt?: number; pollIntervalMs?: number } = {},
 ): Promise<BroadcastRowsResult> {
 	if (!isBroadcastRowsDestination(id)) throw new Error("Not a row destination");
 	if (id === "bigquery") return sendBigQuery(config, rows, send);
-	if (id === "snowflake") return sendSnowflake(config, rows, send);
+	if (id === "snowflake") return sendSnowflake(config, rows, send, options);
 	if (id === "clickhouse") {
 		const target = clickHouseTarget(config);
 		return settled(await send(target.url, {

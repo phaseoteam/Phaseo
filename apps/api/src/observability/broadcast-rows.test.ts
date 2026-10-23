@@ -10,6 +10,7 @@ import {
 	sendBroadcastRows,
 	signAwsRequest,
 	snowflakeInsertStatement,
+	snowflakeRequestId,
 } from "./broadcast-rows";
 
 const AWS_EXAMPLE_KEYS = {
@@ -474,7 +475,8 @@ describe("Snowflake", () => {
 		});
 		expect(result).toEqual({ ok: true, status: 200, error: null, retryAfter: null });
 		const [{ url, init }] = calls;
-		expect(url.toString()).toBe("https://myorg-my-account.snowflakecomputing.com/api/v2/statements");
+		expect(`${url.origin}${url.pathname}`).toBe("https://myorg-my-account.snowflakecomputing.com/api/v2/statements");
+		expect(url.searchParams.get("requestId")).toBe(await snowflakeRequestId(broadcastRows(otlp, "gateway:req_1")));
 		const headers = init.headers as Record<string, string>;
 		expect(headers["x-snowflake-authorization-token-type"]).toBe("KEYPAIR_JWT");
 		const [header, claims, signature] = headers.authorization.replace("Bearer ", "").split(".");
@@ -496,14 +498,57 @@ describe("Snowflake", () => {
 		const tokens: string[] = [];
 		const send = async (_url: URL, init: RequestInit) => {
 			tokens.push((init.headers as Record<string, string>).authorization);
-			return new Response(JSON.stringify({ statementHandle: "h" }), { status: 202 });
+			return Response.json({ message: "Statement executed successfully." });
 		};
 		const located = { ...config(), account: "xy12345.us-east-1.aws" };
-		expect(await sendBroadcastRows("snowflake", located, [], send)).toMatchObject({ ok: true, status: 202 });
+		expect(await sendBroadcastRows("snowflake", located, [], send)).toMatchObject({ ok: true, status: 200 });
 		await sendBroadcastRows("snowflake", located, [], send);
 		expect(tokens[0]).toBe(tokens[1]);
 		expect(decode(tokens[0].replace("Bearer ", "").split(".")[1]).sub).toBe("XY12345.PHASEO_BROADCAST");
 		expect(broadcastRowsEndpoint("snowflake", located)).toBe("https://xy12345.us-east-1.aws.snowflakecomputing.com/api/v2/statements");
+	});
+
+	it("polls a running insert until it finishes", async () => {
+		const handle = "01b2c3d4-0000-1111-0000-000000000001";
+		const calls: Array<{ url: URL; method: string }> = [];
+		const responses = [
+			Response.json({ statementHandle: handle, message: "Asynchronous execution in progress." }, { status: 202 }),
+			Response.json({ statementHandle: handle, message: "Asynchronous execution in progress." }, { status: 202 }),
+			Response.json({ code: "100132", message: "JavaScript execution error" }, { status: 422 }),
+		];
+		const result = await sendBroadcastRows("snowflake", config(), broadcastRows(otlp, "e"), async (url, init) => {
+			calls.push({ url, method: String(init.method) });
+			return responses.shift()!;
+		}, { pollIntervalMs: 0 });
+		expect(calls.map((call) => `${call.method} ${call.url.pathname}`)).toEqual([
+			"POST /api/v2/statements",
+			`GET /api/v2/statements/${handle}`,
+			`GET /api/v2/statements/${handle}`,
+		]);
+		expect(result).toMatchObject({ ok: false, status: 422, error: "Destination returned 422: JavaScript execution error" });
+	});
+
+	it("retries an insert still running after the polls, with the same request ID", async () => {
+		const urls: URL[] = [];
+		const running = async (url: URL) => {
+			urls.push(url);
+			return Response.json({ statementHandle: "01b2c3d4-0000-1111-0000-000000000001" }, { status: 202 });
+		};
+		const rows = broadcastRows(otlp, "e");
+		expect(await sendBroadcastRows("snowflake", config(), rows, running, { pollIntervalMs: 0 })).toMatchObject({ ok: false, status: 202, retryable: true });
+		expect(urls).toHaveLength(11);
+		expect(urls[0].searchParams.get("retry")).toBeNull();
+		const requestId = urls[0].searchParams.get("requestId");
+		expect(requestId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+
+		urls.length = 0;
+		await sendBroadcastRows("snowflake", config(), rows, async (url) => {
+			urls.push(url);
+			return Response.json({ message: "ok" });
+		}, { attempt: 2 });
+		expect(urls[0].searchParams.get("requestId")).toBe(requestId);
+		expect(urls[0].searchParams.get("retry")).toBe("true");
+		expect(await snowflakeRequestId(rows.slice(1))).not.toBe(requestId);
 	});
 
 	it("reports Snowflake's statement error", async () => {
@@ -532,6 +577,7 @@ describe("Snowflake", () => {
 		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), role: "a b" })).toThrow("role must start with a letter");
 		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), warehouse: "" })).toThrow("warehouse is required");
 		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), account: "evil.example.com/x" })).toThrow("account must be an account identifier");
+		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), account: "xy12345.global" })).toThrow("rather than a .global one");
 		expect(() => broadcastRowsEndpoint("snowflake", { ...config(), private_key: "-----BEGIN ENCRYPTED PRIVATE KEY-----" })).toThrow("unencrypted PKCS #8");
 	});
 });

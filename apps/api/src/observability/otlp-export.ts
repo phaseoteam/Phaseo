@@ -593,7 +593,7 @@ export async function deliverGatewayRowsPayload(
 			const validated = await validateWebhookEndpointUrlForDelivery(url.toString());
 			if (validated.ok === false) throw new InvalidRowsDestination(`Invalid destination endpoint: ${validated.reason}`);
 			return fetch(url, { ...init, redirect: "manual", signal: AbortSignal.timeout(30_000) });
-		});
+		}, { attempt: attempts });
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Row delivery failed";
 		// A config or endpoint the destination will never accept is not retried;
