@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useCallback, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { Fragment, createContext, useContext, useCallback, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -39,6 +39,14 @@ export function useSettingsRouter() {
 	const invalidate = useInvalidatePrivateSettings();
 	const refresh = useCallback(() => { void invalidate(); router.refresh(); }, [invalidate, router]);
 	return useMemo(() => ({ ...router, refresh }), [router, refresh]);
+}
+
+/** Refetches stale data; resolves true when the server returned something different. */
+export async function revalidateStaleSettings(query: { data: unknown; isStale: boolean; refetch: () => Promise<{ isSuccess: boolean; data: unknown }> }) {
+	if (!query.isStale) return false;
+	const before = query.data;
+	const result = await query.refetch();
+	return result.isSuccess && result.data !== before;
 }
 
 /** Only display DTOs belong here: never secret-reveal, payment or MFA responses. */
@@ -89,8 +97,27 @@ export function PrivateSettingsQuery<T>({ path, children, workspace = true, reso
 	});
 	const identity = JSON.stringify(options.queryKey);
 	const [initialRead, setInitialRead] = useState(() => ({ identity, stale: query.isStale }));
+	// Changes made elsewhere load when the tab is shown again. Views copy data into
+	// drafts, so offer to remount rather than replacing what someone is editing.
+	const [mountVersion, setMountVersion] = useState(0);
+	const [changedElsewhere, setChangedElsewhere] = useState(false);
+	const { data: currentData, isStale, refetch } = query;
+	useEffect(() => {
+		if (currentData === undefined) return;
+		function revalidate() {
+			if (document.visibilityState !== "visible") return;
+			void revalidateStaleSettings({ data: currentData, isStale, refetch }).then((changed) => { if (changed) setChangedElsewhere(true); });
+		}
+		document.addEventListener("visibilitychange", revalidate);
+		window.addEventListener("online", revalidate);
+		return () => {
+			document.removeEventListener("visibilitychange", revalidate);
+			window.removeEventListener("online", revalidate);
+		};
+	}, [currentData, isStale, refetch]);
 	if (initialRead.identity !== identity) {
 		setInitialRead({ identity, stale: query.isStale });
+		setChangedElsewhere(false);
 		return <SettingsSectionFallback />;
 	}
 	if (workspace && !scope.workspaceId) return <p>{t("selectWorkspace")}</p>;
@@ -103,7 +130,8 @@ export function PrivateSettingsQuery<T>({ path, children, workspace = true, reso
 	if (!query.data) return <SettingsSectionFallback />;
 	return <>
 		{query.error ? <p role="status">{t("refreshFailed")}</p> : null}
-		{children(query.data)}
+		{changedElsewhere ? <p role="status" className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">{t("changedElsewhere")}<Button variant="link" size="sm" className="h-auto p-0" onClick={() => { setChangedElsewhere(false); setMountVersion((version) => version + 1); }}>{t("showLatest")}</Button></p> : null}
+		<Fragment key={mountVersion}>{children(query.data)}</Fragment>
 	</>;
 }
 

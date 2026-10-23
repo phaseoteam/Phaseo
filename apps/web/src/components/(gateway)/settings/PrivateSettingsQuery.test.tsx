@@ -1,7 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PrivateSettingsProvider, PrivateSettingsQuery, useSettingsWrite } from "./PrivateSettingsQuery";
+import { PrivateSettingsProvider, PrivateSettingsQuery, revalidateStaleSettings, useSettingsWrite } from "./PrivateSettingsQuery";
 import { readCachedSettings } from "@/app/(dashboard)/settings/cachedSettingsActions";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { createClient } from "@/utils/supabase/client";
@@ -40,11 +40,23 @@ it("retains data with a warning on transient errors", () => {
 	expect(html).toContain("private data");
 	expect(html).toContain("Refresh failed");
 });
-it("has no manual refresh button and revalidates stale data on focus", () => {
+it("has no manual refresh button and leaves revalidation to the view", () => {
 	const html = render();
 	expect(html).toContain("private data");
 	expect(html).not.toContain("<button");
-	expect(options).toMatchObject({ refetchOnWindowFocus: true, refetchOnReconnect: true, refetchInterval: false });
+	expect(options).toMatchObject({ refetchOnWindowFocus: false, refetchOnReconnect: false, refetchInterval: false });
+});
+it("revalidates only stale data and reports whether it changed", async () => {
+	const data = { name: "a" };
+	const refetch = jest.fn();
+	await expect(revalidateStaleSettings({ data, isStale: false, refetch })).resolves.toBe(false);
+	expect(refetch).not.toHaveBeenCalled();
+	refetch.mockResolvedValueOnce({ isSuccess: true, data });
+	await expect(revalidateStaleSettings({ data, isStale: true, refetch })).resolves.toBe(false);
+	refetch.mockResolvedValueOnce({ isSuccess: true, data: { name: "b" } });
+	await expect(revalidateStaleSettings({ data, isStale: true, refetch })).resolves.toBe(true);
+	refetch.mockResolvedValueOnce({ isSuccess: false, data });
+	await expect(revalidateStaleSettings({ data, isStale: true, refetch })).resolves.toBe(false);
 });
 it("does not initialize an editor from expired data while the first read is pending", () => {
 	jest.mocked(useQuery).mockReturnValue({ data: { name: "expired draft" }, isStale: true, isFetching: true, isFetchedAfterMount: false } as never);

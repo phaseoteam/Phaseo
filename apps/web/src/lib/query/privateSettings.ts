@@ -5,8 +5,10 @@ export function privateSettingsOptions(scope: AccountQueryScope, path: string) {
 	return {
 		...WEB_QUERY_POLICIES.private,
 		queryKey: [...webQueryKeys.account.scope(scope), "settings", path] as const,
-		// Writes invalidate; outside changes load when the tab regains focus after the data goes stale.
-		// Refetches never remount the view, so open editors keep their drafts.
+		// Editors retain their draft while open. Writes invalidate; PrivateSettingsQuery
+		// revalidates stale data when the tab is shown again and offers the update.
 		refetchInterval: false as const,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 	};
 }

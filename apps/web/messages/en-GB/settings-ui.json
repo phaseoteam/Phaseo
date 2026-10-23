@@ -5433,7 +5433,9 @@
 		"accessChanged": "Your session or workspace access changed. Reload to continue.",
 		"loadFailed": "Settings could not be loaded.",
 		"retry": "Try again",
-		"refreshFailed": "Refresh failed. Showing the last loaded settings."
+		"refreshFailed": "Refresh failed. Showing the last loaded settings.",
+		"changedElsewhere": "These settings changed since this page loaded.",
+		"showLatest": "Show latest"
 	},
 	"landingGaps": {
 		"identityBilling": "Identity and governance billing for this workspace, separate from model usage credits.",

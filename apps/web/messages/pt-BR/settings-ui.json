@@ -5433,7 +5433,9 @@
 		"accessChanged": "Sua sessão ou acesso ao espaço de trabalho mudou. Recarregue para continuar.",
 		"loadFailed": "Não foi possível carregar as configurações.",
 		"retry": "Tentar novamente",
-		"refreshFailed": "Falha ao atualizar. Exibindo as últimas configurações carregadas."
+		"refreshFailed": "Falha ao atualizar. Exibindo as últimas configurações carregadas.",
+		"changedElsewhere": "Estas configurações mudaram desde que a página foi carregada.",
+		"showLatest": "Mostrar mais recentes"
 	},
 	"landingGaps": {
 		"identityBilling": "Faturamento de identidade e governança deste espaço, separado dos créditos de uso de modelos.",
