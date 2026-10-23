@@ -109,14 +109,21 @@ describe("ElevenLabs Realtime models and setup", () => {
 		expect(elevenLabsCanonicalModel("elevenlabs/eleven_realtime_v1_mini")).toBe("eleven-labs/eleven-realtime-v1-mini");
 		expect(elevenLabsProviderModel("eleven-labs/eleven-realtime-v1-mini")).toBe("eleven_realtime_v1_mini");
 		expect(realtimeMaxDurationSeconds("elevenlabs")).toBe(30 * 60);
+		expect(providerFromModel("eleven-labs/eleven-realtime-v1-max")).toBe("elevenlabs");
+		expect(elevenLabsProviderModel("eleven-labs/eleven-realtime-v1-max")).toBe("eleven_realtime_v1_max");
+		expect(canonicalModel("elevenlabs", "eleven_realtime_v1_max")).toBe("eleven-labs/eleven-realtime-v1-max");
+	});
+
+	it("chooses the model in session.update, since ElevenLabs ignores ?model= (recorded 2026-10-23)", () => {
+		expect(buildElevenLabsSessionUpdate({ model: "eleven_realtime_v1_max" }).session.model).toBe("eleven_realtime_v1_max");
 	});
 
 	it("asks ElevenLabs for a session a minute longer than the gateway cap, never under its 60 s minimum", () => {
-		expect(buildElevenLabsSessionUpdate({ voice: "brian", maxDurationSeconds: 1860 }).session).toMatchObject({
-			max_duration_seconds: 1860, audio: { input: { format: { type: "audio/pcm", rate: 24_000 } }, output: { voice: "brian" } },
+		expect(buildElevenLabsSessionUpdate({ model: "eleven_realtime_v1_mini", voice: "brian", maxDurationSeconds: 1860 }).session).toMatchObject({
+			model: "eleven_realtime_v1_mini", max_duration_seconds: 1860, audio: { input: { format: { type: "audio/pcm", rate: 24_000 } }, output: { voice: "brian" } },
 		});
-		expect(buildElevenLabsSessionUpdate({ maxDurationSeconds: 20 }).session.max_duration_seconds).toBe(60);
-		expect(buildElevenLabsSessionUpdate({})).not.toHaveProperty("session.max_duration_seconds");
+		expect(buildElevenLabsSessionUpdate({ model: "eleven_realtime_v1_mini", maxDurationSeconds: 20 }).session.max_duration_seconds).toBe(60);
+		expect(buildElevenLabsSessionUpdate({ model: "eleven_realtime_v1_mini" })).not.toHaveProperty("session.max_duration_seconds");
 	});
 });
 
@@ -142,12 +149,32 @@ describe("ElevenLabs conversation cost (recorded GET)", () => {
 });
 
 describe("ElevenLabs relay", () => {
+	it("ends the call before any reply when ElevenLabs confirms a different model than the one priced", async () => {
+		vi.useFakeTimers();
+		const { object } = relay();
+		object.elevenLabsModel = "eleven_realtime_v1_max";
+		mocks.fetchCost.mockResolvedValue(reported);
+		await object.handleUpstreamMessage(JSON.stringify(recording.events[0].event));
+		await object.handleUpstreamMessage(JSON.stringify(recording.session_updated));
+		expect(object.providerSetupComplete).toBe(false);
+		expect(object.acceptingAudio).toBe(false);
+		expect(object.end).toMatchObject({ reason: "provider_error", initiatedBy: "provider" });
+	});
+
+	it("accepts the session when ElevenLabs confirms the requested model", async () => {
+		const { object } = relay();
+		object.elevenLabsModel = "eleven_realtime_v1_mini";
+		await object.handleUpstreamMessage(JSON.stringify(recording.session_updated));
+		expect(object.providerSetupComplete).toBe(true);
+		expect(object.end).toBeNull();
+	});
+
 	it("records the conversation, retries a refused session length with ElevenLabs' default, and keeps the error from the client", async () => {
 		vi.useFakeTimers();
 		const { object, storage } = relay();
 		await play(object, recording.events);
 		expect(object.usage.provider_conversation_id).toBe("conv_4101m5hp9pdze1bajbw3gjssccra");
-		expect(object.upstream.send).toHaveBeenLastCalledWith(JSON.stringify(buildElevenLabsSessionUpdate({ voice: "brian", instructions: null })));
+		expect(object.upstream.send).toHaveBeenLastCalledWith(JSON.stringify(buildElevenLabsSessionUpdate({ model: "eleven_realtime_v1_mini", voice: "brian", instructions: null })));
 		expect(object.deadlineMs).toBe(object.claimedAtMs + 595_000);
 		expect(storage.setAlarm).toHaveBeenLastCalledWith(object.claimedAtMs + 595_000);
 		expect(sentOfType(object, "error")).toHaveLength(0);

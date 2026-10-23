@@ -66,7 +66,7 @@ A GPT Live call is billed per second of voice ($0.05 per minute, from GPT Live's
 
 ### ElevenLabs Realtime sessions
 
-ElevenLabs Realtime (`eleven-labs/eleven-realtime-v1-mini`) uses the same create request and relay as OpenAI, with 24 kHz audio. Phaseo connects to ElevenLabs with its own key; your client only ever sees the relay.
+ElevenLabs Realtime comes in two models: `eleven-labs/eleven-realtime-v1-mini`, the faster and cheaper default, and `eleven-labs/eleven-realtime-v1-max`, which reasons before it answers and suits complex instructions and multi-step tool use. Both use the same create request and relay as OpenAI, with 24 kHz audio. Phaseo connects to ElevenLabs with its own key; your client only ever sees the relay.
 
 ElevenLabs bills a call for every second it's connected, plus the language-model tokens it uses, and it doesn't report usage during the call. The relay meters connected time while the call runs, so holds and the overdraft cap work as for other providers. When the call ends, Phaseo reads ElevenLabs' bill for the conversation and charges the larger of that and its own list-price total. That usually takes a few seconds. If it takes longer, `session.ended` arrives with `billing_status: "pending"` and a `final_bill` request, and the bill is settled within 10 minutes.
 
