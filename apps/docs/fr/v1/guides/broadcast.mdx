@@ -13,7 +13,7 @@ Broadcast est gratuit. Les propriétaires et les administrateurs gèrent les des
 1. Ouvrez **Paramètres → Broadcast** et choisissez une destination.
 2. Saisissez ses identifiants. Ils sont chiffrés avant leur enregistrement et ne sont plus jamais affichés.
 3. Choisissez ce qui est envoyé (voir la section « Choisir ce qui est envoyé »).
-4. Sélectionnez **Test de connexion**. Phaseo envoie une trace d’exemple de la même manière que les envois réels : un échec à cette étape affiche donc l’erreur propre à la destination.
+4. Sélectionnez **Tester la connexion**. Phaseo envoie une trace d’exemple de la même manière que les envois réels : un échec à cette étape affiche donc l’erreur propre à la destination.
 5. Enregistrez. Les requêtes qui se terminent ensuite sont envoyées en une minute environ.
 
 | Catégorie | Destinations |
@@ -31,7 +31,7 @@ Chaque formulaire ne demande que ce dont l’outil a besoin, par exemple une cl�
 Chaque destination a ses propres paramètres :
 
 - **Mode de confidentialité** exclut de chaque trace les prompts, les sorties, les instructions système et les définitions d’outils. Les requêtes effectuées avec une clé API qui ne stocke jamais de contenu ne sont jamais transmises avec leur contenu, quelle que soit la valeur de ce paramètre.
-- **Génération Métadonnées**, **Coût**, **Identité** et **Demande Contexte** activent ou désactivent chacun un groupe d’attributs de span. Désactiver **Demande Contexte** supprime aussi les métadonnées de requête (voir la section « Ajouter votre propre contexte de trace »).
+- **Métadonnées de génération**, **Coût**, **Identité** et **Contexte de la requête** activent ou désactivent chacun un groupe d’attributs de span. Désactiver **Contexte de la requête** supprime aussi les métadonnées de requête (voir la section « Ajouter votre propre contexte de trace »).
 - **Taux** envoie une part des requêtes éligibles, de 0 à 1. Le choix est stable pour chaque requête et chaque destination : un envoi relancé n’est donc jamais échantillonné différemment.
 - **Filtre des clés API** inclut ou exclut les requêtes effectuées avec certaines clés.
 - **Règles de filtre** n’envoient que les requêtes correspondantes. Les règles comparent des champs comme le modèle, le fournisseur, l’ID utilisateur, le motif de fin, le coût ou le nombre de tokens, et peuvent être regroupées avec **et** et **ou**. **Matches regex** utilise un moteur en temps linéaire : les références arrière et les assertions lookaround ne sont pas prises en charge, et un motif trop volumineux est refusé à l’enregistrement.
@@ -63,7 +63,7 @@ Placez un objet `metadata` dans le corps de la requête pour nommer les traces e
 
 Les valeurs peuvent être des chaînes, des nombres ou des booléens ; les objets imbriqués sont ignorés. Phaseo conserve jusqu’à 64 clés de 64 caractères au plus et tronque les valeurs à 512 caractères. Un en-tête W3C `traceparent`, s’il est présent, détermine la trace à la place de `trace_id` et `parent_span_id`.
 
-Ne placez ni secrets ni données personnelles dans `metadata` : il est envoyé à toutes les destinations où **Demande Contexte** est activé.
+Ne placez ni secrets ni données personnelles dans `metadata` : il est envoyé à toutes les destinations où **Contexte de la requête** est activé.
 
 ## Envois par webhook
 
@@ -78,7 +78,7 @@ x-phaseo-signature: 5d2a…e41f
 
 `x-phaseo-signature` est le HMAC-SHA256 hexadécimal de l’horodatage, d’un point (`.`) et du corps de la requête non modifié, avec votre secret comme clé. C’est le même schéma que pour les webhooks de notification : vous pouvez donc réutiliser leur [code de vérification](./workspace-notifications.mdx). Les envois Broadcast n’ont pas d’en-tête d’ID d’événement : dédupliquez à l’aide des ID de span présents dans le corps.
 
-**Test de connexion** envoie `{"resourceSpans": []}` avec un en-tête `X-Test-Connection: true`. Une réponse `400` est considérée comme joignable : un récepteur qui refuse les exports vides réussit donc quand même le test.
+**Tester la connexion** envoie `{"resourceSpans": []}` avec un en-tête `X-Test-Connection: true`. Une réponse `400` est considérée comme joignable : un récepteur qui refuse les exports vides réussit donc quand même le test.
 
 ## Lignes du stockage d’objets et des entrepôts
 
