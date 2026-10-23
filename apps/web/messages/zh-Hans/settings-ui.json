@@ -5433,8 +5433,9 @@
 		"accessChanged": "你的会话或工作区访问权限已更改。请重新加载以继续。",
 		"loadFailed": "无法加载设置。",
 		"retry": "重试",
-		"refresh": "刷新设置",
-		"refreshFailed": "刷新失败。正在显示上次加载的设置。"
+		"refreshFailed": "刷新失败。正在显示上次加载的设置。",
+		"changedElsewhere": "自页面加载以来，这些设置已更改。",
+		"showLatest": "显示最新"
 	},
 	"landingGaps": {
 		"identityBilling": "此工作区的身份和治理计费，与模型使用额度分开。",

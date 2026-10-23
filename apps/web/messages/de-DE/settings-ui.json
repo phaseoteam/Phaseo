@@ -5433,8 +5433,9 @@
 		"accessChanged": "Deine Sitzung oder dein Zugriff auf den Arbeitsbereich hat sich geändert. Lade die Seite neu, um fortzufahren.",
 		"loadFailed": "Die Einstellungen konnten nicht geladen werden.",
 		"retry": "Erneut versuchen",
-		"refresh": "Einstellungen aktualisieren",
-		"refreshFailed": "Die Aktualisierung ist fehlgeschlagen. Die zuletzt geladenen Einstellungen werden angezeigt."
+		"refreshFailed": "Die Aktualisierung ist fehlgeschlagen. Die zuletzt geladenen Einstellungen werden angezeigt.",
+		"changedElsewhere": "Diese Einstellungen wurden seit dem Laden der Seite geändert.",
+		"showLatest": "Neueste anzeigen"
 	},
 	"landingGaps": {
 		"identityBilling": "Abrechnung für Identität und Governance in diesem Arbeitsbereich, getrennt von Modellnutzungsguthaben.",
