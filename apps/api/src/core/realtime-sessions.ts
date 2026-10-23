@@ -23,8 +23,12 @@ export const REALTIME_GRACEFUL_STOP_THRESHOLD = 0.95;
 // counted from when the relay connects (claims) the session, not from creation.
 export const OPENAI_REALTIME_MAX_DURATION_SECONDS = 60 * 60;
 export const XAI_REALTIME_MAX_DURATION_SECONDS = 120 * 60;
-// Until upstream session resumption is supported.
-export const GOOGLE_REALTIME_MAX_DURATION_SECONDS = 15 * 60;
+// Google closes each Live connection after about 10 minutes (goAway ~50 s
+// before) and the relay resumes it on a new connection. With context window
+// compression the provider sets no session limit, and resumption handles stay
+// valid for 2 hours. One hour bounds the number of reconnects (each re-bills the
+// carried context as input tokens, which usageMetadata reports and we bill).
+export const GOOGLE_REALTIME_MAX_DURATION_SECONDS = 60 * 60;
 export const LIVE_MAX_DURATION_SECONDS = 25 * 60;
 // The longest any relay session may run, whatever its provider.
 export const REALTIME_RELAY_MAX_DURATION_SECONDS = XAI_REALTIME_MAX_DURATION_SECONDS;
@@ -390,6 +394,11 @@ export function buildGoogleBidiGenerateContentSetup(args?: {
 	voice?: string | null;
 	instructions?: string | null;
 	thinkingLevel?: GoogleRealtimeThinkingLevel | null;
+	/**
+	 * Relay only: ask Google for resumption handles (null) or resume from one
+	 * (a handle). Omitted for ephemeral tokens handed to clients.
+	 */
+	resumptionHandle?: string | null;
 }) {
 	const voice = normalizeText(args?.voice) ?? "Puck";
 	const model = normalizeText(args?.model) ?? "gemini-3.1-flash-live-preview";
@@ -429,8 +438,13 @@ export function buildGoogleBidiGenerateContentSetup(args?: {
 				prefixPaddingMs: 300,
 			},
 			activityHandling: "START_OF_ACTIVITY_INTERRUPTS",
+			// Silence between activity is not part of a turn, so it is never
+			// tokenized or billed (relied on when the relay forwards mic silence).
 			turnCoverage: "TURN_INCLUDES_ONLY_ACTIVITY",
 		},
+		...(args?.resumptionHandle !== undefined
+			? { sessionResumption: args.resumptionHandle ? { handle: args.resumptionHandle } : {} }
+			: {}),
 	};
 }
 

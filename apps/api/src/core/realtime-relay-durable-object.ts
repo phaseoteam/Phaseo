@@ -69,6 +69,18 @@ const GOOGLE_OUTPUT_SAMPLE_RATE = 24_000;
 const OPENAI_OUTPUT_SAMPLE_RATE = 24_000;
 const GOOGLE_SPEECH_RMS_THRESHOLD = 0.012;
 const GOOGLE_SILENCE_END_MS = 1_000;
+// Google closes a Live connection that receives no input for about 150 s
+// (recorded 2026-10-22: 1008 at 150.3 s, no goAway). Warn this long after the
+// client's last audio so it can keep streaming (silence is enough).
+export const GOOGLE_INPUT_IDLE_WARNING_MS = 120_000;
+export const GOOGLE_INPUT_IDLE_CLOSE_MS = 150_000;
+// A resumed connection that has not acknowledged setup by then has failed.
+export const GOOGLE_RESUME_SETUP_TIMEOUT_MS = 10_000;
+// Resumption attempts per goAway before the call ends with the connection.
+const GOOGLE_RESUME_MAX_ATTEMPTS = 2;
+// Client audio held while the relay switches connections (~0.3 s recorded).
+// Anything beyond this is dropped, never billed.
+const GOOGLE_RESUME_AUDIO_BUFFER_MS = 5_000;
 // Server VAD keeps this much audio before detected speech in the committed buffer.
 const OPENAI_VAD_PREFIX_PADDING_MS = 300;
 // After this many failed settlement attempts the session moves to billing
@@ -132,6 +144,10 @@ type RelayUsageAggregate = LiveUsage & {
 	provider_last_seen_ms?: number;
 	provider_closed_at_ms?: number;
 	session_audio_ms?: number;
+	// Google: connections resumed after goAway, failed attempts and audio dropped while switching.
+	provider_reconnects?: number;
+	provider_resume_failures?: number;
+	resume_dropped_audio_ms?: number;
 };
 
 type RelayProviderState = {
@@ -342,13 +358,26 @@ export function googleUsageSnapshot(usage: Record<string, unknown>): RelayUsageA
 	const promptDetails = usage.promptTokensDetails ?? usage.prompt_tokens_details;
 	const responseDetails = usage.responseTokensDetails ?? usage.response_tokens_details;
 	const thoughts = toNumber(usage.thoughtsTokenCount ?? usage.thoughts_token_count);
+	const inputText = getGoogleModalityTokens(promptDetails, "text");
+	const inputAudio = getGoogleModalityTokens(promptDetails, "audio");
+	const inputImage = getGoogleModalityTokens(promptDetails, "image");
+	const inputVideo = getGoogleModalityTokens(promptDetails, "video");
+	const outputText = getGoogleModalityTokens(responseDetails, "text");
+	const outputAudio = getGoogleModalityTokens(responseDetails, "audio");
+	// Recorded Live turns report a promptTokenCount above the sum of its
+	// modality details (413 vs 393 on 2026-10-22). Google bills the total, so
+	// the remainder is billed as text instead of being dropped.
+	const promptTotal = toNumber(usage.promptTokenCount ?? usage.prompt_token_count);
+	const responseTotal = toNumber(usage.responseTokenCount ?? usage.response_token_count ?? usage.candidatesTokenCount);
+	const unattributedInput = Math.max(0, promptTotal - inputText - inputAudio - inputImage - inputVideo);
+	const unattributedOutput = Math.max(0, responseTotal - outputText - outputAudio);
 	return {
-		input_text_tokens: getGoogleModalityTokens(promptDetails, "text"),
-		input_audio_tokens: getGoogleModalityTokens(promptDetails, "audio"),
-		output_text_tokens: getGoogleModalityTokens(responseDetails, "text") + thoughts,
-		output_audio_tokens: getGoogleModalityTokens(responseDetails, "audio"),
-		input_image_tokens: getGoogleModalityTokens(promptDetails, "image"),
-		input_video_tokens: getGoogleModalityTokens(promptDetails, "video"),
+		input_text_tokens: inputText + unattributedInput,
+		input_audio_tokens: inputAudio,
+		output_text_tokens: outputText + unattributedOutput + thoughts,
+		output_audio_tokens: outputAudio,
+		input_image_tokens: inputImage,
+		input_video_tokens: inputVideo,
 	};
 }
 
@@ -500,6 +529,20 @@ export class RealtimeRelayDurableObject {
 	private holdShortfall = false;
 	private lastHoldAttemptAt = 0;
 	private lastFundsCheckAt = 0;
+	// Google session resumption: the latest handle, whether Google said the
+	// session could be resumed from it, and the connection switch in progress.
+	private googleResumeHandle: string | null = null;
+	private googleHandleResumable = false;
+	private googleGoAwayAt = 0;
+	private googleGoAwayDeadlineMs = 0;
+	private googleResuming = false;
+	private googleResumeAttempts = 0;
+	private resumeSocket: WebSocket | null = null;
+	private resumeTimer: number | null = null;
+	private resumeTask: Promise<void> | null = null;
+	private resumeAudio: Array<{ audio: string; ms: number }> = [];
+	private resumeAudioMs = 0;
+	private googleIdleTimer: number | null = null;
 
 	private get isLive() { return isLiveModel(this.session?.model_id); }
 	// Playground rules (idle timeout, hold and spend-limit closes) apply only to source "chat".
@@ -593,6 +636,7 @@ export class RealtimeRelayDurableObject {
 				idle_timeout_seconds: this.isPlayground ? REALTIME_IDLE_TIMEOUT_SECONDS : null,
 			});
 			this.resetIdleTimer();
+			this.resetGoogleIdleWarning();
 			this.scheduleDurationWarnings();
 			this.schedulePolicyRecheck();
 		}
@@ -621,7 +665,6 @@ export class RealtimeRelayDurableObject {
 			typeof metadataRecord(this.session).instructions === "string"
 				? String(metadataRecord(this.session).instructions)
 				: undefined;
-		const thinkingLevel = metadataRecord(this.session).thinking_level;
 
 		if (provider === "openai") {
 			const key = resolveOpenAIKey();
@@ -673,23 +716,7 @@ export class RealtimeRelayDurableObject {
 		}
 
 		if (provider === "google-ai-studio") {
-			const key = resolveGoogleKey();
-			if (!key) throw new Error("google_ai_studio_key_missing");
-			this.upstream = await connectWebSocket(
-				`${GOOGLE_LIVE_URL}?key=${encodeURIComponent(key)}`,
-			);
-			this.attachUpstream();
-			this.sendUpstream({
-				setup: buildGoogleBidiGenerateContentSetup({
-					model,
-					voice,
-					instructions,
-					thinkingLevel:
-						thinkingLevel === "low" || thinkingLevel === "medium" || thinkingLevel === "high"
-							? thinkingLevel
-							: null,
-				}),
-			});
+			this.upstream = await this.openGoogleSocket(null);
 			return;
 		}
 
@@ -718,16 +745,52 @@ export class RealtimeRelayDurableObject {
 		});
 	}
 
-	private attachUpstream() {
-		const upstream = this.upstream;
+	/**
+	 * Opens a Google Live connection and sends setup, asking for resumption
+	 * handles (handle null) or resuming from one.
+	 */
+	private async openGoogleSocket(handle: string | null): Promise<WebSocket> {
+		if (!this.session) throw new Error("realtime_relay_session_missing");
+		const key = resolveGoogleKey();
+		if (!key) throw new Error("google_ai_studio_key_missing");
+		const metadata = metadataRecord(this.session);
+		const thinkingLevel = metadata.thinking_level;
+		const socket = await connectWebSocket(`${GOOGLE_LIVE_URL}?key=${encodeURIComponent(key)}`);
+		// Owned before any event can arrive, so close and error handlers recognise it.
+		if (handle === null) this.upstream = socket;
+		else this.resumeSocket = socket;
+		this.attachUpstream(socket);
+		socket.send(JSON.stringify({
+			setup: buildGoogleBidiGenerateContentSetup({
+				model: this.session.provider_model_id ?? this.session.model_id.split("/").pop() ?? this.session.model_id,
+				voice: this.session.voice ?? undefined,
+				instructions: typeof metadata.instructions === "string" ? metadata.instructions : undefined,
+				thinkingLevel:
+					thinkingLevel === "low" || thinkingLevel === "medium" || thinkingLevel === "high"
+						? thinkingLevel
+						: null,
+				resumptionHandle: handle,
+			}),
+		}));
+		return socket;
+	}
+
+	private attachUpstream(upstream: WebSocket | null = this.upstream) {
 		if (!upstream) return;
 		upstream.addEventListener("message", (event) => {
-			this.queueUpstreamEvent(() => this.handleUpstreamMessage(event.data));
+			this.queueUpstreamEvent(() => this.handleUpstreamMessage(event.data, upstream));
 		});
 		upstream.addEventListener("close", (event) => {
-			this.queueUpstreamEvent(() => this.handleUpstreamClose(event));
+			this.queueUpstreamEvent(() => this.handleUpstreamClose(event, upstream));
 		});
 		upstream.addEventListener("error", () => {
+			if (upstream === this.resumeSocket) {
+				this.queueUpstreamEvent(() => this.failGoogleResume("provider_socket_error"));
+				return;
+			}
+			// A replaced connection no longer matters; during a switch the close
+			// that follows decides what happens.
+			if (upstream !== this.upstream || this.googleResuming) return;
 			this.sendClient({
 				type: "relay.upstream_error",
 				provider: this.session?.provider,
@@ -750,8 +813,14 @@ export class RealtimeRelayDurableObject {
 		this.state.waitUntil(this.upstreamEvents);
 	}
 
-	private async handleUpstreamClose(event: CloseEvent) {
+	private async handleUpstreamClose(event: CloseEvent, socket?: WebSocket) {
 		if (this.settled) return;
+		if (socket && socket === this.resumeSocket) {
+			await this.failGoogleResume(`provider_socket_closed_${event.code ?? "unknown"}`);
+			return;
+		}
+		// A connection the relay already replaced with a resumed one.
+		if (socket && this.upstream !== socket) return;
 		const provider = this.session ? providerFromSession(this.session) : null;
 		const googleClosedBeforeSetup =
 			provider === "google-ai-studio" && !this.providerSetupComplete;
@@ -761,6 +830,20 @@ export class RealtimeRelayDurableObject {
 			: "provider_socket_closed";
 		// Google closes idle sessions with 1008 and sessions past their limit after goAway.
 		if (!this.end && typeof event.code === "number") this.providerCloseCode = event.code;
+		if (provider === "google-ai-studio" && !closedBeforeReady && this.googleGoAwayAt > 0
+			&& !this.pendingSettlement && !this.end && !this.settling) {
+			// Google closed the connection it announced with goAway before the relay
+			// could switch (a turn was still running). Nothing more can arrive on it,
+			// so its unfinished turn is billed from metered audio, then the call resumes.
+			this.upstream = null;
+			this.applyPendingEstimate("google_resumption_interrupted_turn");
+			await this.checkpointUsage(true);
+			if (this.googleResuming) return;
+			if (this.googleResumeHandle && this.googleResumeAttempts < GOOGLE_RESUME_MAX_ATTEMPTS) {
+				this.resumeTask = this.startGoogleResume();
+				return;
+			}
+		}
 		this.sendClient({
 			type: "relay.upstream_closed",
 			provider: this.session?.provider,
@@ -817,7 +900,9 @@ export class RealtimeRelayDurableObject {
 			await this.rejectAudio(validated.reason);
 			return;
 		}
-		if (this.upstream?.readyState !== WebSocket.OPEN || this.upstream.bufferedAmount > RELAY_MAX_BUFFERED_BYTES) {
+		// While Google's connection is being switched, audio is held (or dropped), not rejected.
+		if (!this.googleResuming
+			&& (this.upstream?.readyState !== WebSocket.OPEN || this.upstream.bufferedAmount > RELAY_MAX_BUFFERED_BYTES)) {
 			await this.rejectAudio("realtime_upstream_backpressure");
 			return;
 		}
@@ -829,9 +914,13 @@ export class RealtimeRelayDurableObject {
 			return;
 		}
 		if (provider === "google-ai-studio") {
+			this.resetGoogleIdleWarning();
 			// Compute activity from validated PCM, never the client-supplied rms.
 			// Idle microphone silence does not create a provider VAD turn and
-			// must not reopen pending billing after the last response.
+			// must not reopen pending billing after the last response. It is
+			// still forwarded: it keeps Google's connection open (no input for
+			// ~150 s closes it), and with TURN_INCLUDES_ONLY_ACTIVITY Google
+			// leaves it out of every turn, so it is never tokenized or billed.
 			const pcm = atob(message.audio);
 			let squares = 0;
 			for (let i = 0; i < pcm.length; i += 2) {
@@ -846,8 +935,10 @@ export class RealtimeRelayDurableObject {
 			} else {
 				this.googleSilenceMs += validated.durationMs;
 				if (!this.googleAudioActive || this.googleSilenceMs >= GOOGLE_SILENCE_END_MS) {
-					if (this.googleAudioActive) this.sendUpstream({ realtimeInput: { audioStreamEnd: true } });
+					// Google's own VAD ends the turn from the forwarded silence.
 					this.googleAudioActive = false;
+					this.sendGoogleAudio(message.audio, validated.durationMs);
+					this.maybeStartGoogleResume();
 					return;
 				}
 			}
@@ -873,14 +964,7 @@ export class RealtimeRelayDurableObject {
 		await this.checkpointUsage(!pendingBefore && this.inputSinceLastResponse);
 		void this.maybePersistUsage();
 		if (provider === "google-ai-studio") {
-			this.sendUpstream({
-				realtimeInput: {
-					audio: {
-						mimeType: "audio/pcm;rate=16000",
-						data: message.audio,
-					},
-				},
-			});
+			this.sendGoogleAudio(message.audio, validated.durationMs);
 			return;
 		}
 		this.sendUpstream({
@@ -906,19 +990,30 @@ export class RealtimeRelayDurableObject {
 		return OPENAI_BILLING_EVENT_TYPES.has(type);
 	}
 
-	private async handleUpstreamMessage(raw: unknown) {
+	private async handleUpstreamMessage(raw: unknown, socket?: WebSocket) {
 		const text = await parseMessageData(raw);
 		if (!text) return;
 		this.lastActivityAt = Date.now();
 		// Bounds the billed duration of an xAI session if this object is evicted.
 		if (this.upstream && this.usage.provider_connected_at_ms) this.usage.provider_last_seen_ms = this.lastActivityAt;
 		const event = parseJson(text);
+		// A connection abandoned because the call ended has nothing left to say.
+		if (socket && socket !== this.upstream && socket !== this.resumeSocket && (this.settled || this.settling)) return;
+		if (socket && socket === this.resumeSocket) {
+			// A resumed Google connection: its setupComplete completes the switch
+			// and is not shown to the client, which saw the first one.
+			if (event?.setupComplete) { await this.finishGoogleResume(); return; }
+			if (event?.error) { await this.failGoogleResume("provider_resume_setup_error"); return; }
+		}
 		let forwarded = false;
 		const forward = () => {
 			if (forwarded) return;
 			forwarded = true;
 			this.sendClientRaw(text);
 		};
+		// Connection management is handled by the relay: goAway and resumption
+		// handles are never forwarded (a handle resumes our provider session).
+		if (event && (event.goAway || event.sessionResumptionUpdate)) forwarded = true;
 		// Usage-bearing and in-flight events are journaled to Durable Object
 		// storage before the client sees them; everything else is forwarded first.
 		if (!event || !this.session || !this.isBillingEvent(event)) forward();
@@ -1082,12 +1177,22 @@ export class RealtimeRelayDurableObject {
 
 		if (provider === "google-ai-studio") {
 			if (event.setupComplete) this.providerSetupComplete = true;
+			const resumption = getRecordField(event, "sessionResumptionUpdate");
+			if (resumption) {
+				const handle = getStringField(resumption, "newHandle");
+				this.googleHandleResumable = resumption.resumable === true;
+				if (handle && this.googleHandleResumable) this.googleResumeHandle = handle;
+			}
 			const goAway = getRecordField(event, "goAway");
-			if (goAway) {
+			if (goAway && !this.googleGoAwayAt) {
 				const secondsRemaining = durationSeconds(goAway.timeLeft);
-				this.warnOnce("provider_closing", "goaway",
-					"The provider will close this connection soon; the call ends when it does.",
-					secondsRemaining != null ? { seconds_remaining: secondsRemaining } : undefined);
+				this.googleGoAwayAt = Date.now();
+				this.googleGoAwayDeadlineMs = this.googleGoAwayAt + (secondsRemaining ?? 50) * 1000;
+				this.googleResumeAttempts = 0;
+				// The relay moves the call to a new connection; warn only when it cannot.
+				if (!this.googleResumeHandle || this.pendingSettlement || this.end) {
+					this.warnGoogleClosing(secondsRemaining);
+				}
 			}
 			const serverContent = getRecordField(event, "serverContent");
 			if (serverContent) {
@@ -1144,6 +1249,154 @@ export class RealtimeRelayDurableObject {
 			await this.afterResponseComplete();
 		}
 		if (inputCleared) await this.finishDrainIfIdle();
+		if (provider === "google-ai-studio") this.maybeStartGoogleResume();
+	}
+
+	private warnGoogleClosing(secondsRemaining: number | null) {
+		this.warnOnce("provider_closing", "goaway",
+			"The provider will close this connection soon; the call ends when it does.",
+			secondsRemaining != null ? { seconds_remaining: secondsRemaining } : undefined);
+	}
+
+	/**
+	 * After goAway, moves the call to a new Google connection once no turn is
+	 * running and Google has marked the latest handle resumable. A turn still
+	 * running when Google closes is handled in handleUpstreamClose.
+	 */
+	private maybeStartGoogleResume() {
+		if (!this.googleGoAwayAt || this.googleResuming || !this.googleResumeHandle) return;
+		if (this.settled || this.settling || this.pendingSettlement || this.end) return;
+		if (this.googleResumeAttempts >= GOOGLE_RESUME_MAX_ATTEMPTS) return;
+		if (!this.googleHandleResumable || this.providerState.googleTurnActive || this.responseInFlight || this.googleAudioActive) return;
+		this.resumeTask = this.startGoogleResume();
+	}
+
+	private isEnding(): boolean {
+		return this.settled || this.settling || this.pendingSettlement != null || this.end != null;
+	}
+
+	private async startGoogleResume() {
+		if (this.googleResuming || !this.googleResumeHandle) return;
+		this.googleResuming = true;
+		this.googleResumeAttempts += 1;
+		let socket: WebSocket;
+		try {
+			socket = await this.openGoogleSocket(this.googleResumeHandle);
+		} catch (error) {
+			console.warn("realtime_relay_google_resume_connect_failed", {
+				sessionId: this.session?.session_id,
+				error: error instanceof Error ? error.message : String(error),
+			});
+			this.resumeSocket = null;
+			await this.failGoogleResume("provider_resume_connect_failed");
+			return;
+		}
+		if (this.isEnding() || !this.googleResuming) {
+			// The call ended while the new connection was opening.
+			try { socket.close(1000, "realtime_relay_settling"); } catch { /* already closed */ }
+			if (this.resumeSocket === socket) this.resumeSocket = null;
+			return;
+		}
+		this.resumeSocket = socket;
+		this.resumeTimer = setTimeout(() => {
+			this.resumeTimer = null;
+			this.queueUpstreamEvent(() => this.failGoogleResume("provider_resume_setup_timeout"));
+		}, GOOGLE_RESUME_SETUP_TIMEOUT_MS) as unknown as number;
+	}
+
+	/** The resumed connection is set up: it becomes the provider socket. */
+	private async finishGoogleResume() {
+		const socket = this.resumeSocket;
+		if (!socket) return;
+		if (this.resumeTimer != null) clearTimeout(this.resumeTimer);
+		this.resumeTimer = null;
+		this.resumeSocket = null;
+		if (this.isEnding()) {
+			try { socket.close(1000, "realtime_relay_settling"); } catch { /* already closed */ }
+			this.googleResuming = false;
+			return;
+		}
+		const previous = this.upstream;
+		this.upstream = socket;
+		this.googleResuming = false;
+		this.googleGoAwayAt = 0;
+		this.googleGoAwayDeadlineMs = 0;
+		this.googleResumeAttempts = 0;
+		this.googleHandleResumable = false;
+		this.usage.provider_reconnects = toNumber(this.usage.provider_reconnects) + 1;
+		try { previous?.close(1000, "realtime_relay_resumed"); } catch { /* already closed */ }
+		const buffered = this.resumeAudio;
+		this.resumeAudio = [];
+		this.resumeAudioMs = 0;
+		for (const chunk of buffered) this.sendGoogleAudio(chunk.audio, chunk.ms);
+		await this.checkpointUsage(true);
+		this.sendClient({ type: "relay.provider_reconnected", provider: this.session?.provider, reconnects: this.usage.provider_reconnects });
+	}
+
+	/**
+	 * A resumption attempt failed: retry while the old connection is still
+	 * open, otherwise warn that the call ends with it, or end now if it is gone.
+	 */
+	private async failGoogleResume(reason: string) {
+		if (!this.googleResuming && !this.resumeSocket) return;
+		if (this.resumeTimer != null) clearTimeout(this.resumeTimer);
+		this.resumeTimer = null;
+		const socket = this.resumeSocket;
+		this.resumeSocket = null;
+		try { socket?.close(1000, "realtime_relay_resume_failed"); } catch { /* already closed */ }
+		this.googleResuming = false;
+		this.usage.provider_resume_failures = toNumber(this.usage.provider_resume_failures) + 1;
+		console.warn("realtime_relay_google_resume_failed", { sessionId: this.session?.session_id, reason, attempt: this.googleResumeAttempts });
+		if (this.isEnding()) return;
+		const oldOpen = this.upstream?.readyState === WebSocket.OPEN;
+		if (this.googleResumeAttempts < GOOGLE_RESUME_MAX_ATTEMPTS && (!oldOpen || Date.now() < this.googleGoAwayDeadlineMs)) {
+			this.resumeTask = this.startGoogleResume();
+			return;
+		}
+		// Audio held for the switch goes to the connection that is still open.
+		const buffered = this.resumeAudio;
+		this.resumeAudio = [];
+		this.resumeAudioMs = 0;
+		if (oldOpen) {
+			for (const chunk of buffered) this.sendGoogleAudio(chunk.audio, chunk.ms);
+			this.warnGoogleClosing(Math.max(0, Math.round((this.googleGoAwayDeadlineMs - Date.now()) / 1000)));
+			return;
+		}
+		this.sendClient({ type: "relay.upstream_closed", provider: this.session?.provider, code: this.providerCloseCode, phase: "session" });
+		this.markProviderClosed();
+		await this.settle(this.providerCompletedResponseSeen ? "completed" : "failed", "provider_socket_closed_resume_failed");
+	}
+
+	/** Sends Google microphone audio, holding it briefly while the connection is switched. */
+	private sendGoogleAudio(audio: string, ms: number) {
+		if (this.googleResuming) {
+			if (this.resumeAudioMs + ms > GOOGLE_RESUME_AUDIO_BUFFER_MS) {
+				this.usage.resume_dropped_audio_ms = toNumber(this.usage.resume_dropped_audio_ms) + ms;
+				return;
+			}
+			this.resumeAudio.push({ audio, ms });
+			this.resumeAudioMs += ms;
+			return;
+		}
+		this.sendUpstream({ realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: audio } } });
+	}
+
+	/**
+	 * Google ends a connection that receives no input for about 150 s. API
+	 * calls are never ended by the gateway for that, so the client is told
+	 * to keep streaming its microphone (silence counts and is not billed).
+	 */
+	private resetGoogleIdleWarning() {
+		if (this.googleIdleTimer != null) clearTimeout(this.googleIdleTimer);
+		this.googleIdleTimer = null;
+		if (!this.session || providerFromSession(this.session) !== "google-ai-studio" || this.isEnding()) return;
+		this.googleIdleTimer = setTimeout(() => {
+			this.googleIdleTimer = null;
+			if (this.isEnding()) return;
+			this.sendClient(buildSessionWarningEvent("provider_closing",
+				"No audio has been sent for 2 minutes. The provider closes the call after about 150 seconds without input; keep streaming microphone audio (silence is fine and is not billed).",
+				{ threshold: "input_idle", seconds_remaining: Math.round((GOOGLE_INPUT_IDLE_CLOSE_MS - GOOGLE_INPUT_IDLE_WARNING_MS) / 1000) }));
+		}, GOOGLE_INPUT_IDLE_WARNING_MS) as unknown as number;
 	}
 
 	private billingFlagsKey(): string {
@@ -1793,6 +2046,14 @@ export class RealtimeRelayDurableObject {
 			clearTimeout(this.policyGraceTimer);
 			this.policyGraceTimer = null;
 		}
+		if (this.resumeTimer != null) {
+			clearTimeout(this.resumeTimer);
+			this.resumeTimer = null;
+		}
+		if (this.googleIdleTimer != null) {
+			clearTimeout(this.googleIdleTimer);
+			this.googleIdleTimer = null;
+		}
 		for (const timer of this.warningTimers) clearTimeout(timer);
 		this.warningTimers = [];
 	}
@@ -2022,7 +2283,7 @@ export class RealtimeRelayDurableObject {
 			&& !this.settling
 			&& !this.pendingSettlement
 			&& this.client?.readyState === WebSocket.OPEN
-			&& this.upstream?.readyState === WebSocket.OPEN
+			&& (this.upstream?.readyState === WebSocket.OPEN || this.googleResuming)
 			// An API call with both sockets open is healthy however quiet it is.
 			&& (!this.isPlayground || Date.now() - this.lastActivityAt < REALTIME_IDLE_TIMEOUT_SECONDS * 1_000);
 	}
@@ -2071,6 +2332,18 @@ export class RealtimeRelayDurableObject {
 			// The provider socket may already be closed.
 		}
 		this.upstream = null;
+		// A Google connection switch in progress is abandoned with the call.
+		try {
+			this.resumeSocket?.close(1000, reason);
+		} catch {
+			// Already closed.
+		}
+		this.resumeSocket = null;
+		this.googleResuming = false;
+		this.resumeAudio = [];
+		this.resumeAudioMs = 0;
+		if (this.resumeTimer != null) clearTimeout(this.resumeTimer);
+		this.resumeTimer = null;
 	}
 
 	private async requestLiveClose(status: PendingSettlement["status"], reason: string) {

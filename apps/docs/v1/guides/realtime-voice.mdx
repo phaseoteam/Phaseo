@@ -26,6 +26,12 @@ The response includes `client_secret`, `connect.url`, `max_duration_seconds` and
 
 Phaseo holds $5 of credit when the session starts and extends the hold as the call runs.
 
+### Google Live connections
+
+Keep streaming microphone audio for the whole call, including silence. Google closes a connection that receives no audio for about 150 seconds (close code `1008`), and the call then ends with `provider_closed`. The relay sends a `provider_closing` warning with `threshold: "input_idle"` after 2 minutes without audio. Silence between turns is not part of any turn, so it isn't billed.
+
+Google also replaces each connection after about 10 minutes. The relay moves the call to a new connection with Google's session resumption, keeps your socket open and sends `{"type": "relay.provider_reconnected", "reconnects": 1}` when the switch is done. Audio you send during the switch (usually under a second) is held and passed on. The resumed connection reprocesses the conversation so far, and Google bills that again as input tokens on the next turn, so a long call costs a little more per turn after each switch. All of it is included in `usage` and the bill. The relay only warns with `provider_closing` if it can't resume, and the call then ends when Google closes the connection.
+
 ## End a session
 
 Send `session.end` when the caller hangs up:
@@ -101,7 +107,7 @@ If settlement is still being retried, `billing_status` is `pending` and `cost` s
 | --- | --- | --- |
 | `client_requested` | client | You sent `session.end`. |
 | `client_disconnected` | client | Your socket closed without `session.end`. |
-| `provider_closed` | provider | The provider closed its connection, for example Google after about 150 idle seconds (code `1008`) or after its `goAway`. |
+| `provider_closed` | provider | The provider closed its connection, for example Google after about 150 seconds without audio (code `1008`), or after a `goAway` the relay couldn't resume from. |
 | `provider_error` | provider | The provider connection failed or reported an error. |
 | `max_duration_reached` | gateway | The provider's session limit was reached. |
 | `insufficient_funds` | gateway | The overdraft cap was reached. |
@@ -129,7 +135,7 @@ Warnings tell you what's coming without ending the call. Each code is sent at mo
 | `code` | Extra fields | When |
 | --- | --- | --- |
 | `max_duration_approaching` | `seconds_remaining`, `expires_at` | 2 minutes and 30 seconds before the provider's session limit. |
-| `provider_closing` | `seconds_remaining` | The provider announced it will close the connection (Google `goAway`). |
+| `provider_closing` | `seconds_remaining`, and `threshold: "input_idle"` for the idle case | Google will close the connection: after a `goAway` the relay couldn't resume from, or (`input_idle`) because no audio has arrived for 2 minutes. |
 | `funds_low` | `remaining_usd` | The credit hold couldn't be extended. The call continues on your free balance. |
 | `overdraft_in_use` | `remaining_usd`, `overdraft_used_usd` | Your free balance is used up and the call is running on overdraft. Sent again when less than $0.25 of the cap is left. |
 | `spend_limit_exceeded` | `limit` (`key` or `workspace_budget`) | A key spend limit or workspace budget was reached. The call continues; new requests are refused. |
@@ -145,7 +151,7 @@ API sessions are never ended for being idle, and spend limits only warn. A call 
 | --- | --- |
 | OpenAI Realtime | 60 minutes |
 | xAI | 120 minutes |
-| Google Live | 15 minutes, until session resumption is supported. Google itself may close the connection earlier with `goAway`. |
+| Google Live | 60 minutes, across the connections the relay resumes. The call also ends if your client stops sending audio for about 150 seconds. |
 | GPT Live | 25 minutes |
 | Overdraft cap | $1 beyond your holds and free balance |
 | Lost access | The key is revoked, expired or paused, or the workspace is removed. Detected within about a minute, then the call ends without a grace period. |
