@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { claudeUsage, codexResponseUsage } from "./harnessUsage";
 import type { HarnessUsage } from "../shared/usageLedger";
+import type { ScanWriter, SessionOwners } from "./usageLedgerWrites";
 import type { Account, Project } from "../shared/workspace";
 
 /** A folder of transcripts: Claude Code's config folder (its `projects`) or a Codex home (its `sessions`). */
@@ -296,6 +297,12 @@ export function serveTranscriptReads(port: Pick<MessagePort, "on" | "postMessage
 	});
 }
 
+/** Writes on the store's own connection, on this thread: in tests, and where no writer worker is given. */
+function storeWriter(store: ScanStore): ScanWriter {
+	let context: [SessionOwners, readonly Pick<Project, "id" | "directory">[], string] = [new Map(), [], ""];
+	return { begin: (...value) => { context = value; }, record: rows => store.recordTranscriptUsage(rows, ...context), saveFile: (file, value) => store.saveTranscriptFile(file, value), sum: async limit => store.sumStaleQuarters(limit), close() {} };
+}
+
 /** What the scanner needs of the store. */
 type ScanStore = {
 	getAccounts(): Account[]; getProjects(): Pick<Project, "id" | "directory">[]; addedTranscriptFolders(): TranscriptFolder[];
@@ -317,10 +324,12 @@ export class TranscriptScanner {
 	private readonly now: () => number;
 	private readonly readers: () => Pick<TranscriptReaders, "size" | "read" | "sessions" | "close">;
 	private readonly folders: () => TranscriptFolder[];
-	constructor(private readonly store: ScanStore, private readonly onChange: () => void, options: { now?: () => number; readers?: () => Pick<TranscriptReaders, "size" | "read" | "sessions" | "close">; folders?: () => TranscriptFolder[] } = {}) {
+	private readonly writer: () => ScanWriter;
+	constructor(private readonly store: ScanStore, private readonly onChange: () => void, options: { now?: () => number; readers?: () => Pick<TranscriptReaders, "size" | "read" | "sessions" | "close">; folders?: () => TranscriptFolder[]; writer?: () => ScanWriter } = {}) {
 		this.now = options.now ?? Date.now;
 		this.readers = options.readers ?? (() => new TranscriptReaders());
 		this.folders = options.folders ?? (() => transcriptFolders(store.getAccounts(), store.addedTranscriptFolders()));
+		this.writer = options.writer ?? (() => storeWriter(store));
 	}
 	scan(force = false): Promise<number> {
 		if (this.running) return this.running;
@@ -345,10 +354,11 @@ export class TranscriptScanner {
 		if (!jobs.length) return 0;
 		// Newest first, so a first read fills today and this week in seconds and older history after.
 		jobs.sort((a, b) => b.mtimeMs - a.mtimeMs);
-		const readers = this.readers();
+		const readers = this.readers(), writer = this.writer();
+		writer.begin(owners, projects, cutoff);
 		let added = 0, unannounced = 0, announced = now, next = 0, pending: TranscriptUsage[] = [];
 		// Written two thousand rows to a transaction: one per worker message cost twice as long, and more holds up the app.
-		const write = () => { if (!pending.length) return; this.store.recordTranscriptUsage(pending, owners, projects, cutoff); added += pending.length; unannounced += pending.length; pending = []; };
+		const write = () => { if (!pending.length) return; writer.record(pending); added += pending.length; unannounced += pending.length; pending = []; };
 		try {
 			await this.resolveRoots(jobs.filter(job => job.harness === "codex" && (job.path.endsWith(".zst") || !job.from || job.size < job.from.offset)), readers);
 			await Promise.all(Array.from({ length: Math.min(readers.size, jobs.length) }, async () => {
@@ -358,18 +368,20 @@ export class TranscriptScanner {
 						const done = await readers.read(job, rows => { pending.push(...rows); if (pending.length >= 2000) write(); });
 						// The rows first, so a file is never marked read past rows that weren't kept.
 						write();
-						this.store.saveTranscriptFile(job.path, done);
+						writer.saveFile(job.path, done);
 					} catch { write(); continue; } // A file being replaced or locked is read next time.
-					if (unannounced && this.now() - announced > 3000) { await this.sum(); this.onChange(); unannounced = 0; announced = this.now(); }
+					if (unannounced && this.now() - announced > 3000) { await this.sum(writer); this.onChange(); unannounced = 0; announced = this.now(); }
 				}
 			}));
-		} finally { readers.close(); }
-		if (unannounced) { await this.sum(); this.onChange(); }
+			// Also waits for the last rows and files to be written.
+			await this.sum(writer);
+		} finally { readers.close(); writer.close(); }
+		if (unannounced) this.onChange();
 		return added;
 	}
 	/** Sums what the ledger gained into its quarter hours, a day of hours at a time, yielding between, so a report needn't. */
-	private async sum() {
-		while (this.store.sumStaleQuarters(24)) await new Promise(resolve => setImmediate(resolve));
+	private async sum(writer: ScanWriter) {
+		while (await writer.sum(24)) await new Promise(resolve => setImmediate(resolve));
 	}
 	/**
 	 * Codex files read from the start get their fork chain's root before any is read, from every new file's first line

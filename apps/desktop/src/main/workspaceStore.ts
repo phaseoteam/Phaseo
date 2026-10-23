@@ -10,6 +10,7 @@ import type { AgentRunResult } from "@phaseo/agent-sdk";
 import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, UsageTotals, Workspace, WorkspaceCommand } from "../shared/workspace";
 import { usageAmounts, usageTokens, usageTotalsOf } from "../shared/usageAmounts";
 import type { ThreadRoots, TranscriptFile, TranscriptFolder, TranscriptUsage } from "./usageTranscripts";
+import { harnessMerge, staleHour, TranscriptLedger } from "./usageLedgerWrites";
 import { estimateNanos, localDay, noCost, noTokens, tokenTotal, usageIdTime, usageKind, usagePeriods, type HarnessUsage, type TokenPrices, type UsageCost, type UsagePeriod, type UsageReport, type UsageTokens } from "../shared/usageLedger";
 import type { AutopilotDecision } from "../shared/inbox";
 import { publicMcpConnection, type McpConnection } from "../shared/mcp";
@@ -70,26 +71,6 @@ function conversationSummary(messages: Task["messages"]) {
 	return { lastUserId: messages.findLast(value => value.role === "user")?.id, lastUserAt: messages.findLast(value => value.role === "user" && !value.delivery)?.createdAt, lastCompletedAt: messages.findLast(value => value.role === "user" && value.completedAt)?.completedAt };
 }
 
-/**
- * Merges a harness response reported again (as it grows, or both live and from its transcript): the larger count of
- * each type, a Phaseo chat's id over a transcript's session, and the first project and folder known. A report that
- * changes nothing (most are: Claude Code repeats a response per content block, a Codex fork copies its parent's) writes nothing.
- */
-const harnessMerge = `input = max(input, excluded.input), cached = max(cached, excluded.cached), cache_write = max(cache_write, excluded.cache_write), output = max(output, excluded.output), reasoning = max(reasoning, excluded.reasoning),
-	tokens = max(input, excluded.input) + max(cached, excluded.cached) + max(cache_write, excluded.cache_write) + max(output, excluded.output),
-	task_id = CASE WHEN usage_ledger.task_id LIKE 'session:%' THEN excluded.task_id ELSE usage_ledger.task_id END,
-	project_id = coalesce(usage_ledger.project_id, excluded.project_id), label = coalesce(usage_ledger.label, excluded.label)
-	WHERE excluded.input > usage_ledger.input OR excluded.cached > usage_ledger.cached OR excluded.cache_write > usage_ledger.cache_write OR excluded.output > usage_ledger.output OR excluded.reasoning > usage_ledger.reasoning
-		OR (usage_ledger.task_id LIKE 'session:%' AND excluded.task_id IS NOT usage_ledger.task_id)
-		OR (usage_ledger.project_id IS NULL AND excluded.project_id IS NOT NULL) OR (usage_ledger.label IS NULL AND excluded.label IS NOT NULL)`;
-/** A ledger time's quarter hour in UTC, as `YYYY-MM-DDTHH:MM`: every time zone's hours and days start on one. */
-const usageQuarter = (at: string) => `substr(${at}, 1, 14) || printf('%02d', CAST(substr(${at}, 15, 2) AS INTEGER) / 15 * 15)`;
-/**
- * Marks a ledger time's hour for summing into quarters again: an hour, as a prefix costs next to nothing on every write
- * where working out the quarter doubled it. NOT EXISTS, not OR IGNORE: an upsert's conflict policy would apply here.
- */
-const staleHour = (at: string) => `INSERT INTO usage_stale (at) SELECT substr(${at}, 1, 13) WHERE NOT EXISTS (SELECT 1 FROM usage_stale WHERE at = substr(${at}, 1, 13));`;
-
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
 	/** Prepared once per connection: with many chats streaming, compiling the same SQL on every save was a fifth of the work. */
@@ -101,8 +82,13 @@ export class WorkspaceStore {
 	private readonly agentRuns: AgentRuns;
 	readonly missions: MissionStore;
 	readonly browserDownloads: BrowserDownloadStore;
+	/** The database file, for a second connection (see TranscriptWriter). */
+	readonly filename: string;
+	private readonly ledger: TranscriptLedger;
 	constructor(filename: string) {
+		this.filename = filename;
 		this.db = openWorkspaceDatabase(filename);
+		this.ledger = new TranscriptLedger(this.db, run => this.batch(run));
 		this.db.function("history_lower", { deterministic: true }, value => typeof value === "string" ? value.toLowerCase() : "");
 		// A second connection waits for a lock rather than failing; with WAL, NORMAL syncs at checkpoints, not every commit,
 		// and a power cut can lose only the last commits, never corrupt the file. The WAL file shrinks back after checkpoints.
@@ -460,34 +446,8 @@ export class WorkspaceStore {
 		const rows = this.statement("SELECT id, json_extract(data, '$.harness') AS harness, json_extract(data, '$.nativeSessionId') AS session, json_extract(data, '$.projectId') AS projectId FROM tasks WHERE json_extract(data, '$.nativeSessionId') IS NOT NULL").all() as { id: string; harness: string; session: string; projectId: string | null }[];
 		return new Map(rows.map(row => [`${row.harness}:${row.session}`, { id: row.id, ...row.projectId ? { projectId: row.projectId } : {} }]));
 	}
-	/**
-	 * Keeps responses read from Claude Code and Codex transcripts. One from a Phaseo chat's session counts under that chat;
-	 * others count under their session, labelled by folder, and under the project whose folder they ran in.
-	 */
-	recordTranscriptUsage(rows: readonly TranscriptUsage[], owners: Map<string, { id: string; projectId?: string }>, projects: readonly Pick<Project, "id" | "directory">[], cutoff: string) {
-		const folder = (value: string) => value.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
-		const homes = projects.map(project => ({ id: project.id, directory: folder(project.directory) })).sort((a, b) => b.directory.length - a.directory.length);
-		const insert = this.statement(`INSERT INTO usage_ledger (key, task_id, at, kind, autopilot, harness, model, project_id, input, cached, cache_write, output, reasoning, tokens, cost_nanos, label) VALUES (?, ?, ?, 'turn', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)
-			ON CONFLICT(key) DO UPDATE SET ${harnessMerge}`);
-		// Rows come a session at a time, so each folder's project and label are worked out once.
-		const places = new Map<string, { projectId?: string; label: string | null }>();
-		const place = (cwd: string) => {
-			let known = places.get(cwd);
-			if (!known) {
-				const directory = folder(cwd);
-				places.set(cwd, known = { projectId: homes.find(home => directory === home.directory || directory.startsWith(`${home.directory}/`))?.id, label: cwd.split(/[\\/]/).filter(Boolean).at(-1) ?? null });
-			}
-			return known;
-		};
-		this.batch(() => {
-			for (const row of rows) {
-				const total = tokenTotal(row);
-				if (row.at < cutoff || !total) continue;
-				const owner = owners.get(`${row.harness}:${row.sessionId}`), where = row.cwd ? place(row.cwd) : undefined;
-				insert.run(row.key, owner?.id ?? `session:${row.harness}:${row.sessionId}`, row.at, row.harness, row.model ?? "unknown", owner?.projectId ?? where?.projectId ?? null, row.input, row.cached, row.cacheWrite, row.output, row.reasoning, total, where?.label ?? null);
-			}
-		});
-	}
+	/** Keeps responses read from Claude Code and Codex transcripts (see TranscriptLedger.record). */
+	recordTranscriptUsage(rows: readonly TranscriptUsage[], owners: Map<string, { id: string; projectId?: string }>, projects: readonly Pick<Project, "id" | "directory">[], cutoff: string) { this.ledger.record(rows, owners, projects, cutoff); }
 	/** Transcript folders the person added in Settings, beyond the ones found on their own. */
 	addedTranscriptFolders(): TranscriptFolder[] {
 		const row = this.statement("SELECT data FROM preferences WHERE id = 'usage-transcript-folders'").get() as { data: string } | undefined;
@@ -504,7 +464,7 @@ export class WorkspaceStore {
 		const row = this.statement("SELECT data FROM usage_files WHERE path = ?").get(file) as { data: string } | undefined;
 		return row ? JSON.parse(row.data) as TranscriptFile : undefined;
 	}
-	saveTranscriptFile(file: string, value: TranscriptFile) { this.statement("INSERT OR REPLACE INTO usage_files (path, data) VALUES (?, ?)").run(file, JSON.stringify(value)); }
+	saveTranscriptFile(file: string, value: TranscriptFile) { this.ledger.saveFile(file, value); }
 	/**
 	 * Fills the ledger once with Phaseo's reports from chats used in the last `days`, timing each by its turn, so the
 	 * Usage page has history from the first launch. Claude Code and Codex history comes from their own transcripts.
@@ -536,22 +496,8 @@ export class WorkspaceStore {
 	pruneUsageLedger(days = 91, now = new Date()) {
 		this.statement("DELETE FROM usage_ledger WHERE at < ?").run(new Date(now.getTime() - days * 86_400_000).toISOString());
 	}
-	/**
-	 * Sums the ledger's stale hours into quarters again (see usage_quarters), newest first, through the time indexes: up
-	 * to `limit` hours in one transaction, so a long first read can sum as it goes without holding up the app. Whether
-	 * any are left. An hour `YYYY-MM-DDTHH` holds every time from it up to, not including, `YYYY-MM-DDTHHZ`.
-	 */
-	sumStaleQuarters(limit = -1): boolean {
-		const stale = "SELECT at FROM usage_stale ORDER BY at DESC LIMIT ?";
-		this.batch(() => {
-			this.statement(`DELETE FROM usage_quarters WHERE rowid IN (SELECT usage_quarters.rowid FROM (${stale}) AS stale JOIN usage_quarters ON usage_quarters.at >= stale.at AND usage_quarters.at < stale.at || 'Z')`).run(limit);
-			this.statement(`INSERT INTO usage_quarters SELECT ${usageQuarter("usage_ledger.at")} AS quarter, harness, model, cost_nanos IS NULL, task_id, project_id, label, autopilot, SUM(input), SUM(cached), SUM(cache_write), SUM(output), SUM(reasoning), SUM(tokens), SUM(cost_nanos)
-				FROM (${stale}) AS stale JOIN usage_ledger ON usage_ledger.at >= stale.at AND usage_ledger.at < stale.at || 'Z'
-				GROUP BY quarter, harness, model, cost_nanos IS NULL, task_id, project_id, label, autopilot`).run(limit);
-			this.statement(`DELETE FROM usage_stale WHERE at IN (${stale})`).run(limit);
-		});
-		return Boolean(this.statement("SELECT 1 FROM usage_stale LIMIT 1").get());
-	}
+	/** Sums the ledger's stale hours into quarters again (see TranscriptLedger.sumStale); whether any are left. */
+	sumStaleQuarters(limit = -1): boolean { return this.ledger.sumStale(limit); }
 	/**
 	 * One period's usage for the Usage page. The database sums the ledger's quarter hours by harness and model for every
 	 * view (totals, buckets, chats, projects, the pace); `priceOf` then prices each sum Phaseo didn't charge, so no row is

@@ -1,3 +1,4 @@
+import "./threadPool";
 import { imageMime } from "./attachments";
 import { linkTitle } from "./linkTitle";
 import { KeybindingsFile } from "./keybindingsFile";
@@ -64,6 +65,7 @@ import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
 import { listPullRequestDirectory, pullRequestCounts } from "./pullRequestDirectory";
 import { TranscriptScanner, transcriptFiles, transcriptFolders, type TranscriptFolder } from "./usageTranscripts";
+import { TranscriptWriter } from "./usageLedgerWrites";
 import { localDay, modelMatchKey, type TokenPrices, type UsagePeriod } from "../shared/usageLedger";
 import { ghFailure, projectPullRequestAction, projectPullRequestBehind, projectPullRequestCandidates, projectPullRequestView, readPullRequestView, runGh } from "./projectPullRequestView";
 import { PullRequestGuides } from "./pullRequestGuides";
@@ -891,7 +893,8 @@ app.whenReady().then(() => {
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	workspaceRuntime.phaseo.background = backgroundCommands();
-	transcriptScanner = new TranscriptScanner(workspaceRuntime.store, () => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:usage-changed"); });
+	// Rows are written by a worker on its own connection, so a first read doesn't hold up the app.
+	transcriptScanner = new TranscriptScanner(workspaceRuntime.store, () => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:usage-changed"); }, { writer: () => new TranscriptWriter(workspaceRuntime.store.filename) });
 	// After the ledger's own start-up work, so a first read of large transcripts doesn't compete with opening the app.
 	setTimeout(() => { if (!shutdownStarted) void transcriptScanner?.scan(true).catch(() => {}); }, 5000).unref?.();
 	// Phaseo turns size compaction and output limits from the cached catalogue; a model not in it gets safe defaults.
