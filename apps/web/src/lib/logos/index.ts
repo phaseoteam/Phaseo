@@ -50,6 +50,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	crofai: "CrofAI",
 	continue: "Continue",
 	"deepseek-harness": "DeepSeek Harness",
+	dealignai: "dealign.ai",
 	digitalocean: "DigitalOcean",
 	empiriolabs: "EmpirioLabs AI",
 	github: "GitHub",
