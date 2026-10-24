@@ -24,6 +24,12 @@ export type ModelSuccessorResolution = {
     reason: string | null;
     priceRatio: number | null;
     priceComparable: boolean;
+    /**
+     * Meters only the successor bills that the price comparison left out
+     * because the retired model could not have incurred them (web tools, or a
+     * modality it never had). They only hold for a request that uses none of them.
+     */
+    priceSkippedMeters: string[];
     workspaceOverride: boolean;
 };
 
@@ -47,8 +53,9 @@ export type ModelSubstitution = {
     source: "approved" | "workspace";
 };
 
-const RESOLUTION_KEY_PREFIX = "gateway:model-successor:v1:";
-const WORKSPACE_RESOLUTION_KEY_PREFIX = "gateway:model-successor-workspace:v1:";
+// v2: resolutions carry priceSkippedMeters, which v1 entries could have dropped.
+const RESOLUTION_KEY_PREFIX = "gateway:model-successor:v2:";
+const WORKSPACE_RESOLUTION_KEY_PREFIX = "gateway:model-successor-workspace:v2:";
 const POLICY_KEY_PREFIX = "gateway:model-successor-policy:v2:";
 const MAX_MODEL_LENGTH = 512;
 const MAX_WORKSPACE_OVERRIDES = 500;
@@ -60,6 +67,10 @@ export function successorRedirectEnabled(): boolean {
 
 function stringOrNull(value: unknown): string | null {
     return typeof value === "string" && value ? value : null;
+}
+
+function stringArray(value: unknown): string[] {
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
 function finiteOrNull(value: unknown): number | null {
@@ -81,6 +92,7 @@ export function parseModelSuccessorResolution(value: unknown): ModelSuccessorRes
         reason: stringOrNull(row.reason),
         priceRatio: finiteOrNull(row.price_ratio ?? row.priceRatio),
         priceComparable: (row.price_comparable ?? row.priceComparable) === true,
+        priceSkippedMeters: stringArray(row.price_skipped_meters ?? row.priceSkippedMeters),
         workspaceOverride: (row.workspace_override ?? row.workspaceOverride) === true,
     };
 }
@@ -89,7 +101,7 @@ function isResolution(value: unknown): value is ModelSuccessorResolution {
     if (!value || typeof value !== "object") return false;
     const row = value as Record<string, unknown>;
     return typeof row.model === "string" && Array.isArray(row.chain) && typeof row.priceComparable === "boolean" &&
-        typeof row.workspaceOverride === "boolean";
+        Array.isArray(row.priceSkippedMeters) && typeof row.workspaceOverride === "boolean";
 }
 
 async function loadResolution(model: string): Promise<ModelSuccessorResolution | null> {
@@ -222,13 +234,112 @@ export async function loadSuccessorRedirectPolicy(workspaceId: string): Promise<
     }
 }
 
+type Modality = "text" | "image" | "audio" | "video";
+const MODALITIES: Modality[] = ["text", "image", "audio", "video"];
+const MAX_SCANNED_NODES = 20_000;
+const CLIENT_TOOL_TYPES = new Set(["function", "custom"]);
+const WEB_TOOL_PATTERN = /web_?search|web_?fetch|google_?search/i;
+
+type RequestUsage = { webTools: boolean; input: Set<Modality>; output: Set<Modality> };
+
+/** Media modalities a content type, key or MIME type names. Files and documents can hold any of them. */
+function mediaModalitiesOf(text: string): Modality[] {
+    const lower = text.toLowerCase();
+    const found = MODALITIES.filter((modality) => modality !== "text" && lower.includes(modality));
+    if (found.length || !/file|document|blob|media/.test(lower)) return found;
+    return ["image", "audio", "video"];
+}
+
+function isClientTool(tool: unknown): boolean {
+    if (!tool || typeof tool !== "object") return false;
+    const entry = tool as Record<string, unknown>;
+    if (WEB_TOOL_PATTERN.test(JSON.stringify(entry))) return false;
+    if (typeof entry.type === "string") return CLIENT_TOOL_TYPES.has(entry.type);
+    // Anthropic client tools have no type; Gemini groups functions in functionDeclarations.
+    return "input_schema" in entry || "function_declarations" in entry || "functionDeclarations" in entry;
+}
+
+/**
+ * What a raw request body of any surface may use that a successor could bill.
+ * It errs towards using more: a wrong guess only keeps the original failure.
+ */
+function scanRequestUsage(body: unknown): RequestUsage {
+    const usage: RequestUsage = { webTools: false, input: new Set(), output: new Set() };
+    if (!body || typeof body !== "object") return usage;
+    const request = body as Record<string, any>;
+    const tools: unknown[] = Array.isArray(request.tools) ? request.tools : [];
+    usage.webTools = tools.some((tool) => !isClientTool(tool)) ||
+        request.web_search_options != null || (Array.isArray(request.plugins) && request.plugins.length > 0);
+    if (tools.some((tool) => !isClientTool(tool) && /image_generation/i.test(JSON.stringify(tool)))) usage.output.add("image");
+
+    let scanned = 0;
+    const addMedia = (text: string) => {
+        for (const modality of mediaModalitiesOf(text)) usage.input.add(modality);
+    };
+    const visit = (node: unknown): void => {
+        if (++scanned > MAX_SCANNED_NODES) return;
+        if (typeof node === "string") {
+            usage.input.add("text");
+            return;
+        }
+        if (Array.isArray(node)) {
+            for (const item of node) visit(item);
+            return;
+        }
+        if (!node || typeof node !== "object") return;
+        for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+            if (typeof value === "string" && (key === "type" || key === "mime_type" || key === "mimeType" || key === "media_type")) {
+                addMedia(key === "type" ? value : value.split("/")[0] ?? "");
+                continue;
+            }
+            addMedia(key);
+            visit(value);
+        }
+    };
+    for (const key of ["messages", "input", "contents", "system", "systemInstruction", "system_instruction", "prompt"]) {
+        if (key in request) visit(request[key]);
+    }
+    // Too large to read in full: assume it may hold anything.
+    if (scanned > MAX_SCANNED_NODES) for (const modality of MODALITIES) usage.input.add(modality);
+
+    const requestedOutput = [request.modalities, request.response_modalities, request.generationConfig?.responseModalities,
+        request.generation_config?.response_modalities].flatMap((value) => (Array.isArray(value) ? value : []));
+    for (const value of requestedOutput) {
+        const modality = String(value).toLowerCase() as Modality;
+        if (MODALITIES.includes(modality)) usage.output.add(modality);
+    }
+    if (request.audio != null) usage.output.add("audio");
+    return usage;
+}
+
+/**
+ * Whether the request could incur a meter the price comparison skipped, so
+ * the comparison does not hold for it. Unknown meters always could.
+ */
+export function requestMayIncurSkippedMeters(body: unknown, meters: readonly string[]): boolean {
+    if (!meters.length) return false;
+    const usage = scanRequestUsage(body);
+    return meters.some((meter) => {
+        if (meter === "native_web_search_requests" || meter === "native_web_fetch_requests") return usage.webTools;
+        const match = /^(input|output)_(image|audio|video)_/.exec(meter);
+        if (!match) return true;
+        return (match[1] === "input" ? usage.input : usage.output).has(match[2] as Modality);
+    });
+}
+
 /**
  * Whether the workspace's price policy allows the target. An unknown price
- * ratio is only allowed by "any". The workspace's own replacement is always allowed.
+ * ratio is only allowed by "any", and so is one that leaves out a charge the
+ * request could incur. The workspace's own replacement is always allowed.
  */
-export function successorPriceAllowed(resolution: ModelSuccessorResolution, policy: SuccessorRedirectPolicy): boolean {
+export function successorPriceAllowed(
+    resolution: ModelSuccessorResolution,
+    policy: SuccessorRedirectPolicy,
+    requestBody?: unknown,
+): boolean {
     if (policy.pricePolicy === "any" || resolution.workspaceOverride) return true;
     if (!resolution.priceComparable || resolution.priceRatio === null) return false;
+    if (requestMayIncurSkippedMeters(requestBody, resolution.priceSkippedMeters ?? [])) return false;
     const limit = policy.pricePolicy === "limit" ? 1 + policy.maxPriceIncreasePercent / 100 : 1;
     // Ratios are rounded to 6 places in SQL; tolerate that rounding at the limit.
     return resolution.priceRatio <= limit + 1e-6;
@@ -238,9 +349,10 @@ export function successorPriceAllowed(resolution: ModelSuccessorResolution, poli
 export function successorRedirectTarget(
     resolution: ModelSuccessorResolution | null,
     policy: SuccessorRedirectPolicy,
+    requestBody?: unknown,
 ): ModelSubstitution | null {
     if (!resolution?.target || resolution.reason !== "eligible") return null;
-    if (!policy.enabled || !successorPriceAllowed(resolution, policy)) return null;
+    if (!policy.enabled || !successorPriceAllowed(resolution, policy, requestBody)) return null;
     return {
         from: resolution.model,
         to: resolution.target,
