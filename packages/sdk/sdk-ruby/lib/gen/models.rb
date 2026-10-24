@@ -5377,6 +5377,7 @@ module Phaseo
     # @!attribute [rw] payment_method_id
     #   @return [String, nil]
     WorkspaceAutoTopUpUpdate = Struct.new(:amount_nanos, :balance_threshold_nanos, :enabled, :mfa_bypass_acknowledged, :mfa_bypass_phrase, :payment_method_id, keyword_init: true)
+    WorkspaceBillingTimeZone = Object
     # @!attribute [rw] created_at
     #   @return [String]
     # @!attribute [rw] created_by
@@ -5772,7 +5773,13 @@ module Phaseo
     #   @return [Array<String>]
     # @!attribute [rw] rate_limit_throttled
     #   @return [Array<String>]
-    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :broadcast_destination_failing, :low_balance, :model_deprecation, :model_substitution, :payment_method_expiring, :rate_limit_throttled, keyword_init: true)
+    # @!attribute [rw] spend_alert
+    #   @return [Array<String>]
+    # @!attribute [rw] spend_blocked
+    #   @return [Array<String>]
+    # @!attribute [rw] spend_report
+    #   @return [Array<String>]
+    WorkspaceNotificationRouteMap = Struct.new(:auto_top_up_failed, :broadcast_destination_failing, :low_balance, :model_deprecation, :model_substitution, :payment_method_expiring, :rate_limit_throttled, :spend_alert, :spend_blocked, :spend_report, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceNotificationRouteResponse = Struct.new(:data, keyword_init: true)
@@ -5969,12 +5976,16 @@ module Phaseo
     #   @return [String, nil]
     WorkspaceSettingsUpdateRequest = Struct.new(:alpha_channel_enabled, :beta_channel_enabled, :byok_fallback_enabled, :io_logging_enabled, :io_logging_include_provider_payloads, :model_successor_max_price_increase_percent, :model_successor_price_policy, :model_successor_redirect_enabled, :privacy_enable_free_may_publish_prompts, :privacy_enable_free_may_train, :privacy_enable_input_output_logging, :privacy_enable_paid_may_train, :privacy_zdr_only, :provider_restriction_enforce_allowed, :provider_restriction_mode, :provider_restriction_provider_ids, :response_healing_enabled, :response_healing_locked, :response_healing_mode, :routing_mode, keyword_init: true)
     WorkspaceSpendAttribution = Object
+    # @!attribute [rw] billing_time_zone
+    #   @return [String]
     # @!attribute [rw] department_attribution
     #   @return [String]
-    WorkspaceSpendSettings = Struct.new(:department_attribution, keyword_init: true)
+    WorkspaceSpendSettings = Struct.new(:billing_time_zone, :department_attribution, keyword_init: true)
+    # @!attribute [rw] billing_time_zone
+    #   @return [String, nil]
     # @!attribute [rw] department_attribution
     #   @return [String, nil]
-    WorkspaceSpendSettingsUpdate = Struct.new(:department_attribution, keyword_init: true)
+    WorkspaceSpendSettingsUpdate = Struct.new(:billing_time_zone, :department_attribution, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     WorkspaceSsoResponse = Struct.new(:data, keyword_init: true)

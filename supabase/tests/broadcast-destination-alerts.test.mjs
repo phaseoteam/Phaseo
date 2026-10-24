@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const db = new PGlite();
@@ -72,9 +72,15 @@ try {
 
   const schema = (path) => read(`../schemas/${path}`);
   assert.ok(alertsMigration.includes(await schema('public/functions/enqueue_broadcast_destination_alerts.sql')), 'enqueue function matches the declarative definition');
-  assert.ok(alertsMigration.includes(await schema('public/functions/set_notification_event_destinations.sql')), 'route setter matches the declarative definition');
+  // Later migrations add event kinds; the newest one that redefines the setter and CHECK must match the schema files.
+  let routesMigration = alertsMigration;
+  for (const name of (await readdir(new URL('../migrations/', import.meta.url))).filter((name) => name.endsWith('.sql')).sort()) {
+    const sql = await read(`../migrations/${name}`);
+    if (sql.includes('CREATE OR REPLACE FUNCTION public.set_notification_event_destinations')) routesMigration = sql;
+  }
+  assert.ok(routesMigration.includes(await schema('public/functions/set_notification_event_destinations.sql')), 'route setter matches the declarative definition');
   const table = await schema('public/tables/notification_event_destinations.sql');
-  const check = alertsMigration.match(/CHECK \(\(event_kind = ANY \(ARRAY\[[^\]]+\]\)\)\)/)?.[0];
+  const check = routesMigration.match(/CHECK \(\(event_kind = ANY \(ARRAY\[[^\]]+\]\)\)\)/)?.[0];
   assert.ok(check && table.includes(check), 'event kind constraint matches the declarative definition');
 
   await db.query(`insert into auth.users values ($1, 'owner@example.com'), ($2, 'other@example.com')`, [user(1), user(2)]);

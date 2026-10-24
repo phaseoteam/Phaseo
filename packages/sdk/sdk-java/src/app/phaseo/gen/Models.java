@@ -3814,6 +3814,9 @@ public final class Models {
 		public String payment_method_id;
 	}
 
+	public static class WorkspaceBillingTimeZone {
+	}
+
 	public static class WorkspaceBudget {
 		public String created_at;
 		public String created_by;
@@ -4150,6 +4153,9 @@ public final class Models {
 		public java.util.List<String> model_substitution;
 		public java.util.List<String> payment_method_expiring;
 		public java.util.List<String> rate_limit_throttled;
+		public java.util.List<String> spend_alert;
+		public java.util.List<String> spend_blocked;
+		public java.util.List<String> spend_report;
 	}
 
 	public static class WorkspaceNotificationRouteResponse {
@@ -4311,10 +4317,12 @@ public final class Models {
 	}
 
 	public static class WorkspaceSpendSettings {
+		public String billing_time_zone;
 		public Object department_attribution;
 	}
 
 	public static class WorkspaceSpendSettingsUpdate {
+		public String billing_time_zone;
 		public Object department_attribution;
 	}
 

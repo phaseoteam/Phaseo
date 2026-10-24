@@ -32,6 +32,7 @@ CREATE TABLE "public"."keys" (
     NOT NULL) AND (NOT COALESCE((btrim(oauth_resource) ~* '^https://api\.phaseo\.app(?::443)?/v1/*$'::text), false))) OR
     (COALESCE(oauth_scopes, ARRAY[]::text[]) @> ARRAY['gateway:access'::text]))),
   CONSTRAINT "keys_hash_key" UNIQUE (hash),
+  CONSTRAINT "keys_id_workspace_id_key" UNIQUE (id, workspace_id),
   CONSTRAINT "keys_issued_via_check" CHECK ((issued_via = ANY (ARRAY['dashboard'::text, 'oauth_pkce'::text, 'cli'::text]))),
   CONSTRAINT "keys_key_kind_check" CHECK ((key_kind = ANY (ARRAY['standard'::text, 'oauth_delegated'::text]))),
   CONSTRAINT "keys_oauth_user_id_fkey" FOREIGN KEY (oauth_user_id) REFERENCES auth.users(id) ON DELETE SET NULL,

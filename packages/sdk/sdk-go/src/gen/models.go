@@ -5412,6 +5412,8 @@ type WorkspaceAutoTopUpUpdate struct {
 	PaymentMethodId *string `json:"payment_method_id,omitempty"`
 }
 
+type WorkspaceBillingTimeZone = string
+
 type WorkspaceBudget struct {
 	CreatedAt string `json:"created_at"`
 	CreatedBy *string `json:"created_by,omitempty"`
@@ -5770,6 +5772,9 @@ const (
 	WorkspaceNotificationEventKindModelSubstitution WorkspaceNotificationEventKind = "model_substitution"
 	WorkspaceNotificationEventKindRateLimitThrottled WorkspaceNotificationEventKind = "rate_limit_throttled"
 	WorkspaceNotificationEventKindBroadcastDestinationFailing WorkspaceNotificationEventKind = "broadcast_destination_failing"
+	WorkspaceNotificationEventKindSpendAlert WorkspaceNotificationEventKind = "spend_alert"
+	WorkspaceNotificationEventKindSpendBlocked WorkspaceNotificationEventKind = "spend_blocked"
+	WorkspaceNotificationEventKindSpendReport WorkspaceNotificationEventKind = "spend_report"
 )
 
 
@@ -5786,6 +5791,9 @@ type WorkspaceNotificationRouteMap struct {
 	ModelSubstitution []string `json:"model_substitution"`
 	PaymentMethodExpiring []string `json:"payment_method_expiring"`
 	RateLimitThrottled []string `json:"rate_limit_throttled"`
+	SpendAlert []string `json:"spend_alert"`
+	SpendBlocked []string `json:"spend_blocked"`
+	SpendReport []string `json:"spend_report"`
 }
 
 type WorkspaceNotificationRouteResponse struct {
@@ -5971,10 +5979,12 @@ const (
 
 
 type WorkspaceSpendSettings struct {
+	BillingTimeZone string `json:"billing_time_zone"`
 	DepartmentAttribution string `json:"department_attribution"`
 }
 
 type WorkspaceSpendSettingsUpdate struct {
+	BillingTimeZone *string `json:"billing_time_zone,omitempty"`
 	DepartmentAttribution *string `json:"department_attribution,omitempty"`
 }
 

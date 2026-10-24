@@ -453,6 +453,7 @@
     "models/WorkspaceAuditEventMetadata.ts",
     "models/WorkspaceAutoTopUpSettings.ts",
     "models/WorkspaceAutoTopUpUpdate.ts",
+    "models/WorkspaceBillingTimeZone.ts",
     "models/WorkspaceBudget.ts",
     "models/WorkspaceBudgetDeleteResponse.ts",
     "models/WorkspaceBudgetInput.ts",
