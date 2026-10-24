@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react-native";
+import type { ReactNode } from "react";
 import { ActivityIndicator, Pressable, type PressableProps, View } from "react-native";
 import { cn } from "@/lib/cn";
 import { Icon, useToneColor, type IconTone } from "./icon";
@@ -14,8 +15,8 @@ const variants = {
 
 const sizes = {
   sm: "h-9 px-3 rounded-md gap-1.5",
-  md: "h-11 px-4 rounded-lg gap-2",
-  lg: "h-12 px-5 rounded-lg gap-2",
+  md: "h-11 px-4 rounded-md gap-2",
+  lg: "h-12 px-5 rounded-md gap-2",
 } as const;
 
 export type ButtonProps = Omit<PressableProps, "children"> & {
@@ -23,11 +24,13 @@ export type ButtonProps = Omit<PressableProps, "children"> & {
   variant?: keyof typeof variants;
   size?: keyof typeof sizes;
   icon?: LucideIcon;
+  /** A logo or other element shown before the label, in place of an icon. */
+  leading?: ReactNode;
   loading?: boolean;
   className?: string;
 };
 
-export function Button({ label, variant = "primary", size = "md", icon, loading, disabled, className, ...props }: ButtonProps) {
+export function Button({ label, variant = "primary", size = "md", icon, leading, loading, disabled, className, ...props }: ButtonProps) {
   const style = variants[variant];
   const spinner = useToneColor(style.tone);
   return (
@@ -38,7 +41,7 @@ export function Button({ label, variant = "primary", size = "md", icon, loading,
       {...props}
       className={cn("flex-row items-center justify-center disabled:opacity-50", sizes[size], style.box, className)}
     >
-      {loading ? <ActivityIndicator size="small" color={spinner} /> : icon ? <Icon icon={icon} tone={style.tone} size={size === "sm" ? 16 : 18} /> : null}
+      {loading ? <ActivityIndicator size="small" color={spinner} /> : icon ? <Icon icon={icon} tone={style.tone} size={size === "sm" ? 16 : 18} /> : leading ?? null}
       <Text variant="label" className={cn(style.text, size === "sm" && "text-[13px]")}>{label}</Text>
     </Pressable>
   );
@@ -46,7 +49,7 @@ export function Button({ label, variant = "primary", size = "md", icon, loading,
 
 export function IconButton({ icon, label, tone = "foreground", onPress, className, size = 20 }: { icon: LucideIcon; label: string; tone?: IconTone; onPress?: () => void; className?: string; size?: number }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={8} onPress={onPress} className={cn("h-10 w-10 items-center justify-center rounded-full active:bg-accent", className)}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={8} onPress={onPress} className={cn("h-10 w-10 items-center justify-center rounded-md active:bg-accent", className)}>
       <View pointerEvents="none"><Icon icon={icon} tone={tone} size={size} /></View>
     </Pressable>
   );

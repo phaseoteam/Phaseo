@@ -28,8 +28,17 @@ const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
   ?? localWebEnvironment.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+// Firebase's Android config, needed for push. It holds public identifiers only, so it is
+// committed; builds without it still work but can't receive notifications.
+const googleServicesFile = "./google-services.json";
+const hasGoogleServices = fs.existsSync(path.resolve(__dirname, googleServicesFile));
+
 export default {
   ...appJson.expo,
+  android: {
+    ...appJson.expo.android,
+    ...(hasGoogleServices ? { googleServicesFile } : {}),
+  },
   extra: {
     ...appJson.expo.extra,
     supabaseUrl,

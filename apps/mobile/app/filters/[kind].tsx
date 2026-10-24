@@ -1,12 +1,16 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { Check } from "lucide-react-native";
+import { ArrowDownAZ, Check, CircleDollarSign, CircleCheck, Clock, Flame, Gift, History, Maximize2, type LucideIcon } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { ScrollView, Switch, View } from "react-native";
+import { Logo } from "@/components/Logo";
 import { Button, Header, Icon, Row, Screen, SearchField, Section, Text } from "@/components/ui";
 import { SORT_LABELS } from "@/features/models/ModelBrowser";
-import { filtersStore, toggleValue, updateFilters, useCatalogue } from "@/features/models/state";
+import { filtersStore, toggleValue, updateFilters, useCatalogue, useLabIds } from "@/features/models/state";
 import { DEFAULT_FILTERS, type CatalogueSort } from "@/lib/catalogue";
 import { modalityLabel } from "@/lib/format";
+import { modalityIcon } from "@/lib/modalityIcon";
+
+const SORT_ICONS: Record<CatalogueSort, LucideIcon> = { newest: Clock, popular: Flame, price: CircleDollarSign, context: Maximize2, name: ArrowDownAZ };
 
 /** Bottom sheets for the Models filters: sort, labs, and modalities. */
 export default function FilterSheet() {
@@ -29,7 +33,7 @@ function SortSheet() {
     <ScrollView contentContainerClassName="pb-8">
       <Header title="Sort by" />
       {(Object.keys(SORT_LABELS) as CatalogueSort[]).map((value, index, list) => (
-        <Row key={value} title={SORT_LABELS[value]} trailing={<Check_ on={sort === value} />} chevron={false} onPress={() => updateFilters({ sort: value })} last={index === list.length - 1} />
+        <Row key={value} icon={SORT_ICONS[value]} title={SORT_LABELS[value]} trailing={<Check_ on={sort === value} />} chevron={false} onPress={() => updateFilters({ sort: value })} last={index === list.length - 1} />
       ))}
     </ScrollView>
   );
@@ -38,6 +42,7 @@ function SortSheet() {
 function OrganisationSheet() {
   const catalogue = useCatalogue();
   const selected = filtersStore.use((filters) => filters.organisations);
+  const labIds = useLabIds();
   const [query, setQuery] = useState("");
   const options = useMemo(() => {
     const list = catalogue.data?.facets.creatorOptions ?? [];
@@ -52,6 +57,7 @@ function OrganisationSheet() {
         {options.map((option, index) => (
           <Row
             key={option.value}
+            leading={<Logo id={labIds.get(option.value) ?? option.value} label={option.value} size={28} />}
             title={option.value}
             value={option.count.toLocaleString()}
             trailing={<Check_ on={selected.includes(option.value)} />}
@@ -75,18 +81,18 @@ function ModelFilterSheet() {
       <Header title="Filters" right={<Button label="Reset" variant="ghost" size="sm" onPress={() => filtersStore.set({ ...DEFAULT_FILTERS, query: filters.query })} />} />
       <Section title="Accepts" className="mt-2">
         {inputs.map((option, index) => (
-          <Row key={option.value} title={modalityLabel(option.value)} value={option.count.toLocaleString()} trailing={<Check_ on={filters.inputModalities.includes(option.value)} />} chevron={false} onPress={() => updateFilters({ inputModalities: toggleValue(filters.inputModalities, option.value) })} last={index === inputs.length - 1} />
+          <Row key={option.value} icon={modalityIcon(option.value)} title={modalityLabel(option.value)} value={option.count.toLocaleString()} trailing={<Check_ on={filters.inputModalities.includes(option.value)} />} chevron={false} onPress={() => updateFilters({ inputModalities: toggleValue(filters.inputModalities, option.value) })} last={index === inputs.length - 1} />
         ))}
       </Section>
       <Section title="Produces">
         {outputs.map((option, index) => (
-          <Row key={option.value} title={modalityLabel(option.value)} value={option.count.toLocaleString()} trailing={<Check_ on={filters.outputModalities.includes(option.value)} />} chevron={false} onPress={() => updateFilters({ outputModalities: toggleValue(filters.outputModalities, option.value) })} last={index === outputs.length - 1} />
+          <Row key={option.value} icon={modalityIcon(option.value)} title={modalityLabel(option.value)} value={option.count.toLocaleString()} trailing={<Check_ on={filters.outputModalities.includes(option.value)} />} chevron={false} onPress={() => updateFilters({ outputModalities: toggleValue(filters.outputModalities, option.value) })} last={index === outputs.length - 1} />
         ))}
       </Section>
       <Section title="Availability">
-        <Row title="Only models on Phaseo" chevron={false} trailing={<Switch value={filters.availability === "phaseo"} onValueChange={(on) => updateFilters({ availability: on ? "phaseo" : "all" })} trackColorOnClassName="accent-primary" />} />
-        <Row title="Only free models" chevron={false} trailing={<Switch value={filters.availability === "free"} onValueChange={(on) => updateFilters({ availability: on ? "free" : "all" })} trackColorOnClassName="accent-primary" />} />
-        <Row title="Show retired models" chevron={false} last trailing={<Switch value={filters.includeRetired} onValueChange={(on) => updateFilters({ includeRetired: on })} trackColorOnClassName="accent-primary" />} />
+        <Row icon={CircleCheck} title="Only models on Phaseo" chevron={false} trailing={<Switch value={filters.availability === "phaseo"} onValueChange={(on) => updateFilters({ availability: on ? "phaseo" : "all" })} trackColorOnClassName="accent-primary" />} />
+        <Row icon={Gift} title="Only free models" chevron={false} trailing={<Switch value={filters.availability === "free"} onValueChange={(on) => updateFilters({ availability: on ? "free" : "all" })} trackColorOnClassName="accent-primary" />} />
+        <Row icon={History} title="Show retired models" chevron={false} last trailing={<Switch value={filters.includeRetired} onValueChange={(on) => updateFilters({ includeRetired: on })} trackColorOnClassName="accent-primary" />} />
       </Section>
       <Text variant="caption" className="px-4 pt-4">Filters apply instantly. Swipe down to close.</Text>
     </ScrollView>

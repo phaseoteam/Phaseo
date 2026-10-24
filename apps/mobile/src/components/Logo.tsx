@@ -9,13 +9,23 @@ import { useAppearance } from "@/providers/AppearanceProvider";
 // keeps organisation and provider logos identical to phaseo.app without a copy.
 import { resolveLogo } from "../../../web/src/lib/logos";
 
+/** A logo on its own, without the tile: for buttons, chips and dense lists. Renders nothing if unknown. */
+export function LogoMark({ id, size = 18 }: { id: string; size?: number }) {
+  const { resolved } = useAppearance();
+  const [failed, setFailed] = useState(false);
+  const logo = resolveLogo(id, { theme: resolved, fallbackToColor: true });
+  if (!logo?.src || failed) return null;
+  return <Image source={{ uri: `${WEB_ORIGIN}${logo.src}` }} style={{ width: size, height: size }} contentFit="contain" cachePolicy="disk" onError={() => setFailed(true)} accessibilityElementsHidden importantForAccessibility="no" />;
+}
+
 export function Logo({ id, label, colour, size = 32, className }: { id?: string | null; label?: string | null; colour?: string | null; size?: number; className?: string }) {
   const { resolved } = useAppearance();
   const [failed, setFailed] = useState(false);
   const logo = id ? resolveLogo(id, { theme: resolved, fallbackToColor: true }) : null;
   const src = logo?.src && !failed ? `${WEB_ORIGIN}${logo.src}` : null;
   const name = label ?? logo?.label ?? id ?? "?";
-  const radius = Math.round(size * 0.28);
+  // rounded-md (8 px) on normal tiles; small tiles scale down so they stay squares, not circles.
+  const radius = Math.min(8, Math.round(size * 0.25));
 
   if (src) {
     return (

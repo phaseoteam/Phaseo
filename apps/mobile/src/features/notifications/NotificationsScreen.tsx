@@ -142,7 +142,7 @@ export function NotificationsScreen() {
 
 function Stepper({ icon, label, disabled, onPress }: { icon: typeof Plus; label: string; disabled?: boolean; onPress(): void }) {
   return (
-    <Pressable accessibilityLabel={label} disabled={disabled} onPress={onPress} className="h-10 w-10 items-center justify-center rounded-full border border-border active:bg-accent disabled:opacity-40">
+    <Pressable accessibilityLabel={label} disabled={disabled} onPress={onPress} className="h-10 w-10 items-center justify-center rounded-md border border-border active:bg-accent disabled:opacity-40">
       <Icon icon={icon} size={18} />
     </Pressable>
   );
