@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type {
 	SettingsRateLimitPolicy,
@@ -186,13 +187,13 @@ function PolicyDialog({ state, onClose }: { state: Exclude<EditorState, null>; o
 	const [draft, setDraft] = useState<PolicyDraft>(() => existing ? draftFromPolicy(existing) : emptyPolicyDraft());
 	const [problem, setProblem] = useState<PolicyProblem | null>(null);
 	const [saving, startSaving] = useTransition();
-	const set = (field: keyof PolicyDraft, value: string) => {
+	const set = <K extends keyof PolicyDraft>(field: K, value: PolicyDraft[K]) => {
 		setDraft((current) => ({ ...current, [field]: value }));
 		setProblem(null);
 	};
 
 	function save() {
-		const built = draftToPayload(draft, existing);
+		const built = draftToPayload(draft);
 		if (!built.ok) {
 			setProblem(built.problem);
 			return;
@@ -229,7 +230,7 @@ function PolicyDialog({ state, onClose }: { state: Exclude<EditorState, null>; o
 						<Textarea id="rate-limit-description" value={draft.description} rows={2} maxLength={MAX_DESCRIPTION_LENGTH} placeholder={t("fields.descriptionPlaceholder")} onChange={(event) => set("description", event.target.value)} aria-invalid={problem === "description"} />
 						{field("description")}
 					</div>
-					<div className="grid gap-4 sm:grid-cols-2">
+					<div className="grid gap-4 sm:grid-cols-3">
 						<div className="space-y-1.5">
 							<Label htmlFor="rate-limit-rpm">{t("fields.requestsPerMinute")}</Label>
 							<Input id="rate-limit-rpm" inputMode="numeric" value={draft.requestsPerMinute} placeholder={t("fields.noLimit")} onChange={(event) => set("requestsPerMinute", event.target.value)} aria-invalid={problem === "requestsPerMinute"} />
@@ -240,10 +241,24 @@ function PolicyDialog({ state, onClose }: { state: Exclude<EditorState, null>; o
 							<Input id="rate-limit-tpm" inputMode="numeric" value={draft.tokensPerMinute} placeholder={t("fields.noLimit")} onChange={(event) => set("tokensPerMinute", event.target.value)} aria-invalid={problem === "tokensPerMinute"} />
 							{field("tokensPerMinute")}
 						</div>
+						<div className="space-y-1.5">
+							<Label htmlFor="rate-limit-concurrent">{t("fields.concurrentRequests")}</Label>
+							<Input id="rate-limit-concurrent" inputMode="numeric" value={draft.concurrentRequests} placeholder={t("fields.noLimit")} onChange={(event) => set("concurrentRequests", event.target.value)} aria-invalid={problem === "concurrentRequests"} />
+							{field("concurrentRequests")}
+						</div>
 					</div>
 					{field("limits")}
-					<p className="text-xs text-muted-foreground">{t("fields.tokensHint")}</p>
-					{existing && (existing.concurrentRequests != null || existing.failClosed) ? <p className="text-xs text-muted-foreground">{t("fields.apiOnlyHint")}</p> : null}
+					<div className="space-y-1 text-xs text-muted-foreground">
+						<p>{t("fields.tokensHint")}</p>
+						<p>{t("fields.concurrencyHint")}</p>
+					</div>
+					<div className="flex items-start justify-between gap-4 rounded-md border px-3 py-2.5">
+						<div className="space-y-0.5">
+							<Label htmlFor="rate-limit-strict">{t("fields.strict")}</Label>
+							<p id="rate-limit-strict-hint" className="text-xs text-muted-foreground">{t("fields.strictHint")}</p>
+						</div>
+						<Switch id="rate-limit-strict" checked={draft.failClosed} onCheckedChange={(checked) => set("failClosed", checked)} aria-describedby="rate-limit-strict-hint" />
+					</div>
 					<DialogFooter>
 						<Button type="button" variant="outline" className="rounded-md" disabled={saving} onClick={onClose}>{t("cancel")}</Button>
 						<Button type="submit" className="rounded-md" disabled={saving}>{existing ? t("save") : t("create")}</Button>

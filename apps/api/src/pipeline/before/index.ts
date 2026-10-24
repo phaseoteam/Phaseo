@@ -810,7 +810,7 @@ export async function beforeRequest(
                 const resolution = override
                     ? await findWorkspaceModelSuccessor(unservedModel!, override)
                     : await findModelSuccessor(unservedModel!);
-                const substitution = successorRedirectTarget(resolution, policy);
+                const substitution = successorRedirectTarget(resolution, policy, body);
                 if (!substitution) return null;
                 const successorContext = await contextForModel(substitution.to, testingContextFlags);
                 return successorContext.ok ? { successorContext, substitution } : null;

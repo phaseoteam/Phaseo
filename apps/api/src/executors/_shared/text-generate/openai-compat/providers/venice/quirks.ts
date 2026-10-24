@@ -32,12 +32,20 @@ function addVeniceWebSearch(usage: any): void {
 export const veniceQuirks: ProviderQuirks = {
 	transformRequest: ({ request, ir }) => {
 		const veniceParameters = (ir.vendor as any)?.venice;
-		if (veniceParameters && typeof veniceParameters === "object" && !Array.isArray(veniceParameters)) {
-			request.venice_parameters = { ...veniceParameters };
-		}
-
+		const callerParameters =
+			veniceParameters && typeof veniceParameters === "object" && !Array.isArray(veniceParameters)
+				? veniceParameters
+				: null;
 		const isResponsesRequest = request.input_items != null || request.input != null;
-		if (!isResponsesRequest) return;
+		if (!isResponsesRequest) {
+			// Venice prepends its own system prompt unless told not to ("include_venice_system_prompt",
+			// default true; https://docs.venice.ai/api-reference/endpoint/chat/completions). Measured
+			// on 2026-10-23 it adds ~1,525 billed input tokens to every chat request and changes
+			// model behaviour, so send the caller's prompt only unless they opt in.
+			request.venice_parameters = { include_venice_system_prompt: false, ...callerParameters };
+			return;
+		}
+		if (callerParameters) request.venice_parameters = { ...callerParameters };
 
 		if (request.input == null && request.input_items != null) {
 			request.input = request.input_items;

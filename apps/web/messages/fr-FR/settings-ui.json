@@ -6485,7 +6485,7 @@
 		"newPolicy": "Nouvelle politique",
 		"emptyTitle": "Aucune politique de limite de débit",
 		"emptyBody": "Créez une politique, puis attribuez-la à des clés, des membres, des départements ou des garde-fous.",
-		"strict": "Stricte (pas encore appliquée)",
+		"strict": "Stricte",
 		"edit": "Modifier",
 		"delete": "Supprimer",
 		"cancel": "Annuler",
@@ -6496,7 +6496,7 @@
 		"listAppliesTo": "S'applique à",
 		"limitRequests": "{count, number} requêtes/min",
 		"limitTokens": "{count, number} tokens/min",
-		"limitConcurrent": "{count, number} simultanées (pas encore appliqué)",
+		"limitConcurrent": "{count, number} à la fois",
 		"throttled": "{count, plural, one {# requête} other {# requêtes}} au cours des {hours} dernières heures",
 		"notThrottled": "Aucune au cours des {hours} dernières heures",
 		"notAssigned": "Pas encore attribuée",
@@ -6510,15 +6510,19 @@
 			"descriptionPlaceholder": "Facultatif",
 			"requestsPerMinute": "Requêtes par minute",
 			"tokensPerMinute": "Tokens par minute",
+			"concurrentRequests": "Requêtes simultanées",
 			"noLimit": "Aucune limite",
 			"tokensHint": "Les tokens sont comptés d'après l'utilisation réelle de chaque requête une fois terminée ; les requêtes déjà en cours peuvent donc dépasser légèrement la limite.",
-			"apiOnlyHint": "Cette politique a aussi une limite de simultanéité ou le mode strict définis via l'API. Ils sont conservés si vous enregistrez ici."
+			"concurrencyHint": "Requêtes simultanées compte les requêtes en cours, y compris les streams jusqu’à leur fin. Sa vérification ajoute un peu de latence à chaque requête couverte par la politique.",
+			"strict": "Mode strict",
+			"strictHint": "Vérifie les limites avant l’envoi de chaque requête et refuse les requêtes lorsqu’elles ne peuvent pas être vérifiées. Exact, mais ajoute de la latence à chaque requête couverte par la politique. Sinon, les limites sont vérifiées en arrière-plan et les requêtes sont acceptées si une vérification échoue."
 		},
 		"problems": {
 			"name": "Saisissez un nom de 100 caractères maximum.",
 			"description": "La description ne doit pas dépasser 500 caractères.",
 			"requestsPerMinute": "Saisissez un nombre entier de 1 à 2 147 483 647, ou laissez le champ vide.",
 			"tokensPerMinute": "Saisissez un nombre entier d'au moins 1, ou laissez le champ vide.",
+			"concurrentRequests": "Saisissez un nombre entier de 1 à 2 147 483 647, ou laissez le champ vide.",
 			"limits": "Définissez au moins une limite."
 		},
 		"assignmentsTitle": "Attributions",

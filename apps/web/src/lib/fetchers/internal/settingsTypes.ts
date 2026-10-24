@@ -621,9 +621,9 @@ export type SettingsRateLimitPolicy = {
 	description: string | null;
 	requestsPerMinute: number | null;
 	tokensPerMinute: number | null;
-	/** Set through the API; not enforced yet. */
+	/** Requests in progress at once. */
 	concurrentRequests: number | null;
-	/** Set through the API; not enforced yet. */
+	/** Strict mode: limits are checked before sending, and requests are rejected when they can't be. */
 	failClosed: boolean;
 	updatedAt: string;
 };

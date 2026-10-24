@@ -6485,7 +6485,7 @@
 		"newPolicy": "New policy",
 		"emptyTitle": "No rate limit policies yet",
 		"emptyBody": "Create a policy, then assign it to keys, members, departments or guardrails.",
-		"strict": "Strict (not enforced yet)",
+		"strict": "Strict",
 		"edit": "Edit",
 		"delete": "Delete",
 		"cancel": "Cancel",
@@ -6496,7 +6496,7 @@
 		"listAppliesTo": "Applies to",
 		"limitRequests": "{count, number} requests/min",
 		"limitTokens": "{count, number} tokens/min",
-		"limitConcurrent": "{count, number} concurrent (not enforced yet)",
+		"limitConcurrent": "{count, number} at once",
 		"throttled": "{count, plural, one {# request} other {# requests}} in the last {hours} hours",
 		"notThrottled": "None in the last {hours} hours",
 		"notAssigned": "Not assigned yet",
@@ -6510,15 +6510,19 @@
 			"descriptionPlaceholder": "Optional",
 			"requestsPerMinute": "Requests per minute",
 			"tokensPerMinute": "Tokens per minute",
+			"concurrentRequests": "Concurrent requests",
 			"noLimit": "No limit",
 			"tokensHint": "Tokens are counted from each request's actual usage once it finishes, so requests already running can take usage slightly past the limit.",
-			"apiOnlyHint": "This policy also has a concurrency limit or strict mode set through the API. Saving here keeps them."
+			"concurrencyHint": "Concurrent requests counts requests in progress, including streams until they finish. Checking it adds a little latency to every request the policy covers.",
+			"strict": "Strict mode",
+			"strictHint": "Check the limits before each request is sent, and reject requests when they can't be checked. Exact, but adds latency to every request the policy covers. Otherwise limits are checked in the background and requests are allowed if a check fails."
 		},
 		"problems": {
 			"name": "Enter a name of up to 100 characters.",
 			"description": "Keep the description to 500 characters or fewer.",
 			"requestsPerMinute": "Enter a whole number from 1 to 2,147,483,647, or leave it blank.",
 			"tokensPerMinute": "Enter a whole number of at least 1, or leave it blank.",
+			"concurrentRequests": "Enter a whole number from 1 to 2,147,483,647, or leave it blank.",
 			"limits": "Set at least one limit."
 		},
 		"assignmentsTitle": "Assignments",

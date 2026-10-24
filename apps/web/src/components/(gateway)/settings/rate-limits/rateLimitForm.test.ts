@@ -16,14 +16,14 @@ describe("rate limit policy form", () => {
 		const draft = { ...draftFromPolicy(policy), name: "  Standard  ", description: "  For most keys " };
 		expect(draftToPayload(draft)).toEqual({
 			ok: true,
-			payload: { name: "Standard", description: "For most keys", requests_per_minute: 60, tokens_per_minute: null },
+			payload: { name: "Standard", description: "For most keys", requests_per_minute: 60, tokens_per_minute: null, concurrent_requests: null, fail_closed: false },
 		});
 	});
 
 	it("accepts thousands separators and treats blanks as no limit", () => {
 		expect(draftToPayload({ ...emptyPolicyDraft(), name: "Batch", tokensPerMinute: "200,000" })).toEqual({
 			ok: true,
-			payload: { name: "Batch", description: null, requests_per_minute: null, tokens_per_minute: 200_000 },
+			payload: { name: "Batch", description: null, requests_per_minute: null, tokens_per_minute: 200_000, concurrent_requests: null, fail_closed: false },
 		});
 	});
 
@@ -36,12 +36,20 @@ describe("rate limit policy form", () => {
 		expect(draftToPayload({ ...base, requestsPerMinute: "1.5" })).toEqual({ ok: false, problem: "requestsPerMinute" });
 		expect(draftToPayload({ ...base, requestsPerMinute: "2147483648" })).toEqual({ ok: false, problem: "requestsPerMinute" });
 		expect(draftToPayload({ ...base, tokensPerMinute: "-5" })).toEqual({ ok: false, problem: "tokensPerMinute" });
+		expect(draftToPayload({ ...base, concurrentRequests: "0" })).toEqual({ ok: false, problem: "concurrentRequests" });
+		expect(draftToPayload({ ...base, concurrentRequests: "2147483648" })).toEqual({ ok: false, problem: "concurrentRequests" });
 		expect(draftToPayload({ ...base, requestsPerMinute: "" })).toEqual({ ok: false, problem: "limits" });
 	});
 
-	it("lets a policy keep only an API-set concurrency limit", () => {
-		const draft = { ...emptyPolicyDraft(), name: "Concurrency only" };
-		expect(draftToPayload(draft, { concurrentRequests: 4 })).toMatchObject({ ok: true });
+	it("edits the concurrency limit and strict mode, and a concurrency limit alone is enough", () => {
+		const draft = { ...emptyPolicyDraft(), name: "Concurrency only", concurrentRequests: "4", failClosed: true };
+		expect(draftToPayload(draft)).toEqual({
+			ok: true,
+			payload: { name: "Concurrency only", description: null, requests_per_minute: null, tokens_per_minute: null, concurrent_requests: 4, fail_closed: true },
+		});
+		expect(draftFromPolicy({ ...policy, concurrentRequests: 3, failClosed: true })).toMatchObject({ concurrentRequests: "3", failClosed: true });
+		// Clearing every limit, including concurrency, is refused.
+		expect(draftToPayload({ ...draft, concurrentRequests: "" })).toEqual({ ok: false, problem: "limits" });
 	});
 
 	it("offers only targets without a policy, labelling unnamed keys and members", () => {

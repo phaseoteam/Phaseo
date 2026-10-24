@@ -11,6 +11,8 @@ export type RateLimitPolicyPayload = {
 	description: string | null;
 	requests_per_minute: number | null;
 	tokens_per_minute: number | null;
+	concurrent_requests: number | null;
+	fail_closed: boolean;
 };
 export type RateLimitActionError = { ok: false; status: number | null; message: string | null; code: string | null };
 

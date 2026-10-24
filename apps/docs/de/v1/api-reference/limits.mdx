@@ -35,6 +35,8 @@ Eigentümer und Administratoren des Arbeitsbereichs können Budgets auch im Dash
 
 Abteilungsbudgets, die über die API `/v1/department-budgets` verwaltet werden, lehnen keine Anfragen ab. Die Ausgaben einer Abteilung umfassen dieselben Schlüssel und OAuth-Anfragen wie die unten beschriebenen Ratenlimits für Abteilungen. Inhaber und Administratoren erhalten eine mobile Push-Benachrichtigung bei etwa 80 % und erneut bei 100 % eines täglichen, wöchentlichen oder monatlichen Budgets. Die Ausgaben stammen aus Nutzungsdaten, die bis zu einer Stunde verzögert sein können.
 
+Inhaber und Admins können Abteilungsbudgets auch unter [Einstellungen → Budgets](https://phaseo.app/settings/budgets) verwalten oder mit der Ressource `phaseo_department_budget` des Terraform-Providers.
+
 ## Ratenlimit-Richtlinien
 
 Workspace-Admins können über die Management-API `/v1/rate-limits` benannte Ratenlimit-Richtlinien erstellen und sie API-Schlüsseln, Workspace-Mitgliedern, Abteilungen, Sicherheitsleitplanken oder als Standard für jeden Endnutzer zuweisen. Das Gateway setzt die Werte `requests_per_minute` und `tokens_per_minute` einer Richtlinie durch, jeweils gemessen über eine gleitende Minute:
@@ -44,6 +46,8 @@ Workspace-Admins können über die Management-API `/v1/rate-limits` benannte Rat
 - **Abteilung:** ein Kontingent, das sich alles teilt, was der Abteilung zugerechnet wird. Ein mit einer Abteilung verknüpfter Schlüssel zählt nur für diese Abteilung. Jeder andere Schlüssel zählt für alle Abteilungen der Person, die ihn erstellt hat, und OAuth-Anfragen zählen für alle Abteilungen ihres Nutzers. Ein Mitglied mit einer Abteilungsüberschreibung zählt nur für die Abteilung der Überschreibung.
 - **Sicherheitsleitplanke:** ein eigenes Kontingent für jeden Schlüssel (oder OAuth-Nutzer), den die Leitplanke abdeckt.
 - **Standard pro Endnutzer:** ein eigenes Kontingent für jeden Endnutzer, erkannt am Feld `user` der Anfrage oder am Header `X-Phaseo-User-Id`. Anfragen ohne Endnutzer-ID werden dadurch nicht begrenzt.
+
+Inhaber und Admins können Richtlinien und ihre Zuweisungen auch unter [Einstellungen → Ratenlimits](https://phaseo.app/settings/rate-limits) verwalten oder mit den Ressourcen `phaseo_rate_limit_policy` und `phaseo_rate_limit_assignment` des Terraform-Providers.
 
 Gelten mehrere Richtlinien, wird jede gezählt, und die erste ausgeschöpfte lehnt die Anfrage ab. Richtlinienlimits gelten zusätzlich zu den Gateway-Limits oben. Änderungen an Richtlinien werden innerhalb von etwa einer Minute wirksam. Änderungen an Abteilungsmitgliedschaften im Dashboard oder über SCIM können bis zu etwa fünf Minuten dauern.
 
