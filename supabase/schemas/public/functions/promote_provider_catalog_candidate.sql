@@ -242,6 +242,7 @@ begin
 
   -- Feed-owned declarations are replaceable, including omission and version downgrade.
   -- Keep the management marker after withdrawal to prevent provider-default Yes fallback.
+  -- Offers that have never declared a policy keep inheriting the provider default.
   update public.v2_route_capabilities cap set metadata = cap.metadata || jsonb_build_object(
     'catalog_data_policy', jsonb_build_object('declaration', (
       select value from jsonb_array_elements(coalesce(nullif(tier_offer->'dataPolicy','null'::jsonb)->'capabilities','[]'::jsonb))
@@ -249,7 +250,7 @@ begin
       'sourceRunId',candidate.run_id,'catalogUrl',source.catalog_url,'managementMode',source.management_mode))
   from public.provider_catalog_sources source
   where cap.provider_model_id=provider_model_id_value and source.provider_slug=candidate.provider_slug
-    and (tier_offer ? 'dataPolicy' or cap.metadata ? 'catalog_data_policy');
+    and (nullif(tier_offer->'dataPolicy','null'::jsonb) is not null or cap.metadata ? 'catalog_data_policy');
 
   insert into public.v2_route_variants (
     provider_model_id, variant_key, service_tier_slug, status,
