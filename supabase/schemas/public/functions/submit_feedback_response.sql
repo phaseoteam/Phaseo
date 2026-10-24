@@ -1,6 +1,5 @@
 CREATE OR REPLACE FUNCTION public.submit_feedback_response (
   p_token              uuid,
-  p_answers            jsonb,
   p_reward_nanos       bigint,
   p_reward_cap         integer,
   p_reward_valid_days  integer
@@ -10,19 +9,16 @@ CREATE OR REPLACE FUNCTION public.submit_feedback_response (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
--- Stores the first answer for a feedback token and, while the campaign's reward budget
--- lasts, issues a single-use thank-you credit code. Later submissions change nothing
--- and return the original code.
+-- Records that a feedback token was answered and, while the campaign's reward budget
+-- lasts, issues a single-use thank-you credit code. The answers themselves are sent to
+-- PostHog by the caller before this runs. Later submissions change nothing and return
+-- the original code.
 declare
   v_request public.feedback_requests%rowtype;
   v_rewarded integer;
   v_code text;
   v_grant_id uuid;
 begin
-  if p_answers is null or jsonb_typeof(p_answers) <> 'object' then
-    return jsonb_build_object('status', 'invalid_answers');
-  end if;
-
   select * into v_request
   from public.feedback_requests
   where access_token = p_token
@@ -37,7 +33,7 @@ begin
   end if;
 
   update public.feedback_requests
-  set responded_at = now(), answers = p_answers
+  set responded_at = now()
   where id = v_request.id;
 
   if coalesce(p_reward_nanos, 0) <= 0 or coalesce(p_reward_cap, 0) <= 0 then
@@ -78,10 +74,10 @@ begin
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."submit_feedback_response"(uuid, jsonb, bigint, integer, integer) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."submit_feedback_response"(uuid, bigint, integer, integer) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."submit_feedback_response"(uuid, jsonb, bigint, integer, integer) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."submit_feedback_response"(uuid, bigint, integer, integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."submit_feedback_response"(uuid, jsonb, bigint, integer, integer) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."submit_feedback_response"(uuid, bigint, integer, integer) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."submit_feedback_response"(uuid, jsonb, bigint, integer, integer) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."submit_feedback_response"(uuid, bigint, integer, integer) FROM PUBLIC, "anon", "authenticated";

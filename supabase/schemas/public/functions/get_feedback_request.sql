@@ -8,9 +8,12 @@ CREATE OR REPLACE FUNCTION public.get_feedback_request (
   SET search_path TO ''
   AS $function$
 -- What the emailed feedback page needs for one token, or null for an unknown token.
--- Never returns the email address or user id. rewardsIssued lets the caller stop
--- offering a code once the campaign's budget is spent.
+-- Never returns the email address. rewardsIssued lets the caller stop offering a code
+-- once the campaign's budget is spent; requestId and userId identify the answer sent
+-- to PostHog. The web API keeps those three server-side.
 select jsonb_build_object(
+  'requestId', r.id,
+  'userId', r.user_id,
   'campaign', r.campaign,
   'segment', r.segment,
   'recency', r.recency,

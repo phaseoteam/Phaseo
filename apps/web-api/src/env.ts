@@ -36,6 +36,10 @@ export type Env = {
 	EXPO_ACCESS_TOKEN?: string;
 	FEEDBACK_REWARD_USD?: string;
 	FEEDBACK_REWARD_CAP?: string;
+	/** PostHog project API key (the public phc_ key the browser also uses). Feedback answers are sent with it. */
+	POSTHOG_PROJECT_API_KEY?: string;
+	/** PostHog ingestion host. Defaults to https://eu.i.posthog.com. */
+	POSTHOG_HOST?: string;
 	DISCORD_BILLING_WEBHOOK_URL?: string;
 	DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?: string;
 	DISCORD_ROLE_ID?: string;
