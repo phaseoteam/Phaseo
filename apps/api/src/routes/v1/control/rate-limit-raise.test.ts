@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
 	published: [] as Array<Record<string, unknown>>,
 	publishError: null as Error | null,
 	readErrorAfterInsert: null as Error | null,
+	/** A raise another request recorded between this request's read and its insert. */
+	raceRaise: null as { created_at: string } | null,
 }));
 
 vi.mock("./dashboard-session", () => ({ authenticateDashboardSession: async () => mocks.session }));
@@ -27,6 +29,18 @@ vi.mock("@core/customer-rate-limit-tiers", () => ({
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => mocks.bindings,
 	getSupabaseAdmin: () => ({
+		rpc: async (name: string, args: Record<string, any>) => {
+			if (name !== "request_workspace_rate_limit_raise") throw new Error(name);
+			if (mocks.raceRaise) mocks.lastRaise = mocks.raceRaise;
+			// The function inserts only if the caller saw the newest raise.
+			if ((mocks.lastRaise?.created_at ?? null) !== args.p_last_requested_at) return { data: [], error: null };
+			const row = { workspace_id: args.p_workspace_id, from_tier: args.p_from_tier, to_tier: args.p_to_tier, requested_by: args.p_requested_by, expires_at: args.p_expires_at };
+			mocks.inserts.push(row);
+			// Once inserted, the inputs carry the raise, as the SQL function would.
+			mocks.inputs = { ...mocks.inputs, raise_tier: row.to_tier, raise_expires_at: row.expires_at };
+			mocks.lastRaise = { created_at: new Date().toISOString() };
+			return { data: [{ id: "raise-1", from_tier: row.from_tier, to_tier: row.to_tier, expires_at: row.expires_at }], error: null };
+		},
 		from: () => {
 			const builder: any = {
 				select: () => builder,
@@ -34,13 +48,6 @@ vi.mock("@/runtime/env", () => ({
 				order: () => builder,
 				limit: () => builder,
 				maybeSingle: async () => ({ data: mocks.lastRaise, error: null }),
-				insert: (row: Record<string, unknown>) => {
-					mocks.inserts.push(row);
-					// Once inserted, the inputs carry the raise, as the SQL function would.
-					mocks.inputs = { ...mocks.inputs, raise_tier: row.to_tier, raise_expires_at: row.expires_at };
-					mocks.lastRaise = { created_at: new Date().toISOString() };
-					return { select: () => ({ single: async () => ({ data: { id: "raise-1", ...row }, error: null }) }) };
-				},
 			};
 			return builder;
 		},
@@ -68,6 +75,7 @@ beforeEach(() => {
 	mocks.published.length = 0;
 	mocks.publishError = null;
 	mocks.readErrorAfterInsert = null;
+	mocks.raceRaise = null;
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -127,6 +135,16 @@ describe("self-serve rate limit raise routes", () => {
 		const response = await handleRaiseRateLimitTier(request("POST"));
 		expect(response.status).toBe(201);
 		expect(mocks.inserts).toHaveLength(1);
+	});
+
+	it("refuses with 409 when a concurrent request recorded a raise first", async () => {
+		mocks.raceRaise = { created_at: new Date().toISOString() };
+		const response = await handleRaiseRateLimitTier(request("POST"));
+		expect(response.status).toBe(409);
+		expect(await response.json()).toMatchObject({ error: "raise_unavailable", reason: "raised" });
+		expect(mocks.inserts).toHaveLength(0);
+		expect(mocks.audits).toHaveLength(0);
+		expect(mocks.published).toHaveLength(0);
 	});
 
 	it("reports the saved raise when reading the workspace again fails", async () => {

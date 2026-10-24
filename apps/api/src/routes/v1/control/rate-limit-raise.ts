@@ -35,8 +35,11 @@ function raisesEnabled(): boolean {
 	return bindings.CUSTOMER_RATE_LIMIT_LADDER_ENABLED === "true" && bindings.CUSTOMER_RATE_LIMIT_SELF_SERVE_RAISES_ENABLED === "true";
 }
 
-/** The workspace's tier and raise status, from fresh inputs (not the published KV value). */
-async function currentStatus(workspaceId: string): Promise<SelfServeRaiseStatus | null> {
+/**
+ * The workspace's tier and raise status, from fresh inputs (not the published KV value).
+ * `lastRequestedAt` is the newest raise's created_at exactly as Postgres returned it.
+ */
+async function readStatus(workspaceId: string): Promise<{ status: SelfServeRaiseStatus; lastRequestedAt: string | null } | null> {
 	const [inputs, last] = await Promise.all([
 		readCustomerRateLimitInputs(workspaceId),
 		getSupabaseAdmin().from("workspace_rate_limit_raises").select("created_at")
@@ -44,15 +47,24 @@ async function currentStatus(workspaceId: string): Promise<SelfServeRaiseStatus 
 	]);
 	if (last.error) throw new Error(last.error.message || "Failed to read rate limit raises");
 	if (!inputs) return null;
-	const lastRequestedAt = last.data ? Date.parse((last.data as { created_at: string }).created_at) : Number.NaN;
-	return selfServeRaiseStatus({
+	const lastRequestedAt = last.data ? (last.data as { created_at: string }).created_at : null;
+	const lastRequestedMs = lastRequestedAt ? Date.parse(lastRequestedAt) : Number.NaN;
+	const status = selfServeRaiseStatus({
 		inputs,
 		ladder: customerRateLimitLadder(getBindings().CUSTOMER_RATE_LIMIT_LADDER),
 		now: Date.now(),
 		enabled: raisesEnabled(),
-		lastRequestedAt: Number.isFinite(lastRequestedAt) ? lastRequestedAt : null,
+		lastRequestedAt: Number.isFinite(lastRequestedMs) ? lastRequestedMs : null,
 	});
+	return { status, lastRequestedAt };
 }
+
+async function currentStatus(workspaceId: string): Promise<SelfServeRaiseStatus | null> {
+	return (await readStatus(workspaceId))?.status ?? null;
+}
+
+const raiseUnavailable = (reason: string | null) =>
+	json({ error: "raise_unavailable", reason, message: "This workspace cannot raise its rate limit now" }, 409, NO_STORE);
 
 function body(status: SelfServeRaiseStatus, session: DashboardSession) {
 	return { data: { ...status, canRaise: session.role === "owner" && status.eligible } };
@@ -78,21 +90,24 @@ export async function handleRaiseRateLimitTier(req: Request) {
 	if (session.role !== "owner") return forbidden("Only the workspace owner can raise the workspace's rate limit");
 	const workspaceId = session.auth.workspaceId;
 	try {
-		const status = await currentStatus(workspaceId);
-		if (!status) return json({ error: "not_found", message: "Workspace not found" }, 404, NO_STORE);
-		if (!status.eligible || !status.target) {
-			return json({ error: "raise_unavailable", reason: status.refusal, message: "This workspace cannot raise its rate limit now" }, 409, NO_STORE);
-		}
+		const read = await readStatus(workspaceId);
+		if (!read) return json({ error: "not_found", message: "Workspace not found" }, 404, NO_STORE);
+		const { status } = read;
+		if (!status.eligible || !status.target) return raiseUnavailable(status.refusal);
 		const now = Date.now();
-		const { data, error } = await getSupabaseAdmin().from("workspace_rate_limit_raises").insert({
-			workspace_id: workspaceId,
-			from_tier: status.tier,
-			to_tier: status.target,
-			requested_by: session.auth.userId,
-			expires_at: new Date(now + status.durationDays * DAY_MS).toISOString(),
-		}).select("id,from_tier,to_tier,expires_at").single();
+		// Inserted only if no other raise was recorded since the read above, so
+		// concurrent requests cannot both pass the eligibility check.
+		const { data, error } = await getSupabaseAdmin().rpc("request_workspace_rate_limit_raise", {
+			p_workspace_id: workspaceId,
+			p_from_tier: status.tier,
+			p_to_tier: status.target,
+			p_requested_by: session.auth.userId ?? null,
+			p_expires_at: new Date(now + status.durationDays * DAY_MS).toISOString(),
+			p_last_requested_at: read.lastRequestedAt,
+		});
 		if (error) throw error;
-		const raise = data as { id: string; from_tier: string; to_tier: string; expires_at: string };
+		const raise = (data as Array<{ id: string; from_tier: string; to_tier: string; expires_at: string }> | null)?.[0];
+		if (!raise) return raiseUnavailable("raised");
 		await recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 			workspaceId,
 			actorUserId: session.auth.userId ?? null,

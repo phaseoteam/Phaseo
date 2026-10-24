@@ -73,6 +73,7 @@ try {
     await db.exec(`set role ${role}`);
     await assert.rejects(rows('select * from public.workspace_rate_limit_raises'), /permission denied/);
     await assert.rejects(rows('select * from public.gateway_customer_rate_limit_inputs()'), /permission denied/);
+    await assert.rejects(rows(`select * from public.request_workspace_rate_limit_raise($1::uuid, 'standard', 'trusted', null, now() + interval '30 days', $2::timestamptz)`, [ws(6), null]), /permission denied/);
     await db.exec('reset role');
   }
   await db.exec('set role service_role');
@@ -107,6 +108,17 @@ try {
     /check constraint/,
     'a raise must expire after it starts',
   );
+
+  // A raise is recorded only if the caller saw the newest raise, so of two
+  // concurrent requests that both read "no raise yet", only one inserts.
+  const request = (lastRequestedAt) => rows(`select * from public.request_workspace_rate_limit_raise($1::uuid, 'standard', 'trusted', null, now() + interval '30 days', $2::timestamptz)`, [ws(6), lastRequestedAt]);
+  const first = await request(null);
+  assert.equal(first.length, 1, "the first request records a raise");
+  assert.equal(first[0].to_tier, "trusted");
+  assert.deepEqual(await request(null), [], "a request that read before that raise records nothing");
+  const [{ created_at: newest }] = await rows("select max(created_at) as created_at from public.workspace_rate_limit_raises where workspace_id = $1", [ws(6)]);
+  assert.equal((await request(newest)).length, 1, "a request that saw the newest raise records one");
+  assert.equal((await rows("select 1 from public.workspace_rate_limit_raises where workspace_id = $1", [ws(6)])).length, 2);
 
   console.log('rate limit self-serve raises: ok');
 } finally {
