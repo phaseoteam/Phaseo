@@ -19,6 +19,7 @@ CREATE TABLE "public"."notification_destinations" (
   "signing_secret_key_version" text,
   "signing_secret_rotated_at"  timestamp with time zone,
   CONSTRAINT "notification_destinations_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "notification_destinations_id_workspace_id_key" UNIQUE (id, workspace_id),
   CONSTRAINT "notification_destinations_name_check" CHECK (((char_length(name) >= 1) AND (char_length(name) <= 100))),
   CONSTRAINT "notification_destinations_pkey" PRIMARY KEY (id),
   CONSTRAINT "notification_destinations_signing_secret_check" CHECK ((((signing_secret_ciphertext IS NULL) = (signing_secret_iv IS NULL)) AND ((signing_secret_ciphertext IS NULL) OR (type = 'custom_webhook'::text)))),

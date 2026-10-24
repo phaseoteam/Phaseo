@@ -1,6 +1,6 @@
 ---
 title: "发布提供商目录"
-description: "发布包含标准化服务层级报价和速率限制的 V1 或 V1.1 模型数据源。"
+description: "发布包含标准化服务层级报价、数据政策和速率限制的 V1、V1.1 或 V1.2 模型数据源。"
 icon: "list"
 ---
 
@@ -12,11 +12,11 @@ icon: "list"
 
 V1.1 声明 `"schema_version": "1.1"`，并在每个模型中发布 `service_tiers`。导入程序根据文档本身选择格式。`?format=phaseo-v1.1` 等 URL 查询参数只是你的端点可选采用的约定；Phaseo 不会根据 URL 推断版本。
 
-下载 [V1 Schema](https://phaseo.app/api/internal/provider-catalog/schema) 或 [V1.1 Schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1)。不受支持的版本会被明确拒绝。
+下载 [V1 Schema](https://phaseo.app/api/internal/provider-catalog/schema)、[V1.1 Schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) 或 [V1.2 Schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2)。不受支持的版本会被明确拒绝。
 
-### V1.2 数据政策（预览）
+### V1.2 数据政策
 
-V1.2 为每个服务层级添加按能力划分的训练和保留声明。发布这些字段前，请与 Phaseo 协调启用时间；旧版导入器会拒绝这些字段。V1 和 V1.1 数据源仍受支持。
+V1.2 为每个服务层级添加按能力划分的训练和保留声明。你可以随时发布 V1.2。Phaseo 会在导入时验证这些声明，但在 Phaseo 批准你的政策来源之前，它们不会提供任何保证。V1 和 V1.1 数据源仍受支持。
 
 V1.2 还接受模型级或层级级的可选 `declarations`，用于描述模型标识、类型化输入/输出限制、参数说明、按范围划分的价格和容量、折扣及部署详情。这些声明会经过验证并保留以供审核，不会自动启用参数，也不会更改计费价格、容量限制的执行方式或数据驻留保证。验证结果会标识已存储的声明；请继续通过现有字段发布实际生效的价格和能力。
 

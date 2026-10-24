@@ -66,6 +66,7 @@ async function readNotifications() {
 		modelDeprecationAlertsEnabled: data.modelDeprecationAlertsEnabled,
 		modelDeprecationAlertsIncludeAdmins: data.modelDeprecationAlertsIncludeAdmins,
 		departmentSpendAttribution: data.departmentSpendAttribution ?? "all",
+		billingTimeZone: data.billingTimeZone ?? "UTC",
 	};
 }
 

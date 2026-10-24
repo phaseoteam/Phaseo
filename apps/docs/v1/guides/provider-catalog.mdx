@@ -1,7 +1,7 @@
 ---
 title: "Publish a provider catalog"
-description: "Publish V1 or V1.1 model feeds with normalized service-tier offers and rate limits."
-"og:image": "https://phaseo.app/og/dynamic?title=Publish%20a%20provider%20catalog&description=Publish%20V1%20or%20V1.1%20model%20feeds%20with%20normalized%20service-tier%20offers%20and%20rate%20limits.&pathname=/docs/v1/guides/provider-catalog"
+description: "Publish V1, V1.1 or V1.2 model feeds with normalized service-tier offers, data policies and rate limits."
+"og:image": "https://phaseo.app/og/dynamic?title=Publish%20a%20provider%20catalog&description=Publish%20V1%2C%20V1.1%20or%20V1.2%20model%20feeds%20with%20normalized%20service-tier%20offers%2C%20data%20policies%20and%20rate%20limits.&pathname=/docs/v1/guides/provider-catalog"
 icon: "list"
 ---
 
@@ -13,11 +13,11 @@ Existing V1 feeds continue to work without changes. An unversioned `{"data": [..
 
 V1.1 declares `"schema_version": "1.1"` and publishes `service_tiers` inside each model. The importer selects the format from the document. URL query parameters such as `?format=phaseo-v1.1` are optional conventions for your endpoint; Phaseo does not infer a version from the URL.
 
-Download the [V1 schema](https://phaseo.app/api/internal/provider-catalog/schema) or [V1.1 schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1). Unsupported versions are rejected explicitly.
+Download the [V1 schema](https://phaseo.app/api/internal/provider-catalog/schema), [V1.1 schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) or [V1.2 schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2). Unsupported versions are rejected explicitly.
 
-### V1.2 data policies (preview)
+### V1.2 data policies
 
-V1.2 adds capability-specific training and retention declarations to each service tier. Coordinate activation with Phaseo before publishing these fields; older importers reject them. V1 and V1.1 feeds remain supported.
+V1.2 adds capability-specific training and retention declarations to each service tier. You can publish V1.2 at any time. Phaseo validates declarations on import, but they grant no guarantee until Phaseo approves your policy source. V1 and V1.1 feeds remain supported.
 
 V1.2 also accepts optional model-level or tier-level `declarations` for model identity, typed input/output limits, parameter descriptions, scoped pricing and capacity, discounts, and deployment details. These are validated and retained for review. They do not automatically enable parameters or change billable prices, capacity enforcement or residency guarantees. Validation feedback identifies stored declarations; continue publishing effective prices and capabilities through their existing fields.
 

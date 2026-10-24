@@ -35,6 +35,7 @@ describe("notification routing job", () => {
 		await expect(runNotificationDeliveryJob()).resolves.toEqual({ queued: 130, sent: 0, failed: 0 });
 		expect(routed.size).toBe(130);
 		expect(filters).toContainEqual(["is", "notification_routed_events", null]);
+		expect(filters).toContainEqual(["in", "kind", expect.arrayContaining(["rate_limit_throttled", "spend_alert", "spend_blocked", "spend_report"])]);
 		expect(filters.filter(([method]) => method === "select")).toHaveLength(2);
 		expect(rpc).toHaveBeenLastCalledWith("claim_notification_delivery_attempts", { p_limit: 25 });
 	});
@@ -61,6 +62,14 @@ describe("notification provider payloads", () => {
 		expect(eventContent({ ...event, kind: "rate_limit_throttled", payload: { throttled_requests: 1, window_minutes: 15, policies: [] } }).message).toBe("Rate limit policies rejected 1 request in the last 15 minutes.");
 		const five = Array.from({ length: 5 }, (_, index) => ({ policy_name: `Policy ${index + 1}`, limit_scope: "key", throttled_requests: 5 - index }));
 		expect(eventContent({ ...event, kind: "rate_limit_throttled", payload: { throttled_requests: 15, window_minutes: 15, policies: five } }).message).toContain("Policy 4 (key limit, 2), Policy 5 (key limit, 1).");
+	});
+	it("titles spend rule events and prefers their rendered message", () => {
+		const spend = { ...event, subject: null };
+		expect(eventContent({ ...spend, kind: "spend_alert", payload: { rule_name: "Monthly cap", message: "Monthly cap reached 80% of $500.00." } })).toMatchObject({ title: "Spend alert", message: "Monthly cap reached 80% of $500.00." });
+		expect(eventContent({ ...spend, kind: "spend_alert", payload: { rule_name: "Monthly cap" } }).message).toBe('Spend rule "Monthly cap" crossed a threshold.');
+		expect(eventContent({ ...spend, kind: "spend_blocked", payload: { state: "started" } }).title).toBe("Requests blocked by a spend rule");
+		expect(eventContent({ ...spend, kind: "spend_blocked", payload: { state: "lifted" } }).title).toBe("Spend block lifted");
+		expect(eventContent({ ...spend, kind: "spend_report", payload: {} }).title).toBe("Spend report");
 	});
 	it("formats Broadcast destination failing content", () => {
 		const content = eventContent({ ...event, kind: "broadcast_destination_failing", payload: {
