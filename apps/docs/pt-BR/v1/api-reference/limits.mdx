@@ -35,6 +35,8 @@ Proprietários e administradores do espaço de trabalho também podem definir, a
 
 Os orçamentos de departamento, gerenciados pela API `/v1/department-budgets`, não rejeitam solicitações. O gasto de um departamento conta as mesmas chaves e solicitações OAuth que os limites de taxa de departamento, descritos abaixo. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e novamente em 100% de um orçamento diário, semanal ou mensal. O gasto vem de dados de uso que podem ter até uma hora de atraso.
 
+Proprietários e administradores também podem gerenciar os orçamentos de departamento em [Configurações → Orçamentos](https://phaseo.app/settings/budgets), ou com o recurso `phaseo_department_budget` do provedor do Terraform.
+
 ## Políticas de limite de taxa
 
 Os administradores do espaço de trabalho podem criar políticas de limite de taxa nomeadas pela API de gerenciamento `/v1/rate-limits` e atribuí-las a chaves de API, membros do espaço de trabalho, departamentos, proteções ou como padrão para cada usuário final. O gateway aplica o `requests_per_minute` e o `tokens_per_minute` de uma política, cada um medido em um minuto móvel:
@@ -44,6 +46,8 @@ Os administradores do espaço de trabalho podem criar políticas de limite de ta
 - **Departamento:** uma cota compartilhada por tudo o que conta para o departamento. Uma chave vinculada a um departamento conta apenas para esse departamento. Qualquer outra chave conta para todos os departamentos de quem a criou, e as solicitações OAuth contam para todos os departamentos do seu usuário. Um membro com uma substituição de departamento conta apenas para o departamento da substituição.
 - **Proteção:** uma cota separada para cada chave (ou usuário OAuth) coberta pela proteção.
 - **Padrão por usuário final:** uma cota separada para cada usuário final, identificado pelo campo `user` da solicitação ou pelo cabeçalho `X-Phaseo-User-Id`. Solicitações sem ID de usuário final não são limitadas por ela.
+
+Proprietários e administradores também podem gerenciar as políticas e suas atribuições em [Configurações → Limites de taxa](https://phaseo.app/settings/rate-limits), ou com os recursos `phaseo_rate_limit_policy` e `phaseo_rate_limit_assignment` do provedor do Terraform.
 
 Quando várias políticas se aplicam, cada uma é contada e a primeira esgotada rejeita a solicitação. Os limites das políticas se somam aos limites do gateway acima. As alterações nas políticas entram em vigor em cerca de um minuto. Alterações na participação em departamentos feitas no painel ou via SCIM podem levar até cerca de cinco minutos.
 

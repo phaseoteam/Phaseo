@@ -35,6 +35,8 @@ Les propriétaires et administrateurs de l’espace de travail peuvent aussi dé
 
 Les budgets de service, gérés avec l’API `/v1/department-budgets`, ne rejettent aucune requête. Les dépenses d’un service comptent les mêmes clés et requêtes OAuth que les limites de débit de service, décrites plus bas. Les propriétaires et les administrateurs reçoivent une notification push sur mobile à environ 80 %, puis à 100 % d’un budget quotidien, hebdomadaire ou mensuel. Les dépenses proviennent de données d’utilisation qui peuvent avoir jusqu’à une heure de retard.
 
+Les propriétaires et les administrateurs peuvent aussi gérer les budgets des départements dans [Paramètres → Budgets](https://phaseo.app/settings/budgets), ou avec la ressource `phaseo_department_budget` du fournisseur Terraform.
+
 ## Politiques de limite de débit
 
 Les administrateurs de l’espace de travail peuvent créer des politiques de limite de débit nommées via l’API de gestion `/v1/rate-limits` et les attribuer à des clés API, à des membres de l’espace de travail, à des services, à des garde-fous, ou comme valeur par défaut pour chaque utilisateur final. Le gateway applique les valeurs `requests_per_minute` et `tokens_per_minute` d’une politique, chacune mesurée sur une minute glissante :
@@ -44,6 +46,8 @@ Les administrateurs de l’espace de travail peuvent créer des politiques de li
 - **Service :** un quota partagé par tout ce qui est rattaché au service. Une clé liée à un service ne compte que pour ce service. Toute autre clé compte pour tous les services de la personne qui l’a créée, et les requêtes OAuth comptent pour tous les services de leur utilisateur. Un membre dont le service est remplacé manuellement ne compte que pour le service de ce remplacement.
 - **Garde-fou :** un quota distinct pour chaque clé (ou utilisateur OAuth) couverte par le garde-fou.
 - **Valeur par défaut par utilisateur final :** un quota distinct pour chaque utilisateur final, identifié par le champ `user` de la requête ou l’en-tête `X-Phaseo-User-Id`. Les requêtes sans identifiant d’utilisateur final ne sont pas limitées par cette valeur.
+
+Les propriétaires et les administrateurs peuvent aussi gérer les politiques et leurs affectations dans [Paramètres → Limites de débit](https://phaseo.app/settings/rate-limits), ou avec les ressources `phaseo_rate_limit_policy` et `phaseo_rate_limit_assignment` du fournisseur Terraform.
 
 Lorsque plusieurs politiques s’appliquent, chacune est comptée et la première épuisée rejette la requête. Les limites des politiques s’ajoutent aux limites du gateway ci-dessus. Les modifications des politiques prennent effet en une minute environ. Les changements d’appartenance aux services effectués dans le tableau de bord ou via SCIM peuvent prendre jusqu’à cinq minutes environ.
 
