@@ -1153,6 +1153,7 @@
 		"realtimeBillingOpenAI": "أحداث استخدام OpenAI",
 		"realtimeBillingXai": "مقياس مدة xAI",
 		"realtimeBillingGoogle": "بيانات استخدام Google الوصفية",
+		"realtimeBillingProvider": "استخدام {provider}",
 		"selectRealtimeModel": "اختر نموذجاً للوقت الفعلي",
 		"searchRealtimeModels": "البحث في نماذج الوقت الفعلي...",
 		"noRealtimeModels": "لم يتم العثور على نماذج للوقت الفعلي.",

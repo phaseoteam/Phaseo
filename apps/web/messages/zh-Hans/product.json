@@ -1153,6 +1153,7 @@
 		"realtimeBillingOpenAI": "OpenAI 使用事件",
 		"realtimeBillingXai": "xAI 时长计量",
 		"realtimeBillingGoogle": "Google 使用元数据",
+		"realtimeBillingProvider": "{provider} 使用量",
 		"selectRealtimeModel": "选择实时模型",
 		"searchRealtimeModels": "搜索实时模型……",
 		"noRealtimeModels": "未找到实时模型。",
