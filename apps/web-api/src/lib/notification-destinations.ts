@@ -2,6 +2,18 @@ import type { Env } from "@/env";
 
 export const NOTIFICATION_DESTINATION_TYPES = ["email", "discord", "discord_webhook", "slack", "microsoft_teams", "custom_webhook"] as const;
 export type NotificationDestinationType = typeof NOTIFICATION_DESTINATION_TYPES[number];
+/** Routable notification kinds; matches notification_event_destinations_event_kind_check. */
+export const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report"] as const;
+export function isNotificationEventKind(value: unknown): value is typeof NOTIFICATION_EVENT_KINDS[number] { return typeof value === "string" && (NOTIFICATION_EVENT_KINDS as readonly string[]).includes(value); }
+
+const IANA_TIME_ZONE = /^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+){0,2}$/;
+/** An IANA time zone such as Europe/London, trimmed; null otherwise. The database re-checks it against pg_timezone_names. */
+export function parseIanaTimeZone(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const zone = value.trim();
+	if (!zone || zone.length > 64 || !IANA_TIME_ZONE.test(zone)) return null;
+	try { new Intl.DateTimeFormat("en-US", { timeZone: zone }); return zone; } catch { return null; }
+}
 
 function text(value: unknown): string | null {
 	const normalized = typeof value === "string" ? value.trim() : "";

@@ -5,7 +5,7 @@ import { getEmailSuppressionReason } from "@/pipeline/notifications/email-suppre
 import { getModelDeprecationContent, getModelDeprecationTemplateVariables, renderModelDeprecationEmail, renderNotificationTestEmail } from "@/pipeline/notifications/model-deprecation";
 import { getModelSubstitutionContent, renderModelSubstitutionEmail } from "@/pipeline/notifications/model-substitution";
 
-const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "notification_test"];
+const DELIVERABLE_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report", "notification_test"];
 const EVENT_PAGE_SIZE = 100;
 const MAX_ROUTING_PASSES = 20;
 // Kept below PostgREST's 1,000-row response cap; the RPC also clamps it.
@@ -82,13 +82,17 @@ export function eventContent(event: EventRow) {
 		return { title: content.title, message: content.message, settingsUrl: content.settingsUrl };
 	}
 	const payload = event.payload ?? {};
-	const title = String(payload.title ?? event.subject ?? ({ low_balance: "Low balance alert", auto_top_up_failed: "Auto Top-Up failed", payment_method_expiring: "Payment method expiring soon", model_deprecation: "Model deprecation alert", rate_limit_throttled: "Rate limit alert", broadcast_destination_failing: "Broadcast destination failing", notification_test: "Phaseo test notification" } as Record<string, string>)[event.kind] ?? "Phaseo notification");
+	const title = String(payload.title ?? event.subject ?? ({ low_balance: "Low balance alert", auto_top_up_failed: "Auto Top-Up failed", payment_method_expiring: "Payment method expiring soon", model_deprecation: "Model deprecation alert", rate_limit_throttled: "Rate limit alert", broadcast_destination_failing: "Broadcast destination failing", spend_alert: "Spend alert", spend_blocked: payload.state === "lifted" ? "Spend block lifted" : "Requests blocked by a spend rule", spend_report: "Spend report", notification_test: "Phaseo test notification" } as Record<string, string>)[event.kind] ?? "Phaseo notification");
 	let message = String(payload.message ?? "");
 	if (!message && event.kind === "low_balance") message = `Your workspace balance is $${Number(payload.balance_usd ?? 0).toFixed(2)}, at or below the configured $${Number(payload.threshold_usd ?? 0).toFixed(2)} threshold.`;
 	if (!message && event.kind === "auto_top_up_failed") message = String(payload.reason ?? "Phaseo could not automatically add credits to your workspace.");
 	if (!message && event.kind === "payment_method_expiring") message = `The ${String(payload.brand ?? "card")} ending in ${String(payload.last4 ?? "unknown")} expires ${String(payload.expiry ?? "soon")}.`;
 	if (!message && event.kind === "model_deprecation") message = `${String(payload.model_name ?? payload.model_id ?? "A model used by your workspace")} has been deprecated${payload.retirement_date ? ` and is scheduled to retire on ${String(payload.retirement_date)}` : ""}.`;
 	if (!message && event.kind === "rate_limit_throttled") message = rateLimitThrottledMessage(payload);
+	// Spend rule events carry their rendered text in payload.message; these are fallbacks only.
+	if (!message && event.kind === "spend_alert") { const name = String(payload.rule_name ?? "").trim(); message = name ? `Spend rule "${name}" crossed a threshold.` : "A spend rule in your workspace crossed a threshold."; }
+	if (!message && event.kind === "spend_blocked") message = payload.state === "lifted" ? "A spend rule block was lifted. Requests in its scope are allowed again." : "A spend rule is blocking requests in its scope until the period resets or an admin lifts the block.";
+	if (!message && event.kind === "spend_report") message = "Your workspace spend report is ready.";
 	if (!message && event.kind === "broadcast_destination_failing") message = broadcastDestinationFailingMessage(payload);
 	const settingsUrl = event.kind === "broadcast_destination_failing" ? "https://phaseo.app/settings/broadcast" : "https://phaseo.app/settings/notifications";
 	return { title, message: message || "A workspace notification was generated.", settingsUrl };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { targetPreview, validateNotificationTarget } from "./notification-destinations";
+import { isNotificationEventKind, parseIanaTimeZone, targetPreview, validateNotificationTarget } from "./notification-destinations";
 
 describe("notification destination validation", () => {
 	it("accepts and masks multiple email destinations", () => { const target = validateNotificationTarget("email", JSON.stringify(["Alerts@Example.com", "ops@example.com"])); expect(JSON.parse(target)).toEqual(["alerts@example.com", "ops@example.com"]); expect(targetPreview("email", target)).toBe("al•••@example.com +1"); });
@@ -17,5 +17,16 @@ describe("notification destination validation", () => {
 	it("stores Microsoft Teams UPN and Entra mentions", () => {
 		const target = validateNotificationTarget("microsoft_teams", JSON.stringify({ url: "https://example.com/teams", mentionIds: ["alex@example.com", "49c4641c-ab91-4248-aebb-6a7de286397b"] }));
 		expect(JSON.parse(target).mentionIds).toHaveLength(2);
+	});
+	it("routes the spend rule notification kinds", () => {
+		for (const kind of ["spend_alert", "spend_blocked", "spend_report", "rate_limit_throttled"]) expect(isNotificationEventKind(kind)).toBe(true);
+		expect(isNotificationEventKind("notification_test")).toBe(false);
+	});
+	it("accepts IANA billing time zones only", () => {
+		expect(parseIanaTimeZone("Europe/London")).toBe("Europe/London");
+		expect(parseIanaTimeZone("UTC")).toBe("UTC");
+		expect(parseIanaTimeZone("+05:30")).toBeNull();
+		expect(parseIanaTimeZone("Mars/Olympus_Mons")).toBeNull();
+		expect(parseIanaTimeZone(null)).toBeNull();
 	});
 });

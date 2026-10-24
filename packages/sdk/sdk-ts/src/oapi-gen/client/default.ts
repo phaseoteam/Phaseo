@@ -12863,6 +12863,7 @@ export async function getWorkspaceNotificationSettings(
       threshold_usd: number;
     };
     spend: {
+      billing_time_zone: string;
       department_attribution: "all" | "primary";
     };
   };
@@ -12887,6 +12888,7 @@ export async function getWorkspaceNotificationSettings(
         threshold_usd: number;
       };
       spend: {
+        billing_time_zone: string;
         department_attribution: "all" | "primary";
       };
     };
@@ -19683,6 +19685,9 @@ export async function listWorkspaceNotificationRoutes(
     model_substitution: string[];
     payment_method_expiring: string[];
     rate_limit_throttled: string[];
+    spend_alert: string[];
+    spend_blocked: string[];
+    spend_report: string[];
   };
 }> {
   const { path, query, headers, body } = args;
@@ -19696,6 +19701,9 @@ export async function listWorkspaceNotificationRoutes(
       model_substitution: string[];
       payment_method_expiring: string[];
       rate_limit_throttled: string[];
+      spend_alert: string[];
+      spend_blocked: string[];
+      spend_report: string[];
     };
   }>({
     method: "GET",
@@ -24648,7 +24656,10 @@ export type UpdateWorkspaceNotificationRouteParams = {
       | "model_deprecation"
       | "model_substitution"
       | "rate_limit_throttled"
-      | "broadcast_destination_failing";
+      | "broadcast_destination_failing"
+      | "spend_alert"
+      | "spend_blocked"
+      | "spend_report";
   };
   query?: Record<string, never>;
   headers?: Record<string, never>;
@@ -24673,7 +24684,10 @@ export async function updateWorkspaceNotificationRoute(
       | "model_deprecation"
       | "model_substitution"
       | "rate_limit_throttled"
-      | "broadcast_destination_failing";
+      | "broadcast_destination_failing"
+      | "spend_alert"
+      | "spend_blocked"
+      | "spend_report";
   };
 }> {
   const { path, query, headers, body } = args;
@@ -24690,7 +24704,10 @@ export async function updateWorkspaceNotificationRoute(
         | "model_deprecation"
         | "model_substitution"
         | "rate_limit_throttled"
-        | "broadcast_destination_failing";
+        | "broadcast_destination_failing"
+        | "spend_alert"
+        | "spend_blocked"
+        | "spend_report";
     };
   }>({
     method: "PUT",
@@ -24724,6 +24741,7 @@ export type UpdateWorkspaceNotificationSettingsParams = {
       threshold_usd?: number;
     };
     spend?: {
+      billing_time_zone?: string;
       department_attribution?: "all" | "primary";
     };
   };
@@ -24753,6 +24771,7 @@ export async function updateWorkspaceNotificationSettings(
       threshold_usd: number;
     };
     spend: {
+      billing_time_zone: string;
       department_attribution: "all" | "primary";
     };
   };
@@ -24777,6 +24796,7 @@ export async function updateWorkspaceNotificationSettings(
         threshold_usd: number;
       };
       spend: {
+        billing_time_zone: string;
         department_attribution: "all" | "primary";
       };
     };

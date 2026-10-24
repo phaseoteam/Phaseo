@@ -21777,13 +21777,21 @@ components:
       enum:
         - all
         - primary
+    WorkspaceBillingTimeZone:
+      type: string
+      maxLength: 64
+      description: 独自のタイムゾーンを持たない支出ルールの暦期間と支出レポートに使う IANA タイムゾーン。既定値は UTC です。適用されるキーの上限とワークスペース予算は常に UTC を使います。
+      example: Europe/London
     WorkspaceSpendSettings:
       type: object
       required:
         - department_attribution
+        - billing_time_zone
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
+        billing_time_zone:
+          $ref: '#/components/schemas/WorkspaceBillingTimeZone'
       additionalProperties: false
     WorkspaceNotificationSettings:
       type: object
@@ -21873,6 +21881,8 @@ components:
       properties:
         department_attribution:
           $ref: '#/components/schemas/WorkspaceSpendAttribution'
+        billing_time_zone:
+          $ref: '#/components/schemas/WorkspaceBillingTimeZone'
       additionalProperties: false
     WorkspaceNotificationDestinationType:
       type: string
@@ -22004,6 +22014,9 @@ components:
         - model_substitution
         - rate_limit_throttled
         - broadcast_destination_failing
+        - spend_alert
+        - spend_blocked
+        - spend_report
     WorkspaceNotificationRouteMap:
       type: object
       required:
@@ -22014,6 +22027,9 @@ components:
         - model_substitution
         - rate_limit_throttled
         - broadcast_destination_failing
+        - spend_alert
+        - spend_blocked
+        - spend_report
       properties:
         low_balance:
           type: array
@@ -22046,6 +22062,21 @@ components:
             type: string
             format: uuid
         broadcast_destination_failing:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_alert:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_blocked:
+          type: array
+          items:
+            type: string
+            format: uuid
+        spend_report:
           type: array
           items:
             type: string

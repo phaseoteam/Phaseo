@@ -3779,6 +3779,8 @@ pub struct WorkspaceAutoTopUpUpdate {
 	pub payment_method_id: Option<Option<String>>,
 }
 
+pub type WorkspaceBillingTimeZone = JsonValue;
+
 pub struct WorkspaceBudget {
 	pub created_at: String,
 	pub created_by: Option<Option<String>>,
@@ -4110,6 +4112,9 @@ pub struct WorkspaceNotificationRouteMap {
 	pub model_substitution: Vec<String>,
 	pub payment_method_expiring: Vec<String>,
 	pub rate_limit_throttled: Vec<String>,
+	pub spend_alert: Vec<String>,
+	pub spend_blocked: Vec<String>,
+	pub spend_report: Vec<String>,
 }
 
 pub struct WorkspaceNotificationRouteResponse {
@@ -4267,10 +4272,12 @@ pub struct WorkspaceSettingsUpdateRequest {
 pub type WorkspaceSpendAttribution = JsonValue;
 
 pub struct WorkspaceSpendSettings {
+	pub billing_time_zone: String,
 	pub department_attribution: String,
 }
 
 pub struct WorkspaceSpendSettingsUpdate {
+	pub billing_time_zone: Option<String>,
 	pub department_attribution: Option<String>,
 }
 
