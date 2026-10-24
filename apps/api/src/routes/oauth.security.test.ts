@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
 	consentParams: null as string | null,
 	oauthAuth: { ok: false, reason: "invalid_token" } as Record<string, unknown>,
 	pollStatus: "ok" as string,
+	displayName: null as string | null,
 }));
 
 const FUTURE_EXPIRES_AT = "2999-01-01T00:00:00.000Z";
@@ -37,7 +38,7 @@ vi.mock("@/runtime/env", () => ({
 					data: {
 						user: {
 							email: "user@example.com",
-							user_metadata: { full_name: "Phaseo User" },
+							user_metadata: { full_name: "Phaseo User", avatar_url: "https://lh3.googleusercontent.com/a/photo" },
 						},
 					},
 				}),
@@ -45,6 +46,9 @@ vi.mock("@/runtime/env", () => ({
 		},
 		rpc: async () => ({ data: state.pollStatus, error: null }),
 		from(table: string) {
+			if (table === "users") {
+				return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { display_name: state.displayName ?? null }, error: null }) }) }) };
+			}
 			if (table === "oauth_clients") {
 				return {
 					insert: async (payload: Record<string, unknown>) => {
@@ -211,6 +215,7 @@ describe("OAuth route security", () => {
 		state.deviceRow = null;
 		state.authorizationRow = null;
 		state.authorizationCodeRow = null;
+		state.displayName = null;
 		state.client = { id: "phaseo_cli", name: "Phaseo CLI", client_type: "public" };
 		state.updateResult = null;
 		state.updatePayloads.length = 0;
@@ -1029,9 +1034,20 @@ describe("OAuth route security", () => {
 			sub: "user_1",
 			email: "user@example.com",
 			name: "Phaseo User",
+			picture: "https://lh3.googleusercontent.com/a/photo",
 			workspace_id: "workspace_1",
 			client_id: "client_1",
 		});
+
+		// The name set on the profile page wins over the sign-in provider's.
+		state.displayName = "  Ada  ";
+		const renamed = await oauthRouter.request("https://example.com/userinfo", { headers: { Authorization: "Bearer phaseo_v1_sk_example" } });
+		expect(await renamed.json()).toMatchObject({ name: "Ada" });
+
+		// Without the profile scope, neither the name nor the picture is shared.
+		state.oauthAuth = { ...state.oauthAuth, oauthScopes: ["openid", "email"] };
+		const narrow = await (await oauthRouter.request("https://example.com/userinfo", { headers: { Authorization: "Bearer phaseo_v1_sk_example" } })).json();
+		expect(narrow).not.toHaveProperty("name"); expect(narrow).not.toHaveProperty("picture");
 	});
 
 	it("binds a delegated access token to the resource echoed at token exchange", async () => {
