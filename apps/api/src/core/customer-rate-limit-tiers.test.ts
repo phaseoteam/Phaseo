@@ -31,7 +31,7 @@ vi.mock("@/runtime/env", () => {
 
 import { __resetTieredCacheForTests } from "./tiered-cache";
 import {
-	customerTierManifestKey, KV_OPERATIONS_PER_INVOCATION, MAX_TIER_WRITES_PER_RUN, publishCustomerRateLimitTiers, readCustomerLimits,
+	customerTierManifestKey, KV_OPERATIONS_PER_INVOCATION, MAX_TIER_WRITES_PER_RUN, publishCustomerRateLimitTier, publishCustomerRateLimitTiers, readCustomerLimits,
 	TIER_MANIFEST_SHARD_COUNT,
 } from "./customer-rate-limit-tiers";
 
@@ -153,6 +153,20 @@ describe("customer rate-limit tier publisher", () => {
 		expect(mocks.deletes).toEqual([`customer-quota:v2:${id(2)}`]);
 		const manifest = JSON.parse(mocks.store.get(customerTierManifestKey(id(2)[0]))!);
 		expect(manifest.w).toEqual({});
+	});
+
+	it("repairs an immediate raise publication that was revoked before the next run", async () => {
+		const paid = { has_paid_top_up: true, lifetime_paid_spend_nanos: "20000000000" };
+		mocks.rows = [row(1, paid)];
+		await publish();
+		expect(published(1)).toEqual({ tier: "standard" });
+		// The owner raises; the endpoint publishes at once.
+		await publishCustomerRateLimitTier(row(1, { ...paid, raise_tier: "trusted", raise_expires_at: new Date(Date.now() + 86_400_000).toISOString() }) as never, undefined);
+		expect(published(1)).toMatchObject({ tier: "standard", raise: { tier: "trusted" } });
+		// An operator revokes it before the next run: Postgres is back to what the manifest last recorded.
+		const summary = await publish();
+		expect(published(1)).toEqual({ tier: "standard" });
+		expect(summary.written).toBe(1);
 	});
 
 	it("refuses to publish with invalid tuning rather than misclassifying", async () => {

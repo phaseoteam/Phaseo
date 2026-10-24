@@ -151,7 +151,9 @@ function quotaExceeded(args: { requestId: string; kind: CustomerQuotaKind }, lim
  */
 async function customerLimitsFor(bindings: GatewayBindings, workspaceId: string): Promise<CustomerLimits> {
 	if (bindings.CUSTOMER_RATE_LIMIT_LADDER_ENABLED !== "true") return { ...DEFAULT_CUSTOMER_LIMITS };
-	const { requestsPerMinute, freeRequestsPerDay } = await readCustomerLimits(workspaceId, bindings.CUSTOMER_RATE_LIMIT_LADDER);
+	const { requestsPerMinute, freeRequestsPerDay } = await readCustomerLimits(
+		workspaceId, bindings.CUSTOMER_RATE_LIMIT_LADDER, bindings.CUSTOMER_RATE_LIMIT_SELF_SERVE_RAISES_ENABLED === "true",
+	);
 	return { requestsPerMinute, freeRequestsPerDay };
 }
 

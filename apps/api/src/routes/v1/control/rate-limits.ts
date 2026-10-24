@@ -19,6 +19,7 @@ import {
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
 import { authenticateDashboardSession } from "./dashboard-session";
+import { handleGetRateLimitTier, handleRaiseRateLimitTier } from "./rate-limit-raise";
 
 const POLICY_COLUMNS = "id,workspace_id,name,description,requests_per_minute,tokens_per_minute,concurrent_requests,fail_closed,created_by,created_at,updated_at";
 const ASSIGNMENT_COLUMNS = "id,workspace_id,policy_id,target_type,key_id,user_id,department_id,guardrail_id,created_by,created_at,updated_at";
@@ -524,3 +525,6 @@ rateLimitsRoutes.post("/assignments", withRuntime(handleCreateAssignment));
 rateLimitsRoutes.get("/assignments/:id", withRuntime(handleGetAssignment));
 rateLimitsRoutes.patch("/assignments/:id", withRuntime(handleUpdateAssignment));
 rateLimitsRoutes.delete("/assignments/:id", withRuntime(handleDeleteAssignment));
+// Dashboard only: the workspace's trust-ladder tier and self-serve raises.
+rateLimitsRoutes.get("/tier", withRuntime(handleGetRateLimitTier));
+rateLimitsRoutes.post("/tier/raise", withRuntime(handleRaiseRateLimitTier));
