@@ -3,8 +3,41 @@ title: "オブザーバビリティの宛先を作成"
 sidebarTitle: "宛先を作成"
 badge: "ベータ"
 openapi: "/ja/openapi/v1/openapi.localized.yaml POST /observability/destinations"
-description: "WebhookまたはOpenTelemetryの宛先を作成します。"
+description: "Broadcast の宛先（OpenTelemetry ツール、Webhook、ストレージバケット、データウェアハウス）を作成します。"
 ---
 <Note>このエンドポイントには `settings:write` 権限を持つ管理APIキーが必要です。</Note>
 
-`config` オブジェクトは書き込み専用で、保存前に暗号化されます。エンドポイントには公開HTTPSアドレスを指定してください。
+`config` オブジェクトは書き込み専用で、保存前に暗号化されます。エンドポイントには公開HTTPSアドレスを指定してください。各宛先の動作と受け取る内容については、[Broadcast](../../guides/broadcast.mdx) を参照してください。
+
+## 種類別の config キー
+
+値はすべて文字列です。必須キーが欠けているリクエスト、または宛先で使用できない値を含むリクエストには、そのキーを示すメッセージとともに `400` が返されます。
+
+| `type` | 必須の `config` キー | 任意の `config` キー |
+| --- | --- | --- |
+| `arize` | `api_key`, `space_id`, `project_name` | `base_url` |
+| `axiom` | `api_token`, `dataset` | `region` |
+| `bigquery` | `service_account_json`, `dataset`, `table` | `project_id` |
+| `braintrust` | `api_key`, `project_id` | `base_url` |
+| `clickhouse` | `endpoint`, `password`, `table` | `username`, `database` |
+| `comet_opik` | `api_key`, `workspace`, `project_name` | `base_url` |
+| `datadog` | `api_key` | `ml_app`, `site` |
+| `dynatrace` | `environment_url`, `api_token` | `token_type` |
+| `elastic` | `otlp_endpoint`, `api_key` | — |
+| `gcs` | `bucket`, `access_key_id`, `secret_access_key` | `path_template` |
+| `grafana_cloud` | `otlp_endpoint`, `instance_id`, `api_key` | — |
+| `honeycomb` | `api_key` | `region`, `dataset` |
+| `langfuse` | `secret_key`, `public_key` | `base_url` |
+| `langsmith` | `api_key` | `project`, `base_url` |
+| `new_relic` | `license_key` | `region` |
+| `otel_collector` | `otlp_endpoint` | `otlp_protocol`, `headers_json` |
+| `posthog` | `api_key` | `base_url` |
+| `r2` | `account_id`, `bucket`, `access_key_id`, `secret_access_key` | `jurisdiction`, `path_template` |
+| `respan` | `api_key` | `base_url` |
+| `s3` | `bucket`, `access_key_id`, `secret_access_key` | `region`, `endpoint`, `session_token`, `path_template` |
+| `sentry` | `otlp_endpoint`, `public_key` | — |
+| `snowflake` | `account`, `user`, `private_key`, `warehouse`, `database`, `schema`, `table` | `role` |
+| `wandb_weave` | `api_key`, `entity`, `project` | `base_url` |
+| `webhook` | `url` | `method`, `headers_json`, `signing_secret` |
+
+OpenTelemetry の種類では、ベンダーが 1 つの値しか受け付けない場合を除き、`otlp_protocol`（`http/json` または `http/protobuf`）と `otlp_compression`（`none` または `gzip`）も指定できます。Webhook の `headers_json` は、ヘッダー名と値を対応付けた JSON オブジェクトを文字列にしたものです。

@@ -1,6 +1,13 @@
 import { getLogoLabel, resolveLogo } from "@/lib/logos";
 
 describe("logos", () => {
+	test("resolves the Base Labs icon in both themes", () => {
+		for (const theme of ["light", "dark"] as const) {
+			expect(resolveLogo("baselabs", { theme })).toMatchObject({
+				id: "baselabs", label: "Base Labs", src: "/logos/baselabs.svg", variant: "color",
+			});
+		}
+	});
 	test("resolves Nace's official mark in both themes", () => {
 		for (const theme of ["light", "dark"] as const) {
 			expect(resolveLogo("nace", { theme })).toMatchObject({

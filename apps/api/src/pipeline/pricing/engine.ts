@@ -35,6 +35,7 @@ const KNOWN_METERS = new Set<string>([
     "server_tool_web_search_requests", "server_tool_web_search_extra_results", "server_tool_web_fetch_requests", "server_tool_advisor_requests",
     "server_tool_image_generation_requests", "server_tool_apply_patch_requests",
     "native_web_search_requests", "native_web_fetch_requests",
+    "native_code_execution_requests", "native_x_search_posts", "native_x_search_users",
     "requests",
     ...OPENAI_CACHE_WRITE_TTL_METERS,
 ]);
@@ -194,6 +195,12 @@ function analyzeRuleSelection(candidates: PriceRule[], ctx: Record<string, any>)
     };
 }
 
+// Providers that receive a request-level cache lifetime as prompt_cache_options.ttl ("5m" or
+// "1h") and report writes without a lifetime split: Moonshot
+// (https://platform.kimi.ai/docs/api/chat) and DeepInfra
+// (https://docs.deepinfra.com/chat/prompt-cache-retention).
+const PROMPT_CACHE_OPTIONS_TTL_PROVIDERS = new Set(["moonshotai", "deepinfra"]);
+
 const REPORTED_INPUT_TOTAL_PATHS = [
     "input_tokens",
     "prompt_tokens",
@@ -203,6 +210,18 @@ const REPORTED_INPUT_TOTAL_PATHS = [
     "totalInputTokens",
     "inputTokens",
     "promptTokenCount",
+] as const;
+
+/** Output totals a provider reports. output_text_tokens is not one: realtime reports it next to output_audio_tokens. */
+const REPORTED_OUTPUT_TOTAL_PATHS = [
+    "output_tokens",
+    "completion_tokens",
+    "completionTokens",
+    "completion_token_count",
+    "total_output_tokens",
+    "totalOutputTokens",
+    "outputTokens",
+    "candidatesTokenCount",
 ] as const;
 
 /** Split raw usage into numeric meters and a context object */
@@ -215,6 +234,8 @@ function splitUsage(
     context: Record<string, any>;
     /** input_text_tokens is the whole uncached prompt, so it still contains any image, audio or video tokens. */
     inputTextCoversPrompt: boolean;
+    /** output_text_tokens is the whole output, so it still contains any audio tokens. */
+    outputTextCoversOutput: boolean;
 } {
     const meters: Record<string, number> = {};
     const context: Record<string, any> = {};
@@ -282,13 +303,25 @@ function splitUsage(
         rule.meter === "cached_write_text_tokens_1h"
     );
     // Writes with no TTL detail were made with the TTL the request asked for
-    // (cache_control.ttl, prompt_cache_retention); 5 minutes otherwise.
+    // (cache_control.ttl, prompt_cache_retention, then prompt_cache_options.ttl, which is
+    // only sent to a route with a 1-hour write row); 5 minutes otherwise. Moonshot reports
+    // one cache_write_tokens count, "Billed according to the TTL at write time"
+    // (https://platform.kimi.ai/docs/api/chat).
     const undividedWriteMeter = (): "cached_write_text_tokens_5m" | "cached_write_text_tokens_1h" => {
+        // Only an exact "1h" is forwarded (see pipeline/execute/cacheTtl.ts); any other value is
+        // removed before sending, so the provider wrote with its 5-minute default.
+        const promptCacheOptionsTtl =
+            PROMPT_CACHE_OPTIONS_TTL_PROVIDERS.has(String(card.provider ?? "").toLowerCase()) &&
+            card.rules.some((rule) => rule.meter === "cached_write_text_tokens_1h") &&
+            String(requestOptions?.prompt_cache_options_ttl ?? "").trim().toLowerCase() === "1h"
+                ? "1h"
+                : undefined;
         const ttlHint = String(
             usageRaw?.cache_ttl ??
             usageRaw?.cache_ttl_seconds ??
             usageRaw?.context?.cache_ttl ??
             requestOptions?.cache_ttl ??
+            promptCacheOptionsTtl ??
             "5m",
         ).trim().toLowerCase();
         return ttlHint === "1h" || ttlHint === "60m" || ttlHint === "3600"
@@ -404,6 +437,16 @@ function splitUsage(
     ) {
         meters.native_web_fetch_requests = nativeWebFetchRequests;
     }
+    // Other per-call server tools (xAI code execution and X search). Executors report them as
+    // flat meters and inside server_tool_use, which is what survives stream usage shaping.
+    for (const [meter, serverToolUseKey] of [
+        ["native_code_execution_requests", "code_execution_requests"],
+        ["native_x_search_posts", "x_search_posts"],
+        ["native_x_search_users", "x_search_users"],
+    ] as const) {
+        const count = pickFirstFiniteNumber(usageRaw, [meter, `server_tool_use.${serverToolUseKey}`]);
+        if (typeof count === "number" && meters[meter] == null) meters[meter] = count;
+    }
 
     const inputTextTokens = meters.input_text_tokens;
     // Reads and writes that the provider counted inside input are billed on their own
@@ -430,6 +473,10 @@ function splitUsage(
     if (meters.input_text_tokens == null) {
         meters.input_text_tokens = uncachedCanonicalInput;
     }
+    const reportedOutputTotal = pickFirstFiniteNumber(usageRaw, [...REPORTED_OUTPUT_TOTAL_PATHS]);
+    const outputTextCoversOutput =
+        meters.output_text_tokens == null ||
+        (typeof reportedOutputTotal === "number" && meters.output_text_tokens === reportedOutputTotal);
     if (meters.output_text_tokens == null) {
         meters.output_text_tokens =
             card.rules.some((rule) => rule.meter === "output_reasoning_tokens") &&
@@ -474,7 +521,7 @@ function splitUsage(
         context,
     });
 
-    return { meters, context, inputTextCoversPrompt };
+    return { meters, context, inputTextCoversPrompt, outputTextCoversOutput };
 }
 
 const INPUT_MODALITY_METERS: PricingDimensionKey[] = ["input_image_tokens", "input_audio_tokens", "input_video_tokens"];
@@ -498,6 +545,24 @@ function separatePricedInputModalities(
         const moved = Math.min(text, quantity);
         meters.input_text_tokens = text - moved;
     }
+}
+
+/**
+ * Audio output tokens are part of the output total (OpenAI Chat completion_tokens, Gemini
+ * candidatesTokenCount). When the card prices output_audio_tokens on its own meter, take them
+ * out of output_text_tokens so they are billed once, at the audio rate. When it does not,
+ * they stay in output_text_tokens and are billed as text, as before.
+ */
+function separatePricedOutputAudio(
+    meters: Record<string, number>,
+    outputTextCoversOutput: boolean,
+    hasRule: (meter: PricingDimensionKey) => boolean,
+): void {
+    const quantity = meters.output_audio_tokens;
+    if (typeof quantity !== "number" || !(quantity > 0)) return;
+    if (!outputTextCoversOutput || !hasRule("output_audio_tokens")) return;
+    const text = meters.output_text_tokens ?? 0;
+    meters.output_text_tokens = text - Math.min(text, quantity);
 }
 
 /** price qty at rule's price/unit_size using nanos math */
@@ -862,12 +927,21 @@ function cacheMeterFallbackRule(
     return null;
 }
 
+export type PricingEngineOptions = {
+    /**
+     * Price a meter whose rules all have unmet conditions at its base rate instead of
+     * failing (or billing $0). Only for usage a provider has already charged for.
+     */
+    baseRateFallback?: boolean;
+};
+
 /** Main public API -- build a full pricing summary from raw usage. */
 export function computeBillSummary(
     usageRaw: Record<string, any>,
     cardInput: PriceCard,
     requestOptions?: Record<string, any>,
-    requestedPricingPlan: string = "standard"
+    requestedPricingPlan: string = "standard",
+    engineOptions?: PricingEngineOptions,
 ): PricingResult {
     // Cards from either loader may still name the fast tier `fast`; the engine prices it as `priority`.
     const card = normalizePriceCardPlans(cardInput);
@@ -889,7 +963,7 @@ export function computeBillSummary(
     if (requiresExplicitServiceTier(card) && !card.rules.some((rule) => rule.pricing_plan === pricingPlan)) {
         throw new Error(`pricing_plan_missing:${pricingPlan}`);
     }
-    const { meters, context: usageContext, inputTextCoversPrompt } = splitUsage(usageRaw, card, requestOptions);
+    const { meters, context: usageContext, inputTextCoversPrompt, outputTextCoversOutput } = splitUsage(usageRaw, card, requestOptions);
     const ctx = { ...(requestOptions ?? {}), ...(usageContext ?? {}) };
     {
         const modalityContext = { ...ctx, ...meters };
@@ -899,13 +973,15 @@ export function computeBillSummary(
             );
         // Mirrors the rule selection in the meter loop below, so a modality only leaves
         // input_text_tokens when the loop will price it.
-        separatePricedInputModalities(meters, inputTextCoversPrompt, (meter) => {
+        const willPrice = (meter: PricingDimensionKey) => {
             if (ruleMatches(pricingPlan, meter)) return true;
             if (pricingPlan === "standard") return false;
             const planDefinesMeter = card.rules.some((rule) => rule.pricing_plan === pricingPlan && rule.meter === meter);
             if (planDefinesMeter) return pricingPlan !== "batch";
             return ruleMatches("standard", meter);
-        });
+        };
+        separatePricedInputModalities(meters, inputTextCoversPrompt, willPrice);
+        separatePricedOutputAudio(meters, outputTextCoversOutput, willPrice);
     }
 
     logPricingDebug("usage_received", {
@@ -923,7 +999,8 @@ export function computeBillSummary(
     });
 
     const lines: PricingBreakdownLine[] = [];
-    const unmatchedConfiguredMeters: string[] = [];
+    let unmatchedConfiguredMeters: string[] = [];
+    const unmatchedConfiguredJobs: Array<{ dim: PricingDimensionKey; ruleMeter: PricingDimensionKey; qty: number }> = [];
     const missingRequiredCacheMeters: string[] = [];
     // Tier conditions on `input_tokens` compare the full prompt length; the input_tokens
     // meter itself is still billed at its reported quantity.
@@ -1039,6 +1116,7 @@ export function computeBillSummary(
                 missingRequiredCacheMeters.push(dim);
             } else if (card.rules.some((rule) => rule.meter === ruleMeter)) {
                 unmatchedConfiguredMeters.push(dim);
+                unmatchedConfiguredJobs.push({ dim, ruleMeter, qty });
             }
             continue;
         }
@@ -1186,6 +1264,55 @@ export function computeBillSummary(
 			fallback: cachePricingFallback,
 		});
 	}
+    const baseRateFallback: NonNullable<PricingResult["base_rate_fallback"]> = [];
+    if (engineOptions?.baseRateFallback && unmatchedConfiguredJobs.length > 0) {
+        // The provider has already charged for this usage. A rule whose condition the request
+        // did not meet (an unexpected resolution, say) is a catalogue gap: bill the meter at its
+        // base rate, the cheapest of its rules on this plan, rather than failing or billing $0.
+        const stillUnmatched = new Set<string>();
+        for (const job of unmatchedConfiguredJobs) {
+            const planRules = (plan: string) => card.rules.filter((rule) => rule.pricing_plan === plan && rule.meter === job.ruleMeter);
+            const candidates = planRules(pricingPlan).length > 0 ? planRules(pricingPlan) : planRules(basePlan);
+            if (!candidates.length) {
+                stillUnmatched.add(job.dim);
+                continue;
+            }
+            const priced = candidates
+                .map((rule) => ({ rule, priced: priceWithRule(job.qty, rule, requestOptions) }))
+                .reduce((cheapest, next) => (next.priced.lineNanos < cheapest.priced.lineNanos ? next : cheapest));
+            lines.push({
+                dimension: job.dim,
+                quantity: job.qty,
+                billable_units: priced.priced.billableUnits,
+                unit_size: priced.rule.unit_size,
+                unit_price_usd: priced.priced.unitPriceUsd,
+                line_cost_usd: priced.priced.lineCostUsd,
+                line_nanos: priced.priced.lineNanos,
+                bill_mode: (priced.rule.included_quantity ?? 0) > 0 ? "over" : "all",
+                included_quantity: priced.rule.included_quantity,
+                rule_priority: effectiveRulePriority(priced.rule),
+                rule_id: priced.rule.id,
+                billing_timestamp_basis: priced.priced.billingTimestampBasis,
+                billing_timestamp_basis_configured: priced.priced.billingTimestampBasisConfigured,
+                billing_timestamp_ms: priced.priced.billingTimestampMs,
+                billing_timestamp_iso: priced.priced.billingTimestampMs === null
+                    ? null
+                    : new Date(priced.priced.billingTimestampMs).toISOString(),
+                pricing_time_window: priced.priced.pricingTimeWindow,
+                pricing_fallback: "base_rate",
+            });
+            baseRateFallback.push({ meter: job.dim, quantity: job.qty, rule_id: priced.rule.id ?? null });
+        }
+        unmatchedConfiguredMeters = unmatchedConfiguredMeters.filter((meter) => stillUnmatched.has(meter));
+        if (baseRateFallback.length > 0) {
+            console.warn("[pricing] meter priced at base-rate fallback", {
+                provider: card.provider,
+                model: card.model,
+                pricing_plan: pricingPlan,
+                fallback: baseRateFallback,
+            });
+        }
+    }
     if (unpricedCacheMeters.length > 0) {
 		throw new Error(`pricing_rule_missing:${unpricedCacheMeters.join(",")}`);
     }
@@ -1210,6 +1337,7 @@ export function computeBillSummary(
         currency: "USD",
         lines,
         ...(cachePricingFallback.length > 0 ? { cache_pricing_fallback: cachePricingFallback } : {}),
+        ...(baseRateFallback.length > 0 ? { base_rate_fallback: baseRateFallback } : {}),
     };
 }
 
@@ -1218,13 +1346,15 @@ export function computeBill(
     usageRaw: Record<string, any>,
     card: PriceCard,
     requestOptions?: Record<string, any>,
-    pricingPlan?: string
+    pricingPlan?: string,
+    engineOptions?: PricingEngineOptions,
 ): Record<string, any> {
     const summary = computeBillSummary(
         usageRaw,
         card,
         requestOptions,
-        pricingPlan ?? (requestOptions as any)?.pricing_plan ?? "standard"
+        pricingPlan ?? (requestOptions as any)?.pricing_plan ?? "standard",
+        engineOptions,
     );
 
     // Use precomputed line_nanos to preserve exact totals when billable_units is fractional.
@@ -1265,6 +1395,21 @@ export function computeBill(
             currency: "USD",
             lines: slimLines,
             ...(summary.cache_pricing_fallback ? { cache_pricing_fallback: summary.cache_pricing_fallback } : {}),
+            ...(summary.base_rate_fallback ? { base_rate_fallback: summary.base_rate_fallback } : {}),
         },
     };
+}
+
+/**
+ * Price usage a provider has already charged for. A synchronous media adapter must never
+ * throw here: the request would fail (or move to another provider) after the charge. A meter
+ * whose conditions do not match is priced at its base rate and logged.
+ */
+export function computeBillAfterProviderCharge(
+    usageRaw: Record<string, any>,
+    card: PriceCard,
+    requestOptions?: Record<string, any>,
+    pricingPlan?: string,
+): Record<string, any> {
+    return computeBill(usageRaw, card, requestOptions, pricingPlan, { baseRateFallback: true });
 }

@@ -20,6 +20,7 @@ import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
+import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { readDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 
@@ -326,7 +327,8 @@ export function extractErrorDescription(body: any): string | null {
 export function isRateLimitPolicyRejection(errorCode: string | null | undefined, body: any): boolean {
     if (errorCode !== "rate_limit_exceeded") return false;
     const reason = body?.reason ?? body?.error?.reason;
-    return reason === "policy_requests_per_minute" || reason === "policy_tokens_per_minute";
+    return reason === "policy_requests_per_minute" || reason === "policy_tokens_per_minute"
+        || reason === "policy_concurrent_requests" || reason === "policy_unavailable";
 }
 
 // Classify error attribution for error header
@@ -676,6 +678,9 @@ export async function handleError({
         requestPayload: unknown;
         requestedModel: string | null;
         model?: string | null;
+        workspaceId?: string | null;
+        apiKeyId?: string | null;
+        zeroDataRetention?: boolean;
     },
 }): Promise<Response> {
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
@@ -795,6 +800,14 @@ export async function handleError({
         requestObservability?.requestPayload ??
         recoveredRequest.requestPayload ??
         null;
+    // Rejections before makeMeta have no ctx.meta; read metadata and trace keys the same way it would.
+    const requestMetadataForObservability = ctx?.meta
+        ? ctx.meta.requestMetadata ?? null
+        : readRequestMetadata((requestPayloadForObservability as any)?.metadata);
+    const traceContextForObservability = ctx?.meta
+        ? ctx.meta.otelTraceContext ?? null
+        : parseW3cTraceContext(req?.headers.get("traceparent") ?? null, req?.headers.get("tracestate") ?? null) ??
+            metadataTraceContext(requestMetadataForObservability);
     const generationId =
         ctx?.requestId ??
         body?.generation_id ??
@@ -999,10 +1012,14 @@ export async function handleError({
     // Admission rejections happen before any provider is called.
     const providerForAudit = isFreeModelLimit || isPolicyRejection ? null : providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
     const loggedErrorCode = `${isFreeModelLimit ? "gateway" : attribution}:${errCode}`;
+    // Without a context, a preset's ZDR comes from the early snapshot; the I/O log and
+    // telemetry also read the key's policy and the request payload.
+    const zeroDataRetention = ctx?.zeroDataRetention === true || requestObservability?.zeroDataRetention === true;
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
-        workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? null,
+        workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? requestObservability?.workspaceId ?? null,
+        zeroDataRetention,
         endpoint,
         model: modelForObservability,
         requestedModel,
@@ -1044,7 +1061,7 @@ export async function handleError({
         generationMs: ctx ? (executeAdapterMs ? Math.round(executeAdapterMs) : null) : null,
         internalLatencyMs,
         byok: ctx ? ((ctx as any)?.meta?.keySource === "byok") : false,
-        keyId: ctx?.meta?.apiKeyId ?? null,
+        keyId: ctx?.meta?.apiKeyId ?? requestObservability?.apiKeyId ?? null,
         requestMethod: requestMeta.requestMethod,
         requestPath: requestMeta.requestPath,
         requestUrl: requestMeta.requestUrl,
@@ -1118,11 +1135,12 @@ export async function handleError({
                 errorType,
                 startedAtMs: ctx?.meta?.startedAtMs ?? Date.now(),
                 completedAtMs: Date.now(),
-                traceContext: ctx?.meta?.otelTraceContext ?? null,
+                traceContext: traceContextForObservability,
                 requestMethod: requestMeta.requestMethod,
                 requestPath: requestMeta.requestPath,
                 sessionId: auditArgs.sessionId,
                 edgeColo: requestMeta.edgeColo,
+                metadata: requestMetadataForObservability,
                 rateLimitPolicyId: isPolicyRejection ? (errorPayload.policy_id as string | undefined) ?? null : null,
                 rateLimitScope: isPolicyRejection ? (errorPayload.limit_scope as string | undefined) ?? null : null,
             })
@@ -1132,6 +1150,7 @@ export async function handleError({
         result: undefined,
         requestId: auditArgs.requestId,
         workspaceId: auditArgs.workspaceId ?? "unknown",
+        zeroDataRetention,
         endpoint,
         model: modelForObservability,
         requestedModel,
@@ -1149,7 +1168,7 @@ export async function handleError({
         edgeCountry: requestMeta.edgeCountry,
         edgeContinent: requestMeta.edgeContinent,
         edgeAsn: requestMeta.edgeAsn,
-        keyId: ctx?.meta?.apiKeyId ?? null,
+        keyId: ctx?.meta?.apiKeyId ?? requestObservability?.apiKeyId ?? null,
         statusCode,
         success: false,
         errorCode: loggedErrorCode,

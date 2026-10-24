@@ -33,6 +33,7 @@ export interface ApiKeyResponse {
     scopes: string | string[];
     soft_blocked: boolean;
     status: string | null;
+    storage_locations?: string[];
     updated_at: string | null;
     usage: number;
     usage_daily: number;

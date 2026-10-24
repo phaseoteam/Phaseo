@@ -237,3 +237,49 @@ describe("ElevenLabs music.generate endpoint", () => {
 		expect(await result.upstream.clone().json()).toMatchObject({ error: { param: "format" } });
 	});
 });
+
+describe("ElevenLabs music billing without music_length_ms", () => {
+	// Production: music_v2 priced on output_audio_seconds, $0.15 per 60 seconds.
+	const card = {
+		provider: "elevenlabs", model: "elevenlabs/music_v2", endpoint: "music.generate",
+		effective_from: null, effective_to: null, currency: "USD", version: null,
+		rules: [{ meter: "output_audio_seconds", unit: "second", unit_size: 60, price_per_unit: "0.15", currency: "USD", pricing_plan: "standard", note: null, match: [], priority: 100 }],
+	} as any;
+
+	const run = async (body: Record<string, unknown>, query: string, audio: Uint8Array, contentType: string) => {
+		const mock = installFetchMock([{
+			match: (url) => url === `https://api.elevenlabs.example/v1/music${query}`,
+			response: new Response(audio, { status: 200, headers: { "Content-Type": contentType } }),
+		}]);
+		try {
+			return await exec({
+				endpoint: "music.generate", model: "elevenlabs/music_v2",
+				body: { model: "elevenlabs/music_v2", prompt: "Calm piano", ...body },
+				meta: REQUEST_META, workspaceId: "team_test", providerId: "elevenlabs", byokMeta: [],
+				pricingCard: card, providerModelSlug: "music_v2", stream: false,
+			} as any);
+		} finally {
+			mock.restore();
+		}
+	};
+
+	it("bills the length of raw PCM audio", async () => {
+		// 30 s of 16-bit mono PCM at 44.1 kHz.
+		const result = await run({ elevenlabs: { output_format: "pcm_44100" } }, "?output_format=pcm_44100", new Uint8Array(44_100 * 2 * 30), "audio/pcm");
+		expect(result.bill.usage.output_audio_seconds).toBe(30);
+		// Before: no output_audio_seconds, so $0.
+		expect(result.bill.usage.pricing.total_nanos).toBe(75_000_000);
+	});
+
+	it("bills MP3 audio from its bitrate when the frames cannot be parsed", async () => {
+		// 240,000 bytes at mp3_44100_128 (16,000 bytes a second) is 15 s.
+		const result = await run({ format: "mp3" }, "?output_format=mp3_44100_128", new Uint8Array(240_000), "audio/mpeg");
+		expect(result.bill.usage.output_audio_seconds).toBe(15);
+		expect(result.bill.usage.pricing.total_nanos).toBe(37_500_000);
+	});
+
+	it("keeps billing the requested length when the client sets one", async () => {
+		const result = await run({ duration: 45 }, "", new Uint8Array(1_000), "audio/mpeg");
+		expect(result.bill.usage.output_audio_seconds).toBe(45);
+	});
+});

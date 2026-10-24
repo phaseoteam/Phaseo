@@ -82,3 +82,6 @@ REVOKE ALL ON TABLE "public"."provider_catalog_sources" FROM "service_role";
 GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."provider_catalog_sources" TO "service_role";
 
 REVOKE ALL ON TABLE "public"."provider_catalog_sources" FROM "anon", "authenticated";
+
+CREATE TRIGGER invalidate_catalog_policy_source AFTER UPDATE OF catalog_url, management_mode, status, last_success_at ON public.provider_catalog_sources
+FOR EACH STATEMENT EXECUTE FUNCTION private.invalidate_routing_catalogue();

@@ -116,6 +116,22 @@ describe("Realtime relay lifecycle", () => {
 		expect(object.usage).toMatchObject({ input_audio_tokens: 200, output_audio_tokens: 40 });
 	});
 
+	it("completes a Google turn whose usage has only image and video prompt tokens", async () => {
+		const object = relay("google-ai-studio");
+		object.client = {};
+		object.checkpointUsage = vi.fn();
+		object.persistUsage = vi.fn();
+		object.persistProviderState = vi.fn();
+		object.maybePersistProviderState = vi.fn();
+		object.emitTurnTelemetry = vi.fn();
+		const event = (value: unknown) => object.handleUpstreamMessage(JSON.stringify(value));
+		const usageMetadata = { promptTokensDetails: [{ modality: "IMAGE", tokenCount: 258 }, { modality: "VIDEO", tokenCount: 300 }] };
+		await event({ serverContent: { modelTurn: { parts: [] } }, usageMetadata });
+		await event({ serverContent: { turnComplete: true }, usageMetadata });
+		expect(object.usage).toMatchObject({ input_image_tokens: 258, input_video_tokens: 300 });
+		expect(object.providerState.googleTurnActive).toBe(false);
+	});
+
 	it("ends Google's microphone stream immediately on disconnect and drains final usage", async () => {
 		vi.useFakeTimers();
 		try {

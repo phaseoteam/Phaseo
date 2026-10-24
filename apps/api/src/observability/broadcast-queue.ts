@@ -2,10 +2,19 @@ import { clearRuntime, configureRuntime, getBindings, getSupabaseAdmin } from "@
 import type { GatewayBindings } from "@/runtime/env.types";
 import { mapWithConcurrency } from "@/pipeline/model-discovery/concurrency";
 import { broadcastDelivery } from "./broadcast-destinations";
+import { BroadcastHealthRecorder } from "./broadcast-health";
+import {
+	BROADCAST_ROWS_REQUEST_LIMITS,
+	broadcastRowBytes,
+	broadcastRows,
+	type BroadcastRow,
+	type BroadcastRowsDestinationId,
+} from "./broadcast-rows";
 import { broadcastMessageBytes, gunzipJson, type BroadcastQueueMessage, type BroadcastTelemetry } from "./broadcast-event";
 import {
 	MAX_ATTEMPTS,
 	deliverGatewayOtlpPayload,
+	deliverGatewayRowsPayload,
 	deliverGatewayWebhookPayload,
 	destinationConfig,
 	renderBroadcastPayload,
@@ -34,7 +43,8 @@ type Outcome = Awaited<ReturnType<typeof deliverGatewayOtlpPayload>>;
 type QueuedDestination = Destination & { enabled: boolean };
 type QueuedMessage = Message<BroadcastQueueMessage>;
 type Event = { message: QueuedMessage; body: BroadcastQueueMessage; telemetry: BroadcastTelemetry };
-// One request: an OTLP batch of events for a destination, or one webhook event.
+// One request: an OTLP or row batch of events for a destination, or one webhook
+// event.
 type Delivery = { destination: QueuedDestination; config: Record<string, unknown>; events: Event[]; payload: unknown };
 // Destinations an event still needs, and the soonest any may be retried.
 type Pending = { ids: string[]; delayMs: number };
@@ -94,9 +104,13 @@ async function loadDestinations(ids: string[]): Promise<Map<string, QueuedDestin
 	return new Map(((data ?? []) as QueuedDestination[]).map((destination) => [destination.id, destination]));
 }
 
+const utf8 = new TextEncoder();
+
 // Payloads for the same destination share one request, split to stay under
-// MAX_OTLP_REQUEST_BYTES. Each OTLP payload is a list of resourceSpans, so
-// concatenating them is still a valid export request.
+// MAX_OTLP_REQUEST_BYTES of UTF-8. Protobuf stores strings as UTF-8 too, so the
+// JSON's UTF-8 size bounds either encoding even for multibyte prompts. Each OTLP
+// payload is a list of resourceSpans, so concatenating them is still a valid
+// export request.
 function otlpDeliveries(destination: QueuedDestination, config: Record<string, unknown>, events: Event[]): Delivery[] {
 	const deliveries: Delivery[] = [];
 	let current: { events: Event[]; spans: unknown[]; bytes: number } = { events: [], spans: [], bytes: 0 };
@@ -108,7 +122,7 @@ function otlpDeliveries(destination: QueuedDestination, config: Record<string, u
 	for (const event of events) {
 		const payload = renderBroadcastPayload(event.telemetry, destination) as { resourceSpans?: unknown[] };
 		const spans = payload.resourceSpans ?? [];
-		const bytes = JSON.stringify(spans).length;
+		const bytes = utf8.encode(JSON.stringify(spans)).byteLength;
 		if (current.bytes + bytes > MAX_OTLP_REQUEST_BYTES) flush();
 		current.events.push(event);
 		current.spans.push(...spans);
@@ -118,12 +132,35 @@ function otlpDeliveries(destination: QueuedDestination, config: Record<string, u
 	return deliveries;
 }
 
+// Rows for the same destination share one request, up to the store's limits.
+function rowsDeliveries(destination: QueuedDestination, config: Record<string, unknown>, events: Event[]): Delivery[] {
+	const limits = BROADCAST_ROWS_REQUEST_LIMITS[destination.destination_id as BroadcastRowsDestinationId];
+	const deliveries: Delivery[] = [];
+	let current: { events: Event[]; rows: BroadcastRow[]; bytes: number } = { events: [], rows: [], bytes: 0 };
+	const flush = () => {
+		if (!current.events.length) return;
+		deliveries.push({ destination, config, events: current.events, payload: current.rows });
+		current = { events: [], rows: [], bytes: 0 };
+	};
+	for (const event of events) {
+		const rows = broadcastRows(renderBroadcastPayload(event.telemetry, destination), event.body.eventId);
+		const bytes = rows.reduce((total, row) => total + broadcastRowBytes(row), 0);
+		if (current.bytes + bytes > limits.bytes || current.rows.length + rows.length > limits.rows) flush();
+		current.events.push(event);
+		current.rows.push(...rows);
+		current.bytes += bytes;
+	}
+	flush();
+	return deliveries;
+}
+
 async function deliver(delivery: Delivery): Promise<Outcome> {
 	const attempts = Math.max(...delivery.events.map((event) => event.body.attempt));
 	try {
-		return broadcastDelivery(delivery.destination.destination_id) === "webhook"
-			? await deliverGatewayWebhookPayload(delivery.payload, delivery.config, attempts)
-			: await deliverGatewayOtlpPayload(delivery.payload, delivery.config, attempts, delivery.destination.destination_id);
+		const kind = broadcastDelivery(delivery.destination.destination_id);
+		if (kind === "webhook") return await deliverGatewayWebhookPayload(delivery.payload, delivery.config, attempts);
+		if (kind === "rows") return await deliverGatewayRowsPayload(delivery.payload as BroadcastRow[], delivery.config, attempts, delivery.destination.destination_id);
+		return await deliverGatewayOtlpPayload(delivery.payload, delivery.config, attempts, delivery.destination.destination_id);
 	} catch (error) {
 		return { delivered: false, retryable: false, status: null, delayMs: 0, error: errorMessage(error) };
 	}
@@ -135,11 +172,15 @@ async function deliverEvents(
 	destinations: Map<string, QueuedDestination>,
 	configs: Map<string, Promise<Record<string, unknown>>>,
 	summary: BroadcastQueueSummary,
+	health: BroadcastHealthRecorder,
 ): Promise<Map<Event, Pending>> {
 	const remaining = new Map<Event, Pending>(events.map((event) => [event, { ids: [], delayMs: 0 }]));
-	const record = (event: Event, destinationId: string, outcome: Outcome) => {
+	// Unattempted events, for a destination since disabled or deleted, are not
+	// counted against its health.
+	const record = (event: Event, destinationId: string, outcome: Outcome, attempted = true) => {
 		if (outcome.delivered) {
 			summary.delivered += 1;
+			health.event(destinationId, true);
 			return;
 		}
 		if (outcome.retryable && event.body.attempt < MAX_ATTEMPTS) {
@@ -150,6 +191,7 @@ async function deliverEvents(
 			return;
 		}
 		summary.failed += 1;
+		if (attempted) health.event(destinationId, false);
 	};
 
 	const deliveries: Delivery[] = [];
@@ -165,7 +207,7 @@ async function deliverEvents(
 		const destination = destinations.get(destinationId);
 		const delivery = destination?.enabled ? broadcastDelivery(destination.destination_id) : null;
 		if (!destination || !delivery) {
-			for (const event of destinationEvents) record(event, destinationId, { delivered: false, retryable: false, status: null, delayMs: 0, error: "Broadcast destination unavailable or disabled" });
+			for (const event of destinationEvents) record(event, destinationId, { delivered: false, retryable: false, status: null, delayMs: 0, error: "Broadcast destination unavailable or disabled" }, false);
 			continue;
 		}
 		let config: Record<string, unknown>;
@@ -174,10 +216,12 @@ async function deliverEvents(
 			config = await configs.get(destinationId)!;
 		} catch (error) {
 			console.error("broadcast_destination_config_failed", { destinationId, error: errorMessage(error) });
+			health.request(destinationId, { delivered: false, status: null, error: errorMessage(error) });
 			for (const event of destinationEvents) record(event, destinationId, { delivered: false, retryable: false, status: null, delayMs: 0, error: errorMessage(error) });
 			continue;
 		}
 		if (delivery === "otlp") deliveries.push(...otlpDeliveries(destination, config, destinationEvents));
+		else if (delivery === "rows") deliveries.push(...rowsDeliveries(destination, config, destinationEvents));
 		else {
 			for (const event of destinationEvents) {
 				deliveries.push({ destination, config, events: [event], payload: renderBroadcastPayload(event.telemetry, destination) });
@@ -187,7 +231,9 @@ async function deliverEvents(
 
 	summary.requests += deliveries.length;
 	await mapWithConcurrency(deliveries, DELIVERY_CONCURRENCY, async (delivery) => {
+		const startedAtMs = Date.now();
 		const outcome = await deliver(delivery);
+		health.request(delivery.destination.id, outcome, startedAtMs);
 		if (!outcome.delivered) {
 			console.warn("broadcast_delivery_failed", {
 				destinationId: delivery.destination.id,
@@ -289,6 +335,7 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 	const configs = new Map<string, Promise<Record<string, unknown>>>();
 	const retries: Array<{ event: Event } & Pending> = [];
 	const finished: Event[] = [];
+	const health = new BroadcastHealthRecorder();
 	for (const round of rounds) {
 		const events: Event[] = [];
 		for (const message of round) {
@@ -311,7 +358,7 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 			}
 		}
 		if (!events.length) continue;
-		const remaining = await deliverEvents(events, destinations, configs, summary);
+		const remaining = await deliverEvents(events, destinations, configs, summary, health);
 		for (const event of events) {
 			const pending = remaining.get(event)!;
 			if (pending.ids.length) retries.push({ event, ...pending });
@@ -326,6 +373,7 @@ export async function processBroadcastQueueBatch(batch: MessageBatch<unknown>): 
 		else retry.event.message.ack();
 	}
 	for (const event of finished) event.message.ack();
+	await health.flush();
 	const finishedSpills = finished.flatMap((event) => event.body.spillKey ? [event.body.spillKey] : []);
 	if (finishedSpills.length) {
 		try {

@@ -14,6 +14,9 @@ export const logoManifest = {
 	"abliteration-ai": {
 		color: "/logos/abliteration-ai.svg",
 	},
+	dealignai: {
+		color: "/logos/dealignai.svg",
+	},
 	apodex: {
 		light: "/logos/apodex_light.svg",
 		dark: "/logos/apodex_dark.svg",
@@ -123,6 +126,10 @@ export const logoManifest = {
 	},
 	baseten: {
 		color: "/logos/baseten.svg",
+	},
+	baselabs: {
+		// Lossless vector of the official grid icon: https://labs.baseten.co/favicon.ico.
+		color: "/logos/baselabs.svg",
 	},
 	"black-forest-labs": {
 		light: "/logos/black-forest-labs_light.svg",

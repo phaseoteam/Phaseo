@@ -9,13 +9,16 @@ export class WebApiError extends Error {
 	readonly status: number;
 	readonly detail?: string;
 	readonly issues?: Array<{ path: string; message: string }>;
+	/** The response's machine-readable `error`, kept even when `detail` is its message. */
+	readonly code?: string;
 
-	constructor(path: string, status: number, detail?: string, issues?: Array<{ path: string; message: string }>) {
+	constructor(path: string, status: number, detail?: string, issues?: Array<{ path: string; message: string }>, code?: string) {
 		super(detail || `Cloudflare web API request failed (${status}): ${path}`);
 		this.name = "WebApiError";
 		this.status = status;
 		this.detail = detail;
 		this.issues = issues;
+		this.code = code;
 	}
 }
 
@@ -141,6 +144,7 @@ export async function fetchAccountWebApi<T>(
 					? payload.detail
 					: typeof payload?.error === "string" ? payload.error : undefined,
 			Array.isArray(payload?.issues) ? payload.issues.slice(0, 10) : undefined,
+			typeof payload?.error === "string" ? payload.error : undefined,
 		);
 	}
 	return payload as T;

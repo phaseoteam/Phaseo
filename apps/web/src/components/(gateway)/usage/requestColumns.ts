@@ -6,6 +6,7 @@ export const REQUEST_COLUMNS = [
 	{ id: "models", label: "Models" },
 	{ id: "provider", label: "Provider" },
 	{ id: "app", label: "App" },
+	{ id: "labels", label: "Labels" },
 	{ id: "input", label: "Input Tokens", numeric: true },
 	{ id: "output", label: "Output Tokens", numeric: true },
 	{ id: "cost", label: "Cost", numeric: true },

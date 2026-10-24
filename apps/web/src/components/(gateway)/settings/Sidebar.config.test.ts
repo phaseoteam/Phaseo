@@ -1,6 +1,11 @@
 import { getActiveSettingsNav, getSettingsSidebar, isSettingsNavChildActive } from "./Sidebar.config";
 
 describe("settings sidebar navigation", () => {
+	it("removes the retired discovery queue while keeping provider review", () => {
+		const hrefs = getSettingsSidebar({ showInternal: true }).flatMap((group) => group.items.map((item) => item.href));
+		expect(hrefs).not.toContain("/settings/internal/model-discovery");
+		expect(hrefs).toContain("/settings/internal/provider-review");
+	});
 	it("puts provider catalogs first without workspace or billing navigation", () => {
 		const groups = getSettingsSidebar({ providerMode: true });
 		expect(groups.map((group) => group.scope)).toEqual(["personal", "provider"]);
@@ -44,10 +49,35 @@ describe("settings sidebar navigation", () => {
 		expect(getSettingsSidebar().flatMap((group) => group.items).some((item) => item.href === "/settings/classifiers")).toBe(false);
 	});
 
+	it("lists Budgets right after API keys in the workspace section", () => {
+		const workspace = getSettingsSidebar().find((group) => group.scope === "workspace")!.items.map((item) => item.href);
+		expect(workspace.indexOf("/settings/budgets")).toBe(workspace.indexOf("/settings/keys") + 1);
+		expect(getActiveSettingsNav("/settings/budgets")?.item.label).toBe("Budgets");
+	});
+
+	it("shows Slack after Apps only behind the Slack agent flag", () => {
+		const hrefs = (showSlackAgent: boolean) => getSettingsSidebar({ showSlackAgent }).flatMap((group) => group.items.map((item) => item.href));
+		expect(hrefs(false)).not.toContain("/settings/slack");
+		const shown = hrefs(true);
+		expect(shown.indexOf("/settings/slack")).toBe(shown.indexOf("/settings/apps") + 1);
+		const active = getActiveSettingsNav("/settings/slack", { showSlackAgent: true });
+		expect(active?.item.label).toBe("Slack");
+		expect(active?.item.badge).toBe("Beta");
+		expect(active?.group.scope).toBe("workspace");
+		expect(getActiveSettingsNav("/settings/slack")?.item.label).not.toBe("Slack");
+	});
+
 	it("includes the workspace activity log under settings", () => {
 		const settings = getActiveSettingsNav("/settings/workspaces/activity")?.item;
 		expect(settings?.label).toBe("Settings");
 		expect(settings?.children?.map((child) => child.label)).toContain("Activity");
+	});
+
+	it("groups Key Security under API Keys", () => {
+		const active = getActiveSettingsNav("/settings/security");
+		expect(active?.item.label).toBe("API Keys");
+		expect(active?.item.children?.find((child) => isSettingsNavChildActive("/settings/security", child))?.label).toBe("Key Security");
+		expect(getActiveSettingsNav("/settings/keys/prod-key")?.item.children?.find((child) => isSettingsNavChildActive("/settings/keys/prod-key", child))?.label).toBe("Keys");
 	});
 
 	it("exposes Auto Routing within the Routing section", () => {
@@ -75,10 +105,12 @@ describe("settings sidebar navigation", () => {
 				"Settings",
 				"Enterprise",
 				"API Keys",
+				"Budgets",
 				"Usage",
 				"Logs",
 				"Routing",
 				"Guardrails",
+				"Rate limits",
 				"Classifiers",
 				"Privacy",
 				"Presets",

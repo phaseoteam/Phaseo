@@ -11,6 +11,10 @@ import {
 	getUniqueCountryModels,
 	normaliseIso,
 } from "@/components/(data)/countries/utils";
+import {
+	groupCountryModels,
+	previewCountryModels,
+} from "@/components/(data)/countries/countryModelGroups";
 import { fetchFrontendCountry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildLocalizedPageMetadata } from "@/lib/auth/localized-metadata";
 import { notFound } from "next/navigation";
@@ -75,6 +79,7 @@ export default async function CountryDetailPage({
 	const organisationEntries = country.organisations;
 	const models = getUniqueCountryModels(country);
 	const modelsToShow = models.slice(1, 10);
+	const modelGroups = groupCountryModels(models, t("unknownOrganisation"));
 	const latestModel = country.latestModel;
 	const latestAccent = latestModel?.organisation_colour ?? "hsl(222 89% 53%)";
 
@@ -250,7 +255,12 @@ export default async function CountryDetailPage({
 							{t("browseCatalogue")}
 						</p>
 					</div>
-					<CountryModelsSection models={models} />
+					<CountryModelsSection
+						iso={iso}
+						previewModels={previewCountryModels(modelGroups)}
+						organisationModelCounts={Object.fromEntries(modelGroups.map((group) => [group.id, group.models.length]))}
+						totalModels={models.length}
+					/>
 				</section>
 			</div>
 		</CountryDetailShell>

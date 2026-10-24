@@ -67,6 +67,7 @@ Abre la solicitud en **Gateway -> Uso** para confirmar qué valores predetermina
 ## Qué puede incluir un preajuste
 
 - Un prompt de sistema que se antepone a cada solicitud.
+- Una [plantilla de prompt](./prompt-templates.mdx): mensajes con `{{variables}}` que cada solicitud completa.
 - Modelos o familias de modelos permitidos.
 - Listas de proveedores permitidos o ignorados para las preferencias de enrutamiento.
 - Parámetros predeterminados (temperature, top_p, max_tokens y otros similares).
@@ -74,7 +75,7 @@ Abre la solicitud en **Gateway -> Uso** para confirmar qué valores predetermina
 
 Los nombres de los preajustes llevan el prefijo `@` para identificarlos fácilmente.
 
-Invoca un preajuste únicamente mediante el campo `model` de la solicitud. Phaseo no ofrece un campo `preset` independiente en la solicitud.
+Invoca un preajuste mediante el campo `model` de la solicitud o, si el preajuste tiene una [plantilla de prompt](./prompt-templates.mdx), mediante `prompt.id`. Phaseo no ofrece un campo `preset` independiente en la solicitud.
 
 - Los preajustes privados y del espacio de trabajo usan `@{slug}` y se resuelven dentro del espacio de trabajo de la clave de API.
 - Los preajustes públicos usan `@{username}/{slug}` y se pueden resolver desde cualquier espacio de trabajo. Por ejemplo, `@octavia/release-summary`.
@@ -113,6 +114,7 @@ Así, los preajustes son la superficie pública principal para reutilizar valore
 El flujo de preajustes del panel se limita intencionadamente a un subconjunto estable y explícito de ajustes de solicitudes:
 
 - inyección del prompt de sistema
+- plantillas de prompt con variables tipadas
 - listas de modelos permitidos
 - restricciones de enrutamiento con listas de proveedores permitidos o ignorados
 - valores predeterminados de decodificación y generación
@@ -133,6 +135,7 @@ Crea y administra preajustes en **Panel -> Ajustes -> Preajustes**. Usa slugs di
 
 ## Guías relacionadas
 
+- [Plantillas de prompt](./prompt-templates.mdx)
 - [Recopilar comentarios sobre preajustes](./preset-feedback.mdx)
 - [Enrutamiento y alternativas](./routing-and-fallbacks.mdx)
 - [Parámetros de inferencia](./inference-parameters.mdx)

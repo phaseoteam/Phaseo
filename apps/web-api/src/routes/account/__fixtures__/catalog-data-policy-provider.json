@@ -1,0 +1,169 @@
+{
+  "schema_version": "1.2",
+  "data": [
+    {
+      "id": "catalog-policy-test/native",
+      "name": "Internal native control",
+      "capabilities": [
+        "text.generate",
+        "batch"
+      ],
+      "service_tiers": [
+        {
+          "service_tier": "standard",
+          "provider_model_slug": "native",
+          "pricing": [
+            {
+              "meter_key": "input_tokens",
+              "modality": "text",
+              "direction": "input",
+              "unit": "token",
+              "unit_quantity": 1000000,
+              "price_nanos": 250000000,
+              "display_label": "Input",
+              "display_unit": "1M tokens"
+            }
+          ],
+          "data_policy": {
+            "capabilities": [
+              {
+                "id": "text.generate",
+                "training_policy": "no_train",
+                "retention_mode": "none",
+                "retention_days": 0,
+                "zero_data_retention": true,
+                "zdr_eligibility": "eligible",
+                "requirements": {
+                  "contract_mode": "none",
+                  "account_settings": []
+                },
+                "privacy_policy_url": "https://provider.example/privacy",
+                "terms_of_service_url": "https://provider.example/terms"
+              }
+            ]
+          }
+        },
+        {
+          "service_tier": "batch",
+          "provider_model_slug": "native-batch",
+          "pricing": [
+            {
+              "meter_key": "input_tokens",
+              "modality": "text",
+              "direction": "input",
+              "unit": "token",
+              "unit_quantity": 1000000,
+              "price_nanos": 250000000,
+              "display_label": "Input",
+              "display_unit": "1M tokens"
+            }
+          ],
+          "data_policy": {
+            "capabilities": [
+              {
+                "id": "text.generate",
+                "training_policy": "no_train",
+                "retention_mode": "fixed",
+                "retention_days": 30,
+                "zero_data_retention": false,
+                "zdr_eligibility": "ineligible",
+                "requirements": {
+                  "contract_mode": "none",
+                  "account_settings": []
+                },
+                "privacy_policy_url": "https://provider.example/privacy",
+                "terms_of_service_url": "https://provider.example/terms"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "catalog-policy-test/resold",
+      "name": "Internal retained-content control",
+      "capabilities": [
+        "text.generate"
+      ],
+      "service_tiers": [
+        {
+          "service_tier": "standard",
+          "provider_model_slug": "resold",
+          "pricing": [
+            {
+              "meter_key": "input_tokens",
+              "modality": "text",
+              "direction": "input",
+              "unit": "token",
+              "unit_quantity": 1000000,
+              "price_nanos": 250000000,
+              "display_label": "Input",
+              "display_unit": "1M tokens"
+            }
+          ],
+          "data_policy": {
+            "capabilities": [
+              {
+                "id": "text.generate",
+                "training_policy": "no_train",
+                "retention_mode": "fixed",
+                "retention_days": 30,
+                "zero_data_retention": false,
+                "zdr_eligibility": "ineligible",
+                "requirements": {
+                  "contract_mode": "none",
+                  "account_settings": []
+                },
+                "privacy_policy_url": "https://provider.example/privacy",
+                "terms_of_service_url": "https://provider.example/terms"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "catalog-policy-test/conditional",
+      "name": "Internal agreement control",
+      "capabilities": [
+        "text.generate"
+      ],
+      "service_tiers": [
+        {
+          "service_tier": "standard",
+          "provider_model_slug": "conditional",
+          "pricing": [
+            {
+              "meter_key": "input_tokens",
+              "modality": "text",
+              "direction": "input",
+              "unit": "token",
+              "unit_quantity": 1000000,
+              "price_nanos": 250000000,
+              "display_label": "Input",
+              "display_unit": "1M tokens"
+            }
+          ],
+          "data_policy": {
+            "capabilities": [
+              {
+                "id": "text.generate",
+                "training_policy": "no_train",
+                "retention_mode": "none",
+                "retention_days": 0,
+                "zero_data_retention": false,
+                "zdr_eligibility": "conditional",
+                "requirements": {
+                  "contract_mode": "customer_agreement",
+                  "account_settings": []
+                },
+                "privacy_policy_url": "https://provider.example/privacy",
+                "terms_of_service_url": "https://provider.example/terms"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

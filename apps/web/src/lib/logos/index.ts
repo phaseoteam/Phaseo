@@ -38,6 +38,7 @@ const normalisedAliasMap = new Map<string, KnownLogoId>();
 const pathToKeyMap = new Map<string, KnownLogoId>();
 
 const labelOverrides: Partial<Record<KnownLogoId, string>> = {
+	baselabs: "Base Labs",
 	nace: "Nace.AI",
 	"abliteration-ai": "Abliteration AI",
 	ai21: "AI21",
@@ -49,6 +50,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	crofai: "CrofAI",
 	continue: "Continue",
 	"deepseek-harness": "DeepSeek Harness",
+	dealignai: "dealign.ai",
 	digitalocean: "DigitalOcean",
 	empiriolabs: "EmpirioLabs AI",
 	github: "GitHub",

@@ -3,7 +3,6 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { setKeyVersion } from "@/core/kv";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
-import { getSupabaseActor } from "@/lib/oauth/service";
 import type { AuthSuccess } from "@/pipeline/before/auth";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
@@ -25,6 +24,7 @@ import {
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
+import { authenticateDashboardSession } from "./dashboard-session";
 
 const SAMPLE_RATE_BPS = 10000;
 const CLASSIFIER_SAMPLE_RATE_BPS = 1000;
@@ -75,12 +75,6 @@ async function auditConsentDenial(auth: {
 	}
 }
 
-function bearerToken(req: Request): string | null {
-	const authorization = req.headers.get("authorization")?.trim() ?? "";
-	if (!authorization.toLowerCase().startsWith("bearer ")) return null;
-	return authorization.slice(7).trim() || null;
-}
-
 async function requireAdminPreview(
 	auth: AuthSuccess,
 	auditConsentDenials: boolean,
@@ -116,40 +110,14 @@ export async function authenticateDashboardDataContribution(
 	req: Request,
 	auditConsentDenials: boolean,
 ): Promise<AuthSuccess | Response | null> {
-	const workspaceId = req.headers.get("x-phaseo-workspace-id")?.trim();
-	if (!workspaceId) return null;
-	const token = bearerToken(req);
-	const actor = token ? await getSupabaseActor(token) : null;
-	if (!actor) return json({ error: "unauthorized" }, 401, { "Cache-Control": "no-store" });
-	const client = getSupabaseAdmin();
-	const [membership, workspace] = await Promise.all([
-		client.from("workspace_members").select("role")
-			.eq("workspace_id", workspaceId).eq("user_id", actor.userId).maybeSingle(),
-		client.from("workspaces").select("owner_user_id").eq("id", workspaceId).maybeSingle(),
-	]);
-	if (membership.error || workspace.error || !workspace.data) {
+	const session = await authenticateDashboardSession(req, [CAPABILITIES.SETTINGS_READ, CAPABILITIES.SETTINGS_WRITE]);
+	if (session === null) return null;
+	if (session instanceof Response) return session;
+	if (!["owner", "admin"].includes(session.role)) {
+		if (auditConsentDenials) await auditConsentDenial(session.auth, "insufficient_workspace_role");
 		return json({ error: "forbidden" }, 403, { "Cache-Control": "no-store" });
 	}
-	const workspaceRole = workspace.data.owner_user_id === actor.userId
-		? "owner"
-		: String(membership.data?.role ?? "").toLowerCase();
-	const auth: AuthSuccess = {
-		ok: true,
-		workspaceId,
-		apiKeyId: `dashboard:${actor.userId}`,
-		apiKeyRef: "dashboard",
-		apiKeyKid: "dashboard",
-		userId: actor.userId,
-		internal: false,
-		authMethod: "oauth",
-		oauthScopes: [CAPABILITIES.SETTINGS_READ, CAPABILITIES.SETTINGS_WRITE],
-		scopes: [CAPABILITIES.SETTINGS_READ, CAPABILITIES.SETTINGS_WRITE],
-	};
-	if (!["owner", "admin"].includes(workspaceRole)) {
-		if (auditConsentDenials) await auditConsentDenial(auth, "insufficient_workspace_role");
-		return json({ error: "forbidden" }, 403, { "Cache-Control": "no-store" });
-	}
-	return requireAdminPreview(auth, auditConsentDenials);
+	return requireAdminPreview(session.auth, auditConsentDenials);
 }
 
 async function authenticate(req: Request, write = false, auditConsentDenials = false) {

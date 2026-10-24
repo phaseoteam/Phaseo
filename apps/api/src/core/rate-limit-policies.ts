@@ -1,5 +1,5 @@
-// Purpose: Enforce workspace rate limit policies (requests and tokens per minute) on the request path.
-// Why: Admins assign named limits to keys, members, guardrails and end users;
+// Purpose: Enforce workspace rate limit policies (requests and tokens per minute, concurrent requests) on the request path.
+// Why: Admins assign named limits to keys, members, departments, guardrails and end users;
 //      the request path must apply them without Postgres or added latency.
 // How: The control API publishes a compact per-workspace plan to KV after
 //      every change (`rate-limit-plan:v1:{workspace}`; no key means no
@@ -13,8 +13,16 @@
 //      publish cannot persist. Tokens per minute are charged with each
 //      request's real usage once it completes (chargeRateLimitPolicyTokens),
 //      so requests already in flight can take an allowance past its limit.
-//      Department assignments and concurrent_requests are not enforced yet, and
-//      fail_closed is ignored: every failure admits the request.
+//      A department policy is one allowance shared by everything that counts
+//      toward the department (see departmentsFor); the plan carries the key
+//      and member department links it needs, so membership changes made
+//      outside this API reach the gateway with the next reconcile.
+//      A concurrency limit holds a slot per request in flight, awaited at
+//      admission and released by the entrypoint once the response is
+//      delivered (pipeline/index.ts); requests outside that entrypoint are
+//      not limited by concurrency. A strict (fail_closed) policy awaits its
+//      checks and rejects when its counter cannot answer. Anything else that
+//      fails, including reading the plan, admits the request.
 import { getCache, getSupabaseAdmin } from "@/runtime/env";
 import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
 import { invalidateTieredL1, tieredRead } from "@core/tiered-cache";
@@ -28,14 +36,21 @@ import type { PipelineContext } from "@pipeline/before/types";
 export type RateLimitPlan = {
 	v: 1;
 	/** `tpm` is absent from plans published before tokens per minute were enforced. */
-	policies: Record<string, { rpm: number | null; tpm?: number | null; name: string }>;
+	/** `cc` and `strict` are present only when set, and absent from plans published before they were enforced. */
+	policies: Record<string, { rpm: number | null; tpm?: number | null; cc?: number | null; strict?: boolean; name: string }>;
 	keys: Record<string, string>;
 	members: Record<string, string>;
 	guardrails: Record<string, string>;
 	endUserDefault: string | null;
+	/** Department ID -> policy ID. Absent from plans published before department limits were enforced. */
+	departments?: Record<string, string>;
+	/** Key ID -> the department the key is linked to. Present when `departments` is non-empty. */
+	keyDepartments?: Record<string, string>;
+	/** User ID -> the departments with a policy that the user counts toward. */
+	memberDepartments?: Record<string, string[]>;
 };
 
-export type RateLimitTarget = "key" | "member" | "guardrail" | "end_user";
+export type RateLimitTarget = "key" | "member" | "department" | "guardrail" | "end_user";
 
 export type ApplicableRateLimit = {
 	policyId: string;
@@ -43,6 +58,10 @@ export type ApplicableRateLimit = {
 	targetType: RateLimitTarget;
 	rpm: number | null;
 	tpm: number | null;
+	/** Concurrent requests; present only when the policy sets it. */
+	cc?: number;
+	/** Present (true) only for fail-closed policies. */
+	strict?: true;
 	/** Subject within the policy, e.g. `key:{keyId}`. */
 	scopeKey: string;
 };
@@ -71,22 +90,32 @@ export function isRateLimitPlan(value: unknown): value is RateLimitPlan {
 	if (plan.v !== 1 || !plan.policies || typeof plan.policies !== "object") return false;
 	const limitValid = (value: unknown) => value === null || (typeof value === "number" && Number.isSafeInteger(value) && value > 0);
 	const policiesValid = Object.values(plan.policies).every((policy) => Boolean(policy) && typeof policy.name === "string"
-		&& limitValid(policy.rpm) && (policy.tpm === undefined || limitValid(policy.tpm)));
+		&& limitValid(policy.rpm) && (policy.tpm === undefined || limitValid(policy.tpm))
+		&& (policy.cc === undefined || limitValid(policy.cc)) && (policy.strict === undefined || typeof policy.strict === "boolean"));
+	const memberDepartmentsValid = plan.memberDepartments === undefined || (Boolean(plan.memberDepartments)
+		&& typeof plan.memberDepartments === "object" && !Array.isArray(plan.memberDepartments)
+		&& Object.values(plan.memberDepartments).every((ids) => Array.isArray(ids) && ids.every((id) => typeof id === "string")));
 	return policiesValid && isStringRecord(plan.keys) && isStringRecord(plan.members) && isStringRecord(plan.guardrails)
-		&& (plan.endUserDefault === null || typeof plan.endUserDefault === "string");
+		&& (plan.endUserDefault === null || typeof plan.endUserDefault === "string")
+		&& (plan.departments === undefined || isStringRecord(plan.departments))
+		&& (plan.keyDepartments === undefined || isStringRecord(plan.keyDepartments))
+		&& memberDepartmentsValid;
 }
 
 function isEmptyPlan(plan: RateLimitPlan): boolean {
 	return !plan.endUserDefault && !Object.keys(plan.keys).length && !Object.keys(plan.members).length
-		&& !Object.keys(plan.guardrails).length;
+		&& !Object.keys(plan.guardrails).length && !Object.keys(plan.departments ?? {}).length;
 }
 
-async function readAll<T>(table: string, columns: string, workspaceId: string): Promise<T[]> {
+type ReadFilter = (query: any) => any;
+
+async function readAll<T>(table: string, columns: string, workspaceId: string, options: { order?: string[]; filter?: ReadFilter } = {}): Promise<T[]> {
 	const rows: T[] = [];
 	for (let offset = 0; ; offset += PAGE_SIZE) {
-		const { data, error } = await getSupabaseAdmin().from(table).select(columns)
-			.eq("workspace_id", workspaceId).order("id", { ascending: true })
-			.range(offset, offset + PAGE_SIZE - 1);
+		let query = getSupabaseAdmin().from(table).select(columns).eq("workspace_id", workspaceId);
+		if (options.filter) query = options.filter(query);
+		for (const column of options.order ?? ["id"]) query = query.order(column, { ascending: true });
+		const { data, error } = await query.range(offset, offset + PAGE_SIZE - 1);
 		if (error) throw new Error(error.message || `Failed to read ${table}`);
 		const page = (data ?? []) as T[];
 		rows.push(...page);
@@ -94,38 +123,91 @@ async function readAll<T>(table: string, columns: string, workspaceId: string): 
 	}
 }
 
-type PolicyRow = { id: string; name: string; requests_per_minute: number | null; tokens_per_minute: number | string | null };
+type PolicyRow = {
+	id: string;
+	name: string;
+	requests_per_minute: number | null;
+	tokens_per_minute: number | string | null;
+	concurrent_requests?: number | null;
+	fail_closed?: boolean | null;
+};
 type AssignmentRow = {
 	policy_id: string;
 	target_type: string;
 	key_id: string | null;
 	user_id: string | null;
+	department_id: string | null;
 	guardrail_id: string | null;
 };
 
-/** Reads a workspace's policies and assignments. Department assignments are not enforced yet and are omitted. */
+/** Reads a workspace's policies and assignments, plus the department links department policies need. */
 export async function buildRateLimitPlan(workspaceId: string): Promise<RateLimitPlan> {
 	const [policies, assignments] = await Promise.all([
-		readAll<PolicyRow>("workspace_rate_limit_policies", "id,name,requests_per_minute,tokens_per_minute", workspaceId),
-		readAll<AssignmentRow>("workspace_rate_limit_policy_assignments", "id,policy_id,target_type,key_id,user_id,guardrail_id", workspaceId),
+		readAll<PolicyRow>("workspace_rate_limit_policies", "id,name,requests_per_minute,tokens_per_minute,concurrent_requests,fail_closed", workspaceId),
+		readAll<AssignmentRow>("workspace_rate_limit_policy_assignments", "id,policy_id,target_type,key_id,user_id,department_id,guardrail_id", workspaceId),
 	]);
 	const known = new Map(policies.map((policy) => [policy.id, policy]));
 	const plan: RateLimitPlan = { v: 1, policies: {}, keys: {}, members: {}, guardrails: {}, endUserDefault: null };
+	const departments: Record<string, string> = {};
 	for (const assignment of assignments) {
 		const policy = known.get(assignment.policy_id);
 		if (!policy) continue;
 		if (assignment.target_type === "key" && assignment.key_id) plan.keys[assignment.key_id] = policy.id;
 		else if (assignment.target_type === "member" && assignment.user_id) plan.members[assignment.user_id] = policy.id;
+		else if (assignment.target_type === "department" && assignment.department_id) departments[assignment.department_id] = policy.id;
 		else if (assignment.target_type === "guardrail" && assignment.guardrail_id) plan.guardrails[assignment.guardrail_id] = policy.id;
 		else if (assignment.target_type === "end_user_default") plan.endUserDefault = policy.id;
 		else continue;
 		plan.policies[policy.id] = {
 			rpm: policy.requests_per_minute == null ? null : Number(policy.requests_per_minute),
 			tpm: policy.tokens_per_minute == null ? null : Number(policy.tokens_per_minute),
+			...(policy.concurrent_requests == null ? {} : { cc: Number(policy.concurrent_requests) }),
+			...(policy.fail_closed ? { strict: true } : {}),
 			name: policy.name,
 		};
 	}
+	if (Object.keys(departments).length) Object.assign(plan, { departments, ...await readDepartmentLinks(workspaceId, departments) });
 	return plan;
+}
+
+/**
+ * Which departments each key and member counts toward. A key linked to a
+ * department counts toward that one only, even when it has no policy. Every
+ * other key counts toward its creator's departments, as OAuth requests count
+ * toward their user's: the override department when the member has a manual
+ * department override, otherwise every department they belong to. Only
+ * departments with a policy are kept for members.
+ */
+async function readDepartmentLinks(workspaceId: string, departments: Record<string, string>) {
+	const limited = Object.keys(departments);
+	const [keys, grants, overrides] = await Promise.all([
+		readAll<{ id: string; department_id: string }>("keys", "id,department_id", workspaceId, {
+			filter: (query) => query.not("department_id", "is", null),
+		}),
+		readAll<{ user_id: string; department_id: string }>("workspace_department_grants", "user_id,department_id", workspaceId, {
+			filter: (query) => query.in("department_id", limited),
+			order: ["user_id", "department_id", "source_type", "source_id"],
+		}),
+		readAll<{ user_id: string; department_id: string | null }>("workspace_member_overrides", "user_id,department_id", workspaceId, {
+			filter: (query) => query.eq("department_override_enabled", true),
+			order: ["user_id"],
+		}),
+	]);
+	const keyDepartments: Record<string, string> = {};
+	for (const key of keys) keyDepartments[key.id] = key.department_id;
+	const overridden = new Map(overrides.map((override) => [override.user_id, override.department_id]));
+	const memberships = new Map<string, Set<string>>();
+	const join = (userId: string, departmentId: string | null) => {
+		if (!departmentId || !departments[departmentId]) return;
+		const joined = memberships.get(userId) ?? new Set<string>();
+		joined.add(departmentId);
+		memberships.set(userId, joined);
+	};
+	for (const grant of grants) if (!overridden.has(grant.user_id)) join(grant.user_id, grant.department_id);
+	for (const [userId, departmentId] of overridden) join(userId, departmentId);
+	const memberDepartments: Record<string, string[]> = {};
+	for (const [userId, joined] of memberships) memberDepartments[userId] = [...joined].sort();
+	return { keyDepartments, memberDepartments };
 }
 
 /**
@@ -247,9 +329,21 @@ export async function readRateLimitPlan(workspaceId: string): Promise<RateLimitP
 }
 
 /**
+ * Departments a request counts toward: the key's linked department, otherwise
+ * the departments of the key's creator (or the OAuth user).
+ */
+function departmentsFor(plan: RateLimitPlan, keyId: string | null, userId: string | null): string[] {
+	if (!plan.departments) return [];
+	const linked = keyId ? plan.keyDepartments?.[keyId] : undefined;
+	if (linked) return [linked];
+	return userId ? plan.memberDepartments?.[userId] ?? [] : [];
+}
+
+/**
  * Policies that apply to one request. Every entry is a separate allowance and
  * all are counted, so the most restrictive one rejects first. A guardrail
- * policy gives each key (or OAuth user) it covers its own allowance.
+ * policy gives each key (or OAuth user) it covers its own allowance; a
+ * department policy is one allowance for the whole department.
  */
 export function applicableRateLimits(plan: RateLimitPlan | null, subject: {
 	keyId?: string | null;
@@ -263,14 +357,22 @@ export function applicableRateLimits(plan: RateLimitPlan | null, subject: {
 	const add = (policyId: string | null | undefined, targetType: RateLimitTarget, scopeKey: string) => {
 		const policy = policyId ? plan.policies[policyId] : undefined;
 		const tpm = policy?.tpm ?? null;
-		if (!policyId || !policy || (policy.rpm == null && tpm == null)) return;
-		limits.push({ policyId, name: policy.name, targetType, rpm: policy.rpm, tpm, scopeKey });
+		const cc = policy?.cc ?? null;
+		if (!policyId || !policy || (policy.rpm == null && tpm == null && cc == null)) return;
+		limits.push({
+			policyId, name: policy.name, targetType, rpm: policy.rpm, tpm,
+			...(cc == null ? {} : { cc }), ...(policy.strict ? { strict: true as const } : {}),
+			scopeKey,
+		});
 	};
 	// OAuth requests carry the OAuth client ID in place of a key ID.
 	const keyId = subject.authMethodIsOAuth ? null : subject.keyId || null;
 	const userId = subject.userId || null;
 	if (keyId) add(plan.keys[keyId], "key", `key:${keyId}`);
 	if (userId) add(plan.members[userId], "member", `member:${userId}`);
+	for (const departmentId of departmentsFor(plan, keyId, userId)) {
+		add(plan.departments?.[departmentId], "department", `department:${departmentId}`);
+	}
 	const guardrailSubject = keyId ? `key:${keyId}` : userId ? `user:${userId}` : null;
 	if (guardrailSubject) {
 		for (const guardrailId of new Set(subject.guardrailIds ?? [])) {
@@ -312,6 +414,7 @@ async function resolveRequestLimits(ctx: PipelineContext): Promise<RequestLimits
 
 function limitedSubject(entry: ApplicableRateLimit): string {
 	if (entry.targetType === "member") return "This workspace member";
+	if (entry.targetType === "department") return "This request's department";
 	if (entry.targetType === "end_user") return "This end user";
 	if (entry.targetType === "guardrail") return entry.scopeKey.includes(":user:") ? "This user, through a guardrail," : "This API key, through a guardrail,";
 	return "This API key";
@@ -335,7 +438,13 @@ export async function guardRateLimitPolicies(ctx: PipelineContext): Promise<Resp
 }
 
 function policyScopes(state: RequestLimits) {
-	return state.limits.map((limit) => ({ scopeKey: limit.quotaKey, requestsPerMinute: limit.rpm, tokensPerMinute: limit.tpm }));
+	return state.limits.map((limit) => ({
+		scopeKey: limit.quotaKey,
+		requestsPerMinute: limit.rpm,
+		tokensPerMinute: limit.tpm,
+		concurrentRequests: limit.cc ?? null,
+		strict: limit.strict === true,
+	}));
 }
 
 /**
@@ -376,21 +485,40 @@ async function admitRequest(ctx: PipelineContext): Promise<Response | null> {
 	}
 	const state = await pending;
 	if (!state) return null;
-	const denial = admitPolicyQuotas({ scopes: policyScopes(state), admissionId: state.admissionId });
+	const denial = await admitPolicyQuotas({ scopes: policyScopes(state), admissionId: state.admissionId, leases: ctx.rateLimitConcurrency ?? null });
 	if (!denial) return null;
 	const entry = state.limits.find((limit) => limit.quotaKey === denial.scope.scopeKey)!;
 	state.denied = { ...denial, entry };
 	const response = err("rate_limit_exceeded", {
 		request_id: ctx.requestId,
 		error_origin: "user",
-		reason: denial.kind === "tokens" ? "policy_tokens_per_minute" : "policy_requests_per_minute",
+		reason: DENIAL_REASONS[denial.kind],
 		policy_id: entry.policyId,
 		limit_scope: entry.targetType,
-		description: `${limitedSubject(entry)} reached the "${entry.name}" rate limit policy's ${denial.limit} ${denial.kind} per minute. Retry after ${denial.retryAfterSeconds} seconds.`,
+		description: denialDescription(entry, denial),
 	});
 	response.headers.set("Retry-After", String(denial.retryAfterSeconds));
 	for (const [name, value] of Object.entries(rateLimitPolicyHeaders(ctx) ?? {})) response.headers.set(name, value);
 	return response;
+}
+
+/** The `reason` of a policy rejection; see isRateLimitPolicyRejection and rateLimitPolicyRejection. */
+export const DENIAL_REASONS: Record<PolicyQuotaDenial["kind"], string> = {
+	requests: "policy_requests_per_minute",
+	tokens: "policy_tokens_per_minute",
+	concurrent_requests: "policy_concurrent_requests",
+	unavailable: "policy_unavailable",
+};
+
+function denialDescription(entry: ApplicableRateLimit, denial: PolicyQuotaDenial): string {
+	const retry = `Retry after ${denial.retryAfterSeconds} seconds.`;
+	if (denial.kind === "concurrent_requests") {
+		return `${limitedSubject(entry)} already has ${denial.limit} requests in progress, the "${entry.name}" rate limit policy's limit on concurrent requests. ${retry}`;
+	}
+	if (denial.kind === "unavailable") {
+		return `The "${entry.name}" rate limit policy is strict, and its limits could not be checked just now, so the request was not sent. ${retry}`;
+	}
+	return `${limitedSubject(entry)} reached the "${entry.name}" rate limit policy's ${denial.limit} ${denial.kind} per minute. ${retry}`;
 }
 
 type HeaderValues = { limit: number; remaining: number; reset: number };
@@ -432,8 +560,10 @@ export function rateLimitPolicyHeaders(ctx: PipelineContext): Record<string, str
 	let requests: HeaderValues | null = null;
 	let tokens: HeaderValues | null = null;
 	if (state.denied) {
+		// Concurrency and strict-mode refusals have no per-minute allowance to report.
 		const denied = { limit: state.denied.limit, remaining: 0, reset: state.denied.retryAfterSeconds };
-		if (state.denied.kind === "tokens") tokens = denied; else requests = denied;
+		if (state.denied.kind === "tokens") tokens = denied;
+		else if (state.denied.kind === "requests") requests = denied;
 	} else {
 		const now = Date.now();
 		for (const entry of state.limits) {
