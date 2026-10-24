@@ -61,6 +61,7 @@ describe("Venice quirks", () => {
 			ir: { vendor: { venice: { enable_web_search: "auto", disable_thinking: false } } } as any,
 		});
 		expect(request.venice_parameters).toEqual({
+			include_venice_system_prompt: false,
 			enable_web_search: "auto",
 			disable_thinking: false,
 		});
@@ -68,5 +69,24 @@ describe("Venice quirks", () => {
 			choice: { message: { reasoning_content: "working" } },
 			rawContent: "answer",
 		})).toEqual({ main: "answer", reasoning: ["working"] });
+	});
+
+	it("turns off the Venice system prompt on chat requests unless the caller opts in", () => {
+		const plain: Record<string, any> = { model: "deepseek-v4-1-flash", messages: [] };
+		veniceQuirks.transformRequest?.({ request: plain, ir: {} as any });
+		expect(plain.venice_parameters).toEqual({ include_venice_system_prompt: false });
+
+		const optedIn: Record<string, any> = { model: "deepseek-v4-1-flash", messages: [] };
+		veniceQuirks.transformRequest?.({
+			request: optedIn,
+			ir: { vendor: { venice: { include_venice_system_prompt: true } } } as any,
+		});
+		expect(optedIn.venice_parameters).toEqual({ include_venice_system_prompt: true });
+	});
+
+	it("leaves Responses requests without Venice parameters unless the caller sends them", () => {
+		const request: Record<string, any> = { model: "openai-gpt-55", input: [] };
+		veniceQuirks.transformRequest?.({ request, ir: {} as any });
+		expect(request.venice_parameters).toBeUndefined();
 	});
 });

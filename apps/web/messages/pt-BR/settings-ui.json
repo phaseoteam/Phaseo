@@ -6485,7 +6485,7 @@
 		"newPolicy": "Nova política",
 		"emptyTitle": "Nenhuma política de limite de taxa ainda",
 		"emptyBody": "Crie uma política e atribua-a a chaves, membros, departamentos ou proteções.",
-		"strict": "Estrita (ainda não aplicada)",
+		"strict": "Estrita",
 		"edit": "Editar",
 		"delete": "Excluir",
 		"cancel": "Cancelar",
@@ -6496,7 +6496,7 @@
 		"listAppliesTo": "Aplica-se a",
 		"limitRequests": "{count, number} solicitações/min",
 		"limitTokens": "{count, number} tokens/min",
-		"limitConcurrent": "{count, number} simultâneas (ainda não aplicado)",
+		"limitConcurrent": "{count, number} ao mesmo tempo",
 		"throttled": "{count, plural, one {# solicitação} other {# solicitações}} nas últimas {hours} horas",
 		"notThrottled": "Nenhuma nas últimas {hours} horas",
 		"notAssigned": "Ainda não atribuída",
@@ -6510,15 +6510,19 @@
 			"descriptionPlaceholder": "Opcional",
 			"requestsPerMinute": "Solicitações por minuto",
 			"tokensPerMinute": "Tokens por minuto",
+			"concurrentRequests": "Solicitações simultâneas",
 			"noLimit": "Sem limite",
 			"tokensHint": "Os tokens são contados pelo uso real de cada solicitação quando ela termina, então solicitações em andamento podem passar um pouco do limite.",
-			"apiOnlyHint": "Esta política também tem um limite de simultaneidade ou o modo estrito definidos pela API. Salvar aqui os mantém."
+			"concurrencyHint": "Solicitações simultâneas conta as solicitações em andamento, incluindo streams até terminarem. A verificação acrescenta um pouco de latência a cada solicitação coberta pela política.",
+			"strict": "Modo estrito",
+			"strictHint": "Verifica os limites antes de enviar cada solicitação e rejeita solicitações quando não for possível verificá-los. É exato, mas acrescenta latência a cada solicitação coberta pela política. Caso contrário, os limites são verificados em segundo plano e as solicitações são permitidas se uma verificação falhar."
 		},
 		"problems": {
 			"name": "Digite um nome com até 100 caracteres.",
 			"description": "A descrição deve ter no máximo 500 caracteres.",
 			"requestsPerMinute": "Digite um número inteiro de 1 a 2.147.483.647 ou deixe em branco.",
 			"tokensPerMinute": "Digite um número inteiro de pelo menos 1 ou deixe em branco.",
+			"concurrentRequests": "Digite um número inteiro de 1 a 2.147.483.647 ou deixe em branco.",
 			"limits": "Defina pelo menos um limite."
 		},
 		"assignmentsTitle": "Atribuições",

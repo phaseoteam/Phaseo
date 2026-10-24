@@ -14,6 +14,32 @@ permissions:
     id-token: write
 
 jobs:
+    public_snapshot:
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+              with:
+                  persist-credentials: false
+            - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              with:
+                  version: 10.33.0
+            - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+              with:
+                  node-version: 24
+                  cache: pnpm
+            - run: pnpm install --frozen-lockfile
+            - name: Test full public extraction and matching
+              run: pnpm exec tsx --test scripts/artificial-analysis/public-page.test.ts scripts/artificial-analysis/core.test.ts
+            - name: Publish full public dashboard snapshot
+              env:
+                  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+              run: pnpm exec tsx scripts/scrape-artificial-analysis-public.ts --match-db --write --output "$RUNNER_TEMP/artificial-analysis-public-snapshot.json"
+
     sync:
         if: github.ref == 'refs/heads/main'
         runs-on: ubuntu-latest

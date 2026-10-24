@@ -43,6 +43,7 @@ begin
     'reason', v_reason,
     'price_ratio', (v_price->>'ratio')::numeric,
     'price_comparable', coalesce((v_price->>'comparable')::boolean, false),
+    'price_skipped_meters', coalesce(v_price->'skipped_meters', '[]'::jsonb),
     'workspace_override', true);
 end $function$;
 
