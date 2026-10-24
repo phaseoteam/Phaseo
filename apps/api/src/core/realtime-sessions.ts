@@ -3,7 +3,7 @@
 // How: Creates session rows, reserves $5 increments, prices final usage, and settles atomically.
 
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
-import { refreshRealtimeBillingReviews, syncRealtimeBillingReviewSummaries } from "./realtime-billing-review";
+import { quoteRealtimeRecovery, refreshRealtimeBillingReviews, syncRealtimeBillingReviewSummaries } from "./realtime-billing-review";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { computeBill } from "@pipeline/pricing/engine";
@@ -13,7 +13,7 @@ import { fetchGatewayContext } from "@pipeline/before/context";
 import { buildProviderCandidatesWithDiagnostics } from "@pipeline/before/utils";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { enqueueAsyncGenAiOtlpExport } from "@observability/otlp-export";
-import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveUsageMeters, LIVE_VOICES } from "./live-sessions";
+import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveUsageMeters, LIVE_VOICES, type LiveUsage } from "./live-sessions";
 
 export const REALTIME_INITIAL_HOLD_NANOS = 5_000_000_000;
 export const REALTIME_HOLD_INCREMENT_NANOS = 5_000_000_000;
@@ -22,6 +22,8 @@ export const REALTIME_GRACEFUL_STOP_THRESHOLD = 0.95;
 export const REALTIME_MAX_DURATION_SECONDS = 25 * 60;
 export const GOOGLE_REALTIME_MAX_DURATION_SECONDS = 15 * 60;
 export const REALTIME_IDLE_TIMEOUT_SECONDS = 5 * 60;
+// A session whose relay is never claimed is reaped after this long.
+export const REALTIME_UNCLAIMED_SESSION_TIMEOUT_SECONDS = 2 * 60;
 export const REALTIME_MAX_WORKSPACE_SESSIONS = 8;
 export const REALTIME_MAX_KEY_SESSIONS = 4;
 export const REALTIME_MAX_USER_SESSIONS = 1;
@@ -143,7 +145,14 @@ type WalletSettlementResult = {
 	after_balance_nanos: number | null;
 	before_reserved_nanos: number | null;
 	after_reserved_nanos: number | null;
+	/** Charged beyond holds and free balance (wallet went negative, within the overdraft cap). */
+	debt_nanos?: number | null;
+	/** Priced cost beyond the overdraft cap that could not be charged. */
+	uncollected_nanos?: number | null;
 };
+
+/** Maximum negative wallet balance a realtime settlement may create. Mirrors the SQL constant. */
+export const REALTIME_MAX_OVERDRAFT_NANOS = 1_000_000_000;
 
 function normalizeText(value: unknown): string | null {
 	if (typeof value !== "string") return null;
@@ -418,12 +427,20 @@ export function pcm16Base64DurationMs(base64: string, sampleRate: number): numbe
 export function resolveRealtimeFinalCostNanos(args: {
 	auth: Pick<RealtimeAuthContext, "internal">;
 	finalCostNanos?: number | null;
+	providerCostNanos?: number | null;
 	pricedCostNanos: number;
 }): number {
 	if (args.auth.internal === true && args.finalCostNanos != null) {
 		return Math.max(0, Math.round(args.finalCostNanos));
 	}
-	return Math.max(0, Math.round(args.pricedCostNanos));
+	const priced = Math.max(0, Math.round(args.pricedCostNanos));
+	// A provider-reported cost may cover only part of what the provider bills
+	// (for example per-response tokens on a duration-billed session), so it can
+	// raise the charge but never lower it.
+	if (args.auth.internal === true && args.providerCostNanos != null) {
+		return Math.max(priced, Math.round(args.providerCostNanos));
+	}
+	return priced;
 }
 
 export function assertRealtimeSettlementAuthority(auth: Pick<RealtimeAuthContext, "internal">) {
@@ -719,12 +736,16 @@ export function assertRealtimeBillingMetersPresent(args: {
 	provider: RealtimeProvider;
 	usage: Record<string, unknown>;
 	costNanos: number;
+	estimated?: boolean;
 }) {
 	if (args.provider === "x-ai" || args.provider === "spacex-ai") return;
 	const responseInFlight = args.usage.assistant_response_in_flight === true;
 	if (responseInFlight) {
 		throw new Error(`${args.provider}_realtime_authoritative_usage_pending`);
 	}
+	// The relay already converted the unconfirmed turn into estimated meters
+	// (possibly zero, when no model turn followed the speech).
+	if (args.estimated === true) return;
 	const audioSeconds =
 		(toFiniteNumber(args.usage.input_audio_seconds) ?? 0) +
 		(toFiniteNumber(args.usage.output_audio_seconds) ?? 0) +
@@ -1170,22 +1191,74 @@ export async function updateRealtimeSessionUsage(args: {
 	return updated as RealtimeSessionRow;
 }
 
+/**
+ * Prices only provider-confirmed usage so the database can capture it now and
+ * leave a billing review covering just the unconfirmed remainder. Pricing
+ * failures fall back to zero: marking a session for review must not fail.
+ */
+export async function realtimeConfirmedCostNanos(args: {
+	modelId: string;
+	provider: string | null;
+	metadata?: Record<string, unknown> | null;
+	usage: Record<string, unknown>;
+}): Promise<number> {
+	try {
+		if (isLiveModel(args.modelId)) {
+			return quoteRealtimeRecovery(args.modelId, args.usage as LiveUsage, args.metadata ?? {}).costNanos;
+		}
+		const provider = providerFromModel(args.modelId, args.provider);
+		if (!provider) return 0;
+		const confirmed = { ...args.usage };
+		delete confirmed.assistant_response_in_flight;
+		// Estimated meters are not provider-confirmed.
+		for (const [meter, estimate] of [
+			["input_audio_tokens", "estimated_input_audio_tokens"],
+			["output_audio_tokens", "estimated_output_audio_tokens"],
+		] as const) {
+			const value = toFiniteNumber(confirmed[meter]);
+			if (value != null) confirmed[meter] = Math.max(0, value - (toFiniteNumber(confirmed[estimate]) ?? 0));
+		}
+		const priced = computeBill(normalizeRealtimeUsage(confirmed), await requireRealtimePriceCard(provider, args.modelId), {
+			endpoint: "audio.realtime",
+		});
+		return pricedTotalNanos(priced);
+	} catch (error) {
+		console.error("realtime_confirmed_cost_failed", {
+			modelId: args.modelId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return 0;
+	}
+}
+
 export async function markRealtimeSessionBillingUnresolved(args: {
 	auth: RealtimeAuthContext;
 	sessionId: string;
 	usage: Record<string, unknown>;
 	reason: string;
+	session?: Pick<RealtimeSessionRow, "model_id" | "provider" | "metadata"> | null;
 }): Promise<RealtimeSessionRow> {
+	const usage = normalizeRealtimeUsage(args.usage);
+	const session = args.session ?? await getRealtimeSessionForInternal(args.sessionId).catch(() => null);
+	const confirmedCostNanos = session
+		? await realtimeConfirmedCostNanos({
+			modelId: session.model_id,
+			provider: session.provider,
+			metadata: session.metadata ?? null,
+			usage: args.usage,
+		})
+		: 0;
 	const rpc = await getSupabaseAdmin().rpc("gateway_realtime_mark_billing_unresolved", {
 		p_workspace_id: args.auth.workspaceId,
 		p_session_id: args.sessionId,
-		p_usage: normalizeRealtimeUsage(args.usage),
+		p_usage: usage,
 		p_reason: args.reason,
+		p_confirmed_cost_nanos: confirmedCostNanos,
 	});
 	if (rpc.error) throw rpc.error;
-	const session = (Array.isArray(rpc.data) ? rpc.data[0] : rpc.data) as RealtimeSessionRow | null;
-	if (!session) throw new Error("realtime_billing_unresolved_empty");
-	return session;
+	const marked = (Array.isArray(rpc.data) ? rpc.data[0] : rpc.data) as RealtimeSessionRow | null;
+	if (!marked) throw new Error("realtime_billing_unresolved_empty");
+	return marked;
 }
 
 export async function settleRealtimeSession(args: {
@@ -1194,9 +1267,14 @@ export async function settleRealtimeSession(args: {
 	status?: RealtimeTerminalStatus;
 	usage?: Record<string, unknown>;
 	finalCostNanos?: number | null;
+	/** Internal relay only: cost the provider reported; never charges less than the priced usage. */
+	providerCostNanos?: number | null;
 	disconnectReason?: string | null;
 	errorCode?: string | null;
 	errorMessage?: string | null;
+	/** Internal relay only: part of the usage was estimated from metered audio. */
+	estimated?: boolean;
+	estimateBasis?: string | null;
 }): Promise<{ session: RealtimeSessionRow; settlement: WalletSettlementResult; pricedUsage: Record<string, unknown> }> {
 	const supabase = getSupabaseAdmin();
 	const { data: row, error } = await supabase
@@ -1242,11 +1320,13 @@ export async function settleRealtimeSession(args: {
 	const costNanos = live ? pricedTotalNanos(pricedUsage) : resolveRealtimeFinalCostNanos({
 		auth: args.auth,
 		finalCostNanos: args.finalCostNanos,
+		providerCostNanos: args.providerCostNanos,
 		pricedCostNanos: pricedTotalNanos(pricedUsage),
 	});
 	const lines = pricingLines(pricedUsage);
+	const estimated = args.auth.internal === true && args.estimated === true;
 	if (live) assertLiveFinalUsage(normalizedUsage);
-	else assertRealtimeBillingMetersPresent({ provider, usage: normalizedUsage, costNanos });
+	else assertRealtimeBillingMetersPresent({ provider, usage: normalizedUsage, costNanos, estimated });
 	const rpc = await supabase.rpc("gateway_realtime_settle_once", {
 		p_workspace_id: args.auth.workspaceId,
 		p_session_id: args.sessionId,
@@ -1257,10 +1337,20 @@ export async function settleRealtimeSession(args: {
 		p_disconnect_reason: args.disconnectReason ?? null,
 		p_error_code: args.errorCode ?? null,
 		p_error_message: args.errorMessage ?? null,
+		p_estimated: estimated,
+		p_estimate_basis: estimated ? normalizeText(args.estimateBasis) ?? "metered_audio" : null,
 	});
 	if (rpc.error) throw rpc.error;
 	const settlement = (Array.isArray(rpc.data) ? rpc.data[0] : rpc.data) as WalletSettlementResult | null;
 	if (!settlement) throw new Error("realtime_settlement_empty");
+	if (Number(settlement.debt_nanos ?? 0) > 0 || Number(settlement.uncollected_nanos ?? 0) > 0) {
+		console.warn("realtime_settlement_overdraft", {
+			sessionId: args.sessionId,
+			workspaceId: args.auth.workspaceId,
+			debtNanos: settlement.debt_nanos,
+			uncollectedNanos: settlement.uncollected_nanos,
+		});
+	}
 	if (settlement.status !== "completed" && settlement.status !== "failed" && settlement.status !== "cancelled" && settlement.status !== "expired") {
 		throw new Error(`realtime_settlement_${settlement.status}`);
 	}
@@ -1335,6 +1425,7 @@ export type RealtimeSessionReconciliationSummary = {
 	sessionsExpired: number;
 	sessionsErrored: number;
 	sessionsBillingUnresolved: number;
+	sessionsHealthy: number;
 };
 
 export async function realtimeReconciliationToken(): Promise<string> {
@@ -1352,17 +1443,20 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 	const supabase = getSupabaseAdmin();
 	const now = new Date().toISOString();
 	const idleCutoff = new Date(Date.now() - REALTIME_IDLE_TIMEOUT_SECONDS * 1000).toISOString();
+	// Sessions whose relay was never claimed hold credit for nothing.
+	const unclaimedCutoff = new Date(Date.now() - REALTIME_UNCLAIMED_SESSION_TIMEOUT_SECONDS * 1000).toISOString();
 	const { data: sessions, error } = await supabase
 		.from("gateway_realtime_sessions")
 		.select("*")
 		.in("status", ["created", "connecting", "connected", "ending"])
-		.or(`expires_at.lte.${now},last_event_at.lte.${idleCutoff}`)
+		.or(`expires_at.lte.${now},last_event_at.lte.${idleCutoff},and(status.eq.created,created_at.lte.${unclaimedCutoff})`)
 		.order("updated_at", { ascending: true })
 		.limit(Math.max(1, Math.min(500, Math.trunc(args?.limit ?? 100))));
 	if (error) throw error;
 
 	let sessionsExpired = 0;
 	let sessionsErrored = 0;
+	let sessionsHealthy = 0;
 	for (const row of sessions ?? []) {
 		const session = row as RealtimeSessionRow;
 		try {
@@ -1375,14 +1469,23 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 					}),
 				);
 				if (!response.ok) throw new Error(`realtime_relay_reconciliation_http_${response.status}`);
-				const result = await response.json<{ active?: boolean; settled?: boolean }>();
+				const result = await response.json<{ active?: boolean; settled?: boolean; healthy?: boolean }>();
 				if (result.active) {
+					// Open sockets with recent traffic (or a bounded final-usage wait)
+					// are not stuck; the relay settles them itself.
+					if (result.healthy) {
+						sessionsHealthy += 1;
+						continue;
+					}
 					if (!result.settled) throw new Error("realtime_relay_reconciliation_pending");
 					sessionsExpired += 1;
 					continue;
 				}
 			}
-			if (session.status !== "created") {
+			// Without relay state a created or connecting session never reached the
+			// provider, so it settles at zero. Connected sessions lost evidence.
+			const relayed = session.metadata?.relay === true;
+			if (session.status !== "created" && !(relayed && session.status === "connecting")) {
 				const provider = providerFromModel(session.model_id, session.provider);
 				if (provider !== "spacex-ai") {
 					await markRealtimeSessionBillingUnresolved({
@@ -1396,6 +1499,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 						sessionId: session.session_id,
 						usage: session.usage ?? {},
 						reason: "realtime_relay_state_missing_during_reconciliation",
+						session,
 					});
 					sessionsErrored += 1;
 					continue;
@@ -1446,6 +1550,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 		sessionsExpired,
 		sessionsErrored,
 		sessionsBillingUnresolved: unresolvedCount ?? 0,
+		sessionsHealthy,
 	};
 }
 
