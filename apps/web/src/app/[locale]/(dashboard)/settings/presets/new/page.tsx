@@ -10,6 +10,7 @@ import {
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { getTranslations } from "next-intl/server";
+import { PRESET_MODEL_OPTIONS } from "../presetModels";
 
 export async function generateMetadata() {
 	const t = await getTranslations("SettingsUI.settingsPageMetadata");
@@ -59,7 +60,7 @@ export default async function NewPresetPage() {
 
 async function NewPresetContent() {
 	const [models, providers] = await Promise.all([
-		fetchFrontendModels(),
+		fetchFrontendModels(PRESET_MODEL_OPTIONS),
 		fetchFrontendAPIProviders(),
 	]);
 
