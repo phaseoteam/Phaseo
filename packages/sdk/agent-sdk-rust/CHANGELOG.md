@@ -1,5 +1,11 @@
 # @phaseo/agent-sdk-rust
 
+## 0.2.1
+
+### Patch Changes
+
+- [#2477](https://github.com/phaseoteam/Phaseo/pull/2477) [`3ec3df2`](https://github.com/phaseoteam/Phaseo/commit/3ec3df2bd9af751a12bf89ac6bf1289a7a94f9b8) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Use shadcn scroll areas throughout request samples, keep managed gateway tools available in Agent SDK examples, and generate multi-turn starters from the latest user message.
+
 ## 0.2.0
 
 ### Minor Changes

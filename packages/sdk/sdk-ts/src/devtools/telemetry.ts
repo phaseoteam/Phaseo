@@ -20,7 +20,7 @@ export class TelemetryCapture {
   private readonly sdkVersion: string;
 
 
-  constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = "3.0.0") {
+  constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = "4.0.0") {
 
     // Check if devtools is enabled via env var or config
     const env = nodeProcess()?.env;

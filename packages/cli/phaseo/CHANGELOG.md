@@ -1,5 +1,13 @@
 # @phaseo/cli
 
+## 0.3.1
+
+### Patch Changes
+
+- [#2888](https://github.com/phaseoteam/Phaseo/pull/2888) [`dafbc58`](https://github.com/phaseoteam/Phaseo/commit/dafbc580dcda55d340613949c80939763f07215d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add beta management endpoints for named rate limit policies (requests per minute, tokens per minute, concurrent requests) and their assignments to API keys, members, departments, guardrails, or the workspace's end-user default, with new `rate_limits:read`, `rate_limits:write`, and `rate_limits:delete` scopes. The gateway does not enforce these policies yet. API keys can now be linked to a department with `department_id`. The guardrail request and spend limit fields, which were never enforced, are marked deprecated.
+
+- [#3029](https://github.com/phaseoteam/Phaseo/pull/3029) [`c8f3bca`](https://github.com/phaseoteam/Phaseo/commit/c8f3bcaebc6c6c6f37c5f32bef03852b3e5724f1) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add beta management endpoints for request classifiers (`/v1/classifiers`), with new `classifiers:read`, `classifiers:write`, and `classifiers:delete` scopes. A classifier is a workspace taxonomy of up to 12 dimensions, a model, optional instructions, a sample rate, an optional scope (keys, apps, models), and an optional monthly budget; up to 5 per workspace. The gateway does not run classifiers yet.
+
 ## 0.3.0
 
 ### Minor Changes
