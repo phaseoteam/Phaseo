@@ -138,6 +138,22 @@ describe("rate limit tier", () => {
 		expect(forwarded?.headers.get("x-phaseo-workspace-id")).toBe(WORKSPACE);
 	});
 
+	it("loads the page without the tier when the gateway is slow", async () => {
+		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+		try {
+			database({ role: "owner", gateway: () => new Promise<Response>(() => {}) });
+			const pending = call(`/rate-limits?workspaceId=${WORKSPACE}`);
+			await vi.advanceTimersByTimeAsync(2_500);
+			const response = await pending;
+			expect(response.status).toBe(200);
+			const body = await response.json() as any;
+			expect(body.canManageRateLimits).toBe(true);
+			expect(body.tier).toBeNull();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("forwards a raise without a body and passes the gateway's refusal through", async () => {
 		const requests = database({ gateway: () => Response.json({ error: "raise_unavailable", reason: "cooldown" }, { status: 409 }) });
 		const response = await call("/rate-limits/tier/raise", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE }) });

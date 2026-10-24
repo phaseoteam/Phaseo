@@ -63,20 +63,27 @@ function emptyData(workspaceId: string | null) {
 	};
 }
 
+const TIER_READ_BUDGET_MS = 2_500;
+
 /**
  * The workspace's trust-ladder tier and self-serve raise status, from the
- * gateway (which holds the ladder configuration). Null when it can't be read,
- * so the rest of the page still loads.
+ * gateway (which holds the ladder configuration). Null when it can't be read
+ * within TIER_READ_BUDGET_MS, so a slow gateway can't hold up the rest of the page.
  */
 async function readTier(c: any, workspaceId: string): Promise<unknown> {
-	const result: GatewayResult = await callGatewayControl({
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const timedOut = new Promise<GatewayResult>((resolve) => {
+		timer = setTimeout(() => resolve({ status: 0, payload: null }), TIER_READ_BUDGET_MS);
+	});
+	const read = callGatewayControl({
 		env: c.env,
 		request: c.req.raw,
 		workspaceId,
 		method: "GET",
 		path: "/v1/rate-limits/tier",
 		failureEvent: "rate_limits_gateway_proxy_failed",
-	}).catch(() => ({ status: 0, payload: null }));
+	}).catch((): GatewayResult => ({ status: 0, payload: null }));
+	const result = await Promise.race([read, timedOut]).finally(() => clearTimeout(timer));
 	return result.status === 200 && result.payload?.data ? result.payload.data : null;
 }
 
