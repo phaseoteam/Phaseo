@@ -143,6 +143,7 @@ normalisedAliasMap.set(normalise("minimax-cn"), "minimax");
 normalisedAliasMap.set(normalise("minimax-coding-plan"), "minimax");
 normalisedAliasMap.set(normalise("minimax-cn-coding-plan"), "minimax");
 normalisedAliasMap.set(normalise("moonshot"), "moonshotai");
+normalisedAliasMap.set(normalise("kimi"), "moonshotai");
 normalisedAliasMap.set(normalise("moonshotai-cn"), "moonshotai");
 normalisedAliasMap.set(normalise("ollama-cloud"), "ollama");
 normalisedAliasMap.set(normalise("cline-pass"), "cline");
