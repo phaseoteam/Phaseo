@@ -16,7 +16,7 @@ CREATE TABLE "public"."workspace_spend_blocks" (
   "created_at"        timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"        timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "workspace_spend_blocks_amounts_check" CHECK (((spend_nanos >= 0) AND (limit_nanos > 0))),
-  CONSTRAINT "workspace_spend_blocks_lift_check" CHECK ((((lifted_at IS NULL) = (lift_reason IS NULL)) AND ((lifted_by IS NULL) OR (lift_reason = 'manual'::text)) AND ((lifted_at IS NULL) OR (lifted_at >= started_at)))),
+  CONSTRAINT "workspace_spend_blocks_lift_check" CHECK ((((lifted_at IS NULL) = (lift_reason IS NULL)) AND ((lifted_by IS NULL) OR (lift_reason IS NOT DISTINCT FROM 'manual'::text)) AND ((lifted_at IS NULL) OR (lifted_at >= started_at)))),
   CONSTRAINT "workspace_spend_blocks_lift_reason_check" CHECK (((lift_reason IS NULL) OR (lift_reason = ANY (ARRAY['manual'::text, 'period_reset'::text, 'below_limit'::text, 'rule_changed'::text, 'rule_disabled'::text, 'rule_deleted'::text])))),
   CONSTRAINT "workspace_spend_blocks_lifted_by_fkey" FOREIGN KEY (lifted_by) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "workspace_spend_blocks_pkey" PRIMARY KEY (id),
