@@ -1153,6 +1153,7 @@
 		"realtimeBillingOpenAI": "OpenAI उपयोग इवेंट",
 		"realtimeBillingXai": "xAI अवधि मीटर",
 		"realtimeBillingGoogle": "Google उपयोग मेटाडेटा",
+		"realtimeBillingProvider": "{provider} उपयोग",
 		"selectRealtimeModel": "रीयलटाइम मॉडल चुनें",
 		"searchRealtimeModels": "रीयलटाइम मॉडल खोजें...",
 		"noRealtimeModels": "कोई रीयलटाइम मॉडल नहीं मिला।",
