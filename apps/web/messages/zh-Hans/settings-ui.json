@@ -6566,6 +6566,35 @@
 			"saveFailed": "无法保存策略，请重试。",
 			"deleteFailed": "无法删除策略，请重试。",
 			"assignFailed": "无法更改分配，请重试。"
+		},
+		"tier": {
+			"title": "工作区限额",
+			"description": "工作区中的每位用户还有一个每分钟请求数额度，由工作区的状况决定。随着工作区逐步建立信誉，额度会自动提高。",
+			"current": "{tier} · 每分钟 {count, number} 个请求",
+			"tiers": {
+				"new": "新建",
+				"standard": "标准",
+				"trusted": "受信任",
+				"enterprise": "开票结算"
+			},
+			"raisedUntil": "已提升至{tier}，有效期至 {date}。",
+			"raise": "提升至{tier}",
+			"ownerOnly": "只有工作区所有者可以提升限额。",
+			"confirmTitle": "提升至{tier}，为期 {days, number} 天？",
+			"confirmBody": "在 {days, number} 天内，每位用户的额度提高到每分钟 {count, number} 个请求。如果有付款被退款，提升会提前结束，之后一段时间内无法再次提升。",
+			"confirm": "提升限额",
+			"cancel": "取消",
+			"raising": "正在提升…",
+			"raised": "限额已提升，将在一分钟内生效。",
+			"raiseFailed": "无法提升限额。请刷新页面后重试。",
+			"refusals": {
+				"override": "Phaseo 为此工作区设置了自定义限额。",
+				"top_tier": "此工作区已拥有无需开票结算即可获得的最高限额。",
+				"no_paid_top_up": "提升限额前需要先完成一次付费充值。",
+				"too_new": "工作区创建满 {days, number} 天后才能提升限额。",
+				"not_enough_spend": "提升限额需要至少 {amount} 的付费充值。",
+				"cooldown": "你可以在 {date} 再次提升限额。"
+			}
 		}
 	},
 	"budgets": {

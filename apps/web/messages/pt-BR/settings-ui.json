@@ -6566,6 +6566,35 @@
 			"saveFailed": "Não foi possível salvar a política. Tente novamente.",
 			"deleteFailed": "Não foi possível excluir a política. Tente novamente.",
 			"assignFailed": "Não foi possível alterar a atribuição. Tente novamente."
+		},
+		"tier": {
+			"title": "Limite do workspace",
+			"description": "Cada usuário do workspace também tem uma cota de solicitações por minuto definida pela situação do workspace. Ela aumenta automaticamente à medida que o workspace se estabelece.",
+			"current": "{tier} · {count, number} solicitações por minuto",
+			"tiers": {
+				"new": "Novo",
+				"standard": "Padrão",
+				"trusted": "Confiável",
+				"enterprise": "Faturado"
+			},
+			"raisedUntil": "Aumentado para {tier} até {date}.",
+			"raise": "Aumentar para {tier}",
+			"ownerOnly": "Somente o proprietário do workspace pode aumentar o limite.",
+			"confirmTitle": "Aumentar para {tier} por {days, number} dias?",
+			"confirmBody": "A cota de cada usuário sobe para {count, number} solicitações por minuto por {days, number} dias. Ela termina antes se um pagamento for reembolsado, e depois disso você não poderá aumentar o limite de novo por um tempo.",
+			"confirm": "Aumentar limite",
+			"cancel": "Cancelar",
+			"raising": "Aumentando…",
+			"raised": "Limite aumentado. Ele entra em vigor em até um minuto.",
+			"raiseFailed": "Não foi possível aumentar o limite. Atualize a página e tente de novo.",
+			"refusals": {
+				"override": "A Phaseo definiu um limite personalizado para este workspace.",
+				"top_tier": "Este workspace já tem o limite mais alto disponível sem faturamento.",
+				"no_paid_top_up": "Para aumentar o limite, é preciso primeiro uma recarga paga.",
+				"too_new": "O workspace precisa ter pelo menos {days, number} dias para aumentar o limite.",
+				"not_enough_spend": "Para aumentar o limite, são necessários pelo menos {amount} em recargas pagas.",
+				"cooldown": "Você poderá aumentar o limite de novo em {date}."
+			}
 		}
 	},
 	"budgets": {

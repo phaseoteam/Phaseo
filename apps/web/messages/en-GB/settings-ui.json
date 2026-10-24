@@ -6566,6 +6566,35 @@
 			"saveFailed": "Couldn't save the policy. Try again.",
 			"deleteFailed": "Couldn't delete the policy. Try again.",
 			"assignFailed": "Couldn't change the assignment. Try again."
+		},
+		"tier": {
+			"title": "Workspace limit",
+			"description": "Each user in the workspace also has a requests-per-minute allowance set by the workspace's standing. It rises automatically as the workspace becomes established.",
+			"current": "{tier} · {count, number} requests per minute",
+			"tiers": {
+				"new": "New",
+				"standard": "Standard",
+				"trusted": "Trusted",
+				"enterprise": "Invoiced"
+			},
+			"raisedUntil": "Raised to {tier} until {date}.",
+			"raise": "Raise to {tier}",
+			"ownerOnly": "Only the workspace owner can raise the limit.",
+			"confirmTitle": "Raise to {tier} for {days, number} days?",
+			"confirmBody": "Each user's allowance rises to {count, number} requests per minute for {days, number} days. It ends early if a payment is refunded, and you can't raise the limit again for a while after that.",
+			"confirm": "Raise limit",
+			"cancel": "Cancel",
+			"raising": "Raising…",
+			"raised": "Limit raised. It applies within a minute.",
+			"raiseFailed": "Couldn't raise the limit. Refresh the page and try again.",
+			"refusals": {
+				"override": "This workspace has a custom limit set by Phaseo.",
+				"top_tier": "This workspace already has the highest limit available without invoiced billing.",
+				"no_paid_top_up": "Raising the limit needs a paid top-up first.",
+				"too_new": "The workspace must be at least {days, number} days old to raise its limit.",
+				"not_enough_spend": "Raising the limit needs at least {amount} in paid top-ups.",
+				"cooldown": "You can raise the limit again on {date}."
+			}
 		}
 	},
 	"budgets": {

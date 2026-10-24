@@ -6566,6 +6566,35 @@
 			"saveFailed": "Die Richtlinie konnte nicht gespeichert werden. Versuche es erneut.",
 			"deleteFailed": "Die Richtlinie konnte nicht gelöscht werden. Versuche es erneut.",
 			"assignFailed": "Die Zuweisung konnte nicht geändert werden. Versuche es erneut."
+		},
+		"tier": {
+			"title": "Workspace-Limit",
+			"description": "Jede Person im Workspace hat außerdem ein Kontingent an Anfragen pro Minute, das vom Status des Workspace abhängt. Es steigt automatisch, sobald der Workspace etabliert ist.",
+			"current": "{tier} · {count, number} Anfragen pro Minute",
+			"tiers": {
+				"new": "Neu",
+				"standard": "Standard",
+				"trusted": "Vertrauenswürdig",
+				"enterprise": "Rechnung"
+			},
+			"raisedUntil": "Bis {date} auf {tier} angehoben.",
+			"raise": "Auf {tier} anheben",
+			"ownerOnly": "Nur der Inhaber des Workspace kann das Limit anheben.",
+			"confirmTitle": "Für {days, number} Tage auf {tier} anheben?",
+			"confirmBody": "Das Kontingent jeder Person steigt für {days, number} Tage auf {count, number} Anfragen pro Minute. Es endet vorzeitig, wenn eine Zahlung erstattet wird, und danach kannst du das Limit eine Weile nicht erneut anheben.",
+			"confirm": "Limit anheben",
+			"cancel": "Abbrechen",
+			"raising": "Wird angehoben…",
+			"raised": "Limit angehoben. Es gilt innerhalb einer Minute.",
+			"raiseFailed": "Das Limit konnte nicht angehoben werden. Lade die Seite neu und versuch es noch einmal.",
+			"refusals": {
+				"override": "Für diesen Workspace hat Phaseo ein eigenes Limit festgelegt.",
+				"top_tier": "Dieser Workspace hat bereits das höchste Limit ohne Rechnungsabrechnung.",
+				"no_paid_top_up": "Zum Anheben des Limits ist zuerst eine bezahlte Aufladung nötig.",
+				"too_new": "Der Workspace muss mindestens {days, number} Tage alt sein, um sein Limit anzuheben.",
+				"not_enough_spend": "Zum Anheben des Limits sind mindestens {amount} an bezahlten Aufladungen nötig.",
+				"cooldown": "Du kannst das Limit am {date} wieder anheben."
+			}
 		}
 	},
 	"budgets": {

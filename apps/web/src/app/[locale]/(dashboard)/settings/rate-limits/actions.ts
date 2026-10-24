@@ -76,3 +76,8 @@ export async function changeRateLimitAssignment(id: string, policyId: string) {
 export async function removeRateLimitAssignment(id: string) {
 	return send(`/assignments/${encodeURIComponent(id)}`, "DELETE");
 }
+
+/** Raises the workspace one trust-ladder tier; the gateway allows only the owner and checks eligibility. */
+export async function raiseRateLimitTier() {
+	return send("/tier/raise", "POST");
+}
