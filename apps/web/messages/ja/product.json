@@ -1153,6 +1153,7 @@
 		"realtimeBillingOpenAI": "OpenAIの使用イベント",
 		"realtimeBillingXai": "xAIの時間計測",
 		"realtimeBillingGoogle": "Googleの使用メタデータ",
+		"realtimeBillingProvider": "{provider}の使用量",
 		"selectRealtimeModel": "リアルタイムモデルを選択",
 		"searchRealtimeModels": "リアルタイムモデルを検索…",
 		"noRealtimeModels": "リアルタイムモデルが見つかりません。",
