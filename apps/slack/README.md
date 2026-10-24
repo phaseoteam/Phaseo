@@ -114,7 +114,9 @@ they ask about usage, at most once per person in a thread.
 
 ## Secrets
 
-Set with `wrangler secret put <NAME> [--env production]`.
+Set with `wrangler secret put <NAME> [--env production]`. CI deploys the
+production Worker on every push to `main`, and the deploy fails while a required
+secret is missing.
 
 | Secret | Required | What it is |
 |---|---|---|
