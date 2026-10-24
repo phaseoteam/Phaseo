@@ -9,12 +9,16 @@ const mocks = vi.hoisted(() => ({
 	audits: [] as Array<Record<string, unknown>>,
 	published: [] as Array<Record<string, unknown>>,
 	publishError: null as Error | null,
+	readErrorAfterInsert: null as Error | null,
 }));
 
 vi.mock("./dashboard-session", () => ({ authenticateDashboardSession: async () => mocks.session }));
 vi.mock("@/lib/audit/workspaceAudit", () => ({ recordWorkspaceAuditEvent: async (_client: unknown, event: Record<string, unknown>) => { mocks.audits.push(event); } }));
 vi.mock("@core/customer-rate-limit-tiers", () => ({
-	readCustomerRateLimitInputs: async () => mocks.inputs,
+	readCustomerRateLimitInputs: async () => {
+		if (mocks.readErrorAfterInsert && mocks.inserts.length > 0) throw mocks.readErrorAfterInsert;
+		return mocks.inputs;
+	},
 	publishCustomerRateLimitTier: async (inputs: Record<string, unknown>) => {
 		if (mocks.publishError) throw mocks.publishError;
 		mocks.published.push(inputs);
@@ -63,6 +67,7 @@ beforeEach(() => {
 	mocks.audits.length = 0;
 	mocks.published.length = 0;
 	mocks.publishError = null;
+	mocks.readErrorAfterInsert = null;
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -122,5 +127,17 @@ describe("self-serve rate limit raise routes", () => {
 		const response = await handleRaiseRateLimitTier(request("POST"));
 		expect(response.status).toBe(201);
 		expect(mocks.inserts).toHaveLength(1);
+	});
+
+	it("reports the saved raise when reading the workspace again fails", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		mocks.readErrorAfterInsert = new Error("postgres down");
+		const response = await handleRaiseRateLimitTier(request("POST"));
+		expect(response.status).toBe(201);
+		expect(mocks.inserts).toHaveLength(1);
+		expect(mocks.published).toHaveLength(0);
+		const body = await response.json() as any;
+		expect(body.data).toMatchObject({ tier: "trusted", requestsPerMinute: 60, eligible: false, refusal: "raised", canRaise: false });
+		expect(body.data.activeUntil).toBe(Date.parse(mocks.inserts[0].expires_at as string));
 	});
 });

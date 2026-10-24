@@ -102,15 +102,25 @@ export async function handleRaiseRateLimitTier(req: Request) {
 			targetName: raise.to_tier,
 			metadata: { from_tier: raise.from_tier, to_tier: raise.to_tier, expires_at: raise.expires_at, requests_per_minute: status.targetRequestsPerMinute },
 		});
+		// The raise is saved from here on, so nothing below may turn it into an error.
 		// Apply now rather than at the next publisher run; if this fails, that run applies it.
-		const inputs = await readCustomerRateLimitInputs(workspaceId);
-		if (inputs) {
-			await publishCustomerRateLimitTier(inputs, getBindings().CUSTOMER_RATE_LIMIT_LADDER).catch((publishError) => {
-				console.warn("rate_limit_raise_publish_failed", { error: publishError instanceof Error ? publishError.message : String(publishError) });
-			});
+		try {
+			const inputs = await readCustomerRateLimitInputs(workspaceId);
+			if (inputs) await publishCustomerRateLimitTier(inputs, getBindings().CUSTOMER_RATE_LIMIT_LADDER);
+		} catch (publishError) {
+			console.warn("rate_limit_raise_publish_failed", { error: publishError instanceof Error ? publishError.message : String(publishError) });
 		}
-		const updated = await currentStatus(workspaceId);
-		return json(body(updated ?? status, session), 201, NO_STORE);
+		const raised: SelfServeRaiseStatus = {
+			...status,
+			tier: status.target,
+			requestsPerMinute: status.targetRequestsPerMinute ?? status.requestsPerMinute,
+			eligible: false,
+			refusal: "raised",
+			activeUntil: Date.parse(raise.expires_at),
+			availableAt: null,
+		};
+		const updated = await currentStatus(workspaceId).catch(() => null);
+		return json(body(updated ?? raised, session), 201, NO_STORE);
 	} catch (error) {
 		return internalServerError("rate_limit_tier.raise", error);
 	}
