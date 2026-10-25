@@ -43,6 +43,8 @@ test("missing most explicit Epoch IDs, or duplicate IDs, fail closed", () => {
 	assert.throws(() => matchEpochRows([{ model_slug: "lab/model", name: "Model", metadata: { external_ids: { epoch_ai: "missing" } } }], [epochRow]), /1 of 1 Epoch mappings refer to missing source IDs/);
 	const models = ["one", "two"].map((name) => ({ model_slug: `lab/${name}`, name, metadata: { external_ids: { epoch_ai: epochRow.model } } }));
 	assert.throws(() => matchEpochRows(models, [epochRow]), /maps to both/);
+	const missingTwice = ["one", "two"].map((name) => ({ model_slug: `lab/${name}`, name, metadata: { external_ids: { epoch_ai: "removed-id" } } }));
+	assert.throws(() => matchEpochRows([...missingTwice, ...models.slice(0, 1)], [epochRow]), /Epoch source removed-id maps to both/);
 	assert.throws(() => matchEpochRows([], [epochRow, epochRow]), /Duplicate Epoch/);
 });
 
