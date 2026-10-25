@@ -75,13 +75,17 @@ export function staleEpochResultIds(activeRows: EpochResultIdentity[], currentRo
 export function matchEpochRows(models: EpochCatalogModel[], rows: EpochEciRow[]) {
 	const explicit = new Map<string, EpochCatalogModel>();
 	const byName = new Map<string, EpochCatalogModel[]>();
+	const missingMappings: Array<{ model_slug: string; sourceId: string }> = [];
+	let explicitCount = 0;
 	const sourceIds = new Set(rows.map((row) => row.model));
 	if (sourceIds.size !== rows.length) throw new Error("Duplicate Epoch source IDs; no data was written.");
 	for (const model of models) {
 		const id = benchmarkSourceId(model.metadata, "epoch_ai", model.model_slug);
 		if (id !== undefined) {
 			if (id === null) continue;
-			if (!sourceIds.has(id)) throw new Error(`Epoch mapping for ${model.model_slug} refers to missing source ID ${id}.`);
+			explicitCount += 1;
+			// Epoch drops rows from its CSV; skip the model and keep its scores, as for a null mapping.
+			if (!sourceIds.has(id)) { missingMappings.push({ model_slug: model.model_slug, sourceId: id }); continue; }
 			if (explicit.has(id)) throw new Error(`Epoch source ${id} maps to both ${explicit.get(id)!.model_slug} and ${model.model_slug}.`);
 			explicit.set(id, model);
 			continue;
@@ -89,7 +93,9 @@ export function matchEpochRows(models: EpochCatalogModel[], rows: EpochEciRow[])
 		const key = normalizeEpochModelName(model.name);
 		byName.set(key, [...(byName.get(key) ?? []), model]);
 	}
-	return rows.map((row) => {
+	// Losing most pinned rows at once points to a source format change, not routine removals.
+	if (missingMappings.length * 2 > explicitCount) throw new Error(`${missingMappings.length} of ${explicitCount} Epoch mappings refer to missing source IDs; no data was written.`);
+	const matches = rows.map((row) => {
 		const mapped = explicit.get(row.model);
 		if (mapped) return { row, model: mapped, candidates: [mapped] };
 		const candidates = [...new Map([
@@ -98,4 +104,5 @@ export function matchEpochRows(models: EpochCatalogModel[], rows: EpochEciRow[])
 		].map((model) => [model.model_slug, model])).values()];
 		return { row, model: candidates.length === 1 ? candidates[0] : null, candidates };
 	});
+	return { matches, missingMappings };
 }

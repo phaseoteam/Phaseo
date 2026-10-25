@@ -16,17 +16,31 @@ test("remapping an Epoch source retires its former owner's result while preservi
 
 test("explicit database IDs override ambiguous display names", () => {
 	const models = [{ model_slug: "lab/renamed", name: "Different Name", metadata: { external_ids: { epoch_ai: epochRow.model } } }, { model_slug: "lab/alias", name: epochRow.displayName }];
-	assert.equal(matchEpochRows(models, [epochRow])[0].model?.model_slug, "lab/renamed");
+	assert.equal(matchEpochRows(models, [epochRow]).matches[0].model?.model_slug, "lab/renamed");
 });
 
 test("mapped and opted-out models never match another Epoch configuration by name", () => {
 	const models = [{ model_slug: "lab/model", name: "Other configuration", metadata: { external_ids: { epoch_ai: epochRow.model } } }, { model_slug: "lab/excluded", name: "Other configuration", metadata: { external_ids: { epoch_ai: null } } }];
 	const rows = [epochRow, { ...epochRow, model: "other-id", displayName: "Other configuration" }];
-	assert.equal(matchEpochRows(models, rows)[1].model, null);
+	assert.equal(matchEpochRows(models, rows).matches[1].model, null);
 });
 
-test("missing and duplicate explicit Epoch IDs fail closed", () => {
-	assert.throws(() => matchEpochRows([{ model_slug: "lab/model", name: "Model", metadata: { external_ids: { epoch_ai: "missing" } } }], [epochRow]), /missing source ID/);
+test("a mapping to a removed Epoch row skips that model without blocking the others", () => {
+	const models = [
+		{ model_slug: "lab/removed", name: epochRow.displayName, metadata: { external_ids: { epoch_ai: "removed-id" } } },
+		{ model_slug: "lab/pinned", name: "Pinned", metadata: { external_ids: { epoch_ai: epochRow.model } } },
+		{ model_slug: "lab/pinned-two", name: "Pinned Two", metadata: { external_ids: { epoch_ai: "other-id" } } },
+	];
+	const rows = [epochRow, { ...epochRow, model: "other-id", displayName: "Other" }];
+	const { matches, missingMappings } = matchEpochRows(models, rows);
+	assert.deepEqual(missingMappings, [{ model_slug: "lab/removed", sourceId: "removed-id" }]);
+	assert.deepEqual(matches.map((match) => match.model?.model_slug), ["lab/pinned", "lab/pinned-two"]);
+	// The stale model is not name-matched onto another row and keeps its earlier scores.
+	assert.ok(matches.every((match) => !match.candidates.some((candidate) => candidate.model_slug === "lab/removed")));
+});
+
+test("missing most explicit Epoch IDs, or duplicate IDs, fail closed", () => {
+	assert.throws(() => matchEpochRows([{ model_slug: "lab/model", name: "Model", metadata: { external_ids: { epoch_ai: "missing" } } }], [epochRow]), /1 of 1 Epoch mappings refer to missing source IDs/);
 	const models = ["one", "two"].map((name) => ({ model_slug: `lab/${name}`, name, metadata: { external_ids: { epoch_ai: epochRow.model } } }));
 	assert.throws(() => matchEpochRows(models, [epochRow]), /maps to both/);
 	assert.throws(() => matchEpochRows([], [epochRow, epochRow]), /Duplicate Epoch/);
@@ -39,6 +53,6 @@ test("parses quoted Epoch ECI rows and orders them by score", () => {
 });
 
 test("matches only a unique normalized Phaseo model name", () => {
-	const [match] = matchEpochRows([{ model_slug: "lab/model-one", name: "Model One" }], [{ model: "model-one", displayName: "Model One", score: 12, ciLow: 11, ciHigh: 13, releaseDate: "", organisation: "Lab" }]);
+	const [match] = matchEpochRows([{ model_slug: "lab/model-one", name: "Model One" }], [{ model: "model-one", displayName: "Model One", score: 12, ciLow: 11, ciHigh: 13, releaseDate: "", organisation: "Lab" }]).matches;
 	assert.equal(match.model?.model_slug, "lab/model-one");
 });
