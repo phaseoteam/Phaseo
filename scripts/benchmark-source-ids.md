@@ -36,6 +36,6 @@ pnpm data:sync-artificial-analysis --report=artificial-analysis-report.json
 pnpm data:sync-epoch-eci --report=epoch-eci-report.json
 ```
 
-Both importers reject invalid, duplicate, or stale explicit mappings before writing results. AA expands an anchor ID to its reasoning family. Epoch attaches the exact mapped CSV row and excludes that model from fallback matching to other configurations. Unmatched and disabled models retain their previous scores and provenance.
+Both importers reject invalid or duplicate explicit mappings before writing results. AA also rejects stale mappings. Epoch drops rows from its CSV over time, so an Epoch mapping to a missing row only skips that model: it keeps its scores, the run logs a warning, and the report lists it under `missingMappings`. Set that mapping to `null` or a current ID. If more than half of the Epoch mappings are missing at once, the importer assumes the source format changed and writes nothing. AA expands an anchor ID to its reasoning family. Epoch attaches the exact mapped CSV row and excludes that model from fallback matching to other configurations. Unmatched and disabled models retain their previous scores and provenance.
 
 After reviewing the report, add `--write` to publish scores immediately, or let the next scheduled run import them. Public caches expire under their normal TTLs. No schema migration or per-model code PR is required.
