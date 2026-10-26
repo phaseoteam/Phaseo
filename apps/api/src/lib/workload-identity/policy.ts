@@ -97,7 +97,7 @@ function tokenLifetimeSeconds(claims: WorkloadTokenClaims): number {
 export function policyMatchesClaims(policy: WorkloadIdentityPolicy, claims: WorkloadTokenClaims): boolean {
 	if (policy.status !== "active" || policy.issuer !== claims.iss) return false;
 	const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-	if (!audiences.includes(WORKLOAD_IDENTITY_AUDIENCE)) return false;
+	if (!audiences.some((value) => value === WORKLOAD_IDENTITY_AUDIENCE)) return false;
 	if (tokenLifetimeSeconds(claims) > policy.maxTokenLifetimeSeconds) return false;
 	// Defence in depth: a stored policy that lost its pinned claim never matches.
 	for (const claim of REQUIRED_PINNED_CLAIMS[policy.provider] ?? []) {

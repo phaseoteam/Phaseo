@@ -175,7 +175,8 @@ export async function verifyWorkloadToken(
 	}
 	if (payload.nbf !== undefined && !isFiniteNumber(payload.nbf)) return { ok: false, reason: "workload_token_malformed" };
 	const audiences: unknown[] = Array.isArray(aud) ? aud : [aud];
-	if (!audiences.includes(WORKLOAD_IDENTITY_AUDIENCE)) return { ok: false, reason: "workload_token_wrong_audience" };
+	// Exact match on each audience value, never a substring.
+	if (!audiences.some((value) => value === WORKLOAD_IDENTITY_AUDIENCE)) return { ok: false, reason: "workload_token_wrong_audience" };
 
 	// Check time claims before any network work so expired tokens stay cheap.
 	const now = options.nowSeconds ?? Math.floor(Date.now() / 1000);
