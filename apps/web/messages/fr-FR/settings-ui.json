@@ -4510,6 +4510,7 @@
 		"workspaces": "Espaces de travail",
 		"classifiers": "Classificateurs",
 		"rateLimits": "Limites de débit",
+		"trustedWorkloads": "Workloads de confiance",
 		"newClassifier": "Nouveau classificateur",
 		"classifier": "Classificateur",
 		"budgets": "Budgets",
@@ -4742,6 +4743,7 @@
 		"providerProfile": "Profil du fournisseur",
 		"classifiers": "Classificateurs",
 		"rateLimits": "Limites de débit",
+		"trustedWorkloads": "Workloads de confiance",
 		"budgets": "Budgets",
 		"keys": "Clés",
 		"keySecurity": "Sécurité des clés",
@@ -6625,6 +6627,98 @@
 				"not_enough_spend": "Pour relever la limite, il faut au moins {amount} de recharges payées.",
 				"cooldown": "Vous pourrez relever la limite à nouveau le {date}."
 			}
+		}
+	},
+	"trustedWorkloads": {
+		"title": "Workloads de confiance",
+		"description": "Permettez aux déploiements Vercel et aux jobs GitHub Actions d'appeler l'API avec un jeton OIDC de courte durée au lieu d'une clé API.",
+		"feedback": "Comment les workloads de confiance pourraient-ils mieux fonctionner pour vous ?",
+		"selectWorkspace": "Sélectionnez un espace de travail pour gérer les workloads de confiance.",
+		"unavailable": "Les workloads de confiance ne sont pas encore disponibles pour cet espace de travail.",
+		"adminsOnly": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent voir et modifier les workloads de confiance.",
+		"howItWorks": "Vercel et GitHub Actions remettent à chaque déploiement ou job un jeton signé qui indique son identité et expire en quelques heures. Quand un jeton correspond à l'une de ces règles, la requête s'exécute avec la clé de cette règle, avec les mêmes limites, budgets, journaux et la même facturation qu'une clé API. Aucun secret n'est à stocker.",
+		"policiesTitle": "Règles de confiance",
+		"propagation": "Les modifications prennent effet en une minute environ.",
+		"newPolicy": "Nouvelle règle",
+		"emptyTitle": "Aucun workload de confiance pour l'instant",
+		"emptyBody": "Ajoutez une règle pour un projet Vercel ou un dépôt GitHub afin qu'il puisse appeler l'API sans clé API.",
+		"noConditions": "Aucune",
+		"disabled": "Désactivée",
+		"enabledLabel": "Accepter les jetons pour {name}",
+		"edit": "Modifier",
+		"delete": "Supprimer",
+		"cancel": "Annuler",
+		"save": "Enregistrer",
+		"create": "Créer la règle",
+		"listIssuer": "Émetteur",
+		"listConditions": "Conditions",
+		"listRef": "Branche ou tag",
+		"listLastUsed": "Dernière utilisation",
+		"neverUsed": "Jamais",
+		"listLifetime": "Jeton le plus long",
+		"lifetimeHours": "{count, plural, one {# heure} other {# heures}}",
+		"deleteTitle": "Supprimer {name} ?",
+		"deleteBody": "Les jetons qui correspondent à cette règle cessent de fonctionner en une minute environ. Les requêtes passées restent dans vos journaux.",
+		"dialogCreateTitle": "Nouvelle règle de confiance",
+		"dialogEditTitle": "Modifier {name}",
+		"usageTitle": "Appeler l'API avec un jeton",
+		"usageBody": "Demandez un jeton pour l'audience ci-dessous et envoyez-le dans l'en-tête Authorization, comme une clé API :",
+		"audienceLabel": "Audience",
+		"providers": {
+			"vercel": "Vercel",
+			"github_actions": "GitHub Actions"
+		},
+		"ownerLabel": {
+			"vercel": "ID de l'équipe",
+			"github_actions": "ID du propriétaire"
+		},
+		"ownerWide": {
+			"vercel": "Fait confiance à tous les projets de cette équipe Vercel. Ajoutez un ID de projet pour la restreindre.",
+			"github_actions": "Fait confiance à tous les dépôts de ce propriétaire. Ajoutez un ID de dépôt pour la restreindre."
+		},
+		"environments": {
+			"production": "Production",
+			"preview": "Aperçu",
+			"development": "Développement"
+		},
+		"fields": {
+			"name": "Nom",
+			"namePlaceholder": "Site en production",
+			"provider": "Plateforme",
+			"vercelTeamSlug": "Slug de l'équipe",
+			"vercelTeamId": "ID de l'équipe",
+			"vercelTeamHint": "Vous trouverez les deux dans Team Settings sur Vercel. Laissez le slug vide si le projet utilise l'émetteur global.",
+			"vercelProjectId": "ID du projet",
+			"vercelProjectHint": "Facultatif, mais recommandé. Sans lui, tous les projets de l'équipe sont approuvés.",
+			"environment": "Environnement",
+			"environmentHint": "Ne cochez rien pour accepter tous les environnements.",
+			"githubOwnerId": "ID du propriétaire",
+			"githubRepositoryId": "ID du dépôt",
+			"githubIdsHint": "Utilisez les ID numériques, qui ne changent pas si le propriétaire ou le dépôt est renommé. L'ID du dépôt est facultatif, mais sans lui tous les dépôts du propriétaire sont approuvés.",
+			"githubRef": "Branche ou tag (facultatif)",
+			"lifetime": "Jeton le plus long accepté (heures)",
+			"lifetimeHint": "Les jetons émis pour durer plus longtemps sont refusés. Jusqu'à {max} heures."
+		},
+		"problems": {
+			"name": "Saisissez un nom de 100 caractères maximum.",
+			"vercelTeamSlug": "Utilisez le slug figurant dans l'URL de l'équipe, par exemple acme.",
+			"vercelTeamId": "Les ID d'équipe commencent par team_.",
+			"vercelProjectId": "Les ID de projet commencent par prj_.",
+			"githubOwnerId": "Saisissez l'ID numérique du propriétaire.",
+			"githubRepositoryId": "Saisissez l'ID numérique du dépôt.",
+			"lifetime": "Saisissez un nombre entier d'heures entre 1 et 12."
+		},
+		"errors": {
+			"invalid": "{message}",
+			"saveFailed": "Impossible d'enregistrer la règle. Réessayez.",
+			"deleteFailed": "Impossible de supprimer la règle. Réessayez."
+		},
+		"toasts": {
+			"created": "Règle créée",
+			"saved": "Règle enregistrée",
+			"deleted": "Règle supprimée",
+			"enabled": "Règle activée",
+			"disabled": "Règle désactivée"
 		}
 	},
 	"budgets": {

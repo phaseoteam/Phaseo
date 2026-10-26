@@ -12,6 +12,7 @@ import {
 	AUTO_ROUTING_GATE,
 	REQUEST_CLASSIFIERS_GATE,
 	MODEL_SUCCESSOR_REDIRECT_GATE,
+	WORKLOAD_IDENTITY_GATE,
 	SLACK_AGENT_GATE,
 	PRESET_EXPERIMENTS_GATE,
 	SAML_SSO_GATE,
@@ -117,6 +118,19 @@ export const modelSuccessorRedirectFlag = statsigAdapter
 		})
 	: flag<boolean>({
 			key: MODEL_SUCCESSOR_REDIRECT_GATE,
+			decide: () => false,
+		});
+
+// Decided for the workspace owner, as the gateway does, so Settings → Trusted
+// workloads only shows where the gateway accepts workload tokens.
+export const workloadIdentityFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: WORKLOAD_IDENTITY_GATE,
+			identify: identifyWorkspaceOwner,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: WORKLOAD_IDENTITY_GATE,
 			decide: () => false,
 		});
 

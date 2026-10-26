@@ -25,6 +25,7 @@ import { accountSettingsByokRouter } from "./settings-byok";
 import { accountSettingsGuardrailsRouter } from "./settings-guardrails";
 import { accountSettingsClassifiersRouter } from "./settings-classifiers";
 import { accountSettingsRateLimitsRouter } from "./settings-rate-limits";
+import { accountSettingsWorkloadIdentityRouter } from "./settings-workload-identity";
 import { accountSettingsBudgetsRouter } from "./settings-budgets";
 import { accountSettingsSlackRouter } from "./settings-slack";
 import { accountSettingsBroadcastRouter } from "./settings-broadcast";
@@ -153,6 +154,7 @@ accountSettingsRouter.route("/", accountSettingsByokRouter);
 accountSettingsRouter.route("/", accountSettingsGuardrailsRouter);
 accountSettingsRouter.route("/", accountSettingsClassifiersRouter);
 accountSettingsRouter.route("/", accountSettingsRateLimitsRouter);
+accountSettingsRouter.route("/", accountSettingsWorkloadIdentityRouter);
 accountSettingsRouter.route("/", accountSettingsBudgetsRouter);
 accountSettingsRouter.route("/", accountSettingsSlackRouter);
 accountSettingsRouter.route("/", accountSettingsBroadcastRouter);
@@ -1150,8 +1152,10 @@ accountSettingsRouter.get("/keys", async (c) => {
 	const observedAt = Date.now();
 	if (initialWorkspaceId) {
 		const [keysResult, usageResult] = await Promise.all([
+			// Workload identity keys have no secret and are managed on Settings → Trusted workloads.
 			client.from("keys").select("*").eq("workspace_id", initialWorkspaceId)
-				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME),
+				.neq("status", "deleted").neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME)
+				.neq("key_kind", "workload_identity"),
 			// get_workspace_key_usage only returns daily totals in production, which left
 			// weekly and monthly limits at zero. This service-only RPC uses the gateway's
 			// UTC day/week/month windows; membership in this workspace was checked above.

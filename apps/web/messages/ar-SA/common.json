@@ -255,6 +255,7 @@
 				"nav-settings-privacy": "إعدادات الخصوصية",
 				"nav-settings-guardrails": "ضوابط الحماية",
 				"nav-settings-rate-limits": "حدود المعدل",
+				"nav-settings-trusted-workloads": "أحمال العمل الموثوقة",
 				"nav-settings-classifiers": "المصنِّفات",
 				"nav-settings-slack": "Slack",
 				"nav-settings-security": "أمان المفاتيح",

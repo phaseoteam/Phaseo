@@ -4510,6 +4510,7 @@
 		"workspaces": "工作区",
 		"classifiers": "分类器",
 		"rateLimits": "速率限制",
+		"trustedWorkloads": "受信任的工作负载",
 		"newClassifier": "新建分类器",
 		"classifier": "分类器",
 		"budgets": "预算",
@@ -4742,6 +4743,7 @@
 		"providerProfile": "提供商资料",
 		"classifiers": "分类器",
 		"rateLimits": "速率限制",
+		"trustedWorkloads": "受信任的工作负载",
 		"budgets": "预算",
 		"keys": "密钥",
 		"keySecurity": "密钥安全",
@@ -6625,6 +6627,98 @@
 				"not_enough_spend": "提升限额需要至少 {amount} 的付费充值。",
 				"cooldown": "你可以在 {date} 再次提升限额。"
 			}
+		}
+	},
+	"trustedWorkloads": {
+		"title": "受信任的工作负载",
+		"description": "让 Vercel 部署和 GitHub Actions 作业使用短期 OIDC 令牌而不是 API 密钥调用 API。",
+		"feedback": "受信任的工作负载怎样才能更好地为你所用？",
+		"selectWorkspace": "请选择一个工作区来管理受信任的工作负载。",
+		"unavailable": "此工作区暂时无法使用受信任的工作负载。",
+		"adminsOnly": "只有工作区所有者和管理员可以查看和更改受信任的工作负载。",
+		"howItWorks": "Vercel 和 GitHub Actions 会为每个部署或作业签发一个已签名的令牌，说明其身份，并在数小时内过期。令牌与其中一条策略匹配时，请求会以该策略的密钥运行，限额、预算、日志和计费都与 API 密钥相同。无需保存任何密钥。",
+		"policiesTitle": "信任策略",
+		"propagation": "更改大约在一分钟内生效。",
+		"newPolicy": "新建策略",
+		"emptyTitle": "还没有受信任的工作负载",
+		"emptyBody": "为 Vercel 项目或 GitHub 仓库添加策略后，它就能在没有 API 密钥的情况下调用 API。",
+		"noConditions": "无",
+		"disabled": "已关闭",
+		"enabledLabel": "接受 {name} 的令牌",
+		"edit": "编辑",
+		"delete": "删除",
+		"cancel": "取消",
+		"save": "保存",
+		"create": "创建策略",
+		"listIssuer": "签发方",
+		"listConditions": "条件",
+		"listRef": "分支或标签",
+		"listLastUsed": "上次使用",
+		"neverUsed": "从未",
+		"listLifetime": "最长令牌",
+		"lifetimeHours": "{count, number} 小时",
+		"deleteTitle": "删除 {name}？",
+		"deleteBody": "与此策略匹配的令牌将在大约一分钟内失效。过去的请求仍保留在日志中。",
+		"dialogCreateTitle": "新建信任策略",
+		"dialogEditTitle": "编辑 {name}",
+		"usageTitle": "使用令牌调用 API",
+		"usageBody": "为下方的受众申请令牌，并像发送 API 密钥一样在 Authorization 请求头中发送：",
+		"audienceLabel": "受众",
+		"providers": {
+			"vercel": "Vercel",
+			"github_actions": "GitHub Actions"
+		},
+		"ownerLabel": {
+			"vercel": "团队 ID",
+			"github_actions": "所有者 ID"
+		},
+		"ownerWide": {
+			"vercel": "信任此 Vercel 团队中的所有项目。添加项目 ID 可缩小范围。",
+			"github_actions": "信任此所有者的所有仓库。添加仓库 ID 可缩小范围。"
+		},
+		"environments": {
+			"production": "生产",
+			"preview": "预览",
+			"development": "开发"
+		},
+		"fields": {
+			"name": "名称",
+			"namePlaceholder": "网站生产环境",
+			"provider": "平台",
+			"vercelTeamSlug": "团队标识（slug）",
+			"vercelTeamId": "团队 ID",
+			"vercelTeamHint": "两者都可以在 Vercel 的 Team Settings 中找到。如果项目使用全局签发方，请将标识留空。",
+			"vercelProjectId": "项目 ID",
+			"vercelProjectHint": "可选，但建议填写。不填写时会信任团队中的所有项目。",
+			"environment": "环境",
+			"environmentHint": "全部不勾选即接受任何环境。",
+			"githubOwnerId": "所有者 ID",
+			"githubRepositoryId": "仓库 ID",
+			"githubIdsHint": "请使用数字 ID，所有者或仓库改名后它们也不会变。仓库 ID 为可选项，但不填写时会信任该所有者的所有仓库。",
+			"githubRef": "分支或标签（可选）",
+			"lifetime": "可接受的最长令牌（小时）",
+			"lifetimeHint": "签发时有效期超过此值的令牌会被拒绝。最多 {max} 小时。"
+		},
+		"problems": {
+			"name": "请输入不超过 100 个字符的名称。",
+			"vercelTeamSlug": "请使用团队网址中的标识，例如 acme。",
+			"vercelTeamId": "团队 ID 以 team_ 开头。",
+			"vercelProjectId": "项目 ID 以 prj_ 开头。",
+			"githubOwnerId": "请输入所有者的数字 ID。",
+			"githubRepositoryId": "请输入仓库的数字 ID。",
+			"lifetime": "请输入 1 到 12 之间的整数小时数。"
+		},
+		"errors": {
+			"invalid": "{message}",
+			"saveFailed": "无法保存策略，请重试。",
+			"deleteFailed": "无法删除策略，请重试。"
+		},
+		"toasts": {
+			"created": "策略已创建",
+			"saved": "策略已保存",
+			"deleted": "策略已删除",
+			"enabled": "策略已开启",
+			"disabled": "策略已关闭"
 		}
 	},
 	"budgets": {

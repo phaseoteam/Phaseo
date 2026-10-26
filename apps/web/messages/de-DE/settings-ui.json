@@ -4510,6 +4510,7 @@
 		"workspaces": "Arbeitsbereiche",
 		"classifiers": "Klassifikatoren",
 		"rateLimits": "Ratenlimits",
+		"trustedWorkloads": "Vertrauenswürdige Workloads",
 		"newClassifier": "Neuer Klassifikator",
 		"classifier": "Klassifikator",
 		"budgets": "Budgets",
@@ -4742,6 +4743,7 @@
 		"providerProfile": "Anbieterprofil",
 		"classifiers": "Klassifikatoren",
 		"rateLimits": "Ratenlimits",
+		"trustedWorkloads": "Vertrauenswürdige Workloads",
 		"budgets": "Budgets",
 		"keys": "Schlüssel",
 		"keySecurity": "Schlüsselsicherheit",
@@ -6625,6 +6627,98 @@
 				"not_enough_spend": "Zum Anheben des Limits sind mindestens {amount} an bezahlten Aufladungen nötig.",
 				"cooldown": "Du kannst das Limit am {date} wieder anheben."
 			}
+		}
+	},
+	"trustedWorkloads": {
+		"title": "Vertrauenswürdige Workloads",
+		"description": "Vercel-Deployments und GitHub-Actions-Jobs rufen die API mit einem kurzlebigen OIDC-Token statt mit einem API-Schlüssel auf.",
+		"feedback": "Wie könnten vertrauenswürdige Workloads besser für dich funktionieren?",
+		"selectWorkspace": "Wähle einen Workspace aus, um vertrauenswürdige Workloads zu verwalten.",
+		"unavailable": "Vertrauenswürdige Workloads sind für diesen Workspace noch nicht verfügbar.",
+		"adminsOnly": "Nur Workspace-Inhaber und Admins können vertrauenswürdige Workloads sehen und ändern.",
+		"howItWorks": "Vercel und GitHub Actions geben jedem Deployment oder Job ein signiertes Token, das angibt, wer es ist, und nach wenigen Stunden abläuft. Passt ein Token zu einer dieser Richtlinien, läuft die Anfrage über den Schlüssel der Richtlinie, mit denselben Limits, Budgets, Logs und derselben Abrechnung wie ein API-Schlüssel. Es muss kein Geheimnis gespeichert werden.",
+		"policiesTitle": "Vertrauensrichtlinien",
+		"propagation": "Änderungen werden innerhalb von etwa einer Minute wirksam.",
+		"newPolicy": "Neue Richtlinie",
+		"emptyTitle": "Noch keine vertrauenswürdigen Workloads",
+		"emptyBody": "Füge eine Richtlinie für ein Vercel-Projekt oder ein GitHub-Repository hinzu, damit es die API ohne API-Schlüssel aufrufen kann.",
+		"noConditions": "Keine",
+		"disabled": "Aus",
+		"enabledLabel": "Tokens für {name} akzeptieren",
+		"edit": "Bearbeiten",
+		"delete": "Löschen",
+		"cancel": "Abbrechen",
+		"save": "Speichern",
+		"create": "Richtlinie erstellen",
+		"listIssuer": "Aussteller",
+		"listConditions": "Bedingungen",
+		"listRef": "Branch oder Tag",
+		"listLastUsed": "Zuletzt verwendet",
+		"neverUsed": "Nie",
+		"listLifetime": "Längstes Token",
+		"lifetimeHours": "{count, plural, one {# Stunde} other {# Stunden}}",
+		"deleteTitle": "{name} löschen?",
+		"deleteBody": "Tokens, die zu dieser Richtlinie passen, funktionieren innerhalb von etwa einer Minute nicht mehr. Frühere Anfragen bleiben in deinen Logs.",
+		"dialogCreateTitle": "Neue Vertrauensrichtlinie",
+		"dialogEditTitle": "{name} bearbeiten",
+		"usageTitle": "Die API mit einem Token aufrufen",
+		"usageBody": "Fordere ein Token für die unten stehende Audience an und sende es im Authorization-Header, genau wie einen API-Schlüssel:",
+		"audienceLabel": "Audience",
+		"providers": {
+			"vercel": "Vercel",
+			"github_actions": "GitHub Actions"
+		},
+		"ownerLabel": {
+			"vercel": "Team-ID",
+			"github_actions": "Inhaber-ID"
+		},
+		"ownerWide": {
+			"vercel": "Vertraut jedem Projekt in diesem Vercel-Team. Füge eine Projekt-ID hinzu, um es einzugrenzen.",
+			"github_actions": "Vertraut jedem Repository dieses Inhabers. Füge eine Repository-ID hinzu, um es einzugrenzen."
+		},
+		"environments": {
+			"production": "Produktion",
+			"preview": "Vorschau",
+			"development": "Entwicklung"
+		},
+		"fields": {
+			"name": "Name",
+			"namePlaceholder": "Website-Produktion",
+			"provider": "Plattform",
+			"vercelTeamSlug": "Team-Slug",
+			"vercelTeamId": "Team-ID",
+			"vercelTeamHint": "Beides findest du in Vercel unter Team Settings. Lass den Slug leer, wenn das Projekt den globalen Aussteller verwendet.",
+			"vercelProjectId": "Projekt-ID",
+			"vercelProjectHint": "Optional, aber empfohlen. Ohne sie wird jedem Projekt im Team vertraut.",
+			"environment": "Umgebung",
+			"environmentHint": "Wähle keine aus, um jede Umgebung zu akzeptieren.",
+			"githubOwnerId": "Inhaber-ID",
+			"githubRepositoryId": "Repository-ID",
+			"githubIdsHint": "Verwende die numerischen IDs, die gleich bleiben, wenn Inhaber oder Repository umbenannt werden. Die Repository-ID ist optional, aber ohne sie wird jedem Repository des Inhabers vertraut.",
+			"githubRef": "Branch oder Tag (optional)",
+			"lifetime": "Längstes akzeptiertes Token (Stunden)",
+			"lifetimeHint": "Tokens, die länger gültig sein sollten, werden abgelehnt. Bis zu {max} Stunden."
+		},
+		"problems": {
+			"name": "Gib einen Namen mit bis zu 100 Zeichen ein.",
+			"vercelTeamSlug": "Verwende den Team-Slug aus der URL des Teams, zum Beispiel acme.",
+			"vercelTeamId": "Team-IDs beginnen mit team_.",
+			"vercelProjectId": "Projekt-IDs beginnen mit prj_.",
+			"githubOwnerId": "Gib die numerische ID des Inhabers ein.",
+			"githubRepositoryId": "Gib die numerische ID des Repositorys ein.",
+			"lifetime": "Gib eine ganze Zahl von 1 bis 12 Stunden ein."
+		},
+		"errors": {
+			"invalid": "{message}",
+			"saveFailed": "Die Richtlinie konnte nicht gespeichert werden. Versuche es erneut.",
+			"deleteFailed": "Die Richtlinie konnte nicht gelöscht werden. Versuche es erneut."
+		},
+		"toasts": {
+			"created": "Richtlinie erstellt",
+			"saved": "Richtlinie gespeichert",
+			"deleted": "Richtlinie gelöscht",
+			"enabled": "Richtlinie eingeschaltet",
+			"disabled": "Richtlinie ausgeschaltet"
 		}
 	},
 	"budgets": {

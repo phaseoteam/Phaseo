@@ -4510,6 +4510,7 @@
 		"workspaces": "ワークスペース",
 		"classifiers": "分類器",
 		"rateLimits": "レート制限",
+		"trustedWorkloads": "信頼済みワークロード",
 		"newClassifier": "新しい分類器",
 		"classifier": "分類器",
 		"budgets": "予算",
@@ -4742,6 +4743,7 @@
 		"providerProfile": "プロバイダープロフィール",
 		"classifiers": "分類器",
 		"rateLimits": "レート制限",
+		"trustedWorkloads": "信頼済みワークロード",
 		"budgets": "予算",
 		"keys": "キー",
 		"keySecurity": "キーのセキュリティ",
@@ -6625,6 +6627,98 @@
 				"not_enough_spend": "上限を引き上げるには、有料チャージが合計 {amount} 以上必要です。",
 				"cooldown": "{date} に再び引き上げられます。"
 			}
+		}
+	},
+	"trustedWorkloads": {
+		"title": "信頼済みワークロード",
+		"description": "Vercel のデプロイや GitHub Actions のジョブが、API キーの代わりに有効期間の短い OIDC トークンで API を呼び出せるようにします。",
+		"feedback": "信頼済みワークロードをもっと使いやすくするには？",
+		"selectWorkspace": "信頼済みワークロードを管理するワークスペースを選択してください。",
+		"unavailable": "このワークスペースでは、信頼済みワークロードはまだ利用できません。",
+		"adminsOnly": "信頼済みワークロードを表示・変更できるのは、ワークスペースのオーナーと管理者のみです。",
+		"howItWorks": "Vercel と GitHub Actions は、デプロイやジョブごとに、その身元を示し数時間で失効する署名付きトークンを発行します。トークンがいずれかのポリシーに一致すると、リクエストはそのポリシーのキーとして実行され、API キーと同じ制限、予算、ログ、請求が適用されます。シークレットを保存する必要はありません。",
+		"policiesTitle": "信頼ポリシー",
+		"propagation": "変更は約 1 分以内に反映されます。",
+		"newPolicy": "新しいポリシー",
+		"emptyTitle": "信頼済みワークロードはまだありません",
+		"emptyBody": "Vercel のプロジェクトや GitHub のリポジトリのポリシーを追加すると、API キーなしで API を呼び出せます。",
+		"noConditions": "なし",
+		"disabled": "オフ",
+		"enabledLabel": "{name} のトークンを受け付ける",
+		"edit": "編集",
+		"delete": "削除",
+		"cancel": "キャンセル",
+		"save": "保存",
+		"create": "ポリシーを作成",
+		"listIssuer": "発行者",
+		"listConditions": "条件",
+		"listRef": "ブランチまたはタグ",
+		"listLastUsed": "最終使用",
+		"neverUsed": "未使用",
+		"listLifetime": "最長トークン",
+		"lifetimeHours": "{count, number} 時間",
+		"deleteTitle": "{name} を削除しますか？",
+		"deleteBody": "このポリシーに一致するトークンは約 1 分以内に使えなくなります。過去のリクエストはログに残ります。",
+		"dialogCreateTitle": "新しい信頼ポリシー",
+		"dialogEditTitle": "{name} を編集",
+		"usageTitle": "トークンで API を呼び出す",
+		"usageBody": "下のオーディエンス向けのトークンを取得し、API キーと同じように Authorization ヘッダーで送信します。",
+		"audienceLabel": "オーディエンス",
+		"providers": {
+			"vercel": "Vercel",
+			"github_actions": "GitHub Actions"
+		},
+		"ownerLabel": {
+			"vercel": "チーム ID",
+			"github_actions": "オーナー ID"
+		},
+		"ownerWide": {
+			"vercel": "この Vercel チームのすべてのプロジェクトを信頼します。範囲を絞るにはプロジェクト ID を追加してください。",
+			"github_actions": "このオーナーのすべてのリポジトリを信頼します。範囲を絞るにはリポジトリ ID を追加してください。"
+		},
+		"environments": {
+			"production": "本番",
+			"preview": "プレビュー",
+			"development": "開発"
+		},
+		"fields": {
+			"name": "名前",
+			"namePlaceholder": "Web サイト本番",
+			"provider": "プラットフォーム",
+			"vercelTeamSlug": "チームのスラッグ",
+			"vercelTeamId": "チーム ID",
+			"vercelTeamHint": "どちらも Vercel の Team Settings で確認できます。プロジェクトがグローバル発行者を使う場合、スラッグは空欄にしてください。",
+			"vercelProjectId": "プロジェクト ID",
+			"vercelProjectHint": "任意ですが推奨します。指定しないと、チーム内のすべてのプロジェクトが信頼されます。",
+			"environment": "環境",
+			"environmentHint": "どれも選択しない場合、すべての環境を受け付けます。",
+			"githubOwnerId": "オーナー ID",
+			"githubRepositoryId": "リポジトリ ID",
+			"githubIdsHint": "オーナーやリポジトリの名前が変わっても変わらない数値 ID を使ってください。リポジトリ ID は任意ですが、指定しないとオーナーのすべてのリポジトリが信頼されます。",
+			"githubRef": "ブランチまたはタグ（任意）",
+			"lifetime": "受け付ける最長トークン（時間）",
+			"lifetimeHint": "これより長く有効になるよう発行されたトークンは拒否されます。最大 {max} 時間です。"
+		},
+		"problems": {
+			"name": "100 文字以内で名前を入力してください。",
+			"vercelTeamSlug": "チームの URL にあるスラッグ（例: acme）を使ってください。",
+			"vercelTeamId": "チーム ID は team_ で始まります。",
+			"vercelProjectId": "プロジェクト ID は prj_ で始まります。",
+			"githubOwnerId": "オーナーの数値 ID を入力してください。",
+			"githubRepositoryId": "リポジトリの数値 ID を入力してください。",
+			"lifetime": "1 から 12 までの整数の時間を入力してください。"
+		},
+		"errors": {
+			"invalid": "{message}",
+			"saveFailed": "ポリシーを保存できませんでした。もう一度お試しください。",
+			"deleteFailed": "ポリシーを削除できませんでした。もう一度お試しください。"
+		},
+		"toasts": {
+			"created": "ポリシーを作成しました",
+			"saved": "ポリシーを保存しました",
+			"deleted": "ポリシーを削除しました",
+			"enabled": "ポリシーをオンにしました",
+			"disabled": "ポリシーをオフにしました"
 		}
 	},
 	"budgets": {

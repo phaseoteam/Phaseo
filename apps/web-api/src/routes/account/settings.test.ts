@@ -38,6 +38,16 @@ it("reports weekly and monthly key usage from the gateway's window totals", asyn
 	expect(urls.some((url) => url.includes("/rpc/get_workspace_key_usage"))).toBe(false);
 });
 
+it("leaves workload identity keys off the Keys page", async () => {
+	const fetchMock = vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input));
+	vi.stubGlobal("fetch", fetchMock);
+	await app.request("https://phaseo.app/api/account/settings/keys?workspaceId=workspace-1", { headers: { authorization: `Bearer ${sessionToken}` } }, env);
+	const keyList = fetchMock.mock.calls
+		.map(([input]) => new URL(input instanceof Request ? input.url : String(input)))
+		.find((url) => url.pathname.endsWith("/rest/v1/keys"));
+	expect(keyList?.searchParams.get("key_kind")).toBe("neq.workload_identity");
+});
+
 function authenticatedFetch(input: RequestInfo | URL): Response {
 	const url = input instanceof Request ? input.url : String(input);
 	if (url.includes("/auth/v1/user")) {

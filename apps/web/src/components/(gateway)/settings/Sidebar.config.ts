@@ -27,6 +27,7 @@ import {
 	SlidersHorizontal,
 	Tags,
 	Gauge,
+	FingerprintPattern,
 	Wallet,
 } from "lucide-react";
 
@@ -166,6 +167,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				icon: Gauge,
 				badge: "Beta",
 				match: ["/settings/rate-limits"],
+			},
+			{
+				href: "/settings/trusted-workloads",
+				label: "Trusted workloads",
+				icon: FingerprintPattern,
+				badge: "Beta",
+				match: ["/settings/trusted-workloads"],
 			},
 			{
 				href: "/settings/classifiers",
@@ -363,6 +371,7 @@ const WORKSPACE_NAV_ORDER = [
 	"/settings/routing",
 	"/settings/guardrails",
 	"/settings/rate-limits",
+	"/settings/trusted-workloads",
 	"/settings/classifiers",
 	"/settings/privacy",
 	"/settings/presets",
@@ -376,7 +385,7 @@ const WORKSPACE_NAV_ORDER = [
 	"/settings/webhooks",
 ] as const;
 
-export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showClassifiers?: boolean; showSlackAgent?: boolean; showInternal?: boolean; providerMode?: boolean }): NavGroup[] {
+export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showClassifiers?: boolean; showWorkloadIdentity?: boolean; showSlackAgent?: boolean; showInternal?: boolean; providerMode?: boolean }): NavGroup[] {
 	if (options?.providerMode) {
 		return [
 			{ scope: "personal", items: BASE_SETTINGS_SIDEBAR[0].items.filter((item) => ["/settings/profile", "/settings/account"].includes(item.href)) },
@@ -392,6 +401,7 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 	const showEnterprise = options?.showEnterprise ?? true;
 	const showAutoRouting = options?.showAutoRouting ?? false;
 	const showClassifiers = options?.showClassifiers ?? false;
+	const showWorkloadIdentity = options?.showWorkloadIdentity ?? false;
 	const showSlackAgent = options?.showSlackAgent ?? false;
 	const showInternal = options?.showInternal ?? false;
 	const groups = BASE_SETTINGS_SIDEBAR.map((group) => ({
@@ -402,6 +412,7 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 				(showWebhooks ? true : item.href !== "/settings/webhooks") &&
 				(showEnterprise ? true : item.href !== "/settings/workspaces/enterprise") &&
 				(showClassifiers ? true : item.href !== "/settings/classifiers") &&
+				(showWorkloadIdentity ? true : item.href !== "/settings/trusted-workloads") &&
 				(showSlackAgent ? true : item.href !== "/settings/slack") &&
 				(showInternal ? true : !item.href.startsWith("/settings/internal/")),
 			)
@@ -444,7 +455,7 @@ export function isSettingsNavChildActive(
 
 export function getActiveSettingsNav(
 	pathname: string,
-	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean; showClassifiers?: boolean; showSlackAgent?: boolean; providerMode?: boolean },
+	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean; showClassifiers?: boolean; showWorkloadIdentity?: boolean; showSlackAgent?: boolean; providerMode?: boolean },
 ): ResolvedSettingsNav | null {
 	const navGroups = getSettingsSidebar(options);
 
