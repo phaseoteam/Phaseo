@@ -68,7 +68,7 @@
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {
-		"@anthropic-ai/sdk": "^0.91.1",
+		"@anthropic-ai/sdk": "^0.135.0",
 		"@cloudflare/workers-types": "^4.20260523.1",
 		"@copilotkit/aimock": "1.15.1",
 		"@typescript/native": "catalog:",
