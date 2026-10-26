@@ -148,6 +148,11 @@ export async function verifyWorkloadToken(
 	token: string,
 	options: {
 		jwks: JwksSource;
+		/**
+		 * Issuers some active policy names. Vercel serves keys for any team name,
+		 * so without this an unverified token could make us fetch keys for any slug.
+		 */
+		configuredIssuers?: ReadonlySet<string>;
 		nowSeconds?: number;
 		maxLifetimeSeconds?: number;
 	},
@@ -185,6 +190,7 @@ export async function verifyWorkloadToken(
 	if (notBefore > now + CLOCK_SKEW_SECONDS) return { ok: false, reason: "workload_token_not_yet_valid" };
 	const maxLifetime = options.maxLifetimeSeconds ?? DEFAULT_MAX_TOKEN_LIFETIME_SECONDS;
 	if (payload.exp - notBefore > maxLifetime) return { ok: false, reason: "workload_token_lifetime_too_long" };
+	if (options.configuredIssuers && !options.configuredIssuers.has(iss)) return { ok: false, reason: "workload_issuer_not_trusted" };
 
 	let keys: JsonWebKey[];
 	try {

@@ -6,6 +6,8 @@ const runtime = vi.hoisted(() => {
 	const state = {
 		bindings: {} as Record<string, string | undefined>,
 		gateEnabled: true,
+		issuers: ["https://oidc.vercel.com/acme"] as string[] | null,
+		issuerReads: 0,
 		gateCalls: [] as Array<Record<string, unknown>>,
 		policyRows: [] as Array<Record<string, unknown>>,
 		policyQueries: [] as Array<Array<[string, unknown]>>,
@@ -30,6 +32,11 @@ const runtime = vi.hoisted(() => {
 		return chain;
 	};
 	const supabase = {
+		rpc: async (name: string) => {
+			if (name !== "active_workload_identity_issuers") throw new Error(`unexpected rpc ${name}`);
+			state.issuerReads += 1;
+			return state.issuers ? { data: state.issuers, error: null } : { data: null, error: { message: "boom" } };
+		},
 		from: (table: string) => {
 			if (table === "workload_identity_policies") return policyQuery();
 			if (table === "keys") {
@@ -129,6 +136,8 @@ beforeEach(() => {
 	runtime.state.bindings = {};
 	runtime.state.gateEnabled = true;
 	runtime.state.gateCalls = [];
+	runtime.state.issuers = [ISSUER];
+	runtime.state.issuerReads = 0;
 	runtime.state.policyRows = [policyRow()];
 	runtime.state.policyQueries = [];
 	runtime.state.policyError = null;
@@ -180,6 +189,27 @@ describe("authenticate with workload identity tokens", () => {
 	it("leaves other JWTs on the existing path", async () => {
 		const result = await authenticate(request(await signTestToken(signer, claims({ iss: "https://evil.example.com" }))));
 		expect(result).toEqual({ ok: false, reason: "invalid_key_format" });
+		expect(jwksFetches).toBe(0);
+	});
+
+	it("never fetches keys for an issuer no active policy names", async () => {
+		const result = await authenticate(request(await signTestToken(signer, claims({ iss: "https://oidc.vercel.com/some-other-team" }))));
+		expect(result).toEqual({ ok: false, reason: "workload_issuer_not_trusted" });
+		expect(jwksFetches).toBe(0);
+		expect(runtime.state.policyQueries).toHaveLength(0);
+	});
+
+	it("reads the configured issuers once per minute, not per request", async () => {
+		for (let i = 0; i < 3; i += 1) {
+			await authenticate(request(await signTestToken(signer, claims({ iss: `https://oidc.vercel.com/random-${i}` }))));
+		}
+		await authenticate(request(await signTestToken(signer, claims())));
+		expect(runtime.state.issuerReads).toBe(1);
+	});
+
+	it("fails closed when the configured issuers cannot be read", async () => {
+		runtime.state.issuers = null;
+		expect(await authenticate(request(await signTestToken(signer, claims())))).toEqual({ ok: false, reason: "db_error" });
 		expect(jwksFetches).toBe(0);
 	});
 

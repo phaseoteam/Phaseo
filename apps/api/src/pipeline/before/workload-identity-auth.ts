@@ -18,6 +18,8 @@ const POLICY_L1_TTL_MS = 30_000;
 const POLICY_L1_MAX_ENTRIES = 1_000;
 const TOKEN_L1_TTL_MS = 30_000;
 const TOKEN_L1_MAX_ENTRIES = 5_000;
+// New policies' issuers are picked up within this window.
+const ISSUERS_L1_TTL_MS = 60_000;
 export const WORKLOAD_IDENTITY_WORKSPACE_HEADER = "x-phaseo-workspace";
 
 type PolicyKeyRow = {
@@ -49,9 +51,14 @@ type CandidatePolicy = WorkloadIdentityPolicy & { key: PolicyKeyRow };
 const policyL1 = new Map<string, { policies: CandidatePolicy[]; expiresAt: number }>();
 const tokenL1 = new Map<string, { result: AuthSuccess; keyId: string; ipAllowlist: unknown; expiresAt: number }>();
 
+let issuersL1: { issuers: ReadonlySet<string>; expiresAt: number } | null = null;
+let issuersInFlight: Promise<ReadonlySet<string> | "db_error"> | null = null;
+
 export function __resetWorkloadIdentityAuthCachesForTests(): void {
 	policyL1.clear();
 	tokenL1.clear();
+	issuersL1 = null;
+	issuersInFlight = null;
 }
 
 export function isWorkloadIdentityAuthEnabled(bindings: Pick<GatewayBindings, "WORKLOAD_IDENTITY_AUTH_ENABLED">): boolean {
@@ -96,6 +103,23 @@ function toCandidate(row: PolicyRow): CandidatePolicy | null {
 		status: row.status,
 		key: row.keys,
 	};
+}
+
+/** One small read per isolate per minute, whatever the traffic. */
+async function loadConfiguredIssuers(nowMs: number): Promise<ReadonlySet<string> | "db_error"> {
+	if (issuersL1 && issuersL1.expiresAt > nowMs) return issuersL1.issuers;
+	issuersInFlight ??= (async () => {
+		try {
+			const { data, error } = await getSupabaseAdmin().rpc("active_workload_identity_issuers");
+			if (error) return "db_error" as const;
+			const issuers = new Set(Array.isArray(data) ? data.filter((value): value is string => typeof value === "string") : []);
+			issuersL1 = { issuers, expiresAt: Date.now() + ISSUERS_L1_TTL_MS };
+			return issuers;
+		} finally {
+			issuersInFlight = null;
+		}
+	})();
+	return issuersInFlight;
 }
 
 async function loadCandidatePolicies(issuer: string, ownerId: string): Promise<CandidatePolicy[] | "db_error"> {
@@ -156,8 +180,11 @@ export async function authenticateWorkloadIdentity(
 		return { result: cached.result };
 	}
 
+	const configuredIssuers = await loadConfiguredIssuers(nowMs);
+	if (configuredIssuers === "db_error") return { result: { ok: false, reason: "db_error" } };
 	const verified = await verifyWorkloadToken(token, {
 		jwks: deps.jwks ?? createJwksSource({ kv: deps.kv ?? null }),
+		configuredIssuers,
 		nowSeconds: Math.floor(nowMs / 1000),
 	});
 	if (verified.ok === false) return { result: { ok: false, reason: verified.reason } };

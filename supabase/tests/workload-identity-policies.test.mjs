@@ -26,7 +26,7 @@ const vercel = (overrides = {}) => {
 try {
   const sql = await migration('_workload_identity_policies.sql');
   // The migration must carry the declarative definitions verbatim.
-  for (const file of ['public/tables/workload_identity_policies.sql', 'public/functions/create_workload_identity_policy.sql']) {
+  for (const file of ['public/tables/workload_identity_policies.sql', 'public/functions/create_workload_identity_policy.sql', 'public/functions/active_workload_identity_issuers.sql']) {
     assert.ok(sql.includes(await readFile(new URL(file, schemas), 'utf8')), `migration includes ${file}`);
   }
   const keysSchema = await readFile(new URL('public/tables/keys.sql', schemas), 'utf8');
@@ -60,11 +60,20 @@ try {
     await db.exec(`set role ${role}`);
     await assert.rejects(rows('select * from public.workload_identity_policies'), /permission denied/);
     await assert.rejects(rows(create, vercel()), /permission denied/);
+    await assert.rejects(rows('select public.active_workload_identity_issuers()'), /permission denied/);
     await db.exec('reset role');
   }
 
   await db.exec('set role service_role');
+  const issuers = async () => (await rows('select public.active_workload_identity_issuers() as issuers'))[0].issuers;
+  assert.deepEqual(await issuers(), []);
   const [created] = await rows(create, vercel());
+  await rows(create, vercel({ name: 'Second', owner: 'team_456' }));
+  await rows(create, vercel({ name: 'CI', provider: 'github_actions', issuer: 'https://token.actions.githubusercontent.com', owner: '42' }));
+  // Distinct, sorted, and only active policies count.
+  assert.deepEqual(await issuers(), ['https://oidc.vercel.com/acme', 'https://token.actions.githubusercontent.com']);
+  await rows("update public.workload_identity_policies set status = 'disabled' where provider = 'github_actions'");
+  assert.deepEqual(await issuers(), ['https://oidc.vercel.com/acme']);
   assert.ok(created.policy_id && created.key_id);
   const [key] = await rows('select * from public.keys where id = $1', [created.key_id]);
   assert.equal(key.key_kind, 'workload_identity');
@@ -96,7 +105,7 @@ try {
 
   // Deleting the key removes its policy.
   await rows('delete from public.keys where id = $1', [created.key_id]);
-  assert.equal((await rows('select count(*)::int as n from public.workload_identity_policies'))[0].n, 0);
+  assert.equal((await rows('select count(*)::int as n from public.workload_identity_policies where id = $1', [created.policy_id]))[0].n, 0);
   await db.exec('reset role');
   console.log('workload identity policy contracts passed');
 } finally {

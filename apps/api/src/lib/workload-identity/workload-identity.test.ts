@@ -135,6 +135,16 @@ describe("verifyWorkloadToken", () => {
 		expect(jwks.calls).toHaveLength(0);
 	});
 
+	it("refuses allowlisted issuers that no policy names, without fetching", async () => {
+		const jwks = staticJwks({ [vercelJwksUrl]: [rsa.publicJwk] });
+		const token = await sign(rsa, vercelClaims());
+		const configuredIssuers = new Set(["https://oidc.vercel.com/other-team"]);
+		expect(await verifyWorkloadToken(token, { jwks, nowSeconds: NOW, configuredIssuers })).toEqual({ ok: false, reason: "workload_issuer_not_trusted" });
+		expect(jwks.calls).toHaveLength(0);
+		configuredIssuers.add(VERCEL_ISSUER);
+		expect((await verifyWorkloadToken(token, { jwks, nowSeconds: NOW, configuredIssuers })).ok).toBe(true);
+	});
+
 	it("refuses issuers outside the allowlist without fetching", async () => {
 		const jwks = staticJwks({});
 		const token = await sign(rsa, vercelClaims({ iss: "https://attacker.example.com" }));
