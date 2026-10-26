@@ -384,6 +384,19 @@ describe("events: internal alert when removed in Slack", () => {
 		}
 	});
 
+	it("runs after Slack is answered, so a slow webhook can't delay the acknowledgement", async () => {
+		let release!: () => void;
+		const fetchMock = alertFetch(() => new Promise<Response>((resolve) => { release = () => resolve(new Response(null, { status: 204 })); }));
+		const later: Promise<unknown>[] = [];
+		const envelope = eventEnvelope({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED01" }) as SlackEnvelope;
+		await expect(processEvent({ ...world.deps, waitUntil: (work) => later.push(work) }, hostedApp(world.env)!, envelope)).resolves.toBe("uninstalled");
+		expect(world.db.tables.slack_installations[0]).toMatchObject({ status: "uninstalled" });
+		expect(later).toHaveLength(1);
+		await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+		release();
+		await later[0];
+	});
+
 	it("is off without the webhook", async () => {
 		world.env.DISCORD_SIGNUP_WEBHOOK_URL = undefined;
 		const fetchMock = alertFetch();

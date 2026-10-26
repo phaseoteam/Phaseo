@@ -28,6 +28,8 @@ export type Deps = {
 	db: Db;
 	slack: (token: string) => SlackClient;
 	now: () => number;
+	/** Work that may finish after Slack is answered (the request's waitUntil). Without it, it is awaited. */
+	waitUntil?: (work: Promise<unknown>) => void;
 };
 
 export function defaultDeps(env: Env): Deps {
@@ -344,6 +346,9 @@ async function handleRemoval(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		console.error("[slack-agent] meter not closed after uninstall", { installationId: installation.id });
 	}
 	console.log("[slack-agent] uninstalled in Slack", { installationId: installation.id, event: event.type });
-	await alertUninstalledInSlack(deps.env, deps.db, installation, revokedBots ? "tokens_revoked" : "app_uninstalled");
+	// Slack waits for this event's answer (up to three seconds), so the alert runs after it.
+	const alert = alertUninstalledInSlack(deps.env, deps.db, installation, revokedBots ? "tokens_revoked" : "app_uninstalled");
+	if (deps.waitUntil) deps.waitUntil(alert);
+	else await alert;
 	return "uninstalled";
 }
