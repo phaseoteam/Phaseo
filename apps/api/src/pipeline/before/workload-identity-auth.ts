@@ -122,6 +122,15 @@ function claimAsString(value: unknown): string | null {
 	return null;
 }
 
+function isGateOpen(auth: AuthSuccess): Promise<boolean> {
+	return isWorkloadIdentityAccessEnabled({
+		workspaceId: auth.workspaceId,
+		apiKeyId: auth.apiKeyId,
+		apiKeyRef: auth.apiKeyRef,
+		apiKeyKid: auth.apiKeyKid,
+	});
+}
+
 export type WorkloadIdentityAuthResult = {
 	result: AuthSuccess | AuthFailure;
 	/** Background write of `keys.last_used_at`, run once the request is admitted. */
@@ -142,6 +151,8 @@ export async function authenticateWorkloadIdentity(
 	if (cached && cached.expiresAt > nowMs) {
 		// IP policy depends on the caller, so it is checked on every request.
 		if (!isKeyIpAllowed(cached.ipAllowlist, clientIp)) return { result: { ok: false, reason: "key_ip_not_allowed" } };
+		// Rollout changes apply to cached tokens too; the gate keeps its own short cache.
+		if (!(await isGateOpen(cached.result))) return { result: { ok: false, reason: "workload_identity_not_enabled" } };
 		return { result: cached.result };
 	}
 
@@ -172,11 +183,6 @@ export async function authenticateWorkloadIdentity(
 	}
 	if (Number.isFinite(keyExpiresAt) && keyExpiresAt <= nowMs) return { result: { ok: false, reason: "key_expired" } };
 	if (!isKeyIpAllowed(key.ip_allowlist, clientIp)) return { result: { ok: false, reason: "key_ip_not_allowed" } };
-	// Checked only after a signed token matched a policy, so other traffic never waits on Statsig.
-	if (!(await isWorkloadIdentityAccessEnabled({ workspaceId: key.workspace_id, apiKeyId: key.id, apiKeyRef: `kid_${key.kid}`, apiKeyKid: key.kid }))) {
-		return { result: { ok: false, reason: "workload_identity_not_enabled" } };
-	}
-
 	const result: AuthSuccess = {
 		ok: true,
 		apiKeyId: key.id,
@@ -188,6 +194,8 @@ export async function authenticateWorkloadIdentity(
 		// Logged as api_key: the keys row's key_kind tells the two apart.
 		authMethod: "api_key",
 	};
+	// Checked only after a signed token matched a policy, so other traffic never waits on Statsig.
+	if (!(await isGateOpen(result))) return { result: { ok: false, reason: "workload_identity_not_enabled" } };
 	const tokenExpiresAt = verified.claims.exp * 1000;
 	setBounded(tokenL1, tokenKey, {
 		result,

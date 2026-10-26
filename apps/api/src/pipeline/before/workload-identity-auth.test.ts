@@ -212,6 +212,16 @@ describe("authenticate with workload identity tokens", () => {
 		expect((await authenticate(request(token))).ok).toBe(true);
 	});
 
+	it("stops accepting a cached token once the workspace leaves the gate", async () => {
+		const token = await signTestToken(signer, claims());
+		expect((await authenticate(request(token))).ok).toBe(true);
+		runtime.state.gateEnabled = false;
+		expect(await authenticate(request(token))).toEqual({ ok: false, reason: "workload_identity_not_enabled" });
+		// The refusal came from the cache path: no new verification or policy read.
+		expect(jwksFetches).toBe(1);
+		expect(runtime.state.policyQueries).toHaveLength(1);
+	});
+
 	it("never consults Statsig for tokens that match no policy", async () => {
 		await authenticate(request(await signTestToken(signer, claims({ environment: "preview" }))));
 		await authenticate(request(await signTestToken(signer, claims({ iss: "https://evil.example.com" }))));
