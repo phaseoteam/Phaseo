@@ -125,8 +125,11 @@ gap, not a choice, unless you can say why.
 5. Pricing: save each SKU through `mutate_v2_admin_pricing_sku` (versioned
    and audited), then link SKUs to their variants with a targeted `UPDATE`
    scoped to the new route. `refresh_v2_pricing_variant_links()` relinks every
-   unlinked SKU across the whole catalogue, so call it only when you intend
-   that, and report how many rows it changed.
+   SKU across the whole catalogue whose `route_variant_id` is `NULL` or
+   differs from the matching `global:` variant, so it can also overwrite
+   existing links, including regional ones. Call it only when you intend to
+   rewrite those links, and report how many rows it changed and which of them
+   already had a link (`v2_catalogue_row_history` records the before state).
 6. `v2_subscription_plan_models`: add the consumer plans the lab's
    announcement names (e.g. ChatGPT Plus/Pro, Claude Pro/Max). Leave out plans
    the announcement does not name.
