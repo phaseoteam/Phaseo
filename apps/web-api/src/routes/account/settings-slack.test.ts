@@ -26,7 +26,11 @@ const env = {
 	PHASEO_CONTROL_SECRET: "control-secret",
 	GATEWAY_API_ORIGIN: "https://gateway-control.test",
 };
-const executionCtx = { waitUntil: () => undefined, passThroughOnException: () => undefined, props: {} } as any;
+const background: Promise<unknown>[] = [];
+const executionCtx = { waitUntil: (promise: Promise<unknown>) => { background.push(promise); }, passThroughOnException: () => undefined, props: {} } as any;
+/** Waits for the work the routes handed to waitUntil (gateway invalidation, alerts). */
+const settle = () => Promise.allSettled(background.splice(0));
+const ALERT_WEBHOOK = "https://discord.test/api/webhooks/1/alerts";
 const TOKENS: Record<string, string> = { "token-a": "user-a", "token-b": "user-b" };
 
 function installationRow(overrides: Record<string, unknown> = {}) {
@@ -68,6 +72,8 @@ type Fixture = {
 	slackUninstallOk?: boolean;
 	keyById?: Record<string, unknown>;
 	customAppInsertError?: { status: number; body: Record<string, unknown> };
+	/** The internal alert webhook's answer: a status (default 204) or a function. */
+	alert?: number | ((request: Request) => Response | Promise<Response>);
 };
 
 function parse(text: string): any {
@@ -92,6 +98,10 @@ function database(fixture: Fixture = {}) {
 			if (path === "/api/apps.uninstall") return Response.json({ ok: fixture.slackUninstallOk ?? true });
 		}
 		if (url.hostname === "gateway-control.test") return Response.json({ ok: true });
+		if (url.hostname === "discord.test") {
+			if (typeof fixture.alert === "function") return fixture.alert(request);
+			return new Response(null, { status: fixture.alert ?? 204 });
+		}
 		if (path.endsWith("/auth/v1/user")) {
 			const token = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
 			const id = TOKENS[token];
@@ -729,6 +739,117 @@ describe("Slack agent uninstall", () => {
 		const requests = database({ role: "member", installation: {} });
 		expect((await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) })).status).toBe(403);
 		expect(requests.some((entry) => entry.method === "PATCH")).toBe(false);
+	});
+});
+
+describe("Internal Slack agent alerts", () => {
+	const alerts = (requests: Recorded[]) => requests.filter((entry) => entry.url.hostname === "discord.test");
+	const withAlerts = { DISCORD_SIGNUP_WEBHOOK_URL: ALERT_WEBHOOK };
+
+	it("tells the Phaseo team when a workspace installs, with names only", async () => {
+		const requests = database({ role: "admin" });
+		const response = await callback({ code: "123.456.abc", state: await installState() }, "token-a", withAlerts);
+		expect(location(response).searchParams.get("installed")).toBe("1");
+		await settle();
+		const sent = alerts(requests);
+		expect(sent).toHaveLength(1);
+		expect(sent[0].method).toBe("POST");
+		expect(sent[0].url.href).toBe(ALERT_WEBHOOK);
+		expect(sent[0].body).toEqual({
+			content: [
+				"Slack agent installed",
+				`- workspace: \`Workspace A\` (\`${WORKSPACE}\`)`,
+				"- slack_team: `Acme`",
+				"- app: `hosted`",
+				"- installed_by: `user-a` (`u*****@example.com`)",
+			].join("\n"),
+			allowed_mentions: { parse: [] },
+		});
+		expect(JSON.stringify(sent[0].body)).not.toContain("xox");
+	});
+
+	it("says when the install used the workspace's own Slack app", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { client_secret: "customclientsecret0001", signing_secret: "customsigningsecret001" });
+		const customApp = { id: APP_ROW_ID, slack_app_id: "A0CUSTOM01", client_id: "9999.8888", secrets_ciphertext };
+		const requests = database({ role: "admin", customApp, slackAccess: grant({ app_id: "A0CUSTOM01" }) });
+		await callback({ code: "123.456.abc", state: await installState({ slack_app_id: APP_ROW_ID }) }, "token-a", withAlerts);
+		await settle();
+		expect(alerts(requests)[0].body.content).toContain("- app: `company`");
+	});
+
+	it("tells the team when a workspace uninstalls in Phaseo settings", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "phaseo_v1_sk_kid_secret" });
+		const requests = database({ role: "admin", installation: { secrets_ciphertext } });
+		const response = await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) }, "token-a", withAlerts);
+		expect(response.status).toBe(200);
+		await settle();
+		const sent = alerts(requests);
+		expect(sent).toHaveLength(1);
+		expect(sent[0].body.content).toBe([
+			"Slack agent uninstalled",
+			`- workspace: \`Workspace A\` (\`${WORKSPACE}\`)`,
+			"- slack_team: `Acme`",
+			"- app: `hosted`",
+			"- uninstalled_by: `user-a` (`u*****@example.com`) in Phaseo settings",
+		].join("\n"));
+		expect(JSON.stringify(sent[0].body)).not.toContain(BOT_TOKEN);
+	});
+
+	it("sends nothing when the uninstall found the agent already removed", async () => {
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "k" });
+		const requests = database({ role: "admin", installation: { secrets_ciphertext }, installationUpdateRows: [] });
+		await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) }, "token-a", withAlerts);
+		await settle();
+		expect(alerts(requests)).toHaveLength(0);
+	});
+
+	it("sends nothing for an install that failed", async () => {
+		const requests = database({ role: "admin", teamRows: [{ id: "other", workspace_id: OTHER_WORKSPACE }] });
+		const response = await callback({ code: "123.456.abc", state: await installState() }, "token-a", withAlerts);
+		expect(location(response).searchParams.get("error")).toBe("slack_team_in_use");
+		await settle();
+		expect(alerts(requests)).toHaveLength(0);
+	});
+
+	it("never fails an install or uninstall when the alert fails", async () => {
+		const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		try {
+			database({ role: "admin", alert: 500 });
+			expect(location(await callback({ code: "123.456.abc", state: await installState() }, "token-a", withAlerts)).searchParams.get("installed")).toBe("1");
+			await settle();
+			expect(errors).toHaveBeenCalledWith("slack_agent_alert_failed", { event: "installed", status: 500 });
+
+			const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "k" });
+			database({ role: "admin", installation: { secrets_ciphertext }, alert: () => { throw new TypeError("fetch failed"); } });
+			const response = await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) }, "token-a", withAlerts);
+			expect(await response.json()).toEqual({ uninstalled: true, slack_uninstalled: true });
+			expect((await settle()).every((result) => result.status === "fulfilled")).toBe(true);
+			expect(errors).toHaveBeenCalledWith("slack_agent_alert_failed", { event: "uninstalled", status: null });
+		} finally {
+			errors.mockRestore();
+		}
+	});
+
+	it("doesn't make the install wait for the alert", async () => {
+		let deliver!: () => void;
+		const held = new Promise<Response>((resolve) => { deliver = () => resolve(new Response(null, { status: 204 })); });
+		const requests = database({ role: "admin", alert: () => held });
+		const response = await callback({ code: "123.456.abc", state: await installState() }, "token-a", withAlerts);
+		expect(location(response).searchParams.get("installed")).toBe("1");
+		deliver();
+		await settle();
+		expect(alerts(requests)).toHaveLength(1);
+	});
+
+	it("is off without the webhook", async () => {
+		const requests = database({ role: "admin" });
+		expect(location(await callback({ code: "123.456.abc", state: await installState() }, "token-a", { DISCORD_SIGNUP_WEBHOOK_URL: " " })).searchParams.get("installed")).toBe("1");
+		const secrets_ciphertext = await encryptSlackSecrets(env as never, { bot_token: BOT_TOKEN, gateway_key: "k" });
+		const uninstall = database({ role: "admin", installation: { secrets_ciphertext } });
+		expect((await call("/slack", { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) })).status).toBe(200);
+		await settle();
+		expect(alerts(requests)).toHaveLength(0);
+		expect(alerts(uninstall)).toHaveLength(0);
 	});
 });
 

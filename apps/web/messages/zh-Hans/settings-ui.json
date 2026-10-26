@@ -6182,6 +6182,36 @@
 		"changed": "{workspaces, plural, other {# 个工作区}}中的 {keys, plural, other {# 个密钥}}",
 		"notApplied": "未应用"
 	},
+	"slackAgentInstallations": {
+		"title": "Slack 智能体安装",
+		"description": "已安装 Slack 智能体的所有 Phaseo 工作区，最新的在前。人数、回答数和支出为 {month}（UTC）截至目前的数据。",
+		"notes": "Slack 智能体费用是本月截至目前的估算值，不超过各工作区的支出上限。模型支出通过每个安装专用的密钥单独计费。",
+		"count": "{count, plural, other {# 个安装}}",
+		"none": "还没有工作区安装 Slack 智能体。",
+		"workspace": "Phaseo 工作区",
+		"slackTeam": "Slack 工作区",
+		"status": "状态",
+		"app": "应用",
+		"installedAt": "安装时间",
+		"uninstalledAt": "卸载时间",
+		"people": "人数",
+		"answers": "回答数",
+		"estimatedCharge": "Slack 智能体费用",
+		"modelSpend": "模型支出",
+		"modelRequests": "{count, plural, other {# 个请求}}",
+		"hostedApp": "Phaseo 应用",
+		"companyApp": "公司自有应用",
+		"unnamed": "未命名",
+		"statuses": {
+			"active": "活跃",
+			"paused": "已暂停",
+			"paymentDue": "待付款",
+			"uninstalled": "已卸载"
+		},
+		"pages": "安装分页",
+		"previous": "上一页",
+		"next": "下一页"
+	},
 	"providerDashboard": {
 		"profile": "提供商资料",
 		"overrides": "手动覆盖",

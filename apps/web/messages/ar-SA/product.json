@@ -2430,7 +2430,9 @@
 		"realtimeBillingTitle": "الفوترة في الوقت الفعلي",
 		"realtimeBillingDescription": "راجع الاستخدام المفقود والأموال المحجوزة وقرارات الفوترة المدققة.",
 		"keyIncidentsTitle": "حوادث أماكن تخزين المفاتيح",
-		"keyIncidentsDescription": "أبطل أو أوقف مؤقتًا كل مفاتيح API المخزنة على منصة تعرضت للاختراق."
+		"keyIncidentsDescription": "أبطل أو أوقف مؤقتًا كل مفاتيح API المخزنة على منصة تعرضت للاختراق.",
+		"slackAgentTitle": "وكيل Slack",
+		"slackAgentDescription": "كل عمليات تثبيت وكيل Slack، مع أشخاص هذا الشهر وإجاباته ورسومه وإنفاق النماذج."
 	},
 	"webhookPage": {
 		"description": "أرسل إلى تطبيقك تحديثات موقّعة وقابلة لإعادة المحاولة من مهام الفيديو والدفعات غير المتزامنة.",

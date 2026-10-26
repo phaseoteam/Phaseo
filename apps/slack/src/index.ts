@@ -88,7 +88,7 @@ export function createApp(makeDeps: (env: Env) => Deps = defaultDeps) {
 		// An uninstall must not be lost: it is handled before answering (a few quick database
 		// calls), and a failure asks Slack to send it again. Handling it twice is safe.
 		if (isRemovalEvent(envelope)) {
-			const outcome = await processEvent(deps, request.app, envelope);
+			const outcome = await processEvent({ ...deps, waitUntil: (work) => c.executionCtx.waitUntil(work) }, request.app, envelope);
 			return outcome === "error" ? c.json({ error: "unavailable" }, 500) : c.body(null, 200);
 		}
 		c.executionCtx.waitUntil(processEvent(deps, request.app, envelope));

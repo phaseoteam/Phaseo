@@ -6182,6 +6182,36 @@
 		"changed": "{workspaces, plural, one {# वर्कस्पेस} other {# वर्कस्पेस}} में {keys, plural, one {# कुंजी} other {# कुंजियाँ}}",
 		"notApplied": "लागू नहीं किया गया"
 	},
+	"slackAgentInstallations": {
+		"title": "Slack एजेंट इंस्टॉलेशन",
+		"description": "हर Phaseo वर्कस्पेस जिसने Slack एजेंट इंस्टॉल किया है, सबसे नए पहले। लोग, जवाब और खर्च {month} (UTC) में अब तक के हैं।",
+		"notes": "Slack एजेंट शुल्क इस महीने अब तक का अनुमान है, जो हर वर्कस्पेस की खर्च सीमा से ज़्यादा नहीं होता। मॉडल खर्च का बिल अलग से, हर इंस्टॉलेशन की अपनी कुंजी के ज़रिए बनता है।",
+		"count": "{count, plural, one {# इंस्टॉलेशन} other {# इंस्टॉलेशन}}",
+		"none": "अभी तक किसी वर्कस्पेस ने Slack एजेंट इंस्टॉल नहीं किया है।",
+		"workspace": "Phaseo वर्कस्पेस",
+		"slackTeam": "Slack वर्कस्पेस",
+		"status": "स्थिति",
+		"app": "ऐप",
+		"installedAt": "इंस्टॉल किया गया",
+		"uninstalledAt": "अनइंस्टॉल किया गया",
+		"people": "लोग",
+		"answers": "जवाब",
+		"estimatedCharge": "Slack एजेंट शुल्क",
+		"modelSpend": "मॉडल खर्च",
+		"modelRequests": "{count, plural, one {# अनुरोध} other {# अनुरोध}}",
+		"hostedApp": "Phaseo ऐप",
+		"companyApp": "कंपनी का ऐप",
+		"unnamed": "बिना नाम",
+		"statuses": {
+			"active": "सक्रिय",
+			"paused": "रुका हुआ",
+			"paymentDue": "भुगतान बाकी",
+			"uninstalled": "अनइंस्टॉल किया गया"
+		},
+		"pages": "इंस्टॉलेशन पेज",
+		"previous": "पिछला",
+		"next": "अगला"
+	},
 	"providerDashboard": {
 		"profile": "प्रदाता प्रोफ़ाइल",
 		"overrides": "मैन्युअल बदलाव",

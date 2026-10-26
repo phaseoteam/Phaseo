@@ -2430,7 +2430,9 @@
 		"realtimeBillingTitle": "Realtime billing",
 		"realtimeBillingDescription": "Review missing usage, held funds, and audited billing decisions.",
 		"keyIncidentsTitle": "Key storage incidents",
-		"keyIncidentsDescription": "Revoke or pause every API key stored on a breached platform."
+		"keyIncidentsDescription": "Revoke or pause every API key stored on a breached platform.",
+		"slackAgentTitle": "Slack agent",
+		"slackAgentDescription": "Every Slack agent installation, with this month's people, answers, charges and model spend."
 	},
 	"webhookPage": {
 		"description": "Send signed, retryable updates from your async video and batch jobs to your application.",

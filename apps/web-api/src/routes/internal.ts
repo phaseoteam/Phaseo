@@ -9,6 +9,7 @@ import { providerCatalogWebhookRouter } from "@/routes/provider-catalog-webhook"
 import { internalProviderCatalogReviewRouter } from "@/routes/internal-provider-catalog-review";
 import { internalRealtimeBillingRouter } from "@/routes/internal-realtime-billing";
 import { internalKeyIncidentsRouter } from "@/routes/internal-key-incidents";
+import { internalSlackAgentRouter } from "@/routes/internal-slack-agent";
 import {
 	LEGACY_ALLOWED_CACHE_TAGS,
 	isCacheScopeId,
@@ -52,6 +53,7 @@ internalRouter.route("/", internalProviderCatalogReviewRouter);
 internalRouter.route("/", internalGatewayBenchmarkRouter);
 internalRouter.route("/", internalRealtimeBillingRouter);
 internalRouter.route("/", internalKeyIncidentsRouter);
+internalRouter.route("/", internalSlackAgentRouter);
 
 internalRouter.get("/cache", async (c) => {
 	if (isCrossSiteBrowserRequest(c.req.raw)) {
