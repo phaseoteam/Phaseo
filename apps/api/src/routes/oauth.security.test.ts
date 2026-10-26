@@ -144,6 +144,7 @@ vi.mock("@/lib/oauth/service", () => ({
 	createOpaqueCode: vi.fn(() => "opaque-code"),
 	createUserCode: vi.fn(() => "ABCD-EFGH"),
 	defaultDeviceIntervalSeconds: vi.fn(() => 5),
+	desktopKeyWorkspace: vi.fn(async (_userId: string, requested?: string | null) => requested ?? "00000000-0000-4000-8000-000000000001"),
 	deviceExpiresInSeconds: vi.fn(() => 600),
 	filterAllowedScopes: vi.fn((client, scopes) => {
 		const allowedScopes = Array.isArray(client?.allowed_scopes)
@@ -152,6 +153,7 @@ vi.mock("@/lib/oauth/service", () => ({
 		return allowedScopes ? scopes.filter((scope: string) => allowedScopes.has(scope)) : scopes;
 	}),
 	getApiBaseUrl: vi.fn(() => "https://api.example.com"),
+	getGatewayOAuthResource: vi.fn(() => "https://api.example.com/v1"),
 	getIssuer: vi.fn(() => "https://api.example.com/oauth"),
 	getLocalJwks: vi.fn(async () => ({ keys: [] })),
 	getSupabaseActor: vi.fn(async () => ({ userId: "user_1" })),
@@ -160,6 +162,9 @@ vi.mock("@/lib/oauth/service", () => ({
 	hasActiveOAuthWorkspaceAccess: vi.fn(async () => Boolean(
 		state.authorizationRow && state.authorizationRow.revoked_at == null,
 	)),
+	issueDesktopSessionKey: vi.fn(async (args: { workspaceId: string }) => (args.workspaceId === "00000000-0000-4000-8000-00000000dead"
+		? null
+		: { key: "phaseo_v1_sk_desktop", expiresAt: "2999-01-01T00:00:00.000Z", scopes: ["gateway:access", "models:read"] })),
 	issueTokenPairForGrant: vi.fn(async (_grant: Record<string, unknown>, input: Record<string, unknown>) => {
 		state.issuedTokenPairs.push(input);
 		return { access_token: "token" };
@@ -1051,6 +1056,39 @@ describe("OAuth route security", () => {
 		state.oauthAuth = { ...state.oauthAuth, oauthScopes: ["openid", "email"] };
 		const narrow = await (await oauthRouter.request("https://example.com/userinfo", { headers: { Authorization: "Bearer phaseo_v1_sk_example" } })).json();
 		expect(narrow).not.toHaveProperty("name"); expect(narrow).not.toHaveProperty("given_name"); expect(narrow).not.toHaveProperty("picture");
+	});
+
+	it("gives the desktop app a key for the person signed in to it, after two-factor sign-in", async () => {
+		const service = await import("@/lib/oauth/service");
+		const { oauthRouter } = await import("./oauth");
+		const request = (body?: unknown) => oauthRouter.request("https://example.com/desktop/key", {
+			method: "POST",
+			headers: { authorization: "Bearer user-session", "content-type": "application/json" },
+			...(body === undefined ? {} : { body: JSON.stringify(body) }),
+		});
+		const issued = await request();
+		expect(issued.status).toBe(200);
+		expect(issued.headers.get("Cache-Control")).toBe("no-store");
+		expect(await issued.json()).toMatchObject({
+			access_token: "phaseo_v1_sk_desktop", token_type: "Bearer", workspace_id: "00000000-0000-4000-8000-000000000001",
+			scope: "gateway:access models:read", resource: "https://api.example.com/v1", expires_at: "2999-01-01T00:00:00.000Z",
+		});
+		const chosen = await request({ workspace_id: "00000000-0000-4000-8000-000000000002" });
+		expect(await chosen.json()).toMatchObject({ workspace_id: "00000000-0000-4000-8000-000000000002" });
+		expect(vi.mocked(service.issueDesktopSessionKey)).toHaveBeenLastCalledWith({ userId: "user_1", workspaceId: "00000000-0000-4000-8000-000000000002" });
+
+		// Not a member, not a workspace id, no login, or a login that skipped its second factor.
+		expect((await request({ workspace_id: "00000000-0000-4000-8000-00000000dead" })).status).toBe(403);
+		expect((await request({ workspace_id: "workspace_1" })).status).toBe(400);
+		expect((await request({ workspace_id: 7 })).status).toBe(400);
+		vi.mocked(service.getSupabaseActor).mockResolvedValueOnce(null);
+		expect((await request()).status).toBe(401);
+		vi.mocked(service.getSupabaseActor).mockResolvedValueOnce({ userId: "user_1", mfaRequired: true, assuranceLevel: "aal1" } as never);
+		const partial = await request();
+		expect(partial.status).toBe(401);
+		expect(await partial.json()).toMatchObject({ error: "insufficient_user_authentication" });
+		vi.mocked(service.getSupabaseActor).mockResolvedValueOnce({ userId: "user_1", mfaRequired: true, assuranceLevel: "aal2" } as never);
+		expect((await request()).status).toBe(200);
 	});
 
 	it("renews the desktop app's own delegated key, and nothing else", async () => {

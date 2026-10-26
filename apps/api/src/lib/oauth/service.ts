@@ -1167,6 +1167,54 @@ export async function renewDesktopKey(keyId: string): Promise<{ expiresAt: strin
 	return data?.expires_at ? { expiresAt: String(data.expires_at) } : null;
 }
 
+export const DESKTOP_KEY_SCOPES = [GATEWAY_ACCESS_SCOPE, "models:read"] as const;
+
+/**
+ * The workspace a desktop sign-in's key belongs to: the one asked for, else the person's default, else the first they
+ * joined. Membership of the one asked for is checked when the key is issued.
+ */
+export async function desktopKeyWorkspace(userId: string, requested?: string | null): Promise<string | null> {
+	if (requested) return requested;
+	const supabase = getSupabaseAdmin();
+	const [user, membership] = await Promise.all([
+		supabase.from("users").select("default_workspace_id").eq("user_id", userId).maybeSingle(),
+		supabase.from("workspace_members").select("workspace_id").eq("user_id", userId).order("joined_at", { ascending: true }).limit(1).maybeSingle(),
+	]);
+	if (user.error || membership.error) throw new Error(user.error?.message || membership.error?.message || "Failed to load the person's workspaces");
+	const fallback = membership.data?.workspace_id ? String(membership.data.workspace_id) : null;
+	const preferred = user.data?.default_workspace_id ? String(user.data.default_workspace_id) : null;
+	if (!preferred) return fallback;
+	const { data, error } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", userId).eq("workspace_id", preferred).maybeSingle();
+	if (error) throw new Error(error.message || "Failed to load the person's workspaces");
+	return data ? preferred : fallback;
+}
+
+/**
+ * The desktop app's key for model calls, issued against the person's own Phaseo login rather than an OAuth code: the
+ * app is Phaseo's, so it signs in like the website and gets no consent screen. It's the same delegated key an OAuth
+ * sign-in gave it (renewable, revocable, listed under Connected apps), and owners hear about it like any new key.
+ * Null when the person isn't a member of the workspace.
+ */
+export async function issueDesktopSessionKey(args: { userId: string; workspaceId: string }) {
+	const pepper = resolveActiveKeyPepper(getBindings());
+	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
+	const generated = generateGatewayKey();
+	const { data, error } = await getSupabaseAdmin().rpc("issue_desktop_session_key", {
+		p_user_id: args.userId,
+		p_workspace_id: args.workspaceId,
+		p_key_hash: await hmacSecret(generated.secret, pepper),
+		p_key_kid: generated.kid,
+		p_key_prefix: generated.prefix,
+		p_key_name: "Phaseo desktop",
+		p_resource: getGatewayOAuthResource(),
+		p_ttl_seconds: DESKTOP_KEY_TTL_SECONDS,
+	});
+	if (error) throw new Error(error.message || "Failed to issue the desktop key");
+	if (typeof data !== "string" || !data) return null;
+	await recordOAuthKeyIssued({ kid: generated.kid, workspaceId: args.workspaceId, userId: args.userId, clientId: DESKTOP_CLIENT_ID, clientName: "Phaseo desktop" });
+	return { key: generated.plaintext, expiresAt: new Date(data).toISOString(), scopes: [...DESKTOP_KEY_SCOPES] };
+}
+
 export function makeDeviceCodeExpiry(): string {
 	return new Date(Date.now() + DEVICE_CODE_TTL_SECONDS * 1000).toISOString();
 }

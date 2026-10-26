@@ -470,3 +470,31 @@ describe("Desktop key renewal", () => {
 		await expect(renewDesktopKey("key_1")).resolves.toBeNull();
 	});
 });
+
+describe("Desktop key for a Phaseo login", () => {
+	beforeEach(() => { state.rpcCalls.length = 0; state.rpcError = null; state.auditEvents.length = 0; state.delegatedKeyRow = null; });
+
+	it("issues a gateway key for the desktop client, 30 days long, and tells owners like any new key", async () => {
+		state.rotationStatus = "2026-11-25T12:00:00+00:00";
+		state.delegatedKeyRow = { id: "key_9", name: "Phaseo desktop", prefix: "abc123" };
+		const { issueDesktopSessionKey } = await import("./service");
+		const issued = await issueDesktopSessionKey({ userId: "user_1", workspaceId: "ws_1" });
+		expect(issued).toEqual({ key: expect.stringMatching(/^phaseo_v1_sk_/), expiresAt: "2026-11-25T12:00:00.000Z", scopes: ["gateway:access", "models:read"] });
+		const rpcCall = state.rpcCalls.at(-1);
+		expect(rpcCall).toMatchObject({
+			name: "issue_desktop_session_key",
+			args: { p_user_id: "user_1", p_workspace_id: "ws_1", p_key_name: "Phaseo desktop", p_resource: "https://api.phaseo.app/v1", p_ttl_seconds: 30 * 24 * 60 * 60, p_key_hash: expect.stringMatching(/^[a-f0-9]{64}$/) },
+		});
+		expect(rpcCall?.args.p_key_hash).not.toBe(issued?.key);
+		expect(state.auditEvents).toEqual([expect.objectContaining({ action: "api_key.created", target_id: "key_9", metadata: expect.objectContaining({ oauthClientId: "phaseo_desktop", appName: "Phaseo desktop" }) })]);
+	});
+
+	it("gives no key outside the person's workspaces, and fails loudly when the database does", async () => {
+		const { issueDesktopSessionKey } = await import("./service");
+		state.rotationStatus = null as unknown as string;
+		await expect(issueDesktopSessionKey({ userId: "user_1", workspaceId: "ws_other" })).resolves.toBeNull();
+		expect(state.auditEvents).toEqual([]);
+		state.rpcError = { message: "issue failed" };
+		await expect(issueDesktopSessionKey({ userId: "user_1", workspaceId: "ws_1" })).rejects.toThrow("issue failed");
+	});
+});

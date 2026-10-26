@@ -14,16 +14,19 @@ import {
 	bearerToken,
 	createOpaqueCode,
 	createUserCode,
+	desktopKeyWorkspace,
 	defaultDeviceIntervalSeconds,
 	deviceExpiresInSeconds,
 	filterAllowedScopes,
 	getApiBaseUrl,
+	getGatewayOAuthResource,
 	getIssuer,
 	getLocalJwks,
 	getSupabaseActor,
 	hashOAuthSecret,
 	hashOAuthSecretCandidates,
 	hasActiveOAuthWorkspaceAccess,
+	issueDesktopSessionKey,
 	issueTokenPairForGrant,
 	issueOAuthManagedKeyForAuthorizationCode,
 	issueMcpUpstreamToken,
@@ -1065,6 +1068,44 @@ oauthRouter.post(
 			upstream_access_token: upstream.access_token,
 			token_type: upstream.token_type,
 			expires_in: upstream.expires_in,
+		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
+// The desktop app's key for model calls, for the person signed in to it with their Phaseo login (a Supabase session,
+// like the website's and the mobile app's); see issueDesktopSessionKey. An account with two-factor sign-in must have
+// used it in this session, as the website's API requires.
+oauthRouter.post(
+	"/desktop/key",
+	withRuntime(async (req) => {
+		const actor = await requireSupabaseActor(req);
+		if (!actor) return oauthError("invalid_token", "A Phaseo login is required", 401);
+		if (actor.mfaRequired && actor.assuranceLevel !== "aal2") {
+			return oauthError("insufficient_user_authentication", "Finish two-factor sign-in first", 401);
+		}
+		if (!(await checkOAuthRateLimit(req, "token", `desktop-key:${actor.userId}`))) return rateLimitError();
+
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const requested = typeof body.workspace_id === "string" ? body.workspace_id.trim() : "";
+		if ((body.workspace_id !== undefined && body.workspace_id !== null && typeof body.workspace_id !== "string") || (requested && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested))) {
+			return oauthError("invalid_request", "workspace_id must be a workspace id");
+		}
+		const workspaceId = await desktopKeyWorkspace(actor.userId, requested || null);
+		const issued = workspaceId ? await issueDesktopSessionKey({ userId: actor.userId, workspaceId }) : null;
+		if (!workspaceId || !issued) return oauthError("access_denied", "You aren't a member of that workspace", 403);
+		return json({
+			access_token: issued.key,
+			token_type: "Bearer",
+			workspace_id: workspaceId,
+			scope: issued.scopes.join(" "),
+			resource: getGatewayOAuthResource(),
+			expires_at: issued.expiresAt,
+			expires_in: Math.max(0, Math.floor((Date.parse(issued.expiresAt) - Date.now()) / 1000)),
 		}, 200, { "Cache-Control": "no-store" });
 	}),
 );
