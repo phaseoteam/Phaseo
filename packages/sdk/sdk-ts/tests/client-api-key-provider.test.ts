@@ -70,6 +70,26 @@ describe("apiKey as a function", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  test("a credential function that never settles still honours the timeout", async () => {
+    const fetchImpl = vi.fn(async () => okResponse()) as unknown as typeof fetch;
+    const client = new Phaseo({ apiKey: () => new Promise<string>(() => {}), baseUrl: "https://example.test", fetchImpl, timeoutMs: 20 });
+
+    await expect(client.getApiKey("key_123")).rejects.toThrow();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  test("a credential function that never settles still honours cancellation", async () => {
+    const fetchImpl = vi.fn(async () => okResponse()) as unknown as typeof fetch;
+    const controller = new AbortController();
+    const client = new Phaseo({ apiKey: () => new Promise<string>(() => {}), baseUrl: "https://example.test", fetchImpl, timeoutMs: 60_000 });
+
+    const pending = client.withOptions({ signal: controller.signal }).getApiKey("key_123");
+    controller.abort(new Error("caller cancelled"));
+
+    await expect(pending).rejects.toThrow();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   test("still accepts a plain API key string", async () => {
     const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(authorizationOf(input, init)).toBe("Bearer sk_test_123");

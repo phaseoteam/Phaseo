@@ -140,7 +140,7 @@ const client = new Phaseo({
 });
 ```
 
-Tokens must be issued for the audience `https://api.phaseo.app`.
+Tokens must be issued for the audience `https://api.phaseo.app`. On Vercel, `getVercelOidcToken({ audience })` from the server entry of `@vercel/oidc` 4.x exchanges the deployment's token for one with that audience.
 
 ## Regional text routing
 
