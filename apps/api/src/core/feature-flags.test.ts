@@ -7,6 +7,7 @@ import {
 	getAutoRoutingFeatureGateName,
 	getRequestClassifiersFeatureGateName,
 	getModelSuccessorRedirectFeatureGateName,
+	getWorkloadIdentityFeatureGateName,
 	getVideoApiFeatureGateName,
 	getRealtimeVoiceFeatureGateName,
 	isBatchApiAccessEnabled,
@@ -16,6 +17,7 @@ import {
 	isRealtimeVoiceAccessEnabled,
 	isAutoRoutingAccessEnabled,
 	isModelSuccessorRedirectAccessEnabled,
+	isWorkloadIdentityAccessEnabled,
 	__resetFeatureGateCacheForTests,
 } from "./feature-flags";
 import type { AuthSuccess } from "@pipeline/before/auth";
@@ -66,6 +68,20 @@ describe("batch API feature gate", () => {
 		expect(getRequestClassifiersFeatureGateName({})).toBe("gateway_request_classifiers");
 		expect(getModelSuccessorRedirectFeatureGateName({ STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE: "custom_successor_gate" })).toBe("custom_successor_gate");
 		expect(getModelSuccessorRedirectFeatureGateName({})).toBe("gateway_model_successor_redirect");
+		expect(getWorkloadIdentityFeatureGateName({ STATSIG_WORKLOAD_IDENTITY_GATE: "custom_oidc_gate" })).toBe("custom_oidc_gate");
+		expect(getWorkloadIdentityFeatureGateName({})).toBe("gateway_workload_identity");
+	});
+
+	it("fails workload identity closed when the workspace owner cannot be found", async () => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify({ value: true })));
+		vi.stubGlobal("fetch", fetchMock);
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		await expect(isWorkloadIdentityAccessEnabled(
+			{ workspaceId: "ws_without_owner", apiKeyId: "key_oidc" },
+			{ STATSIG_SERVER_KEY: "secret-statsig-key" },
+		)).resolves.toBe(false);
+		expect(fetchMock).not.toHaveBeenCalled();
+		consoleError.mockRestore();
 	});
 
 	it("checks the model successor redirect against its own gate for the given owner", async () => {

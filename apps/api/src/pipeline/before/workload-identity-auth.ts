@@ -5,6 +5,7 @@
 // that policy's secretless key so limits, budgets, logs and billing are unchanged.
 
 import { getSupabaseAdmin, type GatewayBindings } from "@/runtime/env";
+import { isWorkloadIdentityAccessEnabled } from "@/core/feature-flags";
 import { shouldRecordLastUsed } from "@/core/last-used-throttle";
 import { isKeyIpAllowed } from "@/lib/security/keyIpAllowlist";
 import { presetProviderForIssuer, type WorkloadIdentityProvider } from "@/lib/workload-identity/issuers";
@@ -55,7 +56,7 @@ export function __resetWorkloadIdentityAuthCachesForTests(): void {
 }
 
 export function isWorkloadIdentityAuthEnabled(bindings: Pick<GatewayBindings, "WORKLOAD_IDENTITY_AUTH_ENABLED">): boolean {
-	return bindings.WORKLOAD_IDENTITY_AUTH_ENABLED === "true";
+	return bindings.WORKLOAD_IDENTITY_AUTH_ENABLED !== "false";
 }
 
 /** Cheap routing check: an unverified `iss` naming a supported platform. */
@@ -173,6 +174,10 @@ export async function authenticateWorkloadIdentity(
 	}
 	if (Number.isFinite(keyExpiresAt) && keyExpiresAt <= nowMs) return { result: { ok: false, reason: "key_expired" } };
 	if (!isKeyIpAllowed(key.ip_allowlist, clientIp)) return { result: { ok: false, reason: "key_ip_not_allowed" } };
+	// Checked only after a signed token matched a policy, so other traffic never waits on Statsig.
+	if (!(await isWorkloadIdentityAccessEnabled({ workspaceId: key.workspace_id, apiKeyId: key.id, apiKeyRef: `kid_${key.kid}`, apiKeyKid: key.kid }))) {
+		return { result: { ok: false, reason: "workload_identity_not_enabled" } };
+	}
 
 	const result: AuthSuccess = {
 		ok: true,

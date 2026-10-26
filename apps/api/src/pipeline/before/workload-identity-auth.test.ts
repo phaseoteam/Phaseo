@@ -4,7 +4,9 @@ import { __resetWorkloadJwksCacheForTests } from "@/lib/workload-identity/verify
 
 const runtime = vi.hoisted(() => {
 	const state = {
-		bindings: { WORKLOAD_IDENTITY_AUTH_ENABLED: "true" } as Record<string, string | undefined>,
+		bindings: {} as Record<string, string | undefined>,
+		gateEnabled: true,
+		gateCalls: [] as Array<Record<string, unknown>>,
 		policyRows: [] as Array<Record<string, unknown>>,
 		policyQueries: [] as Array<Array<[string, unknown]>>,
 		policyError: null as { message: string } | null,
@@ -44,6 +46,13 @@ const runtime = vi.hoisted(() => {
 	};
 	return { state, supabase };
 });
+
+vi.mock("@/core/feature-flags", () => ({
+	isWorkloadIdentityAccessEnabled: async (subject: Record<string, unknown>) => {
+		runtime.state.gateCalls.push(subject);
+		return runtime.state.gateEnabled;
+	},
+}));
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => runtime.state.bindings,
@@ -118,7 +127,9 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-	runtime.state.bindings = { WORKLOAD_IDENTITY_AUTH_ENABLED: "true" };
+	runtime.state.bindings = {};
+	runtime.state.gateEnabled = true;
+	runtime.state.gateCalls = [];
 	runtime.state.policyRows = [policyRow()];
 	runtime.state.policyQueries = [];
 	runtime.state.policyError = null;
@@ -160,8 +171,8 @@ describe("authenticate with workload identity tokens", () => {
 		expect(runtime.state.keyUpdates).toHaveLength(1);
 	});
 
-	it("is off unless the kill switch is on", async () => {
-		runtime.state.bindings = {};
+	it("is off when the kill switch is set to false", async () => {
+		runtime.state.bindings = { WORKLOAD_IDENTITY_AUTH_ENABLED: "false" };
 		const result = await authenticate(request(await signTestToken(signer, claims())));
 		expect(result).toEqual({ ok: false, reason: "invalid_key_format" });
 		expect(jwksFetches).toBe(0);
@@ -185,6 +196,27 @@ describe("authenticate with workload identity tokens", () => {
 		await authenticate(request(await signTestToken(signer, claims({ iat: Math.floor(Date.now() / 1000) - 5 }))));
 		expect(runtime.state.policyQueries).toHaveLength(1);
 		expect(jwksFetches).toBe(1);
+	});
+
+	it("refuses workspaces outside the Statsig gate, deciding per workspace", async () => {
+		runtime.state.gateEnabled = false;
+		const token = await signTestToken(signer, claims());
+		expect(await authenticate(request(token))).toEqual({ ok: false, reason: "workload_identity_not_enabled" });
+		expect(runtime.state.gateCalls).toEqual([{
+			workspaceId: "ws_1",
+			apiKeyId: "key_1",
+			apiKeyRef: "kid_0123456789abcdef0123456789abcdef",
+			apiKeyKid: "0123456789abcdef0123456789abcdef",
+		}]);
+		// A refusal is not cached: once the workspace joins the gate, the same token works.
+		runtime.state.gateEnabled = true;
+		expect((await authenticate(request(token))).ok).toBe(true);
+	});
+
+	it("never consults Statsig for tokens that match no policy", async () => {
+		await authenticate(request(await signTestToken(signer, claims({ environment: "preview" }))));
+		await authenticate(request(await signTestToken(signer, claims({ iss: "https://evil.example.com" }))));
+		expect(runtime.state.gateCalls).toHaveLength(0);
 	});
 
 	it("rejects tokens that match no policy", async () => {
