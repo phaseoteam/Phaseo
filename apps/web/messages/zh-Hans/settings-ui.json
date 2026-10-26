@@ -6814,17 +6814,22 @@
 			"cap": "上限 {cap}",
 			"plan": "套餐",
 			"planValue": "最多 {people} 人",
-			"planPrice": "每月 {price}"
+			"planPrice": "每月 {price}",
+			"modelSpend": "模型支出",
+			"modelSpendDetail": "作为普通请求从额度中扣除，不属于 Slack 智能体费用",
+			"modelSpendUnavailable": "暂不可用"
 		},
 		"charges": {
 			"month": "月份",
 			"people": "人数",
 			"answers": "回答",
 			"amount": "金额",
+			"modelSpend": "模型支出",
 			"status": "状态",
 			"charged": "已支付",
 			"pending": "等待额度",
 			"empty": "暂无扣费。首次扣费将在本月结束时进行。",
+			"modelSpendNote": "模型支出作为普通请求从额度中扣除，不计入金额。",
 			"note": "每笔扣费也会以“Slack 智能体”显示在你的账单交易中。",
 			"transactions": "查看交易"
 		},

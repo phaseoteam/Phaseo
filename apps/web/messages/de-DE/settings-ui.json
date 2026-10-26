@@ -6814,17 +6814,22 @@
 			"cap": "Grenze {cap}",
 			"plan": "Plan",
 			"planValue": "Bis zu {people} Personen",
-			"planPrice": "{price} im Monat"
+			"planPrice": "{price} im Monat",
+			"modelSpend": "Modellausgaben",
+			"modelSpendDetail": "Als normale Anfragen vom Guthaben abgebucht, nicht Teil des Slack-Agent-Betrags",
+			"modelSpendUnavailable": "Nicht verfügbar"
 		},
 		"charges": {
 			"month": "Monat",
 			"people": "Personen",
 			"answers": "Antworten",
 			"amount": "Betrag",
+			"modelSpend": "Modellausgaben",
 			"status": "Status",
 			"charged": "Bezahlt",
 			"pending": "Wartet auf Guthaben",
 			"empty": "Noch keine Abrechnungen. Die erste erfolgt am Ende dieses Monats.",
+			"modelSpendNote": "Modellausgaben werden als normale Anfragen vom Guthaben abgebucht und sind nicht im Betrag enthalten.",
 			"note": "Jede Abrechnung erscheint auch in deinen Transaktionen als Slack-Agent.",
 			"transactions": "Transaktionen ansehen"
 		},

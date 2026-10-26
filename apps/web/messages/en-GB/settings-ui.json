@@ -6814,17 +6814,22 @@
 			"cap": "Cap {cap}",
 			"plan": "Plan",
 			"planValue": "Up to {people} people",
-			"planPrice": "{price} a month"
+			"planPrice": "{price} a month",
+			"modelSpend": "Model spend",
+			"modelSpendDetail": "Billed from credits as normal requests, not part of the Slack agent charge",
+			"modelSpendUnavailable": "Unavailable"
 		},
 		"charges": {
 			"month": "Month",
 			"people": "People",
 			"answers": "Answers",
 			"amount": "Amount",
+			"modelSpend": "Model spend",
 			"status": "Status",
 			"charged": "Paid",
 			"pending": "Waiting for credits",
 			"empty": "No charges yet. The first one is taken when this month ends.",
+			"modelSpendNote": "Model spend is billed from credits as normal requests and is not part of the amount.",
 			"note": "Each charge also appears in your billing transactions as Slack agent.",
 			"transactions": "View transactions"
 		},
