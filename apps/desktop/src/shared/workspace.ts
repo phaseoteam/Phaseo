@@ -32,7 +32,9 @@ export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
 export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings };
-export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string; oauthExpiresAt?: string; /** For a Phaseo sign-in, who it belongs to, from the account's OpenID profile. */ profile?: { name?: string; givenName?: string; email?: string; picture?: string; checkedAt: string } };
+export type PhaseoSignInMethod = { provider: "github" | "google" | "gitlab" } | { email: string; password: string };
+export type PhaseoSignInResult = { workspace: WorkspaceOverview; accountId: string } | { secondFactor: true };
+export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string; oauthExpiresAt?: string; /** For a Phaseo login (not an older OAuth sign-in): the vault entry holding the login, and the Phaseo workspace its key is for. */ sessionSecretId?: string; phaseoWorkspaceId?: string; /** For a Phaseo sign-in, who it belongs to, from its Phaseo profile. */ profile?: { name?: string; givenName?: string; email?: string; picture?: string; checkedAt: string } };
 export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
@@ -234,7 +236,9 @@ export type WorkspaceApi = {
 	terminals: () => Promise<TerminalSession[]>;
 	terminal: (command: TerminalCommand) => Promise<TerminalSession[]>;
 	onTerminalEvent: (listener: (event: TerminalEvent) => void) => () => void;
-	signInPhaseo: (accountId?: string) => Promise<{ workspace: WorkspaceOverview; accountId: string }>;
+	/** Signs in to Phaseo in the browser (GitHub, Google, GitLab) or with an email and password; an account with two-factor sign-in then needs verifyPhaseoSignIn. */
+	signInPhaseo: (accountId: string | undefined, method: PhaseoSignInMethod) => Promise<PhaseoSignInResult>;
+	verifyPhaseoSignIn: (code: string) => Promise<PhaseoSignInResult>;
 	cancelPhaseoSignIn: () => Promise<void>;
 	signIn: (accountId: string) => Promise<WorkspaceOverview>;
 	accountStatus: (harness: "codex" | "claude" | "cursor" | "grok", accountId?: string) => Promise<AccountStatus>;

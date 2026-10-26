@@ -3,7 +3,8 @@ import { imageMime } from "./attachments";
 import { linkTitle } from "./linkTitle";
 import { KeybindingsFile } from "./keybindingsFile";
 import { browserShortcuts } from "../shared/keybindings";
-import { phaseoProfile, renewPhaseoKey, signInPhaseo, PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth";
+import { phaseoProfile, renewPhaseoKey, PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth";
+import { browserSignIn, issuePhaseoKey, parsePhaseoSession, passwordSignIn, phaseoAccountProfile, PHASEO_PROVIDERS, refreshPhaseoSession, revokePhaseoKey, secondFactor, signOutPhaseo, verifySecondFactor, type PhaseoProvider, type PhaseoSession } from "./phaseoLogin";
 import { PhaseoSkills } from "./phaseoSkills";
 import { GlobalInstructions } from "./globalInstructions";
 import { codexNativeActions } from "./codexNativeActions";
@@ -32,7 +33,7 @@ import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
-import type { AccountStatus, Harness } from "../shared/workspace";
+import type { Account, AccountStatus, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { harnessVersion } from "./harnessVersion";
@@ -170,61 +171,146 @@ ipcMain.handle("workspace:open-link", async (event, value: unknown) => {
 	if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw new Error("Use a web link.");
 	await shell.openExternal(url.href);
 });
-ipcMain.handle("workspace:phaseo-sign-in", async (event, accountId: unknown) => {
+/** A login waiting for its authenticator code, by window: the next code, a new sign-in or a cancel ends it. */
+const phaseoSecondFactors = new Map<number, { accountId?: string; session: PhaseoSession; factorId: string }>();
+function phaseoSignInMethod(value: unknown): PhaseoSignInMethod {
+	const method = value && typeof value === "object" ? value as Record<string, unknown> : {};
+	if (typeof method.provider === "string" && (PHASEO_PROVIDERS as readonly string[]).includes(method.provider)) return { provider: method.provider as PhaseoProvider };
+	if (typeof method.email === "string" && typeof method.password === "string" && method.email.length <= 320 && /^[^\s@]+@[^\s@]+$/.test(method.email.trim()) && method.password && method.password.length <= 1024) return { email: method.email.trim(), password: method.password };
+	throw new Error("Choose how to sign in to Phaseo.");
+}
+/** Runs one step of a Phaseo sign-in for a window, which a cancel, the window closing or the app quitting stops. */
+async function phaseoSignInStep<T>(event: Electron.IpcMainInvokeEvent, step: (owner: BrowserWindow, signal: AbortSignal) => Promise<T>) {
 	const owner = senderWindow(event);
-	if (!owner || shutdownStarted || !credentialVault.available() || (accountId !== undefined && typeof accountId !== "string")) throw new Error("Phaseo sign-in is unavailable.");
+	if (!owner || shutdownStarted || !credentialVault.available()) throw new Error("Phaseo sign-in is unavailable.");
 	if (phaseoSignIns.has(event.sender.id)) throw new Error("Phaseo sign-in is already open.");
+	const controller = new AbortController(); phaseoSignIns.set(event.sender.id, controller);
+	const destroyed = () => controller.abort(); owner.webContents.once("destroyed", destroyed);
+	try { return await step(owner, controller.signal); }
+	catch (error) { if (controller.signal.aborted) throw new Error("Sign-in canceled.", { cause: error }); throw error; }
+	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); }
+}
+/** Signs in to Phaseo itself (see phaseoLogin.ts): in the browser, or with an email and password typed into the app. */
+ipcMain.handle("workspace:phaseo-sign-in", (event, accountId: unknown, method: unknown) => {
+	if (accountId !== undefined && typeof accountId !== "string") throw new Error("Phaseo sign-in is unavailable.");
+	const chosen = phaseoSignInMethod(method);
+	return phaseoSignInStep(event, async (owner, signal): Promise<PhaseoSignInResult> => {
+		phaseoSecondFactors.delete(event.sender.id);
+		const session = "provider" in chosen
+			? await browserSignIn({ provider: chosen.provider, signal, openBrowser: url => shell.openExternal(url) })
+			: await passwordSignIn(chosen.email, chosen.password, fetch, signal);
+		if (signal.aborted || shutdownStarted || owner.isDestroyed()) throw new Error("Sign-in canceled.");
+		const factorId = await secondFactor(session, fetch, signal);
+		if (factorId) { phaseoSecondFactors.set(event.sender.id, { accountId, session, factorId }); return { secondFactor: true }; }
+		return savePhaseoLogin(owner, accountId, session, signal);
+	});
+});
+ipcMain.handle("workspace:phaseo-verify-sign-in", (event, code: unknown) => {
+	if (typeof code !== "string" || !/^\d{6}$/.test(code.trim())) throw new Error("Enter the 6-digit code from your authenticator app.");
+	return phaseoSignInStep(event, async (owner, signal): Promise<PhaseoSignInResult> => {
+		const pending = phaseoSecondFactors.get(event.sender.id);
+		if (!pending) throw new Error("Start signing in again.");
+		// A wrong code keeps the login waiting, so the person can try another.
+		const session = await verifySecondFactor(pending.session, pending.factorId, code.trim(), fetch, signal);
+		phaseoSecondFactors.delete(event.sender.id);
+		if (signal.aborted || shutdownStarted || owner.isDestroyed()) throw new Error("Sign-in canceled.");
+		return savePhaseoLogin(owner, pending.accountId, session, signal);
+	});
+});
+/**
+ * Keeps a Phaseo login and the gateway key it gets (in the person's default workspace), as a new account or in place of
+ * an existing account's sign-in, whose key is then revoked and login ended.
+ */
+async function savePhaseoLogin(owner: BrowserWindow, accountId: string | undefined, session: PhaseoSession, signal: AbortSignal) {
 	const existing = accountId ? workspaceRuntime.store.getAccounts().find(account => account.id === accountId && account.harness === "phaseo" && account.oauthExpiresAt && !account.archived) : undefined;
 	if (accountId && !existing) throw new Error("Choose an active Phaseo sign-in account.");
 	const accountIdToSave = existing?.id ?? randomUUID();
 	const releaseAccount = workspaceRuntime.beginAccountSignIn(accountIdToSave);
-	const controller = new AbortController(); phaseoSignIns.set(event.sender.id, controller);
-	const destroyed = () => controller.abort(); owner.webContents.once("destroyed", destroyed);
 	try {
-		const result = await signInPhaseo({ signal: controller.signal, openBrowser: url => shell.openExternal(url) });
-		if (controller.signal.aborted || shutdownStarted || owner.isDestroyed()) throw new Error("Sign-in canceled.");
-		const newSecret = randomUUID(); await credentialVault.set(newSecret, result.key);
+		const issued = await issuePhaseoKey(session, undefined, fetch, signal);
+		const keySecret = randomUUID(), sessionSecret = randomUUID();
 		try {
-			if (controller.signal.aborted || shutdownStarted || owner.isDestroyed()) throw new Error("Sign-in canceled.");
+			if (signal.aborted || shutdownStarted || owner.isDestroyed()) throw new Error("Sign-in canceled.");
+			await credentialVault.set(keySecret, issued.key); await credentialVault.set(sessionSecret, JSON.stringify(session));
+			if (signal.aborted || shutdownStarted || owner.isDestroyed()) throw new Error("Sign-in canceled.");
 			const current = existing ? workspaceRuntime.store.getAccounts().find(account => account.id === existing.id && !account.archived) : undefined;
 			if (existing && !current) throw new Error("Account is unavailable.");
-			workspaceRuntime.store.saveAccount({ ...current, id: accountIdToSave, name: current?.name ?? "Phaseo", harness: "phaseo", kind: "api", endpoint: PHASEO_GATEWAY_ENDPOINT, secretId: newSecret, configured: true, oauthExpiresAt: result.expiresAt });
-		} catch (error) { credentialVault.remove(newSecret); throw error; }
-		if (existing) credentialVault.remove(existing.secretId ?? existing.id);
+			workspaceRuntime.store.saveAccount({ ...current, id: accountIdToSave, name: current?.name ?? "Phaseo", harness: "phaseo", kind: "api", endpoint: PHASEO_GATEWAY_ENDPOINT, secretId: keySecret, sessionSecretId: sessionSecret, phaseoWorkspaceId: issued.workspaceId, configured: true, oauthExpiresAt: issued.expiresAt });
+		} catch (error) { credentialVault.remove(keySecret); credentialVault.remove(sessionSecret); void revokePhaseoKey(issued.key); throw error; }
+		if (existing) void retirePhaseoSignIn(existing);
 		const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state);
 		void refreshPhaseoSignIns(accountIdToSave);
 		return { workspace: state, accountId: accountIdToSave };
-	} catch (error) { if (controller.signal.aborted) throw new Error("Sign-in canceled.", { cause: error }); throw error; }
-	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); releaseAccount(); }
-});
+	} finally { releaseAccount(); }
+}
+/** Lets go of a sign-in a new one replaced: its key is revoked and its login ended, both best effort. */
+async function retirePhaseoSignIn(account: Account) {
+	const keySecret = account.secretId ?? account.id;
+	const [key, session] = await Promise.all([
+		credentialVault.get(keySecret).catch(() => undefined),
+		account.sessionSecretId ? credentialVault.get(account.sessionSecretId).then(parsePhaseoSession).catch(() => undefined) : undefined,
+	]);
+	credentialVault.remove(keySecret); if (account.sessionSecretId) credentialVault.remove(account.sessionSecretId);
+	await Promise.all([key && revokePhaseoKey(key), session && signOutPhaseo(session)]);
+}
+const phaseoSessionReads = new Map<string, Promise<PhaseoSession>>();
+/**
+ * An account's Phaseo login with an access token good for a few minutes more. An older one is refreshed, once however
+ * many ask, and kept at once: the refresh token it used stops working.
+ */
+function phaseoSession(account: Account): Promise<PhaseoSession> {
+	const secretId = account.sessionSecretId;
+	if (!secretId) return Promise.reject(new Error("Sign in to Phaseo again."));
+	const running = phaseoSessionReads.get(secretId);
+	if (running) return running;
+	const read = credentialVault.get(secretId).then(parsePhaseoSession).then(async stored => {
+		if (stored.expiresAt - Date.now() > 5 * 60_000) return stored;
+		const next = await refreshPhaseoSession(stored.refreshToken);
+		// Not into a login replaced since.
+		if (workspaceRuntime.store.getAccounts().some(value => value.sessionSecretId === secretId)) await credentialVault.set(secretId, JSON.stringify(next));
+		return next;
+	}).finally(() => phaseoSessionReads.delete(secretId));
+	phaseoSessionReads.set(secretId, read);
+	return read;
+}
 /**
  * Keeps each Phaseo sign-in going while the app is used: renews its key once a day (a key lasts 30 days from its last
- * renewal), and reads who it belongs to for the sidebar's profile, a new sign-in at once and the rest at most daily.
- * A failure keeps what was there: the key's expiry, the last profile (or the initials).
+ * renewal), replaces a key that ran out from the login, and reads who it belongs to for the sidebar's profile, a new
+ * sign-in at once and the rest at most daily. A failure keeps what was there: the key's expiry, the last profile (or the
+ * initials). An older OAuth sign-in has no login, so its key can only be renewed.
  */
 async function refreshPhaseoSignIns(signedIn?: string) {
-	for (const account of workspaceRuntime.store.getAccounts()) {
-		if (account.harness !== "phaseo" || !account.oauthExpiresAt || account.archived || Date.parse(account.oauthExpiresAt) <= Date.now()) continue;
+	for (let account of workspaceRuntime.store.getAccounts()) {
+		if (account.harness !== "phaseo" || !account.oauthExpiresAt || account.archived) continue;
 		if (signedIn && account.id !== signedIn) continue;
-		const save = (change: Partial<typeof account>) => {
+		const expired = Date.parse(account.oauthExpiresAt) <= Date.now();
+		if (expired && !account.sessionSecretId) continue;
+		const save = (change: Partial<Account>) => {
 			const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id);
 			// Not over a sign-in made since (a new key, a new expiry).
-			if (!current || shutdownStarted || current.secretId !== account.secretId) return;
-			workspaceRuntime.store.saveAccount({ ...current, ...change });
+			if (!current || shutdownStarted || current.secretId !== account.secretId) return false;
+			account = { ...current, ...change };
+			workspaceRuntime.store.saveAccount(account);
 			workspaceRuntime.onChange(workspaceRuntime.store.getOverview());
+			return true;
 		};
 		try {
-			const key = await credentialVault.get(account.secretId ?? account.id);
-			if (Date.parse(account.oauthExpiresAt) - Date.now() < 29 * 86_400_000) {
-				const oauthExpiresAt = await renewPhaseoKey(key).catch(() => undefined);
+			if (expired) {
+				const issued = await issuePhaseoKey(await phaseoSession(account), account.phaseoWorkspaceId);
+				const oldSecret = account.secretId ?? account.id, secretId = randomUUID();
+				await credentialVault.set(secretId, issued.key);
+				if (!save({ secretId, oauthExpiresAt: issued.expiresAt, phaseoWorkspaceId: issued.workspaceId })) { credentialVault.remove(secretId); void revokePhaseoKey(issued.key); continue; }
+				credentialVault.remove(oldSecret);
+			} else if (Date.parse(account.oauthExpiresAt) - Date.now() < 29 * 86_400_000) {
+				const oauthExpiresAt = await renewPhaseoKey(await credentialVault.get(account.secretId ?? account.id)).catch(() => undefined);
 				if (oauthExpiresAt && oauthExpiresAt > account.oauthExpiresAt) save({ oauthExpiresAt });
 			}
 			if (!signedIn && account.profile && Date.now() - Date.parse(account.profile.checkedAt) < 86_400_000) continue;
-			save({ profile: await phaseoProfile(key) });
+			save({ profile: account.sessionSecretId ? await phaseoAccountProfile(await phaseoSession(account)) : await phaseoProfile(await credentialVault.get(account.secretId ?? account.id)) });
 		} catch { /* Kept as it was. */ }
 	}
 }
-ipcMain.handle("workspace:phaseo-cancel-sign-in", event => { if (!senderWindow(event)) throw new Error("Invalid sign-in request."); phaseoSignIns.get(event.sender.id)?.abort(); });
+ipcMain.handle("workspace:phaseo-cancel-sign-in", event => { if (!senderWindow(event)) throw new Error("Invalid sign-in request."); phaseoSecondFactors.delete(event.sender.id); phaseoSignIns.get(event.sender.id)?.abort(); });
 /**
  * Catalogue prices by model, for the Usage page's estimates of what Claude Code and Codex used. They come from the first
  * Phaseo account's catalogue; a catalogue saved before it kept cache prices is fetched again, so cached input isn't

@@ -900,9 +900,8 @@ button { color: inherit; }
 @media (max-width: 550px) { .session-picker-body { grid-template-columns: 115px minmax(0, 1fr); } .session-harnesses button { gap: 5px; font-size: 11px; } .chat-title-project { max-width: 110px; } }
 
 .phaseo-sign-in { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block: 6px; }
-.phaseo-sign-in button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
-.phaseo-sign-in button:hover:not(:disabled) { background: var(--surface-hover); }
-.phaseo-sign-in small { width: 100%; color: var(--danger); font-size: 11px; }
+.phaseo-sign-in > button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
+.phaseo-sign-in > button:hover:not(:disabled) { background: var(--surface-hover); }
 .manual-api-connection > summary { width: fit-content; margin-top: 10px; padding: 4px 6px; border-radius: 6px; cursor: pointer; font-size: 12px; }
 .manual-api-connection > summary:hover { background: var(--surface-hover); }
 .session-model-name { display: flex; align-items: center; gap: 8px; min-width: 0; } .session-model-name > span:last-child { overflow: hidden; text-overflow: ellipsis; }

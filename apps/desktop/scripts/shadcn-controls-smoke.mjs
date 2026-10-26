@@ -149,7 +149,7 @@ app.whenReady().then(async () => {
     owner.setSize(1440, 920);
     // Without a connected runtime a new chat asks to sign in; an API connection from Settings unlocks Phaseo's catalog.
     await run("window.dispatchEvent(new KeyboardEvent('keydown',{key:'n',ctrlKey:true,bubbles:true}))");
-    await wait("Boolean(window.__auditButton('Sign in with your browser'))&&!document.querySelector('main [aria-label=Message]')");
+    await wait("Boolean(window.__auditButton('Continue with GitHub'))&&!document.querySelector('main [aria-label=Message]')");
     await run("window.__auditButton('Connect in Settings').click()");
     await wait("Boolean(document.querySelector('form[aria-label=\"Add account\"]'))&&document.querySelector('nav[aria-label=\"Settings sections\"] [aria-current=page]')?.textContent==='Accounts'");
     await run("window.__auditChoose('Account provider','phaseo')");
@@ -158,7 +158,7 @@ app.whenReady().then(async () => {
     await run("document.querySelector('form[aria-label=\"Add account\"]').requestSubmit()");
     await wait("Array.from(document.querySelectorAll('article')).some(article=>article.textContent.includes('Owned Phaseo'))");
     await run("window.__auditCloseSettings()");
-    await wait("document.querySelector('main form [aria-label=\"Choose model\"]')?.textContent.includes('Owned model 0')&&!window.__auditButton('Sign in with your browser')");
+    await wait("document.querySelector('main form [aria-label=\"Choose model\"]')?.textContent.includes('Owned model 0')&&!window.__auditButton('Continue with GitHub')");
     // Search, Free and New filters, favourites and lab logos.
     const popup = "document.querySelector('[data-slot=popover-content]')";
     // The list is virtualised: rendered rows are a window, and every option reports the full count.

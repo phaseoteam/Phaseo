@@ -78,7 +78,8 @@ const desktopApi: PhaseoDesktopApi = {
 			ipcRenderer.on("workspace:terminal-event", subscription);
 			return () => ipcRenderer.removeListener("workspace:terminal-event", subscription);
 		},
-		signInPhaseo: id => ipcRenderer.invoke("workspace:phaseo-sign-in", id),
+		signInPhaseo: (id, method) => ipcRenderer.invoke("workspace:phaseo-sign-in", id, method),
+		verifyPhaseoSignIn: code => ipcRenderer.invoke("workspace:phaseo-verify-sign-in", code),
 		cancelPhaseoSignIn: () => ipcRenderer.invoke("workspace:phaseo-cancel-sign-in"),
 		signIn: id => ipcRenderer.invoke("workspace:sign-in", id),
 		accountStatus: (harness, id) => ipcRenderer.invoke("workspace:account-status", harness, id),

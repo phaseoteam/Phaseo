@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { PhaseoSignIn } from "../components/PhaseoSignIn";
+import { PhaseoSignInForm } from "../components/PhaseoSignInForm";
 import { Select } from "../components/Select";
 import { HarnessLogo } from "../components/HarnessLogo";
 import type { AccountStatus as NativeAccountStatus, WorkspaceCommand } from "../../shared/workspace";
@@ -20,6 +21,8 @@ export function Accounts() {
 	const [apiKey, setApiKey] = useState("");
 	const [error, setError] = useState("");
 	const [signingIn, setSigningIn] = useState<string>();
+	/** The Phaseo account whose sign-in form is open beneath it, to sign in again. */
+	const [phaseoAgain, setPhaseoAgain] = useState<string>();
 	const [saving, setSaving] = useState(false);
 	const [statuses, setStatuses] = useState<Record<string, NativeAccountStatus>>({});
 	const [checking, setChecking] = useState<string>();
@@ -73,7 +76,7 @@ export function Accounts() {
 			{visible.map(account => <article key={account.id}>
 				<SettingsRow icon={<HarnessLogo harness={account.harness} />} title={account.name} description={<>{harnessLabel[account.harness] ?? account.harness} · {state(account)}</>}
 					control={<>
-						{account.oauthExpiresAt && !account.archived && <PhaseoSignIn accountId={account.id} onConnected={next => setWorkspace(next)} />}
+						{account.oauthExpiresAt && !account.archived && phaseoAgain !== account.id && <SettingsButton onClick={() => { setEditing(undefined); setPhaseoAgain(account.id); }}>Sign in again</SettingsButton>}
 						{account.kind === "api" && account.harness === "cursor" && <SettingsButton disabled={!!checking} onClick={() => void check("cursor", account.id)}>Check status</SettingsButton>}
 						{account.kind === "native" && <>
 							<SettingsButton disabled={!!checking || signingIn === account.id} onClick={() => void check(account.harness as "codex" | "claude" | "cursor" | "grok", account.id)}>{checking === account.id ? "Checking…" : "Check status"}</SettingsButton>
@@ -82,6 +85,7 @@ export function Accounts() {
 						<SettingsButton variant="ghost" disabled={signingIn === account.id || checking === account.id} onClick={() => setEditing(account.id)}>Edit</SettingsButton>
 						<SettingsButton variant="ghost" disabled={signingIn === account.id || checking === account.id} onClick={() => { setEditing(undefined); void update({ type: "update-account", id: account.id, archived: !account.archived }); }}>{account.archived ? "Restore" : "Archive"}</SettingsButton>
 					</>}>
+					{phaseoAgain === account.id && <div className="max-w-sm px-4 pb-4"><PhaseoSignInForm accountId={account.id} onCancel={() => setPhaseoAgain(undefined)} onConnected={next => { setPhaseoAgain(undefined); setWorkspace(next); }} /></div>}
 					{editing === account.id && <AccountEditor account={account} onSave={update} onCancel={() => setEditing(undefined)} />}
 					{statuses[account.id] && <UsageMeters status={statuses[account.id]} />}
 				</SettingsRow>

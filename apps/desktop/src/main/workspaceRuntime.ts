@@ -730,17 +730,18 @@ export class WorkspaceRuntime {
 				if (account.kind !== "api") throw new Error("Native credentials are managed through native sign-in.");
 				if (this.store.getOverview().tasks.some(task => task.accountId === account.id && this.executions.has(task.id))) throw new Error("Stop this account's running tasks before changing its connection.");
 			}
-			const oldSecret = account.secretId ?? account.id;
+			const oldSecret = account.secretId ?? account.id, oldSession = account.sessionSecretId;
 			if (command.apiKey !== undefined) this.credentialChanges.add(account.id);
 			try {
-				if (command.apiKey !== undefined) { if (!this.vault) throw new Error("Secure credential storage is unavailable."); account.secretId = randomUUID(); await this.vault.set(account.secretId, command.apiKey); account.configured = true; delete account.oauthExpiresAt; }
+				if (command.apiKey !== undefined) { if (!this.vault) throw new Error("Secure credential storage is unavailable."); account.secretId = randomUUID(); await this.vault.set(account.secretId, command.apiKey); account.configured = true; delete account.oauthExpiresAt; delete account.sessionSecretId; delete account.phaseoWorkspaceId; }
 				if (command.name !== undefined) account.name = command.name;
 				if (command.endpoint !== undefined) account.endpoint = command.endpoint;
 				if (command.archived !== undefined) account.archived = command.archived;
 				try { if (this.closing) throw new Error("The workspace is shutting down."); this.store.saveAccount(account); }
 				catch (error) { if (command.apiKey !== undefined) this.vault?.remove(account.secretId!); throw error; }
 				this.broadcast();
-				if (command.apiKey !== undefined) this.vault?.remove(oldSecret);
+				// A pasted key replaces a Phaseo login too.
+				if (command.apiKey !== undefined) { this.vault?.remove(oldSecret); if (oldSession) this.vault?.remove(oldSession); }
 				return this.store.getOverview();
 			} finally { this.credentialChanges.delete(account.id); }
 		}
