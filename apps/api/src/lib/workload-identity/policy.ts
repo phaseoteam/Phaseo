@@ -1,11 +1,11 @@
 // Purpose: Trust policies that map a verified workload token to a workspace key.
 // Why: A verified signature only proves who issued the token; the policy
 // decides which workloads a workspace trusts and which key they act as.
-// How: Validate policies on write (pinned immutable IDs, audiences), then
+// How: Validate policies on write (pinned immutable IDs), then
 // require exactly one active policy to match each token.
 
 import { presetProviderForIssuer, type WorkloadIdentityProvider } from "./issuers";
-import { DEFAULT_MAX_TOKEN_LIFETIME_SECONDS, type WorkloadTokenClaims } from "./verify";
+import { DEFAULT_MAX_TOKEN_LIFETIME_SECONDS, WORKLOAD_IDENTITY_AUDIENCE, type WorkloadTokenClaims } from "./verify";
 
 export type WorkloadIdentityPolicy = {
 	id: string;
@@ -13,14 +13,13 @@ export type WorkloadIdentityPolicy = {
 	keyId: string;
 	provider: WorkloadIdentityProvider;
 	issuer: string;
-	audiences: string[];
 	/** Every listed claim must equal one of its values. */
 	claimConditions: Record<string, string[]>;
 	maxTokenLifetimeSeconds: number;
 	status: "active" | "disabled";
 };
 
-export type WorkloadIdentityPolicyInput = Pick<WorkloadIdentityPolicy, "provider" | "issuer" | "audiences" | "claimConditions"> & {
+export type WorkloadIdentityPolicyInput = Pick<WorkloadIdentityPolicy, "provider" | "issuer" | "claimConditions"> & {
 	maxTokenLifetimeSeconds?: number;
 };
 
@@ -33,13 +32,12 @@ export const REQUIRED_PINNED_CLAIMS: Record<WorkloadIdentityProvider, readonly s
 	github_actions: ["repository_owner_id"],
 };
 
-// Registered claims are checked by the verifier or the audience list.
+// Registered claims are checked by the verifier.
 const RESERVED_CLAIMS = new Set(["iss", "aud", "exp", "iat", "nbf", "jti"]);
 const CLAIM_NAME = /^[A-Za-z0-9._-]{1,64}$/;
 const MAX_CONDITIONS = 16;
 const MAX_VALUES_PER_CLAIM = 20;
 const MAX_VALUE_LENGTH = 256;
-const MAX_AUDIENCES = 10;
 const MIN_LIFETIME_SECONDS = 60;
 
 export function validateWorkloadIdentityPolicy(
@@ -52,12 +50,6 @@ export function validateWorkloadIdentityPolicy(
 		if (presetProviderForIssuer(issuer) !== input.provider) errors.push(`issuer is not a ${input.provider} issuer`);
 	} else {
 		errors.push("provider must be vercel or github_actions");
-	}
-
-	const audiences = Array.isArray(input.audiences) ? input.audiences : [];
-	if (audiences.length === 0 || audiences.length > MAX_AUDIENCES) errors.push(`audiences must list 1 to ${MAX_AUDIENCES} values`);
-	if (audiences.some((aud) => typeof aud !== "string" || aud.length === 0 || aud.length > MAX_VALUE_LENGTH || aud !== aud.trim())) {
-		errors.push("audiences must be non-empty trimmed strings");
 	}
 
 	const conditions = input.claimConditions && typeof input.claimConditions === "object" ? input.claimConditions : {};
@@ -87,7 +79,7 @@ export function validateWorkloadIdentityPolicy(
 	}
 
 	if (errors.length > 0) return { ok: false, errors };
-	return { ok: true, value: { ...input, issuer, audiences, claimConditions: conditions, maxTokenLifetimeSeconds: lifetime } };
+	return { ok: true, value: { ...input, issuer, claimConditions: conditions, maxTokenLifetimeSeconds: lifetime } };
 }
 
 function claimAsString(value: unknown): string | null {
@@ -104,8 +96,8 @@ function tokenLifetimeSeconds(claims: WorkloadTokenClaims): number {
 
 export function policyMatchesClaims(policy: WorkloadIdentityPolicy, claims: WorkloadTokenClaims): boolean {
 	if (policy.status !== "active" || policy.issuer !== claims.iss) return false;
-	const tokenAudiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-	if (!tokenAudiences.some((aud) => policy.audiences.includes(aud))) return false;
+	const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+	if (!audiences.includes(WORKLOAD_IDENTITY_AUDIENCE)) return false;
 	if (tokenLifetimeSeconds(claims) > policy.maxTokenLifetimeSeconds) return false;
 	// Defence in depth: a stored policy that lost its pinned claim never matches.
 	for (const claim of REQUIRED_PINNED_CLAIMS[policy.provider] ?? []) {

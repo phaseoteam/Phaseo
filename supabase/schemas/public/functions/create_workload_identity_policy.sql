@@ -5,7 +5,6 @@ CREATE OR REPLACE FUNCTION public.create_workload_identity_policy (
   p_provider                   text,
   p_issuer                     text,
   p_pinned_owner_id            text,
-  p_audiences                  text[],
   p_claim_conditions           jsonb,
   p_max_token_lifetime_seconds integer
 )
@@ -28,22 +27,22 @@ begin
 
   return query
   insert into public.workload_identity_policies as policy (
-    workspace_id, key_id, name, provider, issuer, pinned_owner_id, audiences, claim_conditions,
+    workspace_id, key_id, name, provider, issuer, pinned_owner_id, claim_conditions,
     max_token_lifetime_seconds, created_by
   ) values (
-    p_workspace_id, new_key_id, p_name, p_provider, p_issuer, p_pinned_owner_id, p_audiences,
+    p_workspace_id, new_key_id, p_name, p_provider, p_issuer, p_pinned_owner_id,
     coalesce(p_claim_conditions, '{}'::jsonb), coalesce(p_max_token_lifetime_seconds, 43200), p_created_by
   )
   returning policy.id, policy.key_id;
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, text[], jsonb, integer) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, text[], jsonb, integer) IS 'Creates a workload identity trust policy together with the secretless keys row it authenticates as. The caller must already have checked that p_created_by is a workspace admin and validated the policy.';
+COMMENT ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) IS 'Creates a workload identity trust policy together with the secretless keys row it authenticates as. The caller must already have checked that p_created_by is a workspace admin and validated the policy.';
 
-REVOKE ALL ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, text[], jsonb, integer) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, text[], jsonb, integer) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, text[], jsonb, integer) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) FROM PUBLIC, "anon", "authenticated";

@@ -6,14 +6,12 @@ CREATE TABLE "public"."workload_identity_policies" (
   "provider"                   text                     NOT NULL,
   "issuer"                     text                     NOT NULL,
   "pinned_owner_id"            text                     NOT NULL,
-  "audiences"                  text[]                   NOT NULL,
   "claim_conditions"           jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "max_token_lifetime_seconds" integer                  NOT NULL DEFAULT 43200,
   "status"                     text                     NOT NULL DEFAULT 'active'::text,
   "created_by"                 uuid,
   "created_at"                 timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"                 timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT "workload_identity_policies_audiences_check" CHECK (((cardinality(audiences) >= 1) AND (cardinality(audiences) <= 10))),
   CONSTRAINT "workload_identity_policies_claim_conditions_check" CHECK ((jsonb_typeof(claim_conditions) = 'object'::text)),
   CONSTRAINT "workload_identity_policies_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "workload_identity_policies_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE CASCADE,
@@ -44,7 +42,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."workload_identity_policie
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."workload_identity_policies" IS 'Trust policies that let a workload authenticate to the gateway with a short-lived OIDC token from Vercel or GitHub Actions instead of an API key. Each policy owns one keys row (key_kind workload_identity, no usable secret) so limits, budgets, logs and billing use the normal key paths. pinned_owner_id is the immutable owner ID the token must carry (Vercel owner_id, GitHub repository_owner_id); claim_conditions adds exact-match conditions on other claims.';
+COMMENT ON TABLE "public"."workload_identity_policies" IS 'Trust policies that let a workload authenticate to the gateway with a short-lived OIDC token from Vercel or GitHub Actions instead of an API key. Each policy owns one keys row (key_kind workload_identity, no usable secret) so limits, budgets, logs and billing use the normal key paths. pinned_owner_id is the immutable owner ID the token must carry (Vercel owner_id, GitHub repository_owner_id); claim_conditions adds exact-match conditions on other claims. Tokens must be issued for the audience https://api.phaseo.app.';
 
 REVOKE ALL ON TABLE "public"."workload_identity_policies" FROM "service_role";
 

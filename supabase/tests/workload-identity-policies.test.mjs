@@ -13,14 +13,14 @@ const migration = async (suffix) => {
   assert.ok(name, `migration *${suffix} exists`);
   return readFile(new URL(name, migrations), 'utf8');
 };
-const create = `select * from public.create_workload_identity_policy($1::uuid, $2::uuid, $3, $4, $5, $6, $7::text[], $8::jsonb, $9)`;
+const create = `select * from public.create_workload_identity_policy($1::uuid, $2::uuid, $3, $4, $5, $6, $7::jsonb, $8)`;
 const vercel = (overrides = {}) => {
   const value = {
     name: 'Production website', provider: 'vercel', issuer: 'https://oidc.vercel.com/acme', owner: 'team_123',
-    audiences: ['https://vercel.com/acme'], conditions: { project_id: ['prj_1'], environment: ['production'] }, lifetime: null,
+    conditions: { project_id: ['prj_1'], environment: ['production'] }, lifetime: null,
     ...overrides,
   };
-  return [ws, admin, value.name, value.provider, value.issuer, value.owner, value.audiences, JSON.stringify(value.conditions), value.lifetime];
+  return [ws, admin, value.name, value.provider, value.issuer, value.owner, JSON.stringify(value.conditions), value.lifetime];
 };
 
 try {
@@ -81,14 +81,13 @@ try {
   const before = (await rows('select count(*)::int as n from public.keys'))[0].n;
   for (const [overrides, pattern] of [
     [{ provider: 'custom' }, /provider_check/],
-    [{ audiences: [] }, /audiences_check/],
     [{ lifetime: 10 }, /lifetime_check/],
     [{ owner: ' ' }, /pinned_owner_id_check/],
     [{ name: '' }, /name_check/],
   ]) {
     await assert.rejects(rows(create, vercel(overrides)), pattern);
   }
-  await assert.rejects(rows(create, [...vercel().slice(0, 7), '[]', null]), /claim_conditions_check/);
+  await assert.rejects(rows(create, [...vercel().slice(0, 6), '[]', null]), /claim_conditions_check/);
   assert.equal((await rows('select count(*)::int as n from public.keys'))[0].n, before);
 
   // Standard keys are unaffected; unknown kinds still fail.

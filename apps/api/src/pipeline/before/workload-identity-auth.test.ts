@@ -76,7 +76,7 @@ function claims(overrides: Record<string, unknown> = {}): Record<string, unknown
 	const now = Math.floor(Date.now() / 1000);
 	return {
 		iss: ISSUER,
-		aud: "https://vercel.com/acme",
+		aud: "https://api.phaseo.app",
 		sub: "owner:acme:project:web:environment:production",
 		iat: now - 10,
 		nbf: now - 10,
@@ -96,7 +96,6 @@ function policyRow(overrides: Record<string, unknown> = {}, keyOverrides: Record
 		provider: "vercel",
 		issuer: ISSUER,
 		pinned_owner_id: "team_123",
-		audiences: ["https://vercel.com/acme"],
 		claim_conditions: { project_id: ["prj_web"], environment: ["production"] },
 		max_token_lifetime_seconds: 43200,
 		status: "active",

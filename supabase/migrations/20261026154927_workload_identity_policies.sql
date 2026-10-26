@@ -23,14 +23,12 @@ CREATE TABLE "public"."workload_identity_policies" (
   "provider"                   text                     NOT NULL,
   "issuer"                     text                     NOT NULL,
   "pinned_owner_id"            text                     NOT NULL,
-  "audiences"                  text[]                   NOT NULL,
   "claim_conditions"           jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "max_token_lifetime_seconds" integer                  NOT NULL DEFAULT 43200,
   "status"                     text                     NOT NULL DEFAULT 'active'::text,
   "created_by"                 uuid,
   "created_at"                 timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"                 timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT "workload_identity_policies_audiences_check" CHECK (((cardinality(audiences) >= 1) AND (cardinality(audiences) <= 10))),
   CONSTRAINT "workload_identity_policies_claim_conditions_check" CHECK ((jsonb_typeof(claim_conditions) = 'object'::text)),
   CONSTRAINT "workload_identity_policies_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,
   CONSTRAINT "workload_identity_policies_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE CASCADE,
@@ -61,7 +59,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."workload_identity_policie
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."workload_identity_policies" IS 'Trust policies that let a workload authenticate to the gateway with a short-lived OIDC token from Vercel or GitHub Actions instead of an API key. Each policy owns one keys row (key_kind workload_identity, no usable secret) so limits, budgets, logs and billing use the normal key paths. pinned_owner_id is the immutable owner ID the token must carry (Vercel owner_id, GitHub repository_owner_id); claim_conditions adds exact-match conditions on other claims.';
+COMMENT ON TABLE "public"."workload_identity_policies" IS 'Trust policies that let a workload authenticate to the gateway with a short-lived OIDC token from Vercel or GitHub Actions instead of an API key. Each policy owns one keys row (key_kind workload_identity, no usable secret) so limits, budgets, logs and billing use the normal key paths. pinned_owner_id is the immutable owner ID the token must carry (Vercel owner_id, GitHub repository_owner_id); claim_conditions adds exact-match conditions on other claims. Tokens must be issued for the audience https://api.phaseo.app.';
 
 REVOKE ALL ON TABLE "public"."workload_identity_policies" FROM "service_role";
 
@@ -76,7 +74,6 @@ CREATE OR REPLACE FUNCTION public.create_workload_identity_policy (
   p_provider                   text,
   p_issuer                     text,
   p_pinned_owner_id            text,
-  p_audiences                  text[],
   p_claim_conditions           jsonb,
   p_max_token_lifetime_seconds integer
 )
@@ -99,22 +96,22 @@ begin
 
   return query
   insert into public.workload_identity_policies as policy (
-    workspace_id, key_id, name, provider, issuer, pinned_owner_id, audiences, claim_conditions,
+    workspace_id, key_id, name, provider, issuer, pinned_owner_id, claim_conditions,
     max_token_lifetime_seconds, created_by
   ) values (
-    p_workspace_id, new_key_id, p_name, p_provider, p_issuer, p_pinned_owner_id, p_audiences,
+    p_workspace_id, new_key_id, p_name, p_provider, p_issuer, p_pinned_owner_id,
     coalesce(p_claim_conditions, '{}'::jsonb), coalesce(p_max_token_lifetime_seconds, 43200), p_created_by
   )
   returning policy.id, policy.key_id;
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, text[], jsonb, integer) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, text[], jsonb, integer) IS 'Creates a workload identity trust policy together with the secretless keys row it authenticates as. The caller must already have checked that p_created_by is a workspace admin and validated the policy.';
+COMMENT ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) IS 'Creates a workload identity trust policy together with the secretless keys row it authenticates as. The caller must already have checked that p_created_by is a workspace admin and validated the policy.';
 
-REVOKE ALL ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, text[], jsonb, integer) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, text[], jsonb, integer) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, text[], jsonb, integer) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."create_workload_identity_policy"(uuid, uuid, text, text, text, text, jsonb, integer) FROM PUBLIC, "anon", "authenticated";

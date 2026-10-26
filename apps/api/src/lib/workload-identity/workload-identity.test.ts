@@ -25,7 +25,7 @@ type Signer = TestSigner;
 function vercelClaims(overrides: Record<string, unknown> = {}): Record<string, unknown> {
 	return {
 		iss: VERCEL_ISSUER,
-		aud: "https://vercel.com/acme",
+		aud: "https://api.phaseo.app",
 		sub: "owner:acme:project:acme_website:environment:production",
 		iat: NOW - 60,
 		nbf: NOW - 60,
@@ -140,6 +140,17 @@ describe("verifyWorkloadToken", () => {
 		const token = await sign(rsa, vercelClaims({ iss: "https://attacker.example.com" }));
 		expect(await verifyWorkloadToken(token, { jwks, nowSeconds: NOW })).toEqual({ ok: false, reason: "workload_issuer_not_trusted" });
 		expect(jwks.calls).toHaveLength(0);
+	});
+
+	it("requires tokens minted for Phaseo before fetching keys", async () => {
+		const jwks = staticJwks({ [vercelJwksUrl]: [rsa.publicJwk] });
+		for (const aud of ["https://vercel.com/acme", ["https://vercel.com/acme", "sts.amazonaws.com"]]) {
+			const token = await sign(rsa, vercelClaims({ aud }));
+			expect(await verifyWorkloadToken(token, { jwks, nowSeconds: NOW })).toEqual({ ok: false, reason: "workload_token_wrong_audience" });
+		}
+		expect(jwks.calls).toHaveLength(0);
+		const multi = await sign(rsa, vercelClaims({ aud: ["https://vercel.com/acme", "https://api.phaseo.app"] }));
+		expect((await verifyWorkloadToken(multi, { jwks, nowSeconds: NOW })).ok).toBe(true);
 	});
 
 	it("checks exp, nbf and maximum lifetime with clock skew", async () => {
@@ -272,7 +283,6 @@ describe("trust policies", () => {
 			keyId: "key_1",
 			provider: "vercel",
 			issuer: VERCEL_ISSUER,
-			audiences: ["https://vercel.com/acme"],
 			claimConditions: { owner_id: ["team_123"], project_id: ["prj_456"], environment: ["production"] },
 			maxTokenLifetimeSeconds: 43_200,
 			status: "active",
@@ -285,7 +295,6 @@ describe("trust policies", () => {
 		const missing = validateWorkloadIdentityPolicy({
 			provider: "vercel",
 			issuer: VERCEL_ISSUER,
-			audiences: ["https://vercel.com/acme"],
 			claimConditions: { owner: ["acme"] },
 		});
 		expect(missing).toMatchObject({ ok: false, errors: ['claim "owner_id" is required for vercel policies'] });
@@ -293,7 +302,6 @@ describe("trust policies", () => {
 		const github = validateWorkloadIdentityPolicy({
 			provider: "github_actions",
 			issuer: GITHUB_ISSUER,
-			audiences: ["https://api.phaseo.app"],
 			claimConditions: { repository_owner_id: ["42"], repository_id: ["7"] },
 		});
 		expect(github).toMatchObject({ ok: true, value: { maxTokenLifetimeSeconds: 43_200 } });
@@ -303,7 +311,6 @@ describe("trust policies", () => {
 		const result = validateWorkloadIdentityPolicy({
 			provider: "github_actions",
 			issuer: VERCEL_ISSUER,
-			audiences: [],
 			claimConditions: { aud: ["x"], "bad name": ["x"], repository_owner_id: [" 42"] },
 			maxTokenLifetimeSeconds: 10,
 		});
@@ -311,7 +318,6 @@ describe("trust policies", () => {
 		if (result.ok === false) {
 			expect(result.errors).toEqual(expect.arrayContaining([
 				"issuer is not a github_actions issuer",
-				"audiences must list 1 to 10 values",
 				'claim "aud" cannot be a condition',
 				'claim name "bad name" is invalid',
 				'claim "repository_owner_id" values must be non-empty trimmed strings',
@@ -320,13 +326,13 @@ describe("trust policies", () => {
 		}
 	});
 
-
 	it("matches exactly one active policy", () => {
 		expect(matchWorkloadIdentityPolicy(claims, [policy()])).toMatchObject({ ok: true, policy: { id: "pol_1" } });
 		expect(matchWorkloadIdentityPolicy(claims, [policy({ status: "disabled" })])).toEqual({ ok: false, reason: "workload_identity_no_matching_policy" });
 		expect(matchWorkloadIdentityPolicy(claims, [policy({ claimConditions: { owner_id: ["team_123"], environment: ["preview"] } })]))
 			.toEqual({ ok: false, reason: "workload_identity_no_matching_policy" });
-		expect(matchWorkloadIdentityPolicy(claims, [policy({ audiences: ["https://api.phaseo.app"] })]))
+		// Platform default audiences never match, even if a stored policy is otherwise satisfied.
+		expect(matchWorkloadIdentityPolicy({ ...claims, aud: "https://vercel.com/acme" }, [policy()]))
 			.toEqual({ ok: false, reason: "workload_identity_no_matching_policy" });
 		expect(matchWorkloadIdentityPolicy(claims, [policy({ maxTokenLifetimeSeconds: 600 })]))
 			.toEqual({ ok: false, reason: "workload_identity_no_matching_policy" });

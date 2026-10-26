@@ -9,6 +9,12 @@ import { jwksUrlForIssuer, presetProviderForIssuer, type WorkloadIdentityProvide
 const MAX_TOKEN_LENGTH = 8_192;
 const CLOCK_SKEW_SECONDS = 60;
 export const DEFAULT_MAX_TOKEN_LIFETIME_SECONDS = 12 * 60 * 60;
+/**
+ * Tokens must be minted for Phaseo. Platform default audiences (for example
+ * Vercel's https://vercel.com/<team>) are shared with every service the
+ * workload calls, so a token sent elsewhere could be replayed here.
+ */
+export const WORKLOAD_IDENTITY_AUDIENCE = "https://api.phaseo.app";
 
 const JWKS_L1_TTL_MS = 10 * 60 * 1000;
 const JWKS_KV_TTL_SECONDS = 60 * 60;
@@ -46,6 +52,7 @@ export type WorkloadTokenClaims = Record<string, unknown> & {
 
 export type WorkloadTokenFailureReason =
 	| "workload_token_malformed"
+	| "workload_token_wrong_audience"
 	| "workload_token_unsupported_alg"
 	| "workload_issuer_not_trusted"
 	| "workload_jwks_unavailable"
@@ -167,6 +174,8 @@ export async function verifyWorkloadToken(
 		return { ok: false, reason: "workload_token_malformed" };
 	}
 	if (payload.nbf !== undefined && !isFiniteNumber(payload.nbf)) return { ok: false, reason: "workload_token_malformed" };
+	const audiences: unknown[] = Array.isArray(aud) ? aud : [aud];
+	if (!audiences.includes(WORKLOAD_IDENTITY_AUDIENCE)) return { ok: false, reason: "workload_token_wrong_audience" };
 
 	// Check time claims before any network work so expired tokens stay cheap.
 	const now = options.nowSeconds ?? Math.floor(Date.now() / 1000);

@@ -38,7 +38,6 @@ type PolicyRow = {
 	provider: WorkloadIdentityProvider;
 	issuer: string;
 	pinned_owner_id: string;
-	audiences: string[];
 	claim_conditions: Record<string, string[]> | null;
 	max_token_lifetime_seconds: number;
 	status: "active" | "disabled";
@@ -92,7 +91,6 @@ function toCandidate(row: PolicyRow): CandidatePolicy | null {
 		keyId: row.key_id,
 		provider: row.provider,
 		issuer: row.issuer,
-		audiences: row.audiences ?? [],
 		claimConditions: conditions,
 		maxTokenLifetimeSeconds: row.max_token_lifetime_seconds,
 		status: row.status,
@@ -106,7 +104,7 @@ async function loadCandidatePolicies(issuer: string, ownerId: string): Promise<C
 	if (cached && cached.expiresAt > Date.now()) return cached.policies;
 	const { data, error } = await getSupabaseAdmin()
 		.from("workload_identity_policies")
-		.select("id,workspace_id,key_id,provider,issuer,pinned_owner_id,audiences,claim_conditions,max_token_lifetime_seconds,status,keys(id,kid,workspace_id,status,key_kind,expires_at,ip_allowlist,created_by)")
+		.select("id,workspace_id,key_id,provider,issuer,pinned_owner_id,claim_conditions,max_token_lifetime_seconds,status,keys(id,kid,workspace_id,status,key_kind,expires_at,ip_allowlist,created_by)")
 		.eq("issuer", issuer)
 		.eq("pinned_owner_id", ownerId)
 		.eq("status", "active");
