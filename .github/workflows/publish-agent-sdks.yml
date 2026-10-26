@@ -114,7 +114,7 @@ jobs:
           name: python-agent-sdk-${{ needs.build-python.outputs.version }}
           path: dist/python-agent
       - name: Publish to PyPI with trusted publishing
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
         with:
           packages-dir: dist/python-agent
           skip-existing: true
