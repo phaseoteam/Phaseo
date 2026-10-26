@@ -87,6 +87,8 @@ const response = await client.responses.create({
 });
 ```
 
+Passar uma função como `apiKey` exige uma versão do `@phaseo/sdk` posterior à 3.0.0.
+
 Com qualquer cliente HTTP, solicite um token a cada solicitação e envie-o como token bearer:
 
 ```ts

@@ -88,6 +88,8 @@ const response = await client.responses.create({
 });
 ```
 
+Passing a function as `apiKey` needs a version of `@phaseo/sdk` newer than 3.0.0.
+
 With any HTTP client, request a token per request and send it as a bearer token:
 
 ```ts
