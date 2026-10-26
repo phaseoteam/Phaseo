@@ -497,8 +497,6 @@ jobs:
                   pnpm --filter @phaseo/mcp test
                   pnpm --filter @phaseo/mcp build:production
 
-            # Built and tested only: the hosted Slack app and its secrets don't
-            # exist yet, so the Worker is not in the deploy matrix.
             - name: Slack agent typecheck, test & production build
               if: matrix.app == 'slack'
               run: |
@@ -838,6 +836,8 @@ jobs:
                       name: Deploy Web API
                     - target: mcp
                       name: Deploy MCP
+                    - target: slack
+                      name: Deploy Slack agent
                     - target: docs
                       name: Deploy Docs
         steps:
@@ -925,11 +925,11 @@ jobs:
               run: git checkout -- pnpm-lock.yaml
 
             - name: Install dependencies (for Cloudflare Workers)
-              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp'
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp' || matrix.target == 'slack'
               run: corepack pnpm install --frozen-lockfile
 
             - name: Validate Cloudflare API deploy secrets
-              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp'
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp' || matrix.target == 'slack'
               shell: bash
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -1147,6 +1147,23 @@ jobs:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   workingDirectory: apps/mcp
+                  command: deploy --env production
+
+            # The Worker's secrets are set on Cloudflare (apps/slack/README.md);
+            # deploy fails if a required one is missing.
+            - name: Build Slack agent workspace dependencies
+              if: matrix.target == 'slack'
+              run: |
+                  corepack pnpm --filter @phaseo/sdk build
+                  corepack pnpm --filter @phaseo/agent-sdk build
+
+            - name: Deploy Slack agent Worker to Cloudflare
+              if: matrix.target == 'slack'
+              uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0
+              with:
+                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  workingDirectory: apps/slack
                   command: deploy --env production
 
             # ---------- DOCS ----------
