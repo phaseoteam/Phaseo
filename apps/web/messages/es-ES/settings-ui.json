@@ -6814,17 +6814,22 @@
 			"cap": "Tope {cap}",
 			"plan": "Plan",
 			"planValue": "Hasta {people} personas",
-			"planPrice": "{price} al mes"
+			"planPrice": "{price} al mes",
+			"modelSpend": "Gasto en modelos",
+			"modelSpendDetail": "Se descuenta de los créditos como solicitudes normales, no forma parte del cargo del Agente de Slack",
+			"modelSpendUnavailable": "No disponible"
 		},
 		"charges": {
 			"month": "Mes",
 			"people": "Personas",
 			"answers": "Respuestas",
 			"amount": "Importe",
+			"modelSpend": "Gasto en modelos",
 			"status": "Estado",
 			"charged": "Pagado",
 			"pending": "Esperando créditos",
 			"empty": "Aún no hay cargos. El primero se cobra cuando termine este mes.",
+			"modelSpendNote": "El gasto en modelos se descuenta de los créditos como solicitudes normales y no está incluido en el importe.",
 			"note": "Cada cargo aparece también en tus transacciones como Agente de Slack.",
 			"transactions": "Ver transacciones"
 		},

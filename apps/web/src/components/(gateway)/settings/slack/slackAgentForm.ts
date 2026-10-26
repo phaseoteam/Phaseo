@@ -39,7 +39,15 @@ export type SlackAgentInstallation = {
 	settings: SlackAgentSettings;
 	plan: { people: number; price_usd: number };
 	/** Counted in the database for the current UTC month. Absent in PATCH responses. */
-	month?: { period_start: string; people: number; answers: number; estimated_charge_usd: number };
+	month?: {
+		period_start: string;
+		people: number;
+		answers: number;
+		estimated_charge_usd: number;
+		/** Model requests through the agent's managed key, billed from credits, not part of the charge. Null when it couldn't be read. */
+		model_spend_usd?: number | null;
+		model_requests?: number | null;
+	};
 };
 
 export type SlackAgentCharge = {
@@ -47,6 +55,8 @@ export type SlackAgentCharge = {
 	people: number;
 	answers: number;
 	amount_usd: number;
+	/** That month's model spend through the installation's key, separate from amount_usd. Null when it couldn't be read. */
+	model_spend_usd?: number | null;
 	/** pending (waiting for credits) or charged. */
 	status: string;
 	charged_at: string | null;

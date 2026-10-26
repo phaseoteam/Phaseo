@@ -6814,17 +6814,22 @@
 			"cap": "上限 {cap}",
 			"plan": "プラン",
 			"planValue": "最大 {people} 人",
-			"planPrice": "月額 {price}"
+			"planPrice": "月額 {price}",
+			"modelSpend": "モデルの支出",
+			"modelSpendDetail": "通常のリクエストとしてクレジットから請求され、Slack エージェントの請求には含まれません",
+			"modelSpendUnavailable": "取得できません"
 		},
 		"charges": {
 			"month": "月",
 			"people": "人数",
 			"answers": "回答",
 			"amount": "金額",
+			"modelSpend": "モデルの支出",
 			"status": "状態",
 			"charged": "支払い済み",
 			"pending": "クレジット待ち",
 			"empty": "まだ請求はありません。最初の請求は今月末に行われます。",
+			"modelSpendNote": "モデルの支出は通常のリクエストとしてクレジットから請求され、金額には含まれません。",
 			"note": "各請求は、取引履歴にも Slack エージェントとして表示されます。",
 			"transactions": "取引を見る"
 		},

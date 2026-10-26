@@ -6814,17 +6814,22 @@
 			"cap": "السقف {cap}",
 			"plan": "الخطة",
 			"planValue": "حتى {people} شخصًا",
-			"planPrice": "{price} شهريًا"
+			"planPrice": "{price} شهريًا",
+			"modelSpend": "إنفاق النماذج",
+			"modelSpendDetail": "يُخصم من الرصيد كطلبات عادية، وليس جزءًا من رسوم وكيل Slack",
+			"modelSpendUnavailable": "غير متاح"
 		},
 		"charges": {
 			"month": "الشهر",
 			"people": "الأشخاص",
 			"answers": "الإجابات",
 			"amount": "المبلغ",
+			"modelSpend": "إنفاق النماذج",
 			"status": "الحالة",
 			"charged": "مدفوع",
 			"pending": "بانتظار الرصيد",
 			"empty": "لا توجد رسوم بعد. تُخصم أول رسوم عند انتهاء هذا الشهر.",
+			"modelSpendNote": "يُخصم إنفاق النماذج من الرصيد كطلبات عادية، ولا يدخل في المبلغ.",
 			"note": "تظهر كل رسوم أيضًا في معاملات الفوترة باسم وكيل Slack.",
 			"transactions": "عرض المعاملات"
 		},

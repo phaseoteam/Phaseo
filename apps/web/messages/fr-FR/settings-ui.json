@@ -6814,17 +6814,22 @@
 			"cap": "Plafond {cap}",
 			"plan": "Forfait",
 			"planValue": "Jusqu’à {people} personnes",
-			"planPrice": "{price} par mois"
+			"planPrice": "{price} par mois",
+			"modelSpend": "Dépenses de modèles",
+			"modelSpendDetail": "Prélevées sur les crédits comme des demandes normales, hors montant de l’Agent Slack",
+			"modelSpendUnavailable": "Indisponible"
 		},
 		"charges": {
 			"month": "Mois",
 			"people": "Personnes",
 			"answers": "Réponses",
 			"amount": "Montant",
+			"modelSpend": "Dépenses de modèles",
 			"status": "Statut",
 			"charged": "Payé",
 			"pending": "En attente de crédits",
 			"empty": "Aucune facturation pour l’instant. La première a lieu à la fin de ce mois.",
+			"modelSpendNote": "Les dépenses de modèles sont prélevées sur les crédits comme des demandes normales et ne sont pas comprises dans le montant.",
 			"note": "Chaque facturation apparaît aussi dans vos transactions sous le nom Agent Slack.",
 			"transactions": "Voir les transactions"
 		},

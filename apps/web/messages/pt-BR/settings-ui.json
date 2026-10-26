@@ -6814,17 +6814,22 @@
 			"cap": "Teto {cap}",
 			"plan": "Plano",
 			"planValue": "Até {people} pessoas",
-			"planPrice": "{price} por mês"
+			"planPrice": "{price} por mês",
+			"modelSpend": "Gasto com modelos",
+			"modelSpendDetail": "Cobrado dos créditos como solicitações normais, fora da cobrança do Agente do Slack",
+			"modelSpendUnavailable": "Indisponível"
 		},
 		"charges": {
 			"month": "Mês",
 			"people": "Pessoas",
 			"answers": "Respostas",
 			"amount": "Valor",
+			"modelSpend": "Gasto com modelos",
 			"status": "Status",
 			"charged": "Pago",
 			"pending": "Aguardando créditos",
 			"empty": "Nenhuma cobrança ainda. A primeira é feita quando este mês terminar.",
+			"modelSpendNote": "O gasto com modelos é cobrado dos créditos como solicitações normais e não está incluído no valor.",
 			"note": "Cada cobrança também aparece nas suas transações como Agente do Slack.",
 			"transactions": "Ver transações"
 		},
