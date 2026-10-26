@@ -141,7 +141,7 @@
 	},
 	"devDependencies": {
 		"@eslint/eslintrc": "^3",
-		"@formatjs/icu-messageformat-parser": "3.5.17",
+		"@formatjs/icu-messageformat-parser": "3.5.21",
 		"@playwright/test": "^1.62.1",
 		"@shikijs/colorized-brackets": "^4.3.1",
 		"@tailwindcss/postcss": "^4",
