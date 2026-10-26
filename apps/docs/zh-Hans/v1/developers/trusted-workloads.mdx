@@ -151,7 +151,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-GitHub Actions 的令牌几分钟后就会过期，因此运行时间较长的作业需要重新请求令牌。
+GitHub Actions 的令牌有效期很短，因此运行时间较长的作业需要重新请求令牌。
 </Tab>
 </Tabs>
 
@@ -175,10 +175,10 @@ GitHub Actions 的令牌几分钟后就会过期，因此运行时间较长的�
 | --- | --- | --- |
 | `workload_token_wrong_audience` | 该令牌不是为 `https://api.phaseo.app` 签发的。 | 使用该受众请求令牌。 |
 | `workload_issuer_not_trusted` | 没有已启用的策略使用此令牌的签发者。 | 检查 Vercel 团队 slug 或签发者模式，并确认策略已开启。 |
-| `workload_identity_no_matching_policy` | 令牌有效，但没有已启用的策略与其 claims 匹配。 | 检查团队、所有者、项目或仓库 ID，以及环境、分支或标签条件。 |
+| `workload_identity_no_matching_policy` | 令牌有效，但没有已启用的策略与之匹配。 | 检查团队、所有者、项目或仓库 ID，环境、分支或标签条件，并确认令牌的有效期没有超过策略的 **可接受的最长令牌**。 |
 | `workload_identity_ambiguous` | 有多个工作区信任该工作负载。 | 发送 `x-phaseo-workspace: <workspace id>`。 |
 | `workload_identity_not_enabled` | 此工作区暂时无法使用受信任的工作负载。 | 目前请先使用 API 密钥。 |
 | `workload_token_expired` | 令牌已过期。 | 每次请求或每个作业步骤都请求新令牌。 |
-| `workload_token_lifetime_too_long` | 令牌签发时的有效期超过了策略允许的范围。 | 调高策略的 **可接受的最长令牌**，最多 12 小时。 |
+| `workload_token_lifetime_too_long` | 令牌签发时的有效期超过 12 小时，这是 Phaseo 接受的上限。 | 请求有效期更短的令牌。 |
 | `workload_token_invalid_signature` | 令牌的签名与平台的密钥不匹配。 | 按平台签发的原样发送令牌，不要修改。 |
 | `workload_jwks_unavailable` | Phaseo 无法获取平台的签名密钥。 | 稍等片刻后重试。 |

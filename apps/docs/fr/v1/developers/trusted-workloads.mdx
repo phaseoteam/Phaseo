@@ -151,7 +151,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-Les jetons GitHub Actions expirent au bout de quelques minutes ; demandez-en donc un nouveau pour les jobs longs.
+Les jetons GitHub Actions sont de courte durée ; demandez-en donc un nouveau pour les jobs longs.
 </Tab>
 </Tabs>
 
@@ -175,10 +175,10 @@ Un jeton refusé renvoie `401` avec l'un de ces messages :
 | --- | --- | --- |
 | `workload_token_wrong_audience` | Le jeton n'a pas été émis pour `https://api.phaseo.app`. | Demandez le jeton avec cette audience. |
 | `workload_issuer_not_trusted` | Aucune règle active n'utilise l'émetteur de ce jeton. | Vérifiez le slug de l'équipe Vercel ou le mode d'émetteur, et que la règle est activée. |
-| `workload_identity_no_matching_policy` | Le jeton est valide, mais aucune règle active ne correspond à ses claims. | Vérifiez les ID d'équipe, de propriétaire, de projet ou de dépôt, ainsi que les conditions d'environnement, de branche ou de tag. |
+| `workload_identity_no_matching_policy` | Le jeton est valide, mais aucune règle active ne lui correspond. | Vérifiez les ID d'équipe, de propriétaire, de projet ou de dépôt, les conditions d'environnement, de branche ou de tag, et que la durée de vie du jeton ne dépasse pas le **Jeton le plus long accepté** de la règle. |
 | `workload_identity_ambiguous` | Plusieurs espaces de travail font confiance à ce workload. | Envoyez `x-phaseo-workspace: <workspace id>`. |
 | `workload_identity_not_enabled` | Les workloads de confiance ne sont pas encore disponibles pour cet espace de travail. | Utilisez une clé API pour le moment. |
 | `workload_token_expired` | Le jeton a expiré. | Demandez un nouveau jeton pour chaque requête ou étape du job. |
-| `workload_token_lifetime_too_long` | Le jeton a été émis pour durer plus longtemps que la règle ne le permet. | Augmentez le **Jeton le plus long accepté** de la règle, jusqu'à 12 heures. |
+| `workload_token_lifetime_too_long` | Le jeton a été émis pour durer plus de 12 heures, le maximum accepté par Phaseo. | Demandez un jeton de plus courte durée. |
 | `workload_token_invalid_signature` | La signature du jeton ne correspond pas aux clés de la plateforme. | Envoyez le jeton tel que la plateforme l'a émis, sans le modifier. |
 | `workload_jwks_unavailable` | Phaseo n'a pas pu récupérer les clés de signature de la plateforme. | Réessayez après une courte attente. |

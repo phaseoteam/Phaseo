@@ -151,7 +151,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-تنتهي صلاحية رموز GitHub Actions بعد بضع دقائق، لذا اطلب رمزًا جديدًا في المهام الطويلة.
+رموز GitHub Actions قصيرة الأجل، لذا اطلب رمزًا جديدًا في المهام الطويلة.
 </Tab>
 </Tabs>
 
@@ -175,10 +175,10 @@ curl https://api.phaseo.app/v1/chat/completions \
 | --- | --- | --- |
 | `workload_token_wrong_audience` | لم يصدر الرمز للجمهور `https://api.phaseo.app`. | اطلب الرمز بهذا الجمهور. |
 | `workload_issuer_not_trusted` | لا توجد سياسة نشطة تستخدم مُصدِر هذا الرمز. | تحقق من الاسم المختصر لفريق Vercel أو وضع المُصدِر، ومن أن السياسة مفعّلة. |
-| `workload_identity_no_matching_policy` | الرمز صالح، لكن لا توجد سياسة نشطة تطابق claims الخاصة به. | تحقق من معرّفات الفريق أو المالك أو المشروع أو المستودع، ومن شروط البيئة أو الفرع أو الوسم. |
+| `workload_identity_no_matching_policy` | الرمز صالح، لكن لا توجد سياسة نشطة تطابقه. | تحقق من معرّفات الفريق أو المالك أو المشروع أو المستودع، ومن شروط البيئة أو الفرع أو الوسم، ومن أن صلاحية الرمز لا تتجاوز **أطول رمز مقبول** في السياسة. |
 | `workload_identity_ambiguous` | تثق أكثر من مساحة عمل بحمل العمل هذا. | أرسل `x-phaseo-workspace: <workspace id>`. |
 | `workload_identity_not_enabled` | أحمال العمل الموثوقة غير متاحة لمساحة العمل هذه بعد. | استخدم مفتاح API في الوقت الحالي. |
 | `workload_token_expired` | انتهت صلاحية الرمز. | اطلب رمزًا جديدًا لكل طلب أو خطوة في المهمة. |
-| `workload_token_lifetime_too_long` | صدر الرمز بصلاحية أطول مما تسمح به السياسة. | ارفع **أطول رمز مقبول** في السياسة، حتى 12 ساعة. |
+| `workload_token_lifetime_too_long` | صدر الرمز بصلاحية تزيد على 12 ساعة، وهي أقصى مدة يقبلها Phaseo. | اطلب رمزًا أقصر أجلًا. |
 | `workload_token_invalid_signature` | لا يطابق توقيع الرمز مفاتيح المنصة. | أرسل الرمز دون تعديل، تمامًا كما أصدرته المنصة. |
 | `workload_jwks_unavailable` | تعذّر على Phaseo جلب مفاتيح التوقيع الخاصة بالمنصة. | أعد المحاولة بعد انتظار قصير. |

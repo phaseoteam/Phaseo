@@ -152,7 +152,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-GitHub Actions tokens expire after a few minutes, so request a new one for long jobs.
+GitHub Actions tokens are short-lived, so request a new one for long jobs.
 </Tab>
 </Tabs>
 
@@ -176,10 +176,10 @@ A refused token returns `401` with one of these messages:
 | --- | --- | --- |
 | `workload_token_wrong_audience` | The token wasn't issued for `https://api.phaseo.app`. | Request the token with that audience. |
 | `workload_issuer_not_trusted` | No active policy uses this token's issuer. | Check the Vercel team slug or issuer mode, and that the policy is on. |
-| `workload_identity_no_matching_policy` | The token is valid, but no active policy matches its claims. | Check the Team, Owner, Project or Repository IDs and the environment, branch or tag conditions. |
+| `workload_identity_no_matching_policy` | The token is valid, but no active policy matches it. | Check the Team, Owner, Project or Repository IDs, the environment, branch or tag conditions, and that the token doesn't outlive the policy's **Longest token accepted**. |
 | `workload_identity_ambiguous` | More than one workspace trusts this workload. | Send `x-phaseo-workspace: <workspace id>`. |
 | `workload_identity_not_enabled` | Trusted workloads isn't available for this workspace yet. | Use an API key for now. |
 | `workload_token_expired` | The token has expired. | Request a new token for each request or job step. |
-| `workload_token_lifetime_too_long` | The token was issued to last longer than the policy allows. | Raise **Longest token accepted** on the policy, up to 12 hours. |
+| `workload_token_lifetime_too_long` | The token was issued to last longer than 12 hours, the most Phaseo accepts. | Request a shorter-lived token. |
 | `workload_token_invalid_signature` | The token's signature doesn't match the platform's keys. | Send the token unchanged, exactly as the platform issued it. |
 | `workload_jwks_unavailable` | Phaseo couldn't fetch the platform's signing keys. | Retry after a short wait. |

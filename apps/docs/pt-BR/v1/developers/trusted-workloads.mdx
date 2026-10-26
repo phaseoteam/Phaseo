@@ -151,7 +151,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-Os tokens do GitHub Actions expiram após alguns minutos, então solicite um novo em jobs longos.
+Os tokens do GitHub Actions são de curta duração, então solicite um novo em jobs longos.
 </Tab>
 </Tabs>
 
@@ -175,10 +175,10 @@ Um token recusado retorna `401` com uma destas mensagens:
 | --- | --- | --- |
 | `workload_token_wrong_audience` | O token não foi emitido para `https://api.phaseo.app`. | Solicite o token com essa audiência. |
 | `workload_issuer_not_trusted` | Nenhuma política ativa usa o emissor deste token. | Verifique o slug da equipe da Vercel ou o modo de emissor e se a política está ativada. |
-| `workload_identity_no_matching_policy` | O token é válido, mas nenhuma política ativa corresponde às claims dele. | Verifique os IDs de equipe, proprietário, projeto ou repositório e as condições de ambiente, branch ou tag. |
+| `workload_identity_no_matching_policy` | O token é válido, mas nenhuma política ativa corresponde a ele. | Verifique os IDs de equipe, proprietário, projeto ou repositório, as condições de ambiente, branch ou tag, e se o token não dura mais do que o **Token mais longo aceito** da política. |
 | `workload_identity_ambiguous` | Mais de um espaço de trabalho confia neste workload. | Envie `x-phaseo-workspace: <workspace id>`. |
 | `workload_identity_not_enabled` | Os workloads confiáveis ainda não estão disponíveis para este espaço de trabalho. | Use uma chave de API por enquanto. |
 | `workload_token_expired` | O token expirou. | Solicite um novo token a cada solicitação ou etapa do job. |
-| `workload_token_lifetime_too_long` | O token foi emitido para durar mais do que a política permite. | Aumente o **Token mais longo aceito** da política, até 12 horas. |
+| `workload_token_lifetime_too_long` | O token foi emitido para durar mais de 12 horas, o máximo que o Phaseo aceita. | Solicite um token de menor duração. |
 | `workload_token_invalid_signature` | A assinatura do token não corresponde às chaves da plataforma. | Envie o token sem alterações, exatamente como a plataforma o emitiu. |
 | `workload_jwks_unavailable` | O Phaseo não conseguiu obter as chaves de assinatura da plataforma. | Tente novamente após uma breve espera. |

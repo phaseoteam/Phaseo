@@ -151,7 +151,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-GitHub-Actions-Tokens laufen nach wenigen Minuten ab, fordere bei langen Jobs also ein neues an.
+GitHub-Actions-Tokens sind kurzlebig, fordere bei langen Jobs also ein neues an.
 </Tab>
 </Tabs>
 
@@ -175,10 +175,10 @@ Ein abgelehntes Token gibt `401` mit einer dieser Meldungen zurück:
 | --- | --- | --- |
 | `workload_token_wrong_audience` | Das Token wurde nicht für `https://api.phaseo.app` ausgestellt. | Fordere das Token mit dieser Audience an. |
 | `workload_issuer_not_trusted` | Keine aktive Richtlinie nutzt den Issuer dieses Tokens. | Prüfe den Vercel-Team-Slug oder den Issuer-Modus und ob die Richtlinie eingeschaltet ist. |
-| `workload_identity_no_matching_policy` | Das Token ist gültig, aber keine aktive Richtlinie passt zu seinen Claims. | Prüfe Team-, Inhaber-, Projekt- oder Repository-ID und die Bedingungen für Umgebung, Branch oder Tag. |
+| `workload_identity_no_matching_policy` | Das Token ist gültig, aber keine aktive Richtlinie passt dazu. | Prüfe Team-, Inhaber-, Projekt- oder Repository-ID, die Bedingungen für Umgebung, Branch oder Tag und ob das Token länger gültig ist als das **Längste akzeptierte Token** der Richtlinie. |
 | `workload_identity_ambiguous` | Mehr als ein Workspace vertraut diesem Workload. | Sende `x-phaseo-workspace: <workspace id>`. |
 | `workload_identity_not_enabled` | Vertrauenswürdige Workloads sind für diesen Workspace noch nicht verfügbar. | Nutze vorerst einen API-Schlüssel. |
 | `workload_token_expired` | Das Token ist abgelaufen. | Fordere für jede Anfrage oder jeden Job-Schritt ein neues Token an. |
-| `workload_token_lifetime_too_long` | Das Token wurde länger gültig ausgestellt, als die Richtlinie erlaubt. | Erhöhe das **Längste akzeptierte Token** der Richtlinie, bis zu 12 Stunden. |
+| `workload_token_lifetime_too_long` | Das Token wurde für mehr als 12 Stunden ausgestellt, das Maximum, das Phaseo akzeptiert. | Fordere ein kürzer gültiges Token an. |
 | `workload_token_invalid_signature` | Die Signatur des Tokens passt nicht zu den Schlüsseln der Plattform. | Sende das Token unverändert, genau so, wie die Plattform es ausgestellt hat. |
 | `workload_jwks_unavailable` | Phaseo konnte die Signaturschlüssel der Plattform nicht abrufen. | Versuche es nach kurzer Wartezeit erneut. |

@@ -151,7 +151,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-GitHub Actions のトークンは数分で失効するため、長時間のジョブでは新しいトークンを取得してください。
+GitHub Actions のトークンは有効期間が短いため、長時間のジョブでは新しいトークンを取得してください。
 </Tab>
 </Tabs>
 
@@ -175,10 +175,10 @@ GitHub Actions のトークンは数分で失効するため、長時間のジ�
 | --- | --- | --- |
 | `workload_token_wrong_audience` | トークンが `https://api.phaseo.app` 向けに発行されていません。 | このオーディエンスでトークンを要求してください。 |
 | `workload_issuer_not_trusted` | このトークンの発行者を使う有効なポリシーがありません。 | Vercel のチームのスラッグまたは発行者モードと、ポリシーがオンになっているかを確認してください。 |
-| `workload_identity_no_matching_policy` | トークンは有効ですが、その claims に一致する有効なポリシーがありません。 | チーム、オーナー、プロジェクト、リポジトリの ID と、環境、ブランチ、タグの条件を確認してください。 |
+| `workload_identity_no_matching_policy` | トークンは有効ですが、一致する有効なポリシーがありません。 | チーム、オーナー、プロジェクト、リポジトリの ID、環境、ブランチ、タグの条件、そしてトークンの有効期間がポリシーの **受け付ける最長トークン** を超えていないかを確認してください。 |
 | `workload_identity_ambiguous` | 複数のワークスペースがこのワークロードを信頼しています。 | `x-phaseo-workspace: <workspace id>` を送信してください。 |
 | `workload_identity_not_enabled` | このワークスペースでは信頼済みワークロードをまだ利用できません。 | 当面は API キーを使ってください。 |
 | `workload_token_expired` | トークンの有効期限が切れています。 | リクエストまたはジョブのステップごとに新しいトークンを取得してください。 |
-| `workload_token_lifetime_too_long` | トークンが、ポリシーで許可されているより長く有効になるよう発行されています。 | ポリシーの **受け付ける最長トークン** を、最大 12 時間まで引き上げてください。 |
+| `workload_token_lifetime_too_long` | トークンが、Phaseo が受け付ける上限である 12 時間より長く有効になるよう発行されています。 | 有効期間の短いトークンを要求してください。 |
 | `workload_token_invalid_signature` | トークンの署名がプラットフォームの鍵と一致しません。 | プラットフォームが発行したトークンを、変更せずにそのまま送信してください。 |
 | `workload_jwks_unavailable` | Phaseo がプラットフォームの署名鍵を取得できませんでした。 | 少し待ってから再試行してください。 |

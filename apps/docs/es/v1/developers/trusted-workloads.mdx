@@ -151,7 +151,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-Los tokens de GitHub Actions caducan a los pocos minutos, así que solicita uno nuevo en los jobs largos.
+Los tokens de GitHub Actions son de corta duración, así que solicita uno nuevo en los jobs largos.
 </Tab>
 </Tabs>
 
@@ -175,10 +175,10 @@ Un token rechazado devuelve `401` con uno de estos mensajes:
 | --- | --- | --- |
 | `workload_token_wrong_audience` | El token no se emitió para `https://api.phaseo.app`. | Solicita el token con esa audiencia. |
 | `workload_issuer_not_trusted` | Ninguna política activa usa el emisor de este token. | Revisa el slug del equipo de Vercel o el modo de emisor, y que la política esté activada. |
-| `workload_identity_no_matching_policy` | El token es válido, pero ninguna política activa coincide con sus claims. | Revisa los ID de equipo, propietario, proyecto o repositorio y las condiciones de entorno, rama o etiqueta. |
+| `workload_identity_no_matching_policy` | El token es válido, pero ninguna política activa coincide con él. | Revisa los ID de equipo, propietario, proyecto o repositorio, las condiciones de entorno, rama o etiqueta, y que el token no dure más que el **Token más largo aceptado** de la política. |
 | `workload_identity_ambiguous` | Más de un espacio de trabajo confía en esta carga de trabajo. | Envía `x-phaseo-workspace: <workspace id>`. |
 | `workload_identity_not_enabled` | Las cargas de trabajo de confianza aún no están disponibles para este espacio de trabajo. | Usa una clave de API por ahora. |
 | `workload_token_expired` | El token ha caducado. | Solicita un token nuevo en cada solicitud o paso del job. |
-| `workload_token_lifetime_too_long` | El token se emitió para durar más de lo que permite la política. | Aumenta el **Token más largo aceptado** de la política, hasta 12 horas. |
+| `workload_token_lifetime_too_long` | El token se emitió para durar más de 12 horas, el máximo que acepta Phaseo. | Solicita un token de menor duración. |
 | `workload_token_invalid_signature` | La firma del token no coincide con las claves de la plataforma. | Envía el token sin modificar, tal como lo emitió la plataforma. |
 | `workload_jwks_unavailable` | Phaseo no pudo obtener las claves de firma de la plataforma. | Vuelve a intentarlo tras una breve espera. |
