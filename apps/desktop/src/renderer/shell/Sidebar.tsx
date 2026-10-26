@@ -2,7 +2,7 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, CalendarClock, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
+import { Archive, CalendarClock, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -159,7 +159,7 @@ function FooterButton({ name, tip, active, onClick, children }: { name: string; 
 function Avatar({ name, picture, className }: { name: string; picture?: string; className?: string }) {
 	const [failed, setFailed] = useState<string>();
 	if (picture && failed !== picture) return <img aria-hidden alt="" src={picture} referrerPolicy="no-referrer" onError={() => setFailed(picture)} className={cn("shrink-0 rounded-md object-cover", className)} />;
-	const initials = name.split(/[s._@-]+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("") || name.slice(0, 2);
+	const initials = name.split(/[\s._@-]+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("") || name.slice(0, 2);
 	return <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-md bg-linear-to-br from-[#0078b8] to-[#7c3aed] font-bold text-white", className)}>{initials.toUpperCase()}</span>;
 }
 
@@ -172,8 +172,9 @@ function AccountFooter() {
 	const { tasks } = useScheduledTasks();
 	const on = tasks.filter(task => task.enabled).length;
 	const account = usablePhaseoAccounts(overview)[0];
-	// Who signed in, from their Phaseo profile; the account's own name until it has been read.
+	// Who signed in, from their Phaseo profile; the account's own name until it has been read. The menu greets them by first name.
 	const name = account?.profile?.name ?? account?.profile?.email?.split("@")[0] ?? account?.name ?? "", picture = account?.profile?.picture;
+	const firstName = account?.profile?.givenName ?? account?.profile?.name?.split(/s+/)[0] ?? name;
 	return <div className="sidebar-footer border-t border-sidebar-border"><UsageRings /><div className="flex items-center gap-1 p-2.5">
 		{account
 			? <DropdownMenu>
@@ -183,9 +184,10 @@ function AccountFooter() {
 				<DropdownMenuContent side="top" align="start" className="w-56">
 					<div className="flex items-center gap-2.5 px-2 py-1.5">
 						<Avatar name={name} picture={picture} className="size-7 text-[11px]" />
-						<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{name}</span><span className="block truncate text-[11px] text-muted-foreground">{account.profile?.email ?? "Signed in to Phaseo"}</span></span>
+						<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{firstName}</span><span className="block truncate text-[11px] text-muted-foreground">{account.profile?.email ?? "Signed in to Phaseo"}</span></span>
 					</div>
 					<DropdownMenuSeparator />
+					<DropdownMenuItem onClick={() => void window.phaseoDesktop?.openExternal("https://phaseo.app/settings/account")}><ExternalLink />Manage account</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openSettings("accounts")}><UserRound />Accounts</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openUsage("limits")}><Gauge />Usage limits</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openSettings()}><Settings />Settings<DropdownMenuShortcut>{shortcut("settings.open")}</DropdownMenuShortcut></DropdownMenuItem>

@@ -5,7 +5,15 @@ import { createServer } from "node:http";
 export const PHASEO_DESKTOP_CLIENT_ID = "phaseo_desktop";
 export const PHASEO_GATEWAY_ENDPOINT = "https://api.phaseo.app/v1";
 const apiRoot = "https://api.phaseo.app";
-const scopes = ["openid", "profile", "email", "gateway:access", "models:read"];
+/**
+ * The CLI's account access as well as model calls, so the app can show and change the account (credits, usage, keys,
+ * presets, settings, workspaces). The consent page lets each optional scope be declined, and a server that doesn't
+ * allow one yet leaves it out; only gateway:access and models:read are required.
+ */
+const scopes = ["openid", "profile", "email", "gateway:access", "me:read", "models:read", "providers:read", "pricing:read", "credits:read", "activity:read", "analytics:read", "generations:read",
+	"workspaces:read", "workspaces:write", "workspaces:delete", "keys:read", "keys:write", "keys:delete", "presets:read", "presets:write", "presets:delete", "settings:read", "settings:write",
+	"guardrails:read", "guardrails:write", "guardrails:delete", "budgets:read", "budgets:write", "budgets:delete", "rate_limits:read", "rate_limits:write", "rate_limits:delete",
+	"classifiers:read", "classifiers:write", "classifiers:delete", "management_keys:read", "management_keys:write", "management_keys:delete", "oauth_clients:read", "oauth_clients:write", "oauth_clients:delete"];
 
 /** Authorization codes stay in main; only the final encrypted account reaches the renderer. */
 export async function signInPhaseo({ openBrowser, signal, fetcher = fetch, timeoutMs = 300_000 }: {
@@ -96,6 +104,20 @@ export async function phaseoProfile(key: string, fetcher: typeof fetch = fetch, 
 	const picture = text(body.picture, 2048);
 	let https: string | undefined;
 	try { https = picture && new URL(picture).protocol === "https:" ? picture : undefined; } catch { https = undefined; }
-	const name = text(body.name), email = text(body.email);
-	return { checkedAt: new Date().toISOString(), ...name ? { name } : {}, ...email ? { email } : {}, ...https ? { picture: https } : {} };
+	const name = text(body.name), givenName = text(body.given_name), email = text(body.email);
+	return { checkedAt: new Date().toISOString(), ...name ? { name } : {}, ...givenName ? { givenName } : {}, ...email ? { email } : {}, ...https ? { picture: https } : {} };
+}
+
+/**
+ * Renews a Phaseo sign-in's key while the app is used, so it lasts like the CLI's session instead of a week: the new
+ * expiry. Undefined when this server can't renew keys yet (the key keeps its expiry); a key that can't be renewed throws.
+ */
+export async function renewPhaseoKey(key: string, fetcher: typeof fetch = fetch, signal: AbortSignal = AbortSignal.timeout(15_000)): Promise<string | undefined> {
+	const response = await fetcher(`${apiRoot}/oauth/desktop/renew`, { method: "POST", headers: { Authorization: `Bearer ${key}` }, redirect: "error", signal });
+	if (response.status === 404 || response.status === 405) return undefined;
+	if (!response.ok) throw new Error(`Phaseo couldn't renew this sign-in (HTTP ${response.status}).`);
+	const body = await response.json() as { expires_at?: unknown };
+	const expiresAt = typeof body.expires_at === "string" ? Date.parse(body.expires_at) : Number.NaN;
+	if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() || expiresAt > Date.now() + 90 * 86_400_000) throw new Error("Phaseo returned an invalid renewal.");
+	return new Date(expiresAt).toISOString();
 }

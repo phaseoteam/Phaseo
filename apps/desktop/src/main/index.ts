@@ -3,7 +3,7 @@ import { imageMime } from "./attachments";
 import { linkTitle } from "./linkTitle";
 import { KeybindingsFile } from "./keybindingsFile";
 import { browserShortcuts } from "../shared/keybindings";
-import { phaseoProfile, signInPhaseo, PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth";
+import { phaseoProfile, renewPhaseoKey, signInPhaseo, PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth";
 import { PhaseoSkills } from "./phaseoSkills";
 import { GlobalInstructions } from "./globalInstructions";
 import { codexNativeActions } from "./codexNativeActions";
@@ -121,6 +121,7 @@ let terminalService: TerminalService;
 let taskNotifications: TaskNotifications;
 let missionService: MissionService;
 let settleTimer: ReturnType<typeof setInterval> | undefined;
+let phaseoSignInTimer: ReturnType<typeof setInterval> | undefined;
 let pullRequestWatcher: PullRequestWatcher | undefined;
 let modelCatalogCache: ModelCatalogCache;
 // Before any handler is registered, so each one is traced (slow or failed calls only).
@@ -191,25 +192,35 @@ ipcMain.handle("workspace:phaseo-sign-in", async (event, accountId: unknown) => 
 		} catch (error) { credentialVault.remove(newSecret); throw error; }
 		if (existing) credentialVault.remove(existing.secretId ?? existing.id);
 		const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state);
-		void refreshPhaseoProfiles(accountIdToSave);
+		void refreshPhaseoSignIns(accountIdToSave);
 		return { workspace: state, accountId: accountIdToSave };
 	} catch (error) { if (controller.signal.aborted) throw new Error("Sign-in canceled.", { cause: error }); throw error; }
 	finally { owner.webContents.removeListener("destroyed", destroyed); phaseoSignIns.delete(event.sender.id); releaseAccount(); }
 });
 /**
- * Reads who each Phaseo sign-in belongs to, for the sidebar's profile: a new sign-in at once, the rest at most daily.
- * A failure keeps the last profile (or the initials).
+ * Keeps each Phaseo sign-in going while the app is used: renews its key once a day (a key lasts 30 days from its last
+ * renewal), and reads who it belongs to for the sidebar's profile, a new sign-in at once and the rest at most daily.
+ * A failure keeps what was there: the key's expiry, the last profile (or the initials).
  */
-async function refreshPhaseoProfiles(signedIn?: string) {
+async function refreshPhaseoSignIns(signedIn?: string) {
 	for (const account of workspaceRuntime.store.getAccounts()) {
 		if (account.harness !== "phaseo" || !account.oauthExpiresAt || account.archived || Date.parse(account.oauthExpiresAt) <= Date.now()) continue;
-		if (signedIn ? account.id !== signedIn : account.profile && Date.now() - Date.parse(account.profile.checkedAt) < 86_400_000) continue;
-		try {
-			const profile = await phaseoProfile(await credentialVault.get(account.secretId ?? account.id));
+		if (signedIn && account.id !== signedIn) continue;
+		const save = (change: Partial<typeof account>) => {
 			const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id);
-			if (!current || shutdownStarted) continue;
-			workspaceRuntime.store.saveAccount({ ...current, profile });
+			// Not over a sign-in made since (a new key, a new expiry).
+			if (!current || shutdownStarted || current.secretId !== account.secretId) return;
+			workspaceRuntime.store.saveAccount({ ...current, ...change });
 			workspaceRuntime.onChange(workspaceRuntime.store.getOverview());
+		};
+		try {
+			const key = await credentialVault.get(account.secretId ?? account.id);
+			if (Date.parse(account.oauthExpiresAt) - Date.now() < 29 * 86_400_000) {
+				const oauthExpiresAt = await renewPhaseoKey(key).catch(() => undefined);
+				if (oauthExpiresAt && oauthExpiresAt > account.oauthExpiresAt) save({ oauthExpiresAt });
+			}
+			if (!signedIn && account.profile && Date.now() - Date.parse(account.profile.checkedAt) < 86_400_000) continue;
+			save({ profile: await phaseoProfile(key) });
 		} catch { /* Kept as it was. */ }
 	}
 }
@@ -308,6 +319,7 @@ app.on("before-quit", event => {
 	diagnostics.close();
 	missionService?.close();
 	if (settleTimer) clearInterval(settleTimer);
+	if (phaseoSignInTimer) clearInterval(phaseoSignInTimer);
 	void pullRequestWatcher?.close();
 	taskNotifications?.dismiss();
 	terminalService?.close();
@@ -950,7 +962,8 @@ app.whenReady().then(() => {
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);
 	createWindow();
 	missionService.start();
-	void refreshPhaseoProfiles();
+	void refreshPhaseoSignIns();
+	phaseoSignInTimer = setInterval(() => void refreshPhaseoSignIns(), 6 * 3_600_000); phaseoSignInTimer.unref();
 	workspaceRuntime.settleIdleThreads();
 	settleTimer = setInterval(() => workspaceRuntime.settleIdleThreads(), 60_000); settleTimer.unref();
 	workspaceRuntime.onPullRequestNotice = (taskId, summary, outcome) => { const title = workspaceRuntime.store.getOverview().tasks.find(task => task.id === taskId)?.title ?? "Chat"; taskNotifications.notice(taskId, title, summary, outcome !== "completed"); };
