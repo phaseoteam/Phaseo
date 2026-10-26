@@ -166,8 +166,8 @@ importers:
         specifier: ^4.20260523.1
         version: 4.20260702.1
       '@copilotkit/aimock':
-        specifier: 1.15.1
-        version: 1.15.1(jest@30.4.2(@types/node@26.2.0)(ts-node@10.9.2(@swc/core@1.15.47(@swc/helpers@0.5.23))(@types/node@26.2.0)(@typescript/typescript6@6.0.2)))(vitest@4.1.11)
+        specifier: 1.45.1
+        version: 1.45.1(jest@30.4.2(@types/node@26.2.0)(ts-node@10.9.2(@swc/core@1.15.47(@swc/helpers@0.5.23))(@types/node@26.2.0)(@typescript/typescript6@6.0.2)))(vitest@4.1.11)
       '@typescript/native':
         specifier: 'catalog:'
         version: typescript@7.0.2
@@ -2392,9 +2392,9 @@ packages:
   '@cloudflare/workers-types@5.20260713.1':
     resolution: {integrity: sha512-4YZE9YIzr3iP9eRUV4ekZozLLsYQFFKxmMJfAcsteCuzKJ7RJrLqcCxm1aMzTE9uFcy+D6A89WE+cjJadF2c9g==}
 
-  '@copilotkit/aimock@1.15.1':
-    resolution: {integrity: sha512-DG9p6fKdYmuTW0zaUe9iDbgB/CM3SWhpdhVBrszQ6+L2UW4+DZB0gvICFQXRWhVXMpqxEkI9Pqhm/MtMb8li9A==}
-    engines: {node: '>=24.0.0'}
+  '@copilotkit/aimock@1.45.1':
+    resolution: {integrity: sha512-JYf6ThCKD8eNMVm0PYsfu1wASy2E2T8VCVoWnEpWHNV2QiSv4yMJ6JHTPm5Gp76azKqme2F43L6siFA1gU7UKQ==}
+    engines: {node: '>=20.15.0'}
     hasBin: true
     peerDependencies:
       jest: '>=29'
@@ -17601,7 +17601,7 @@ snapshots:
 
   '@cloudflare/workers-types@5.20260713.1': {}
 
-  '@copilotkit/aimock@1.15.1(jest@30.4.2(@types/node@26.2.0)(ts-node@10.9.2(@swc/core@1.15.47(@swc/helpers@0.5.23))(@types/node@26.2.0)(@typescript/typescript6@6.0.2)))(vitest@4.1.11)':
+  '@copilotkit/aimock@1.45.1(jest@30.4.2(@types/node@26.2.0)(ts-node@10.9.2(@swc/core@1.15.47(@swc/helpers@0.5.23))(@types/node@26.2.0)(@typescript/typescript6@6.0.2)))(vitest@4.1.11)':
     optionalDependencies:
       jest: 30.4.2(@types/node@26.2.0)(ts-node@10.9.2(@swc/core@1.15.47(@swc/helpers@0.5.23))(@types/node@26.2.0)(@typescript/typescript6@6.0.2))
       vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(@vitest/coverage-v8@4.1.11)(jsdom@26.1.0)(vite@8.1.4(@types/node@26.2.0)(esbuild@0.25.12)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.1))
