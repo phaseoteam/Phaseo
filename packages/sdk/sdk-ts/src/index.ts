@@ -48,6 +48,7 @@ import type {
 import * as ops from "./oapi-gen/client/index.js";
 import { PhaseoHttpError, Client, type RawResponse } from "./runtime/client.js";
 import { createTransport, type RequestControls } from "./runtime/transport.js";
+import { withApiKeyProvider, type ApiKeyProvider } from "./runtime/auth.js";
 import { JobHandle } from "./jobHandle.js";
 import { paginateItems, paginatePages, type PageOptions } from "./pagination.js";
 import {
@@ -64,6 +65,7 @@ import {
 export { JobHandle } from "./jobHandle.js";
 export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
 export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
+export type { ApiKeyProvider } from "./runtime/auth.js";
 export { responseMetadata, requestTraceUrl, RequestTimeoutError, type RequestControls, type RequestEvent, type ResponseEvent, type RetryEvent, type ResponseMetadata } from "./runtime/transport.js";
 import {
   TelemetryCapture,
@@ -127,7 +129,11 @@ export type AppAttribution = {
 };
 
 export type Options = RequestControls & {
-  apiKey?: string;
+  /**
+   * A Phaseo API key, or a function returning the credential for each request, such as
+   * `() => getVercelOidcToken({ audience: "https://api.phaseo.app" })` for a trusted workload.
+   */
+  apiKey?: string | ApiKeyProvider;
   baseUrl?: string;
   /** Select a Phaseo regional provider-routing endpoint. Cannot be combined with baseUrl. */
   region?: PhaseoRegion;
@@ -634,9 +640,11 @@ export class Phaseo {
 
   constructor(private readonly opts: Options = {}) {
     const apiKey = resolveApiKey(opts.apiKey);
+    // A credential function sets Authorization on every request instead of once here.
+    const fetchImpl = typeof apiKey === "function" ? withApiKeyProvider(opts.fetchImpl ?? globalThis.fetch, apiKey) : opts.fetchImpl;
     this.basePath = trimTrailingSlashes(resolveBaseUrl(opts));
     this.headers = {
-      Authorization: `Bearer ${apiKey}`,
+      ...(typeof apiKey === "string" ? { Authorization: `Bearer ${apiKey}` } : {}),
       "X-Phaseo-Client": "phaseo-typescript",
       "X-Phaseo-Client-Version": "2.2.0",
       ...appAttributionHeaders(opts.app),
@@ -648,9 +656,9 @@ export class Phaseo {
       timeoutMs: opts.timeoutMs,
       signal: opts.signal,
       maxRetries: opts.maxRetries,
-      fetchImpl: opts.fetchImpl
+      fetchImpl
     });
-    this.fetchImpl = createTransport(opts.fetchImpl ?? fetch, opts);
+    this.fetchImpl = createTransport(fetchImpl ?? fetch, opts);
     this.enableDeprecationWarnings = opts.enableDeprecationWarnings ?? true;
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
     this.modelLifecycleChecks = opts.modelLifecycleChecks ?? true;
@@ -1899,7 +1907,8 @@ export type {
 
 export default Phaseo;
 
-function resolveApiKey(explicit?: string): string {
+function resolveApiKey(explicit?: string | ApiKeyProvider): string | ApiKeyProvider {
+  if (typeof explicit === "function") return explicit;
   const key = explicit ?? readEnv("PHASEO_API_KEY");
   if (!key) {
     throw new Error(
