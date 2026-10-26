@@ -46,7 +46,7 @@ afterAll(() => queryClient.clear());
 function render(month: SlackAgentInstallation["month"], charges: SlackAgentCharge[] = []) {
 	const view: SlackAgentManagerView = {
 		workspaceId: "w1", canManage: true, configured: { hosted_app: true, custom_app: true }, redirect_url: "https://phaseo.app/callback",
-		scopes: [], installed: true, installation: installation(month), custom_app: null, charges,
+		scopes: [], auto_routing: false, installed: true, installation: installation(month), custom_app: null, charges,
 	};
 	return renderToStaticMarkup(
 		<QueryClientProvider client={queryClient}>
