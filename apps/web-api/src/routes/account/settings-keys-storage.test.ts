@@ -87,4 +87,16 @@ describe("key storage locations", () => {
         expect((await request("POST", "/keys/key-1/rotate", {})).status).toBe(200);
         expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({ storage_locations: ["railway"] }));
     });
+
+    it("refuses to rotate a workload identity key", async () => {
+        Object.assign(mocks.key, { key_kind: "workload_identity" });
+        try {
+            const response = await request("POST", "/keys/key-1/rotate", {});
+            expect(response.status).toBe(409);
+            expect(await response.json()).toEqual({ error: "key_not_rotatable" });
+            expect(mocks.insert).not.toHaveBeenCalled();
+        } finally {
+            delete (mocks.key as Record<string, unknown>).key_kind;
+        }
+    });
 });

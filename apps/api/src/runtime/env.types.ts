@@ -65,6 +65,8 @@ export type GatewayBindings = {
 	CUSTOMER_RATE_LIMIT_SELF_SERVE_RAISES_ENABLED?: string;
 	/** Enforces workspace rate limit policies (requests per minute) through CUSTOMER_RATE_LIMITS. */
 	RATE_LIMIT_POLICIES_ENABLED?: string;
+	/** Kill switch: "false" stops accepting Vercel and GitHub Actions OIDC tokens. On when unset; the Statsig gate decides per workspace. */
+	WORKLOAD_IDENTITY_AUTH_ENABLED?: string;
 	/** Kill switch: "false" stops request classifiers. On when unset. */
 	REQUEST_CLASSIFIERS_ENABLED?: string;
 	SPEND_LIMITS?: DurableObjectNamespace;
@@ -413,6 +415,7 @@ export type GatewayBindings = {
     STATSIG_AUTO_ROUTING_GATE?: string;
     STATSIG_REQUEST_CLASSIFIERS_GATE?: string;
     STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE?: string;
+    STATSIG_WORKLOAD_IDENTITY_GATE?: string;
     STATSIG_ENVIRONMENT_TIER?: string;
     REALTIME_SESSION_RECONCILIATION_ENABLED?: string;
     REALTIME_SESSION_RECONCILIATION_LIMIT?: string;

@@ -14,6 +14,7 @@ const DEFAULT_DATA_CONTRIBUTION_GATE = "gateway_data_contribution";
 const DEFAULT_AUTO_ROUTING_GATE = "gateway_auto_routing";
 const DEFAULT_REQUEST_CLASSIFIERS_GATE = "gateway_request_classifiers";
 const DEFAULT_MODEL_SUCCESSOR_REDIRECT_GATE = "gateway_model_successor_redirect";
+const DEFAULT_WORKLOAD_IDENTITY_GATE = "gateway_workload_identity";
 const WORKSPACE_OWNER_CACHE_TTL_MS = 5 * 60 * 1000;
 
 type StatsigGateSubject = {
@@ -104,6 +105,10 @@ export function getRequestClassifiersFeatureGateName(bindings: Partial<GatewayBi
 
 export function getModelSuccessorRedirectFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
 	return normalizeText(bindings.STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE) ?? DEFAULT_MODEL_SUCCESSOR_REDIRECT_GATE;
+}
+
+export function getWorkloadIdentityFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
+	return normalizeText(bindings.STATSIG_WORKLOAD_IDENTITY_GATE) ?? DEFAULT_WORKLOAD_IDENTITY_GATE;
 }
 
 async function resolveWorkspaceOwnerUserId(workspaceId: string): Promise<string | null> {
@@ -335,5 +340,16 @@ export async function isModelSuccessorRedirectAccessEnabled(
 	return isStatsigGateEnabled(getModelSuccessorRedirectFeatureGateName(bindings), {
 		...subject,
 		surface: "gateway_model_successor_redirect",
+	}, bindings);
+}
+
+/** Decided for the workspace owner, so a workspace either accepts workload identity tokens or does not. */
+export async function isWorkloadIdentityAccessEnabled(
+	subject: Omit<StatsigGateSubject, "surface" | "userId">,
+	bindings: Partial<GatewayBindings> = getBindings(),
+): Promise<boolean> {
+	return isStatsigGateEnabled(getWorkloadIdentityFeatureGateName(bindings), {
+		...subject,
+		surface: "gateway_workload_identity",
 	}, bindings);
 }
