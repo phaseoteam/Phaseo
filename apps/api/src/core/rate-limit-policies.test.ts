@@ -680,6 +680,15 @@ describe("concurrency limits and strict policies", () => {
 		expect(leases.held.size).toBe(0);
 	});
 
+	it("words a limit of one request and a one-second retry in the singular", async () => {
+		publishPlan(concurrencyPlan({ rpm: null, cc: 1, name: "Concurrent" }));
+		mocks.acquireConcurrency.mockResolvedValue({ allowed: false, limit: 1, remaining: 0, retryAfterSeconds: 1 });
+		const response = await guardRateLimitPolicies(ctx({ rateLimitConcurrency: createConcurrencyLeases() }));
+		expect(((await response?.json()) as { description: string }).description).toBe(
+			"This API key already has 1 request in progress, the \"Concurrent\" rate limit policy's limit on concurrent requests. Retry after 1 second.",
+		);
+	});
+
 	it("does not limit concurrency for requests that nothing would release", async () => {
 		publishPlan(concurrencyPlan({ rpm: null, cc: 1, name: "Concurrent" }));
 		expect(await guardRateLimitPolicies(ctx())).toBeNull();
