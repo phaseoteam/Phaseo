@@ -83,6 +83,26 @@ describe("trusted workload form", () => {
 		});
 	});
 
+	it("keeps saved value lists and lifetime when those fields are not edited", () => {
+		const github = {
+			...vercelPolicy,
+			provider: "github_actions" as const,
+			issuer: "https://token.actions.githubusercontent.com",
+			ownerId: "42",
+			claimConditions: { repository_id: ["7", "8"], ref: ["refs/heads/main", "refs/heads/release"] },
+			maxTokenLifetimeSeconds: 300,
+		};
+		// Only the name changes.
+		const renamed = draftToPayload({ ...draftFromPolicy(github), name: "Renamed" });
+		expect(renamed).toMatchObject({ ok: true, payload: { claim_conditions: github.claimConditions, max_token_lifetime_seconds: 300 } });
+		// Editing one field replaces only that field's list.
+		const edited = draftToPayload({ ...draftFromPolicy(github), githubRef: "refs/heads/next", maxLifetimeHours: "2" });
+		expect(edited).toMatchObject({ ok: true, payload: { claim_conditions: { repository_id: ["7", "8"], ref: ["refs/heads/next"] }, max_token_lifetime_seconds: 7200 } });
+		// Custom Vercel environments the boxes can't show survive while the boxes are untouched.
+		const custom = { ...vercelPolicy, claimConditions: { environment: ["staging-eu"] } };
+		expect(draftToPayload(draftFromPolicy(custom))).toMatchObject({ ok: true, payload: { claim_conditions: { environment: ["staging-eu"] } } });
+	});
+
 	it("flags policies that trust a whole team or organisation", () => {
 		expect(isOwnerWide(vercelPolicy)).toBe(false);
 		expect(isOwnerWide({ provider: "github_actions", claimConditions: { ref: ["refs/heads/main"] } })).toBe(true);

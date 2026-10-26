@@ -36,6 +36,11 @@ export type WorkloadDraft = {
 	maxLifetimeHours: string;
 	/** Conditions on claims the form does not show, kept on save. */
 	extraConditions: Record<string, string[]>;
+	/**
+	 * The saved policy when editing. The form shows one value per claim and whole
+	 * hours, so an unchanged field keeps the saved values exactly.
+	 */
+	original?: { conditions: Record<string, string[]>; lifetimeSeconds: number; lifetimeHours: string };
 };
 
 export type WorkloadProblem =
@@ -87,6 +92,7 @@ export function draftFromPolicy(policy: SettingsWorkloadIdentityPolicy): Workloa
 	const extraConditions = Object.fromEntries(
 		Object.entries(conditions).filter(([claim]) => !FORM_CLAIMS[policy.provider].includes(claim)),
 	);
+	const lifetimeHours = String(Math.max(1, Math.round(policy.maxTokenLifetimeSeconds / 3600)));
 	const environments = (conditions.environment ?? []).filter((value): value is VercelEnvironment =>
 		(VERCEL_ENVIRONMENTS as readonly string[]).includes(value));
 	return {
@@ -99,18 +105,33 @@ export function draftFromPolicy(policy: SettingsWorkloadIdentityPolicy): Workloa
 		githubRepositoryId: policy.provider === "github_actions" ? first(conditions, "repository_id") : "",
 		githubRef: policy.provider === "github_actions" ? first(conditions, "ref") : "",
 		githubEnvironment: policy.provider === "github_actions" ? first(conditions, "environment") : "",
-		maxLifetimeHours: String(Math.max(1, Math.round(policy.maxTokenLifetimeSeconds / 3600))),
+		maxLifetimeHours: lifetimeHours,
 		extraConditions,
+		original: { conditions, lifetimeSeconds: policy.maxTokenLifetimeSeconds, lifetimeHours },
 	};
 }
 
 type Built = { ok: true; payload: WorkloadCreatePayload } | { ok: false; problem: WorkloadProblem };
 
+/** The saved values when the field still shows what was loaded, else the edited ones. */
+function keepUnchanged(original: string[] | undefined, shown: string[], edited: string[]): string[] {
+	const same = original !== undefined && shown.length === edited.length && shown.every((value, index) => value === edited[index]);
+	return same ? original : edited;
+}
+
 export function draftToPayload(draft: WorkloadDraft): Built {
 	const name = draft.name.trim();
 	if (!name || name.length > MAX_NAME_LENGTH) return { ok: false, problem: "name" };
-	const hours = Number(draft.maxLifetimeHours.trim());
-	if (!Number.isInteger(hours) || hours < 1 || hours > MAX_LIFETIME_HOURS) return { ok: false, problem: "lifetime" };
+	const hoursText = draft.maxLifetimeHours.trim();
+	const hours = Number(hoursText);
+	const lifetimeUnchanged = draft.original !== undefined && hoursText === draft.original.lifetimeHours;
+	if (!lifetimeUnchanged && (!Number.isInteger(hours) || hours < 1 || hours > MAX_LIFETIME_HOURS)) return { ok: false, problem: "lifetime" };
+	const saved = draft.original?.conditions;
+	// Sets a form claim, keeping the saved value list when the field was not edited.
+	const setClaim = (conditions: Record<string, string[]>, claim: string, edited: string[], shown: string[]) => {
+		const values = keepUnchanged(saved?.[claim], shown, edited);
+		if (values.length) conditions[claim] = [...values];
+	};
 	const conditions: Record<string, string[]> = { ...draft.extraConditions };
 	const ownerId = draft.ownerId.trim();
 	let issuer: string;
@@ -122,20 +143,22 @@ export function draftToPayload(draft: WorkloadDraft): Built {
 		const projectId = draft.vercelProjectId.trim();
 		if (projectId && !VERCEL_PROJECT_ID.test(projectId)) return { ok: false, problem: "vercelProjectId" };
 		issuer = slug ? `${VERCEL_GLOBAL_ISSUER}/${slug}` : VERCEL_GLOBAL_ISSUER;
-		if (projectId) conditions.project_id = [projectId];
-		// Keep the environments in a stable order.
+		setClaim(conditions, "project_id", projectId ? [projectId] : [], saved?.project_id?.length ? [saved.project_id[0]] : []);
+		// Keep the environments in a stable order. Custom environments the form can't show are kept while the boxes are unchanged.
 		const environments = VERCEL_ENVIRONMENTS.filter((environment) => draft.vercelEnvironments.includes(environment));
-		if (environments.length) conditions.environment = [...environments];
+		const shownEnvironments = VERCEL_ENVIRONMENTS.filter((environment) => (saved?.environment ?? []).includes(environment));
+		setClaim(conditions, "environment", [...environments], [...shownEnvironments]);
 	} else {
 		if (!NUMERIC_ID.test(ownerId)) return { ok: false, problem: "githubOwnerId" };
 		const repositoryId = draft.githubRepositoryId.trim();
 		if (repositoryId && !NUMERIC_ID.test(repositoryId)) return { ok: false, problem: "githubRepositoryId" };
 		issuer = GITHUB_ACTIONS_ISSUER;
-		if (repositoryId) conditions.repository_id = [repositoryId];
+		const shownFirst = (claim: string) => (saved?.[claim]?.length ? [saved[claim][0]] : []);
+		setClaim(conditions, "repository_id", repositoryId ? [repositoryId] : [], shownFirst("repository_id"));
 		const ref = draft.githubRef.trim();
-		if (ref) conditions.ref = [ref];
+		setClaim(conditions, "ref", ref ? [ref] : [], shownFirst("ref"));
 		const environment = draft.githubEnvironment.trim();
-		if (environment) conditions.environment = [environment];
+		setClaim(conditions, "environment", environment ? [environment] : [], shownFirst("environment"));
 	}
 
 	return {
@@ -146,7 +169,7 @@ export function draftToPayload(draft: WorkloadDraft): Built {
 			issuer,
 			owner_id: ownerId,
 			claim_conditions: conditions,
-			max_token_lifetime_seconds: hours * 3600,
+			max_token_lifetime_seconds: lifetimeUnchanged && draft.original ? draft.original.lifetimeSeconds : hours * 3600,
 		},
 	};
 }
