@@ -178,7 +178,6 @@ Slack's API terms don't allow training on Slack data or keeping it, so the agent
 
 - **No message content in Phaseo's logs.** The agent's API key never stores request or response content, in logs, caches or telemetry, whatever your workspace settings. Its requests still appear in your usage and logs without content, with the [request labels](/v1/guides/request-labels) `app=slack-agent`, `slack_team` and `slack_channel` and the [app title](/v1/guides/app-attribution) `Phaseo Slack agent`.
 - **No training or logging providers.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models, prompt publishing, and providers that log inputs and outputs.
-- **No data collection.** Every request asks for providers that don't collect data (`provider.data_collection: "deny"`).
 - **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, and who it has sent the Connect button. They're deleted 7 days after the thread's last activity.
 - **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
 - **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.

@@ -69,10 +69,11 @@ describe("the SDK agent runner", () => {
 		expect(sent.body).toMatchObject({
 			model: "phaseo/auto",
 			user: "slack:T0TEST0001:U0PERSON01",
-			provider: { data_collection: "deny" },
 			stream: true,
 			instructions: "You are the Phaseo agent.",
 		});
+		// The guardrail on the key carries the data rules; the gateway rejects provider.data_collection "deny".
+		expect(sent.body).not.toHaveProperty("provider");
 		expect(sent.body.tools).toEqual([
 			{ type: "function", function: { name: "get_spend", description: "Spend", parameters: { type: "object", properties: {} } } },
 			{ type: "phaseo:web_search" },

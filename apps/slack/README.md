@@ -86,8 +86,9 @@ Workflows), one per Slack event, kept for 1 day. It has five steps:
    - `user: slack:<team>:<user>`;
    - `x-phaseo-metadata` labels `app=slack-agent`, `slack_team` and `slack_channel`;
    - `x-title: Phaseo Slack agent`;
-   - `provider.data_collection: "deny"`;
    - the gateway's web search and fetch tools.
+
+   Which providers may serve it is decided by the installation's **Slack agent** guardrail (no training, no logging providers), which the gateway applies from its provider data-policy metadata. The request doesn't send `provider.data_collection`: the gateway rejects `"deny"` with a 400.
 
    It stops after 12 steps or $0.50 of model spend. The answer streams into Slack with `chat.startStream` and `chat.appendStream`, batched about every 400 ms. After every agent step the answer so far and what it cost are staged in the coordinator, and the cancel flag is checked.
 4. `reply`: finishes the Slack message with a footer (model and cost). It stops the stream, or, when the live stream failed or the run was retried, writes the staged answer with `chat.update` (or `chat.postMessage` if the stream never started).
