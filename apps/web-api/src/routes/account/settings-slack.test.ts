@@ -59,6 +59,8 @@ type Fixture = {
 	appInUse?: boolean;
 	keyLimitNanos?: number;
 	usage?: { people: number; answers: number };
+	modelSpend?: Array<Record<string, unknown>>;
+	modelSpendError?: boolean;
 	charges?: Array<Record<string, unknown>>;
 	installInsertError?: { status: number; body: Record<string, unknown> };
 	installationUpdateRows?: Array<Record<string, unknown>>;
@@ -103,6 +105,10 @@ function database(fixture: Fixture = {}) {
 		if (path.endsWith("/workspaces")) return rows([{ owner_user_id: "owner", slug: "workspace-a", name: "Workspace A" }]);
 		if (path.endsWith("/workspace_audit_events")) return new Response(null, { status: 201 });
 		if (path.endsWith("/rpc/get_slack_agent_month_usage")) return rows([fixture.usage ?? { people: 0, answers: 0 }]);
+		if (path.endsWith("/rpc/get_slack_agent_model_spend")) {
+			if (fixture.modelSpendError) return Response.json({ code: "PGRST202", message: "Could not find the function" }, { status: 404 });
+			return rows(fixture.modelSpend ?? []);
+		}
 		if (path.endsWith("/slack_agent_charges")) return rows(fixture.charges ?? []);
 		if (path.endsWith("/slack_user_links")) return new Response(null, { status: 201 });
 		if (path.endsWith("/workspace_member_guardrails")) return new Response(null, { status: 200, headers: { "content-range": "*/0" } });
@@ -198,6 +204,7 @@ describe("Slack agent settings reads", () => {
 			installation: { team_name: "Acme", status: "active", installed_at: "2026-10-01T00:00:00Z" },
 		});
 		expect(find(requests, "POST", "/rpc/get_slack_agent_month_usage")).toHaveLength(0);
+		expect(find(requests, "POST", "/rpc/get_slack_agent_model_spend")).toHaveLength(0);
 		expect(find(requests, "GET", "/slack_agent_charges")).toHaveLength(0);
 	});
 
@@ -209,7 +216,11 @@ describe("Slack agent settings reads", () => {
 	it("shows admins the settings, plan price, this month's usage from the database and recent charges, without secrets", async () => {
 		const requests = database({
 			role: "admin", installation: {}, keyLimitNanos: 40_000_000_000, usage: { people: 4, answers: 1_500 },
-			charges: [{ period_start: "2026-09-01", people: 3, answers: 200, amount_nanos: 990_000_000, status: "charged", charged_at: "2026-10-01T01:00:00Z" }],
+			charges: [{ installation_id: INSTALLATION_ID, period_start: "2026-09-01", people: 3, answers: 200, amount_nanos: 990_000_000, status: "charged", charged_at: "2026-10-01T01:00:00Z" }],
+			modelSpend: [
+				{ installation_id: INSTALLATION_ID, period_start: currentPeriodStart(), requests: 812, cost_nanos: 12_500_000_000 },
+				{ installation_id: INSTALLATION_ID, period_start: "2026-09-01", requests: 95, cost_nanos: 1_234_567_890 },
+			],
 		});
 		const response = await call(`/slack?workspaceId=${WORKSPACE}`);
 		expect(response.status).toBe(200);
@@ -220,14 +231,75 @@ describe("Slack agent settings reads", () => {
 		expect(body.installation.settings).toMatchObject({ plan_people: 10, monthly_cap_usd: 25, token_monthly_limit_usd: 40, over_plan: "refuse" });
 		expect(body.installation.plan).toEqual({ people: 10, price_usd: 2.99 });
 		// 4 people: the 10-person plan ($2.99) and 1,200 included answers, so 300 extra at $0.25 per 1,000.
-		expect(body.installation.month).toEqual({ period_start: currentPeriodStart(), people: 4, answers: 1_500, estimated_charge_usd: 3.065 });
-		expect(body.charges).toEqual([{ period_start: "2026-09-01", people: 3, answers: 200, amount_usd: 0.99, status: "charged", charged_at: "2026-10-01T01:00:00Z" }]);
+		// Model spend through the agent's key is billed as normal requests, beside the charge, not in it.
+		expect(body.installation.month).toEqual({
+			period_start: currentPeriodStart(), people: 4, answers: 1_500, estimated_charge_usd: 3.065, model_spend_usd: 12.5, model_requests: 812,
+		});
+		expect(body.charges).toEqual([{ period_start: "2026-09-01", people: 3, answers: 200, amount_usd: 0.99, model_spend_usd: 1.23456789, status: "charged", charged_at: "2026-10-01T01:00:00Z" }]);
 		const rpc = find(requests, "POST", "/rpc/get_slack_agent_month_usage")[0];
 		expect(rpc.body).toEqual({ p_installation_id: INSTALLATION_ID, p_period_start: currentPeriodStart() });
+		// Spend is summed in the database for this month and the charged months, in one call.
+		const spend = find(requests, "POST", "/rpc/get_slack_agent_model_spend");
+		expect(spend).toHaveLength(1);
+		expect(spend[0].body).toEqual({ p_workspace_id: WORKSPACE, p_periods: [currentPeriodStart(), "2026-09-01"] });
+		const charges = find(requests, "GET", "/slack_agent_charges");
+		expect(charges).toHaveLength(1);
+		expect(charges[0].url.searchParams.get("select")).toContain("installation_id");
 		// Usage is never read row by row, and secrets are never selected or returned.
 		expect(find(requests, "GET", "/slack_agent_monthly_people")).toHaveLength(0);
+		expect(find(requests, "GET", "/v2_private_usage_15m")).toHaveLength(0);
 		for (const entry of find(requests, "GET", "/slack_installations")) expect(entry.url.searchParams.get("select")).not.toContain("secrets");
 		expect(JSON.stringify(body)).not.toMatch(/secret|ciphertext|xox/);
+	});
+
+	it("shows zero model spend for months without any, and each charge's own installation's spend", async () => {
+		const OLD_INSTALLATION = "00000000-0000-4000-8000-0000000000d0";
+		database({
+			role: "admin", installation: {},
+			charges: [
+				{ installation_id: INSTALLATION_ID, period_start: "2026-09-01", people: 3, answers: 200, amount_nanos: 990_000_000, status: "pending", charged_at: null },
+				{ installation_id: OLD_INSTALLATION, period_start: "2026-09-01", people: 1, answers: 20, amount_nanos: 990_000_000, status: "charged", charged_at: "2026-10-01T01:00:00Z" },
+			],
+			modelSpend: [{ installation_id: OLD_INSTALLATION, period_start: "2026-09-01", requests: 40, cost_nanos: 2_000_000_000 }],
+		});
+		const body = await (await call(`/slack?workspaceId=${WORKSPACE}`)).json() as any;
+		expect(body.installation.month).toMatchObject({ model_spend_usd: 0, model_requests: 0 });
+		expect(body.charges.map((charge: any) => charge.model_spend_usd)).toEqual([0, 2]);
+	});
+
+	it("still loads the page when the model spend can't be read, without guessing it", async () => {
+		const requests = database({
+			role: "admin", installation: {}, modelSpendError: true,
+			charges: [{ installation_id: INSTALLATION_ID, period_start: "2026-09-01", people: 3, answers: 200, amount_nanos: 990_000_000, status: "charged", charged_at: "2026-10-01T01:00:00Z" }],
+		});
+		const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		try {
+			const response = await call(`/slack?workspaceId=${WORKSPACE}`);
+			expect(response.status).toBe(200);
+			const body = await response.json() as any;
+			expect(body.installation.month).toMatchObject({ model_spend_usd: null, model_requests: null });
+			expect(body.charges[0]).toMatchObject({ amount_usd: 0.99, model_spend_usd: null });
+			expect(find(requests, "POST", "/rpc/get_slack_agent_model_spend")).toHaveLength(1);
+			expect(logged).toHaveBeenCalledWith("[slack-agent] model spend unavailable", { workspaceId: WORKSPACE, code: "PGRST202" });
+		} finally {
+			logged.mockRestore();
+		}
+	});
+
+	it("asks for the charged months' spend after an uninstall, and nothing when there is no history", async () => {
+		const requests = database({
+			role: "admin",
+			charges: [{ installation_id: INSTALLATION_ID, period_start: "2026-08-01", people: 3, answers: 200, amount_nanos: 990_000_000, status: "charged", charged_at: "2026-09-01T01:00:00Z" }],
+			modelSpend: [{ installation_id: INSTALLATION_ID, period_start: "2026-08-01", requests: 5, cost_nanos: 50_000_000 }],
+		});
+		const body = await (await call(`/slack?workspaceId=${WORKSPACE}`)).json() as any;
+		expect(body.installation).toBeNull();
+		expect(body.charges[0].model_spend_usd).toBe(0.05);
+		expect(find(requests, "POST", "/rpc/get_slack_agent_model_spend")[0].body).toEqual({ p_workspace_id: WORKSPACE, p_periods: ["2026-08-01"] });
+
+		const empty = database({ role: "admin" });
+		expect((await call(`/slack?workspaceId=${WORKSPACE}`)).status).toBe(200);
+		expect(find(empty, "POST", "/rpc/get_slack_agent_model_spend")).toHaveLength(0);
 	});
 });
 
