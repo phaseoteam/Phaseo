@@ -38,7 +38,8 @@ guides/private/
 .playwright-cli/
 .tools/
 .codex/tmp/
-/.claude/
+/.claude/*
+!/.claude/skills/
 /.codex/remote-control*.log
 /design-audit/
 /design-qa*

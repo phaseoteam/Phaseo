@@ -11,10 +11,12 @@ Reusable coding-agent skills that help teams ship against Phaseo faster. Public 
 
 The [`phaseoteam/skills`](https://github.com/phaseoteam/skills) repository mirrors the docs copy for skills.sh (`npx skills add phaseoteam/skills`).
 
-After editing a public skill, run:
+It also copies every skill, public and internal, to `.claude/skills`, because Claude Code only discovers project skills there. Never edit `.claude/skills` directly; CI fails if it drifts from `.agents/skills` (`pnpm skills:check`).
+
+After editing any skill, run:
 
 ```bash
-pnpm skills:sync      # copy to the docs and the plugin
+pnpm skills:sync      # copy to the docs, the plugin and .claude/skills
 pnpm skills:validate  # frontmatter, structure, evals, links and examples
 ```
 

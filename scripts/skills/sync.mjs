@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-// Publish the public Phaseo agent skills from `.agents/skills` (the source of truth) to:
+// Publish Phaseo agent skills from `.agents/skills` (the source of truth) to:
 //   - apps/docs/.mintlify/skills, where Mintlify serves them at /.well-known/agent-skills, lists them as Docs MCP
 //     resources, and lets `npx skills add https://phaseo.app/docs` install them (phaseoteam/skills mirrors this copy);
-//   - apps/mcp/plugin/phaseo/skills, bundled in the Phaseo plugin for Codex, ChatGPT and Claude Code.
+//   - apps/mcp/plugin/phaseo/skills, bundled in the Phaseo plugin for Codex, ChatGPT and Claude Code;
+//   - .claude/skills, every skill including internal ones, because Claude Code only discovers project skills there.
+// The docs and plugin copies get the public skills only.
 //
 // Usage: node scripts/skills/sync.mjs          copy the skills
 //        node scripts/skills/sync.mjs --check  fail if a published copy is out of date
@@ -24,9 +26,12 @@ function linkFilesToRepository(skill, file, content) {
 	return linked.replace(/(?<!\[)`references\/([\w.-]+)`/g, (_, target) => `[\`references/${target}\`](${url(`references/${target}`)})`);
 }
 
+const ALL_SKILLS = readdirSync(sourceRoot).filter((name) => statSync(join(sourceRoot, name)).isDirectory()).sort();
+
 const TARGETS = [
-	{ name: "docs", root: join(repoRoot, "apps/docs/.mintlify/skills"), rewriteMarkdown: linkFilesToRepository, keep: [] },
-	{ name: "plugin", root: join(repoRoot, "apps/mcp/plugin/phaseo/skills"), rewriteMarkdown: null, keep: PLUGIN_ONLY_SKILLS },
+	{ name: "docs", root: join(repoRoot, "apps/docs/.mintlify/skills"), skills: PUBLIC_SKILLS, rewriteMarkdown: linkFilesToRepository, keep: [] },
+	{ name: "plugin", root: join(repoRoot, "apps/mcp/plugin/phaseo/skills"), skills: PUBLIC_SKILLS, rewriteMarkdown: null, keep: PLUGIN_ONLY_SKILLS },
+	{ name: "claude", root: join(repoRoot, ".claude/skills"), skills: ALL_SKILLS, rewriteMarkdown: null, keep: [] },
 ];
 
 // Every file in the skill except `evals/`, which holds test prompts rather than instructions.
@@ -47,7 +52,7 @@ function publishedFiles(skillDir) {
 
 function expected(target) {
 	const result = new Map();
-	for (const skill of PUBLIC_SKILLS) {
+	for (const skill of target.skills) {
 		const skillDir = join(sourceRoot, skill);
 		const skillFile = join(skillDir, "SKILL.md");
 		if (!existsSync(skillFile)) throw new Error(`Missing ${relative(repoRoot, skillFile)}`);
@@ -92,12 +97,12 @@ for (const target of TARGETS) {
 			if (!have.has(file)) problems.push(`missing ${file}`);
 			else if (have.get(file) !== content) problems.push(`out of date ${file}`);
 		}
-		for (const file of have.keys()) if (!want.has(file)) problems.push(`not a public skill file ${file}`);
+		for (const file of have.keys()) if (!want.has(file)) problems.push(`not a published skill file ${file}`);
 		if (problems.length) {
 			failed = true;
 			process.stderr.write(`${where} differs from .agents/skills:\n  ${problems.join("\n  ")}\n`);
 		} else {
-			process.stdout.write(`${where} matches .agents/skills: ${PUBLIC_SKILLS.length} skills, ${want.size} files.\n`);
+			process.stdout.write(`${where} matches .agents/skills: ${target.skills.length} skills, ${want.size} files.\n`);
 		}
 	} else {
 		mkdirSync(target.root, { recursive: true });
@@ -108,7 +113,7 @@ for (const target of TARGETS) {
 			mkdirSync(dirname(join(target.root, file)), { recursive: true });
 			writeFileSync(join(target.root, file), content);
 		}
-		process.stdout.write(`Published ${PUBLIC_SKILLS.length} skills (${want.size} files) to ${where}.\n`);
+		process.stdout.write(`Published ${target.skills.length} skills (${want.size} files) to ${where}.\n`);
 	}
 }
 if (failed) {
