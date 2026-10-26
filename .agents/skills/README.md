@@ -113,7 +113,7 @@ Run the cases against Haiku, Sonnet and Opus (or the Codex default model) before
 
 ## Internal skills
 
-- `phaseo-model-provider-onboarding`: use Supabase to onboard models, routes, aliases and pricing
+- `phaseo-model-provider-onboarding`: required for every new model; onboard models, routes, capabilities, pricing, plans and benchmarks in Supabase
 - `phaseo-internal-model-onboarding`: admin-only model setup, private logs and public exclusion
 - `phaseo-database-changes`: schema and RPC migrations, with direct Supabase catalogue updates
 - `phaseo-product-docs`: product-facing rewrite workflow for docs, cookbook pages and guides
