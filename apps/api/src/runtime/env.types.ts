@@ -65,6 +65,8 @@ export type GatewayBindings = {
 	CUSTOMER_RATE_LIMIT_SELF_SERVE_RAISES_ENABLED?: string;
 	/** Enforces workspace rate limit policies (requests per minute) through CUSTOMER_RATE_LIMITS. */
 	RATE_LIMIT_POLICIES_ENABLED?: string;
+	/** Accepts Vercel and GitHub Actions OIDC tokens matched to workload identity policies when "true". */
+	WORKLOAD_IDENTITY_AUTH_ENABLED?: string;
 	/** Kill switch: "false" stops request classifiers. On when unset. */
 	REQUEST_CLASSIFIERS_ENABLED?: string;
 	SPEND_LIMITS?: DurableObjectNamespace;
