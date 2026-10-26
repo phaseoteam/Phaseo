@@ -114,6 +114,9 @@ describe("rate limit settings reads", () => {
 		const sinceHours = (Date.now() - Date.parse(rpc!.body.p_since)) / 3_600_000;
 		expect(sinceHours).toBeGreaterThan(23.9);
 		expect(sinceHours).toBeLessThan(24.1);
+		// Chat's and the Slack agent's managed keys can't be picked as targets.
+		const keys = requests.find((request) => request.url.pathname.endsWith("/keys"));
+		expect(keys?.url.searchParams.getAll("name")).toEqual(["neq.__chat_route_managed_key__", "neq.__slack_agent_managed_key__"]);
 		// Every table read is scoped to the workspace.
 		for (const request of requests.filter((entry) => entry.url.pathname.includes("/rest/v1/") && !entry.url.pathname.includes("/rpc/"))) {
 			expect(request.url.searchParams.get("workspace_id") ?? request.url.searchParams.get("id")).toBe(`eq.${WORKSPACE}`);

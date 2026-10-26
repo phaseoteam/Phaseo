@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
 import { callGatewayControl, type GatewayResult } from "./gateway-control";
 
@@ -103,7 +104,7 @@ accountSettingsRateLimitsRouter.get("/rate-limits", async (c) => {
 			.eq("workspace_id", workspaceId).order("created_at", { ascending: true }).limit(MAX_ASSIGNMENTS),
 		context.client.from("keys").select("id,name,prefix,status")
 			.eq("workspace_id", workspaceId).neq("status", "deleted")
-			.neq("name", "__chat_route_managed_key__").order("created_at", { ascending: false }),
+			.neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }),
 		context.client.from("workspace_members").select("user_id,role,users(display_name)")
 			.eq("workspace_id", workspaceId),
 		context.client.from("workspace_departments").select("id,name")
