@@ -219,7 +219,8 @@
                 "pages": [
                   "v1/guides/workspaces",
                   "v1/guides/workspace-audit-log",
-                  "v1/developers/management-api-keys"
+                  "v1/developers/management-api-keys",
+                  "v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -1880,7 +1881,8 @@
                 "pages": [
                   "es/v1/guides/workspaces",
                   "es/v1/guides/workspace-audit-log",
-                  "es/v1/developers/management-api-keys"
+                  "es/v1/developers/management-api-keys",
+                  "es/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -3575,7 +3577,8 @@
                 "pages": [
                   "fr/v1/guides/workspaces",
                   "fr/v1/guides/workspace-audit-log",
-                  "fr/v1/developers/management-api-keys"
+                  "fr/v1/developers/management-api-keys",
+                  "fr/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -5270,7 +5273,8 @@
                 "pages": [
                   "de/v1/guides/workspaces",
                   "de/v1/guides/workspace-audit-log",
-                  "de/v1/developers/management-api-keys"
+                  "de/v1/developers/management-api-keys",
+                  "de/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -6965,7 +6969,8 @@
                 "pages": [
                   "pt-BR/v1/guides/workspaces",
                   "pt-BR/v1/guides/workspace-audit-log",
-                  "pt-BR/v1/developers/management-api-keys"
+                  "pt-BR/v1/developers/management-api-keys",
+                  "pt-BR/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -8660,7 +8665,8 @@
                 "pages": [
                   "ja/v1/guides/workspaces",
                   "ja/v1/guides/workspace-audit-log",
-                  "ja/v1/developers/management-api-keys"
+                  "ja/v1/developers/management-api-keys",
+                  "ja/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -10355,7 +10361,8 @@
                 "pages": [
                   "zh-Hans/v1/guides/workspaces",
                   "zh-Hans/v1/guides/workspace-audit-log",
-                  "zh-Hans/v1/developers/management-api-keys"
+                  "zh-Hans/v1/developers/management-api-keys",
+                  "zh-Hans/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -12050,7 +12057,8 @@
                 "pages": [
                   "hi/v1/guides/workspaces",
                   "hi/v1/guides/workspace-audit-log",
-                  "hi/v1/developers/management-api-keys"
+                  "hi/v1/developers/management-api-keys",
+                  "hi/v1/developers/trusted-workloads"
                 ]
               },
               {
@@ -13745,7 +13753,8 @@
                 "pages": [
                   "ar/v1/guides/workspaces",
                   "ar/v1/guides/workspace-audit-log",
-                  "ar/v1/developers/management-api-keys"
+                  "ar/v1/developers/management-api-keys",
+                  "ar/v1/developers/trusted-workloads"
                 ]
               },
               {
