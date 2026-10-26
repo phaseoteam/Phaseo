@@ -73,7 +73,7 @@
 		"@copilotkit/aimock": "1.45.1",
 		"@typescript/native": "catalog:",
 		"dotenv": "^17.4.2",
-		"eslint": "^10.8.1",
+		"eslint": "^10.13.0",
 		"openai": "^6.39.0",
 		"tsx": "^4.23.13",
 		"typescript": "catalog:",
