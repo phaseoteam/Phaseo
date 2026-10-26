@@ -8,9 +8,13 @@ const ws = (n) => id('1', n);
 const user = (n) => id('2', n);
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const migration = await readFile(new URL('../migrations/20261021203244_slack_agent_billing.sql', import.meta.url), 'utf8');
+// Allows providers that keep logs: replaces protect_slack_agent_guardrail and updates live guardrails.
+const guardrailMigration = await readFile(new URL('../migrations/20261026223103_slack_agent_guardrail_allows_logging_providers.sql', import.meta.url), 'utf8');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const TABLES = ['slack_apps', 'slack_installations', 'slack_user_links', 'slack_agent_monthly_people', 'slack_agent_charges'];
-const FUNCTIONS = ['record_slack_agent_people', 'list_slack_agent_due_charges', 'charge_slack_agent_month', 'protect_slack_agent_guardrail'];
+const FUNCTIONS = ['record_slack_agent_people', 'list_slack_agent_due_charges', 'charge_slack_agent_month'];
+const OLD_GUARDRAIL_DESCRIPTION = "Managed by the Slack agent. Slack's API terms do not allow training on Slack data or keeping it, so training, prompt publishing and providers that log prompts are off.";
+const GUARDRAIL_DESCRIPTION = "Managed by the Slack agent. Slack's API terms do not allow training on Slack data, so training and prompt publishing are off.";
 const DOLLAR = 1_000_000_000n;
 
 try {
@@ -22,9 +26,10 @@ try {
     create table public.workspaces (id uuid primary key);
     create table public.keys (id uuid primary key, workspace_id uuid not null);
     create table public.workspace_guardrails (
-      id uuid primary key, workspace_id uuid not null, name text not null default 'Guardrail', enabled boolean not null default true,
+      id uuid primary key, workspace_id uuid not null, name text not null default 'Guardrail', description text, enabled boolean not null default true,
       privacy_enable_paid_may_train boolean not null default true, privacy_enable_free_may_train boolean not null default true,
-      privacy_enable_free_may_publish_prompts boolean not null default true, privacy_enable_input_output_logging boolean not null default true
+      privacy_enable_free_may_publish_prompts boolean not null default true, privacy_enable_input_output_logging boolean not null default true,
+      updated_at timestamptz not null default now()
     );
     create table public.key_guardrails (
       key_id uuid not null references public.keys(id) on delete cascade,
@@ -65,6 +70,7 @@ try {
   for (const fn of FUNCTIONS) {
     assert.ok(migration.includes(await schema(`public/functions/${fn}.sql`)), `${fn} migration matches the declarative definition`);
   }
+  assert.ok(guardrailMigration.includes(await schema('public/functions/protect_slack_agent_guardrail.sql')), 'protect_slack_agent_guardrail migration matches the declarative definition');
   for (const table of ['workspace_guardrails', 'key_guardrails']) {
     const trigger = (await schema(`public/tables/${table}.sql`)).match(/CREATE TRIGGER protect_slack_agent_guardrail\n[\s\S]*?;/)?.[0];
     assert.ok(trigger && migration.includes(trigger), `${table} guardrail trigger matches the declarative definition`);
@@ -238,16 +244,43 @@ try {
   await assert.rejects(charge(id('9', 9), '2026-07-01', 1, 1, 1), /installation_not_found/);
 
   // A live installation's privacy guardrail stays in force: it can't be deleted, disabled,
-  // loosened or detached from the agent's key until the agent is uninstalled.
+  // allow training or prompt publishing, or be detached from the agent's key until the agent is uninstalled.
   const [key] = await rows(`insert into public.keys (id, workspace_id) values (gen_random_uuid(), $1) returning id`, [ws(1)]);
-  const [guardrail] = await rows(`
-    insert into public.workspace_guardrails (id, workspace_id, name, privacy_enable_paid_may_train, privacy_enable_free_may_train,
+  const slackGuardrail = async (workspaceId) => (await rows(`
+    insert into public.workspace_guardrails (id, workspace_id, name, description, privacy_enable_paid_may_train, privacy_enable_free_may_train,
       privacy_enable_free_may_publish_prompts, privacy_enable_input_output_logging)
-    values (gen_random_uuid(), $1, 'Slack agent', false, false, false, false) returning id`, [ws(1)]);
+    values (gen_random_uuid(), $1, 'Slack agent', $2, false, false, false, false) returning id`, [workspaceId, OLD_GUARDRAIL_DESCRIPTION]))[0];
+  const guardrail = await slackGuardrail(ws(1));
   await rows('insert into public.key_guardrails (key_id, guardrail_id) values ($1, $2)', [key.id, guardrail.id]);
   await rows('update public.slack_installations set key_id = $2, guardrail_id = $3 where id = $1', [first.id, key.id, guardrail.id]);
+  // Before the change, logging providers stayed off too.
+  await assert.rejects(rows('update public.workspace_guardrails set privacy_enable_input_output_logging = true where id = $1', [guardrail.id]), /slack_agent_guardrail_protected/);
+
+  // The migration lets live installations' guardrails allow providers that keep logs, and
+  // leaves past installations' guardrails and other guardrails alone.
+  const pastGuardrail = await slackGuardrail(ws(2));
+  await rows('update public.slack_installations set guardrail_id = $2 where id = $1', [second.id, pastGuardrail.id]);
+  const unrelated = await slackGuardrail(ws(3));
+  await rows(`update public.workspace_guardrails set description = 'Renamed by an admin' where id = $1`, [guardrail.id]);
+  // Migrations run as the database owner, not as the service role these checks use.
+  const applyGuardrailMigration = () => db.exec(`reset role; ${guardrailMigration}; set role service_role;`);
+  await applyGuardrailMigration();
+  const guardrailState = async (guardrailId) => (await rows(
+    'select privacy_enable_input_output_logging as logging, description from public.workspace_guardrails where id = $1', [guardrailId]))[0];
+  assert.deepEqual(await guardrailState(guardrail.id), { logging: true, description: 'Renamed by an admin' }, 'an edited description is kept');
+  assert.deepEqual(await guardrailState(pastGuardrail.id), { logging: false, description: OLD_GUARDRAIL_DESCRIPTION });
+  assert.deepEqual(await guardrailState(unrelated.id), { logging: false, description: OLD_GUARDRAIL_DESCRIPTION });
+  await rows('update public.workspace_guardrails set privacy_enable_input_output_logging = false, description = $2 where id = $1', [guardrail.id, OLD_GUARDRAIL_DESCRIPTION]);
+  await applyGuardrailMigration();
+  assert.deepEqual(await guardrailState(guardrail.id), { logging: true, description: GUARDRAIL_DESCRIPTION }, 'the install\'s description says what is off');
+  await applyGuardrailMigration();
+  assert.deepEqual(await guardrailState(guardrail.id), { logging: true, description: GUARDRAIL_DESCRIPTION }, 'running it again changes nothing');
+
   await rows(`update public.workspace_guardrails set name = 'Slack agent (renamed)' where id = $1`, [guardrail.id]);
-  for (const change of ['enabled = false', 'privacy_enable_paid_may_train = true', 'privacy_enable_free_may_train = true', 'privacy_enable_free_may_publish_prompts = true', 'privacy_enable_input_output_logging = true']) {
+  // Logging providers can be turned off and on again; they never see training or published prompts.
+  await rows('update public.workspace_guardrails set privacy_enable_input_output_logging = false where id = $1', [guardrail.id]);
+  await rows('update public.workspace_guardrails set privacy_enable_input_output_logging = true where id = $1', [guardrail.id]);
+  for (const change of ['enabled = false', 'privacy_enable_paid_may_train = true', 'privacy_enable_free_may_train = true', 'privacy_enable_free_may_publish_prompts = true']) {
     await assert.rejects(rows(`update public.workspace_guardrails set ${change} where id = $1`, [guardrail.id]), /slack_agent_guardrail_protected/, change);
   }
   await assert.rejects(rows('delete from public.workspace_guardrails where id = $1', [guardrail.id]), /slack_agent_guardrail_protected/);
@@ -256,7 +289,7 @@ try {
   const [other] = await rows(`insert into public.workspace_guardrails (id, workspace_id) values (gen_random_uuid(), $1) returning id`, [ws(1)]);
   await rows('insert into public.key_guardrails (key_id, guardrail_id) values ($1, $2)', [key.id, other.id]);
   await rows('delete from public.key_guardrails where key_id = $1 and guardrail_id = $2', [key.id, other.id]);
-  await rows('update public.workspace_guardrails set privacy_enable_input_output_logging = true where id = $1', [other.id]);
+  await rows('update public.workspace_guardrails set privacy_enable_paid_may_train = true where id = $1', [other.id]);
   // Deleting the key itself cascades (fail-closed: the agent has no working key), and uninstalling unlocks the guardrail.
   const [spareKey] = await rows(`insert into public.keys (id, workspace_id) values (gen_random_uuid(), $1) returning id`, [ws(1)]);
   await rows('insert into public.key_guardrails (key_id, guardrail_id) values ($1, $2)', [spareKey.id, guardrail.id]);

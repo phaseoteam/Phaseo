@@ -23,7 +23,7 @@ icon: "messages-square"
 <Steps>
 <Step title="اختر طريقة عمله">
 
-افتح **الإعدادات → Slack**. ضمن **أضف إلى Slack**، اختر النموذج، ومن يمكنه استخدام الوكيل، وأين يمكنه مشاركة بيانات الاستخدام، وحدوده (راجع قسم "الحدود" أدناه). مع **تلقائي** يختار Phaseo نموذجًا مناسبًا لكل سؤال. يمكنك تغيير كل ذلك لاحقًا.
+افتح **الإعدادات → Slack**. ضمن **أضف إلى Slack**، اختر النموذج، ومن يمكنه استخدام الوكيل، وأين يمكنه مشاركة بيانات الاستخدام، وحدوده (راجع قسم "الحدود" أدناه). إذا كانت مساحة العمل لديك تتيح التوجيه التلقائي، فمع **تلقائي** يختار Phaseo نموذجًا مناسبًا لكل سؤال؛ وإلا فاختر نموذجًا محددًا. يمكنك تغيير كل ذلك لاحقًا.
 
 </Step>
 
@@ -43,7 +43,7 @@ icon: "messages-square"
 ينشئ التثبيت شيئين في مساحة عمل Phaseo:
 
 - **مفتاح API للوكيل.** يديره Phaseo، لذا لا يظهر في قائمة مفاتيح API لديك. تُحتسب رموز النموذج التي يستخدمها الوكيل عبره.
-- **ضابط حماية باسم Slack agent** على هذا المفتاح، يُبقي رسائل Slack خارج التدريب والسجلات (راجع قسم "البيانات والخصوصية" أدناه).
+- **ضابط حماية باسم Slack agent** على هذا المفتاح، يُبقي رسائل Slack خارج التدريب (راجع قسم "البيانات والخصوصية" أدناه).
 
 يمكن أن تحتوي مساحة عمل Slack على الوكيل من مساحة عمل Phaseo واحدة فقط في كل مرة.
 
@@ -176,7 +176,7 @@ icon: "messages-square"
 لا تسمح شروط واجهة Slack البرمجية بالتدريب على بيانات Slack ولا بالاحتفاظ بها، لذا أُعدّ الوكيل على هذا النحو:
 
 - **لا محتوى للرسائل في سجلات Phaseo.** لا يخزّن مفتاح API الخاص بالوكيل أبدًا محتوى الطلبات أو الاستجابات، لا في السجلات ولا في ذاكرات التخزين المؤقت ولا في بيانات القياس، أيًّا كانت إعدادات مساحة عملك. تظل طلباته تظهر في استخدامك وسجلاتك من دون محتوى، مع [تسميات الطلب](./request-labels.mdx) `app=slack-agent` و`slack_team` و`slack_channel` و[عنوان التطبيق](./app-attribution.mdx) `Phaseo Slack agent`.
-- **لا تدريب ولا مزوّدين يسجلون البيانات.** يُعطّل [ضابط الحماية](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** التدريب على النماذج المدفوعة والمجانية، ونشر الموجّهات، والمزوّدين الذين يسجلون المدخلات والمخرجات.
+- **لا مزوّدين يدرّبون على الموجّهات.** يُعطّل [ضابط الحماية](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** التدريب على النماذج المدفوعة والمجانية ونشر الموجّهات، فلا يُستخدم أبدًا أي مزوّد يدرّب على الموجّهات. يمكن أن يجيب مزوّدون يحتفظون بسجلات دون التدريب عليها؛ أما Phaseo نفسه فلا يخزّن أي محتوى للرسائل.
 - **ذاكرة عمل قصيرة.** يحتفظ الوكيل لكل سلسلة رسائل بإجاباته الأخيرة، وملاحظات قصيرة عن الأدوات التي استخدمها، والرسائل التي تنتظر دورها، ومعرّفات أحدث رسائل السلسلة (دون نصها) ليعرف من أين يقرأ، ومن أرسل إليهم زر الربط. تُحذف بعد 7 أيام من آخر نشاط في السلسلة.
 - **لا شيء مؤرشف.** لا يؤرشف Phaseo أي شيء من Slack. لا تحتفظ سجلات الوكيل نفسه إلا بمعرّفات Slack والحالات.
 - **أسرار مشفّرة.** تُخزَّن رموز البوت وأسرار تطبيق Slack الخاص بك مشفّرة ولا تُعرض مرة أخرى.
@@ -223,7 +223,7 @@ icon: "messages-square"
     "name": "Phaseo",
     "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
     "background_color": "#0069a8",
-    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests only go to providers that don't collect data, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
   },
   "features": {
     "app_home": {
@@ -326,6 +326,7 @@ icon: "messages-square"
 | "Connect your Phaseo account to use the Phaseo agent here." | الوصول على **الحسابات المرتبطة فقط**. | اربط حساب Slack (راجع قسم "ربط حساب Slack" أعلاه). |
 | "I'm still working through earlier messages in this thread." | هناك 5 رسائل تنتظر بالفعل في هذه السلسلة. | انتظر تلك الإجابات. |
 | "Sorry, I couldn't check your Slack account just now." | لم يستجب Slack لعملية تحقق. | حاول مرة أخرى بعد دقيقة. |
+| "The model chosen for this agent isn't available to the Slack agent." | لا تستطيع البوابة استخدام نموذج الوكيل بمفتاحه: **تلقائي** دون التوجيه التلقائي، أو لا يستوفي أي مزوّد للنموذج ضابط الحماية **Slack agent**. | اختر نموذجًا آخر في **الإعدادات → Slack**. |
 
 إذا لم يرد الوكيل إطلاقًا:
 

@@ -116,6 +116,24 @@ describe("the SDK agent runner", () => {
 		expect(turnErrorText("no_credits")).toBe("This Phaseo workspace is out of credits, so I can't answer right now. An admin can add credits in Phaseo billing.");
 	});
 
+	it("says the model isn't available to the agent when the gateway refuses it for the key, without internal details", async () => {
+		const error = (status: number, code: string, reason: string, message: string) =>
+			new AgentGatewayError({ status, statusText: "Error", body: { error: { code, message, type: "invalid_request_error" }, code, reason, error_type: "user" } });
+		const refusals = [
+			error(403, "guardrail_blocked", "data_handling_policy_no_routes", "No provider routes satisfy the workspace data-handling policy"),
+			error(403, "guardrail_blocked", "provider_restricted_by_policy", "All provider routes for this model are blocked by a workspace policy or guardrail"),
+			error(403, "guardrail_blocked", "model_restricted_by_policy", "Model \"openai/gpt-6-luna\" is blocked by a workspace policy or guardrail"),
+			error(400, "not_supported", "auto_routing_feature_flag_disabled", "Auto Routing is currently available to selected Alpha workspaces."),
+		];
+		for (const refusal of refusals) expect(classifyTurnError(refusal), refusal.reason ?? "").toBe("model_not_allowed");
+		expect(classifyTurnError(new Error("run failed", { cause: refusals[0] }))).toBe("model_not_allowed");
+		// A guardrail that blocks the message itself is not about the model.
+		expect(classifyTurnError(error(403, "guardrail_blocked", "prompt_injection_detected", "Request blocked by prompt injection guardrail"))).toBe("failed");
+		const text = turnErrorText("model_not_allowed");
+		expect(text).toBe("The model chosen for this agent isn't available to the Slack agent. An admin can choose another model in Phaseo settings.");
+		expect(text).not.toMatch(/guardrail|policy|alpha|provider/i);
+	});
+
 	it("surfaces a gateway refusal from a streamed request as an error the turn can classify", async () => {
 		const fetchImpl = vi.fn(async () => Response.json({ error: { code: "insufficient_funds", message: "Not enough credits" } }, { status: 402 }));
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });

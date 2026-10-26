@@ -6766,6 +6766,7 @@
 			"auto": "自动",
 			"specific": "指定模型",
 			"autoHelp": "Phaseo 会为每个问题挑选合适的模型。",
+			"autoUnavailable": "此工作区无法使用“自动”，在你选择指定模型之前，智能体无法回答。",
 			"help": "模型 token 与其他网关请求一样计费，通过智能体自己的 API 密钥结算。"
 		},
 		"instructions": {
@@ -6939,6 +6940,7 @@
 			"signInRequired": "请在此浏览器中登录 Phaseo，然后重新开始安装。",
 			"sessionMismatch": "请使用发起安装的管理员账户完成安装。",
 			"installFailed": "安装未完成，也没有进行任何设置。请重试。",
+			"autoUnavailable": "此工作区无法使用“自动”。请选择指定模型。",
 			"invalid": "请检查设置后重试。",
 			"invalidWithMessage": "请检查设置后重试：{message}",
 			"unavailable": "Phaseo 暂时无法完成此操作。请稍后再试。",

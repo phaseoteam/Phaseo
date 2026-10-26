@@ -92,7 +92,7 @@ function InstallView({ view }: { view: SlackAgentManagerView }) {
 	const t = useTranslations("SettingsUI.slack");
 	const hosted = view.configured.hosted_app;
 	const customApp = view.configured.custom_app ? view.custom_app : null;
-	const [draft, setDraft] = useState<SlackInstallDraft>(() => installDraftDefaults(!hosted && Boolean(customApp)));
+	const [draft, setDraft] = useState<SlackInstallDraft>(() => installDraftDefaults(!hosted && Boolean(customApp), view.auto_routing === true));
 	const [problem, setProblem] = useState<SlackDraftProblem | null>(null);
 	const [error, setError] = useState<ActionError | null>(null);
 	const [pending, startInstall] = useTransition();
@@ -133,7 +133,7 @@ function InstallView({ view }: { view: SlackAgentManagerView }) {
 			{!hosted ? <Notice>{customApp ? t("install.customAppOnly", { appId: customApp.slack_app_id }) : t("install.hostedUnavailable")}</Notice> : null}
 
 			<Section title={t("sections.agent")}>
-				<ModelField value={draft.model} disabled={busy} problem={problem} onChange={(model) => set("model", model)} />
+				<ModelField value={draft.model} autoAvailable={view.auto_routing === true} disabled={busy} problem={problem} onChange={(model) => set("model", model)} />
 			</Section>
 			<Section title={t("sections.access")}>
 				<AccessField value={draft.accessMode} disabled={busy} onChange={(mode) => set("accessMode", mode)} />
@@ -267,7 +267,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 			</Section>
 
 			<Section title={t("sections.agent")}>
-				<ModelField value={draft.model} disabled={busy} problem={problem} onChange={(model) => set("model", model)} />
+				<ModelField value={draft.model} autoAvailable={view.auto_routing === true} disabled={busy} problem={problem} onChange={(model) => set("model", model)} />
 				<div className="space-y-1.5">
 					<Label htmlFor="slack-instructions">{t("instructions.label")}</Label>
 					<Textarea id="slack-instructions" value={draft.instructions} rows={4} maxLength={MAX_INSTRUCTIONS_CHARS} disabled={busy} placeholder={t("instructions.placeholder")} aria-invalid={problem?.field === "instructions" || undefined} aria-describedby="slack-instructions-help" onChange={(event) => set("instructions", event.target.value)} />
