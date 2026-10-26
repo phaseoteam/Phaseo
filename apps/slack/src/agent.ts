@@ -17,9 +17,11 @@ import { withoutTrailingSlashes } from "./url";
 // gateway. The real runner uses @phaseo/agent-sdk against the gateway through the
 // PHASEO_API service binding, with the installation's managed key.
 //
-// Every request carries the Slack data rules: provider data_collection "deny"
-// (no provider that trains on or keeps prompts), and the key itself stores no
-// content (never_store_content, set at install).
+// The Slack data rules live on the installation's key, not in the request: its
+// "Slack agent" guardrail allows no provider that trains on or logs prompts (the
+// gateway applies it from provider data-policy metadata), and the key stores no
+// content (never_store_content, set at install). The request must not send
+// provider.data_collection: the gateway rejects "deny" with a 400.
 
 export const AGENT_ID = "phaseo-slack-agent";
 export const MAX_STEPS = 12;
@@ -138,7 +140,6 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 					headers: { "x-title": APP_TITLE, "x-phaseo-metadata": requestLabelsHeader(request.labels) },
 				},
 				model: request.model,
-				provider: { data_collection: "deny" },
 				user: request.endUser,
 				gatewayTools: GATEWAY_TOOLS,
 			}), (usd) => {
