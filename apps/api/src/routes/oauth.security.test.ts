@@ -1034,20 +1034,21 @@ describe("OAuth route security", () => {
 			sub: "user_1",
 			email: "user@example.com",
 			name: "Phaseo User",
+			given_name: "Phaseo",
 			picture: "https://lh3.googleusercontent.com/a/photo",
 			workspace_id: "workspace_1",
 			client_id: "client_1",
 		});
 
 		// The name set on the profile page wins over the sign-in provider's.
-		state.displayName = "  Ada  ";
+		state.displayName = "  Ada Lovelace  ";
 		const renamed = await oauthRouter.request("https://example.com/userinfo", { headers: { Authorization: "Bearer phaseo_v1_sk_example" } });
-		expect(await renamed.json()).toMatchObject({ name: "Ada" });
+		expect(await renamed.json()).toMatchObject({ name: "Ada Lovelace", given_name: "Ada" });
 
 		// Without the profile scope, neither the name nor the picture is shared.
 		state.oauthAuth = { ...state.oauthAuth, oauthScopes: ["openid", "email"] };
 		const narrow = await (await oauthRouter.request("https://example.com/userinfo", { headers: { Authorization: "Bearer phaseo_v1_sk_example" } })).json();
-		expect(narrow).not.toHaveProperty("name"); expect(narrow).not.toHaveProperty("picture");
+		expect(narrow).not.toHaveProperty("name"); expect(narrow).not.toHaveProperty("given_name"); expect(narrow).not.toHaveProperty("picture");
 	});
 
 	it("binds a delegated access token to the resource echoed at token exchange", async () => {

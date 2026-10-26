@@ -1117,12 +1117,15 @@ oauthRouter.get(
 		};
 		const displayName = typeof account.data?.display_name === "string" ? account.data.display_name.trim() : "";
 		const name = displayName || metadataString(["full_name", "name"]);
+		// A first name for greetings: the display name's first word, as the profile's name is its owner's choice.
+		const givenName = (displayName ? null : metadataString(["given_name", "first_name"])) ?? name?.split(/\s+/)[0] ?? null;
 		const picture = metadataString(["avatar_url", "picture", "picture_url"]);
 		return json(
 			{
 				sub: auth.userId,
 				email: scopes.includes("email") ? user?.email ?? null : undefined,
 				name: profile ? name : undefined,
+				given_name: profile ? givenName : undefined,
 				picture: profile ? picture : undefined,
 				workspace_id: auth.workspaceId,
 				client_id: auth.oauthClientId,
