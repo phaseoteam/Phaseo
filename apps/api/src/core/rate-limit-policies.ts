@@ -510,15 +510,18 @@ export const DENIAL_REASONS: Record<PolicyQuotaDenial["kind"], string> = {
 	unavailable: "policy_unavailable",
 };
 
+/** "1 request", "2 requests". */
+const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+
 function denialDescription(entry: ApplicableRateLimit, denial: PolicyQuotaDenial): string {
-	const retry = `Retry after ${denial.retryAfterSeconds} seconds.`;
+	const retry = `Retry after ${count(denial.retryAfterSeconds, "second")}.`;
 	if (denial.kind === "concurrent_requests") {
-		return `${limitedSubject(entry)} already has ${denial.limit} requests in progress, the "${entry.name}" rate limit policy's limit on concurrent requests. ${retry}`;
+		return `${limitedSubject(entry)} already has ${count(denial.limit, "request")} in progress, the "${entry.name}" rate limit policy's limit on concurrent requests. ${retry}`;
 	}
 	if (denial.kind === "unavailable") {
 		return `The "${entry.name}" rate limit policy is strict, and its limits could not be checked just now, so the request was not sent. ${retry}`;
 	}
-	return `${limitedSubject(entry)} reached the "${entry.name}" rate limit policy's ${denial.limit} ${denial.kind} per minute. ${retry}`;
+	return `${limitedSubject(entry)} reached the "${entry.name}" rate limit policy's ${count(denial.limit, denial.kind === "tokens" ? "token" : "request")} per minute. ${retry}`;
 }
 
 type HeaderValues = { limit: number; remaining: number; reset: number };
