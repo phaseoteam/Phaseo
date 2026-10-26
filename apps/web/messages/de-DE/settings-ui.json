@@ -6182,6 +6182,36 @@
 		"changed": "{keys, plural, one {# Schlüssel} other {# Schlüssel}} in {workspaces, plural, one {# Workspace} other {# Workspaces}}",
 		"notApplied": "Nicht angewendet"
 	},
+	"slackAgentInstallations": {
+		"title": "Slack-Agent-Installationen",
+		"description": "Alle Phaseo-Workspaces, die den Slack-Agent installiert haben, die neuesten zuerst. Personen, Antworten und Ausgaben gelten für {month} (UTC) bis heute.",
+		"notes": "Die Slack-Agent-Gebühr ist eine Schätzung für den bisherigen Monat, begrenzt auf das Ausgabenlimit des jeweiligen Workspaces. Modellausgaben werden separat über den eigenen Schlüssel jeder Installation abgerechnet.",
+		"count": "{count, plural, one {# Installation} other {# Installationen}}",
+		"none": "Noch kein Workspace hat den Slack-Agent installiert.",
+		"workspace": "Phaseo-Workspace",
+		"slackTeam": "Slack-Workspace",
+		"status": "Status",
+		"app": "App",
+		"installedAt": "Installiert",
+		"uninstalledAt": "Deinstalliert",
+		"people": "Personen",
+		"answers": "Antworten",
+		"estimatedCharge": "Slack-Agent-Gebühr",
+		"modelSpend": "Modellausgaben",
+		"modelRequests": "{count, plural, one {# Anfrage} other {# Anfragen}}",
+		"hostedApp": "Phaseo-App",
+		"companyApp": "Firmen-App",
+		"unnamed": "Ohne Namen",
+		"statuses": {
+			"active": "Aktiv",
+			"paused": "Pausiert",
+			"paymentDue": "Zahlung fällig",
+			"uninstalled": "Deinstalliert"
+		},
+		"pages": "Installationsseiten",
+		"previous": "Zurück",
+		"next": "Weiter"
+	},
 	"providerDashboard": {
 		"profile": "Anbieterprofil",
 		"overrides": "Manuelle Anpassungen",

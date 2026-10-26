@@ -6182,6 +6182,36 @@
 		"changed": "{keys, plural, one {# key} other {# keys}} in {workspaces, plural, one {# workspace} other {# workspaces}}",
 		"notApplied": "Not applied"
 	},
+	"slackAgentInstallations": {
+		"title": "Slack agent installations",
+		"description": "Every Phaseo workspace that has installed the Slack agent, newest first. People, answers and spend are for {month} (UTC) so far.",
+		"notes": "The Slack agent charge is an estimate for the month so far, capped at each workspace's spending cap. Model spend is billed separately, through each installation's own key.",
+		"count": "{count, plural, one {# installation} other {# installations}}",
+		"none": "No workspace has installed the Slack agent yet.",
+		"workspace": "Phaseo workspace",
+		"slackTeam": "Slack workspace",
+		"status": "Status",
+		"app": "App",
+		"installedAt": "Installed",
+		"uninstalledAt": "Uninstalled",
+		"people": "People",
+		"answers": "Answers",
+		"estimatedCharge": "Slack agent charge",
+		"modelSpend": "Model spend",
+		"modelRequests": "{count, plural, one {# request} other {# requests}}",
+		"hostedApp": "Phaseo app",
+		"companyApp": "Company app",
+		"unnamed": "Unnamed",
+		"statuses": {
+			"active": "Active",
+			"paused": "Paused",
+			"paymentDue": "Payment due",
+			"uninstalled": "Uninstalled"
+		},
+		"pages": "Installation pages",
+		"previous": "Previous",
+		"next": "Next"
+	},
 	"providerDashboard": {
 		"profile": "Provider profile",
 		"overrides": "Manual overrides",

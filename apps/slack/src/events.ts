@@ -1,4 +1,5 @@
 import { connectAccountMessage, forgetInstallationFacts, isLinked, linkUrl, lookupUserFacts, refusalText, type ReplyReason } from "./access";
+import { alertUninstalledInSlack } from "./alerts";
 import type { EnqueueResult } from "./coordinator";
 import type { Env } from "./env";
 import {
@@ -317,8 +318,9 @@ async function handleStop(deps: Deps, app: SlackAppContext, envelope: SlackEnvel
  * Slack sends both, in either order. One database call deletes the installation's
  * gateway key, marks it uninstalled and removes its guardrail (web-api's uninstall
  * order) and records slack_agent.uninstalled_in_slack. It is safe to repeat, and an
- * event older than a reinstall does nothing. Then the meter closes for good. Each
- * queued turn re-reads the installation before it runs, so none answers.
+ * event older than a reinstall does nothing. Then the meter closes for good and
+ * the Phaseo team gets an internal alert. Each queued turn re-reads the
+ * installation before it runs, so none answers.
  */
 async function handleRemoval(deps: Deps, app: SlackAppContext, envelope: SlackEnvelope, event: SlackEvent): Promise<EventOutcome> {
 	const revokedBots = event.type === "tokens_revoked" ? (Array.isArray(event.tokens?.bot) ? event.tokens.bot : []) : null;
@@ -342,5 +344,6 @@ async function handleRemoval(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		console.error("[slack-agent] meter not closed after uninstall", { installationId: installation.id });
 	}
 	console.log("[slack-agent] uninstalled in Slack", { installationId: installation.id, event: event.type });
+	await alertUninstalledInSlack(deps.env, deps.db, installation, revokedBots ? "tokens_revoked" : "app_uninstalled");
 	return "uninstalled";
 }

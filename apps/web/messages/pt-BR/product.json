@@ -2430,7 +2430,9 @@
 		"realtimeBillingTitle": "Faturamento em tempo real",
 		"realtimeBillingDescription": "Revise o uso ausente, os fundos retidos e as decisões de faturamento auditadas.",
 		"keyIncidentsTitle": "Incidentes de armazenamento de chaves",
-		"keyIncidentsDescription": "Revogar ou pausar todas as chaves de API armazenadas em uma plataforma que sofreu vazamento."
+		"keyIncidentsDescription": "Revogar ou pausar todas as chaves de API armazenadas em uma plataforma que sofreu vazamento.",
+		"slackAgentTitle": "Agente do Slack",
+		"slackAgentDescription": "Todas as instalações do agente do Slack, com as pessoas, respostas, cobranças e gastos com modelos deste mês."
 	},
 	"webhookPage": {
 		"description": "Envie à sua aplicação atualizações assinadas, com novas tentativas, dos seus trabalhos assíncronos de vídeo e lote.",

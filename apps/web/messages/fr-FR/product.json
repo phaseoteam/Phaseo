@@ -2430,7 +2430,9 @@
 		"realtimeBillingTitle": "Facturation en temps réel",
 		"realtimeBillingDescription": "Examinez l’utilisation manquante, les fonds retenus et les décisions de facturation auditées.",
 		"keyIncidentsTitle": "Incidents de stockage des clés",
-		"keyIncidentsDescription": "Révoquer ou suspendre toutes les clés API stockées sur une plateforme victime d’une fuite."
+		"keyIncidentsDescription": "Révoquer ou suspendre toutes les clés API stockées sur une plateforme victime d’une fuite.",
+		"slackAgentTitle": "Agent Slack",
+		"slackAgentDescription": "Toutes les installations de l’agent Slack, avec les personnes, réponses, frais et dépenses de modèles de ce mois-ci."
 	},
 	"webhookPage": {
 		"description": "Envoyez à votre application des mises à jour signées, avec de nouvelles tentatives, depuis vos tâches asynchrones de vidéo et de traitement par lots.",

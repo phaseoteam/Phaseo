@@ -8,6 +8,7 @@ import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
+import { sendSlackAgentAlert } from "@/lib/slack-agent-alerts";
 import {
 	SLACK_AGENT_BOT_SCOPES,
 	exchangeSlackCode,
@@ -604,6 +605,14 @@ accountSettingsSlackRouter.get("/slack/oauth/callback", async (c) => {
 		access_mode: settings.access_mode,
 		usage_data_mode: settings.usage_data_mode,
 	});
+	c.executionCtx.waitUntil(sendSlackAgentAlert(env, {
+		event: "installed",
+		workspaceId: context.workspaceId,
+		workspaceName: context.workspaceName,
+		teamName: grant.teamName,
+		customApp: Boolean(settings.slack_app_id),
+		actor: { id: context.user.id, email: context.user.email },
+	}));
 	return redirectToSettings(c, { installed: "1", workspaceId: context.workspaceId });
 });
 
@@ -717,6 +726,15 @@ accountSettingsSlackRouter.delete("/slack", async (c) => {
 		enterprise_id: current.enterprise_id,
 		slack_uninstalled: slackUninstalled,
 	});
+	// No row means it was uninstalled meanwhile (in Slack, say), which sent its own alert.
+	if (result.data) c.executionCtx.waitUntil(sendSlackAgentAlert(c.env, {
+		event: "uninstalled",
+		workspaceId: context.workspaceId,
+		workspaceName: context.workspaceName,
+		teamName: current.team_name,
+		customApp: Boolean(current.slack_app_id),
+		actor: { id: context.user.id, email: context.user.email },
+	}));
 	return json(c, { uninstalled: true, slack_uninstalled: slackUninstalled });
 });
 

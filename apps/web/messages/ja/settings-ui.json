@@ -6182,6 +6182,36 @@
 		"changed": "{workspaces, plural, other {# 件のワークスペース}}の{keys, plural, other {# 件のキー}}",
 		"notApplied": "未適用"
 	},
+	"slackAgentInstallations": {
+		"title": "Slack エージェントのインストール",
+		"description": "Slack エージェントをインストールしたすべての Phaseo ワークスペース（新しい順）。人数、回答数、支出は {month}（UTC）のこれまでの値です。",
+		"notes": "Slack エージェントの料金は今月これまでの見積もりで、各ワークスペースの支出上限を超えません。モデルの支出は、各インストール専用のキーを通じて別途請求されます。",
+		"count": "{count, plural, other {# 件のインストール}}",
+		"none": "Slack エージェントをインストールしたワークスペースはまだありません。",
+		"workspace": "Phaseo ワークスペース",
+		"slackTeam": "Slack ワークスペース",
+		"status": "ステータス",
+		"app": "アプリ",
+		"installedAt": "インストール日",
+		"uninstalledAt": "アンインストール日",
+		"people": "人数",
+		"answers": "回答数",
+		"estimatedCharge": "Slack エージェントの料金",
+		"modelSpend": "モデルの支出",
+		"modelRequests": "{count, plural, other {# 件のリクエスト}}",
+		"hostedApp": "Phaseo アプリ",
+		"companyApp": "自社アプリ",
+		"unnamed": "名前なし",
+		"statuses": {
+			"active": "有効",
+			"paused": "一時停止中",
+			"paymentDue": "支払い待ち",
+			"uninstalled": "アンインストール済み"
+		},
+		"pages": "インストールのページ",
+		"previous": "前へ",
+		"next": "次へ"
+	},
 	"providerDashboard": {
 		"profile": "プロバイダープロフィール",
 		"overrides": "手動の変更",

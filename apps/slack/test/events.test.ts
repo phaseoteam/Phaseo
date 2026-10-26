@@ -307,6 +307,91 @@ describe("events: removed in Slack", () => {
 	});
 });
 
+describe("events: internal alert when removed in Slack", () => {
+	const WEBHOOK = "https://discord.test/api/webhooks/1/alerts";
+	const alertFetch = (respond: () => Response | Promise<Response> = () => new Response(null, { status: 204 })) => {
+		const fetchMock = vi.fn(async (_url: string, _init: RequestInit) => respond());
+		vi.stubGlobal("fetch", fetchMock);
+		return fetchMock;
+	};
+
+	beforeEach(() => {
+		world.env.DISCORD_SIGNUP_WEBHOOK_URL = WEBHOOK;
+		world.db.tables.slack_installations[0].team_name = "Acme Slack";
+		world.db.tables.workspaces.push({ id: WORKSPACE_ID, name: "Acme" });
+	});
+
+	it("tells the Phaseo team once, with names only", async () => {
+		const fetchMock = alertFetch();
+		await expect(run({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED01", authorizations: [] })).resolves.toBe("uninstalled");
+		await expect(run({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED01", authorizations: [] })).resolves.toBe("no_installation");
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(url).toBe(WEBHOOK);
+		expect(init.method).toBe("POST");
+		expect(JSON.parse(String(init.body))).toEqual({
+			content: [
+				"Slack agent uninstalled",
+				`- workspace: \`Acme\` (\`${WORKSPACE_ID}\`)`,
+				"- slack_team: `Acme Slack`",
+				"- app: `hosted`",
+				"- uninstalled_by: removed in Slack (`app_uninstalled`)",
+			].join("\n"),
+			allowed_mentions: { parse: [] },
+		});
+		expect(String(init.body)).not.toContain(BOT_TOKEN);
+	});
+
+	it("names a revoked token and a company app", async () => {
+		await install({ slack_app_id: "00000000-0000-4000-8000-0000000000c1" });
+		world.db.tables.slack_installations[0].team_name = "Acme Slack";
+		const fetchMock = alertFetch();
+		const app = { appRowId: "00000000-0000-4000-8000-0000000000c1", slackAppId: "A0COMPANY1", signingSecret: "s" };
+		const envelope = eventEnvelope({ type: "tokens_revoked", tokens: { oauth: [], bot: [BOT_USER_ID] } }, { event_id: "Ev0REVOKED01" }) as SlackEnvelope;
+		await expect(processEvent(world.deps, app, envelope)).resolves.toBe("uninstalled");
+		const content = JSON.parse(String(fetchMock.mock.calls[0][1].body)).content as string;
+		expect(content).toContain("- app: `company`");
+		expect(content).toContain("- uninstalled_by: removed in Slack (`tokens_revoked`)");
+	});
+
+	it("still sends, with ids, when the names can't be read", async () => {
+		const fetchMock = alertFetch();
+		const select = world.db.select.bind(world.db);
+		// Finding the installation works; reading the names for the alert doesn't.
+		world.db.select = async <T,>(table: string, query: Record<string, string>) => {
+			if (table === "workspaces" || query.select === "team_name") throw new Error("db_error_503");
+			return select<T>(table, query);
+		};
+		await expect(run({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED01" })).resolves.toBe("uninstalled");
+		const content = JSON.parse(String(fetchMock.mock.calls[0][1].body)).content as string;
+		expect(content).toContain(`- workspace: \`unknown\` (\`${WORKSPACE_ID}\`)`);
+		expect(content).toContain("- slack_team: `unknown`");
+	});
+
+	it("never changes the outcome when the alert fails", async () => {
+		const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		try {
+			alertFetch(() => new Response("nope", { status: 500 }));
+			await expect(run({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED01" })).resolves.toBe("uninstalled");
+			expect(errors).toHaveBeenCalledWith("[slack-agent] uninstall alert failed", { installationId: INSTALLATION_ID, status: 500 });
+
+			await install();
+			alertFetch(() => { throw new TypeError("fetch failed"); });
+			await expect(run({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED02" })).resolves.toBe("uninstalled");
+			expect(errors).toHaveBeenCalledWith("[slack-agent] uninstall alert failed", { installationId: INSTALLATION_ID, status: null });
+		} finally {
+			errors.mockRestore();
+		}
+	});
+
+	it("is off without the webhook", async () => {
+		world.env.DISCORD_SIGNUP_WEBHOOK_URL = undefined;
+		const fetchMock = alertFetch();
+		await expect(run({ type: "app_uninstalled" }, { event_id: "Ev0REMOVED01" })).resolves.toBe("uninstalled");
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+});
+
 describe("events: stopping", () => {
 	it("cancels the thread when someone presses Slack's stop button", async () => {
 		const key = `${INSTALLATION_ID}:D0DIRECT01:1792600000.000050`;

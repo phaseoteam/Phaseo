@@ -40,6 +40,10 @@ The Slack agent's settings routes (`/api/account/settings/slack*`) return 503 `s
 
 Register `https://phaseo.app/api/account/settings/slack/oauth/callback` as the Slack app's redirect URL. The callback checks the browser's Phaseo session cookie, so it only completes on the origin where people sign in.
 
+When a workspace installs the Slack agent or uninstalls it in Phaseo settings, web-api posts a short alert (workspace, Slack team, hosted or company app, who did it with their email masked) to the internal Discord channel in `DISCORD_SIGNUP_WEBHOOK_URL`, the one that already gets signups and account deletions. Without it there is no alert. The alert runs after the response and its failures are only logged. The Slack Worker sends the same alert when the app is removed inside Slack, if it has the same secret (see `apps/slack/README.md`).
+
+Phaseo admins see every installation, with this month's people, answers, estimated charge and model spend through its key, at `/internal/slack-agent` (`GET /api/internal/slack-agent/installations`, summed by `list_slack_agent_installations`).
+
 ## Validation
 
 ```bash

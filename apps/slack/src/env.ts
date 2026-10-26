@@ -36,4 +36,7 @@ export interface Env {
 
 	SUPABASE_URL?: string;
 	SUPABASE_SERVICE_ROLE_KEY?: string;
+
+	/** Phaseo's internal Discord webhook (the same as web-api's) for an alert when the app is removed inside Slack. Optional: unset turns the alert off. */
+	DISCORD_SIGNUP_WEBHOOK_URL?: string;
 }

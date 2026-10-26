@@ -6182,6 +6182,36 @@
 		"changed": "{keys, plural, zero {# مفتاح} one {مفتاح واحد} two {مفتاحان} few {# مفاتيح} many {# مفتاحًا} other {# مفتاح}} في {workspaces, plural, zero {# مساحة عمل} one {مساحة عمل واحدة} two {مساحتَي عمل} few {# مساحات عمل} many {# مساحة عمل} other {# مساحة عمل}}",
 		"notApplied": "لم يُطبَّق"
 	},
+	"slackAgentInstallations": {
+		"title": "عمليات تثبيت وكيل Slack",
+		"description": "كل مساحات عمل Phaseo التي ثبّتت وكيل Slack، الأحدث أولًا. الأشخاص والإجابات والإنفاق عن {month} (UTC) حتى الآن.",
+		"notes": "رسوم وكيل Slack تقدير للشهر حتى الآن، ولا تتجاوز حد الإنفاق لكل مساحة عمل. يُفوتَر إنفاق النماذج بشكل منفصل عبر المفتاح الخاص بكل عملية تثبيت.",
+		"count": "{count, plural, zero {# عملية تثبيت} one {عملية تثبيت واحدة} two {عمليتا تثبيت} few {# عمليات تثبيت} many {# عملية تثبيت} other {# عملية تثبيت}}",
+		"none": "لم تثبّت أي مساحة عمل وكيل Slack بعد.",
+		"workspace": "مساحة عمل Phaseo",
+		"slackTeam": "مساحة عمل Slack",
+		"status": "الحالة",
+		"app": "التطبيق",
+		"installedAt": "تاريخ التثبيت",
+		"uninstalledAt": "تاريخ إلغاء التثبيت",
+		"people": "الأشخاص",
+		"answers": "الإجابات",
+		"estimatedCharge": "رسوم وكيل Slack",
+		"modelSpend": "إنفاق النماذج",
+		"modelRequests": "{count, plural, zero {# طلب} one {طلب واحد} two {طلبان} few {# طلبات} many {# طلبًا} other {# طلب}}",
+		"hostedApp": "تطبيق Phaseo",
+		"companyApp": "تطبيق الشركة",
+		"unnamed": "بلا اسم",
+		"statuses": {
+			"active": "نشط",
+			"paused": "متوقف مؤقتًا",
+			"paymentDue": "الدفع مستحق",
+			"uninstalled": "أُلغي التثبيت"
+		},
+		"pages": "صفحات عمليات التثبيت",
+		"previous": "السابق",
+		"next": "التالي"
+	},
 	"providerDashboard": {
 		"profile": "ملف المزوّد",
 		"overrides": "تعديلات يدوية",

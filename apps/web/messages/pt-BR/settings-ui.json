@@ -6182,6 +6182,36 @@
 		"changed": "{keys, plural, one {# chave} other {# chaves}} em {workspaces, plural, one {# espaço de trabalho} other {# espaços de trabalho}}",
 		"notApplied": "Não aplicado"
 	},
+	"slackAgentInstallations": {
+		"title": "Instalações do agente do Slack",
+		"description": "Todos os espaços de trabalho do Phaseo que instalaram o agente do Slack, dos mais recentes aos mais antigos. Pessoas, respostas e gastos referem-se a {month} (UTC) até agora.",
+		"notes": "A cobrança do agente do Slack é uma estimativa do mês até agora, limitada ao teto de gastos de cada espaço de trabalho. Os gastos com modelos são cobrados à parte, pela chave própria de cada instalação.",
+		"count": "{count, plural, one {# instalação} other {# instalações}}",
+		"none": "Nenhum espaço de trabalho instalou o agente do Slack ainda.",
+		"workspace": "Espaço de trabalho do Phaseo",
+		"slackTeam": "Espaço de trabalho do Slack",
+		"status": "Situação",
+		"app": "Aplicativo",
+		"installedAt": "Instalado em",
+		"uninstalledAt": "Desinstalado em",
+		"people": "Pessoas",
+		"answers": "Respostas",
+		"estimatedCharge": "Cobrança do agente do Slack",
+		"modelSpend": "Gastos com modelos",
+		"modelRequests": "{count, plural, one {# solicitação} other {# solicitações}}",
+		"hostedApp": "Aplicativo do Phaseo",
+		"companyApp": "Aplicativo da empresa",
+		"unnamed": "Sem nome",
+		"statuses": {
+			"active": "Ativo",
+			"paused": "Pausado",
+			"paymentDue": "Pagamento pendente",
+			"uninstalled": "Desinstalado"
+		},
+		"pages": "Páginas de instalações",
+		"previous": "Anterior",
+		"next": "Próxima"
+	},
 	"providerDashboard": {
 		"profile": "Perfil do provedor",
 		"overrides": "Alterações manuais",
