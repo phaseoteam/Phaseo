@@ -18,6 +18,10 @@ const JWKS_KV_PREFIX = "workload-identity:jwks:v1:";
 const JWKS_FORCED_REFRESH_INTERVAL_MS = 60 * 1000;
 const JWKS_FETCH_TIMEOUT_MS = 3_000;
 const JWKS_MAX_BYTES = 64 * 1024;
+// A failed fetch is not retried for a minute, so unverified tokens naming a
+// missing or failing issuer cannot drive an outbound request on every attempt.
+const JWKS_FAILURE_BACKOFF_MS = 60 * 1000;
+const JWKS_FAILURE_MAX_ENTRIES = 1_000;
 
 type SupportedAlg = "RS256" | "ES256";
 const ALGORITHMS: Record<SupportedAlg, { kty: string; import: RsaHashedImportParams | EcKeyImportParams; verify: AlgorithmIdentifier | EcdsaParams }> = {
@@ -203,10 +207,14 @@ type JwksL1Entry = { keys: JsonWebKey[]; expiresAt: number };
 const jwksL1 = new Map<string, JwksL1Entry>();
 // When each URL last started a forced refresh, successful or not.
 const forcedRefreshAt = new Map<string, number>();
+const failedUntil = new Map<string, number>();
+const inFlight = new Map<string, Promise<JsonWebKey[]>>();
 
 export function __resetWorkloadJwksCacheForTests(): void {
 	jwksL1.clear();
 	forcedRefreshAt.clear();
+	failedUntil.clear();
+	inFlight.clear();
 }
 
 async function fetchJwksDocument(url: string, fetchImpl: typeof fetch): Promise<JsonWebKey[]> {
@@ -258,7 +266,23 @@ export function createJwksSource(args: { kv?: KVNamespace | null; fetchImpl?: ty
 				}
 			}
 
-			const keys = await fetchJwksDocument(url, fetchImpl);
+			if ((failedUntil.get(url) ?? 0) > now) throw new Error("jwks_backoff");
+			// Concurrent misses share one fetch.
+			let pending = inFlight.get(url);
+			if (!pending) {
+				pending = fetchJwksDocument(url, fetchImpl).finally(() => inFlight.delete(url));
+				inFlight.set(url, pending);
+			}
+			let keys: JsonWebKey[];
+			try {
+				keys = await pending;
+			} catch (error) {
+				failedUntil.delete(url);
+				failedUntil.set(url, now + JWKS_FAILURE_BACKOFF_MS);
+				while (failedUntil.size > JWKS_FAILURE_MAX_ENTRIES) failedUntil.delete(failedUntil.keys().next().value as string);
+				throw error;
+			}
+			failedUntil.delete(url);
 			jwksL1.set(url, { keys, expiresAt: now + JWKS_L1_TTL_MS });
 			if (args.kv) {
 				try {

@@ -234,6 +234,22 @@ describe("createJwksSource", () => {
 		expect(fetchImpl).toHaveBeenCalledTimes(1);
 	});
 
+	it("backs off after a failed fetch and shares concurrent fetches", async () => {
+		let status = 404;
+		const fetchImpl = vi.fn(async () => status === 200 ? jsonResponse({ keys: [] }) : new Response("missing", { status }));
+		let now = 9_000_000;
+		const source = createJwksSource({ fetchImpl: fetchImpl as unknown as typeof fetch, nowMs: () => now });
+		const first = await Promise.allSettled(Array.from({ length: 3 }, () => source.getKeys(url)));
+		expect(first.every((result) => result.status === "rejected")).toBe(true);
+		expect(fetchImpl).toHaveBeenCalledTimes(1);
+		for (let i = 0; i < 5; i += 1) await expect(source.getKeys(url)).rejects.toThrow("jwks_backoff");
+		expect(fetchImpl).toHaveBeenCalledTimes(1);
+		now += 61_000;
+		status = 200;
+		await expect(source.getKeys(url)).resolves.toEqual([]);
+		expect(fetchImpl).toHaveBeenCalledTimes(2);
+	});
+
 	it("does not follow redirects and caps the response size", async () => {
 		const redirecting = createJwksSource({
 			fetchImpl: (async () => new Response(null, { status: 302, headers: { location: "http://169.254.169.254/" } })) as unknown as typeof fetch,
