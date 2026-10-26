@@ -128,6 +128,20 @@ const client = new Phaseo({
 
 App attribution is optional and is never inferred from the SDK itself.
 
+### Trusted workloads (OIDC tokens instead of an API key)
+
+Workspaces in the trusted workloads beta can let Vercel deployments and GitHub Actions jobs call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → Trusted workloads, then pass a function as `apiKey`. It is called before every request, so each request uses a current token:
+
+```ts
+import { getVercelOidcToken } from "@vercel/oidc";
+
+const client = new Phaseo({
+  apiKey: () => getVercelOidcToken({ audience: "https://api.phaseo.app" }),
+});
+```
+
+Tokens must be issued for the audience `https://api.phaseo.app`.
+
 ## Regional text routing
 
 Select `eu` or `us` to restrict Chat Completions, Responses, and Messages to
