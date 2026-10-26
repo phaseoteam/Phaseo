@@ -8,6 +8,7 @@ import { json, withRuntime } from "@/routes/utils";
 import {
 	CLI_CLIENT_ID,
 	CLI_DEFAULT_SCOPES,
+	DESKTOP_CLIENT_ID,
 	assertRedirectAllowed,
 	authorizationConsentUrl,
 	bearerToken,
@@ -37,6 +38,7 @@ import {
 	normalizeScopes,
 	normalizeUserCode,
 	parseTokenRequestBody,
+	renewDesktopKey,
 	revokeToken,
 	rotateRefreshToken,
 	verificationUriFor,
@@ -1063,6 +1065,25 @@ oauthRouter.post(
 			upstream_access_token: upstream.access_token,
 			token_type: upstream.token_type,
 			expires_in: upstream.expires_in,
+		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
+// The desktop app renews its own delegated key while it is used (see renewDesktopKey), authenticated by that key. A
+// session token or another app's key can't: those have their own lifetimes.
+oauthRouter.post(
+	"/desktop/renew",
+	withRuntime(async (req) => {
+		if (!(await checkOAuthRateLimit(req, "token", "desktop-renew"))) return rateLimitError();
+		const auth = await authenticateManagement(req, { useKvCache: false });
+		if (!auth.ok || auth.authMethod !== "oauth" || auth.oauthClientId !== DESKTOP_CLIENT_ID || !auth.apiKeyRef?.startsWith("kid_") || !auth.apiKeyId) {
+			return oauthError("invalid_token", "A Phaseo desktop key is required", 401);
+		}
+		const renewed = await renewDesktopKey(auth.apiKeyId);
+		if (!renewed) return oauthError("invalid_token", "This key can no longer be renewed; sign in again", 401);
+		return json({
+			expires_at: renewed.expiresAt,
+			expires_in: Math.max(0, Math.floor((Date.parse(renewed.expiresAt) - Date.now()) / 1000)),
 		}, 200, { "Cache-Control": "no-store" });
 	}),
 );

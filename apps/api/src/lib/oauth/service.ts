@@ -1143,6 +1143,30 @@ export async function revokeToken(token: string) {
 		.eq("key_kind", "oauth_delegated");
 }
 
+export const DESKTOP_KEY_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+/**
+ * Keeps the desktop app's delegated key alive while it's used, so a sign-in lasts like the CLI's renewing session
+ * without minting (and announcing to the workspace's owners) a new key each time. An expired or revoked key isn't
+ * brought back; the caller has already checked the key's authorization and membership.
+ */
+export async function renewDesktopKey(keyId: string): Promise<{ expiresAt: string } | null> {
+	const now = new Date();
+	const expiresAt = new Date(now.getTime() + DESKTOP_KEY_TTL_SECONDS * 1000).toISOString();
+	const { data, error } = await getSupabaseAdmin()
+		.from("keys")
+		.update({ expires_at: expiresAt })
+		.eq("id", keyId)
+		.eq("key_kind", "oauth_delegated")
+		.eq("oauth_client_id", DESKTOP_CLIENT_ID)
+		.eq("status", "active")
+		.gt("expires_at", now.toISOString())
+		.select("expires_at")
+		.maybeSingle();
+	if (error) throw new Error(error.message || "Failed to renew the desktop key");
+	return data?.expires_at ? { expiresAt: String(data.expires_at) } : null;
+}
+
 export function makeDeviceCodeExpiry(): string {
 	return new Date(Date.now() + DEVICE_CODE_TTL_SECONDS * 1000).toISOString();
 }

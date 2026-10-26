@@ -133,6 +133,7 @@ vi.mock("@/pipeline/before/auth", () => ({
 vi.mock("@/lib/oauth/service", () => ({
 	CLI_CLIENT_ID: "phaseo_cli",
 	CLI_DEFAULT_SCOPES: ["openid"],
+	DESKTOP_CLIENT_ID: "phaseo_desktop",
 	assertRedirectAllowed: vi.fn(() => true),
 	authorizationConsentUrl: vi.fn((params: URLSearchParams) => {
 		state.consentParams = params.toString();
@@ -188,6 +189,7 @@ vi.mock("@/lib/oauth/service", () => ({
 	}),
 	normalizeUserCode: vi.fn((value: string) => value.trim().toUpperCase()),
 	parseTokenRequestBody: vi.fn((raw: string) => (raw ? JSON.parse(raw) : {})),
+	renewDesktopKey: vi.fn(async (keyId: string) => (keyId === "key_desktop" ? { expiresAt: "2999-01-01T00:00:00.000Z" } : null)),
 	revokeToken: vi.fn(async () => undefined),
 	rotateRefreshToken: vi.fn(async () => ({ ok: false, reason: "invalid_grant" })),
 	validateLocalAccessToken: vi.fn(async () => ({ valid: false })),
@@ -1049,6 +1051,28 @@ describe("OAuth route security", () => {
 		state.oauthAuth = { ...state.oauthAuth, oauthScopes: ["openid", "email"] };
 		const narrow = await (await oauthRouter.request("https://example.com/userinfo", { headers: { Authorization: "Bearer phaseo_v1_sk_example" } })).json();
 		expect(narrow).not.toHaveProperty("name"); expect(narrow).not.toHaveProperty("given_name"); expect(narrow).not.toHaveProperty("picture");
+	});
+
+	it("renews the desktop app's own delegated key, and nothing else", async () => {
+		const desktop = { ok: true, workspaceId: "workspace_1", apiKeyId: "key_desktop", apiKeyRef: "kid_abc", apiKeyKid: "abc", userId: "user_1", authMethod: "oauth", oauthClientId: "phaseo_desktop", oauthScopes: ["gateway:access"] };
+		const { oauthRouter } = await import("./oauth");
+		const renew = () => oauthRouter.request("https://example.com/desktop/renew", { method: "POST", headers: { Authorization: "Bearer phaseo_v1_sk_example" } });
+		state.oauthAuth = desktop;
+		const renewed = await renew();
+		expect(renewed.status).toBe(200);
+		expect(renewed.headers.get("Cache-Control")).toBe("no-store");
+		expect(await renewed.json()).toMatchObject({ expires_at: "2999-01-01T00:00:00.000Z", expires_in: expect.any(Number) });
+		// Another app's key, a session token, a plain API key, or a key past renewing.
+		for (const auth of [
+			{ ...desktop, oauthClientId: "client_1" },
+			{ ...desktop, apiKeyRef: "oauth_phaseo_desktop" },
+			{ ...desktop, authMethod: "api_key" },
+			{ ok: false, reason: "key_expired" },
+			{ ...desktop, apiKeyId: "key_revoked" },
+		]) {
+			state.oauthAuth = auth;
+			expect((await renew()).status).toBe(401);
+		}
 	});
 
 	it("binds a delegated access token to the resource echoed at token exchange", async () => {

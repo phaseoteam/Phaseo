@@ -15,6 +15,8 @@ const state = vi.hoisted(() => ({
 	delegatedKeyRow: null as Record<string, unknown> | null,
 	revokedDelegatedKeyIds: [] as string[],
 	auditEvents: [] as Array<Record<string, unknown>>,
+	keyUpdates: [] as Array<{ payload: Record<string, unknown>; filters: unknown[][] }>,
+	renewedKeyRow: null as Record<string, unknown> | null,
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -142,12 +144,23 @@ vi.mock("@/runtime/env", () => ({
 							maybeSingle: async () => ({ data: state.delegatedKeyRow, error: null }),
 						}),
 					}),
-					update: () => ({
-						eq(column: string, value: unknown) {
-							if (column === "id") state.revokedDelegatedKeyIds.push(String(value));
-							return this;
-						},
-					}),
+					update: (payload: Record<string, unknown>) => {
+						const filters: unknown[][] = [];
+						const chain = {
+							eq(column: string, value: unknown) {
+								if (column === "id") state.revokedDelegatedKeyIds.push(String(value));
+								filters.push([column, "eq", value]);
+								return chain;
+							},
+							gt(column: string, value: unknown) { filters.push([column, "gt", value]); return chain; },
+							select: () => chain,
+							maybeSingle: async () => {
+								state.keyUpdates.push({ payload, filters });
+								return { data: state.renewedKeyRow, error: null };
+							},
+						};
+						return chain;
+					},
 				};
 			}
 			if (table === "workspace_audit_events") {
@@ -432,5 +445,28 @@ describe("OAuth refresh rotation security", () => {
 			clientId: "phaseo_cli",
 			scopes: ["openid"],
 		})).rejects.toThrow("grant update failed");
+	});
+});
+
+describe("Desktop key renewal", () => {
+	beforeEach(() => { state.keyUpdates = []; state.renewedKeyRow = null; });
+
+	it("extends only the desktop's own active, unexpired delegated key by 30 days", async () => {
+		const { renewDesktopKey } = await import("./service");
+		const before = Date.now();
+		state.renewedKeyRow = { expires_at: "2026-11-25T12:00:00.000Z" };
+		await expect(renewDesktopKey("key_1")).resolves.toEqual({ expiresAt: "2026-11-25T12:00:00.000Z" });
+		const [{ payload, filters }] = state.keyUpdates;
+		const days = (Date.parse(String(payload.expires_at)) - before) / 86_400_000;
+		expect(days).toBeGreaterThan(29.99); expect(days).toBeLessThan(30.01);
+		expect(filters).toEqual(expect.arrayContaining([
+			["id", "eq", "key_1"], ["key_kind", "eq", "oauth_delegated"], ["oauth_client_id", "eq", "phaseo_desktop"], ["status", "eq", "active"],
+			["expires_at", "gt", expect.any(String)],
+		]));
+	});
+
+	it("doesn't bring back a key that has expired or been revoked", async () => {
+		const { renewDesktopKey } = await import("./service");
+		await expect(renewDesktopKey("key_1")).resolves.toBeNull();
 	});
 });
