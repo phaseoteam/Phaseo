@@ -463,7 +463,7 @@ export class AgentTurnWorkflow extends WorkflowEntrypoint<Env, TurnRef> {
 	async run(event: Readonly<WorkflowEvent<TurnRef>>, step: WorkflowStep): Promise<unknown> {
 		const deps: TurnDeps = {
 			...defaultDeps(this.env),
-			agent: createSdkAgentRunner({ fetchImpl: gatewayFetch(this.env), baseUrl: gatewayBaseUrl(this.env) }),
+			agent: createSdkAgentRunner({ fetchImpl: gatewayFetch(), baseUrl: gatewayBaseUrl(this.env) }),
 		};
 		return runTurn(deps, event.payload, step as unknown as StepRunner);
 	}

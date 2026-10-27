@@ -82,7 +82,7 @@ Workflows), one per Slack event, kept for 1 day. It has five steps:
 
 1. `load`: re-checks the installation and access. It sets the Slack session to `processing` (`agents.sessions.setStatus`).
 2. `context`: one `conversations.replies` read of up to 15 messages, ending at the message answered (`src/history.ts`). Slack allows apps outside the Marketplace about one read a minute per workspace, 15 messages each, and returns a range's earliest messages first, so the read starts at the oldest of the 8 newest messages the coordinator knows (in a channel, never more than 30 minutes back; the first read in a thread goes 30 minutes back). Slack sends the thread's first message with every read. When the stretch held more, the prompt says messages are missing. Only the installation's bot user (or its app) is the agent in the prompt; other bots and apps are labelled `Another app (name)`. When Slack rate limits the read, the coordinator's working memory is used alone, and the meter keeps Slack's `Retry-After`: until it passes, every thread of the installation skips its read and uses working memory too. Reads aren't spaced otherwise, for the hosted app or a company's own app: Slack tolerates small bursts, and a refused read only costs that turn its read.
-3. `run`: runs `@phaseo/agent-sdk` through the gateway (the `PHASEO_API` service binding) with the installation's managed key and model. Every request carries:
+3. `run`: runs `@phaseo/agent-sdk` through the gateway's public URL (`PHASEO_API_BASE_URL`) with the installation's managed key and model. Every request carries:
    - `user: slack:<team>:<user>`;
    - `x-phaseo-metadata` labels `app=slack-agent`, `slack_team` and `slack_channel`;
    - `x-title: Phaseo Slack agent`;
@@ -138,8 +138,9 @@ Vars:
 - `PHASEO_WEB_ORIGIN`: where `/slack/link` lives (default `https://phaseo.app`).
 - `PHASEO_API_BASE_URL`: the gateway (default `https://api.phaseo.app/v1`).
 
-The production env also binds `PHASEO_API` to the `phaseo-gateway` Worker,
-which agent turns use instead of the public URL.
+Agent turns call the gateway's public URL rather than a service binding. A
+service binding's request carries no country, and providers that refuse requests
+from an unknown country (OpenAI, Anthropic and others) would then never answer.
 
 ## Local development
 
