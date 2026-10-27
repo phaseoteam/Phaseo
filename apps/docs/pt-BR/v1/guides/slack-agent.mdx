@@ -62,7 +62,24 @@ Enquanto responde:
   - Quando o Slack não deixa que ele leia a thread naquele momento, ele trabalha com as próprias respostas anteriores na thread.
 - Ele responde uma mensagem por vez em cada thread. Até 5 mensagens a mais esperam a vez; depois disso, ele pede que você aguarde as respostas anteriores.
 - O botão de parar do Slack interrompe a resposta em andamento.
-- Cada resposta termina com o modelo e quanto a resposta custou em tokens de modelo, como `phaseo/auto · $0.0031`. Com **Automático**, o modelo escolhido aparece depois de uma seta.
+- Cada resposta termina com o modelo e quanto a resposta custou em tokens de modelo, como `Auto → GPT-6 Luna · $0.0031`. Com **Automático**, o modelo escolhido aparece depois de uma seta. O nome de um modelo leva à página dele na Phaseo, e o custo leva às requisições dessa resposta em **Registros**, que os membros do workspace da Phaseo podem abrir.
+
+## Escolher um modelo por mensagem
+
+Proprietários e administradores podem deixar as pessoas escolherem o modelo de uma única mensagem. Em **Configurações → Slack**, na seção **Escolha de modelo**, ative **Permitir escolher um modelo por mensagem** e adicione até 10 modelos do catálogo da Phaseo. Se o seu workspace tiver Roteamento Automático, **Incluir “Automático”** adiciona **Automático** à lista. O modelo em **Agente** continua respondendo a todas as outras mensagens.
+
+Para escolher um modelo, comece a mensagem com `with <model>:` e indique um modelo permitido pelo nome ou ID:
+
+```text
+@Phaseo with Claude Opus 5.5: veja se falta algo neste resumo do incidente
+with openai/gpt-6-luna: escreva uma resposta para este cliente
+```
+
+- A comparação é feita só com os modelos permitidos, sem diferenciar maiúsculas de minúsculas. O começo de um nome ou ID basta quando só um modelo permitido o tem, então `with claude:` funciona quando há um único modelo Claude na lista.
+- O agente responde a essa mensagem com esse modelo, sem a parte `with …:`, e o rodapé mostra o modelo que respondeu.
+- Se o modelo não estiver na lista, ou se o nome servir para mais de um, o agente responde em particular com os modelos que você pode escolher e não responde à mensagem. Essa mensagem não conta como resposta.
+- Cada resposta mantém os mesmos limites ($0.50 e 12 etapas, veja “Limites de cada resposta” abaixo), seja qual for o modelo que responder. Os tokens do modelo são cobrados pelo preço dele.
+- O guardrail **Slack agent** continua valendo. Se nenhum provedor do modelo escolhido o atender, o agente avisa em vez de responder.
 
 ## Quem pode usar
 
@@ -327,6 +344,8 @@ Quando o agente não consegue responder a alguém, ele responde em particular no
 | "I'm still working through earlier messages in this thread." | Já há 5 mensagens aguardando nesta thread. | Aguarde essas respostas. |
 | "Sorry, I couldn't check your Slack account just now." | O Slack não respondeu a uma consulta. | Tente de novo em um minuto. |
 | "The model chosen for this agent isn't available to the Slack agent." | O gateway não consegue usar o modelo do agente com a chave dele: **Automático** sem Roteamento Automático, ou nenhum provedor do modelo atende ao guardrail **Slack agent**. | Escolha outro modelo em **Configurações → Slack**. |
+| "…isn't one of the models you can choose here, so I didn't answer." | A mensagem começou com `with …:` e indicou um modelo que não está em **Escolha de modelo**, ou um nome que serve para vários modelos permitidos. | Use um modelo da lista da resposta, ou tire o `with …:`. |
+| "The model you chose for this message isn't available to the Slack agent." | O gateway não consegue usar o modelo escolhido com a chave do agente, como acima. | Pergunte sem `with …:`, ou troque o modelo em **Escolha de modelo**. |
 
 Se o agente não responder nada:
 
