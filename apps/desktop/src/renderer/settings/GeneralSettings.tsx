@@ -15,6 +15,7 @@ import { publishWorkspacePreferences } from "../lib/workspacePreferences";
 import { mergeMethodLabels } from "../views/pullRequests/pullRequestLogic";
 import { isMac } from "../lib/shortcuts";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
+import { WorktreeCleanupSettings } from "./WorktreeCleanupSettings";
 
 /** Workspace preferences, loaded once and saved one change at a time. */
 function usePreferences() {
@@ -159,6 +160,7 @@ export function GeneralSettings() {
 					onValueChange={value => void save({ ...preferences, autoSettleAfterDays: value === "never" ? null : Number(value) })}
 					options={[{ value: "never", label: "Never" }, ...[...new Set([1, 2, 3, 5, 7, 14, 30, ...(preferences.autoSettleAfterDays ? [preferences.autoSettleAfterDays] : [])])].sort((a, b) => a - b).map(days => ({ value: String(days), label: days === 1 ? "After 1 day" : `After ${days} days` }))]} />} />
 		</SettingsSection>
+		<WorktreeCleanupSettings preferences={preferences} save={save} disabled={!ready || busy} />
 		<GlobalInstructions />
 	</SettingsPageLayout>;
 }

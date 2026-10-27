@@ -52,6 +52,8 @@ import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth
 import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
 import { gitBranches, withGitLock } from "./gitOperations";
 import { runWorktreeSetup } from "./worktreeChat";
+import { planWorktreeCleanup } from "./worktreeCleanup";
+import type { WorktreeCleanupReport } from "../shared/worktreeCleanup";
 import { branchNamePrompt, temporaryWorktreeBranch, type WorktreeChatRequest } from "../shared/worktreeChat";
 import { captureCheckpoint } from "./gitCheckpoints";
 import { grokModelCatalog } from "./grokModelCatalog";
@@ -588,6 +590,36 @@ export class WorkspaceRuntime {
 		const baseCommit = await createGitWorktree(source.directory, directory, branch, base);
 		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); if (runScripts) this.startWorktreeScripts(project.id); return { workspace: this.store.getOverview(), projectId: project.id }; }
 		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
+	}
+	/** The last worktree cleanup, for Settings; kept until the app quits. */
+	lastWorktreeCleanup?: WorktreeCleanupReport;
+	private worktreeCleanupRun?: Promise<WorktreeCleanupReport>;
+	/**
+	 * T3's worktree cleanup. "plan" lists what the rules would remove; "remove" removes those of `projectIds` the rules
+	 * still pick when checked again; "auto" removes everything they pick (the setting, off by default).
+	 */
+	async cleanWorktrees(mode: "plan" | "auto" | { remove: string[] }): Promise<WorktreeCleanupReport> {
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		if (this.worktreeCleanupRun) { if (mode === "auto") return this.worktreeCleanupRun; throw new Error("A worktree cleanup is already running."); }
+		const run = (async () => {
+			const rules = this.store.getPreferences().worktreeCleanup, workspace = this.store.getOverview();
+			const sameDirectory = (a: string, b: string) => { try { return !path.relative(realpathSync(a), realpathSync(b)); } catch { return false; } };
+			const entries = await planWorktreeCleanup({ projects: workspace.projects, tasks: workspace.tasks, rules, now: Date.now(), only: typeof mode === "object" ? new Set(mode.remove) : undefined,
+				blocked: project => this.removingWorktrees.has(project.id) || [...this.projectMutations.values()].includes(project.id) ? "A Git action is using it"
+					: workspace.tasks.some(task => task.projectId === project.id && this.executions.has(task.id)) ? "A chat is running in it"
+					: this.getTerminals?.().some(value => value.status === "running" && sameDirectory(value.cwd, project.directory)) ? "A terminal is open in it"
+					: workspace.projects.some(other => other.worktree && !other.worktree.removedAt && other.worktree.sourceProjectId === project.id) ? "Other worktrees start from it" : undefined });
+			if (mode !== "plan") for (const entry of entries) {
+				if (entry.outcome !== "remove" || this.closing) continue;
+				// removeWorktree checks again that nothing runs there and that the checkout is clean.
+				try { await this.removeWorktree(entry.projectId); entry.outcome = "removed"; } catch (error) { entry.outcome = "keep"; entry.reason = error instanceof Error ? error.message : "It could not be removed"; }
+			}
+			const report: WorktreeCleanupReport = { checkedAt: new Date().toISOString(), entries, ...mode === "auto" ? { automatic: true } : {} };
+			if (mode !== "plan") this.lastWorktreeCleanup = report;
+			return report;
+		})();
+		this.worktreeCleanupRun = run;
+		try { return await run; } finally { this.worktreeCleanupRun = undefined; }
 	}
 	/** T3's "run on worktree creation": each such script starts in a terminal of its own in the new worktree. */
 	private startWorktreeScripts(projectId: string) {

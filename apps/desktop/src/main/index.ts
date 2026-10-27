@@ -35,6 +35,7 @@ import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
 import { validateWorktreeChatRequest } from "../shared/worktreeChat";
 import { validatePublishRepository } from "../shared/gitWorkflow";
+import { validateWorktreeCleanupRequest } from "../shared/worktreeCleanup";
 import { generateCommitMessage, gitInit, publishOwners, publishRepository } from "./gitWorkflow";
 import type { Account, AccountStatus, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
@@ -126,6 +127,9 @@ let terminalService: TerminalService;
 let taskNotifications: TaskNotifications;
 let missionService: MissionService;
 let settleTimer: ReturnType<typeof setInterval> | undefined;
+let worktreeCleanupTimer: ReturnType<typeof setInterval> | undefined;
+/** T3's automatic worktree cleanup, when turned on in Settings → General. */
+const autoCleanWorktrees = () => { if (!shutdownStarted && workspaceRuntime.store.getPreferences().worktreeCleanup.enabled) void workspaceRuntime.cleanWorktrees("auto").catch(() => {}); };
 let phaseoSignInTimer: ReturnType<typeof setInterval> | undefined;
 let pullRequestWatcher: PullRequestWatcher | undefined;
 let modelCatalogCache: ModelCatalogCache;
@@ -416,6 +420,7 @@ app.on("before-quit", event => {
 	diagnostics.close();
 	missionService?.close();
 	if (settleTimer) clearInterval(settleTimer);
+	if (worktreeCleanupTimer) clearInterval(worktreeCleanupTimer);
 	if (phaseoSignInTimer) clearInterval(phaseoSignInTimer);
 	void pullRequestWatcher?.close();
 	taskNotifications?.dismiss();
@@ -664,6 +669,12 @@ ipcMain.handle("workspace:start-worktree-chat", (event, value: unknown) => {
 	const command = validateCommand(create);
 	if (command.type !== "create-task" || shutdownStarted) throw new Error("Invalid worktree chat request.");
 	return workspaceRuntime.startWorktreeChat(request, command);
+});
+ipcMain.handle("workspace:worktree-cleanup", async (event, value: unknown) => {
+	if (!senderWindow(event) || shutdownStarted) throw new Error("Invalid worktree cleanup request.");
+	const request = validateWorktreeCleanupRequest(value);
+	const report = await workspaceRuntime.cleanWorktrees(request.type === "plan" ? "plan" : { remove: request.projectIds });
+	return { report, last: workspaceRuntime.lastWorktreeCleanup, workspace: workspaceRuntime.store.getOverview() };
 });
 ipcMain.handle("workspace:remove-worktree", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid worktree request.");
@@ -1083,6 +1094,8 @@ app.whenReady().then(() => {
 	phaseoSignInTimer = setInterval(() => void refreshPhaseoSignIns(), 6 * 3_600_000); phaseoSignInTimer.unref();
 	workspaceRuntime.settleIdleThreads();
 	settleTimer = setInterval(() => workspaceRuntime.settleIdleThreads(), 60_000); settleTimer.unref();
+	// Worktree cleanup waits for startup to settle, then runs every six hours.
+	setTimeout(autoCleanWorktrees, 120_000).unref(); worktreeCleanupTimer = setInterval(autoCleanWorktrees, 6 * 3_600_000); worktreeCleanupTimer.unref();
 	workspaceRuntime.onPullRequestNotice = (taskId, summary, outcome) => { const title = workspaceRuntime.store.getOverview().tasks.find(task => task.id === taskId)?.title ?? "Chat"; taskNotifications.notice(taskId, title, summary, outcome !== "completed"); };
 	pullRequestWatcher = new PullRequestWatcher({ targets: () => workspaceRuntime.pullRequestWatchTargets(), read: readPullRequestView, record: (taskId, link, startedAt, next, update) => workspaceRuntime.recordPullRequestWatch(taskId, link, startedAt, next, update), snapshot: view => workspaceRuntime.syncPullRequestSnapshot(view.repository, view.number, pullRequestLinkSnapshot(view)) });
 	pullRequestWatcher.start();

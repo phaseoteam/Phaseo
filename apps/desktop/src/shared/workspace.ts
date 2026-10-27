@@ -30,6 +30,7 @@ import type { PullRequestGuideResult } from "./pullRequestGuide";
 import type { PullRequestStackActionRequest, PullRequestStackRead } from "./pullRequestStacks";
 import type { WorktreeChatRequest, WorktreeSetup } from "./worktreeChat";
 import type { PublishRepositoryRequest, PublishRepositoryResult } from "./gitWorkflow";
+import type { WorktreeCleanupReport, WorktreeCleanupRequest } from "./worktreeCleanup";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -213,6 +214,8 @@ export type WorkspaceApi = {
 	projectFile: (projectId: string) => Promise<T3ProjectFileState>;
 	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: WorkspaceOverview; projectId: string }>;
 	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
+	/** T3's worktree cleanup: list what the rules would remove, or remove the chosen ones after checking again. */
+	worktreeCleanup: (request: WorktreeCleanupRequest) => Promise<{ report: WorktreeCleanupReport; last?: WorktreeCleanupReport; workspace: WorkspaceOverview }>;
 	/** T3's New worktree workspace: makes a worktree from `base` and a chat in it; the first send waits for its setup. */
 	startWorktreeChat: (request: WorktreeChatRequest & { create: Extract<WorkspaceCommand, { type: "create-task" }> }) => Promise<{ workspace: WorkspaceOverview; taskId: string }>;
 	/** Fetches a pull request's head and makes a managed worktree on a new branch at it (T3's "Check out in a separate worktree"). */
