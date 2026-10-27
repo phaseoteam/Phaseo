@@ -10,6 +10,10 @@ const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const migration = await readFile(new URL('../migrations/20261021203244_slack_agent_billing.sql', import.meta.url), 'utf8');
 // Allows providers that keep logs: replaces protect_slack_agent_guardrail and updates live guardrails.
 const guardrailMigration = await readFile(new URL('../migrations/20261026223103_slack_agent_guardrail_allows_logging_providers.sql', import.meta.url), 'utf8');
+// Adds per-message model choice to slack_installations: two columns, a check and their comments.
+const modelChoiceMigration = await readFile(new URL('../migrations/20261027131100_slack_agent_model_choice.sql', import.meta.url), 'utf8');
+const MODEL_CHOICE_LINES = /^ {2}"(?:model_choice_enabled|allowed_models)" .*\n|^ {2}CONSTRAINT "slack_installations_allowed_models_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."(?:model_choice_enabled|allowed_models)" .*\n\n/gm;
+const words = (text) => text.trim().replace(/[,;]$/, '').replace(/\s+/g, ' ');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const TABLES = ['slack_apps', 'slack_installations', 'slack_user_links', 'slack_agent_monthly_people', 'slack_agent_charges'];
 const FUNCTIONS = ['record_slack_agent_people', 'list_slack_agent_due_charges', 'charge_slack_agent_month'];
@@ -63,9 +67,18 @@ try {
     insert into public.wallets (workspace_id, balance_nanos) values ('${ws(1)}', 500000000), ('${ws(2)}', 100000000000);
   `);
   await db.exec(migration);
+  await db.exec(modelChoiceMigration);
 
   for (const table of TABLES) {
-    assert.ok(migration.includes(await schema(`public/tables/${table}.sql`)), `${table} migration matches the declarative definition`);
+    let definition = await schema(`public/tables/${table}.sql`);
+    if (table === 'slack_installations') {
+      // The first migration's table, plus what the model choice migration added to it.
+      const added = definition.match(MODEL_CHOICE_LINES) ?? [];
+      assert.equal(added.length, 5, 'slack_installations declares the model choice columns, check and comments');
+      for (const line of added) assert.ok(words(modelChoiceMigration).includes(words(line)), `the model choice migration adds ${words(line).slice(0, 60)}`);
+      definition = definition.replace(MODEL_CHOICE_LINES, '');
+    }
+    assert.ok(migration.includes(definition), `${table} migration matches the declarative definition`);
   }
   for (const fn of FUNCTIONS) {
     assert.ok(migration.includes(await schema(`public/functions/${fn}.sql`)), `${fn} migration matches the declarative definition`);
@@ -107,6 +120,13 @@ try {
   assert.equal(first.usage_data_mode, 'dm');
   assert.equal(first.model, 'phaseo/auto');
   assert.equal(first.allow_external_users, false);
+  // Model choice is off, with no models, until an admin turns it on; at most 10 models.
+  assert.equal(first.model_choice_enabled, false);
+  assert.deepEqual(first.allowed_models, []);
+  const tenModels = Array.from({ length: 10 }, (_, index) => `acme/model-${index}`);
+  await rows('update public.slack_installations set model_choice_enabled = true, allowed_models = $2 where id = $1', [first.id, tenModels]);
+  await assert.rejects(rows('update public.slack_installations set allowed_models = $2 where id = $1', [first.id, [...tenModels, 'acme/model-10']]), /slack_installations_allowed_models_check/);
+  await rows("update public.slack_installations set model_choice_enabled = false, allowed_models = '{}' where id = $1", [first.id]);
 
   // One live installation per workspace and per Slack team; uninstalled rows stay for billing history.
   await assert.rejects(install(ws(1), 'T0TEAM0002'), /slack_installations_live_workspace_idx/);
