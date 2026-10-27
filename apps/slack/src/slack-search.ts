@@ -18,8 +18,8 @@ import { ToolInputError } from "./usage-tools";
 // writes after a search can carry what it found, so once an answer has searched
 // (searchedThisAnswer) it keeps nothing the model writes: ask_question refuses,
 // so no run paused for a question ever holds results, and so does every tool
-// that saves text (notes, pins, to-dos, skills and recurring tasks). The tool
-// note kept as working memory names the query and the count, never a result.
+// that saves text (notes, pins, to-dos, skills and recurring tasks). Working
+// memory keeps only the answer's tool ids and a note in place of its reply.
 // The action token waits in the thread's coordinator with the turn's message,
 // and goes with it when the turn ends; it never reaches a Workflow payload or
 // step output. The coordinator counts the answer's searches, across its runs
