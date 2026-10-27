@@ -1619,15 +1619,17 @@ export async function realtimeReconciliationToken(): Promise<string> {
 }
 
 // How long reconciliation waits for ElevenLabs to report a conversation's
-// charge before settling from the connected time the relay last recorded.
-export const ELEVENLABS_COST_WAIT_MS = 60 * 60 * 1000;
+// charge. Without it the language-model tokens are unknown, so the session
+// then goes to billing review instead of settling for connected time alone.
+export const ELEVENLABS_COST_WAIT_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Usage (and provider cost floor) for settling a session whose relay state is
  * gone. ElevenLabs reports its charge on the conversation after the call; the
- * session waits for it (the cron retries) for up to an hour.
+ * session waits for it (the cron retries) for up to a day, then reports
+ * `costUnavailable`.
  */
-export async function reconciledProviderCost(session: RealtimeSessionRow): Promise<{ usage: Record<string, unknown>; providerCostNanos?: number }> {
+export async function reconciledProviderCost(session: RealtimeSessionRow): Promise<{ usage: Record<string, unknown>; providerCostNanos?: number; costUnavailable?: true }> {
 	const usage = session.usage ?? {};
 	const conversationId = typeof usage.provider_conversation_id === "string" ? usage.provider_conversation_id : "";
 	if (providerFromModel(session.model_id, session.provider) !== ELEVENLABS_PROVIDER || !conversationId) return { usage };
@@ -1639,7 +1641,7 @@ export async function reconciledProviderCost(session: RealtimeSessionRow): Promi
 	const lastSeen = Date.parse(session.last_event_at ?? session.connected_at ?? session.started_at);
 	if (Number.isFinite(lastSeen) && Date.now() - lastSeen < ELEVENLABS_COST_WAIT_MS) throw new Error("realtime_elevenlabs_cost_pending");
 	console.error("realtime_elevenlabs_cost_unavailable", { sessionId: session.session_id, conversationId });
-	return { usage: { ...usage, provider_cost_status: "unavailable" } };
+	return { usage: { ...usage, provider_cost_status: "unavailable" }, costUnavailable: true };
 }
 
 export async function runRealtimeSessionReconciliationJob(args?: {
@@ -1719,6 +1721,24 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 					continue;
 				}
 			}
+			const { costUnavailable, ...reconciled } = await reconciledProviderCost(session);
+			if (costUnavailable) {
+				await markRealtimeSessionBillingUnresolved({
+					auth: {
+						requestId: `realtime_reconcile_unresolved:${session.session_id}`,
+						workspaceId: session.workspace_id,
+						apiKeyId: session.key_id ?? "00000000-0000-0000-0000-000000000000",
+						userId: session.user_id ?? null,
+						internal: true,
+					},
+					sessionId: session.session_id,
+					usage: reconciled.usage,
+					reason: "realtime_provider_cost_unavailable",
+					session,
+				});
+				sessionsErrored += 1;
+				continue;
+			}
 			await settleRealtimeSession({
 				auth: {
 					requestId: `realtime_reconcile:${session.session_id}`,
@@ -1729,7 +1749,7 @@ export async function runRealtimeSessionReconciliationJob(args?: {
 				},
 				sessionId: session.session_id,
 				status: "expired",
-				...(await reconciledProviderCost(session)),
+				...reconciled,
 				disconnectReason: "realtime_session_reconciliation_expired",
 			});
 			sessionsExpired += 1;

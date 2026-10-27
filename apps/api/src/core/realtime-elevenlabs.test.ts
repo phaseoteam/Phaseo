@@ -233,21 +233,29 @@ describe("ElevenLabs relay", () => {
 		expect(mocks.markRealtimeSessionBillingUnresolved).not.toHaveBeenCalled();
 	});
 
-	it("settles from its own connected-time meter if ElevenLabs never reports, instead of opening a review", async () => {
+	it("keeps the bill pending for a day, backing off, then opens a review instead of undercharging", async () => {
 		vi.useFakeTimers();
-		const { object } = relay();
+		const { object, storage } = relay();
 		await play(object, recording.events.slice(0, 1));
 		mocks.fetchCost.mockRejectedValue(new Error("elevenlabs_conversation_http_503"));
 		await vi.advanceTimersByTimeAsync(20_000);
 		await object.handleClientGone();
+		expect(storage.setAlarm).toHaveBeenLastCalledWith(Date.now() + 30_000);
+		await vi.advanceTimersByTimeAsync(15 * 60_000);
+		await object.alarm();
+		// Past the first 10 minutes it retries every 10 minutes.
+		expect(storage.setAlarm).toHaveBeenLastCalledWith(Date.now() + 10 * 60_000);
+		expect(mocks.markRealtimeSessionBillingUnresolved).not.toHaveBeenCalled();
 		await vi.advanceTimersByTimeAsync(ELEVENLABS_RELAY_COST_WAIT_MS);
 		await object.alarm();
-		expect(mocks.settleRealtimeSession).toHaveBeenCalledOnce();
-		const call = mocks.settleRealtimeSession.mock.calls[0][0] as any;
-		expect(call.providerCostNanos).toBeUndefined();
+		// Connected time alone would leave out the language-model tokens ElevenLabs charged.
+		expect(mocks.settleRealtimeSession).not.toHaveBeenCalled();
+		expect(mocks.markRealtimeSessionBillingUnresolved).toHaveBeenCalledOnce();
+		const call = mocks.markRealtimeSessionBillingUnresolved.mock.calls[0][0] as any;
+		expect(call.reason).toBe("realtime_provider_cost_unavailable");
 		// Connected time stops at the close, not when settlement finally runs.
 		expect(call.usage).toMatchObject({ provider_cost_status: "unavailable", session_audio_ms: 20_000 });
-		expect(mocks.markRealtimeSessionBillingUnresolved).not.toHaveBeenCalled();
+		expect(sentOfType(object, "session.ended")).toEqual([expect.objectContaining({ billing_status: "pending" })]);
 		mocks.fetchCost.mockReset();
 	});
 
@@ -267,14 +275,17 @@ describe("ElevenLabs reconciliation without relay state", () => {
 	const session = (lastEventAt: string) => ({ session_id: "rt_x", model_id: "eleven-labs/eleven-realtime-v1-mini", provider: "elevenlabs",
 		started_at: lastEventAt, last_event_at: lastEventAt, usage: { provider_conversation_id: "conv_4101m5hp9pdze1bajbw3gjssccra", session_audio_ms: 30_000, audio_ms: 30_000 } }) as any;
 
-	it("uses the reported charge, waits while it is pending, then falls back to the recorded meter", async () => {
+	it("uses the reported charge, waits while it is pending, then reports the charge unavailable", async () => {
 		mocks.fetchCost.mockResolvedValueOnce(reported);
 		expect(await reconciledProviderCost(session(new Date().toISOString()))).toMatchObject({ providerCostNanos: 47_130_741,
 			usage: { audio_ms: 35_245, input_text_tokens: 1174 } });
 		mocks.fetchCost.mockResolvedValueOnce(processing);
 		await expect(reconciledProviderCost(session(new Date().toISOString()))).rejects.toThrow("realtime_elevenlabs_cost_pending");
 		mocks.fetchCost.mockResolvedValueOnce(processing);
-		expect(await reconciledProviderCost(session(new Date(Date.now() - 2 * 60 * 60_000).toISOString())))
-			.toEqual({ usage: expect.objectContaining({ provider_cost_status: "unavailable", audio_ms: 30_000 }) });
+		mocks.fetchCost.mockResolvedValueOnce(processing);
+		await expect(reconciledProviderCost(session(new Date(Date.now() - 2 * 60 * 60_000).toISOString()))).rejects.toThrow("realtime_elevenlabs_cost_pending");
+		mocks.fetchCost.mockResolvedValueOnce(processing);
+		expect(await reconciledProviderCost(session(new Date(Date.now() - 25 * 60 * 60_000).toISOString())))
+			.toEqual({ usage: expect.objectContaining({ provider_cost_status: "unavailable", audio_ms: 30_000 }), costUnavailable: true });
 	});
 });

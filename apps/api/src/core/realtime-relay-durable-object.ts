@@ -210,10 +210,14 @@ const STORAGE_SETTLEMENT_ATTEMPTS = "settlement_attempts";
 const STORAGE_CLAIMED_AT = "claimed_at_ms";
 const STORAGE_DEADLINE = "deadline_ms";
 const STORAGE_PROVIDER_COST_SINCE = "provider_cost_since_ms";
-// ElevenLabs reports a conversation's charge after the call. Settlement waits
-// for it this long (holds stay in place), retrying on this interval.
-export const ELEVENLABS_RELAY_COST_WAIT_MS = 10 * 60_000;
+// ElevenLabs reports a conversation's charge after the call, usually within
+// seconds. Settlement waits for it this long (holds stay in place), retrying
+// every 30 s for the first 10 minutes and every 10 minutes after that. A
+// charge that never arrives goes to billing review rather than being guessed.
+export const ELEVENLABS_RELAY_COST_WAIT_MS = 24 * 60 * 60_000;
+const ELEVENLABS_COST_FAST_RETRY_WINDOW_MS = 10 * 60_000;
 const ELEVENLABS_COST_RETRY_MS = 30_000;
+const ELEVENLABS_COST_SLOW_RETRY_MS = 10 * 60_000;
 const OPENAI_BILLING_EVENT_TYPES = new Set([
 	"input_audio_buffer.committed",
 	"response.created",
@@ -576,6 +580,7 @@ export class RealtimeRelayDurableObject {
 	// The model asked for in session.update; ElevenLabs confirms it in session.updated.
 	private elevenLabsModel: string | null = null;
 	private elevenLabsQuickRetryMs = [0, 2_000, 5_000];
+	private elevenLabsCostRetryMs = ELEVENLABS_COST_RETRY_MS;
 
 	private get isLive() { return isLiveModel(this.session?.model_id); }
 	// Playground rules (idle timeout, hold and spend-limit closes) apply only to source "chat".
@@ -1135,10 +1140,11 @@ export class RealtimeRelayDurableObject {
 	/**
 	 * What ElevenLabs charged for the conversation, read back once it has
 	 * finished. Waits a few seconds at the end of the call, then retries from
-	 * the alarm for up to ELEVENLABS_RELAY_COST_WAIT_MS before settling from
-	 * the relay's own connected-time meter.
+	 * the alarm for up to ELEVENLABS_RELAY_COST_WAIT_MS. Without that charge the
+	 * language-model tokens are unknown, so the session goes to billing review
+	 * ("unavailable") instead of settling for connected time alone.
 	 */
-	private async reconcileElevenLabsCost(): Promise<number | "pending"> {
+	private async reconcileElevenLabsCost(): Promise<number | "pending" | "unavailable"> {
 		const conversationId = typeof this.usage.provider_conversation_id === "string" ? this.usage.provider_conversation_id : "";
 		if (!conversationId) return 0;
 		let since = await this.state.storage.get<number>(STORAGE_PROVIDER_COST_SINCE);
@@ -1160,10 +1166,14 @@ export class RealtimeRelayDurableObject {
 				return cost.costNanos;
 			}
 		}
-		if (Date.now() - since < ELEVENLABS_RELAY_COST_WAIT_MS) return "pending";
+		const waited = Date.now() - since;
+		if (waited < ELEVENLABS_RELAY_COST_WAIT_MS) {
+			this.elevenLabsCostRetryMs = waited < ELEVENLABS_COST_FAST_RETRY_WINDOW_MS ? ELEVENLABS_COST_RETRY_MS : ELEVENLABS_COST_SLOW_RETRY_MS;
+			return "pending";
+		}
 		console.error("realtime_relay_elevenlabs_cost_unavailable", { sessionId: this.session?.session_id, conversationId });
 		this.usage.provider_cost_status = "unavailable";
-		return 0;
+		return "unavailable";
 	}
 
 	private async rejectAudio(reason: string) {
@@ -2348,12 +2358,16 @@ export class RealtimeRelayDurableObject {
 			if (cost === "pending") {
 				this.settling = false;
 				await this.state.storage.put(STORAGE_USAGE, this.usage);
-				await this.state.storage.setAlarm(Date.now() + ELEVENLABS_COST_RETRY_MS);
+				await this.state.storage.setAlarm(Date.now() + this.elevenLabsCostRetryMs);
 				if (!this.endedSent) {
 					this.sendSessionEnded("pending");
 					this.closeClient("realtime_billing_pending");
 				}
 				return false;
+			}
+			if (cost === "unavailable") {
+				this.settling = false;
+				return this.markBillingUnresolved("realtime_provider_cost_unavailable");
 			}
 			providerCostNanos = cost;
 		}
