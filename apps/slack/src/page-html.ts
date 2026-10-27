@@ -115,13 +115,36 @@ const DATA_IMAGE = /^data:image\/(?:png|jpeg|gif|webp)[;,]/i;
 const URL_TRIM = /^[\x00-\x20]+|[\x00-\x20]+$/g;
 
 /**
- * CSS as the browser reads it, for the checks: escapes decoded, lowercase, no
- * whitespace, and with comments removed (which can only join tokens) unless
- * keepComments. A comment's opener inside a quoted string isn't a comment, so
- * the checks read the CSS both ways.
+ * CSS without its comments, as the tokenizer reads it: a comment opener inside a
+ * quoted string is part of the string (a string ends at its closing quote, or
+ * at a newline), and a backslash escapes the next character.
  */
-function plainCss(css: string, keepComments = false): string {
-	return (keepComments ? css : css.replace(/\/\*[\s\S]*?(?:\*\/|$)/g, ""))
+export function withoutCssComments(css: string): string {
+	let out = "";
+	let quote: string | null = null;
+	for (let index = 0; index < css.length; index += 1) {
+		const char = css[index];
+		if (quote) {
+			out += char;
+			if (char === "\\" && index + 1 < css.length) out += css[++index];
+			else if (char === quote || char === "\n" || char === "\r" || char === "\f") quote = null;
+		} else if (char === "/" && css[index + 1] === "*") {
+			const end = css.indexOf("*/", index + 2);
+			index = end === -1 ? css.length : end + 1;
+		} else {
+			if (char === "\\" && index + 1 < css.length) out += char + css[++index];
+			else {
+				if (char === '"' || char === "'") quote = char;
+				out += char;
+			}
+		}
+	}
+	return out;
+}
+
+/** CSS as the browser reads it, for the checks: comments removed (which can only join tokens), escapes decoded, lowercase, no whitespace. */
+function plainCss(css: string): string {
+	return withoutCssComments(css)
 		.replace(/\\(?:([0-9a-fA-F]{1,6})[ \t\n\r\f]?|([^\n\r\f0-9a-fA-F])|[\n\r\f])/g, (_, hex: string | undefined, char: string | undefined) => {
 			if (!hex) return char ?? "";
 			const code = Number.parseInt(hex, 16);
@@ -134,16 +157,15 @@ function plainCss(css: string, keepComments = false): string {
 /** Functions and rules that load something, or ran script in old browsers. url() is checked on its own. */
 const CSS_BLOCKED = /@import|expression\(|-moz-binding|behaviou?r:|javascript:|image-set\(|cross-fade\(|element\(|(?:^|[^a-z0-9_-])(?:image|src)\(/;
 
-/** Whether CSS can't load anything: every url() is a data: image or a #fragment of the page, and nothing in CSS_BLOCKED, read with and without its comments. */
+/** Whether CSS can't load anything: every url() is a data: image or a #fragment of the page, and nothing in CSS_BLOCKED. */
 export function cssIsStatic(css: string): boolean {
-	return [plainCss(css), plainCss(css, true)].every((plain) => {
-		if (CSS_BLOCKED.test(plain)) return false;
-		for (const match of plain.matchAll(/url\(/g)) {
-			const target = plain.slice(match.index + 4, match.index + 40).replace(/^["']/, "");
-			if (!target.startsWith("#") && !DATA_IMAGE.test(target)) return false;
-		}
-		return true;
-	});
+	const plain = plainCss(css);
+	if (CSS_BLOCKED.test(plain)) return false;
+	for (const match of plain.matchAll(/url\(/g)) {
+		const target = plain.slice(match.index + 4, match.index + 40).replace(/^["']/, "");
+		if (!target.startsWith("#") && !DATA_IMAGE.test(target)) return false;
+	}
+	return true;
 }
 
 /** Whitespace, comments and @import rules at the start of a stylesheet. */

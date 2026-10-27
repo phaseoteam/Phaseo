@@ -1,6 +1,6 @@
 import { html as spec, parse, type DefaultTreeAdapterTypes } from "parse5";
 import { describe, expect, it } from "vitest";
-import { cleanPageHtml, cssIsStatic, MAX_ATTRIBUTES_PER_ELEMENT, MAX_PAGE_DEPTH } from "../src/page-html";
+import { cleanPageHtml, cssIsStatic, MAX_ATTRIBUTES_PER_ELEMENT, MAX_PAGE_DEPTH, withoutCssComments } from "../src/page-html";
 
 type Node = DefaultTreeAdapterTypes.Node;
 type Element = DefaultTreeAdapterTypes.Element;
@@ -164,8 +164,15 @@ th, td { padding: 4px 8px; border-bottom: 1px solid #e5e7eb; text-align: right; 
 		expect(page.removed).toContain(`attributes past the first ${MAX_ATTRIBUTES_PER_ELEMENT}`);
 	});
 
-	it("doesn't take a comment opener inside a CSS string for a comment", () => {
+	it("doesn't take a comment opener inside a CSS string for a comment, and keeps CSS whose comments mention a URL", () => {
+		// An escaped slash doesn't open a comment.
+		expect(withoutCssComments('a/* x */b "/* kept */" \'/*\' c\\/* d */')).toBe('ab "/* kept */" \'/*\' c\\/* d */');
+		expect(withoutCssComments('"unclosed\n/* gone */x')).toBe('"unclosed\nx');
 		expect(cssIsStatic('font-family:"/*";background:url(https://evil.example/a);--x:"*/"')).toBe(false);
+		// A commented-out resource loads nothing: the report keeps its formatting.
+		const css = "body { color: #222 } /* background: url(https://example.com/banner.png); */";
+		expect(cssIsStatic(css)).toBe(true);
+		expect(cleaned(`<style>${css}</style><p>Spend</p>`).html).toContain("color: #222");
 		expectInert(cleaned('<p style=\'font-family:"/*";background:url(https://evil.example/a);--x:"*/"\'>Spend</p>').html);
 	});
 
