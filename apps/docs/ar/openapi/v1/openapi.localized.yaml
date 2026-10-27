@@ -17354,6 +17354,10 @@ components:
           type: object
           additionalProperties: true
           description: قيم متغيرات القالب. تقبل متغيرات الصور عنوان https أو عنوان data أو جزء صورة.
+        version:
+          type: string
+          maxLength: 64
+          description: 'يشغّل هذا الإصدار المنشور من الإعداد المسبق بدلًا من الإصدار الحالي: نماذجه ومعاملاته وقالبه. استخدم تسمية إصدار مثل v3 أو 1.2.0 أو 2026.10.27، أو تسمية مثل production. يعادل تعيين model إلى @support-triage@production.'
     Preset:
       type: object
       required:

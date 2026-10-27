@@ -17354,6 +17354,10 @@ components:
           type: object
           additionalProperties: true
           description: Valeurs des variables du modèle. Les variables d’image acceptent une URL https, une URL de données ou une partie image.
+        version:
+          type: string
+          maxLength: 64
+          description: 'Exécute cette version publiée du préréglage au lieu de la version actuelle : ses modèles, ses paramètres et son modèle de prompt. Utilisez un libellé de version comme v3, 1.2.0 ou 2026.10.27, ou une étiquette comme production. Équivaut à définir model sur @support-triage@production.'
     Preset:
       type: object
       required:

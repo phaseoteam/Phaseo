@@ -9573,6 +9573,16 @@
 			"ja": "ステータス別の配信試行。",
 			"zh-Hans": "按状态统计的投递尝试。",
 			"ar": "محاولات التسليم حسب الحالة."
+		},
+		"Runs this published version of the preset instead of the current one: its models, parameters and template. Use a version label such as v3, 1.2.0 or 2026.10.27, or a label such as production. The same as setting model to @support-triage@production.": {
+			"es": "Ejecuta esta versión publicada del preajuste en lugar de la actual: sus modelos, parámetros y plantilla. Usa una etiqueta de versión como v3, 1.2.0 o 2026.10.27, o una etiqueta como production. Equivale a establecer model en @support-triage@production.",
+			"fr": "Exécute cette version publiée du préréglage au lieu de la version actuelle : ses modèles, ses paramètres et son modèle de prompt. Utilisez un libellé de version comme v3, 1.2.0 ou 2026.10.27, ou une étiquette comme production. Équivaut à définir model sur @support-triage@production.",
+			"de": "Führt diese veröffentlichte Version des Presets statt der aktuellen aus: ihre Modelle, Parameter und Vorlage. Verwende eine Versionsbezeichnung wie v3, 1.2.0 oder 2026.10.27 oder ein Label wie production. Entspricht model mit dem Wert @support-triage@production.",
+			"pt-BR": "Executa esta versão publicada da predefinição em vez da atual: seus modelos, parâmetros e template. Use um rótulo de versão como v3, 1.2.0 ou 2026.10.27, ou um rótulo como production. Equivale a definir model como @support-triage@production.",
+			"hi": "मौजूदा संस्करण की जगह प्रीसेट का यह प्रकाशित संस्करण चलाता है: उसके मॉडल, पैरामीटर और टेम्पलेट। v3, 1.2.0 या 2026.10.27 जैसा संस्करण लेबल, या production जैसा लेबल दें। यह model को @support-triage@production पर सेट करने जैसा है।",
+			"ja": "現在のバージョンではなく、プリセットのこの公開済みバージョン（モデル、パラメーター、テンプレート）を実行します。v3、1.2.0、2026.10.27 などのバージョンラベル、または production などのラベルを指定します。model を @support-triage@production にするのと同じです。",
+			"zh-Hans": "运行预设的这个已发布版本而不是当前版本：包括其模型、参数和模板。使用 v3、1.2.0 或 2026.10.27 这样的版本标签，或 production 这样的标签。等同于将 model 设为 @support-triage@production。",
+			"ar": "يشغّل هذا الإصدار المنشور من الإعداد المسبق بدلًا من الإصدار الحالي: نماذجه ومعاملاته وقالبه. استخدم تسمية إصدار مثل v3 أو 1.2.0 أو 2026.10.27، أو تسمية مثل production. يعادل تعيين model إلى @support-triage@production."
 		}
 	},
 	"GET /apps": {

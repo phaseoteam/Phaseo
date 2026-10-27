@@ -17354,6 +17354,10 @@ components:
           type: object
           additionalProperties: true
           description: 模板变量的值。图像变量接受 https URL、data URL 或图像部分。
+        version:
+          type: string
+          maxLength: 64
+          description: 运行预设的这个已发布版本而不是当前版本：包括其模型、参数和模板。使用 v3、1.2.0 或 2026.10.27 这样的版本标签，或 production 这样的标签。等同于将 model 设为 @support-triage@production。
     Preset:
       type: object
       required:

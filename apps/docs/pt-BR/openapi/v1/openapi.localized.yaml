@@ -17354,6 +17354,10 @@ components:
           type: object
           additionalProperties: true
           description: Valores para as variáveis do template. Variáveis de imagem aceitam uma URL https, uma URL de dados ou uma parte de imagem.
+        version:
+          type: string
+          maxLength: 64
+          description: 'Executa esta versão publicada da predefinição em vez da atual: seus modelos, parâmetros e template. Use um rótulo de versão como v3, 1.2.0 ou 2026.10.27, ou um rótulo como production. Equivale a definir model como @support-triage@production.'
     Preset:
       type: object
       required:

@@ -17354,6 +17354,10 @@ components:
           type: object
           additionalProperties: true
           description: テンプレート変数の値。画像変数には https URL、データ URL、または画像パートを指定します。
+        version:
+          type: string
+          maxLength: 64
+          description: 現在のバージョンではなく、プリセットのこの公開済みバージョン（モデル、パラメーター、テンプレート）を実行します。v3、1.2.0、2026.10.27 などのバージョンラベル、または production などのラベルを指定します。model を @support-triage@production にするのと同じです。
     Preset:
       type: object
       required:

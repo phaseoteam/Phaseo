@@ -17354,6 +17354,10 @@ components:
           type: object
           additionalProperties: true
           description: Werte für die Vorlagenvariablen. Bildvariablen akzeptieren eine https-URL, eine Daten-URL oder einen Bildteil.
+        version:
+          type: string
+          maxLength: 64
+          description: 'Führt diese veröffentlichte Version des Presets statt der aktuellen aus: ihre Modelle, Parameter und Vorlage. Verwende eine Versionsbezeichnung wie v3, 1.2.0 oder 2026.10.27 oder ein Label wie production. Entspricht model mit dem Wert @support-triage@production.'
     Preset:
       type: object
       required:

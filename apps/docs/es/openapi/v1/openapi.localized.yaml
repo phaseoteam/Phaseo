@@ -17354,6 +17354,10 @@ components:
           type: object
           additionalProperties: true
           description: Valores para las variables de la plantilla. Las variables de imagen aceptan una URL https, una URL de datos o una parte de imagen.
+        version:
+          type: string
+          maxLength: 64
+          description: 'Ejecuta esta versión publicada del preajuste en lugar de la actual: sus modelos, parámetros y plantilla. Usa una etiqueta de versión como v3, 1.2.0 o 2026.10.27, o una etiqueta como production. Equivale a establecer model en @support-triage@production.'
     Preset:
       type: object
       required:

@@ -17354,6 +17354,10 @@ components:
           type: object
           additionalProperties: true
           description: टेम्पलेट वेरिएबल के मान। इमेज वेरिएबल https URL, data URL या इमेज पार्ट लेते हैं।
+        version:
+          type: string
+          maxLength: 64
+          description: 'मौजूदा संस्करण की जगह प्रीसेट का यह प्रकाशित संस्करण चलाता है: उसके मॉडल, पैरामीटर और टेम्पलेट। v3, 1.2.0 या 2026.10.27 जैसा संस्करण लेबल, या production जैसा लेबल दें। यह model को @support-triage@production पर सेट करने जैसा है।'
     Preset:
       type: object
       required:
