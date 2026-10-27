@@ -648,6 +648,36 @@ export type SettingsRateLimitsInitialData = {
 	tier?: SettingsRateLimitTier | null;
 };
 
+export type SettingsWorkloadIdentityProvider = "vercel" | "github_actions";
+
+/** A trust policy from the gateway's /v1/workload-identity/policies (web-api settings-workload-identity). */
+export type SettingsWorkloadIdentityPolicy = {
+	id: string;
+	name: string;
+	provider: SettingsWorkloadIdentityProvider;
+	issuer: string;
+	/** Vercel team ID or GitHub repository owner ID the token must carry. */
+	ownerId: string;
+	/** Exact-match conditions on other token claims, such as project_id or environment. */
+	claimConditions: Record<string, string[]>;
+	maxTokenLifetimeSeconds: number;
+	status: "active" | "disabled";
+	lastUsedAt: string | null;
+	createdAt: string | null;
+	updatedAt: string | null;
+};
+
+export type SettingsWorkloadIdentityInitialData = {
+	workspaceId: string | null;
+	/** False when the workspace is outside the rollout. */
+	available: boolean;
+	/** Owners and admins only. */
+	canManage: boolean;
+	/** The audience every token must be issued for. */
+	audience: string;
+	policies: SettingsWorkloadIdentityPolicy[];
+};
+
 export type SettingsRateLimitTierName = "new" | "standard" | "trusted" | "enterprise";
 /** GET /v1/rate-limits/tier: the workspace's tier and whether its owner can raise it one step. */
 export type SettingsRateLimitTier = {

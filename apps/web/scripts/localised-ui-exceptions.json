@@ -400,5 +400,21 @@
       "C0123ABCD, C0456EFGH"
     ],
     "reason": "Example Slack channel IDs in the usage-data channel input; they are Slack identifiers in their exact format, not copy."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/trusted-workloads/TrustedWorkloadsSettingsClient.tsx"
+    ],
+    "attributes": [
+      "placeholder"
+    ],
+    "texts": [
+      "acme",
+      "team_…",
+      "prj_…",
+      "refs/heads/main",
+      "production"
+    ],
+    "reason": "Example Vercel team slug, Team ID and Project ID prefixes, a Git ref and a GitHub environment name in the trust policy inputs; they are identifiers in the format the platforms issue, not copy."
   }
 ]

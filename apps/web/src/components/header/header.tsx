@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import HeaderShell from "./HeaderShell";
 import SettingsSidebarTrigger from "@/components/(gateway)/settings/SettingsSidebarTrigger";
 import { BrandMenu } from "./BrandMenu";
-import { autoRoutingFlag, requestClassifiersFlag, slackAgentSettingsEnabled } from "@/lib/flags";
+import { autoRoutingFlag, requestClassifiersFlag, slackAgentSettingsEnabled, workloadIdentityFlag } from "@/lib/flags";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { getSettingsNavigationMessages } from "@/i18n/settings-navigation-messages";
 import { getPublicMessages } from "@/i18n/messages";
@@ -28,12 +28,12 @@ async function GatedSettingsSidebarTrigger() {
 	await connection();
 	const locale = await getLocale();
 	const publicLocale = isPublicLocale(locale) ? locale : "en-GB";
-	const [showAutoRouting, showClassifiers, showSlackAgent, messages, navigationMessages, account] = await Promise.all([
-		autoRoutingFlag(), requestClassifiersFlag().catch(() => false), slackAgentSettingsEnabled(), getPublicMessages(publicLocale), getSettingsNavigationMessages(publicLocale),
+	const [showAutoRouting, showClassifiers, showSlackAgent, showWorkloadIdentity, messages, navigationMessages, account] = await Promise.all([
+		autoRoutingFlag(), requestClassifiersFlag().catch(() => false), slackAgentSettingsEnabled(), workloadIdentityFlag().catch(() => false), getPublicMessages(publicLocale), getSettingsNavigationMessages(publicLocale),
 		getHeaderAccountData(),
 	]);
 	const copy = getSettingsNavigationCopy(navigationMessages, messages.SettingsUI.sidebarNew);
-	return <SettingsSidebarTrigger showAutoRouting={showAutoRouting} showClassifiers={showClassifiers} showSlackAgent={showSlackAgent} copy={copy} providerMode={account.providerMode === true} />;
+	return <SettingsSidebarTrigger showAutoRouting={showAutoRouting} showClassifiers={showClassifiers} showWorkloadIdentity={showWorkloadIdentity} showSlackAgent={showSlackAgent} copy={copy} providerMode={account.providerMode === true} />;
 }
 
 export default async function Header() {

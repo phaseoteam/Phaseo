@@ -87,7 +87,7 @@ async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof re
 	const limit = Math.max(1, Number.parseInt(env.NON_ENTERPRISE_KEY_LIMIT ?? "100", 10) || 100);
 	const notExpiredFilter = `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`;
 	const countQuery = keyType === "api"
-		? context.client.from("keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter).neq("name", CHAT_MANAGED_KEY_NAME).neq("name", SLACK_AGENT_MANAGED_KEY_NAME)
+		? context.client.from("keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter).neq("name", CHAT_MANAGED_KEY_NAME).neq("name", SLACK_AGENT_MANAGED_KEY_NAME).neq("key_kind", "workload_identity")
 		: context.client.from("management_keys").select("id", { count: "exact", head: true }).eq("workspace_id", context.workspaceId).eq("status", "active").eq("soft_blocked", false).or(notExpiredFilter);
 	if (excludeKeyId) countQuery.neq("id", excludeKeyId);
 	const countResult = await countQuery;
@@ -114,11 +114,11 @@ accountSettingsKeysRouter.get("/keys/:keyId", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const result = await getDataClient(c.env).from("keys")
-		.select("id,workspace_id,name,prefix,status,created_by,created_at,last_used_at,expires_at,ip_allowlist,storage_locations,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos")
+		.select("id,workspace_id,name,prefix,status,key_kind,created_by,created_at,last_used_at,expires_at,ip_allowlist,storage_locations,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos")
 		.eq("id", c.req.param("keyId")).maybeSingle();
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const key = result.data;
-	if (!key || key.status === "deleted" || isManagedKeyName(key.name)) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	if (!key || key.status === "deleted" || isManagedKeyName(key.name) || key.key_kind === "workload_identity") return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: key.workspace_id });
 	if (!context) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const dayStart = new Date();

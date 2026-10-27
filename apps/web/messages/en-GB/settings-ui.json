@@ -4510,6 +4510,7 @@
 		"workspaces": "Workspaces",
 		"classifiers": "Classifiers",
 		"rateLimits": "Rate limits",
+		"trustedWorkloads": "Trusted workloads",
 		"newClassifier": "New classifier",
 		"classifier": "Classifier",
 		"budgets": "Budgets",
@@ -4742,6 +4743,7 @@
 		"providerProfile": "Provider profile",
 		"classifiers": "Classifiers",
 		"rateLimits": "Rate limits",
+		"trustedWorkloads": "Trusted workloads",
 		"budgets": "Budgets",
 		"keys": "Keys",
 		"keySecurity": "Key Security",
@@ -6625,6 +6627,98 @@
 				"not_enough_spend": "Raising the limit needs at least {amount} in paid top-ups.",
 				"cooldown": "You can raise the limit again on {date}."
 			}
+		}
+	},
+	"trustedWorkloads": {
+		"title": "Trusted workloads",
+		"description": "Let Vercel deployments and GitHub Actions jobs call the API with a short-lived OIDC token instead of an API key.",
+		"feedback": "How could trusted workloads work better for you?",
+		"selectWorkspace": "Select a workspace to manage trusted workloads.",
+		"unavailable": "Trusted workloads are not available for this workspace yet.",
+		"adminsOnly": "Only workspace owners and admins can see and change trusted workloads.",
+		"howItWorks": "Vercel and GitHub Actions give each deployment or job a signed token that says who it is and expires within hours. When a token matches one of these policies, the request runs as that policy's key, with the same limits, budgets, logs and billing as an API key. Nothing needs to be stored as a secret.",
+		"policiesTitle": "Trust policies",
+		"propagation": "Changes take effect within about a minute.",
+		"newPolicy": "New policy",
+		"emptyTitle": "No trusted workloads yet",
+		"emptyBody": "Add a policy for a Vercel project or a GitHub repository so it can call the API without an API key.",
+		"noConditions": "None",
+		"disabled": "Off",
+		"enabledLabel": "Accept tokens for {name}",
+		"edit": "Edit",
+		"delete": "Delete",
+		"cancel": "Cancel",
+		"save": "Save",
+		"create": "Create policy",
+		"listIssuer": "Issuer",
+		"listConditions": "Conditions",
+		"listRef": "Branch or tag",
+		"listLastUsed": "Last used",
+		"neverUsed": "Never",
+		"listLifetime": "Longest token",
+		"lifetimeHours": "{count, plural, one {# hour} other {# hours}}",
+		"deleteTitle": "Delete {name}?",
+		"deleteBody": "Tokens that match this policy stop working within about a minute. Past requests stay in your logs.",
+		"dialogCreateTitle": "New trust policy",
+		"dialogEditTitle": "Edit {name}",
+		"usageTitle": "Calling the API with a token",
+		"usageBody": "Request a token for the audience below and send it in the Authorization header, the same way you would send an API key:",
+		"audienceLabel": "Audience",
+		"providers": {
+			"vercel": "Vercel",
+			"github_actions": "GitHub Actions"
+		},
+		"ownerLabel": {
+			"vercel": "Team ID",
+			"github_actions": "Owner ID"
+		},
+		"ownerWide": {
+			"vercel": "Trusts every project in this Vercel team. Add a project ID to narrow it.",
+			"github_actions": "Trusts every repository this owner has. Add a repository ID to narrow it."
+		},
+		"environments": {
+			"production": "Production",
+			"preview": "Preview",
+			"development": "Development"
+		},
+		"fields": {
+			"name": "Name",
+			"namePlaceholder": "Website production",
+			"provider": "Platform",
+			"vercelTeamSlug": "Team slug",
+			"vercelTeamId": "Team ID",
+			"vercelTeamHint": "Find both under Team Settings in Vercel. Leave the slug empty if the project uses the global issuer.",
+			"vercelProjectId": "Project ID",
+			"vercelProjectHint": "Optional, but recommended. Without it, every project in the team is trusted.",
+			"environment": "Environment",
+			"environmentHint": "Leave all unticked to accept any environment.",
+			"githubOwnerId": "Owner ID",
+			"githubRepositoryId": "Repository ID",
+			"githubIdsHint": "Use the numeric IDs, which stay the same if the owner or repository is renamed. The repository ID is optional, but without it every repository the owner has is trusted.",
+			"githubRef": "Branch or tag (optional)",
+			"lifetime": "Longest token accepted (hours)",
+			"lifetimeHint": "Tokens that were issued to last longer than this are refused. Up to {max} hours."
+		},
+		"problems": {
+			"name": "Enter a name of up to 100 characters.",
+			"vercelTeamSlug": "Use the team slug from the team's URL, such as acme.",
+			"vercelTeamId": "Team IDs start with team_.",
+			"vercelProjectId": "Project IDs start with prj_.",
+			"githubOwnerId": "Enter the owner's numeric ID.",
+			"githubRepositoryId": "Enter the repository's numeric ID.",
+			"lifetime": "Enter a whole number of hours from 1 to 12."
+		},
+		"errors": {
+			"invalid": "{message}",
+			"saveFailed": "The policy could not be saved. Try again.",
+			"deleteFailed": "The policy could not be deleted. Try again."
+		},
+		"toasts": {
+			"created": "Policy created",
+			"saved": "Policy saved",
+			"deleted": "Policy deleted",
+			"enabled": "Policy turned on",
+			"disabled": "Policy turned off"
 		}
 	},
 	"budgets": {

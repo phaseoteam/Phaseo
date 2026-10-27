@@ -6,6 +6,7 @@ export type GlobalNavigationItem = PaletteItem & { href: string };
 export type SearchCapabilities = {
 	autoRouting: boolean;
 	classifiers: boolean;
+	workloadIdentity: boolean;
 	slackAgent: boolean;
 	enterprise: boolean;
 	webhooks: boolean;
@@ -17,6 +18,7 @@ export type SearchCapabilities = {
 export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
 	autoRouting: false,
 	classifiers: false,
+	workloadIdentity: false,
 	slackAgent: false,
 	enterprise: false,
 	webhooks: false,
@@ -28,6 +30,7 @@ export const DEFAULT_SEARCH_CAPABILITIES: SearchCapabilities = {
 const GATED_DESTINATIONS: ReadonlyArray<[string, keyof SearchCapabilities]> = [
 	["/settings/routing/auto", "autoRouting"],
 	["/settings/classifiers", "classifiers"],
+	["/settings/trusted-workloads", "workloadIdentity"],
 	["/settings/slack", "slackAgent"],
 	["/settings/workspaces/enterprise", "enterprise"],
 	["/settings/webhooks", "webhooks"],
@@ -106,6 +109,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-settings-privacy", title: "Privacy Settings", subtitle: "Configure data handling preferences", href: "/settings/privacy", keywords: ["privacy", "retention", "zdr"] },
 	{ id: "nav-settings-guardrails", title: "Guardrails", subtitle: "Manage request and response guardrails", href: "/settings/guardrails", keywords: ["safety", "validation", "policies"] },
 	{ id: "nav-settings-rate-limits", title: "Rate limits", subtitle: "Limit requests and tokens per minute for keys, members and departments", href: "/settings/rate-limits", keywords: ["rate limit", "throttle", "rpm", "tpm", "429", "quota"] },
+	{ id: "nav-settings-trusted-workloads", title: "Trusted workloads", subtitle: "Let Vercel and GitHub Actions call the API with OIDC tokens instead of API keys", href: "/settings/trusted-workloads", keywords: ["oidc", "workload identity", "vercel", "github actions", "federation", "keyless"] },
 	{ id: "nav-settings-classifiers", title: "Classifiers", subtitle: "Label requests automatically with a model", href: "/settings/classifiers", keywords: ["labels", "taxonomy", "department", "tagging", "categorise"] },
 	{ id: "nav-settings-slack", title: "Slack", subtitle: "Add the Phaseo agent to Slack", href: "/settings/slack", keywords: ["slack", "agent", "bot", "assistant", "integration"] },
 	{ id: "nav-settings-oauth", title: "OAuth Apps", subtitle: "Manage OAuth applications and grants", href: "/settings/oauth-apps", keywords: ["oauth", "clients", "authorized apps"] },
@@ -123,7 +127,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 ];
 
 // Derive settings pages from the sidebar so new subpages remain discoverable.
-const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true, showClassifiers: true, showSlackAgent: true }).flatMap((group) =>
+const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouting: true, showClassifiers: true, showWorkloadIdentity: true, showSlackAgent: true }).flatMap((group) =>
 	group.items.filter((item) => !item.disabled && !item.external).flatMap((item) => [
 		{ id: `nav-${item.href.slice(1).replaceAll("/", "-")}`, title: item.label, href: item.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label] },
 		...(item.children ?? []).map((child) => ({ id: `nav-${child.href.slice(1).replaceAll("/", "-")}`, title: `${item.label}: ${child.label}`, href: child.href, subtitle: `${group.scope === "personal" ? "Account" : "Workspace"} settings`, keywords: ["settings", item.label, child.label] })),

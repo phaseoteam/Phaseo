@@ -4510,6 +4510,7 @@
 		"workspaces": "Espaços de trabalho",
 		"classifiers": "Classificadores",
 		"rateLimits": "Limites de taxa",
+		"trustedWorkloads": "Workloads confiáveis",
 		"newClassifier": "Novo classificador",
 		"classifier": "Classificador",
 		"budgets": "Orçamentos",
@@ -4742,6 +4743,7 @@
 		"providerProfile": "Perfil do provedor",
 		"classifiers": "Classificadores",
 		"rateLimits": "Limites de taxa",
+		"trustedWorkloads": "Workloads confiáveis",
 		"budgets": "Orçamentos",
 		"keys": "Chaves",
 		"keySecurity": "Segurança das chaves",
@@ -6625,6 +6627,98 @@
 				"not_enough_spend": "Para aumentar o limite, são necessários pelo menos {amount} em recargas pagas.",
 				"cooldown": "Você poderá aumentar o limite de novo em {date}."
 			}
+		}
+	},
+	"trustedWorkloads": {
+		"title": "Workloads confiáveis",
+		"description": "Permita que deployments da Vercel e jobs do GitHub Actions chamem a API com um token OIDC de curta duração em vez de uma chave de API.",
+		"feedback": "Como os workloads confiáveis poderiam funcionar melhor para você?",
+		"selectWorkspace": "Selecione um espaço de trabalho para gerenciar workloads confiáveis.",
+		"unavailable": "Workloads confiáveis ainda não estão disponíveis para este espaço de trabalho.",
+		"adminsOnly": "Somente proprietários e administradores do espaço de trabalho podem ver e alterar workloads confiáveis.",
+		"howItWorks": "A Vercel e o GitHub Actions dão a cada deployment ou job um token assinado que informa quem ele é e expira em poucas horas. Quando um token corresponde a uma destas políticas, a requisição usa a chave dessa política, com os mesmos limites, orçamentos, logs e cobrança de uma chave de API. Nenhum segredo precisa ser armazenado.",
+		"policiesTitle": "Políticas de confiança",
+		"propagation": "As alterações entram em vigor em cerca de um minuto.",
+		"newPolicy": "Nova política",
+		"emptyTitle": "Nenhum workload confiável ainda",
+		"emptyBody": "Adicione uma política para um projeto da Vercel ou um repositório do GitHub para que ele possa chamar a API sem uma chave de API.",
+		"noConditions": "Nenhuma",
+		"disabled": "Desativada",
+		"enabledLabel": "Aceitar tokens para {name}",
+		"edit": "Editar",
+		"delete": "Excluir",
+		"cancel": "Cancelar",
+		"save": "Salvar",
+		"create": "Criar política",
+		"listIssuer": "Emissor",
+		"listConditions": "Condições",
+		"listRef": "Branch ou tag",
+		"listLastUsed": "Último uso",
+		"neverUsed": "Nunca",
+		"listLifetime": "Token mais longo",
+		"lifetimeHours": "{count, plural, one {# hora} other {# horas}}",
+		"deleteTitle": "Excluir {name}?",
+		"deleteBody": "Os tokens que correspondem a esta política param de funcionar em cerca de um minuto. As requisições anteriores continuam nos seus logs.",
+		"dialogCreateTitle": "Nova política de confiança",
+		"dialogEditTitle": "Editar {name}",
+		"usageTitle": "Chamar a API com um token",
+		"usageBody": "Solicite um token para o público abaixo e envie-o no cabeçalho Authorization, do mesmo jeito que uma chave de API:",
+		"audienceLabel": "Público (audience)",
+		"providers": {
+			"vercel": "Vercel",
+			"github_actions": "GitHub Actions"
+		},
+		"ownerLabel": {
+			"vercel": "ID da equipe",
+			"github_actions": "ID do proprietário"
+		},
+		"ownerWide": {
+			"vercel": "Confia em todos os projetos desta equipe da Vercel. Adicione um ID de projeto para restringir.",
+			"github_actions": "Confia em todos os repositórios deste proprietário. Adicione um ID de repositório para restringir."
+		},
+		"environments": {
+			"production": "Produção",
+			"preview": "Preview",
+			"development": "Desenvolvimento"
+		},
+		"fields": {
+			"name": "Nome",
+			"namePlaceholder": "Site em produção",
+			"provider": "Plataforma",
+			"vercelTeamSlug": "Slug da equipe",
+			"vercelTeamId": "ID da equipe",
+			"vercelTeamHint": "Encontre os dois em Team Settings na Vercel. Deixe o slug vazio se o projeto usar o emissor global.",
+			"vercelProjectId": "ID do projeto",
+			"vercelProjectHint": "Opcional, mas recomendado. Sem ele, todos os projetos da equipe são confiáveis.",
+			"environment": "Ambiente",
+			"environmentHint": "Deixe tudo desmarcado para aceitar qualquer ambiente.",
+			"githubOwnerId": "ID do proprietário",
+			"githubRepositoryId": "ID do repositório",
+			"githubIdsHint": "Use os IDs numéricos, que não mudam se o proprietário ou o repositório for renomeado. O ID do repositório é opcional, mas sem ele todos os repositórios do proprietário são confiáveis.",
+			"githubRef": "Branch ou tag (opcional)",
+			"lifetime": "Token mais longo aceito (horas)",
+			"lifetimeHint": "Tokens emitidos para durar mais que isso são recusados. Até {max} horas."
+		},
+		"problems": {
+			"name": "Digite um nome com até 100 caracteres.",
+			"vercelTeamSlug": "Use o slug da equipe que aparece na URL dela, como acme.",
+			"vercelTeamId": "IDs de equipe começam com team_.",
+			"vercelProjectId": "IDs de projeto começam com prj_.",
+			"githubOwnerId": "Digite o ID numérico do proprietário.",
+			"githubRepositoryId": "Digite o ID numérico do repositório.",
+			"lifetime": "Digite um número inteiro de horas entre 1 e 12."
+		},
+		"errors": {
+			"invalid": "{message}",
+			"saveFailed": "Não foi possível salvar a política. Tente novamente.",
+			"deleteFailed": "Não foi possível excluir a política. Tente novamente."
+		},
+		"toasts": {
+			"created": "Política criada",
+			"saved": "Política salva",
+			"deleted": "Política excluída",
+			"enabled": "Política ativada",
+			"disabled": "Política desativada"
 		}
 	},
 	"budgets": {

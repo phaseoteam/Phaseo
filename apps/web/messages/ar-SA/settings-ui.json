@@ -4510,6 +4510,7 @@
 		"workspaces": "مساحات العمل",
 		"classifiers": "المصنِّفات",
 		"rateLimits": "حدود المعدل",
+		"trustedWorkloads": "أحمال العمل الموثوقة",
 		"newClassifier": "مصنِّف جديد",
 		"classifier": "مصنِّف",
 		"budgets": "الميزانيات",
@@ -4742,6 +4743,7 @@
 		"providerProfile": "ملف المزوّد",
 		"classifiers": "المصنِّفات",
 		"rateLimits": "حدود المعدل",
+		"trustedWorkloads": "أحمال العمل الموثوقة",
 		"budgets": "الميزانيات",
 		"keys": "المفاتيح",
 		"keySecurity": "أمان المفاتيح",
@@ -6625,6 +6627,98 @@
 				"not_enough_spend": "يتطلب رفع الحد ما لا يقل عن {amount} من عمليات الشحن المدفوعة.",
 				"cooldown": "يمكنك رفع الحد مجددًا في {date}."
 			}
+		}
+	},
+	"trustedWorkloads": {
+		"title": "أحمال العمل الموثوقة",
+		"description": "اسمح لعمليات النشر على Vercel ومهام GitHub Actions باستدعاء الواجهة البرمجية برمز OIDC قصير الأجل بدلًا من مفتاح API.",
+		"feedback": "كيف يمكن أن تعمل أحمال العمل الموثوقة بشكل أفضل لك؟",
+		"selectWorkspace": "اختر مساحة عمل لإدارة أحمال العمل الموثوقة.",
+		"unavailable": "أحمال العمل الموثوقة غير متاحة لمساحة العمل هذه بعد.",
+		"adminsOnly": "يمكن لمالكي مساحة العمل ومسؤوليها فقط عرض أحمال العمل الموثوقة وتغييرها.",
+		"howItWorks": "يمنح Vercel وGitHub Actions كل عملية نشر أو مهمة رمزًا موقّعًا يحدد هويتها وتنتهي صلاحيته خلال ساعات. عندما يطابق الرمز إحدى هذه السياسات، يُنفَّذ الطلب بمفتاح تلك السياسة، بالحدود والميزانيات والسجلات والفوترة نفسها التي لمفتاح API. لا حاجة إلى تخزين أي سر.",
+		"policiesTitle": "سياسات الثقة",
+		"propagation": "تسري التغييرات خلال دقيقة تقريبًا.",
+		"newPolicy": "سياسة جديدة",
+		"emptyTitle": "لا توجد أحمال عمل موثوقة بعد",
+		"emptyBody": "أضف سياسة لمشروع على Vercel أو مستودع على GitHub ليتمكن من استدعاء الواجهة البرمجية دون مفتاح API.",
+		"noConditions": "لا شيء",
+		"disabled": "متوقفة",
+		"enabledLabel": "قبول الرموز لـ {name}",
+		"edit": "تعديل",
+		"delete": "حذف",
+		"cancel": "إلغاء",
+		"save": "حفظ",
+		"create": "إنشاء سياسة",
+		"listIssuer": "الجهة المُصدِرة",
+		"listConditions": "الشروط",
+		"listRef": "الفرع أو الوسم",
+		"listLastUsed": "آخر استخدام",
+		"neverUsed": "لم يُستخدم",
+		"listLifetime": "أطول رمز",
+		"lifetimeHours": "{count, plural, one {ساعة واحدة} two {ساعتان} few {# ساعات} many {# ساعة} other {# ساعة}}",
+		"deleteTitle": "حذف {name}؟",
+		"deleteBody": "تتوقف الرموز المطابقة لهذه السياسة عن العمل خلال دقيقة تقريبًا. تبقى الطلبات السابقة في سجلاتك.",
+		"dialogCreateTitle": "سياسة ثقة جديدة",
+		"dialogEditTitle": "تعديل {name}",
+		"usageTitle": "استدعاء الواجهة البرمجية برمز",
+		"usageBody": "اطلب رمزًا للجمهور أدناه وأرسله في ترويسة Authorization، كما ترسل مفتاح API:",
+		"audienceLabel": "الجمهور (audience)",
+		"providers": {
+			"vercel": "Vercel",
+			"github_actions": "GitHub Actions"
+		},
+		"ownerLabel": {
+			"vercel": "معرّف الفريق",
+			"github_actions": "معرّف المالك"
+		},
+		"ownerWide": {
+			"vercel": "تثق بكل مشروع في فريق Vercel هذا. أضف معرّف مشروع لتضييقها.",
+			"github_actions": "تثق بكل مستودع لدى هذا المالك. أضف معرّف مستودع لتضييقها."
+		},
+		"environments": {
+			"production": "الإنتاج",
+			"preview": "المعاينة",
+			"development": "التطوير"
+		},
+		"fields": {
+			"name": "الاسم",
+			"namePlaceholder": "إنتاج الموقع",
+			"provider": "المنصة",
+			"vercelTeamSlug": "الاسم المختصر للفريق",
+			"vercelTeamId": "معرّف الفريق",
+			"vercelTeamHint": "تجد الاثنين في Team Settings على Vercel. اترك الاسم المختصر فارغًا إذا كان المشروع يستخدم الجهة المُصدِرة العامة.",
+			"vercelProjectId": "معرّف المشروع",
+			"vercelProjectHint": "اختياري لكنه موصى به. بدونه يُوثق بكل مشاريع الفريق.",
+			"environment": "البيئة",
+			"environmentHint": "اترك الكل دون تحديد لقبول أي بيئة.",
+			"githubOwnerId": "معرّف المالك",
+			"githubRepositoryId": "معرّف المستودع",
+			"githubIdsHint": "استخدم المعرّفات الرقمية، فهي لا تتغير عند إعادة تسمية المالك أو المستودع. معرّف المستودع اختياري، لكن بدونه يُوثق بكل مستودعات المالك.",
+			"githubRef": "الفرع أو الوسم (اختياري)",
+			"lifetime": "أطول رمز مقبول (بالساعات)",
+			"lifetimeHint": "تُرفض الرموز الصادرة لمدة أطول من ذلك. حتى {max} ساعة."
+		},
+		"problems": {
+			"name": "أدخل اسمًا من 100 حرف كحد أقصى.",
+			"vercelTeamSlug": "استخدم الاسم المختصر الظاهر في رابط الفريق، مثل acme.",
+			"vercelTeamId": "تبدأ معرّفات الفرق بـ team_.",
+			"vercelProjectId": "تبدأ معرّفات المشاريع بـ prj_.",
+			"githubOwnerId": "أدخل المعرّف الرقمي للمالك.",
+			"githubRepositoryId": "أدخل المعرّف الرقمي للمستودع.",
+			"lifetime": "أدخل عددًا صحيحًا من الساعات بين 1 و12."
+		},
+		"errors": {
+			"invalid": "{message}",
+			"saveFailed": "تعذّر حفظ السياسة. حاول مرة أخرى.",
+			"deleteFailed": "تعذّر حذف السياسة. حاول مرة أخرى."
+		},
+		"toasts": {
+			"created": "تم إنشاء السياسة",
+			"saved": "تم حفظ السياسة",
+			"deleted": "تم حذف السياسة",
+			"enabled": "تم تشغيل السياسة",
+			"disabled": "تم إيقاف السياسة"
 		}
 	},
 	"budgets": {
