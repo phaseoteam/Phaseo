@@ -18,10 +18,15 @@ const DEFAULT_WEB_ORIGIN = "https://phaseo.app";
 
 export function userFacts(user: SlackUser, installation: Pick<Installation, "team_id" | "enterprise_id">): UserFacts {
 	const sameEnterprise = Boolean(installation.enterprise_id && user.enterprise_user?.enterprise_id === installation.enterprise_id);
-	const otherTeam = Boolean(installation.team_id && user.team_id && user.team_id !== installation.team_id);
+	// A workspace install: someone from another workspace, unless it's in the same Enterprise Grid.
+	// An org-wide install (no team): anyone who isn't a member of the installation's enterprise,
+	// which includes people in shared channels whose is_stranger is false.
+	const otherOrganisation = installation.team_id
+		? Boolean(user.team_id && user.team_id !== installation.team_id) && !sameEnterprise
+		: Boolean(installation.enterprise_id) && !sameEnterprise;
 	return {
 		isBot: user.is_bot === true || user.id === "USLACKBOT",
-		isExternal: user.is_stranger === true || (otherTeam && !sameEnterprise),
+		isExternal: user.is_stranger === true || otherOrganisation,
 		isGuest: user.is_restricted === true || user.is_ultra_restricted === true,
 	};
 }

@@ -133,6 +133,20 @@ describe("events: who gets an answer", () => {
 		expect(world.turns.created.map((entry) => (entry.params as { external?: boolean }).external)).toEqual([true]);
 	});
 
+	it("treats someone outside an org-wide install's enterprise as from another organisation, even when Slack doesn't call them a stranger", async () => {
+		await install({ team_id: null, enterprise_id: "E0ORG00001", allow_external_users: true });
+		const authorizations = [{ enterprise_id: "E0ORG00001", team_id: null, user_id: BOT_USER_ID, is_bot: true, is_enterprise_install: true }];
+		// A shared-channel user from another company whose is_stranger is false.
+		world.slack.users.set("U0PARTNER1", { id: "U0PARTNER1", team_id: "T0PARTNER1", is_stranger: false });
+		await expect(run(mention({ user: "U0PARTNER1" }), { team_id: "T0SISTER01", authorizations })).resolves.toBe("started");
+		// Their turn sees only this conversation's notes and can't save skills.
+		expect(world.turns.created.map((entry) => (entry.params as { external?: boolean }).external)).toEqual([true]);
+		// Refused when the admin hasn't allowed other companies.
+		await install({ team_id: null, enterprise_id: "E0ORG00001", allow_external_users: false });
+		clearUserFactsCache();
+		await expect(run(mention({ user: "U0PARTNER1", ts: "1792600000.000600" }), { team_id: "T0SISTER01", authorizations })).resolves.toBe("refused_external_user");
+	});
+
 	it("treats another workspace of the same Enterprise Grid org as inside the organisation", async () => {
 		await install({ enterprise_id: "E0ORG00001" });
 		world.slack.users.set("U0SISTER01", { id: "U0SISTER01", team_id: "T0SISTER01", enterprise_user: { enterprise_id: "E0ORG00001" } });
@@ -325,6 +339,8 @@ describe("events: linked accounts", () => {
 describe("events: installations", () => {
 	it("finds an org-wide Enterprise Grid install by its enterprise", async () => {
 		await install({ team_id: null, enterprise_id: "E0ORG00001" });
+		// A member of the org: Slack names its enterprise.
+		world.slack.users.set("U0PERSON01", { id: "U0PERSON01", team_id: "T0SISTER01", enterprise_user: { enterprise_id: "E0ORG00001" } });
 		const authorizations = [{ enterprise_id: "E0ORG00001", team_id: null, user_id: BOT_USER_ID, is_bot: true, is_enterprise_install: true }];
 		await expect(run(mention(), { team_id: "T0SISTER01", authorizations })).resolves.toBe("started");
 		expect(world.db.queries.at(0)?.query).toMatchObject({ enterprise_id: "eq.E0ORG00001", team_id: "is.null", slack_app_id: "is.null" });
