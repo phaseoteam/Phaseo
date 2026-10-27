@@ -17,6 +17,10 @@ const MODEL_CHOICE_LINES = /^ {2}"(?:model_choice_enabled|allowed_models)" .*\n|
 const memoryMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_memory_and_skills.sql'));
 const memoryMigration = await readFile(new URL(`../migrations/${memoryMigrationName}`, import.meta.url), 'utf8');
 const MEMORY_LINES = /^ {2}"memory_enabled" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."memory_enabled" .*\n\n/gm;
+// Records the bot scopes Slack granted: one column, a check and its comment.
+const botScopesMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_bot_scopes.sql'));
+const botScopesMigration = await readFile(new URL(`../migrations/${botScopesMigrationName}`, import.meta.url), 'utf8');
+const BOT_SCOPES_LINES = /^ {2}"bot_scopes" .*\n|^ {2}CONSTRAINT "slack_installations_bot_scopes_check" .*\n|^COMMENT ON COLUMN "public"\."slack_installations"\."bot_scopes" .*\n\n/gm;
 // The schedules migration adds the recurring task settings to slack_installations: three columns, two checks and their comments.
 const schedulesMigrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_schedules.sql'));
 const schedulesMigration = await readFile(new URL(`../migrations/${schedulesMigrationName}`, import.meta.url), 'utf8');
@@ -80,6 +84,7 @@ try {
   `);
   await db.exec(migration);
   await db.exec(modelChoiceMigration);
+  await db.exec(botScopesMigration);
   await db.exec(pagesMigration);
 
   // The memory and schedules migrations added the triggers that delete the agent's memory and schedules on
@@ -99,6 +104,11 @@ try {
       assert.equal(memoryLines.length, 2, 'slack_installations declares the memory switch and its comment');
       for (const line of memoryLines) assert.ok(words(memoryMigration).includes(words(line)), `the memory migration adds ${words(line).slice(0, 60)}`);
       definition = definition.replace(MEMORY_LINES, '');
+      // And what the bot scopes migration added.
+      const scopes = definition.match(BOT_SCOPES_LINES) ?? [];
+      assert.equal(scopes.length, 3, 'slack_installations declares the bot scopes column, check and comment');
+      for (const line of scopes) assert.ok(words(botScopesMigration).includes(words(line)), `the bot scopes migration adds ${words(line).slice(0, 60)}`);
+      definition = definition.replace(BOT_SCOPES_LINES, '');
       // And what the schedules migration added.
       const scheduleLines = definition.match(SCHEDULE_LINES) ?? [];
       assert.equal(scheduleLines.length, 8, 'slack_installations declares the schedule settings, their checks and comments');
@@ -159,6 +169,12 @@ try {
   await rows('update public.slack_installations set model_choice_enabled = true, allowed_models = $2 where id = $1', [first.id, tenModels]);
   await assert.rejects(rows('update public.slack_installations set allowed_models = $2 where id = $1', [first.id, [...tenModels, 'acme/model-10']]), /slack_installations_allowed_models_check/);
   await rows("update public.slack_installations set model_choice_enabled = false, allowed_models = '{}' where id = $1", [first.id]);
+  // Installations from before scopes were recorded have none; the scopes Slack granted are kept, up to 50.
+  assert.equal(first.bot_scopes, null);
+  const [scoped] = await rows('update public.slack_installations set bot_scopes = $2 where id = $1 returning bot_scopes', [first.id, ['chat:write', 'files:read', 'files:write']]);
+  assert.deepEqual(scoped.bot_scopes, ['chat:write', 'files:read', 'files:write']);
+  await assert.rejects(rows('update public.slack_installations set bot_scopes = $2 where id = $1', [first.id, Array.from({ length: 51 }, (_, index) => `scope:${index}`)]), /slack_installations_bot_scopes_check/);
+  await rows('update public.slack_installations set bot_scopes = null where id = $1', [first.id]);
   // Shared pages are on, kept 30 days and open to anyone with the link, until an admin changes it.
   assert.equal(first.pages_enabled, true);
   assert.equal(first.page_expiry_days, 30);

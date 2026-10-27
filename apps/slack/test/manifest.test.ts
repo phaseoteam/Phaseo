@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { SLACK_AGENT_BOT_SCOPES } from "../../web-api/src/lib/slack-api";
+import { SLACK_AGENT_BOT_SCOPES, SLACK_AGENT_ORIGINAL_BOT_SCOPES } from "../../web-api/src/lib/slack-api";
+import { ORIGINAL_BOT_SCOPES } from "../src/installations";
 import { processEvent, type SlackEnvelope } from "../src/events";
 import { createApp } from "../src/index";
 import { hostedApp } from "../src/installations";
@@ -119,6 +120,10 @@ async function slackRequest(url: string, body: string, secret: string, contentTy
 }
 
 describe("Slack app manifest", () => {
+	it("reads an installation from before its scopes were recorded as having the scopes web-api assumes", () => {
+		expect([...ORIGINAL_BOT_SCOPES]).toEqual([...SLACK_AGENT_ORIGINAL_BOT_SCOPES]);
+	});
+
 	it("asks for exactly the bot scopes web-api requests at install, and no user scopes", () => {
 		expect(manifest.oauth_config.scopes.bot).toEqual([...SLACK_AGENT_BOT_SCOPES]);
 		expect(manifest.oauth_config.scopes.user).toBeUndefined();

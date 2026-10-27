@@ -6828,7 +6828,9 @@
 		"openChat": "Ouvrir Chat",
 		"addCredits": "Ajouter des crédits",
 		"notices": {
-			"installed": "L’agent Phaseo est maintenant dans {team}."
+			"installed": "L’agent Phaseo est maintenant dans {team}.",
+			"permissionsUpdated": "Autorisations Slack mises à jour dans {team}. L’agent peut maintenant publier des graphiques et des images, et lire les fichiers partagés avec lui.",
+			"permissionsPartial": "Slack n’a pas accordé toutes les autorisations, certaines fonctions restent donc désactivées. Réessayez, et vérifiez que votre application Slack comporte tous les scopes."
 		},
 		"member": {
 			"installed": "L’agent Phaseo est installé dans {team}.",
@@ -6946,6 +6948,13 @@
 			"save": "Enregistrer les modifications",
 			"saved": "Réglages enregistrés.",
 			"discard": "Annuler les modifications"
+		},
+		"permissions": {
+			"title": "Mettre à jour les autorisations Slack",
+			"description": "L’agent peut maintenant publier les graphiques et images qu’il crée, et lire les images et PDF partagés avec lui, dès que Slack l’y autorise. La mise à jour ouvre Slack pour approuver les nouvelles autorisations, et conserve les paramètres, la clé et les données de l’agent.",
+			"customApp": "Ajoutez d’abord les scopes de bot files:read et files:write au manifeste de votre application Slack.",
+			"submit": "Mettre à jour les autorisations Slack",
+			"redirecting": "Ouverture de Slack…"
 		},
 		"month": {
 			"note": "{date} jusqu’ici, en UTC. Le montant est prélevé sur les crédits à la fin du mois.",
@@ -7217,6 +7226,7 @@
 			"appUnavailable": "Phaseo n’a pas pu lire les informations enregistrées de votre application Slack. Enregistrez-les à nouveau, puis réessayez.",
 			"alreadyInstalled": "L’agent Slack est déjà installé dans cet espace de travail.",
 			"teamInUse": "Cet espace de travail Slack a déjà l’agent depuis un autre espace de travail Phaseo. Désinstallez-le d’abord là-bas.",
+			"teamMismatch": "C’était un autre espace de travail Slack. Choisissez celui où l’agent est installé, puis réessayez.",
 			"notInstalled": "L’agent Slack n’est plus installé dans cet espace de travail. Rechargez la page.",
 			"conflict": "L’agent Slack a été modifié entre-temps. Rechargez et réessayez.",
 			"keyMissing": "La clé API de l’agent est introuvable. Désinstallez l’agent et ajoutez-le de nouveau.",

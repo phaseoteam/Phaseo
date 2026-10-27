@@ -16,6 +16,7 @@ import { pageStoreFor } from "./pages";
 import { allowedModels, chooseModel, decideComparison, modelChoiceOn, modelNames, namesCatalogueModel, namesComparison, namesModel, namesOtherModel, modelRefusalText, withoutMention } from "./model-choice";
 import { updateQuestionMessage } from "./questions";
 import { createSlackClient, postEphemeral, type SlackClient } from "./slack-api";
+import { sharedFileRefs } from "./slack-files";
 import { createDb, type Db } from "./supabase";
 
 // What the Worker does with a verified Slack event, after it has acknowledged it:
@@ -72,6 +73,8 @@ export type SlackEvent = {
 	tab?: string;
 	/** tokens_revoked: the user ids whose user (oauth) and bot tokens were revoked. */
 	tokens?: { oauth?: unknown; bot?: unknown };
+	/** Files shared with the message. Only their ids and names are kept (slack-files.ts). */
+	files?: unknown[];
 };
 
 export type SlackEnvelope = {
@@ -278,9 +281,10 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		return "link_required";
 	}
 
-	// Their reply to the question the running turn asked them: the turn goes on with it.
+	// Their reply to the question the running turn asked them: the turn goes on with it, and with its files.
 	let text = typeof event.text === "string" ? event.text : "";
-	const answered = await coordinator.answerWithMessage({ slackUserId: user, text: withoutMention(text, installation.bot_user_id), now });
+	const files = sharedFileRefs(event.files);
+	const answered = await coordinator.answerWithMessage({ slackUserId: user, text: withoutMention(text, installation.bot_user_id), ...(files.length ? { files } : {}), now });
 	if (answered) {
 		console.log("[slack-agent] question answered", { installationId: installation.id, turnId: answered.turnId, question: answered.question.n, by: "message" });
 		await updateQuestionMessage(slack, { channel, threadTs, turnId: answered.turnId, askerId: answered.askerId }, answered.question);
@@ -349,6 +353,7 @@ async function handleMessage(deps: Deps, app: SlackAppContext, envelope: SlackEn
 		...(facts.isExternal ? { external: true } : {}),
 		...(compare ? { compare } : {}),
 		text,
+		...(files.length ? { files } : {}),
 	}, now);
 	if (queued.status === "queue_full") {
 		await meter.release({ eventId });

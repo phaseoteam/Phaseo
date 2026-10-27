@@ -8,7 +8,7 @@ icon: "messages-square"
 El agente de Slack se está habilitando poco a poco en los espacios de trabajo. Si **Ajustes → Slack** todavía no aparece en tus ajustes, aún no está disponible para tu espacio de trabajo.
 </Note>
 
-El agente de Phaseo responde preguntas en Slack. Menciónalo en un canal o envíale un mensaje directo, y responde en el hilo, transmitiendo la respuesta mientras la escribe. Usa el modelo que elijas en Phaseo, puede buscar en la web y leer páginas web, y puede informar a los miembros vinculados sobre el gasto en Phaseo, los créditos, el uso de las claves de API y los modelos de tu espacio de trabajo.
+El agente de Phaseo responde preguntas en Slack. Menciónalo en un canal o envíale un mensaje directo, y responde en el hilo, transmitiendo la respuesta mientras la escribe. Usa el modelo que elijas en Phaseo, puede buscar en la web y leer páginas web, y puede informar a los miembros vinculados sobre el gasto en Phaseo, los créditos, el uso de las claves de API y los modelos de tu espacio de trabajo. También puede publicar gráficos e imágenes que crea, y leer imágenes y PDF que compartas con él.
 
 Los propietarios y administradores lo añaden desde **Ajustes → Slack**, eligen quién puede usarlo y fijan sus límites. Pagas un precio mensual por las personas que lo usaron, y los tokens de modelo se facturan como cualquier otra solicitud del gateway.
 
@@ -126,6 +126,27 @@ Cuando el agente necesita que elijas entre algunas opciones o apruebes algo ante
 Abre el agente en Slack y elige **Home** para ver cómo usarlo, el modelo que usa y si tu cuenta de Phaseo está conectada. Si no lo está y conectarla serviría de algo (con **Solo cuentas vinculadas**, o donde se permiten los **Datos de uso**), la pestaña muestra el botón **Connect your Phaseo account**. Los miembros del espacio de trabajo de Phaseo que han conectado su cuenta también ven cuántas respuestas ha dado el agente en el espacio de trabajo de Slack este mes (UTC). La pestaña solo muestra ajustes y cifras, nunca mensajes. También muestra las tareas recurrentes que configuraste, con su próxima ejecución (consulta «Tareas programadas» más abajo).
 
 Con tu propia aplicación de Slack, la pestaña Home necesita el manifiesto más reciente: `home_tab_enabled` en `true` y el evento de bot `app_home_opened`.
+
+## Gráficos, imágenes y archivos
+
+El agente puede publicar gráficos e imágenes en el hilo, y leer imágenes y PDF que compartas con él.
+
+- **Gráficos:** pide un gráfico, por ejemplo `@Phaseo chart our spend by week this month`. El agente dibuja un gráfico de barras, de líneas o circular con los números que tiene y lo publica en el hilo como imagen. El texto del gráfico usa letras latinas y cirílicas; lo demás queda en su respuesta.
+- **Imágenes:** pídele que cree una, por ejemplo `@Phaseo make an icon of a paper plane in blue`. Usa [GPT Image 2](https://phaseo.app/models/openai/gpt-image-2) con la clave de API del agente, y se factura como cualquier otra solicitud. Una imagen cuesta unos céntimos y cuenta para el límite de $0.50 de la respuesta (consulta "Límites de cada respuesta" más abajo), y el pie de la respuesta la incluye. Una respuesta crea como máximo 2 imágenes, y solo mientras quede al menos $0.15 de su límite.
+- **Archivos que compartes:** adjunta imágenes (PNG, JPEG, GIF o WebP, hasta 5 MB cada una) o PDF (hasta 10 MB) a tu mensaje, o a mensajes anteriores del hilo que el agente lee. Lee hasta 4 archivos, 12 MB en total, por respuesta, empezando por los más recientes. Todavía no puede leer otros tipos de archivo.
+
+El modelo también tiene que poder leer imágenes o PDF. Con **Auto**, el agente envía los archivos, y responde sin ellos si el modelo que elige no puede leerlos. Con un modelo concreto, el agente te avisa cuando ese modelo no puede leer el tipo de archivo que compartiste.
+
+Los archivos que compartes se descargan para la respuesta que los lee y nunca se guardan. Los gráficos y las imágenes que publica el agente son archivos de tu espacio de trabajo de Slack, como cualquier otro.
+
+### Actualizar permisos de Slack
+
+Los gráficos y las imágenes necesitan el permiso `files:write` de Slack, y leer archivos necesita `files:read`. Si el agente se añadió antes de poder usar archivos, todavía no los tiene: avisa de que un administrador debe actualizar sus permisos, y **Ajustes → Slack** muestra **Actualizar permisos de Slack**.
+
+1. Selecciona **Actualizar permisos de Slack**. Slack muestra los permisos que pide el agente.
+2. Apruébalos para el mismo espacio de trabajo de Slack. Slack te devuelve a **Ajustes → Slack**.
+
+Al actualizar se conservan la configuración, la clave de API, el guardrail y el historial del agente. Con tu propia aplicación de Slack, primero añade `files:read` y `files:write` a su manifiesto (consulta "Usar tu propia aplicación de Slack" más abajo).
 
 ## Quién puede usarlo
 
@@ -298,7 +319,7 @@ La sección **Agente** fija el modelo y las **Instrucciones**: indicaciones adic
 
 ### Límites de cada respuesta
 
-Cada respuesta se detiene tras 12 pasos o $0.50 de gasto en modelos, lo que ocurra primero. Un paso es una llamada al modelo y las herramientas que ejecuta, como una búsqueda web. Los otros modelos a los que pregunta el agente y los modelos de una comparación cuentan para los mismos $0.50. Cuando un límite detiene una respuesta, el agente lo dice, y puedes pedirle que continúe. Estos límites son iguales para todos los espacios de trabajo.
+Cada respuesta se detiene tras 12 pasos o $0.50 de gasto en modelos, lo que ocurra primero. Un paso es una llamada al modelo y las herramientas que ejecuta, como una búsqueda web. Los otros modelos a los que pregunta el agente y los modelos de una comparación cuentan para los mismos $0.50. Cuando un límite detiene una respuesta, el agente lo dice, y puedes pedirle que continúe. Estos límites son iguales para todos los espacios de trabajo. Las imágenes que crea el agente también cuentan para los $0.50.
 
 ## Precios
 
@@ -349,6 +370,7 @@ Las condiciones de la API de Slack no permiten entrenar con datos de Slack ni ar
 - **Ningún proveedor que entrene con prompts.** El [guardrail](../cookbook/guardrails-for-api-keys.mdx) **Slack agent** desactiva el entrenamiento con modelos de pago y gratuitos y la publicación de prompts, así que nunca se usan proveedores que entrenan con prompts. Pueden responder proveedores que guardan registros sin entrenar con ellos, y pueden conservar el contenido de los mensajes en esos registros según sus propias políticas; los registros, cachés y telemetría de Phaseo siguen sin guardar el contenido de los mensajes.
 - **Memoria de trabajo breve.** Para cada hilo, el agente guarda sus respuestas recientes, notas breves sobre las herramientas que usó, los mensajes que esperan su turno, los ID (no el texto) de los mensajes recientes del hilo para saber desde dónde leer, a quién ha enviado el botón para conectar la cuenta y las preguntas que hizo, con sus respuestas. Se eliminan 7 días después de la última actividad del hilo.
 - **Memoria que puedes ver y eliminar.** El agente guarda las notas, notas fijadas, tareas y habilidades que le piden guardar, con sus propias palabras y nunca como copias de mensajes, junto con el ID de Slack de quien lo pidió. Se mantienen hasta que alguien las elimina, pasa la fecha hasta la que debían guardarse o desinstalas el agente. Los propietarios y administradores pueden verlas y eliminarlas en **Ajustes → Slack**, y desactivar ahí las notas (consulta «Memoria y habilidades», más arriba). Las personas de otras empresas nunca ven las notas de todo el espacio de trabajo.
+- **Los archivos compartidos se leen, no se guardan.** El agente descarga las imágenes y los PDF que lee para una respuesta y los envía al modelo con las solicitudes de esa respuesta, con las mismas reglas. Nunca los guarda; solo sus ID de archivo de Slack y sus nombres se conservan con el mensaje hasta que termina la respuesta.
 - **Tareas recurrentes.** Para cada tarea, el agente guarda su título y su instrucción, dónde publica, su programación y zona horaria, el ID de Slack de la persona que la configuró y cómo fue su última ejecución. Se conservan hasta que alguien cancela o elimina la tarea, o desinstalas el agente. Los propietarios y administradores pueden verlas, pausarlas y eliminarlas en **Ajustes → Slack**.
 - **Páginas compartidas hasta que caducan.** Una página que publica el agente puede incluir lo que se dijo en Slack o lo que encontró. Phaseo conserva la página, su título, el ID de Slack de la persona que la pidió y cuántas veces se abrió hasta que caduca (a los 7, 30 o 90 días, según hayan elegido tus administradores), un propietario o administrador la elimina o desinstalas el agente. Pueden abrirla todas las personas con su enlace o solo los miembros de tu espacio de trabajo de Slack que hayan iniciado sesión, según lo que se haya elegido para la página. Las páginas nunca aparecen en los registros de Phaseo.
 - **Nada archivado.** Phaseo no archiva nada de Slack. Los registros propios del agente solo guardan ID y estados de Slack.
@@ -425,7 +447,9 @@ En **Ajustes → Slack**, elige **Tu aplicación de Slack** en **Aplicación de 
         "im:history",
         "channels:history",
         "groups:history",
-        "users:read"
+        "users:read",
+        "files:read",
+        "files:write"
       ]
     }
   },
@@ -469,6 +493,9 @@ Phaseo pide a Slack exactamente estos scopes del token de bot al instalar, así 
 | `im:history` | Leer los mensajes directos enviados al agente. |
 | `channels:history`, `groups:history` | Leer el hilo en el que se le mencionó, en canales públicos y privados. |
 | `users:read` | Comprobar si alguien es invitado, un bot o de otra organización. |
+| `files:read` | Leer imágenes y PDF compartidos con el agente. |
+| `files:write` | Publicar gráficos e imágenes en el hilo. |
+
 Algunas reglas para tu propia aplicación:
 
 - Mantén desactivada la rotación de tokens, como en el manifiesto. Slack no puede volver a desactivarla una vez activada.
@@ -506,6 +533,7 @@ Cuando el agente no puede responder a alguien, le contesta en privado en Slack:
 | "The model chosen for this agent isn't available to the Slack agent." | El gateway no puede usar el modelo del agente con su clave: **Automático** sin enrutamiento automático, o ningún proveedor del modelo cumple el guardrail **Slack agent**. | Elige otro modelo en **Ajustes → Slack**. |
 | "…isn't one of the models you can choose here, so I didn't answer." | El mensaje empezaba con `with …:` y nombraba un modelo que no está en **Elección de modelo**, o uno que encaja con varios modelos permitidos. | Usa un modelo de la lista de la respuesta, o quita `with …:`. |
 | "The model you chose for this message isn't available to the Slack agent." | El gateway no puede usar el modelo elegido con la clave del agente, como en la fila anterior. | Pregunta sin `with …:`, o sustituye el modelo en **Elección de modelo**. |
+| "The model this agent uses can't read the files shared here." | Ningún proveedor del modelo del agente puede leer las imágenes o los PDF compartidos. | Pregunta sin los archivos, o elige en **Ajustes → Slack** un modelo que lea imágenes. |
 | "…so I didn't compare them." o "Name 2 or 3 different models to compare…" | El mensaje empezaba por `compare …:`, y un modelo no está en **Elección de modelo**, un nombre encaja con más de un modelo permitido, o nombraba menos de 2 o más de 3 modelos distintos. | Usa 2 o 3 modelos de la lista de la respuesta. |
 
 Si el agente no responde en absoluto:

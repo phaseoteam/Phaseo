@@ -60,8 +60,9 @@ export function consultErrorText(kind: TurnErrorKind, name: string): string {
 			return `${name} isn't available to the Slack agent: no provider of it meets the agent's data rules, or a workspace policy blocks it.`;
 		case "model_unavailable":
 			return `${name} isn't available right now.`;
-		// access_changed only follows a question, never a gateway error.
+		// access_changed only follows a question, never a gateway error; files_unsupported needs shared files, which aren't sent here.
 		case "access_changed":
+		case "files_unsupported":
 		case "failed":
 			return `Asking ${name} failed.`;
 	}

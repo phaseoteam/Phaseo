@@ -14,6 +14,7 @@ import {
 	saveSlackCustomApp,
 	setSlackAgentScheduleStatus,
 	startSlackInstall,
+	startSlackPermissionsUpdate,
 	uninstallSlackAgent,
 	updateSlackAgent,
 	updateSlackAgentSkill,
@@ -37,7 +38,7 @@ beforeEach(() => {
 describe("Slack settings actions", () => {
 	it("do nothing while the Slack agent flag is off", async () => {
 		mockEnabled.mockResolvedValue(false);
-		for (const result of [await startSlackInstall({}), await updateSlackAgent({ model: "phaseo/auto" }), await uninstallSlackAgent(), await saveSlackCustomApp({}), await removeSlackCustomApp()]) {
+		for (const result of [await startSlackInstall({}), await startSlackPermissionsUpdate(), await updateSlackAgent({ model: "phaseo/auto" }), await uninstallSlackAgent(), await saveSlackCustomApp({}), await removeSlackCustomApp()]) {
 			expect(result).toMatchObject({ ok: false, status: 404 });
 		}
 		expect(fetchMock).not.toHaveBeenCalled();
@@ -75,6 +76,19 @@ describe("Slack settings actions", () => {
 		expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ plan_people: 3, workspaceId: "workspace-a" });
 		fetchMock.mockResolvedValue(respond(200, { url: "https://example.com/oauth" }));
 		expect(await startSlackInstall({})).toMatchObject({ ok: false, status: 502 });
+	});
+
+	it("starts a permissions update for the active workspace, and only to Slack's consent page", async () => {
+		fetchMock.mockResolvedValue(respond(200, { url: "https://slack.com/oauth/v2/authorize?client_id=1.2&state=u" }));
+		expect(await startSlackPermissionsUpdate()).toEqual({ ok: true, url: "https://slack.com/oauth/v2/authorize?client_id=1.2&state=u" });
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(String(url)).toMatch(/\/api\/account\/settings\/slack\/permissions$/);
+		expect(init.method).toBe("POST");
+		expect(JSON.parse(init.body)).toEqual({ workspaceId: "workspace-a" });
+		fetchMock.mockResolvedValue(respond(200, { url: "https://example.com/oauth" }));
+		expect(await startSlackPermissionsUpdate()).toMatchObject({ ok: false, status: 502 });
+		fetchMock.mockResolvedValue(respond(404, { error: "not_installed" }));
+		expect(await startSlackPermissionsUpdate()).toMatchObject({ ok: false, status: 404, code: "not_installed" });
 	});
 
 	it("saves and removes the company's Slack app for the active workspace", async () => {

@@ -25,8 +25,19 @@ export const INSTALLATION_COLUMNS = [
 	"id", "workspace_id", "slack_app_id", "team_id", "enterprise_id", "bot_user_id", "secrets_ciphertext", "key_id",
 	"model", "model_choice_enabled", "allowed_models", "memory_enabled", "instructions", "access_mode", "usage_data_mode", "usage_data_channel_ids",
 	"schedules_enabled", "schedule_creators", "plan_people", "over_plan", "max_people", "monthly_cap_nanos", "answers_per_person_hour", "allow_guests", "allow_external_users", "status",
+	"bot_scopes",
 	"pages_enabled", "page_expiry_days", "page_default_access", "page_link_access",
 ].join(",");
+
+/**
+ * The bot scopes every installation had before slack_installations.bot_scopes
+ * was recorded. A feature that needs a newer scope (files:read, files:write)
+ * reaches an installation only once an admin updates its Slack permissions, so
+ * it checks hasBotScope first and says it can't do that here yet without it.
+ */
+export const ORIGINAL_BOT_SCOPES: readonly string[] = [
+	"app_mentions:read", "assistant:write", "chat:write", "im:history", "channels:history", "groups:history", "users:read",
+];
 
 export type Installation = {
 	id: string;
@@ -59,6 +70,8 @@ export type Installation = {
 	allow_guests: boolean;
 	allow_external_users: boolean;
 	status: "active" | "paused" | "payment_due" | "uninstalled";
+	/** The bot scopes Slack granted; null for installations from before they were recorded (ORIGINAL_BOT_SCOPES). */
+	bot_scopes: string[] | null;
 	/** Shared pages (pages.ts): whether the agent may publish them, for how many days, and who can view them. */
 	pages_enabled: boolean;
 	page_expiry_days: number;
@@ -66,6 +79,11 @@ export type Installation = {
 	/** Whether a page may be open to anyone with its link. Off, every page needs a Slack sign-in. */
 	page_link_access: boolean;
 };
+
+/** Whether Slack granted the installation's bot a scope. */
+export function hasBotScope(installation: Pick<Installation, "bot_scopes">, scope: string): boolean {
+	return (installation.bot_scopes ?? ORIGINAL_BOT_SCOPES).includes(scope);
+}
 
 export type InstallationSecrets = {
 	bot_token: string;

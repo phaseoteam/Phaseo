@@ -6,9 +6,12 @@
 /**
  * The Slack agent's bot scopes. The app manifest uses the same list. Only what
  * the agent uses today: a scope for a new feature is added with that feature
- * (installs keep the scopes they were granted until they are reinstalled).
+ * (installs keep the scopes they were granted until an admin updates the Slack
+ * permissions, which runs the install again; slack_installations.bot_scopes
+ * records what Slack granted).
  */
-export const SLACK_AGENT_BOT_SCOPES = [
+/** The scopes every installation had before bot_scopes was recorded (a null bot_scopes). The Worker keeps the same list (ORIGINAL_BOT_SCOPES). */
+export const SLACK_AGENT_ORIGINAL_BOT_SCOPES = [
 	"app_mentions:read",
 	"assistant:write",
 	"chat:write",
@@ -16,6 +19,13 @@ export const SLACK_AGENT_BOT_SCOPES = [
 	"channels:history",
 	"groups:history",
 	"users:read",
+] as const;
+
+export const SLACK_AGENT_BOT_SCOPES = [
+	...SLACK_AGENT_ORIGINAL_BOT_SCOPES,
+	// Charts and generated images are uploaded to the thread; images and PDFs shared in it are read.
+	"files:read",
+	"files:write",
 ] as const;
 
 export const SLACK_AUTHORIZE_URL = "https://slack.com/oauth/v2/authorize";
@@ -28,6 +38,8 @@ const BOT_USER_PATTERN = /^[UWB][A-Z0-9]{2,31}$/;
 const TEAM_PATTERN = /^T[A-Z0-9]{2,31}$/;
 const ENTERPRISE_PATTERN = /^E[A-Z0-9]{2,31}$/;
 const APP_PATTERN = /^A[A-Z0-9]{2,31}$/;
+const SCOPE_PATTERN = /^[a-z][a-z0-9_.-]{0,60}(?::[a-z][a-z0-9_.-]{0,60})*$/;
+const MAX_SCOPES = 50;
 
 export type SlackAppCredentials = {
 	clientId: string;
@@ -46,6 +58,8 @@ export type SlackInstallGrant = {
 	/** Only when the app has token rotation turned on. */
 	refreshToken: string | null;
 	expiresInSeconds: number | null;
+	/** The bot scopes Slack granted (its comma-separated `scope`), or null when it didn't say. */
+	scopes: string[] | null;
 };
 
 export function slackAuthorizeUrl(args: { clientId: string; redirectUri: string; state: string }): string {
@@ -65,6 +79,13 @@ function displayName(value: unknown): string | null {
 	if (typeof value !== "string") return null;
 	const name = value.trim().slice(0, 200);
 	return name || null;
+}
+
+/** Slack's comma-separated scope list, without anything malformed; null when it sent none. */
+function grantedScopes(value: unknown): string[] | null {
+	if (typeof value !== "string") return null;
+	const scopes = [...new Set(value.split(",").map((scope) => scope.trim()).filter((scope) => SCOPE_PATTERN.test(scope)))];
+	return scopes.length ? scopes.slice(0, MAX_SCOPES) : null;
 }
 
 /** A successful oauth.v2.access bot install, or null if anything required is missing or malformed. */
@@ -96,6 +117,7 @@ export function parseSlackInstallGrant(payload: unknown): SlackInstallGrant | nu
 		appId,
 		refreshToken,
 		expiresInSeconds: refreshToken && Number.isFinite(expiresIn) && expiresIn > 0 ? Math.floor(expiresIn) : null,
+		scopes: grantedScopes(body.scope),
 	};
 }
 

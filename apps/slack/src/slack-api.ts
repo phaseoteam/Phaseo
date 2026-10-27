@@ -2,13 +2,28 @@
 // { ok: false, error } for most failures and 429 with Retry-After when rate
 // limited, so every call returns a result instead of throwing. Only Slack's error
 // code is ever logged, never a response (which can hold message text or tokens).
+//
+// File bytes go to and from Slack's file host only: uploads to the URL
+// files.getUploadURLExternal returns, and downloads of files shared in a thread
+// (their url_private_download), which carry the bot token. Nothing else ever
+// gets the token, and a download never follows a redirect.
 
 const SLACK_API_ORIGIN = "https://slack.com/api";
 const TIMEOUT_MS = 10_000;
+const FILE_TIMEOUT_MS = 20_000;
+const FILES_HOST = "files.slack.com";
 const ROTATING_BOT_TOKEN_PATTERN = /^xoxe\.xoxb-[A-Za-z0-9-]{8,500}$/;
 const REFRESH_TOKEN_PATTERN = /^xoxe-[A-Za-z0-9-]{8,500}$/;
 
 export type SlackResult<T> = { ok: true; data: T } | { ok: false; error: string; retryAfterSeconds?: number };
+
+/**
+ * A file downloaded from Slack. no_access: Slack sent the bot elsewhere (its
+ * sign-in page, for a token without files:read) or refused it.
+ */
+export type SlackDownload =
+	| { ok: true; bytes: Uint8Array; contentType: string }
+	| { ok: false; error: "not_slack_file" | "too_large" | "no_access" | "download_failed" };
 
 export type SlackClient = {
 	/**
@@ -16,14 +31,97 @@ export type SlackClient = {
 	 * as users.info and conversations.replies only take form fields, so pass form.
 	 */
 	call<T = Record<string, unknown>>(method: string, args: Record<string, unknown>, options?: { form?: boolean }): Promise<SlackResult<T>>;
+	/** Sends a file's bytes to the upload URL files.getUploadURLExternal returned. */
+	upload(uploadUrl: string, bytes: Uint8Array): Promise<boolean>;
+	/** Downloads a file shared in Slack (its url_private_download) with the bot token, refusing more than maxBytes. */
+	download(url: string, maxBytes: number): Promise<SlackDownload>;
 };
 
 function errorCode(value: unknown): string {
 	return typeof value === "string" && value ? value.slice(0, 80) : "slack_error";
 }
 
+/** A URL on Slack's file host, the only place file bytes and the bot token go. */
+function slackFileUrl(value: string): URL | null {
+	try {
+		const url = new URL(value);
+		return url.protocol === "https:" && url.hostname === FILES_HOST ? url : null;
+	} catch {
+		return null;
+	}
+}
+
+/** Reads a response body, stopping as soon as it passes maxBytes. */
+async function readCapped(body: ReadableStream<Uint8Array>, maxBytes: number): Promise<Uint8Array | null> {
+	const reader = body.getReader();
+	const chunks: Uint8Array[] = [];
+	let total = 0;
+	for (;;) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		total += value.byteLength;
+		if (total > maxBytes) {
+			await reader.cancel().catch(() => undefined);
+			return null;
+		}
+		chunks.push(value);
+	}
+	const bytes = new Uint8Array(total);
+	let offset = 0;
+	for (const chunk of chunks) {
+		bytes.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	return bytes;
+}
+
 export function createSlackClient(token: string, fetchImpl: typeof fetch = fetch): SlackClient {
 	return {
+		async upload(uploadUrl, bytes) {
+			const url = slackFileUrl(uploadUrl);
+			if (!url) return false;
+			try {
+				const response = await fetchImpl(url.toString(), {
+					method: "POST",
+					headers: { "Content-Type": "application/octet-stream" },
+					body: bytes as BufferSource,
+					signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
+				});
+				await response.body?.cancel().catch(() => undefined);
+				if (!response.ok) console.warn("[slack-agent] file upload refused", { status: response.status });
+				return response.ok;
+			} catch {
+				return false;
+			}
+		},
+		async download(fileUrl, maxBytes) {
+			const url = slackFileUrl(fileUrl);
+			if (!url) return { ok: false, error: "not_slack_file" };
+			let response: Response;
+			try {
+				response = await fetchImpl(url.toString(), {
+					headers: { Authorization: `Bearer ${token}` },
+					redirect: "manual",
+					signal: AbortSignal.timeout(FILE_TIMEOUT_MS),
+				});
+			} catch {
+				return { ok: false, error: "download_failed" };
+			}
+			if (!response.ok || !response.body) {
+				await response.body?.cancel().catch(() => undefined);
+				const refused = (response.status >= 300 && response.status < 400) || [401, 403, 404].includes(response.status);
+				return { ok: false, error: refused ? "no_access" : "download_failed" };
+			}
+			const declared = Number(response.headers.get("content-length"));
+			if (Number.isFinite(declared) && declared > maxBytes) {
+				await response.body.cancel().catch(() => undefined);
+				return { ok: false, error: "too_large" };
+			}
+			const bytes = await readCapped(response.body, maxBytes).catch(() => undefined);
+			if (bytes === undefined) return { ok: false, error: "download_failed" };
+			if (bytes === null) return { ok: false, error: "too_large" };
+			return { ok: true, bytes, contentType: (response.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase() };
+		},
 		async call<T>(method: string, args: Record<string, unknown>, options?: { form?: boolean }): Promise<SlackResult<T>> {
 			let response: Response;
 			try {

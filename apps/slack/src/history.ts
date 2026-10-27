@@ -1,4 +1,5 @@
 import type { ContextEntry, ThreadContext } from "./coordinator";
+import { sharedFileRefs } from "./slack-files";
 import type { TurnRef } from "./turns";
 
 // Which part of a Slack thread a turn reads. Slack lets apps outside the Slack
@@ -22,6 +23,9 @@ import type { TurnRef } from "./turns";
 //   missing, and the coordinator starts again from the message answered.
 // - Only the installation's own bot user (or its app) is the agent's side of the
 //   thread; other bots and apps are labelled as such.
+// - A message's shared files are kept by id and name (slack-files.ts), so the
+//   turn can read the images and PDFs people shared; a message with files and
+//   no text is kept too.
 
 /** Slack caps non-Marketplace apps at 15 messages per conversations.replies call. */
 export const REPLIES_LIMIT = 15;
@@ -43,6 +47,7 @@ export type SlackHistoryMessage = {
 	bot_profile?: { app_id?: string; name?: string } | null;
 	text?: string;
 	subtype?: string;
+	files?: unknown[];
 };
 export type SlackReplies = { messages?: SlackHistoryMessage[]; has_more?: boolean };
 
@@ -107,11 +112,12 @@ function speaker(message: SlackHistoryMessage, self: AgentIdentity): Pick<Contex
 }
 
 function entry(message: SlackHistoryMessage, self: AgentIdentity): ContextEntry {
-	return { ...speaker(message, self), text: message.text!, ts: message.ts ?? null };
+	const files = sharedFileRefs(message.files);
+	return { ...speaker(message, self), text: message.text ?? "", ts: message.ts ?? null, ...(files.length ? { files } : {}) };
 }
 
 function hasText(message: SlackHistoryMessage): boolean {
-	return typeof message.text === "string" && message.text.trim() !== "";
+	return (typeof message.text === "string" && message.text.trim() !== "") || sharedFileRefs(message.files).length > 0;
 }
 
 /** The thread so far, without the message being answered. */

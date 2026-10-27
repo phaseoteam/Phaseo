@@ -1,6 +1,6 @@
 import { AgentGatewayError } from "@phaseo/agent-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, turnErrorText, type AgentTurnRequest, type AskRequest, type PausedRun } from "../src/agent";
+import { classifyTurnError, createSdkAgentRunner, gatewayBaseUrl, gatewayFetch, ImageNotReadError, turnErrorText, withAttachments, type AgentTurnRequest, type AskRequest, type PausedRun } from "../src/agent";
 import { askQuestionTool, type QuestionDraft } from "../src/questions";
 
 function sse(events: unknown[]): Response {
@@ -310,5 +310,118 @@ describe("asking another model", () => {
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
 		const failure = await runner.ask(ask()).then(() => null, (caught: unknown) => caught);
 		expect(classifyTurnError(failure, "anthropic/claude-test")).toBe("model_not_allowed");
+	});
+});
+
+describe("files and images", () => {
+	const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
+	const IMAGE_PART = { type: "input_image", image_url: "data:image/png;base64,iVBORw0KGgo=" };
+
+	it("adds the shared files to the first user message of every Responses request, after its text", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			seen.push(await capture(input, init));
+			return sse([COMPLETED]);
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		await runner.run(request({ attachments: [IMAGE_PART] }), { onText: async () => {}, onStep: async () => {} });
+		const [user] = seen[0].body.input.filter((item: any) => item.role === "user");
+		expect(user.content).toEqual([{ type: "input_text", text: "New message from <@U0PERSON01>:\nhello" }, IMAGE_PART]);
+		// The rest of the request is as the SDK built it.
+		expect(seen[0].headers.get("authorization")).toBe("Bearer phaseo_v1_sk_testkid00000_testsecret");
+		expect(seen[0].body).toMatchObject({ model: "phaseo/auto", stream: true, session_id: "slack-Ev0TEST0001" });
+	});
+
+	it("leaves requests alone without files, and anything that isn't a Responses request", async () => {
+		const passed = vi.fn(async () => new Response("{}"));
+		expect(withAttachments(passed as unknown as typeof fetch, [])).toBe(passed);
+		const wrapped = withAttachments(passed as unknown as typeof fetch, [IMAGE_PART]);
+		await wrapped("https://gateway.test/v1/models");
+		const sent = (passed.mock.calls[0] as unknown[])[0] as Request;
+		expect(sent.url).toBe("https://gateway.test/v1/models");
+		expect(sent.method).toBe("GET");
+	});
+
+	it("counts the tools' spend with the model's, against the limit and in the cost", async () => {
+		const fetchImpl = vi.fn(async () => sse([COMPLETED]));
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const steps: number[] = [];
+		const modelCosts: number[] = [];
+		const output = await runner.run(request({ otherCostUsd: () => 0.04 }), {
+			onText: async () => {},
+			onStep: async (progress) => { steps.push(progress.costUsd); },
+			onCost: (usd) => { modelCosts.push(usd); },
+		});
+		expect(modelCosts).toEqual([0.0021]);
+		expect(steps.map((usd) => Math.round(usd * 10_000) / 10_000)).toEqual([0.0421]);
+		expect(Math.round(output.costUsd * 10_000) / 10_000).toBe(0.0421);
+
+		// An image that takes the run to its limit stops it there, as model spend would.
+		const tool = { id: "draw", description: "Draw", parameters: { type: "object", properties: {} }, execute: async () => ({ posted: true }) };
+		let calls = 0;
+		const looping = vi.fn(async () => {
+			calls += 1;
+			return sse([{ ...COMPLETED, response: { ...COMPLETED.response, output: [{ type: "function_call", call_id: `call_${calls}`, name: "draw", arguments: "{}" }] } }]);
+		});
+		const stopped = await createSdkAgentRunner({ fetchImpl: looping as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" })
+			.run(request({ tools: [tool], maxCostUsd: 0.5, otherCostUsd: () => 0.5 }), { onText: async () => {}, onStep: async () => {} });
+		expect(stopped.stopReason).toBe("max_cost:0.5");
+		expect(calls).toBe(1);
+	});
+
+	it("makes an image through the gateway with the turn's key, labels, end user and session, and reads its cost", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			seen.push(await capture(input, init));
+			return Response.json({ created: 1, model: "openai/gpt-image-2", data: [{ b64_json: btoa(String.fromCharCode(...PNG)) }], cost_nanos: 42_000_000 });
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const image = await runner.generateImage!({
+			gatewayKey: "phaseo_v1_sk_testkid00000_testsecret", model: "openai/gpt-image-2", prompt: "A lighthouse", size: "1024x1024",
+			endUser: "slack:T0TEST0001:U0PERSON01", sessionId: "slack-Ev0TEST0001", labels: { slackTeam: "T0TEST0001", slackChannel: "C0CHANNEL1" },
+			signal: new AbortController().signal,
+		});
+		expect(image).toEqual({ bytes: PNG, mimeType: "image/png", costUsd: 0.042, model: "openai/gpt-image-2" });
+		expect(seen[0].url).toBe("https://gateway.test/v1/images/generations");
+		expect(seen[0].headers.get("authorization")).toBe("Bearer phaseo_v1_sk_testkid00000_testsecret");
+		expect(seen[0].headers.get("x-title")).toBe("Phaseo Slack agent");
+		expect(seen[0].headers.get("x-phaseo-session-id")).toBe("slack-Ev0TEST0001");
+		expect(JSON.parse(seen[0].headers.get("x-phaseo-metadata")!).labels).toContainEqual({ key: "app", value: "slack-agent" });
+		expect(seen[0].body).toEqual({ model: "openai/gpt-image-2", prompt: "A lighthouse", n: 1, size: "1024x1024", quality: "medium", user: "slack:T0TEST0001:U0PERSON01" });
+	});
+
+	it("turns an image refusal into an error the turn can classify, and refuses anything that isn't an image", async () => {
+		const imageRequest = {
+			gatewayKey: "k", model: "openai/gpt-image-2", prompt: "A cat", size: "1024x1024" as const, endUser: "slack:T:U", sessionId: "s",
+			labels: { slackTeam: "T", slackChannel: "C" }, signal: new AbortController().signal,
+		};
+		const refused = createSdkAgentRunner({ fetchImpl: (async () => Response.json({ error: "insufficient_credits" }, { status: 402 })) as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const error = await refused.generateImage!(imageRequest).catch((caught: unknown) => caught);
+		expect(classifyTurnError(error)).toBe("no_credits");
+		const notImage = createSdkAgentRunner({ fetchImpl: (async () => Response.json({ data: [{ b64_json: btoa("<html>") }], cost_nanos: 40_000_000 })) as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const unread = await notImage.generateImage!(imageRequest).catch((caught: unknown) => caught);
+		// Billed all the same: the cost goes with the error.
+		expect(unread).toBeInstanceOf(ImageNotReadError);
+		expect((unread as ImageNotReadError).costUsd).toBe(0.04);
+		const lostDownload = createSdkAgentRunner({
+			fetchImpl: (async (input: RequestInfo | URL) => String(input).endsWith("/images/generations")
+				? Response.json({ data: [{ url: "https://images.test/fox.png" }], cost_nanos: 40_000_000 })
+				: Promise.reject(new TypeError("network"))) as unknown as typeof fetch,
+			baseUrl: "https://gateway.test/v1",
+		});
+		await expect(lostDownload.generateImage!(imageRequest)).rejects.toMatchObject({ name: "ImageNotReadError", costUsd: 0.04 });
+		// A null or blank cost_nanos is no amount: the usage pricing is read instead of counting $0.
+		const nullNanos = createSdkAgentRunner({
+			fetchImpl: (async () => Response.json({ data: [{ b64_json: btoa(String.fromCharCode(...PNG)) }], cost_nanos: null, usage: { pricing: { total_nanos: "35000000" } } })) as unknown as typeof fetch,
+			baseUrl: "https://gateway.test/v1",
+		});
+		await expect(nullNanos.generateImage!(imageRequest)).resolves.toMatchObject({ costUsd: 0.035 });
+	});
+
+	it("says when the model can't read the files shared", () => {
+		const error = new AgentGatewayError({ status: 400, statusText: "Bad Request", body: { error: "unsupported_modalities", reason: "unsupported_modalities" }, message: "unsupported" });
+		expect(classifyTurnError(error, "phaseo/auto")).toBe("files_unsupported");
+		expect(turnErrorText("files_unsupported")).toBe("The model this agent uses can't read the files shared here. Ask again without them, or an admin can choose a model that reads images and PDFs in Phaseo settings.");
+		expect(turnErrorText("files_unsupported", true)).toContain("The model you chose for this message can't read the files shared here.");
 	});
 });

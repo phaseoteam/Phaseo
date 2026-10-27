@@ -36,7 +36,9 @@
         "im:history",
         "channels:history",
         "groups:history",
-        "users:read"
+        "users:read",
+        "files:read",
+        "files:write"
       ]
     }
   },

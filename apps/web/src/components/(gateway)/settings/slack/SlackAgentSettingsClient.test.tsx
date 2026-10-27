@@ -9,6 +9,7 @@ import type { SlackAgentCharge, SlackAgentInstallation, SlackAgentManagerView } 
 jest.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
 jest.mock("@/app/(dashboard)/settings/slack/actions", () => ({
 	startSlackInstall: jest.fn(),
+	startSlackPermissionsUpdate: jest.fn(),
 	updateSlackAgent: jest.fn(),
 	uninstallSlackAgent: jest.fn(),
 	saveSlackCustomApp: jest.fn(),
@@ -48,10 +49,10 @@ function charge(overrides: Partial<SlackAgentCharge>): SlackAgentCharge {
 const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
 afterAll(() => queryClient.clear());
 
-function render(month: SlackAgentInstallation["month"], charges: SlackAgentCharge[] = [], settings: Partial<SlackAgentInstallation["settings"]> = {}, autoRouting = false) {
+function render(month: SlackAgentInstallation["month"], charges: SlackAgentCharge[] = [], settings: Partial<SlackAgentInstallation["settings"]> = {}, autoRouting = false, extra: Partial<SlackAgentInstallation> = {}) {
 	const view: SlackAgentManagerView = {
 		workspaceId: "w1", canManage: true, configured: { hosted_app: true, custom_app: true }, redirect_url: "https://phaseo.app/callback",
-		scopes: [], auto_routing: autoRouting, installed: true, installation: installation(month, settings), custom_app: null, charges,
+		scopes: [], auto_routing: autoRouting, installed: true, installation: { ...installation(month, settings), ...extra }, custom_app: null, charges,
 	};
 	return renderToStaticMarkup(
 		<QueryClientProvider client={queryClient}>
@@ -61,6 +62,28 @@ function render(month: SlackAgentInstallation["month"], charges: SlackAgentCharg
 		</QueryClientProvider>,
 	);
 }
+
+describe("SlackAgentSettingsClient Slack permissions", () => {
+	const ORIGINAL = ["app_mentions:read", "assistant:write", "chat:write", "im:history", "channels:history", "groups:history", "users:read"];
+
+	it("asks an admin to update the Slack permissions when the installation lacks scopes the agent needs", () => {
+		const html = render(MONTH, [], {}, false, { permissions: { granted: ORIGINAL, missing: ["files:read", "files:write"] } });
+		expect(html).toContain("Update Slack permissions");
+		expect(html).toContain("keeps the agent&#x27;s settings, key and data");
+		expect(html).not.toContain("files:read and files:write bot scopes");
+		expect(html).not.toMatch(/rounded-(full|lg|xl)/);
+	});
+
+	it("tells a workspace with its own Slack app to add the scopes to its manifest first", () => {
+		const html = render(MONTH, [], {}, false, { uses_custom_app: true, permissions: { granted: ORIGINAL, missing: ["files:read", "files:write"] } });
+		expect(html).toContain("Add the files:read and files:write bot scopes to your Slack app&#x27;s manifest first.");
+	});
+
+	it("shows nothing once every scope is granted, or when the API doesn't say", () => {
+		expect(render(MONTH, [], {}, false, { permissions: { granted: [...ORIGINAL, "files:read", "files:write"], missing: [] } })).not.toContain("Update Slack permissions");
+		expect(render(MONTH)).not.toContain("Update Slack permissions");
+	});
+});
 
 describe("SlackAgentSettingsClient model spend", () => {
 	it("shows this month's model spend in dollars, apart from the Slack agent charge", () => {
